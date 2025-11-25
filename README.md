@@ -1,6 +1,6 @@
 # OutlookMailSpamFilter
 
-Automated Python-based email spam and phishing filter for Microsoft Outlook that processes multiple bulk mail folders using configurable YAML rules.
+Automated Python-based email spam and phishing filter for Microsoft Outlook that processes multiple bulk mail folders using configurable YAML rules
 
 ## Overview
 
