@@ -128,6 +128,7 @@
     - '@(?:[a-z0-9-]+\.)*depiqueo\.[a-z0-9.-]+$'
     - '@(?:[a-z0-9-]+\.)*deutchdds\.[a-z0-9.-]+$'
     - '@(?:[a-z0-9-]+\.)*dewdrev\.[a-z0-9.-]+$'
+    - '@(?:[a-z0-9-]+\.)*dialecticanet\.[a-z0-9.-]+$'
     - '@(?:[a-z0-9-]+\.)*dicitive\.[a-z0-9.-]+$'
     - '@(?:[a-z0-9-]+\.)*dickensonlab\.[a-z0-9.-]+$'
     - '@(?:[a-z0-9-]+\.)*discussel\.[a-z0-9.-]+$'
@@ -338,6 +339,7 @@
     - '@(?:[a-z0-9-]+\.)*hgemail\.[a-z0-9.-]+$'
     - '@(?:[a-z0-9-]+\.)*highestroyed\.[a-z0-9.-]+$'
     - '@(?:[a-z0-9-]+\.)*highpointddsus\.[a-z0-9.-]+$'
+    - '@(?:[a-z0-9-]+\.)*hightail\.[a-z0-9.-]+$'
     - '@(?:[a-z0-9-]+\.)*hiltongrandvacations\.[a-z0-9.-]+$'
     - '@(?:[a-z0-9-]+\.)*hims\-offernet\.[a-z0-9.-]+$'
     - '@(?:[a-z0-9-]+\.)*hipposica\.[a-z0-9.-]+$'
@@ -440,6 +442,7 @@
     - '@(?:[a-z0-9-]+\.)*irasense\.[a-z0-9.-]+$'
     - '@(?:[a-z0-9-]+\.)*irionline\.[a-z0-9.-]+$'
     - '@(?:[a-z0-9-]+\.)*irishpeddlernow\.[a-z0-9.-]+$'
+    - '@(?:[a-z0-9-]+\.)*iritailit\.[a-z0-9.-]+$'
     - '@(?:[a-z0-9-]+\.)*ironchefai\.[a-z0-9.-]+$'
     - '@(?:[a-z0-9-]+\.)*islunch\.[a-z0-9.-]+$'
     - '@(?:[a-z0-9-]+\.)*isolsoftech\.[a-z0-9.-]+$'
@@ -1773,7 +1776,7 @@
     'header': []
     'subject': []
   'metadata':
-    'last_modified': '2025-11-24T08:54:18.994742'
+    'last_modified': '2025-11-25T08:17:14.151172'
     'created_by': 'system'
     'tags':
     - 'spam'
@@ -2924,7 +2927,7 @@
     'header': []
     'subject': []
   'metadata':
-    'last_modified': '2025-11-24T08:54:18.994742'
+    'last_modified': '2025-11-25T08:17:14.151172'
     'created_by': 'system'
     'tags':
     - 'spam'
@@ -2963,7 +2966,7 @@
     'header': []
     'subject': []
   'metadata':
-    'last_modified': '2025-11-24T08:54:18.994742'
+    'last_modified': '2025-11-25T08:17:14.151172'
     'created_by': 'system'
     'tags':
     - 'spam'
@@ -3033,7 +3036,7 @@
     'header': []
     'subject': []
   'metadata':
-    'last_modified': '2025-11-24T08:54:18.994742'
+    'last_modified': '2025-11-25T08:17:14.151172'
     'created_by': 'system'
     'tags':
     - 'spam'
@@ -3073,7 +3076,7 @@
     'header': []
     'subject': []
   'metadata':
-    'last_modified': '2025-11-24T08:54:18.994742'
+    'last_modified': '2025-11-25T08:17:14.151172'
     'created_by': 'system'
     'tags':
     - 'spam'
