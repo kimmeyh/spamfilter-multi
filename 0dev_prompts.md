@@ -1,9 +1,27 @@
 Next:
 @workspace use 'memory-bank/*' to understand the workspace 
 
+@workspace use 'memory-bank/*' to understand the workspace
+Ensure to update 'memory-bank/mobile-app-plan.md' and 'IMPLEMENTATION_SUMMARY.md' to familiarize with the current plan for this repository.
+
+Update the plan to include something similar/equivalent to a Translator Layer via abstraction:
+interface SpamFilterPlatform:
+    load_credentials()
+    fetch_messages()
+    apply_rules(compiled_regex)
+    take_action(message, action)
+When implementing:
+• Outlook/Office365 via Graph API
+• Gmail via Gmail API
+• IMAP generic handler for everything else
+• Local client adapter (optional)
+• Mobile wrapper that uses the same YAML + credentials bundle
+
 Would like your help planning to make this into a phone app (first android, then iPhone - but open to reasons for reverse)
 Need it to work with most phone/web-based email accounts:  aol, gmail, yahoo, hotmail, protomail
 What other email providers should I consider.
+
+Create a plan, then review the plan for additional items that should be updated, then respond with recommended updates.
 
 Can you help draft a high-level plan that I can use.
 It should start with an MVP (minimal viable product) based on the existing app, and AOL mail while considering the other mail clients for architecture and setup purposes.
@@ -28,6 +46,19 @@ Do not remove any commented out code.  Do not update 0dev_prompts.md
 When complete, update the memory-bank/* files and README.md
 
 ------------------------------------------------------------------------------
+# Build Release APK:
+cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-apk.ps1 # -VerboseOutput # (optional)
+
+------------------------------------------------------------------------------
+# Launch emulator and run debug build:
+cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\run-emulator.ps1 
+# to run a specific emulator: 
+cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\run-emulator.ps1 -EmulatorId pixel34
+# Install a prebuilt release APK instead of debug run:
+cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\run-emulator.ps1 -InstallReleaseApk
+
+------------------------------------------------------------------------------
+
 
 create an optional YAML config files for all the major global variables.  List:
 EMAIL_BULK_FOLDER_NAMES # list of folders - example ["Bulk Mail", "bulk"] 

@@ -1,41 +1,100 @@
-# OutlookMailSpamFilter
+# Spam Filter Multi-Platform
 
-Automated Python-based email spam and phishing filter for Microsoft Outlook that processes multiple bulk mail folders using configurable YAML rules
+Cross-platform email spam filtering application supporting desktop (Outlook) and mobile (Android/iOS).
 
 ## Overview
 
-This tool provides intelligent filtering and removal of SPAM and phishing emails from Outlook accounts using pattern-based rules and safe sender management. The system processes emails from configurable folder lists and applies comprehensive filtering criteria including header analysis, body content scanning, subject pattern matching, and sender verification.
+This repository contains both the original Python-based Outlook spam filter and a new cross-platform mobile application built with Flutter. The mobile app maintains full compatibility with the desktop application's YAML rule format while supporting multiple email providers (AOL, Gmail, Yahoo, Outlook.com, ProtonMail, etc.).
+[Flutter Docs](https://docs.flutter.dev/get-started/quick)
 
-## Recent Updates (November 2025)
+## Repository Structure
 
-- ✅ **Unified print_to() function (11/15/2025)**: Consolidated output functionality
-  - New `print_to()` function replaces multiple concurrent calls to log_print(), simple_print(), and print()
-  - Supports flexible output to any combination of: debug log, simple log, and console
-  - Automatically handles message sanitization for ASCII compatibility
-  - Backward-compatible: old simple_print() calls still work via wrapper function
-  - Reduces code duplication in summary reporting sections
+```
+spamfilter-multi/
+├── mobile-app/           # Flutter mobile application (Phase 1 MVP - Active Development)
+├── Archive/
+│   ├── desktop-python/   # Original Outlook desktop application (if moved)
+│   └── ...              # Historical files and backups
+├── memory-bank/         # MCP server configuration (development planning docs)
+├── rules.yaml           # Active spam filtering rules (shared with desktop)
+├── rules_safe_senders.yaml  # Active safe sender whitelist (shared with desktop)
+├── withOutlookRulesYAML.py  # Python desktop app (or moved to Archive/desktop-python/)
+├── pytest/              # Python tests
+└── README.md           # This file
+```
 
-## Recent Updates (October 2025)
+## Projects
 
-- ✅ **Consolidated YAML filenames (10/18/2025)**: Simplified to single filenames now that regex is the only mode
-  - Rules: `rules.yaml` (contains regex patterns)
-  - Safe senders: `rules_safe_senders.yaml` (contains regex patterns)
-  - Removed `_regex` suffix variants (rulesregex.yaml, rules_safe_sendersregex.yaml)
-- ✅ **Interactive rule filtering enhanced (10/18/2025)**: During user input, emails matching newly added rules or safe senders are now properly skipped using regex matching
-- ✅ **Legacy mode deprecated (10/14/2025)**: Regex mode is now the only supported mode
-- ✅ CLI flags simplified for consolidated filenames
-- ✅ Exporters enforce consistency (lowercase, trimmed, de-duped, sorted) and create timestamped backups in `archive/`
-- ✅ Memory bank updated with processing flow, schemas, and regex conventions
-- ✅ Interactive prompt gains new options: 'sd' (add sender-domain regex to safe_senders) and '?' (help)
+### Mobile App (Active Development)
 
-## Recent Updates (July 2025)
+**Location**: [`mobile-app/`](mobile-app/)  
+**Status**: Phase 1 MVP - Foundation setup complete  
+**Platform**: Flutter (Android, iOS, Chromebooks)  
+**First Target**: AOL IMAP support
 
-- ✅ **Multi-Folder Processing**: Updated to process multiple folders instead of single folder
-- ✅ **Configurable Folder List**: EMAIL_BULK_FOLDER_NAMES now supports ["Bulk Mail", "bulk"]
-- ✅ **Recursive Folder Search**: Added capability to find folders at any nesting level
-- ✅ **Enhanced Logging**: Folder-specific logging and processing information
+#### Quick Start
 
-## Key Features
+```powershell
+# Install Flutter (if not already installed)
+# Download from https://flutter.dev/docs/get-started/install/windows
+# Or use chocolatey: choco install flutter
+
+# Navigate to mobile app
+cd mobile-app
+
+# Install dependencies
+flutter pub get
+
+# Run on connected device
+flutter run
+
+# Run tests
+flutter test
+```
+
+See [`mobile-app/README.md`](mobile-app/README.md) for project details and
+[`mobile-app/NEW_DEVELOPER_SETUP.md`](mobile-app/NEW_DEVELOPER_SETUP.md) for the validated Windows 11 setup.
+
+### Desktop Python Application (Reference)
+
+**Location**: Root directory (or [`Archive/desktop-python/`](Archive/desktop-python/) if moved)  
+**Status**: Functional reference implementation  
+**Platform**: Windows with Microsoft Outlook
+
+The original Python application uses Outlook COM interfaces and serves as the reference implementation.
+
+## Current Status (November 28, 2025)
+
+### ✅ Mobile App - Completed
+- Mobile app directory structure created
+- Core models implemented (EmailMessage, RuleSet, SafeSenderList, EvaluationResult)
+- Core services implemented (PatternCompiler, RuleEvaluator, YamlService)
+- Email provider interface defined
+- Basic UI scaffold (AccountSetupScreen)
+- pubspec.yaml configured with Phase 1 dependencies
+
+### 🔄 Mobile App - In Progress
+- Flutter SDK installation (required for development)
+- IMAP adapter implementation (AOL MVP)
+- Platform storage integration
+
+### 📋 Mobile App - Next Steps
+1. Install Flutter SDK: https://flutter.dev/docs/get-started/install/windows
+2. Run `flutter pub get` in mobile-app directory
+3. Implement GenericIMAPAdapter using `enough_mail` package
+4. Add platform-specific storage for YAML files
+5. Build scan progress UI
+6. Create unit tests for evaluator logic
+
+## Rule Format Compatibility
+
+Both desktop and mobile applications use the same YAML rule format:
+- **rules.yaml** - Spam filtering rules with regex patterns
+- **rules_safe_senders.yaml** - Whitelisted senders with regex patterns
+
+Rules are fully portable between platforms. The mobile app supports importing existing desktop rule sets.
+
+## Key Features (Desktop Python App)
 
 - **Multi-Folder Processing**: Process emails from configurable list of folders
 - **YAML-Based Configuration**: Easy-to-maintain rule files (`rules.yaml`, `rules_safe_senders.yaml` - both use regex patterns)
