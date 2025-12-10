@@ -1,0 +1,46 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Mobile: Build APK",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/mobile-app/scripts/build-apk.ps1"
+      ],
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Mobile: Run emulator (debug)",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/mobile-app/scripts/run-emulator.ps1"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Mobile: Run emulator (install release APK)",
+      "type": "shell",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}/mobile-app/scripts/run-emulator.ps1",
+        "-InstallReleaseApk"
+      ],
+      "problemMatcher": []
+    }
+  ]
+}

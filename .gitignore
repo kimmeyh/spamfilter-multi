@@ -6,6 +6,39 @@
 # Archive directory
 Archive/
 
+# Windows shortcuts (personal local files)
+*.lnk
+
+#------------------------------------------------------------
+# HK 20251204 These are items specific to this repository
+# Flutter/Dart specific
+
+# Dart/Flutter build artifacts
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+pubspec.lock
+
+# Mobile app build artifacts
+mobile-app/build/
+mobile-app/.packages
+
+# Generated documentation
+mobile-app/.dart_tool/widget_preview_scaffold/
+
+# Backup and temporary files
+
+# YAML configuration backups
+rules_backup_*.yaml
+rules_safe_senders_backup_*.yaml
+
+# General backup files
+*.backup
+*.bak
+
+# Memory bank logs (exclude logs but keep memory-bank docs)
+memory-bank/logs/
+
 #------------------------------------------------------------
 #Common .gitignore items
 
@@ -172,3 +205,5 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
+
+

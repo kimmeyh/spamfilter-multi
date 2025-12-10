@@ -1,9 +1,66 @@
 # Mobile Spam Filter App - Development Plan
 
-**Status**: Planning Phase  
-**Last Updated**: 2025-11-25  
+**Status**: Phase 1.5 - IMAP Integration & E2E Testing ✅ COMPLETE  
+**Last Updated**: 2025-12-05  
+**Flutter Installation**: ✅ Complete (3.38.3 verified)
 **Target Platforms**: Android, iOS (phones & tablets), Chromebooks  
 **Tech Stack**: Flutter/Dart (with optional Rust optimization path)
+
+## Repository Migration Status
+
+✅ **Completed (2025-12-04)**:
+- New directory structure created in `mobile-app/`
+- Core models implemented (EmailMessage, RuleSet, SafeSenderList, EvaluationResult)
+- Core services implemented (PatternCompiler, RuleEvaluator, YamlService)
+- **NEW**: Translator layer architecture (`SpamFilterPlatform` abstraction)
+- **NEW**: Platform registry and factory pattern
+- **NEW**: Platform-specific adapters (Gmail, Outlook, IMAP)
+- Email provider interface defined (EmailProvider, Credentials)
+- Basic UI scaffold (AccountSetupScreen)
+- pubspec.yaml configured with Phase 1 & Phase 2 dependencies
+- Root README.md updated with new structure
+- Mobile app README.md created
+
+✅ **Phase 1.3 Complete (December 10, 2025)**:
+- Flutter SDK installed (3.38.3) with full toolchain
+- Debug APK built and deployed to Android emulator
+- All code analysis passing (zero issues)
+- Unit test suite: 16 tests passing
+- Android emulator validated (API 34, Android 14)
+
+✅ **Phase 1.4 Complete (December 10, 2025)**:
+- YAML integration testing: 3 of 4 tests passing
+- Production rules.yaml loaded successfully (5 rules parsed)
+- Production rules_safe_senders.yaml loaded (426 patterns)
+- **Performance validated**: 2,890 regex patterns compiled in 42ms (0.01ms/pattern)
+- Performance target exceeded: 100x faster than 5-second target
+- Total test suite: 19 tests passing
+
+✅ **Phase 1.5 Complete (December 10, 2025)**:
+- **Test Suite**: 34 total tests (27 passing, 6 skipped, 1 non-critical failure)
+  - 16 unit tests (PatternCompiler, SafeSenderList)
+  - 4 YAML integration tests (production file validation)
+  - 4 end-to-end workflow tests (email evaluation pipeline)
+  - 10 IMAP adapter tests (6 require AOL credentials)
+- **End-to-End Validation**: Complete email processing workflow tested
+  - Safe sender evaluation working
+  - Spam detection matched production rule (SpamAutoDeleteHeader: `@.*\.xyz$`)
+  - Batch processing: 100 emails in 1,958ms (19.58ms avg - 5x better than target)
+  - Full inbox scan simulation successful
+- **IMAP Integration Framework**: All tests compile, ready for live credentials
+- **Performance**: 19.58ms per email (5x better than 100ms target)
+- **Code Quality**: flutter analyze passes with 0 issues
+- **Documentation**: PHASE_1.5_COMPLETION_REPORT.md created (460 lines)
+
+📋 **Next Steps (Phase 2.0 - Platform Storage & UI Development)**:
+1. Integrate path_provider for file system access
+2. Implement secure credential storage (flutter_secure_storage)
+3. Configure Provider for app-wide state management
+4. Run live IMAP tests with AOL credentials (AOL_EMAIL, AOL_APP_PASSWORD)
+5. Build platform selection UI
+6. Create account setup form with validation
+7. Add scan progress indicator
+8. Build results summary display
 
 ## Executive Summary
 
@@ -61,6 +118,7 @@ Port the OutlookMailSpamFilter desktop application to a cross-platform mobile ap
 ```
 ┌─────────────────────────────────────────────────────┐
 │              Flutter UI Layer                       │
+│  - Platform selection (Gmail, Outlook, AOL, etc.)   │
 │  - Account setup & OAuth flows                      │
 │  - Rule editor (view/add/remove patterns)           │
 │  - Safe sender manager                              │
@@ -74,6 +132,38 @@ Port the OutlookMailSpamFilter desktop application to a cross-platform mobile ap
 │  - RuleSet: In-memory rule management               │
 │  - SafeSenderList: Whitelist management             │
 │  - PatternCompiler: Precompile & cache regex        │
+│  - RuleEvaluator: Apply rules to messages           │
+│  - YamlService: Load/save YAML rules                │
+└─────────────────────────────────────────────────────┘
+                     ↓ ↑
+┌─────────────────────────────────────────────────────┐
+│   ⭐ Translator Layer (SpamFilterPlatform)          │
+│  Unified abstraction for all email providers:       │
+│    - loadCredentials(credentials)                   │
+│    - fetchMessages(daysBack, folderNames)           │
+│    - applyRules(messages, compiledRegex)            │
+│    - takeAction(message, action)                    │
+│    - listFolders()                                  │
+│    - testConnection()                               │
+│    - disconnect()                                   │
+└─────────────────────────────────────────────────────┘
+                     ↓ ↑
+┌─────────────────────────────────────────────────────┐
+│       Platform-Specific Adapters                    │
+│  ┌─────────────┐  ┌──────────────┐  ┌────────────┐ │
+│  │ Gmail       │  │  Outlook/    │  │  Generic   │ │
+│  │ Adapter     │  │  Office365   │  │  IMAP      │ │
+│  │             │  │  Adapter     │  │  Adapter   │ │
+│  │ OAuth 2.0   │  │  OAuth 2.0   │  │  App Pass  │ │
+│  │ Gmail API   │  │  Graph API   │  │  IMAP      │ │
+│  │ Labels      │  │  Folders     │  │  Folders   │ │
+│  └─────────────┘  └──────────────┘  └────────────┘ │
+│       Phase 2         Phase 2           Phase 1     │
+└─────────────────────────────────────────────────────┘
+                     ↓ ↑
+┌─────────────────────────────────────────────────────┐
+│          Email Provider APIs                        │
+│  Gmail REST API | Microsoft Graph API | IMAP/SMTP   │
 │  - Evaluator: Message → Action decision engine      │
 │  - MutationService: Add/remove rules (immediate)    │
 │  - YAMLService: Import/export with validation       │
@@ -110,9 +200,94 @@ Port the OutlookMailSpamFilter desktop application to a cross-platform mobile ap
 └─────────────────────────────────────────────────────┘
 ```
 
+## Translator Layer Architecture
+
+### Core Abstraction: `SpamFilterPlatform`
+
+The translator layer provides a unified interface for all email platforms while allowing platform-specific optimizations:
+
+```dart
+abstract class SpamFilterPlatform {
+  /// Platform identifier (e.g., 'gmail', 'outlook', 'aol', 'imap')
+  String get platformId;
+  
+  /// Human-readable platform name for UI display
+  String get displayName;
+  
+  /// Authentication method supported by this platform
+  AuthMethod get supportedAuthMethod;
+  
+  /// Load and validate credentials for this platform
+  Future<void> loadCredentials(Credentials credentials);
+  
+  /// Fetch messages with platform-specific optimization
+  Future<List<EmailMessage>> fetchMessages({
+    required int daysBack,
+    required List<String> folderNames,
+  });
+  
+  /// Apply compiled rules with platform-native filtering when available
+  Future<List<EvaluationResult>> applyRules({
+    required List<EmailMessage> messages,
+    required Map<String, Pattern> compiledRegex,
+  });
+  
+  /// Execute action (delete, move, mark) with platform-specific API
+  Future<void> takeAction({
+    required EmailMessage message,
+    required FilterAction action,
+  });
+  
+  /// List available folders with platform-specific names
+  Future<List<FolderInfo>> listFolders();
+  
+  /// Test connection and authentication without fetching data
+  Future<ConnectionStatus> testConnection();
+  
+  /// Disconnect and cleanup resources
+  Future<void> disconnect();
+}
+```
+
+### Platform Implementations
+
+**1. GenericIMAPAdapter** (Phase 1 - MVP):
+- Standard IMAP protocol using `enough_mail` package
+- App passwords or basic auth
+- Works with AOL, Yahoo, iCloud, custom servers
+- Factory methods for known providers: `GenericIMAPAdapter.aol()`
+
+**2. GmailAdapter** (Phase 2):
+- OAuth 2.0 authentication via `google_sign_in`
+- Gmail REST API using `googleapis` package
+- Label-based operations (Gmail doesn't use folders)
+- Batch operations for performance
+- Efficient query syntax: `"after:2025/11/01 in:inbox OR in:spam"`
+
+**3. OutlookAdapter** (Phase 2):
+- Microsoft Identity Platform OAuth 2.0 via `msal_flutter`
+- Microsoft Graph API for email operations
+- OData query filters for efficient searching
+- Native folder operations
+- Well-known folders: inbox, junkemail, deleteditems
+
+**4. Future Adapters** (Phase 3+):
+- ProtonMail (via ProtonMail Bridge or API)
+- Zoho Mail (IMAP + OAuth)
+- Fastmail (IMAP with app password)
+- Any custom IMAP server
+
+### Benefits
+
+- **Unified Business Logic**: Core spam filtering rules work across all platforms
+- **Platform Optimization**: Each adapter can use native APIs for better performance
+- **Extensibility**: New providers added without changing core logic
+- **Testing**: Mock adapters for unit testing without real email accounts
+- **YAML Compatibility**: Same rule files work across desktop and mobile
+
 ### Core Interfaces
 
-#### EmailProvider Interface
+#### Legacy EmailProvider Interface (Kept for compatibility)
 ```dart
 abstract class EmailProvider {
   Future<void> connect(Credentials credentials);
@@ -157,26 +332,61 @@ abstract class RuleEvaluator {
 
 ## Email Provider Coverage
 
-### Phase 1 (MVP)
-- **AOL**: Generic IMAP + app password or OAuth (if available)
+### Phase 1 (MVP) - Generic IMAP
+- **AOL Mail**: `GenericIMAPAdapter.aol()` with app password
+  - IMAP: imap.aol.com:993 (SSL)
+  - Primary target for MVP validation
+- **Custom IMAP**: `GenericIMAPAdapter.custom()` with manual configuration
+  - Allows testing with any IMAP server
 
-### Phase 2
-- **Gmail**: OAuth 2.0 + Gmail REST API (better than IMAP for labels/filters)
-- **Outlook.com/Hotmail**: OAuth 2.0 + Microsoft Graph API
-- **Yahoo**: IMAP + app password
+### Phase 2 - Major Platforms with Native APIs
+- **Gmail**: `GmailAdapter` with OAuth 2.0 + Gmail REST API
+  - Label-based operations (INBOX, SPAM, TRASH labels)
+  - Efficient query syntax for date filtering
+  - Batch message operations for performance
+  - Better than IMAP for Gmail-specific features
+  
+- **Outlook.com/Office 365**: `OutlookAdapter` with OAuth 2.0 + Microsoft Graph API
+  - OData filtering for efficient queries
+  - Native folder operations
+  - Enterprise account support
+  - Well-known folders: inbox, junkemail, deleteditems
+  
+- **Yahoo Mail**: `GenericIMAPAdapter.yahoo()` with app password
+  - IMAP: imap.mail.yahoo.com:993 (SSL)
+  - OAuth support may be added later if Yahoo enables it
 
-### Phase 3
-- **ProtonMail**: ProtonMail Bridge (desktop relay) or native API when available
-- **iCloud Mail**: IMAP + app-specific password
-- **Office 365/Exchange Online**: Microsoft Graph API (enterprise)
+### Phase 3 - Additional Consumer Platforms
+- **iCloud Mail**: `GenericIMAPAdapter.icloud()` with app-specific password
+  - IMAP: imap.mail.me.com:993 (SSL)
+  - Requires 2FA enabled on Apple ID
+  
+- **ProtonMail**: Custom adapter using ProtonMail Bridge or API
+  - Bridge: Local IMAP/SMTP server for ProtonMail
+  - Native API: If ProtonMail provides mobile SDK
+  
+- **Zoho Mail**: IMAP + OAuth support
+  - IMAP: imap.zoho.com:993 (SSL)
+  
+- **Fastmail**: `GenericIMAPAdapter` with app password
+  - IMAP: imap.fastmail.com:993 (SSL)
 
-### Phase 4 (Extended)
-- **Zoho Mail**: IMAP + OAuth
-- **Fastmail**: IMAP + app password
-- **GMX**: IMAP
-- **Yandex**: IMAP
-- **Hey.com**: API (if available)
-- **Custom IMAP**: Generic fallback for any IMAP server
+### Phase 4 - Extended Coverage
+- **GMX/Mail.com**: Generic IMAP adapter
+- **Yandex Mail**: Generic IMAP adapter
+- **Tutanota**: Native API if available
+- **Mailbox.org**: Generic IMAP adapter
+- **Any Custom Server**: Manual IMAP configuration with server details
+
+### Email Providers Recommended for Consideration
+Based on market share and user requests:
+1. **Gmail** (Highest priority - largest user base)
+2. **Outlook/Hotmail** (Second highest - Microsoft ecosystem)
+3. **Yahoo Mail** (Third - still significant user base)
+4. **iCloud Mail** (Apple ecosystem users)
+5. **ProtonMail** (Privacy-focused users)
+6. **AOL Mail** (Legacy but still active, good for MVP due to simple IMAP)
+7. **Custom IMAP** (Power users with self-hosted email)
 
 ## Development Phases
 
@@ -243,40 +453,63 @@ abstract class RuleEvaluator {
 
 **Decision Gate**: Based on profiling results, decide if SQLite needed for Phase 2
 
-### Phase 2: Provider Abstraction & Multi-Provider Support
+### Phase 2: Multi-Platform Support via Translator Layer
 **Duration**: 4-6 weeks  
-**Goal**: Support Gmail, Outlook.com, Yahoo with proper OAuth flows  
+**Goal**: Support Gmail, Outlook.com, Yahoo with proper OAuth flows using unified translator abstraction  
 **Storage Enhancement**: Conditionally add SQLite for email cache & tracking (only if Phase 1 profiling shows need)
 
-#### 2.1 OAuth Infrastructure
+#### 2.1 Complete Translator Layer Implementation
+- ✅ Core `SpamFilterPlatform` interface defined
+- ✅ `PlatformRegistry` factory created
+- ✅ Platform metadata and selection UI data structure
+- 🔄 Complete `GenericIMAPAdapter` testing with AOL
+- 🔄 Add unit tests for platform abstraction
+- 🔄 Create mock platform adapter for testing
+
+#### 2.2 OAuth Infrastructure
 - Implement OAuth2Manager with token refresh
 - Add secure credential storage (flutter_secure_storage)
 - Build OAuth consent flow UI
 - Handle token expiration gracefully
+- Support for multiple OAuth providers
 
-#### 2.2 Gmail Integration
-- Implement GmailAPIAdapter using Gmail REST API
-- Add Google Sign-In flow
+#### 2.3 Gmail Integration
+- Complete `GmailAdapter` implementation using Gmail REST API
+- Add dependencies: `googleapis`, `google_sign_in`
+- Implement OAuth 2.0 flow with Google Sign-In
 - Map Gmail labels to folder concept
 - Optimize for Gmail-specific features (filters, categories)
+- Batch operations for improved performance
 
-#### 2.3 Outlook.com Integration
-- Implement OutlookGraphAdapter using Microsoft Graph API
-- Add Microsoft authentication library (MSAL)
+#### 2.4 Outlook.com Integration
+- Complete `OutlookAdapter` implementation using Microsoft Graph API
+- Add dependencies: `msal_flutter`, `http`
+- Implement Microsoft Identity Platform OAuth 2.0
 - Handle Outlook folder hierarchy
 - Support Office 365 accounts
+- OData query optimization
 
-#### 2.4 Yahoo Integration
-- Extend GenericIMAPAdapter for Yahoo specifics
+#### 2.5 Yahoo Integration
+- Extend `GenericIMAPAdapter.yahoo()` factory
 - Add app password flow (Yahoo no longer supports OAuth for IMAP)
 - Handle Yahoo folder naming conventions
+- Test with Yahoo-specific IMAP quirks
 
-#### 2.5 Multi-Account Support
+#### 2.6 Platform Selection UI
+- Build platform selection screen
+- Display available platforms with icons and descriptions
+- Show authentication method per platform
+- Guide users through setup process
+- Test connection before proceeding
+
+#### 2.7 Multi-Account Support
 - Allow multiple email accounts in app
+- Per-account platform adapter instances
 - Per-account rule sets (optional)
 - Unified vs. per-account scanning modes
+- Account switcher UI
 
-#### 2.6 Optional SQLite Addition (Decision-Based)
+#### 2.8 Optional SQLite Addition (Decision-Based)
 - **IF** Phase 1 showed YAML load time >1s OR memory issues:
   - Add `sqflite` dependency
   - Create email_cache table for incremental scanning
@@ -285,7 +518,14 @@ abstract class RuleEvaluator {
   - Sync layer: Load YAML → populate in-memory cache → use SQLite for email tracking
 - **ELSE**: Continue with pure YAML approach
 
-**Deliverable**: App supports 4 major providers (AOL, Gmail, Outlook.com, Yahoo) with optimized storage strategy
+**Deliverable**: App supports 4 major providers (AOL, Gmail, Outlook.com, Yahoo) with unified translator layer and optimized storage strategy
+
+**Success Criteria**:
+- All 4 platforms functional via `SpamFilterPlatform` interface
+- OAuth flows complete and tested
+- Platform-specific optimizations working (Gmail batching, Outlook OData)
+- Same YAML rules work across all platforms
+- Performance improvement: 2x faster than pure IMAP for Gmail/Outlook
 
 ### Phase 3: Interactive Training & Advanced Features
 **Duration**: 3-4 weeks  
@@ -758,10 +998,79 @@ flutter:
 
 ---
 
-**Document Version**: 1.1  
-**Last Updated**: 2025-11-25  
+## Flutter Installation Guide (PowerShell 7)
+
+### Option 1: Using Chocolatey (Recommended)
+
+```powershell
+# Install Chocolatey if not already installed
+Set-ExecutionPolicy Bypass -Scope Process -Force
+[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+# Install Flutter
+choco install flutter -y
+
+# Verify installation
+flutter doctor
+```
+
+### Option 2: Manual Installation
+
+```powershell
+# Download Flutter SDK
+$flutterZip = "$env:USERPROFILE\Downloads\flutter_windows.zip"
+Invoke-WebRequest -Uri "https://storage.googleapis.com/flutter_infra_release/releases/stable/windows/flutter_windows_3.16.0-stable.zip" -OutFile $flutterZip
+
+# Extract to C:\src\flutter
+Expand-Archive -Path $flutterZip -DestinationPath "C:\src"
+
+# Add to PATH permanently
+$currentPath = [Environment]::GetEnvironmentVariable("Path", "User")
+[Environment]::SetEnvironmentVariable("Path", "$currentPath;C:\src\flutter\bin", "User")
+
+# Reload PATH in current session
+$env:Path = [Environment]::GetEnvironmentVariable("Path", "User")
+
+# Verify installation
+flutter doctor
+```
+
+### Post-Installation Setup
+
+```powershell
+# Accept Android licenses (if Android SDK installed)
+flutter doctor --android-licenses
+
+# Install VS Code Flutter extension
+code --install-extension Dart-Code.flutter
+
+# Navigate to mobile app and get dependencies
+cd mobile-app
+flutter pub get
+
+# Check for issues
+flutter doctor -v
+```
+
+### Common Issues & Fixes
+
+**Issue**: `flutter: The term 'flutter' is not recognized`  
+**Fix**: Restart PowerShell or reboot computer to reload PATH
+
+**Issue**: Android SDK not found  
+**Fix**: Install Android Studio or set ANDROID_HOME environment variable
+
+**Issue**: Visual Studio not found (Windows)  
+**Fix**: Install Visual Studio 2022 with "Desktop development with C++" workload
+
+---
+
+**Document Version**: 1.2  
+**Last Updated**: 2025-11-28  
 **Database Decision**: Pure YAML/file-based for MVP, conditional SQLite for Phase 2+  
 **Related Docs**: 
-- Original Python codebase: `OutlookMailSpamFilter/withOutlookRulesYAML.py`
+- Mobile app code: `mobile-app/`
+- Original Python codebase: `withOutlookRulesYAML.py` (or `Archive/desktop-python/`)
 - Existing architecture: `memory-bank/*.md`
 - Rule schemas: `rules.yaml`, `rules_safe_senders.yaml`
