@@ -2,7 +2,7 @@ Next:
 @workspace use 'memory-bank/*' to understand the workspace 
 
 @workspace use 'memory-bank/*' to understand the workspace
-Ensure to update 'memory-bank/mobile-app-plan.md' and 'IMPLEMENTATION_SUMMARY.md' to familiarize with the current plan for this repository.
+Ensure to update 'memory-bank/mobile-app-plan.md' and 'IMPLEMENTATION_SUMMARY.md' and repo-home 'README.MD' to familiarize with the current plan for this repository.
 
 What is the next step in development
 
