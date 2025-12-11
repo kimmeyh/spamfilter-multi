@@ -96,6 +96,8 @@ The original Python application uses Outlook COM interfaces and serves as the re
 - **Documentation**: Comprehensive completion reports created
 
 ### 📋 Mobile App - Next Phase 2.0 (Platform Storage & UI)
+ - Storage scaffolding started (AppPaths, LocalRuleStore, SecureCredentialsStore) with Gmail/Outlook OAuth dependencies activated (msal_flutter pinned ^2.0.1)
+ - Provider rollout order: AOL first, then Gmail, then Outlook
 1. Integrate path_provider for file system access and rule persistence
 2. Implement flutter_secure_storage for encrypted credential storage
 3. Configure Provider for app-wide state management

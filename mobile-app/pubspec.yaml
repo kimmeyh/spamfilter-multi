@@ -23,16 +23,15 @@ dependencies:
   # Storage & Security (Phase 1)
   flutter_secure_storage: ^9.0.0
   path_provider: ^2.1.0
+  path: ^1.8.0
 
-  # Phase 2 - Gmail Support (Native API)
-  # Uncomment when implementing Gmail adapter
-  # googleapis: ^11.4.0
-  # google_sign_in: ^6.1.5
+  # Phase 2 - Gmail Support (Native API) - activated
+  googleapis: ^11.4.0
+  google_sign_in: ^6.1.5
   
-  # Phase 2 - Outlook/Office365 Support (Native API)
-  # Uncomment when implementing Outlook adapter
-  # msal_flutter: ^2.1.0
-  # http: ^1.1.0
+  # Phase 2 - Outlook/Office365 Support (Native API) - activated
+  msal_flutter: ^2.0.1
+  http: ^1.1.0
   
   # Phase 2+ - UI Enhancement
   # flutter_svg: ^2.0.9

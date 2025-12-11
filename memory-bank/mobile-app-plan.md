@@ -1,10 +1,46 @@
 # Mobile Spam Filter App - Development Plan
 
-**Status**: Phase 1.5 - IMAP Integration & E2E Testing ✅ COMPLETE  
-**Last Updated**: 2025-12-05  
+**Status**: Phase 2.0 - Platform Storage & State Management ✅ COMPLETE (in progress)  
+**Last Updated**: 2025-12-11  
 **Flutter Installation**: ✅ Complete (3.38.3 verified)
 **Target Platforms**: Android, iOS (phones & tablets), Chromebooks  
 **Tech Stack**: Flutter/Dart (with optional Rust optimization path)
+
+## Current Phase: 2.0 - Platform Storage & State Management (December 11, 2025)
+
+✅ **Phase 2.0 Complete (December 11, 2025)**:
+- **AppPaths**: Platform-agnostic file system helper
+  - Auto-creates app support directory structure (rules, credentials, backups, logs)
+  - Single API for all platform paths (iOS, Android, desktop)
+  - Backup filename generation and file management utilities
+- **LocalRuleStore**: YAML file persistence with defaults
+  - Load rules/safe senders with auto-create defaults on first run
+  - Save with automatic timestamped backups
+  - Integrates with YamlService for compatibility
+  - Backup listing and pruning capability
+- **SecureCredentialsStore**: Encrypted credential storage
+  - Uses flutter_secure_storage (Keychain iOS, Keystore Android)
+  - Multi-account support with account tracking
+  - OAuth token storage and retrieval
+  - Platform availability testing
+- **RuleSetProvider**: Rule state management via Provider pattern
+  - Async initialization of AppPaths and rule loading
+  - Load/save rules with persistence
+  - Add/remove/update rule operations with automatic persistence
+  - Add/remove safe sender patterns with automatic persistence
+  - Loading state management (idle, loading, success, error)
+  - Ready for UI consumption via Provider.of<>() pattern
+- **EmailScanProvider**: Scan progress and results state
+  - Track scan progress (total, processed, current email)
+  - Categorize results (deleted, moved, safe senders, errors)
+  - Pause/resume/complete/error functionality
+  - Summary generation for results display
+  - Ready for progress UI bars and results screens
+- **Provider Integration**: Multi-provider setup in main.dart
+  - RuleSetProvider and EmailScanProvider initialized on app startup
+  - Loading UI while initializing rules
+  - Error UI if initialization fails
+  - Automatic rule loading via initialize() call
 
 ## Repository Migration Status
 
@@ -52,15 +88,20 @@
 - **Code Quality**: flutter analyze passes with 0 issues
 - **Documentation**: PHASE_1.5_COMPLETION_REPORT.md created (460 lines)
 
-📋 **Next Steps (Phase 2.0 - Platform Storage & UI Development)**:
-1. Integrate path_provider for file system access
-2. Implement secure credential storage (flutter_secure_storage)
-3. Configure Provider for app-wide state management
-4. Run live IMAP tests with AOL credentials (AOL_EMAIL, AOL_APP_PASSWORD)
-5. Build platform selection UI
-6. Create account setup form with validation
-7. Add scan progress indicator
+📋 **Next Steps (Phase 2 - UI Development & Live Testing)**:
+1. ✅ Integrate path_provider for file system access **(COMPLETE 2025-12-11: AppPaths created; rules/safe senders rooted in app support directory)**
+2. ✅ Implement secure credential storage (flutter_secure_storage) **(COMPLETE 2025-12-11: SecureCredentialsStore with multi-account support)**
+3. ✅ Configure Provider for app-wide state management **(COMPLETE 2025-12-11: RuleSetProvider + EmailScanProvider + main.dart integration)**
+4. Build platform selection UI (next phase)
+5. Create account setup form with validation (next phase)
+6. Add scan progress indicator UI using EmailScanProvider (next phase)
+7. Build results summary display (next phase)
+8. Run live IMAP tests with AOL credentials (AOL_EMAIL, AOL_APP_PASSWORD) (validation phase)
+9. Enable OAuth-ready dependencies for Gmail/Outlook adapters (Phase 2 priority)
+10. Provider rollout order: **AOL first**, then **Gmail**, then **Outlook** (Phase 2+ priority)
 8. Build results summary display
+9. Enable OAuth-ready dependencies for Gmail/Outlook adapters **(googleapis, google_sign_in, msal_flutter, http activated 2025-12-10)**
+10. Provider rollout order: **AOL first**, then **Gmail**, then **Outlook** (Phase 2 priority)
 
 ## Executive Summary
 
@@ -466,9 +507,45 @@ Based on market share and user requests:
 - 🔄 Add unit tests for platform abstraction
 - 🔄 Create mock platform adapter for testing
 
+#### 2.1a Current Implementation - Storage & State Management (COMPLETE 2025-12-11)
+- ✅ `AppPaths` helper for file system access
+  - Auto-creates app support directory structure (rules, credentials, backups, logs)
+  - Platform-agnostic paths (iOS, Android, desktop)
+  - Single API for all app storage locations
+- ✅ `LocalRuleStore` for YAML file persistence
+  - Load/save rules and safe senders with auto-default creation
+  - Automatic timestamped backups before writes
+  - Backup listing and pruning capability
+  - Leverages existing YamlService for desktop compatibility
+- ✅ `SecureCredentialsStore` for encrypted credential storage
+  - Uses flutter_secure_storage (Keychain iOS, Keystore Android)
+  - Multi-account support with account tracking
+  - OAuth token storage and retrieval (access, refresh)
+  - Platform availability testing
+- ✅ `RuleSetProvider` for rule state management
+  - Async initialization of AppPaths and rule loading
+  - Load/save rules with persistence
+  - Add/remove/update operations with automatic persistence
+  - Add/remove safe senders with automatic persistence
+  - Loading state management (idle, loading, success, error)
+  - Ready for UI consumption via Provider.of<>() pattern
+- ✅ `EmailScanProvider` for scan progress and results state
+  - Track scan progress (total, processed, current email)
+  - Categorize results (deleted, moved, safe senders, errors)
+  - Pause/resume/complete/error functionality
+  - Summary generation for results display
+  - Ready for progress UI bars and results screens
+- ✅ Provider integration in main.dart
+  - Multi-provider setup with RuleSetProvider and EmailScanProvider
+  - Automatic rule loading on app startup
+  - Loading UI while initializing
+  - Error UI if initialization fails
+
+**Next**: Build UI screens for platform selection, account setup, scan progress, and results display
+
 #### 2.2 OAuth Infrastructure
 - Implement OAuth2Manager with token refresh
-- Add secure credential storage (flutter_secure_storage)
+- Add secure credential storage (flutter_secure_storage) ✅ **DONE via SecureCredentialsStore**
 - Build OAuth consent flow UI
 - Handle token expiration gracefully
 - Support for multiple OAuth providers

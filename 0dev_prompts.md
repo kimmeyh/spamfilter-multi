@@ -1,15 +1,12 @@
 Next:
-@workspace use 'memory-bank/*' to understand the workspace 
+@workspace use 'memory-bank/*', 'memory-bank/mobile-app-plan.md' and 'IMPLEMENTATION_SUMMARY.md' to understand the workspace 
 
-@workspace use 'memory-bank/*' to understand the workspace
-Ensure to update 'memory-bank/mobile-app-plan.md' and 'IMPLEMENTATION_SUMMARY.md' and repo-home 'README.MD' to familiarize with the current plan for this repository.
+Please proceed with the next step in Phase 2
 
-What is the next step in development
-
-Can you help draft the code for review in the files
+Can you help draft the code for review in the files (NOT in Copilot, but in the actual files to be changed)
 Any code that should be removed should be commented out and not deleted.
 Do not remove any commented out code.  Do not update 0dev_prompts.md
-When complete, update the memory-bank/* files and README.md
+When complete, update 'README.md', 'memory-bank/*', 'memory-bank/mobile-app-plan.md' and 'mobile-app/IMPLEMENTATION_SUMMARY.md'
 
 ------------------------------------------------------------------------------
 
@@ -24,6 +21,9 @@ Any code that should be removed should be commented out and not deleted.
 Do not remove any commented out code.  Do not update 0dev_prompts.md
 When complete, update the memory-bank/* files and README.md
 
+Commonly used prompts:
+@workspace use 'memory-bank/*' to understand the workspace
+Ensure to update 'memory-bank/mobile-app-plan.md' and 'IMPLEMENTATION_SUMMARY.md' and repo-home 'README.MD' to familiarize with the current plan for this repository.
 ------------------------------------------------------------------------------
 # Build Release APK:
 # Prompt:
