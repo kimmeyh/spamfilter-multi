@@ -1,36 +1,36 @@
 # Spam Filter Multi-Platform
 
-Cross-platform email spam filtering application supporting desktop (Outlook) and mobile (Android/iOS).
+Cross-platform email spam filtering application built with 100% Flutter/Dart for all platforms (Windows, macOS, Linux, Android, iOS).
 
 ## Overview
 
-This repository contains both the original Python-based Outlook spam filter and a new cross-platform mobile application built with Flutter. The mobile app maintains full compatibility with the desktop application's YAML rule format while supporting multiple email providers (AOL, Gmail, Yahoo, Outlook.com, ProtonMail, etc.).
+This repository contains a unified cross-platform spam filter application built entirely with Flutter. The app uses IMAP/OAuth protocols to support multiple email providers (AOL, Gmail, Yahoo, Outlook.com, ProtonMail, etc.) across all platforms with a single codebase. Complete YAML rule format compatibility enables portable rule sets between any platform.
 [Flutter Docs](https://docs.flutter.dev/get-started/quick)
 
 ## Repository Structure
 
 ```
 spamfilter-multi/
-├── mobile-app/           # Flutter mobile application (Phase 1 MVP - Active Development)
+├── mobile-app/           # Flutter application (all 5 platforms: Windows, macOS, Linux, Android, iOS)
 ├── Archive/
-│   ├── desktop-python/   # Original Outlook desktop application (if moved)
-│   └── ...              # Historical files and backups
-├── memory-bank/         # MCP server configuration (development planning docs)
-├── rules.yaml           # Active spam filtering rules (shared with desktop)
-├── rules_safe_senders.yaml  # Active safe sender whitelist (shared with desktop)
-├── withOutlookRulesYAML.py  # Python desktop app (or moved to Archive/desktop-python/)
-├── pytest/              # Python tests
-└── README.md           # This file
+│   ├── desktop-python/   # Original Outlook desktop application (reference only)
+│   └── ...               # Historical files and backups
+├── memory-bank/          # MCP server configuration (development planning docs)
+├── rules.yaml            # Active spam filtering rules (shared across all platforms)
+├── rules_safe_senders.yaml   # Active safe sender whitelist (shared across all platforms)
+├── README.md             # This file
+└── DOCUMENTATION_INDEX.md    # Complete documentation reference
 ```
 
 ## Projects
 
-### Mobile App (Active Development)
+### Flutter App (Active Development - All Platforms)
 
 **Location**: [`mobile-app/`](mobile-app/)  
-**Status**: Phase 1 MVP - Foundation setup complete  
-**Platform**: Flutter (Android, iOS, Chromebooks)  
-**First Target**: AOL IMAP support
+**Status**: Phase 2.0 Complete - Storage & State Management ✅ | Phase 2 Ready - UI Development 🔄  
+**Platforms**: Flutter (Windows, macOS, Linux, Android, iOS)  
+**Email Access**: IMAP/OAuth for universal provider support  
+**First Target**: AOL (IMAP), then Gmail (OAuth), then Outlook.com (OAuth)
 
 #### Quick Start
 
@@ -45,65 +45,81 @@ cd mobile-app
 # Install dependencies
 flutter pub get
 
-# Run on connected device
+# Run on connected device or emulator
 flutter run
 
 # Run tests
 flutter test
+
+# Build release APK (Android)
+flutter build apk --release
+
+# Build Windows installer (MSIX)
+flutter build windows
 ```
 
 See [`mobile-app/README.md`](mobile-app/README.md) for project details and
 [`mobile-app/NEW_DEVELOPER_SETUP.md`](mobile-app/NEW_DEVELOPER_SETUP.md) for the validated Windows 11 setup.
 
-### Desktop Python Application (Reference)
+### Desktop Python Application (Reference/Archive)
 
-**Location**: Root directory (or [`Archive/desktop-python/`](Archive/desktop-python/) if moved)  
-**Status**: Functional reference implementation  
-**Platform**: Windows with Microsoft Outlook
+**Location**: [`Archive/desktop-python/`](Archive/desktop-python/)  
+**Status**: Archived reference implementation  
+**Platform**: Windows with Microsoft Outlook COM
 
-The original Python application uses Outlook COM interfaces and serves as the reference implementation.
+The original Python application using Outlook COM is archived for reference only. New development uses the unified Flutter approach.
 
-## Current Status (December 10, 2025)
+## Current Status (December 11, 2025)
 
-### ✅ Mobile App - Foundation Complete
-- Mobile app directory structure created
-- Core models implemented (EmailMessage, RuleSet, SafeSenderList, EvaluationResult)
-- Core services implemented (PatternCompiler, RuleEvaluator, YamlService)
-- **Translator layer architecture** (SpamFilterPlatform, PlatformRegistry, adapters)
-- Email provider interface defined with GenericIMAPAdapter for IMAP support
-- Basic UI scaffold (AccountSetupScreen)
-- pubspec.yaml configured with Phase 1 dependencies
-- **Flutter SDK installed** (3.38.3) ✅
-- **Dependencies installed** (`flutter pub get`) ✅
-- **Code analysis passing** (`flutter analyze`) ✅
+### ✅ Architecture: 100% Flutter/Dart for All Platforms (NEW - Pivot Complete)
+- **Decision Made** (December 11, 2025): Unified Flutter approach for all 5 platforms
+- **Rationale**: Outlook desktop client no longer needed (web client used); AOL IMAP connection complete; single codebase simplifies development and maintenance
+- **Old Approach**: Python desktop (Outlook COM) + Flutter mobile (IMAP)
+- **New Approach**: 100% Flutter/Dart for Windows, macOS, Linux, Android, iOS with IMAP/OAuth
 
-### ✅ Mobile App - Phase 1.5 Complete (December 10, 2025)
-**Status**: Core engine fully tested and validated with production rules ✅
+### ✅ Phase 2.0 Complete - Platform Storage & State Management (December 11, 2025)
+- **AppPaths**: Platform-agnostic file system helper (190 lines) ✅
+  - Auto-creates app support directory structure (rules, credentials, backups, logs)
+  - Single API for all 5 platforms (iOS, Android, Windows, macOS, Linux)
+  - 7 unit tests passing ✅
+- **LocalRuleStore**: YAML file persistence with auto-defaults (200 lines) ✅
+  - Load/save rules and safe senders with automatic timestamped backups
+  - Default file creation on first run
+  - Backup listing and pruning
+- **SecureCredentialsStore**: Encrypted credential storage (310 lines) ✅
+  - Uses flutter_secure_storage (Keychain iOS, Keystore Android, Credential Manager Windows)
+  - Multi-account support with account tracking
+  - OAuth token storage (access, refresh)
+  - 4 unit tests passing ✅
+- **RuleSetProvider**: Rule state management via Provider (210 lines) ✅
+  - Async initialization with loading states (idle, loading, success, error)
+  - Load/save/add/remove/update operations with automatic persistence
+  - UI-ready via Provider.of<>() pattern
+- **EmailScanProvider**: Real-time scan progress tracking (260 lines) ✅
+  - Track scan status (idle, scanning, paused, completed, error)
+  - Result categorization (deleted, moved, safe senders, errors)
+  - Progress calculation (0.0-1.0) and summary generation
+  - 12 unit tests passing ✅
+- **MultiProvider Integration**: Updated main.dart with async initialization ✅
+  - RuleSetProvider and EmailScanProvider initialized on app startup
+  - Loading UI while rules initialize
+  - Error UI if initialization fails
 
-- **Test Suite**: 34 total tests (27 passing, 6 skipped awaiting credentials, 1 non-critical)
-  - 16 unit tests: PatternCompiler (7), SafeSenderList (8), smoke (1)
-  - 7 integration tests: YAML loading (3), end-to-end workflow (4)
-  - 10 IMAP adapter tests: configuration (4), live connection (6 - require credentials)
-- **Performance**: 19.58ms average per email evaluation (5x better than 100ms target) ⚡
-- **Production Validation**: 
-  - 5 rules loaded from rules.yaml
-  - 426 safe sender patterns loaded
-  - 2,890 regex patterns compiled in 23ms (0.01ms/pattern)
-  - Spam detection working with real production rules
-- **End-to-End Testing**: Complete email processing workflow validated
-- **IMAP Integration**: Framework ready for live AOL testing
-- **Code Quality**: flutter analyze passes with 0 issues
-- **Documentation**: Comprehensive completion reports created
+### ✅ Phase 2.0 Test Results (December 11, 2025)
+- **Total Tests**: 50+ passing, 0 failing ✅
+- **Phase 1 Regression**: 27 tests passing ✅
+- **Phase 2.0 New Tests**: 23 tests passing ✅
+  - AppPaths: 7/7 passing (fixed platform channel mocking)
+  - SecureCredentialsStore: 4/4 passing
+  - EmailScanProvider: 12/12 passing
+- **Code Quality**: flutter analyze - 0 issues ✅
 
-### 📋 Mobile App - Next Phase 2.0 (Platform Storage & UI)
- - Storage scaffolding started (AppPaths, LocalRuleStore, SecureCredentialsStore) with Gmail/Outlook OAuth dependencies activated (msal_flutter pinned ^2.0.1)
- - Provider rollout order: AOL first, then Gmail, then Outlook
-1. Integrate path_provider for file system access and rule persistence
-2. Implement flutter_secure_storage for encrypted credential storage
-3. Configure Provider for app-wide state management
-4. Run live IMAP integration tests with AOL credentials
-5. Build platform selection UI and account setup screens
-6. Create scan progress indicator and results display
+### 📋 Phase 2 Ready - UI Development & Live Testing (Next Phase)
+1. Platform Selection Screen (AOL, Gmail, Outlook, Yahoo)
+2. Account Setup Forms with SecureCredentialsStore integration
+3. Scan Progress Screen bound to EmailScanProvider
+4. Results Display Screen with summary metrics
+5. Live IMAP/OAuth testing with real credentials
 
 ## Rule Format Compatibility
 
@@ -135,19 +151,40 @@ Rules are fully portable between platforms. The mobile app supports importing ex
 
 ## How to Run
 
+### Flutter App (All Platforms)
+
 ```powershell
-# Activate Python virtual environment (PowerShell)
+# Activate Python virtual environment (optional, for desktop app only)
 ./.venv/Scripts/Activate.ps1
 ```
+
 ```bash
-# Activate Python virtual environment (Bash)
+# Activate Python virtual environment (optional, for desktop app only)
 source .venv/bin/activate
 ```
+
+```powershell
+# Standard Flutter app run (debug)
+cd mobile-app && flutter run
+
+# Build release APK (Android)
+cd mobile-app && flutter build apk --release
+
+# Build Windows app (desktop)
+cd mobile-app && flutter build windows
+```
+
+### Desktop Python Application (Reference Only)
+
+```powershell
+# Activate Python virtual environment
+./.venv/Scripts/Activate.ps1
+
 # Standard processing (no interactive updates)
-cd D:\Data\Harold\github\OutlookMailSpamFilter && ./.venv/Scripts/Activate.ps1 && python withOutlookRulesYAML.py
+python withOutlookRulesYAML.py
 
 # Interactive mode (prompts to add rules)
-cd D:\Data\Harold\github\OutlookMailSpamFilter && ./.venv/Scripts/Activate.ps1 && python withOutlookRulesYAML.py -u
+python withOutlookRulesYAML.py -u
 ```
 
 ## Configuration

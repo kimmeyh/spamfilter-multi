@@ -2,10 +2,29 @@
 
 **Date**: December 4, 2025  
 **Updated**: December 11, 2025  
-**Status**: Phase 2.0 - Platform Storage & State Management (IN PROGRESS) 🔄  
+**Architecture**: 100% Flutter/Dart for all platforms (Windows, macOS, Linux, Android, iOS)  
+**Status**: Phase 2.0 - Platform Storage & State Management ✅ COMPLETE  
 **Next Phase**: Phase 2 - UI Development and Live Testing
 
-### Phase 2.0 Progress (December 11, 2025 - CURRENT)
+## Architecture Decision: 100% Flutter (December 11, 2025)
+
+**Previous Architecture**:
+- Python desktop app using Outlook COM for Windows only
+- Flutter mobile app for Android/iOS with IMAP
+
+**New Architecture** (Unified):
+- 100% Flutter/Dart codebase for all 5 platforms
+- IMAP/OAuth protocols for universal email provider support
+- Single codebase with platform-specific builds (Windows, macOS, Linux, Android, iOS)
+
+**Rationale**:
+- Outlook desktop client no longer used (migrated to web client)
+- AOL IMAP connection fully operational
+- Eliminates dual-codebase maintenance burden
+- Enables parallel development and faster feature delivery
+- IMAP/OAuth provides support for all major email providers
+
+### Phase 2.0 Progress (December 11, 2025 - COMPLETE) ✅
 - ✅ **AppPaths**: Platform storage helper for app support directory management
   - Auto-creates rules, credentials, backup, logs directories
   - Path API for all file locations (iOS, Android, desktop-agnostic)

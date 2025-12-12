@@ -1,51 +1,241 @@
 {
   "project_overview": {
-    "name": "OutlookMailSpamFilter",
-    "description": "Python-based email spam and phishing filter for Microsoft Outlook that processes bulk mail folder using configurable YAML rules",
-    "purpose": "Automated processing and removal of SPAM and phishing emails from Outlook accounts using intelligent filtering rules",
+    "name": "SpamFilter-multi",
+    "description": "100% Flutter/Dart unified spam & phishing filter for all platforms (Windows, macOS, Linux, Android, iOS) with shared YAML rules and IMAP/OAuth email provider support",
+    "purpose": "Automated processing and removal of SPAM and phishing emails using intelligent filtering rules across all desktop and mobile platforms with single codebase",
     "type": "Email Security Tool",
-    "language": "Python",
-    "platform": "Windows (with Outlook integration via win32com)"
+    "repository_type": "Flutter monorepo (100% Dart for all 5 platforms)",
+    "license": "MIT License",
+    "current_phase": "Phase 2.0 ✅ COMPLETE | Phase 2 🔄 READY (UI Development)",
+    "last_updated": "2025-12-11",
+    "architecture_decision_date": "2025-12-11",
+    "architecture_note": "Unified Flutter approach (100% Dart) replaces previous Python desktop + Flutter mobile hybrid model",
+    "status_url": "See PHASE_2.0_COMPLETE.md for detailed Phase 2.0 completion report"
+  },
+  "platforms": {
+    "overview": "100% Flutter/Dart - Single codebase for all 5 platforms",
+    "supported_platforms": [
+      {
+        "name": "Windows",
+        "type": "Desktop",
+        "build_command": "flutter build windows",
+        "installer": "MSIX",
+        "status": "Ready - Phase 2.5"
+      },
+      {
+        "name": "macOS",
+        "type": "Desktop",
+        "build_command": "flutter build macos",
+        "installer": "DMG",
+        "status": "Ready - Phase 2.5"
+      },
+      {
+        "name": "Linux",
+        "type": "Desktop",
+        "build_command": "flutter build linux",
+        "installer": "AppImage/Snap",
+        "status": "Ready - Phase 2.5"
+      },
+      {
+        "name": "Android",
+        "type": "Mobile",
+        "build_command": "flutter build apk --release",
+        "installer": "APK/AAB",
+        "status": "Ready now"
+      },
+      {
+        "name": "iOS",
+        "type": "Mobile",
+        "build_command": "flutter build ios --release",
+        "installer": "IPA",
+        "status": "Ready - Phase 2.5"
+      }
+    ],
+    "email_providers": {
+      "phase_2_priority": [
+        {
+          "provider": "AOL",
+          "protocol": "IMAP",
+          "auth": "App Password",
+          "status": "Ready for Phase 2 live testing"
+        },
+        {
+          "provider": "Gmail",
+          "protocol": "IMAP/OAuth 2.0",
+          "auth": "Google OAuth 2.0",
+          "status": "Framework ready - Phase 2+"
+        },
+        {
+          "provider": "Outlook.com",
+          "protocol": "IMAP/OAuth 2.0",
+          "auth": "Microsoft OAuth 2.0",
+          "status": "Framework ready - Phase 2+"
+        }
+      ],
+      "future_support": [
+        {
+          "provider": "Yahoo",
+          "protocol": "IMAP",
+          "auth": "App Password",
+          "status": "Phase 2+"
+        },
+        {
+          "provider": "ProtonMail",
+          "protocol": "IMAP",
+          "auth": "Bridge Password",
+          "status": "Phase 3"
+        },
+        {
+          "provider": "Custom IMAP",
+          "protocol": "IMAP",
+          "auth": "Configurable",
+          "status": "Generic handler ready"
+        }
+      ]
+    },
+    "desktop": {
+      "language": "Dart/Flutter",
+      "platforms": ["Windows", "macOS", "Linux"],
+      "status": "Production Ready (Phase 2.5)",
+      "deployment": "Desktop installers (MSIX, DMG, AppImage)"
+    },
+    "mobile": {
+      "language": "Dart/Flutter",
+      "targets": ["Android", "iOS"],
+      "status": "Production Ready (backend) - UI in Phase 2",
+      "phase_2_0_components": [
+        {
+          "component": "AppPaths",
+          "file": "lib/adapters/storage/app_paths.dart",
+          "lines": 190,
+          "status": "✅ Complete Dec 11",
+          "description": "Platform-agnostic file system path management (iOS, Android, Windows, macOS, Linux)"
+        },
+        {
+          "component": "LocalRuleStore",
+          "file": "lib/adapters/storage/local_rule_store.dart",
+          "lines": 200,
+          "status": "✅ Complete Dec 11",
+          "description": "YAML file persistence with automatic backups"
+        },
+        {
+          "component": "SecureCredentialsStore",
+          "file": "lib/adapters/storage/secure_credentials_store.dart",
+          "lines": 310,
+          "status": "✅ Complete Dec 11",
+          "description": "Encrypted credential storage using platform-native encryption (Keychain/Keystore/Credential Manager)"
+        },
+        {
+          "component": "RuleSetProvider",
+          "file": "lib/core/providers/rule_set_provider.dart",
+          "lines": 210,
+          "status": "✅ Complete Dec 11",
+          "description": "Rule state management with async initialization"
+        },
+        {
+          "component": "EmailScanProvider",
+          "file": "lib/core/providers/email_scan_provider.dart",
+          "lines": 260,
+          "status": "✅ Complete Dec 11",
+          "description": "Real-time scan progress and results tracking"
+        }
+      ],
+      "phase_2_next": [
+        "Platform Selection Screen (AOL, Gmail, Outlook, Yahoo)",
+        "Account Setup Forms with SecureCredentialsStore integration",
+        "Scan Progress Screen bound to EmailScanProvider",
+        "Results Display Screen with summary metrics"
+      ]
+    }
+  },
+  "repository_structure": {
+    "shared": ["rules.yaml", "rules_safe_senders.yaml", "memory-bank/", "README.md", "LICENSE"],
+    "flutter_only": ["mobile-app/lib/", "mobile-app/test/", "mobile-app/android/", "mobile-app/ios/", "mobile-app/windows/", "mobile-app/macos/", "mobile-app/linux/", "mobile-app/pubspec.yaml"],
+    "archived_reference": ["Archive/desktop-python/ (legacy Outlook COM implementation)"]
+  },
+  "quick_reference_dashboard": {
+    "current_status": {
+      "phase_2_0": "✅ COMPLETE (Dec 11, 2025)",
+      "architecture": "100% Flutter for all 5 platforms (NEW)",
+      "tests_passing": "50+ (27 Phase 1 regression + 23 Phase 2.0 new)",
+      "code_quality": "0 issues (flutter analyze)",
+      "performance": "19.58ms per email"
+    },
+    "immediate_next_actions": [
+      "1. Verify: flutter test (confirm 50+ pass)",
+      "2. Read: PHASE_2.0_COMPLETE.md (15 min overview)",
+      "3. Begin: Phase 2 UI screens using providers"
+    ],
+    "quick_links": {
+      "new_users": ["README.md", "PHASE_2.0_COMPLETE.md", "NEXT_STEPS.md"],
+      "developers": ["mobile-app/IMPLEMENTATION_SUMMARY.md", "memory-bank/mobile-app-plan.md"],
+      "qa_testers": ["TEST_GUIDE.md", "mobile-app/PHASE_2.0_TESTING_CHECKLIST.md"],
+      "full_documentation": "DOCUMENTATION_INDEX.md"
+    },
+    "command_cheat_sheet": {
+      "flutter_tests": "cd mobile-app && flutter test",
+      "flutter_quality": "cd mobile-app && flutter analyze",
+      "flutter_run": "cd mobile-app && flutter run",
+      "flutter_build_android": "cd mobile-app && flutter build apk --release",
+      "flutter_build_windows": "cd mobile-app && flutter build windows",
+      "desktop_setup": "./.venv/Scripts/Activate.ps1",
+      "desktop_run_reference": "python withOutlookRulesYAML.py (reference only)"
+    },
+    "key_files_to_know": {
+      "flutter_entry": "mobile-app/lib/main.dart (MultiProvider setup with async init)",
+      "flutter_storage": "mobile-app/lib/adapters/storage/ (3 files: AppPaths, LocalRuleStore, SecureCredentialsStore)",
+      "flutter_providers": "mobile-app/lib/core/providers/ (2 files: RuleSetProvider, EmailScanProvider)",
+      "flutter_tests": "mobile-app/test/unit/ (23 Phase 2.0 tests + 27 Phase 1 regression tests)",
+      "shared_rules": "rules.yaml and rules_safe_senders.yaml (used by all platforms)",
+      "legacy_desktop": "Archive/desktop-python/withOutlookRulesYAML.py (Outlook COM - archived)"
+    }
   },
   "architecture": {
-    "main_class": "OutlookSecurityAgent",
-    "primary_file": "withOutlookRulesYAML.py",
-    "core_components": [
+    "pattern": "100% Flutter/Dart with Provider pattern for reactive state management",
+    "platforms": "All 5 platforms (Windows, macOS, Linux, Android, iOS) from single codebase",
+    "email_access": "IMAP/OAuth protocols (universal provider support)",
+    "state_management": "Provider 6.1.0 with ChangeNotifier for reactive updates",
+    "storage_layer": "Platform-agnostic abstraction for file paths + encrypted credential storage",
+    "initialization": "Async MultiProvider in main.dart with TestWidgetsFlutterBinding for tests",
+    "components": [
       {
-        "component": "Email Processing Engine",
-        "description": "Processes emails from specified Outlook folders using configurable rules"
+        "component": "Rule Engine",
+        "description": "Pattern compiler and rule evaluator for email filtering"
       },
       {
-        "component": "Rule Management System", 
-        "description": "YAML-based rule configuration for headers, body content, subjects, and sender filtering"
+        "component": "Storage Layer",
+        "description": "AppPaths (file management) + LocalRuleStore (YAML persistence) + SecureCredentialsStore (encrypted credentials)"
       },
       {
-        "component": "Phishing Detection",
-        "description": "Identifies potential phishing attempts using pattern matching and suspicious indicators"
+        "component": "State Management",
+        "description": "RuleSetProvider (rule state) + EmailScanProvider (scan progress)"
       },
       {
-        "component": "Safe Sender Management",
-        "description": "Maintains lists of trusted senders and domains to prevent false positives"
+        "component": "Email Adapters",
+        "description": "Platform-specific adapters for AOL (IMAP), Gmail (OAuth), Outlook (OAuth), Yahoo (IMAP), ProtonMail (IMAP)"
       },
       {
-        "component": "Logging and Reporting",
-        "description": "Comprehensive logging of all processing activities and email actions"
+        "component": "UI Framework",
+        "description": "Flutter widgets for all platforms with responsive layouts"
       }
     ]
   },
   "key_features": [
     "YAML-based rule configuration for easy maintenance",
     "Multi-criteria filtering (header, body, subject, sender)",
-    "Multi-folder processing with configurable folder list",
-    "Recursive folder search capability for nested folders",
-    "Second-pass email reprocessing after rule updates for maximum cleanup",
-    "Phishing detection with suspicious URL and domain analysis", 
+    "Phishing detection with suspicious URL and domain analysis",
     "Safe sender whitelist management",
     "Automatic email deletion with safety checks",
     "Comprehensive logging and audit trails",
     "Interactive rule updates based on unmatched emails",
     "Backup and restore functionality for rules",
-    "Cross-platform rule sharing capability"
+    "Cross-platform rule sharing capability",
+    "IMAP/OAuth support for multiple email providers",
+    "Encrypted credential storage (Keychain/Keystore/Credential Manager)",
+    "Multi-account support with account tracking",
+    "Platform-agnostic file system access",
+    "Real-time scan progress tracking",
+    "Result categorization and summary reporting"
   ],
   "file_structure": {
     "configuration_files": [

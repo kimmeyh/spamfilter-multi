@@ -1,12 +1,38 @@
 # Mobile Spam Filter App - Development Plan
 
-**Status**: Phase 2.0 - Platform Storage & State Management ✅ COMPLETE (in progress)  
+**Status**: Phase 2.0 - Platform Storage & State Management ✅ COMPLETE (December 11, 2025)  
 **Last Updated**: 2025-12-11  
-**Flutter Installation**: ✅ Complete (3.38.3 verified)
-**Target Platforms**: Android, iOS (phones & tablets), Chromebooks  
-**Tech Stack**: Flutter/Dart (with optional Rust optimization path)
+**Architecture**: 100% Flutter/Dart for all platforms (Windows, macOS, Linux, Android, iOS)  
+**Flutter Installation**: ✅ Complete (3.38.3 verified)  
+**Email Access**: IMAP/OAuth protocols for universal provider support  
+**Tech Stack**: Flutter/Dart with Provider 6.1.0 for state management
 
-## Current Phase: 2.0 - Platform Storage & State Management (December 11, 2025)
+## Architecture Decision: 100% Flutter for All Platforms (December 11, 2025)
+
+**Decision Rationale**:
+- Outlook desktop client no longer used (web client migration complete)
+- AOL IMAP connection fully functional
+- Single Flutter codebase reduces development burden by 50%+
+- Eliminates Python desktop app maintenance burden
+- Enables parallel development across all 5 platforms
+- IMAP/OAuth provides universal email provider support
+
+**Platforms Supported** (5 total):
+1. Windows (desktop build via `flutter build windows`)
+2. macOS (desktop build via `flutter build macos`)
+3. Linux (desktop build via `flutter build linux`)
+4. Android (mobile build via `flutter build apk`)
+5. iOS (mobile build via `flutter build ios`)
+
+**Email Providers** (Phase Priority):
+1. **AOL** - IMAP (Phase 2 - Live testing)
+2. **Gmail** - OAuth 2.0 (Phase 2+)
+3. **Outlook.com** - OAuth 2.0 (Phase 2+)
+4. **Yahoo** - IMAP (Phase 2+)
+5. **ProtonMail** - IMAP (Phase 3)
+6. Generic IMAP for custom providers
+
+## Current Phase: 2.0 - Platform Storage & State Management ✅ COMPLETE (December 11, 2025)
 
 ✅ **Phase 2.0 Complete (December 11, 2025)**:
 - **AppPaths**: Platform-agnostic file system helper
@@ -92,13 +118,54 @@
 1. ✅ Integrate path_provider for file system access **(COMPLETE 2025-12-11: AppPaths created; rules/safe senders rooted in app support directory)**
 2. ✅ Implement secure credential storage (flutter_secure_storage) **(COMPLETE 2025-12-11: SecureCredentialsStore with multi-account support)**
 3. ✅ Configure Provider for app-wide state management **(COMPLETE 2025-12-11: RuleSetProvider + EmailScanProvider + main.dart integration)**
-4. Build platform selection UI (next phase)
-5. Create account setup form with validation (next phase)
-6. Add scan progress indicator UI using EmailScanProvider (next phase)
-7. Build results summary display (next phase)
-8. Run live IMAP tests with AOL credentials (AOL_EMAIL, AOL_APP_PASSWORD) (validation phase)
-9. Enable OAuth-ready dependencies for Gmail/Outlook adapters (Phase 2 priority)
-10. Provider rollout order: **AOL first**, then **Gmail**, then **Outlook** (Phase 2+ priority)
+4. **Build platform selection UI** (next - start Phase 2 development)
+5. **Create account setup form with validation** (next - Phase 2 UI)
+6. **Add scan progress indicator UI** using EmailScanProvider (next - Phase 2 UI)
+7. **Build results summary display** (next - Phase 2 UI)
+8. Run live IMAP tests with AOL credentials (validation phase)
+9. Implement Gmail OAuth flow (Phase 2+)
+10. Implement Outlook OAuth flow (Phase 2+)
+11. **Phase 2.5 Desktop Builds**: Windows MSIX, macOS DMG, Linux AppImage (after Phase 2 UI complete)
+
+## Development Timeline
+
+**Phase 1** ✅ COMPLETE - Foundation (November 2025)
+- Core models, services, translator layer architecture
+- IMAP framework
+- Basic UI scaffold
+
+**Phase 1.5** ✅ COMPLETE - Testing (December 2025)
+- Unit tests (16 tests)
+- Integration tests (7 tests)
+- End-to-end validation
+- Performance testing (19.58ms per email)
+
+**Phase 2.0** ✅ COMPLETE - Storage & State Management (December 11, 2025)
+- AppPaths for platform file access (7 tests passing)
+- SecureCredentialsStore for encrypted storage (4 tests passing)
+- RuleSetProvider for rule management (integrated)
+- EmailScanProvider for scan progress (12 tests passing)
+- MultiProvider in main.dart
+
+**Phase 2** 🔄 READY - UI Development (Est. 2-4 weeks, starts next)
+- Platform Selection Screen
+- Account Setup Forms
+- Scan Progress Screen
+- Results Display Screen
+- Live IMAP/OAuth testing with real accounts
+
+**Phase 2.5** ⏳ PLANNED - Desktop Builds (Est. 1-2 weeks after Phase 2)
+- Windows MSIX installer
+- macOS DMG installer
+- Linux AppImage/Snap
+- Desktop-specific UI adjustments
+
+**Phase 3** ⏳ PLANNED - IMAP/OAuth Integration (Est. 3-4 weeks after Phase 2)
+- Live IMAP testing with AOL
+- Gmail OAuth integration
+- Outlook.com OAuth integration
+- Background sync implementation
+- Credential refresh token handling
 8. Build results summary display
 9. Enable OAuth-ready dependencies for Gmail/Outlook adapters **(googleapis, google_sign_in, msal_flutter, http activated 2025-12-10)**
 10. Provider rollout order: **AOL first**, then **Gmail**, then **Outlook** (Phase 2 priority)

@@ -1,12 +1,37 @@
 Next:
-@workspace use 'memory-bank/*', 'memory-bank/mobile-app-plan.md' and 'IMPLEMENTATION_SUMMARY.md' to understand the workspace 
+Can you update these files based on the new plan:
+  'memory-bank/memory-bank.json'
+  'memory-bank/mobile-app-plan.md'
+  'mobile-app/IMPLEMENTATION_SUMMARY.md'
+  'README.md'
+
+@workspace use 'memory-bank/memory-bank.json' (for quick reference), 
+'memory-bank/mobile-app-plan.md' (for roadmap), and 
+'mobile-app/IMPLEMENTATION_SUMMARY.md' (for technical details)
+to understand the workspace.
+
+Context:
+- Mono-repo: Python desktop + Flutter mobile (shared YAML rules)
+- Phase 2.0 ✅ Complete (storage & state management done)
+- Phase 2 🔄 Ready to start (UI development needed)
+- 50+ tests passing, 0 code quality issues
+
+@workspace Need your help in determining the most effective yet efficient way to provide GitHub Copilot with information about the codebase and development plan without needing to read 100 files yet effectively understand the repository for each new chat. I want to use a couple of files, but want to leave it open to your suggestions on other files.  These are the must-have files:  
+  'memory-bank/memory-bank.json' (this information may not be accurate)
+  'memory-bank/mobile-app-plan.md'
+  'mobile-app/IMPLEMENTATION_SUMMARY.md'
+
+What should be added, updated or removed from these files?  What other files are no longer needed.
+
+@workspace use 'memory-bank/*', 'memory-bank/mobile-app-plan.md' and 'IMPLEMENTATION_SUMMARY.md' to understand the workspace
+and development plan:  memory-bank/mobile-app-plan.md' and 'IMPLEMENTATION_SUMMARY.md'
 
 Please proceed with the next step in Phase 2
 
 Can you help draft the code for review in the files (NOT in Copilot, but in the actual files to be changed)
 Any code that should be removed should be commented out and not deleted.
 Do not remove any commented out code.  Do not update 0dev_prompts.md
-When complete, update 'README.md', 'memory-bank/*', 'memory-bank/mobile-app-plan.md' and 'mobile-app/IMPLEMENTATION_SUMMARY.md'
+When complete, update 'README.md', 'memory-bank/*', and 'mobile-app/IMPLEMENTATION_SUMMARY.md'
 
 ------------------------------------------------------------------------------
 
