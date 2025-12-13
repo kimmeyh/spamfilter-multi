@@ -1,10 +1,4 @@
-Next:
-Can you update these files based on the new plan:
-  'memory-bank/memory-bank.json'
-  'memory-bank/mobile-app-plan.md'
-  'mobile-app/IMPLEMENTATION_SUMMARY.md'
-  'README.md'
-
+Next:----------------------------------------
 @workspace use 'memory-bank/memory-bank.json' (for quick reference), 
 'memory-bank/mobile-app-plan.md' (for roadmap), and 
 'mobile-app/IMPLEMENTATION_SUMMARY.md' (for technical details)
@@ -16,17 +10,42 @@ Context:
 - Phase 2 🔄 Ready to start (UI development needed)
 - 50+ tests passing, 0 code quality issues
 
-@workspace Need your help in determining the most effective yet efficient way to provide GitHub Copilot with information about the codebase and development plan without needing to read 100 files yet effectively understand the repository for each new chat. I want to use a couple of files, but want to leave it open to your suggestions on other files.  These are the must-have files:  
-  'memory-bank/memory-bank.json' (this information may not be accurate)
-  'memory-bank/mobile-app-plan.md'
-  'mobile-app/IMPLEMENTATION_SUMMARY.md'
+Check.  The user of the app may have multiple email accounts, including multiple email accounts with the same email provider.  Example a@aol.com and b@aol.com.  Does the architecture and code accomodate that.  If not we should now update the app to account for this.
 
-What should be added, updated or removed from these files?  What other files are no longer needed.
+Do not remove any commented out code.  Do not update 0dev_prompts.md
+When complete, update 'memory-bank/memory-bank.json' (for quick reference),
+'memory-bank/mobile-app-plan.md' (for roadmap), and 
+'mobile-app/IMPLEMENTATION_SUMMARY.md' (for technical details) 
 
+
+Credentials are not saving between runs.  Can you help save credentials for each email account.
+
+Currently only checking the inbox.  Will need to add checking the "junk folder"(s) for each email address (unique per provider/email address?).
+
+Template:----------------------------------------
+@workspace use 'memory-bank/memory-bank.json' (for quick reference), 
+'memory-bank/mobile-app-plan.md' (for roadmap), and 
+'mobile-app/IMPLEMENTATION_SUMMARY.md' (for technical details)
+to understand the workspace.
+
+Context:
+- Mono-repo: Python desktop + Flutter mobile (shared YAML rules)
+- Phase 2.0 ✅ Complete (storage & state management done)
+- Phase 2 🔄 Ready to start (UI development needed)
+- 50+ tests passing, 0 code quality issues
+
+<request>
+
+Do not remove any commented out code.  Do not update 0dev_prompts.md
+When complete, update 'memory-bank/memory-bank.json' (for quick reference),
+'memory-bank/mobile-app-plan.md' (for roadmap), and 
+'mobile-app/IMPLEMENTATION_SUMMARY.md' (for technical details) 
+
+OLD Template:----------------------------------------
 @workspace use 'memory-bank/*', 'memory-bank/mobile-app-plan.md' and 'IMPLEMENTATION_SUMMARY.md' to understand the workspace
 and development plan:  memory-bank/mobile-app-plan.md' and 'IMPLEMENTATION_SUMMARY.md'
 
-Please proceed with the next step in Phase 2
+<request>
 
 Can you help draft the code for review in the files (NOT in Copilot, but in the actual files to be changed)
 Any code that should be removed should be commented out and not deleted.
@@ -110,6 +129,24 @@ cd D:\Data\Harold\github\OutlookMailSpamFilter && ./.venv/Scripts/Activate.ps1 &
 
 ------------------------------------------------------------------------------
 Completed:
+
+What can you add/update in 'memory-bank/memory-bank.json' so that in the future GitHub Copilot always knows:
+- your terminal interface is always PowerShell
+- when running commands in PowerShell, always set the correct directory when running them.
+Then proceed where you left off with "flutter config --enable-windows-desktop"
+
+Can you update these files based on the new plan:
+  'memory-bank/memory-bank.json'
+  'memory-bank/mobile-app-plan.md'
+  'mobile-app/IMPLEMENTATION_SUMMARY.md'
+  'README.md'
+
+@workspace Need your help in determining the most effective yet efficient way to provide GitHub Copilot with information about the codebase and development plan without needing to read 100 files yet effectively understand the repository for each new chat. I want to use a couple of files, but want to leave it open to your suggestions on other files.  These are the must-have files:  
+  'memory-bank/memory-bank.json' (this information may not be accurate)
+  'memory-bank/mobile-app-plan.md'
+  'mobile-app/IMPLEMENTATION_SUMMARY.md'
+What should be added, updated or removed from these files?  What other files are no longer needed.
+
 Would like your help planning to make this into a phone app (first android, then iPhone - but open to reasons for reverse)
 Need it to work with most phone/web-based email accounts:  aol, gmail, yahoo, hotmail, protomail
 What other email providers should I consider.

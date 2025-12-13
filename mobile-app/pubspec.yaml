@@ -43,3 +43,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/rules/rules.yaml
+    - assets/rules/rules_safe_senders.yaml
