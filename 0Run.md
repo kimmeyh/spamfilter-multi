@@ -1,6 +1,9 @@
 # Run Windows Emulator
 #   cd D:\Data\Harold\github\spamfilter-multi\mobile-app
 #   flutter run -d windows
+# If needed confirm dependencies and then re-build the app
+cd d:\Data\Harold\github\spamfilter-multi\mobile-app; flutter pub get
+cd d:\Data\Harold\github\spamfilter-multi\mobile-app; flutter build windows
 # single command line
 cd D:\Data\Harold\github\spamfilter-multi\mobile-app; flutter run -d windows
 

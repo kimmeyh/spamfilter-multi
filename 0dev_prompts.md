@@ -8,15 +8,18 @@ Context:
 - Mono-repo: Flutter mobile, web and desktop (shared YAML rules)
 - 57+ tests passing, 0 code quality issues
 
-Credentials and email addresses are not being saved between runs.  In the setup screen, look for existing email addresses already setup and if so, add to the selection to use one of the existing email addresses or setup a new one, then list the providers.  Ensure email account, provider and credentials are saved between runs and recalled as expected.
+Current Issue: Windows Gmail OAuth Limitation
+Root Cause: google_sign_in 7.2.0 plugin does NOT implement OAuth authentication on Windows platform (by design, not a code bug). Android/iOS have native Google SDKs, but Windows does not.
+Suggestion:  implement Browser-Based OAuth - Launch system browser for Google consent
+As a backup, implement WebView Approach - Embed web OAuth in Flutter WebView with appropriate user instructions
+As an additional backup (instead of failure), implement Manual Token Entry - UI form for user to paste OAuth token and instructions on how to get token
+
 
 Do not remove any previously commented out code.  Do not update 0dev_prompts.md
 When complete, update 'memory-bank/memory-bank.json' (for quick reference),
 'memory-bank/mobile-app-plan.md' (for roadmap), and 
 'mobile-app/IMPLEMENTATION_SUMMARY.md' (for technical details) 
 
-
-Credentials are not saving between runs.  Can you help save credentials for each email account.
 
 Currently only checking the inbox.  Will need to add checking the "junk folder"(s) for each email address (unique per provider/email address?).
 
@@ -151,6 +154,9 @@ cd D:\Data\Harold\github\OutlookMailSpamFilter && ./.venv/Scripts/Activate.ps1 &
 
 ------------------------------------------------------------------------------
 Completed:
+
+Credentials and email addresses are not being saved between runs.  In the setup screen, look for existing email addresses already setup and if so, add to the selection to use one of the existing email addresses or setup a new one, then list the providers.  Ensure email account, provider and credentials are saved between runs and recalled as expected.
+
 Can you ensure that all unit tests run without making any changes to the actual email account being tested (read-only) by default.  They should also have a means to test changes to a limited number of emails by number in the CLI.  They should also have a means to revert all changes from the last run.
 
 Check.  The user of the app may have multiple email accounts, including multiple email accounts with the same email provider.  Example a@aol.com and b@aol.com.  Does the architecture and code accommodate that.  If not we should now update the app to account for this.

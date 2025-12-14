@@ -27,7 +27,7 @@ dependencies:
 
   # Phase 2 - Gmail Support (Native API) - activated
   googleapis: ^11.4.0
-  google_sign_in: ^6.1.5
+  google_sign_in: ^7.2.0
   
   # Phase 2 - Outlook/Office365 Support (Native API) - activated
   msal_auth: ^3.3.0
