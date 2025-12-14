@@ -5,14 +5,12 @@ Next:----------------------------------------
 to understand the workspace.
 
 Context:
-- Mono-repo: Python desktop + Flutter mobile (shared YAML rules)
-- Phase 2.0 ✅ Complete (storage & state management done)
-- Phase 2 🔄 Ready to start (UI development needed)
-- 50+ tests passing, 0 code quality issues
+- Mono-repo: Flutter mobile, web and desktop (shared YAML rules)
+- 57+ tests passing, 0 code quality issues
 
-Check.  The user of the app may have multiple email accounts, including multiple email accounts with the same email provider.  Example a@aol.com and b@aol.com.  Does the architecture and code accomodate that.  If not we should now update the app to account for this.
 
-Do not remove any commented out code.  Do not update 0dev_prompts.md
+
+Do not remove any previously commented out code.  Do not update 0dev_prompts.md
 When complete, update 'memory-bank/memory-bank.json' (for quick reference),
 'memory-bank/mobile-app-plan.md' (for roadmap), and 
 'mobile-app/IMPLEMENTATION_SUMMARY.md' (for technical details) 
@@ -21,6 +19,25 @@ When complete, update 'memory-bank/memory-bank.json' (for quick reference),
 Credentials are not saving between runs.  Can you help save credentials for each email account.
 
 Currently only checking the inbox.  Will need to add checking the "junk folder"(s) for each email address (unique per provider/email address?).
+
+Phase 2 Sprint 3 - Gmail OAuth Integration & Rule Editor UI
+
+The UI will need to have functionality to add/remove folders to scan all the time and one-time scan options that can be triggered manually (read and display all folders, allow to multi-select via checkbox, include and All checkbox that selects all folders to be scanned, check and uncheck as needed).
+
+ScanProgressScreen integration with folder display
+Results screen with "Revert Last Run" button
+Maintenance screen for account management
+Actual revert implementation in GenericIMAPAdapter
+
+Sprint 4: Gmail OAuth Integration & Results Display UI
+Testing and doc request:----------------------------------------
+
+Complete full test suite
+Run app for manual testing
+Address errors and issues to resolution
+When complete, update 'memory-bank/memory-bank.json' (for quick reference),
+'memory-bank/mobile-app-plan.md' (for roadmap), and 
+'mobile-app/IMPLEMENTATION_SUMMARY.md' (for technical details) 
 
 Template:----------------------------------------
 @workspace use 'memory-bank/memory-bank.json' (for quick reference), 
@@ -129,6 +146,9 @@ cd D:\Data\Harold\github\OutlookMailSpamFilter && ./.venv/Scripts/Activate.ps1 &
 
 ------------------------------------------------------------------------------
 Completed:
+Can you ensure that all unit tests run without making any changes to the actual email account being tested (read-only) by default.  They should also have a means to test changes to a limited number of emails by number in the CLI.  They should also have a means to revert all changes from the last run.
+
+Check.  The user of the app may have multiple email accounts, including multiple email accounts with the same email provider.  Example a@aol.com and b@aol.com.  Does the architecture and code accomodate that.  If not we should now update the app to account for this.
 
 What can you add/update in 'memory-bank/memory-bank.json' so that in the future GitHub Copilot always knows:
 - your terminal interface is always PowerShell

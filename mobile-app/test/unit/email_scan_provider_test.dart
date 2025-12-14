@@ -57,6 +57,7 @@ void main() {
 
     test('records result and updates counts', () {
       // Arrange
+      scanProvider.initializeScanMode(mode: ScanMode.testAll); // Enable actual execution
       scanProvider.startScan(totalEmails: 100);
       final email = EmailMessage(
         id: '1',
@@ -99,6 +100,7 @@ void main() {
 
     test('completes scan successfully', () {
       // Arrange
+      scanProvider.initializeScanMode(mode: ScanMode.testAll); // Enable actual execution
       scanProvider.startScan(totalEmails: 100);
       scanProvider.recordResult(EmailActionResult(
         email: EmailMessage(
@@ -139,6 +141,7 @@ void main() {
 
     test('resets scan state', () {
       // Arrange
+      scanProvider.initializeScanMode(mode: ScanMode.testAll); // Enable actual execution
       scanProvider.startScan(totalEmails: 100);
       scanProvider.recordResult(EmailActionResult(
         email: EmailMessage(
@@ -167,6 +170,7 @@ void main() {
 
     test('generates summary correctly', () {
       // Arrange
+      scanProvider.initializeScanMode(mode: ScanMode.testAll); // Enable actual execution
       scanProvider.startScan(totalEmails: 100);
       for (int i = 0; i < 50; i++) {
         scanProvider.recordResult(EmailActionResult(
@@ -196,6 +200,7 @@ void main() {
 
     test('categorizes results by action type', () {
       // Arrange
+      scanProvider.initializeScanMode(mode: ScanMode.testAll); // Enable actual execution
       scanProvider.startScan(totalEmails: 100);
 
       // Act

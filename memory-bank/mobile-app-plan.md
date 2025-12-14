@@ -1,8 +1,8 @@
 # Mobile Spam Filter App - Development Plan
 
-**Status**: Phase 2.0 ✅ COMPLETE | Phase 2 Sprint 1 ✅ COMPLETE | Phase 2 Sprint 2 ✅ COMPLETE (December 13, 2025)  
+**Status**: Phase 2.0 ✅ COMPLETE | Phase 2 Sprint 1 ✅ COMPLETE | Phase 2 Sprint 2 ✅ COMPLETE | Phase 2 Sprint 3 🔄 IN PROGRESS  
 **Last Updated**: 2025-12-13  
-**Current Work**: Phase 2 Sprint 3 - Gmail OAuth Integration & Rule Editor UI  
+**Current Work**: Phase 2 Sprint 3 - Read-Only Testing Mode + Multi-Folder Scanning  
 **Architecture**: 100% Flutter/Dart for all platforms (Windows, macOS, Linux, Android, iOS)  
 **Flutter Installation**: ✅ Complete (3.38.3 verified)  
 **Email Access**: IMAP/OAuth protocols for universal provider support  
@@ -158,8 +158,8 @@
 **Phase 2** 🔄 IN PROGRESS - UI Development & Live Testing (Est. 2-4 weeks, started December 11)
 - ✅ Sprint 1: Platform Selection Screen (complete December 11)
 - ✅ Sprint 2: Asset Bundling & AOL IMAP Integration (complete December 13)
-- 🔄 Sprint 3: Gmail OAuth Integration & Rule Editor UI (in progress)
-- ⏳ Sprint 4: Results Display & Interactive Training UI
+- 🔄 Sprint 3: Multi-Account & Multi-Folder Support (in progress)
+- ⏳ Sprint 4: Gmail OAuth Integration & Results Display UI
 
 **Phase 2.5** ⏳ PLANNED - Desktop Builds (Est. 1-2 weeks after Phase 2)
 - Windows MSIX installer
@@ -568,6 +568,51 @@ Based on market share and user requests:
 
 **Decision Gate**: Based on profiling results, decide if SQLite needed for Phase 2
 
+## Phase 2 Sprint 3: Multi-Account & Multi-Folder Support 🔄 IN PROGRESS (Started December 13, 2025)
+
+✅ **Completed Tasks**:
+1. **Multi-Account Support Implementation**:
+   - ✅ Updated AccountSetupScreen to save credentials with unique accountId format: `"{platformId}-{email}"`
+   - ✅ Example: "aol-a@aol.com" and "aol-b@aol.com" for two AOL accounts
+   - ✅ Unique accountId passed to ScanProgressScreen for credential retrieval
+   - ✅ Added accountEmail parameter for UI display and folder scanning
+
+2. **Credential Persistence Between Runs**:
+   - ✅ SecureCredentialsStore.saveCredentials() called immediately on account setup
+   - ✅ Credentials encrypted and stored in platform-native storage (Keychain/Keystore)
+   - ✅ getSavedAccounts() method returns list of all saved accountIds
+   - ✅ Next run: Users can select from saved accounts or add new one
+
+3. **Multi-Folder Scanning Framework**:
+   - ✅ Added JunkFolderConfig class for folder configuration
+   - ✅ EmailScanProvider includes JUNK_FOLDERS_BY_PROVIDER mapping:
+     - AOL: ['Bulk Mail', 'Spam']
+     - Gmail: ['Spam', 'Trash']
+     - Outlook: ['Junk Email', 'Spam']
+     - Yahoo: ['Bulk', 'Spam']
+     - iCloud: ['Junk', 'Trash']
+   - ✅ Added getJunkFoldersForProvider(platformId) method
+   - ✅ Added setCurrentFolder(folderName) for UI progress display
+   - ✅ Added getDetailedStatus() for "Scanning Inbox: 40/88" display
+   - ✅ Added _currentFolder tracking for real-time UI updates
+
+4. **Code Changes**:
+   - [account_setup_screen.dart](mobile-app/lib/ui/screens/account_setup_screen.dart) - Multi-account credential saving
+   - [email_scan_provider.dart](mobile-app/lib/core/providers/email_scan_provider.dart) - Junk folder mapping and multi-folder tracking
+   - [generic_imap_adapter.dart](mobile-app/lib/adapters/email_providers/generic_imap_adapter.dart) - Multi-folder support ready
+
+🔄 **In Progress**:
+- Building PlatformSelectionScreen to display and select saved accounts
+- Updating ScanProgressScreen to show current folder being scanned
+- Implementing actual multi-folder scanning in GenericIMAPAdapter
+- Adding account management UI (view saved accounts, add more, delete)
+
+⏳ **Next Steps**:
+1. PlatformSelectionScreen: Show "AOL (2 accounts)" with selectable accounts
+2. ScanProgressScreen: Show "Scanning [Inbox/Bulk Mail]: 40/88 emails"
+3. GenericIMAPAdapter: Implement multi-folder scan loop (Inbox → Junk folders → Second pass)
+4. AccountManagementScreen: View/delete saved accounts per provider
+
 ## Phase 2 Sprint 2: Asset Bundling & AOL IMAP Integration ✅ COMPLETE (December 13, 2025)
 
 ✅ **Completed Tasks**:
@@ -624,6 +669,93 @@ Based on market share and user requests:
 - Rule editor UI not yet built
 
 **Deliverable**: Fully functional AOL email scanning with asset-bundled rules, credential storage, IMAP fetch, and safe sender detection
+
+## Phase 2 Sprint 3: Read-Only Testing Mode & Multi-Folder Scanning 🔄 IN PROGRESS (December 13, 2025)
+
+**Objective**: Implement safe testing modes with folder selection UI and revert capability for email modifications
+
+✅ **Implemented Tasks**:
+1. **Scan Mode Architecture** (EmailScanProvider):
+   - Added `ScanMode` enum: `readonly` (default safe), `testLimit`, `testAll`
+   - Safe-by-default design: readonly mode prevents all email modifications
+   - `initializeScanMode()` method with mode and optional test limit
+   - Revert capability with `revertLastRun()` async method
+   - Confirm functionality with `confirmLastRun()` method
+
+2. **Read-Only Mode Implementation**:
+   - Default safe mode: emails evaluated but NOT modified
+   - Actions logged for audit trail (📋 [READONLY])
+   - No deletion, moving, or safe sender addition
+   - Perfect for initial testing and rule validation
+
+3. **Test Limit Mode Implementation**:
+   - Modify only first N emails (user-specified, e.g., 50)
+   - Safe for testing rules before full deployment
+   - Actions tracked and reversible
+   - Useful for validation on small subset
+
+4. **Test All Mode with Revert**:
+   - Execute all email modifications
+   - All actions tracked in `_lastRunActions` list
+   - `revertLastRun()` undoes deletions/moves from trash/junk
+   - `confirmLastRun()` prevents further reverts (permanent)
+
+5. **FolderSelectionScreen Widget** (multi-folder UI):
+   - `lib/ui/screens/folder_selection_screen.dart` created
+   - Multi-select checkboxes for Inbox + provider-specific junk folders
+   - "Select All" checkbox for convenience
+   - Provider-specific folder names via `JUNK_FOLDERS_BY_PROVIDER` map
+   - AOL: ['Bulk Mail', 'Spam']
+   - Gmail: ['Spam', 'Trash']
+   - Outlook: ['Junk Email', 'Spam']
+   - Yahoo: ['Bulk', 'Spam']
+   - iCloud: ['Junk', 'Trash']
+
+6. **_ScanModeSelector Widget** (integrated into AccountSetupScreen):
+   - Dialog-based scan mode selection
+   - Radio buttons for: readonly (default), testLimit, testAll
+   - Input field for test email limit (only visible in testLimit mode)
+   - Help text explaining each mode
+   - Warning about revert capability
+   - Initializes EmailScanProvider with selected mode
+
+7. **Multi-Account Support Enhancement**:
+   - Changed credential key format: `"{platformId}-{email}"` (e.g., "aol-a@aol.com")
+   - Allows multiple accounts per provider
+   - Unique accountId for credential retrieval
+   - Enhanced logging for account tracking
+
+8. **Unit Tests** (email_scan_provider_test.dart):
+   - Test readonly mode prevents modifications (0 actions executed)
+   - Test testLimit mode respects email count cap
+   - Test testAll mode executes all actions
+   - Test scan mode initialization and mode transitions
+   - Test revert and confirm functionality
+   - Total: 15+ unit tests for scan mode logic
+
+**Files Created/Modified**:
+- ✅ [mobile-app/lib/ui/screens/folder_selection_screen.dart](../mobile-app/lib/ui/screens/folder_selection_screen.dart) - New widget
+- ✅ [mobile-app/lib/ui/screens/account_setup_screen.dart](../mobile-app/lib/ui/screens/account_setup_screen.dart#L2-L6) - Added _ScanModeSelector widget
+- ✅ [mobile-app/lib/core/providers/email_scan_provider.dart](../mobile-app/lib/core/providers/email_scan_provider.dart#L1-L30) - Added ScanMode enum + revert logic
+- ✅ [mobile-app/test/core/providers/email_scan_provider_test.dart](../mobile-app/test/core/providers/email_scan_provider_test.dart) - New unit tests
+
+🔄 **In Progress**:
+- ScanProgressScreen integration with folder display
+- Results screen with "Revert Last Run" button
+- Maintenance screen for account management
+- Actual revert implementation in GenericIMAPAdapter
+
+⏳ **Pending**:
+- Second-pass reprocessing logic
+- Gmail OAuth integration
+- Outlook OAuth integration
+
+**Key Features**:
+- 🔒 **Safe by Default**: readonly mode prevents accidental data loss
+- 🧪 **Testing Flexibility**: testLimit allows safe rule validation
+- ↩️ **Reversibility**: testAll with revert capability
+- 📁 **Multi-Folder**: Select which folders to scan
+- 👤 **Multi-Account**: Multiple accounts per provider
 
 ### Phase 2: Multi-Platform Support via Translator Layer
 **Duration**: 4-6 weeks  

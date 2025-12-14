@@ -384,14 +384,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.17.0"
-  msal_flutter:
+  msal_auth:
     dependency: "direct main"
     description:
-      name: msal_flutter
-      sha256: "5123bda74d513f44dd6489fe30835a138c40299bdf1e33a00df7007607c09258"
+      name: msal_auth
+      sha256: "3e563ef107e9d87a9645b7e21e23b8af50786786762d9f37324057c36c44f5c0"
       url: "https://pub.dev"
     source: hosted
-    version: "2.0.1"
+    version: "3.3.0"
   nested:
     dependency: transitive
     description:
