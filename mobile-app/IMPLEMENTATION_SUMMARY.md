@@ -55,7 +55,29 @@
   - Loading and error UI states
   - Automatic rule loading via initialize()
 
-## Phase 2 Sprint 3 Progress (December 13, 2025 - COMPLETE) ✅
+## Phase 2 Sprint 3 Progress (December 13-14, 2025 - COMPLETE) ✅
+
+### Account Persistence Implementation (December 14, 2025)
+- ✅ **AccountSelectionScreen Created**:
+  - Full-featured screen for managing saved email accounts
+  - Displays all saved accounts with provider-specific icons and colors
+  - "Add New Account" button navigates to PlatformSelectionScreen
+  - Account deletion with confirmation dialog
+  - Empty state auto-navigates to PlatformSelectionScreen
+  - Real-time account loading with error handling
+  - Account ID parsing for display: "platformId-email" → "Platform: email"
+
+- ✅ **Navigation Flow Updated**:
+  - App start → AccountSelectionScreen (checks for saved accounts)
+  - Empty state → PlatformSelectionScreen (auto-redirect)
+  - After account setup → AccountSelectionScreen (return to account list)
+  - Select account → ScanProgressScreen (begin scanning)
+
+- ✅ **Multi-Account Architecture**:
+  - Account ID format: `"{platformId}-{email}"` (e.g., "aol-harold@aol.com")
+  - Multiple accounts per provider supported ("aol-a@aol.com", "aol-b@aol.com")
+  - Credentials persist between app runs via SecureCredentialsStore
+  - Platform-specific icons: AOL (blue), Gmail (red), Outlook (blue), Yahoo (purple), iCloud (gray)
 
 ### Multi-Account Support Implementation
 - ✅ **AccountSetupScreen Updated**: 
@@ -64,6 +86,7 @@
   - Added accountEmail parameter to ScanProgressScreen
   - Credentials now persist between app runs via SecureCredentialsStore
   - Added detailed logging for credential saves
+  - Navigation returns to AccountSelectionScreen after account setup (shows success SnackBar)
 
 - ✅ **EmailScanProvider Enhanced**:
   - Added JUNK_FOLDERS_BY_PROVIDER static map with provider-specific junk folders

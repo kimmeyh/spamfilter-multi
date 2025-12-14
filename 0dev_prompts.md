@@ -8,7 +8,7 @@ Context:
 - Mono-repo: Flutter mobile, web and desktop (shared YAML rules)
 - 57+ tests passing, 0 code quality issues
 
-
+Credentials and email addresses are not being saved between runs.  In the setup screen, look for existing email addresses already setup and if so, add to the selection to use one of the existing email addresses or setup a new one, then list the providers.  Ensure email account, provider and credentials are saved between runs and recalled as expected.
 
 Do not remove any previously commented out code.  Do not update 0dev_prompts.md
 When complete, update 'memory-bank/memory-bank.json' (for quick reference),
@@ -28,6 +28,11 @@ ScanProgressScreen integration with folder display
 Results screen with "Revert Last Run" button
 Maintenance screen for account management
 Actual revert implementation in GenericIMAPAdapter
+
+Manual testing on device/emulator
+Testing all three scan modes (readonly, testLimit, testAll)
+Release APK build for mobile deployment
+Desktop application builds (Windows, macOS, Linux)
 
 Sprint 4: Gmail OAuth Integration & Results Display UI
 Testing and doc request:----------------------------------------

@@ -30,6 +30,12 @@
         "✅ End-to-end workflow tests (6 tests)",
         "✅ Widget test compilation fixed (syntax errors resolved)",
         "✅ Account maintenance screen (listSavedAccounts method fixed)",
+        "✅ Account persistence feature (Dec 14, 2025)",
+        "✅ AccountSelectionScreen widget for saved account management",
+        "✅ Multi-account support: multiple accounts per provider",
+        "✅ Credentials saved between app runs (SecureCredentialsStore)",
+        "✅ Empty state auto-navigation to PlatformSelectionScreen",
+        "✅ Account deletion with confirmation dialog",
         "✅ Full test suite passing: 68/68 tests ✅"
       ],
       "bug_fixes": [
