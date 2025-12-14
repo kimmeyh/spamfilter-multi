@@ -153,7 +153,7 @@ cd D:\Data\Harold\github\OutlookMailSpamFilter && ./.venv/Scripts/Activate.ps1 &
 Completed:
 Can you ensure that all unit tests run without making any changes to the actual email account being tested (read-only) by default.  They should also have a means to test changes to a limited number of emails by number in the CLI.  They should also have a means to revert all changes from the last run.
 
-Check.  The user of the app may have multiple email accounts, including multiple email accounts with the same email provider.  Example a@aol.com and b@aol.com.  Does the architecture and code accomodate that.  If not we should now update the app to account for this.
+Check.  The user of the app may have multiple email accounts, including multiple email accounts with the same email provider.  Example a@aol.com and b@aol.com.  Does the architecture and code accommodate that.  If not we should now update the app to account for this.
 
 What can you add/update in 'memory-bank/memory-bank.json' so that in the future GitHub Copilot always knows:
 - your terminal interface is always PowerShell
