@@ -101,7 +101,7 @@ flutter build windows
 [ ] Invalid credentials rejected properly
 [ ] Missing files show helpful error messages
 [ ] Malformed YAML shows parsing error
-[ ] App doesn't crash on unexpected input
+[ ] App does not crash on unexpected input
 ```
 
 ### Phase 7: Performance (10 minutes)

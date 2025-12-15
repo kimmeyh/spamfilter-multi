@@ -33,6 +33,11 @@ dependencies:
   msal_auth: ^3.3.0
   http: ^1.1.0
   
+  # Phase 2 Sprint 5 - Windows Gmail OAuth Support
+  url_launcher: ^6.2.0  # For browser-based OAuth
+  webview_flutter: ^4.4.0  # For WebView OAuth backup
+  crypto: ^3.0.3  # For PKCE S256 (sha256)
+  
   # Phase 2+ - UI Enhancement
   # flutter_svg: ^2.0.9
 

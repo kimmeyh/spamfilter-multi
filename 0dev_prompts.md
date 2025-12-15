@@ -8,12 +8,7 @@ Context:
 - Mono-repo: Flutter mobile, web and desktop (shared YAML rules)
 - 57+ tests passing, 0 code quality issues
 
-Current Issue: Windows Gmail OAuth Limitation
-Root Cause: google_sign_in 7.2.0 plugin does NOT implement OAuth authentication on Windows platform (by design, not a code bug). Android/iOS have native Google SDKs, but Windows does not.
-Suggestion:  implement Browser-Based OAuth - Launch system browser for Google consent
-As a backup, implement WebView Approach - Embed web OAuth in Flutter WebView with appropriate user instructions
-As an additional backup (instead of failure), implement Manual Token Entry - UI form for user to paste OAuth token and instructions on how to get token
-
+Update implementation plan to hold off on any email providers other than gmail and aol until full functionality is confirmed for windows and android (setup, adding/updating email addresses/accounts; scanning inbox, spam folders, selection of folders; ability to automatically delete scan new mail as it is delivered for spam and handle it in production mode; add new rules (rules, safe-sender rules); update existing rules via display, selection, delete, change.
 
 Do not remove any previously commented out code.  Do not update 0dev_prompts.md
 When complete, update 'memory-bank/memory-bank.json' (for quick reference),
@@ -154,6 +149,13 @@ cd D:\Data\Harold\github\OutlookMailSpamFilter && ./.venv/Scripts/Activate.ps1 &
 
 ------------------------------------------------------------------------------
 Completed:
+
+Current Issue: Windows Gmail OAuth Limitation
+Root Cause: google_sign_in 7.2.0 plugin does NOT implement OAuth authentication on Windows platform (by design, not a code bug). Android/iOS have native Google SDKs, but Windows does not.
+Suggestion:  implement Browser-Based OAuth - Launch system browser for Google consent
+As a backup, implement WebView Approach - Embed web OAuth in Flutter WebView with appropriate user instructions
+As an additional backup (instead of failure), implement Manual Token Entry - UI form for user to paste OAuth token and instructions on how to get token
+
 
 Credentials and email addresses are not being saved between runs.  In the setup screen, look for existing email addresses already setup and if so, add to the selection to use one of the existing email addresses or setup a new one, then list the providers.  Ensure email account, provider and credentials are saved between runs and recalled as expected.
 

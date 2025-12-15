@@ -7,9 +7,11 @@
         "isregex",
         "Kimmey",
         "levelname",
+        "protomail",
         "protonmail",
         "rulesregex",
-        "safesenders"
+        "safesenders",
+        "spamfilter"
     ],
     // Ensure VS Code uses the local venv interpreter for this workspace
     "python.defaultInterpreterPath": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
