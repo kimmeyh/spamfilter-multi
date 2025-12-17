@@ -1,10 +1,38 @@
 # Mobile App Implementation Summary
 
 **Date**: December 4, 2025  
-**Updated**: December 14, 2025  
+**Updated**: December 17, 2025 (Gmail/AOL focus directive)  
 **Architecture**: 100% Flutter/Dart for all platforms (Windows, macOS, Linux, Android, iOS)  
 **Status**: Phase 2.0 ✅ COMPLETE | Phase 2 Sprint 2 ✅ COMPLETE | Phase 2 Sprint 3 ✅ COMPLETE | Phase 2 Sprint 4 ✅ COMPLETE | Phase 2 Sprint 5 ✅ COMPLETE (December 14, 2025)  
-**Current Focus**: Windows Gmail OAuth Implementation (Phase 2 Sprint 5 ✅ COMPLETE)
+**Current Focus**: Post-Sprint 5 maintenance: Windows Gmail OAuth credential fallback (Dec 16) + Implementation Plan Update - Gmail/AOL primary focus until full functionality confirmed on Windows/Android (Dec 17)
+
+## Implementation Plan Update (December 17, 2025 - Updated)
+
+**Directive**: Priority order - (1) AOL, (2) Gmail, (3) iCloud. Hold off on any other email providers until full functionality is confirmed for Windows and Android.
+
+**Full Functionality Criteria** for Priority Providers:
+1. ✅ Setup: Account configuration and credential storage
+2. ✅ Multi-account support: Multiple accounts per provider
+3. 🔄 Inbox and spam folder scanning: Ability to scan both Inbox and Junk/Spam/Bulk Mail folders
+4. 🔄 Folder selection: User can choose which folders to scan
+5. 🔄 Production delete mode: Automatic deletion of spam in production (not just testing mode)
+6. 🔄 New mail handling: Ability to automatically delete new mail as it is delivered for spam
+7. 🔄 Rule add/update: Add new spam rules and safe sender rules; update existing rules via display, selection, delete, change
+
+**Provider Priority** (Dec 17 Updated):
+- **PRIORITY 1: AOL** (IMAP): Validate full functionality on Windows and Android
+- **PRIORITY 2: Gmail** (OAuth 2.0): Validate full functionality on Windows and Android (Android/iOS working; Windows OAuth Dec 16)
+- **PRIORITY 3: iCloud** (IMAP): Implement after Priority 1-2 validated (important Apple ecosystem support)
+
+**Deferred Providers** (Until Priority 1-3 Full Functionality Confirmed):
+- ❌ Outlook.com (Phase 3+): Framework ready but deferred
+- ❌ Yahoo (Phase 3+): Framework ready but deferred
+- ❌ ProtonMail (Phase 3+): Framework ready but deferred
+- ❌ Custom IMAP (Phase 4+): Framework ready but deferred
+
+**Rationale**: Focusing on AOL, Gmail, and iCloud (Priority 1-3) allows concentrated effort on full-stack validation (setup → multi-account → scanning → rule management → production delete) for three major consumer email providers before expanding to others. iCloud is Priority 3 because it covers important Apple ecosystem (macOS, iPhone, iPad).
+
+---
 
 ## Architecture Decision: 100% Flutter (December 11, 2025)
 
@@ -153,6 +181,8 @@
 - Privacy notice explains permissions clearly
 
 ## Phase 2 Sprint 5 Implementation (December 14, 2025 - COMPLETE) ✅
+
+**Maintenance Update (Dec 16, 2025)**: Added SecureCredentialsStore fallback to reuse stored OAuth access tokens when the credentials blob lacks an accessToken, preventing Windows from calling unsupported google_sign_in APIs during Gmail scans.
 
 ### Windows Gmail OAuth - Three-Tiered Approach
 

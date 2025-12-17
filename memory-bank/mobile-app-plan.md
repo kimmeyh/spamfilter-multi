@@ -1,13 +1,22 @@
 # Mobile Spam Filter App - Development Plan
 
 **Status**: Phase 2.0 ✅ COMPLETE | Phase 2 Sprint 1 ✅ COMPLETE | Phase 2 Sprint 2 ✅ COMPLETE | Phase 2 Sprint 3 ✅ COMPLETE | Phase 2 Sprint 4 ✅ COMPLETE | Phase 2 Sprint 5 ✅ COMPLETE (December 14, 2025)  
-**Last Updated**: 2025-12-14  
-**Current Work**: Phase 2 Sprint 5 ✅ COMPLETE - Windows Gmail OAuth Implementation  
+**Last Updated**: 2025-12-16  
+**Current Work**: Post-Sprint 5 maintenance: Windows Gmail OAuth credential fallback (Dec 16) to reuse stored tokens and avoid unsupported google_sign_in calls  
 **Architecture**: 100% Flutter/Dart for all platforms (Windows, macOS, Linux, Android, iOS)  
 **Flutter Installation**: ✅ Complete (3.38.3 verified)  
 **Email Access**: IMAP/OAuth protocols for universal provider support  
 **Tech Stack**: Flutter/Dart with Provider 6.1.0 for state management  
 **Multi-Account**: ✅ Multiple accounts per provider supported
+
+**Provider Focus (Dec 17 directive)**: Prioritize ONLY Gmail and AOL until full functionality (setup, multi-folder scanning including junk folders, rule add/update, production mode delete) is confirmed on Windows and Android. Defer all other email providers (Outlook, Yahoo, iCloud, ProtonMail, Custom IMAP) to Phase 3 until Gmail/AOL are fully validated.
+
+### Immediate Focus (Dec 17 Updated)
+- Gmail and AOL only: Defer all other providers (Outlook, Yahoo, iCloud, ProtonMail, Custom IMAP) to Phase 3+
+- Re-test Gmail on Windows using stored OAuth tokens after SecureCredentialsStore fallback; set GMAIL_DESKTOP_CLIENT_ID and confirm browser/WebView/manual flows succeed.
+- Validate AOL IMAP setup, multi-folder scanning (Inbox + Bulk Mail/Spam), and production delete on Windows and Android.
+- Keep scope to Gmail and AOL until Windows and Android flows are validated end-to-end (setup, junk folders, rule add/update, production delete).
+- Ensure junk folders are included per provider when scanning (Inbox plus Spam/Junk/Trash as mapped).
 
 ## Architecture Decision: 100% Flutter for All Platforms (December 11, 2025)
 
@@ -26,13 +35,14 @@
 4. Android (mobile build via `flutter build apk`)
 5. iOS (mobile build via `flutter build ios`)
 
-**Email Providers** (Phase Priority):
-1. **AOL** - IMAP (Phase 2 - Live testing)
-2. **Gmail** - OAuth 2.0 (Phase 2+)
-3. **Outlook.com** - OAuth 2.0 (Phase 2+)
-4. **Yahoo** - IMAP (Phase 2+)
-5. **ProtonMail** - IMAP (Phase 3)
-6. Generic IMAP for custom providers
+**Email Providers** (Phase Priority - Updated Dec 17):
+1. **AOL** - IMAP (Phase 2 - Live testing - PRIMARY FOCUS)
+2. **Gmail** - OAuth 2.0 (Phase 2 - PRIMARY FOCUS; Android/iOS working, Windows OAuth implemented Dec 16)
+3. **Outlook.com** - OAuth 2.0 (DEFERRED to Phase 3+ until Gmail/AOL full functionality confirmed)
+4. **Yahoo** - IMAP (DEFERRED to Phase 3+ until Gmail/AOL full functionality confirmed)
+5. **ProtonMail** - IMAP (DEFERRED to Phase 3+ until Gmail/AOL full functionality confirmed)
+6. **iCloud** - IMAP (DEFERRED to Phase 3+ until Gmail/AOL full functionality confirmed)
+7. Generic IMAP for custom providers (DEFERRED to Phase 4+ until Gmail/AOL validated)
 
 ## Current Phase: 2.0 - Platform Storage & State Management ✅ COMPLETE (December 11, 2025)
 
@@ -449,63 +459,43 @@ abstract class RuleEvaluator {
 }
 ```
 
-## Email Provider Coverage
+## Email Provider Coverage (Updated Dec 17 - Gmail/AOL Focus Only)
 
-### Phase 1 (MVP) - Generic IMAP
+### Phase 2 (Current) - PRIMARY FOCUS: Gmail and AOL Only
 - **AOL Mail**: `GenericIMAPAdapter.aol()` with app password
   - IMAP: imap.aol.com:993 (SSL)
-  - Primary target for MVP validation
-- **Custom IMAP**: `GenericIMAPAdapter.custom()` with manual configuration
-  - Allows testing with any IMAP server
-
-### Phase 2 - Major Platforms with Native APIs
+  - Status: Full validation in progress (Windows/Android)
+  - Full functionality checklist: Setup (✅), Multi-account (✅), Inbox/spam scanning (framework ready), Production delete (testing), Rule add/update (planned)
+  
 - **Gmail**: `GmailAdapter` with OAuth 2.0 + Gmail REST API
   - Label-based operations (INBOX, SPAM, TRASH labels)
   - Efficient query syntax for date filtering
   - Batch message operations for performance
-  - Better than IMAP for Gmail-specific features
-  
+  - Status: Framework ready; Android/iOS OAuth working; Windows OAuth methods implemented Dec 16 (browser/WebView/manual)
+  - Full functionality checklist: Setup (✅ OAuth), Multi-account (framework ready), Inbox/spam scanning (framework ready), Production delete (testing), Rule add/update (planned)
+
+### Phase 3+ - DEFERRED (Until Gmail/AOL Full Functionality Confirmed)
+The following providers are **DEFERRED** until Gmail and AOL achieve full functionality (setup, multi-account, inbox+spam scanning, production delete, rule add/update) on Windows and Android:
+
 - **Outlook.com/Office 365**: `OutlookAdapter` with OAuth 2.0 + Microsoft Graph API
-  - OData filtering for efficient queries
-  - Native folder operations
-  - Enterprise account support
-  - Well-known folders: inbox, junkemail, deleteditems
+  - Reason for deferral: Allows focused testing of Gmail/AOL before expanding provider support
+  - Planned for Phase 3+ after Gmail/AOL validation complete
   
 - **Yahoo Mail**: `GenericIMAPAdapter.yahoo()` with app password
-  - IMAP: imap.mail.yahoo.com:993 (SSL)
-  - OAuth support may be added later if Yahoo enables it
-
-### Phase 3 - Additional Consumer Platforms
+  - Reason for deferral: IMAP framework already proven with AOL; Yahoo support can wait until Gmail/AOL validated
+  - Planned for Phase 3+ after Gmail/AOL validation complete
+  
 - **iCloud Mail**: `GenericIMAPAdapter.icloud()` with app-specific password
-  - IMAP: imap.mail.me.com:993 (SSL)
-  - Requires 2FA enabled on Apple ID
+  - Reason for deferral: Lower priority; IMAP framework covers generic support
+  - Planned for Phase 3+ after Gmail/AOL validation complete
   
 - **ProtonMail**: Custom adapter using ProtonMail Bridge or API
-  - Bridge: Local IMAP/SMTP server for ProtonMail
-  - Native API: If ProtonMail provides mobile SDK
+  - Reason for deferral: Requires Bridge setup; lower priority until core providers validated
+  - Planned for Phase 3+ after Gmail/AOL validation complete
   
-- **Zoho Mail**: IMAP + OAuth support
-  - IMAP: imap.zoho.com:993 (SSL)
-  
-- **Fastmail**: `GenericIMAPAdapter` with app password
-  - IMAP: imap.fastmail.com:993 (SSL)
-
-### Phase 4 - Extended Coverage
-- **GMX/Mail.com**: Generic IMAP adapter
-- **Yandex Mail**: Generic IMAP adapter
-- **Tutanota**: Native API if available
-- **Mailbox.org**: Generic IMAP adapter
-- **Any Custom Server**: Manual IMAP configuration with server details
-
-### Email Providers Recommended for Consideration
-Based on market share and user requests:
-1. **Gmail** (Highest priority - largest user base)
-2. **Outlook/Hotmail** (Second highest - Microsoft ecosystem)
-3. **Yahoo Mail** (Third - still significant user base)
-4. **iCloud Mail** (Apple ecosystem users)
-5. **ProtonMail** (Privacy-focused users)
-6. **AOL Mail** (Legacy but still active, good for MVP due to simple IMAP)
-7. **Custom IMAP** (Power users with self-hosted email)
+- **Custom IMAP**: Manual IMAP configuration
+  - Reason for deferral: Power user feature; implement after core providers working end-to-end
+  - Planned for Phase 4+ after Gmail/AOL and Outlook/Yahoo validated
 
 ## Development Phases
 
@@ -592,9 +582,9 @@ Based on market share and user requests:
    - ✅ EmailScanProvider includes JUNK_FOLDERS_BY_PROVIDER mapping:
      - AOL: ['Bulk Mail', 'Spam']
      - Gmail: ['Spam', 'Trash']
+     - iCloud: ['Junk', 'Trash']
      - Outlook: ['Junk Email', 'Spam']
      - Yahoo: ['Bulk', 'Spam']
-     - iCloud: ['Junk', 'Trash']
    - ✅ Added getJunkFoldersForProvider(platformId) method
    - ✅ Added setCurrentFolder(folderName) for UI progress display
    - ✅ Added getDetailedStatus() for "Scanning Inbox: 40/88" display
@@ -711,8 +701,8 @@ Based on market share and user requests:
    - Provider-specific folder names via `JUNK_FOLDERS_BY_PROVIDER` map
    - AOL: ['Bulk Mail', 'Spam']
    - Gmail: ['Spam', 'Trash']
-   - Outlook: ['Junk Email', 'Spam']
    - Yahoo: ['Bulk', 'Spam']
+   - Outlook: ['Junk Email', 'Spam']
    - iCloud: ['Junk', 'Trash']
 
 6. **_ScanModeSelector Widget** (integrated into AccountSetupScreen):
@@ -763,7 +753,7 @@ Based on market share and user requests:
 
 ### Phase 2: Multi-Platform Support via Translator Layer
 **Duration**: 4-6 weeks  
-**Goal**: Support Gmail, Outlook.com, Yahoo with proper OAuth flows using unified translator abstraction  
+**Goal**: Support Gmail, Yahoo, Outlook.com... with proper OAuth flows using unified translator abstraction  
 **Storage Enhancement**: Conditionally add SQLite for email cache & tracking (only if Phase 1 profiling shows need)
 
 #### 2.1 Complete Translator Layer Implementation
@@ -862,7 +852,7 @@ Based on market share and user requests:
   - Sync layer: Load YAML → populate in-memory cache → use SQLite for email tracking
 - **ELSE**: Continue with pure YAML approach
 
-**Deliverable**: App supports 4 major providers (AOL, Gmail, Outlook.com, Yahoo) with unified translator layer and optimized storage strategy
+**Deliverable**: App supports 4 major providers (AOL, Gmail, iphone email, Outlook.com, Yahoo) with unified translator layer and optimized storage strategy
 
 **Success Criteria**:
 - All 4 platforms functional via `SpamFilterPlatform` interface

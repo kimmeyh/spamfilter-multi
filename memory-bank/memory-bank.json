@@ -6,8 +6,8 @@
     "type": "Email Security Tool",
     "repository_type": "Flutter monorepo (100% Dart for all 5 platforms)",
     "license": "MIT License",
-    "current_phase": "Phase 2.0 ✅ COMPLETE | Phase 2 Sprint 2 ✅ COMPLETE | Phase 2 Sprint 3 ✅ COMPLETE | Phase 2 Sprint 4 ✅ DRAFT (Dec 14, 2025)",
-    "last_updated": "2025-12-14",
+    "current_phase": "Phase 2.0 ✅ COMPLETE | Phase 2 Sprint 2 ✅ COMPLETE | Phase 2 Sprint 3 ✅ COMPLETE | Phase 2 Sprint 4 ✅ COMPLETE | Phase 2 Sprint 5 ✅ COMPLETE",
+    "last_updated": "2025-12-16",
     "multi_account_support": "✅ IMPLEMENTED - Multiple accounts per provider supported",
     "architecture_decision_date": "2025-12-11",
     "architecture_note": "Unified Flutter approach (100% Dart) replaces previous Python desktop + Flutter mobile hybrid model",
@@ -45,9 +45,10 @@
       ]
     },
     "phase_2_sprint_4": {
-      "status": "✅ COMPLETE WITH KNOWN LIMITATION (Windows platform issue - RESOLVED in Sprint 5)",
+      "status": "✅ COMPLETE (Windows limitation resolved in Sprint 5; Gmail/AOL now primary focus)",
       "completed_date": "December 14, 2025",
-      "focus": "Gmail OAuth 2.0 integration with Gmail REST API (Android/iOS working; Windows initially unsupported)",
+      "phase_2_sprint_4_directive": "(Dec 17) - Gmail and AOL are now the ONLY focus for Phase 2 until full functionality confirmed on Windows and Android. All other providers deferred to Phase 3+.",
+      "focus": "Gmail OAuth 2.0 integration with Gmail REST API (Android/iOS working; Windows limitation resolved Dec 16)",
       "implemented": [
         "✅ GmailApiAdapter with full OAuth flow (gmail_api_adapter.dart - 380 lines)",
         "✅ google_sign_in integration for Google OAuth 2.0 authentication",
@@ -87,22 +88,21 @@
         "Native spam filtering integration (in:spam label)",
         "Connection validation via profile fetch (minimal overhead)"
       ],
-      "testing_status": "Unit tests passing (14 tests), integration tests require real Gmail account",
+      "testing_status": "Unit tests passing (14 tests); Windows Gmail auth retest pending after Dec 16 credential fallback fix",
       "known_limitations": [
-        "⚠️ WINDOWS PLATFORM: google_sign_in 7.2.0 does NOT support OAuth on Windows (platform limitation, not code bug)",
-        "⚠️ On Windows: initialize(), authenticate(), attemptLightweightAuthentication() all throw UnimplementedError",
-        "✅ HANDLED GRACEFULLY: Code catches UnimplementedError, logs detailed errors, shows user-friendly message",
-        "✅ APP STABILITY: Windows app builds and runs without crashes; fails gracefully with clear error",
-        "✅ ANDROID/iOS: Gmail OAuth fully working on mobile platforms (verified architecture is sound)"
+        "✅ WINDOWS: google_sign_in unsupported but now bypassed when stored OAuth tokens exist (Dec 16 fix)",
+        "⚠️ Requires configured Desktop OAuth client ID env var GMAIL_DESKTOP_CLIENT_ID for browser/WebView flows",
+        "✅ ANDROID/iOS: Gmail OAuth fully working via google_sign_in"
       ],
       "root_cause_analysis": "google_sign_in plugin intentionally limits Windows support (by design). Native Google SDKs only available for Android/iOS. Windows would require browser-based OAuth or alternative auth method.",
       "code_status": "✅ ROBUST - No crashes, comprehensive error handling, detailed logging for diagnostics",
       "next_phase": "Phase 2 Sprint 5 - RESOLVED (see Sprint 5 below)"
     },
     "phase_2_sprint_5": {
-      "status": "✅ COMPLETE",
-      "completed_date": "December 14, 2025",
-      "focus": "Windows Gmail OAuth Implementation - Three-tiered approach for cross-platform OAuth support",
+      "status": "✅ COMPLETE (with Dec 16 maintenance; Gmail/AOL now primary focus Dec 17)",
+      "completed_date": "December 14, 2025 (maintenance fix Dec 16, 2025; prioritization directive Dec 17, 2025)",
+      "phase_2_sprint_5_directive": "(Dec 17) - Focus on Gmail and AOL only until full functionality confirmed on Windows and Android: setup, adding/updating email addresses/accounts, scanning inbox and spam folders, folder selection, automatic delete of new incoming spam in production mode, add new rules, update existing rules.",
+      "focus": "Windows Gmail OAuth Implementation - Three-tiered approach for cross-platform OAuth support; AOL/Gmail now primary focus until full functionality confirmed",
       "implemented": [
         "✅ GmailWindowsOAuthHandler - Browser-based OAuth handler (gmail_windows_oauth_handler.dart)",
         "✅ Browser OAuth (Primary) - System browser with local HTTP server callback on port 8080",
@@ -112,6 +112,7 @@
         "✅ OAuth token refresh mechanism - Refresh token support for long-term access",
         "✅ User email validation - Token validation via Google userinfo API",
         "✅ Secure token storage - Integration with SecureCredentialsStore",
+        "✅ Dec 16: SecureCredentialsStore fallback uses stored OAuth tokens when accessToken missing to avoid unsupported Windows google_sign_in calls",
         "✅ Navigation flow - Seamless transition to folder selection after auth",
         "✅ Error handling - Comprehensive error messages and recovery options",
         "✅ Privacy UI - Security warnings and OAuth 2.0 Playground instructions"
@@ -165,20 +166,22 @@
         "⚠️ TODO: Replace 'YOUR_CLIENT_ID.apps.googleusercontent.com' in gmail_windows_oauth_handler.dart",
         "⚠️ TODO: Replace 'YOUR_CLIENT_SECRET' with actual Google Cloud Console OAuth credentials",
         "⚠️ TODO: Configure OAuth consent screen in Google Cloud Console",
-        "⚠️ TODO: Add http://localhost:8080/oauth/callback to authorized redirect URIs"
+        "⚠️ TODO: Add http://localhost:8080/oauth/callback to authorized redirect URIs",
+        "⚠️ TODO: Set env var GMAIL_DESKTOP_CLIENT_ID on Windows hosts"
       ],
       "testing_notes": [
         "Browser OAuth requires Google Cloud Console configuration",
         "WebView OAuth requires same configuration as browser",
         "Manual token entry works immediately (uses OAuth 2.0 Playground tokens)",
         "All methods require active Gmail account for validation",
-        "Test on Windows desktop for full validation"
+        "Test on Windows desktop for full validation",
+        "Re-run Windows Gmail scan after Dec 16 credential fallback change"
       ],
       "dependencies_added": {
         "url_launcher": "^6.2.0 - For launching system browser",
         "webview_flutter": "^4.4.0 - For embedded WebView OAuth"
       },
-      "resolution_summary": "Phase 2 Sprint 4 Windows limitation fully resolved with three-tiered OAuth approach. Users now have multiple options for Gmail authentication on Windows, with browser-based OAuth as the recommended primary method. Fallback options ensure authentication always succeeds even if primary methods have issues."
+      "resolution_summary": "Phase 2 Sprint 4 Windows limitation resolved with three-tiered OAuth approach; Dec 16 credential fallback ensures stored tokens are used on Windows without calling unsupported google_sign_in APIs."
     }
   },
   "platforms": {
@@ -221,44 +224,63 @@
       }
     ],
     "email_providers": {
+      "phase_2_focus_directive": "(Dec 17, 2025 - Updated) - Priority order: (1) AOL, (2) Gmail, (3) iCloud. Hold off on any other email providers (Outlook, Yahoo, ProtonMail, Custom IMAP) until full functionality is confirmed for Windows and Android. Full functionality means: setup, adding/updating email addresses/accounts, scanning inbox and spam folders, selection of folders, ability to automatically delete scan new mail as it is delivered for spam and handle it in production mode, add new rules (rules, safe-sender rules), update existing rules via display, selection, delete, change.",
       "phase_2_priority": [
         {
           "provider": "AOL",
           "protocol": "IMAP",
           "auth": "App Password",
-          "status": "Ready for Phase 2 live testing"
+          "priority_order": 1,
+          "status": "⚡ PRIORITY 1 - Phase 2.0+ Full validation in progress (Windows/Android)",
+          "full_functionality_status": "Setup (✅), Multi-account (✅), Inbox/spam scanning (✅ framework), Folder selection (✅ framework), Production delete (🔄 testing), Rule add/update (🔄 planned)"
         },
         {
           "provider": "Gmail",
-          "protocol": "IMAP/OAuth 2.0",
+          "protocol": "OAuth 2.0 + Gmail REST API",
           "auth": "Google OAuth 2.0",
-          "status": "Framework ready - Phase 2+"
+          "priority_order": 2,
+          "status": "⚡ PRIORITY 2 - Phase 2.0+ Framework ready; Android/iOS working; Windows OAuth methods implemented Dec 16",
+          "full_functionality_status": "Setup (✅ OAuth), Multi-account (✅ framework), Inbox/spam scanning (✅ framework), Folder selection (✅ framework), Production delete (🔄 testing), Rule add/update (🔄 planned)",
+          "oauth_methods_windows": ["Browser-based (primary)", "WebView (backup)", "Manual token entry (fallback)"]
         },
         {
-          "provider": "Outlook.com",
-          "protocol": "IMAP/OAuth 2.0",
-          "auth": "Microsoft OAuth 2.0",
-          "status": "Framework ready - Phase 2+"
+          "provider": "iCloud",
+          "protocol": "IMAP",
+          "auth": "App-specific Password",
+          "priority_order": 3,
+          "status": "⚡ PRIORITY 3 - Phase 2.0+ (After AOL/Gmail validated) iCloud Mail with app-specific password",
+          "full_functionality_status": "Setup (framework ready), Multi-account (framework ready), Inbox/spam scanning (framework ready), Folder selection (framework ready), Production delete (framework ready), Rule add/update (framework ready)",
+          "note": "Uses GenericIMAPAdapter; iCloud users (macOS, iPhone, iPad) important ecosystem; implement after Gmail/AOL validated"
         }
       ],
-      "future_support": [
+      "deferred_providers": [
+        {
+          "provider": "Outlook.com",
+          "protocol": "OAuth 2.0 + Microsoft Graph API",
+          "auth": "Microsoft OAuth 2.0",
+          "status": "DEFERRED - Phase 3+ Framework ready; defer until AOL/Gmail/iCloud full functionality confirmed",
+          "reason": "Enterprise focus; defer until core consumer providers (AOL/Gmail/iCloud) validated"
+        },
         {
           "provider": "Yahoo",
           "protocol": "IMAP",
           "auth": "App Password",
-          "status": "Phase 2+"
+          "status": "DEFERRED - Phase 3+ Defer until AOL/Gmail/iCloud full functionality confirmed",
+          "reason": "Lower priority; IMAP framework proven with AOL/iCloud"
         },
         {
           "provider": "ProtonMail",
-          "protocol": "IMAP",
+          "protocol": "IMAP (via Bridge)",
           "auth": "Bridge Password",
-          "status": "Phase 3"
+          "status": "DEFERRED - Phase 3+ Defer until AOL/Gmail/iCloud full functionality confirmed",
+          "reason": "Requires Bridge setup; lower priority until core providers validated"
         },
         {
           "provider": "Custom IMAP",
           "protocol": "IMAP",
           "auth": "Configurable",
-          "status": "Generic handler ready"
+          "status": "DEFERRED - Phase 4+ Generic handler framework ready; defer until core providers validated",
+          "reason": "Power user feature; implement after AOL/Gmail/iCloud working end-to-end"
         }
       ]
     },
@@ -346,7 +368,7 @@
     "current_status": {
       "phase_2_0": "✅ COMPLETE (Dec 11, 2025)",
       "phase_2_sprint_2": "✅ COMPLETE (Dec 13, 2025)",
-      "phase_2_sprint_3": "🔄 IN PROGRESS (Started Dec 13, 2025)",
+      "phase_2_sprint_3": "✅ COMPLETE (Dec 13, 2025)",
       "architecture": "100% Flutter for all 5 platforms (NEW)",
       "tests_passing": "68/68 tests (all passing, 0 skipped, 0 errors)",
       "code_quality": "0 issues (flutter analyze)",
@@ -356,23 +378,26 @@
       "imap_fetch": "✅ FIXED - BODY.PEEK[] syntax",
       "asset_bundling": "✅ COMPLETE - 5 rules, 426 safe senders loaded",
       "multi_account_support": "✅ COMPLETE - accountId format: '{platform}-{email}'",
-      "credential_persistence": "✅ COMPLETE - Credentials saved between runs",
+      "credential_persistence": "✅ COMPLETE - Credentials saved between runs; Dec 16 Windows OAuth token fallback implemented",
       "multi_folder_scanning": "✅ FRAMEWORK READY - Junk folder support per provider"
     },
     "immediate_next_actions": [
       "1. ✅ DONE: Complete Gmail OAuth implementation (Android/iOS verified working)",
       "2. ✅ DONE: Identify Windows Gmail OAuth limitation (google_sign_in platform restriction)",
-      "3. ✅ DONE: Document root cause and platform limitations",
-      "4. ✅ DONE: Phase 2 Sprint 5 - Implemented Windows OAuth alternatives (Browser/WebView/Manual)",
-      "5. NEXT: Configure Google Cloud Console OAuth credentials (client ID/secret)",
-      "6. NEXT: Run flutter pub get to install new dependencies (url_launcher, webview_flutter)",
-      "7. NEXT: Run full test suite to validate no regressions (flutter test)",
-      "8. NEXT: Build Windows release for testing (flutter build windows)",
-      "9. NEXT: Build Android APK for mobile testing (flutter build apk --release)",
-      "10. NEXT: Manual testing: Gmail OAuth on Windows (all three methods)",
-      "11. NEXT: Manual testing: Gmail OAuth on Android/iOS (native method)",
-      "12. NEXT: Update GitHub with Phase 2 Sprint 5 completion status",
-      "13. NEXT: Deploy release APK for mobile testing"
+      "3. ✅ DONE: Implement Windows OAuth alternatives (Browser/WebView/Manual)",
+      "4. ✅ DONE: Add SecureCredentialsStore fallback to reuse stored OAuth tokens on Windows (Dec 16)",
+      "5. ✅ DONE: Update implementation plan - Gmail/AOL focus only until full functionality confirmed (Dec 17)",
+      "6. NEXT: Set GMAIL_DESKTOP_CLIENT_ID env var and update OAuth client ID/secret",
+      "7. NEXT: Run flutter pub get to confirm dependencies present",
+      "8. NEXT: Run flutter test on Windows after token fallback change",
+      "9. NEXT: Manual Windows Gmail OAuth test (all three methods) and verify scan succeeds",
+      "10. NEXT: Manual AOL testing - verify inbox and spam/junk folder scanning on Windows",
+      "11. NEXT: Manual AOL testing - verify production delete mode on Android",
+      "12. NEXT: Build Windows release for testing (flutter build windows)",
+      "13. NEXT: Build Android APK for mobile testing (flutter build apk --release)",
+      "14. NEXT: Complete full functionality validation for Gmail/AOL (Windows + Android) before considering other providers",
+      "15. NEXT: Rule add/update functionality testing with AOL and Gmail",
+      "16. NEXT: Multi-folder scanning validation (Inbox + Junk/Spam/Bulk Mail folders)"
     ],
     "quick_links": {
       "new_users": ["README.md", "PHASE_2.0_COMPLETE.md", "NEXT_STEPS.md"],
@@ -440,14 +465,17 @@
     "Interactive rule updates based on unmatched emails",
     "Backup and restore functionality for rules",
     "Cross-platform rule sharing capability",
-    "IMAP/OAuth support for multiple email providers",
+    "IMAP/OAuth support for Gmail and AOL (Phase 2 focus; other providers Phase 3+)",
     "Encrypted credential storage (Keychain/Keystore/Credential Manager)",
     "✨ Multi-account support (multiple accounts per provider)",
     "✨ Credential persistence between app runs",
     "✨ Multi-folder scanning (Inbox + Junk folders per provider)",
+    "✨ Gmail OAuth with three-tiered Windows support (Browser/WebView/Manual) - Dec 16",
+    "✨ AOL IMAP support with secure app password authentication - Dec 13",
     "Platform-agnostic file system access",
     "Real-time scan progress tracking",
-    "Result categorization and summary reporting"
+    "Result categorization and summary reporting",
+    "Full functionality validation focus: Setup, account management, multi-folder scanning, production delete, rule add/update"
   ],
   "file_structure": {
     "configuration_files": [

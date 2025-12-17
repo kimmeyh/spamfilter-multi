@@ -1,12 +1,12 @@
 Next:----------------------------------------
-@workspace use 'memory-bank/memory-bank.json' (for quick reference), 
-'memory-bank/mobile-app-plan.md' (for roadmap), and 
-'mobile-app/IMPLEMENTATION_SUMMARY.md' (for technical details)
-to understand the workspace.
-
+@workspace Must read and review the following files (in this workspace) to understand the workspace first:
+  'memory-bank/memory-bank.json' (for quick reference), 
+  'memory-bank/mobile-app-plan.md' (for roadmap), 
+  'mobile-app/IMPLEMENTATION_SUMMARY.md' (for technical details)
 Context:
 - Mono-repo: Flutter mobile, web and desktop (shared YAML rules)
-- 57+ tests passing, 0 code quality issues
+- 78+ tests passing, 0 code quality issues
+Request:
 
 Update implementation plan to hold off on any email providers other than gmail and aol until full functionality is confirmed for windows and android (setup, adding/updating email addresses/accounts; scanning inbox, spam folders, selection of folders; ability to automatically delete scan new mail as it is delivered for spam and handle it in production mode; add new rules (rules, safe-sender rules); update existing rules via display, selection, delete, change.
 
@@ -16,7 +16,14 @@ When complete, update 'memory-bank/memory-bank.json' (for quick reference),
 'mobile-app/IMPLEMENTATION_SUMMARY.md' (for technical details) 
 
 
-Currently only checking the inbox.  Will need to add checking the "junk folder"(s) for each email address (unique per provider/email address?).
+
+Currently only checking the inbox.  Will need to add default checking the "junk folder"(s) for each email address (unique per provider/email address?).
+
+Need to be able to get back to the account setup screen from the email list screen.
+
+Need to be able to get back to the email list screen from the Scan progress screen
+
+Need Select account page to show email address and platform/provider/auth method on single line.  Assume less than 20 accounts per page, nearly unlimited number of accounts per user.
 
 Phase 2 Sprint 3 - Gmail OAuth Integration & Rule Editor UI
 
@@ -43,16 +50,14 @@ When complete, update 'memory-bank/memory-bank.json' (for quick reference),
 'mobile-app/IMPLEMENTATION_SUMMARY.md' (for technical details) 
 
 Template:----------------------------------------
-@workspace use 'memory-bank/memory-bank.json' (for quick reference), 
-'memory-bank/mobile-app-plan.md' (for roadmap), and 
-'mobile-app/IMPLEMENTATION_SUMMARY.md' (for technical details)
-to understand the workspace.
-
+@workspace Must review to understand the workspace before starting request below:
+  'memory-bank/memory-bank.json' (for quick reference), 
+  'memory-bank/mobile-app-plan.md' (for roadmap), and 
+  'mobile-app/IMPLEMENTATION_SUMMARY.md' (for technical details)
 Context:
-- Mono-repo: Python desktop + Flutter mobile (shared YAML rules)
-- Phase 2.0 ✅ Complete (storage & state management done)
-- Phase 2 🔄 Ready to start (UI development needed)
-- 50+ tests passing, 0 code quality issues
+- Mono-repo: Flutter mobile, web and desktop (shared YAML rules)
+- 78+ tests passing, 0 code quality issues
+Request:
 
 <request>
 
@@ -149,6 +154,11 @@ cd D:\Data\Harold\github\OutlookMailSpamFilter && ./.venv/Scripts/Activate.ps1 &
 
 ------------------------------------------------------------------------------
 Completed:
+
+Proceed with next steps:
+Set GMAIL_DESKTOP_CLIENT_ID and rerun Windows Gmail OAuth (browser/WebView/manual) to confirm scans succeed with stored tokens.
+Run flutter pub get, flutter test, and a Windows build to verify no regressions.
+Validate multi-folder scans include provider junk folders; keep scope to Gmail/AOL until Windows/Android flows are confirmed.
 
 Current Issue: Windows Gmail OAuth Limitation
 Root Cause: google_sign_in 7.2.0 plugin does NOT implement OAuth authentication on Windows platform (by design, not a code bug). Android/iOS have native Google SDKs, but Windows does not.
