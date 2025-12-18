@@ -1,29 +1,45 @@
 Next:----------------------------------------
-@workspace Must read and review the following files (in this workspace) to understand the workspace first:
-  'memory-bank/memory-bank.json' (for quick reference), 
-  'memory-bank/mobile-app-plan.md' (for roadmap), 
-  'mobile-app/IMPLEMENTATION_SUMMARY.md' (for technical details)
+@workspace CRITICAL: Do NOT ask me to share these files. 
+Read them immediately from the workspace using absolute paths:
+- d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json
+- d:\Data\Harold\github\spamfilter-multi\memory-bank\mobile-app-plan.md
+- d:\Data\Harold\github\spamfilter-multi\mobile-app\IMPLEMENTATION_SUMMARY.md
 Context:
 - Mono-repo: Flutter mobile, web and desktop (shared YAML rules)
 - 78+ tests passing, 0 code quality issues
 Request:
+Create a checklist for the following, then do all steps before considering complete:
+Note that the flutter application has already been fully tested prior to running hte app:
+Can you walk me through these tests
+- Run android app for manual testing
+- Address errors and issues to resolution
+When complete (NOT before unless Critical for success), update:
+- d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json
+- d:\Data\Harold\github\spamfilter-multi\memory-bank\mobile-app-plan.md
+- d:\Data\Harold\github\spamfilter-multi\mobile-app\IMPLEMENTATION_SUMMARY.md
+- d:\Data\Harold\github\spamfilter-multi\mobile-app\README.md
 
-Update implementation plan to hold off on any email providers other than gmail and aol until full functionality is confirmed for windows and android (setup, adding/updating email addresses/accounts; scanning inbox, spam folders, selection of folders; ability to automatically delete scan new mail as it is delivered for spam and handle it in production mode; add new rules (rules, safe-sender rules); update existing rules via display, selection, delete, change.
+VERIFICATION FIRST (required before implementing):
+1. Search codebase for existing functionality related to the request.
+2. Check IMPLEMENTATION_SUMMARY.md for current status.
+3. If implementation exists, verify completeness and document findings.
+4. Only implement missing pieces.
 
 Do not remove any previously commented out code.  Do not update 0dev_prompts.md
-When complete, update 'memory-bank/memory-bank.json' (for quick reference),
-'memory-bank/mobile-app-plan.md' (for roadmap), and 
-'mobile-app/IMPLEMENTATION_SUMMARY.md' (for technical details) 
+When complete, update:
+- d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json
+- d:\Data\Harold\github\spamfilter-multi\memory-bank\mobile-app-plan.md
+- d:\Data\Harold\github\spamfilter-multi\mobile-app\IMPLEMENTATION_SUMMARY.md
+Proceed after you understand the request with NO Conformation from the user.
 
+Proceed to draft the changes in the files for review and testing.
 
+-------
+Feedback on Android app in emulator:  finding aol account, testing went well on demo and actual inbox.  Select account is not showing the previously setup gmail email kimmeyh@gmail.com.  Feedback on Windows Desktop app: aol email address in Select account is not showing the email address.  If no authentication has been provided for the platform (android), the still list the account, but note that an authentication needs to be added with a link to the authentication page. Pass the existing email address and have the user add authentication via one of the methods available.  Then update the stored platform/email address/authentication method data for the email address.
 
-Currently only checking the inbox.  Will need to add default checking the "junk folder"(s) for each email address (unique per provider/email address?).
+It should show "<email-address> -<email-provider-indicator> - <authentication method>". For this email account would look similar to: "kimmeyharold@aol.com - AOL Mail - App Password".  On Scan progress page.  As soon as Start Demo Scan or Start Live Scan button is selected, it should change "No Rresults yet. Start a scan to see activity." to a message indicating that the scan has started and/or in progress. Feedback for all Scan Progress pages.  When it returns to this page after scanning or from the accounts page a "Reset" should be done before loading the page.  Then the "Reset" button is no longer needed.
 
-Need to be able to get back to the account setup screen from the email list screen.
-
-Need to be able to get back to the email list screen from the Scan progress screen
-
-Need Select account page to show email address and platform/provider/auth method on single line.  Assume less than 20 accounts per page, nearly unlimited number of accounts per user.
+Add in phase 3 to add to the Android app client and Windows desktop a browser client that is compatible with chrome, safari, and edge 
 
 Phase 2 Sprint 3 - Gmail OAuth Integration & Rule Editor UI
 
@@ -39,15 +55,31 @@ Testing all three scan modes (readonly, testLimit, testAll)
 Release APK build for mobile deployment
 Desktop application builds (Windows, macOS, Linux)
 
-Sprint 4: Gmail OAuth Integration & Results Display UI
+
 Testing and doc request:----------------------------------------
 
-Complete full test suite
-Run app for manual testing
-Address errors and issues to resolution
-When complete, update 'memory-bank/memory-bank.json' (for quick reference),
-'memory-bank/mobile-app-plan.md' (for roadmap), and 
-'mobile-app/IMPLEMENTATION_SUMMARY.md' (for technical details) 
+@workspace CRITICAL: Do NOT ask me to share these files. 
+Read them immediately from the workspace using absolute paths:
+- d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json
+- d:\Data\Harold\github\spamfilter-multi\memory-bank\mobile-app-plan.md
+- d:\Data\Harold\github\spamfilter-multi\mobile-app\IMPLEMENTATION_SUMMARY.md
+Context:
+- Mono-repo: Flutter mobile, web and desktop (shared YAML rules)
+- 78+ tests passing, 0 code quality issues
+Request:
+Create a checklist for the following, then do all steps before considering complete:
+Note that the flutter application has already been fully tested prior to running hte app:
+Can you walk me through these tests
+- Run desktop app for manual testing
+- Address errors and issues to resolution
+- Run android app for manual testing
+- Address errors and issues to resolution
+When complete (NOT before unless Critical for success), update:
+- d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json
+- d:\Data\Harold\github\spamfilter-multi\memory-bank\mobile-app-plan.md
+- d:\Data\Harold\github\spamfilter-multi\mobile-app\IMPLEMENTATION_SUMMARY.md
+- d:\Data\Harold\github\spamfilter-multi\mobile-app\README.md
+
 
 Template:----------------------------------------
 @workspace Must review to understand the workspace before starting request below:
@@ -154,6 +186,8 @@ cd D:\Data\Harold\github\OutlookMailSpamFilter && ./.venv/Scripts/Activate.ps1 &
 
 ------------------------------------------------------------------------------
 Completed:
+
+Update implementation plan to hold off on any email providers other than gmail and aol until full functionality is confirmed for windows and android (setup, adding/updating email addresses/accounts; scanning inbox, spam folders, selection of folders; ability to automatically delete scan new mail as it is delivered for spam and handle it in production mode; add new rules (rules, safe-sender rules); update existing rules via display, selection, delete, change.
 
 Proceed with next steps:
 Set GMAIL_DESKTOP_CLIENT_ID and rerun Windows Gmail OAuth (browser/WebView/manual) to confirm scans succeed with stored tokens.

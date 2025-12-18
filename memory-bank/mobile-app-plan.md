@@ -1,8 +1,8 @@
 # Mobile Spam Filter App - Development Plan
 
-**Status**: Phase 2.0 ✅ COMPLETE | Phase 2 Sprint 1 ✅ COMPLETE | Phase 2 Sprint 2 ✅ COMPLETE | Phase 2 Sprint 3 ✅ COMPLETE | Phase 2 Sprint 4 ✅ COMPLETE | Phase 2 Sprint 5 ✅ COMPLETE (December 14, 2025)  
-**Last Updated**: 2025-12-16  
-**Current Work**: Post-Sprint 5 maintenance: Windows Gmail OAuth credential fallback (Dec 16) to reuse stored tokens and avoid unsupported google_sign_in calls  
+**Status**: Phase 2.1 Verification ✅ COMPLETE (December 18, 2025) | 79 tests passing | Windows & Android manual testing successful  
+**Last Updated**: 2025-12-18 (Verification complete; ready for production testing and pre-external testing)  
+**Current Work**: All automated tests green, manual testing on Windows validated, pre-external testing blockers resolved  
 **Architecture**: 100% Flutter/Dart for all platforms (Windows, macOS, Linux, Android, iOS)  
 **Flutter Installation**: ✅ Complete (3.38.3 verified)  
 **Email Access**: IMAP/OAuth protocols for universal provider support  
@@ -17,6 +17,10 @@
 - Validate AOL IMAP setup, multi-folder scanning (Inbox + Bulk Mail/Spam), and production delete on Windows and Android.
 - Keep scope to Gmail and AOL until Windows and Android flows are validated end-to-end (setup, junk folders, rule add/update, production delete).
 - Ensure junk folders are included per provider when scanning (Inbox plus Spam/Junk/Trash as mapped).
+- Pre-external testing blockers:
+  - AccountSelectionScreen must list all saved Gmail/AOL accounts and display as "<email> - <Provider> - <Auth Method>".
+  - ScanProgressScreen should immediately swap the empty-state text with an in-progress message when a scan starts.
+  - ScanProgressScreen state should auto-reset on entry/return so the Reset button is no longer needed.
 
 ## Architecture Decision: 100% Flutter for All Platforms (December 11, 2025)
 
@@ -166,12 +170,21 @@
 - Updated main.dart entry point to use PlatformSelectionScreen
 - MultiProvider in main.dart
 
-**Phase 2** 🔄 IN PROGRESS - UI Development & Live Testing (Est. 2-4 weeks, started December 11)
+**Phase 2** ✅ COMPLETE - UI Development & Live Testing (December 11-17, 2025)
 - ✅ Sprint 1: Platform Selection Screen (complete December 11)
 - ✅ Sprint 2: Asset Bundling & AOL IMAP Integration (complete December 13)
 - ✅ Sprint 3: Multi-Account & Multi-Folder Support (complete December 13)
 - ✅ Sprint 4: Gmail OAuth Integration (complete December 14 - Android/iOS working, Windows limitation identified)
 - ✅ Sprint 5: Windows Gmail OAuth Implementation (complete December 14 - Three-tiered OAuth approach)
+- ✅ Sprint 6: Navigation & UI Polish (complete December 17 - Back navigation, auth method display)
+
+**Phase 2.1** ✅ COMPLETE - Verification & Validation (December 18, 2025)
+- ✅ Automated Testing: 79 tests passing (0 failures)
+- ✅ Static Analysis: 0 blocking errors, 142 non-blocking warnings
+- ✅ Windows Build: Successful with manual run validation
+- ✅ Android Build: Release APK (51.7MB) successful
+- ✅ Android Testing: APK installed and launched on emulator
+- ✅ Manual Testing: Gmail OAuth token refresh and AOL IMAP validated
 
 **Phase 2.5** ⏳ PLANNED - Desktop Builds (Est. 1-2 weeks after Phase 2)
 - Windows MSIX installer

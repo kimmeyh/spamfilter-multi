@@ -15,6 +15,9 @@ void main() {
     // Build app and trigger first frame.
     await tester.pumpWidget(const SpamFilterApp());
 
+    // Let any one-shot delayed timers (e.g., 500ms init delays) fire.
+    await tester.pump(const Duration(milliseconds: 600));
+
     // Verify top-level material app is present.
     expect(find.byType(MaterialApp), findsOneWidget);
   });

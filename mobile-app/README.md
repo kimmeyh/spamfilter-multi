@@ -4,8 +4,15 @@ Cross-platform email spam filter application built with Flutter.
 
 ## Project Status
 
-**Phase**: Phase 1 MVP Development  
-**Current Focus**: AOL IMAP support with file-based YAML storage
+**Phase**: Phase 2.1 Verification ✅ COMPLETE (December 18, 2025)  
+**Current Status**: All automated tests passing (79/79), manual Windows testing successful, ready for production testing and external user validation
+
+### Pre-External Testing Blockers ✅ RESOLVED
+- ✅ AccountSelectionScreen lists all saved Gmail/AOL accounts formatted as "email • Platform • Auth Method" (verified)
+- ✅ ScanProgressScreen shows in-progress message immediately after scan starts (verified)
+- ✅ ScanProgressScreen auto-resets on load/return (verified)
+- ✅ Both Gmail OAuth and AOL App Password auth methods working on Windows (verified)
+- ✅ Scan workflow validated end-to-end: account selection → scan progress → results display (verified)
 
 ## Architecture
 

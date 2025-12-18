@@ -12,6 +12,15 @@ cd D:\Data\Harold\github\spamfilter-multi\mobile-app; flutter emulators --launch
   # in another PowerShell window, run flutter
   flutter run
 
+#   Another way
+powershell -NoProfile -ExecutionPolicy Bypass -File D:\Data\Harold\github\spamfilter-multi/mobile-app/scripts/run-emulator.ps1 -InstallReleaseApk
+
+# Runs the Android emulator app using the "abd monkey" command below with the package name
+adb shell monkey -p com.example.spamfilter_mobile -c android.intent.category.LAUNCHER 1
+
+#   Another way
+powershell -NoProfile -ExecutionPolicy Bypass -File D:\Data\Harold\github\spamfilter-multi/mobile-app/scripts/run-emulator.ps1
+
 # Build & Run APK on Emulator
 cd D:\Data\Harold\github\spamfilter-multi\mobile-app
 flutter build apk --release

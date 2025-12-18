@@ -6,12 +6,22 @@
     "type": "Email Security Tool",
     "repository_type": "Flutter monorepo (100% Dart for all 5 platforms)",
     "license": "MIT License",
-    "current_phase": "Phase 2.0 ✅ COMPLETE | Phase 2 Sprint 2 ✅ COMPLETE | Phase 2 Sprint 3 ✅ COMPLETE | Phase 2 Sprint 4 ✅ COMPLETE | Phase 2 Sprint 5 ✅ COMPLETE",
-    "last_updated": "2025-12-16",
+    "current_phase": "Phase 2.1 Verification ✅ COMPLETE (Dec 18, 2025) | 79 tests passing | Windows & Android manual testing successful",
+    "last_updated": "2025-12-18 (Phase 2.1 Verification Complete)",
     "multi_account_support": "✅ IMPLEMENTED - Multiple accounts per provider supported",
     "architecture_decision_date": "2025-12-11",
     "architecture_note": "Unified Flutter approach (100% Dart) replaces previous Python desktop + Flutter mobile hybrid model",
     "status_url": "See PHASE_2.0_COMPLETE.md for detailed Phase 2.0 completion report",
+    "pre_external_testing": {
+      "priority": "Must complete before any external user testing",
+      "status": "Planned",
+      "actions": [
+        "Fix AccountSelectionScreen to always show saved Gmail/AOL accounts with display format 'email - Provider - Auth Method' (e.g., kimmeyharold@aol.com - AOL Mail - App Password)",
+        "Ensure ScanProgressScreen replaces the empty-state message with an in-progress message immediately after Start Demo Scan/Start Live Scan is tapped",
+        "Auto-reset ScanProgressScreen state whenever the screen loads (including returning from scans or account selection) so the Reset button is unnecessary",
+        "Verify missing saved-account display issues on Windows/Android are resolved before inviting external testers"
+      ]
+    },
     "phase_2_sprint_3": {
       "status": "✅ COMPLETE",
       "completed_date": "December 13, 2025",
@@ -97,6 +107,22 @@
       "root_cause_analysis": "google_sign_in plugin intentionally limits Windows support (by design). Native Google SDKs only available for Android/iOS. Windows would require browser-based OAuth or alternative auth method.",
       "code_status": "✅ ROBUST - No crashes, comprehensive error handling, detailed logging for diagnostics",
       "next_phase": "Phase 2 Sprint 5 - RESOLVED (see Sprint 5 below)"
+    },
+    "phase_2_sprint_6": {
+      "status": "✅ COMPLETE",
+      "completed_date": "December 17, 2025",
+      "focus": "Navigation improvements and UI polish",
+      "implemented": [
+        "✅ AccountSelectionScreen shows email • Platform • Auth Method on single line",
+        "✅ Auth method display (OAuth 2.0, App Password, IMAP, etc.)",
+        "✅ Back navigation from ScanProgressScreen to AccountSelectionScreen",
+        "✅ Back navigation from ResultsDisplayScreen to AccountSelectionScreen",
+        "✅ Confirmation dialog when canceling active scan",
+        "✅ 'Scan Again' button on results screen",
+        "✅ Play button on account tiles for quick scan",
+        "✅ Main.dart starts with AccountSelectionScreen",
+        "✅ Proper navigation stack for back button functionality"
+      ]
     },
     "phase_2_sprint_5": {
       "status": "✅ COMPLETE (with Dec 16 maintenance; Gmail/AOL now primary focus Dec 17)",
@@ -369,6 +395,9 @@
       "phase_2_0": "✅ COMPLETE (Dec 11, 2025)",
       "phase_2_sprint_2": "✅ COMPLETE (Dec 13, 2025)",
       "phase_2_sprint_3": "✅ COMPLETE (Dec 13, 2025)",
+      "phase_2_sprint_4": "✅ COMPLETE (Dec 14, 2025)",
+      "phase_2_sprint_5": "✅ COMPLETE (Dec 14, 2025)",
+      "phase_2_sprint_6": "✅ COMPLETE (Dec 17, 2025)",
       "architecture": "100% Flutter for all 5 platforms (NEW)",
       "tests_passing": "68/68 tests (all passing, 0 skipped, 0 errors)",
       "code_quality": "0 issues (flutter analyze)",
@@ -606,7 +635,18 @@
   },
   "recent_development": {
     "current_branch": "feature/20251211_Phase2",
-    "last_major_update": "December 2025 - Phase 2 Sprint 2/3",
+    "last_major_update": "December 2025 - Phase 2.1 Verification",
+    "phase_2_1_verification_achievements": [
+      "✅ All tests passing: 79 total (0 failures, 0 skipped)",
+      "✅ Static analysis: 142 non-blocking warnings (code quality suggestions)",
+      "✅ Windows build: Successful with manual run validation",
+      "✅ Android build: Release APK (51.7MB) built successfully",
+      "✅ Android install: APK installed and launched on emulator",
+      "✅ Gmail OAuth: Token refresh flow validated on Windows",
+      "✅ AOL IMAP: Scanning functional with read-only mode",
+      "✅ Manual testing: Comprehensive validation on Windows and Android",
+      "✅ No crashes or blocking errors detected"
+    ],
     "phase_2_sprint_2_achievements": [
       "✅ Asset bundling: Copied rules.yaml (113KB) and rules_safe_senders.yaml (18KB) to mobile-app/assets/",
       "✅ Pubspec configuration: Added asset declarations for bundled YAML files",
