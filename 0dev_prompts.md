@@ -8,11 +8,10 @@ Context:
 - Mono-repo: Flutter mobile, web and desktop (shared YAML rules)
 - 78+ tests passing, 0 code quality issues
 Request:
-Create a checklist for the following, then do all steps before considering complete:
-Note that the flutter application has already been fully tested prior to running hte app:
-Can you walk me through these tests
-- Run android app for manual testing
-- Address errors and issues to resolution
+Do NOT continue without having read the workspace files as requested earlier in this prompt.
+
+Can you help with Mobile Android simulator Gmail Sign-in as all methods are giving 
+"Sign-In Error Sign in was cancelled or failed.
 When complete (NOT before unless Critical for success), update:
 - d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json
 - d:\Data\Harold\github\spamfilter-multi\memory-bank\mobile-app-plan.md

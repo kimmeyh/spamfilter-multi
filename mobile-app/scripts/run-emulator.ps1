@@ -2,7 +2,8 @@
 param(
   [string]$ProjectPath = "$(Split-Path $PSScriptRoot -Parent)",
   [string]$EmulatorId = "pixel34",
-  [switch]$InstallReleaseApk
+  [switch]$InstallReleaseApk,
+  [string]$PackageId = "com.example.spamfilter_mobile"
 )
 
 function Wait-For-AdbDevice {
@@ -16,11 +17,31 @@ function Wait-For-AdbDevice {
   }
 }
 
+function Wait-For-EmulatorBoot {
+  Write-Host "Waiting for emulator to complete boot..."
+  $booted = ""
+  $attempts = 0
+  while ($booted.Trim() -ne "1" -and $attempts -lt 180) { # up to ~6 minutes
+    $booted = adb shell getprop sys.boot_completed
+    Start-Sleep -Seconds 2
+    $attempts++
+  }
+  if ($booted.Trim() -ne "1") {
+    Write-Warning "Emulator did not finish booting in time. APK install may fail."
+  } else {
+    Write-Host "Emulator boot complete."
+  }
+}
+
 # Start emulator via Flutter (creates if already present)
 Write-Host "Launching emulator: $EmulatorId"
 flutter emulators --launch $EmulatorId | Out-Null
 
+# Ensure ADB is running cleanly before waiting
+adb kill-server | Out-Null
+adb start-server | Out-Null
 Wait-For-AdbDevice
+Wait-For-EmulatorBoot
 
 Push-Location $ProjectPath
 try {
@@ -30,7 +51,15 @@ try {
     $apk = Join-Path $ProjectPath "build/app/outputs/flutter-apk/app-release.apk"
     if (Test-Path $apk) {
       Write-Host "Installing APK: $apk"
-      adb install -r $apk | Write-Host
+      $installResult = adb install -r $apk 2>&1
+      Write-Host $installResult
+      if ($LASTEXITCODE -ne 0) {
+        Write-Warning "APK install failed (exit code $LASTEXITCODE). Printing recent logs for diagnostics..."
+        adb logcat -d | Select-String -Pattern "ActivityManager|AndroidRuntime|E/flutter|FATAL|Exception" -SimpleMatch | Out-String | Write-Output
+        return
+      }
+      Write-Host "Launching app ($PackageId)..."
+      adb shell monkey -p $PackageId -c android.intent.category.LAUNCHER 1 | Write-Host
     } else {
       Write-Warning "APK not found at $apk. Building debug run instead."
       flutter run

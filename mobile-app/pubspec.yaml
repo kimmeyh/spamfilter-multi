@@ -18,7 +18,7 @@ dependencies:
   intl: ^0.20.2
 
   # Phase 1 - IMAP Email Support (AOL MVP)
-  enough_mail: ^2.1.0
+  enough_mail: ^2.1.7
   
   # Storage & Security (Phase 1)
   flutter_secure_storage: ^9.0.0
@@ -51,3 +51,6 @@ flutter:
   assets:
     - assets/rules/rules.yaml
     - assets/rules/rules_safe_senders.yaml
+
+    # AOL IMAP CA certificate for custom SecurityContext
+    - assets/certs/aol_ca.pem
