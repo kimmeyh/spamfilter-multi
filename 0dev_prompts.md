@@ -9,14 +9,8 @@ Context:
 - 78+ tests passing, 0 code quality issues
 Request:
 Do NOT continue without having read the workspace files as requested earlier in this prompt.
-
 Can you help with Mobile Android simulator Gmail Sign-in as all methods are giving 
 "Sign-In Error Sign in was cancelled or failed.
-When complete (NOT before unless Critical for success), update:
-- d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json
-- d:\Data\Harold\github\spamfilter-multi\memory-bank\mobile-app-plan.md
-- d:\Data\Harold\github\spamfilter-multi\mobile-app\IMPLEMENTATION_SUMMARY.md
-- d:\Data\Harold\github\spamfilter-multi\mobile-app\README.md
 
 VERIFICATION FIRST (required before implementing):
 1. Search codebase for existing functionality related to the request.
@@ -25,15 +19,17 @@ VERIFICATION FIRST (required before implementing):
 4. Only implement missing pieces.
 
 Do not remove any previously commented out code.  Do not update 0dev_prompts.md
-When complete, update:
+When complete (NOT before unless Critical for success), update:
 - d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json
 - d:\Data\Harold\github\spamfilter-multi\memory-bank\mobile-app-plan.md
 - d:\Data\Harold\github\spamfilter-multi\mobile-app\IMPLEMENTATION_SUMMARY.md
-Proceed after you understand the request with NO Conformation from the user.
+- d:\Data\Harold\github\spamfilter-multi\mobile-app\README.md
 
 Proceed to draft the changes in the files for review and testing.
 
 -------
+For Android app, gmail setting - had to add a Firebase project at https://console.firebase.google.com/u/0/?pli=1
+
 Feedback on Android app in emulator:  finding aol account, testing went well on demo and actual inbox.  Select account is not showing the previously setup gmail email kimmeyh@gmail.com.  Feedback on Windows Desktop app: aol email address in Select account is not showing the email address.  If no authentication has been provided for the platform (android), the still list the account, but note that an authentication needs to be added with a link to the authentication page. Pass the existing email address and have the user add authentication via one of the methods available.  Then update the stored platform/email address/authentication method data for the email address.
 
 It should show "<email-address> -<email-provider-indicator> - <authentication method>". For this email account would look similar to: "kimmeyharold@aol.com - AOL Mail - App Password".  On Scan progress page.  As soon as Start Demo Scan or Start Live Scan button is selected, it should change "No Rresults yet. Start a scan to see activity." to a message indicating that the scan has started and/or in progress. Feedback for all Scan Progress pages.  When it returns to this page after scanning or from the accounts page a "Reset" should be done before loading the page.  Then the "Reset" button is no longer needed.

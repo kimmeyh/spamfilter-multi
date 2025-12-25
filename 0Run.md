@@ -8,10 +8,19 @@ cd d:\Data\Harold\github\spamfilter-multi\mobile-app; flutter build windows
 cd D:\Data\Harold\github\spamfilter-multi\mobile-app; flutter run -d windows
 # NOTE: Log file is: 
 
-# Run Android Emulator
+# Run Android Emulator -------------------------
 #   Preferred method
 powershell -NoProfile -ExecutionPolicy Bypass -File D:\Data\Harold\github\spamfilter-multi/mobile-app/scripts/run-emulator.ps1
 # NOTE: Log file is: D:\Data\Harold\github\spamfilter-multi\mobile-app\test_results.txt
+# Emulator notes:  
+#   Press back button to exit
+    adb shell "am start -a android.settings.SETTINGS" ;&  Start-Sleep -Seconds 2 ; adb shell input keyevent 4
+
+#   Or press home button
+    adb shell "am start -a android.settings.SETTINGS" ;&  Start-Sleep -Seconds 2 ; adb shell input keyevent 3
+
+#   Or open recent apps
+    adb shell "am start -a android.settings.SETTINGS" ;&  Start-Sleep -Seconds 2 ; adb shell input keyevent 187
 
 # another way
 cd D:\Data\Harold\github\spamfilter-multi\mobile-app; flutter emulators --launch pixel34

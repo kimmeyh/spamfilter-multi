@@ -1,0 +1,38 @@
+{
+  "project_info": {
+    "project_number": "577022808534",
+    "project_id": "spamfilter-multi",
+    "storage_bucket": "spamfilter-multi.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:577022808534:android:792349f0a9778964659477",
+        "android_client_info": {
+          "package_name": "com.example.spamfilter_mobile"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "577022808534-v94j401b6hvllehkp70pheo4b0injrc1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.spamfilter_mobile",
+            "certificate_hash": "f6cf2100947ad94e8ae925665f8f20db55158f17"
+          }
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB3xYMmLYr_Oa6cWM9Ud4LAgeLBn9CyvcA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

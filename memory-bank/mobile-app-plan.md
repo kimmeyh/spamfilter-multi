@@ -50,6 +50,15 @@
   - Gmail OAuth and AOL App Password auth methods working (Windows & Android)
   - Scan workflow validated end-to-end (Windows & Android)
 
+### Android Build & Install (Canonical Command)
+- Use the combined build + secrets injection + auto-install workflow:
+  - From mobile-app/scripts:
+    ```powershell
+    .\build-with-secrets.ps1 -BuildType debug -InstallToEmulator
+    ```
+  - Requires mobile-app/secrets.dev.json (Gmail OAuth or AOL IMAP)
+  - Auto-discovers/starts emulator via Android SDK (emulator.exe) and installs/launches the APK
+
 ### Android Manual Testing Results (Dec 2025)
 - Release APK built and installed on emulator (API 34, Android 14)
 - App launches and runs without crashes or blocking errors

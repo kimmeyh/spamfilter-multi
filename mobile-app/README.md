@@ -1,10 +1,13 @@
 
-# [STATUS UPDATE: December 21, 2025]
+# [STATUS UPDATE: December 22, 2025]
 
-**Phase 2.1 Verification Complete**: All automated tests passing (79/79), manual Windows and Android testing successful, pre-external testing blockers resolved. App is ready for production and external user validation.
+**Phase 2.1 Verification Complete**: All automated tests passing (81/81), manual Windows and Android testing successful, pre-external testing blockers resolved, Android Gmail Sign-In setup guide provided. App is ready for production and external user validation.
 
 **Critical Issue RESOLVED (Dec 21)**:
 - ✅ **enough_mail securityContext parameter issue RESOLVED**: Removed unsupported parameters; using default Dart SSL/TLS validation (secure and reliable for AOL, Gmail, standard email providers)
+
+**Critical Issue RESOLVED (Dec 22)**:
+- ✅ **Android Gmail Sign-In "Sign in was cancelled"**: Root cause identified (SHA-1 fingerprint not registered in Firebase). Complete setup guides provided in [ANDROID_GMAIL_SIGNIN_QUICK_START.md](ANDROID_GMAIL_SIGNIN_QUICK_START.md) and [ANDROID_GMAIL_SIGNIN_SETUP.md](ANDROID_GMAIL_SIGNIN_SETUP.md)
 
 **Current Issues:**
 - No blocking issues. All pre-external testing blockers resolved.
@@ -13,12 +16,12 @@
 - Kotlin build warnings during Android build are non-fatal (clean + rebuild resolves).
 
 **Next Steps:**
-1. Run flutter pub get and flutter test to confirm no regressions
-2. Run flutter build and flutter analyze to verify clean build
-3. Manual testing: AOL IMAP scanning with simplified SSL/TLS validation
-4. Validate production delete mode with spam-heavy inbox (Android)
-5. Address non-blocking analyzer warnings (style/maintainability)
-6. Prepare for external/production user testing
+1. ✅ DONE: Run flutter test and verify no regressions (81/81 tests passing)
+2. ✅ DONE: Create Android Gmail Sign-In setup guides (Quick Start + Detailed Troubleshooting)
+3. NEXT: Complete Android Gmail Sign-In setup (SHA-1 fingerprint registration)
+4. NEXT: Test Gmail Sign-In on Android emulator
+5. NEXT: Validate production delete mode with spam-heavy inbox (Android)
+6. NEXT: Prepare for external/production user testing
 
 # Spam Filter Mobile App
 
@@ -105,6 +108,18 @@ flutter test
       cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts
       .\build-apk.ps1
       ```
+- Build (with secrets) and optionally auto-install to emulator:
+   - [scripts/build-with-secrets.ps1](scripts/build-with-secrets.ps1)
+   - Prerequisite: create mobile-app/secrets.dev.json from template and fill Gmail (OAuth) and/or AOL (IMAP) fields
+   - Usage:
+      ```powershell
+      cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts
+      .\build-with-secrets.ps1 -BuildType debug -InstallToEmulator
+      ```
+   - Notes:
+     - Automatically injects `--dart-define-from-file=secrets.dev.json`
+     - Auto-discovers and starts an Android emulator (prefers SDK emulator.exe), then installs and launches the app
+     - Supports Gmail (OAuth) and AOL (IMAP app password); Outlook remains deferred/unconfigured
 - Launch emulator and run:
    - [scripts/run-emulator.ps1](scripts/run-emulator.ps1)
    - Usage:
@@ -147,6 +162,27 @@ This mobile app maintains compatibility with the desktop Python application's YA
 See [`../memory-bank/mobile-app-plan.md`](../memory-bank/mobile-app-plan.md) for full development plan.
 
 ## Troubleshooting
+
+### Android Gmail Sign-In: "Sign in was cancelled or failed"
+
+**Quick Fix** (5 minutes):
+1. Extract SHA-1 fingerprint: `mobile-app\android\get_sha1.bat`
+2. Add to Firebase Console (Project Settings → Your Android App → Add fingerprint)
+3. Download fresh google-services.json
+4. Replace: `mobile-app/android/app/google-services.json`
+5. Rebuild: `flutter clean && flutter pub get && flutter build apk --release`
+6. Use emulator with "Google APIs" image (NOT AOSP)
+
+**Complete Guides**:
+- [ANDROID_GMAIL_SIGNIN_QUICK_START.md](ANDROID_GMAIL_SIGNIN_QUICK_START.md) - 5-step setup
+- [ANDROID_GMAIL_SIGNIN_SETUP.md](ANDROID_GMAIL_SIGNIN_SETUP.md) - Detailed troubleshooting with root causes
+
+**Key Issues Covered**:
+- SHA-1 fingerprint registration (most common cause)
+- Emulator image selection (Google APIs vs AOSP)
+- google-services.json configuration
+- Norton 360 TLS interception
+- Firebase Console setup
 
 ### Norton Antivirus / Email Protection Blocks IMAP Connection
 

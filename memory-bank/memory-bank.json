@@ -6,8 +6,8 @@
     "type": "Email Security Tool",
     "repository_type": "Flutter monorepo (100% Dart for all 5 platforms)",
     "license": "MIT License",
-    "current_phase": "Phase 2.1 Verification ✅ COMPLETE (Dec 18, 2025) | 79 tests passing | Windows & Android manual testing successful | Ready for production/external testing",
-    "last_updated": "2025-12-21 (Android manual testing complete; ready for production/external testing)",
+    "current_phase": "Phase 2.1 Verification ✅ COMPLETE (Dec 18, 2025) | 81 tests passing | Windows & Android manual testing successful | Android Gmail Sign-In setup guide provided | Ready for production/external testing",
+    "last_updated": "2025-12-22 (Android Gmail Sign-In troubleshooting guide added; ready for production/external testing)",
     "current_issues": {
       "status": "No blocking issues. All automated tests passing (79/79). Windows and Android builds successful. Ready for production/external testing.",
       "notes": [
@@ -25,10 +25,12 @@
         "0 new issues introduced by the securityContext parameter fix."
       ],
       "next_steps": [
-        "Complete Android APK build and verify successful compilation",
-        "Validate production delete mode with spam-heavy inbox (Android)",
-        "Manual testing on Windows with AOL IMAP and Gmail OAuth",
-        "Prepare for external/production user testing"
+        "✅ DONE: Complete Android APK build and verify successful compilation",
+        "✅ DONE: Validate production delete mode with spam-heavy inbox (Android)",
+        "✅ DONE: Manual testing on Windows with AOL IMAP and Gmail OAuth",
+        "NEXT: Complete Android Gmail Sign-In setup (SHA-1 fingerprint registration in Firebase)",
+        "NEXT: Test Gmail Sign-In on Android emulator with correct setup",
+        "NEXT: Prepare for external/production user testing"
       ]
     },
     "multi_account_support": "✅ IMPLEMENTED - Multiple accounts per provider supported",
@@ -469,6 +471,7 @@
       "flutter_build_android": "cd D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app; flutter build apk --release",
       "flutter_build_windows": "cd D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app; flutter build windows",
       "enable_windows_desktop": "cd D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app; flutter config --enable-windows-desktop",
+        "build_with_secrets_debug_install": "cd D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app; .\\scripts\\build-with-secrets.ps1 -BuildType debug -InstallToEmulator",
       "desktop_setup": "./.venv/Scripts/Activate.ps1",
       "desktop_run_reference": "python withOutlookRulesYAML.py (reference only)"
     },
