@@ -712,6 +712,13 @@
       "breaking_changes_note": "Legacy wildcard mode removed, regex-only mode with consolidated filenames"
     }
   },
+  "android_debug_build_review": [
+    "2025-12-26: Android debug build and install to emulator completed using scripts/build-with-secrets.ps1 -BuildType debug -InstallToEmulator (manual run, no errors)",
+    "Emulator launched and app started via scripts/run-emulator.ps1; app launched successfully, no crashes",
+    "Manual validation: Login/auth flows, UI, scan features confirmed operational",
+    "No blocking issues found during manual test",
+    "Status: PENDING REVIEW/APPROVAL"
+  ],
   "future_enhancements": [
     "Move backup files to dedicated backup directory",
     "Update mail processing to use safe_senders list for all header exceptions",

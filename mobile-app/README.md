@@ -216,23 +216,17 @@ python -c "import socket, ssl; c=ssl.create_default_context(); s=socket.create_c
 
 **Additional Resources**: See [NEW_DEVELOPER_SETUP.md § Common Fixes](./NEW_DEVELOPER_SETUP.md#common-fixes) for developer setup guidance.
 
-## Verification & Implementation Status
 
-✅ **Completed**:
-- Core models and services implemented (EmailMessage, RuleSet, SafeSenderList, EvaluationResult, PatternCompiler, RuleEvaluator, YamlService)
-- Email provider interface and adapters (IMAP, Gmail OAuth) defined
-- Multi-account and multi-folder support (AOL, Gmail)
-- Secure credential storage and persistence
-- UI scaffold and navigation (AccountSelection, ScanProgress, ResultsDisplay)
-- All automated tests passing (79/79)
-- Manual testing on Windows and Android: successful, no crashes or blocking issues
-- Pre-external testing blockers resolved (see above)
+## Phase 2.1 Manual Android Build & Test Checklist (2025-12-26, Pending Review)
 
-📋 **Next Steps**:
-1. Validate production delete mode with spam-heavy inbox (Android)
-2. Address non-blocking analyzer warnings (style/maintainability)
-3. Prepare for external/production user testing
-4. Continue documentation and roadmap updates
+- [x] Rebuilt app using `build-with-secrets.ps1 -BuildType debug -InstallToEmulator`
+- [x] Resolved all build and install errors (dependencies, secrets, emulator)
+- [x] Launched Android emulator and app via `run-emulator.ps1`
+- [x] Confirmed app launches, login/auth works, UI and scan features operational
+- [x] No blocking issues found during manual validation
+
+**Status:** PENDING REVIEW/APPROVAL
+**Result:** Android debug build and manual test successful. Ready for production/external testing upon approval.
 
 ## Testing
 

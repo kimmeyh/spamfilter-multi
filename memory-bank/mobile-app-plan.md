@@ -1,3 +1,13 @@
+## Phase 2.1 Manual Android Build & Test Checklist (2025-12-26, Pending Review)
+
+- [x] Rebuilt app using `build-with-secrets.ps1 -BuildType debug -InstallToEmulator`
+- [x] Resolved all build and install errors (dependencies, secrets, emulator)
+- [x] Launched Android emulator and app via `run-emulator.ps1`
+- [x] Confirmed app launches, login/auth works, UI and scan features operational
+- [x] No blocking issues found during manual validation
+
+**Status:** PENDING REVIEW/APPROVAL
+**Result:** Android debug build and manual test successful. Ready for production/external testing upon approval.
 
 # [STATUS UPDATE: December 21, 2025]
 

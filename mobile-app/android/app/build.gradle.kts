@@ -8,7 +8,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.spamfilter_mobile"
+    namespace = "com.example.spamfiltermobile"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -23,13 +23,16 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.spamfilter_mobile"
+        applicationId = "com.example.spamfiltermobile"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        
+        // flutter_appauth redirect scheme (reversed Android OAuth client ID)
+        manifestPlaceholders["appAuthRedirectScheme"] = "com.googleusercontent.apps.577022808534-0ejdbmoouklgtucjo3tooovn2pr01ga2"
     }
 
     buildTypes {

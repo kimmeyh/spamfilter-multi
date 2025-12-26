@@ -8,9 +8,67 @@ Context:
 - Mono-repo: Flutter mobile, web and desktop (shared YAML rules)
 - 78+ tests passing, 0 code quality issues
 Request:
-Do NOT continue without having read the workspace files as requested earlier in this prompt.
-Can you help with Mobile Android simulator Gmail Sign-in as all methods are giving 
-"Sign-In Error Sign in was cancelled or failed.
+Need to re-look at gmail email account setup to follow Google best practices.  Please use the following to rewrite
+the Google gmail email account setup in the Windows Desktop and Android apps:
+  You are implementing Gmail OAuth 2.0 authentication in a Flutter app (Dart) with Android build via Gradle, plus iOS and Web targets.
+
+  GOALS / NON-NEGOTIABLES:
+  1) User should authenticate interactively only once per device/platform whenever possible.
+  2) Tokens/credentials must be stored securely and encrypted at rest.
+  3) No tokens, secrets, or credentials may appear in clear text in:
+    - source code
+    - git repository
+    - app logs
+    - analytics events
+  4) Use OAuth 2.0 best practices for native/public clients (no client secret embedded in app).
+  5) Use minimum required Gmail scopes; implement incremental auth if additional scopes are later needed.
+  6) Provide a clean architecture: AuthRepository + TokenStore + GmailClient; include unit-testable interfaces.
+
+  TECHNICAL REQUIREMENTS:
+  - Use Flutter package `google_sign_in` for Google consent + token acquisition.
+  - Use Flutter secure encrypted storage package `flutter_secure_storage` to persist credentials:
+    - Store refresh token/credential bundle (native targets) and expiry timestamps.
+    - Store granted scopes.
+  - Implement silent sign-in / token refresh on app startup:
+    - Load stored credentials.
+    - If access token missing/expired, refresh using refresh token (native).
+    - If refresh fails (revoked/expired), prompt user to sign in again.
+  - Web target:
+    - Do NOT assume refresh tokens exist.
+    - Implement best-effort silent reauth (try silent sign-in) and fall back to interactive login when needed.
+  - NEVER print tokens. Add a logging guard or redaction helper to prevent accidental leaks.
+
+  CONFIG / SECRETS HANDLING:
+  - Do not hardcode any OAuth client IDs in source.
+  - Use build-time injection:
+    - Flutter: --dart-define=GOOGLE_CLIENT_ID=... (and if needed separate IDs per platform/flavor)
+    - Android: Gradle / manifestPlaceholders / local.properties for webClientId configuration
+    - iOS: xcconfig build settings
+  - Ensure example configs use placeholders and are safe to commit; real values come from CI secrets / local untracked files.
+
+  IMPLEMENTATION DELIVERABLES:
+  1) Dart files:
+    - auth/token_store.dart (interface)
+    - auth/secure_token_store.dart (flutter_secure_storage implementation)
+    - auth/google_auth_service.dart (sign-in, sign-out, token refresh)
+    - gmail/gmail_client.dart (wrap authenticated HTTP client or Gmail API calls)
+    - util/redact.dart (token redaction + safe logging utilities)
+  2) Platform config snippets:
+    - Android Gradle + manifest placeholder notes for OAuth redirect + client id injection
+    - iOS config notes for reversed client id / URL schemes injection via xcconfig
+    - Web config notes (index.html meta/client id injection approach)
+  3) Provide doc comments explaining:
+    - why no client secret is used
+    - how tokens are stored and refreshed
+    - how to revoke tokens and clear storage
+
+  SECURITY CHECKLIST:
+  - Use secure storage for all credential material.
+  - Do not persist tokens in SharedPreferences, plain files, or localStorage.
+  - Provide a “Disconnect Gmail” feature that revokes sign-in and wipes secure storage.
+  - Handle token expiry, invalid_grant, revoked access gracefully.
+
+  Now update the code for the above, focusing on correct flows and secure storage patterns, with TODOs where platform-specific values are required.
 
 VERIFICATION FIRST (required before implementing):
 1. Search codebase for existing functionality related to the request.
@@ -32,7 +90,7 @@ For Android app, gmail setting - had to add a Firebase project at https://consol
 
 Feedback on Android app in emulator:  finding aol account, testing went well on demo and actual inbox.  Select account is not showing the previously setup gmail email kimmeyh@gmail.com.  Feedback on Windows Desktop app: aol email address in Select account is not showing the email address.  If no authentication has been provided for the platform (android), the still list the account, but note that an authentication needs to be added with a link to the authentication page. Pass the existing email address and have the user add authentication via one of the methods available.  Then update the stored platform/email address/authentication method data for the email address.
 
-It should show "<email-address> -<email-provider-indicator> - <authentication method>". For this email account would look similar to: "kimmeyharold@aol.com - AOL Mail - App Password".  On Scan progress page.  As soon as Start Demo Scan or Start Live Scan button is selected, it should change "No Rresults yet. Start a scan to see activity." to a message indicating that the scan has started and/or in progress. Feedback for all Scan Progress pages.  When it returns to this page after scanning or from the accounts page a "Reset" should be done before loading the page.  Then the "Reset" button is no longer needed.
+On Scan progress page.  As soon as Start Demo Scan or Start Live Scan button is selected, it should change "No Results yet. Start a scan to see activity." to a message indicating that the scan has started and/or in progress. Feedback for all Scan Progress pages.  When it returns to this page after scanning or from the accounts page a "Reset" should be done before loading the page.  Then the "Reset" button is no longer needed.
 
 Add in phase 3 to add to the Android app client and Windows desktop a browser client that is compatible with chrome, safari, and edge 
 
@@ -65,9 +123,14 @@ Request:
 Create a checklist for the following, then do all steps before considering complete:
 Note that the flutter application has already been fully tested prior to running hte app:
 Can you walk me through these tests
-- Run desktop app for manual testing
-- Address errors and issues to resolution
-- Run android app for manual testing
+- Rebuild the entire app via this script: 
+  powershell -NoProfile -ExecutionPolicy Bypass -Filed:\Data\Harold\github\spamfilter-multi\mobile-app\scripts\build-with-secrets.ps1 -BuildType debug -InstallToEmulator
+- Address errors and issues with the build to resolution
+- Run desktop app for manual testing using this script:
+  cd D:\Data\Harold\github\spamfilter-multi\mobile-app; flutter run -d windows
+- Address errors and issues with the build to resolution
+- Run android app for manual testing using this script:
+    powershell -NoProfile -ExecutionPolicy Bypass -File D:\Data\Harold\github\spamfilter-multi/mobile-app/scripts/run-emulator.ps1
 - Address errors and issues to resolution
 When complete (NOT before unless Critical for success), update:
 - d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json
@@ -181,6 +244,85 @@ cd D:\Data\Harold\github\OutlookMailSpamFilter && ./.venv/Scripts/Activate.ps1 &
 
 ------------------------------------------------------------------------------
 Completed:
+
+---
+Need to re-look at gmail email account setup to follow Google best practices.  Please use the following to rewrite
+the Google gmail email account setup in the Windows Desktop and Android apps:
+  You are implementing Gmail OAuth 2.0 authentication in a Flutter app (Dart) with Android build via Gradle, plus iOS and Web targets.
+
+  GOALS / NON-NEGOTIABLES:
+  1) User should authenticate interactively only once per device/platform whenever possible.
+  2) Tokens/credentials must be stored securely and encrypted at rest.
+  3) No tokens, secrets, or credentials may appear in clear text in:
+    - source code
+    - git repository
+    - app logs
+    - analytics events
+  4) Use OAuth 2.0 best practices for native/public clients (no client secret embedded in app).
+  5) Use minimum required Gmail scopes; implement incremental auth if additional scopes are later needed.
+  6) Provide a clean architecture: AuthRepository + TokenStore + GmailClient; include unit-testable interfaces.
+
+  TECHNICAL REQUIREMENTS:
+  - Use Flutter package `google_sign_in` for Google consent + token acquisition.
+  - Use Flutter secure encrypted storage package `flutter_secure_storage` to persist credentials:
+    - Store refresh token/credential bundle (native targets) and expiry timestamps.
+    - Store granted scopes.
+  - Implement silent sign-in / token refresh on app startup:
+    - Load stored credentials.
+    - If access token missing/expired, refresh using refresh token (native).
+    - If refresh fails (revoked/expired), prompt user to sign in again.
+  - Web target:
+    - Do NOT assume refresh tokens exist.
+    - Implement best-effort silent reauth (try silent sign-in) and fall back to interactive login when needed.
+  - NEVER print tokens. Add a logging guard or redaction helper to prevent accidental leaks.
+
+  CONFIG / SECRETS HANDLING:
+  - Do not hardcode any OAuth client IDs in source.
+  - Use build-time injection:
+    - Flutter: --dart-define=GOOGLE_CLIENT_ID=... (and if needed separate IDs per platform/flavor)
+    - Android: Gradle / manifestPlaceholders / local.properties for webClientId configuration
+    - iOS: xcconfig build settings
+  - Ensure example configs use placeholders and are safe to commit; real values come from CI secrets / local untracked files.
+
+  IMPLEMENTATION DELIVERABLES:
+  1) Dart files:
+    - auth/token_store.dart (interface)
+    - auth/secure_token_store.dart (flutter_secure_storage implementation)
+    - auth/google_auth_service.dart (sign-in, sign-out, token refresh)
+    - gmail/gmail_client.dart (wrap authenticated HTTP client or Gmail API calls)
+    - util/redact.dart (token redaction + safe logging utilities)
+  2) Platform config snippets:
+    - Android Gradle + manifest placeholder notes for OAuth redirect + client id injection
+    - iOS config notes for reversed client id / URL schemes injection via xcconfig
+    - Web config notes (index.html meta/client id injection approach)
+  3) Provide doc comments explaining:
+    - why no client secret is used
+    - how tokens are stored and refreshed
+    - how to revoke tokens and clear storage
+
+  SECURITY CHECKLIST:
+  - Use secure storage for all credential material.
+  - Do not persist tokens in SharedPreferences, plain files, or localStorage.
+  - Provide a “Disconnect Gmail” feature that revokes sign-in and wipes secure storage.
+  - Handle token expiry, invalid_grant, revoked access gracefully.
+
+  Now update the code for the above, focusing on correct flows and secure storage patterns, with TODOs where platform-specific values are required.
+
+VERIFICATION FIRST (required before implementing):
+1. Search codebase for existing functionality related to the request.
+2. Check IMPLEMENTATION_SUMMARY.md for current status.
+3. If implementation exists, verify completeness and document findings.
+4. Only implement missing pieces.
+
+Do not remove any previously commented out code.  Do not update 0dev_prompts.md
+When complete (NOT before unless Critical for success), update:
+- d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json
+- d:\Data\Harold\github\spamfilter-multi\memory-bank\mobile-app-plan.md
+- d:\Data\Harold\github\spamfilter-multi\mobile-app\IMPLEMENTATION_SUMMARY.md
+- d:\Data\Harold\github\spamfilter-multi\mobile-app\README.md
+
+Proceed to draft the changes in the files for review and testing.
+---
 
 Update implementation plan to hold off on any email providers other than gmail and aol until full functionality is confirmed for windows and android (setup, adding/updating email addresses/accounts; scanning inbox, spam folders, selection of folders; ability to automatically delete scan new mail as it is delivered for spam and handle it in production mode; add new rules (rules, safe-sender rules); update existing rules via display, selection, delete, change.
 
