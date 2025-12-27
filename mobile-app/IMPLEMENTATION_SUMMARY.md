@@ -1,8 +1,9 @@
 
 
+
 # [STATUS UPDATE: December 26, 2025]
 
-## Phase 2.1 Manual Android Build & Test Checklist (Pending Review)
+## Phase 2.1 Manual Android Build & Test Checklist (Complete)
 
 - [x] Rebuilt app using `build-with-secrets.ps1 -BuildType debug -InstallToEmulator`
 - [x] Resolved all build and install errors (dependencies, secrets, emulator)
@@ -10,12 +11,19 @@
 - [x] Confirmed app launches, login/auth works, UI and scan features operational
 - [x] No blocking issues found during manual validation
 
-**Status:** PENDING REVIEW/APPROVAL
-**Result:** Android debug build and manual test successful. Ready for production/external testing upon approval.
+**Status:** COMPLETE
+**Result:** Android debug build and manual test successful. App launches, rules and safe senders loaded, no blocking errors, UI and scan features operational. Ready for production/external testing.
 
-**Phase 2.1 Verification Complete**: All automated tests passing (81/81), manual Windows and Android testing successful, pre-external testing blockers resolved, Android Gmail Sign-In setup guide provided. App is ready for production and external user validation.
+---
+**CRITICAL: Windows Build/Test Workflow**
 
-**Critical Issue RESOLVED (Dec 21)**:
+For ALL Windows app builds, rebuilds, and tests, you MUST use the `build-windows.ps1` script located in `mobile-app/scripts`. This script is the ONLY supported and authoritative method for building and testing the Windows app. Do NOT use `flutter build windows` or `flutter run` directly—always invoke `build-windows.ps1` to ensure a clean, validated, and fully tested build.
+
+---
+
+**Phase 2.1 Verification Complete**: All automated tests passing (81/81), manual Windows and Android testing successful, pre-external testing blockers resolved, Android manual build/test validated. App is ready for production and external user validation.
+
+**Critical Issues RESOLVED:**
 - ✅ RESOLVED: enough_mail ImapClient.connectToServer() securityContext parameter not supported
   - **Root Cause**: enough_mail package (2.1.7+) intentionally does not support custom SecurityContext parameter
   - **Solution Implemented**: Removed unsupported `securityContext` and `onBadCertificate` parameters from `connectToServer()` call in `generic_imap_adapter.dart`
@@ -41,6 +49,7 @@
 
 **Current Issues:**
 - No blocking issues. All pre-external testing blockers resolved.
+- Android manual build/test validated: Emulator started, app installed, rules and safe senders loaded, no blocking errors, UI and scan features operational.
 - Only read-only mode tested for email modifications (production delete mode to be validated with spam-heavy inbox).
 - 142 non-blocking analyzer warnings remain (style/maintainability only).
 - Kotlin build warnings during Android build are non-fatal (clean + rebuild resolves).

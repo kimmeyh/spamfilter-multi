@@ -1,4 +1,5 @@
-## Phase 2.1 Manual Android Build & Test Checklist (2025-12-26, Pending Review)
+
+## Phase 2.1 Manual Android Build & Test Checklist (2025-12-26, Complete)
 
 - [x] Rebuilt app using `build-with-secrets.ps1 -BuildType debug -InstallToEmulator`
 - [x] Resolved all build and install errors (dependencies, secrets, emulator)
@@ -6,8 +7,15 @@
 - [x] Confirmed app launches, login/auth works, UI and scan features operational
 - [x] No blocking issues found during manual validation
 
-**Status:** PENDING REVIEW/APPROVAL
-**Result:** Android debug build and manual test successful. Ready for production/external testing upon approval.
+**Status:** COMPLETE
+**Result:** Android debug build and manual test successful. App launches, rules and safe senders loaded, no blocking errors, UI and scan features operational. Ready for production/external testing.
+
+---
+**CRITICAL: Windows Build/Test Workflow**
+
+For ALL Windows app builds, rebuilds, and tests, you MUST use the `build-windows.ps1` script located in `mobile-app/scripts`. This script is the ONLY supported and authoritative method for building and testing the Windows app. Do NOT use `flutter build windows` or `flutter run` directly—always invoke `build-windows.ps1` to ensure a clean, validated, and fully tested build.
+
+---
 
 # [STATUS UPDATE: December 21, 2025]
 

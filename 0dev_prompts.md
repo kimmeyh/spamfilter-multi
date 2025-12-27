@@ -1,74 +1,44 @@
 Next:----------------------------------------
-@workspace CRITICAL: Do NOT ask me to share these files. 
-Read them immediately from the workspace using absolute paths:
-- d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json
-- d:\Data\Harold\github\spamfilter-multi\memory-bank\mobile-app-plan.md
-- d:\Data\Harold\github\spamfilter-multi\mobile-app\IMPLEMENTATION_SUMMARY.md
-Context:
-- Mono-repo: Flutter mobile, web and desktop (shared YAML rules)
-- 78+ tests passing, 0 code quality issues
-Request:
-Need to re-look at gmail email account setup to follow Google best practices.  Please use the following to rewrite
-the Google gmail email account setup in the Windows Desktop and Android apps:
-  You are implementing Gmail OAuth 2.0 authentication in a Flutter app (Dart) with Android build via Gradle, plus iOS and Web targets.
+Copy testing context before next prompt
+Android emulated verifying new email addresses, but not saving them. Can we test and check to ensure saving is working as expected.
+Need to be able to really add Bulk Mail folder
+Need to be able to find all folders
+Need to be able to actually find safe senders and/or moved, and rules that apply and if would have been deleted.
 
-  GOALS / NON-NEGOTIABLES:
-  1) User should authenticate interactively only once per device/platform whenever possible.
-  2) Tokens/credentials must be stored securely and encrypted at rest.
-  3) No tokens, secrets, or credentials may appear in clear text in:
+@workspace Copilot Instructions:
+  Copilot, you MUST:
+  CRITICAL: Do NOT ask me to share these files. Read them immediately from the workspace using absolute paths:
+  - d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json
+  - d:\Data\Harold\github\spamfilter-multi\memory-bank\mobile-app-plan.md
+  - d:\Data\Harold\github\spamfilter-multi\mobile-app\IMPLEMENTATION_SUMMARY.md
+  1. Read the above files before proceeding.  Then Create a detailed, step-by-step "ToDo" checklist for yourself, Copilot, to accomplish the following tasks.
+  2. Execute each step on my behalf, resolving any issues as you go.
+  3. Do not ask me for files, confirmations, or reviews—just act and report progress.
+  4. Only consider the job complete when all steps are finished and all required documentation is updated.
+  5. Do not stop for review or approval at any point. Do not ask for clarification unless absolutely critical for success.
+  6. If a file is required, read it directly from the workspace using its absolute path.
+  7. When finished, update the following files as specified: [list files].
+  8. Do not update this prompt file.
+  9. Tokens/credentials must be stored securely and encrypted at rest.  
+  10. No tokens, secrets, or credentials may appear in clear text in:
     - source code
     - git repository
     - app logs
     - analytics events
-  4) Use OAuth 2.0 best practices for native/public clients (no client secret embedded in app).
-  5) Use minimum required Gmail scopes; implement incremental auth if additional scopes are later needed.
-  6) Provide a clean architecture: AuthRepository + TokenStore + GmailClient; include unit-testable interfaces.
+Context:
+- Mono-repo: Flutter mobile, web and desktop (shared YAML rules)
+- 80+ tests passing, 0 code quality issues
 
-  TECHNICAL REQUIREMENTS:
-  - Use Flutter package `google_sign_in` for Google consent + token acquisition.
-  - Use Flutter secure encrypted storage package `flutter_secure_storage` to persist credentials:
-    - Store refresh token/credential bundle (native targets) and expiry timestamps.
-    - Store granted scopes.
-  - Implement silent sign-in / token refresh on app startup:
-    - Load stored credentials.
-    - If access token missing/expired, refresh using refresh token (native).
-    - If refresh fails (revoked/expired), prompt user to sign in again.
-  - Web target:
-    - Do NOT assume refresh tokens exist.
-    - Implement best-effort silent reauth (try silent sign-in) and fall back to interactive login when needed.
-  - NEVER print tokens. Add a logging guard or redaction helper to prevent accidental leaks.
-
-  CONFIG / SECRETS HANDLING:
-  - Do not hardcode any OAuth client IDs in source.
-  - Use build-time injection:
-    - Flutter: --dart-define=GOOGLE_CLIENT_ID=... (and if needed separate IDs per platform/flavor)
-    - Android: Gradle / manifestPlaceholders / local.properties for webClientId configuration
-    - iOS: xcconfig build settings
-  - Ensure example configs use placeholders and are safe to commit; real values come from CI secrets / local untracked files.
-
-  IMPLEMENTATION DELIVERABLES:
-  1) Dart files:
-    - auth/token_store.dart (interface)
-    - auth/secure_token_store.dart (flutter_secure_storage implementation)
-    - auth/google_auth_service.dart (sign-in, sign-out, token refresh)
-    - gmail/gmail_client.dart (wrap authenticated HTTP client or Gmail API calls)
-    - util/redact.dart (token redaction + safe logging utilities)
-  2) Platform config snippets:
-    - Android Gradle + manifest placeholder notes for OAuth redirect + client id injection
-    - iOS config notes for reversed client id / URL schemes injection via xcconfig
-    - Web config notes (index.html meta/client id injection approach)
-  3) Provide doc comments explaining:
-    - why no client secret is used
-    - how tokens are stored and refreshed
-    - how to revoke tokens and clear storage
-
-  SECURITY CHECKLIST:
-  - Use secure storage for all credential material.
-  - Do not persist tokens in SharedPreferences, plain files, or localStorage.
-  - Provide a “Disconnect Gmail” feature that revokes sign-in and wipes secure storage.
-  - Handle token expiry, invalid_grant, revoked access gracefully.
-
-  Now update the code for the above, focusing on correct flows and secure storage patterns, with TODOs where platform-specific values are required.
+Request:
+Somewhere in the last couple of commits you helped me fix the Android Gmail OAuth 2 authentication, but broke the Windows Desktop Gmail Authentication.  They both need to work and likely need different OAuth access and refresh tokens.  Are they being stored separately and if so can you help fix so that we fix the Windows Desktop Gmail authentication but do not break the Android app gmail authentication by:
+- Rebuild the entire Windows app and run the app via this script: 
+  powershell -NoProfile -ExecutionPolicy Bypass -File D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts\build-windows.ps1
+- Monitor the build and run; address errors and issues to resolution
+When complete (NOT before unless Critical for success), update:
+- d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json
+- d:\Data\Harold\github\spamfilter-multi\memory-bank\mobile-app-plan.md
+- d:\Data\Harold\github\spamfilter-multi\mobile-app\IMPLEMENTATION_SUMMARY.md
+- d:\Data\Harold\github\spamfilter-multi\mobile-app\README.md
 
 VERIFICATION FIRST (required before implementing):
 1. Search codebase for existing functionality related to the request.
@@ -111,17 +81,28 @@ Desktop application builds (Windows, macOS, Linux)
 
 Testing and doc request:----------------------------------------
 
-@workspace CRITICAL: Do NOT ask me to share these files. 
-Read them immediately from the workspace using absolute paths:
-- d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json
-- d:\Data\Harold\github\spamfilter-multi\memory-bank\mobile-app-plan.md
-- d:\Data\Harold\github\spamfilter-multi\mobile-app\IMPLEMENTATION_SUMMARY.md
+@workspace Copilot Instructions:
+  Copilot, you MUST:
+  CRITICAL: Do NOT ask me to share these files. Read them immediately from the workspace using absolute paths:
+  - d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json
+  - d:\Data\Harold\github\spamfilter-multi\memory-bank\mobile-app-plan.md
+  - d:\Data\Harold\github\spamfilter-multi\mobile-app\IMPLEMENTATION_SUMMARY.md
+  1. Read the above files before proceeding.  Then Create a detailed, step-by-step "ToDo" checklist for yourself, Copilot, to accomplish the following tasks.
+  2. Execute each step on my behalf, resolving any issues as you go.
+  3. Do not ask me for files, confirmations, or reviews—just act and report progress.
+  4. Only consider the job complete when all steps are finished and all required documentation is updated.
+  5. Do not stop for review or approval at any point. Do not ask for clarification unless absolutely critical for success.
+  6. If a file is required, read it directly from the workspace using its absolute path.
+  7. When finished, update the following files as specified: [list files].
+  8. Do not update this prompt file.
 Context:
 - Mono-repo: Flutter mobile, web and desktop (shared YAML rules)
 - 78+ tests passing, 0 code quality issues
+
 Request:
-Create a checklist for the following, then do all steps before considering complete:
-Note that the flutter application has already been fully tested prior to running hte app:
+Copilot, create a detailed step-by-step checklist for yourself to accomplish the following tasks. Then, execute each step on my behalf, resolving any issues as you go, and only consider the job complete when all steps are finished and documentation is updated. Do not ask me for files or confirmations—just act and report progress.
+Do not ask for confirmation or files. Do not stop for review. Plan, then execute, then update documentation when done.
+Note that the flutter application has already been fully tested prior to this request:
 Can you walk me through these tests
 - Rebuild the entire app via this script: 
   powershell -NoProfile -ExecutionPolicy Bypass -Filed:\Data\Harold\github\spamfilter-multi\mobile-app\scripts\build-with-secrets.ps1 -BuildType debug -InstallToEmulator
@@ -138,6 +119,7 @@ When complete (NOT before unless Critical for success), update:
 - d:\Data\Harold\github\spamfilter-multi\mobile-app\IMPLEMENTATION_SUMMARY.md
 - d:\Data\Harold\github\spamfilter-multi\mobile-app\README.md
 
+What can I change in the prompt so that you understand I want you, Copilot, to create a plan for yourself, then for Copilot to execute all the steps?
 
 Template:----------------------------------------
 @workspace Must review to understand the workspace before starting request below:

@@ -10,10 +10,6 @@
 - ✅ **Android Gmail Sign-In "Sign in was cancelled"**: Root cause identified (SHA-1 fingerprint not registered in Firebase). Complete setup guides provided in [ANDROID_GMAIL_SIGNIN_QUICK_START.md](ANDROID_GMAIL_SIGNIN_QUICK_START.md) and [ANDROID_GMAIL_SIGNIN_SETUP.md](ANDROID_GMAIL_SIGNIN_SETUP.md)
 
 **Current Issues:**
-- No blocking issues. All pre-external testing blockers resolved.
-- Only read-only mode tested for email modifications (production delete mode to be validated with spam-heavy inbox).
-- 142 non-blocking analyzer warnings remain (style/maintainability only).
-- Kotlin build warnings during Android build are non-fatal (clean + rebuild resolves).
 
 **Next Steps:**
 1. ✅ DONE: Run flutter test and verify no regressions (81/81 tests passing)
@@ -21,6 +17,13 @@
 3. NEXT: Complete Android Gmail Sign-In setup (SHA-1 fingerprint registration)
 4. NEXT: Test Gmail Sign-In on Android emulator
 5. NEXT: Validate production delete mode with spam-heavy inbox (Android)
+
+---
+**CRITICAL: Windows Build/Test Workflow**
+
+For ALL Windows app builds, rebuilds, and tests, you MUST use the `build-windows.ps1` script located in `mobile-app/scripts`. This script is the ONLY supported and authoritative method for building and testing the Windows app. Do NOT use `flutter build windows` or `flutter run` directly—always invoke `build-windows.ps1` to ensure a clean, validated, and fully tested build.
+
+---
 6. NEXT: Prepare for external/production user testing
 
 # Spam Filter Mobile App
@@ -217,7 +220,8 @@ python -c "import socket, ssl; c=ssl.create_default_context(); s=socket.create_c
 **Additional Resources**: See [NEW_DEVELOPER_SETUP.md § Common Fixes](./NEW_DEVELOPER_SETUP.md#common-fixes) for developer setup guidance.
 
 
-## Phase 2.1 Manual Android Build & Test Checklist (2025-12-26, Pending Review)
+
+## Phase 2.1 Manual Android Build & Test Checklist (2025-12-26, Complete)
 
 - [x] Rebuilt app using `build-with-secrets.ps1 -BuildType debug -InstallToEmulator`
 - [x] Resolved all build and install errors (dependencies, secrets, emulator)
@@ -225,8 +229,8 @@ python -c "import socket, ssl; c=ssl.create_default_context(); s=socket.create_c
 - [x] Confirmed app launches, login/auth works, UI and scan features operational
 - [x] No blocking issues found during manual validation
 
-**Status:** PENDING REVIEW/APPROVAL
-**Result:** Android debug build and manual test successful. Ready for production/external testing upon approval.
+**Status:** COMPLETE
+**Result:** Android debug build and manual test successful. App launches, rules and safe senders loaded, no blocking errors, UI and scan features operational. Ready for production/external testing.
 
 ## Testing
 

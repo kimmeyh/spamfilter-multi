@@ -6,10 +6,10 @@
     "type": "Email Security Tool",
     "repository_type": "Flutter monorepo (100% Dart for all 5 platforms)",
     "license": "MIT License",
-    "current_phase": "Phase 2.1 Verification ✅ COMPLETE (Dec 18, 2025) | 81 tests passing | Windows & Android manual testing successful | Android Gmail Sign-In setup guide provided | Ready for production/external testing",
-    "last_updated": "2025-12-22 (Android Gmail Sign-In troubleshooting guide added; ready for production/external testing)",
+    "current_phase": "Phase 2.1 Verification ✅ COMPLETE (Dec 26, 2025) | 81 tests passing | Windows & Android manual testing successful | Android Gmail Sign-In setup guide provided | Android manual build/test validated | Ready for production/external testing",
+    "last_updated": "2025-12-26 (Android manual build/test validated; ready for production/external testing)",
     "current_issues": {
-      "status": "No blocking issues. All automated tests passing (79/79). Windows and Android builds successful. Ready for production/external testing.",
+      "status": "No blocking issues. All automated tests passing (81/81). Windows and Android builds successful. Android manual build/test validated. Ready for production/external testing.",
       "notes": [
         "✅ RESOLVED (Dec 21): enough_mail ImapClient.connectToServer securityContext parameter issue - Removed unsupported parameter, using default Dart SSL/TLS validation (secure and reliable for standard email providers)",
         "✅ RESOLVED (Dec 22): Norton 360 Email Protection TLS interception - Identified and documented Norton MITM inspection; resolution: disable Email Protection in Norton 360 > Settings > Security > Advanced > Intrusion Prevention",
@@ -18,6 +18,7 @@
         "✅ VERIFIED (Dec 21): Windows build - Release executable compiled successfully",
         "✅ VERIFIED (Dec 22): Android build - APK built and tested on emulator with Norton Email Protection disabled",
         "✅ VERIFIED (Dec 22): Android manual testing - Release APK (51.7MB) installed and launched successfully on API 34 emulator",
+        "✅ VERIFIED (Dec 26): Android manual build and test validated: Emulator started, app installed, rules and safe senders loaded, no blocking errors, UI and scan features operational.",
         "All pre-external testing blockers resolved: Account selection, scan progress, and credential persistence verified.",
         "Multi-account and multi-folder support confirmed.",
         "Windows app built and verified to contain no regressions from IMAP fix.",
@@ -28,6 +29,7 @@
         "✅ DONE: Complete Android APK build and verify successful compilation",
         "✅ DONE: Validate production delete mode with spam-heavy inbox (Android)",
         "✅ DONE: Manual testing on Windows with AOL IMAP and Gmail OAuth",
+        "✅ DONE: Android manual build and test validated (Dec 26, 2025)",
         "NEXT: Complete Android Gmail Sign-In setup (SHA-1 fingerprint registration in Firebase)",
         "NEXT: Test Gmail Sign-In on Android emulator with correct setup",
         "NEXT: Prepare for external/production user testing"
@@ -401,6 +403,7 @@
     "terminal_notes": [
       "CRITICAL: Always use PowerShell on Windows environment",
       "CRITICAL: Always set correct directory using 'cd' before running commands",
+      "CRITICAL: For ALL Windows app builds, rebuilds, and tests, you MUST use the build-windows.ps1 script located in mobile-app/scripts. This script is the ONLY supported and authoritative method for building and testing the Windows app. Do NOT use flutter build windows or flutter run directly—always invoke build-windows.ps1 to ensure a clean, validated, and fully tested build.",
       "PowerShell format: cd D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app; <command>",
       "Use semicolon (;) to chain directory change with command execution",
       "Example: cd D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app; flutter test"
