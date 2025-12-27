@@ -324,6 +324,13 @@ try {
         $maxAdbTries = 5
         while (-not $adbStarted -and $adbTries -lt $maxAdbTries) {
             Write-Host "[ADB] Checking daemon status (attempt $($adbTries+1)/$maxAdbTries)..." -ForegroundColor Cyan
+            # Kill all running adb processes for a clean start
+            $adbProcs = Get-Process | Where-Object { $_.ProcessName -like 'adb*' }
+            if ($adbProcs) {
+                Write-Host "[ADB] Killing all running adb processes..." -ForegroundColor Yellow
+                $adbProcs | ForEach-Object { try { Stop-Process -Id $_.Id -Force -ErrorAction SilentlyContinue } catch {} }
+                Start-Sleep -Seconds 2
+            }
             $adbDevices = & adb devices 2>&1
             if ($adbDevices -match "daemon not running" -or $adbDevices -match "cannot connect") {
                 Write-Host "[ADB] Daemon not running or connection refused. Restarting..." -ForegroundColor Yellow
