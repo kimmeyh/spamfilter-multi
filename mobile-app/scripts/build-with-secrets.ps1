@@ -318,26 +318,40 @@ try {
         Write-Host ""
         Write-Host "[APK Install] Starting emulator detection and installation..." -ForegroundColor Cyan
 
-        # Step 1: Ensure ADB daemon is running
+        # Step 1: Robust ADB daemon and emulator startup
         $adbStarted = $false
-        for ($i = 0; $i -lt 3; $i++) {
+        $adbTries = 0
+        $maxAdbTries = 5
+        while (-not $adbStarted -and $adbTries -lt $maxAdbTries) {
+            Write-Host "[ADB] Checking daemon status (attempt $($adbTries+1)/$maxAdbTries)..." -ForegroundColor Cyan
             $adbDevices = & adb devices 2>&1
-            if ($adbDevices -match "daemon not running") {
-                Write-Host "[INFO]: ADB daemon not running, starting..." -ForegroundColor Yellow
+            if ($adbDevices -match "daemon not running" -or $adbDevices -match "cannot connect") {
+                Write-Host "[ADB] Daemon not running or connection refused. Restarting..." -ForegroundColor Yellow
                 & adb kill-server
                 Start-Sleep -Seconds 2
                 & adb start-server
                 Start-Sleep -Seconds 2
-            } elseif ($adbDevices -match "List of devices attached") {
+                $adbDevices = & adb devices 2>&1
+            }
+            if ($adbDevices -match "List of devices attached") {
                 $adbStarted = $true
                 break
-            } else {
-                Start-Sleep -Seconds 2
             }
+            $adbTries++
+            Start-Sleep -Seconds 2
         }
         if (-not $adbStarted) {
-            Write-Host "[ERROR]: Unable to start ADB daemon after multiple attempts." -ForegroundColor Red
-            exit 1
+            Write-Host "[ERROR]: Unable to start ADB daemon after $maxAdbTries attempts." -ForegroundColor Red
+            Write-Host "[INFO]: Attempting to launch emulator and retry ADB..." -ForegroundColor Yellow
+            & flutter emulators --launch pixel34_updated
+            Start-Sleep -Seconds 20
+            $adbDevices = & adb devices 2>&1
+            if ($adbDevices -match "List of devices attached") {
+                $adbStarted = $true
+            } else {
+                Write-Host "[FATAL]: ADB still not available after emulator launch." -ForegroundColor Red
+                exit 1
+            }
         }
 
         # Step 2: Ensure emulator is running
@@ -348,6 +362,7 @@ try {
             Write-Host "[INFO]: No running emulator detected, launching emulator..." -ForegroundColor Yellow
             & flutter emulators --launch pixel34_updated
             Start-Sleep -Seconds 20
+            & adb devices | Out-Null
         }
         if (-not $emulatorDevice) {
             Write-Host "[ERROR]: Emulator still not detected after multiple attempts." -ForegroundColor Red
