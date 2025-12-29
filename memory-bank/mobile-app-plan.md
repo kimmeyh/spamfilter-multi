@@ -1282,35 +1282,18 @@ spam-filter-mobile/
 │   │       ├── work_manager_adapter.dart (Android)
 │   │       └── background_fetch_adapter.dart (iOS)
 │   ├── ui/
-│   │   ├── screens/
-│   │   │   ├── account_setup_screen.dart
-│   │   │   ├── inbox_trainer_screen.dart
-│   │   │   ├── rule_editor_screen.dart
-│   │   │   └── safe_sender_screen.dart
 │   │   ├── widgets/
 │   │   │   ├── scan_progress.dart
 │   │   │   └── rule_list_item.dart
 │   │   └── theme/
 │   │       └── app_theme.dart
-│   └── config/
-│       └── constants.dart
-├── test/
-│   ├── unit/
-│   ├── integration/
-│   └── fixtures/
 │       ├── sample_rules.yaml
 │       └── sample_safe_senders.yaml
 ├── android/
 ├── ios/
-├── docs/
 │   ├── architecture.md
 │   ├── provider_setup_guides/
 │   │   ├── aol_setup.md
-│   │   ├── gmail_setup.md
-│   │   └── outlook_setup.md
-│   └── api/
-├── pubspec.yaml
-├── README.md
 └── LICENSE
 ```
 

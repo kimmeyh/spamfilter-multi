@@ -17,15 +17,19 @@ Returning from Gmail scan, did not return to list of accounts (while AOL does) -
   - d:\Data\Harold\github\spamfilter-multi\memory-bank\mobile-app-plan.md
   - d:\Data\Harold\github\spamfilter-multi\mobile-app\IMPLEMENTATION_SUMMARY.md
   1. Read the above files before proceeding.  Then Create a detailed, step-by-step "ToDo" checklist for yourself, Copilot, to accomplish the following tasks.
-  2. Execute each step on my behalf, resolving any issues as you go.
-  3. Do not ask me for files, confirmations, or reviews—just act and report progress.
-  4. Only consider the job complete when all steps are finished and all required documentation is updated.
-  5. Do not stop for review or approval at any point. Do not ask for clarification unless absolutely critical for success.
-  6. If a file is required, read it directly from the workspace using its absolute path.
-  7. When finished, update the following files as specified: [list files].
-  8. Do not update this prompt file.
-  9. Tokens/credentials must be stored securely and encrypted at rest.  
-  10. No tokens, secrets, or credentials may appear in clear text in:
+  2. Search codebase for existing functionality related to the request.
+  3. Check IMPLEMENTATION_SUMMARY.md for current status.
+  4. If implementation exists, verify completeness and document findings.
+  5. Only implement missing pieces.
+  6. Execute each step on my behalf, resolving any issues as you go.
+  7. Do not ask me for files, confirmations, or reviews—just act and report progress.
+  8. Only consider the job complete when all steps are finished and all required documentation is updated.
+  9. Do not stop for review or approval at any point. Do not ask for clarification unless absolutely critical for success.
+  10. If a file is required, read it directly from the workspace using its absolute path.
+  11. When finished, update the following files as specified: [list files].
+  12. Do not update this prompt file.
+  13. Tokens/credentials must be stored securely and encrypted at rest.  
+  14. No tokens, secrets, or credentials may appear in clear text in:
     - source code
     - git repository
     - app logs
@@ -35,23 +39,8 @@ Context:
 - 80+ tests passing, 0 code quality issues
 
 Request:
-The Gmail Sign-In > Sign in with Gmail page is having an error. The Sign in with Google goes to a web authentication page and receives """Authentication Successful!""" However, returning to the Windows Desktop app is gibing an error (image attached).  Can you fix the Windows Desktop Gmail authentication but do not change the Android app gmail authentication by:
-- Rebuild the entire Windows app and run the app via this script: 
-  powershell -NoProfile -ExecutionPolicy Bypass -File D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts\build-windows.ps1
-- Monitor the build and run; address errors and issues to resolution
-When complete (NOT before unless Critical for success), update:
-- d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json
-- d:\Data\Harold\github\spamfilter-multi\memory-bank\mobile-app-plan.md
-- d:\Data\Harold\github\spamfilter-multi\mobile-app\IMPLEMENTATION_SUMMARY.md
-- d:\Data\Harold\github\spamfilter-multi\mobile-app\README.md
+Can you move google-services.json from the root directory to the mobile-app/android/app/ directory.  Is this the main location for it today or is it multiple locations.  Update all references, as needed.  Ensure no longer included in the github commits via .gitignore
 
-VERIFICATION FIRST (required before implementing):
-1. Search codebase for existing functionality related to the request.
-2. Check IMPLEMENTATION_SUMMARY.md for current status.
-3. If implementation exists, verify completeness and document findings.
-4. Only implement missing pieces.
-
-Do not remove any previously commented out code.  Do not update 0dev_prompts.md
 When complete (NOT before unless Critical for success), update:
 - d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json
 - d:\Data\Harold\github\spamfilter-multi\memory-bank\mobile-app-plan.md
@@ -231,6 +220,11 @@ cd D:\Data\Harold\github\OutlookMailSpamFilter && ./.venv/Scripts/Activate.ps1 &
 
 ------------------------------------------------------------------------------
 Completed:
+
+The Gmail Sign-In > Sign in with Gmail page is having an error. The Sign in with Google goes to a web authentication page and receives """Authentication Successful!""" However, returning to the Windows Desktop app is gibing an error (image attached).  Can you fix the Windows Desktop Gmail authentication but do not change the Android app gmail authentication by:
+- Rebuild the entire Windows app and run the app via this script: 
+  powershell -NoProfile -ExecutionPolicy Bypass -File D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts\build-windows.ps1
+- Monitor the build and run; address errors and issues to resolution
 
 ---
 Need to re-look at gmail email account setup to follow Google best practices.  Please use the following to rewrite

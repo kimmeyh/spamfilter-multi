@@ -75,9 +75,12 @@ app.*.map.json
 coverage/
 
 # Secrets and credentials (NEVER COMMIT)
+# CRITICAL: Google Services configuration for Android Firebase integration
+# Location: mobile-app/android/app/google-services.json (generated from Firebase Console)
+# This file contains OAuth client secrets and API keys - MUST NOT be committed to git
+**/google-services.json
 secrets.*.json
 secrets.*.ps1
-**/google-services.json
 .env
 .env.*
 
