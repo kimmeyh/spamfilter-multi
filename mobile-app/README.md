@@ -173,6 +173,7 @@ See [`../memory-bank/mobile-app-plan.md`](../memory-bank/mobile-app-plan.md) for
 **CRITICAL**: OAuth credentials must NEVER be committed to Git:
 - ✅ Store `google-services.json` at `mobile-app/android/app/google-services.json` (automatically excluded by .gitignore)
 - ✅ Store `secrets.dev.json` at `mobile-app/secrets.dev.json` (already in .gitignore)
+- ✅ Store OAuth client secret JSON files (e.g., `client_secret_*.json`) ONLY locally - these are now excluded by .gitignore
 - ❌ NEVER commit client IDs or client secrets to repository
 - ❌ NEVER include real secrets in documentation or code comments
 - Use masked placeholders in docs: `GOCSPX-**********************LSH6`
@@ -180,8 +181,11 @@ See [`../memory-bank/mobile-app-plan.md`](../memory-bank/mobile-app-plan.md) for
 **File Locations** (NEVER commit these):
 - `mobile-app/android/app/google-services.json` - Android Firebase configuration (generated from Firebase Console)
 - `mobile-app/secrets.dev.json` - Build-time secrets injection for Windows/desktop
+- `client_secret_*.json` - OAuth client secret files downloaded from Google Cloud Console (store locally only, NEVER commit)
 
 GitHub scans commits for secrets and will **block your push** if detected.
+
+**For CI/CD Pipelines**: Store OAuth credentials in your CI/CD platform's secrets vault (GitHub Secrets, Azure Key Vault, AWS Secrets Manager, etc.) and inject them at build time. Never hardcode credentials in CI/CD configuration files.
 
 ### Android Firebase Configuration
 
