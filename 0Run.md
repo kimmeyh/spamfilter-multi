@@ -48,3 +48,6 @@ flutter install
 #    Press r - Hot reload (preserves state)
 #    Press R - Hot restart (resets state)
 #    Press q - Quit
+
+
+I added aol account, ran scan.  Return from scan went to the aol account setup screen instead of the Select Account screen.
