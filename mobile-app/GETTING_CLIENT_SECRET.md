@@ -1,5 +1,7 @@
 # Getting OAuth Client Secret - Alternative Methods
 
+⚠️ **SECURITY WARNING**: The downloaded OAuth client secret JSON file (e.g., `client_secret_*.json`) contains sensitive credentials and must NEVER be committed to Git. Store it locally only and add values to `mobile-app/secrets.dev.json` for build-time injection. These files are now excluded by `.gitignore`.
+
 Your Desktop OAuth client JSON is missing `client_secret`. Here are all options:
 
 ## Option 1: Desktop Client Secret (Try First)
