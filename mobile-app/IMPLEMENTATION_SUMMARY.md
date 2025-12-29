@@ -93,39 +93,61 @@ class CredentialStorage {
     required String refreshToken,
     required DateTime expiresAt,
   }) async {
-    await _secureStorage.write(
-      key: 'account_${accountId}_access',
-      value: accessToken,
-    );
-    await _secureStorage.write(
-      key: 'account_${accountId}_refresh',
-      value: refreshToken,
-    );
-    await _secureStorage.write(
-      key: 'account_${accountId}_expires',
-      value: expiresAt.toIso8601String(),
-    );
+    try {
+      await _secureStorage.write(
+        key: 'account_${accountId}_access',
+        value: accessToken,
+      );
+      await _secureStorage.write(
+        key: 'account_${accountId}_refresh',
+        value: refreshToken,
+      );
+      await _secureStorage.write(
+        key: 'account_${accountId}_expires',
+        value: expiresAt.toIso8601String(),
+      );
+    } catch (e) {
+      throw StorageException('Failed to save account credentials: $e');
+    }
   }
   
   /// Load credentials for scanning - NEVER deletes anything
   Future<AccountCredentials?> loadAccountCredentials(String accountId) async {
-    final accessToken = await _secureStorage.read(
-      key: 'account_${accountId}_access',
-    );
-    if (accessToken == null) return null;
-    
-    final refreshToken = await _secureStorage.read(
-      key: 'account_${accountId}_refresh',
-    );
-    final expiresStr = await _secureStorage.read(
-      key: 'account_${accountId}_expires',
-    );
-    
-    return AccountCredentials(
-      accessToken: accessToken,
-      refreshToken: refreshToken,
-      expiresAt: DateTime.parse(expiresStr ?? ''),
-    );
+    try {
+      final accessToken = await _secureStorage.read(
+        key: 'account_${accountId}_access',
+      );
+      if (accessToken == null) return null;
+      
+      final refreshToken = await _secureStorage.read(
+        key: 'account_${accountId}_refresh',
+      );
+      final expiresStr = await _secureStorage.read(
+        key: 'account_${accountId}_expires',
+      );
+      
+      // Parse expiration date with proper error handling
+      DateTime? expiresAt;
+      if (expiresStr != null && expiresStr.isNotEmpty) {
+        try {
+          expiresAt = DateTime.parse(expiresStr);
+        } catch (e) {
+          // If parsing fails, treat as expired
+          expiresAt = DateTime.now().subtract(Duration(days: 1));
+        }
+      } else {
+        // If no expiration stored, treat as expired
+        expiresAt = DateTime.now().subtract(Duration(days: 1));
+      }
+      
+      return AccountCredentials(
+        accessToken: accessToken,
+        refreshToken: refreshToken ?? '',
+        expiresAt: expiresAt,
+      );
+    } catch (e) {
+      throw StorageException('Failed to load account credentials: $e');
+    }
   }
   
   /// Delete account - called ONLY on user "Remove Account"

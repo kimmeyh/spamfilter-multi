@@ -222,14 +222,14 @@ abstract class RuleEvaluator {
 - [ ] Implement RuleSet and SafeSenderList models (in-memory)
 - [ ] Build PatternCompiler with precompiled regex cache
 - [ ] Create Evaluator engine (header/body/subject/from matching)
-- Implement MutationService for rule updates
-- Add YAMLStorage service (read/write with atomic operations)
-- Add unit tests for all core logic
-- **No database**: All data in YAML files and memory
+- [ ] Implement MutationService for rule updates
+- [ ] Add YAMLStorage service (read/write with atomic operations)
+- [ ] Add unit tests for all core logic
+- [ ] **No database**: All data in YAML files and memory
 
 #### 1.3 AOL IMAP Integration
-- Implement GenericIMAPAdapter using `enough_mail` package
-- Add app password authentication
+- [ ] Implement GenericIMAPAdapter using `enough_mail` package
+- [ ] Add app password authentication
 - Build message fetcher (with date range filtering)
 - Implement delete/move operations
 - Handle bulk folder processing
