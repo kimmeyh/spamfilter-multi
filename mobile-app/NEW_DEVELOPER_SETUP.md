@@ -139,6 +139,32 @@ flutter devices
   - Dart (Dart-Code.dart-code)
 
 ## Common Fixes
+
+### Norton Antivirus 360 / Email Protection Blocks IMAP
+
+**Symptom**: TLS certificate validation error when adding an AOL/Yahoo account or scanning.
+
+**Root Cause**: Norton's "Email Protection" feature performs man-in-the-middle TLS inspection of email traffic. The Android emulator trust store does not include Norton's custom root CA, causing SSL handshake failures.
+
+**Solution**: Disable Email Protection in Norton 360:
+1. Open **Norton 360**
+2. Go to **Settings > Security > Advanced > Intrusion Prevention** (or **Firewall > Advanced**)
+3. Disable **"Email Protection"** or **"SSL Scanning"**
+   - ⚠️ **Important**: Safe Web exclusions alone do NOT work. Email Protection must be fully disabled.
+4. Restart the app and test again
+
+**To verify the fix** (Windows PowerShell):
+```powershell
+python -c "import socket, ssl; c=ssl.create_default_context(); s=socket.create_connection(('imap.aol.com',993),timeout=10); t=c.wrap_socket(s, server_hostname='imap.aol.com'); print('Issuer:', dict(x[0] for x in t.getpeercert()['issuer'])); t.close()"
+```
+- ✅ **Expected**: Issuer shows `DigiCert Inc` or `Yahoo` (NOT Norton)
+- ❌ **If still Norton**: Email Protection is still active
+
+**For physical devices**: Norton's root CA is pre-installed on Android phones, so no changes needed.
+
+**Full details**: See [README.md § Troubleshooting](./README.md#troubleshooting)
+
+### Flutter Using Wrong JDK
 - Flutter using the wrong JDK (bundled with Android Studio):
   ```powershell
   flutter config --jdk-dir "C:\Program Files\Microsoft\jdk-17.0.16.8-hotspot"

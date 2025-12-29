@@ -74,6 +74,27 @@ app.*.map.json
 # Coverage
 coverage/
 
+# Secrets and credentials (NEVER COMMIT)
+# CRITICAL: Google Services configuration for Android Firebase integration
+# Location: mobile-app/android/app/google-services.json (generated from Firebase Console)
+# This file contains OAuth client secrets and API keys - MUST NOT be committed to git
+**/google-services.json
+secrets.*.json
+secrets.*.ps1
+.env
+.env.*
+
+# OAuth Secrets (never commit real values)
+android/local.properties
+ios/Flutter/Secrets.xcconfig
+web/secrets.js
+
+# Keep example/template files
+!secrets.*.example.json
+!android/local.properties.example
+!ios/Flutter/Secrets.xcconfig.example
+!web/secrets.js.example
+
 # Exceptions to above rules
 !**/ios/**/default.mode1v3
 !**/ios/**/default.mode2v3

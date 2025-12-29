@@ -18,21 +18,27 @@ dependencies:
   intl: ^0.20.2
 
   # Phase 1 - IMAP Email Support (AOL MVP)
-  enough_mail: ^2.1.0
+  enough_mail: ^2.1.7
   
   # Storage & Security (Phase 1)
   flutter_secure_storage: ^9.0.0
   path_provider: ^2.1.0
+  path: ^1.8.0
 
-  # Phase 2 - Gmail Support (Native API)
-  # Uncomment when implementing Gmail adapter
-  # googleapis: ^11.4.0
-  # google_sign_in: ^6.1.5
+  # Phase 2 - Gmail Support (Native API) - activated
+  googleapis: ^11.4.0
+  google_sign_in: ^7.2.0
   
-  # Phase 2 - Outlook/Office365 Support (Native API)
-  # Uncomment when implementing Outlook adapter
-  # msal_flutter: ^2.1.0
-  # http: ^1.1.0
+  # Phase 2 - Outlook/Office365 Support (Native API) - activated
+  msal_auth: ^3.3.0
+  http: ^1.1.0
+  
+  # Phase 2 Sprint 5 - Windows Gmail OAuth Support
+  url_launcher: ^6.2.0  # For browser-based OAuth
+  webview_flutter: ^4.4.0  # For WebView OAuth backup
+  crypto: ^3.0.3  # For PKCE S256 (sha256)
+  app_links: ^6.3.3  # For deep link handling on mobile OAuth
+  flutter_appauth: ^8.0.1  # For proper OAuth on Android/iOS
   
   # Phase 2+ - UI Enhancement
   # flutter_svg: ^2.0.9
@@ -44,3 +50,9 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/rules/rules.yaml
+    - assets/rules/rules_safe_senders.yaml
+
+    # AOL IMAP CA certificate for custom SecurityContext
+    - assets/certs/aol_ca.pem

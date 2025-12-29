@@ -1,0 +1,120 @@
+--------- beginning of main
+12-22 18:33:54.826 D/StatusBarIconController(  770): ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 18:33:55.533 I/wpa_supplicant(  758): wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 18:34:00.005 I/AiAiEcho( 1486): Predicting[0]: 
+12-22 18:34:00.005 I/AiAiEcho( 1486): EchoTargets: 
+12-22 18:34:00.005 I/AiAiEcho( 1486): Filtered by AiAi flag check: 
+12-22 18:34:00.006 I/AiAiEcho( 1486): Ranked targets strategy: SORT, count: 0, ranking metadata: 
+12-22 18:34:00.006 I/AiAiEcho( 1486): #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+12-22 18:34:00.013 D/EGL_emulation(  770): app_time_stats: avg=59998.10ms min=59998.10ms max=59998.10ms count=1
+12-22 18:34:00.013 W/PageIndicator(  770): Total number of pages invalid: 0. Assuming 1 page.
+12-22 18:34:00.860 D/audioserver(  413): FGS Logger Transaction failed
+12-22 18:34:00.860 D/audioserver(  413): -129
+12-22 18:34:00.866 D/EGL_emulation( 6906): app_time_stats: avg=1903.35ms min=13.83ms max=73603.10ms count=39
+12-22 18:34:01.025 D/audioserver(  413): FGS Logger Transaction failed
+12-22 18:34:01.025 D/audioserver(  413): -129
+--------- beginning of system
+12-22 18:34:02.928 D/ShellBackPreview(  770): Finishing gesture with event action: 1
+12-22 18:34:02.930 D/ShellBackPreview(  770): onGestureFinished() mTriggerBack == false
+12-22 18:34:02.930 D/ShellBackPreview(  770): BackAnimationController: finishBackNavigation()
+12-22 18:34:02.932 D/EGL_emulation( 6906): app_time_stats: avg=40.96ms min=1.77ms max=1420.34ms count=38
+12-22 18:34:02.935 D/audioserver(  413): FGS Logger Transaction failed
+12-22 18:34:02.935 D/audioserver(  413): -129
+12-22 18:34:02.940 I/GoogleInputMethodService( 1382): GoogleInputMethodService.onStartInput():1877 onStartInput(EditorInfo{inputType=0x8021(EmailAddress) imeOptions=0x2000006 privateImeOptions=null actionName=DONE actionLabel=null actionId=0 initialSelStart=17 initialSelEnd=17 initialCapsMode=0x0 hintText=null label=null packageName=com.example.spamfilter_mobile fieldId=1 fieldName=null extras=Bundle[mParcelledData.dataSize=168]}, true)
+12-22 18:34:02.940 I/GoogleInputMethodService( 1382): GoogleInputMethodService.shouldHideHeaderOnInitialState():4008 ShouldHideHeaderOnInitialState = false
+12-22 18:34:02.941 I/ImeTracker( 6906): com.example.spamfilter_mobile:7cb32bc9: onRequestShow at ORIGIN_CLIENT_SHOW_SOFT_INPUT reason SHOW_SOFT_INPUT
+12-22 18:34:02.941 D/InputMethodManager( 6906): showSoftInput() view=J2.q{936c91a VFE...... .F...... 0,0-1080,2274 #1 aid=1073741824} flags=0 reason=SHOW_SOFT_INPUT
+12-22 18:34:02.941 I/GoogleInputMethodService( 1382): GoogleInputMethodService.updateDeviceLockedStatus():2087 repeatCheckTimes = 2, unlocked = true
+12-22 18:34:02.941 W/SessionManager( 1382): SessionManager.beginSession():53 Try to begin an already begun session [INPUT_SESSION], end it first
+12-22 18:34:02.949 W/ProcessStats(  552): Tracking association SourceState{432585c system/1000 BFgs #6095} whose proc state 4 is better than process ProcessState{3cb6dda com.google.android.inputmethod.latin/10137 pkg=com.google.android.inputmethod.latin} proc state 6 (27 skipped)
+12-22 18:34:02.953 I/GoogleInputMethodService( 1382): GoogleInputMethodService.onStartInputView():1995 onStartInputView(EditorInfo{inputType=0x8021(EmailAddress) imeOptions=0x2000006 privateImeOptions=null actionName=DONE actionLabel=null actionId=0 initialSelStart=17 initialSelEnd=17 initialCapsMode=0x0 hintText=null label=null packageName=com.example.spamfilter_mobile fieldId=1 fieldName=null extras=Bundle[{androidx.core.view.inputmethod.EditorInfoCompat.STYLUS_HANDWRITING_ENABLED=true}]}, false)
+12-22 18:34:02.953 D/AudioFlinger(  413): mixer(0x73aa4d4ac930) throttle end: throttle time(33)
+12-22 18:34:02.958 I/GoogleInputMethodService( 1382): GoogleInputMethodService.updateDeviceLockedStatus():2087 repeatCheckTimes = 2, unlocked = true
+12-22 18:34:02.958 W/ModuleManager( 1382): ModuleManager.loadModule():450 Module erj is not available
+12-22 18:34:02.963 I/DeviceModeUtil( 1382): DeviceModeUtil.getDeviceMode():122 Get device mode phone by ui mode:1 and smallestScreenWidthDp:393
+12-22 18:34:02.971 I/KeyboardViewUtil( 1382): KeyboardViewUtil.getKeyboardHeightRatio():189 systemKeyboardHeightRatio:1.000000; userKeyboardHeightRatio:1.000000.
+12-22 18:34:02.971 I/AndroidIME( 1382): AbstractIme.onActivate():86 LatinIme.onActivate() : EditorInfo = inputType=0x8021(EmailAddress) imeOptions=0x2000006 privateImeOptions=null actionName=DONE actionLabel=null actionId=0 initialSelStart=17 initialSelEnd=17 initialCapsMode=0x0 hintText=null label=null packageName=com.example.spamfilter_mobile fieldId=1 fieldName=null extras=Bundle[{androidx.core.view.inputmethod.EditorInfoCompat.STYLUS_HANDWRITING_ENABLED=true}], IncognitoMode = false, DeviceLocked = false
+12-22 18:34:02.974 I/Delight5Facilitator( 1382): Delight5Facilitator.initializeForIme():777 initializeForIme() : Locale = [en_US], layout = qwerty
+12-22 18:34:02.974 I/VoiceInputManagerWrapper( 1382): VoiceInputManagerWrapper.cancelShutdown():55 cancelShutdown()
+12-22 18:34:02.974 I/VoiceInputManagerWrapper( 1382): VoiceInputManagerWrapper.syncLanguagePacks():67 syncLanguagePacks()
+12-22 18:34:02.976 I/LatinIme( 1382): LatinIme.updateEnableInlineSuggestionsOnDecoderSideFlags():1003 inline flag updated to:false
+12-22 18:34:02.978 I/SpeechFactory( 1382): SpeechRecognitionFactory.maybeScheduleAutoPackDownloadForFallback():205 maybeScheduleAutoPackDownloadForFallback()
+12-22 18:34:02.979 I/FallbackOnDeviceRecognitionProvider( 1382): FallbackOnDeviceRecognitionProvider.maybeScheduleAutoPackDownload():195 maybeScheduleAutoPackDownload() for language tag en-US
+12-22 18:34:02.984 I/KeyboardWrapper( 1382): KeyboardWrapper.consumeEvent():275 Skip consuming an event as current keyboard is deactivated (state=0, keyboard existence=true)
+12-22 18:34:02.990 I/KeyboardViewUtil( 1382): KeyboardViewUtil.calculateMaxKeyboardBodyHeight():40 leave 344 height for app when screen height:2208, header height:121 and isFullscreenMode:false, so the max keyboard body height is:1743
+12-22 18:34:02.990 I/DeviceModeUtil( 1382): DeviceModeUtil.getDeviceMode():122 Get device mode phone by ui mode:1 and smallestScreenWidthDp:393
+12-22 18:34:02.990 I/GoogleInputMethodService( 1382): GoogleInputMethodService.setKeyboardViewShown():3483 setKeyboardViewShown() : type = HEADER, shownType = SHOW_OPTIONAL
+12-22 18:34:02.990 I/GoogleInputMethodService( 1382): GoogleInputMethodService.setKeyboardViewShown():3530 setKeyboardViewShown() : shouldShow = true
+12-22 18:34:02.990 I/GoogleInputMethodService( 1382): GoogleInputMethodService.setKeyboardViewShown():3483 setKeyboardViewShown() : type = BODY, shownType = SHOW_MANDATORY
+12-22 18:34:02.991 I/GoogleInputMethodService( 1382): GoogleInputMethodService.setKeyboardViewShown():3530 setKeyboardViewShown() : shouldShow = true
+12-22 18:34:02.991 I/GoogleInputMethodService( 1382): GoogleInputMethodService.setKeyboardViewShown():3483 setKeyboardViewShown() : type = FLOATING_CANDIDATES, shownType = HIDE
+12-22 18:34:02.991 I/GoogleInputMethodService( 1382): GoogleInputMethodService.setKeyboardViewShown():3530 setKeyboardViewShown() : shouldShow = false
+12-22 18:34:02.993 I/KeyboardViewUtil( 1382): KeyboardViewUtil.calculateMaxKeyboardBodyHeight():40 leave 344 height for app when screen height:2208, header height:121 and isFullscreenMode:false, so the max keyboard body height is:1743
+12-22 18:34:02.993 I/DeviceModeUtil( 1382): DeviceModeUtil.getDeviceMode():122 Get device mode phone by ui mode:1 and smallestScreenWidthDp:393
+12-22 18:34:02.995 I/DeviceModeUtil( 1382): DeviceModeUtil.getDeviceMode():122 Get device mode phone by ui mode:1 and smallestScreenWidthDp:393
+12-22 18:34:02.995 I/KeyboardModeManager( 1382): KeyboardModeManager.setInputView():364 setInputView() : supportsOneHandedMode=true
+12-22 18:34:02.995 I/NormalModeController( 1382): NormalModeController.getKeyboardBodyViewHolderPaddingBottom():116 currentPrimeKeyboardType:SOFT systemPaddingBottom:-1
+12-22 18:34:02.996 I/NormalModeController( 1382): NormalModeController.getKeyboardBodyViewHolderPaddingBottom():116 currentPrimeKeyboardType:SOFT systemPaddingBottom:-1
+12-22 18:34:02.997 I/KeyboardModeManager( 1382): KeyboardModeManager.setInputView():356 setInputView() : entry=hwn{languageTag=en-US, variant=qwerty, hasLocalizedResources=true, conditionCacheKey=_device=phone_device_size=default_enable_adaptive_text_editing=true_enable_inline_suggestions_on_client_side=false_enable_large_tablet_batch_1=false_enable_large_tablet_batch_2=false_enable_more_candidates_view_for_multilingual=false_enable_nav_redesign=false_enable_number_row=false_enable_preemptive_decode=true_enable_secondary_symbols=false_expressions=normal_four_or_more_letter_rows=false_keyboard_mode=normal_language=en-US_orientation=portrait_physical_keyboard=qwerty_show_secondary_digits=true_show_suggestions=true_split_with_duplicate_keys=true_variant=qwerty, imeDef.stringId=ime_english_united_states, imeDef.className=com.google.android.apps.inputmethod.libs.latin5.LatinIme, imeDef.languageTag=en-US}
+12-22 18:34:03.000 I/CurrentMicStatusHolder( 1382): CurrentMicStatusHolder.onStartInputView():79 Current Mic status = {MicIconHidden-EmailInputType,}
+12-22 18:34:03.000 I/VoiceImeExtension( 1382): VoiceImeExtension.shouldStartVoiceInputAutomatically():383 No private IME option set to start voice input.
+12-22 18:34:03.004 D/CoreBackPreview(  552): Window{ba4a34d u0 com.example.spamfilter_mobile/com.example.spamfilter_mobile.MainActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@ba1ea70, mPriority=0, mIsAnimationCallback=false}
+12-22 18:34:03.006 D/ActivityManager(  552): sync unfroze 1797 com.google.android.gms for 6
+12-22 18:34:03.021 D/BoundBrokerSvc( 1797): onBind: Intent { act=com.google.firebase.dynamiclinks.service.START pkg=com.google.android.gms }
+12-22 18:34:03.022 D/BoundBrokerSvc( 1797): Loading bound service for intent: Intent { act=com.google.firebase.dynamiclinks.service.START pkg=com.google.android.gms }
+12-22 18:34:03.025 D/BoundBrokerSvc( 1797): onUnbind: Intent { act=com.google.android.gms.common.BIND_SHARED_PREFS pkg=com.google.android.gms }
+12-22 18:34:03.053 E/OpenGLRenderer( 1382): Unable to match the desired swap behavior.
+12-22 18:34:03.102 I/NormalModeController( 1382): NormalModeController.getKeyboardBodyViewHolderPaddingBottom():116 currentPrimeKeyboardType:SOFT systemPaddingBottom:-1
+12-22 18:34:03.104 I/Delight5Decoder( 1382): Delight5DecoderWrapper.setKeyboardLayout():457 setKeyboardLayout()
+12-22 18:34:03.104 D/InsetsController( 6906): show(ime(), fromIme=true)
+12-22 18:34:03.115 D/EGL_emulation( 6906): app_time_stats: avg=3896.92ms min=1.23ms max=77834.22ms count=20
+12-22 18:34:03.123 D/BoundBrokerSvc( 1797): onBind: Intent { act=com.google.android.gms.common.BIND_SHARED_PREFS pkg=com.google.android.gms }
+12-22 18:34:03.123 D/BoundBrokerSvc( 1797): Loading bound service for intent: Intent { act=com.google.android.gms.common.BIND_SHARED_PREFS pkg=com.google.android.gms }
+12-22 18:34:03.155 D/audioserver(  413): FGS Logger Transaction failed
+12-22 18:34:03.155 D/audioserver(  413): -129
+12-22 18:34:03.188 W/TooltipLifecycleManager( 1382): TooltipLifecycleManager.dismissTooltips():159 Tooltip with id spell_check_add_to_dictionary not found in tooltipManager.
+12-22 18:34:03.302 D/EGL_emulation(  770): app_time_stats: avg=4279.47ms min=13.76ms max=76507.02ms count=18
+12-22 18:34:03.427 I/ImeTracker( 6906): com.example.spamfilter_mobile:7cb32bc9: onShown
+12-22 18:34:03.470 I/wpa_supplicant(  758): wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 18:34:03.980 D/EGL_emulation( 6906): app_time_stats: avg=30.27ms min=2.41ms max=498.05ms count=28
+12-22 18:34:04.312 D/EGL_emulation(  770): app_time_stats: avg=15.54ms min=7.60ms max=22.17ms count=61
+12-22 18:34:04.825 D/StatusBarIconController(  770): ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 18:34:05.440 D/audioserver(  413): FGS Logger Transaction failed
+12-22 18:34:05.440 D/audioserver(  413): -129
+12-22 18:34:05.449 D/EGL_emulation( 6906): app_time_stats: avg=489.58ms min=469.19ms max=501.22ms count=3
+12-22 18:34:05.449 I/ImeTracker( 6906): com.example.spamfilter_mobile:e5147b99: onRequestHide at ORIGIN_CLIENT_HIDE_SOFT_INPUT reason HIDE_SOFT_INPUT
+12-22 18:34:05.452 I/GoogleInputMethodService( 1382): GoogleInputMethodService.onFinishInputView():2241 
+12-22 18:34:05.453 W/TooltipLifecycleManager( 1382): TooltipLifecycleManager.dismissTooltips():159 Tooltip with id spell_check_add_to_dictionary not found in tooltipManager.
+12-22 18:34:05.454 I/InputBundle( 1382): InputBundle.consumeEvent():923 Skip consuming an event as keyboard status is 0
+12-22 18:34:05.455 I/KeyboardWrapper( 1382): KeyboardWrapper.consumeEvent():275 Skip consuming an event as current keyboard is deactivated (state=0, keyboard existence=true)
+12-22 18:34:05.455 I/VoiceInputManagerWrapper( 1382): VoiceInputManagerWrapper.shutdown():77 shutdown()
+12-22 18:34:05.456 I/AndroidIME( 1382): AbstractIme.onDeactivate():207 LatinIme.onDeactivate()
+12-22 18:34:05.459 W/ModuleManager( 1382): ModuleManager.loadModule():450 Module jjj is not available
+12-22 18:34:05.465 W/WindowOnBackDispatcher( 6906): sendCancelIfRunning: isInProgress=falsecallback=ImeCallback=ImeOnBackInvokedCallback@94284969 Callback=android.window.IOnBackInvokedCallback$Stub$Proxy@4d24e3b
+12-22 18:34:05.466 D/CoreBackPreview(  552): Window{ba4a34d u0 com.example.spamfilter_mobile/com.example.spamfilter_mobile.MainActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@109472b, mPriority=0, mIsAnimationCallback=false}
+12-22 18:34:05.469 D/EGL_emulation( 6906): app_time_stats: avg=116.45ms min=3.56ms max=2034.74ms count=20
+12-22 18:34:05.671 D/audioserver(  413): FGS Logger Transaction failed
+12-22 18:34:05.672 D/audioserver(  413): -129
+12-22 18:34:05.777 I/ImeTracker( 6906): com.example.spamfilter_mobile:b94c53b6: onRequestHide at ORIGIN_CLIENT_HIDE_SOFT_INPUT reason HIDE_SOFT_INPUT_BY_INSETS_API
+12-22 18:34:05.779 I/ImeTracker(  552): com.example.spamfilter_mobile:b94c53b6: onCancelled at PHASE_SERVER_SHOULD_HIDE
+12-22 18:34:05.780 I/ImeTracker( 6906): com.example.spamfilter_mobile:e5147b99: onHidden
+12-22 18:34:05.785 I/GoogleInputMethodService( 1382): GoogleInputMethodService.onStartInput():1877 onStartInput(EditorInfo{inputType=0x0(NULL) imeOptions=0x0 privateImeOptions=null actionName=UNSPECIFIED actionLabel=null actionId=0 initialSelStart=-1 initialSelEnd=-1 initialCapsMode=0x0 hintText=null label=null packageName=com.example.spamfilter_mobile fieldId=0 fieldName=null extras=null}, true)
+12-22 18:34:05.785 I/GoogleInputMethodService( 1382): GoogleInputMethodService.shouldHideHeaderOnInitialState():4008 ShouldHideHeaderOnInitialState = false
+12-22 18:34:05.787 I/GoogleInputMethodService( 1382): GoogleInputMethodService.updateDeviceLockedStatus():2087 repeatCheckTimes = 2, unlocked = true
+12-22 18:34:05.787 W/SessionManager( 1382): SessionManager.beginSession():53 Try to begin an already begun session [INPUT_SESSION], end it first
+12-22 18:34:05.796 D/EGL_emulation(  770): app_time_stats: avg=35.13ms min=11.48ms max=816.13ms count=41
+12-22 18:34:06.811 D/EGL_emulation(  770): app_time_stats: avg=16.23ms min=7.32ms max=33.81ms count=59
+12-22 18:34:07.048 D/EGL_emulation( 6906): app_time_stats: avg=46.34ms min=1.83ms max=1102.68ms count=29
+12-22 18:34:07.064 D/audioserver(  413): FGS Logger Transaction failed
+12-22 18:34:07.064 D/audioserver(  413): -129
+12-22 18:34:07.282 D/audioserver(  413): FGS Logger Transaction failed
+12-22 18:34:07.282 D/audioserver(  413): -129
+12-22 18:34:10.151 D/android.hardware.audio@7.1-impl.ranchu(  357): threadLoop: entering standby, frames: 5979648
+12-22 18:34:11.406 I/wpa_supplicant(  758): wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 18:34:14.826 D/StatusBarIconController(  770): ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 18:34:15.477 I/ProtoXDBBufferWrapper( 1382): ProtoXDBBufferWrapper.flushToStorage():153 Flushed 6 data item(s) to storage.
+12-22 18:34:18.179 D/BoundBrokerSvc( 1797): onUnbind: Intent { act=com.google.firebase.dynamiclinks.service.START pkg=com.google.android.gms }
+12-22 18:34:19.342 I/wpa_supplicant(  758): wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 18:34:24.828 D/StatusBarIconController(  770): ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 18:34:24.849 D/EGL_emulation(  770): app_time_stats: avg=24836.15ms min=24836.15ms max=24836.15ms count=1
+12-22 18:34:25.456 I/VoiceInputManagerWrapper( 1382): VoiceInputManagerWrapper.shutdownVoiceInternal():95 shutdownVoiceInternal()

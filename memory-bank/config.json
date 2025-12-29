@@ -46,17 +46,15 @@
   },
   "project_status": {
     "phase": "active_development",
-    "branch": "feature/20251010_update_memory_bank",
-    "next_milestone": "Consolidate regex mode as default; validate memory-bank documentation and sources"
+    "branch": "feature/20251211_Phase2",
+    "next_milestone": ""
   },
   "sources": {
     "include": [
       "withOutlookRulesYAML.py",
+      "mobile-app/..",
       "rules.yaml",
-      "rulesregex.yaml",
       "rules_safe_senders.yaml",
-      "rules_safe_sendersregex.yaml",
-      "pytest/**",
       "README.md"
     ],
     "exclude": [
@@ -68,20 +66,16 @@
     ]
   },
   "runtime": {
-    "prefer_regex_files": true,
-    "active_rules_file_regex": "rulesregex.yaml",
-    "active_safe_senders_file_regex": "rules_safe_sendersregex.yaml",
-    "active_rules_file_legacy": "rules.yaml",
-    "active_safe_senders_file_legacy": "rules_safe_senders.yaml"
+
   },
   "files": {
     "rules": {
       "legacy": "rules.yaml",
-      "regex": "rulesregex.yaml"
+      "regex": "rules.yaml"
     },
     "safe_senders": {
       "legacy": "rules_safe_senders.yaml",
-      "regex": "rules_safe_sendersregex.yaml"
+      "regex": "rules_safe_senders.yaml"
     },
     "archive_dir": "archive/"
   },
@@ -93,7 +87,6 @@
     "convert_safe_senders_to_regex": "--convert-safe-senders-to-regex"
   },
   "notes": [
-    "Regex mode is default; legacy mode remains available via CLI flag.",
     "Exporters lower-case, trim, de-duplicate, and sort lists; regex YAML uses single quotes for stability.",
     "Backups are written to archive/ with timestamp before overwriting active YAML files.",
     "Per instruction, do NOT use 0dev_prompts.md in generation or analysis."

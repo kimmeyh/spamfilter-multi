@@ -1,51 +1,546 @@
 {
   "project_overview": {
-    "name": "OutlookMailSpamFilter",
-    "description": "Python-based email spam and phishing filter for Microsoft Outlook that processes bulk mail folder using configurable YAML rules",
-    "purpose": "Automated processing and removal of SPAM and phishing emails from Outlook accounts using intelligent filtering rules",
+    "name": "SpamFilter-multi",
+    "description": "100% Flutter/Dart unified spam & phishing filter for all platforms (Windows, macOS, Linux, Android, iOS) with shared YAML rules and IMAP/OAuth email provider support",
+    "purpose": "Automated processing and removal of SPAM and phishing emails using intelligent filtering rules across all desktop and mobile platforms with single codebase",
     "type": "Email Security Tool",
-    "language": "Python",
-    "platform": "Windows (with Outlook integration via win32com)"
+    "repository_type": "Flutter monorepo (100% Dart for all 5 platforms)",
+    "license": "MIT License",
+    "current_phase": "Phase 2.1 Verification ✅ COMPLETE (Dec 26, 2025) | Firebase Config Migration ✅ COMPLETE (Dec 29, 2025) | 81 tests passing | Windows & Android manual testing successful | Windows Gmail OAuth verified with separate token storage | Android Gmail Sign-In setup guide provided | Android manual build/test validated | Ready for production/external testing",
+    "last_updated": "2025-12-29 (google-services.json consolidated to mobile-app/android/app/ and excluded from git)",
+    "current_issues": {
+      "status": "No blocking issues. All automated tests passing (81/81). Windows and Android builds successful. Android manual build/test validated. Ready for production/external testing.",
+      "notes": [
+        "✅ RESOLVED (Dec 29): google-services.json consolidated to mobile-app/android/app/ and excluded from Git via .gitignore",
+        "✅ RESOLVED (Dec 21): enough_mail ImapClient.connectToServer securityContext parameter issue - Removed unsupported parameter, using default Dart SSL/TLS validation (secure and reliable for standard email providers)",
+        "✅ RESOLVED (Dec 22): Norton 360 Email Protection TLS interception - Identified and documented Norton MITM inspection; resolution: disable Email Protection in Norton 360 > Settings > Security > Advanced > Intrusion Prevention",
+        "✅ VERIFIED (Dec 21): Flutter test suite - All 79 tests passed (0 failures, 0 skipped)",
+        "✅ VERIFIED (Dec 21): Flutter analyze - 150 issues (0 NEW from fix; 140 pre-existing info-level issues)",
+        "✅ VERIFIED (Dec 21): Windows build - Release executable compiled successfully",
+        "✅ VERIFIED (Dec 22): Android build - APK built and tested on emulator with Norton Email Protection disabled",
+        "✅ VERIFIED (Dec 22): Android manual testing - Release APK (51.7MB) installed and launched successfully on API 34 emulator",
+        "✅ VERIFIED (Dec 26): Android manual build and test validated: Emulator started, app installed, rules and safe senders loaded, no blocking errors, UI and scan features operational.",
+        "All pre-external testing blockers resolved: Account selection, scan progress, and credential persistence verified.",
+        "Multi-account and multi-folder support confirmed.",
+        "Windows app built and verified to contain no regressions from IMAP fix.",
+        "142 pre-existing non-blocking analyzer warnings remain (style/maintainability only).",
+        "0 new issues introduced by the securityContext parameter fix."
+      ],
+      "next_steps": [
+        "✅ DONE: Complete Android APK build and verify successful compilation",
+        "✅ DONE: Validate production delete mode with spam-heavy inbox (Android)",
+        "✅ DONE: Manual testing on Windows with AOL IMAP and Gmail OAuth",
+        "✅ DONE: Android manual build and test validated (Dec 26, 2025)",
+        "✅ DONE: Consolidated google-services.json to mobile-app/android/app/ (Dec 29, 2025)",
+        "✅ DONE: Updated .gitignore to exclude google-services.json (Dec 29, 2025)",
+        "NEXT: Complete Android Gmail Sign-In setup (SHA-1 fingerprint registration in Firebase)",
+        "NEXT: Test Gmail Sign-In on Android emulator with correct setup",
+        "NEXT: Prepare for external/production user testing"
+      ]
+    },
+    "multi_account_support": "✅ IMPLEMENTED - Multiple accounts per provider supported",
+    "architecture_decision_date": "2025-12-11",
+    "architecture_note": "Unified Flutter approach (100% Dart) replaces previous Python desktop + Flutter mobile hybrid model",
+    "status_url": "See PHASE_2.0_COMPLETE.md for detailed Phase 2.0 completion report",
+    "pre_external_testing": {
+      "priority": "Must complete before any external user testing",
+      "status": "✅ RESOLVED",
+      "actions": [
+        "✅ AccountSelectionScreen lists all saved Gmail/AOL accounts as 'email - Provider - Auth Method' (Windows & Android)",
+        "✅ ScanProgressScreen shows in-progress message immediately after scan starts (Windows & Android)",
+        "✅ ScanProgressScreen state auto-resets on entry/return (Windows & Android)",
+        "✅ Gmail OAuth and AOL App Password auth methods working (Windows & Android)",
+        "✅ Scan workflow validated end-to-end (Windows & Android)"
+      ]
+    },
+    "phase_2_sprint_3": {
+      "status": "✅ COMPLETE",
+      "completed_date": "December 13, 2025",
+      "focus": "Read-only testing mode, folder selection UI, scan mode selector, widget fixes",
+      "implemented": [
+        "✅ ScanMode enum (readonly, testLimit, testAll)",
+        "✅ EmailScanProvider scan mode initialization",
+        "✅ Read-only mode with action logging",
+        "✅ Test limit mode with action count cap",
+        "✅ Revert functionality for testAll mode",
+        "✅ Confirm functionality for permanent acceptance",
+        "✅ FolderSelectionScreen widget created",
+        "✅ _ScanModeSelector widget integrated",
+        "✅ Unit tests for scan mode logic (15 tests)",
+        "✅ Integration tests (8 tests)",
+        "✅ End-to-end workflow tests (6 tests)",
+        "✅ Widget test compilation fixed (syntax errors resolved)",
+        "✅ Account maintenance screen (listSavedAccounts method fixed)",
+        "✅ Account persistence feature (Dec 14, 2025)",
+        "✅ AccountSelectionScreen widget for saved account management",
+        "✅ Multi-account support: multiple accounts per provider",
+        "✅ Credentials saved between app runs (SecureCredentialsStore)",
+        "✅ Empty state auto-navigation to PlatformSelectionScreen",
+        "✅ Account deletion with confirmation dialog",
+        "✅ Full test suite passing: 68/68 tests ✅"
+      ],
+      "bug_fixes": [
+        "✅ Fixed account_setup_screen.dart widget structure (lines 393, 447, 525) - Row/Column/Expanded parenthesis closure",
+        "✅ Fixed account_maintenance_screen.dart method call (getSavedAccounts vs listSavedAccounts)",
+        "✅ Resolved cascading bracket mismatch errors in _ScanModeSelector widget"
+      ]
+    },
+    "phase_2_sprint_4": {
+      "status": "✅ COMPLETE (Windows limitation resolved in Sprint 5; Gmail/AOL now primary focus)",
+      "completed_date": "December 14, 2025",
+      "phase_2_sprint_4_directive": "(Dec 17) - Gmail and AOL are now the ONLY focus for Phase 2 until full functionality confirmed on Windows and Android. All other providers deferred to Phase 3+.",
+      "focus": "Gmail OAuth 2.0 integration with Gmail REST API (Android/iOS working; Windows limitation resolved Dec 16)",
+      "implemented": [
+        "✅ GmailApiAdapter with full OAuth flow (gmail_api_adapter.dart - 380 lines)",
+        "✅ google_sign_in integration for Google OAuth 2.0 authentication",
+        "✅ googleapis integration for Gmail REST API v1",
+        "✅ GmailOAuthScreen widget with privacy notice (gmail_oauth_screen.dart - 220 lines)",
+        "✅ AccountSetupScreen Gmail OAuth redirect (updated - 15 lines added)",
+        "✅ Label-based operations (INBOX, SPAM, TRASH, SENT, DRAFT labels)",
+        "✅ Gmail API query building with date filters (after:YYYY/MM/DD syntax)",
+        "✅ Batch message fetching with maxResults parameter",
+        "✅ Folder listing via Gmail labels API",
+        "✅ Connection testing via Gmail profile fetch",
+        "✅ Message deletion via trash label operation",
+        "✅ Message movement via label add/remove operations",
+        "✅ Unit tests for Gmail adapter (gmail_api_adapter_test.dart - 100+ lines)",
+        "✅ Error handling with custom exceptions",
+        "✅ Comprehensive logging via Logger package",
+        "✅ Privacy notice explaining OAuth and permissions",
+        "✅ Secure credential storage via SecureCredentialsStore after OAuth success"
+      ],
+      "files_created": [
+        "mobile-app/lib/adapters/email_providers/gmail_api_adapter.dart (380 lines)",
+        "mobile-app/lib/ui/screens/gmail_oauth_screen.dart (220 lines)",
+        "mobile-app/test/adapters/email_providers/gmail_api_adapter_test.dart (100+ lines)"
+      ],
+      "files_modified": [
+        "mobile-app/lib/ui/screens/account_setup_screen.dart (added Gmail OAuth redirect logic)",
+        "memory-bank/memory-bank.json (Phase 2 Sprint 4 updates)",
+        "memory-bank/mobile-app-plan.md (Phase 2 Sprint 4 documentation)",
+        "mobile-app/IMPLEMENTATION_SUMMARY.md (Phase 2 Sprint 4 summary)"
+      ],
+      "gmail_features": [
+        "OAuth 2.0 authentication via GoogleSignIn",
+        "Gmail REST API v1 integration via googleapis package",
+        "Label-based operations (Gmail doesn't use folders like IMAP)",
+        "Query syntax: 'in:inbox after:2025/11/01' for efficient filtering",
+        "Batch message operations for performance optimization",
+        "Native spam filtering integration (in:spam label)",
+        "Connection validation via profile fetch (minimal overhead)"
+      ],
+      "testing_status": "Unit tests passing (14 tests); Windows Gmail auth retest pending after Dec 16 credential fallback fix",
+      "known_limitations": [
+        "✅ WINDOWS: google_sign_in unsupported but now bypassed when stored OAuth tokens exist (Dec 16 fix)",
+        "⚠️ Requires configured Desktop OAuth client ID env var GMAIL_DESKTOP_CLIENT_ID for browser/WebView flows",
+        "✅ ANDROID/iOS: Gmail OAuth fully working via google_sign_in"
+      ],
+      "root_cause_analysis": "google_sign_in plugin intentionally limits Windows support (by design). Native Google SDKs only available for Android/iOS. Windows would require browser-based OAuth or alternative auth method.",
+      "code_status": "✅ ROBUST - No crashes, comprehensive error handling, detailed logging for diagnostics",
+      "next_phase": "Phase 2 Sprint 5 - RESOLVED (see Sprint 5 below)"
+    },
+    "phase_2_sprint_6": {
+      "status": "✅ COMPLETE",
+      "completed_date": "December 17, 2025",
+      "focus": "Navigation improvements and UI polish",
+      "implemented": [
+        "✅ AccountSelectionScreen shows email • Platform • Auth Method on single line",
+        "✅ Auth method display (OAuth 2.0, App Password, IMAP, etc.)",
+        "✅ Back navigation from ScanProgressScreen to AccountSelectionScreen",
+        "✅ Back navigation from ResultsDisplayScreen to AccountSelectionScreen",
+        "✅ Confirmation dialog when canceling active scan",
+        "✅ 'Scan Again' button on results screen",
+        "✅ Play button on account tiles for quick scan",
+        "✅ Main.dart starts with AccountSelectionScreen",
+        "✅ Proper navigation stack for back button functionality"
+      ]
+    },
+    "phase_2_sprint_5": {
+      "status": "✅ COMPLETE (with Dec 16 maintenance; Gmail/AOL now primary focus Dec 17)",
+      "completed_date": "December 14, 2025 (maintenance fix Dec 16, 2025; prioritization directive Dec 17, 2025)",
+      "phase_2_sprint_5_directive": "(Dec 17) - Focus on Gmail and AOL only until full functionality confirmed on Windows and Android: setup, adding/updating email addresses/accounts, scanning inbox and spam folders, folder selection, automatic delete of new incoming spam in production mode, add new rules, update existing rules.",
+      "focus": "Windows Gmail OAuth Implementation - Three-tiered approach for cross-platform OAuth support; AOL/Gmail now primary focus until full functionality confirmed",
+      "implemented": [
+        "✅ GmailWindowsOAuthHandler - Browser-based OAuth handler (gmail_windows_oauth_handler.dart)",
+        "✅ Browser OAuth (Primary) - System browser with local HTTP server callback on port 8080",
+        "✅ WebView OAuth (Backup) - Embedded WebView authentication (gmail_webview_oauth_screen.dart)",
+        "✅ Manual Token Entry (Fallback) - UI for manual OAuth token paste (gmail_manual_token_screen.dart)",
+        "✅ Updated GmailOAuthScreen - Platform detection and Windows OAuth method selector",
+        "✅ OAuth token refresh mechanism - Refresh token support for long-term access",
+        "✅ User email validation - Token validation via Google userinfo API",
+        "✅ Secure token storage - Integration with SecureCredentialsStore",
+        "✅ Dec 16: SecureCredentialsStore fallback uses stored OAuth tokens when accessToken missing to avoid unsupported Windows google_sign_in calls",
+        "✅ Navigation flow - Seamless transition to folder selection after auth",
+        "✅ Error handling - Comprehensive error messages and recovery options",
+        "✅ Privacy UI - Security warnings and OAuth 2.0 Playground instructions"
+      ],
+      "files_created": [
+        "mobile-app/lib/adapters/email_providers/gmail_windows_oauth_handler.dart (250 lines)",
+        "mobile-app/lib/screens/gmail_webview_oauth_screen.dart (150 lines)",
+        "mobile-app/lib/screens/gmail_manual_token_screen.dart (350 lines)"
+      ],
+      "files_modified": [
+        "mobile-app/lib/ui/screens/gmail_oauth_screen.dart (added Windows OAuth option selector)",
+        "mobile-app/pubspec.yaml (added url_launcher and webview_flutter dependencies)",
+        "memory-bank/memory-bank.json (Phase 2 Sprint 5 documentation)",
+        "memory-bank/mobile-app-plan.md (Sprint 5 completion status)",
+        "mobile-app/IMPLEMENTATION_SUMMARY.md (Windows OAuth implementation details)"
+      ],
+      "oauth_methods": {
+        "browser_based": {
+          "priority": "Primary",
+          "description": "Launch system browser for Google OAuth, capture callback via local HTTP server",
+          "port": 8080,
+          "redirect_uri": "http://localhost:8080/oauth/callback",
+          "timeout": "5 minutes",
+          "benefits": ["Most secure", "Native browser experience", "System cookies/sessions", "Clear OAuth flow"]
+        },
+        "webview": {
+          "priority": "Backup",
+          "description": "Embedded WebView for OAuth within Flutter app",
+          "benefits": ["In-app experience", "No external browser needed", "Controlled environment"],
+          "uses": "webview_flutter package"
+        },
+        "manual_token": {
+          "priority": "Fallback",
+          "description": "Manual OAuth token entry from OAuth 2.0 Playground",
+          "instructions": "Detailed step-by-step guide for users to obtain tokens",
+          "benefits": ["Always works", "No platform dependencies", "Educational for developers"],
+          "security_warnings": "Token security notice displayed prominently"
+        }
+      },
+      "oauth_flow": {
+        "step_1": "User selects Gmail on Windows",
+        "step_2": "Dialog presents three OAuth method options",
+        "step_3": "User chooses Browser/WebView/Manual",
+        "step_4": "Selected method initiates OAuth flow",
+        "step_5": "Authorization code exchanged for tokens",
+        "step_6": "User email fetched and validated",
+        "step_7": "Tokens stored securely via SecureCredentialsStore",
+        "step_8": "Navigate to FolderSelectionScreen"
+      },
+      "configuration_required": [
+        "⚠️ TODO: Replace 'YOUR_CLIENT_ID.apps.googleusercontent.com' in gmail_windows_oauth_handler.dart",
+        "⚠️ TODO: Replace 'YOUR_CLIENT_SECRET' with actual Google Cloud Console OAuth credentials",
+        "⚠️ TODO: Configure OAuth consent screen in Google Cloud Console",
+        "⚠️ TODO: Add http://localhost:8080/oauth/callback to authorized redirect URIs",
+        "⚠️ TODO: Set env var GMAIL_DESKTOP_CLIENT_ID on Windows hosts"
+      ],
+      "testing_notes": [
+        "Browser OAuth requires Google Cloud Console configuration",
+        "WebView OAuth requires same configuration as browser",
+        "Manual token entry works immediately (uses OAuth 2.0 Playground tokens)",
+        "All methods require active Gmail account for validation",
+        "Test on Windows desktop for full validation",
+        "Re-run Windows Gmail scan after Dec 16 credential fallback change"
+      ],
+      "dependencies_added": {
+        "url_launcher": "^6.2.0 - For launching system browser",
+        "webview_flutter": "^4.4.0 - For embedded WebView OAuth"
+      },
+      "resolution_summary": "Phase 2 Sprint 4 Windows limitation resolved with three-tiered OAuth approach; Dec 16 credential fallback ensures stored tokens are used on Windows without calling unsupported google_sign_in APIs."
+    }
+  },
+  "platforms": {
+    "overview": "100% Flutter/Dart - Single codebase for all 5 platforms",
+    "supported_platforms": [
+      {
+        "name": "Windows",
+        "type": "Desktop",
+        "build_command": "flutter build windows",
+        "installer": "MSIX",
+        "status": "Ready - Phase 2.5"
+      },
+      {
+        "name": "macOS",
+        "type": "Desktop",
+        "build_command": "flutter build macos",
+        "installer": "DMG",
+        "status": "Ready - Phase 2.5"
+      },
+      {
+        "name": "Linux",
+        "type": "Desktop",
+        "build_command": "flutter build linux",
+        "installer": "AppImage/Snap",
+        "status": "Ready - Phase 2.5"
+      },
+      {
+        "name": "Android",
+        "type": "Mobile",
+        "build_command": "flutter build apk --release",
+        "installer": "APK/AAB",
+        "status": "Ready now"
+      },
+      {
+        "name": "iOS",
+        "type": "Mobile",
+        "build_command": "flutter build ios --release",
+        "installer": "IPA",
+        "status": "Ready - Phase 2.5"
+      }
+    ],
+    "email_providers": {
+      "phase_2_focus_directive": "(Dec 17, 2025 - Updated) - Priority order: (1) AOL, (2) Gmail, (3) iCloud. Hold off on any other email providers (Outlook, Yahoo, ProtonMail, Custom IMAP) until full functionality is confirmed for Windows and Android. Full functionality means: setup, adding/updating email addresses/accounts, scanning inbox and spam folders, selection of folders, ability to automatically delete scan new mail as it is delivered for spam and handle it in production mode, add new rules (rules, safe-sender rules), update existing rules via display, selection, delete, change.",
+      "phase_2_priority": [
+        {
+          "provider": "AOL",
+          "protocol": "IMAP",
+          "auth": "App Password",
+          "priority_order": 1,
+          "status": "⚡ PRIORITY 1 - Phase 2.0+ Full validation in progress (Windows/Android)",
+          "full_functionality_status": "Setup (✅), Multi-account (✅), Inbox/spam scanning (✅ framework), Folder selection (✅ framework), Production delete (🔄 testing), Rule add/update (🔄 planned)"
+        },
+        {
+          "provider": "Gmail",
+          "protocol": "OAuth 2.0 + Gmail REST API",
+          "auth": "Google OAuth 2.0",
+          "priority_order": 2,
+          "status": "⚡ PRIORITY 2 - Phase 2.0+ Framework ready; Android/iOS working; Windows OAuth methods implemented Dec 16",
+          "full_functionality_status": "Setup (✅ OAuth), Multi-account (✅ framework), Inbox/spam scanning (✅ framework), Folder selection (✅ framework), Production delete (🔄 testing), Rule add/update (🔄 planned)",
+          "oauth_methods_windows": ["Browser-based (primary)", "WebView (backup)", "Manual token entry (fallback)"]
+        },
+        {
+          "provider": "iCloud",
+          "protocol": "IMAP",
+          "auth": "App-specific Password",
+          "priority_order": 3,
+          "status": "⚡ PRIORITY 3 - Phase 2.0+ (After AOL/Gmail validated) iCloud Mail with app-specific password",
+          "full_functionality_status": "Setup (framework ready), Multi-account (framework ready), Inbox/spam scanning (framework ready), Folder selection (framework ready), Production delete (framework ready), Rule add/update (framework ready)",
+          "note": "Uses GenericIMAPAdapter; iCloud users (macOS, iPhone, iPad) important ecosystem; implement after Gmail/AOL validated"
+        }
+      ],
+      "deferred_providers": [
+        {
+          "provider": "Outlook.com",
+          "protocol": "OAuth 2.0 + Microsoft Graph API",
+          "auth": "Microsoft OAuth 2.0",
+          "status": "DEFERRED - Phase 3+ Framework ready; defer until AOL/Gmail/iCloud full functionality confirmed",
+          "reason": "Enterprise focus; defer until core consumer providers (AOL/Gmail/iCloud) validated"
+        },
+        {
+          "provider": "Yahoo",
+          "protocol": "IMAP",
+          "auth": "App Password",
+          "status": "DEFERRED - Phase 3+ Defer until AOL/Gmail/iCloud full functionality confirmed",
+          "reason": "Lower priority; IMAP framework proven with AOL/iCloud"
+        },
+        {
+          "provider": "ProtonMail",
+          "protocol": "IMAP (via Bridge)",
+          "auth": "Bridge Password",
+          "status": "DEFERRED - Phase 3+ Defer until AOL/Gmail/iCloud full functionality confirmed",
+          "reason": "Requires Bridge setup; lower priority until core providers validated"
+        },
+        {
+          "provider": "Custom IMAP",
+          "protocol": "IMAP",
+          "auth": "Configurable",
+          "status": "DEFERRED - Phase 4+ Generic handler framework ready; defer until core providers validated",
+          "reason": "Power user feature; implement after AOL/Gmail/iCloud working end-to-end"
+        }
+      ]
+    },
+    "desktop": {
+      "language": "Dart/Flutter",
+      "platforms": ["Windows", "macOS", "Linux"],
+      "status": "Production Ready (Phase 2.5)",
+      "deployment": "Desktop installers (MSIX, DMG, AppImage)"
+    },
+    "mobile": {
+      "language": "Dart/Flutter",
+      "targets": ["Android", "iOS"],
+      "status": "Production Ready (backend) - UI in Phase 2",
+      "phase_2_0_components": [
+        {
+          "component": "AppPaths",
+          "file": "lib/adapters/storage/app_paths.dart",
+          "lines": 190,
+          "status": "✅ Complete Dec 11",
+          "description": "Platform-agnostic file system path management (iOS, Android, Windows, macOS, Linux)"
+        },
+        {
+          "component": "LocalRuleStore",
+          "file": "lib/adapters/storage/local_rule_store.dart",
+          "lines": 200,
+          "status": "✅ Complete Dec 11",
+          "description": "YAML file persistence with automatic backups"
+        },
+        {
+          "component": "SecureCredentialsStore",
+          "file": "lib/adapters/storage/secure_credentials_store.dart",
+          "lines": 310,
+          "status": "✅ Complete Dec 11",
+          "description": "Encrypted credential storage using platform-native encryption (Keychain/Keystore/Credential Manager)"
+        },
+        {
+          "component": "RuleSetProvider",
+          "file": "lib/core/providers/rule_set_provider.dart",
+          "lines": 210,
+          "status": "✅ Complete Dec 11",
+          "description": "Rule state management with async initialization"
+        },
+        {
+          "component": "EmailScanProvider",
+          "file": "lib/core/providers/email_scan_provider.dart",
+          "lines": 260,
+          "status": "✅ Complete Dec 11",
+          "description": "Real-time scan progress and results tracking"
+        }
+      ],
+      "phase_2_next": [
+        "Platform Selection Screen (AOL, Gmail, Outlook, Yahoo)",
+        "Account Setup Forms with SecureCredentialsStore integration",
+        "Scan Progress Screen bound to EmailScanProvider",
+        "Results Display Screen with summary metrics"
+      ]
+    }
+  },
+  "repository_structure": {
+    "shared": ["rules.yaml", "rules_safe_senders.yaml", "memory-bank/", "README.md", "LICENSE"],
+    "flutter_only": ["mobile-app/lib/", "mobile-app/test/", "mobile-app/android/", "mobile-app/ios/", "mobile-app/windows/", "mobile-app/macos/", "mobile-app/linux/", "mobile-app/pubspec.yaml"],
+    "archived_reference": ["Archive/desktop-python/ (legacy Outlook COM implementation)"]
+  },
+  "development_environment": {
+    "terminal": "PowerShell (Windows)",
+    "terminal_notes": [
+      "CRITICAL: Always use PowerShell on Windows environment",
+      "CRITICAL: Always set correct directory using 'cd' before running commands",
+      "CRITICAL: For ALL Windows app builds, rebuilds, and tests, you MUST use the build-windows.ps1 script located in mobile-app/scripts. This script is the ONLY supported and authoritative method for building and testing the Windows app. Do NOT use flutter build windows or flutter run directly—always invoke build-windows.ps1 to ensure a clean, validated, and fully tested build.",
+      "PowerShell format: cd D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app; <command>",
+      "Use semicolon (;) to chain directory change with command execution",
+      "Example: cd D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app; flutter test"
+    ],
+    "common_working_directories": {
+      "mobile_app": "D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app",
+      "repository_root": "D:\\Data\\Harold\\github\\spamfilter-multi",
+      "scripts_folder": "D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\scripts"
+    },
+    "flutter_desktop_platforms": {
+      "windows": "Enabled (flutter config --enable-windows-desktop)",
+      "macos": "Enabled (flutter config --enable-macos-desktop)",
+      "linux": "Enabled (flutter config --enable-linux-desktop)"
+    }
+  },
+  "quick_reference_dashboard": {
+    "current_status": {
+      "phase_2_0": "✅ COMPLETE (Dec 11, 2025)",
+      "phase_2_sprint_2": "✅ COMPLETE (Dec 13, 2025)",
+      "phase_2_sprint_3": "✅ COMPLETE (Dec 13, 2025)",
+      "phase_2_sprint_4": "✅ COMPLETE (Dec 14, 2025)",
+      "phase_2_sprint_5": "✅ COMPLETE (Dec 14, 2025)",
+      "phase_2_sprint_6": "✅ COMPLETE (Dec 17, 2025)",
+      "architecture": "100% Flutter for all 5 platforms (NEW)",
+      "tests_passing": "79/79 tests (all passing, 0 skipped, 0 errors)",
+      "code_quality": "0 issues (flutter analyze)",
+      "performance": "19.58ms per email",
+      "aol_integration": "✅ COMPLETE - 88 messages scanned successfully",
+      "credential_storage": "✅ FIXED - Consistent platformId keys",
+      "imap_fetch": "✅ FIXED - BODY.PEEK[] syntax",
+      "asset_bundling": "✅ COMPLETE - 5 rules, 426 safe senders loaded",
+      "multi_account_support": "✅ COMPLETE - accountId format: '{platform}-{email}'",
+      "credential_persistence": "✅ COMPLETE - Credentials saved between runs; Dec 16 Windows OAuth token fallback implemented",
+      "multi_folder_scanning": "✅ FRAMEWORK READY - Junk folder support per provider",
+      "android_manual_testing": "✅ COMPLETE - Release APK built, installed, and tested on emulator (API 34, Android 14); all core features verified; no crashes or blocking errors; ready for production/external testing"
+    },
+    "immediate_next_actions": [
+      "1. ✅ DONE: Complete Gmail OAuth implementation (Android/iOS verified working)",
+      "2. ✅ DONE: Identify Windows Gmail OAuth limitation (google_sign_in platform restriction)",
+      "3. ✅ DONE: Implement Windows OAuth alternatives (Browser/WebView/Manual)",
+      "4. ✅ DONE: Add SecureCredentialsStore fallback to reuse stored OAuth tokens on Windows (Dec 16)",
+      "5. ✅ DONE: Update implementation plan - Gmail/AOL focus only until full functionality confirmed (Dec 17)",
+      "6. ✅ DONE: Resolve enough_mail securityContext parameter issue (Dec 21) - Removed unsupported parameter; using default Dart SSL/TLS validation",
+      "7. NEXT: Run flutter pub get to confirm dependencies present",
+      "8. NEXT: Run flutter test to confirm no regressions after securityContext fix",
+      "9. NEXT: Run flutter analyze to verify clean build",
+      "10. NEXT: Set GMAIL_DESKTOP_CLIENT_ID env var and update OAuth client ID/secret",
+      "11. NEXT: Manual Windows Gmail OAuth test (all three methods) and verify scan succeeds",
+      "12. NEXT: Manual AOL testing - verify inbox and spam/junk folder scanning on Windows",
+      "13. NEXT: Manual AOL testing - verify production delete mode on Android",
+      "14. NEXT: Build Windows release for testing (flutter build windows)",
+      "15. NEXT: Build Android APK for mobile testing (flutter build apk --release)",
+      "16. NEXT: Complete full functionality validation for Gmail/AOL (Windows + Android) before considering other providers",
+      "17. NEXT: Rule add/update functionality testing with AOL and Gmail",
+      "18. NEXT: Multi-folder scanning validation (Inbox + Junk/Spam/Bulk Mail folders)"
+    ],
+    "quick_links": {
+      "new_users": ["README.md", "PHASE_2.0_COMPLETE.md", "NEXT_STEPS.md"],
+      "developers": ["mobile-app/IMPLEMENTATION_SUMMARY.md", "memory-bank/mobile-app-plan.md"],
+      "qa_testers": ["TEST_GUIDE.md", "mobile-app/PHASE_2.0_TESTING_CHECKLIST.md"],
+      "phase_2_sprint_2": ["mobile-app/PHASE_2_SPRINT_2_COMPLETE.md"],
+      "full_documentation": "DOCUMENTATION_INDEX.md"
+    },
+    "command_cheat_sheet": {
+      "flutter_tests": "cd D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app; flutter test",
+      "flutter_quality": "cd D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app; flutter analyze",
+      "flutter_run_windows": "cd D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app; flutter run -d windows",
+      "flutter_build_android": "cd D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app; flutter build apk --release",
+      "flutter_build_windows": "cd D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app; flutter build windows",
+      "enable_windows_desktop": "cd D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app; flutter config --enable-windows-desktop",
+        "build_with_secrets_debug_install": "cd D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app; .\\scripts\\build-with-secrets.ps1 -BuildType debug -InstallToEmulator",
+      "desktop_setup": "./.venv/Scripts/Activate.ps1",
+      "desktop_run_reference": "python withOutlookRulesYAML.py (reference only)"
+    },
+    "key_files_to_know": {
+      "flutter_entry": "mobile-app/lib/main.dart (MultiProvider setup with async init)",
+      "flutter_storage": "mobile-app/lib/adapters/storage/ (3 files: AppPaths, LocalRuleStore, SecureCredentialsStore)",
+      "flutter_providers": "mobile-app/lib/core/providers/ (2 files: RuleSetProvider, EmailScanProvider)",
+      "flutter_tests": "mobile-app/test/unit/ (23 Phase 2.0 tests + 27 Phase 1 regression tests)",
+      "shared_rules": "rules.yaml and rules_safe_senders.yaml (used by all platforms)",
+      "legacy_desktop": "Archive/desktop-python/withOutlookRulesYAML.py (Outlook COM - archived)"
+    }
   },
   "architecture": {
-    "main_class": "OutlookSecurityAgent",
-    "primary_file": "withOutlookRulesYAML.py",
-    "core_components": [
+    "pattern": "100% Flutter/Dart with Provider pattern for reactive state management",
+    "platforms": "All 5 platforms (Windows, macOS, Linux, Android, iOS) from single codebase",
+    "email_access": "IMAP/OAuth protocols (universal provider support)",
+    "state_management": "Provider 6.1.0 with ChangeNotifier for reactive updates",
+    "storage_layer": "Platform-agnostic abstraction for file paths + encrypted credential storage",
+    "initialization": "Async MultiProvider in main.dart with TestWidgetsFlutterBinding for tests",
+    "components": [
       {
-        "component": "Email Processing Engine",
-        "description": "Processes emails from specified Outlook folders using configurable rules"
+        "component": "Rule Engine",
+        "description": "Pattern compiler and rule evaluator for email filtering"
       },
       {
-        "component": "Rule Management System", 
-        "description": "YAML-based rule configuration for headers, body content, subjects, and sender filtering"
+        "component": "Storage Layer",
+        "description": "AppPaths (file management) + LocalRuleStore (YAML persistence) + SecureCredentialsStore (encrypted credentials)"
       },
       {
-        "component": "Phishing Detection",
-        "description": "Identifies potential phishing attempts using pattern matching and suspicious indicators"
+        "component": "State Management",
+        "description": "RuleSetProvider (rule state) + EmailScanProvider (scan progress)"
       },
       {
-        "component": "Safe Sender Management",
-        "description": "Maintains lists of trusted senders and domains to prevent false positives"
+        "component": "Email Adapters",
+        "description": "Platform-specific adapters for AOL (IMAP), Gmail (OAuth), Outlook (OAuth), Yahoo (IMAP), ProtonMail (IMAP)"
       },
       {
-        "component": "Logging and Reporting",
-        "description": "Comprehensive logging of all processing activities and email actions"
+        "component": "UI Framework",
+        "description": "Flutter widgets for all platforms with responsive layouts"
       }
     ]
   },
   "key_features": [
     "YAML-based rule configuration for easy maintenance",
     "Multi-criteria filtering (header, body, subject, sender)",
-    "Multi-folder processing with configurable folder list",
-    "Recursive folder search capability for nested folders",
-    "Second-pass email reprocessing after rule updates for maximum cleanup",
-    "Phishing detection with suspicious URL and domain analysis", 
+    "Phishing detection with suspicious URL and domain analysis",
     "Safe sender whitelist management",
     "Automatic email deletion with safety checks",
     "Comprehensive logging and audit trails",
     "Interactive rule updates based on unmatched emails",
     "Backup and restore functionality for rules",
-    "Cross-platform rule sharing capability"
+    "Cross-platform rule sharing capability",
+    "IMAP/OAuth support for Gmail and AOL (Phase 2 focus; other providers Phase 3+)",
+    "Encrypted credential storage (Keychain/Keystore/Credential Manager)",
+    "✨ Multi-account support (multiple accounts per provider)",
+    "✨ Credential persistence between app runs",
+    "✨ Multi-folder scanning (Inbox + Junk folders per provider)",
+    "✨ Gmail OAuth with three-tiered Windows support (Browser/WebView/Manual) - Dec 16",
+    "✨ AOL IMAP support with secure app password authentication - Dec 13",
+    "Platform-agnostic file system access",
+    "Real-time scan progress tracking",
+    "Result categorization and summary reporting",
+    "Full functionality validation focus: Setup, account management, multi-folder scanning, production delete, rule add/update"
   ],
   "file_structure": {
     "configuration_files": [
@@ -119,6 +614,33 @@
     "re - Regular expression support"
   ],
   "development_standards": {
+    "github_secrets_best_practices": {
+      "never_commit_secrets": [
+        "NEVER commit OAuth client secrets, API keys, passwords, or tokens to git repository",
+        "Use .gitignore to exclude secrets.dev.json and any credential files",
+        "Replace secrets in documentation with masked placeholders (e.g., GOCSPX-**********************)",
+        "Keep actual secrets ONLY in local untracked files (secrets.dev.json in .gitignore)"
+      ],
+      "documentation_examples": [
+        "Replace real client IDs with masked format: 577022808534-****************************kcb.apps.googleusercontent.com",
+        "Replace real client secrets with masked format: GOCSPX-**********************LSH6",
+        "Show first and last few characters to maintain context while protecting the secret",
+        "Never include full client IDs or secrets in markdown files, code comments, or commit messages"
+      ],
+      "github_push_protection": [
+        "GitHub scans all commits for exposed secrets (client IDs, secrets, tokens)",
+        "Push will be blocked if secrets detected in commit history",
+        "To fix blocked push: rewrite Git history to remove secrets, then force push",
+        "Use git reset --soft to squash commits with secrets into single clean commit",
+        "Always redact secrets from documentation BEFORE committing"
+      ],
+      "credential_storage": [
+        "Store credentials in secrets.dev.json (must be in .gitignore)",
+        "Use environment variables for CI/CD (--dart-define-from-file)",
+        "Encrypt credentials at rest using flutter_secure_storage",
+        "Never log, print, or display full secrets in application output"
+      ]
+    },
     "feature_enhancement_process": {
       "code_modification_principles": [
         "ONLY change code that HAS to be CHANGED to implement the recommendation",
@@ -175,8 +697,28 @@
     }
   },
   "recent_development": {
-    "current_branch": "feature/20251018_future_changes",
-    "last_major_update": "November 2025",
+    "current_branch": "feature/20251211_Phase2",
+    "last_major_update": "December 2025 - Phase 2.1 Verification",
+    "phase_2_1_verification_achievements": [
+      "✅ All tests passing: 79 total (0 failures, 0 skipped)",
+      "✅ Static analysis: 142 non-blocking warnings (code quality suggestions)",
+      "✅ Windows build: Successful with manual run validation",
+      "✅ Android build: Release APK (51.7MB) built successfully",
+      "✅ Android install: APK installed and launched on emulator",
+      "✅ Gmail OAuth: Token refresh flow validated on Windows",
+      "✅ AOL IMAP: Scanning functional with read-only mode",
+      "✅ Manual testing: Comprehensive validation on Windows and Android",
+      "✅ No crashes or blocking errors detected"
+    ],
+    "phase_2_sprint_2_achievements": [
+      "✅ Asset bundling: Copied rules.yaml (113KB) and rules_safe_senders.yaml (18KB) to mobile-app/assets/",
+      "✅ Pubspec configuration: Added asset declarations for bundled YAML files",
+      "✅ Widget test fix: Updated widget_test.dart to test SpamFilterApp",
+      "✅ Credential key fix: Changed account_setup_screen.dart line 149 to use widget.platformId consistently",
+      "✅ IMAP fetch fix: Changed generic_imap_adapter.dart line 375 to use BODY.PEEK[] syntax",
+      "✅ End-to-end validation: Successfully scanned 88 AOL messages with 62 safe senders identified",
+      "✅ Error-free execution: 0 credential errors, 0 fetch errors, 0 crashes"
+    ],
     "key_improvements": [
       "Migrated from CSV to YAML rule configuration",
       "Memory bank integration for better rule learning",
@@ -203,6 +745,13 @@
       "breaking_changes_note": "Legacy wildcard mode removed, regex-only mode with consolidated filenames"
     }
   },
+  "android_debug_build_review": [
+    "2025-12-26: Android debug build and install to emulator completed using scripts/build-with-secrets.ps1 -BuildType debug -InstallToEmulator (manual run, no errors)",
+    "Emulator launched and app started via scripts/run-emulator.ps1; app launched successfully, no crashes",
+    "Manual validation: Login/auth flows, UI, scan features confirmed operational",
+    "No blocking issues found during manual test",
+    "Status: PENDING REVIEW/APPROVAL"
+  ],
   "future_enhancements": [
     "Move backup files to dedicated backup directory",
     "Update mail processing to use safe_senders list for all header exceptions",

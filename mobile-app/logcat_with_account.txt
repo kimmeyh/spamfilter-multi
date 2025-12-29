@@ -1,0 +1,178 @@
+--------- beginning of main
+I/AiAiEcho( 1486): Predicting[0]: 
+I/AiAiEcho( 1486): EchoTargets: 
+I/AiAiEcho( 1486): Filtered by AiAi flag check: 
+I/AiAiEcho( 1486): Ranked targets strategy: SORT, count: 0, ranking metadata: 
+I/AiAiEcho( 1486): #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+D/EGL_emulation(  770): app_time_stats: avg=15149.10ms min=15149.10ms max=15149.10ms count=1
+W/PageIndicator(  770): Total number of pages invalid: 0. Assuming 1 page.
+--------- beginning of system
+D/CompatibilityChangeReporter(  552): Compat change id reported: 135634846; UID 10117; state: DISABLED
+D/CompatibilityChangeReporter(  552): Compat change id reported: 177438394; UID 10117; state: DISABLED
+D/CompatibilityChangeReporter(  552): Compat change id reported: 135772972; UID 10117; state: DISABLED
+D/CompatibilityChangeReporter(  552): Compat change id reported: 135754954; UID 10117; state: ENABLED
+D/CompatibilityChangeReporter(  552): Compat change id reported: 143937733; UID 10117; state: ENABLED
+W/vold    (  170): There is no valid blk device path for data partition
+W/StorageManagerService(  552): Failed to get storage write record
+I/SmartStorageMaintIdler(  552): Got smart storage maintenance service completion callback
+D/Zygote  (  352): Forked child process 11311
+I/ActivityManager(  552): Start proc 11311:com.google.android.partnersetup/u0a117 for service {com.google.android.partnersetup/com.google.android.partnersetup.InstalledAppJobService}
+W/JobScheduler(  552): Job didn't exist in JobStore: 54b2615 #1000/2808 android/com.android.server.SmartStorageMaintIdler
+I/id.partnersetup(11311): Using CollectorTypeCMC GC.
+W/id.partnersetup(11311): Unexpected CPU variant for x86: x86_64.
+W/id.partnersetup(11311): Known variants: atom, sandybridge, silvermont, goldmont, goldmont-plus, tremont, kabylake, default
+E/id.partnersetup(11311): Not starting debugger since process cannot load the jdwp agent.
+D/CompatibilityChangeReporter(  552): Compat change id reported: 168419799; UID 10117; state: DISABLED
+D/CompatibilityChangeReporter(  552): Compat change id reported: 273564678; UID 10117; state: DISABLED
+D/CompatibilityChangeReporter(  552): Compat change id reported: 265195908; UID 10117; state: ENABLED
+D/CompatibilityChangeReporter(11311): Compat change id reported: 171979766; UID 10117; state: ENABLED
+D/CompatibilityChangeReporter(11311): Compat change id reported: 242716250; UID 10117; state: DISABLED
+D/CompatibilityChangeReporter(  552): Compat change id reported: 170503758; UID 10117; state: ENABLED
+D/nativeloader(11311): Configuring clns-6 for other apk /system/framework/org.apache.http.legacy.jar. target_sdk_version=33, uses_libraries=ALL, library_path=/product/priv-app/PartnerSetupPrebuilt/lib/x86_64, permitted_path=/data:/mnt/expand:/data/user/0/com.google.android.partnersetup
+D/nativeloader(11311): InitLlndkLibrariesProduct: libEGL.so:libGLESv1_CM.so:libGLESv2.so:libGLESv3.so:libRS.so:libandroid_net.so:libbinder_ndk.so:libc.so:libcgrouprc.so:libclang_rt.asan-x86_64-android.so:libcom.android.tethering.connectivity_native.so:libdl.so:libft2.so:liblog.so:libm.so:libmediandk.so:libnativewindow.so:libneuralnetworks.so:libselinux.so:libsync.so:libvndksupport.so:libvulkan.so
+D/nativeloader(11311): Configuring product-clns-7 for unbundled product apk /product/priv-app/PartnerSetupPrebuilt/PartnerSetupPrebuilt.apk. target_sdk_version=33, uses_libraries=, library_path=/product/priv-app/PartnerSetupPrebuilt/lib/x86_64:/product/lib64:/system/product/lib64, permitted_path=/data:/mnt/expand:/data/user/0/com.google.android.partnersetup:/product/lib64:/system/product/lib64
+D/nativeloader(11311): InitVndkspLibrariesProduct: android.hardware.common-V2-ndk.so:android.hardware.common.fmq-V1-ndk.so:android.hardware.graphics.allocator-V2-ndk.so:android.hardware.graphics.common-V4-ndk.so:android.hardware.graphics.common@1.0.so:android.hardware.graphics.common@1.1.so:android.hardware.graphics.common@1.2.so:android.hardware.graphics.composer3-V1-ndk.so:android.hardware.graphics.mapper@2.0.so:android.hardware.graphics.mapper@2.1.so:android.hardware.graphics.mapper@3.0.so:android.hardware.graphics.mapper@4.0.so:android.hardware.renderscript@1.0.so:android.hidl.memory.token@1.0.so:android.hidl.memory@1.0-impl.so:android.hidl.memory@1.0.so:android.hidl.safe_union@1.0.so:libRSCpuRef.so:libRSDriver.so:libRS_internal.so:libbase.so:libbcinfo.so:libblas.so:libc++.so:libcompiler_rt.so:libcutils.so:libdmabufheap.so:libgralloctypes.so:libhardware.so:libhidlbase.so:libhidlmemory.so:libion.so:libjsoncpp.so:liblzma.so:libprocessgroup.so:libunwindstack.so:libutils.so:libutilscallstack.so:libz.so
+V/GraphicsEnvironment(11311): Currently set values for:
+V/GraphicsEnvironment(11311):   angle_gl_driver_selection_pkgs=[]
+V/GraphicsEnvironment(11311):   angle_gl_driver_selection_values=[]
+V/GraphicsEnvironment(11311): ANGLE GameManagerService for com.google.android.partnersetup: false
+V/GraphicsEnvironment(11311): com.google.android.partnersetup is not listed in per-application setting
+V/GraphicsEnvironment(11311): Neither updatable production driver nor prerelease driver is supported.
+I/ActivityManager(  552): Flag disabled. Ignoring finishAttachApplication from uid: 10117. pid: 11311
+D/CompatibilityChangeReporter(11311): Compat change id reported: 194532703; UID 10117; state: ENABLED
+D/CompatibilityChangeReporter(11311): Compat change id reported: 253665015; UID 10117; state: DISABLED
+D/CompatibilityChangeReporter(  552): Compat change id reported: 253665015; UID 10117; state: DISABLED
+D/CompatibilityChangeReporter(  552): Compat change id reported: 194532703; UID 10117; state: ENABLED
+W/JobScheduler(  552): Job didn't exist in JobStore: 335be01 #u0a117/4096 com.google.android.partnersetup/.InstalledAppJobService
+I/wpa_supplicant(  758): wlan0: CTRL-EVENT-BEACON-LOSS 
+D/StatusBarIconController(  770): ignoring old pipeline callbacks, because the new mobile icons are enabled
+D/EGL_emulation(  770): app_time_stats: avg=4848.99ms min=4848.99ms max=4848.99ms count=1
+D/audioserver(  413): FGS Logger Transaction failed
+D/audioserver(  413): -129
+D/EGL_emulation( 6906): app_time_stats: avg=2418.70ms min=13.63ms max=93701.56ms count=39
+I/GoogleInputMethodService( 1382): GoogleInputMethodService.onStartInput():1877 onStartInput(EditorInfo{inputType=0x8021(EmailAddress) imeOptions=0x2000006 privateImeOptions=null actionName=DONE actionLabel=null actionId=0 initialSelStart=17 initialSelEnd=17 initialCapsMode=0x0 hintText=null label=null packageName=com.example.spamfilter_mobile fieldId=1 fieldName=null extras=Bundle[mParcelledData.dataSize=168]}, true)
+I/GoogleInputMethodService( 1382): GoogleInputMethodService.shouldHideHeaderOnInitialState():4008 ShouldHideHeaderOnInitialState = false
+I/ImeTracker( 6906): com.example.spamfilter_mobile:78c1e918: onRequestShow at ORIGIN_CLIENT_SHOW_SOFT_INPUT reason SHOW_SOFT_INPUT
+D/InputMethodManager( 6906): showSoftInput() view=J2.q{936c91a VFE...... .F...... 0,0-1080,2274 #1 aid=1073741824} flags=0 reason=SHOW_SOFT_INPUT
+I/GoogleInputMethodService( 1382): GoogleInputMethodService.updateDeviceLockedStatus():2087 repeatCheckTimes = 2, unlocked = true
+W/SessionManager( 1382): SessionManager.beginSession():53 Try to begin an already begun session [INPUT_SESSION], end it first
+W/ProcessStats(  552): Tracking association SourceState{432585c system/1000 BFgs #13925} whose proc state 4 is better than process ProcessState{3cb6dda com.google.android.inputmethod.latin/10137 pkg=com.google.android.inputmethod.latin} proc state 6 (7 skipped)
+I/GoogleInputMethodService( 1382): GoogleInputMethodService.onStartInputView():1995 onStartInputView(EditorInfo{inputType=0x8021(EmailAddress) imeOptions=0x2000006 privateImeOptions=null actionName=DONE actionLabel=null actionId=0 initialSelStart=17 initialSelEnd=17 initialCapsMode=0x0 hintText=null label=null packageName=com.example.spamfilter_mobile fieldId=1 fieldName=null extras=Bundle[{androidx.core.view.inputmethod.EditorInfoCompat.STYLUS_HANDWRITING_ENABLED=true}]}, false)
+I/DeviceModeUtil( 1382): DeviceModeUtil.getDeviceMode():122 Get device mode phone by ui mode:1 and smallestScreenWidthDp:393
+I/GoogleInputMethodService( 1382): GoogleInputMethodService.updateDeviceLockedStatus():2087 repeatCheckTimes = 2, unlocked = true
+W/ModuleManager( 1382): ModuleManager.loadModule():450 Module erj is not available
+I/KeyboardViewUtil( 1382): KeyboardViewUtil.getKeyboardHeightRatio():189 systemKeyboardHeightRatio:1.000000; userKeyboardHeightRatio:1.000000.
+I/AndroidIME( 1382): AbstractIme.onActivate():86 LatinIme.onActivate() : EditorInfo = inputType=0x8021(EmailAddress) imeOptions=0x2000006 privateImeOptions=null actionName=DONE actionLabel=null actionId=0 initialSelStart=17 initialSelEnd=17 initialCapsMode=0x0 hintText=null label=null packageName=com.example.spamfilter_mobile fieldId=1 fieldName=null extras=Bundle[{androidx.core.view.inputmethod.EditorInfoCompat.STYLUS_HANDWRITING_ENABLED=true}], IncognitoMode = false, DeviceLocked = false
+I/Delight5Facilitator( 1382): Delight5Facilitator.initializeForIme():777 initializeForIme() : Locale = [en_US], layout = qwerty
+I/VoiceInputManagerWrapper( 1382): VoiceInputManagerWrapper.cancelShutdown():55 cancelShutdown()
+I/VoiceInputManagerWrapper( 1382): VoiceInputManagerWrapper.syncLanguagePacks():67 syncLanguagePacks()
+I/LatinIme( 1382): LatinIme.updateEnableInlineSuggestionsOnDecoderSideFlags():1003 inline flag updated to:false
+I/SpeechFactory( 1382): SpeechRecognitionFactory.maybeScheduleAutoPackDownloadForFallback():205 maybeScheduleAutoPackDownloadForFallback()
+I/FallbackOnDeviceRecognitionProvider( 1382): FallbackOnDeviceRecognitionProvider.maybeScheduleAutoPackDownload():195 maybeScheduleAutoPackDownload() for language tag en-US
+I/KeyboardWrapper( 1382): KeyboardWrapper.consumeEvent():275 Skip consuming an event as current keyboard is deactivated (state=0, keyboard existence=true)
+I/KeyboardViewUtil( 1382): KeyboardViewUtil.calculateMaxKeyboardBodyHeight():40 leave 344 height for app when screen height:2208, header height:121 and isFullscreenMode:false, so the max keyboard body height is:1743
+I/DeviceModeUtil( 1382): DeviceModeUtil.getDeviceMode():122 Get device mode phone by ui mode:1 and smallestScreenWidthDp:393
+I/GoogleInputMethodService( 1382): GoogleInputMethodService.setKeyboardViewShown():3483 setKeyboardViewShown() : type = HEADER, shownType = SHOW_OPTIONAL
+I/GoogleInputMethodService( 1382): GoogleInputMethodService.setKeyboardViewShown():3530 setKeyboardViewShown() : shouldShow = true
+I/GoogleInputMethodService( 1382): GoogleInputMethodService.setKeyboardViewShown():3483 setKeyboardViewShown() : type = BODY, shownType = SHOW_MANDATORY
+I/GoogleInputMethodService( 1382): GoogleInputMethodService.setKeyboardViewShown():3530 setKeyboardViewShown() : shouldShow = true
+I/GoogleInputMethodService( 1382): GoogleInputMethodService.setKeyboardViewShown():3483 setKeyboardViewShown() : type = FLOATING_CANDIDATES, shownType = HIDE
+I/GoogleInputMethodService( 1382): GoogleInputMethodService.setKeyboardViewShown():3530 setKeyboardViewShown() : shouldShow = false
+I/KeyboardViewUtil( 1382): KeyboardViewUtil.calculateMaxKeyboardBodyHeight():40 leave 344 height for app when screen height:2208, header height:121 and isFullscreenMode:false, so the max keyboard body height is:1743
+I/DeviceModeUtil( 1382): DeviceModeUtil.getDeviceMode():122 Get device mode phone by ui mode:1 and smallestScreenWidthDp:393
+I/DeviceModeUtil( 1382): DeviceModeUtil.getDeviceMode():122 Get device mode phone by ui mode:1 and smallestScreenWidthDp:393
+I/KeyboardModeManager( 1382): KeyboardModeManager.setInputView():364 setInputView() : supportsOneHandedMode=true
+I/NormalModeController( 1382): NormalModeController.getKeyboardBodyViewHolderPaddingBottom():116 currentPrimeKeyboardType:SOFT systemPaddingBottom:-1
+I/NormalModeController( 1382): NormalModeController.getKeyboardBodyViewHolderPaddingBottom():116 currentPrimeKeyboardType:SOFT systemPaddingBottom:-1
+I/KeyboardModeManager( 1382): KeyboardModeManager.setInputView():356 setInputView() : entry=hwn{languageTag=en-US, variant=qwerty, hasLocalizedResources=true, conditionCacheKey=_device=phone_device_size=default_enable_adaptive_text_editing=true_enable_inline_suggestions_on_client_side=false_enable_large_tablet_batch_1=false_enable_large_tablet_batch_2=false_enable_more_candidates_view_for_multilingual=false_enable_nav_redesign=false_enable_number_row=false_enable_preemptive_decode=true_enable_secondary_symbols=false_expressions=normal_four_or_more_letter_rows=false_keyboard_mode=normal_language=en-US_orientation=portrait_physical_keyboard=qwerty_show_secondary_digits=true_show_suggestions=true_split_with_duplicate_keys=true_variant=qwerty, imeDef.stringId=ime_english_united_states, imeDef.className=com.google.android.apps.inputmethod.libs.latin5.LatinIme, imeDef.languageTag=en-US}
+I/CurrentMicStatusHolder( 1382): CurrentMicStatusHolder.onStartInputView():79 Current Mic status = {MicIconHidden-EmailInputType,}
+I/VoiceImeExtension( 1382): VoiceImeExtension.shouldStartVoiceInputAutomatically():383 No private IME option set to start voice input.
+D/CoreBackPreview(  552): Window{ba4a34d u0 com.example.spamfilter_mobile/com.example.spamfilter_mobile.MainActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@c712d19, mPriority=0, mIsAnimationCallback=false}
+D/ActivityManager(  552): sync unfroze 1797 com.google.android.gms for 4
+E/OpenGLRenderer( 1382): Unable to match the desired swap behavior.
+D/ActivityManager(  552): sync unfroze 1478 android.process.acore for 4
+D/BoundBrokerSvc( 1797): onUnbind: Intent { act=com.google.android.gms.common.BIND_SHARED_PREFS pkg=com.google.android.gms }
+D/audioserver(  413): FGS Logger Transaction failed
+D/audioserver(  413): -129
+D/InsetsController( 6906): show(ime(), fromIme=true)
+I/NormalModeController( 1382): NormalModeController.getKeyboardBodyViewHolderPaddingBottom():116 currentPrimeKeyboardType:SOFT systemPaddingBottom:-1
+I/Delight5Decoder( 1382): Delight5DecoderWrapper.setKeyboardLayout():457 setKeyboardLayout()
+D/EGL_emulation( 6906): app_time_stats: avg=6405.69ms min=1.08ms max=95981.31ms count=15
+D/BoundBrokerSvc( 1797): onBind: Intent { act=com.google.android.gms.common.BIND_SHARED_PREFS pkg=com.google.android.gms }
+D/BoundBrokerSvc( 1797): Loading bound service for intent: Intent { act=com.google.android.gms.common.BIND_SHARED_PREFS pkg=com.google.android.gms }
+W/TooltipLifecycleManager( 1382): TooltipLifecycleManager.dismissTooltips():159 Tooltip with id spell_check_add_to_dictionary not found in tooltipManager.
+D/EGL_emulation(  770): app_time_stats: avg=5287.05ms min=13.75ms max=94648.94ms count=18
+I/ImeTracker( 6906): com.example.spamfilter_mobile:78c1e918: onShown
+D/EGL_emulation( 6906): app_time_stats: avg=31.02ms min=2.01ms max=494.63ms count=25
+D/EGL_emulation(  770): app_time_stats: avg=14.32ms min=4.99ms max=22.36ms count=61
+D/EGL_emulation( 6906): app_time_stats: avg=498.57ms min=497.37ms max=499.96ms count=3
+D/android.hardware.audio@7.1-impl.ranchu(  357): threadLoop: entering standby, frames: 12061568
+I/AlarmManager( 1187): setExactAndAllowWhileIdle [name: GCM_HB_ALARM type: 2 triggerAtMillis: 8170080]
+I/AlarmManager( 1187): setExactAndAllowWhileIdle [name: GCM_HB_ALARM type: 2 triggerAtMillis: 8170084]
+D/EGL_emulation( 6906): app_time_stats: avg=499.49ms min=498.56ms max=500.71ms count=3
+D/StatusBarIconController(  770): ignoring old pipeline callback because the new wifi icon is enabled
+D/EGL_emulation( 6906): app_time_stats: avg=500.23ms min=498.75ms max=501.31ms count=3
+I/wpa_supplicant(  758): wlan0: CTRL-EVENT-BEACON-LOSS 
+D/ActivityManager(  552): freezing 11311 com.google.android.partnersetup
+D/ActivityManager(  552): freezing 6249 com.google.process.gservices
+D/EGL_emulation( 6906): app_time_stats: avg=499.36ms min=498.81ms max=500.08ms count=3
+D/StatusBarIconController(  770): ignoring old pipeline callback because the new wifi icon is enabled
+D/EGL_emulation( 6906): app_time_stats: avg=500.32ms min=499.93ms max=500.72ms count=2
+D/EGL_emulation( 6906): app_time_stats: avg=499.93ms min=499.36ms max=500.49ms count=3
+D/StatusBarIconController(  770): ignoring old pipeline callbacks, because the new mobile icons are enabled
+D/EGL_emulation( 6906): app_time_stats: avg=499.82ms min=499.17ms max=500.47ms count=2
+D/EGL_emulation( 6906): app_time_stats: avg=499.73ms min=498.60ms max=501.02ms count=3
+D/EGL_emulation( 6906): app_time_stats: avg=500.03ms min=500.00ms max=500.05ms count=2
+D/audioserver(  413): FGS Logger Transaction failed
+D/audioserver(  413): -129
+D/AudioFlinger(  413): mixer(0x73aa4d4ac930) throttle end: throttle time(37)
+I/ImeTracker( 6906): com.example.spamfilter_mobile:fe310b36: onRequestHide at ORIGIN_CLIENT_HIDE_SOFT_INPUT reason HIDE_SOFT_INPUT
+I/GoogleInputMethodService( 1382): GoogleInputMethodService.onFinishInputView():2241 
+W/TooltipLifecycleManager( 1382): TooltipLifecycleManager.dismissTooltips():159 Tooltip with id spell_check_add_to_dictionary not found in tooltipManager.
+I/InputBundle( 1382): InputBundle.consumeEvent():923 Skip consuming an event as keyboard status is 0
+W/ProcessStats(  552): Tracking association SourceState{7c6168d com.google.android.inputmethod.latin/10137 ImpBg #13936} whose proc state 6 is better than process ProcessState{8466aa7 com.google.android.gms/10129 pkg=com.google.android.gms} proc state 13 (10 skipped)
+I/KeyboardWrapper( 1382): KeyboardWrapper.consumeEvent():275 Skip consuming an event as current keyboard is deactivated (state=0, keyboard existence=true)
+I/VoiceInputManagerWrapper( 1382): VoiceInputManagerWrapper.shutdown():77 shutdown()
+I/AndroidIME( 1382): AbstractIme.onDeactivate():207 LatinIme.onDeactivate()
+W/ModuleManager( 1382): ModuleManager.loadModule():450 Module jjj is not available
+W/WindowOnBackDispatcher( 6906): sendCancelIfRunning: isInProgress=falsecallback=ImeCallback=ImeOnBackInvokedCallback@94284969 Callback=android.window.IOnBackInvokedCallback$Stub$Proxy@17a6b6b
+D/AudioFlinger(  413): mixer(0x73aa4d4ac930) throttle end: throttle time(9)
+D/CoreBackPreview(  552): Window{ba4a34d u0 com.example.spamfilter_mobile/com.example.spamfilter_mobile.MainActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@844c042, mPriority=0, mIsAnimationCallback=false}
+D/EGL_emulation( 6906): app_time_stats: avg=670.55ms min=2.29ms max=13133.86ms count=20
+D/audioserver(  413): FGS Logger Transaction failed
+D/audioserver(  413): -129
+I/ImeTracker( 6906): com.example.spamfilter_mobile:f021d22e: onRequestHide at ORIGIN_CLIENT_HIDE_SOFT_INPUT reason HIDE_SOFT_INPUT_BY_INSETS_API
+I/ImeTracker(  552): com.example.spamfilter_mobile:f021d22e: onCancelled at PHASE_SERVER_SHOULD_HIDE
+I/ImeTracker( 6906): com.example.spamfilter_mobile:fe310b36: onHidden
+I/GoogleInputMethodService( 1382): GoogleInputMethodService.onStartInput():1877 onStartInput(EditorInfo{inputType=0x0(NULL) imeOptions=0x0 privateImeOptions=null actionName=UNSPECIFIED actionLabel=null actionId=0 initialSelStart=-1 initialSelEnd=-1 initialCapsMode=0x0 hintText=null label=null packageName=com.example.spamfilter_mobile fieldId=0 fieldName=null extras=null}, true)
+I/GoogleInputMethodService( 1382): GoogleInputMethodService.shouldHideHeaderOnInitialState():4008 ShouldHideHeaderOnInitialState = false
+I/GoogleInputMethodService( 1382): GoogleInputMethodService.updateDeviceLockedStatus():2087 repeatCheckTimes = 2, unlocked = true
+W/SessionManager( 1382): SessionManager.beginSession():53 Try to begin an already begun session [INPUT_SESSION], end it first
+D/EGL_emulation(  770): app_time_stats: avg=305.38ms min=11.63ms max=11902.12ms count=41
+D/EGL_emulation( 6906): app_time_stats: avg=67.34ms min=12.10ms max=500.69ms count=15
+I/wpa_supplicant(  758): wlan0: CTRL-EVENT-BEACON-LOSS 
+D/EGL_emulation(  770): app_time_stats: avg=15.35ms min=6.18ms max=30.39ms count=59
+D/audioserver(  413): FGS Logger Transaction failed
+D/audioserver(  413): -129
+D/EGL_emulation( 6906): app_time_stats: avg=136.37ms min=2.25ms max=899.46ms count=7
+D/AudioFlinger(  413): mixer(0x73aa4d4ac930) throttle end: throttle time(20)
+D/audioserver(  413): FGS Logger Transaction failed
+D/audioserver(  413): -129
+D/android.hardware.audio@7.1-impl.ranchu(  357): threadLoop: entering standby, frames: 12280256
+D/StatusBarIconController(  770): ignoring old pipeline callbacks, because the new mobile icons are enabled
+D/EGL_emulation(  770): app_time_stats: avg=20024.42ms min=20024.42ms max=20024.42ms count=1
+I/wpa_supplicant(  758): wlan0: CTRL-EVENT-BEACON-LOSS 
+I/ProtoXDBBufferWrapper( 1382): ProtoXDBBufferWrapper.flushToStorage():153 Flushed 6 data item(s) to storage.
+D/audioserver(  413): FGS Logger Transaction failed
+D/audioserver(  413): -129
+D/EGL_emulation( 6906): app_time_stats: avg=251.18ms min=2.01ms max=9366.89ms count=38
+D/audioserver(  413): FGS Logger Transaction failed
+D/audioserver(  413): -129
+D/ActivityManager(  552): freezing 1797 com.google.android.gms
+D/ActivityManager(  552): freezing 1478 android.process.acore
+D/android.hardware.audio@7.1-impl.ranchu(  357): threadLoop: entering standby, frames: 12429312
+D/StatusBarIconController(  770): ignoring old pipeline callbacks, because the new mobile icons are enabled
+I/wpa_supplicant(  758): wlan0: CTRL-EVENT-BEACON-LOSS 
+I/VoiceInputManagerWrapper( 1382): VoiceInputManagerWrapper.shutdownVoiceInternal():95 shutdownVoiceInternal()
+I/wpa_supplicant(  758): wlan0: CTRL-EVENT-BEACON-LOSS 
+D/StatusBarIconController(  770): ignoring old pipeline callbacks, because the new mobile icons are enabled
