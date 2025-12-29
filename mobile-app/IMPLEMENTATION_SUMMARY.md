@@ -379,6 +379,39 @@ App Start → AccountSelectionScreen (entry point)
 
 ---
 
+## GitHub Secrets Management (CRITICAL)
+
+**Never Commit Secrets to Git Repository**
+
+Copilot MUST follow these practices when working with OAuth credentials:
+
+### Secrets Storage
+- ✅ **KEEP secrets in**: `mobile-app/secrets.dev.json` (in .gitignore, never committed)
+- ❌ **NEVER commit**: OAuth client IDs, client secrets, API keys, passwords, tokens
+- ❌ **NEVER include in**: Markdown files, code comments, commit messages, logs
+
+### Documentation Examples
+- ✅ **USE masked format**: `GOCSPX-**********************LSH6` (prefix + last 4 chars)
+- ✅ **USE masked format**: `577022808534-****************************kcb.apps.googleusercontent.com`
+- Shows pattern/context while protecting actual secret values
+- Maintains readability for setup instructions
+
+### GitHub Push Protection
+- GitHub automatically scans all commits for exposed secrets
+- Push will be **BLOCKED** if secrets detected in commit history
+- Fix by rewriting Git history to remove secrets (git reset + squash)
+- Always redact secrets from documentation BEFORE committing
+
+### If Secrets Exposed
+1. **DO NOT** push the commit
+2. Redact all secrets from markdown files using masked placeholders
+3. Use `git reset --soft` to squash commits with secrets
+4. Create single clean commit with redacted documentation
+5. Force push with `--force-with-lease` to replace history
+6. Consider rotating exposed credentials in Google Cloud Console
+
+---
+
 ## Architecture Decision: 100% Flutter (December 11, 2025)
 
 **Previous Architecture**:

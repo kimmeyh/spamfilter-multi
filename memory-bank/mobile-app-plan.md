@@ -1166,6 +1166,26 @@ The following providers are **DEFERRED** until Gmail and AOL achieve full functi
 
 ## Security & Privacy
 
+### GitHub Secrets Best Practices
+
+**CRITICAL: Never Commit Secrets to Git**
+- ✅ **DO**: Store secrets in `secrets.dev.json` (in .gitignore)
+- ✅ **DO**: Use masked placeholders in documentation (e.g., `GOCSPX-**********************LSH6`)
+- ✅ **DO**: Redact client IDs and secrets from all markdown files before committing
+- ❌ **DON'T**: Commit real OAuth client IDs, client secrets, API keys, or passwords
+- ❌ **DON'T**: Include secrets in code comments, commit messages, or documentation examples
+
+**GitHub Push Protection**:
+- GitHub automatically scans commits for exposed secrets
+- Push will be blocked if secrets detected in commit history
+- Fix blocked pushes by rewriting Git history to remove secrets
+- Always redact secrets from documentation BEFORE staging commits
+
+**Secret Masking Format**:
+- Client IDs: `577022808534-****************************kcb.apps.googleusercontent.com` (show first/last chars)
+- Client Secrets: `GOCSPX-**********************LSH6` (show prefix and last 4 chars)
+- Maintains context for developers while protecting actual values
+
 ### Data Protection
 
 - **Credentials**: Store in platform secure storage (Keychain/Keystore)

@@ -168,6 +168,16 @@ See [`../memory-bank/mobile-app-plan.md`](../memory-bank/mobile-app-plan.md) for
 
 ## Gmail OAuth Setup
 
+### SECURITY WARNING: Never Commit Secrets
+
+**CRITICAL**: OAuth credentials must NEVER be committed to Git:
+- ✅ Store in `secrets.dev.json` (already in .gitignore)
+- ❌ NEVER commit client IDs or client secrets to repository
+- ❌ NEVER include real secrets in documentation or code comments
+- Use masked placeholders in docs: `GOCSPX-**********************LSH6`
+
+GitHub scans commits for secrets and will **block your push** if detected.
+
 ### Windows Desktop Gmail Authentication
 
 The Windows app uses **Google OAuth 2.0 with PKCE** and a **Desktop Application OAuth client** for secure Gmail authentication.
@@ -176,7 +186,7 @@ The Windows app uses **Google OAuth 2.0 with PKCE** and a **Desktop Application 
 - Desktop OAuth Client ID from Google Cloud Console
 - **Client Secret** (required by Google, must be injected at build time)
 - Loopback redirect URI: `http://localhost:8080/oauth/callback`
-- Secrets file: `mobile-app/secrets.dev.json`
+- Secrets file: `mobile-app/secrets.dev.json` (in .gitignore, never committed)
 
 **Setup & Troubleshooting:**
 - See [WINDOWS_GMAIL_OAUTH_SETUP.md](WINDOWS_GMAIL_OAUTH_SETUP.md) for complete guide

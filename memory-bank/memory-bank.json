@@ -611,6 +611,33 @@
     "re - Regular expression support"
   ],
   "development_standards": {
+    "github_secrets_best_practices": {
+      "never_commit_secrets": [
+        "NEVER commit OAuth client secrets, API keys, passwords, or tokens to git repository",
+        "Use .gitignore to exclude secrets.dev.json and any credential files",
+        "Replace secrets in documentation with masked placeholders (e.g., GOCSPX-**********************)",
+        "Keep actual secrets ONLY in local untracked files (secrets.dev.json in .gitignore)"
+      ],
+      "documentation_examples": [
+        "Replace real client IDs with masked format: 577022808534-****************************kcb.apps.googleusercontent.com",
+        "Replace real client secrets with masked format: GOCSPX-**********************LSH6",
+        "Show first and last few characters to maintain context while protecting the secret",
+        "Never include full client IDs or secrets in markdown files, code comments, or commit messages"
+      ],
+      "github_push_protection": [
+        "GitHub scans all commits for exposed secrets (client IDs, secrets, tokens)",
+        "Push will be blocked if secrets detected in commit history",
+        "To fix blocked push: rewrite Git history to remove secrets, then force push",
+        "Use git reset --soft to squash commits with secrets into single clean commit",
+        "Always redact secrets from documentation BEFORE committing"
+      ],
+      "credential_storage": [
+        "Store credentials in secrets.dev.json (must be in .gitignore)",
+        "Use environment variables for CI/CD (--dart-define-from-file)",
+        "Encrypt credentials at rest using flutter_secure_storage",
+        "Never log, print, or display full secrets in application output"
+      ]
+    },
     "feature_enhancement_process": {
       "code_modification_principles": [
         "ONLY change code that HAS to be CHANGED to implement the recommendation",
