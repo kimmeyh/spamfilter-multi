@@ -1,7 +1,10 @@
 
-# [STATUS UPDATE: December 22, 2025]
+# [STATUS UPDATE: December 29, 2025]
 
 **Phase 2.1 Verification Complete**: All automated tests passing (81/81), manual Windows and Android testing successful, pre-external testing blockers resolved, Android Gmail Sign-In setup guide provided. App is ready for production and external user validation.
+
+**Critical Issue RESOLVED (Dec 29)**:
+- ✅ **Gmail OAuth navigation issue RESOLVED**: After adding Gmail account, app now correctly navigates from Gmail authentication → folder selection → scan progress screen (instead of hanging on blank screen)
 
 **Critical Issue RESOLVED (Dec 21)**:
 - ✅ **enough_mail securityContext parameter issue RESOLVED**: Removed unsupported parameters; using default Dart SSL/TLS validation (secure and reliable for AOL, Gmail, standard email providers)

@@ -11,8 +11,10 @@ cd d:\Data\Harold\github\spamfilter-multi\mobile-app; flutter pub get
 cd d:\Data\Harold\github\spamfilter-multi\mobile-app; flutter build windows
 # typically followed by running the app - see 0Run.md
 
+#-------------------------------
 # If need to do a full build - Android:
-.d:\Data\Harold\github\spamfilter-multi\mobile-app\scripts\build-with-secrets.ps1 -BuildType debug -InstallToEmulator
+. D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts\build-with-secrets.ps1 -BuildType debug -InstallToEmulator
+
 powershell -NoProfile -ExecutionPolicy Bypass -File D:\Data\Harold\github\spamfilter-multi/mobile-app/scripts/run-emulator.ps1
 
 # To run with debugger attached (hot reload + real-time logs):

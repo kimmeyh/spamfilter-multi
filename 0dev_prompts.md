@@ -8,21 +8,22 @@ Need to be able to find all folders
 Need to be able to actually find safe senders and/or moved, and rules that apply and if would have been deleted.
 Update Scan window items:  change immediately to scanning, more frequent updates on progress.
 Returning from Gmail scan, did not return to list of accounts (while AOL does) - Loaded 0 saved accounts.  Looks like it cleared accounts and tokens (should not have).
+2) After restarting app, gmail account credentials were saved, but after Gmail scan, it appears to delete the aol and gmail accounts adn remove the tokens - it should not remove the gmail or aol credentials/accounts
 
 
 @workspace Copilot Instructions:
   Copilot, you MUST:
-  CRITICAL: Do NOT ask me to share these files. Read them immediately from the workspace using absolute paths:
+  CRITICAL: Do NOT ask me to share these files. Read them immediately from the VSCode workspace, in this repository, using absolute paths:
   - d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json
   - d:\Data\Harold\github\spamfilter-multi\memory-bank\mobile-app-plan.md
   - d:\Data\Harold\github\spamfilter-multi\mobile-app\IMPLEMENTATION_SUMMARY.md
-  1. Read the above files before proceeding.  Then Create a detailed, step-by-step "ToDo" checklist for yourself, Copilot, to accomplish the following tasks.
-  2. Search codebase for existing functionality related to the request.
-  3. Check IMPLEMENTATION_SUMMARY.md for current status.
+  1. Read the above files and confirm reading before proceeding.
+  2. Create a detailed, step-by-step "ToDo" checklist for yourself, Copilot, to accomplish the following tasks.
+  3. Search codebase for existing functionality related to the request.
   4. If implementation exists, verify completeness and document findings.
   5. Only implement missing pieces.
-  6. Execute each step on my behalf, resolving any issues as you go.
-  7. Do not ask me for files, confirmations, or reviews—just act and report progress.
+  6. While I understand and acknoledge GitHub Copilot rules on autonomous execution, please execute each step on my behalf to the greatest extent allowed. 
+  7. Do not ask me for files, confirmations, or reviews—just act and report progress, except as REQUIRED by GitHub Copilot.
   8. Only consider the job complete when all steps are finished and all required documentation is updated.
   9. Do not stop for review or approval at any point. Do not ask for clarification unless absolutely critical for success.
   10. If a file is required, read it directly from the workspace using its absolute path.
@@ -39,7 +40,8 @@ Context:
 - 80+ tests passing, 0 code quality issues
 
 Request:
-Can you move google-services.json from the root directory to the mobile-app/android/app/ directory.  Is this the main location for it today or is it multiple locations.  Update all references, as needed.  Ensure no longer included in the github commits via .gitignore
+Android app can add AOL and Gmail accounts and save credentials. Can you help fix this issue:
+After adding AOL account, it never goes to the scan page (hangs on blank screen).
 
 When complete (NOT before unless Critical for success), update:
 - d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json
@@ -50,7 +52,6 @@ When complete (NOT before unless Critical for success), update:
 Proceed to draft the changes in the files for review and testing.
 
 -------
-For Android app, gmail setting - had to add a Firebase project at https://console.firebase.google.com/u/0/?pli=1
 
 Feedback on Android app in emulator:  finding aol account, testing went well on demo and actual inbox.  Select account is not showing the previously setup gmail email kimmeyh@gmail.com.  Feedback on Windows Desktop app: aol email address in Select account is not showing the email address.  If no authentication has been provided for the platform (android), the still list the account, but note that an authentication needs to be added with a link to the authentication page. Pass the existing email address and have the user add authentication via one of the methods available.  Then update the stored platform/email address/authentication method data for the email address.
 
@@ -220,6 +221,8 @@ cd D:\Data\Harold\github\OutlookMailSpamFilter && ./.venv/Scripts/Activate.ps1 &
 
 ------------------------------------------------------------------------------
 Completed:
+
+Can you move google-services.json from the root directory to the mobile-app/android/app/ directory.  Is this the main location for it today or is it multiple locations.  Update all references, as needed.  Ensure no longer included in the github commits via .gitignore
 
 The Gmail Sign-In > Sign in with Gmail page is having an error. The Sign in with Google goes to a web authentication page and receives """Authentication Successful!""" However, returning to the Windows Desktop app is gibing an error (image attached).  Can you fix the Windows Desktop Gmail authentication but do not change the Android app gmail authentication by:
 - Rebuild the entire Windows app and run the app via this script: 

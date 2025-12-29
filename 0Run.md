@@ -13,6 +13,7 @@ cd D:\Data\Harold\github\spamfilter-multi\mobile-app; flutter put get; flutter b
 # Run Android Emulator -------------------------
 #   Preferred method
 powershell -NoProfile -ExecutionPolicy Bypass -File D:\Data\Harold\github\spamfilter-multi/mobile-app/scripts/run-emulator.ps1
+
 # NOTE: Log file is: D:\Data\Harold\github\spamfilter-multi\mobile-app\test_results.txt
 # Emulator notes:  
 #   Press back button to exit

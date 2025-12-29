@@ -132,12 +132,34 @@ try {
         return $isConfigured
     }
 
-    # Validate all providers
+    # Validate all providers - support multiple field name variants
     Write-Host "[INFO] Validating credentials for all providers..." -ForegroundColor Cyan
+    
+    # Gmail: Use Android-specific credentials for Android builds, fall back to Windows/Generic
+    $gmailClientId = if ($secrets.ANDROID_GMAIL_CLIENT_ID) { 
+        $secrets.ANDROID_GMAIL_CLIENT_ID 
+    } elseif ($secrets.WINDOWS_GMAIL_DESKTOP_CLIENT_ID) { 
+        $secrets.WINDOWS_GMAIL_DESKTOP_CLIENT_ID 
+    } elseif ($secrets.GMAIL_DESKTOP_CLIENT_ID) { 
+        $secrets.GMAIL_DESKTOP_CLIENT_ID 
+    } else { $null }
+    
+    $gmailClientSecret = if ($secrets.WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET) { 
+        $secrets.WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET 
+    } elseif ($secrets.GMAIL_OAUTH_CLIENT_SECRET) { 
+        $secrets.GMAIL_OAUTH_CLIENT_SECRET 
+    } else { $null }
+    
+    $gmailRedirectUri = if ($secrets.ANDROID_REDIRECT_URI) { 
+        $secrets.ANDROID_REDIRECT_URI 
+    } elseif ($secrets.GMAIL_REDIRECT_URI) { 
+        $secrets.GMAIL_REDIRECT_URI 
+    } else { $null }
+    
     $gmailValid = Validate-OAuthProvider "Gmail" `
-        $secrets.GMAIL_DESKTOP_CLIENT_ID `
-        $secrets.GMAIL_OAUTH_CLIENT_SECRET `
-        $secrets.GMAIL_REDIRECT_URI
+        $gmailClientId `
+        $gmailClientSecret `
+        $gmailRedirectUri
     
     $aolValid = Validate-IMAPProvider "AOL" `
         $secrets.AOL_EMAIL `

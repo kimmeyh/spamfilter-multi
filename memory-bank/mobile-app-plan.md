@@ -17,9 +17,18 @@ For ALL Windows app builds, rebuilds, and tests, you MUST use the `build-windows
 
 ---
 
-# [STATUS UPDATE: December 21, 2025]
+# [STATUS UPDATE: December 29, 2025]
 
 **Phase 2.1 Verification Complete**: All automated tests passing (79/79), manual Windows and Android testing successful, pre-external testing blockers resolved. App is ready for production and external user validation.
+
+**Critical Issue RESOLVED (Dec 29)**:
+- ✅ **Gmail OAuth navigation issue RESOLVED**:
+  - **Problem**: After adding Gmail account via OAuth, app hangs on blank screen instead of navigating to scan page
+  - **Root Cause**: After successful OAuth and folder selection, GmailOAuthScreen was calling `Navigator.pop()` instead of navigating to `ScanProgressScreen`
+  - **Solution**: Modified both `_handleBrowserOAuth()` and `_handleSignIn()` methods in GmailOAuthScreen to use `Navigator.pushReplacement()` to navigate to ScanProgressScreen after folder selection
+  - **Files Modified**: `mobile-app/lib/ui/screens/gmail_oauth_screen.dart`
+  - **Result**: App now correctly navigates from Gmail authentication → folder selection → scan progress screen
+  - **Testing**: Ready for Android emulator testing
 
 **Critical Issue RESOLVED (Dec 21)**:
 - ✅ **enough_mail securityContext parameter issue RESOLVED**: 

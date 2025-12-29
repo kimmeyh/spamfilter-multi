@@ -11,6 +11,7 @@
     "current_issues": {
       "status": "No blocking issues. All automated tests passing (81/81). Windows and Android builds successful. Android manual build/test validated. Ready for production/external testing.",
       "notes": [
+        "✅ RESOLVED (Dec 29): Gmail OAuth navigation issue - After adding Gmail account, app now navigates correctly to scan page instead of hanging on blank screen",
         "✅ RESOLVED (Dec 29): google-services.json consolidated to mobile-app/android/app/ and excluded from Git via .gitignore",
         "✅ RESOLVED (Dec 21): enough_mail ImapClient.connectToServer securityContext parameter issue - Removed unsupported parameter, using default Dart SSL/TLS validation (secure and reliable for standard email providers)",
         "✅ RESOLVED (Dec 22): Norton 360 Email Protection TLS interception - Identified and documented Norton MITM inspection; resolution: disable Email Protection in Norton 360 > Settings > Security > Advanced > Intrusion Prevention",
@@ -20,6 +21,7 @@
         "✅ VERIFIED (Dec 22): Android build - APK built and tested on emulator with Norton Email Protection disabled",
         "✅ VERIFIED (Dec 22): Android manual testing - Release APK (51.7MB) installed and launched successfully on API 34 emulator",
         "✅ VERIFIED (Dec 26): Android manual build and test validated: Emulator started, app installed, rules and safe senders loaded, no blocking errors, UI and scan features operational.",
+        "✅ VERIFIED (Dec 29): Gmail OAuth navigation flow - App correctly navigates from Gmail authentication → folder selection → scan progress screen",
         "All pre-external testing blockers resolved: Account selection, scan progress, and credential persistence verified.",
         "Multi-account and multi-folder support confirmed.",
         "Windows app built and verified to contain no regressions from IMAP fix.",
