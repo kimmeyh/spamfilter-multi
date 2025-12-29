@@ -1,9 +1,14 @@
 Next:----------------------------------------
 Copy testing context before next prompt
-Android emulated verifying new email addresses, but not saving them. Can we test and check to ensure saving is working as expected.
+Android:
+emulator verifying new Bmail email addresses, asking for folders, then hangs (does save credentials).Why is it hanging?working as expected.
+Windows and Android:
 Need to be able to really add Bulk Mail folder
 Need to be able to find all folders
 Need to be able to actually find safe senders and/or moved, and rules that apply and if would have been deleted.
+Update Scan window items:  change immediately to scanning, more frequent updates on progress.
+Returning from Gmail scan, did not return to list of accounts (while AOL does) - Loaded 0 saved accounts.  Looks like it cleared accounts and tokens (should not have).
+
 
 @workspace Copilot Instructions:
   Copilot, you MUST:
@@ -30,7 +35,7 @@ Context:
 - 80+ tests passing, 0 code quality issues
 
 Request:
-Somewhere in the last couple of commits you helped me fix the Android Gmail OAuth 2 authentication, but broke the Windows Desktop Gmail Authentication.  They both need to work and likely need different OAuth access and refresh tokens.  Are they being stored separately and if so can you help fix so that we fix the Windows Desktop Gmail authentication but do not break the Android app gmail authentication by:
+The Gmail Sign-In > Sign in with Gmail page is having an error. The Sign in with Google goes to a web authentication page and receives """Authentication Successful!""" However, returning to the Windows Desktop app is gibing an error (image attached).  Can you fix the Windows Desktop Gmail authentication but do not change the Android app gmail authentication by:
 - Rebuild the entire Windows app and run the app via this script: 
   powershell -NoProfile -ExecutionPolicy Bypass -File D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts\build-windows.ps1
 - Monitor the build and run; address errors and issues to resolution

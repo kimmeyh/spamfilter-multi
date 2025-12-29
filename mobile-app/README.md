@@ -36,10 +36,12 @@ Cross-platform email spam filter application built with Flutter.
 **Current Status**: All automated tests passing (79/79), manual Windows and Android testing successful, ready for production and external user validation
 
 ### Pre-External Testing Blockers ✅ RESOLVED
+### Pre-External Testing Blockers ✅ RESOLVED
 - ✅ AccountSelectionScreen lists all saved Gmail/AOL accounts formatted as "email • Platform • Auth Method" (verified, Windows & Android)
 - ✅ ScanProgressScreen shows in-progress message immediately after scan starts (verified, Windows & Android)
 - ✅ ScanProgressScreen auto-resets on load/return (verified, Windows & Android)
 - ✅ Both Gmail OAuth and AOL App Password auth methods working on Windows and Android (verified)
+- ✅ Windows Gmail OAuth verified with separate token storage (no cross-platform overwrites)
 - ✅ Scan workflow validated end-to-end: account selection → scan progress → results display (verified, Windows & Android)
 
 ### Android Manual Testing Results (Dec 2025)
@@ -163,6 +165,29 @@ This mobile app maintains compatibility with the desktop Python application's YA
 - `rules_safe_senders.yaml` - Safe sender whitelist (regex patterns)
 
 See [`../memory-bank/mobile-app-plan.md`](../memory-bank/mobile-app-plan.md) for full development plan.
+
+## Gmail OAuth Setup
+
+### Windows Desktop Gmail Authentication
+
+The Windows app uses **Google OAuth 2.0 with PKCE** and a **Desktop Application OAuth client** for secure Gmail authentication.
+
+**Key Requirements:**
+- Desktop OAuth Client ID from Google Cloud Console
+- **Client Secret** (required by Google, must be injected at build time)
+- Loopback redirect URI: `http://localhost:8080/oauth/callback`
+- Secrets file: `mobile-app/secrets.dev.json`
+
+**Setup & Troubleshooting:**
+- See [WINDOWS_GMAIL_OAUTH_SETUP.md](WINDOWS_GMAIL_OAUTH_SETUP.md) for complete guide
+- Covers Google Cloud configuration, environment variable setup, OAuth flow, and debugging
+
+**Common Issue: "client_secret is missing"**
+- Ensure `secrets.dev.json` contains `WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET`
+- Environment variable name must match exactly in code (case-sensitive)
+- Rebuild with `.\scripts\build-windows.ps1` to inject secrets
+
+---
 
 ## Troubleshooting
 

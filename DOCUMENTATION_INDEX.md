@@ -11,6 +11,13 @@
 1. **[PHASE_2.0_COMPLETE.md](PHASE_2.0_COMPLETE.md)** - Complete implementation guide
 2. **[mobile-app/IMPLEMENTATION_SUMMARY.md](mobile-app/IMPLEMENTATION_SUMMARY.md)** - Technical details
 3. **[mobile-app/PHASE_2.0_TESTING_CHECKLIST.md](mobile-app/PHASE_2.0_TESTING_CHECKLIST.md)** - Test framework
+4. **[WINDOWS_GMAIL_OAUTH_DOCUMENTATION.md](WINDOWS_GMAIL_OAUTH_DOCUMENTATION.md)** - Gmail OAuth setup guide
+
+### For Email Authentication
+1. **[mobile-app/WINDOWS_GMAIL_OAUTH_SETUP.md](mobile-app/WINDOWS_GMAIL_OAUTH_SETUP.md)** - Complete Windows Gmail OAuth guide
+2. **[mobile-app/WINDOWS_GMAIL_OAUTH_QUICK_REFERENCE.md](mobile-app/WINDOWS_GMAIL_OAUTH_QUICK_REFERENCE.md)** - Quick reference card
+3. **[memory-bank/oauth-setup-guide.md](memory-bank/oauth-setup-guide.md)** - Cross-platform OAuth architecture
+4. **[WINDOWS_GMAIL_OAUTH_FIX_DECEMBER_29.md](WINDOWS_GMAIL_OAUTH_FIX_DECEMBER_29.md)** - Fix details and explanation
 
 ### For Project Management
 1. **[mobile-app-plan.md](memory-bank/mobile-app-plan.md)** - Overall project plan
