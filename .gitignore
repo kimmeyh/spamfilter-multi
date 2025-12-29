@@ -31,6 +31,12 @@ mobile-app/.dart_tool/widget_preview_scaffold/
 google-services.json
 mobile-app/android/app/google-services.json
 
+# OAuth Client Secrets (NEVER commit OAuth credentials)
+# These files contain sensitive OAuth client credentials and should only be stored locally
+# or in CI/CD secrets vault, never committed to version control
+client_secret_*.json
+*client_secret*.json
+
 # Backup and temporary files
 
 # YAML configuration backups
