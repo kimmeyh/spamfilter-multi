@@ -1,9 +1,10 @@
 # Mobile Spam Filter App - Development Plan
 
-**Status**: Planning Phase  
-**Last Updated**: 2025-11-25  
+**Status**: Planning Phase - Documentation Created  
+**Last Updated**: 2025-12-29  
 **Target Platforms**: Android, iOS (phones & tablets), Chromebooks  
-**Tech Stack**: Flutter/Dart (with optional Rust optimization path)
+**Tech Stack**: Flutter/Dart (with optional Rust optimization path)  
+**Documentation Location**: `../mobile-app/` directory
 
 ## Executive Summary
 
@@ -180,33 +181,47 @@ abstract class RuleEvaluator {
 
 ## Development Phases
 
-### Phase 0: Planning & Architecture (Current)
-**Status**: In Progress  
-**Duration**: 1-2 weeks
+### Phase 0: Planning & Architecture
+**Status**: ✅ Complete  
+**Completion Date**: 2025-12-29  
+**Duration**: Completed
 
 - ✅ Select tech stack (Flutter/Dart)
 - ✅ Define architecture layers
-- 🔄 Design core interfaces
-- 🔄 Plan migration strategy from Python codebase
-- 🔄 Create project structure
-- 🔄 Set up new repository
+- ✅ Design core interfaces
+- ✅ Plan migration strategy from Python codebase
+- ✅ Document token persistence requirements (CRITICAL)
+- ✅ Create documentation structure in `mobile-app/` directory
+- ✅ Address "Gmail token removal" issue with proper specifications
+
+**Deliverables**:
+- ✅ `mobile-app/README.md` - Project overview and setup guide
+- ✅ `mobile-app/IMPLEMENTATION_SUMMARY.md` - Detailed token management specifications
+- ✅ Updated `memory-bank/memory-bank.json` with mobile app section
+- ✅ Updated this file with current status
+
+**Critical Requirement Documented**: Tokens and accounts must NEVER be deleted during email scanning operations. All specifications and code examples provided in `IMPLEMENTATION_SUMMARY.md`.
 
 ### Phase 1: MVP - AOL Email with Core Filtering
+**Status**: 🔜 Not Started  
 **Duration**: 4-6 weeks  
 **Goal**: Replicate core spam filtering for AOL accounts  
 **Storage**: Pure file-based (YAML + encrypted JSON), no database
 
+**CRITICAL FIRST STEP**: Implement secure credential storage with token persistence before any other features.
+
 #### 1.1 Project Setup
-- Create Flutter project structure in new branch (feature/mobile-app)
-- Add core dependencies (see dependencies section)
-- Configure linting and code standards
-- Set up testing infrastructure
+- [ ] Create Flutter project structure in mobile-app/ directory
+- [ ] Add core dependencies (see dependencies section)
+- [ ] Configure linting and code standards
+- [ ] Set up testing infrastructure
 
 #### 1.2 Business Logic Migration (File-Based Storage)
-- Port YAML loader/exporter from Python to Dart
-- Implement RuleSet and SafeSenderList models (in-memory)
-- Build PatternCompiler with precompiled regex cache
-- Create Evaluator engine (header/body/subject/from matching)
+- [ ] **IMPLEMENT FIRST**: Secure CredentialStorage with token persistence tests
+- [ ] Port YAML loader/exporter from Python to Dart
+- [ ] Implement RuleSet and SafeSenderList models (in-memory)
+- [ ] Build PatternCompiler with precompiled regex cache
+- [ ] Create Evaluator engine (header/body/subject/from matching)
 - Implement MutationService for rule updates
 - Add YAMLStorage service (read/write with atomic operations)
 - Add unit tests for all core logic
@@ -719,49 +734,62 @@ flutter:
 ## Success Metrics
 
 ### MVP Success Criteria (Phase 1)
-- ✅ Successfully scan AOL inbox with existing rule sets
-- ✅ Match desktop app spam detection accuracy (>95%)
-- ✅ Evaluation performance <100ms per email (mid-range phone)
-- ✅ Zero crashes during 100-email scan
-- ✅ Runs on Android 10+, iOS 14+, Chromebooks
+- [ ] Successfully scan AOL inbox with existing rule sets
+- [ ] Match desktop app spam detection accuracy (>95%)
+- [ ] Evaluation performance <100ms per email (mid-range phone)
+- [ ] Zero crashes during 100-email scan
+- [ ] Runs on Android 10+, iOS 14+, Chromebooks
+- [ ] **CRITICAL**: Tokens persist across scans (verified by tests)
+- [ ] **CRITICAL**: Accounts never deleted during scan operations
 
 ### Full Release Success Criteria (Phase 7)
-- ✅ Support 5+ email providers
-- ✅ 10,000+ active users within 6 months
-- ✅ <2% crash rate
-- ✅ 4.0+ average rating (app stores)
-- ✅ Background scanning works reliably for 80% of users
-- ✅ Rule import success rate >95%
+- [ ] Support 5+ email providers
+- [ ] 10,000+ active users within 6 months
+- [ ] <2% crash rate
+- [ ] 4.0+ average rating (app stores)
+- [ ] Background scanning works reliably for 80% of users
+- [ ] Rule import success rate >95%
+- [ ] **CRITICAL**: Zero reports of lost credentials/tokens
 
 ## Next Steps
 
-### Immediate Actions (This Week)
+### Phase 0: Complete (2025-12-29)
 1. ✅ Finalize architecture and plan (this document)
 2. ✅ Database decision: Start with pure YAML/file-based, add SQLite only if needed
-3. 🔄 Set up Flutter project in new branch (feature/mobile-app)
-4. 🔄 Define core interfaces in code
-5. 🔄 Port YAML schema and sample files
+3. ✅ Document token persistence requirements (mobile-app/IMPLEMENTATION_SUMMARY.md)
+4. ✅ Create mobile app directory structure
+5. ✅ Update memory-bank files with mobile app specifications
 
-### Week 2-3
-- Implement YAML loader/exporter in Dart (maintain desktop compatibility)
-- Build RuleSet and SafeSenderList models (in-memory)
-- Create PatternCompiler with precompiled regex cache
-- Write unit tests for core logic
-- Performance benchmarking harness
+### Phase 1: Immediate Next Actions (When Implementation Begins)
+1. [ ] Set up Flutter project in mobile-app/ directory
+2. [ ] **IMPLEMENT FIRST**: CredentialStorage with flutter_secure_storage
+3. [ ] Write token persistence tests (before building any other features)
+4. [ ] Verify tokens survive app restart and scans
+5. [ ] Define core interfaces in code
 
-### Week 4-6
-- Implement GenericIMAPAdapter (AOL)
-- Build basic UI (account setup, manual scan)
-- Integration testing with test AOL account
-- Performance profiling (YAML load, regex compile, evaluation)
-- **Decision gate**: SQLite needed for Phase 2?
+### Week 2-3 (Phase 1 Continuation)
+- [ ] Implement YAML loader/exporter in Dart (maintain desktop compatibility)
+- [ ] Build RuleSet and SafeSenderList models (in-memory)
+- [ ] Create PatternCompiler with precompiled regex cache
+- [ ] Write unit tests for core logic
+- [ ] Performance benchmarking harness
+
+### Week 4-6 (Phase 1 Completion)
+- [ ] Implement GenericIMAPAdapter (AOL)
+- [ ] Build basic UI (account setup, manual scan)
+- [ ] Integration testing with test AOL account
+- [ ] Performance profiling (YAML load, regex compile, evaluation)
+- [ ] **Decision gate**: SQLite needed for Phase 2?
 
 ---
 
-**Document Version**: 1.1  
-**Last Updated**: 2025-11-25  
+**Document Version**: 1.2  
+**Last Updated**: 2025-12-29  
+**Phase 0 Status**: ✅ Complete - Documentation and specifications created  
 **Database Decision**: Pure YAML/file-based for MVP, conditional SQLite for Phase 2+  
+**Token Management**: Specifications complete - see mobile-app/IMPLEMENTATION_SUMMARY.md  
 **Related Docs**: 
-- Original Python codebase: `OutlookMailSpamFilter/withOutlookRulesYAML.py`
+- Mobile app specifications: `../mobile-app/README.md`, `../mobile-app/IMPLEMENTATION_SUMMARY.md`
+- Original Python codebase: `../withOutlookRulesYAML.py`
 - Existing architecture: `memory-bank/*.md`
 - Rule schemas: `rules.yaml`, `rules_safe_senders.yaml`

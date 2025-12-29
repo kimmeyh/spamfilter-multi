@@ -203,12 +203,75 @@
       "breaking_changes_note": "Legacy wildcard mode removed, regex-only mode with consolidated filenames"
     }
   },
+  "mobile_app_project": {
+    "status": "Planning / Documentation Phase",
+    "last_updated": "2025-12-29",
+    "location": "mobile-app/ directory",
+    "technology_stack": "Flutter/Dart (cross-platform)",
+    "target_platforms": ["Android", "iOS", "Chromebooks"],
+    "key_documents": [
+      "mobile-app/README.md - Project overview and setup guide",
+      "mobile-app/IMPLEMENTATION_SUMMARY.md - Detailed implementation specifications",
+      "memory-bank/mobile-app-plan.md - Full architecture and development plan"
+    ],
+    "current_phase": "Phase 0: Planning & Architecture",
+    "implementation_status": {
+      "flutter_project": "Not created",
+      "ui_screens": "Not implemented",
+      "email_providers": "Not implemented",
+      "rule_engine": "Not ported from Python",
+      "oauth_flows": "Not implemented",
+      "secure_storage": "Not implemented",
+      "background_sync": "Not implemented"
+    },
+    "critical_requirements": {
+      "token_persistence": {
+        "requirement": "Tokens and accounts must NEVER be deleted during email scanning",
+        "storage_method": "flutter_secure_storage with platform keystore/keychain",
+        "encryption": "Required - all credentials encrypted at rest",
+        "user_control": "Only explicit user actions (Add/Remove Account) modify storage",
+        "documentation": "See mobile-app/IMPLEMENTATION_SUMMARY.md for detailed specifications",
+        "issue_reference": "Update to Gmail scan to not remove stored accounts and tokens"
+      },
+      "security_constraints": [
+        "No tokens in plain text files",
+        "No tokens in source code",
+        "No tokens in git repository",
+        "No tokens in application logs",
+        "No tokens in analytics events",
+        "All credentials encrypted using platform secure storage"
+      ]
+    },
+    "planned_features": [
+      "Multi-provider email support (Gmail, AOL, Yahoo, Outlook.com, ProtonMail)",
+      "YAML rule import from desktop app (maintain compatibility)",
+      "OAuth 2.0 authentication with secure token storage",
+      "Interactive rule training (d/e/s/sd options)",
+      "Background email scanning with notifications",
+      "Cross-platform rule synchronization"
+    ],
+    "architecture_layers": {
+      "ui_layer": "Flutter Material/Cupertino (account setup, scanning, rule management)",
+      "business_logic": "Pure Dart (rule evaluation, pattern matching, mutation service)",
+      "adapter_layer": "Email providers (IMAP, Gmail API, Graph API), secure storage, OAuth 2.0",
+      "storage_strategy": "Phase 1: Pure YAML + encrypted JSON, Phase 2+: Optional SQLite for caching"
+    },
+    "development_phases": {
+      "phase_1": "MVP - AOL email with core filtering (6 weeks)",
+      "phase_2": "Multi-provider support with OAuth (6 weeks)",
+      "phase_3": "Interactive training and rule editor (4 weeks)",
+      "phase_4": "Background processing and notifications (4 weeks)",
+      "phase_5": "Extended providers and enterprise features (6 weeks)",
+      "phase_6": "Optional Rust optimization (3 weeks, conditional)",
+      "phase_7": "Polish and production release (3 weeks)"
+    }
+  },
   "future_enhancements": [
     "Move backup files to dedicated backup directory",
     "Update mail processing to use safe_senders list for all header exceptions",
     "Cross-platform email client support",
     "Machine learning-based spam detection",
-    "Mobile app development for cloud email providers",
+    "Mobile app development for cloud email providers (See mobile_app_project section)",
     "Different processing rules for different folders",
     "Email volume reporting and summary statistics",
     "Reprocess emails in multiple folders for additional cleanup passes"
