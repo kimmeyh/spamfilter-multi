@@ -28,7 +28,7 @@ mobile-app/.dart_tool/widget_preview_scaffold/
 
 # Android Firebase Configuration (NEVER commit google-services.json)
 # Location: mobile-app/android/app/google-services.json
-google-services.json
+**/google-services.json
 mobile-app/android/app/google-services.json
 
 # OAuth Client Secrets (NEVER commit OAuth credentials)
