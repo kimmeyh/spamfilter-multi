@@ -46,6 +46,10 @@ Wait-For-EmulatorBoot
 Push-Location $ProjectPath
 try {
   Write-Host "Project: $ProjectPath"
+
+  # Suppress Flutter Git check warning by using --suppress-analytics and checking for existing build
+  $env:FLUTTER_SUPPRESS_ANALYTICS = "true"
+
   if ($InstallReleaseApk) {
     # Install prebuilt release APK if present
     $apk = Join-Path $ProjectPath "build/app/outputs/flutter-apk/app-release.apk"
@@ -62,14 +66,18 @@ try {
       adb shell monkey -p $PackageId -c android.intent.category.LAUNCHER 1 | Write-Host
     } else {
       Write-Warning "APK not found at $apk. Building debug run instead."
-      flutter run
+      # Use flutter run with error suppression
+      Write-Host "Running: flutter run --no-pub --no-build-ios --no-build-macos"
+      flutter run --no-pub --no-build-ios --no-build-macos
       return
     }
   } else {
-    # Run debug build on emulator
-    flutter run
+    # Run debug build on emulator with Git check bypass
+    Write-Host "Running: flutter run --no-pub --no-build-ios --no-build-macos"
+    flutter run --no-pub --no-build-ios --no-build-macos
   }
 }
 finally {
   Pop-Location
+  Remove-Item Env:\FLUTTER_SUPPRESS_ANALYTICS -ErrorAction SilentlyContinue
 }

@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter test:*)",
+      "Bash(powershell -NoProfile -ExecutionPolicy Bypass -File:*)",
+      "Bash(flutter --version:*)",
+      "Bash(Start-Sleep -Seconds 30)",
+      "Bash(Get-Command flutter)",
+      "Bash(Select-Object -ExpandProperty Source)",
+      "Bash(powershell -Command \"Get-Command flutter | Select-Object -ExpandProperty Source\")",
+      "Bash(powershell -Command:*)",
+      "Bash(powershell -NoProfile -ExecutionPolicy Bypass -Command \"cd D:\\\\Data\\\\Harold\\\\github\\\\spamfilter-multi\\\\mobile-app\\\\scripts; .\\\\build-with-secrets.ps1 -BuildType debug -Run\")",
+      "Bash(powershell -NoProfile -ExecutionPolicy Bypass -Command \"Start-Sleep -Seconds 30\")",
+      "Bash(powershell -NoProfile -ExecutionPolicy Bypass -Command \"Get-Command flutter | Select-Object -ExpandProperty Source\")",
+      "Bash(powershell:*)",
+      "Bash(adb logcat:*)",
+      "Bash(Select-String \"11:14:[2-9][0-9]\")",
+      "Bash(Select-String \"Loaded.*saved accounts|Raw accounts JSON\")",
+      "Bash(Select-Object -Last 20)"
+    ]
+  }
+}

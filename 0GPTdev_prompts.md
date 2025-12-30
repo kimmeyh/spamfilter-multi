@@ -1,7 +1,7 @@
 Next:----------------------------------------
 Copy testing context before next prompt
 Android:
-emulator verifying new Bmail email addresses, asking for folders, then hangs (does save credentials).Why is it hanging?working as expected.
+emulator verifying new Gmail email addresses, asking for folders, then hangs (does save credentials).Why is it hanging?working as expected.
 Windows and Android:
 Need to be able to really add Bulk Mail folder
 Need to be able to find all folders

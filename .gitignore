@@ -78,7 +78,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+# Python lib directories only (not Flutter's lib/)
+Archive/desktop-python/lib/
 lib64/
 parts/
 sdist/
