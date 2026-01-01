@@ -3,7 +3,9 @@
     "allow": [
       "Bash(powershell:*)",
       "Bash(adb:*)",
-      "EnterPlanMode"
+      "Bash(cd D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app)",
+      "EnterPlanMode",
+      "Bash(flutter:*)"
     ]
   }
 }

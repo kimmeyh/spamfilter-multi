@@ -16,6 +16,17 @@ class AccountDisplayData {
     required this.email,
     required this.platformId,
   });
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AccountDisplayData &&
+          runtimeType == other.runtimeType &&
+          email == other.email &&
+          platformId == other.platformId;
+
+  @override
+  int get hashCode => email.hashCode ^ platformId.hashCode;
 }
 
 /// Screen to select existing account or add new one
@@ -48,6 +59,9 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
   bool _isLoading = true;
   String? _error;
   DateTime _lastReloadTime = DateTime.now().subtract(const Duration(seconds: 5));
+
+  // Cache for account display data to prevent flicker on rebuild
+  final Map<String, AccountDisplayData?> _accountDataCache = {};
 
   @override
   void initState() {
@@ -112,16 +126,48 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
     };
   }
 
-  /// Load account display data from secure storage
-  /// 
+  /// Load account display data with caching to prevent flicker
+  ///
+  /// Returns cached data immediately if available, then refreshes in background.
+  /// For new accounts, fetches data and caches it.
+  Future<AccountDisplayData?> _loadAccountDisplayData(String accountId) async {
+    // Return cached data if available
+    if (_accountDataCache.containsKey(accountId)) {
+      // Refresh in background but return cached immediately
+      _refreshAccountDataInBackground(accountId);
+      return _accountDataCache[accountId];
+    }
+
+    // Initial load - fetch and cache
+    final data = await _fetchAccountDisplayData(accountId);
+    _accountDataCache[accountId] = data;
+    return data;
+  }
+
+  /// Refresh account data in background (non-blocking)
+  ///
+  /// Updates cache if data has changed, triggering a rebuild.
+  void _refreshAccountDataInBackground(String accountId) async {
+    final data = await _fetchAccountDisplayData(accountId);
+
+    // Only update if mounted and data has actually changed
+    if (mounted && data != _accountDataCache[accountId]) {
+      setState(() {
+        _accountDataCache[accountId] = data;
+      });
+    }
+  }
+
+  /// Fetch account display data from secure storage (no caching)
+  ///
   /// Retrieves the actual email address and platform from credentials storage.
   /// This handles both old format accounts (accountId = platformId) and new format
   /// accounts (accountId = email).
-  Future<AccountDisplayData?> _loadAccountDisplayData(String accountId) async {
+  Future<AccountDisplayData?> _fetchAccountDisplayData(String accountId) async {
     try {
       // Try to retrieve full credentials which includes the email address
       final creds = await _credStore.getCredentials(accountId);
-      
+
       if (creds == null) {
         _logger.w('⚠️ No credentials found for account: $accountId');
         return null;
@@ -129,7 +175,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
 
       // Email is the most reliable source of truth
       String email = creds.email;
-      
+
       // If email is empty or just the platformId (old format), try to infer from storage
       if (email.isEmpty || !email.contains('@')) {
         // This is likely an old account where accountId was just the platformId
@@ -137,10 +183,10 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
         email = accountId.contains('@') ? accountId : 'Account (email not set)';
         _logger.w('⚠️ Email not properly stored for account: $accountId, using fallback: $email');
       }
-      
+
       // Get platformId from storage or infer from email domain
       String platformId = await _credStore.getPlatformId(accountId) ?? 'unknown';
-      
+
       // If platformId is still unknown, try to infer from email domain
       if (platformId == 'unknown' && email.contains('@')) {
         if (email.contains('@gmail.com')) {
@@ -155,7 +201,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
           platformId = 'icloud';
         }
       }
-      
+
       // Last resort: if platformId still unknown, try to parse from accountId
       if (platformId == 'unknown' && !accountId.contains('@')) {
         // accountId might be just the platformId (old format)
@@ -163,7 +209,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       }
 
       _logger.d('✅ Loaded account data: email=$email, platformId=$platformId for accountId=$accountId');
-      
+
       return AccountDisplayData(
         email: email,
         platformId: platformId,
@@ -358,6 +404,8 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
         await _credStore.deleteCredentials(accountId);
         setState(() {
           _savedAccounts.remove(accountId);
+          // Remove from cache
+          _accountDataCache.remove(accountId);
         });
         _logger.i('Deleted account: $accountId');
         
@@ -544,22 +592,6 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                 return FutureBuilder<AccountDisplayData?>(
                   future: _loadAccountDisplayData(accountId),
                   builder: (context, snapshot) {
-                    // Show loading state
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Card(
-                        margin: const EdgeInsets.only(bottom: 12),
-                        elevation: 2,
-                        child: ListTile(
-                          title: Text(accountId),
-                          trailing: const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        ),
-                      );
-                    }
-
                     // Handle errors
                     if (snapshot.hasError) {
                       _logger.e('Error loading account $accountId: ${snapshot.error}');

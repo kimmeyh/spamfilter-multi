@@ -63,8 +63,10 @@ Claud Instructions:
 Proceed to draft the changes in the files for review and testing.
 
 -------
-  Please build the Android app using the following script, |||powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-with-secrets.ps1 -BuildType debug -InstallToEmulator"|||, monitor its progress
-  via log file, then help address any issues.
+Common parts used in prompts
+Can you write a commit message for the current files modified and ready for commit?
+
+  Please build the Android app using the following script, |||powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-with-secrets.ps1 -BuildType debug -InstallToEmulator"|||, monitor its progress by monitoring logs, then help address any issues.
   Please run the app using the following script, |||powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-with-secrets.ps1 -BuildType debug -Run"|||, monitor its progress
   via log file, then monitor the progress of the Android application via |||adb logcat|||, then help address any issues.
 

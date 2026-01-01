@@ -161,7 +161,9 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
 
   Widget _buildHeader(EmailScanProvider scanProvider) {
     final statusText = switch (scanProvider.status) {
-      ScanStatus.idle => 'Idle - ready to start',
+      ScanStatus.idle => scanProvider.results.isEmpty
+          ? 'Ready to scan'
+          : 'Idle',
       ScanStatus.scanning => 'Scanning in progress',
       ScanStatus.paused => 'Paused',
       ScanStatus.completed => 'Scan completed',
@@ -316,11 +318,22 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
       );
     }
 
-    // Show "no results" message for non-scanning states with empty results
-    if (scanProvider.results.isEmpty) {
+    // Show "no results" message only when idle with empty results
+    if (scanProvider.results.isEmpty && scanProvider.status == ScanStatus.idle) {
       return Center(
         child: Text(
           'No results yet. Start a scan to see activity.',
+          style: const TextStyle(color: Colors.grey, fontSize: 16),
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
+    // Show empty state for completed/error states with no results
+    if (scanProvider.results.isEmpty) {
+      return Center(
+        child: Text(
+          'No emails processed.',
           style: const TextStyle(color: Colors.grey, fontSize: 16),
           textAlign: TextAlign.center,
         ),
@@ -391,6 +404,9 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
 
     if (daysBack == null) return; // User cancelled
 
+    // Immediately update UI to show scan is starting
+    scanProvider.startScan(totalEmails: 0);
+
     try {
       // Create scanner
       final scanner = EmailScanner(
@@ -400,7 +416,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
         scanProvider: scanProvider,
       );
 
-      // Start scan in background
+      // Start scan in background (will call startScan again with real count)
       await scanner.scanInbox(daysBack: daysBack);
     } catch (e) {
       if (context.mounted) {

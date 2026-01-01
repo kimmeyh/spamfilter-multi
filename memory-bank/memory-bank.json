@@ -7,10 +7,13 @@
     "repository_type": "Flutter monorepo (100% Dart for all 5 platforms)",
     "license": "MIT License",
     "current_phase": "Phase 2.1 Verification ✅ COMPLETE (Dec 26, 2025) | Firebase Config Migration ✅ COMPLETE (Dec 29, 2025) | 81 tests passing | Windows & Android manual testing successful | Windows Gmail OAuth verified with separate token storage | Android Gmail Sign-In setup guide provided | Android manual build/test validated | Ready for production/external testing",
-    "last_updated": "2025-12-30 (App execution validated on Android emulator; PowerShell execution context issue documented)",
+    "last_updated": "2026-01-01 (Three UI enhancements: Account loading flicker fix, Results navigation fix, Scan progress immediate updates)",
     "current_issues": {
       "status": "No blocking issues. All automated tests passing (81/81). Windows and Android builds successful. Android manual build/test validated. Ready for production/external testing.",
       "notes": [
+        "✅ RESOLVED (Jan 1, 2026): Account loading flicker on Account Selection screen - Implemented caching system to show accounts instantly when returning to screen without loading spinner flicker",
+        "✅ RESOLVED (Jan 1, 2026): Results screen 'Back to Accounts' navigation - Changed to use popUntil to return directly to Account Selection screen instead of Scan Progress screen",
+        "✅ RESOLVED (Jan 1, 2026): Scan progress status updates delayed - Added immediate scanProvider.startScan() call after dialog closes to update UI before fetching emails",
         "✅ RESOLVED (Dec 29): Gmail OAuth navigation issue - After adding Gmail account, app now navigates correctly to scan page instead of hanging on blank screen",
         "✅ RESOLVED (Dec 29): google-services.json consolidated to mobile-app/android/app/ and excluded from Git via .gitignore",
         "✅ RESOLVED (Dec 21): enough_mail ImapClient.connectToServer securityContext parameter issue - Removed unsupported parameter, using default Dart SSL/TLS validation (secure and reliable for standard email providers)",

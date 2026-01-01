@@ -48,7 +48,7 @@ Cross-platform email spam filtering application built with 100% Flutter/Dart for
 
 **Current Status**: Phase 2.1 Complete - All automated tests passing (81/81), manual Windows and Android testing successful, ready for production validation.
 
-**Latest Test Run**: December 30, 2025 - App successfully launched on Android emulator (emulator-5554) with Gmail OAuth configuration validated. Email input fields, Firebase integration, and UI navigation confirmed operational via logcat analysis.
+**Latest Test Run**: January 1, 2026 - Successfully fixed account loading flicker on Android. App now uses cached display data for instant rendering when returning to Account Selection screen, with background refresh to keep data current.
 
 ## Repository Structure
 
@@ -319,6 +319,33 @@ flutter test --coverage                         # With coverage
 **Fix Applied (Dec 30, 2025)**: Changed line 81-82 in root `.gitignore` from `lib/` to `Archive/desktop-python/lib/` to only exclude Python package directories
 **Impact**: All Flutter/Dart source code in `mobile-app/lib/` is now properly tracked by git
 **Note**: This was a mixed-repository issue where Python gitignore rules conflicted with Flutter project structure
+
+### Results Screen Navigation Not Returning to Account Selection
+**Symptom**: "Back to Accounts" button on Results Display screen returned to Scan Progress screen instead of Account Selection screen
+**Root Cause**: Navigation stack was Account Selection → Scan Progress → Results Display. Using `Navigator.pop()` only popped one level back to Scan Progress
+**Fix Applied (Jan 1, 2026)**: Changed navigation to use `Navigator.popUntil(context, (route) => route.isFirst)` to pop all screens until reaching Account Selection screen
+**Files Modified**: `mobile-app/lib/ui/screens/results_display_screen.dart`
+**Impact**: "Back to Accounts" button now correctly navigates directly to Account Selection screen
+
+### Scan Progress Status Updates Delayed
+**Symptom**: After clicking "Start Live Scan" and confirming scan options, screen continued to show "Ready to scan" and "No results yet" until results actually started appearing
+**Root Cause**: Status only changed when `EmailScanner.scanInbox()` called `scanProvider.startScan()`, which happened after fetching emails from server
+**Fix Applied (Jan 1, 2026)**: Added immediate call to `scanProvider.startScan(totalEmails: 0)` right after dialog closes, before scanner runs
+**Files Modified**: `mobile-app/lib/ui/screens/scan_progress_screen.dart`
+**Impact**: UI immediately updates to show "Scanning in progress" and replaces "No results yet" with progress indicator
+
+### Account Loading Flicker on Account Selection Screen
+**Symptom**: When returning to Account Selection screen, account cards briefly flicker showing loading state (spinner) before displaying full account details
+**Root Cause**: FutureBuilder creates a new Future on every widget rebuild, causing it to show `ConnectionState.waiting` state even for already-loaded accounts
+**Fix Applied (Jan 1, 2026)**: Implemented caching system in `AccountSelectionScreen`:
+  - Added `Map<String, AccountDisplayData?> _accountDataCache` to store loaded account data
+  - Modified `_loadAccountDisplayData()` to return cached data immediately if available
+  - Background refresh via `_refreshAccountDataInBackground()` updates cache only when data changes
+  - Removed loading spinner state from FutureBuilder (always shows data immediately)
+  - Cache cleared when accounts are deleted
+**Files Modified**: `mobile-app/lib/ui/screens/account_selection_screen.dart`
+**Impact**: Accounts appear instantly when returning to screen, no visual flicker, still refreshes data in background to catch credential changes
+**Applies to**: All account types (Gmail OAuth, AOL IMAP, Yahoo IMAP)
 
 ## Development Workflow
 

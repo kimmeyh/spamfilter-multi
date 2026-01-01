@@ -183,7 +183,13 @@ class ResultsDisplayScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: ElevatedButton.icon(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      // Pop back to Account Selection Screen (past Scan Progress)
+                      Navigator.popUntil(
+                        context,
+                        (route) => route.isFirst,
+                      );
+                    },
                     icon: const Icon(Icons.home),
                     label: const Text('Back to Accounts'),
                   ),
