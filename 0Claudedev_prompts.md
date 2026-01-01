@@ -51,8 +51,8 @@ Claud Instructions:
      - app logs
      - analytics events
   Request:
-  Please run the app using the following script, |||powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-with-secrets.ps1 -BuildType debug -Run"|||, monitor its progress
-  via log file, then help address any issues.
+
+   Please build the Android app using the following script, |||powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-with-secrets.ps1 -BuildType debug -InstallToEmulator"|||, monitor the progress of the Android application via |||adb logcat|||
 
   When complete (NOT before unless Critical for success), update:
   - D:\Data\Harold\github\spamfilter-multi\CLAUDE.md
@@ -63,7 +63,10 @@ Claud Instructions:
 Proceed to draft the changes in the files for review and testing.
 
 -------
-
+  Please build the Android app using the following script, |||powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-with-secrets.ps1 -BuildType debug -InstallToEmulator"|||, monitor its progress
+  via log file, then help address any issues.
+  Please run the app using the following script, |||powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-with-secrets.ps1 -BuildType debug -Run"|||, monitor its progress
+  via log file, then monitor the progress of the Android application via |||adb logcat|||, then help address any issues.
 
 
 Testing and doc request:----------------------------------------
@@ -174,45 +177,6 @@ cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\run-emulator.ps1
 cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\run-emulator.ps1 -InstallReleaseApk
 
 ------------------------------------------------------------------------------
-
-
-create an optional YAML config files for all the major global variables.  List:
-EMAIL_BULK_FOLDER_NAMES # list of folders - example ["Bulk Mail", "bulk"] 
-EMAIL_INBOX_FOLDER_NAME = "Inbox"
-OUTLOOK_SECURITY_LOG_PATH = f"D:/Data/Harold/OutlookRulesProcessing/"
-OUTLOOK_SECURITY_LOG = OUTLOOK_SECURITY_LOG_PATH + "OutlookRulesProcessingDEBUG_INFO.log"
-OUTLOOK_SIMPLE_LOG = OUTLOOK_SECURITY_LOG_PATH + "OutlookRulesProcessingSimple.log"
-OUTLOOK_RULES_PATH = f"D:/data/harold/github/OutlookMailSpamFilter/"
-OUTLOOK_RULES_FILE = OUTLOOK_RULES_PATH + "outlook_rules.csv"
-OUTLOOK_SAFE_SENDERS_FILE = OUTLOOK_RULES_PATH + "OutlookSafeSenders.csv"
-YAML_RULES_PATH = f"D:/data/harold/github/OutlookMailSpamFilter/"
-YAML_ARCHIVE_PATH = YAML_RULES_PATH + "archive/"
-YAML_RULES_FILE = YAML_RULES_PATH + "rules.yaml"
-#YAML_RULES_FILE = YAML_RULES_PATH + "rules_new.yaml" # this was temporary and no longer needed
-YAML_RULES_SAFE_SENDERS_FILE    = YAML_RULES_PATH + "rules_safe_senders.yaml"
-
-# not sure if these will be used
-YAML_RULES_BODY_FILE            = YAML_RULES_PATH + "rules_body.yaml"
-YAML_RULES_HEADER_FILE          = YAML_RULES_PATH + "rules_header.yaml"
-YAML_RULES_SUBJECT_FILE         = YAML_RULES_PATH + "rules_subject.yaml"
-YAML_RULES_SPAM_FILTER_FILE     = YAML_RULES_PATH + "rules_spam_filter.yaml"
-YAML_RULES_SAFE_RECIPIENTS_FILE = YAML_RULES_PATH + "rules_safe_recipients.yaml"
-YAML_RULES_BLOCKED_SENDERS_FILE = YAML_RULES_PATH + "rules_blocked_senders.yaml"
-YAML_RULES_CONTACTS_FILE        = YAML_RULES_PATH + "rules_contacts.yaml"           # periodically review email account contacts and update
-YAML_RULES_EMAIL_TO_FILE        = YAML_RULES_PATH + "rules_email_to.yaml"           # periodically review emails sent and add targeted recipients to secondary "Safe Senders" file (name?)
-YAML_INTERNATIONAL_RULES_FILE   = YAML_RULES_PATH + "rules_international.yaml"      # send all but a few "organizations" "*.<>" to Bulk Mail .jp, .cz...
-OUTLOOK_RULES_SUBSET            = "SpamAutoDelete"
-DAYS_BACK_DEFAULT = 365 # default number of days to go back in the calendar
-
-Often needed:
-Can you review all the memory-bank/ files and ensure they are current based on the contents of withOutlookRulesYAML.py and the REGEX files: rulesregex.yaml and rules_safe_senderregex.yaml
-Propose updates to memory-bank/*.* files
-
-How to Run from command line (best practice):
-cd D:\Data\Harold\github\OutlookMailSpamFilter && ./.venv/Scripts/Activate.ps1 && python withOutlookRulesYAML.py -u
-cd D:\Data\Harold\github\OutlookMailSpamFilter && ./.venv/Scripts/Activate.ps1 && python withOutlookRulesYAML.py
-
-------------------------------------------------------------------------------
 Completed:
 
-
+  The install of flutter is incorrect.  Can you save any key configuration files (backup), then remove all the files in d:\dev\flutter directory, then re-install flutter to the directory.  Restore any configuration files, as needed.

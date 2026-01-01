@@ -134,7 +134,30 @@ class SecureCredentialsStore {
         key: '${_credentialsPrefix}${accountId}_email',
       );
 
+      // If no standard credentials found, check Gmail tokens as fallback
       if (email == null) {
+        final gmailTokens = await getGmailTokens(accountId);
+        if (gmailTokens != null) {
+          _logger.d('Using Gmail tokens for credentials: $accountId');
+
+          // Get platformId if stored
+          final platformId = await _storage.read(
+            key: '$_credentialsPrefix${accountId}_platformId',
+          );
+
+          return Credentials(
+            email: gmailTokens.email,
+            password: null, // OAuth doesn't use passwords
+            accessToken: gmailTokens.accessToken,
+            additionalParams: {
+              'accountId': accountId,
+              if (platformId != null) 'platformId': platformId,
+              'isGmailOAuth': 'true', // Flag for adapters
+            },
+          );
+        }
+
+        // No credentials found at all
         return null;
       }
 

@@ -567,13 +567,30 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
 
                     final displayData = snapshot.data;
                     if (displayData == null) {
-                      // Fallback if data couldn't be loaded
+                      // Fallback if data couldn't be loaded - show delete option
                       return Card(
                         margin: const EdgeInsets.only(bottom: 12),
                         elevation: 2,
+                        color: Colors.red[50],
                         child: ListTile(
-                          title: Text(accountId),
-                          subtitle: const Text('Error loading account details'),
+                          leading: CircleAvatar(
+                            backgroundColor: Colors.red.withValues(alpha: 0.2),
+                            child: const Icon(Icons.error_outline, color: Colors.red),
+                          ),
+                          title: Text(
+                            accountId,
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                          subtitle: const Text(
+                            'Error: Missing credentials\nTap delete to remove',
+                            style: TextStyle(fontSize: 12),
+                          ),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete_outline),
+                            onPressed: () => _deleteAccount(accountId),
+                            tooltip: 'Delete account',
+                            color: Colors.red[700],
+                          ),
                         ),
                       );
                     }

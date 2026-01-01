@@ -2,6 +2,46 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Development Philosophy: Co-Lead Developer Collaboration
+
+**CRITICAL**: Treat the user as a co-lead developer, not a client. This means:
+
+1. **Think Out Loud**: Share your investigation process, reasoning, and hypotheses before taking action
+   - Explain what you're checking and why before running commands
+   - Narrate your detective work when debugging ("I'm checking X because Y might be causing Z")
+   - Share findings immediately rather than silently making fixes
+
+2. **Collaborative Problem-Solving**: Debugging is a team effort
+   - When you have multiple approaches, present options and discuss trade-offs
+   - Ask for input when facing architectural decisions
+   - Acknowledge when the user's insight completes your investigation (e.g., suspecting .gitignore issues)
+
+3. **Full Transparency**: Provide complete information about what you're doing
+   - Don't shortcut analysis - show the full picture
+   - Explain both what you found AND what you didn't find
+   - Share context about why something matters
+
+4. **Mutual Respect**: Together you are better than either individually
+   - The user brings domain knowledge, project history, and strategic vision
+   - You bring pattern recognition, systematic analysis, and code generation
+   - Best results come from combining both perspectives
+
+5. **Communication Style**:
+   - Explain your thought process before and during actions
+   - Use "Let me check..." or "I'm investigating..." instead of silent tool usage
+   - Share intermediate findings, not just final conclusions
+
+**Example of Good Co-Lead Collaboration**:
+```
+❌ BAD: [Silently runs git status, finds files missing, edits .gitignore, reports "Fixed!"]
+
+✅ GOOD: "I'm checking git status to see which files are tracked... Interesting - the
+mobile-app/lib/ files aren't showing up. You opened .gitignore - good thinking! Let me
+search for 'lib/' in there... Found it! Line 81 has a broad 'lib/' exclusion that's
+catching both Python lib directories AND our Flutter source code. This is a mixed-repo
+issue. Should I make it more specific to only exclude 'Archive/desktop-python/lib/'?"
+```
+
 ## Project Overview
 
 Cross-platform email spam filtering application built with 100% Flutter/Dart for all platforms (Windows, macOS, Linux, Android, iOS). The app uses IMAP/OAuth protocols to support multiple email providers (AOL, Gmail, Yahoo, Outlook.com, ProtonMail) with a single codebase and portable YAML rule sets.
@@ -272,6 +312,13 @@ flutter test --coverage                         # With coverage
 **Root Cause**: `secrets.dev.json` missing or incomplete
 **Fix**: Ensure `WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET` is in `secrets.dev.json`, rebuild with `build-windows.ps1`
 **Guide**: `WINDOWS_GMAIL_OAUTH_SETUP.md`
+
+### Flutter Source Files Not Tracked by Git
+**Symptom**: Dart files in `mobile-app/lib/` don't show as modified in git status or VSCode Source Control
+**Root Cause**: Root `.gitignore` had overly broad `lib/` exclusion (intended for Python lib directories) that also excluded Flutter's `mobile-app/lib/` source code directory
+**Fix Applied (Dec 30, 2025)**: Changed line 81-82 in root `.gitignore` from `lib/` to `Archive/desktop-python/lib/` to only exclude Python package directories
+**Impact**: All Flutter/Dart source code in `mobile-app/lib/` is now properly tracked by git
+**Note**: This was a mixed-repository issue where Python gitignore rules conflicted with Flutter project structure
 
 ## Development Workflow
 

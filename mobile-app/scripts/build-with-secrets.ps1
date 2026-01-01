@@ -251,7 +251,13 @@ try {
                 return
             } catch {
                 Start-Sleep -Milliseconds (300 * $i)
-                if ($i -eq $retries) { throw }
+                if ($i -eq $retries) {
+                    # On final retry, warn but don't throw - some files may be locked by IDE/OS
+                    Write-Host "[WARNING] Could not remove all files in '$path' - some files may be locked. Build will continue." -ForegroundColor Yellow
+                    # Try one more time with SilentlyContinue to remove what we can
+                    try { Remove-Item -LiteralPath $path -Recurse -Force -ErrorAction SilentlyContinue } catch {}
+                    return
+                }
             }
         }
     }

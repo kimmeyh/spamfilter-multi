@@ -186,7 +186,21 @@ class GoogleAuthService {
     // Try silent sign-in for first account
     final accountId = accounts.first;
     _currentAccountId = accountId;
-    return await _attemptSilentSignIn(accountId);
+
+    final result = await _attemptSilentSignIn(accountId);
+
+    // If silent sign-in failed and we're on Android, try native refresh
+    if (!result.success && Platform.isAndroid) {
+      Redact.logSafe('[Auth] Silent sign-in failed, attempting native refresh...');
+
+      // Get tokens for native refresh (even if expired)
+      final tokens = await _credStore.getGmailTokens(accountId);
+      if (tokens != null) {
+        return await _refreshViaNativeSignIn(accountId, tokens);
+      }
+    }
+
+    return result;
   }
 
   /// Attempt silent sign-in / token refresh.
