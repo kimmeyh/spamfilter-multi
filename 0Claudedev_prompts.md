@@ -20,14 +20,12 @@ Release APK build for mobile deployment
 Desktop application builds (Windows, macOS, Linux)
 
 Android:
-emulator verifying new Gmail email addresses, asking for folders, then hangs (does save credentials).Why is it hanging?working as expected.
+
 Windows and Android:
 Need to be able to really add Bulk Mail folder
 Need to be able to find all folders
 Need to be able to actually find safe senders and/or moved, and rules that apply and if would have been deleted.
-Update Scan window items:  change immediately to scanning, more frequent updates on progress.
-Returning from Gmail scan, did not return to list of accounts (while AOL does) - Loaded 0 saved accounts.  Looks like it cleared accounts and tokens (should not have).
-2) After restarting app, gmail account credentials were saved, but after Gmail scan, it appears to delete the aol and gmail accounts adn remove the tokens - it should not remove the gmail or aol credentials/accounts
+
 
 ------Prompt-----
 Claud Instructions:
@@ -75,6 +73,11 @@ Please build the Android app using the following script, |||powershell -NoProfil
 Please run the app using the following script, |||powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-with-secrets.ps1 -BuildType debug -Run"|||, monitor its progress
 via log file, then while I test can you monitor the progress of the Android application via |||adb logcat|||, then help address any issues that I report.
 
+Can you review the code base and last commit to determine if updates are needed to the following files, then make updates as needed:
+- D:\Data\Harold\github\spamfilter-multi\CLAUDE.md
+- d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json
+- d:\Data\Harold\github\spamfilter-multi\memory-bank\mobile-app-plan.md
+- d:\Data\Harold\github\spamfilter-multi\mobile-app\README.md
 
 
 

@@ -16,7 +16,8 @@
       "Bash(ConvertTo-Json -Depth 10)",
       "Bash(dir:*)",
       "Bash(node --version:*)",
-      "Bash(npx:*)"
+      "Bash(npx:*)",
+      "mcp__plugin_serena_serena__list_dir"
     ]
   }
 }

@@ -375,10 +375,39 @@ flutter test --coverage                         # With coverage
 - **Production Delete Mode**: Not yet validated with spam-heavy inbox (read-only mode tested)
 - **iOS/macOS/Linux**: Not yet validated (architecture supports, testing pending)
 
+## Code Review Findings & Issue Backlog (January 2026)
+
+A comprehensive code review of the Flutter spam filter codebase identified **11 high-confidence issues** with specific file:line references. All issues have been documented in the GitHub repository.
+
+### Critical Issues (5)
+- **Issue #8**: Header matching bug in RuleEvaluator - rules with header conditions never match (`rule_evaluator.dart:53-73`)
+- **Issue #9**: Scan mode bypass in EmailScanner - readonly mode still deletes emails (`email_scanner.dart:66-125`)
+- **Issue #10**: Credential type confusion in SecureCredentialsStore (`secure_credentials_store.dart:137-161`)
+- **Issue #11**: Silent regex compilation failures in PatternCompiler (`pattern_compiler.dart:10-26`)
+- **Issue #18**: Missing unit tests for RuleEvaluator (create `rule_evaluator_test.dart` with 20+ tests)
+
+### High Priority Issues (4)
+- **Issue #12**: Missing refresh token storage on Android (`google_auth_service.dart:422-428`)
+- **Issue #13**: Overly broad exception mapping in GenericIMAPAdapter (`generic_imap_adapter.dart:146-165`)
+- **Issue #14**: Duplicate scan mode enforcement logic (`email_scan_provider.dart:315-358`)
+- **Issue #15**: Inconsistent logging - mix of print() and Logger (9 occurrences in main.dart, adapters)
+
+### Medium/Low Priority Issues (2)
+- **Issue #16**: PatternCompiler cache grows unbounded (medium priority)
+- **Issue #17**: EmailMessage.getHeader() returns empty string instead of null (low priority)
+
+**Complete Details**: See `GITHUB_ISSUES_BACKLOG.md` for full problem descriptions, root causes, proposed solutions, and acceptance criteria for all 11 issues.
+
+**Recommended Fix Order**:
+1. Issue #18 (Create RuleEvaluator tests) - Foundation for safely fixing other issues
+2. Issue #8 (Fix header matching bug) - Critical bug affecting spam filtering
+3. Issue #9 (Fix scan mode bypass) - Critical data loss prevention
+
 ## Additional Resources
 
 - **Development Standards**: `memory-bank/development-standards.md`
 - **Processing Flow**: `memory-bank/processing-flow.md`
 - **YAML Schemas**: `memory-bank/yaml-schemas.md`
 - **Regex Conventions**: `memory-bank/regex-conventions.md`
+- **Code Review Backlog**: `GITHUB_ISSUES_BACKLOG.md` (complete issue details)
 - **Desktop Archive**: `Archive/desktop-python/` (reference only)
