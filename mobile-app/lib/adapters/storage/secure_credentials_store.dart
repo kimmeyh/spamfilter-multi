@@ -128,36 +128,20 @@ class SecureCredentialsStore {
   /// Load credentials for an account
   /// 
   /// Returns null if credentials don't exist
+  /// Get IMAP credentials for an account
+  /// 
+  /// Returns credentials stored via [saveCredentials()].
+  /// For Gmail OAuth accounts, use [getGmailTokens()] instead.
+  /// 
+  /// Returns null if no IMAP credentials found.
   Future<Credentials?> getCredentials(String accountId) async {
     try {
       final email = await _storage.read(
         key: '${_credentialsPrefix}${accountId}_email',
       );
 
-      // If no standard credentials found, check Gmail tokens as fallback
+      // No IMAP credentials found
       if (email == null) {
-        final gmailTokens = await getGmailTokens(accountId);
-        if (gmailTokens != null) {
-          _logger.d('Using Gmail tokens for credentials: $accountId');
-
-          // Get platformId if stored
-          final platformId = await _storage.read(
-            key: '$_credentialsPrefix${accountId}_platformId',
-          );
-
-          return Credentials(
-            email: gmailTokens.email,
-            password: null, // OAuth doesn't use passwords
-            accessToken: gmailTokens.accessToken,
-            additionalParams: {
-              'accountId': accountId,
-              if (platformId != null) 'platformId': platformId,
-              'isGmailOAuth': 'true', // Flag for adapters
-            },
-          );
-        }
-
-        // No credentials found at all
         return null;
       }
 
@@ -188,7 +172,7 @@ class SecureCredentialsStore {
         key: '${_credentialsPrefix}${accountId}_platformId',
       );
 
-      _logger.d('Retrieved credentials for account: $accountId');
+      _logger.d('Retrieved IMAP credentials for account: $accountId');
       return Credentials(
         email: email,
         password: password,
@@ -202,6 +186,47 @@ class SecureCredentialsStore {
     } catch (e) {
       throw CredentialStorageException('Failed to retrieve credentials', e);
     }
+  }
+
+  /// Get credentials for any platform (IMAP or OAuth)
+  /// 
+  /// This is a convenience method that checks the platformId and returns
+  /// the appropriate credential type:
+  /// - For Gmail: Returns OAuth tokens wrapped as Credentials
+  /// - For IMAP platforms: Returns standard IMAP credentials
+  /// 
+  /// Use this when you need platform-agnostic credential retrieval.
+  /// Returns null if no credentials found for the account.
+  Future<Credentials?> getCredentialsForPlatform(String accountId) async {
+    // Get platformId to determine credential type
+    final platformId = await getPlatformId(accountId);
+    
+    if (platformId == null) {
+      _logger.w('No platformId found for account: $accountId');
+      return null;
+    }
+
+    // Gmail uses OAuth tokens
+    if (platformId == 'gmail') {
+      final gmailTokens = await getGmailTokens(accountId);
+      if (gmailTokens != null) {
+        _logger.d('Retrieved Gmail OAuth tokens for account: $accountId');
+        return Credentials(
+          email: gmailTokens.email,
+          password: null, // OAuth doesn't use passwords
+          accessToken: gmailTokens.accessToken,
+          additionalParams: {
+            'accountId': accountId,
+            'platformId': platformId,
+            'isGmailOAuth': 'true', // Flag for adapters
+          },
+        );
+      }
+      return null;
+    }
+
+    // All other platforms use IMAP credentials
+    return await getCredentials(accountId);
   }
 
   /// Save OAuth token for an account

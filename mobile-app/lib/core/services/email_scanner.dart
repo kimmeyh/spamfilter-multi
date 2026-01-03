@@ -38,8 +38,8 @@ class EmailScanner {
         throw Exception('Platform $platformId not supported');
       }
 
-      // 2. Load credentials
-      final credentials = await _credStore.getCredentials(accountId);
+      // 2. Load credentials (platform-aware: handles both IMAP and OAuth)
+      final credentials = await _credStore.getCredentialsForPlatform(accountId);
       if (credentials == null) {
         throw Exception('No credentials found for account $accountId');
       }
@@ -162,8 +162,8 @@ class EmailScanner {
         throw Exception('Platform $platformId not supported');
       }
 
-      // Load credentials
-      final credentials = await _credStore.getCredentials(accountId);
+      // Load credentials (platform-aware: handles both IMAP and OAuth)
+      final credentials = await _credStore.getCredentialsForPlatform(accountId);
       if (credentials == null) {
         throw Exception('No credentials found for account $accountId');
       }

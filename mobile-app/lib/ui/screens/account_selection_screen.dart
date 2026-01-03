@@ -184,8 +184,8 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
   /// accounts (accountId = email).
   Future<AccountDisplayData?> _fetchAccountDisplayData(String accountId) async {
     try {
-      // Try to retrieve full credentials which includes the email address
-      final creds = await _credStore.getCredentials(accountId);
+      // Try to retrieve full credentials (platform-aware: handles both IMAP and OAuth)
+      final creds = await _credStore.getCredentialsForPlatform(accountId);
 
       if (creds == null) {
         _logger.w('⚠️ No credentials found for account: $accountId');
