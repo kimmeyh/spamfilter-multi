@@ -1,7 +1,47 @@
 
-# [STATUS UPDATE: December 22, 2025]
+# [STATUS UPDATE: January 3, 2026]
 
-**Phase 2.1 Verification Complete**: All automated tests passing (81/81), manual Windows and Android testing successful, pre-external testing blockers resolved, Android Gmail Sign-In setup guide provided. App is ready for production and external user validation.
+**Phase 2.1 Verification Complete**: All automated tests passing (122/122), manual Windows and Android testing successful, pre-external testing blockers resolved, Android Gmail Sign-In setup guide provided. App is ready for production and external user validation.
+
+**Latest Fixes (Jan 3, 2026)**:
+- ✅ **Issue #18 COMPLETE**: Created comprehensive RuleEvaluator test suite (32 tests, 97.96% code coverage, includes anti-spoofing verification)
+- ✅ **Issue #8 FIXED**: Header matching bug in RuleEvaluator - Rules now properly check email headers for spam detection
+- ✅ **Issue #4 FIXED**: Silent regex compilation failures - Invalid patterns now logged with detailed error messages and tracked for UI visibility
+- 📊 **Test Suite Growth**: Added 41 new tests (32 RuleEvaluator + 9 PatternCompiler) - Total: 122 passing tests
+
+**Code Review Complete (Jan 3, 2026)**:
+- ✅ **Comprehensive Code Review**: Analyzed 40 Dart files, identified 11 improvement opportunities
+- 📋 **GitHub Issues Created**: Issues #8-#18 (5 critical, 4 high priority, 2 medium/low)
+- 📄 **Full Details**: See `GITHUB_ISSUES_BACKLOG.md` in repository root
+- ✅ **Completed**: Issues #18 (tests), #8 (header matching), #4 (regex logging)
+- 🎯 **Next Priority**: Issue #9 (scan mode bypass)
+- ⚠️ **Non-Blocking**: All issues are improvements; no blockers for production testing
+
+**Latest Fix (Jan 2, 2026)**:
+- ✅ **Account Selection Navigation and Refresh Fixed**: "Back to Accounts" from Results Display now correctly navigates to Account Selection screen (not Platform Selection), and account list refreshes immediately
+  - Navigation Fix: Removed Navigator.pushReplacement from delete handler - Account Selection now stays in navigation stack
+  - Refresh Fix: Added RouteObserver and RouteAware mixin to detect navigation events and refresh account list immediately (no more 2-second timer delay)
+  - Files Modified: `main.dart` (RouteObserver), `account_selection_screen.dart` (RouteAware mixin with didPopNext())
+  - Impact: Account list appears instantly when returning from scans or after adding accounts, navigation stack preserved correctly
+
+**Previous UI Enhancements (Jan 1, 2026)**:
+- ✅ **Account Loading Flicker Fixed**: Implemented caching system in AccountSelectionScreen to eliminate visual flicker when returning from scans
+  - Instant Rendering: Accounts now display immediately using cached data (no loading spinner delay)
+  - Background Refresh: Data still refreshes in background to catch credential changes
+  - File Modified: `mobile-app/lib/ui/screens/account_selection_screen.dart` (added Map cache with equality checks)
+- ✅ **Results Screen Navigation Fixed**: "Back to Accounts" button now correctly navigates to Account Selection screen
+  - Changed from `Navigator.pop()` to `Navigator.popUntil()` to pop entire navigation stack
+  - File Modified: `mobile-app/lib/ui/screens/results_display_screen.dart`
+- ✅ **Scan Progress Immediate Updates**: Status now updates instantly when "Start Live Scan" is pressed
+  - Added immediate `scanProvider.startScan(totalEmails: 0)` call after dialog closes
+  - File Modified: `mobile-app/lib/ui/screens/scan_progress_screen.dart`
+
+**Previous Execution Test (Dec 30)**:
+- ✅ **Android App Execution Validated**: App successfully launched on emulator-5554 with Gmail OAuth configuration; email input fields, Firebase integration, and UI navigation confirmed operational
+- ⚠️ **PowerShell Execution Context**: Commands must execute in native PowerShell (not Bash-wrapped) to preserve environment variables and Flutter toolchain context
+
+**Critical Issue RESOLVED (Dec 29)**:
+- ✅ **Gmail OAuth navigation issue RESOLVED**: After adding Gmail account, app now correctly navigates from Gmail authentication → folder selection → scan progress screen (instead of hanging on blank screen)
 
 **Critical Issue RESOLVED (Dec 21)**:
 - ✅ **enough_mail securityContext parameter issue RESOLVED**: Removed unsupported parameters; using default Dart SSL/TLS validation (secure and reliable for AOL, Gmail, standard email providers)
@@ -12,11 +52,12 @@
 **Current Issues:**
 
 **Next Steps:**
-1. ✅ DONE: Run flutter test and verify no regressions (81/81 tests passing)
+1. ✅ DONE: Run flutter test and verify no regressions (122/122 tests passing)
 2. ✅ DONE: Create Android Gmail Sign-In setup guides (Quick Start + Detailed Troubleshooting)
-3. NEXT: Complete Android Gmail Sign-In setup (SHA-1 fingerprint registration)
-4. NEXT: Test Gmail Sign-In on Android emulator
-5. NEXT: Validate production delete mode with spam-heavy inbox (Android)
+3. ✅ DONE: Fix critical code review issues (Issue #18, #8, #4)
+4. NEXT: Complete Android Gmail Sign-In setup (SHA-1 fingerprint registration)
+5. NEXT: Test Gmail Sign-In on Android emulator
+6. NEXT: Validate production delete mode with spam-heavy inbox (Android)
 
 ---
 **CRITICAL: Windows Build/Test Workflow**
@@ -32,8 +73,8 @@ Cross-platform email spam filter application built with Flutter.
 
 ## Project Status
 
-**Phase**: Phase 2.1 Verification ✅ COMPLETE (December 18, 2025)  
-**Current Status**: All automated tests passing (79/79), manual Windows and Android testing successful, ready for production and external user validation
+**Phase**: Phase 2.1 Verification ✅ COMPLETE (December 18, 2025)
+**Current Status**: All automated tests passing (122/122), manual Windows and Android testing successful, ready for production and external user validation
 
 ### Pre-External Testing Blockers ✅ RESOLVED
 ### Pre-External Testing Blockers ✅ RESOLVED

@@ -1,7 +1,18 @@
 
 
 
-# [STATUS UPDATE: December 26, 2025]
+# [STATUS UPDATE: December 29, 2025]
+
+## Gmail OAuth Navigation Fix (December 29, 2025)
+
+**Critical Issue RESOLVED (Dec 29)**:
+- ✅ **Gmail OAuth navigation issue RESOLVED**:
+  - **Problem**: After adding Gmail account via OAuth, app hangs on blank screen instead of navigating to scan page
+  - **Root Cause**: After successful OAuth and folder selection, GmailOAuthScreen was calling `Navigator.pop()` instead of navigating to `ScanProgressScreen`
+  - **Solution**: Modified both `_handleBrowserOAuth()` and `_handleSignIn()` methods in GmailOAuthScreen to use `Navigator.pushReplacement()` to navigate to ScanProgressScreen after folder selection
+  - **Files Modified**: `mobile-app/lib/ui/screens/gmail_oauth_screen.dart`
+  - **Result**: App now correctly navigates from Gmail authentication → folder selection → scan progress screen
+  - **Testing**: Ready for Android emulator testing
 
 ## Phase 2.1 Manual Android Build & Test Checklist (Complete)
 

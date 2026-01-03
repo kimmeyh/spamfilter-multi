@@ -7,14 +7,19 @@ cd d:\Data\Harold\github\spamfilter-multi\mobile-app; flutter build windows
 # single command line for full Windows App rebuild and test
 powershell -NoProfile -ExecutionPolicy Bypass -File D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts\build-windows.ps1
 
+
 cd D:\Data\Harold\github\spamfilter-multi\mobile-app; flutter put get; flutter build windows; flutter run -d windows
 # NOTE: Log file is: 
 
 # Run Android Emulator -------------------------
 #   Preferred method
-powershell -NoProfile -ExecutionPolicy Bypass -File D:\Data\Harold\github\spamfilter-multi/mobile-app/scripts/run-emulator.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-with-secrets.ps1 -BuildType debug -Run"
+
 # NOTE: Log file is: D:\Data\Harold\github\spamfilter-multi\mobile-app\test_results.txt
 # Emulator notes:  
+#   Do a Hot restart by issuing a R - treid once and it did ot work
+    db shell input keyevent R
+
 #   Press back button to exit
     adb shell "am start -a android.settings.SETTINGS" ;&  Start-Sleep -Seconds 2 ; adb shell input keyevent 4
 
@@ -47,3 +52,6 @@ flutter install
 #    Press r - Hot reload (preserves state)
 #    Press R - Hot restart (resets state)
 #    Press q - Quit
+
+
+I added aol account, ran scan.  Return from scan went to the aol account setup screen instead of the Select Account screen.
