@@ -51,8 +51,11 @@ Claud Instructions:
      - app logs
      - analytics events
   Request:
-
-   Please build the Android app using the following script, |||powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-with-secrets.ps1 -BuildType debug -InstallToEmulator"|||, monitor the progress of the Android application via |||adb logcat|||
+  Can you review the code base and last commit to determine if updates are needed to the following files, then make updates as needed:
+  - D:\Data\Harold\github\spamfilter-multi\CLAUDE.md
+  - d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json
+  - d:\Data\Harold\github\spamfilter-multi\memory-bank\mobile-app-plan.md
+  - d:\Data\Harold\github\spamfilter-multi\mobile-app\README.md
 
   When complete (NOT before unless Critical for success), update:
   - D:\Data\Harold\github\spamfilter-multi\CLAUDE.md
@@ -62,14 +65,17 @@ Claud Instructions:
 
 Proceed to draft the changes in the files for review and testing.
 
--------
-Common parts used in prompts
+-------Common parts used in prompts-------------------
 Can you write a commit message for the current files modified and ready for commit?
 
 Please close the Android app.
+
 Please build the Android app using the following script, |||powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-with-secrets.ps1 -BuildType debug -InstallToEmulator"|||, monitor its progress by monitoring logs, then help address any issues.
+
 Please run the app using the following script, |||powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-with-secrets.ps1 -BuildType debug -Run"|||, monitor its progress
 via log file, then while I test can you monitor the progress of the Android application via |||adb logcat|||, then help address any issues that I report.
+
+
 
 
 Testing and doc request:----------------------------------------

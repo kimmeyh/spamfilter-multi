@@ -10,7 +10,13 @@
       "Bash(Select-String -Pattern \"flutter|Auth|Gmail|OAuth|Token|Error|Exception\" -CaseSensitive:$false)",
       "Bash(Start-Sleep -Seconds 3)",
       "Bash(findstr:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(Get-Content \"$env:USERPROFILE\\\\.claude\\\\config.json\" -ErrorAction SilentlyContinue)",
+      "Bash(ConvertFrom-Json)",
+      "Bash(ConvertTo-Json -Depth 10)",
+      "Bash(dir:*)",
+      "Bash(node --version:*)",
+      "Bash(npx:*)"
     ]
   }
 }

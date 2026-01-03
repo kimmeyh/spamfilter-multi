@@ -1,9 +1,16 @@
 
-# [STATUS UPDATE: January 1, 2026]
+# [STATUS UPDATE: January 2, 2026]
 
 **Phase 2.1 Verification Complete**: All automated tests passing (81/81), manual Windows and Android testing successful, pre-external testing blockers resolved, Android Gmail Sign-In setup guide provided. App is ready for production and external user validation.
 
-**Latest UI Enhancements (Jan 1, 2026)**:
+**Latest Fix (Jan 2, 2026)**:
+- ✅ **Account Selection Navigation and Refresh Fixed**: "Back to Accounts" from Results Display now correctly navigates to Account Selection screen (not Platform Selection), and account list refreshes immediately
+  - Navigation Fix: Removed Navigator.pushReplacement from delete handler - Account Selection now stays in navigation stack
+  - Refresh Fix: Added RouteObserver and RouteAware mixin to detect navigation events and refresh account list immediately (no more 2-second timer delay)
+  - Files Modified: `main.dart` (RouteObserver), `account_selection_screen.dart` (RouteAware mixin with didPopNext())
+  - Impact: Account list appears instantly when returning from scans or after adding accounts, navigation stack preserved correctly
+
+**Previous UI Enhancements (Jan 1, 2026)**:
 - ✅ **Account Loading Flicker Fixed**: Implemented caching system in AccountSelectionScreen to eliminate visual flicker when returning from scans
   - Instant Rendering: Accounts now display immediately using cached data (no loading spinner delay)
   - Background Refresh: Data still refreshes in background to catch credential changes

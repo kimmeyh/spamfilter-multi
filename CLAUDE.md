@@ -48,7 +48,7 @@ Cross-platform email spam filtering application built with 100% Flutter/Dart for
 
 **Current Status**: Phase 2.1 Complete - All automated tests passing (81/81), manual Windows and Android testing successful, ready for production validation.
 
-**Latest Test Run**: January 1, 2026 - Successfully fixed account loading flicker on Android. App now uses cached display data for instant rendering when returning to Account Selection screen, with background refresh to keep data current.
+**Latest Test Run**: January 2, 2026 - Successfully fixed Account Selection navigation and refresh issues. App now correctly navigates from Results Display → Account Selection (not Platform Selection), and account list refreshes immediately when returning (no timer delay). Navigation stack preserved correctly for all account deletion scenarios.
 
 ## Repository Structure
 
@@ -345,6 +345,18 @@ flutter test --coverage                         # With coverage
   - Cache cleared when accounts are deleted
 **Files Modified**: `mobile-app/lib/ui/screens/account_selection_screen.dart`
 **Impact**: Accounts appear instantly when returning to screen, no visual flicker, still refreshes data in background to catch credential changes
+**Applies to**: All account types (Gmail OAuth, AOL IMAP, Yahoo IMAP)
+
+### Account Selection Navigation and Refresh Issues
+**Symptom**: After completing a scan and clicking "Back to Accounts" from Results Display screen, navigation went to Platform Selection instead of Account Selection, and account list didn't refresh to show newly added accounts
+**Root Cause**: Delete handler used `Navigator.pushReplacement` to replace Account Selection with Platform Selection when last account was deleted (breaking navigation stack), and Account Selection screen only refreshed accounts on 2-second timer (not on navigation events)
+**Fix Applied (Jan 2, 2026)**:
+  - Removed pushReplacement navigation from delete handler - Account Selection now stays in navigation stack and shows built-in "Add Account" UI when empty
+  - Added RouteObserver and RouteAware mixin to detect navigation events and refresh account list immediately when screen becomes visible
+  - Added global RouteObserver in main.dart
+  - Account Selection implements RouteAware mixin with didPopNext() callback
+**Files Modified**: `mobile-app/lib/main.dart`, `mobile-app/lib/ui/screens/account_selection_screen.dart`
+**Impact**: "Back to Accounts" correctly navigates to Account Selection (not Platform Selection), account list refreshes immediately when navigating back (no delay or empty state), navigation stack preserved correctly for all account deletion scenarios
 **Applies to**: All account types (Gmail OAuth, AOL IMAP, Yahoo IMAP)
 
 ## Development Workflow
