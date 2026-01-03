@@ -154,9 +154,10 @@ class GmailApiAdapter implements SpamFilterPlatform {
     // is active and the email matches the loaded credentials.
     if (_gmailApi == null || !_isConnected) {
       // Attempt to initialize and restore session via GoogleAuthService
+      // Pass the specific account email to initialize (not just first account)
       try {
-        final result = await _authService.initialize();
-        
+        final result = await _authService.initialize(accountId: credentials.email);
+
         if (!result.success || result.accessToken == null) {
           throw AuthenticationException('Not authenticated with Google');
         }

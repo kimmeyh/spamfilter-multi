@@ -17,6 +17,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github
 
 # NOTE: Log file is: D:\Data\Harold\github\spamfilter-multi\mobile-app\test_results.txt
 # Emulator notes:  
+#   Do a Hot restart by issuing a R - treid once and it did ot work
+    db shell input keyevent R
+
 #   Press back button to exit
     adb shell "am start -a android.settings.SETTINGS" ;&  Start-Sleep -Seconds 2 ; adb shell input keyevent 4
 

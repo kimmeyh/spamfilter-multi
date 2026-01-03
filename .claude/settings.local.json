@@ -5,7 +5,12 @@
       "Bash(adb:*)",
       "Bash(cd D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app)",
       "EnterPlanMode",
-      "Bash(flutter:*)"
+      "Bash(flutter:*)",
+      "Bash(Select-String -Pattern \"flutter|SpamFilter|EmailScan|Account|Navigation|Error\" -CaseSensitive:$false)",
+      "Bash(Select-String -Pattern \"flutter|Auth|Gmail|OAuth|Token|Error|Exception\" -CaseSensitive:$false)",
+      "Bash(Start-Sleep -Seconds 3)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)"
     ]
   }
 }

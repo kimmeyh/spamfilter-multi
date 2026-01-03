@@ -6,6 +6,9 @@ import 'adapters/storage/secure_credentials_store.dart';
 // import 'ui/screens/platform_selection_screen.dart'; // OLD: Direct to platform selection
 import 'ui/screens/account_selection_screen.dart'; // NEW: Check for saved accounts first
 
+/// Global RouteObserver for tracking navigation events
+final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -45,6 +48,8 @@ class SpamFilterApp extends StatelessWidget {
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
           useMaterial3: true,
         ),
+        // Track navigation events for account list refresh
+        navigatorObservers: [routeObserver],
         // Initialize rules after providers are created
         home: const _AppInitializer(),
       ),

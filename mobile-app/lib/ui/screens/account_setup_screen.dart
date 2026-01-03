@@ -434,19 +434,28 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
       Navigator.of(context).pop();
     }
 
-    // Navigate to ScanProgressScreen using parent context
-    if (mounted) {
-      Navigator.of(widget.parentContext).push(
-        MaterialPageRoute(
-          builder: (_) => ScanProgressScreen(
-            platformId: widget.platformId,
-            platformDisplayName: widget.platformDisplayName,
-            accountId: widget.accountId,
-            accountEmail: widget.accountEmail,
-          ),
+    // Navigate to ScanProgressScreen, replacing Account Setup Screen
+    // This keeps the navigation stack clean: Account Selection → Platform Selection → Scan Progress
+    if (!mounted) return;
+
+    // Capture context before async gap
+    final parentContext = widget.parentContext;
+    await Navigator.of(parentContext).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => ScanProgressScreen(
+          platformId: widget.platformId,
+          platformDisplayName: widget.platformDisplayName,
+          accountId: widget.accountId,
+          accountEmail: widget.accountEmail,
         ),
-      );
-    }
+      ),
+    );
+
+    // After scan completes and returns, pop Platform Selection to return to Account Selection
+    // The scan is done, account was added, notify Account Selection to reload
+    // Check both State.mounted and that the parentContext is still valid
+    if (!mounted || !parentContext.mounted) return;
+    Navigator.of(parentContext).pop(true);
   }
 
   @override

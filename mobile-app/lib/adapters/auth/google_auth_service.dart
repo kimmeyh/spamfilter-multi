@@ -173,7 +173,10 @@ class GoogleAuthService {
   /// Initialize the service and attempt silent sign-in.
   ///
   /// Call this on app startup to restore previous session.
-  Future<AuthResult> initialize() async {
+  ///
+  /// [accountId] - Optional email address of the specific Gmail account to initialize.
+  ///               If not provided, uses the first saved account.
+  Future<AuthResult> initialize({String? accountId}) async {
     _state = AuthState.storedCredentials;
 
     // Try to restore from stored tokens first
@@ -183,20 +186,28 @@ class GoogleAuthService {
       return AuthResult.unauthenticated();
     }
 
-    // Try silent sign-in for first account
-    final accountId = accounts.first;
-    _currentAccountId = accountId;
+    // Use provided accountId or fall back to first account
+    final targetAccountId = accountId ?? accounts.first;
 
-    final result = await _attemptSilentSignIn(accountId);
+    // Verify the target account exists in saved accounts
+    if (!accounts.contains(targetAccountId)) {
+      Redact.logSafe('[Auth] Requested account $targetAccountId not found in saved accounts');
+      _state = AuthState.unauthenticated;
+      return AuthResult.unauthenticated();
+    }
+
+    _currentAccountId = targetAccountId;
+
+    final result = await _attemptSilentSignIn(targetAccountId);
 
     // If silent sign-in failed and we're on Android, try native refresh
     if (!result.success && Platform.isAndroid) {
       Redact.logSafe('[Auth] Silent sign-in failed, attempting native refresh...');
 
       // Get tokens for native refresh (even if expired)
-      final tokens = await _credStore.getGmailTokens(accountId);
+      final tokens = await _credStore.getGmailTokens(targetAccountId);
       if (tokens != null) {
-        return await _refreshViaNativeSignIn(accountId, tokens);
+        return await _refreshViaNativeSignIn(targetAccountId, tokens);
       }
     }
 
@@ -404,8 +415,8 @@ class GoogleAuthService {
       // Request authorization for scopes
       Redact.logSafe('[Auth] Got user, requesting Gmail API scopes...');
       final authorization = await _currentUser!.authorizationClient.authorizeScopes(_scopes);
-      
-      final accountId = 'gmail-${_currentUser!.email}';
+
+      final accountId = _currentUser!.email;
       _currentAccountId = accountId;
 
       final tokens = GmailTokens(
@@ -457,7 +468,7 @@ class GoogleAuthService {
 
       // Get user email from access token
       final email = await GmailWindowsOAuthHandler.getUserEmail(accessToken);
-      final accountId = 'gmail-$email';
+      final accountId = email;
       _currentAccountId = accountId;
 
       // Calculate expiry
@@ -571,9 +582,9 @@ class GoogleAuthService {
     try {
       // Use 7.x API for requesting additional scopes
       final authorization = await _currentUser!.authorizationClient.authorizeScopes(additionalScopes);
-      
+
       // Update stored tokens with new scopes
-      final accountId = 'gmail-${_currentUser!.email}';
+      final accountId = _currentUser!.email;
       final existingTokens = await _credStore.getGmailTokens(accountId);
 
       final newTokens = GmailTokens(

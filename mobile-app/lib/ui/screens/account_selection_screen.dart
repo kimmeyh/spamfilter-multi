@@ -3,6 +3,7 @@ import 'package:logger/logger.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/email_providers/spam_filter_platform.dart';
+import '../../main.dart' show routeObserver;
 import 'account_setup_screen.dart';
 import 'platform_selection_screen.dart';
 import 'scan_progress_screen.dart';
@@ -52,7 +53,7 @@ class AccountSelectionScreen extends StatefulWidget {
   State<AccountSelectionScreen> createState() => _AccountSelectionScreenState();
 }
 
-class _AccountSelectionScreenState extends State<AccountSelectionScreen> with WidgetsBindingObserver {
+class _AccountSelectionScreenState extends State<AccountSelectionScreen> with WidgetsBindingObserver, RouteAware {
   final _credStore = SecureCredentialsStore();
   final _logger = Logger();
   List<String> _savedAccounts = [];
@@ -71,9 +72,27 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Subscribe to route events to detect when we navigate back to this screen
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      routeObserver.subscribe(this, route as ModalRoute);
+    }
+  }
+
+  @override
   void dispose() {
+    routeObserver.unsubscribe(this);
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  /// Called when another screen is popped and we become visible again
+  @override
+  void didPopNext() {
+    _logger.i('🔄 Navigated back to Account Selection - refreshing account list');
+    _loadSavedAccounts();
   }
 
   /// Reload accounts when app comes back to foreground
@@ -408,22 +427,15 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
           _accountDataCache.remove(accountId);
         });
         _logger.i('Deleted account: $accountId');
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Deleted $email')),
           );
         }
 
-        // If no accounts left, navigate to platform selection
-        if (_savedAccounts.isEmpty && mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const PlatformSelectionScreen(),
-            ),
-          );
-        }
+        // No need to navigate anywhere - the build method will show
+        // the "Add Account" UI when _savedAccounts.isEmpty (lines 505-547)
       } catch (e) {
         _logger.e('Failed to delete account: $e');
         if (mounted) {
