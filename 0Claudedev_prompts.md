@@ -73,6 +73,14 @@ Please build the Android app using the following script, |||powershell -NoProfil
 Please run the app using the following script, |||powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-with-secrets.ps1 -BuildType debug -Run"|||, monitor its progress
 via log file, then while I test can you monitor the progress of the Android application via |||adb logcat|||, then help address any issues that I report.
 
+Can you review the modified files pending commit, determine if updates are needed to the following files, then make updates as needed:
+- D:\Data\Harold\github\spamfilter-multi\CLAUDE.md
+- d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json
+- d:\Data\Harold\github\spamfilter-multi\memory-bank\mobile-app-plan.md
+- d:\Data\Harold\github\spamfilter-multi\mobile-app\README.md
+
+Can you initiate a PR for all commits in this branch to the develop branch with appropriate PR description referencing any Issues resolved.
+
 Can you review the code base and last commit to determine if updates are needed to the following files, then make updates as needed:
 - D:\Data\Harold\github\spamfilter-multi\CLAUDE.md
 - d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json

@@ -51,12 +51,26 @@ class RuleEvaluator {
   }
 
   bool _matchesConditions(EmailMessage message, RuleConditions conditions) {
-    final matches = <bool>[
-      _matchesPatternList(message.from, conditions.from),
-      _matchesPatternList(message.from, conditions.header),
-      _matchesPatternList(message.subject, conditions.subject),
-      _matchesPatternList(message.body, conditions.body),
-    ];
+    final matches = <bool>[];
+
+    // Only check non-empty pattern lists
+    if (conditions.from.isNotEmpty) {
+      matches.add(_matchesPatternList(message.from, conditions.from));
+    }
+    if (conditions.header.isNotEmpty) {
+      matches.add(_matchesHeaderList(message.headers, conditions.header));
+    }
+    if (conditions.subject.isNotEmpty) {
+      matches.add(_matchesPatternList(message.subject, conditions.subject));
+    }
+    if (conditions.body.isNotEmpty) {
+      matches.add(_matchesPatternList(message.body, conditions.body));
+    }
+
+    // If no patterns specified, don't match
+    if (matches.isEmpty) {
+      return false;
+    }
 
     if (conditions.type == 'AND') {
       return matches.every((m) => m);
@@ -67,7 +81,7 @@ class RuleEvaluator {
 
   bool _matchesExceptions(EmailMessage message, RuleExceptions exceptions) {
     return _matchesPatternList(message.from, exceptions.from) ||
-        _matchesPatternList(message.from, exceptions.header) ||
+        _matchesHeaderList(message.headers, exceptions.header) ||
         _matchesPatternList(message.subject, exceptions.subject) ||
         _matchesPatternList(message.body, exceptions.body);
   }
@@ -75,11 +89,33 @@ class RuleEvaluator {
   bool _matchesPatternList(String text, List<String> patterns) {
     if (patterns.isEmpty) return false;
     final normalized = text.toLowerCase().trim();
-    
+
     return patterns.any((pattern) {
       try {
         final regex = compiler.compile(pattern);
         return regex.hasMatch(normalized);
+      } catch (e) {
+        return false;
+      }
+    });
+  }
+
+  /// Match header patterns against email headers
+  /// Headers are checked in "key:value" format (e.g., "x-spam-status:yes")
+  bool _matchesHeaderList(Map<String, String> headers, List<String> patterns) {
+    if (patterns.isEmpty) return false;
+
+    return patterns.any((pattern) {
+      try {
+        final regex = compiler.compile(pattern);
+        // Check each header in "key:value" format
+        for (final entry in headers.entries) {
+          final headerLine = '${entry.key}:${entry.value}'.toLowerCase().trim();
+          if (regex.hasMatch(headerLine)) {
+            return true;
+          }
+        }
+        return false;
       } catch (e) {
         return false;
       }
@@ -91,7 +127,7 @@ class RuleEvaluator {
       if (_matchesPattern(message.from, pattern)) return pattern;
     }
     for (final pattern in conditions.header) {
-      if (_matchesPattern(message.from, pattern)) return pattern;
+      if (_matchesHeaderPattern(message.headers, pattern)) return pattern;
     }
     for (final pattern in conditions.subject) {
       if (_matchesPattern(message.subject, pattern)) return pattern;
@@ -100,6 +136,22 @@ class RuleEvaluator {
       if (_matchesPattern(message.body, pattern)) return pattern;
     }
     return '';
+  }
+
+  /// Check if a single header pattern matches any header
+  bool _matchesHeaderPattern(Map<String, String> headers, String pattern) {
+    try {
+      final regex = compiler.compile(pattern);
+      for (final entry in headers.entries) {
+        final headerLine = '${entry.key}:${entry.value}'.toLowerCase().trim();
+        if (regex.hasMatch(headerLine)) {
+          return true;
+        }
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
   }
 
   bool _matchesPattern(String text, String pattern) {

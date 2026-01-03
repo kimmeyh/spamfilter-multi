@@ -19,16 +19,20 @@ For ALL Windows app builds, rebuilds, and tests, you MUST use the `build-windows
 
 # [STATUS UPDATE: January 3, 2026]
 
-**Phase 2.1 Verification Complete**: All automated tests passing (81/81), manual Windows and Android testing successful, pre-external testing blockers resolved. App is ready for production and external user validation.
+**Phase 2.1 Verification Complete**: All automated tests passing (122/122), manual Windows and Android testing successful, pre-external testing blockers resolved. App is ready for production and external user validation.
+
+**Latest Fixes (Jan 3, 2026)**:
+- ✅ **Issue #18 COMPLETE**: Created comprehensive RuleEvaluator test suite (32 tests, 97.96% code coverage, includes anti-spoofing verification)
+- ✅ **Issue #8 FIXED**: Header matching bug - Rules now properly check email headers for spam detection
+- ✅ **Issue #4 FIXED**: Silent regex compilation failures - Invalid patterns now logged with detailed error messages
+- 📊 **Test Suite Growth**: Added 41 new tests (32 RuleEvaluator + 9 PatternCompiler) - Total: 122 passing tests
 
 **Code Review Complete (Jan 3, 2026)**:
 - ✅ **Comprehensive Code Review Completed**: Analyzed 40 Dart files across core, adapters, and UI layers
 - 📋 **11 Issues Identified**: 5 critical, 4 high priority, 2 medium/low priority (GitHub issues #8-#18)
+- ✅ **3 Issues Fixed** (27% complete): #18 (tests), #8 (header matching), #4 (regex logging)
 - 📄 **Full Documentation**: All issues documented in GITHUB_ISSUES_BACKLOG.md with root causes, solutions, and acceptance criteria
-- 🎯 **Top Priorities**:
-  1. Issue #18: Create RuleEvaluator unit tests (20+ tests minimum, >90% coverage)
-  2. Issue #8: Fix header matching bug - rules with header conditions never match
-  3. Issue #9: Fix scan mode bypass - readonly mode still executes deletions
+- 🎯 **Next Priority**: Issue #9 (Fix scan mode bypass - readonly mode still executes deletions)
 - ⚠️ **Non-Blocking**: All issues are improvement opportunities; no blocking bugs for production testing
 
 **Latest Fix (Jan 2, 2026)**:
@@ -93,10 +97,10 @@ For ALL Windows app builds, rebuilds, and tests, you MUST use the `build-windows
 
 # Mobile Spam Filter App - Development Plan
 
-**Status**: Phase 2.1 Verification ✅ COMPLETE (December 18, 2025) | 79 tests passing | Windows & Android manual testing successful | Norton TLS issue resolved (Dec 22)  
-**Last Updated**: 2025-12-22 (Norton 360 Email Protection TLS interception documented; resolution noted)  
-**Current Work**: All automated tests green, manual testing on Windows and Android validated, Norton TLS troubleshooting documented, pre-external testing blockers resolved  
-**Architecture**: 100% Flutter/Dart for all platforms (Windows, macOS, Linux, Android, iOS)  
+**Status**: Phase 2.1 Verification ✅ COMPLETE (December 18, 2025) | 122 tests passing | Windows & Android manual testing successful | Code review issues fixed (3 of 11)
+**Last Updated**: 2026-01-03 (Issue #18, #8, #4 fixed; test suite expanded from 81 to 122 tests)
+**Current Work**: Core spam filtering bugs fixed (header matching, regex logging), comprehensive test suite created, ready for production validation
+**Architecture**: 100% Flutter/Dart for all platforms (Windows, macOS, Linux, Android, iOS)
 **Flutter Installation**: ✅ Complete (3.38.3 verified)  
 **Email Access**: IMAP/OAuth protocols for universal provider support  
 **Tech Stack**: Flutter/Dart with Provider 6.1.0 for state management  

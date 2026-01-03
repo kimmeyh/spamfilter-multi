@@ -74,4 +74,105 @@ void main() {
       expect(pattern.hasMatch('user@otherdomain.com'), isFalse);
     });
   });
+
+  group('PatternCompiler - Failure Tracking', () {
+    test('tracks compilation failures', () {
+      final invalidPattern = r'[invalid(regex';
+      compiler.compile(invalidPattern);
+
+      final failures = compiler.compilationFailures;
+      expect(failures, isNotEmpty);
+      expect(failures.containsKey(invalidPattern), isTrue);
+      expect(failures[invalidPattern], isNotNull);
+      expect(failures[invalidPattern], contains('FormatException'));
+    });
+
+    test('isPatternValid returns false for invalid patterns', () {
+      final invalidPattern = r'[unclosed[bracket';
+      compiler.compile(invalidPattern);
+
+      expect(compiler.isPatternValid(invalidPattern), isFalse);
+    });
+
+    test('isPatternValid returns true for valid patterns', () {
+      final validPattern = r'^test@example\.com$';
+      compiler.compile(validPattern);
+
+      expect(compiler.isPatternValid(validPattern), isTrue);
+    });
+
+    test('invalid pattern cached as never-match fallback', () {
+      final invalidPattern = r'(unclosed(group';
+      final regex = compiler.compile(invalidPattern);
+
+      // Should return a fallback pattern that never matches
+      expect(regex, isNotNull);
+      expect(regex.hasMatch('anything'), isFalse);
+      expect(regex.hasMatch(''), isFalse);
+      expect(regex.hasMatch('(unclosed(group'), isFalse);
+    });
+
+    test('failed patterns count included in stats', () {
+      compiler.compile(r'[invalid');
+      compiler.compile(r'(unclosed');
+      compiler.compile(r'^valid$');  // Valid pattern
+
+      final stats = compiler.getStats();
+      expect(stats['failed_patterns'], equals(2));
+      expect(stats['cached_patterns'], equals(3)); // All cached (valid + invalid)
+    });
+
+    test('multiple invalid patterns tracked separately', () {
+      final invalid1 = r'[unclosed';
+      final invalid2 = r'(unclosed';
+      final invalid3 = r'*invalid';
+
+      compiler.compile(invalid1);
+      compiler.compile(invalid2);
+      compiler.compile(invalid3);
+
+      final failures = compiler.compilationFailures;
+      expect(failures.length, equals(3));
+      expect(failures.keys, containsAll([invalid1, invalid2, invalid3]));
+    });
+
+    test('clear() removes all failures', () {
+      compiler.compile(r'[invalid');
+      compiler.compile(r'(unclosed');
+
+      expect(compiler.compilationFailures, isNotEmpty);
+
+      compiler.clear();
+
+      expect(compiler.compilationFailures, isEmpty);
+      expect(compiler.getStats()['failed_patterns'], equals(0));
+    });
+
+    test('compilationFailures returns unmodifiable map', () {
+      compiler.compile(r'[invalid');
+      final failures = compiler.compilationFailures;
+
+      // Attempting to modify should throw
+      expect(() => failures['new'] = 'error', throwsUnsupportedError);
+    });
+
+    test('recompiling invalid pattern uses cached fallback', () {
+      final invalidPattern = r'[unclosed';
+
+      // First compile - creates fallback
+      final regex1 = compiler.compile(invalidPattern);
+      final stats1 = compiler.getStats();
+
+      // Second compile - uses cache
+      final regex2 = compiler.compile(invalidPattern);
+      final stats2 = compiler.getStats();
+
+      // Should be same object (cached)
+      expect(identical(regex1, regex2), isTrue);
+      expect(stats2['cache_hits'], equals(stats1['cache_hits']! + 1));
+
+      // Should still be tracked as failure only once
+      expect(compiler.compilationFailures.length, equals(1));
+    });
+  });
 }

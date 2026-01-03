@@ -366,7 +366,7 @@ flutter test --coverage                         # With coverage
 3. **Build**:
    - Windows: `.\scripts\build-windows.ps1`
    - Android: `.\scripts\build-with-secrets.ps1 -BuildType debug -InstallToEmulator`
-4. **Test**: `flutter test` (verify all 81 tests passing)
+4. **Test**: `flutter test` (verify all 122 tests passing)
 5. **Analyze**: `flutter analyze` (ensure 0 issues)
 
 ## Known Limitations
@@ -379,14 +379,17 @@ flutter test --coverage                         # With coverage
 
 A comprehensive code review of the Flutter spam filter codebase identified **11 high-confidence issues** with specific file:line references. All issues have been documented in the GitHub repository.
 
-### Critical Issues (5)
-- **Issue #8**: Header matching bug in RuleEvaluator - rules with header conditions never match (`rule_evaluator.dart:53-73`)
+### Completed Issues (3)
+- **Issue #18 ✅ COMPLETE (Jan 3, 2026)**: Created comprehensive RuleEvaluator test suite - 32 tests with 97.96% coverage, includes anti-spoofing verification (`rule_evaluator_test.dart`)
+- **Issue #8 ✅ FIXED (Jan 3, 2026)**: Header matching bug in RuleEvaluator - Rules now properly check email headers instead of From field (`rule_evaluator.dart:53-141`)
+- **Issue #4 ✅ FIXED (Jan 3, 2026)**: Silent regex compilation failures - Invalid patterns now logged and tracked for UI visibility (`pattern_compiler.dart:1-66`)
+
+### Critical Issues Remaining (2)
 - **Issue #9**: Scan mode bypass in EmailScanner - readonly mode still deletes emails (`email_scanner.dart:66-125`)
 - **Issue #10**: Credential type confusion in SecureCredentialsStore (`secure_credentials_store.dart:137-161`)
-- **Issue #11**: Silent regex compilation failures in PatternCompiler (`pattern_compiler.dart:10-26`)
-- **Issue #18**: Missing unit tests for RuleEvaluator (create `rule_evaluator_test.dart` with 20+ tests)
 
 ### High Priority Issues (4)
+- **Issue #11**: Silent regex compilation failures in PatternCompiler (DUPLICATE - see Issue #4 ✅ FIXED)
 - **Issue #12**: Missing refresh token storage on Android (`google_auth_service.dart:422-428`)
 - **Issue #13**: Overly broad exception mapping in GenericIMAPAdapter (`generic_imap_adapter.dart:146-165`)
 - **Issue #14**: Duplicate scan mode enforcement logic (`email_scan_provider.dart:315-358`)
@@ -398,10 +401,7 @@ A comprehensive code review of the Flutter spam filter codebase identified **11 
 
 **Complete Details**: See `GITHUB_ISSUES_BACKLOG.md` for full problem descriptions, root causes, proposed solutions, and acceptance criteria for all 11 issues.
 
-**Recommended Fix Order**:
-1. Issue #18 (Create RuleEvaluator tests) - Foundation for safely fixing other issues
-2. Issue #8 (Fix header matching bug) - Critical bug affecting spam filtering
-3. Issue #9 (Fix scan mode bypass) - Critical data loss prevention
+**Progress Summary**: 3 of 11 issues fixed (27% complete). Test suite expanded from 81 to 122 tests (+50% growth).
 
 ## Additional Resources
 
