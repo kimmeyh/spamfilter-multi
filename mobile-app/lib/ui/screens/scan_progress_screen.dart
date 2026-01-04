@@ -20,14 +20,14 @@ class ScanProgressScreen extends StatefulWidget {
   final String platformId;
   final String platformDisplayName;
   final String accountId;
-  final String? accountEmail;
+  final String accountEmail;
 
   const ScanProgressScreen({
     super.key,
     required this.platformId,
     required this.platformDisplayName,
     required this.accountId,
-    this.accountEmail,
+    required this.accountEmail,
   });
 
   @override
@@ -62,6 +62,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
                 platformId: widget.platformId,
                 platformDisplayName: widget.platformDisplayName,
                 accountId: widget.accountId,
+                accountEmail: widget.accountEmail,
               ),
             ),
           );
@@ -152,6 +153,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
                       platformId: widget.platformId,
                       platformDisplayName: widget.platformDisplayName,
                       accountId: widget.accountId,
+                      accountEmail: widget.accountEmail,
                     ),
                   ),
                 );
@@ -318,6 +320,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
                   platformId: widget.platformId,
                   platformDisplayName: widget.platformDisplayName,
                   accountId: widget.accountId,
+                  accountEmail: widget.accountEmail,
                 ),
               ),
             );
