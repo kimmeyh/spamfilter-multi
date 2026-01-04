@@ -188,9 +188,26 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
         ),
       );
 
-      // ✨ PHASE 2 SPRINT 4: Show scan mode selection for IMAP accounts (AOL, Yahoo, etc.)
-      // This allows the user to choose their preferred scan mode before proceeding to the scan page
-      _showScanModeSelector(context, accountId, email);
+      // ✨ PHASE 3.1: Navigate directly to ScanProgressScreen
+      // Scan mode defaults to readonly (safe) and can be changed via persistent button
+      final scanProvider = context.read<EmailScanProvider>();
+      scanProvider.initializeScanMode(mode: ScanMode.readonly); // Default to safe mode
+      
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => ScanProgressScreen(
+            platformId: widget.platformId,
+            platformDisplayName: widget.platformDisplayName,
+            accountId: accountId,
+            accountEmail: email,
+          ),
+        ),
+      ).then((_) {
+        // After scan screen is popped, pop account setup to return to account selection
+        if (mounted) {
+          Navigator.of(context).pop(true);
+        }
+      });
     }
   }
 
