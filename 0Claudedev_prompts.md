@@ -50,10 +50,16 @@ Claud Instructions:
      - analytics events
   Request:
 
+  When complete (NOT before unless Critical for success), update:
+  - d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json
+  - d:\Data\Harold\github\spamfilter-multi\memory-bank\mobile-app-plan.md
+  - d:\Data\Harold\github\spamfilter-multi\mobile-app\IMPLEMENTATION_SUMMARY.md
+  - d:\Data\Harold\github\spamfilter-multi\mobile-app\README.md
 
-Proceed to draft the changes in the files for review and testing.
 
 -------Common parts used in prompts-------------------
+Proceed to draft the changes in the files for review and testing.
+
 Can you write a commit message for the current files modified and ready for commit?
 
 Please close the Android app.
@@ -194,5 +200,5 @@ Completed:
   - d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json
   - d:\Data\Harold\github\spamfilter-multi\memory-bank\mobile-app-plan.md
   - d:\Data\Harold\github\spamfilter-multi\mobile-app\README.md
-  
+
   The install of flutter is incorrect.  Can you save any key configuration files (backup), then remove all the files in d:\dev\flutter directory, then re-install flutter to the directory.  Restore any configuration files, as needed.

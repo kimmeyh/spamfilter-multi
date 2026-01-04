@@ -317,11 +317,9 @@ class GoogleAuthService {
     if (_isInitialized) return;
     
     try {
-      // On Android/iOS: Don't pass serverClientId - native SDK reads from google-services.json
+      // On Android/iOS: Don't pass serverClientId - native SDK reads from platform configs
+      // (Android: google-services.json, iOS: GoogleService-Info.plist)
       // On Desktop: Not used here (we use browser-based OAuth instead)
-      // 
-      // Note: Android OAuth client ID is configured in android/app/google-services.json
-      // and is automatically used by the native Google Sign-In SDK
       await _googleSignIn.initialize(
         clientId: null,  // Let native SDKs use their platform-specific configs
         serverClientId: null,  // Android reads from google-services.json automatically
@@ -396,7 +394,7 @@ class GoogleAuthService {
   /// Native Google Sign-In (Android/iOS).
   /// 
   /// Uses google_sign_in 7.x API with authenticate() method.
-  /// On Android, uses browser-based OAuth as fallback if native fails.
+  /// On Android, falls back to browser-based OAuth if native fails.
   Future<AuthResult> _signInNative() async {
     try {
       await _ensureNativeSignInInitialized();
@@ -419,6 +417,8 @@ class GoogleAuthService {
       final accountId = _currentUser!.email;
       _currentAccountId = accountId;
 
+      // Native SDK manages refresh internally (Android/iOS)
+      // Refresh token not exposed by google_sign_in SDK (null is acceptable)
       final tokens = GmailTokens(
         accessToken: authorization.accessToken,
         refreshToken: null, // Native SDK manages refresh internally
