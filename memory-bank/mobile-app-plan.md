@@ -19,20 +19,21 @@ For ALL Windows app builds, rebuilds, and tests, you MUST use the `build-windows
 
 # [STATUS UPDATE: January 3, 2026]
 
-**Phase 2.1 Verification Complete**: All automated tests passing (122/122), manual Windows and Android testing successful, pre-external testing blockers resolved. App is ready for production and external user validation.
+**Phase 2.1 Verification Complete**: All automated tests passing (123/123), manual Windows and Android testing successful, pre-external testing blockers resolved. App is ready for production and external user validation.
 
 **Latest Fixes (Jan 3, 2026)**:
 - ✅ **Issue #18 COMPLETE**: Created comprehensive RuleEvaluator test suite (32 tests, 97.96% code coverage, includes anti-spoofing verification)
 - ✅ **Issue #8 FIXED**: Header matching bug - Rules now properly check email headers for spam detection
 - ✅ **Issue #4 FIXED**: Silent regex compilation failures - Invalid patterns now logged with detailed error messages
-- 📊 **Test Suite Growth**: Added 41 new tests (32 RuleEvaluator + 9 PatternCompiler) - Total: 122 passing tests
+- ✅ **Issue #10 FIXED**: Credential type confusion in SecureCredentialsStore - Removed silent OAuth fallback, added explicit `getCredentialsForPlatform()` method
+- 📊 **Test Suite Growth**: Added 42 new tests (32 RuleEvaluator + 9 PatternCompiler + 1 Credentials) - Total: 123 passing tests (+52% from baseline)
 
-**Code Review Complete (Jan 3, 2026)**:
+**Code Review Progress (Jan 3, 2026)**:
 - ✅ **Comprehensive Code Review Completed**: Analyzed 40 Dart files across core, adapters, and UI layers
-- 📋 **11 Issues Identified**: 5 critical, 4 high priority, 2 medium/low priority (GitHub issues #8-#18)
-- ✅ **3 Issues Fixed** (27% complete): #18 (tests), #8 (header matching), #4 (regex logging)
+- 📋 **11 Issues Identified**: 4 critical, 4 high priority, 3 medium/low priority (GitHub issues #8-#18)
+- ✅ **4 Issues Fixed** (36% complete): #18 (tests), #8 (header matching), #4 (regex logging), #10 (credential type confusion)
 - 📄 **Full Documentation**: All issues documented in GITHUB_ISSUES_BACKLOG.md with root causes, solutions, and acceptance criteria
-- 🎯 **Next Priority**: Issue #9 (Fix scan mode bypass - readonly mode still executes deletions)
+- 🎯 **Next Priority**: Issue #9 (Fix scan mode bypass - readonly mode still executes deletions) - CRITICAL
 - ⚠️ **Non-Blocking**: All issues are improvement opportunities; no blocking bugs for production testing
 
 **Latest Fix (Jan 2, 2026)**:
