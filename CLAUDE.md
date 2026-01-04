@@ -379,22 +379,23 @@ flutter test --coverage                         # With coverage
 
 A comprehensive code review of the Flutter spam filter codebase identified **11 high-confidence issues** with specific file:line references. All issues have been documented in the GitHub repository.
 
-### Completed Issues (6)
+### Completed Issues (7)
 - **Issue #18 ✅ COMPLETE (Jan 3, 2026)**: Created comprehensive RuleEvaluator test suite - 32 tests with 97.96% coverage, includes anti-spoofing verification (`rule_evaluator_test.dart`)
 - **Issue #8 ✅ FIXED (Jan 3, 2026)**: Header matching bug in RuleEvaluator - Rules now properly check email headers instead of From field (`rule_evaluator.dart:53-141`)
 - **Issue #4 ✅ FIXED (Jan 3, 2026)**: Silent regex compilation failures - Invalid patterns now logged and tracked for UI visibility (`pattern_compiler.dart:1-66`)
 - **Issue #10 ✅ FIXED (Jan 3, 2026)**: Credential type confusion in SecureCredentialsStore - Removed silent OAuth fallback, added explicit `getCredentialsForPlatform()` method (`secure_credentials_store.dart:130-230`)
 - **Issue #9 ✅ FIXED (Jan 3, 2026)**: Scan mode bypass CRITICAL - EmailScanner now enforces scan mode BEFORE executing actions; readonly mode is now safe (no data loss risk) (`email_scanner.dart:66-135`)
 - **Issue #14 ✅ FIXED (Jan 3, 2026)**: Duplicate scan mode logic - Simplified `recordResult()` by removing duplicate enforcement logic (resolved together with Issue #9)
+- **Issue #15 ✅ FIXED (Jan 3, 2026)**: Inconsistent logging - Replaced all print() calls with Logger for consistent logging (`main.dart`, `email_scanner.dart`, `generic_imap_adapter.dart`)
 
 ### Critical Issues Remaining (0)
 **All critical issues resolved!** 🎉
 
-### High Priority Issues (3)
+### High Priority Issues (1)
 - **Issue #11**: Silent regex compilation failures in PatternCompiler (DUPLICATE - see Issue #4 ✅ FIXED)
-- **Issue #12**: Missing refresh token storage on Android (`google_auth_service.dart:422-428`)
+- **Issue #12 ❌ CANCELLED (Jan 3, 2026)**: Missing refresh token storage on Android - NOT AN ISSUE: Native SDK handles refresh internally, working as designed
 - **Issue #13**: Overly broad exception mapping in GenericIMAPAdapter (`generic_imap_adapter.dart:146-165`)
-- **Issue #15**: Inconsistent logging - mix of print() and Logger (9 occurrences in main.dart, adapters)
+- **Issue #15 ✅ FIXED (Jan 3, 2026)**: Inconsistent logging - Replaced all print() with Logger
 
 ### Medium/Low Priority Issues (2)
 - **Issue #16**: PatternCompiler cache grows unbounded (medium priority)
@@ -402,7 +403,7 @@ A comprehensive code review of the Flutter spam filter codebase identified **11 
 
 **Complete Details**: See `GITHUB_ISSUES_BACKLOG.md` for full problem descriptions, root causes, proposed solutions, and acceptance criteria for all 11 issues.
 
-**Progress Summary**: 6 of 11 issues fixed (55% complete). Test suite: 120 passing tests. All critical issues resolved! 🎉
+**Progress Summary**: 7 of 11 issues fixed, 2 cancelled (82% resolved). Test suite: 120 passing tests. All critical issues resolved! 🎉
 
 ## Additional Resources
 
