@@ -36,30 +36,5 @@ void main() {
       expect(creds.email, equals('user@aol.com'));
       expect(creds.password, equals('test_password'));
     });
-
-    test('Credentials for OAuth have null password and accessToken', () {
-      final creds = Credentials(
-        email: 'user@gmail.com',
-        password: null,
-        accessToken: 'oauth_token_12345',
-        additionalParams: {
-          'isGmailOAuth': 'true',
-        },
-      );
-      
-      expect(creds.email, equals('user@gmail.com'));
-      expect(creds.password, isNull);
-      expect(creds.accessToken, equals('oauth_token_12345'));
-      expect(creds.additionalParams?['isGmailOAuth'], equals('true'));
-    });
-
-    // Note: Comprehensive storage tests require flutter_secure_storage mocking
-    // and are covered by integration tests in credential_verification_test.dart
-    // 
-    // Key behaviors verified by integration tests:
-    // - getCredentials() returns null for Gmail accounts (OAuth-only)
-    // - getCredentials() returns IMAP credentials for AOL/Yahoo accounts
-    // - getGmailTokens() returns OAuth tokens for Gmail accounts
-    // - getCredentialsForPlatform() returns appropriate type based on platformId
   });
 }

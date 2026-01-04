@@ -49,17 +49,21 @@ Claud Instructions:
      - app logs
      - analytics events
   Request:
-
-  When complete (NOT before unless Critical for success), update:
+  Can you review the code base and last commit to determine if updates are needed to the following files, then make updates as needed:
+  - D:\Data\Harold\github\spamfilter-multi\CLAUDE.md
   - d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json
   - d:\Data\Harold\github\spamfilter-multi\memory-bank\mobile-app-plan.md
-  - d:\Data\Harold\github\spamfilter-multi\mobile-app\IMPLEMENTATION_SUMMARY.md
   - d:\Data\Harold\github\spamfilter-multi\mobile-app\README.md
 
+  When complete (NOT before unless Critical for success), update:
+  - D:\Data\Harold\github\spamfilter-multi\CLAUDE.md
+  - d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json
+  - d:\Data\Harold\github\spamfilter-multi\memory-bank\mobile-app-plan.md
+  - d:\Data\Harold\github\spamfilter-multi\mobile-app\README.md
 
--------Common parts used in prompts-------------------
 Proceed to draft the changes in the files for review and testing.
 
+-------Common parts used in prompts-------------------
 Can you write a commit message for the current files modified and ready for commit?
 
 Please close the Android app.
@@ -194,11 +198,5 @@ cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\run-emulator.ps1
 
 ------------------------------------------------------------------------------
 Completed:
-  Can you work on critical issue "Scan mode bypass - readonly mode still deletes emails" - github issue [#9](https://github.com/kimmeyh/spamfilter-multi/issues/9) and it's sub-issues
-  When complete (NOT before unless Critical for success), update:
-  - D:\Data\Harold\github\spamfilter-multi\CLAUDE.md
-  - d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json
-  - d:\Data\Harold\github\spamfilter-multi\memory-bank\mobile-app-plan.md
-  - d:\Data\Harold\github\spamfilter-multi\mobile-app\README.md
 
   The install of flutter is incorrect.  Can you save any key configuration files (backup), then remove all the files in d:\dev\flutter directory, then re-install flutter to the directory.  Restore any configuration files, as needed.

@@ -10,9 +10,6 @@ import 'ui/screens/account_selection_screen.dart'; // NEW: Check for saved accou
 /// Global RouteObserver for tracking navigation events
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 
-/// Logger for main app
-final Logger _logger = Logger();
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -23,7 +20,7 @@ void main() async {
     await credStore.migrateFromLegacyTokenStore();
   } catch (e) {
     // Migration failure shouldn't block app startup
-    _logger.w('Legacy token migration failed: $e');
+    print('Legacy token migration failed: $e');
   }
 
   runApp(const SpamFilterApp());
