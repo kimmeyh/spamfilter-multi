@@ -18,7 +18,8 @@
 - 📄 **Full Details**: See `GITHUB_ISSUES_BACKLOG.md` in repository root
 - ✅ **Completed (55%)**: Issues #18 (tests), #8 (header matching), #4 (regex logging), #10 (credential types), #9 (scan mode bypass - CRITICAL), #14 (duplicate logic)
 - 🎉 **ALL CRITICAL ISSUES RESOLVED** - Production ready!
-- 🎯 **Next Priority**: Issue #13 (Overly broad exception mapping in GenericIMAPAdapter) - HIGH PRIORITY
+- 🎯 **Next Priority**: Issue #16 (PatternCompiler cache grows unbounded) - MEDIUM PRIORITY
+- ✅ **Fixed**: Issue #13 (Exception mapping) - Unknown errors rethrown for better debugging (Jan 3, 2026)
 - ✅ **Fixed**: Issue #15 (Inconsistent logging) - All print() replaced with Logger (Jan 3, 2026)
 - ❌ **Cancelled**: Issue #12 (Missing Android refresh tokens) - Native SDK handles refresh internally (working as designed)
 - ✅ **Production Ready**: All critical safety issues resolved; remaining issues are improvements only

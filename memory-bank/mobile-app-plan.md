@@ -36,7 +36,8 @@ For ALL Windows app builds, rebuilds, and tests, you MUST use the `build-windows
 - ✅ **6 Issues Fixed** (55% complete): #18 (tests), #8 (header matching), #4 (regex logging), #10 (credential types), #9 (scan mode bypass), #14 (duplicate logic)
 - 🎉 **ALL CRITICAL ISSUES RESOLVED** - No blocking bugs for production!
 - 📄 **Full Documentation**: All issues documented in GITHUB_ISSUES_BACKLOG.md with root causes, solutions, and acceptance criteria
-- 🎯 **Next Priority**: Issue #13 (Overly broad exception mapping in GenericIMAPAdapter) - HIGH PRIORITY
+- 🎯 **Next Priority**: Issue #16 (PatternCompiler cache grows unbounded) - MEDIUM PRIORITY
+- ✅ **Fixed**: Issue #13 (Exception mapping) - Unknown errors rethrown for better debugging (Jan 3, 2026)
 - ✅ **Fixed**: Issue #15 (Inconsistent logging) - All print() replaced with Logger (Jan 3, 2026)
 - ❌ **Cancelled**: Issue #12 (Missing Android refresh tokens) - NOT AN ISSUE: Native SDK handles refresh internally
 - ✅ **Production Ready**: All critical safety issues resolved; remaining issues are improvements only
