@@ -355,22 +355,21 @@ class EmailScanProvider extends ChangeNotifier {
     // Always record the result for UI/history
     _results.add(result);
 
-    // Only update execution counts if the action should execute
-    if (shouldExecuteAction) {
-      switch (result.action) {
-        case EmailActionType.delete:
-          _deletedCount++;
-          break;
-        case EmailActionType.moveToJunk:
-          _movedCount++;
-          break;
-        case EmailActionType.safeSender:
-          _safeSendersCount++;
-          break;
-        case EmailActionType.none:
-        case EmailActionType.markAsRead:
-          break;
-      }
+    // ✨ PHASE 3.1: Always update counts based on rule evaluation (what WOULD happen)
+    // This ensures bubbles show proposed actions even in Read-Only mode
+    switch (result.action) {
+      case EmailActionType.delete:
+        _deletedCount++;
+        break;
+      case EmailActionType.moveToJunk:
+        _movedCount++;
+        break;
+      case EmailActionType.safeSender:
+        _safeSendersCount++;
+        break;
+      case EmailActionType.none:
+      case EmailActionType.markAsRead:
+        break;
     }
 
     if (!result.success) {

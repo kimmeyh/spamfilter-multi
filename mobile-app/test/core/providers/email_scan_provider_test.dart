@@ -118,10 +118,10 @@ void main() {
 
         provider.recordResult(result);
 
-        // In readonly mode, action is logged but not tracked
-        // deleted count should NOT increase
-        expect(provider.deletedCount, 0);
-        expect(provider.hasActionsToRevert, isFalse);
+        // ✨ PHASE 3.1: In readonly mode, counts show what WOULD happen (proposed actions)
+        // but actions are NOT executed (hasActionsToRevert remains false)
+        expect(provider.deletedCount, 1); // Shows proposed action
+        expect(provider.hasActionsToRevert, isFalse); // Not executed
       });
 
       test('prevents email moving (logs only)', () {
@@ -150,9 +150,9 @@ void main() {
 
         provider.recordResult(result);
 
-        // In readonly mode, action is logged but not tracked
-        expect(provider.movedCount, 0);
-        expect(provider.hasActionsToRevert, isFalse);
+        // ✨ PHASE 3.1: In readonly mode, counts show what WOULD happen (proposed actions)
+        expect(provider.movedCount, 1); // Shows proposed action
+        expect(provider.hasActionsToRevert, isFalse); // Not executed
       });
 
       test('prevents safe sender addition (logs only)', () {
@@ -175,9 +175,9 @@ void main() {
 
         provider.recordResult(result);
 
-        // In readonly mode, action is logged but not tracked
-        expect(provider.safeSendersCount, 0);
-        expect(provider.hasActionsToRevert, isFalse);
+        // ✨ PHASE 3.1: In readonly mode, counts show what WOULD happen (proposed actions)
+        expect(provider.safeSendersCount, 1); // Shows proposed action
+        expect(provider.hasActionsToRevert, isFalse); // Not executed
       });
 
       test('no actions can be reverted', () {
@@ -234,9 +234,9 @@ void main() {
           provider.recordResult(result);
         }
 
-        // Only 3 actions should be executed
-        expect(provider.deletedCount, 3);
-        expect(provider.revertableActionCount, 3);
+        // ✨ PHASE 3.1: Counts show all proposed actions (5), but only 3 executed
+        expect(provider.deletedCount, 5); // All proposed actions
+        expect(provider.revertableActionCount, 3); // Only executed (within limit)
         expect(provider.hasActionsToRevert, isTrue);
       });
 
@@ -262,9 +262,9 @@ void main() {
 
         provider.recordResult(result);
 
-        // No actions should execute
-        expect(provider.deletedCount, 0);
-        expect(provider.hasActionsToRevert, isFalse);
+        // ✨ PHASE 3.1: Counts show proposed actions (1), but none executed (limit = 0)
+        expect(provider.deletedCount, 1); // Proposed action
+        expect(provider.hasActionsToRevert, isFalse); // Not executed
       });
 
       test('tracks different action types within limit', () {
