@@ -10,7 +10,7 @@ import 'account_setup_screen.dart';
 import 'platform_selection_screen.dart';
 import 'scan_progress_screen.dart';
 
-/// Display data for an account in the account selection list
+/// Display data for an account in the account selection list.
 class AccountDisplayData {
   final String email;
   final String platformId;
