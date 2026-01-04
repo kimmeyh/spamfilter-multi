@@ -19,22 +19,25 @@ For ALL Windows app builds, rebuilds, and tests, you MUST use the `build-windows
 
 # [STATUS UPDATE: January 3, 2026]
 
-**Phase 2.1 Verification Complete**: All automated tests passing (123/123), manual Windows and Android testing successful, pre-external testing blockers resolved. App is ready for production and external user validation.
+**Phase 2.1 Verification Complete**: All automated tests passing (120/120), manual Windows and Android testing successful, pre-external testing blockers resolved. **All critical issues resolved!** App is ready for production and external user validation.
 
 **Latest Fixes (Jan 3, 2026)**:
 - ✅ **Issue #18 COMPLETE**: Created comprehensive RuleEvaluator test suite (32 tests, 97.96% code coverage, includes anti-spoofing verification)
 - ✅ **Issue #8 FIXED**: Header matching bug - Rules now properly check email headers for spam detection
 - ✅ **Issue #4 FIXED**: Silent regex compilation failures - Invalid patterns now logged with detailed error messages
 - ✅ **Issue #10 FIXED**: Credential type confusion in SecureCredentialsStore - Removed silent OAuth fallback, added explicit `getCredentialsForPlatform()` method
-- 📊 **Test Suite Growth**: Added 42 new tests (32 RuleEvaluator + 9 PatternCompiler + 1 Credentials) - Total: 123 passing tests (+52% from baseline)
+- ✅ **Issue #9 FIXED CRITICAL**: Scan mode bypass - EmailScanner now enforces scan mode BEFORE executing actions; readonly mode is now SAFE (no data loss risk)
+- ✅ **Issue #14 FIXED**: Duplicate scan mode logic - Simplified `recordResult()` by removing duplicate enforcement (now handled in EmailScanner)
+- 📊 **Test Results**: 120 passing tests, 13 skipped integration tests (require credentials)
 
 **Code Review Progress (Jan 3, 2026)**:
 - ✅ **Comprehensive Code Review Completed**: Analyzed 40 Dart files across core, adapters, and UI layers
 - 📋 **11 Issues Identified**: 4 critical, 4 high priority, 3 medium/low priority (GitHub issues #8-#18)
-- ✅ **4 Issues Fixed** (36% complete): #18 (tests), #8 (header matching), #4 (regex logging), #10 (credential type confusion)
+- ✅ **6 Issues Fixed** (55% complete): #18 (tests), #8 (header matching), #4 (regex logging), #10 (credential types), #9 (scan mode bypass), #14 (duplicate logic)
+- 🎉 **ALL CRITICAL ISSUES RESOLVED** - No blocking bugs for production!
 - 📄 **Full Documentation**: All issues documented in GITHUB_ISSUES_BACKLOG.md with root causes, solutions, and acceptance criteria
-- 🎯 **Next Priority**: Issue #9 (Fix scan mode bypass - readonly mode still executes deletions) - CRITICAL
-- ⚠️ **Non-Blocking**: All issues are improvement opportunities; no blocking bugs for production testing
+- 🎯 **Next Priority**: Issue #12 (Missing refresh token storage on Android) - HIGH PRIORITY
+- ✅ **Production Ready**: All critical safety issues resolved; remaining issues are improvements only
 
 **Latest Fix (Jan 2, 2026)**:
 - ✅ **Account Selection Navigation and Refresh Fixed**: "Back to Accounts" from Results Display now correctly navigates to Account Selection screen (not Platform Selection), and account list refreshes immediately
