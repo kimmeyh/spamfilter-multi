@@ -160,13 +160,14 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
   }
 
   Widget _buildHeader(EmailScanProvider scanProvider) {
+    final modeName = scanProvider.getScanModeDisplayName();
     final statusText = switch (scanProvider.status) {
       ScanStatus.idle => scanProvider.results.isEmpty
-          ? 'Ready to scan'
+          ? 'Ready to scan - $modeName'
           : 'Idle',
       ScanStatus.scanning => 'Scanning in progress',
       ScanStatus.paused => 'Paused',
-      ScanStatus.completed => 'Scan completed',
+      ScanStatus.completed => 'Scan complete - $modeName',
       ScanStatus.error => 'Scan failed',
     };
 
@@ -225,6 +226,15 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+          // ✨ PHASE 3.1: Scan Mode button
+          OutlinedButton.icon(
+            icon: const Icon(Icons.settings),
+            label: Text('Scan Mode: ${scanProvider.getScanModeDisplayName()}'),
+            onPressed: scanProvider.status == ScanStatus.idle
+                ? () => _showScanModeDialog(context, scanProvider)
+                : null,
+          ),
+          const SizedBox(height: 12),
           // Folder selection button (Phase 2 Sprint 3)
           ElevatedButton.icon(
             icon: const Icon(Icons.folder_open),
@@ -390,6 +400,130 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
         );
       }
     }
+
+  /// ✨ PHASE 3.1: Show scan mode selection dialog
+  Future<void> _showScanModeDialog(
+    BuildContext context,
+    EmailScanProvider scanProvider,
+  ) async {
+    ScanMode selectedMode = scanProvider.scanMode;
+    int testLimit = scanProvider.emailTestLimit ?? 50;
+
+    await showDialog(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Select Scan Mode'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Read-Only
+                RadioListTile<ScanMode>(
+                  value: ScanMode.readonly,
+                  groupValue: selectedMode,
+                  title: const Text('Read-Only'),
+                  subtitle: const Text('Safe testing - no emails modified'),
+                  onChanged: (value) {
+                    setState(() => selectedMode = value!);
+                  },
+                ),
+                // Test Limited Emails
+                RadioListTile<ScanMode>(
+                  value: ScanMode.testLimit,
+                  groupValue: selectedMode,
+                  title: const Text('Test Limited Emails'),
+                  subtitle: Text('Modify up to $testLimit emails'),
+                  onChanged: (value) {
+                    setState(() => selectedMode = value!);
+                  },
+                ),
+                // Full Scan with Revert
+                RadioListTile<ScanMode>(
+                  value: ScanMode.testAll,
+                  groupValue: selectedMode,
+                  title: const Text('Full Scan with Revert'),
+                  subtitle: const Text('All changes (can revert)'),
+                  onChanged: (value) {
+                    setState(() => selectedMode = value!);
+                  },
+                ),
+                // Full Scan (PERMANENT)
+                RadioListTile<ScanMode>(
+                  value: ScanMode.fullScan,
+                  groupValue: selectedMode,
+                  title: const Text('Full Scan'),
+                  subtitle: const Text('PERMANENT delete/move (cannot revert)', 
+                    style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                  onChanged: (value) {
+                    setState(() => selectedMode = value!);
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                // Show warning for Full Scan mode
+                if (selectedMode == ScanMode.fullScan) {
+                  final confirmed = await showDialog<bool>(
+                    context: dialogContext,
+                    barrierDismissible: false,
+                    builder: (ctx) => AlertDialog(
+                      title: const Row(
+                        children: [
+                          Icon(Icons.warning, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text('Warning: Full Scan Mode'),
+                        ],
+                      ),
+                      content: const Text(
+                        'Full Scan mode will PERMANENTLY delete or move emails based on your rules.\n\n'
+                        'This action CANNOT be undone.\n\n'
+                        'Are you sure you want to enable Full Scan mode?',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('Cancel'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                          child: const Text('Enable Full Scan'),
+                        ),
+                      ],
+                    ),
+                  );
+                  
+                  if (confirmed != true) {
+                    return; // User cancelled
+                  }
+                }
+
+                // Apply the mode
+                scanProvider.initializeScanMode(
+                  mode: selectedMode,
+                  testLimit: selectedMode == ScanMode.testLimit ? testLimit : null,
+                );
+                
+                if (dialogContext.mounted) {
+                  Navigator.pop(dialogContext);
+                }
+              },
+              child: const Text('Apply'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   /// Start a real IMAP scan
   Future<void> _startRealScan(
     BuildContext context,
