@@ -171,7 +171,7 @@ class EmailScanner {
           await platform.disconnect();
         } catch (e) {
           // Log but don't throw
-          print('Disconnect error: $e');
+          _logger.w('Disconnect error: $e');
         }
       }
     }

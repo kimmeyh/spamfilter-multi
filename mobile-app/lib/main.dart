@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import 'core/providers/rule_set_provider.dart';
 import 'core/providers/email_scan_provider.dart';
@@ -8,6 +10,9 @@ import 'ui/screens/account_selection_screen.dart'; // NEW: Check for saved accou
 
 /// Global RouteObserver for tracking navigation events
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
+
+/// Logger for main app
+final Logger _logger = Logger();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,7 +24,7 @@ void main() async {
     await credStore.migrateFromLegacyTokenStore();
   } catch (e) {
     // Migration failure shouldn't block app startup
-    print('Legacy token migration failed: $e');
+    _logger.w('Legacy token migration failed: $e');
   }
 
   runApp(const SpamFilterApp());
