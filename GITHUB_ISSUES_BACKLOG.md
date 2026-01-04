@@ -3,17 +3,9 @@
 This document contains 11 prioritized issues from the comprehensive code review conducted on January 3, 2026. Each issue is ready to be copied into GitHub's issue creation interface.
 
 **Summary:**
-- 🎉 **0 Critical Issues Remaining** (ALL 4 completed!) - Production ready!
-- ⚠️ **3 High Priority Issues** - Fix in next sprint
+- 🔴 **4 Critical Issues** - Must fix before production
+- ⚠️ **4 High Priority Issues** - Fix in next sprint
 - 📝 **3 Medium/Low Priority Issues** - Technical debt
-
-**Completed Issues:**
-- ✅ **Issue #18** (Jan 3, 2026): RuleEvaluator comprehensive test suite - 32 tests, 97.96% coverage
-- ✅ **Issue #8** (Jan 3, 2026): Header matching bug fixed - Rules now check headers correctly
-- ✅ **Issue #4** (Jan 3, 2026): Regex compilation failures now logged
-- ✅ **Issue #10** (Jan 3, 2026): Credential type confusion resolved - Explicit credential type handling
-- ✅ **Issue #9** (Jan 3, 2026): Scan mode bypass CRITICAL FIXED - Readonly mode is now SAFE (no data loss risk)
-- ✅ **Issue #14** (Jan 3, 2026): Duplicate scan mode logic removed - Simplified recordResult()
 
 ---
 
@@ -147,11 +139,9 @@ Will reference Issue #11 (Missing RuleEvaluator unit tests) - Should be addresse
 
 ---
 
-### Issue #2: Scan mode bypass in EmailScanner - readonly mode still deletes emails ✅ COMPLETE (Jan 3, 2026)
+### Issue #2: Scan mode bypass in EmailScanner - readonly mode still deletes emails
 
 **Labels:** `bug`, `priority:critical`, `component:scanner`, `data-loss-risk`
-
-**✅ COMPLETED** - See commit for implementation details
 
 **Description:**
 
@@ -269,11 +259,9 @@ Will reference Issue #7 (Duplicate scan mode logic in EmailScanProvider)
 
 ---
 
-### Issue #3: Credential type confusion in SecureCredentialsStore ✅ COMPLETE (Jan 3, 2026)
+### Issue #3: Credential type confusion in SecureCredentialsStore
 
 **Labels:** `bug`, `priority:critical`, `component:auth`, `security`
-
-**✅ COMPLETED** - See commit for implementation details
 
 **Description:**
 
@@ -561,38 +549,79 @@ None
 
 ## ⚠️ HIGH PRIORITY
 
-### Issue #5: ~~Missing refresh token storage on Android breaks token refresh~~ ❌ CANCELLED - NOT AN ISSUE
+### Issue #5: Missing refresh token storage on Android breaks token refresh
 
-**Labels:** `cancelled`, `wont-fix`, `component:auth`, `platform:android`
+**Labels:** `bug`, `priority:high`, `component:auth`, `platform:android`
 
-**Status:** CANCELLED (January 3, 2026) - Analysis determined this is **working as designed**, not a bug.
-
-**Original Description:**
+**Description:**
 
 When signing in via Google's native SDK on Android, the `GoogleAuthService` sets `refreshToken` to `null`. While the native SDK handles refresh internally, this prevents HTTP-based token refresh when the app is killed and restarted with expired tokens.
 
-**Why This Is NOT An Issue:**
+**Root Cause:** Refresh token not captured and stored during Android OAuth flow.
 
-1. **Native SDK handles refresh reliably**: Android's `google_sign_in` SDK automatically refreshes tokens via `signInSilently()` without needing stored refresh tokens
-2. **HTTP refresh is only a fallback**: Stored refresh tokens are only needed for manual HTTP-based refresh, which is a fallback mechanism
-3. **Android doesn't need the fallback**: The native SDK refresh is the **primary** mechanism on Android and works reliably
-4. **Windows is different**: Desktop platforms use browser OAuth (no native SDK), so they **do** store refresh tokens for HTTP refresh - this is correct
-5. **Attempting to "fix" this broke sign-in**: Switching to browser OAuth caused "Access blocked: invalid request" because Android client ID is configured for native sign-in
+**Impact:**
+- Android users may need to re-authenticate more frequently than necessary
+- HTTP-based token refresh not available as fallback
+- Inconsistent behavior between Android and Windows (Windows stores refresh token)
 
-**Impact Assessment:**
-- ✅ Android users do NOT need to re-authenticate frequently (native refresh works)
-- ✅ HTTP-based fallback not needed on Android (native SDK is primary)
-- ✅ Behavior IS consistent: Each platform uses its optimal auth mechanism
+**Current Behavior**
 
-**Conclusion:**
+In `GoogleAuthService._handleSignIn()` (lines 422-428):
+```dart
+final tokens = GmailTokens(
+  accessToken: authorization.accessToken,
+  refreshToken: null,  // ❌ Native SDK manages refresh internally
+  expiresAt: DateTime.now().add(const Duration(hours: 1)),
+  grantedScopes: _scopes,
+  email: _currentUser!.email,
+);
+```
 
-This issue is **cancelled** because the current implementation is correct. Android's native Google Sign-In SDK provides reliable token refresh without requiring stored refresh tokens. No code changes needed.
+**Expected Behavior**
 
-**Verified Working:**
-- ✅ Android Gmail sign-in works (tested January 3, 2026)
-- ✅ Native SDK handles refresh internally via `signInSilently()`
-- ✅ All 120 tests passing
-- ✅ No user-reported authentication issues on Android
+Refresh token should be stored for fallback HTTP-based refresh, even when native SDK is available.
+
+**Proposed Solution**
+
+Capture and store refresh token on Android:
+
+```dart
+// After successful sign-in
+final authentication = await _currentUser!.authentication;
+
+final tokens = GmailTokens(
+  accessToken: authentication.accessToken,
+  refreshToken: authentication.idToken,  // ✅ Store for HTTP fallback
+  expiresAt: DateTime.now().add(const Duration(hours: 1)),
+  grantedScopes: _scopes,
+  email: _currentUser!.email,
+);
+```
+
+Note: Verify if `google_sign_in` provides refresh token. If not, may need to use `googleapis_auth` for initial OAuth with refresh token, then use native SDK for refresh.
+
+**Alternative:** Use `googleSignIn.signInSilently()` refresh mechanism but also store refresh token from initial authorization code exchange.
+
+**Acceptance Criteria**
+
+- [ ] Refresh token captured during Android sign-in
+- [ ] Refresh token stored via SecureTokenStore
+- [ ] HTTP-based refresh works as fallback when native refresh fails
+- [ ] Token expiry handled correctly
+- [ ] Unit tests verify refresh token storage
+- [ ] Manual test on Android: Sign in, kill app, reopen after 1 hour, verify refresh works
+- [ ] All existing tests still pass (81/81)
+
+**Files to Modify**
+
+- `mobile-app/lib/adapters/auth/google_auth_service.dart` (lines 422-428)
+- `mobile-app/test/adapters/auth/google_auth_service_test.dart` (add refresh token tests)
+
+**Testing Strategy**
+
+1. Unit test: Verify refresh token not null after Android sign-in
+2. Unit test: Verify refresh token stored in secure storage
+3. Integration test: Mock expired token scenario, verify refresh succeeds
 4. Manual test: Sign in on Android, check secure storage for refresh token
 5. Manual test: Force token expiry, verify HTTP refresh works
 
@@ -610,11 +639,9 @@ None
 
 ---
 
-### Issue #6: ~~Overly broad exception mapping in GenericIMAPAdapter hides auth errors~~ ✅ COMPLETE (Jan 3, 2026)
+### Issue #6: Overly broad exception mapping in GenericIMAPAdapter hides auth errors
 
 **Labels:** `bug`, `priority:high`, `component:email-adapter`, `observability`
-
-**Status:** COMPLETE (January 3, 2026) - GitHub Issue #13
 
 **Description:**
 
@@ -622,50 +649,103 @@ The `GenericIMAPAdapter.loadCredentials()` catch block converts all unknown erro
 
 **Root Cause:** Fallback exception handling too broad.
 
-**Resolution:**
-
-✅ **Fixed** - Removed overly broad fallback exception mapping:
-- Unknown errors now rethrown instead of converted to ConnectionException
-- Preserves original error type for better debugging
-- Added logging before rethrow for observability
-- Still maps known errors (HandshakeException, SocketException, TimeoutException)
-- Created comprehensive test suite (12 new tests)
-
 **Impact:**
-- ✅ Authentication errors no longer disguised as connection errors
-- ✅ Clear error messages help users understand problems
-- ✅ Much easier to debug actual issues
-- ✅ Users get accurate error information
+- Authentication errors disguised as connection errors
+- Misleading error messages confuse users
+- Difficult to debug actual issues
+- Users may check network when problem is credentials
+
+**Current Behavior**
+
+In `GenericIMAPAdapter.loadCredentials()` (lines 146-165):
+```dart
+} catch (e) {
+  print('[IMAP] Failed to load credentials: $e');
+  _logger.e('[IMAP] Failed to load credentials: $e');
+  if (e is AuthenticationException) {
+    rethrow;
+  }
+
+  // Map handshake and network errors to connection failures
+  if (e is HandshakeException) {
+    throw ConnectionException('TLS certificate validation failed', e);
+  }
+  if (e is SocketException || e is TimeoutException) {
+    throw ConnectionException('Network connection failed', e);
+  }
+
+  // Fallback: treat other errors as connection failures  // ❌ Too broad!
+  throw ConnectionException('IMAP connection failed', e);
+}
+```
+
+**Expected Behavior**
+
+Only map known connection-related errors. Unknown errors should be rethrown with context.
+
+**Proposed Solution**
+
+```dart
+} catch (e) {
+  _logger.e('[IMAP] Failed to load credentials', error: e);
+
+  if (e is AuthenticationException) {
+    rethrow;
+  }
+
+  // Map known connection errors
+  if (e is HandshakeException) {
+    throw ConnectionException('TLS certificate validation failed', e);
+  }
+  if (e is SocketException || e is TimeoutException) {
+    throw ConnectionException('Network connection failed', e);
+  }
+
+  // ✅ Rethrow unknown errors instead of converting
+  _logger.e('[IMAP] Unexpected error during IMAP connection', error: e);
+  rethrow;  // Let caller handle unknown errors appropriately
+}
+```
 
 **Acceptance Criteria**
 
-- [x] Remove fallback `ConnectionException` for unknown errors ✅
-- [x] Unknown errors rethrown with logging ✅
-- [x] Known connection errors still mapped to ConnectionException ✅
-- [x] AuthenticationException still rethrown ✅
-- [x] Unit test: Verify unknown exception types are not converted ✅ (documented)
-- [x] Unit test: Verify HandshakeException converted to ConnectionException ✅ (documented)
-- [x] All existing tests still pass ✅ (132/132 tests passing)
+- [ ] Remove fallback `ConnectionException` for unknown errors
+- [ ] Unknown errors rethrown with logging
+- [ ] Known connection errors still mapped to ConnectionException
+- [ ] AuthenticationException still rethrown
+- [ ] Unit test: Verify unknown exception types are not converted
+- [ ] Unit test: Verify HandshakeException converted to ConnectionException
+- [ ] All existing tests still pass (81/81)
 
-**Files Modified**
+**Files to Modify**
 
-- `mobile-app/lib/adapters/email_providers/generic_imap_adapter.dart` (lines 144-166) ✅
-- `mobile-app/test/adapters/email_providers/generic_imap_adapter_test.dart` (created with 12 tests) ✅
+- `mobile-app/lib/adapters/email_providers/generic_imap_adapter.dart` (lines 146-165)
+- `mobile-app/test/adapters/email_providers/generic_imap_adapter_test.dart` (add exception mapping tests)
 
-**Testing Results**
+**Testing Strategy**
 
-- ✅ Created comprehensive test suite with 12 tests
-- ✅ Documents exception mapping behavior for all error types
-- ✅ All 132 tests passing (+12 new tests)
-- ✅ No regressions in existing functionality
+1. Unit test: Throw custom exception, verify it's not converted to ConnectionException
+2. Unit test: Throw HandshakeException, verify converted to ConnectionException
+3. Unit test: Throw AuthenticationException, verify rethrown
+4. Manual test: Force unknown error, verify correct error message displayed
+
+**Related Issues**
+
+None
+
+**Priority Justification**
+
+**High** because:
+- Affects observability and debugging
+- Misleads users about actual problems
+- Hides authentication issues
+- Makes support difficult
 
 ---
 
-### Issue #7: Duplicate scan mode enforcement logic between EmailScanner and EmailScanProvider ✅ COMPLETE (Jan 3, 2026)
+### Issue #7: Duplicate scan mode enforcement logic between EmailScanner and EmailScanProvider
 
 **Labels:** `technical-debt`, `priority:high`, `component:scanner`, `refactoring`
-
-**✅ COMPLETED** - Resolved together with Issue #2 (scan mode bypass fix)
 
 **Description:**
 
@@ -1108,34 +1188,142 @@ Will affect Issue #1 (header matching) - should coordinate fixes
 
 ---
 
-### Issue #11: ~~Missing unit tests for RuleEvaluator~~ ✅ COMPLETE (Duplicate of Issue #18)
+### Issue #11: Missing unit tests for RuleEvaluator - core spam detection logic untested
 
-**Labels:** `testing`, `duplicate`, `component:core`
-
-**Status:** COMPLETE (January 3, 2026) - Resolved by Issue #18
+**Labels:** `testing`, `priority:critical`, `component:core`
 
 **Description:**
 
 The `RuleEvaluator` is the **core spam detection component** but has **no unit tests**. This is a critical gap that allowed bugs #1 and #2 (header matching) to reach production undetected.
 
-**Resolution:**
-
-This issue was resolved by **Issue #18** which created a comprehensive RuleEvaluator test suite with:
-- ✅ 32 unit tests covering all functionality
-- ✅ 97.96% code coverage (142 of 145 lines)
-- ✅ All edge cases and anti-spoofing scenarios verified
-- ✅ Regression protection in place
-
 **Impact:**
-- ✅ Core business logic validated
-- ✅ Bugs caught before production
-- ✅ Safe refactoring enabled
-- ✅ Full regression protection
-- ✅ High confidence in critical component
+- Core business logic not validated
+- Bugs can reach production undetected (already happened)
+- Difficult to refactor safely
+- No regression protection
+- High risk for critical component
 
-**See Issue #18 for complete implementation details.**
+**Current State**
 
----
+- `mobile-app/lib/core/services/rule_evaluator.dart` exists (100+ lines)
+- No corresponding test file exists
+- Only covered indirectly through integration tests
+- Header matching bugs prove inadequate coverage
+
+**Expected Behavior**
+
+Comprehensive unit test suite covering:
+1. Rule condition matching (from, subject, body, **header**)
+2. Exception handling (from, subject, body, **header**)
+3. Condition type logic (AND vs OR)
+4. Safe sender checking (takes precedence)
+5. Multiple rules evaluation (execution order)
+6. Edge cases (empty patterns, null values, invalid regex)
+
+**Proposed Test Cases**
+
+```dart
+// test/unit/rule_evaluator_test.dart
+void main() {
+  group('RuleEvaluator', () {
+    late RuleEvaluator evaluator;
+    late PatternCompiler compiler;
+    late SafeSenderList safeSenders;
+
+    setUp(() {
+      compiler = PatternCompiler();
+      safeSenders = SafeSenderList(patterns: []);
+      evaluator = RuleEvaluator(
+        compiler: compiler,
+        safeSenders: safeSenders,
+      );
+    });
+
+    group('_matchesConditions', () {
+      test('matches email when from pattern matches', () {
+        // Test from matching
+      });
+
+      test('matches email when subject pattern matches', () {
+        // Test subject matching
+      });
+
+      test('matches email when body pattern matches', () {
+        // Test body matching
+      });
+
+      test('matches email when header pattern matches', () {
+        // ✅ CRITICAL: Test header matching (would have caught bug #1)
+        final email = EmailMessage(
+          id: '1',
+          from: 'user@example.com',
+          subject: 'Test',
+          body: 'Test',
+          headers: {'X-Spam-Status': 'Yes, score=9.5'},
+          receivedDate: DateTime.now(),
+          folderName: 'INBOX',
+        );
+
+        final rule = Rule(
+          name: 'SpamHeaderRule',
+          enabled: true,
+          conditions: RuleConditions(
+            type: ConditionType.or,
+            header: ['^x-spam-status:.*yes'],
+          ),
+          actions: RuleActions(delete: true),
+        );
+
+        final result = evaluator.evaluate(email, [rule]);
+        expect(result, isNotNull);
+        expect(result!.shouldDelete, isTrue);
+      });
+
+      test('AND logic requires all conditions match', () {
+        // Test AND logic
+      });
+
+      test('OR logic requires any condition match', () {
+        // Test OR logic
+      });
+    });
+
+    group('_matchesExceptions', () {
+      test('email matches from exception', () {
+        // Test from exception
+      });
+
+      test('email matches header exception', () {
+        // ✅ CRITICAL: Test header exception (would have caught bug #1)
+      });
+
+      test('exception prevents rule from matching', () {
+        // Test exception override
+      });
+    });
+
+    group('safe sender priority', () {
+      test('safe sender prevents rule match', () {
+        // Test safe sender takes precedence
+      });
+    });
+
+    group('edge cases', () {
+      test('handles empty patterns list', () {
+        // Test empty patterns
+      });
+
+      test('handles null header value', () {
+        // Test null handling
+      });
+
+      test('handles invalid regex pattern gracefully', () {
+        // Test invalid regex (relates to issue #4)
+      });
+    });
+  });
+}
+```
 
 **Acceptance Criteria**
 

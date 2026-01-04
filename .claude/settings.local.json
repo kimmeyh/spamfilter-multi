@@ -11,20 +11,17 @@
       "Bash(Start-Sleep -Seconds 3)",
       "Bash(findstr:*)",
       "Bash(taskkill:*)",
-      "Bash(Get-Content \"$env:USERPROFILE\\.claude\\config.json\" -ErrorAction SilentlyContinue)",
+      "Bash(Get-Content \"$env:USERPROFILE\\\\.claude\\\\config.json\" -ErrorAction SilentlyContinue)",
       "Bash(ConvertFrom-Json)",
       "Bash(ConvertTo-Json -Depth 10)",
       "Bash(dir:*)",
       "Bash(node --version:*)",
       "Bash(npx:*)",
-      "Bash(Select-String -Pattern \"All tests passed|tests passed|tests failed|\\+\\d+|\\~\\d+\")",
+      "mcp__plugin_serena_serena__list_dir",
+      "Bash(Select-String -Pattern \"All tests passed|tests passed|tests failed|\\\\+\\\\d+|\\\\~\\\\d+\")",
       "Bash(Select-Object -Last 10)",
       "Bash(git add:*)",
-      "Bash(git commit:*)",
-      "Bash(Test-Path \"$env:USERPROFILE\\.claude\" -PathType Container)",
-      "Bash(Get-Command claude -ErrorAction SilentlyContinue)",
-      "Bash(Select-Object -ExpandProperty Source)",
-      "mcp__plugin_serena_serena__*"
+      "Bash(git commit:*)"
     ]
   }
 }

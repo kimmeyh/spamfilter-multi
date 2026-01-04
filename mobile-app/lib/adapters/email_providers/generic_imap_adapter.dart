@@ -107,6 +107,7 @@ class GenericIMAPAdapter implements SpamFilterPlatform {
       _credentials = credentials;
       _imapClient = ImapClient(isLogEnabled: false);
 
+      print('[IMAP] Connecting to $_imapHost:$_imapPort (secure: $_isSecure)');
       _logger.i('[IMAP] Connecting to $_imapHost:$_imapPort (secure: $_isSecure)');
 
       // NOTE: enough_mail ImapClient.connectToServer() does not support securityContext parameter.
@@ -132,6 +133,7 @@ class GenericIMAPAdapter implements SpamFilterPlatform {
         final maskedPassword = credentials.password != null
           ? credentials.password!.replaceAll(RegExp('.'), '*').substring(0, credentials.password!.length > 4 ? 4 : credentials.password!.length) + '...'
           : '(none)';
+        print('[IMAP] IMAP login attempt: email="${credentials.email}", password="$maskedPassword"');
         _logger.i('[IMAP] IMAP login attempt: email="${credentials.email}", password="$maskedPassword"');
 
       await _imapClient!.login(
@@ -139,10 +141,11 @@ class GenericIMAPAdapter implements SpamFilterPlatform {
         credentials.password ?? '',
       );
 
+      print('[IMAP] Successfully authenticated to $displayName');
       _logger.i('[IMAP] Successfully authenticated to $displayName');
     } catch (e) {
-      _logger.e('[IMAP] Failed to load credentials', error: e);
-      
+      print('[IMAP] Failed to load credentials: $e');
+      _logger.e('[IMAP] Failed to load credentials: $e');
       if (e is AuthenticationException) {
         // Propagate explicit authentication failures
         rethrow;
@@ -157,10 +160,8 @@ class GenericIMAPAdapter implements SpamFilterPlatform {
         throw ConnectionException('Network connection failed', e);
       }
 
-      // ✅ Rethrow unknown errors instead of converting to ConnectionException
-      // This preserves the original error type and prevents hiding actual problems
-      _logger.e('[IMAP] Unexpected error during IMAP connection', error: e);
-      rethrow;
+      // Fallback: treat other errors as connection failures
+      throw ConnectionException('IMAP connection failed', e);
     }
   }
 

@@ -24,16 +24,14 @@ class EmailMessage {
   }
 
   /// Get header value by key (case-insensitive)
-  /// 
-  /// Returns null if the header is not found.
   String? getHeader(String key) {
     final lowerKey = key.toLowerCase();
-    for (final entry in headers.entries) {
-      if (entry.key.toLowerCase() == lowerKey) {
-        return entry.value;
-      }
-    }
-    return null;
+    return headers.entries
+        .firstWhere(
+          (e) => e.key.toLowerCase() == lowerKey,
+          orElse: () => const MapEntry('', ''),
+        )
+        .value;
   }
 
   @override
