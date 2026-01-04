@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'core/providers/rule_set_provider.dart';
 import 'core/providers/email_scan_provider.dart';
 import 'adapters/storage/secure_credentials_store.dart';
-// import 'ui/screens/platform_selection_screen.dart'; // OLD: Direct to platform selection
+// import 'ui/screens/platform_selection_screen.dart'; // OLD: Direct to platform selection.
 import 'ui/screens/account_selection_screen.dart'; // NEW: Check for saved accounts first
 
 /// Global RouteObserver for tracking navigation events
