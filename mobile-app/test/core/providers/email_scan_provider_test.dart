@@ -93,43 +93,19 @@ void main() {
     });
 
     /// Test readonly mode behavior
+    /// NOTE: Scan mode enforcement now happens in EmailScanner, not recordResult().
+    /// These tests verify that recordResult() correctly records results in readonly mode.
     group('readonly mode', () {
       setUp(() {
         provider.initializeScanMode(mode: ScanMode.readonly);
       });
 
-      test('prevents email deletion (logs only)', () {
+      test('recordResult updates counts for successful actions (enforcement happens in EmailScanner)', () {
         final email = EmailMessage(
           id: 'test-1',
           from: 'spam@example.com',
-          subject: 'Delete This',
-          body: 'Spam email',
-          headers: const {},
-          receivedDate: DateTime.now(),
-          folderName: 'INBOX',
-        );
-
-        final result = EmailActionResult(
-          email: email,
-          evaluationResult: EvaluationResult.noMatch(),
-          action: EmailActionType.delete,
-          success: true,
-        );
-
-        provider.recordResult(result);
-
-        // In readonly mode, action is logged but not tracked
-        // deleted count should NOT increase
-        expect(provider.deletedCount, 0);
-        expect(provider.hasActionsToRevert, isFalse);
-      });
-
-      test('prevents email moving (logs only)', () {
-        final email = EmailMessage(
-          id: 'test-2',
-          from: 'newsletter@example.com',
-          subject: 'Newsletter',
-          body: 'Weekly newsletter',
+          subject: 'Spam',
+          body: 'Spam body',
           headers: const {},
           receivedDate: DateTime.now(),
           folderName: 'INBOX',
@@ -138,49 +114,24 @@ void main() {
         final result = EmailActionResult(
           email: email,
           evaluationResult: EvaluationResult(
-            shouldDelete: false,
-            shouldMove: true,
-            targetFolder: 'Junk',
-            matchedRule: 'newsletter-rule',
+            shouldDelete: true,
+            shouldMove: false,
+            matchedRule: 'spam-rule',
             matchedPattern: 'pattern',
           ),
-          action: EmailActionType.moveToJunk,
-          success: true,
+          action: EmailActionType.delete,
+          success: true, // Action marked as successful (would have succeeded)
         );
 
         provider.recordResult(result);
 
-        // In readonly mode, action is logged but not tracked
-        expect(provider.movedCount, 0);
-        expect(provider.hasActionsToRevert, isFalse);
+        // recordResult() always updates counts for successful actions
+        // Scan mode filtering happens in EmailScanner before recordResult() is called
+        expect(provider.deletedCount, 1);
+        expect(provider.hasActionsToRevert, isFalse); // Only testAll mode tracks for revert
       });
 
-      test('prevents safe sender addition (logs only)', () {
-        final email = EmailMessage(
-          id: 'test-3',
-          from: 'friend@example.com',
-          subject: 'Hi',
-          body: 'Hello friend',
-          headers: const {},
-          receivedDate: DateTime.now(),
-          folderName: 'INBOX',
-        );
-
-        final result = EmailActionResult(
-          email: email,
-          evaluationResult: EvaluationResult.safeSender('whitelist-rule'),
-          action: EmailActionType.safeSender,
-          success: true,
-        );
-
-        provider.recordResult(result);
-
-        // In readonly mode, action is logged but not tracked
-        expect(provider.safeSendersCount, 0);
-        expect(provider.hasActionsToRevert, isFalse);
-      });
-
-      test('no actions can be reverted', () {
+      test('no actions tracked for revert in readonly mode', () {
         final email = EmailMessage(
           id: 'test-1',
           from: 'spam@example.com',
@@ -203,14 +154,18 @@ void main() {
           provider.recordResult(result);
         }
 
+        // Actions recorded but not tracked for revert (only testAll mode does that)
+        expect(provider.deletedCount, 5);
         expect(provider.hasActionsToRevert, isFalse);
         expect(provider.revertableActionCount, 0);
       });
     });
 
     /// Test testLimit mode behavior
+    /// NOTE: Scan mode enforcement now happens in EmailScanner, not recordResult().
+    /// These tests verify that recordResult() correctly records results.
     group('testLimit mode', () {
-      test('limits email modifications to N actions', () {
+      test('recordResult updates all counts (limit enforcement happens in EmailScanner)', () {
         provider.initializeScanMode(mode: ScanMode.testLimit, testLimit: 3);
 
         for (int i = 0; i < 5; i++) {
@@ -234,40 +189,13 @@ void main() {
           provider.recordResult(result);
         }
 
-        // Only 3 actions should be executed
-        expect(provider.deletedCount, 3);
-        expect(provider.revertableActionCount, 3);
-        expect(provider.hasActionsToRevert, isTrue);
-      });
-
-      test('respects zero test limit', () {
-        provider.initializeScanMode(mode: ScanMode.testLimit, testLimit: 0);
-
-        final email = EmailMessage(
-          id: 'test-1',
-          from: 'spam@example.com',
-          subject: 'Test',
-          body: 'Test body',
-          headers: const {},
-          receivedDate: DateTime.now(),
-          folderName: 'INBOX',
-        );
-
-        final result = EmailActionResult(
-          email: email,
-          evaluationResult: EvaluationResult.noMatch(),
-          action: EmailActionType.delete,
-          success: true,
-        );
-
-        provider.recordResult(result);
-
-        // No actions should execute
-        expect(provider.deletedCount, 0);
+        // All 5 actions recorded (EmailScanner would have limited to 3 before calling recordResult)
+        expect(provider.deletedCount, 5);
+        // Not tracked for revert (only testAll mode does that)
         expect(provider.hasActionsToRevert, isFalse);
       });
 
-      test('tracks different action types within limit', () {
+      test('tracks different action types', () {
         provider.initializeScanMode(mode: ScanMode.testLimit, testLimit: 5);
 
         final baseDate = DateTime.now();
@@ -333,7 +261,8 @@ void main() {
         expect(provider.deletedCount, 2);
         expect(provider.movedCount, 2);
         expect(provider.safeSendersCount, 1);
-        expect(provider.revertableActionCount, 5);
+        // Not tracked for revert in testLimit mode
+        expect(provider.hasActionsToRevert, isFalse);
       });
     });
 

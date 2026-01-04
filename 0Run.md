@@ -1,11 +1,13 @@
 # Run Windows Emulator
 #   cd D:\Data\Harold\github\spamfilter-multi\mobile-app
 #   flutter run -d windows
+# single command line for full Windows App rebuild and test
+powershell -NoProfile -ExecutionPolicy Bypass -File D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts\build-windows.ps1
+
 # If needed confirm dependencies and then re-build the app
 cd d:\Data\Harold\github\spamfilter-multi\mobile-app; flutter pub get
 cd d:\Data\Harold\github\spamfilter-multi\mobile-app; flutter build windows
-# single command line for full Windows App rebuild and test
-powershell -NoProfile -ExecutionPolicy Bypass -File D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts\build-windows.ps1
+
 
 
 cd D:\Data\Harold\github\spamfilter-multi\mobile-app; flutter put get; flutter build windows; flutter run -d windows

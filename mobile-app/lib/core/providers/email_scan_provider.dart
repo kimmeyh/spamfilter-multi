@@ -307,35 +307,28 @@ class EmailScanProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// ✨ PHASE 2 SPRINT 3: Mode-aware recordResult with read-only and limits
+  /// ✨ PHASE 2 SPRINT 3: Record scan result
   /// 
-  /// If in readonly mode, actions are logged but NOT executed.
-  /// If in testLimit mode, only first N actions are executed.
-  /// If in testAll mode, all actions are executed (can revert).
+  /// Records the result of processing an email. Scan mode enforcement
+  /// now happens in EmailScanner before actions are executed.
+  /// 
+  /// This method:
+  /// - Records all results for UI/history display
+  /// - Tracks successful actions for revert (if in testAll mode)
+  /// - Updates action counts for summary statistics
   void recordResult(EmailActionResult result) {
-    // Determine if this action should actually be executed
-    bool shouldExecuteAction = _scanMode != ScanMode.readonly &&
-        (_emailTestLimit == null || _lastRunActionIds.length < _emailTestLimit!);
-
-    if (shouldExecuteAction) {
-      // Track action for potential revert
-      _lastRunActionIds.add(result.email.id);
-      _lastRunActions.add(result);
-      _logger.i('📝 Action recorded (will execute): ${result.action} - ${result.email.from}');
-    } else {
-      // Read-only or limit reached: log what would happen
-      if (_scanMode == ScanMode.readonly) {
-        _logger.i('📋 [READONLY] Would ${result.action} email: ${result.email.from}');
-      } else {
-        _logger.i('📋 [LIMIT REACHED] Would ${result.action} email: ${result.email.from}');
-      }
-    }
-
     // Always record the result for UI/history
     _results.add(result);
 
-    // Only update execution counts if the action should execute
-    if (shouldExecuteAction) {
+    // Track for revert if in testAll mode and action was successful
+    if (_scanMode == ScanMode.testAll && result.success && result.action != EmailActionType.none && result.action != EmailActionType.markAsRead) {
+      _lastRunActionIds.add(result.email.id);
+      _lastRunActions.add(result);
+      _logger.i('📝 Action recorded for revert: ${result.action} - ${result.email.from}');
+    }
+
+    // Update counts based on what actually happened
+    if (result.success) {
       switch (result.action) {
         case EmailActionType.delete:
           _deletedCount++;
@@ -350,11 +343,12 @@ class EmailScanProvider extends ChangeNotifier {
         case EmailActionType.markAsRead:
           break;
       }
-    }
-
-    if (!result.success) {
+    } else {
+      // Action failed
       _errorCount++;
     }
+
+    notifyListeners();
   }
 
   /// ✨ PHASE 2 SPRINT 3: Revert all actions from last run
