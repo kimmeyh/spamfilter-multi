@@ -104,7 +104,12 @@ class RuleSetProvider extends ChangeNotifier {
   }
 
   /// Load rules from storage
+  /// 
+  /// Clears the pattern compiler cache to prevent stale patterns from
+  /// accumulating when rules are modified or reloaded.
   Future<void> loadRules() async {
+    // Clear pattern cache when loading fresh rules
+    _patternCompiler.clear();
     try {
       _setLoadingState(RuleLoadingState.loading);
       _rules = await _ruleStore.loadRules();
@@ -120,7 +125,12 @@ class RuleSetProvider extends ChangeNotifier {
   }
 
   /// Load safe senders from storage
+  /// 
+  /// Clears the pattern compiler cache to prevent stale patterns from
+  /// accumulating when safe senders are modified or reloaded.
   Future<void> loadSafeSenders() async {
+    // Clear pattern cache when loading fresh safe senders
+    _patternCompiler.clear();
     try {
       _safeSenders = await _ruleStore.loadSafeSenders();
       _logger.i('Loaded ${_safeSenders!.safeSenders.length} safe sender patterns');

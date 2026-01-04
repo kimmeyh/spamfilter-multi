@@ -57,7 +57,7 @@ void main() {
         
         try {
           // Load credentials
-          final credentials = await credentialStore.getCredentials(accountId);
+          final credentials = await credentialStore.getCredentialsForPlatform(accountId);
           
           if (credentials == null) {
             print('   ❌ Failed to load credentials for account: $accountId');
@@ -186,7 +186,7 @@ void main() {
       final aolAccounts = <String>[];
 
       for (final accountId in accountIds) {
-        final credentials = await credentialStore.getCredentials(accountId);
+        final credentials = await credentialStore.getCredentialsForPlatform(accountId);
         if (credentials != null) {
           final platformId = credentials.additionalParams?['platformId'] ?? 
                             await credentialStore.getPlatformId(accountId);
@@ -205,7 +205,7 @@ void main() {
 
       for (final accountId in aolAccounts) {
         print('Testing AOL account: $accountId');
-        final credentials = await credentialStore.getCredentials(accountId);
+        final credentials = await credentialStore.getCredentialsForPlatform(accountId);
         
         expect(credentials, isNotNull, reason: 'Credentials should exist for $accountId');
         expect(credentials!.email, isNotEmpty, reason: 'Email should not be empty');
@@ -237,7 +237,7 @@ void main() {
       final gmailAccounts = <String>[];
 
       for (final accountId in accountIds) {
-        final credentials = await credentialStore.getCredentials(accountId);
+        final credentials = await credentialStore.getCredentialsForPlatform(accountId);
         if (credentials != null) {
           final platformId = credentials.additionalParams?['platformId'] ?? 
                             await credentialStore.getPlatformId(accountId);
@@ -259,7 +259,7 @@ void main() {
 
       for (final accountId in gmailAccounts) {
         print('Testing Gmail account: $accountId');
-        final credentials = await credentialStore.getCredentials(accountId);
+        final credentials = await credentialStore.getCredentialsForPlatform(accountId);
         
         expect(credentials, isNotNull, reason: 'Credentials should exist for $accountId');
         expect(credentials!.email, isNotEmpty, reason: 'Email should not be empty');
@@ -303,7 +303,7 @@ void main() {
       print('🔐 Verifying credential encryption...\n');
 
       for (final accountId in accountIds) {
-        final credentials = await credentialStore.getCredentials(accountId);
+        final credentials = await credentialStore.getCredentialsForPlatform(accountId);
         
         if (credentials != null) {
           // Verify email is loaded
@@ -343,7 +343,7 @@ void main() {
 
       for (final accountId in accountIds) {
         final platformId = await credentialStore.getPlatformId(accountId);
-        final credentials = await credentialStore.getCredentials(accountId);
+        final credentials = await credentialStore.getCredentialsForPlatform(accountId);
         
         if (credentials != null) {
           final storedPlatformId = credentials.additionalParams?['platformId'];

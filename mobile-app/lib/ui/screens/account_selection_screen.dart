@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import 'package:provider/provider.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/email_providers/spam_filter_platform.dart';
+import '../../core/providers/email_scan_provider.dart';
 import '../../main.dart' show routeObserver;
 import 'account_setup_screen.dart';
 import 'platform_selection_screen.dart';
@@ -184,8 +187,8 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
   /// accounts (accountId = email).
   Future<AccountDisplayData?> _fetchAccountDisplayData(String accountId) async {
     try {
-      // Try to retrieve full credentials which includes the email address
-      final creds = await _credStore.getCredentials(accountId);
+      // Try to retrieve full credentials (platform-aware: handles both IMAP and OAuth)
+      final creds = await _credStore.getCredentialsForPlatform(accountId);
 
       if (creds == null) {
         _logger.w('⚠️ No credentials found for account: $accountId');
@@ -354,19 +357,21 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
 
     if (!mounted) return;
 
-    // Navigate to scan progress with existing account
-    // Using push (not pushReplacement) so back button returns here
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ScanProgressScreen(
-          platformId: platformId,
-          platformDisplayName: _getPlatformName(platformId),
-          accountId: accountId,
-          accountEmail: email,
-        ),
+    // Show scan mode selector dialog (same as new account setup)
+    // This ensures users can choose readonly/testLimit/testAll for every scan
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => _ScanModeSelector(
+        parentContext: context,
+        platformId: platformId,
+        accountId: accountId,
+        accountEmail: email,
       ),
-    ).then((_) => _loadSavedAccounts()); // Refresh accounts on return
+    );
+
+    // Refresh accounts after scan completes
+    _loadSavedAccounts();
   }
 
   /// Navigate to platform selection to add new account
@@ -729,6 +734,251 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Scan mode selector dialog for quick scans from account list
+/// Allows users to choose readonly/testLimit/testAll mode before scanning
+class _ScanModeSelector extends StatefulWidget {
+  final BuildContext parentContext;
+  final String platformId;
+  final String accountId;
+  final String accountEmail;
+
+  const _ScanModeSelector({
+    required this.parentContext,
+    required this.platformId,
+    required this.accountId,
+    required this.accountEmail,
+  });
+
+  @override
+  State<_ScanModeSelector> createState() => _ScanModeSelectorState();
+}
+
+class _ScanModeSelectorState extends State<_ScanModeSelector> {
+  late ScanMode _selectedMode;
+  int _testLimit = 50;
+  final _testLimitController = TextEditingController(text: '50');
+  final _logger = Logger();
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedMode = ScanMode.readonly; // Safe default
+  }
+
+  @override
+  void dispose() {
+    _testLimitController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _proceedWithScan() async {
+    final scanProvider = widget.parentContext.read<EmailScanProvider>();
+
+    // Initialize scan mode
+    int? testLimit;
+    if (_selectedMode == ScanMode.testLimit) {
+      testLimit = _testLimit;
+    }
+
+    scanProvider.initializeScanMode(
+      mode: _selectedMode,
+      testLimit: testLimit,
+    );
+
+    _logger.i(
+      '🔍 Quick scan mode: $_selectedMode'
+      '${testLimit != null ? ' (limit: $testLimit)' : ''}',
+    );
+
+    // Close dialog
+    if (mounted) {
+      Navigator.of(context).pop();
+    }
+
+    // Navigate to scan progress
+    if (!mounted) return;
+    final parentContext = widget.parentContext;
+    
+    await Navigator.of(parentContext).push(
+      MaterialPageRoute(
+        builder: (_) => ScanProgressScreen(
+          platformId: widget.platformId,
+          platformDisplayName: _getPlatformName(widget.platformId),
+          accountId: widget.accountId,
+          accountEmail: widget.accountEmail,
+        ),
+      ),
+    );
+  }
+
+  String _getPlatformName(String platformId) {
+    final info = PlatformRegistry.getPlatformInfo(platformId);
+    return info?.displayName ?? platformId.toUpperCase();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Scan Mode'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Choose scan mode:',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+
+            // Read-only mode
+            _buildModeOption(
+              mode: ScanMode.readonly,
+              title: 'Read-Only (Recommended)',
+              description: '📋 Safe - no emails modified',
+              color: Colors.green,
+            ),
+            const SizedBox(height: 12),
+
+            // Test limit mode
+            _buildModeOption(
+              mode: ScanMode.testLimit,
+              title: 'Test Limited Emails',
+              description: '📝 Modify first N emails only',
+              color: Colors.orange,
+              showLimit: true,
+            ),
+            const SizedBox(height: 12),
+
+            // Test all mode
+            _buildModeOption(
+              mode: ScanMode.testAll,
+              title: 'Full Scan with Revert',
+              description: '⚡ All changes (can revert)',
+              color: Colors.red,
+            ),
+            const SizedBox(height: 16),
+
+            // Help text
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info, color: Colors.blue.shade700, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _selectedMode == ScanMode.readonly
+                          ? 'No emails will be modified.'
+                          : _selectedMode == ScanMode.testLimit
+                              ? 'Only $_testLimit emails modified.'
+                              : 'Can revert using "Revert Last Run".',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.blue.shade700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: _proceedWithScan,
+          child: const Text('Start Scan'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildModeOption({
+    required ScanMode mode,
+    required String title,
+    required String description,
+    required Color color,
+    bool showLimit = false,
+  }) {
+    final isSelected = _selectedMode == mode;
+    
+    return GestureDetector(
+      onTap: () => setState(() => _selectedMode = mode),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: isSelected ? Colors.blue : Colors.grey.shade300,
+            width: 2,
+          ),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Radio<ScanMode>(
+                  value: mode,
+                  groupValue: _selectedMode,
+                  onChanged: (value) => setState(() => _selectedMode = mode),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        description,
+                        style: TextStyle(fontSize: 12, color: color),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (showLimit && isSelected) ...[
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const SizedBox(width: 40),
+                  Expanded(
+                    child: TextField(
+                      controller: _testLimitController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Number of emails',
+                        border: OutlineInputBorder(),
+                        hintText: '50',
+                      ),
+                      onChanged: (value) {
+                        setState(() => _testLimit = int.tryParse(value) ?? 50);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

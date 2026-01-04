@@ -1,6 +1,8 @@
 /// Email scanning service that connects IMAP adapters with rule evaluation
 library;
 
+import 'package:logger/logger.dart';
+
 import '../providers/email_scan_provider.dart';
 import '../providers/rule_set_provider.dart';
 import '../services/rule_evaluator.dart';
@@ -16,6 +18,7 @@ class EmailScanner {
   final RuleSetProvider ruleSetProvider;
   final EmailScanProvider scanProvider;
   final SecureCredentialsStore _credStore = SecureCredentialsStore();
+  final Logger _logger = Logger();
 
   EmailScanner({
     required this.platformId,
@@ -38,8 +41,8 @@ class EmailScanner {
         throw Exception('Platform $platformId not supported');
       }
 
-      // 2. Load credentials
-      final credentials = await _credStore.getCredentials(accountId);
+      // 2. Load credentials (platform-aware: handles both IMAP and OAuth)
+      final credentials = await _credStore.getCredentialsForPlatform(accountId);
       if (credentials == null) {
         throw Exception('No credentials found for account $accountId');
       }
@@ -62,7 +65,12 @@ class EmailScanner {
         compiler: PatternCompiler(),
       );
 
-      // 6. Process each email
+      // 6. Get scan mode settings
+      final scanMode = scanProvider.scanMode;
+      final testLimit = scanProvider.emailTestLimit;
+      int actionsExecuted = 0;
+
+      // 7. Process each email
       for (final message in messages) {
         // Update progress
         scanProvider.updateProgress(
@@ -87,27 +95,53 @@ class EmailScanner {
           // Spam/phishing detected
           else if (result.shouldDelete) {
             action = EmailActionType.delete;
-            try {
-              // Delete via platform adapter
-              await platform.takeAction(
-                message: message,
-                action: FilterAction.delete,
-              );
-            } catch (e) {
-              success = false;
-              error = 'Delete failed: $e';
+
+            // ✅ Check scan mode before executing delete
+            if (scanMode == ScanMode.readonly) {
+              // Readonly mode: log only, don't execute
+              _logger.i('[READONLY] Would delete: ${message.from} - ${message.subject}');
+              success = true; // Mark as would-succeed
+            } else if (scanMode == ScanMode.testLimit && actionsExecuted >= (testLimit ?? 0)) {
+              // Test limit reached: log and skip
+              _logger.i('[LIMIT REACHED] Skipping delete: ${message.from}');
+              success = true;
+            } else {
+              // Execute action
+              try {
+                await platform.takeAction(
+                  message: message,
+                  action: FilterAction.delete,
+                );
+                actionsExecuted++;
+              } catch (e) {
+                success = false;
+                error = 'Delete failed: $e';
+              }
             }
           } else if (result.shouldMove) {
             action = EmailActionType.moveToJunk;
-            try {
-              // Move to junk folder
-              await platform.takeAction(
-                message: message,
-                action: FilterAction.moveToJunk,
-              );
-            } catch (e) {
-              success = false;
-              error = 'Move failed: $e';
+
+            // ✅ Check scan mode before executing move
+            if (scanMode == ScanMode.readonly) {
+              // Readonly mode: log only, don't execute
+              _logger.i('[READONLY] Would move to junk: ${message.from} - ${message.subject}');
+              success = true; // Mark as would-succeed
+            } else if (scanMode == ScanMode.testLimit && actionsExecuted >= (testLimit ?? 0)) {
+              // Test limit reached: log and skip
+              _logger.i('[LIMIT REACHED] Skipping move: ${message.from}');
+              success = true;
+            } else {
+              // Execute action
+              try {
+                await platform.takeAction(
+                  message: message,
+                  action: FilterAction.moveToJunk,
+                );
+                actionsExecuted++;
+              } catch (e) {
+                success = false;
+                error = 'Move failed: $e';
+              }
             }
           }
         }
@@ -124,7 +158,7 @@ class EmailScanner {
         );
       }
 
-      // 7. Complete scan
+      // 8. Complete scan
       scanProvider.completeScan();
     } catch (e) {
       // Handle scan error
@@ -137,7 +171,7 @@ class EmailScanner {
           await platform.disconnect();
         } catch (e) {
           // Log but don't throw
-          print('Disconnect error: $e');
+          _logger.w('Disconnect error: $e');
         }
       }
     }
@@ -162,8 +196,8 @@ class EmailScanner {
         throw Exception('Platform $platformId not supported');
       }
 
-      // Load credentials
-      final credentials = await _credStore.getCredentials(accountId);
+      // Load credentials (platform-aware: handles both IMAP and OAuth)
+      final credentials = await _credStore.getCredentialsForPlatform(accountId);
       if (credentials == null) {
         throw Exception('No credentials found for account $accountId');
       }
