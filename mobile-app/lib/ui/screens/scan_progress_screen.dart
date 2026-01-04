@@ -35,6 +35,8 @@ class ScanProgressScreen extends StatefulWidget {
 }
 
 class _ScanProgressScreenState extends State<ScanProgressScreen> {
+  ScanStatus? _previousStatus;
+
   @override
   void initState() {
     super.initState();
@@ -48,6 +50,25 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
   @override
   Widget build(BuildContext context) {
     final scanProvider = context.watch<EmailScanProvider>();
+
+    // ✨ PHASE 3.1: Auto-navigate to Results when scan completes (Issue #33)
+    if (_previousStatus != ScanStatus.completed && 
+        scanProvider.status == ScanStatus.completed) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => ResultsDisplayScreen(
+                platformId: widget.platformId,
+                platformDisplayName: widget.platformDisplayName,
+                accountId: widget.accountId,
+              ),
+            ),
+          );
+        }
+      });
+    }
+    _previousStatus = scanProvider.status;
 
     return PopScope(
       // Handle back button to return to account selection with confirmation during scan
@@ -145,8 +166,6 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
             children: [
               _buildHeader(scanProvider),
               const SizedBox(height: 16),
-              _buildProgressBar(scanProvider),
-              const SizedBox(height: 16),
               _buildStats(scanProvider),
               const SizedBox(height: 16),
               _buildControls(context, scanProvider),
@@ -187,26 +206,21 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
     );
   }
 
-  Widget _buildProgressBar(EmailScanProvider scanProvider) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        LinearProgressIndicator(value: scanProvider.progress),
-        const SizedBox(height: 8),
-        Text('${scanProvider.processedCount} / ${scanProvider.totalEmails} processed'),
-      ],
-    );
-  }
+  /// ✨ PHASE 3.1: Removed redundant progress bar and text (Issue #33)
+  /// Progress info now shown only in bubble row
 
   Widget _buildStats(EmailScanProvider scanProvider) {
+    // ✨ PHASE 3.1: Updated bubble row with Found, Processed, Deleted, Moved, Safe, Errors
     return Wrap(
       spacing: 12,
       runSpacing: 12,
       children: [
-        _buildStatChip('Deleted', scanProvider.deletedCount, Colors.red.shade100, Colors.red.shade800),
-        _buildStatChip('Moved', scanProvider.movedCount, Colors.orange.shade100, Colors.orange.shade800),
-        _buildStatChip('Safe', scanProvider.safeSendersCount, Colors.green.shade100, Colors.green.shade800),
-        _buildStatChip('Errors', scanProvider.errorCount, Colors.grey.shade200, Colors.grey.shade800),
+        _buildStatChip('Found', scanProvider.totalEmails, const Color(0xFF2196F3), Colors.white), // Blue
+        _buildStatChip('Processed', scanProvider.processedCount, const Color(0xFF9C27B0), Colors.white), // Purple
+        _buildStatChip('Deleted', scanProvider.deletedCount, const Color(0xFFF44336), Colors.white), // Red
+        _buildStatChip('Moved', scanProvider.movedCount, const Color(0xFFFF9800), Colors.white), // Orange
+        _buildStatChip('Safe', scanProvider.safeSendersCount, const Color(0xFF4CAF50), Colors.white), // Green
+        _buildStatChip('Errors', scanProvider.errorCount, const Color(0xFFD32F2F), Colors.white), // Dark Red
       ],
     );
   }
@@ -222,6 +236,10 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
 
   Widget _buildControls(BuildContext context, EmailScanProvider scanProvider) {
     final ruleProvider = context.watch<RuleSetProvider>();
+    
+    // ✨ PHASE 3.1: Re-enable buttons after scan completes (Issue #33)
+    final canStartScan = scanProvider.status == ScanStatus.idle || 
+                         scanProvider.status == ScanStatus.completed;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -230,7 +248,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
           OutlinedButton.icon(
             icon: const Icon(Icons.settings),
             label: Text('Scan Mode: ${scanProvider.getScanModeDisplayName()}'),
-            onPressed: scanProvider.status == ScanStatus.idle
+            onPressed: canStartScan
                 ? () => _showScanModeDialog(context, scanProvider)
                 : null,
           ),
@@ -239,7 +257,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
           ElevatedButton.icon(
             icon: const Icon(Icons.folder_open),
             label: const Text('Select Folders to Scan'),
-            onPressed: scanProvider.status == ScanStatus.idle
+            onPressed: canStartScan
                 ? () => _showFolderSelection(context, scanProvider)
                 : null,
           ),
@@ -250,7 +268,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
               child: ElevatedButton.icon(
                 icon: const Icon(Icons.play_arrow),
                 label: const Text('Start Live Scan'),
-                onPressed: scanProvider.status == ScanStatus.idle
+                onPressed: canStartScan
                     ? () => _startRealScan(context, scanProvider, ruleProvider)
                     : null,
               ),
@@ -285,7 +303,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
         ElevatedButton.icon(
           icon: const Icon(Icons.science),
           label: const Text('Start Demo Scan (Testing)'),
-          onPressed: scanProvider.status == ScanStatus.idle
+          onPressed: canStartScan
               ? () => _startDemoScan(scanProvider)
               : null,
         ),
