@@ -17,11 +17,12 @@ enum ScanStatus { idle, scanning, paused, completed, error }
 /// Email action type for categorization
 enum EmailActionType { none, safeSender, delete, moveToJunk, markAsRead }
 
-/// ✨ PHASE 2 SPRINT 3: Scan mode - read-only, test with limit, or test all
+/// ✨ PHASE 3.1: Scan mode - read-only, test modes, or full production scan
 enum ScanMode {
   readonly,   // Default: scan only, no modifications
   testLimit,  // Test mode: modify up to N emails, then stop
-  testAll,    // Test mode: modify all emails (dangerous - can revert)
+  testAll,    // Test mode: modify all emails (can revert)
+  fullScan,   // ✨ PHASE 3.1: Production mode - PERMANENT delete/move (cannot revert)
 }
 
 /// ✨ Multi-account & Multi-folder support: Junk folder configuration per provider
@@ -136,11 +137,25 @@ class EmailScanProvider extends ChangeNotifier {
   int get errorCount => _errorCount;
   double get progress => _totalEmails == 0 ? 0 : _processedCount / _totalEmails;
 
-  // ✨ PHASE 2 SPRINT 3: Scan mode getters
+  // ✨ PHASE 3.1: Scan mode getters
   ScanMode get scanMode => _scanMode;
   int? get emailTestLimit => _emailTestLimit;
   bool get hasActionsToRevert => _lastRunActionIds.isNotEmpty;
   int get revertableActionCount => _lastRunActionIds.length;
+  
+  /// Get human-readable scan mode name for UI display
+  String getScanModeDisplayName() {
+    switch (_scanMode) {
+      case ScanMode.readonly:
+        return 'Read-Only';
+      case ScanMode.testLimit:
+        return 'Test Limited Emails';
+      case ScanMode.testAll:
+        return 'Full Scan with Revert';
+      case ScanMode.fullScan:
+        return 'Full Scan';
+    }
+  }
 
   /// Start a new scan session
   /// 
@@ -194,7 +209,8 @@ class EmailScanProvider extends ChangeNotifier {
   void completeScan() {
     _status = ScanStatus.completed;
     _currentEmail = null;
-    _statusMessage = 'Scan completed: '
+    final modeName = getScanModeDisplayName();
+    _statusMessage = 'Scan completed - $modeName: '
         '$_deletedCount deleted, $_movedCount moved, $_safeSendersCount safe senders, $_errorCount errors';
     _logger.i('Completed scan: $_statusMessage');
     notifyListeners();
@@ -307,21 +323,26 @@ class EmailScanProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// ✨ PHASE 2 SPRINT 3: Mode-aware recordResult with read-only and limits
+  /// ✨ PHASE 3.1: Mode-aware recordResult with read-only, test modes, and full scan
   /// 
-  /// If in readonly mode, actions are logged but NOT executed.
-  /// If in testLimit mode, only first N actions are executed.
-  /// If in testAll mode, all actions are executed (can revert).
+  /// - readonly: actions logged but NOT executed
+  /// - testLimit: only first N actions executed (can revert)
+  /// - testAll: all actions executed (can revert)
+  /// - fullScan: all actions executed PERMANENTLY (cannot revert)
   void recordResult(EmailActionResult result) {
     // Determine if this action should actually be executed
     bool shouldExecuteAction = _scanMode != ScanMode.readonly &&
         (_emailTestLimit == null || _lastRunActionIds.length < _emailTestLimit!);
 
     if (shouldExecuteAction) {
-      // Track action for potential revert
-      _lastRunActionIds.add(result.email.id);
-      _lastRunActions.add(result);
-      _logger.i('📝 Action recorded (will execute): ${result.action} - ${result.email.from}');
+      // Track action for potential revert (only for testLimit and testAll, NOT fullScan)
+      if (_scanMode == ScanMode.testLimit || _scanMode == ScanMode.testAll) {
+        _lastRunActionIds.add(result.email.id);
+        _lastRunActions.add(result);
+        _logger.i('📝 Action recorded (revertable): ${result.action} - ${result.email.from}');
+      } else if (_scanMode == ScanMode.fullScan) {
+        _logger.i('🔥 Action executed (PERMANENT): ${result.action} - ${result.email.from}');
+      }
     } else {
       // Read-only or limit reached: log what would happen
       if (_scanMode == ScanMode.readonly) {
