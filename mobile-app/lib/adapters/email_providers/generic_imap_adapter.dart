@@ -141,7 +141,8 @@ class GenericIMAPAdapter implements SpamFilterPlatform {
 
       _logger.i('[IMAP] Successfully authenticated to $displayName');
     } catch (e) {
-      _logger.e('[IMAP] Failed to load credentials: $e');
+      _logger.e('[IMAP] Failed to load credentials', error: e);
+      
       if (e is AuthenticationException) {
         // Propagate explicit authentication failures
         rethrow;
@@ -156,8 +157,10 @@ class GenericIMAPAdapter implements SpamFilterPlatform {
         throw ConnectionException('Network connection failed', e);
       }
 
-      // Fallback: treat other errors as connection failures
-      throw ConnectionException('IMAP connection failed', e);
+      // ✅ Rethrow unknown errors instead of converting to ConnectionException
+      // This preserves the original error type and prevents hiding actual problems
+      _logger.e('[IMAP] Unexpected error during IMAP connection', error: e);
+      rethrow;
     }
   }
 
