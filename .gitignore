@@ -47,6 +47,8 @@ rules_safe_senders_backup_*.yaml
 *.backup
 *.bak
 
+.serena/
+
 # Memory bank logs (exclude logs but keep memory-bank docs)
 memory-bank/logs/
 

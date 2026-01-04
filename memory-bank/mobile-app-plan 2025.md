@@ -1,77 +1,14 @@
 
 Phase 3 Development Goals
-- Focus on AOL and Gmail email addresses
-- Focus on Android and Windows Desktop apps
-  - Both Android and Windows Desktop
-    - Scan
-      - Scan Mode screen
-        - Add "Full Scan" as a 4th option under the current 3
-      - Scan Progress screen
-        - Change screen to remove "<n>/<n> processed" line above total bubbles for "Deleted: <n>", "Moved: <n>", "Safe: <n>", "Errors: <n>"
-        - Change screen to remove progress line below "Scan completed: <n> deleted, <n> moved, <n> safe senders, <n> errors"
-        - Change screen to remove "Scan completed: <n> deleted, <n> moved, <n> safe senders, <n> errors"
-        - Change row of bubbles for "Deleted: <n>", "Moved: <n>", "Safe: <n>", "Errors: <n>" to be:
-            "Found: <n>", "Processed: <n>", Deleted: <n>", "Moved: <n>", "Safe: <n>", "Errors: <n>"
-        - Update process for scanning to update bubble for "Processed: <n>" after every <n> emails/seconds (or <n> seconds - please recommend)
-          - <n> should be configurable - likely user configurable by emails or seconds
-          - initially configured as 10 emails
-        - Add "Scan Mode" button above "Select Folders to Scan" button - available for all email accounts and providers
-          - This will also be a user configuration.  Initially set to "Read Only".
-        - Remove "Scan Mode" pop-up as part of AOL Mail "Choose Your Email Provider" process.
-        - Display of "Ready to Scan" should include <mode> as in "Ready to scan - <mode>" where <mode> is one of the 4 selected Options "Read-Only", "Test Limited Emails" or "Full Scan with Revert" or "Full Scan"
-        - Add <mode> to "Scan Complete - <mode>" and any other displays in this same location on the screen.
-        - Ensure for all implementations the buttons with totals for "Deleted", "Moved", "Safe" and "Errors", should be as if it was run in full mode (since <mode> indicates if they are really done, not done or temporary). Believe this is true for Android with AOL email.  Know it not true for Windows Desktop with AOL email.
-        - After scan finishes the UI should go directly to the "Results - <provider>"/"View Results" screen
-        - After returning from the "Results" screen, the following buttons should become active again:  "Select Folders to Scan", Scan Mode", "Start Live Scan", "Start Demo Scan (Testing)" and "View Results" ("View Results" to allow user to see results, again, of the prior scan)
-      - Scan > View Results screen
-        - Update the "Scan Again" button to return to the Scan Progress screen with the following buttons active again:  "Select Folders to Scan", Scan Mode", "Start Live Scan", "Start Demo Scan (Testing)" and "View Results" ("View Results" to allow user to see results, again, of the prior scan) - you may have done this in a previous step.
-        - Update "Results - <provider>" to be "Results - <email-address> - <provider>"
-        - Update "Summary" to be "Summary - <mode>"
-        - Update row of bubbles for "Status: <status>", "Processed: <n>", "Total: <n>", "Deleted: <n>", "Moved: <n>", "Safe senders: <n>", "Errors: <n>" to be: "Found: <n>", "Processed: <n>", Deleted: <n>", "Moved: <n>", "Safe: <n>", "Errors: <n>" 
-        - Update row of bubbles to use same colors as Scan Progress screen      
-        - Ensure for all implementations the buttons for "Found: <n>", "Processed: <n>", Deleted: <n>", "Moved: <n>", "Safe: <n>", "Errors: <n>" should be as if it was run in full mode (since <mode> indicates if they are really done, not done or temporary).
-    - Fully enable scanning of provider-based junk folders
-      - With Windows Desktop AOL email, selected "Select Folders to Scan" and selected only "Bulk Mail", then did "Start Live Scan".  The results only included item in the email address inbox.  Can you update all implementations and provider emails to actually select and then scan the folders selected.
-    - multi-folder scanning
-      - typical junk folders per provider
-      - ability to pull in all folders that exist in the email address and select any to be scanned (multi-select)
-  - Android specific enhancements
-    - TBD
-  - Windows Desktop specific enhancements
-    - TBD 
 - Windows MSIX installer
+- Focus on Android and Windows Desktop apps
+- Focus on AOL and Gmail email addresses
+- macOS DMG installer
+- Linux AppImage/Snap
 - Desktop-specific UI adjustments
 - Background sync implementation- Background sync implementation
 
-Phase 4 Development Goals
-- Expand to iOS platform
-- Expand to apple email 
-- macOS DMG installer
-
-Phase 5 Development Goals
-- Expand to Web App that can run from Browser via user login
-
-Phase 6 Development Goals
-- Expand to IMAP email providers (Generic, Yahoo, ProtonMail)
-
-Phase 7 Development Goals
-- Expand to other OAuth 2.0 email providers (Outlook.com, TBD)
-
-**Development Directives**
-Provider Focus: Prioritize ONLY Gmail and AOL until full functionality (setup, multi-folder scanning including junk folders, rule add/update, production mode delete and move) is confirmed on Windows and Android. Defer all other email providers (Outlook, Yahoo, iCloud, ProtonMail, Custom IMAP) to post phase 3 (see Phase <n> Development Goals).
-
-**Key Architecture Principles**
-All App Platforms should
-- Use the same code for as much as possible, but deviate when necessary.
-  - Deviations should be via Object Oriented "Factory" or similar tools if possible.
-  - Deviate via separate functions when necessary and possible.
-- Use the same basic UI for as much as possible.
-  - Adapt via CSS or similar UI conventions whenever possible to avoid needing different code
-  - Use different code when necessary.
-All email platforms and email addresses should
-- Use the same code for as much as possible, but deviate when necessary.
-
-
+**Provider Focus (Dec 17 directive)**: Prioritize ONLY Gmail and AOL until full functionality (setup, multi-folder scanning including junk folders, rule add/update, production mode delete) is confirmed on Windows and Android. Defer all other email providers (Outlook, Yahoo, iCloud, ProtonMail, Custom IMAP) to Phase 3 until Gmail/AOL are fully validated.
 
 ## Architecture Decision: 100% Flutter for All Platforms (December 11, 2025)
 
@@ -84,20 +21,20 @@ All email platforms and email addresses should
 - IMAP/OAuth provides universal email provider support
 
 **Platforms Supported** (5 total):
-- Windows (desktop build via `flutter build windows`)
-- Android (mobile build via `flutter build apk`)
-- iOS (mobile build via `flutter build ios`) - Future
-- macOS (desktop build via `flutter build macos`) - Future
-- Linux (desktop build via `flutter build linux`) - Possible in the future
+1. Windows (desktop build via `flutter build windows`)
+2. macOS (desktop build via `flutter build macos`)
+3. Linux (desktop build via `flutter build linux`)
+4. Android (mobile build via `flutter build apk`)
+5. iOS (mobile build via `flutter build ios`)
 
 **Email Providers** (Phase Priority - Updated Dec 17):
-- **AOL** - IMAP (Phase 2 - Live testing - PRIMARY FOCUS)
-- **Gmail** - OAuth 2.0 (Phase 2 - PRIMARY FOCUS; Android/iOS working, Windows OAuth implemented Dec 16)
-- **iCloud** - IMAP (DEFERRED to Phase 4+ until Gmail/AOL full functionality confirmed)
-- **Generic IMAP** for custom providers (DEFERRED to Phase 6+ until Gmail/AOL validated)
-- **Yahoo** - IMAP (DEFERRED to Phase 6+ until Gmail/AOL full functionality confirmed)
-- **ProtonMail** - IMAP (DEFERRED to Phase 3+ until Gmail/AOL full functionality confirmed)
-- **Outlook.com** - OAuth 2.0 (DEFERRED to Phase 3+ until Gmail/AOL full functionality confirmed)
+1. **AOL** - IMAP (Phase 2 - Live testing - PRIMARY FOCUS)
+2. **Gmail** - OAuth 2.0 (Phase 2 - PRIMARY FOCUS; Android/iOS working, Windows OAuth implemented Dec 16)
+3. **Outlook.com** - OAuth 2.0 (DEFERRED to Phase 3+ until Gmail/AOL full functionality confirmed)
+4. **Yahoo** - IMAP (DEFERRED to Phase 3+ until Gmail/AOL full functionality confirmed)
+5. **ProtonMail** - IMAP (DEFERRED to Phase 3+ until Gmail/AOL full functionality confirmed)
+6. **iCloud** - IMAP (DEFERRED to Phase 3+ until Gmail/AOL full functionality confirmed)
+7. Generic IMAP for custom providers (DEFERRED to Phase 4+ until Gmail/AOL validated)
 
 - **AppPaths**: Platform-agnostic file system helper
   - Auto-creates app support directory structure (rules, credentials, backups, logs)
@@ -366,6 +303,65 @@ For ALL Windows app builds, rebuilds, and tests, you MUST use the `build-windows
 8. Run live IMAP tests with AOL credentials (validation phase)
 9. Implement Gmail OAuth flow (Phase 2+)
 10. Implement Outlook OAuth flow (Phase 2+)
+
+
+## Development Timeline
+
+**Phase 1** ✅ COMPLETE - Foundation (November 2025)
+- Core models, services, translator layer architecture
+- IMAP framework
+- Basic UI scaffold
+
+**Phase 1.5** ✅ COMPLETE - Testing (December 10, 2025)
+- Unit tests (16 tests)
+- Integration tests (7 tests)
+- End-to-end validation
+- Performance testing (19.58ms per email)
+
+**Phase 2.0** ✅ COMPLETE - Storage & State Management (December 11, 2025)
+- AppPaths for platform file access (7 tests passing)
+- SecureCredentialsStore for encrypted storage (4 tests passing)
+- RuleSetProvider for rule management (integrated)
+- EmailScanProvider for scan progress (12 tests passing)
+- MultiProvider in main.dart with async initialization
+
+**Phase 2 Sprint 1** ✅ COMPLETE - Platform Selection UI (December 11, 2025)
+- PlatformSelectionScreen (500 lines) - displays AOL, Gmail, Outlook, Yahoo
+- SetupInstructionsDialog - provider-specific app password guides
+- Updated AccountSetupScreen to accept platformId parameter
+- Updated main.dart entry point to use PlatformSelectionScreen
+- MultiProvider in main.dart
+
+**Phase 2** ✅ COMPLETE - UI Development & Live Testing (December 11-17, 2025)
+- ✅ Sprint 1: Platform Selection Screen (complete December 11)
+- ✅ Sprint 2: Asset Bundling & AOL IMAP Integration (complete December 13)
+- ✅ Sprint 3: Multi-Account & Multi-Folder Support (complete December 13)
+- ✅ Sprint 4: Gmail OAuth Integration (complete December 14 - Android/iOS working, Windows limitation identified)
+- ✅ Sprint 5: Windows Gmail OAuth Implementation (complete December 14 - Three-tiered OAuth approach)
+- ✅ Sprint 6: Navigation & UI Polish (complete December 17 - Back navigation, auth method display)
+
+**Phase 2.1** ✅ COMPLETE - Verification & Validation (December 18, 2025)
+- ✅ Automated Testing: 79 tests passing (0 failures)
+- ✅ Static Analysis: 0 blocking errors, 142 non-blocking warnings
+- ✅ Windows Build: Successful with manual run validation
+- ✅ Android Build: Release APK (51.7MB) successful
+- ✅ Android Testing: APK installed and launched on emulator
+- ✅ Manual Testing: Gmail OAuth token refresh and AOL IMAP validated
+
+**Phase 2.5** ⏳ PLANNED - Desktop Builds (Est. 1-2 weeks after Phase 2)
+- Windows MSIX installer
+- macOS DMG installer
+- Linux AppImage/Snap
+- Desktop-specific UI adjustments
+
+**Phase 3** ⏳ PLANNED - IMAP/OAuth Integration (Est. 3-4 weeks after Phase 2)
+- Live IMAP testing with AOL
+- Gmail OAuth integration
+
+- Credential refresh token handling
+8. Build results summary display
+9. Enable OAuth-ready dependencies for Gmail/Outlook adapters **(googleapis, google_sign_in, msal_flutter, http activated 2025-12-10)**
+10. Provider rollout order: **AOL first**, then **Gmail**
 
 
 ## Executive Summary
