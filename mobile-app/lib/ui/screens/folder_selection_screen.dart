@@ -16,6 +16,7 @@ import 'package:http/http.dart' as http;
 import '../../adapters/email_providers/spam_filter_platform.dart';
 import '../../adapters/email_providers/generic_imap_adapter.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
+import '../../adapters/auth/google_auth_service.dart';
 
 /// Folder selection screen for email account
 /// 
@@ -99,39 +100,27 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
       List<FolderInfo> folders;
       
       if (widget.platformId == 'gmail') {
-        // ✨ Gmail: Use stored tokens to call Labels API directly
-        // This avoids creating a new adapter and triggering re-authentication
+        // ✨ Gmail: Use GoogleAuthService to get valid token (handles expiration & refresh)
         _logger.i('🔍 Fetching Gmail folders for accountId: ${widget.accountId}');
         
-        // Try getGmailTokens first
-        var tokens = await credStore.getGmailTokens(widget.accountId);
+        final authService = GoogleAuthService();
         
-        // If no tokens found, try getting credentials (which checks Gmail tokens as fallback)
-        if (tokens == null) {
-          _logger.w('⚠️ No Gmail tokens found directly, trying getCredentials()');
-          final credentials = await credStore.getCredentials(widget.accountId);
-          
-          if (credentials == null || credentials.accessToken?.isEmpty != false) {
-            throw Exception('No Gmail credentials found for account ${widget.accountId}');
-          }
-          
-          _logger.i('✅ Found access token via getCredentials()');
-          // Use credentials.accessToken directly (it's already validated as non-empty)
-          final authClient = _GoogleAuthClient({'Authorization': 'Bearer ${credentials.accessToken}'});
-          final gmailApi = gmail.GmailApi(authClient);
-          
-          folders = await _fetchGmailLabels(gmailApi);
-        } else {
-          _logger.i('✅ Found Gmail tokens, using access token');
-          if (tokens.accessToken.isEmpty) {
-            throw Exception('Gmail access token is empty for account ${widget.accountId}');
-          }
+        // getValidAccessToken() handles:
+        // - Token expiration checking
+        // - Automatic refresh if expired
+        // - Re-authentication if refresh fails
+        final accessToken = await authService.getValidAccessToken();
         
-          final authClient = _GoogleAuthClient({'Authorization': 'Bearer ${tokens.accessToken}'});
-          final gmailApi = gmail.GmailApi(authClient);
-          
-          folders = await _fetchGmailLabels(gmailApi);
+        if (accessToken == null || accessToken.isEmpty) {
+          throw Exception('Unable to get valid Gmail access token for account ${widget.accountId}. Please sign in again.');
         }
+        
+        _logger.i('✅ Got valid access token (${accessToken.length} chars)');
+        
+        final authClient = _GoogleAuthClient({'Authorization': 'Bearer $accessToken'});
+        final gmailApi = gmail.GmailApi(authClient);
+        
+        folders = await _fetchGmailLabels(gmailApi);
       } else {
         // IMAP providers (AOL, Yahoo, iCloud, ProtonMail, custom)
         final SpamFilterPlatform provider;
