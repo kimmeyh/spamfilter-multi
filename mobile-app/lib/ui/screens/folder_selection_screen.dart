@@ -101,61 +101,36 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
       if (widget.platformId == 'gmail') {
         // ✨ Gmail: Use stored tokens to call Labels API directly
         // This avoids creating a new adapter and triggering re-authentication
-        final tokens = await credStore.getGmailTokens(widget.accountId);
-        if (tokens == null || tokens.accessToken.isEmpty) {
-          throw Exception('No Gmail credentials found for account ${widget.accountId}');
-        }
+        _logger.i('🔍 Fetching Gmail folders for accountId: ${widget.accountId}');
         
-        // Import googleapis for direct API call
-        final authClient = _GoogleAuthClient({'Authorization': 'Bearer ${tokens.accessToken}'});
-        final gmailApi = gmail.GmailApi(authClient);
+        // Try getGmailTokens first
+        var tokens = await credStore.getGmailTokens(widget.accountId);
         
-        try {
-          final labelsResponse = await gmailApi.users.labels.list('me');
+        // If no tokens found, try getting credentials (which checks Gmail tokens as fallback)
+        if (tokens == null) {
+          _logger.w('⚠️ No Gmail tokens found directly, trying getCredentials()');
+          final credentials = await credStore.getCredentials(widget.accountId);
           
-          folders = [];
-          if (labelsResponse.labels != null) {
-            for (var label in labelsResponse.labels!) {
-              final name = label.name ?? 'Unknown';
-              // Map common Gmail labels to canonical names
-              CanonicalFolder canonical;
-              switch (name.toUpperCase()) {
-                case 'INBOX':
-                  canonical = CanonicalFolder.inbox;
-                  break;
-                case 'SPAM':
-                case 'JUNK':
-                  canonical = CanonicalFolder.junk;
-                  break;
-                case 'TRASH':
-                  canonical = CanonicalFolder.trash;
-                  break;
-                case 'SENT':
-                  canonical = CanonicalFolder.sent;
-                  break;
-                case 'DRAFTS':
-                case 'DRAFT':
-                  canonical = CanonicalFolder.drafts;
-                  break;
-                case 'ARCHIVE':
-                case 'ALL MAIL':
-                  canonical = CanonicalFolder.archive;
-                  break;
-                default:
-                  canonical = CanonicalFolder.custom;
-              }
-
-              folders.add(FolderInfo(
-                id: label.id ?? name,
-                displayName: name,
-                canonicalName: canonical,
-                messageCount: label.messagesTotal,
-                isWritable: true,
-              ));
-            }
+          if (credentials == null || credentials.accessToken?.isEmpty != false) {
+            throw Exception('No Gmail credentials found for account ${widget.accountId}');
           }
-        } catch (e) {
-          throw Exception('Failed to list Gmail labels: $e');
+          
+          _logger.i('✅ Found access token via getCredentials()');
+          // Use credentials.accessToken directly (it's already validated as non-empty)
+          final authClient = _GoogleAuthClient({'Authorization': 'Bearer ${credentials.accessToken}'});
+          final gmailApi = gmail.GmailApi(authClient);
+          
+          folders = await _fetchGmailLabels(gmailApi);
+        } else {
+          _logger.i('✅ Found Gmail tokens, using access token');
+          if (tokens.accessToken.isEmpty) {
+            throw Exception('Gmail access token is empty for account ${widget.accountId}');
+          }
+        
+          final authClient = _GoogleAuthClient({'Authorization': 'Bearer ${tokens.accessToken}'});
+          final gmailApi = gmail.GmailApi(authClient);
+          
+          folders = await _fetchGmailLabels(gmailApi);
         }
       } else {
         // IMAP providers (AOL, Yahoo, iCloud, ProtonMail, custom)
@@ -283,6 +258,61 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
         return Icons.archive;
       case CanonicalFolder.custom:
         return Icons.folder;
+    }
+  }
+
+  /// ✨ PHASE 3.3: Helper to fetch Gmail labels via API
+  Future<List<FolderInfo>> _fetchGmailLabels(gmail.GmailApi gmailApi) async {
+    try {
+      final labelsResponse = await gmailApi.users.labels.list('me');
+      
+      final folders = <FolderInfo>[];
+      if (labelsResponse.labels != null) {
+        for (var label in labelsResponse.labels!) {
+          final name = label.name ?? 'Unknown';
+          // Map common Gmail labels to canonical names
+          CanonicalFolder canonical;
+          switch (name.toUpperCase()) {
+            case 'INBOX':
+              canonical = CanonicalFolder.inbox;
+              break;
+            case 'SPAM':
+            case 'JUNK':
+              canonical = CanonicalFolder.junk;
+              break;
+            case 'TRASH':
+              canonical = CanonicalFolder.trash;
+              break;
+            case 'SENT':
+              canonical = CanonicalFolder.sent;
+              break;
+            case 'DRAFTS':
+            case 'DRAFT':
+              canonical = CanonicalFolder.drafts;
+              break;
+            case 'ARCHIVE':
+            case 'ALL MAIL':
+              canonical = CanonicalFolder.archive;
+              break;
+            default:
+              canonical = CanonicalFolder.custom;
+          }
+
+          folders.add(FolderInfo(
+            id: label.id ?? name,
+            displayName: name,
+            canonicalName: canonical,
+            messageCount: label.messagesTotal,
+            isWritable: true,
+          ));
+        }
+      }
+      
+      _logger.i('✅ Fetched ${folders.length} Gmail labels');
+      return folders;
+    } catch (e) {
+      _logger.e('❌ Failed to list Gmail labels: $e');
+      throw Exception('Failed to list Gmail labels: $e');
     }
   }
 
