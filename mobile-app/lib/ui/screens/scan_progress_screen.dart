@@ -212,7 +212,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
   /// Progress info now shown only in bubble row
 
   Widget _buildStats(EmailScanProvider scanProvider) {
-    // ✨ PHASE 3.1: Updated bubble row with Found, Processed, Deleted, Moved, Safe, Errors
+    // ✨ PHASE 3.1: Updated bubble row with Found, Processed, Deleted, Moved, Safe, No rule, Errors
     return Wrap(
       spacing: 12,
       runSpacing: 12,
@@ -222,6 +222,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
         _buildStatChip('Deleted', scanProvider.deletedCount, const Color(0xFFF44336), Colors.white), // Red
         _buildStatChip('Moved', scanProvider.movedCount, const Color(0xFFFF9800), Colors.white), // Orange
         _buildStatChip('Safe', scanProvider.safeSendersCount, const Color(0xFF4CAF50), Colors.white), // Green
+        _buildStatChip('No rule', scanProvider.noRuleCount, const Color(0xFF757575), Colors.white), // Grey
         _buildStatChip('Errors', scanProvider.errorCount, const Color(0xFFD32F2F), Colors.white), // Dark Red
       ],
     );

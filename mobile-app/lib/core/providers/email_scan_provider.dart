@@ -115,6 +115,7 @@ class EmailScanProvider extends ChangeNotifier {
   int _deletedCount = 0;
   int _movedCount = 0;
   int _safeSendersCount = 0;
+  int _noRuleCount = 0;  // ✨ PHASE 3.1: Emails with no rule match
   int _errorCount = 0;
 
   // ✨ PHASE 2 SPRINT 3: Read-only mode & revert capability
@@ -134,6 +135,7 @@ class EmailScanProvider extends ChangeNotifier {
   int get deletedCount => _deletedCount;
   int get movedCount => _movedCount;
   int get safeSendersCount => _safeSendersCount;
+  int get noRuleCount => _noRuleCount;  // ✨ PHASE 3.1: Emails with no rule match
   int get errorCount => _errorCount;
   double get progress => _totalEmails == 0 ? 0 : _processedCount / _totalEmails;
 
@@ -236,6 +238,7 @@ class EmailScanProvider extends ChangeNotifier {
     _deletedCount = 0;
     _movedCount = 0;
     _safeSendersCount = 0;
+    _noRuleCount = 0;  // ✨ PHASE 3.1: Reset no-rule count
     _errorCount = 0;
     _logger.i('Reset scan state');
     notifyListeners();
@@ -368,6 +371,8 @@ class EmailScanProvider extends ChangeNotifier {
         _safeSendersCount++;
         break;
       case EmailActionType.none:
+        _noRuleCount++;  // ✨ PHASE 3.1: Track emails with no rule match
+        break;
       case EmailActionType.markAsRead:
         break;
     }
