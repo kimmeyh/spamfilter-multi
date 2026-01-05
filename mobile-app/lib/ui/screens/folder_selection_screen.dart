@@ -11,10 +11,10 @@ import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 
 // ✨ PHASE 3.3: Dynamic folder discovery (Issue #37)
+import 'package:googleapis/gmail/v1.dart' as gmail;
+import 'package:http/http.dart' as http;
 import '../../adapters/email_providers/spam_filter_platform.dart';
 import '../../adapters/email_providers/generic_imap_adapter.dart';
-import '../../adapters/email_providers/gmail_api_adapter.dart';
-import '../../adapters/auth/google_auth_service.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 
 /// Folder selection screen for email account
@@ -96,33 +96,91 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
 
     try {
       final credStore = SecureCredentialsStore();
-      
-      // Get email provider instance based on platform
-      final SpamFilterPlatform provider;
+      List<FolderInfo> folders;
       
       if (widget.platformId == 'gmail') {
-        // Gmail: Use GmailApiAdapter
-        provider = GmailApiAdapter();
-      } else if (widget.platformId == 'aol') {
-        provider = GenericIMAPAdapter.aol();
-      } else if (widget.platformId == 'yahoo') {
-        provider = GenericIMAPAdapter.yahoo();
-      } else if (widget.platformId == 'icloud') {
-        provider = GenericIMAPAdapter.icloud();
+        // ✨ Gmail: Use stored tokens to call Labels API directly
+        // This avoids creating a new adapter and triggering re-authentication
+        final tokens = await credStore.getGmailTokens(widget.accountId);
+        if (tokens == null || tokens.accessToken.isEmpty) {
+          throw Exception('No Gmail credentials found for account ${widget.accountId}');
+        }
+        
+        // Import googleapis for direct API call
+        final authClient = _GoogleAuthClient({'Authorization': 'Bearer ${tokens.accessToken}'});
+        final gmailApi = gmail.GmailApi(authClient);
+        
+        try {
+          final labelsResponse = await gmailApi.users.labels.list('me');
+          
+          folders = [];
+          if (labelsResponse.labels != null) {
+            for (var label in labelsResponse.labels!) {
+              final name = label.name ?? 'Unknown';
+              // Map common Gmail labels to canonical names
+              CanonicalFolder canonical;
+              switch (name.toUpperCase()) {
+                case 'INBOX':
+                  canonical = CanonicalFolder.inbox;
+                  break;
+                case 'SPAM':
+                case 'JUNK':
+                  canonical = CanonicalFolder.junk;
+                  break;
+                case 'TRASH':
+                  canonical = CanonicalFolder.trash;
+                  break;
+                case 'SENT':
+                  canonical = CanonicalFolder.sent;
+                  break;
+                case 'DRAFTS':
+                case 'DRAFT':
+                  canonical = CanonicalFolder.drafts;
+                  break;
+                case 'ARCHIVE':
+                case 'ALL MAIL':
+                  canonical = CanonicalFolder.archive;
+                  break;
+                default:
+                  canonical = CanonicalFolder.custom;
+              }
+
+              folders.add(FolderInfo(
+                id: label.id ?? name,
+                displayName: name,
+                canonicalName: canonical,
+                messageCount: label.messagesTotal,
+                isWritable: true,
+              ));
+            }
+          }
+        } catch (e) {
+          throw Exception('Failed to list Gmail labels: $e');
+        }
       } else {
-        // Custom IMAP or unknown
-        provider = GenericIMAPAdapter.custom();
+        // IMAP providers (AOL, Yahoo, iCloud, ProtonMail, custom)
+        final SpamFilterPlatform provider;
+        
+        if (widget.platformId == 'aol') {
+          provider = GenericIMAPAdapter.aol();
+        } else if (widget.platformId == 'yahoo') {
+          provider = GenericIMAPAdapter.yahoo();
+        } else if (widget.platformId == 'icloud') {
+          provider = GenericIMAPAdapter.icloud();
+        } else {
+          provider = GenericIMAPAdapter.custom();
+        }
+        
+        // Load credentials and fetch folders
+        final credentials = await credStore.getCredentials(widget.accountId);
+        if (credentials == null) {
+          throw Exception('No credentials found for account ${widget.accountId}');
+        }
+        
+        await provider.loadCredentials(credentials);
+        folders = await provider.listFolders();
+        await provider.disconnect();
       }
-      
-      // Load credentials and fetch folders
-      final credentials = await credStore.getCredentials(widget.accountId);
-      if (credentials == null) {
-        throw Exception('No credentials found for account ${widget.accountId}');
-      }
-      
-      await provider.loadCredentials(credentials);
-      final folders = await provider.listFolders();
-      await provider.disconnect();
       
       // Sort folders: Inbox first, then junk folders, then others
       folders.sort((a, b) {
@@ -443,5 +501,19 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
         ],
       ),
     );
+  }
+}
+
+/// ✨ PHASE 3.3: HTTP client with Google auth headers for direct Gmail API calls
+class _GoogleAuthClient extends http.BaseClient {
+  final Map<String, String> _headers;
+  final http.Client _client = http.Client();
+
+  _GoogleAuthClient(this._headers);
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) {
+    request.headers.addAll(_headers);
+    return _client.send(request);
   }
 }
