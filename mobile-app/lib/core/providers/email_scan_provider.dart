@@ -127,6 +127,12 @@ class EmailScanProvider extends ChangeNotifier {
   // ✨ PHASE 3.2: Folder selection for scan
   List<String> _selectedFolders = ['INBOX'];  // Default to INBOX
 
+  // ✨ PHASE 3.3: Progressive update throttling (Issue #36)
+  DateTime? _lastProgressNotification;
+  int _emailsSinceLastNotification = 0;
+  static const int _progressEmailInterval = 10;  // Update every 10 emails
+  static const Duration _progressTimeInterval = Duration(seconds: 3);  // OR every 3 seconds
+
   // Getters
   ScanStatus get status => _status;
   int get processedCount => _processedCount;
@@ -179,11 +185,19 @@ class EmailScanProvider extends ChangeNotifier {
     _errorCount = 0;
     _currentEmail = null;
     _statusMessage = 'Starting scan...';
+    
+    // ✨ PHASE 3.3: Reset throttling state for new scan
+    _emailsSinceLastNotification = 0;
+    _lastProgressNotification = null;
+    
     _logger.i('Started scan of $totalEmails emails');
     notifyListeners();
   }
 
   /// Mark current email and update progress
+  /// 
+  /// ✨ PHASE 3.3: Throttles UI updates to every 10 emails OR 3 seconds (whichever comes first)
+  /// to avoid performance issues with large scans
   void updateProgress({
     required EmailMessage email,
     String? message,
@@ -192,7 +206,20 @@ class EmailScanProvider extends ChangeNotifier {
     _processedCount++;
     _statusMessage = message ?? 'Processing ${email.from}...';
     _logger.d('Progress: $_processedCount / $_totalEmails');
-    notifyListeners();
+    
+    // ✨ PHASE 3.3: Throttle UI updates (10 emails OR 3 seconds, whichever comes first)
+    _emailsSinceLastNotification++;
+    final now = DateTime.now();
+    final shouldNotify = _emailsSinceLastNotification >= _progressEmailInterval ||
+        _lastProgressNotification == null ||
+        now.difference(_lastProgressNotification!) >= _progressTimeInterval;
+    
+    if (shouldNotify) {
+      _emailsSinceLastNotification = 0;
+      _lastProgressNotification = now;
+      _logger.d('📊 UI update triggered: $_processedCount / $_totalEmails');
+      notifyListeners();
+    }
   }
 
   /// Pause the scan
@@ -214,6 +241,9 @@ class EmailScanProvider extends ChangeNotifier {
   }
 
   /// Complete the scan successfully
+  /// 
+  /// ✨ PHASE 3.3: Always calls notifyListeners() to ensure final UI update,
+  /// regardless of throttling state (provides complete final counts)
   void completeScan() {
     _status = ScanStatus.completed;
     _currentEmail = null;
@@ -221,7 +251,7 @@ class EmailScanProvider extends ChangeNotifier {
     _statusMessage = 'Scan completed - $modeName: '
         '$_deletedCount deleted, $_movedCount moved, $_safeSendersCount safe senders, $_errorCount errors';
     _logger.i('Completed scan: $_statusMessage');
-    notifyListeners();
+    notifyListeners();  // Final update always sent (bypasses throttling)
   }
 
   /// Mark scan as failed with error
@@ -246,6 +276,11 @@ class EmailScanProvider extends ChangeNotifier {
     _safeSendersCount = 0;
     _noRuleCount = 0;  // ✨ PHASE 3.1: Reset no-rule count
     _errorCount = 0;
+    
+    // ✨ PHASE 3.3: Reset throttling state
+    _emailsSinceLastNotification = 0;
+    _lastProgressNotification = null;
+    
     _logger.i('Reset scan state');
     notifyListeners();
   }
