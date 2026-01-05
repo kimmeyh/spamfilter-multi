@@ -46,9 +46,14 @@ issue. Should I make it more specific to only exclude 'Archive/desktop-python/li
 
 Cross-platform email spam filtering application built with 100% Flutter/Dart for all platforms (Windows, macOS, Linux, Android, iOS). The app uses IMAP/OAuth protocols to support multiple email providers (AOL, Gmail, Yahoo, Outlook.com, ProtonMail) with a single codebase and portable YAML rule sets.
 
-**Current Status**: Phase 2.1 Complete - All automated tests passing (81/81), manual Windows and Android testing successful, ready for production validation.
+**Current Status**: Phase 3.1 Complete - All automated tests passing (122/122), full scan mode implemented, UI redesigned with consistent bubble displays, ready for Phase 3.2 folder selection enhancements.
 
-**Latest Test Run**: January 2, 2026 - Successfully fixed Account Selection navigation and refresh issues. App now correctly navigates from Results Display → Account Selection (not Platform Selection), and account list refreshes immediately when returning (no timer delay). Navigation stack preserved correctly for all account deletion scenarios.
+**Latest Updates**: January 4, 2026 - Phase 3.1 UI/UX Enhancements Complete:
+- ✅ **Issue #32**: Full Scan mode added (4th scan mode) with persistent mode selector and warning dialogs
+- ✅ **Issue #33**: Scan Progress UI redesigned - removed redundant elements, added Found/Processed bubbles, auto-navigation to Results, re-enabled buttons after completion
+- ✅ **Issue #34**: Results Screen UI redesigned - shows email address in title, mode in summary, matching bubble design
+- ✅ **Bubble Counts Fix**: All scan modes now show proposed actions (what WOULD happen) instead of only executed actions
+- ✅ **No Rule Tracking**: Added "No rule" bubble (grey) to track emails with no rule match for future rule creation
 
 ## Repository Structure
 
@@ -272,10 +277,11 @@ See `memory-bank/yaml-schemas.md` and `memory-bank/regex-conventions.md` for com
 
 ## Testing Strategy
 
-**Total Tests**: 81 passing (as of Dec 2025)
+**Total Tests**: 122 passing (as of Jan 2026)
 - **Phase 1 Regression**: 27 tests (core models, services)
 - **Phase 2.0 Tests**: 23 tests (AppPaths, SecureCredentialsStore, EmailScanProvider)
 - **Phase 2.1 Tests**: 31 tests (adapters, providers, integration)
+- **Phase 2.2 Tests**: 41 tests (RuleEvaluator, PatternCompiler with error tracking)
 
 ### Test Organization
 ```
@@ -358,6 +364,56 @@ flutter test --coverage                         # With coverage
 **Files Modified**: `mobile-app/lib/main.dart`, `mobile-app/lib/ui/screens/account_selection_screen.dart`
 **Impact**: "Back to Accounts" correctly navigates to Account Selection (not Platform Selection), account list refreshes immediately when navigating back (no delay or empty state), navigation stack preserved correctly for all account deletion scenarios
 **Applies to**: All account types (Gmail OAuth, AOL IMAP, Yahoo IMAP)
+
+### Phase 3.1 UI/UX Enhancements (Issues #32-#34)
+**Status**: ✅ COMPLETE (Jan 4, 2026)
+**Focus**: Full Scan mode, UI redesign, consistent bubble displays, improved navigation
+
+**Issue #32 - Full Scan Mode and Persistent Selection**:
+- Added `ScanMode.fullScan` (4th mode) - permanent delete/move operations
+- Added persistent "Scan Mode" button on Scan Progress screen
+- Removed scan mode pop-up from account setup flow (default to readonly)
+- Added warning dialog for Full Scan mode (requires user confirmation)
+- Updated `recordResult()` to distinguish revertable vs permanent actions
+- Files Modified: `email_scan_provider.dart`, `account_setup_screen.dart`, `scan_progress_screen.dart`
+
+**Issue #33 - Scan Progress Screen UI Redesign**:
+- Removed redundant progress bar and processed count text
+- Updated to 7-bubble row: Found (Blue), Processed (Purple), Deleted (Red), Moved (Orange), Safe (Green), No rule (Grey), Errors (Dark Red)
+- Added auto-navigation to Results screen when scan completes
+- Re-enabled buttons after scan completes (idle or completed status)
+- Added scan mode to header: "Ready to scan - <mode>" / "Scan complete - <mode>"
+- Files Modified: `scan_progress_screen.dart`
+
+**Issue #34 - Results Screen UI Redesign**:
+- Added `accountEmail` parameter (required) to show email in title
+- Updated title format: "Results - <email> - <provider>"
+- Updated summary format: "Summary - <mode>"
+- Updated bubble row to match Scan Progress (7 bubbles with exact same colors)
+- Made accountEmail required in ScanProgressScreen
+- Files Modified: `results_display_screen.dart`, `scan_progress_screen.dart`
+
+**Bubble Counts Fix**:
+- **Problem**: In Read-Only mode, bubbles showed "Deleted: 0" even when rules evaluated emails for deletion
+- **Solution**: Changed `recordResult()` to always increment counts based on rule evaluation (proposed actions), not just executed actions
+- **Impact**: All scan modes now show what WOULD happen, making Read-Only mode useful for previewing results
+- Files Modified: `email_scan_provider.dart`, `email_scan_provider_test.dart` (5 tests updated)
+
+**No Rule Tracking**:
+- Added `_noRuleCount` field and getter to EmailScanProvider
+- Added "No rule" bubble (grey #757575) between "Safe" and "Errors"
+- Tracks emails that didn't match any rules (for future rule creation)
+- Increments when `action == EmailActionType.none`
+- Files Modified: `email_scan_provider.dart`, `scan_progress_screen.dart`, `results_display_screen.dart`
+
+**Test Results**: 122/122 tests passing (13 skipped integration tests requiring credentials)
+
+**Commits**:
+- `af6a36d` - feat: Add 'No rule' bubble to track emails with no rule match
+- `2f4f1ce` - fix: Bubble counts now show proposed actions in all scan modes
+- `964ef9d` - fix: Redesign Results Screen UI (Issue #34)
+- `e542823` - feat: Redesign Scan Progress UI (Issue #33)
+- `72d876b`, `7816546`, `bf2ab3c`, `2d15ebf` - feat: Full Scan mode (Issue #32)
 
 ## Development Workflow
 

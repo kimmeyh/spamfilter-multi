@@ -1,9 +1,16 @@
 
-# [STATUS UPDATE: January 3, 2026]
+# [STATUS UPDATE: January 4, 2026]
 
-**Phase 2.1 Verification Complete**: All automated tests passing (122/122), manual Windows and Android testing successful, pre-external testing blockers resolved, Android Gmail Sign-In setup guide provided. App is ready for production and external user validation.
+**Phase 3.1 UI/UX Enhancements Complete**: All automated tests passing (122/122), Full Scan mode implemented, Scan Progress and Results screens redesigned with consistent bubble displays, bubble counts now show proposed actions in all modes. App ready for Phase 3.2 folder selection enhancements.
 
-**Latest Fixes (Jan 3, 2026)**:
+**Latest Enhancements (Jan 4, 2026) - Phase 3.1 Complete**:
+- ✅ **Issue #32 COMPLETE**: Full Scan mode added (4th scan mode) with persistent mode selector, warning dialogs, and permanent delete/move operations
+- ✅ **Issue #33 COMPLETE**: Scan Progress UI redesigned - removed redundant elements, added Found/Processed bubbles, auto-navigate to Results, re-enable buttons after completion
+- ✅ **Issue #34 COMPLETE**: Results Screen UI redesigned - email in title, mode in summary, matching bubble design (7 bubbles)
+- ✅ **Bubble Counts Fix**: All scan modes now show proposed actions (what WOULD happen) instead of only executed actions - Read-Only mode now useful for previewing
+- ✅ **No Rule Tracking**: Added "No rule" bubble (grey) to track emails with no rule match for future rule creation
+
+**Previous Fixes (Jan 3, 2026) - Phase 2.2 Complete**:
 - ✅ **Issue #18 COMPLETE**: Created comprehensive RuleEvaluator test suite (32 tests, 97.96% code coverage, includes anti-spoofing verification)
 - ✅ **Issue #8 FIXED**: Header matching bug in RuleEvaluator - Rules now properly check email headers for spam detection
 - ✅ **Issue #4 FIXED**: Silent regex compilation failures - Invalid patterns now logged with detailed error messages and tracked for UI visibility
@@ -73,8 +80,9 @@ Cross-platform email spam filter application built with Flutter.
 
 ## Project Status
 
-**Phase**: Phase 2.1 Verification ✅ COMPLETE (December 18, 2025)
-**Current Status**: All automated tests passing (122/122), manual Windows and Android testing successful, ready for production and external user validation
+**Phase**: Phase 3.1 UI/UX Enhancements ✅ COMPLETE (January 4, 2026)
+**Current Status**: All automated tests passing (122/122), Full Scan mode implemented, UI redesigned with consistent bubbles, ready for Phase 3.2 folder selection enhancements
+**Next Phase**: Phase 3.2 - Fix folder selection not scanning selected folders (Issue #35)
 
 ### Pre-External Testing Blockers ✅ RESOLVED
 ### Pre-External Testing Blockers ✅ RESOLVED
