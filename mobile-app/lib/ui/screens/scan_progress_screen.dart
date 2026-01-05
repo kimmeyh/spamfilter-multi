@@ -40,9 +40,15 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
   @override
   void initState() {
     super.initState();
+    
+    // ✨ PHASE 3.2: Initialize _previousStatus to prevent auto-navigation on first build
+    // This ensures we only auto-navigate when a scan ACTUALLY completes, not when
+    // returning to a screen that already has completed status from a previous scan
+    final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
+    _previousStatus = scanProvider.status;
+    
     // Auto-reset scan state when navigating to this screen
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
       scanProvider.reset();
     });
   }
