@@ -124,6 +124,9 @@ class EmailScanProvider extends ChangeNotifier {
   final List<String> _lastRunActionIds = [];  // Track email IDs of actions for revert
   final List<EmailActionResult> _lastRunActions = [];  // Track actual actions for revert
 
+  // ✨ PHASE 3.2: Folder selection for scan
+  List<String> _selectedFolders = ['INBOX'];  // Default to INBOX
+
   // Getters
   ScanStatus get status => _status;
   int get processedCount => _processedCount;
@@ -144,6 +147,9 @@ class EmailScanProvider extends ChangeNotifier {
   int? get emailTestLimit => _emailTestLimit;
   bool get hasActionsToRevert => _lastRunActionIds.isNotEmpty;
   int get revertableActionCount => _lastRunActionIds.length;
+  
+  // ✨ PHASE 3.2: Folder selection getter
+  List<String> get selectedFolders => _selectedFolders;
   
   /// Get human-readable scan mode name for UI display
   String getScanModeDisplayName() {
@@ -323,6 +329,18 @@ class EmailScanProvider extends ChangeNotifier {
     String modeStr = mode.toString().split('.').last;
     String limitStr = (testLimit != null) ? ' (limit: $testLimit)' : '';
     _logger.i('Initialized scan mode: $modeStr$limitStr');
+    notifyListeners();
+  }
+
+  /// ✨ PHASE 3.2: Set selected folders for scan
+  void setSelectedFolders(List<String> folders) {
+    if (folders.isEmpty) {
+      _logger.w('⚠️ No folders selected, defaulting to INBOX');
+      _selectedFolders = ['INBOX'];
+    } else {
+      _selectedFolders = List.from(folders);  // Create copy to avoid mutation
+      _logger.i('📁 Selected folders for scan: $_selectedFolders');
+    }
     notifyListeners();
   }
 

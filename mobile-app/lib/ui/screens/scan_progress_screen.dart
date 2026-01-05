@@ -406,14 +406,16 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
           accountEmail: widget.accountEmail,
           onFoldersSelected: (folders) {
             logger.i('📁 Folders selected for scan: $folders');
-            // Store selected folders in scanProvider for use during scan
-            // Will be available as scanProvider.selectedFolders
+            // ✨ PHASE 3.2: Store selected folders in scanProvider for use during scan
+            scanProvider.setSelectedFolders(folders);
           },
         ),
       );
 
       if (selected != null && context.mounted) {
         logger.i('✅ User confirmed folders: $selected');
+        // ✨ PHASE 3.2: Update scanProvider with final selection
+        scanProvider.setSelectedFolders(selected);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Ready to scan: ${selected.join(", ")}'),
@@ -572,8 +574,13 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
         scanProvider: scanProvider,
       );
 
+      // ✨ PHASE 3.2: Use selected folders from scanProvider (defaults to ['INBOX'] if none selected)
+      final foldersToScan = scanProvider.selectedFolders;
+      final logger = Logger();
+      logger.i('🚀 Starting scan of folders: $foldersToScan for $daysBack days back');
+
       // Start scan in background (will call startScan again with real count)
-      await scanner.scanInbox(daysBack: daysBack);
+      await scanner.scanInbox(daysBack: daysBack, folderNames: foldersToScan);
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
