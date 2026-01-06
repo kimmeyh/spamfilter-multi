@@ -182,6 +182,7 @@ class EmailScanProvider extends ChangeNotifier {
     _deletedCount = 0;
     _movedCount = 0;
     _safeSendersCount = 0;
+    _noRuleCount = 0;  // ✨ FIX: Reset no-rule count on new scan
     _errorCount = 0;
     _currentEmail = null;
     _statusMessage = 'Starting scan...';
