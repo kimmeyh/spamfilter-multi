@@ -437,6 +437,21 @@ class GmailApiAdapter implements SpamFilterPlatform {
     return queryParts.join(' ');
   }
 
+  /// Extract email address from "Name <email@domain.com>" format
+  /// Returns just the email address for consistency with IMAP behavior
+  String _extractEmail(String fromHeader) {
+    if (fromHeader.isEmpty) return '';
+    
+    // Match email in angle brackets: "Name <email@domain.com>"
+    final angleMatch = RegExp(r'<([^>]+)>').firstMatch(fromHeader);
+    if (angleMatch != null) {
+      return angleMatch.group(1) ?? '';
+    }
+    
+    // If no angle brackets, assume it's already just an email
+    return fromHeader;
+  }
+
   /// Convert Gmail message to EmailMessage
   EmailMessage? _convertGmailMessage(
     gmail.Message gmailMessage,
@@ -478,7 +493,7 @@ class GmailApiAdapter implements SpamFilterPlatform {
 
       return EmailMessage(
         id: gmailMessage.id ?? '',
-        from: getHeader('From'),
+        from: _extractEmail(getHeader('From')),
         subject: getHeader('Subject'),
         body: body,
         headers: {
