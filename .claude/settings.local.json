@@ -8,17 +8,17 @@
       "Bash(flutter:*)",
       "Bash(Select-String -Pattern \"flutter|SpamFilter|EmailScan|Account|Navigation|Error\" -CaseSensitive:$false)",
       "Bash(Select-String -Pattern \"flutter|Auth|Gmail|OAuth|Token|Error|Exception\" -CaseSensitive:$false)",
-      "Bash(Start-Sleep -Seconds 3)",
+      "Bash(Start-Sleep:*)",
       "Bash(findstr:*)",
       "Bash(taskkill:*)",
       "Bash(Get-Content \"$env:USERPROFILE\\\\.claude\\\\config.json\" -ErrorAction SilentlyContinue)",
-      "Bash(ConvertFrom-Json)",
-      "Bash(ConvertTo-Json -Depth 10)",
+      "Bash(ConvertFrom-Json:*)",
+      "Bash(ConvertTo-Json:*)",
       "Bash(dir:*)",
       "Bash(node --version:*)",
       "Bash(npx:*)",
-      "Bash(Select-String -Pattern \"All tests passed|tests passed|tests failed|\\\\+\\\\d+|\\\\~\\\\d+\")",
-      "Bash(Select-Object -Last 10)",
+      "Bash(Select-String:*)",
+      "Bash(Select-Object:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(gh *)",
@@ -28,7 +28,8 @@
       "mcp__plugin_serena_serena__find_symbol",
       "mcp__plugin_serena_serena__read_file",
       "mcp__plugin_serena_serena__search_for_pattern",
-      "mcp__plugin_serena_serena__replace_content"
+      "mcp__plugin_serena_serena__replace_content",
+      "mcp__plugin_serena_serena__get_symbols_overview"
     ]
   }
 }

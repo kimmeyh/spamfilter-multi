@@ -26,7 +26,6 @@ Need to be able to really add Bulk Mail folder
 Need to be able to find all folders
 Need to be able to actually find safe senders and/or moved, and rules that apply and if would have been deleted.
 
-
 ------Prompt-----
 Claud Instructions:
   CRITICAL: Do NOT ask me to share these files. Read them immediately from the VSCode workspace, in this repository, using absolute paths:
@@ -73,7 +72,7 @@ Please build the Android app using the following script, |||powershell -NoProfil
 Please run the app using the following script, |||powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-with-secrets.ps1 -BuildType debug -Run"|||, monitor its progress
 via log file, then while I test can you monitor the progress of the Android application via |||adb logcat|||, then help address any issues that I report.
 
-Can you review the modified files pending commit, determine if updates are needed to the following files, then make updates as needed:
+Can you review the modified files for phase 3.1, determine if updates are needed to the following files, then make updates as needed:
 - D:\Data\Harold\github\spamfilter-multi\CLAUDE.md
 - d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json
 - d:\Data\Harold\github\spamfilter-multi\memory-bank\mobile-app-plan.md

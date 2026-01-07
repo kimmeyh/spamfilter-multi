@@ -3,10 +3,9 @@ cd d:\Data\Harold\github\spamfilter-multi\mobile-app; flutter test
 
 
 #-------------------------------
-# If need to do a full build - Windows:
-powershell -NoProfile -ExecutionPolicy Bypass -Command "cd d:\Data\Harold\github\spamfilter-multi\mobile-app; flutter clean; flutter pub get; flutter build windows"
-# ...then run
-cd D:\Data\Harold\github\spamfilter-multi\mobile-app; flutter run -d windows
+# If need to do a full build and run for testing - Windows:
+powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-windows.ps1"
+
 
 # Clean Build - Windows
 cd d:\Data\Harold\github\spamfilter-multi\mobile-app; flutter clean;
@@ -17,8 +16,7 @@ cd D:\Data\Harold\github\spamfilter-multi\mobile-app; flutter run -d windows
 
 #-------------------------------
 # If need to do a full build - Android.  Note this is preferred as it leaves the Terminal/process free to monitor the output log
-powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-with-secrets.ps1 -BuildType debug -InstallToEmulator"
-
+powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-with-secrets.ps1 -BuildType debug -InstallToEmulator  -StartEmulator"
 # ...then run
 powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-with-secrets.ps1 -BuildType debug -Run"  # To run with debugger attached (hot reload + real-time logs)
 # and monitor via
