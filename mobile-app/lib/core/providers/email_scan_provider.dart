@@ -388,8 +388,20 @@ class EmailScanProvider extends ChangeNotifier {
   /// - fullScan: all actions executed PERMANENTLY (cannot revert)
   void recordResult(EmailActionResult result) {
     // Determine if this action should actually be executed
-    bool shouldExecuteAction = _scanMode != ScanMode.readonly &&
-        (_emailTestLimit == null || _lastRunActionIds.length < _emailTestLimit!);
+    // bool shouldExecuteAction = _scanMode != ScanMode.readonly &&
+    //     (_emailTestLimit == null || _lastRunActionIds.length < _emailTestLimit!);
+    bool shouldExecuteAction;
+    if (_scanMode == ScanMode.fullScan) {
+      // In fullScan mode, all actions are executed permanently (no test limit, no revert tracking)
+      shouldExecuteAction = true;
+    } else if (_scanMode == ScanMode.readonly) {
+      // In readonly mode, actions are never executed
+      shouldExecuteAction = false;
+    } else {
+      // In test modes, respect the optional email test limit
+      shouldExecuteAction = _emailTestLimit == null ||
+          _lastRunActionIds.length < _emailTestLimit!;
+    }
 
     if (shouldExecuteAction) {
       // Track action for potential revert (only for testLimit and testAll, NOT fullScan)

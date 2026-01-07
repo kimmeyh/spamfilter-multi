@@ -4,47 +4,7 @@ The OutlookMailSpamFilter desktop application has been successfully ported to a 
 
 
 ## Development Phases
-### Phase 3 Goals: 
-- Focus on AOL and Gmail email addresses
-- Focus on Android and Windows Desktop apps
-  - Both Android and Windows Desktop
-    - Scan
-      - Scan Mode screen
-        - Add "Full Scan" as a 4th option under the current 3
-      - Scan Progress screen
-        - Change screen to remove "<n>/<n> processed" line above total bubbles for "Deleted: <n>", "Moved: <n>", "Safe: <n>", "Errors: <n>"
-        - Change screen to remove progress line below "Scan completed: <n> deleted, <n> moved, <n> safe senders, <n> errors"
-        - Change screen to remove "Scan completed: <n> deleted, <n> moved, <n> safe senders, <n> errors"
-        - Change row of bubbles for "Deleted: <n>", "Moved: <n>", "Safe: <n>", "Errors: <n>" to be:
-            "Found: <n>", "Processed: <n>", Deleted: <n>", "Moved: <n>", "Safe: <n>", "Errors: <n>"
-        - Update process for scanning to update bubble for "Processed: <n>" after every <n> emails/seconds (or <n> seconds - please recommend)
-          - <n> should be configurable - likely user configurable by emails or seconds
-          - initially configured as 10 emails
-        - Add "Scan Mode" button above "Select Folders to Scan" button - available for all email accounts and providers
-          - This will also be a user configuration.  Initially set to "Read Only".
-        - Remove "Scan Mode" pop-up as part of AOL Mail "Choose Your Email Provider" process.
-        - Display of "Ready to Scan" should include <mode> as in "Ready to scan - <mode>" where <mode> is one of the 4 selected Options "Read-Only", "Test Limited Emails" or "Full Scan with Revert" or "Full Scan"
-        - Add <mode> to "Scan Complete - <mode>" and any other displays in this same location on the screen.
-        - Ensure for all implementations the buttons with totals for "Deleted", "Moved", "Safe" and "Errors", should be as if it was run in full mode (since <mode> indicates if they are really done, not done or temporary). Believe this is true for Android with AOL email.  Know it not true for Windows Desktop with AOL email.
-        - After scan finishes the UI should go directly to the "Results - <provider>"/"View Results" screen
-        - After returning from the "Results" screen, the following buttons should become active again:  "Select Folders to Scan", Scan Mode", "Start Live Scan", "Start Demo Scan (Testing)" and "View Results" ("View Results" to allow user to see results, again, of the prior scan)
-      - Scan > View Results screen
-        - Update the "Scan Again" button to return to the Scan Progress screen with the following buttons active again:  "Select Folders to Scan", Scan Mode", "Start Live Scan", "Start Demo Scan (Testing)" and "View Results" ("View Results" to allow user to see results, again, of the prior scan) - you may have done this in a previous step.
-        - Update "Results - <provider>" to be "Results - <email-address> - <provider>"
-        - Update "Summary" to be "Summary - <mode>"
-        - Update row of bubbles for "Status: <status>", "Processed: <n>", "Total: <n>", "Deleted: <n>", "Moved: <n>", "Safe senders: <n>", "Errors: <n>" to be: "Found: <n>", "Processed: <n>", Deleted: <n>", "Moved: <n>", "Safe: <n>", "Errors: <n>" 
-        - Update row of bubbles to use same colors as Scan Progress screen      
-        - Ensure for all implementations the buttons for "Found: <n>", "Processed: <n>", Deleted: <n>", "Moved: <n>", "Safe: <n>", "Errors: <n>" should be as if it was run in full mode (since <mode> indicates if they are really done, not done or temporary).
-    - Fully enable scanning of provider-based junk folders
-      - With Windows Desktop AOL email, selected "Select Folders to Scan" and selected only "Bulk Mail", then did "Start Live Scan".  The results only included item in the email address inbox.  Can you update all implementations and provider emails to actually select and then scan the folders selected.
-    - multi-folder scanning
-      - typical junk folders per provider
-      - ability to pull in all folders that exist in the email address and select any to be scanned (multi-select)
-    - Add to current issue and work on: Add bubble for email messages where there was no rule match (no safe, no deleted, no moved) and call   it "No rule <n>".  In the future, the user will get a chance to add a rule for all the "No rule" messages.
-
-Phase 3.4
-- Update the D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts\build-with-secrets.ps1
-  - such that the "-BuildType debug -InstallToEmulator" set of flags does not delete the saved email accounts.  Explain if that is not possible or what the impact would be.
+### Phase 3.4 Goals: 
 - Focus on AOL and Gmail email addresses
 - Focus on Android and Windows Desktop apps
   - Both Android and Windows Desktop
