@@ -50,6 +50,10 @@ mobile-app/android/app/google-services.json
 client_secret_*.json
 *client_secret*.json
 
+# Build-time secrets (contains API keys and OAuth credentials)
+mobile-app/secrets.dev.json
+secrets.dev.json
+
 # Backup and temporary files
 
 # YAML configuration backups
