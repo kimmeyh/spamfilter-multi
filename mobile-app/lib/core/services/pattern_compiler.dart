@@ -18,7 +18,18 @@ class PatternCompiler {
 
     _misses++;
     try {
-      final regex = RegExp(pattern, caseSensitive: false);
+      // Strip Python-style inline flags (?i), (?m), (?s), (?x) or combinations like (?im)
+      // Dart RegExp doesn't support inline flags but we already use caseSensitive: false
+      String cleanPattern = pattern;
+      if (pattern.startsWith('(?') && pattern.contains(')')) {
+        final flagMatch = RegExp(r'^\(\?[imsx]+\)').firstMatch(pattern);
+        if (flagMatch != null) {
+          cleanPattern = pattern.substring(flagMatch.end);
+          _logger.d('Stripped inline flags from pattern: "$pattern" -> "$cleanPattern"');
+        }
+      }
+
+      final regex = RegExp(cleanPattern, caseSensitive: false);
       _cache[pattern] = regex;
       return regex;
     } catch (e) {
