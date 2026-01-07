@@ -583,9 +583,15 @@ A comprehensive code review of the Flutter spam filter codebase identified **11 
 
 ## Additional Resources
 
-- **Code Review Backlog**: `GITHUB_ISSUES_BACKLOG.md` (complete issue details)
-- **Desktop Archive**: `Archive/desktop-python/` (reference only)
-- **Archived Memory Bank**: `.archive/memory-bank/` (legacy planning docs, Python-era references)
+### Primary Documentation (Root Directory)
+- **CHANGELOG.md**: Feature and bug updates (newest first, insert at top)
+- **GITHUB_ISSUES_BACKLOG.md**: Active issue tracking with file:line references
+- **QUICK_REFERENCE.md**: Command cheat sheet
+- **CLAUDE_CODE_SETUP_GUIDE.md**: MCP server, skills, hooks documentation
+
+### Archives
+- **Archive/desktop-python/**: Legacy Python desktop app (reference only)
+- **.archive/**: Historical docs, completed phase reports, legacy planning
 
 ### Claude Code Tooling (Added Jan 6, 2026)
 - **Setup Guide**: `CLAUDE_CODE_SETUP_GUIDE.md` (complete MCP server, skills, hooks documentation)
