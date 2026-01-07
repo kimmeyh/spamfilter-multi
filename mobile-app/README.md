@@ -1,14 +1,27 @@
 
-# [STATUS UPDATE: January 4, 2026]
+# [STATUS UPDATE: January 6, 2026]
 
-**Phase 3.1 UI/UX Enhancements Complete**: All automated tests passing (122/122), Full Scan mode implemented, Scan Progress and Results screens redesigned with consistent bubble displays, bubble counts now show proposed actions in all modes. App ready for Phase 3.2 folder selection enhancements.
+**Phase 3.3 Complete**: All automated tests passing (122/122), folder selection fixed, dynamic folder discovery implemented, progressive UI updates with throttling, Gmail header parsing fixed, Claude Code MCP tools added.
 
-**Latest Enhancements (Jan 4, 2026) - Phase 3.1 Complete**:
-- ✅ **Issue #32 COMPLETE**: Full Scan mode added (4th scan mode) with persistent mode selector, warning dialogs, and permanent delete/move operations
-- ✅ **Issue #33 COMPLETE**: Scan Progress UI redesigned - removed redundant elements, added Found/Processed bubbles, auto-navigate to Results, re-enable buttons after completion
-- ✅ **Issue #34 COMPLETE**: Results Screen UI redesigned - email in title, mode in summary, matching bubble design (7 bubbles)
-- ✅ **Bubble Counts Fix**: All scan modes now show proposed actions (what WOULD happen) instead of only executed actions - Read-Only mode now useful for previewing
-- ✅ **No Rule Tracking**: Added "No rule" bubble (grey) to track emails with no rule match for future rule creation
+**Latest Enhancements (Jan 5-6, 2026) - Phase 3.2 & 3.3 Complete**:
+
+**Phase 3.3 - Enhancement Features**:
+- ✅ **Issue #36 COMPLETE**: Progressive UI updates with throttling (every 10 emails OR 3 seconds)
+- ✅ **Issue #37 COMPLETE**: Dynamic folder discovery - fetches real folders from email providers
+- ✅ **Gmail Token Refresh**: Automatic token refresh for folder discovery
+- ✅ **Gmail Header Fix**: Extract email from "Name <email>" format for rule matching
+- ✅ **Counter Bug Fix**: Reset counters properly between scans
+
+**Phase 3.2 - Bug Fixes**:
+- ✅ **Issue #35 COMPLETE**: Folder selection now correctly scans selected folders (not just INBOX)
+- ✅ **Navigation Fix**: Prevent unwanted auto-navigation when returning to Scan Progress
+
+**Phase 3.1 - UI/UX Enhancements (Jan 4, 2026)**:
+- ✅ **Issue #32 COMPLETE**: Full Scan mode added (4th scan mode) with persistent mode selector
+- ✅ **Issue #33 COMPLETE**: Scan Progress UI redesigned - Found/Processed bubbles, auto-navigate to Results
+- ✅ **Issue #34 COMPLETE**: Results Screen UI redesigned - email in title, mode in summary
+- ✅ **Bubble Counts Fix**: All scan modes now show proposed actions
+- ✅ **No Rule Tracking**: Added "No rule" bubble (grey) for future rule creation
 
 **Current Issues:**
 - see [github repository](https://github.com/kimmeyh/spamfilter-multi/)
@@ -41,9 +54,9 @@ Cross-platform email spam filter application built with Flutter.
 
 ## Project Status
 
-**Phase**: Phase 3.1 UI/UX Enhancements ✅ COMPLETE (January 4, 2026)
-**Current Status**: All automated tests passing (122/122), Full Scan mode implemented, UI redesigned with consistent bubbles, ready for Phase 3.2 folder selection enhancements
-**Next Phase**: Phase 3.2 - Fix folder selection not scanning selected folders (Issue #35)
+**Phase**: Phase 3.3 Enhancement Features ✅ COMPLETE (January 6, 2026)
+**Current Status**: All automated tests passing (122/122), folder selection fixed, dynamic folder discovery, progressive UI updates, Gmail fixes, Claude Code tools
+**Next Phase**: Phase 3.4 - Results screen folder display, AOL "Bulk" folder recommendations
 
 ### Pre-External Testing Blockers ✅ RESOLVED
 - ✅ AccountSelectionScreen lists all saved Gmail/AOL accounts formatted as "email • Platform • Auth Method" (verified, Windows & Android)

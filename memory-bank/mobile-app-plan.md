@@ -1,6 +1,7 @@
-## Executive Summary
+﻿## Executive Summary
 
 The OutlookMailSpamFilter desktop application has been successfully ported to a cross-platform mobile app supporting multiple email providers (AOL, Gmail). The app maintains compatibility with existing YAML rule formats and is decoupled from Outlook-specific COM interfaces.
+
 
 ## Development Phases
 ### Phase 3 Goals: 
@@ -310,118 +311,118 @@ All email platforms and email addresses should
 ### Layered Architecture
 
 ```
-┌─────────────────────────────────────────────────────┐
-│              Flutter UI Layer                       │
-│  - Platform selection (Gmail, Outlook, AOL, etc.)   │
-│  - Account setup & OAuth flows                      │
-│  - Rule editor (view/add/remove patterns)           │
-│  - Safe sender manager                              │
-│  - Interactive inbox trainer (d/e/s/sd options)     │
-│  - Scan status & notifications                      │
-│  Material Design (Android) + Cupertino (iOS)        │
-└─────────────────────────────────────────────────────┘
-                     ↓ ↑
-┌─────────────────────────────────────────────────────┐
-│         Business Logic Layer (Pure Dart)            │
-│  - RuleSet: In-memory rule management               │
-│  - SafeSenderList: Whitelist management             │
-│  - PatternCompiler: Precompile & cache regex        │
-│  - RuleEvaluator: Apply rules to messages           │
-│  - YamlService: Load/save YAML rules                │
-└─────────────────────────────────────────────────────┘
-                     ↓ ↑
-┌─────────────────────────────────────────────────────┐
-│   ⭐ Translator Layer (SpamFilterPlatform)          │
-│  Unified abstraction for all email providers:       │
-│    - loadCredentials(credentials)                   │
-│    - fetchMessages(daysBack, folderNames)           │
-│    - applyRules(messages, compiledRegex)            │
-│    - takeAction(message, action)                    │
-│    - listFolders()                                  │
-│    - testConnection()                               │
-│    - disconnect()                                   │
-└─────────────────────────────────────────────────────┘
-                     ↓ ↑
-┌─────────────────────────────────────────────────────┐
-│       Platform-Specific Adapters                    │
-│  ┌─────────────┐  ┌──────────────┐  ┌────────────┐ │
-│  │ Gmail       │  │  Outlook/    │  │  Generic   │ │
-│  │ Adapter     │  │  Office365   │  │  IMAP      │ │
-│  │             │  │  Adapter     │  │  Adapter   │ │
-│  │ OAuth 2.0   │  │  OAuth 2.0   │  │  App Pass  │ │
-│  │ Gmail API   │  │  Graph API   │  │  IMAP      │ │
-│  │ Labels      │  │  Folders     │  │  Folders   │ │
-│  └─────────────┘  └──────────────┘  └────────────┘ │
-│       Phase 2         Phase 5+          Phase 1     │
-└─────────────────────────────────────────────────────┘
-                     ↓ ↑
-┌─────────────────────────────────────────────────────┐
-│          Email Provider APIs                        │
-│  Gmail REST API | Microsoft Graph API | IMAP/SMTP   │
-│  - Evaluator: Message → Action decision engine      │
-│  - MutationService: Add/remove rules (immediate)    │
-│  - YAMLService: Import/export with validation       │
-│  - AuditLog: Track actions & stats                  │
-└─────────────────────────────────────────────────────┘
-                     ↓ ↑
-┌─────────────────────────────────────────────────────┐
-│           Adapter Layer (Dart)                      │
-│  Email Providers:                                   │
-│    - GenericIMAPAdapter (AOL, Yahoo baseline)       │
-│    - GmailAPIAdapter (Gmail via REST API)           │
-│    - OutlookGraphAdapter (Outlook.com, Office 365)  │
-│    - ProtonMailBridgeAdapter (desktop relay)        │
-│  Storage (Phase 1 - MVP):                           │
-│    - YAMLStorage: rules.yaml, safe_senders.yaml     │
-│    - SecureStorage: Encrypted credentials & tokens  │
-│    - FileStorage: Simple JSON for stats/logs        │
-│  Storage (Phase 2 - Optional):                      │
-│    - SQLiteCache: Email metadata, scan tracking     │
-│    - YAMLStorage: Still primary for rules           │
-│  Background:                                        │
-│    - WorkManager (Android scheduled tasks)          │
-│    - BackgroundFetch (iOS background refresh)       │
-│  Auth:                                              │
-│    - OAuth2Manager: Token acquisition & refresh     │
-│    - AppPasswordManager: Legacy auth fallback       │
-└─────────────────────────────────────────────────────┘
-                     ↓ ↑
-┌─────────────────────────────────────────────────────┐
-│          External Services                          │
-│  - Email Providers (IMAP, Gmail API, Graph API)     │
-│  - OAuth Identity Providers                         │
-│  - Cloud Storage (optional backup)                  │
-└─────────────────────────────────────────────────────┘
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚              Flutter UI Layer                       â”‚
+â”‚  - Platform selection (Gmail, Outlook, AOL, etc.)   â”‚
+â”‚  - Account setup & OAuth flows                      â”‚
+â”‚  - Rule editor (view/add/remove patterns)           â”‚
+â”‚  - Safe sender manager                              â”‚
+â”‚  - Interactive inbox trainer (d/e/s/sd options)     â”‚
+â”‚  - Scan status & notifications                      â”‚
+â”‚  Material Design (Android) + Cupertino (iOS)        â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                     â†“ â†‘
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚         Business Logic Layer (Pure Dart)            â”‚
+â”‚  - RuleSet: In-memory rule management               â”‚
+â”‚  - SafeSenderList: Whitelist management             â”‚
+â”‚  - PatternCompiler: Precompile & cache regex        â”‚
+â”‚  - RuleEvaluator: Apply rules to messages           â”‚
+â”‚  - YamlService: Load/save YAML rules                â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                     â†“ â†‘
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚   â­ Translator Layer (SpamFilterPlatform)          â”‚
+â”‚  Unified abstraction for all email providers:       â”‚
+â”‚    - loadCredentials(credentials)                   â”‚
+â”‚    - fetchMessages(daysBack, folderNames)           â”‚
+â”‚    - applyRules(messages, compiledRegex)            â”‚
+â”‚    - takeAction(message, action)                    â”‚
+â”‚    - listFolders()                                  â”‚
+â”‚    - testConnection()                               â”‚
+â”‚    - disconnect()                                   â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                     â†“ â†‘
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚       Platform-Specific Adapters                    â”‚
+â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â” â”‚
+â”‚  â”‚ Gmail       â”‚  â”‚  Outlook/    â”‚  â”‚  Generic   â”‚ â”‚
+â”‚  â”‚ Adapter     â”‚  â”‚  Office365   â”‚  â”‚  IMAP      â”‚ â”‚
+â”‚  â”‚             â”‚  â”‚  Adapter     â”‚  â”‚  Adapter   â”‚ â”‚
+â”‚  â”‚ OAuth 2.0   â”‚  â”‚  OAuth 2.0   â”‚  â”‚  App Pass  â”‚ â”‚
+â”‚  â”‚ Gmail API   â”‚  â”‚  Graph API   â”‚  â”‚  IMAP      â”‚ â”‚
+â”‚  â”‚ Labels      â”‚  â”‚  Folders     â”‚  â”‚  Folders   â”‚ â”‚
+â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜ â”‚
+â”‚       Phase 2         Phase 5+          Phase 1     â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                     â†“ â†‘
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚          Email Provider APIs                        â”‚
+â”‚  Gmail REST API | Microsoft Graph API | IMAP/SMTP   â”‚
+â”‚  - Evaluator: Message â†’ Action decision engine      â”‚
+â”‚  - MutationService: Add/remove rules (immediate)    â”‚
+â”‚  - YAMLService: Import/export with validation       â”‚
+â”‚  - AuditLog: Track actions & stats                  â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                     â†“ â†‘
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚           Adapter Layer (Dart)                      â”‚
+â”‚  Email Providers:                                   â”‚
+â”‚    - GenericIMAPAdapter (AOL, Yahoo baseline)       â”‚
+â”‚    - GmailAPIAdapter (Gmail via REST API)           â”‚
+â”‚    - OutlookGraphAdapter (Outlook.com, Office 365)  â”‚
+â”‚    - ProtonMailBridgeAdapter (desktop relay)        â”‚
+â”‚  Storage (Phase 1 - MVP):                           â”‚
+â”‚    - YAMLStorage: rules.yaml, safe_senders.yaml     â”‚
+â”‚    - SecureStorage: Encrypted credentials & tokens  â”‚
+â”‚    - FileStorage: Simple JSON for stats/logs        â”‚
+â”‚  Storage (Phase 2 - Optional):                      â”‚
+â”‚    - SQLiteCache: Email metadata, scan tracking     â”‚
+â”‚    - YAMLStorage: Still primary for rules           â”‚
+â”‚  Background:                                        â”‚
+â”‚    - WorkManager (Android scheduled tasks)          â”‚
+â”‚    - BackgroundFetch (iOS background refresh)       â”‚
+â”‚  Auth:                                              â”‚
+â”‚    - OAuth2Manager: Token acquisition & refresh     â”‚
+â”‚    - AppPasswordManager: Legacy auth fallback       â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                     â†“ â†‘
+â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+â”‚          External Services                          â”‚
+â”‚  - Email Providers (IMAP, Gmail API, Graph API)     â”‚
+â”‚  - OAuth Identity Providers                         â”‚
+â”‚  - Cloud Storage (optional backup)                  â”‚
+â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 ```
 
-- ✅ `AppPaths` helper for file system access
+- `AppPaths` helper for file system access
   - Auto-creates app support directory structure (rules, credentials, backups, logs)
   - Platform-agnostic paths (iOS, Android, desktop)
   - Single API for all app storage locations
-- ✅ `LocalRuleStore` for YAML file persistence
+- `LocalRuleStore` for YAML file persistence
   - Load/save rules and safe senders with auto-default creation
   - Automatic timestamped backups before writes
   - Backup listing and pruning capability
   - Leverages existing YamlService for desktop compatibility
-- ✅ `SecureCredentialsStore` for encrypted credential storage
+- `SecureCredentialsStore` for encrypted credential storage
   - Uses flutter_secure_storage (Keychain iOS, Keystore Android)
   - Multi-account support with account tracking
   - OAuth token storage and retrieval (access, refresh)
   - Platform availability testing
-- ✅ `RuleSetProvider` for rule state management
+- `RuleSetProvider` for rule state management
   - Async initialization of AppPaths and rule loading
   - Load/save rules with persistence
   - Add/remove/update operations with automatic persistence
   - Add/remove safe senders with automatic persistence
   - Loading state management (idle, loading, success, error)
   - Ready for UI consumption via Provider.of<>() pattern
-- ✅ `EmailScanProvider` for scan progress and results state
+- `EmailScanProvider` for scan progress and results state
   - Track scan progress (total, processed, current email)
   - Categorize results (deleted, moved, safe senders, errors)
   - Pause/resume/complete/error functionality
   - Summary generation for results display
   - Ready for progress UI bars and results screens
-- ✅ Provider integration in main.dart
+- Provider integration in main.dart
   - Multi-provider setup with RuleSetProvider and EmailScanProvider
   - Automatic rule loading on app startup
   - Loading UI while initializing
@@ -557,14 +558,14 @@ abstract class RuleEvaluator {
 - **AOL Mail**: `GenericIMAPAdapter.aol()` with app password
   - IMAP: imap.aol.com:993 (SSL)
   - Status: Full validation in progress (Windows/Android)
-  - Full functionality checklist: Setup (✅), Multi-account (✅), Inbox/spam scanning (framework ready), Production delete (testing), Rule add/update (planned)
+  - Full functionality checklist: Setup (âœ…), Multi-account (âœ…), Inbox/spam scanning (framework ready), Production delete (testing), Rule add/update (planned)
   
 - **Gmail**: `GmailAdapter` with OAuth 2.0 + Gmail REST API
   - Label-based operations (INBOX, SPAM, TRASH labels)
   - Efficient query syntax for date filtering
   - Batch message operations for performance
   - Status: Framework ready; Android/iOS OAuth working; Windows OAuth methods implemented Dec 16 (browser/WebView/manual)
-  - Full functionality checklist: Setup (✅ OAuth), Multi-account (framework ready), Inbox/spam scanning (framework ready), Production delete (testing), Rule add/update (planned)
+  - Full functionality checklist: Setup (OAuth), Multi-account (framework ready), Inbox/spam scanning (framework ready), Production delete (testing), Rule add/update (planned)
 
 ### Phase 3+ - DEFERRED (Until Gmail/AOL Full Functionality Confirmed)
 The following providers are **DEFERRED** until Gmail and AOL achieve full functionality (setup, multi-account, inbox+spam scanning, production delete and move, rule add/update) on Windows and Android:
@@ -594,11 +595,11 @@ The following providers are **DEFERRED** until Gmail and AOL achieve full functi
 ### GitHub Secrets Best Practices
 
 **CRITICAL: Never Commit Secrets to Git**
-- ✅ **DO**: Store secrets in `secrets.dev.json` (in .gitignore)
-- ✅ **DO**: Use masked placeholders in documentation (e.g., `GOCSPX-**********************LSH6`)
-- ✅ **DO**: Redact client IDs and secrets from all markdown files before committing
-- ❌ **DON'T**: Commit real OAuth client IDs, client secrets, API keys, or passwords
-- ❌ **DON'T**: Include secrets in code comments, commit messages, or documentation examples
+- **DO**: Store secrets in `secrets.dev.json` (in .gitignore)
+- **DO**: Use masked placeholders in documentation (e.g., `GOCSPX-**********************LSH6`)
+- **DO**: Redact client IDs and secrets from all markdown files before committing
+- âŒ **DON'T**: Commit real OAuth client IDs, client secrets, API keys, or passwords
+- âŒ **DON'T**: Include secrets in code comments, commit messages, or documentation examples
 
 **GitHub Push Protection**:
 - GitHub automatically scans commits for exposed secrets
@@ -675,51 +676,51 @@ The following providers are **DEFERRED** until Gmail and AOL achieve full functi
 
 ```
 spam-filter-mobile/
-├── lib/
-│   ├── main.dart
-│   ├── core/
-│   │   ├── models/
-│   │   │   ├── email_message.dart
-│   │   │   ├── rule_set.dart
-│   │   │   ├── safe_sender_list.dart
-│   │   │   └── evaluation_result.dart
-│   │   ├── services/
-│   │   │   ├── rule_evaluator.dart
-│   │   │   ├── pattern_compiler.dart
-│   │   │   ├── mutation_service.dart
-│   │   │   ├── yaml_service.dart
-│   │   │   └── audit_log.dart
-│   │   └── utils/
-│   │       ├── regex_builder.dart
-│   │       └── sanitizer.dart
-│   ├── adapters/
-│   │   ├── email_providers/
-│   │   │   ├── email_provider.dart (interface)
-│   │   │   ├── generic_imap_adapter.dart
-│   │   │   ├── gmail_api_adapter.dart
-│   │   │   └── outlook_graph_adapter.dart
-│   │   ├── storage/
-│   │   │   ├── secure_storage.dart
-│   │   │   └── local_database.dart
-│   │   ├── auth/
-│   │   │   └── oauth2_manager.dart
-│   │   └── background/
-│   │       ├── work_manager_adapter.dart (Android)
-│   │       └── background_fetch_adapter.dart (iOS)
-│   ├── ui/
-│   │   ├── widgets/
-│   │   │   ├── scan_progress.dart
-│   │   │   └── rule_list_item.dart
-│   │   └── theme/
-│   │       └── app_theme.dart
-│       ├── sample_rules.yaml
-│       └── sample_safe_senders.yaml
-├── android/
-├── ios/
-│   ├── architecture.md
-│   ├── provider_setup_guides/
-│   │   ├── aol_setup.md
-└── LICENSE
+â”œâ”€â”€ lib/
+â”‚   â”œâ”€â”€ main.dart
+â”‚   â”œâ”€â”€ core/
+â”‚   â”‚   â”œâ”€â”€ models/
+â”‚   â”‚   â”‚   â”œâ”€â”€ email_message.dart
+â”‚   â”‚   â”‚   â”œâ”€â”€ rule_set.dart
+â”‚   â”‚   â”‚   â”œâ”€â”€ safe_sender_list.dart
+â”‚   â”‚   â”‚   â””â”€â”€ evaluation_result.dart
+â”‚   â”‚   â”œâ”€â”€ services/
+â”‚   â”‚   â”‚   â”œâ”€â”€ rule_evaluator.dart
+â”‚   â”‚   â”‚   â”œâ”€â”€ pattern_compiler.dart
+â”‚   â”‚   â”‚   â”œâ”€â”€ mutation_service.dart
+â”‚   â”‚   â”‚   â”œâ”€â”€ yaml_service.dart
+â”‚   â”‚   â”‚   â””â”€â”€ audit_log.dart
+â”‚   â”‚   â””â”€â”€ utils/
+â”‚   â”‚       â”œâ”€â”€ regex_builder.dart
+â”‚   â”‚       â””â”€â”€ sanitizer.dart
+â”‚   â”œâ”€â”€ adapters/
+â”‚   â”‚   â”œâ”€â”€ email_providers/
+â”‚   â”‚   â”‚   â”œâ”€â”€ email_provider.dart (interface)
+â”‚   â”‚   â”‚   â”œâ”€â”€ generic_imap_adapter.dart
+â”‚   â”‚   â”‚   â”œâ”€â”€ gmail_api_adapter.dart
+â”‚   â”‚   â”‚   â””â”€â”€ outlook_graph_adapter.dart
+â”‚   â”‚   â”œâ”€â”€ storage/
+â”‚   â”‚   â”‚   â”œâ”€â”€ secure_storage.dart
+â”‚   â”‚   â”‚   â””â”€â”€ local_database.dart
+â”‚   â”‚   â”œâ”€â”€ auth/
+â”‚   â”‚   â”‚   â””â”€â”€ oauth2_manager.dart
+â”‚   â”‚   â””â”€â”€ background/
+â”‚   â”‚       â”œâ”€â”€ work_manager_adapter.dart (Android)
+â”‚   â”‚       â””â”€â”€ background_fetch_adapter.dart (iOS)
+â”‚   â”œâ”€â”€ ui/
+â”‚   â”‚   â”œâ”€â”€ widgets/
+â”‚   â”‚   â”‚   â”œâ”€â”€ scan_progress.dart
+â”‚   â”‚   â”‚   â””â”€â”€ rule_list_item.dart
+â”‚   â”‚   â””â”€â”€ theme/
+â”‚   â”‚       â””â”€â”€ app_theme.dart
+â”‚       â”œâ”€â”€ sample_rules.yaml
+â”‚       â””â”€â”€ sample_safe_senders.yaml
+â”œâ”€â”€ android/
+â”œâ”€â”€ ios/
+â”‚   â”œâ”€â”€ architecture.md
+â”‚   â”œâ”€â”€ provider_setup_guides/
+â”‚   â”‚   â”œâ”€â”€ aol_setup.md
+â””â”€â”€ LICENSE
 ```
 
 ## Key Dependencies (pubspec.yaml)
@@ -801,28 +802,28 @@ flutter:
 ## Success Metrics
 
 ### MVP Success Criteria (Phase 1)
-- ✅ Successfully scan AOL inbox with existing rule sets
-- ✅ Match desktop app spam detection accuracy (>95%)
-- ✅ Evaluation performance <100ms per email (mid-range phone)
-- ✅ Zero crashes during 100-email scan
-- ✅ Runs on Android 10+, iOS 14+, Chromebooks
+- Successfully scan AOL inbox with existing rule sets
+- Match desktop app spam detection accuracy (>95%)
+- Evaluation performance <100ms per email (mid-range phone)
+- Zero crashes during 100-email scan
+- Runs on Android 10+, iOS 14+, Chromebooks
 
 ### Full Release Success Criteria (Phase 7)
-- ✅ Support 5+ email providers
-- ✅ 10,000+ active users within 6 months
-- ✅ <2% crash rate
-- ✅ 4.0+ average rating (app stores)
-- ✅ Background scanning works reliably for 80% of users
-- ✅ Rule import success rate >95%
+- Support 5+ email providers
+- 10,000+ active users within 6 months
+- <2% crash rate
+- 4.0+ average rating (app stores)
+- Background scanning works reliably for 80% of users
+- Rule import success rate >95%
 
 ## Next Steps
 
 ### Immediate Actions (This Week)
-1. ✅ Finalize architecture and plan (this document)
-2. ✅ Database decision: Start with pure YAML/file-based, add SQLite only if needed
-3. 🔄 Set up Flutter project in new branch (feature/mobile-app)
-4. 🔄 Define core interfaces in code
-5. 🔄 Port YAML schema and sample files
+1. Finalize architecture and plan (this document)
+2. Database decision: Start with pure YAML/file-based, add SQLite only if needed
+3. ðŸ”„ Set up Flutter project in new branch (feature/mobile-app)
+4. ðŸ”„ Define core interfaces in code
+5. ðŸ”„ Port YAML schema and sample files
 
 ### Week 2-3
 - Implement YAML loader/exporter in Dart (maintain desktop compatibility)
@@ -908,9 +909,9 @@ flutter doctor -v
 
 ---
 
-## Phase 2 Sprint 5: Windows Gmail OAuth Implementation ✅ COMPLETE (December 14, 2025)
+## Phase 2 Sprint 5: Windows Gmail OAuth Implementation COMPLETE (December 14, 2025)
 
-✅ **Completed Tasks**:
+**Completed Tasks**:
 
 ### Problem Statement
 Sprint 4 identified that `google_sign_in` 7.2.0 plugin does NOT implement OAuth on Windows platform by design. Native Google SDKs only available for Android/iOS. This was a platform limitation, not a code bug.
@@ -918,68 +919,68 @@ Sprint 4 identified that `google_sign_in` 7.2.0 plugin does NOT implement OAuth 
 ### Solution: Three-Tiered OAuth Approach
 
 **1. Browser-Based OAuth (Primary Method)**:
-   - ✅ Created `GmailWindowsOAuthHandler` class (250 lines)
-   - ✅ Launches system browser for Google OAuth consent
-   - ✅ Starts local HTTP server on port 8080 for OAuth callback
-   - ✅ Captures authorization code via redirect URL
-   - ✅ Exchanges code for access/refresh tokens
-   - ✅ Validates tokens via Google userinfo API
-   - ✅ 5-minute timeout for user interaction
-   - ✅ User-friendly success/error HTML responses
-   - ✅ Token refresh mechanism for long-term access
+   - Created `GmailWindowsOAuthHandler` class (250 lines)
+   - Launches system browser for Google OAuth consent
+   - Starts local HTTP server on port 8080 for OAuth callback
+   - Captures authorization code via redirect URL
+   - Exchanges code for access/refresh tokens
+   - Validates tokens via Google userinfo API
+   - 5-minute timeout for user interaction
+   - User-friendly success/error HTML responses
+   - Token refresh mechanism for long-term access
 
 **2. WebView OAuth (Backup Method)**:
-   - ✅ Created `GmailWebViewOAuthScreen` widget (150 lines)
-   - ✅ Embedded WebView for in-app authentication
-   - ✅ Intercepts OAuth callback URL
-   - ✅ Extracts authorization code from URL parameters
-   - ✅ Same token exchange flow as browser method
-   - ✅ Retry button on failure
-   - ✅ Loading indicators during auth flow
+   - Created `GmailWebViewOAuthScreen` widget (150 lines)
+   - Embedded WebView for in-app authentication
+   - Intercepts OAuth callback URL
+   - Extracts authorization code from URL parameters
+   - Same token exchange flow as browser method
+   - Retry button on failure
+   - Loading indicators during auth flow
 
 **3. Manual Token Entry (Fallback Method)**:
-   - ✅ Created `GmailManualTokenScreen` widget (350 lines)
-   - ✅ Comprehensive step-by-step instructions
-   - ✅ Links to OAuth 2.0 Playground
-   - ✅ Copy/paste support for tokens
-   - ✅ Show/hide token visibility toggle
-   - ✅ Token validation before saving
-   - ✅ Security warnings prominently displayed
-   - ✅ Form validation with helpful error messages
+   - Created `GmailManualTokenScreen` widget (350 lines)
+   - Comprehensive step-by-step instructions
+   - Links to OAuth 2.0 Playground
+   - Copy/paste support for tokens
+   - Show/hide token visibility toggle
+   - Token validation before saving
+   - Security warnings prominently displayed
+   - Form validation with helpful error messages
 
 **4. Updated Gmail OAuth Screen**:
-   - ✅ Platform detection (checks if Windows)
-   - ✅ Windows OAuth method selector dialog
-   - ✅ Three option cards with icons and descriptions
-   - ✅ Color-coded priority indicators
-   - ✅ Seamless navigation to selected method
-   - ✅ Maintains existing Android/iOS native flow
+   - Platform detection (checks if Windows)
+   - Windows OAuth method selector dialog
+   - Three option cards with icons and descriptions
+   - Color-coded priority indicators
+   - Seamless navigation to selected method
+   - Maintains existing Android/iOS native flow
 
 **5. Dependencies Added**:
-   - ✅ `url_launcher: ^6.2.0` - For system browser launch
-   - ✅ `webview_flutter: ^4.4.0` - For embedded WebView
+   - `url_launcher: ^6.2.0` - For system browser launch
+   - `webview_flutter: ^4.4.0` - For embedded WebView
 
 **6. OAuth Flow Architecture**:
    ```
-   Windows User → Gmail OAuth Selection Dialog
-                        ↓
-          ┌──────────────┼──────────────┐
-          ↓              ↓              ↓
+   Windows User â†’ Gmail OAuth Selection Dialog
+                        â†“
+          â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
+          â†“              â†“              â†“
     Browser OAuth   WebView OAuth   Manual Token
      (Primary)        (Backup)       (Fallback)
-          ↓              ↓              ↓
-          └──────────────┼──────────────┘
-                        ↓
+          â†“              â†“              â†“
+          â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+                        â†“
               Authorization Code
-                        ↓
+                        â†“
               Token Exchange (Google)
-                        ↓
+                        â†“
               Access + Refresh Tokens
-                        ↓
+                        â†“
          User Email Validation (Google API)
-                        ↓
+                        â†“
         SecureCredentialsStore.save()
-                        ↓
+                        â†“
            FolderSelectionScreen
    ```
 
@@ -993,26 +994,18 @@ Sprint 4 identified that `google_sign_in` 7.2.0 plugin does NOT implement OAuth 
 2. `mobile-app/pubspec.yaml` - Added url_launcher and webview_flutter dependencies
 
 ### Configuration Required:
-⚠️ **Before using**: Replace placeholder values in `gmail_windows_oauth_handler.dart`:
+âš ï¸ **Before using**: Replace placeholder values in `gmail_windows_oauth_handler.dart`:
 - Line 18: Replace `YOUR_CLIENT_ID.apps.googleusercontent.com`
 - Line 19: Replace `YOUR_CLIENT_SECRET`
 - Google Cloud Console: Add `http://localhost:8080/oauth/callback` to authorized redirect URIs
 
-### Testing Plan:
-1. ✅ Code implementation complete
-2. ⏳ Pending: Google Cloud Console OAuth credentials configuration
-3. ⏳ Pending: flutter pub get to install new dependencies
-4. ⏳ Pending: flutter test to validate no regressions
-5. ⏳ Pending: Windows build and manual testing (all three methods)
-6. ⏳ Pending: Android/iOS testing (native method unchanged)
-
 ### Benefits:
-- ✅ **Windows Gmail support restored** - All platforms now functional
-- ✅ **User choice** - Three methods with clear priority guidance
-- ✅ **Graceful fallback** - If primary fails, two backups available
-- ✅ **Educational** - Manual method teaches OAuth flow
-- ✅ **Future-proof** - Architecture supports other OAuth providers
-- ✅ **No breaking changes** - Android/iOS native flow untouched
+- **Windows Gmail support restored** - All platforms now functional
+- **User choice** - Three methods with clear priority guidance
+- **Graceful fallback** - If primary fails, two backups available
+- **Educational** - Manual method teaches OAuth flow
+- **Future-proof** - Architecture supports other OAuth providers
+- **No breaking changes** - Android/iOS native flow untouched
 
 ### Known Limitations:
 - Manual token entry requires user to visit OAuth 2.0 Playground
@@ -1029,11 +1022,44 @@ Sprint 4 identified that `google_sign_in` 7.2.0 plugin does NOT implement OAuth 
 
 ---
 
-**Document Version**: 1.3  
-**Last Updated**: 2025-12-14  
-**Database Decision**: Pure YAML/file-based for MVP, conditional SQLite for Phase 2+  
-**Related Docs**: 
-- Mobile app code: `mobile-app/`
-- Original Python codebase: `withOutlookRulesYAML.py` (or `Archive/desktop-python/`)
-- Existing architecture: `memory-bank/*.md`
-- Rule schemas: `rules.yaml`, `rules_safe_senders.yaml`
+
+### Phase 3.2 and 3.3 COMPLETE (January 5, 2026)
+**Focus**: Build script enhancements and Android emulator workflow improvements
+
+**Completed Tasks**:
+- Added `-SkipUninstall` parameter to `build-with-secrets.ps1` to preserve saved accounts during debug builds
+- Changed default behavior: debug builds no longer uninstall APK (preserves credentials)
+- Added `-StartEmulator` parameter to auto-start Android emulator before build
+- Added `-EmulatorName` parameter to specify which AVD to start
+- Added emulator detection (checks if already running via ADB)
+- Added 15-second wait for emulator boot when starting fresh
+- Updated documentation for new build script parameters
+
+**Files Modified**:
+- `mobile-app/scripts/build-with-secrets.ps1` - Added 3 new parameters and emulator management
+
+### Phase 3.3 COMPLETE (January 6, 2026)
+**Focus**: Claude Code tooling, MCP server, validation scripts, and automation hooks
+
+**Completed Tasks**:
+- Created custom MCP server for email rule testing (`scripts/email-rule-tester-mcp/`)
+- Created YAML rule validator script (`scripts/validate-yaml-rules.ps1`) - validates 2,850+ patterns
+- Created regex pattern tester script (`scripts/test-regex-patterns.ps1`) - performance benchmarking
+- Created 10 custom Claude Code skills (`.claude/skills.json`)
+- Created 4 automated hooks (`.claude/hooks.json`) - pre-commit, post-checkout, on-save
+- Installed MCP server with npm dependencies
+- Created setup documentation (`CLAUDE_CODE_SETUP_GUIDE.md`, `QUICK_REFERENCE.md`)
+- Updated `.gitignore` for log files and local settings
+- Fixed 3 of 11 code review issues (Issue #18, #8, #4)
+- Tests expanded from 81 to 122 (+50% growth)
+
+**Files Created**:
+- `scripts/validate-yaml-rules.ps1` - YAML validation with regex safety checks
+- `scripts/test-regex-patterns.ps1` - Interactive regex testing
+- `scripts/email-rule-tester-mcp/server.js` - Custom MCP server
+- `scripts/email-rule-tester-mcp/package.json` - MCP dependencies
+- `.claude/skills.json` - 10 custom development skills
+- `.claude/hooks.json` - 4 automated validation hooks
+- `CLAUDE_CODE_SETUP_GUIDE.md` - Complete setup documentation
+- `QUICK_REFERENCE.md` - Quick reference card
+
