@@ -1,52 +1,78 @@
 
-# [STATUS UPDATE: January 6, 2026]
+# [STATUS UPDATE: January 4, 2026]
 
-**Phase 3.3 Complete**: All automated tests passing (122/122), folder selection fixed, dynamic folder discovery implemented, progressive UI updates with throttling, Gmail header parsing fixed, Claude Code MCP tools added.
+**Phase 3.1 UI/UX Enhancements Complete**: All automated tests passing (122/122), Full Scan mode implemented, Scan Progress and Results screens redesigned with consistent bubble displays, bubble counts now show proposed actions in all modes. App ready for Phase 3.2 folder selection enhancements.
 
-**Latest Enhancements (Jan 5-6, 2026) - Phase 3.2 & 3.3 Complete**:
+**Latest Enhancements (Jan 4, 2026) - Phase 3.1 Complete**:
+- ✅ **Issue #32 COMPLETE**: Full Scan mode added (4th scan mode) with persistent mode selector, warning dialogs, and permanent delete/move operations
+- ✅ **Issue #33 COMPLETE**: Scan Progress UI redesigned - removed redundant elements, added Found/Processed bubbles, auto-navigate to Results, re-enable buttons after completion
+- ✅ **Issue #34 COMPLETE**: Results Screen UI redesigned - email in title, mode in summary, matching bubble design (7 bubbles)
+- ✅ **Bubble Counts Fix**: All scan modes now show proposed actions (what WOULD happen) instead of only executed actions - Read-Only mode now useful for previewing
+- ✅ **No Rule Tracking**: Added "No rule" bubble (grey) to track emails with no rule match for future rule creation
 
-**Phase 3.3 - Enhancement Features**:
-- ✅ **Issue #36 COMPLETE**: Progressive UI updates with throttling (every 10 emails OR 3 seconds)
-- ✅ **Issue #37 COMPLETE**: Dynamic folder discovery - fetches real folders from email providers
-- ✅ **Gmail Token Refresh**: Automatic token refresh for folder discovery
-- ✅ **Gmail Header Fix**: Extract email from "Name <email>" format for rule matching
-- ✅ **Counter Bug Fix**: Reset counters properly between scans
+**Previous Fixes (Jan 3, 2026) - Phase 2.2 Complete**:
+- ✅ **Issue #18 COMPLETE**: Created comprehensive RuleEvaluator test suite (32 tests, 97.96% code coverage, includes anti-spoofing verification)
+- ✅ **Issue #8 FIXED**: Header matching bug in RuleEvaluator - Rules now properly check email headers for spam detection
+- ✅ **Issue #4 FIXED**: Silent regex compilation failures - Invalid patterns now logged with detailed error messages and tracked for UI visibility
+- 📊 **Test Suite Growth**: Added 41 new tests (32 RuleEvaluator + 9 PatternCompiler) - Total: 122 passing tests
 
-**Phase 3.2 - Bug Fixes**:
-- ✅ **Issue #35 COMPLETE**: Folder selection now correctly scans selected folders (not just INBOX)
-- ✅ **Navigation Fix**: Prevent unwanted auto-navigation when returning to Scan Progress
+**Code Review Complete (Jan 3, 2026)**:
+- ✅ **Comprehensive Code Review**: Analyzed 40 Dart files, identified 11 improvement opportunities
+- 📋 **GitHub Issues Created**: Issues #8-#18 (5 critical, 4 high priority, 2 medium/low)
+- 📄 **Full Details**: See `GITHUB_ISSUES_BACKLOG.md` in repository root
+- ✅ **Completed**: Issues #18 (tests), #8 (header matching), #4 (regex logging)
+- 🎯 **Next Priority**: Issue #9 (scan mode bypass)
+- ⚠️ **Non-Blocking**: All issues are improvements; no blockers for production testing
 
-**Phase 3.1 - UI/UX Enhancements (Jan 4, 2026)**:
-- ✅ **Issue #32 COMPLETE**: Full Scan mode added (4th scan mode) with persistent mode selector
-- ✅ **Issue #33 COMPLETE**: Scan Progress UI redesigned - Found/Processed bubbles, auto-navigate to Results
-- ✅ **Issue #34 COMPLETE**: Results Screen UI redesigned - email in title, mode in summary
-- ✅ **Bubble Counts Fix**: All scan modes now show proposed actions
-- ✅ **No Rule Tracking**: Added "No rule" bubble (grey) for future rule creation
+**Latest Fix (Jan 2, 2026)**:
+- ✅ **Account Selection Navigation and Refresh Fixed**: "Back to Accounts" from Results Display now correctly navigates to Account Selection screen (not Platform Selection), and account list refreshes immediately
+  - Navigation Fix: Removed Navigator.pushReplacement from delete handler - Account Selection now stays in navigation stack
+  - Refresh Fix: Added RouteObserver and RouteAware mixin to detect navigation events and refresh account list immediately (no more 2-second timer delay)
+  - Files Modified: `main.dart` (RouteObserver), `account_selection_screen.dart` (RouteAware mixin with didPopNext())
+  - Impact: Account list appears instantly when returning from scans or after adding accounts, navigation stack preserved correctly
+
+**Previous UI Enhancements (Jan 1, 2026)**:
+- ✅ **Account Loading Flicker Fixed**: Implemented caching system in AccountSelectionScreen to eliminate visual flicker when returning from scans
+  - Instant Rendering: Accounts now display immediately using cached data (no loading spinner delay)
+  - Background Refresh: Data still refreshes in background to catch credential changes
+  - File Modified: `mobile-app/lib/ui/screens/account_selection_screen.dart` (added Map cache with equality checks)
+- ✅ **Results Screen Navigation Fixed**: "Back to Accounts" button now correctly navigates to Account Selection screen
+  - Changed from `Navigator.pop()` to `Navigator.popUntil()` to pop entire navigation stack
+  - File Modified: `mobile-app/lib/ui/screens/results_display_screen.dart`
+- ✅ **Scan Progress Immediate Updates**: Status now updates instantly when "Start Live Scan" is pressed
+  - Added immediate `scanProvider.startScan(totalEmails: 0)` call after dialog closes
+  - File Modified: `mobile-app/lib/ui/screens/scan_progress_screen.dart`
+
+**Previous Execution Test (Dec 30)**:
+- ✅ **Android App Execution Validated**: App successfully launched on emulator-5554 with Gmail OAuth configuration; email input fields, Firebase integration, and UI navigation confirmed operational
+- ⚠️ **PowerShell Execution Context**: Commands must execute in native PowerShell (not Bash-wrapped) to preserve environment variables and Flutter toolchain context
+
+**Critical Issue RESOLVED (Dec 29)**:
+- ✅ **Gmail OAuth navigation issue RESOLVED**: After adding Gmail account, app now correctly navigates from Gmail authentication → folder selection → scan progress screen (instead of hanging on blank screen)
+
+**Critical Issue RESOLVED (Dec 21)**:
+- ✅ **enough_mail securityContext parameter issue RESOLVED**: Removed unsupported parameters; using default Dart SSL/TLS validation (secure and reliable for AOL, Gmail, standard email providers)
+
+**Critical Issue RESOLVED (Dec 22)**:
+- ✅ **Android Gmail Sign-In "Sign in was cancelled"**: Root cause identified (SHA-1 fingerprint not registered in Firebase). Complete setup guides provided in [ANDROID_GMAIL_SIGNIN_QUICK_START.md](ANDROID_GMAIL_SIGNIN_QUICK_START.md) and [ANDROID_GMAIL_SIGNIN_SETUP.md](ANDROID_GMAIL_SIGNIN_SETUP.md)
 
 **Current Issues:**
-- see [github repository](https://github.com/kimmeyh/spamfilter-multi/)
 
 **Next Steps:**
-- see [github repository](https://github.com/kimmeyh/spamfilter-multi/)
+1. ✅ DONE: Run flutter test and verify no regressions (122/122 tests passing)
+2. ✅ DONE: Create Android Gmail Sign-In setup guides (Quick Start + Detailed Troubleshooting)
+3. ✅ DONE: Fix critical code review issues (Issue #18, #8, #4)
+4. NEXT: Complete Android Gmail Sign-In setup (SHA-1 fingerprint registration)
+5. NEXT: Test Gmail Sign-In on Android emulator
+6. NEXT: Validate production delete mode with spam-heavy inbox (Android)
 
 ---
 **CRITICAL: Windows Build/Test Workflow**
 
-For ALL Windows Desktop app builds, rebuilds, and tests, you MUST use:`build-windows.ps1` script located in `mobile-app/scripts`via:
-powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-windows.ps1"
-This script is the ONLY supported and authoritative method for building and testing the Windows app. Do NOT use `flutter build windows` or `flutter run` directly—always invoke `build-windows.ps1` to ensure a clean, validated, and fully tested build.
+For ALL Windows app builds, rebuilds, and tests, you MUST use the `build-windows.ps1` script located in `mobile-app/scripts`. This script is the ONLY supported and authoritative method for building and testing the Windows app. Do NOT use `flutter build windows` or `flutter run` directly—always invoke `build-windows.ps1` to ensure a clean, validated, and fully tested build.
 
-**CRITICAL: Android Build/Test Workflow**
-
-For ALL Android app builds, rebuilds, and tests, you MUST use:`build-with-secrets..ps1` script located in `mobile-app/scripts`via:
-powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-with-secrets.ps1 -BuildType debug -InstallToEmulator"
-# ...then run
-powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-with-secrets.ps1 -BuildType debug -Run"  # To run with debugger attached (hot reload + real-time logs)
-# and monitor via
-adb logcat # commands
-
-These script are the ONLY supported and authoritative method for building and testing the Android app. 
 ---
+6. NEXT: Prepare for external/production user testing
 
 # Spam Filter Mobile App
 
@@ -54,10 +80,11 @@ Cross-platform email spam filter application built with Flutter.
 
 ## Project Status
 
-**Phase**: Phase 3.3 Enhancement Features ✅ COMPLETE (January 6, 2026)
-**Current Status**: All automated tests passing (122/122), folder selection fixed, dynamic folder discovery, progressive UI updates, Gmail fixes, Claude Code tools
-**Next Phase**: Phase 3.4 - Results screen folder display, AOL "Bulk" folder recommendations
+**Phase**: Phase 3.1 UI/UX Enhancements ✅ COMPLETE (January 4, 2026)
+**Current Status**: All automated tests passing (122/122), Full Scan mode implemented, UI redesigned with consistent bubbles, ready for Phase 3.2 folder selection enhancements
+**Next Phase**: Phase 3.2 - Fix folder selection not scanning selected folders (Issue #35)
 
+### Pre-External Testing Blockers ✅ RESOLVED
 ### Pre-External Testing Blockers ✅ RESOLVED
 - ✅ AccountSelectionScreen lists all saved Gmail/AOL accounts formatted as "email • Platform • Auth Method" (verified, Windows & Android)
 - ✅ ScanProgressScreen shows in-progress message immediately after scan starts (verified, Windows & Android)
@@ -102,13 +129,12 @@ New to the project? See the Windows 11 setup guide: [NEW_DEVELOPER_SETUP.md](NEW
 
 3. **Verify Installation**
    ```powershell
-   cd mobile-app  # ensure you are in the <base-repo-path>/mobile-app directory
    flutter doctor -v
    ```
 
 4. **Get Dependencies**
    ```powershell
-   cd mobile-app  # ensure you are in the <base-repo-path>/mobile-app directory
+   cd mobile-app
    flutter pub get
    ```
 
@@ -118,7 +144,8 @@ New to the project? See the Windows 11 setup guide: [NEW_DEVELOPER_SETUP.md](NEW
 ### Running the App
 
 ```powershell
-cd mobile-app  # ensure you are in the <base-repo-path>/mobile-app directory
+# Navigate to mobile app directory
+cd mobile-app
 
 # Run on connected device
 flutter run
@@ -128,7 +155,14 @@ flutter test
 ```
 
 ### Quick scripts
-- Build the Android app (with secrets) and optionally auto-install to emulator:
+- Build release APK:
+   - [scripts/build-apk.ps1](scripts/build-apk.ps1)
+   - Usage:
+      ```powershell
+      cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts
+      .\build-apk.ps1
+      ```
+- Build (with secrets) and optionally auto-install to emulator:
    - [scripts/build-with-secrets.ps1](scripts/build-with-secrets.ps1)
    - Prerequisite: create mobile-app/secrets.dev.json from template and fill Gmail (OAuth) and/or AOL (IMAP) fields
    - Usage:
@@ -275,7 +309,6 @@ The Windows app uses **Google OAuth 2.0 with PKCE** and a **Desktop Application 
 2. Navigate to **Settings > Security > Advanced > Intrusion Prevention** (or **Firewall > Advanced**)
 3. Disable **"Email Protection"** or **"SSL Scanning"**
    - *Note: Safe Web exclusions alone are NOT effective; Email Protection must be disabled*
-   - *This was tested and resolved the issue*
 4. Alternatively, add exclusions for IMAP servers (though this is less reliable):
    - `imap.aol.com:993` (AOL)
    - `imap.mail.yahoo.com:993` (Yahoo)
@@ -293,6 +326,19 @@ python -c "import socket, ssl; c=ssl.create_default_context(); s=socket.create_c
 **For physical Android devices**: If Norton is also installed on your phone, it will have its root CA pre-installed, so IMAP should work without changes.
 
 **Additional Resources**: See [NEW_DEVELOPER_SETUP.md § Common Fixes](./NEW_DEVELOPER_SETUP.md#common-fixes) for developer setup guidance.
+
+
+
+## Phase 2.1 Manual Android Build & Test Checklist (2025-12-26, Complete)
+
+- [x] Rebuilt app using `build-with-secrets.ps1 -BuildType debug -InstallToEmulator`
+- [x] Resolved all build and install errors (dependencies, secrets, emulator)
+- [x] Launched Android emulator and app via `run-emulator.ps1`
+- [x] Confirmed app launches, login/auth works, UI and scan features operational
+- [x] No blocking issues found during manual validation
+
+**Status:** COMPLETE
+**Result:** Android debug build and manual test successful. App launches, rules and safe senders loaded, no blocking errors, UI and scan features operational. Ready for production/external testing.
 
 ## Testing
 

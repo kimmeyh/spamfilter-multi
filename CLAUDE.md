@@ -46,9 +46,29 @@ issue. Should I make it more specific to only exclude 'Archive/desktop-python/li
 
 Cross-platform email spam filtering application built with 100% Flutter/Dart for all platforms (Windows, macOS, Linux, Android, iOS). The app uses IMAP/OAuth protocols to support multiple email providers (AOL, Gmail, Yahoo, Outlook.com, ProtonMail) with a single codebase and portable YAML rule sets.
 
-**Current Status**: Phase 2.1 Complete - All automated tests passing (81/81), manual Windows and Android testing successful, ready for production validation.
+**Current Status**: Phase 3.3 Complete - All automated tests passing (122/122), folder selection fixed, dynamic folder discovery implemented, progressive UI updates with throttling, Gmail header parsing fixed, Claude Code MCP tools added.
 
-**Latest Test Run**: January 2, 2026 - Successfully fixed Account Selection navigation and refresh issues. App now correctly navigates from Results Display → Account Selection (not Platform Selection), and account list refreshes immediately when returning (no timer delay). Navigation stack preserved correctly for all account deletion scenarios.
+**Latest Updates**: January 6, 2026 - Phase 3.2 & 3.3 Complete:
+
+**Phase 3.3 - Enhancement Features (Jan 5-6, 2026)**:
+- ✅ **Issue #36**: Progressive UI updates with throttling (every 10 emails OR 3 seconds)
+- ✅ **Issue #37**: Dynamic folder discovery - fetches real folders from email providers
+- ✅ **Gmail Token Refresh**: Folder discovery now uses `getValidAccessToken()` for automatic token refresh
+- ✅ **Gmail Header Fix**: Extract email from "Name <email>" format for rule matching
+- ✅ **Counter Bug Fix**: Reset `_noRuleCount` in `startScan()` to prevent accumulation across scans
+- ✅ **Claude Code MCP Tools**: Custom MCP server for YAML validation, regex testing, rule simulation
+- ✅ **Build Script Enhancements**: `-StartEmulator`, `-EmulatorName`, `-SkipUninstall` flags
+
+**Phase 3.2 - Bug Fixes (Jan 4-5, 2026)**:
+- ✅ **Issue #35**: Folder selection now correctly scans selected folders (not just INBOX)
+- ✅ **Navigation Fix**: Prevent unwanted auto-navigation to Results when returning to Scan Progress
+
+**Phase 3.1 - UI/UX Enhancements (Jan 4, 2026)**:
+- ✅ **Issue #32**: Full Scan mode added (4th scan mode) with persistent mode selector and warning dialogs
+- ✅ **Issue #33**: Scan Progress UI redesigned - removed redundant elements, added Found/Processed bubbles, auto-navigation to Results
+- ✅ **Issue #34**: Results Screen UI redesigned - shows email address in title, mode in summary, matching bubble design
+- ✅ **Bubble Counts Fix**: All scan modes now show proposed actions (what WOULD happen)
+- ✅ **No Rule Tracking**: Added "No rule" bubble (grey) to track emails with no rule match
 
 ## Repository Structure
 
@@ -272,10 +292,11 @@ See `memory-bank/yaml-schemas.md` and `memory-bank/regex-conventions.md` for com
 
 ## Testing Strategy
 
-**Total Tests**: 81 passing (as of Dec 2025)
+**Total Tests**: 122 passing (as of Jan 2026)
 - **Phase 1 Regression**: 27 tests (core models, services)
 - **Phase 2.0 Tests**: 23 tests (AppPaths, SecureCredentialsStore, EmailScanProvider)
 - **Phase 2.1 Tests**: 31 tests (adapters, providers, integration)
+- **Phase 2.2 Tests**: 41 tests (RuleEvaluator, PatternCompiler with error tracking)
 
 ### Test Organization
 ```
@@ -359,6 +380,115 @@ flutter test --coverage                         # With coverage
 **Impact**: "Back to Accounts" correctly navigates to Account Selection (not Platform Selection), account list refreshes immediately when navigating back (no delay or empty state), navigation stack preserved correctly for all account deletion scenarios
 **Applies to**: All account types (Gmail OAuth, AOL IMAP, Yahoo IMAP)
 
+### Phase 3.2 Folder Selection Fixes (Issue #35)
+**Status**: ✅ COMPLETE (Jan 5, 2026)
+**Focus**: Fix folder selection to actually scan selected folders
+
+**Issue #35 - Folder Selection Not Scanning Selected Folders**:
+- **Problem**: Selecting non-Inbox folders (e.g., "Bulk Mail") still only scanned Inbox
+- **Root Cause**: Missing state management - `scanProvider.selectedFolders` wasn't being set
+- **Solution**: Added `_selectedFolders` field to EmailScanProvider, connected UI callback to `setSelectedFolders()`, pass to scanner
+- **Files Modified**: `email_scan_provider.dart`, `scan_progress_screen.dart`
+
+**Navigation Fix - Auto-Navigation Race Condition**:
+- **Problem**: Returning to Scan Progress from Account Selection caused unwanted auto-navigation to Results
+- **Root Cause**: `_previousStatus` was null on first build but scan status was completed
+- **Solution**: Initialize `_previousStatus` in `initState()` before first build
+- **Files Modified**: `scan_progress_screen.dart`
+
+### Phase 3.3 Enhancement Features (Issues #36, #37)
+**Status**: ✅ COMPLETE (Jan 5-6, 2026)
+**Focus**: Progressive updates, dynamic folder discovery, Gmail fixes, Claude Code tools
+
+**Issue #36 - Progressive UI Updates**:
+- **Problem**: UI updated for every email, causing performance issues with large scans
+- **Solution**: Throttle updates to every 10 emails OR 3 seconds (whichever comes first)
+- **Implementation**: Added `_lastProgressNotification`, `_emailsSinceLastNotification` fields
+- **Files Modified**: `email_scan_provider.dart`
+
+**Issue #37 - Dynamic Folder Discovery**:
+- **Problem**: Folder selection limited to hardcoded lists
+- **Solution**: Call `provider.listFolders()` dynamically, added search/filter UI, loading states
+- **Features**: Gmail label discovery via API, IMAP folder listing, "Recommended" badges
+- **Files Modified**: `folder_selection_screen.dart`
+
+**Gmail Token Refresh Fix**:
+- **Problem**: 401 errors when selecting folders with expired OAuth tokens
+- **Solution**: Use `GoogleAuthService.getValidAccessToken()` instead of stored tokens directly
+- **Impact**: Seamless token refresh, no manual re-authentication needed
+
+**Gmail Header Format Fix**:
+- **Problem**: Gmail emails not matching rules due to "Name <email>" format vs just "email"
+- **Solution**: Added `_extractEmail()` helper to parse email from header format
+- **Files Modified**: `gmail_api_adapter.dart`
+
+**Counter Accumulation Bug Fix**:
+- **Problem**: "No Rules" count accumulated across scans (showed impossible values)
+- **Solution**: Reset `_noRuleCount = 0` in `startScan()` method
+- **Files Modified**: `email_scan_provider.dart`
+
+**Claude Code MCP Tools**:
+- Custom MCP server for email rule testing (`scripts/email-rule-tester-mcp/`)
+- YAML validation script (`scripts/validate-yaml-rules.ps1`)
+- Regex pattern tester (`scripts/test-regex-patterns.ps1`)
+- 10 custom skills in `.claude/skills.json`
+- 4 automated hooks in `.claude/hooks.json`
+
+**Build Script Enhancements**:
+- `-StartEmulator`: Auto-start Android emulator if none running
+- `-EmulatorName`: Specify which AVD to launch
+- `-SkipUninstall`: Preserve saved accounts during debug builds
+
+### Phase 3.1 UI/UX Enhancements (Issues #32-#34)
+**Status**: ✅ COMPLETE (Jan 4, 2026)
+**Focus**: Full Scan mode, UI redesign, consistent bubble displays, improved navigation
+
+**Issue #32 - Full Scan Mode and Persistent Selection**:
+- Added `ScanMode.fullScan` (4th mode) - permanent delete/move operations
+- Added persistent "Scan Mode" button on Scan Progress screen
+- Removed scan mode pop-up from account setup flow (default to readonly)
+- Added warning dialog for Full Scan mode (requires user confirmation)
+- Updated `recordResult()` to distinguish revertable vs permanent actions
+- Files Modified: `email_scan_provider.dart`, `account_setup_screen.dart`, `scan_progress_screen.dart`
+
+**Issue #33 - Scan Progress Screen UI Redesign**:
+- Removed redundant progress bar and processed count text
+- Updated to 7-bubble row: Found (Blue), Processed (Purple), Deleted (Red), Moved (Orange), Safe (Green), No rule (Grey), Errors (Dark Red)
+- Added auto-navigation to Results screen when scan completes
+- Re-enabled buttons after scan completes (idle or completed status)
+- Added scan mode to header: "Ready to scan - <mode>" / "Scan complete - <mode>"
+- Files Modified: `scan_progress_screen.dart`
+
+**Issue #34 - Results Screen UI Redesign**:
+- Added `accountEmail` parameter (required) to show email in title
+- Updated title format: "Results - <email> - <provider>"
+- Updated summary format: "Summary - <mode>"
+- Updated bubble row to match Scan Progress (7 bubbles with exact same colors)
+- Made accountEmail required in ScanProgressScreen
+- Files Modified: `results_display_screen.dart`, `scan_progress_screen.dart`
+
+**Bubble Counts Fix**:
+- **Problem**: In Read-Only mode, bubbles showed "Deleted: 0" even when rules evaluated emails for deletion
+- **Solution**: Changed `recordResult()` to always increment counts based on rule evaluation (proposed actions), not just executed actions
+- **Impact**: All scan modes now show what WOULD happen, making Read-Only mode useful for previewing results
+- Files Modified: `email_scan_provider.dart`, `email_scan_provider_test.dart` (5 tests updated)
+
+**No Rule Tracking**:
+- Added `_noRuleCount` field and getter to EmailScanProvider
+- Added "No rule" bubble (grey #757575) between "Safe" and "Errors"
+- Tracks emails that didn't match any rules (for future rule creation)
+- Increments when `action == EmailActionType.none`
+- Files Modified: `email_scan_provider.dart`, `scan_progress_screen.dart`, `results_display_screen.dart`
+
+**Test Results**: 122/122 tests passing (13 skipped integration tests requiring credentials)
+
+**Commits**:
+- `af6a36d` - feat: Add 'No rule' bubble to track emails with no rule match
+- `2f4f1ce` - fix: Bubble counts now show proposed actions in all scan modes
+- `964ef9d` - fix: Redesign Results Screen UI (Issue #34)
+- `e542823` - feat: Redesign Scan Progress UI (Issue #33)
+- `72d876b`, `7816546`, `bf2ab3c`, `2d15ebf` - feat: Full Scan mode (Issue #32)
+
 ## Development Workflow
 
 1. **Setup**: Follow `mobile-app/NEW_DEVELOPER_SETUP.md` for validated Windows 11 setup
@@ -411,3 +541,12 @@ A comprehensive code review of the Flutter spam filter codebase identified **11 
 - **Regex Conventions**: `memory-bank/regex-conventions.md`
 - **Code Review Backlog**: `GITHUB_ISSUES_BACKLOG.md` (complete issue details)
 - **Desktop Archive**: `Archive/desktop-python/` (reference only)
+
+### Claude Code Tooling (Added Jan 6, 2026)
+- **Setup Guide**: `CLAUDE_CODE_SETUP_GUIDE.md` (complete MCP server, skills, hooks documentation)
+- **Quick Reference**: `QUICK_REFERENCE.md` (command cheat sheet)
+- **Custom MCP Server**: `scripts/email-rule-tester-mcp/` (YAML validation, regex testing, rule simulation)
+- **Validation Scripts**: `scripts/validate-yaml-rules.ps1`, `scripts/test-regex-patterns.ps1`
+- **Skills Config**: `.claude/skills.json` (10 custom skills: validate-rules, deploy-debug, etc.)
+- **Hooks Config**: `.claude/hooks.json` (pre-commit YAML validation, post-checkout flutter pub get)
+- **Emulator Docs**: `mobile-app/scripts/EMULATOR_AUTO_START.md`

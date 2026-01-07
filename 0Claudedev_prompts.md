@@ -1,4 +1,27 @@
 Next:----------------------------------------
+  🚀 Next Steps
+
+  Step 1: Restart Claude Code
+
+  Close and reopen Claude Code to load the new MCP server.
+
+  Step 2: Test the MCP Server
+
+  Ask Claude:
+  "What MCP tools are available?"
+  "Validate my rules.yaml file"
+
+  Step 3: Try the Skills
+
+  /skill validate-rules
+  /skill deploy-debug
+
+  Step 4: Test Pre-commit Hook
+
+  git add -A
+  git commit -m "feat: Add Claude Code MCP tools and skills"
+  # Should see YAML validation output
+
 Feedback on Android app in emulator:  finding aol account, testing went well on demo and actual inbox.  Select account is not showing the previously setup gmail email kimmeyh@gmail.com.  Feedback on Windows Desktop app: aol email address in Select account is not showing the email address.  If no authentication has been provided for the platform (android), the still list the account, but note that an authentication needs to be added with a link to the authentication page. Pass the existing email address and have the user add authentication via one of the methods available.  Then update the stored platform/email address/authentication method data for the email address.
 
 On Scan progress page.  As soon as Start Demo Scan or Start Live Scan button is selected, it should change "No Results yet. Start a scan to see activity." to a message indicating that the scan has started and/or in progress. Feedback for all Scan Progress pages.  When it returns to this page after scanning or from the accounts page a "Reset" should be done before loading the page.  Then the "Reset" button is no longer needed.
@@ -25,7 +48,6 @@ Windows and Android:
 Need to be able to really add Bulk Mail folder
 Need to be able to find all folders
 Need to be able to actually find safe senders and/or moved, and rules that apply and if would have been deleted.
-
 
 ------Prompt-----
 Claud Instructions:
@@ -73,7 +95,7 @@ Please build the Android app using the following script, |||powershell -NoProfil
 Please run the app using the following script, |||powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-with-secrets.ps1 -BuildType debug -Run"|||, monitor its progress
 via log file, then while I test can you monitor the progress of the Android application via |||adb logcat|||, then help address any issues that I report.
 
-Can you review the modified files pending commit, determine if updates are needed to the following files, then make updates as needed:
+Can you review the modified files for phase 3.2 and 3.3, determine if updates are needed to the following files, then make updates as needed:
 - D:\Data\Harold\github\spamfilter-multi\CLAUDE.md
 - d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json
 - d:\Data\Harold\github\spamfilter-multi\memory-bank\mobile-app-plan.md

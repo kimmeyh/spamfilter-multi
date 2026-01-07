@@ -9,12 +9,14 @@ class ResultsDisplayScreen extends StatelessWidget {
   final String platformId;
   final String platformDisplayName;
   final String accountId;
+  final String accountEmail;
 
   const ResultsDisplayScreen({
     super.key,
     required this.platformId,
     required this.platformDisplayName,
     required this.accountId,
+    required this.accountEmail,
   });
 
   /// Show revert confirmation dialog and execute revert
@@ -145,7 +147,7 @@ class ResultsDisplayScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Results - $platformDisplayName'),
+        title: Text('Results - $accountEmail - $platformDisplayName'),
         // Add explicit back button that returns to account selection
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -225,21 +227,21 @@ class ResultsDisplayScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Summary',
+              'Summary - ${scanProvider.getScanModeDisplayName()}',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Wrap(
               spacing: 12,
-              runSpacing: 8,
+              runSpacing: 12,
               children: [
-                _summaryChip('Status', summary['status'] ?? 'unknown'),
-                _summaryChip('Processed', summary['processed']?.toString() ?? '0'),
-                _summaryChip('Total', summary['total_emails']?.toString() ?? '0'),
-                _summaryChip('Deleted', summary['deleted']?.toString() ?? '0'),
-                _summaryChip('Moved', summary['moved']?.toString() ?? '0'),
-                _summaryChip('Safe senders', summary['safe_senders']?.toString() ?? '0'),
-                _summaryChip('Errors', summary['errors']?.toString() ?? '0'),
+                _buildStatChip('Found', scanProvider.totalEmails, const Color(0xFF2196F3), Colors.white), // Blue
+                _buildStatChip('Processed', scanProvider.processedCount, const Color(0xFF9C27B0), Colors.white), // Purple
+                _buildStatChip('Deleted', scanProvider.deletedCount, const Color(0xFFF44336), Colors.white), // Red
+                _buildStatChip('Moved', scanProvider.movedCount, const Color(0xFFFF9800), Colors.white), // Orange
+                _buildStatChip('Safe', scanProvider.safeSendersCount, const Color(0xFF4CAF50), Colors.white), // Green
+                _buildStatChip('No rule', scanProvider.noRuleCount, const Color(0xFF757575), Colors.white), // Grey
+                _buildStatChip('Errors', scanProvider.errorCount, const Color(0xFFD32F2F), Colors.white), // Dark Red
               ],
             ),
             // Revert info (Phase 2 Sprint 3)
@@ -276,10 +278,12 @@ class ResultsDisplayScreen extends StatelessWidget {
     );
   }
 
-  Widget _summaryChip(String label, String value) {
+  Widget _buildStatChip(String label, int value, Color bg, Color fg) {
     return Chip(
       label: Text('$label: $value'),
-      backgroundColor: Colors.blueGrey.shade50,
+      backgroundColor: bg,
+      labelStyle: TextStyle(color: fg, fontWeight: FontWeight.bold),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     );
   }
 

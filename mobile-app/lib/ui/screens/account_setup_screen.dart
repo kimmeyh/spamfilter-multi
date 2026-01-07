@@ -188,9 +188,26 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
         ),
       );
 
-      // ✨ PHASE 2 SPRINT 4: Show scan mode selection for IMAP accounts (AOL, Yahoo, etc.)
-      // This allows the user to choose their preferred scan mode before proceeding to the scan page
-      _showScanModeSelector(context, accountId, email);
+      // ✨ PHASE 3.1: Navigate directly to ScanProgressScreen
+      // Scan mode defaults to readonly (safe) and can be changed via persistent button
+      final scanProvider = context.read<EmailScanProvider>();
+      scanProvider.initializeScanMode(mode: ScanMode.readonly); // Default to safe mode
+      
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => ScanProgressScreen(
+            platformId: widget.platformId,
+            platformDisplayName: widget.platformDisplayName,
+            accountId: accountId,
+            accountEmail: email,
+          ),
+        ),
+      ).then((_) {
+        // After scan screen is popped, pop account setup to return to account selection
+        if (mounted) {
+          Navigator.of(context).pop(true);
+        }
+      });
     }
   }
 
@@ -411,6 +428,44 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
 
   /// Proceed with selected scan mode
   Future<void> _proceedWithScanMode() async {
+    // ✨ PHASE 3.1: Show warning dialog for Full Scan mode
+    if (_selectedMode == ScanMode.fullScan) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.warning, color: Colors.red),
+              SizedBox(width: 8),
+              Text('Warning: Full Scan Mode'),
+            ],
+          ),
+          content: const Text(
+            'Full Scan mode will PERMANENTLY delete or move emails based on your rules.\n\n'
+            'This action CANNOT be undone.\n\n'
+            'Are you sure you want to enable Full Scan mode?',
+            style: TextStyle(fontSize: 14),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Enable Full Scan'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed != true) {
+        return; // User cancelled
+      }
+    }
+
     final scanProvider = widget.parentContext.read<EmailScanProvider>();
 
     // Initialize scan mode before proceeding
@@ -660,6 +715,62 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
                 ),
               ),
             ),
+            const SizedBox(height: 12),
+
+            // ✨ PHASE 3.1: Full Scan mode (permanent)
+            GestureDetector(
+              onTap: () {
+                setState(() => _selectedMode = ScanMode.fullScan);
+              },
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: _selectedMode == ScanMode.fullScan
+                        ? Colors.blue
+                        : Colors.grey.shade300,
+                    width: 2,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Radio<ScanMode>(
+                          value: ScanMode.fullScan,
+                          groupValue: _selectedMode,
+                          onChanged: (value) {
+                            setState(() => _selectedMode = ScanMode.fullScan);
+                          },
+                        ),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Full Scan',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 4),
+                              const Text(
+                                '🔥 PERMANENT delete/move (cannot revert)',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.red,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
             const SizedBox(height: 16),
 
             // Help text
@@ -679,7 +790,9 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
                           ? 'No emails will be modified. Safe for testing.'
                           : _selectedMode == ScanMode.testLimit
                               ? 'Only first $_testLimit emails will be modified.'
-                              : 'All actions can be reverted using "Revert Last Run" option.',
+                              : _selectedMode == ScanMode.testAll
+                                  ? 'All actions can be reverted using "Revert Last Run" option.'
+                                  : '⚠️ PERMANENT changes - emails will be DELETED or MOVED. This action CANNOT be undone!',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.blue.shade700,

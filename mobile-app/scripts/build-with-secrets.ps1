@@ -15,17 +15,35 @@
     Type of build: debug or release (default: release)
 
 .PARAMETER InstallToEmulator
-    If set, install the APK to running emulator after build
+    If set, install the APK to running emulator after build and launch the app
 
 .PARAMETER Run
     If set, use 'flutter run' instead of build+install. This attaches the
     debugger with hot reload (r/R) and real-time logs. Best for debugging.
 
+.PARAMETER SkipUninstall
+    If set, skip the uninstall step before installing. Preserves saved accounts
+    and app data. Use this for iterative development. May cause version downgrade
+    errors if switching between branches with different version codes.
+
+.PARAMETER StartEmulator
+    If set, automatically start an emulator if none is running. Detects available
+    AVDs and launches the first one found. If a specific emulator is already running,
+    uses that instead.
+
+.PARAMETER EmulatorName
+    Specify which emulator to launch (optional). If not provided, uses the first
+    available AVD from 'emulator -list-avds'. Ignored if an emulator is already running.
+
 .EXAMPLE
     .\build-with-secrets.ps1
     .\build-with-secrets.ps1 -BuildType debug
     .\build-with-secrets.ps1 -BuildType debug -InstallToEmulator
+    .\build-with-secrets.ps1 -BuildType debug -InstallToEmulator -SkipUninstall
+    .\build-with-secrets.ps1 -BuildType debug -InstallToEmulator -StartEmulator
+    .\build-with-secrets.ps1 -BuildType debug -InstallToEmulator -StartEmulator -EmulatorName "Pixel_5_API_33"
     .\build-with-secrets.ps1 -BuildType debug -Run
+    .\build-with-secrets.ps1 -BuildType release -InstallToEmulator  # Clean install
 #>
 
 param(
@@ -34,7 +52,13 @@ param(
     
     [switch]$InstallToEmulator,
     
-    [switch]$Run
+    [switch]$Run,
+    
+    [switch]$SkipUninstall,
+    
+    [switch]$StartEmulator,
+    
+    [string]$EmulatorName = ""
 )
 
 $ErrorActionPreference = 'Stop'
@@ -391,21 +415,82 @@ try {
 
         # Step 2: Ensure emulator is running
         $emulatorDevice = $null
-        for ($i = 0; $i -lt 3; $i++) {
-            $emulatorDevice = & adb devices | Select-String "emulator-" | ForEach-Object { $_.ToString().Split("`t")[0] }
-            if ($emulatorDevice) { break }
-            Write-Host "[INFO]: No running emulator detected, launching emulator..." -ForegroundColor Yellow
-            & flutter emulators --launch pixel34_updated
-            Start-Sleep -Seconds 20
-            & adb devices | Out-Null
-        }
+        $emulatorDevice = & adb devices | Select-String "emulator-" | ForEach-Object { $_.ToString().Split("`t")[0] }
+        
         if (-not $emulatorDevice) {
-            Write-Host "[ERROR]: Emulator still not detected after multiple attempts." -ForegroundColor Red
+            if ($StartEmulator) {
+                Write-Host "[Step 2/6] No emulator running, auto-starting emulator..." -ForegroundColor Cyan
+                
+                # Detect available AVDs
+                $availableAvds = @()
+                try {
+                    $avdList = & emulator -list-avds 2>&1
+                    $availableAvds = $avdList | Where-Object { $_ -and $_.Trim() -ne "" }
+                } catch {
+                    Write-Host "[WARNING]: Could not list AVDs. Make sure Android SDK emulator is in PATH." -ForegroundColor Yellow
+                }
+                
+                # Determine which emulator to launch
+                $avdToLaunch = $null
+                if ($EmulatorName) {
+                    # User specified a name
+                    if ($availableAvds -contains $EmulatorName) {
+                        $avdToLaunch = $EmulatorName
+                    } else {
+                        Write-Host "[WARNING]: Emulator '$EmulatorName' not found. Available AVDs:" -ForegroundColor Yellow
+                        $availableAvds | ForEach-Object { Write-Host "  - $_" -ForegroundColor Gray }
+                        if ($availableAvds.Count -gt 0) {
+                            $avdToLaunch = $availableAvds[0]
+                            Write-Host "[INFO]: Using first available AVD: $avdToLaunch" -ForegroundColor Cyan
+                        }
+                    }
+                } elseif ($availableAvds.Count -gt 0) {
+                    # Auto-select first available
+                    $avdToLaunch = $availableAvds[0]
+                    Write-Host "[INFO]: Auto-selected AVD: $avdToLaunch" -ForegroundColor Cyan
+                }
+                
+                if ($avdToLaunch) {
+                    Write-Host "[INFO]: Launching emulator '$avdToLaunch'..." -ForegroundColor Cyan
+                    Start-Process -FilePath "emulator" -ArgumentList @("-avd", $avdToLaunch) -WindowStyle Minimized
+                    
+                    # Wait for emulator to appear in adb devices (max 60 seconds)
+                    Write-Host "[INFO]: Waiting for emulator to start (this may take 30-60 seconds)..." -ForegroundColor Gray
+                    for ($i = 0; $i -lt 30; $i++) {
+                        Start-Sleep -Seconds 2
+                        $emulatorDevice = & adb devices | Select-String "emulator-" | ForEach-Object { $_.ToString().Split("`t")[0] }
+                        if ($emulatorDevice) {
+                            Write-Host "  [OK] Emulator detected: $emulatorDevice" -ForegroundColor Green
+                            break
+                        }
+                        if ($i % 5 -eq 0) {
+                            Write-Host "  Still waiting... ($($i*2)s elapsed)" -ForegroundColor Gray
+                        }
+                    }
+                } else {
+                    Write-Host "[ERROR]: No AVDs found. Create one with Android Studio (Tools → Device Manager → Create Device)" -ForegroundColor Red
+                    exit 1
+                }
+            } else {
+                Write-Host "[ERROR]: No emulator running. Start one manually or use -StartEmulator flag." -ForegroundColor Red
+                Write-Host "" -ForegroundColor Gray
+                Write-Host "Available options:" -ForegroundColor Yellow
+                Write-Host "  1. Start emulator manually (Android Studio → Device Manager → Run)" -ForegroundColor Gray
+                Write-Host "  2. Use -StartEmulator flag to auto-start" -ForegroundColor Gray
+                Write-Host "  3. Use -StartEmulator -EmulatorName 'YourAVD' to specify which one" -ForegroundColor Gray
+                exit 1
+            }
+        } else {
+            Write-Host "[Step 2/6] Using running emulator: $emulatorDevice" -ForegroundColor Green
+        }
+        
+        if (-not $emulatorDevice) {
+            Write-Host "[ERROR]: Emulator still not detected after auto-start attempt." -ForegroundColor Red
             exit 1
         }
 
         # Step 3: Wait for emulator to finish booting
-        Write-Host "[Step 3/5] Waiting for emulator to finish booting..."
+        Write-Host "[Step 3/6] Waiting for emulator to finish booting..."
         $booted = $false
         for ($i = 0; $i -lt 20; $i++) {
             $bootStatus = & adb shell getprop sys.boot_completed
@@ -421,12 +506,19 @@ try {
         }
 
         # Step 4: Uninstall previous APKs
-        Write-Host "[Step 4/5] Uninstalling previous APKs (if any)..."
-        & adb uninstall com.example.spamfiltermobile | Out-Null
-        & adb uninstall com.example.spamfilter_mobile | Out-Null
+        # ✨ MODIFIED: Conditional uninstall based on build type and -SkipUninstall flag
+        if ($SkipUninstall) {
+            Write-Host "[Step 4/6] Skipping uninstall (-SkipUninstall flag - preserving saved accounts)..." -ForegroundColor Cyan
+        } elseif ($BuildType -eq 'release') {
+            Write-Host "[Step 4/6] Uninstalling previous APKs (release build - clean install)..."
+            & adb uninstall com.example.spamfiltermobile | Out-Null
+            & adb uninstall com.example.spamfilter_mobile | Out-Null
+        } else {
+            Write-Host "[Step 4/6] Skipping uninstall (debug build - preserving saved accounts)..." -ForegroundColor Cyan
+        }
 
         # Step 5: Install APK with retries
-        Write-Host "[Step 5/5] Installing APK to emulator..."
+        Write-Host "[Step 5/6] Installing APK to emulator..."
         $maxInstallTries = 3
         $installSuccess = $false
         for ($i = 1; $i -le $maxInstallTries; $i++) {
@@ -448,11 +540,12 @@ try {
         }
         Write-Host "[SUCCESS]: APK installed to emulator!" -ForegroundColor Green
 
-        # Optionally launch the app
-        Write-Host "[INFO] Launching app..." -ForegroundColor Cyan
+        # Launch the app automatically
+        Write-Host ""
+        Write-Host "[Step 6/6] Launching app on emulator..." -ForegroundColor Cyan
         adb shell am start -n com.example.spamfilter_mobile/.MainActivity 2>&1 | Out-Null
         if ($LASTEXITCODE -eq 0) {
-            Write-Host "  [OK] App launched" -ForegroundColor Green
+            Write-Host "  [OK] App launched successfully" -ForegroundColor Green
         } else {
             Write-Host "  [WARNING] App launch command may not have succeeded" -ForegroundColor Yellow
             Write-Host "  Launch manually with: adb shell am start -n com.example.spamfilter_mobile/.MainActivity" -ForegroundColor Gray

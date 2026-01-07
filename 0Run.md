@@ -4,7 +4,9 @@
 # If needed confirm dependencies and then re-build the app
 cd d:\Data\Harold\github\spamfilter-multi\mobile-app; flutter pub get
 cd d:\Data\Harold\github\spamfilter-multi\mobile-app; flutter build windows
-# single command line for full Windows App rebuild and test
+# single command line for full Windows App rebuild and run for testing
+powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-windows.ps1"
+
 powershell -NoProfile -ExecutionPolicy Bypass -File D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts\build-windows.ps1
 
 
@@ -13,7 +15,8 @@ cd D:\Data\Harold\github\spamfilter-multi\mobile-app; flutter put get; flutter b
 
 # Run Android Emulator -------------------------
 #   Preferred method
-powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-with-secrets.ps1 -BuildType debug -Run"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-with-secrets.ps1 -Run"
+# or  -StartEmulator?
 
 # NOTE: Log file is: D:\Data\Harold\github\spamfilter-multi\mobile-app\test_results.txt
 # Emulator notes:  

@@ -1,0 +1,64 @@
+{
+  "hooks": {
+    "pre-commit": {
+      "description": "Validate YAML rules before committing",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "& scripts/validate-yaml-rules.ps1; if ($LASTEXITCODE -ne 0) { Write-Host 'YAML validation failed. Commit blocked.' -ForegroundColor Red; exit 1 }"
+      ],
+      "enabled": true,
+      "stopOnError": true
+    },
+    "pre-push": {
+      "description": "Run all tests before pushing",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "Write-Host 'Running all tests before push...' -ForegroundColor Cyan; cd mobile-app; flutter test; if ($LASTEXITCODE -ne 0) { Write-Host 'Tests failed. Push blocked.' -ForegroundColor Red; exit 1 } else { Write-Host 'All tests passed!' -ForegroundColor Green }"
+      ],
+      "enabled": false,
+      "stopOnError": true,
+      "note": "Disabled by default (can be slow). Enable with 'enabled': true"
+    },
+    "post-checkout": {
+      "description": "Install Flutter dependencies after checkout",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "if (Test-Path mobile-app/pubspec.yaml) { cd mobile-app; flutter pub get }"
+      ],
+      "enabled": true,
+      "stopOnError": false
+    },
+    "on-save-yaml": {
+      "description": "Auto-validate YAML files on save",
+      "filePattern": "**/*.yaml",
+      "command": "powershell",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "if ('${file}' -like '*rules*.yaml') { & scripts/validate-yaml-rules.ps1 -RulesFile '${file}' }"
+      ],
+      "enabled": true,
+      "stopOnError": false,
+      "note": "Validates rules.yaml and rules_safe_senders.yaml on save"
+    }
+  },
+  "hookSettings": {
+    "showOutput": true,
+    "timeout": 300000,
+    "note": "Timeout in milliseconds (default: 5 minutes)"
+  }
+}

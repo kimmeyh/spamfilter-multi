@@ -17,11 +17,12 @@ enum ScanStatus { idle, scanning, paused, completed, error }
 /// Email action type for categorization
 enum EmailActionType { none, safeSender, delete, moveToJunk, markAsRead }
 
-/// ✨ PHASE 2 SPRINT 3: Scan mode - read-only, test with limit, or test all
+/// ✨ PHASE 3.1: Scan mode - read-only, test modes, or full production scan
 enum ScanMode {
   readonly,   // Default: scan only, no modifications
   testLimit,  // Test mode: modify up to N emails, then stop
-  testAll,    // Test mode: modify all emails (dangerous - can revert)
+  testAll,    // Test mode: modify all emails (can revert)
+  fullScan,   // ✨ PHASE 3.1: Production mode - PERMANENT delete/move (cannot revert)
 }
 
 /// ✨ Multi-account & Multi-folder support: Junk folder configuration per provider
@@ -114,6 +115,7 @@ class EmailScanProvider extends ChangeNotifier {
   int _deletedCount = 0;
   int _movedCount = 0;
   int _safeSendersCount = 0;
+  int _noRuleCount = 0;  // ✨ PHASE 3.1: Emails with no rule match
   int _errorCount = 0;
 
   // ✨ PHASE 2 SPRINT 3: Read-only mode & revert capability
@@ -121,6 +123,15 @@ class EmailScanProvider extends ChangeNotifier {
   int? _emailTestLimit;  // How many emails to actually modify (for testLimit mode)
   final List<String> _lastRunActionIds = [];  // Track email IDs of actions for revert
   final List<EmailActionResult> _lastRunActions = [];  // Track actual actions for revert
+
+  // ✨ PHASE 3.2: Folder selection for scan
+  List<String> _selectedFolders = ['INBOX'];  // Default to INBOX
+
+  // ✨ PHASE 3.3: Progressive update throttling (Issue #36)
+  DateTime? _lastProgressNotification;
+  int _emailsSinceLastNotification = 0;
+  static const int _progressEmailInterval = 10;  // Update every 10 emails
+  static const Duration _progressTimeInterval = Duration(seconds: 3);  // OR every 3 seconds
 
   // Getters
   ScanStatus get status => _status;
@@ -133,14 +144,32 @@ class EmailScanProvider extends ChangeNotifier {
   int get deletedCount => _deletedCount;
   int get movedCount => _movedCount;
   int get safeSendersCount => _safeSendersCount;
+  int get noRuleCount => _noRuleCount;  // ✨ PHASE 3.1: Emails with no rule match
   int get errorCount => _errorCount;
   double get progress => _totalEmails == 0 ? 0 : _processedCount / _totalEmails;
 
-  // ✨ PHASE 2 SPRINT 3: Scan mode getters
+  // ✨ PHASE 3.1: Scan mode getters
   ScanMode get scanMode => _scanMode;
   int? get emailTestLimit => _emailTestLimit;
   bool get hasActionsToRevert => _lastRunActionIds.isNotEmpty;
   int get revertableActionCount => _lastRunActionIds.length;
+  
+  // ✨ PHASE 3.2: Folder selection getter
+  List<String> get selectedFolders => _selectedFolders;
+  
+  /// Get human-readable scan mode name for UI display
+  String getScanModeDisplayName() {
+    switch (_scanMode) {
+      case ScanMode.readonly:
+        return 'Read-Only';
+      case ScanMode.testLimit:
+        return 'Test Limited Emails';
+      case ScanMode.testAll:
+        return 'Full Scan with Revert';
+      case ScanMode.fullScan:
+        return 'Full Scan';
+    }
+  }
 
   /// Start a new scan session
   /// 
@@ -153,14 +182,23 @@ class EmailScanProvider extends ChangeNotifier {
     _deletedCount = 0;
     _movedCount = 0;
     _safeSendersCount = 0;
+    _noRuleCount = 0;  // ✨ FIX: Reset no-rule count on new scan
     _errorCount = 0;
     _currentEmail = null;
     _statusMessage = 'Starting scan...';
+    
+    // ✨ PHASE 3.3: Reset throttling state for new scan
+    _emailsSinceLastNotification = 0;
+    _lastProgressNotification = null;
+    
     _logger.i('Started scan of $totalEmails emails');
     notifyListeners();
   }
 
   /// Mark current email and update progress
+  /// 
+  /// ✨ PHASE 3.3: Throttles UI updates to every 10 emails OR 3 seconds (whichever comes first)
+  /// to avoid performance issues with large scans
   void updateProgress({
     required EmailMessage email,
     String? message,
@@ -169,7 +207,20 @@ class EmailScanProvider extends ChangeNotifier {
     _processedCount++;
     _statusMessage = message ?? 'Processing ${email.from}...';
     _logger.d('Progress: $_processedCount / $_totalEmails');
-    notifyListeners();
+    
+    // ✨ PHASE 3.3: Throttle UI updates (10 emails OR 3 seconds, whichever comes first)
+    _emailsSinceLastNotification++;
+    final now = DateTime.now();
+    final shouldNotify = _emailsSinceLastNotification >= _progressEmailInterval ||
+        _lastProgressNotification == null ||
+        now.difference(_lastProgressNotification!) >= _progressTimeInterval;
+    
+    if (shouldNotify) {
+      _emailsSinceLastNotification = 0;
+      _lastProgressNotification = now;
+      _logger.d('📊 UI update triggered: $_processedCount / $_totalEmails');
+      notifyListeners();
+    }
   }
 
   /// Pause the scan
@@ -191,13 +242,17 @@ class EmailScanProvider extends ChangeNotifier {
   }
 
   /// Complete the scan successfully
+  /// 
+  /// ✨ PHASE 3.3: Always calls notifyListeners() to ensure final UI update,
+  /// regardless of throttling state (provides complete final counts)
   void completeScan() {
     _status = ScanStatus.completed;
     _currentEmail = null;
-    _statusMessage = 'Scan completed: '
+    final modeName = getScanModeDisplayName();
+    _statusMessage = 'Scan completed - $modeName: '
         '$_deletedCount deleted, $_movedCount moved, $_safeSendersCount safe senders, $_errorCount errors';
     _logger.i('Completed scan: $_statusMessage');
-    notifyListeners();
+    notifyListeners();  // Final update always sent (bypasses throttling)
   }
 
   /// Mark scan as failed with error
@@ -220,7 +275,13 @@ class EmailScanProvider extends ChangeNotifier {
     _deletedCount = 0;
     _movedCount = 0;
     _safeSendersCount = 0;
+    _noRuleCount = 0;  // ✨ PHASE 3.1: Reset no-rule count
     _errorCount = 0;
+    
+    // ✨ PHASE 3.3: Reset throttling state
+    _emailsSinceLastNotification = 0;
+    _lastProgressNotification = null;
+    
     _logger.i('Reset scan state');
     notifyListeners();
   }
@@ -307,21 +368,38 @@ class EmailScanProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// ✨ PHASE 2 SPRINT 3: Mode-aware recordResult with read-only and limits
+  /// ✨ PHASE 3.2: Set selected folders for scan
+  void setSelectedFolders(List<String> folders) {
+    if (folders.isEmpty) {
+      _logger.w('⚠️ No folders selected, defaulting to INBOX');
+      _selectedFolders = ['INBOX'];
+    } else {
+      _selectedFolders = List.from(folders);  // Create copy to avoid mutation
+      _logger.i('📁 Selected folders for scan: $_selectedFolders');
+    }
+    notifyListeners();
+  }
+
+  /// ✨ PHASE 3.1: Mode-aware recordResult with read-only, test modes, and full scan
   /// 
-  /// If in readonly mode, actions are logged but NOT executed.
-  /// If in testLimit mode, only first N actions are executed.
-  /// If in testAll mode, all actions are executed (can revert).
+  /// - readonly: actions logged but NOT executed
+  /// - testLimit: only first N actions executed (can revert)
+  /// - testAll: all actions executed (can revert)
+  /// - fullScan: all actions executed PERMANENTLY (cannot revert)
   void recordResult(EmailActionResult result) {
     // Determine if this action should actually be executed
     bool shouldExecuteAction = _scanMode != ScanMode.readonly &&
         (_emailTestLimit == null || _lastRunActionIds.length < _emailTestLimit!);
 
     if (shouldExecuteAction) {
-      // Track action for potential revert
-      _lastRunActionIds.add(result.email.id);
-      _lastRunActions.add(result);
-      _logger.i('📝 Action recorded (will execute): ${result.action} - ${result.email.from}');
+      // Track action for potential revert (only for testLimit and testAll, NOT fullScan)
+      if (_scanMode == ScanMode.testLimit || _scanMode == ScanMode.testAll) {
+        _lastRunActionIds.add(result.email.id);
+        _lastRunActions.add(result);
+        _logger.i('📝 Action recorded (revertable): ${result.action} - ${result.email.from}');
+      } else if (_scanMode == ScanMode.fullScan) {
+        _logger.i('🔥 Action executed (PERMANENT): ${result.action} - ${result.email.from}');
+      }
     } else {
       // Read-only or limit reached: log what would happen
       if (_scanMode == ScanMode.readonly) {
@@ -334,22 +412,23 @@ class EmailScanProvider extends ChangeNotifier {
     // Always record the result for UI/history
     _results.add(result);
 
-    // Only update execution counts if the action should execute
-    if (shouldExecuteAction) {
-      switch (result.action) {
-        case EmailActionType.delete:
-          _deletedCount++;
-          break;
-        case EmailActionType.moveToJunk:
-          _movedCount++;
-          break;
-        case EmailActionType.safeSender:
-          _safeSendersCount++;
-          break;
-        case EmailActionType.none:
-        case EmailActionType.markAsRead:
-          break;
-      }
+    // ✨ PHASE 3.1: Always update counts based on rule evaluation (what WOULD happen)
+    // This ensures bubbles show proposed actions even in Read-Only mode
+    switch (result.action) {
+      case EmailActionType.delete:
+        _deletedCount++;
+        break;
+      case EmailActionType.moveToJunk:
+        _movedCount++;
+        break;
+      case EmailActionType.safeSender:
+        _safeSendersCount++;
+        break;
+      case EmailActionType.none:
+        _noRuleCount++;  // ✨ PHASE 3.1: Track emails with no rule match
+        break;
+      case EmailActionType.markAsRead:
+        break;
     }
 
     if (!result.success) {

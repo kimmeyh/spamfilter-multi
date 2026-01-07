@@ -10,6 +10,19 @@ Archive/
 *.lnk
 
 #------------------------------------------------------------
+# Node.js dependencies (MCP servers)
+node_modules/
+
+# Log files
+*.log
+firebase-debug.log
+flutter_run_output.log
+flutter_run_verbose.log
+
+# Claude Code local settings (machine-specific paths)
+.claude/settings.local.json
+
+#------------------------------------------------------------
 # HK 20251204 These are items specific to this repository
 # Flutter/Dart specific
 
@@ -37,6 +50,10 @@ mobile-app/android/app/google-services.json
 client_secret_*.json
 *client_secret*.json
 
+# Build-time secrets (contains API keys and OAuth credentials)
+mobile-app/secrets.dev.json
+secrets.dev.json
+
 # Backup and temporary files
 
 # YAML configuration backups
@@ -46,6 +63,8 @@ rules_safe_senders_backup_*.yaml
 # General backup files
 *.backup
 *.bak
+
+.serena/
 
 # Memory bank logs (exclude logs but keep memory-bank docs)
 memory-bank/logs/
