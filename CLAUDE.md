@@ -583,21 +583,34 @@ A comprehensive code review of the Flutter spam filter codebase identified **11 
 
 ## Additional Resources
 
-### Primary Documentation (Root Directory)
-- **CHANGELOG.md**: Feature and bug updates (newest first, insert at top)
-- **GITHUB_ISSUES_BACKLOG.md**: Active issue tracking with file:line references
+### Documentation Structure
+```
+spamfilter-multi/
+├── CHANGELOG.md              # Feature/bug updates (newest first)
+├── CLAUDE.md                 # Primary documentation (this file)
+├── README.md                 # Project overview
+├── docs/                     # Consolidated documentation
+│   ├── OAUTH_SETUP.md        # Gmail OAuth for Android + Windows
+│   ├── TROUBLESHOOTING.md    # Common issues and fixes
+│   └── ISSUE_BACKLOG.md      # Open issues and status
+├── mobile-app/
+│   ├── README.md             # App-specific quick start
+│   └── docs/
+│       └── DEVELOPER_SETUP.md  # New developer onboarding (Windows 11)
+└── scripts/
+    └── email-rule-tester-mcp/  # Custom MCP server
+```
+
+### Quick Reference
 - **QUICK_REFERENCE.md**: Command cheat sheet
-- **CLAUDE_CODE_SETUP_GUIDE.md**: MCP server, skills, hooks documentation
+- **CLAUDE_CODE_SETUP_GUIDE.md**: MCP server, skills, hooks setup
 
-### Archives
-- **Archive/desktop-python/**: Legacy Python desktop app (reference only)
-- **.archive/**: Historical docs, completed phase reports, legacy planning
-
-### Claude Code Tooling (Added Jan 6, 2026)
-- **Setup Guide**: `CLAUDE_CODE_SETUP_GUIDE.md` (complete MCP server, skills, hooks documentation)
-- **Quick Reference**: `QUICK_REFERENCE.md` (command cheat sheet)
-- **Custom MCP Server**: `scripts/email-rule-tester-mcp/` (YAML validation, regex testing, rule simulation)
+### Claude Code Tooling
+- **Custom MCP Server**: `scripts/email-rule-tester-mcp/`
 - **Validation Scripts**: `scripts/validate-yaml-rules.ps1`, `scripts/test-regex-patterns.ps1`
-- **Skills Config**: `.claude/skills.json` (10 custom skills: validate-rules, deploy-debug, etc.)
-- **Hooks Config**: `.claude/hooks.json` (pre-commit YAML validation, post-checkout flutter pub get)
-- **Emulator Docs**: `mobile-app/scripts/EMULATOR_AUTO_START.md`
+- **Skills Config**: `.claude/skills.json` (10 custom skills)
+- **Hooks Config**: `.claude/hooks.json` (pre-commit validation, post-checkout pub get)
+
+### Archives (gitignored)
+- **Archive/desktop-python/**: Legacy Python desktop app
+- **.archive/**: Historical docs, completed phase reports
