@@ -217,7 +217,7 @@ class GenericIMAPAdapter implements SpamFilterPlatform {
     required List<EmailMessage> messages,
     required Map<String, Pattern> compiledRegex,
   }) async {
-    // IMAP doesn't support server-side regex filtering,
+    // IMAP does not support server-side regex filtering,
     // so we use the client-side RuleEvaluator
     _logger.i('Applying rules to ${messages.length} messages (client-side)');
 
