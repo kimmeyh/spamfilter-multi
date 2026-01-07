@@ -13,6 +13,15 @@ Archive/
 # Node.js dependencies (MCP servers)
 node_modules/
 
+# Log files
+*.log
+firebase-debug.log
+flutter_run_output.log
+flutter_run_verbose.log
+
+# Claude Code local settings (machine-specific paths)
+.claude/settings.local.json
+
 #------------------------------------------------------------
 # HK 20251204 These are items specific to this repository
 # Flutter/Dart specific
