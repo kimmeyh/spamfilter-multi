@@ -47,7 +47,7 @@ issue. Should I make it more specific to only exclude 'Archive/desktop-python/li
 ### Documentation and Comments
 - **No contractions**: Use "do not" instead of "don't", "does not" instead of "doesn't", "cannot" instead of "can't", etc.
 - **Clarity over brevity**: Write clear, complete sentences in documentation
-- **Use Logger, not print()**: Production code (`lib/`) must use `Logger` for all logging. Test files (`test/`) may use `print()`.
+- **Use Logger, not print()**: Production code (`lib/`) must use `Logger` for all logging. Test files (`test/`) may use `print()`.  Exception: unit and integration tests (ex. *_test.dart files)
 
 ### Example
 ```dart
@@ -256,7 +256,39 @@ All YAML exports enforce:
 5. Single quotes (avoid backslash escaping)
 6. Timestamped backups to `Archive/` before overwrite
 
-See `memory-bank/yaml-schemas.md` and `memory-bank/regex-conventions.md` for complete specifications.
+### Regex Pattern Conventions
+
+**Pattern Formatting**:
+- All patterns are **lowercase** (case-insensitive matching via `caseSensitive: false`)
+- All patterns are **trimmed** (no leading/trailing whitespace)
+- Dart RegExp does not support Python-style inline flags (`(?i)`, `(?m)`, `(?s)`, `(?x)`) - these are automatically stripped by PatternCompiler
+- YAML uses **single quotes** to avoid backslash escaping issues
+
+**Domain Blocking Patterns** (for SpamAutoDeleteHeader.header):
+```regex
+@(?:[a-z0-9-]+\.)*example\.com$           # Block domain and all subdomains
+@(?:[a-z0-9-]+\.)*example\.[a-z0-9.-]+$   # Block domain with generic TLD match
+mailer-daemon@aol\.com                     # Block specific email address
+```
+
+**Safe Sender Patterns** (for rules_safe_senders.yaml):
+```regex
+^john\.doe@company\.com$                           # Exact email match (anchored)
+^[^@\s]+@(?:[a-z0-9-]+\.)*lifeway\.com$           # Allow domain and all subdomains
+```
+
+**Pattern Building Reference**:
+| Purpose | Pattern Format | Example |
+|---------|---------------|---------|
+| Block domain | `@(?:[a-z0-9-]+\.)*domain\.com$` | `@(?:[a-z0-9-]+\.)*spam\.com$` |
+| Block email | Literal email address | `spammer@example\.com` |
+| Allow exact email | `^email@domain\.com$` | `^trusted@company\.com$` |
+| Allow domain | `^[^@\s]+@(?:[a-z0-9-]+\.)*domain\.com$` | `^[^@\s]+@(?:[a-z0-9-]+\.)*trusted\.com$` |
+
+**Regex Compilation**:
+- Patterns compiled with `caseSensitive: false` (equivalent to Python `re.IGNORECASE`)
+- Invalid patterns are logged and tracked (not silently ignored)
+- Compiled patterns are cached for performance
 
 ## OAuth and Secrets Management
 
@@ -551,12 +583,9 @@ A comprehensive code review of the Flutter spam filter codebase identified **11 
 
 ## Additional Resources
 
-- **Development Standards**: `memory-bank/development-standards.md`
-- **Processing Flow**: `memory-bank/processing-flow.md`
-- **YAML Schemas**: `memory-bank/yaml-schemas.md`
-- **Regex Conventions**: `memory-bank/regex-conventions.md`
 - **Code Review Backlog**: `GITHUB_ISSUES_BACKLOG.md` (complete issue details)
 - **Desktop Archive**: `Archive/desktop-python/` (reference only)
+- **Archived Memory Bank**: `.archive/memory-bank/` (legacy planning docs, Python-era references)
 
 ### Claude Code Tooling (Added Jan 6, 2026)
 - **Setup Guide**: `CLAUDE_CODE_SETUP_GUIDE.md` (complete MCP server, skills, hooks documentation)
