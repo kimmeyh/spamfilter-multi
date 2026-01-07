@@ -47,6 +47,9 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
     final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
     _previousStatus = scanProvider.status;
     
+    // ✨ ISSUE #41 FIX: Set current account for per-account folder storage
+    scanProvider.setCurrentAccount(widget.accountId);
+    
     // Auto-reset scan state when navigating to this screen
     WidgetsBinding.instance.addPostFrameCallback((_) {
       scanProvider.reset();
@@ -58,8 +61,11 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
     final scanProvider = context.watch<EmailScanProvider>();
 
     // ✨ PHASE 3.1: Auto-navigate to Results when scan completes (Issue #33)
+    // ✨ ISSUE #39 FIX: Update _previousStatus INSIDE the if block to prevent
+    // multiple navigation callbacks if build() is called multiple times
     if (_previousStatus != ScanStatus.completed && 
         scanProvider.status == ScanStatus.completed) {
+      _previousStatus = scanProvider.status;  // Update immediately to prevent re-scheduling
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           Navigator.of(context).push(
@@ -74,8 +80,9 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
           );
         }
       });
+    } else {
+      _previousStatus = scanProvider.status;
     }
-    _previousStatus = scanProvider.status;
 
     return PopScope(
       // Handle back button to return to account selection with confirmation during scan
@@ -413,7 +420,8 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
           onFoldersSelected: (folders) {
             logger.i('📁 Folders selected for scan: $folders');
             // ✨ PHASE 3.2: Store selected folders in scanProvider for use during scan
-            scanProvider.setSelectedFolders(folders);
+            // ✨ ISSUE #41 FIX: Pass accountId to store folders per-account
+            scanProvider.setSelectedFolders(folders, accountId: widget.accountId);
           },
         ),
       );
@@ -421,7 +429,8 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
       if (selected != null && context.mounted) {
         logger.i('✅ User confirmed folders: $selected');
         // ✨ PHASE 3.2: Update scanProvider with final selection
-        scanProvider.setSelectedFolders(selected);
+        // ✨ ISSUE #41 FIX: Pass accountId to store folders per-account
+        scanProvider.setSelectedFolders(selected, accountId: widget.accountId);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Ready to scan: ${selected.join(", ")}'),
@@ -468,6 +477,38 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
                     setState(() => selectedMode = value!);
                   },
                 ),
+                // ✨ ISSUE #40 FIX: Configurable test limit slider
+                if (selectedMode == ScanMode.testLimit)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 8),
+                        Text(
+                          'Email limit: $testLimit',
+                          style: const TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        Slider(
+                          value: testLimit.toDouble(),
+                          min: 5,
+                          max: 200,
+                          divisions: 39,
+                          label: '$testLimit emails',
+                          onChanged: (value) {
+                            setState(() => testLimit = value.round());
+                          },
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('5', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                            const Text('200', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
                 // Full Scan with Revert
                 RadioListTile<ScanMode>(
                   value: ScanMode.testAll,

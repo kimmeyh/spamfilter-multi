@@ -277,4 +277,96 @@ void main() {
       expect(scanProvider.results.first.error, equals('Permission denied'));
     });
   });
+
+  // ✨ ISSUE #41: Per-account folder selection tests
+  group('EmailScanProvider - Per-Account Folders (Issue #41)', () {
+    test('stores folders per account', () {
+      // Arrange
+      const account1 = 'gmail-user1@gmail.com';
+      const account2 = 'aol-user2@aol.com';
+      
+      // Act
+      scanProvider.setCurrentAccount(account1);
+      scanProvider.setSelectedFolders(['INBOX', 'SPAM', 'CATEGORY_PROMOTIONS'], accountId: account1);
+      
+      scanProvider.setCurrentAccount(account2);
+      scanProvider.setSelectedFolders(['INBOX', 'Bulk Mail'], accountId: account2);
+      
+      // Assert - each account has its own folders
+      expect(scanProvider.getSelectedFoldersForAccount(account1), 
+          equals(['INBOX', 'SPAM', 'CATEGORY_PROMOTIONS']));
+      expect(scanProvider.getSelectedFoldersForAccount(account2), 
+          equals(['INBOX', 'Bulk Mail']));
+    });
+
+    test('returns INBOX as default for unknown account', () {
+      expect(scanProvider.getSelectedFoldersForAccount('unknown-account'), 
+          equals(['INBOX']));
+    });
+
+    test('selectedFolders getter uses current account', () {
+      // Arrange
+      const account1 = 'gmail-user@gmail.com';
+      scanProvider.setCurrentAccount(account1);
+      scanProvider.setSelectedFolders(['SPAM', 'Trash'], accountId: account1);
+      
+      // Assert
+      expect(scanProvider.selectedFolders, equals(['SPAM', 'Trash']));
+    });
+
+    test('selectedFolders returns INBOX when no current account', () {
+      // No account set
+      expect(scanProvider.selectedFolders, equals(['INBOX']));
+    });
+
+    test('switching accounts changes selectedFolders', () {
+      // Arrange
+      const gmailAccount = 'gmail-user@gmail.com';
+      const aolAccount = 'aol-user@aol.com';
+      
+      scanProvider.setCurrentAccount(gmailAccount);
+      scanProvider.setSelectedFolders(['SPAM', 'CATEGORY_SOCIAL'], accountId: gmailAccount);
+      
+      scanProvider.setCurrentAccount(aolAccount);
+      scanProvider.setSelectedFolders(['Bulk Mail'], accountId: aolAccount);
+      
+      // Act & Assert - switch to Gmail
+      scanProvider.setCurrentAccount(gmailAccount);
+      expect(scanProvider.selectedFolders, equals(['SPAM', 'CATEGORY_SOCIAL']));
+      
+      // Act & Assert - switch to AOL
+      scanProvider.setCurrentAccount(aolAccount);
+      expect(scanProvider.selectedFolders, equals(['Bulk Mail']));
+    });
+
+    test('clearSelectedFoldersForAccount removes folders for specific account only', () {
+      // Arrange
+      const account1 = 'gmail-user@gmail.com';
+      const account2 = 'aol-user@aol.com';
+      
+      scanProvider.setCurrentAccount(account1);
+      scanProvider.setSelectedFolders(['SPAM'], accountId: account1);
+      scanProvider.setCurrentAccount(account2);
+      scanProvider.setSelectedFolders(['Bulk Mail'], accountId: account2);
+      
+      // Act
+      scanProvider.clearSelectedFoldersForAccount(account1);
+      
+      // Assert - account1 cleared, account2 retained
+      expect(scanProvider.getSelectedFoldersForAccount(account1), equals(['INBOX']));
+      expect(scanProvider.getSelectedFoldersForAccount(account2), equals(['Bulk Mail']));
+    });
+
+    test('empty folder list defaults to INBOX', () {
+      // Arrange
+      const account = 'test-account';
+      scanProvider.setCurrentAccount(account);
+      
+      // Act
+      scanProvider.setSelectedFolders([], accountId: account);
+      
+      // Assert
+      expect(scanProvider.getSelectedFoldersForAccount(account), equals(['INBOX']));
+    });
+  });
 }
