@@ -1,6 +1,8 @@
 /// Email scanning service that connects IMAP adapters with rule evaluation
 library;
 
+import 'package:logger/logger.dart';
+
 import '../providers/email_scan_provider.dart';
 import '../providers/rule_set_provider.dart';
 import '../services/rule_evaluator.dart';
@@ -16,6 +18,7 @@ class EmailScanner {
   final RuleSetProvider ruleSetProvider;
   final EmailScanProvider scanProvider;
   final SecureCredentialsStore _credStore = SecureCredentialsStore();
+  final Logger _logger = Logger();
 
   EmailScanner({
     required this.platformId,
@@ -137,7 +140,7 @@ class EmailScanner {
           await platform.disconnect();
         } catch (e) {
           // Log but don't throw
-          print('Disconnect error: $e');
+          _logger.w('Disconnect error: $e');
         }
       }
     }
