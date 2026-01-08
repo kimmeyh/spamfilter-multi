@@ -30,9 +30,10 @@ Functionality in human terms:
       - Exceptions to "Individual Email Address Safe Senders" is unlikely as they are very specific.
   - The rules.yaml is a functionality to identify for users email address (or regex patterns) that they will never want to see. However, like email "Junk Folders" a user may want to "find" and email that has bee deleted by a rule and will want add items to help find them (specific folders for different types of rule, tagging the messages with rule match...).  There are several types of rules:
     - AutoDeleteHeader - Automatically Delete based on content of the email header
-      - From: address in the email header
+      - From: address in the email header against stored regex patterns
         - There are datasets of known spam email domains (first-level-domain.top-level-domain) that are known 99% spam.
       - Subject: content
+    - AutoDeleteBody
 
 
 be a little different for email providers.
