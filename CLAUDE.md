@@ -612,5 +612,4 @@ spamfilter-multi/
 - **Hooks Config**: `.claude/hooks.json` (pre-commit validation, post-checkout pub get)
 
 ### Archives (gitignored)
-- **Archive/desktop-python/**: Legacy Python desktop app
-- **.archive/**: Historical docs, completed phase reports
+- **Archive/**: Historical docs, legacy Python desktop app, completed phase reports

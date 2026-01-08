@@ -3,9 +3,8 @@
 #------------------------------------------------------------
 # HK 20241023 These are items I know are specific to me
 *.hk
-# Archive directories
+# Archive directory (includes historical docs, legacy code, completed reports)
 Archive/
-.archive/
 
 # Windows shortcuts (personal local files)
 *.lnk
