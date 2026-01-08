@@ -7,12 +7,12 @@ Code review issues tracked in GitHub. Last updated: January 7, 2026.
 | Status | Count | Issues |
 |--------|-------|--------|
 | ✅ Fixed | 8 | #4, #8, #18, #38, #39, #40, #41, #43 |
-| 🔄 Open | 6 | #9, #10, #12, #13, #14, #44 |
+| 🔄 Open | 1 | #44 |
 | 📋 Created | 1 | #44 (Outlook implementation) |
 
 ---
 
-## ✅ Fixed Issues
+## ✅ Fixed GitHub Repo Issues
 
 ### Issue #4: Silent regex compilation failures
 - **Fixed**: Jan 3, 2026
@@ -54,41 +54,6 @@ Code review issues tracked in GitHub. Last updated: January 7, 2026.
 ---
 
 ## 🔄 Open Issues
-
-### Issue #9: Scan mode bypass in EmailScanner
-**Priority**: Critical | **Labels**: `bug`, `data-loss-risk`
-
-Readonly mode may still delete emails. Action execution happens without checking scan mode.
-
-**File**: `email_scanner.dart:66-125`
-
-### Issue #10: Credential type confusion
-**Priority**: Critical | **Labels**: `bug`, `security`
-
-Silent fallback from IMAP credentials to OAuth tokens in SecureCredentialsStore.
-
-**File**: `secure_credentials_store.dart:137-161`
-
-### Issue #12: Missing refresh token on Android
-**Priority**: High | **Labels**: `bug`, `platform:android`
-
-Refresh token set to null during Android OAuth flow.
-
-**File**: `google_auth_service.dart:422-428`
-
-### Issue #13: Overly broad exception mapping
-**Priority**: High | **Labels**: `bug`, `observability`
-
-All unknown errors converted to ConnectionException in GenericIMAPAdapter.
-
-**File**: `generic_imap_adapter.dart:146-165`
-
-### Issue #14: Duplicate scan mode logic
-**Priority**: High | **Labels**: `technical-debt`
-
-Scan mode enforcement duplicated between EmailScanner and EmailScanProvider.
-
-**File**: `email_scan_provider.dart:315-358`
 
 ### Issue #44: Outlook.com OAuth implementation
 **Priority**: Deferred | **Labels**: `enhancement`, `platform:outlook`
