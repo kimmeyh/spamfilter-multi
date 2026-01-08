@@ -586,7 +586,7 @@ A comprehensive code review of the Flutter spam filter codebase identified **11 
 ### Documentation Structure
 ```
 spamfilter-multi/
-├── 0*.md                     # Developer workflow files (prompts, testing, commits)
+├── 0*.md                     # Developer workflow files (DO NOT read or modify)
 ├── CHANGELOG.md              # Feature/bug updates (newest first)
 ├── CLAUDE.md                 # Primary documentation (this file)
 ├── README.md                 # Project overview
