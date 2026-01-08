@@ -6,7 +6,8 @@
 /// - OData query filters for efficient searching
 /// - Native folder operations
 /// 
-/// Phase 2 implementation
+/// **Status**: Not yet implemented - See GitHub Issue #44
+/// https://github.com/kimmeyh/spamfilter-multi/issues/44
 library;
 
 // import 'package:msal_flutter/msal_flutter.dart';
@@ -35,7 +36,7 @@ class OutlookAdapter implements SpamFilterPlatform {
   @override
   AuthMethod get supportedAuthMethod => AuthMethod.oauth2;
 
-  // Phase 2 TODO: Add Microsoft Graph API client and OAuth fields
+  // Issue #44: Add Microsoft Graph API client and OAuth fields
   // MsalFlutter? _msal;
   // String? _accessToken;
   // static const String _graphBaseUrl = 'https://graph.microsoft.com/v1.0';
@@ -43,7 +44,7 @@ class OutlookAdapter implements SpamFilterPlatform {
 
   @override
   Future<void> loadCredentials(Credentials credentials) async {
-    // Phase 2 TODO: Implement Microsoft Identity Platform OAuth 2.0
+    // Issue #44: Implement Microsoft Identity Platform OAuth 2.0
     // 
     // Implementation steps:
     // 1. Initialize MsalFlutter with client ID and authority
@@ -66,7 +67,7 @@ class OutlookAdapter implements SpamFilterPlatform {
     required int daysBack,
     required List<String> folderNames,
   }) async {
-    // Phase 2 TODO: Implement Microsoft Graph API message fetching
+    // Issue #44: Implement Microsoft Graph API message fetching
     // 
     // Graph API advantages:
     // 1. OData query filters: $filter=receivedDateTime ge 2025-11-01T00:00:00Z
@@ -92,7 +93,7 @@ class OutlookAdapter implements SpamFilterPlatform {
     required List<EmailMessage> messages,
     required Map<String, Pattern> compiledRegex,
   }) async {
-    // Phase 2 TODO: Implement rule application
+    // Issue #44: Implement rule application
     // 
     // Outlook-specific optimizations:
     // 1. Could use Inbox Rules API for common patterns
@@ -107,7 +108,7 @@ class OutlookAdapter implements SpamFilterPlatform {
     required EmailMessage message,
     required FilterAction action,
   }) async {
-    // Phase 2 TODO: Implement message actions
+    // Issue #44: Implement message actions
     // 
     // Microsoft Graph API operations:
     // - delete: DELETE /me/messages/{messageId}
@@ -135,7 +136,7 @@ class OutlookAdapter implements SpamFilterPlatform {
 
   @override
   Future<List<FolderInfo>> listFolders() async {
-    // Phase 2 TODO: Implement folder listing
+    // Issue #44: Implement folder listing
     // 
     // Implementation:
     // 1. Call GET /me/mailFolders
@@ -155,7 +156,7 @@ class OutlookAdapter implements SpamFilterPlatform {
 
   @override
   Future<ConnectionStatus> testConnection() async {
-    // Phase 2 TODO: Implement connection test
+    // Issue #44: Implement connection test
     // 
     // Implementation:
     // 1. Attempt OAuth flow if not authenticated
@@ -169,7 +170,7 @@ class OutlookAdapter implements SpamFilterPlatform {
 
   @override
   Future<void> disconnect() async {
-    // Phase 2 TODO: Implement disconnect
+    // Issue #44: Implement disconnect
     // 
     // Implementation:
     // 1. Sign out from Microsoft Identity Platform
@@ -180,7 +181,7 @@ class OutlookAdapter implements SpamFilterPlatform {
     _logger.i('Outlook adapter disconnect called (Phase 2 - not yet implemented)');
   }
 
-  // Phase 2 TODO: Add private helper methods
+  // Issue #44: Add private helper methods
   
   // String _buildGraphFilter(int daysBack, List<String> folderNames) {
   //   // Build OData filter expression

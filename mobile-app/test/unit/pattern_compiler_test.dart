@@ -175,4 +175,77 @@ void main() {
       expect(compiler.compilationFailures.length, equals(1));
     });
   });
+
+  group('PatternCompiler - Inline Flag Stripping', () {
+    test('strips (?i) inline flag from pattern', () {
+      final pattern = compiler.compile(r'(?i).*aarp.*');
+      expect(pattern, isNotNull);
+      expect(pattern.hasMatch('AARP newsletter'), isTrue);
+      expect(pattern.hasMatch('aarp newsletter'), isTrue);
+      expect(pattern.hasMatch('Join AARP today'), isTrue);
+    });
+
+    test('strips (?im) combined inline flags', () {
+      final pattern = compiler.compile(r'(?im).*dating.*');
+      expect(pattern, isNotNull);
+      expect(pattern.hasMatch('Online DATING site'), isTrue);
+      expect(pattern.hasMatch('dating website'), isTrue);
+    });
+
+    test('strips (?s) single-line flag', () {
+      final pattern = compiler.compile(r'(?s)test.*pattern');
+      expect(pattern, isNotNull);
+      expect(pattern.hasMatch('test some pattern'), isTrue);
+    });
+
+    test('strips (?x) extended flag', () {
+      final pattern = compiler.compile(r'(?x)hello');
+      expect(pattern, isNotNull);
+      expect(pattern.hasMatch('hello world'), isTrue);
+    });
+
+    test('strips (?imsx) all flags combined', () {
+      final pattern = compiler.compile(r'(?imsx)spam');
+      expect(pattern, isNotNull);
+      expect(pattern.hasMatch('SPAM'), isTrue);
+      expect(pattern.hasMatch('spam'), isTrue);
+    });
+
+    test('does not strip valid non-capturing groups', () {
+      // (?:...) is a valid Dart regex construct, should not be stripped
+      final pattern = compiler.compile(r'(?:test|example)\.com');
+      expect(pattern, isNotNull);
+      expect(pattern.hasMatch('test.com'), isTrue);
+      expect(pattern.hasMatch('example.com'), isTrue);
+    });
+
+    test('handles pattern with only inline flag', () {
+      // Edge case: pattern is just the flag
+      final pattern = compiler.compile(r'(?i)');
+      expect(pattern, isNotNull);
+      // Empty pattern after stripping matches everything
+      expect(pattern.hasMatch('anything'), isTrue);
+    });
+
+    test('caches original pattern key but uses cleaned pattern', () {
+      final originalPattern = r'(?i).*test.*';
+      
+      // First compile
+      compiler.compile(originalPattern);
+      final stats1 = compiler.getStats();
+      expect(stats1['cache_misses'], equals(1));
+      
+      // Second compile with same original pattern - should hit cache
+      compiler.compile(originalPattern);
+      final stats2 = compiler.getStats();
+      expect(stats2['cache_hits'], equals(1));
+    });
+
+    test('pattern with spaces after flag works', () {
+      final pattern = compiler.compile(r'(?i).*5\-second\ morning\ hack.*');
+      expect(pattern, isNotNull);
+      expect(pattern.hasMatch('5-second morning hack'), isTrue);
+      expect(pattern.hasMatch('5-SECOND MORNING HACK'), isTrue);
+    });
+  });
 }

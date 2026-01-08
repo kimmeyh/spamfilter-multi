@@ -18,7 +18,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 3. **Full Transparency**: Provide complete information about what you're doing
    - Don't shortcut analysis - show the full picture
-   - Explain both what you found AND what you didn't find
+   - Explain both what you found AND what you did not find
    - Share context about why something matters
 
 4. **Mutual Respect**: Together you are better than either individually
@@ -36,10 +36,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ❌ BAD: [Silently runs git status, finds files missing, edits .gitignore, reports "Fixed!"]
 
 ✅ GOOD: "I'm checking git status to see which files are tracked... Interesting - the
-mobile-app/lib/ files aren't showing up. You opened .gitignore - good thinking! Let me
+mobile-app/lib/ files are not showing up. You opened .gitignore - good thinking! Let me
 search for 'lib/' in there... Found it! Line 81 has a broad 'lib/' exclusion that's
 catching both Python lib directories AND our Flutter source code. This is a mixed-repo
 issue. Should I make it more specific to only exclude 'Archive/desktop-python/lib/'?"
+```
+
+## Coding Style Guidelines
+
+### Documentation and Comments
+- **No contractions**: Use "do not" instead of "don't", "does not" instead of "doesn't", "cannot" instead of "can't", etc.
+- **Clarity over brevity**: Write clear, complete sentences in documentation
+- **Use Logger, not print()**: Production code (`lib/`) must use `Logger` for all logging. Test files (`test/`) may use `print()`.  Exception: unit and integration tests (ex. *_test.dart files)
+
+### Example
+```dart
+// ❌ BAD: Don't use this pattern, it won't work correctly
+// ✅ GOOD: Do not use this pattern, it will not work correctly
+
+// ❌ BAD: Can't be null here
+// ✅ GOOD: Cannot be null here
 ```
 
 ## Project Overview
@@ -82,7 +98,7 @@ spamfilter-multi/
 │   ├── test/            # Unit, integration, and smoke tests
 │   ├── scripts/         # Build automation scripts
 │   └── android/         # Android-specific configuration
-├── Archive/
+├── archive/
 │   └── desktop-python/  # Original Outlook desktop app (reference only)
 ├── memory-bank/         # Development planning and documentation
 ├── rules.yaml           # Active spam filtering rules (regex, shared)
@@ -240,7 +256,39 @@ All YAML exports enforce:
 5. Single quotes (avoid backslash escaping)
 6. Timestamped backups to `Archive/` before overwrite
 
-See `memory-bank/yaml-schemas.md` and `memory-bank/regex-conventions.md` for complete specifications.
+### Regex Pattern Conventions
+
+**Pattern Formatting**:
+- All patterns are **lowercase** (case-insensitive matching via `caseSensitive: false`)
+- All patterns are **trimmed** (no leading/trailing whitespace)
+- Dart RegExp does not support Python-style inline flags (`(?i)`, `(?m)`, `(?s)`, `(?x)`) - these are automatically stripped by PatternCompiler
+- YAML uses **single quotes** to avoid backslash escaping issues
+
+**Domain Blocking Patterns** (for SpamAutoDeleteHeader.header):
+```regex
+@(?:[a-z0-9-]+\.)*example\.com$           # Block domain and all subdomains
+@(?:[a-z0-9-]+\.)*example\.[a-z0-9.-]+$   # Block domain with generic TLD match
+mailer-daemon@aol\.com                     # Block specific email address
+```
+
+**Safe Sender Patterns** (for rules_safe_senders.yaml):
+```regex
+^john\.doe@company\.com$                           # Exact email match (anchored)
+^[^@\s]+@(?:[a-z0-9-]+\.)*lifeway\.com$           # Allow domain and all subdomains
+```
+
+**Pattern Building Reference**:
+| Purpose | Pattern Format | Example |
+|---------|---------------|---------|
+| Block domain | `@(?:[a-z0-9-]+\.)*domain\.com$` | `@(?:[a-z0-9-]+\.)*spam\.com$` |
+| Block email | Literal email address | `spammer@example\.com` |
+| Allow exact email | `^email@domain\.com$` | `^trusted@company\.com$` |
+| Allow domain | `^[^@\s]+@(?:[a-z0-9-]+\.)*domain\.com$` | `^[^@\s]+@(?:[a-z0-9-]+\.)*trusted\.com$` |
+
+**Regex Compilation**:
+- Patterns compiled with `caseSensitive: false` (equivalent to Python `re.IGNORECASE`)
+- Invalid patterns are logged and tracked (not silently ignored)
+- Compiled patterns are cached for performance
 
 ## OAuth and Secrets Management
 
@@ -369,7 +417,7 @@ flutter test --coverage                         # With coverage
 **Applies to**: All account types (Gmail OAuth, AOL IMAP, Yahoo IMAP)
 
 ### Account Selection Navigation and Refresh Issues
-**Symptom**: After completing a scan and clicking "Back to Accounts" from Results Display screen, navigation went to Platform Selection instead of Account Selection, and account list didn't refresh to show newly added accounts
+**Symptom**: After completing a scan and clicking "Back to Accounts" from Results Display screen, navigation went to Platform Selection instead of Account Selection, and account list did not refresh to show newly added accounts
 **Root Cause**: Delete handler used `Navigator.pushReplacement` to replace Account Selection with Platform Selection when last account was deleted (breaking navigation stack), and Account Selection screen only refreshed accounts on 2-second timer (not on navigation events)
 **Fix Applied (Jan 2, 2026)**:
   - Removed pushReplacement navigation from delete handler - Account Selection now stays in navigation stack and shows built-in "Add Account" UI when empty
@@ -386,7 +434,7 @@ flutter test --coverage                         # With coverage
 
 **Issue #35 - Folder Selection Not Scanning Selected Folders**:
 - **Problem**: Selecting non-Inbox folders (e.g., "Bulk Mail") still only scanned Inbox
-- **Root Cause**: Missing state management - `scanProvider.selectedFolders` wasn't being set
+- **Root Cause**: Missing state management - `scanProvider.selectedFolders` was not being set
 - **Solution**: Added `_selectedFolders` field to EmailScanProvider, connected UI callback to `setSelectedFolders()`, pass to scanner
 - **Files Modified**: `email_scan_provider.dart`, `scan_progress_screen.dart`
 
@@ -448,7 +496,7 @@ flutter test --coverage                         # With coverage
 - Added persistent "Scan Mode" button on Scan Progress screen
 - Removed scan mode pop-up from account setup flow (default to readonly)
 - Added warning dialog for Full Scan mode (requires user confirmation)
-- Updated `recordResult()` to distinguish revertable vs permanent actions
+- Updated `recordResult()` to distinguish revertible vs permanent actions
 - Files Modified: `email_scan_provider.dart`, `account_setup_screen.dart`, `scan_progress_screen.dart`
 
 **Issue #33 - Scan Progress Screen UI Redesign**:
@@ -476,7 +524,7 @@ flutter test --coverage                         # With coverage
 **No Rule Tracking**:
 - Added `_noRuleCount` field and getter to EmailScanProvider
 - Added "No rule" bubble (grey #757575) between "Safe" and "Errors"
-- Tracks emails that didn't match any rules (for future rule creation)
+- Tracks emails that did not match any rules (for future rule creation)
 - Increments when `action == EmailActionType.none`
 - Files Modified: `email_scan_provider.dart`, `scan_progress_screen.dart`, `results_display_screen.dart`
 
@@ -535,18 +583,34 @@ A comprehensive code review of the Flutter spam filter codebase identified **11 
 
 ## Additional Resources
 
-- **Development Standards**: `memory-bank/development-standards.md`
-- **Processing Flow**: `memory-bank/processing-flow.md`
-- **YAML Schemas**: `memory-bank/yaml-schemas.md`
-- **Regex Conventions**: `memory-bank/regex-conventions.md`
-- **Code Review Backlog**: `GITHUB_ISSUES_BACKLOG.md` (complete issue details)
-- **Desktop Archive**: `Archive/desktop-python/` (reference only)
+### Documentation Structure
+```
+spamfilter-multi/
+├── 0*.md                     # Developer workflow files (DO NOT read or modify)
+├── CHANGELOG.md              # Feature/bug updates (newest first)
+├── CLAUDE.md                 # Primary documentation (this file)
+├── README.md                 # Project overview
+├── docs/                     # Consolidated documentation
+│   ├── OAUTH_SETUP.md        # Gmail OAuth for Android + Windows
+│   ├── TROUBLESHOOTING.md    # Common issues and fixes
+│   └── ISSUE_BACKLOG.md      # Open issues and status
+├── mobile-app/
+│   ├── README.md             # App-specific quick start
+│   └── docs/
+│       └── DEVELOPER_SETUP.md  # New developer onboarding (Windows 11)
+└── scripts/
+    └── email-rule-tester-mcp/  # Custom MCP server
+```
 
-### Claude Code Tooling (Added Jan 6, 2026)
-- **Setup Guide**: `CLAUDE_CODE_SETUP_GUIDE.md` (complete MCP server, skills, hooks documentation)
-- **Quick Reference**: `QUICK_REFERENCE.md` (command cheat sheet)
-- **Custom MCP Server**: `scripts/email-rule-tester-mcp/` (YAML validation, regex testing, rule simulation)
+### Quick Reference
+- **QUICK_REFERENCE.md**: Command cheat sheet
+- **CLAUDE_CODE_SETUP_GUIDE.md**: MCP server, skills, hooks setup
+
+### Claude Code Tooling
+- **Custom MCP Server**: `scripts/email-rule-tester-mcp/`
 - **Validation Scripts**: `scripts/validate-yaml-rules.ps1`, `scripts/test-regex-patterns.ps1`
-- **Skills Config**: `.claude/skills.json` (10 custom skills: validate-rules, deploy-debug, etc.)
-- **Hooks Config**: `.claude/hooks.json` (pre-commit YAML validation, post-checkout flutter pub get)
-- **Emulator Docs**: `mobile-app/scripts/EMULATOR_AUTO_START.md`
+- **Skills Config**: `.claude/skills.json` (10 custom skills)
+- **Hooks Config**: `.claude/hooks.json` (pre-commit validation, post-checkout pub get)
+
+### Archives (gitignored)
+- **Archive/**: Historical docs, legacy Python desktop app, completed phase reports

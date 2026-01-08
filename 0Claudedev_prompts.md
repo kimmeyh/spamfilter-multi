@@ -1,43 +1,17 @@
 Next:----------------------------------------
-  🚀 Next Steps
+What is the way that Samsung Galaxy S24+ Android email address does authentication for gmail, as it only requests authentication once over multiple years, but the current Windows Desktop and Android app method here seems to need to request an update about once per day?
 
-  Step 1: Restart Claude Code
+Add in phase 3 to add to the Android app client and Windows desktop a browser client that is compatible with chrome, safari, and edge.  Note that the browser client only does the settings and on-demand scans as there is no way to automate scans via the browser.  What would you suggest
 
-  Close and reopen Claude Code to load the new MCP server.
-
-  Step 2: Test the MCP Server
-
-  Ask Claude:
-  "What MCP tools are available?"
-  "Validate my rules.yaml file"
-
-  Step 3: Try the Skills
-
-  /skill validate-rules
-  /skill deploy-debug
-
-  Step 4: Test Pre-commit Hook
-
-  git add -A
-  git commit -m "feat: Add Claude Code MCP tools and skills"
-  # Should see YAML validation output
-
-Feedback on Android app in emulator:  finding aol account, testing went well on demo and actual inbox.  Select account is not showing the previously setup gmail email kimmeyh@gmail.com.  Feedback on Windows Desktop app: aol email address in Select account is not showing the email address.  If no authentication has been provided for the platform (android), the still list the account, but note that an authentication needs to be added with a link to the authentication page. Pass the existing email address and have the user add authentication via one of the methods available.  Then update the stored platform/email address/authentication method data for the email address.
-
-On Scan progress page.  As soon as Start Demo Scan or Start Live Scan button is selected, it should change "No Results yet. Start a scan to see activity." to a message indicating that the scan has started and/or in progress. Feedback for all Scan Progress pages.  When it returns to this page after scanning or from the accounts page a "Reset" should be done before loading the page.  Then the "Reset" button is no longer needed.
-
-Add in phase 3 to add to the Android app client and Windows desktop a browser client that is compatible with chrome, safari, and edge 
-
-Phase 2 Sprint 3 - Gmail OAuth Integration & Rule Editor UI
-
-The UI will need to have functionality to add/remove folders to scan all the time and one-time scan options that can be triggered manually (read and display all folders, allow to multi-select via checkbox, include and All checkbox that selects all folders to be scanned, check and uncheck as needed).
-
-ScanProgressScreen integration with folder display
-Results screen with "Revert Last Run" button
 Maintenance screen for account management
-Actual revert implementation in GenericIMAPAdapter
+The UI will need to have functionality a set of folders that is used for triggered/scheduled scans.
+UI still needs the functionality (as it exists today) for manual scans.
+UI will need a way to change global settings (this is currently true with email/provider setups, default folders to scan, selected folders to scan (selected and then kept until changed later), manual scan *** limit.  There will be others ***
 
-Manual testing on device/emulator
+Results screen with "Revert Last Run" button when in "Revert scan mode"
+
+Actual revert implementation for gmail and aol
+
 Testing all three scan modes (readonly, testLimit, testAll)
 Release APK build for mobile deployment
 Desktop application builds (Windows, macOS, Linux)
@@ -49,39 +23,23 @@ Need to be able to really add Bulk Mail folder
 Need to be able to find all folders
 Need to be able to actually find safe senders and/or moved, and rules that apply and if would have been deleted.
 
+NOTES: For Claude Code:  CLAUD.md is always read.  It manages serena memories automatically.
 ------Prompt-----
 Claud Instructions:
-  CRITICAL: Do NOT ask me to share these files. Read them immediately from the VSCode workspace, in this repository, using absolute paths:
-  - D:\Data\Harold\github\spamfilter-multi\CLAUDE.md
-  - d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json
-  - d:\Data\Harold\github\spamfilter-multi\memory-bank\mobile-app-plan.md
-  1. Read the above files and confirm reading before proceeding.
-  2. Create a detailed, step-by-step "ToDo" checklist for yourself, Claude, to accomplish the request.
-  3. Search codebase for existing functionality related to the request.
-     - If implementation exists, verify completeness and document findings.
-     - Only implement missing pieces.
-  4. While I understand and acknowledge Claude rules on autonomous execution, please execute each step on my behalf to the greatest extent allowed. 
-  5. Only consider the job complete when all checklist items are finished and all required documentation is updated.
-  6. Do not update this prompt file (0Clauddev_prompts.md)
-  7. Do not use Bash for any commands, use only PowerShell for all terminal commands.
-  8. Tokens/credentials must be stored securely and encrypted at rest.  
-  9. No tokens, secrets, or credentials may appear in clear text in:
-     - source code
-     - git repository
-     - app logs
-     - analytics events
+  2. Plan for the below request(s).
+  3. Based on your understanding of the codebase, Windows Desktop app, Android app and conducting code searches, as needed for the request(s) below:
+    - If implementation exists, verify completeness and document findings.
+    - Only implement missing pieces.
+    - Never consider updating or update this prompt file (0Clauddev_prompts.md)
+  3. Provide a summary of the plan and request approval
+  5. Once the plan is approved:
+    - Create or update github issues(s) for the plan
+    - Create or Update the pr for the current github branch with the github issues
+  5. Consider the job complete when:
+    - All planned items all finished
+    - All required documentation is updated.
   Request:
-  Can you review the code base and last commit to determine if updates are needed to the following files, then make updates as needed:
-  - D:\Data\Harold\github\spamfilter-multi\CLAUDE.md
-  - d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json
-  - d:\Data\Harold\github\spamfilter-multi\memory-bank\mobile-app-plan.md
-  - d:\Data\Harold\github\spamfilter-multi\mobile-app\README.md
 
-  When complete (NOT before unless Critical for success), update:
-  - D:\Data\Harold\github\spamfilter-multi\CLAUDE.md
-  - d:\Data\Harold\github\spamfilter-multi\memory-bank\memory-bank.json
-  - d:\Data\Harold\github\spamfilter-multi\memory-bank\mobile-app-plan.md
-  - d:\Data\Harold\github\spamfilter-multi\mobile-app\README.md
 
 Proceed to draft the changes in the files for review and testing.
 

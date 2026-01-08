@@ -20,7 +20,7 @@ void main() async {
     await credStore.migrateFromLegacyTokenStore();
   } catch (e) {
     // Migration failure shouldn't block app startup
-    print('Legacy token migration failed: $e');
+    Logger().w('Legacy token migration failed: $e');
   }
 
   runApp(const SpamFilterApp());

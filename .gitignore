@@ -3,8 +3,8 @@
 #------------------------------------------------------------
 # HK 20241023 These are items I know are specific to me
 *.hk
-# Archive directory
-Archive/
+# Archive directory (includes historical docs, legacy code, completed reports)
+archive/
 
 # Windows shortcuts (personal local files)
 *.lnk
@@ -98,7 +98,7 @@ downloads/
 eggs/
 .eggs/
 # Python lib directories only (not Flutter's lib/)
-Archive/desktop-python/lib/
+archive/desktop-python/lib/
 lib64/
 parts/
 sdist/

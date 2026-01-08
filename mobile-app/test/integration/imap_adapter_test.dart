@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:spam_filter_mobile/core/models/email_message.dart';
 import 'package:spam_filter_mobile/adapters/email_providers/generic_imap_adapter.dart';

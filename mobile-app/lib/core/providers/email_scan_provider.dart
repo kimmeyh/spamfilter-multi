@@ -125,7 +125,9 @@ class EmailScanProvider extends ChangeNotifier {
   final List<EmailActionResult> _lastRunActions = [];  // Track actual actions for revert
 
   // ✨ PHASE 3.2: Folder selection for scan
-  List<String> _selectedFolders = ['INBOX'];  // Default to INBOX
+  // ✨ ISSUE #41 FIX: Store folders per-account to prevent cross-account folder leakage
+  final Map<String, List<String>> _selectedFoldersByAccount = {};  // accountId -> folders
+  String? _currentAccountId;  // Track current account for folder lookup
 
   // ✨ PHASE 3.3: Progressive update throttling (Issue #36)
   DateTime? _lastProgressNotification;
@@ -155,7 +157,14 @@ class EmailScanProvider extends ChangeNotifier {
   int get revertableActionCount => _lastRunActionIds.length;
   
   // ✨ PHASE 3.2: Folder selection getter
-  List<String> get selectedFolders => _selectedFolders;
+  // ✨ ISSUE #41 FIX: Return folders for current account only
+  List<String> get selectedFolders => 
+      _currentAccountId != null 
+          ? (_selectedFoldersByAccount[_currentAccountId] ?? ['INBOX'])
+          : ['INBOX'];
+  
+  // ✨ ISSUE #41: Get current account ID
+  String? get currentAccountId => _currentAccountId;
   
   /// Get human-readable scan mode name for UI display
   String getScanModeDisplayName() {
@@ -369,15 +378,40 @@ class EmailScanProvider extends ChangeNotifier {
   }
 
   /// ✨ PHASE 3.2: Set selected folders for scan
-  void setSelectedFolders(List<String> folders) {
+  /// ✨ ISSUE #41 FIX: Store folders per-account to prevent cross-account folder leakage
+  void setSelectedFolders(List<String> folders, {String? accountId}) {
+    final targetAccountId = accountId ?? _currentAccountId;
+    if (targetAccountId == null) {
+      _logger.w('⚠️ No account ID specified for folder selection');
+      return;
+    }
+    
     if (folders.isEmpty) {
-      _logger.w('⚠️ No folders selected, defaulting to INBOX');
-      _selectedFolders = ['INBOX'];
+      _logger.w('⚠️ No folders selected for $targetAccountId, defaulting to INBOX');
+      _selectedFoldersByAccount[targetAccountId] = ['INBOX'];
     } else {
-      _selectedFolders = List.from(folders);  // Create copy to avoid mutation
-      _logger.i('📁 Selected folders for scan: $_selectedFolders');
+      _selectedFoldersByAccount[targetAccountId] = List.from(folders);  // Create copy to avoid mutation
+      _logger.i('📁 Selected folders for $targetAccountId: ${_selectedFoldersByAccount[targetAccountId]}');
     }
     notifyListeners();
+  }
+  
+  /// ✨ ISSUE #41: Set current account ID for folder lookup
+  void setCurrentAccount(String accountId) {
+    _currentAccountId = accountId;
+    _logger.i('📧 Current account set to: $accountId');
+    // Don't notify - this is just for internal state tracking
+  }
+  
+  /// ✨ ISSUE #41: Get selected folders for a specific account
+  List<String> getSelectedFoldersForAccount(String accountId) {
+    return _selectedFoldersByAccount[accountId] ?? ['INBOX'];
+  }
+  
+  /// ✨ ISSUE #41: Clear folders for a specific account
+  void clearSelectedFoldersForAccount(String accountId) {
+    _selectedFoldersByAccount.remove(accountId);
+    _logger.i('🗑️ Cleared folder selection for $accountId');
   }
 
   /// ✨ PHASE 3.1: Mode-aware recordResult with read-only, test modes, and full scan
@@ -388,8 +422,18 @@ class EmailScanProvider extends ChangeNotifier {
   /// - fullScan: all actions executed PERMANENTLY (cannot revert)
   void recordResult(EmailActionResult result) {
     // Determine if this action should actually be executed
-    bool shouldExecuteAction = _scanMode != ScanMode.readonly &&
-        (_emailTestLimit == null || _lastRunActionIds.length < _emailTestLimit!);
+    bool shouldExecuteAction;
+    if (_scanMode == ScanMode.fullScan) {
+      // In fullScan mode, all actions are executed permanently (no test limit, no revert tracking)
+      shouldExecuteAction = true;
+    } else if (_scanMode == ScanMode.readonly) {
+      // In readonly mode, actions are never executed
+      shouldExecuteAction = false;
+    } else {
+      // In test modes, respect the optional email test limit
+      shouldExecuteAction = _emailTestLimit == null ||
+          _lastRunActionIds.length < _emailTestLimit!;
+    }
 
     if (shouldExecuteAction) {
       // Track action for potential revert (only for testLimit and testAll, NOT fullScan)
