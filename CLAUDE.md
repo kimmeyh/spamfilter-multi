@@ -98,7 +98,7 @@ spamfilter-multi/
 │   ├── test/            # Unit, integration, and smoke tests
 │   ├── scripts/         # Build automation scripts
 │   └── android/         # Android-specific configuration
-├── Archive/
+├── archive/
 │   └── desktop-python/  # Original Outlook desktop app (reference only)
 ├── memory-bank/         # Development planning and documentation
 ├── rules.yaml           # Active spam filtering rules (regex, shared)
@@ -586,6 +586,7 @@ A comprehensive code review of the Flutter spam filter codebase identified **11 
 ### Documentation Structure
 ```
 spamfilter-multi/
+├── 0*.md                     # Developer workflow files (prompts, testing, commits)
 ├── CHANGELOG.md              # Feature/bug updates (newest first)
 ├── CLAUDE.md                 # Primary documentation (this file)
 ├── README.md                 # Project overview
