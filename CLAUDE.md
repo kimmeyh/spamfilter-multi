@@ -544,8 +544,30 @@ flutter test --coverage                         # With coverage
 3. **Build**:
    - Windows: `.\scripts\build-windows.ps1`
    - Android: `.\scripts\build-with-secrets.ps1 -BuildType debug -InstallToEmulator`
-4. **Test**: `flutter test` (verify all 122 tests passing)
+4. **Test**: `flutter test` (verify all 185 tests passing)
 5. **Analyze**: `flutter analyze` (ensure 0 issues)
+
+## Changelog Policy
+
+**CHANGELOG.md** should be updated with each commit that introduces user-facing changes:
+
+1. **When to Update**: Update CHANGELOG.md in the same commit as the code changes (not after PR merge)
+2. **Format**: `- **type**: Description (Issue #N)` where type is:
+   - `feat`: New feature or enhancement
+   - `fix`: Bug fix
+   - `chore`: Maintenance, refactoring, dependencies
+   - `docs`: Documentation only changes
+   - `test`: Adding or updating tests
+3. **Location**: Add entries under `## [Unreleased]` section, grouped by date (newest first)
+4. **Issue References**: Always include GitHub issue number when applicable
+5. **Commit Together**: Stage CHANGELOG.md with the related code changes in a single commit
+
+**Example Entry**:
+```markdown
+### 2026-01-12
+- **feat**: Update Results screen to show folder • subject • rule format (Issue #47)
+- **feat**: Add AOL Bulk/Bulk Email folder recognition as junk folders (Issue #48)
+```
 
 ## Known Limitations
 
