@@ -2,6 +2,62 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Session Startup Checklist
+
+**CRITICAL**: At the start of each new session, verify Claude Code setup before accepting code work requests. Setup issues can block work mid-task, wasting time and context.
+
+### Quick Health Check
+
+Run these checks and resolve any issues WITH the user before proceeding:
+
+1. **Project activation**: Verify the project is recognized
+   ```
+   Check: Can you read files in mobile-app/lib/?
+   Fix: Activate project or verify working directory
+   ```
+
+2. **Git status**: Check for unexpected state
+   ```powershell
+   git status --short
+   git branch --show-current
+   ```
+   - Verify on expected branch
+   - Note any uncommitted changes or conflicts
+
+3. **Tool availability**: Verify essential tools work
+   - File read/write operations
+   - Shell command execution (PowerShell on Windows)
+   - GitHub CLI (`gh issue list`, `gh pr list`)
+
+4. **MCP server status**: If using Serena or other MCP tools
+   - Check if project needs activation (`activate_project`)
+   - Verify onboarding status (`check_onboarding_performed`)
+
+### If Issues Are Found
+
+- **STOP** before accepting code work requests
+- **INFORM** the user about the specific issues found
+- **COLLABORATE** to resolve setup issues first
+- **VERIFY** fixes before proceeding with original request
+
+### Why This Matters
+
+Session startup issues that go undetected can:
+- Block work mid-task after significant context is built
+- Cause failed commits, broken builds, or lost changes
+- Waste user time on requests that cannot be completed
+- Require re-explaining context in a new session
+
+**Example**:
+```
+✅ GOOD: "Before we start, let me verify the environment... I see git status shows
+some unexpected deleted files in .claude/. Let me check if this is intentional
+or a setup issue we should resolve first."
+
+❌ BAD: [Accepts complex refactoring request, works for 20 minutes, then discovers
+MCP tools are not connected and cannot complete the task]
+```
+
 ## Development Philosophy: Co-Lead Developer Collaboration
 
 **CRITICAL**: Treat the user as a co-lead developer, not a client. This means:
