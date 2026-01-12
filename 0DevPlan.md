@@ -5,6 +5,8 @@ The OutlookMailSpamFilter desktop application has been successfully ported to a 
 
 ## Development Phases
 ### Phase 3.4 Goals: 
+<!-- 
+Moved to issues:
 - Focus on AOL and Gmail email addresses
 - Focus on Android and Windows Desktop apps
   - Both Android and Windows Desktop
@@ -12,7 +14,7 @@ The OutlookMailSpamFilter desktop application has been successfully ported to a 
       - Results screen
         - Update to View Results screen > results list. Add the folder in front of the from email address, "<from-email-address> o <rule>" to be "<folder> o <subject> o <rule>"
       - Select Folders screen
-        - Update the AOL platform/email "Bulk" and "Bulk Email" (if they exist)to be considered "Spam/Junk folders" and should be tagged as "Recommended" and checked by default
+        - Update the AOL platform/email "Bulk" and "Bulk Email" (if they exist)to be considered "Spam/Junk folders" and should be tagged as "Recommended" and checked by default -->
 
 Planning
 The management of identified spam will similar, but will likely have differences.  Like the rest of the app, would like it to be the same whenever possible, but different when needed or unreasonable to do the same.
