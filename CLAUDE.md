@@ -573,13 +573,22 @@ This project follows [Keep a Changelog](https://keepachangelog.com/) conventions
 - **feat**: Add AOL Bulk/Bulk Email folder recognition as junk folders (Issue #48)
 ```
 
-### Releasing (After PR Merge)
+### Releasing (After PR Merge to main)
 
-When a PR is merged to `main`, move entries from `[Unreleased]` to a versioned release:
+This project uses **GitFlow**: feature branches → `develop` → `main`
 
-1. **Check for merged PRs**: Review PRs merged since the last changelog date entry
+- **PRs to `develop`**: Entries stay in `[Unreleased]` - these are integration builds
+- **PRs to `main`**: Move entries from `[Unreleased]` to a versioned release - these are production releases
+
+When `develop` is merged to `main`, create a versioned release:
+
+1. **Check for merged PRs to develop**: Review what is included since last release
    ```powershell
-   gh pr list --state merged --base main --search "merged:>=2026-01-04"
+   # PRs merged to develop since a date
+   gh pr list --state merged --base develop --json number,title,mergedAt
+
+   # Commits on develop not yet on main
+   git rev-list --count origin/main..origin/develop
    ```
 
 2. **Create version section**: Move relevant `[Unreleased]` entries to a new version heading
@@ -588,10 +597,13 @@ When a PR is merged to `main`, move entries from `[Unreleased]` to a versioned r
    ### 2026-01-12
    - **feat**: Update Results screen format (Issue #47)
    ...
+
+   ## [Unreleased]
+   (empty or new entries since release)
    ```
 
 3. **Version numbering**: Follow [Semantic Versioning](https://semver.org/)
-   - **MAJOR**: Breaking changes or major milestones
+   - **MAJOR**: Breaking changes or major milestones (Phase releases)
    - **MINOR**: New features (feat)
    - **PATCH**: Bug fixes (fix)
 
