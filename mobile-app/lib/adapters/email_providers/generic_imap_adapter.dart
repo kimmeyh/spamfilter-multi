@@ -456,7 +456,8 @@ class GenericIMAPAdapter implements SpamFilterPlatform {
   CanonicalFolder _getCanonicalFolder(String folderName) {
     final lowerName = folderName.toLowerCase();
     if (lowerName == 'inbox') return CanonicalFolder.inbox;
-    if (lowerName.contains('junk') || lowerName.contains('spam')) {
+    // Issue #48: AOL uses "Bulk Mail" and "Bulk Email" for spam folders
+    if (lowerName.contains('junk') || lowerName.contains('spam') || lowerName.contains('bulk')) {
       return CanonicalFolder.junk;
     }
     if (lowerName.contains('trash') || lowerName.contains('deleted')) {

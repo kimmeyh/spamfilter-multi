@@ -288,10 +288,16 @@ class ResultsDisplayScreen extends StatelessWidget {
   }
 
   Widget _buildResultTile(EmailActionResult result) {
-    final title = result.email.subject.isNotEmpty
+    // Issue #47: Title shows sender email, subtitle shows folder • subject • rule
+    final title = result.email.from.isNotEmpty
+        ? result.email.from
+        : 'Unknown sender';
+    final folder = result.email.folderName;
+    final subject = result.email.subject.isNotEmpty
         ? result.email.subject
         : 'No subject';
-    final subtitle = '${result.email.from} • ${result.evaluationResult?.matchedRule ?? 'No rule'}';
+    final rule = result.evaluationResult?.matchedRule ?? 'No rule';
+    final subtitle = '$folder • $subject • $rule';
     final trailing = result.success
         ? const Icon(Icons.check, color: Colors.green)
         : const Icon(Icons.error, color: Colors.red);
