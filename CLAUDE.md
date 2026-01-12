@@ -549,6 +549,10 @@ flutter test --coverage                         # With coverage
 
 ## Changelog Policy
 
+This project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
+
+### Adding Entries (During Development)
+
 **CHANGELOG.md** should be updated with each commit that introduces user-facing changes:
 
 1. **When to Update**: Update CHANGELOG.md in the same commit as the code changes (not after PR merge)
@@ -568,6 +572,43 @@ flutter test --coverage                         # With coverage
 - **feat**: Update Results screen to show folder • subject • rule format (Issue #47)
 - **feat**: Add AOL Bulk/Bulk Email folder recognition as junk folders (Issue #48)
 ```
+
+### Releasing (After PR Merge)
+
+When a PR is merged to `main`, move entries from `[Unreleased]` to a versioned release:
+
+1. **Check for merged PRs**: Review PRs merged since the last changelog date entry
+   ```powershell
+   gh pr list --state merged --base main --search "merged:>=2026-01-04"
+   ```
+
+2. **Create version section**: Move relevant `[Unreleased]` entries to a new version heading
+   ```markdown
+   ## [1.0.0] - 2026-01-12
+   ### 2026-01-12
+   - **feat**: Update Results screen format (Issue #47)
+   ...
+   ```
+
+3. **Version numbering**: Follow [Semantic Versioning](https://semver.org/)
+   - **MAJOR**: Breaking changes or major milestones
+   - **MINOR**: New features (feat)
+   - **PATCH**: Bug fixes (fix)
+
+4. **Update Version History**: Add summary to the `## Version History` section at bottom of CHANGELOG.md
+
+5. **Link versions**: Add comparison links at bottom of CHANGELOG.md
+   ```markdown
+   [1.0.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.9.0...v1.0.0
+   [Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v1.0.0...HEAD
+   ```
+
+### Best Practices
+
+- **Human-readable**: Write for users, not developers. Focus on "what changed" not "how"
+- **Group by date**: Keep daily entries together for easy scanning
+- **Do not delete**: Never remove entries; move them to versioned sections
+- **PR description**: Use CHANGELOG entries as basis for PR descriptions
 
 ## Known Limitations
 
