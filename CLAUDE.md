@@ -2,61 +2,30 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Session Startup Checklist
+## FIRST: Run Startup Check
 
-**CRITICAL**: At the start of each new session, verify Claude Code setup before accepting code work requests. Setup issues can block work mid-task, wasting time and context.
+**BEFORE doing any work**, run these checks in parallel and report results to user:
 
-### Quick Health Check
-
-Run these checks and resolve any issues WITH the user before proceeding:
-
-1. **Project activation**: Verify the project is recognized
-   ```
-   Check: Can you read files in mobile-app/lib/?
-   Fix: Activate project or verify working directory
-   ```
-
-2. **Git status**: Check for unexpected state
-   ```powershell
-   git status --short
-   git branch --show-current
-   ```
-   - Verify on expected branch
-   - Note any uncommitted changes or conflicts
-
-3. **Tool availability**: Verify essential tools work
-   - File read/write operations
-   - Shell command execution (PowerShell on Windows)
-   - GitHub CLI (`gh issue list`, `gh pr list`)
-
-4. **MCP server status**: If using Serena or other MCP tools
-   - Check if project needs activation (`activate_project`)
-   - Verify onboarding status (`check_onboarding_performed`)
-
-### If Issues Are Found
-
-- **STOP** before accepting code work requests
-- **INFORM** the user about the specific issues found
-- **COLLABORATE** to resolve setup issues first
-- **VERIFY** fixes before proceeding with original request
-
-### Why This Matters
-
-Session startup issues that go undetected can:
-- Block work mid-task after significant context is built
-- Cause failed commits, broken builds, or lost changes
-- Waste user time on requests that cannot be completed
-- Require re-explaining context in a new session
-
-**Example**:
 ```
-✅ GOOD: "Before we start, let me verify the environment... I see git status shows
-some unexpected deleted files in .claude/. Let me check if this is intentional
-or a setup issue we should resolve first."
-
-❌ BAD: [Accepts complex refactoring request, works for 20 minutes, then discovers
-MCP tools are not connected and cannot complete the task]
+1. mcp__plugin_serena_serena__activate_project(project="spamfilter-multi")
+2. mcp__plugin_serena_serena__check_onboarding_performed()
+3. git status --short && git branch --show-current
+4. gh issue list --limit 1  (verifies GitHub CLI)
 ```
+
+**Quick summary format:**
+```
+Startup Check:
+- Serena: [activated/failed]
+- Git: [branch] with [N uncommitted files / clean]
+- GitHub CLI: [working/failed]
+- Ready: [Yes/No - if No, explain what needs fixing]
+```
+
+If any check fails, **STOP and resolve with user before accepting work**.
+## Developer information
+1. Using Windows 11 HP Omen with all current Windows Updates installed
+2. When looking for information about the user, should always use Windows environment variables (however username is kimme as in C:\users\kimme)
 
 ## Development Philosophy: Co-Lead Developer Collaboration
 
