@@ -5,6 +5,11 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-01-12
+- **test**: Add Flutter integration tests for Windows Desktop UI (Issue #46)
+- **feat**: Update Results screen to show folder • subject • rule format (Issue #47)
+- **feat**: Add AOL Bulk/Bulk Email folder recognition as junk folders (Issue #48)
+
 ### 2026-01-07
 - **chore**: Archive memory-bank files, consolidate documentation into CLAUDE.md
 - **chore**: Clean up TODO comments, delete obsolete gmail_adapter.dart, create Issue #44 for Outlook
