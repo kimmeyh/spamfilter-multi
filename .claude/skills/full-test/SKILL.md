@@ -21,7 +21,7 @@ flutter analyze
 
 ## Expected Results
 
-- All 122+ tests should pass
+- All 185+ tests should pass
 - Code analysis should report 0 issues
 
 ## When to Use
