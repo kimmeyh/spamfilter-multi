@@ -17,7 +17,12 @@ Moved to issues:
         - Update the AOL platform/email "Bulk" and "Bulk Email" (if they exist)to be considered "Spam/Junk folders" and should be tagged as "Recommended" and checked by default -->
 
 Planning for management of identified spam
+
 The management of identified spam will be similar between email providers, but will likely have differences.  Like the rest of the app, we would like to email providers and platforms behave the same way and use the same code whenever reasonably possible, but different when needed or unreasonable to do the same way.
+
+What is needed at the end of a scan as an enhancement to "View Results"
+1. review emails and be able to updates Safe Sender and Auto Delete/Move/Tag rules
+***
 Functionality in human terms:
   - The Safe Senders list identifies regex email addresses that the user has identified as OK to see and wants to make sure they are always in the inbox for review.  They can be broken down into a few sets:
     1. Very specific email addresses from individuals
