@@ -447,10 +447,14 @@ void _recordSimpleResult(
   ));
 }
 
+/// Counter used to generate deterministic unique email IDs for tests.
+int _emailIdCounter = 0;
+
 /// Helper function to create an email message
 EmailMessage _createEmail(String from, String subject, {String folderName = 'Inbox'}) {
+  final id = 'test-email-${_emailIdCounter++}';
   return EmailMessage(
-    id: DateTime.now().microsecondsSinceEpoch.toString(),
+    id: id,
     from: from,
     subject: subject,
     body: 'Test body content',
