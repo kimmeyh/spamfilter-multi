@@ -30,7 +30,7 @@ This document describes the step-by-step process for executing sprints in the sp
   - Create one GitHub issue per task (Task A, Task B, Task C, etc.)
   - Use sprint_card.yml template from `.github/ISSUE_TEMPLATE/`
   - Fill in:
-    - **Sprint**: Sprint 2
+    - **Sprint**: Sprint N
     - **Description**: What needs to be done and why
     - **Acceptance Criteria**: Specific, measurable criteria
     - **Model Assignment**: Task breakdown with Haiku/Sonnet/Opus assignments
@@ -38,11 +38,19 @@ This document describes the step-by-step process for executing sprints in the sp
   - Apply labels: `sprint`, `card`, `priority:high/medium/low`
   - Link to related issues (dependencies, related features)
 
-- [ ] **1.5 Verify Sprint Readiness**
-  - All sprint cards created and linked
+- [ ] **1.5 Verify All Sprint Cards Are OPEN**
+  - Before execution, verify all sprint cards exist and are in OPEN state
+  - Command: `gh issue list --label sprint --state closed`
+  - If any closed cards exist for this sprint: Re-open them
+  - Reason: Closed cards block execution (from Sprint 1 learning: Issue #52)
+  - Update: Switch all closed sprint cards to OPEN state
+
+- [ ] **1.6 Verify Sprint Readiness**
+  - All sprint cards created, linked, and in OPEN state
   - No blocking issues or dependencies unresolved
   - Model assignments reviewed and finalized
   - Acceptance criteria clear and testable
+  - Dependencies on previous sprints verified as complete
 
 ---
 

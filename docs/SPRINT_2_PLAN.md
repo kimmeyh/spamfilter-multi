@@ -22,10 +22,13 @@ Sprint 2 builds on the database foundation (Sprint 1) to migrate rule management
 
 ## Tasks Breakdown
 
+**Granularity Guidance**: Tasks keep tight dependencies together. If a task exceeds ~500 lines, consider breaking into subtasks (A1, A2, A3) while maintaining dependency cohesion.
+
 ### **Task A: Implement RuleDatabaseStore**
 **Assigned Model**: Haiku
 **Complexity**: Low (Straightforward CRUD following DatabaseHelper pattern)
-**Estimated Time**: 3-4 hours
+**Estimated Time**: 3-4 hours (Calibrated: ~1.5-2 hours based on Sprint 1 data)
+**Expected Lines**: 200-300 (will not exceed granularity threshold)
 
 **Description**:
 Create new database storage layer for rules that mirrors the existing `LocalRuleStore` API but reads/writes to SQLite instead of YAML.
@@ -58,7 +61,9 @@ Create new database storage layer for rules that mirrors the existing `LocalRule
 ### **Task B: Update RuleSetProvider to use Database**
 **Assigned Model**: Sonnet
 **Complexity**: Medium (Refactor existing provider, maintain compatibility)
-**Estimated Time**: 4-5 hours
+**Estimated Time**: 4-5 hours (Calibrated: ~2-2.5 hours based on Sprint 1 data)
+**Expected Lines**: 150-200 (refactoring only, minimal new code)
+**Granularity Note**: This is a refactoring task with tight dependencies to Task A. Keep together despite code changes (does not add new implementation, only changes initialization and internal dependencies).
 
 **Description**:
 Refactor `RuleSetProvider` to load rules from database via `RuleDatabaseStore` instead of `LocalRuleStore`. Must preserve existing ChangeNotifier pattern and all mutations.
@@ -98,7 +103,9 @@ Refactor `RuleSetProvider` to load rules from database via `RuleDatabaseStore` i
 ### **Task C: Implement YAML Auto-Export**
 **Assigned Model**: Haiku
 **Complexity**: Low (Reverse of YAML import from Sprint 1)
-**Estimated Time**: 2-3 hours
+**Estimated Time**: 2-3 hours (Calibrated: ~1-1.5 hours based on Sprint 1 data)
+**Expected Lines**: 150-200 (follows MigrationManager pattern from Sprint 1)
+**Granularity Note**: This is new implementation that extends Sprint 1's MigrationManager. Keep with its own tests; could be split if exceeds 500 lines, but unlikely given pattern.
 
 **Description**:
 Create service to export database rules back to YAML format whenever rules change. Maintains version control friendly YAML files as backup/reference.
@@ -208,6 +215,23 @@ flutter analyze                 # No errors/warnings
 | **Code Review** | Approved | ⏳ Pending |
 | **Lines Added** | 400-600 | ⏳ Pending |
 | **Commits** | 4-5 | ⏳ Pending |
+
+---
+
+## Effort Calibration (Based on Sprint 1 Data)
+
+**Sprint 1 Actual vs Estimated**:
+- Estimated: 9-13 hours
+- Actual: ~4 hours
+- Variance: Estimates were 2.3x-3.25x higher due to conservative safety margins
+
+**Sprint 2 Calibrated Estimates**:
+When requirements are detailed (as with Sprint 2 plan):
+- Original Task Estimates: 14-17 hours
+- Calibrated Estimates: 5.5-7 hours (30-40% of conservative estimate)
+- Rationale: Clear requirements + proven model assignments = efficient execution
+
+**Note**: These calibrated estimates will be refined after each sprint. Track actual vs estimated time in GitHub issue comments during execution.
 
 ---
 

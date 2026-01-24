@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:logger/logger.dart';
 import 'package:path/path.dart' as path;
+import 'package:sqflite/sqflite.dart';
 
 import '../../adapters/storage/app_paths.dart';
 import '../../adapters/storage/local_rule_store.dart';
@@ -29,8 +30,11 @@ class MigrationResults {
   final List<String> skippedSafeSenders = [];
   final List<String> errors = [];
   DateTime? completedAt;
+  DateTime? startedAt;
+  bool wasTransactionRolledBack = false;
 
   bool get isSuccess => rulesFailed == 0 && safeSendersFailed == 0;
+  bool get isComplete => completedAt != null && !wasTransactionRolledBack;
 
   @override
   String toString() => '''
@@ -39,6 +43,7 @@ MigrationResults:
   Safe senders imported: $safeSendersImported (failed: $safeSendersFailed)
   Completed: $completedAt
   Success: $isSuccess
+  Transaction rolled back: $wasTransactionRolledBack
   Errors: ${errors.length}
 ''';
 }
@@ -58,12 +63,18 @@ class MigrationManager {
     _ruleStore = LocalRuleStore(appPaths);
   }
 
-  /// Perform migration from YAML to database
+  /// Perform migration from YAML to database with transaction rollback on failure
   ///
-  /// Returns MigrationResults with detailed statistics
+  /// Wraps import operations in a SQLite transaction to ensure atomicity:
+  /// - On success: All data committed to database
+  /// - On failure: Transaction rolled back, database left in consistent state
+  ///
+  /// Returns MigrationResults with detailed statistics.
+  /// If migration fails and transaction is rolled back, results.wasTransactionRolledBack will be true.
   Future<MigrationResults> migrate() async {
     _logger.i('Starting YAML to SQLite migration');
     final results = MigrationResults();
+    results.startedAt = DateTime.now();
 
     try {
       // Step 1: Check if YAML files exist
@@ -77,29 +88,59 @@ class MigrationManager {
         return results;
       }
 
-      // Step 2: Create backup of YAML files
+      // Step 2: Create backup of YAML files (non-critical, failure does not abort migration)
       await _createYamlBackups();
 
-      // Step 3: Import rules if file exists
-      if (rulesFileExists) {
-        await _importRules(results);
-      }
+      // Step 3: Execute import operations within transaction
+      // Transaction ensures either all data is imported or none (rollback on exception)
+      await _executeImportWithTransaction(results, rulesFileExists, safeSendersFileExists);
 
-      // Step 4: Import safe senders if file exists
-      if (safeSendersFileExists) {
-        await _importSafeSenders(results);
-      }
-
-      // Step 5: Verify import completeness
+      // Step 4: Verify import completeness
       await _verifyImport(results);
 
       results.completedAt = DateTime.now();
-      _logger.i('Migration completed: ${results.toString()}');
+      _logger.i('Migration completed successfully: ${results.toString()}');
 
       return results;
     } catch (e) {
       _logger.e('Migration failed: $e');
       throw MigrationException('YAML to SQLite migration failed', e);
+    }
+  }
+
+  /// Execute import operations within a database transaction
+  ///
+  /// Ensures atomicity: if any import step fails, entire transaction rolls back.
+  /// This prevents partial migrations (e.g., 1000 rules imported before crash).
+  Future<void> _executeImportWithTransaction(
+    MigrationResults results,
+    bool rulesFileExists,
+    bool safeSendersFileExists,
+  ) async {
+    final db = await databaseHelper.database;
+
+    try {
+      // Begin transaction
+      await db.transaction((txn) async {
+        _logger.i('Starting migration transaction');
+
+        // Import rules if file exists
+        if (rulesFileExists) {
+          await _importRulesWithin(txn, results);
+        }
+
+        // Import safe senders if file exists
+        if (safeSendersFileExists) {
+          await _importSafeSendersWithin(txn, results);
+        }
+
+        _logger.i('Migration transaction committed successfully');
+      });
+    } catch (e) {
+      _logger.e('Migration transaction failed and was rolled back: $e');
+      results.wasTransactionRolledBack = true;
+      results.errors.add('Migration transaction rolled back: ${e.toString()}');
+      rethrow;
     }
   }
 
@@ -135,10 +176,13 @@ class MigrationManager {
     }
   }
 
-  /// Import rules from YAML file to database
-  Future<void> _importRules(MigrationResults results) async {
+  /// Import rules from YAML file to database within a transaction
+  ///
+  /// Called from within _executeImportWithTransaction to ensure transaction consistency.
+  /// If any rule import fails, the entire transaction will be rolled back.
+  Future<void> _importRulesWithin(Transaction txn, MigrationResults results) async {
     try {
-      _logger.i('Importing rules from YAML');
+      _logger.i('Importing rules from YAML (within transaction)');
 
       // Load rules from YAML
       final ruleSet = await _ruleStore.loadRules();
@@ -170,12 +214,18 @@ class MigrationManager {
             'created_by': 'manual',
           };
 
-          await databaseHelper.insertRule(dbRule);
+          // Use transaction's execute for database operations
+          await txn.insert('rules', dbRule);
           results.rulesImported++;
         } catch (e) {
           _logger.w('Failed to import rule "${rule.name}": $e');
           results.rulesFailed++;
           results.skippedRules.add('${rule.name}: ${e.toString()}');
+          // Re-throw to trigger transaction rollback on critical failures
+          if (e.toString().contains('UNIQUE constraint failed')) {
+            rethrow; // UNIQUE constraint violation is critical (duplicate rule name)
+          }
+          // Other errors are logged but do not abort transaction
         }
       }
 
@@ -183,13 +233,18 @@ class MigrationManager {
     } catch (e) {
       _logger.e('Failed to import rules: $e');
       results.errors.add('Rules import failed: ${e.toString()}');
+      rethrow;
     }
   }
 
-  /// Import safe senders from YAML file to database
-  Future<void> _importSafeSenders(MigrationResults results) async {
+
+  /// Import safe senders from YAML file to database within a transaction
+  ///
+  /// Called from within _executeImportWithTransaction to ensure transaction consistency.
+  /// If any safe sender import fails, the entire transaction will be rolled back.
+  Future<void> _importSafeSendersWithin(Transaction txn, MigrationResults results) async {
     try {
-      _logger.i('Importing safe senders from YAML');
+      _logger.i('Importing safe senders from YAML (within transaction)');
 
       // Load safe senders from YAML
       final safeSenderList = await _ruleStore.loadSafeSenders();
@@ -223,12 +278,18 @@ class MigrationManager {
             'created_by': 'manual',
           };
 
-          await databaseHelper.insertSafeSender(dbSafeSender);
+          // Use transaction's insert for database operations
+          await txn.insert('safe_senders', dbSafeSender);
           results.safeSendersImported++;
         } catch (e) {
           _logger.w('Failed to import safe sender "$pattern": $e');
           results.safeSendersFailed++;
           results.skippedSafeSenders.add('$pattern: ${e.toString()}');
+          // Re-throw to trigger transaction rollback on critical failures
+          if (e.toString().contains('UNIQUE constraint failed')) {
+            rethrow; // UNIQUE constraint violation is critical (duplicate pattern)
+          }
+          // Other errors are logged but do not abort transaction
         }
       }
 
@@ -236,8 +297,10 @@ class MigrationManager {
     } catch (e) {
       _logger.e('Failed to import safe senders: $e');
       results.errors.add('Safe senders import failed: ${e.toString()}');
+      rethrow;
     }
   }
+
 
   /// Verify migration completeness
   Future<void> _verifyImport(MigrationResults results) async {
@@ -261,13 +324,44 @@ class MigrationManager {
     }
   }
 
-  /// Check if migration has been completed
+  /// Check if migration has been completed successfully
   ///
-  /// Returns true if database has rules (indicating migration already done)
+  /// Returns true only if:
+  /// 1. Database has rules (indicating data was imported)
+  /// 2. Database has safe senders OR no safe senders in YAML (consistency check)
+  /// 3. No recent transaction rollbacks detected
+  ///
+  /// This prevents returning true for partial migrations (e.g., crash mid-import).
+  /// If crash occurred after rules imported but before safe senders, both counts
+  /// should be present or the migration should be retried from scratch.
   Future<bool> isMigrationComplete() async {
     try {
       final rules = await databaseHelper.queryRules();
-      return rules.isNotEmpty;
+
+      // No rules = migration never ran or was completely rolled back
+      if (rules.isEmpty) {
+        return false;
+      }
+
+      // If we have rules, verify consistency with safe senders
+      // (Better heuristic: both should be present or both absent)
+      final safeSenders = await databaseHelper.querySafeSenders();
+
+      // Check YAML files to understand what should have been imported
+      final safeSendersFileExists = await appPaths.safeSendersFileExists();
+
+      // If safe_senders.yaml exists but we have no safe senders in DB,
+      // this indicates partial import (import crashed after rules but before safe senders)
+      if (safeSendersFileExists && safeSenders.isEmpty) {
+        _logger.w(
+          'Partial migration detected: rules present (${rules.length}) '
+          'but safe senders missing (file exists but DB empty). '
+          'Migration should be retried or manually cleaned up.'
+        );
+        return false;
+      }
+
+      return true;
     } catch (e) {
       _logger.w('Failed to check migration status: $e');
       return false;

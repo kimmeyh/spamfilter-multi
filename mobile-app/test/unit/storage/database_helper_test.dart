@@ -427,7 +427,7 @@ void main() {
         'enabled': 1,
         'execution_order': 10,
         'condition_type': 'OR',
-        'condition_from': '["@spam\\.com$","@junk\\.net$"]',
+        'condition_from': r'["@spam\.com$","@junk\.net$"]',
         'action_delete': 1,
         'date_added': now,
         'created_by': 'manual',

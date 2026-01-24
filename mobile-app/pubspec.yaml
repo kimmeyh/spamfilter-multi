@@ -42,6 +42,7 @@ dependencies:
   
   # Phase 3.5 - Database & Settings
   sqflite: ^2.3.0  # SQLite for scan results, rules, settings
+  sqflite_common_ffi: ^2.3.0  # SQLite FFI for desktop platforms
 
   # Phase 2+ - UI Enhancement
   # flutter_svg: ^2.0.9
