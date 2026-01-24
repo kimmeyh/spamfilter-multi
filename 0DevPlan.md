@@ -4,6 +4,7 @@
 
 
 ***BELOW IS NOT FOR CLAUDE CODE USE***
+***BELOW IS NOT FOR Github Copilot USE***
 Phase 4 Development Goals
 - Expand to iOS platform
 - Expand to apple email 
