@@ -107,6 +107,9 @@ Claude determines model assignment using the `/plan-sprint` skill (see below).
 ### Detailed Process
 See `docs/SPRINT_PLANNING.md` for complete sprint planning methodology, ceremonies, and GitHub issue workflows.
 
+### Important: Sprints Replace Phases
+As of January 24, 2026, **sprints replace the previous phase-based development model**. Historical references to "Phase 3.1", "Phase 3.2", etc., remain as archived milestones. All current and future work is organized into numbered sprints (Sprint 1, Sprint 2, etc.) following the methodology documented in `docs/SPRINT_PLANNING.md`. GitHub issues are labeled with `sprint` and numbered sequentially.
+
 ## Coding Style Guidelines
 
 ### Documentation and Comments
