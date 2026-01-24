@@ -5,12 +5,12 @@ You are a highly paid scrum master and development team for the following applic
 
 The spamfilter-multi application is a background application that reviews emails in a users email addresses account and uses rules to determine if they are safe-senders, or known spam emails or neither.
 
-The team is tasked with determining the features to accomplish the phase 3.5 goals and what can/should be accomplished in each sprint. After reading the CLUADE.MD file and the below development goals and details, please ask clarifying questions as needed.
+The team is tasked with determining the features to accomplish the phase 3.5 goals and what can/should be accomplished in each sprint. After reading the CLAUDE.MD file and the below development goals and details, please ask clarifying questions as needed.
 
 ## Development Phases
 ### Phase 3.5 Goals - Sprint 11: Planning for management of identified spam
 1) Processing Scan Results - build the backend and UI
-2) User Application Settings - build the backend and U
+2) User Application Settings - build the backend and UI
 
 Please see the attached CLAUDE.MD file and the below background information:
 The management of identified spam will be similar between email providers, but will likely have differences.  Like the rest of the app, we would like to email providers and platforms behave the same way and use the same code whenever reasonably possible, but different when needed or unreasonable to do the same way.
@@ -32,7 +32,7 @@ Background - Other Rule Sets:
       - Why - hard to spoof the header copy of "From:" while easy to spoof the message copy of "From:"
       - Regex patterns are similar to Safe-Senders 1-4
         - types 1 and 2 are rarely marked as spam incorrectly and should be tagged uniquely.
-        - types 3 and 4 are rate, but more likely to be incorrect and should be tagged uniquely.
+        - types 3 and 4 are rare, but more likely to be incorrect and should be tagged uniquely.
       - Some care needs to be taken in the content of the header "From:" to make it easy to match
         - convert to all lowercase and regex match lowercase 
         - remove all special characters and spaces so it only contains [0-9], [a-z], underscore and hyphen.
@@ -62,7 +62,7 @@ Background - There are 2 types of scans:
   - happen every <n> minutes (user selections on a setting screen). This scan scans all user default selected folders for every provider/email address they have enabled (each will have a user selectable "enable background scans" in their settings screen(s)).  This never processes auto-delete, auto-move and safe-sender processing for any matching rules, it flags emails that did not match any rules and keeps a list for later processing, but does not move or delete them.
   - continues to use flag in settings for each provider/email address for "Scan Mode: Read=Only"
 - On demand/manual scans that automatically processing rules, but not process emails with unmatched rules (run it expecting no user input at the end).
-  - These scans can be read-only and not process any rules, but keep track o what was found and what has / has ot be en processed.
+  - These scans can be read-only and not process any rules, but keep track o what was found and what has / has not been processed.
 
 Processing Scan Results details:
 - The scan should save a list of unprocessed items from last background scan and last manual scan requested by the user 

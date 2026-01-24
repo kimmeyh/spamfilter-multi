@@ -1,3 +1,10 @@
+---
+name: plan-sprint
+description: Analyzes GitHub issues and generates task breakdowns with model assignments
+allowed-tools: Read
+user-invocable: true
+model: sonnet
+---
 # Plan Sprint Skill
 
 Analyzes GitHub issues (Cards) and automatically generates task breakdowns with intelligent model assignments (Haiku → Sonnet → Opus).
