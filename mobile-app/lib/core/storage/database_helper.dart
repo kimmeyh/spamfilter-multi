@@ -26,7 +26,7 @@ class DatabaseHelper {
 
   /// Initialize database and create tables
   Future<Database> _initializeDatabase() async {
-    final appPaths = AppPaths();
+    final appPaths = getAppPaths();
     final dbPath = appPaths.databaseFilePath;
 
     _logger.i('Initializing database at: $dbPath');
