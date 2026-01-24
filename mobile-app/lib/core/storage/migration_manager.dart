@@ -248,10 +248,35 @@ class MigrationManager {
       final dbRules = await databaseHelper.queryRules();
       _logger.i('Database contains ${dbRules.length} rules');
 
+      // Compare rules count with migration results
+      if (results.rulesImported != null &&
+          results.rulesImported != dbRules.length) {
+        final message =
+            'Verification failed: expected ${results.rulesImported} rules imported, '
+            'but found ${dbRules.length} in database';
+        _logger.w(message);
+        results.errors.add(message);
+      } else {
+        _logger.i(
+            'Rules import verification passed: ${dbRules.length} rules in database');
+      }
+
       // Count safe senders in database
       final dbSafeSenders = await databaseHelper.querySafeSenders();
       _logger.i('Database contains ${dbSafeSenders.length} safe senders');
 
+      // Compare safe senders count with migration results
+      if (results.safeSendersImported != null &&
+          results.safeSendersImported != dbSafeSenders.length) {
+        final message =
+            'Verification failed: expected ${results.safeSendersImported} safe senders imported, '
+            'but found ${dbSafeSenders.length} in database';
+        _logger.w(message);
+        results.errors.add(message);
+      } else {
+        _logger.i(
+            'Safe senders import verification passed: ${dbSafeSenders.length} safe senders in database');
+      }
       // Get statistics
       final stats = await databaseHelper.getStatistics();
       _logger.i('Database statistics: $stats');
