@@ -1,0 +1,121 @@
+name: Feature Request
+description: Propose a new feature or enhancement
+labels: ['feature-request', 'enhancement']
+body:
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature?
+      options:
+        - 🟠 High (Critical capability gap)
+        - 🟡 Medium (Valuable enhancement)
+        - 🔵 Low (Nice to have)
+    validations:
+      required: true
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Use Case / User Problem
+      description: Describe the user problem or opportunity this feature addresses
+      placeholder: |
+        ## Current Behavior
+        [How users currently solve this or work around it]
+
+        ## Problem
+        [Why this is a problem]
+
+        ## Affected Users
+        [Who needs this feature?]
+    validations:
+      required: true
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed Solution
+      description: Detailed description of the proposed feature
+      placeholder: |
+        ## Feature Overview
+        [What should the feature do?]
+
+        ## User Workflow
+        1. User does [X]
+        2. System does [Y]
+        3. Result is [Z]
+
+        ## UI/UX Changes (if applicable)
+        [Screenshots, wireframes, or description of UI changes]
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: What other approaches were considered and why they were not chosen?
+      placeholder: |
+        - Alternative 1: [Description] - Not chosen because [reason]
+        - Alternative 2: [Description] - Not chosen because [reason]
+    validations:
+      required: false
+  - type: textarea
+    id: impact_analysis
+    attributes:
+      label: Impact Analysis
+      description: Analysis of how this feature affects the system
+      placeholder: |
+        ## Affected Components
+        - [Component 1] - [How it's affected]
+        - [Component 2] - [How it's affected]
+
+        ## Breaking Changes
+        - [Will this break existing functionality?]
+
+        ## New Dependencies
+        - [Any new libraries or services needed?]
+
+        ## Performance Impact
+        - [Expected performance implications]
+
+        ## Security Implications
+        - [Any security considerations?]
+    validations:
+      required: false
+  - type: checkboxes
+    id: platforms
+    attributes:
+      label: Platforms Affected
+      description: Which platforms should support this feature?
+      options:
+        - label: Android
+        - label: Windows
+        - label: macOS
+        - label: iOS
+        - label: Linux
+        - label: All Platforms
+    validations:
+      required: false
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance Criteria (Optional)
+      description: How will we know this feature is complete?
+      placeholder: |
+        - [ ] Feature works on [platform(s)]
+        - [ ] Tests pass with [X% coverage]
+        - [ ] No performance regression
+        - [ ] Documentation updated
+        - [ ] [Specific requirement]
+    validations:
+      required: false
+  - type: textarea
+    id: related_issues
+    attributes:
+      label: Related Issues or References
+      description: Links to related issues, discussions, or references
+      placeholder: |
+        - Related to: #123
+        - Partially addresses: #456
+        - Discussed in: [Link to discussion/slack]
+        - Similar in: [Other project or framework]
+    validations:
+      required: false

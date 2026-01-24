@@ -1,0 +1,137 @@
+name: Bug Report
+description: Report a bug in the spamfilter-multi application
+labels: ['bug']
+body:
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      description: Which platform are you running on?
+      options:
+        - Android
+        - Windows
+        - macOS
+        - iOS
+        - Linux
+        - Other (please specify below)
+    validations:
+      required: true
+  - type: input
+    id: flutter_version
+    attributes:
+      label: Flutter Version
+      description: Run `flutter --version` to get this info
+      placeholder: 'Flutter 3.X.X • channel [stable/beta/dev]'
+    validations:
+      required: true
+  - type: input
+    id: dart_version
+    attributes:
+      label: Dart Version
+      description: Run `dart --version` to get this info
+      placeholder: 'Dart 3.X.X'
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How critical is this bug?
+      options:
+        - 🔴 Critical (App crashes or unusable)
+        - 🟠 High (Core feature broken)
+        - 🟡 Medium (Annoying but workaround exists)
+        - 🔵 Low (Minor issue or edge case)
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Clear summary of the bug
+      placeholder: 'Brief description of what is not working'
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Detailed steps to reproduce the bug
+      placeholder: |
+        1. Open the app
+        2. Navigate to [screen]
+        3. Click on [button]
+        4. Observe [unexpected behavior]
+
+        Expected result: [What should happen]
+        Actual result: [What actually happens]
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and Error Messages
+      description: Paste relevant error messages, stack traces, or app logs
+      placeholder: |
+        ```
+        [Error message or stack trace here]
+        ```
+
+        How to collect logs:
+        - Android: `flutter logs`
+        - Windows: Check debug console output
+        - macOS: Check system console
+      render: shell
+    validations:
+      required: false
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots or Screen Recording
+      description: Attach screenshots showing the bug or a screen recording
+      placeholder: 'Paste images or video links here (if applicable)'
+    validations:
+      required: false
+  - type: textarea
+    id: device_info
+    attributes:
+      label: Device/Environment Information
+      description: Additional device or environment details
+      placeholder: |
+        - Device: [Phone/Tablet model]
+        - OS Version: [e.g., Android 13, Windows 11]
+        - App Version: [from about screen]
+        - Email Provider: [Gmail, AOL, Yahoo, etc.]
+    validations:
+      required: false
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Workaround (If Known)
+      description: Is there a workaround for this bug?
+      placeholder: 'If you have found a way to work around this bug, describe it here'
+    validations:
+      required: false
+  - type: textarea
+    id: model_assignment
+    attributes:
+      label: Suggested Model Assignment
+      description: |
+        Based on bug complexity, which model should investigate?
+        - Haiku: Simple bugs with clear root cause
+        - Sonnet: Complex bugs requiring architectural understanding
+        - Opus: Intermittent bugs, race conditions, or deep investigation needed
+      placeholder: 'Suggested Model: [Haiku/Sonnet/Opus]'
+    validations:
+      required: false
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional Context
+      description: Any other context or references
+      placeholder: |
+        - Related issues: #123
+        - Recent changes that might have caused this
+        - Frequency: Always/Sometimes/Rarely
+    validations:
+      required: false

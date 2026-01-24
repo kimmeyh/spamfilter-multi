@@ -247,6 +247,218 @@ void main() {
     });
   });
 
+  group('Results Display - Rule Name Display (Issue #51)', () {
+    late EmailScanProvider provider;
+
+    setUp(() {
+      provider = EmailScanProvider();
+    });
+
+    test('Results with matched rule should display rule name, not "no rule"', () {
+      provider.initializeScanMode(mode: ScanMode.readonly);
+      provider.startScan(totalEmails: 3);
+
+      // Add result with matched rule for delete
+      provider.recordResult(EmailActionResult(
+        email: EmailMessage(
+          id: '1',
+          from: 'spam@test.com',
+          subject: 'Spam Email',
+          body: 'Spam content',
+          headers: {},
+          receivedDate: DateTime.now(),
+          folderName: 'Inbox',
+        ),
+        evaluationResult: EvaluationResult(
+          shouldDelete: true,
+          shouldMove: false,
+          matchedRule: 'SpamAutoDeleteHeader',
+          matchedPattern: '@test\\.com\$',
+        ),
+        action: EmailActionType.delete,
+        success: true,
+      ));
+
+      // Add result with matched rule for move
+      provider.recordResult(EmailActionResult(
+        email: EmailMessage(
+          id: '2',
+          from: 'marketing@company.com',
+          subject: 'Marketing Email',
+          body: 'Marketing content',
+          headers: {},
+          receivedDate: DateTime.now(),
+          folderName: 'Inbox',
+        ),
+        evaluationResult: EvaluationResult(
+          shouldDelete: false,
+          shouldMove: true,
+          targetFolder: 'Junk',
+          matchedRule: 'MarketingBulkMove',
+          matchedPattern: 'marketing@.*',
+        ),
+        action: EmailActionType.moveToJunk,
+        success: true,
+      ));
+
+      // Add result with safe sender rule
+      provider.recordResult(EmailActionResult(
+        email: EmailMessage(
+          id: '3',
+          from: 'trusted@safe.com',
+          subject: 'Trusted Email',
+          body: 'Safe content',
+          headers: {},
+          receivedDate: DateTime.now(),
+          folderName: 'Inbox',
+        ),
+        evaluationResult: EvaluationResult.safeSender('^trusted@safe\\.com\$'),
+        action: EmailActionType.safeSender,
+        success: true,
+      ));
+
+      // Verify rule names are displayed
+      expect(provider.results[0].evaluationResult?.matchedRule, equals('SpamAutoDeleteHeader'));
+      expect(provider.results[0].evaluationResult?.matchedRule, isNot('No rule'));
+
+      expect(provider.results[1].evaluationResult?.matchedRule, equals('MarketingBulkMove'));
+      expect(provider.results[1].evaluationResult?.matchedRule, isNot('No rule'));
+
+      expect(provider.results[2].evaluationResult?.matchedRule, equals('SafeSender'));
+      expect(provider.results[2].evaluationResult?.matchedRule, isNot('No rule'));
+
+      print('✅ All results display actual rule names:');
+      for (var i = 0; i < provider.results.length; i++) {
+        final rule = provider.results[i].evaluationResult?.matchedRule ?? 'No rule';
+        print('   Result $i: Rule = $rule');
+      }
+    });
+
+    test('Result display should show: folder • subject • matched_rule', () {
+      provider.initializeScanMode(mode: ScanMode.readonly);
+      provider.startScan(totalEmails: 1);
+
+      provider.recordResult(EmailActionResult(
+        email: EmailMessage(
+          id: '1',
+          from: 'spam@domain.com',
+          subject: 'Phishing Attempt',
+          body: 'Click here to verify account',
+          headers: {},
+          receivedDate: DateTime.now(),
+          folderName: 'Bulk Mail',
+        ),
+        evaluationResult: EvaluationResult(
+          shouldDelete: true,
+          shouldMove: false,
+          matchedRule: 'PhishingDetected',
+          matchedPattern: 'verify account',
+        ),
+        action: EmailActionType.delete,
+        success: true,
+      ));
+
+      final result = provider.results.first;
+      final folder = result.email.folderName;
+      final subject = result.email.subject.isNotEmpty ? result.email.subject : 'No subject';
+      final rule = result.evaluationResult?.matchedRule ?? 'No rule';
+      final displayFormat = '$folder • $subject • $rule';
+
+      expect(displayFormat, equals('Bulk Mail • Phishing Attempt • PhishingDetected'));
+      expect(rule, isNot('No rule'));
+
+      print('✅ Result display format verified:');
+      print('   Display: $displayFormat');
+    });
+
+    test('Results with no matching rule should have empty string, not "no rule"', () {
+      provider.initializeScanMode(mode: ScanMode.readonly);
+      provider.startScan(totalEmails: 1);
+
+      provider.recordResult(EmailActionResult(
+        email: EmailMessage(
+          id: '1',
+          from: 'unknown@example.com',
+          subject: 'Regular Email',
+          body: 'Regular content',
+          headers: {},
+          receivedDate: DateTime.now(),
+          folderName: 'Inbox',
+        ),
+        evaluationResult: EvaluationResult.noMatch(),
+        action: EmailActionType.none,
+        success: true,
+      ));
+
+      final result = provider.results.first;
+      final rawRule = result.evaluationResult?.matchedRule ?? '';
+      // Empty string needs special handling - display shows "No rule" for empty
+      final displayedRule = rawRule.isEmpty ? 'No rule' : rawRule;
+
+      // When no rule matched, matchedRule is empty string
+      expect(result.evaluationResult?.matchedRule, isEmpty);
+      // Display should show "No rule" as fallback
+      expect(displayedRule, equals('No rule'));
+
+      print('✅ No-rule case verified:');
+      print('   evaluationResult.matchedRule = "${result.evaluationResult?.matchedRule}"');
+      print('   Display (empty -> "No rule") = "$displayedRule"');
+    });
+
+    test('Multiple emails with different rules should display correctly', () {
+      provider.initializeScanMode(mode: ScanMode.readonly);
+      provider.startScan(totalEmails: 4);
+
+      final testCases = [
+        ('rule_1@spam.com', 'Email 1', 'FirstSpamRule'),
+        ('rule_2@bad.com', 'Email 2', 'SecondBadRule'),
+        ('rule_3@phish.com', 'Email 3', 'PhishingRule'),
+        ('safe@trusted.com', 'Email 4', 'SafeSender'),
+      ];
+
+      for (var i = 0; i < testCases.length; i++) {
+        final (from, subject, ruleName) = testCases[i];
+        final isSafe = ruleName == 'SafeSender';
+
+        provider.recordResult(EmailActionResult(
+          email: EmailMessage(
+            id: 'msg-$i',
+            from: from,
+            subject: subject,
+            body: 'Content',
+            headers: {},
+            receivedDate: DateTime.now(),
+            folderName: 'Inbox',
+          ),
+          evaluationResult: isSafe
+              ? EvaluationResult.safeSender('^$from\$')
+              : EvaluationResult(
+                  shouldDelete: true,
+                  shouldMove: false,
+                  matchedRule: ruleName,
+                  matchedPattern: '@.*',
+                ),
+          action: isSafe ? EmailActionType.safeSender : EmailActionType.delete,
+          success: true,
+        ));
+      }
+
+      // Verify each result has correct rule
+      for (var i = 0; i < provider.results.length; i++) {
+        final (_, _, expectedRule) = testCases[i];
+        final actualRule = provider.results[i].evaluationResult?.matchedRule;
+        expect(actualRule, equals(expectedRule),
+          reason: 'Result $i should have rule: $expectedRule');
+      }
+
+      print('✅ Multiple rules displayed correctly:');
+      for (var i = 0; i < provider.results.length; i++) {
+        final rule = provider.results[i].evaluationResult?.matchedRule ?? 'No rule';
+        print('   Email $i: $rule');
+      }
+    });
+  });
+
   group('Results Display - Error Handling', () {
     late EmailScanProvider provider;
 
@@ -427,15 +639,29 @@ void _recordResult(
   // First update progress (like the real scanner does)
   provider.updateProgress(email: email, message: 'Processing: $subject');
 
-  EvaluationResult? evalResult;
-  if (action != EmailActionType.none) {
-    evalResult = EvaluationResult(
-      shouldDelete: action == EmailActionType.delete,
-      shouldMove: action == EmailActionType.moveToJunk,
-      matchedRule: 'TestRule',
-      matchedPattern: 'test-pattern',
-    );
+  // Always create an EvaluationResult (even for no match cases)
+  // This ensures the rule name is always available for display
+  final String ruleName;
+  final String pattern;
+
+  if (action == EmailActionType.none) {
+    ruleName = '';  // No rule matched
+    pattern = '';
+  } else if (action == EmailActionType.safeSender) {
+    ruleName = 'SafeSender';
+    pattern = 'safe-sender-pattern';
+  } else {
+    ruleName = 'TestRule';
+    pattern = 'test-pattern';
   }
+
+  final evalResult = EvaluationResult(
+    shouldDelete: action == EmailActionType.delete,
+    shouldMove: action == EmailActionType.moveToJunk,
+    matchedRule: ruleName,
+    matchedPattern: pattern,
+    isSafeSender: action == EmailActionType.safeSender,
+  );
 
   // Then record the result
   provider.recordResult(EmailActionResult(

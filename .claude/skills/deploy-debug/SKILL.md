@@ -3,6 +3,7 @@ name: deploy-debug
 description: Build, install, and launch debug APK on Android emulator while preserving saved accounts
 allowed-tools: Bash
 user-invocable: true
+model: haiku
 ---
 
 # Deploy Debug

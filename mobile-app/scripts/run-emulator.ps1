@@ -67,14 +67,14 @@ try {
     } else {
       Write-Warning "APK not found at $apk. Building debug run instead."
       # Use flutter run with error suppression
-      Write-Host "Running: flutter run --no-pub --no-build-ios --no-build-macos"
-      flutter run --no-pub --no-build-ios --no-build-macos
+      Write-Host "Running: flutter run --no-pub --no-build-macos"
+      flutter run --no-pub --no-build-macos
       return
     }
   } else {
     # Run debug build on emulator with Git check bypass
-    Write-Host "Running: flutter run --no-pub --no-build-ios --no-build-macos"
-    flutter run --no-pub --no-build-ios --no-build-macos
+    Write-Host "Running: flutter run --no-pub --no-build-macos"
+    flutter run --no-pub --no-build-macos
   }
 }
 finally {

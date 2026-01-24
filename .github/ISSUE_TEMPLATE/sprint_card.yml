@@ -1,0 +1,143 @@
+name: Sprint Card
+description: Main sprint work item representing a deliverable feature or bug fix
+labels: ['sprint', 'card']
+assignees:
+  - kimmeyh
+body:
+  - type: input
+    id: sprint_number
+    attributes:
+      label: Sprint Number
+      description: Which sprint is this card part of? (e.g., Sprint 5)
+      placeholder: 'Sprint X'
+    validations:
+      required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      description: What type of work is this?
+      options:
+        - Enhancement (New Feature)
+        - Bug Fix
+        - Refactoring
+        - Performance Optimization
+        - Documentation
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this card?
+      options:
+        - 🔴 Critical (Breaks core functionality)
+        - 🟠 High (Should complete this sprint)
+        - 🟡 Medium (Nice to have)
+        - 🔵 Low (Future consideration)
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Clear statement of what needs to be done and why. Include user impact or business value.
+      placeholder: |
+        ## What needs to be done?
+        [Clear description of the feature or bug fix]
+
+        ## Why?
+        [Business value or user problem being solved]
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance Criteria
+      description: Specific, measurable criteria that define when this card is complete
+      placeholder: |
+        - [ ] All tests pass (unit and integration)
+        - [ ] Code review approved
+        - [ ] No new warnings or errors in `flutter analyze`
+        - [ ] Feature/fix works on Android, Windows, and macOS
+        - [ ] [Specific requirement 1]
+        - [ ] [Specific requirement 2]
+    validations:
+      required: true
+  - type: textarea
+    id: model_assignment
+    attributes:
+      label: Model Assignment (Use /plan-sprint skill)
+      description: |
+        Tasks assigned to models by capability. Run `/plan-sprint` skill in comments to auto-generate this.
+
+        Format each task as:
+        - **Task X: [Description]** → [Haiku/Sonnet/Opus] (Complexity: Low/Medium/High)
+      placeholder: |
+        Run `/plan-sprint` in a comment to analyze and generate task breakdown.
+
+        Example output:
+        - **Task A: Implement core validation logic** → Haiku (Low)
+        - **Task B: Integrate with existing adapters** → Sonnet (Medium)
+        - **Task C: Performance optimization** → Opus (High)
+    validations:
+      required: false
+  - type: textarea
+    id: technical_notes
+    attributes:
+      label: Technical Notes (Optional)
+      description: Any architectural considerations, design decisions, or constraints
+      placeholder: |
+        - Affects: [Which components/files]
+        - Dependencies: [Any new libraries needed]
+        - Breaking Changes: [Will this break existing functionality?]
+        - Performance Impact: [Expected performance implications]
+    validations:
+      required: false
+  - type: checkboxes
+    id: platforms
+    attributes:
+      label: Platforms Affected
+      description: Which platforms does this impact?
+      options:
+        - label: Android
+        - label: Windows
+        - label: macOS
+        - label: iOS
+        - label: Linux
+        - label: All Platforms (Platform-agnostic)
+    validations:
+      required: false
+  - type: textarea
+    id: test_plan
+    attributes:
+      label: Test Plan
+      description: How should this be tested? Include manual and automated test approaches.
+      placeholder: |
+        ## Automated Tests
+        - Unit tests in: [test file]
+        - Integration tests in: [test file]
+        - Coverage target: [X%]
+
+        ## Manual Testing
+        1. Step 1: [What to do]
+        2. Step 2: [What to look for]
+        3. Expected result: [What should happen]
+
+        ## Regression Testing
+        - Ensure existing tests still pass
+        - Test [specific related feature] still works
+    validations:
+      required: false
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional Context
+      description: Any other information, links, or references
+      placeholder: |
+        - Related issues: #123, #456
+        - Design document: [URL]
+        - Slack discussion: [link]
+        - Prior implementation: [reference]
+    validations:
+      required: false

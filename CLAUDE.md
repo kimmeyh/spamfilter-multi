@@ -23,9 +23,29 @@ Startup Check:
 ```
 
 If any check fails, **STOP and resolve with user before accepting work**.
+
+**Note on Firebase MCP**: This project uses Firebase only for Android Gmail OAuth registration (not backend services like Firestore/Auth/Storage). The Firebase MCP server is not needed for current development workflows. It can be added later if Firebase backend services are integrated.
 ## Developer information
 1. Using Windows 11 HP Omen with all current Windows Updates installed
 2. When looking for information about the user, should always use Windows environment variables (however username is kimme as in C:\users\kimme)
+
+## Development Workflow
+
+Give Claude verification loops for 2-3x quality improvement:
+
+1. Make changes
+3. Run tests
+4. Lint before committing
+5. Commit changes and sync to repository
+5. Before creating PR: run full lint and test suite
+
+## Things Claude Should NOT Do
+
+<!-- Add mistakes Claude makes so it learns -->
+
+- Don't skip error handling
+- Don't commit without running tests first
+- Don't make breaking changes without discussion
 
 ## Development Philosophy: Co-Lead Developer Collaboration
 
@@ -66,6 +86,29 @@ search for 'lib/' in there... Found it! Line 81 has a broad 'lib/' exclusion tha
 catching both Python lib directories AND our Flutter source code. This is a mixed-repo
 issue. Should I make it more specific to only exclude 'Archive/desktop-python/lib/'?"
 ```
+
+## Sprint Planning and Development Workflow
+
+**CRITICAL**: All development follows sprint-based planning with model-tiered task execution.
+
+### Sprint Structure
+- **Sprints**: Time-boxed iterations focusing on one key enhancement
+- **Cards**: GitHub issues representing sprint work items
+- **Tasks**: Sub-tasks within cards, assigned by model capability
+
+### Model Tiering Strategy
+Work flows through models by complexity:
+- **Haiku**: Straightforward implementation, bug fixes, tests, documentation
+- **Sonnet**: Architectural decisions, complex refactoring, multi-file changes
+- **Opus**: Deep debugging, performance optimization, critical path features
+
+Claude determines model assignment using the `/plan-sprint` skill (see below).
+
+### Detailed Process
+See `docs/SPRINT_PLANNING.md` for complete sprint planning methodology, ceremonies, and GitHub issue workflows.
+
+### Important: Sprints Replace Phases
+As of January 24, 2026, **sprints replace the previous phase-based development model**. Historical references to "Phase 3.1", "Phase 3.2", etc., remain as archived milestones. All current and future work is organized into numbered sprints (Sprint 1, Sprint 2, etc.) following the methodology documented in `docs/SPRINT_PLANNING.md`. GitHub issues are labeled with `sprint` and numbered sequentially.
 
 ## Coding Style Guidelines
 

@@ -18,6 +18,7 @@
 - '^[^@\s]+@(?:[a-z0-9-]+\.)*challenge\.itu\.int$'
 - '^[^@\s]+@(?:[a-z0-9-]+\.)*connect\.vizio\.com$'
 - '^[^@\s]+@(?:[a-z0-9-]+\.)*directv\.ebilling\.com$'
+- '^[^@\s]+@(?:[a-z0-9-]+\.)*app\.supabase\.io$'
 - '^[^@\s]+@(?:[a-z0-9-]+\.)*email\.apple\.com$'
 - '^[^@\s]+@(?:[a-z0-9-]+\.)*email\.microsoft\.com$'
 - '^[^@\s]+@(?:[a-z0-9-]+\.)*id\.apple\.com$'
@@ -424,4 +425,4 @@
 - '^workflow@zuora\.com$'
 - '^yshi4@nd\.edu$'
 - '^zliang5@nd\.edu$'
-- 'j.nannette@yahoo.com'
+- '^j\.nannette@yahoo\.com$'
