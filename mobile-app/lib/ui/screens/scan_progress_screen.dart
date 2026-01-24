@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
 
 import '../../core/models/email_message.dart';
+import '../../core/models/evaluation_result.dart';
 import '../../core/providers/email_scan_provider.dart';
 import '../../core/providers/email_scan_provider.dart' show EmailActionType, EmailActionResult;
 import '../../core/providers/rule_set_provider.dart';
@@ -642,7 +643,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
 
   void _startDemoScan(EmailScanProvider scanProvider) {
     scanProvider.startScan(totalEmails: 10);
-    
+
     // Record some sample results
     for (int i = 0; i < 10; i++) {
       final email = EmailMessage(
@@ -661,6 +662,26 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
         _ => EmailActionType.safeSender,
       };
 
+      // Issue #51: Create proper EvaluationResult with rule names for demo scan
+      // This ensures the results display shows actual rule names instead of "No rule"
+      final evalResult = switch (action) {
+        EmailActionType.delete => EvaluationResult(
+          shouldDelete: true,
+          shouldMove: false,
+          matchedRule: 'SpamAutoDeleteHeader',
+          matchedPattern: 'sender$i@.*',
+        ),
+        EmailActionType.moveToJunk => EvaluationResult(
+          shouldDelete: false,
+          shouldMove: true,
+          targetFolder: 'Junk',
+          matchedRule: 'MarketingBulkMove',
+          matchedPattern: 'marketing.*',
+        ),
+        EmailActionType.safeSender => EvaluationResult.safeSender('^sender$i@example\\.com\$'),
+        _ => EvaluationResult.noMatch(),
+      };
+
       scanProvider.updateProgress(
         email: email,
         message: 'Demo processing ${email.subject}',
@@ -668,13 +689,13 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
       scanProvider.recordResult(
         EmailActionResult(
           email: email,
-          evaluationResult: null,
+          evaluationResult: evalResult,
           action: action,
           success: true,
         ),
       );
     }
-    
+
     scanProvider.completeScan();
   }
 
