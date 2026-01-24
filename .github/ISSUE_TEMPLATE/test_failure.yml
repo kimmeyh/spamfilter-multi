@@ -1,0 +1,151 @@
+name: Test Failure
+description: Report a failing test that needs investigation and fix
+labels: ['test-failure']
+body:
+  - type: input
+    id: test_file
+    attributes:
+      label: Test File
+      description: Path to the test file
+      placeholder: 'test/unit/rule_evaluator_test.dart'
+    validations:
+      required: true
+  - type: input
+    id: test_name
+    attributes:
+      label: Test Name
+      description: Name of the specific test that is failing
+      placeholder: 'test_spam_rule_with_header_matching'
+    validations:
+      required: true
+  - type: input
+    id: flutter_version
+    attributes:
+      label: Flutter Version
+      description: Run `flutter --version`
+      placeholder: 'Flutter 3.X.X'
+    validations:
+      required: true
+  - type: dropdown
+    id: test_type
+    attributes:
+      label: Test Type
+      description: What kind of test is this?
+      options:
+        - Unit Test
+        - Integration Test
+        - Widget Test
+        - Smoke Test
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform Tested On
+      description: Which platform is this test failing on?
+      options:
+        - Android
+        - Windows
+        - macOS
+        - iOS
+        - Linux
+        - Any (all platforms)
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How critical is this test failure?
+      options:
+        - 🔴 Critical (Blocks sprint)
+        - 🟠 High (Regression in existing feature)
+        - 🟡 Medium (New test, need to fix)
+        - 🔵 Low (Flaky test, edge case)
+    validations:
+      required: true
+  - type: textarea
+    id: failure_output
+    attributes:
+      label: Failure Output
+      description: Paste the complete error message and stack trace
+      placeholder: |
+        ```
+        ══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════════════════
+        The following StateError was thrown running a test:
+        Build failed: Expected to find the 'Inbox' in folder list, but it was not found.
+
+        Stack trace:
+        #0      EmailScanProvider.setSelectedFolders (package:spamfilter_mobile/core/providers/email_scan_provider.dart:156:5)
+        #1      _FolderSelectionScreenState._onFolderSelected (package:spamfilter_mobile/ui/screens/folder_selection_screen.dart:89:3)
+        ...
+        ```
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: How to reproduce the test failure
+      placeholder: |
+        1. Run: `flutter test test/unit/rule_evaluator_test.dart`
+        2. Expected: All tests pass
+        3. Actual: Test fails with above error
+
+        Or for specific test:
+        `flutter test test/unit/rule_evaluator_test.dart -k "test_spam_rule_with_header_matching"`
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: investigation
+    attributes:
+      label: Investigation Notes
+      description: Any debugging or investigation already done
+      placeholder: |
+        - Appears to be related to: [What might be causing this]
+        - Works fine when: [Under what conditions does it pass]
+        - Fails when: [Under what conditions does it fail]
+        - Happens in: [Branch/commit where this started]
+        - Related to: [Other recent changes that might affect this]
+    validations:
+      required: false
+  - type: textarea
+    id: environment
+    attributes:
+      label: Test Environment
+      description: Additional context about the test environment
+      placeholder: |
+        - Dart Version: [from `dart --version`]
+        - Package versions: [any relevant packages]
+        - Test runner: flutter test / IDE
+        - Frequency: Always / Sometimes (flaky)
+        - Recently started: [date/commit]
+    validations:
+      required: false
+  - type: textarea
+    id: model_assignment
+    attributes:
+      label: Suggested Model Assignment
+      description: |
+        Which model should investigate this?
+        - Haiku: Clear test failure with obvious fix
+        - Sonnet: Complex test failure requiring architecture understanding
+        - Opus: Intermittent failures, race conditions, deep debugging needed
+      placeholder: 'Suggested Model: [Haiku/Sonnet/Opus]'
+    validations:
+      required: false
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance Criteria
+      description: When is this test failure considered fixed?
+      placeholder: |
+        - [ ] Test passes locally on [platform]
+        - [ ] Test passes in CI/CD
+        - [ ] No other tests broken
+        - [ ] Root cause documented
+    validations:
+      required: false
