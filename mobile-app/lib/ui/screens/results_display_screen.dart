@@ -296,7 +296,9 @@ class ResultsDisplayScreen extends StatelessWidget {
     final subject = result.email.subject.isNotEmpty
         ? result.email.subject
         : 'No subject';
-    final rule = result.evaluationResult?.matchedRule ?? 'No rule';
+    // Issue #51: Display matched rule name or "No rule" if empty/null
+    final matchedRule = result.evaluationResult?.matchedRule ?? '';
+    final rule = matchedRule.isNotEmpty ? matchedRule : 'No rule';
     final subtitle = '$folder • $subject • $rule';
     final trailing = result.success
         ? const Icon(Icons.check, color: Colors.green)
