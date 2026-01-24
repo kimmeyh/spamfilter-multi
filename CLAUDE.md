@@ -23,6 +23,8 @@ Startup Check:
 ```
 
 If any check fails, **STOP and resolve with user before accepting work**.
+
+**Note on Firebase MCP**: This project uses Firebase only for Android Gmail OAuth registration (not backend services like Firestore/Auth/Storage). The Firebase MCP server is not needed for current development workflows. It can be added later if Firebase backend services are integrated.
 ## Developer information
 1. Using Windows 11 HP Omen with all current Windows Updates installed
 2. When looking for information about the user, should always use Windows environment variables (however username is kimme as in C:\users\kimme)

@@ -1,3 +1,11 @@
+---
+name: startup-check
+description: Run environment health check for this project
+allowed-tools: Bash, Read
+user-invocable: true
+model: haiku
+---
+
 # Startup Check Skill
 
 Run environment health check for this project.

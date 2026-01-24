@@ -3,6 +3,7 @@ name: full-test
 description: Run all Flutter tests and analyze code quality for the mobile-app
 allowed-tools: Bash
 user-invocable: true
+model: sonnet
 ---
 
 # Full Test

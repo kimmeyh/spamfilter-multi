@@ -1,94 +1,22 @@
-﻿## Executive Summary
-
-The OutlookMailSpamFilter desktop application has been successfully ported to a cross-platform mobile app supporting multiple email providers (AOL, Gmail). The app maintains compatibility with existing YAML rule formats and is decoupled from Outlook-specific COM interfaces.
-
-
-## Development Phases
-### Phase 3.4 Goals: 
-<!-- 
-Moved to issues:
-- Focus on AOL and Gmail email addresses
-- Focus on Android and Windows Desktop apps
-  - Both Android and Windows Desktop
-    - Scan
-      - Results screen
-        - Update to View Results screen > results list. Add the folder in front of the from email address, "<from-email-address> o <rule>" to be "<folder> o <subject> o <rule>"
-      - Select Folders screen
-        - Update the AOL platform/email "Bulk" and "Bulk Email" (if they exist)to be considered "Spam/Junk folders" and should be tagged as "Recommended" and checked by default -->
-
-Planning for management of identified spam
-
-The management of identified spam will be similar between email providers, but will likely have differences.  Like the rest of the app, we would like to email providers and platforms behave the same way and use the same code whenever reasonably possible, but different when needed or unreasonable to do the same way.
-
-What is needed at the end of a scan as an enhancement to "View Results"
-1. review emails and be able to updates Safe Sender and Auto Delete/Move/Tag rules
-***
-Functionality in human terms:
-  - The Safe Senders list identifies regex email addresses that the user has identified as OK to see and wants to make sure they are always in the inbox for review.  They can be broken down into a few sets:
-    1. Very specific email addresses from individuals
-    2. Very specific from business partners
-    3. Business partner emails where the "<first-level-domain>.<top-level-domain>" match, but can match any <sub-domain> of "<address-name>@<sub-domain>.<first-level domain>.<top-level-domain>".
-    4. - Business partner emails where the "<first-level domain>.<top-level-domain>" match, but can match any <sub-domain> of "<any-address-name>@<sub-domain>.<first-level-domain>.<top-level-domain>".
-    5. Since the Safe-Senders check is primary (if they are safe, they are still safe even if they match a auto-delete rule), we need a way to add exceptions to Safe-Senders of type 2 and 3
-    
-  - Rule sets are primarily for taking action to delete and/or move and/or flag emails
-    - Anything matching a rule with an action should be tagged
-      - There are exception regex patterns based on the content. Can all exceptions be moved to safe-senders rules?
-    - They are matched by Regex patterns based on the
-      - Message Header content - free form match of anything in the message header
-      
-      - Message Header "From:" - matching of content of information in the header copy of From
-        - This is the most accurate way to find unwanted emails (majority of the rules)
-        - Why - hard to spoof the header copy of "From:" while easy to spoof the message copy of "From:"
-        - Regex patterns are similar to Safe-Senders 1-4
-          - types 1 and 2 are rarely marked as spam incorrectly and should be tagged uniquely.
-          - types 3 and 4 are rate, but more likely to be incorrect and should be tagged uniquely.
-        - Some care needs to be taken in the content of the header "From:" to make it easy to match
-          - convert to all lowercase and regex match lowercase 
-          - remove all special characters and spaces so it only contains [0-9], [a-z], underscore and hyphen.
-          - did I miss anything?
-      - Message "Subject:" content
-        - Harder to match as all kinds of things can be added to mask
-        - Some care needs to be taken in the content of the header "From:" to make it easy to match
-          - convert to all lowercase and regex match lowercase 
-          - remove all special characters [0-9], [a-z], underscore, period, exclamation point, single and double quotes, brackets, angle brackets and squiggly brackets, ampersand, dollar sign, parenthesis and hyphen.
-          - did I miss anything?
-        - These could match a good message so they should be tagged uniquely
-      Message "Body" content
-        - Harder to match as all kinds of things can be added to mask
-        - Some care needs to be taken in the content of the header "From:" to make it easy to match
-          - convert to all lowercase and regex match lowercase 
-          - remove all special characters [0-9], [a-z], underscore, period, exclamation point, single and double quotes, brackets, angle brackets and squiggly brackets, ampersand, dollar sign, parenthesis and hyphen.
-          - Most of these are looking for similar regex patterns as domains as they are looking for URL's in the body
-            - While it is often true that the Header "From:" has the same domain <first-level domain>.<top-level-domain> and are better of as Header "From:" rules.  Sometimes they are different and putting them here is helpful.
-            - There are a few text strings that often show up in undesirable email messages, but rarely, if ever, show up in desired emails. 
-            - The two 'SpamAutoDeleteBody-imgur.com' rules can be re-incorporated into the Message "Body" content rules and removed as it's own ruleset.
-          - did I miss anything?
-        - These could match a good message so they should be tagged uniquely
-    ***    
-
-
-
-
-
-
-
-      - Exceptions to "Individual Email Address Safe Senders" is unlikely as they are very specific.
-  - The rules.yaml is a functionality to identify for users email address (or regex patterns) that they will never want to see. However, like email "Junk Folders" a user may want to "find" and email that has bee deleted by a rule and will want add items to help find them (specific folders for different types of rule, tagging the messages with rule match...).  There are several types of rules:
-    - AutoDeleteHeader - Automatically Delete based on content of the email header
-      - From: address in the email header against stored regex patterns
-        - There are datasets of known spam email domains (first-level-domain.top-level-domain) that are known 99% spam.
-      - Subject: content
-    - AutoDeleteBody
-
-
-be a little different for email providers.
+﻿
 
 Phase 3.5
   - Android specific enhancements
     - TBD
   - Windows Desktop specific enhancements
     - TBD 
+- Need a Requirements document that is organized and maintained occasionally by Claude Code and by me as the Product Owners/Business Systems Analyst. ...more details ***
+
+  - As complex as needed for you and I to read and update while as simple as reasonably possible.
+  - Easy for you to find sub-sections when you need to reference them, like an index of some kind. possibly a set of tags that are helpful (ex. #signup, #scan #rules #unmatched, #android #W11desktop)
+  - for all indicators of priorities, use a 1 to 5 scale where 1 is most important and 5 indicates it may be re-considered later
+  - Simple indicator for each requirement:
+    - what has been implemented/not implemented
+    - what is in scope for the next iteration/sprint (like a backlog)
+    - backlog will be maintained as a set of github issues with flags for sprint number, 
+    - some level of development priority (dev1-dev5) (all with same priority can be done at the same time as they have no dependencies on other current sprint items or future)
+      - dependencies should be noted in issue comments (ex. Dependency:  issue #98, issue #97)
+    - and product importance priority (pr1-pr5) (must have before release, important, like to have)
 - Process all "No rule" messages via Interactive Inbox Trainer
   - Build UI for unmatched emails (similar to Python CLI prompts)
   - Should have UI and keyboard equivalents for each user action
@@ -117,6 +45,10 @@ Phase 3.5
 - Windows MSIX installer
 - Desktop-specific UI adjustments
 - Background sync implementation- Background sync implementation
+- Gmail authentication
+  - Determine how current Android Samsung email app does authentication for Gmail (as it only authenticates once and never has to authenticate again)for use in current gmail authentication. 
+  - Ensure we store the current authentication between builds in a secure way via environment variables or keyring (python, flutter or dart) so if wiped during build/rebuild of android or Windows Desktop app, they can be re-established without going back to a google web method.
+  - Leave current method as only backup method - likely to be deprecated in the future after Android Samsung email app method is working.
 
 Phase 4 Development Goals
 - Expand to iOS platform
