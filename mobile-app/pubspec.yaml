@@ -40,6 +40,9 @@ dependencies:
   app_links: ^6.3.3  # For deep link handling on mobile OAuth
   flutter_appauth: ^8.0.1  # For proper OAuth on Android/iOS
   
+  # Phase 3.5 - Database & Settings
+  sqflite: ^2.3.0  # SQLite for scan results, rules, settings
+
   # Phase 2+ - UI Enhancement
   # flutter_svg: ^2.0.9
 

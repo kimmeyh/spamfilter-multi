@@ -97,6 +97,14 @@ class AppPaths {
     return path.join(_rulesDir.path, 'rules_safe_senders.yaml');
   }
 
+  /// Full path to SQLite database file (Phase 3.5)
+  ///
+  /// Stores scan results, rules, settings, and scan history
+  String get databaseFilePath {
+    _checkInitialized();
+    return path.join(_appSupportDir.path, 'spam_filter.db');
+  }
+
   /// Credentials and tokens directory (secure storage primary location)
   /// 
   /// Note: Actual credentials stored via flutter_secure_storage
