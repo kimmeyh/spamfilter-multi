@@ -34,6 +34,10 @@ class DatabaseHelper {
     final db = await openDatabase(
       dbPath,
       version: databaseVersion,
+      onConfigure: (db) async {
+        // Ensure SQLite foreign key constraints are enforced
+        await db.execute('PRAGMA foreign_keys = ON');
+      },
       onCreate: _createTables,
       onUpgrade: _upgradeTables,
     );
