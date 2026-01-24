@@ -3,11 +3,28 @@ import 'package:logger/logger.dart';
 
 import '../../adapters/storage/app_paths.dart';
 
+/// Minimal database interface for rule storage operations
+abstract class RuleDatabaseProvider {
+  Future<Database> get database;
+  Future<List<Map<String, dynamic>>> queryRules({bool? enabledOnly});
+  Future<List<Map<String, dynamic>>> querySafeSenders();
+  Future<int> insertRule(Map<String, dynamic> rule);
+  Future<int> insertSafeSender(Map<String, dynamic> safeSender);
+  Future<Map<String, dynamic>?> getRule(String ruleName);
+  Future<Map<String, dynamic>?> getSafeSender(String pattern);
+  Future<int> updateRule(String ruleName, Map<String, dynamic> values);
+  Future<int> updateSafeSender(String pattern, Map<String, dynamic> values);
+  Future<int> deleteRule(String ruleName);
+  Future<int> deleteSafeSender(String pattern);
+  Future<void> deleteAllRules();
+  Future<void> deleteAllSafeSenders();
+}
+
 /// Database schema version (increment on schema changes)
 const int databaseVersion = 1;
 
 /// SQLite database helper - singleton pattern
-class DatabaseHelper {
+class DatabaseHelper implements RuleDatabaseProvider {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
   static final Logger _logger = Logger();
@@ -19,6 +36,7 @@ class DatabaseHelper {
   DatabaseHelper._internal();
 
   /// Get or initialize the database
+  @override
   Future<Database> get database async {
     _database ??= await _initializeDatabase();
     return _database!;
@@ -324,11 +342,13 @@ class DatabaseHelper {
   // CRUD Operations - rules
   // ============================================================================
 
+  @override
   Future<int> insertRule(Map<String, dynamic> values) async {
     final db = await database;
     return db.insert('rules', values);
   }
 
+  @override
   Future<List<Map<String, dynamic>>> queryRules({bool? enabledOnly}) async {
     final db = await database;
     String whereClause = '1=1';
@@ -342,6 +362,7 @@ class DatabaseHelper {
     );
   }
 
+  @override
   Future<Map<String, dynamic>?> getRule(String ruleName) async {
     final db = await database;
     final results = await db.query(
@@ -352,6 +373,7 @@ class DatabaseHelper {
     return results.isNotEmpty ? results.first : null;
   }
 
+  @override
   Future<int> updateRule(String ruleName, Map<String, dynamic> values) async {
     final db = await database;
     return db.update(
@@ -362,6 +384,7 @@ class DatabaseHelper {
     );
   }
 
+  @override
   Future<int> deleteRule(String ruleName) async {
     final db = await database;
     return db.delete(
@@ -371,6 +394,7 @@ class DatabaseHelper {
     );
   }
 
+  @override
   Future<void> deleteAllRules() async {
     final db = await database;
     await db.delete('rules');
@@ -380,16 +404,19 @@ class DatabaseHelper {
   // CRUD Operations - safe_senders
   // ============================================================================
 
+  @override
   Future<int> insertSafeSender(Map<String, dynamic> values) async {
     final db = await database;
     return db.insert('safe_senders', values);
   }
 
+  @override
   Future<List<Map<String, dynamic>>> querySafeSenders() async {
     final db = await database;
     return db.query('safe_senders', orderBy: 'pattern ASC');
   }
 
+  @override
   Future<Map<String, dynamic>?> getSafeSender(String pattern) async {
     final db = await database;
     final results = await db.query(
@@ -400,6 +427,7 @@ class DatabaseHelper {
     return results.isNotEmpty ? results.first : null;
   }
 
+  @override
   Future<int> updateSafeSender(String pattern, Map<String, dynamic> values) async {
     final db = await database;
     return db.update(
@@ -410,6 +438,7 @@ class DatabaseHelper {
     );
   }
 
+  @override
   Future<int> deleteSafeSender(String pattern) async {
     final db = await database;
     return db.delete(
@@ -419,6 +448,7 @@ class DatabaseHelper {
     );
   }
 
+  @override
   Future<void> deleteAllSafeSenders() async {
     final db = await database;
     await db.delete('safe_senders');
