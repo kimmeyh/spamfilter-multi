@@ -473,7 +473,7 @@ void main() {
 
     test('updateScanResultFields updates only specified fields', () async {
       final success = await scanResultStore.updateScanResultFields(scanId, {
-        'matched_count': 80,
+        'processed_count': 80,
         'status': 'completed',
       });
 
@@ -487,7 +487,7 @@ void main() {
 
     test('updateScanResultFields returns false if scan not found', () async {
       final success = await scanResultStore.updateScanResultFields(9999, {
-        'matched_count': 100,
+        'processed_count': 100,
       });
 
       expect(success, false);
@@ -621,7 +621,7 @@ void main() {
         'scan_mode': 'readonly',
         'started_at': 1000,
         'total_emails': 100,
-        'matched_count': 50,
+        'processed_count': 50,
         'no_rule_count': 40,
         'deleted_count': 0,
         'moved_count': 0,

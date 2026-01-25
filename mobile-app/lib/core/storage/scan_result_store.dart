@@ -76,9 +76,12 @@ class ScanResult {
     try {
       if (foldersJson.isNotEmpty && foldersJson != '[]') {
         // Simple JSON parsing for folder names
-        final cleaned = foldersJson.replaceAll('[', '').replaceAll(']', '').replaceAll('"', '');
-        if (cleaned.isNotEmpty) {
-          folders = cleaned.split(',').map((f) => f.trim()).toList();
+        // Only parse if it looks like a JSON array (starts with [ and ends with ])
+        if (foldersJson.startsWith('[') && foldersJson.endsWith(']')) {
+          final cleaned = foldersJson.replaceAll('[', '').replaceAll(']', '').replaceAll('"', '');
+          if (cleaned.isNotEmpty) {
+            folders = cleaned.split(',').map((f) => f.trim()).toList();
+          }
         }
       }
     } catch (e) {
