@@ -14,6 +14,7 @@ import '../../core/models/safe_sender_list.dart';
 import '../../core/services/pattern_compiler.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/rule_database_store.dart';
+import '../../core/storage/safe_sender_database_store.dart';
 
 /// Loading state for rule data
 enum RuleLoadingState { idle, loading, success, error }
@@ -61,6 +62,7 @@ enum RuleLoadingState { idle, loading, success, error }
 class RuleSetProvider extends ChangeNotifier {
   late AppPaths _appPaths;
   late RuleDatabaseStore _databaseStore;
+  late SafeSenderDatabaseStore _safeSenderStore;
   late LocalRuleStore _ruleStore; // Keep for YAML export (dual-write pattern)
   final PatternCompiler _patternCompiler = PatternCompiler();
   final Logger _logger = Logger();
@@ -91,9 +93,10 @@ class RuleSetProvider extends ChangeNotifier {
       _appPaths = AppPaths();
       await _appPaths.initialize();
 
-      // Create database store (primary storage)
+      // Create database stores (primary storage)
       final databaseHelper = DatabaseHelper();
       _databaseStore = RuleDatabaseStore(databaseHelper);
+      _safeSenderStore = SafeSenderDatabaseStore(databaseHelper);
 
       // Create YAML store for export (secondary, for version control)
       _ruleStore = LocalRuleStore(_appPaths);
@@ -130,7 +133,13 @@ class RuleSetProvider extends ChangeNotifier {
   /// Load safe senders from database storage
   Future<void> loadSafeSenders() async {
     try {
-      _safeSenders = await _databaseStore.loadSafeSenders();
+      // Load SafeSenderPattern objects from database
+      final safeSenderPatterns = await _safeSenderStore.loadSafeSenders();
+
+      // Convert to SafeSenderList (simple patterns for backward compatibility)
+      final patterns = safeSenderPatterns.map((s) => s.pattern).toList();
+      _safeSenders = SafeSenderList(safeSenders: patterns);
+
       _logger.i('Loaded ${_safeSenders!.safeSenders.length} safe sender patterns from database');
       notifyListeners();
     } catch (e) {
@@ -242,15 +251,23 @@ class RuleSetProvider extends ChangeNotifier {
     if (_safeSenders == null) return;
 
     try {
+      // Create SafeSenderPattern with auto-detected type
+      final patternType = SafeSenderDatabaseStore.determinePatternType(pattern);
+      final safeSenderPattern = SafeSenderPattern(
+        pattern: pattern,
+        patternType: patternType,
+        dateAdded: DateTime.now().millisecondsSinceEpoch,
+      );
+
       // Add to database
-      await _databaseStore.addSafeSender(pattern);
+      await _safeSenderStore.addSafeSender(safeSenderPattern);
 
       // Update local cache
       _safeSenders!.add(pattern);
 
       // Export to YAML for version control
       await _ruleStore.saveSafeSenders(_safeSenders!);
-      _logger.i('Added safe sender: $pattern');
+      _logger.i('Added safe sender: $pattern (type: $patternType)');
       notifyListeners();
     } catch (e) {
       _setError('Failed to add safe sender: $e');
