@@ -13,6 +13,7 @@ import '../../core/models/rule_set.dart';
 import '../../core/models/safe_sender_list.dart';
 import '../../core/services/pattern_compiler.dart';
 import '../../core/storage/database_helper.dart';
+import '../../core/storage/migration_manager.dart';
 import '../../core/storage/rule_database_store.dart';
 import '../../core/storage/safe_sender_database_store.dart';
 
@@ -85,6 +86,7 @@ class RuleSetProvider extends ChangeNotifier {
   ///
   /// This initializes AppPaths and loads rules from database storage.
   /// Uses dual-write pattern: database is primary, YAML export for version control.
+  /// Automatically runs YAML to database migration on first run.
   Future<void> initialize() async {
     _setLoadingState(RuleLoadingState.loading);
 
@@ -93,8 +95,39 @@ class RuleSetProvider extends ChangeNotifier {
       _appPaths = AppPaths();
       await _appPaths.initialize();
 
-      // Create database stores (primary storage)
+      // Create database helper
       final databaseHelper = DatabaseHelper();
+
+      // Check if YAML to database migration is needed (first run detection)
+      final migrationManager = MigrationManager(
+        databaseHelper: databaseHelper,
+        appPaths: _appPaths,
+      );
+
+      final isMigrationComplete = await migrationManager.isMigrationComplete();
+      if (!isMigrationComplete) {
+        _logger.i('First run detected - migrating YAML rules to database');
+        try {
+          final migrationResults = await migrationManager.migrate();
+          _logger.i(
+              'Migration completed: ${migrationResults.rulesImported} rules, ${migrationResults.safeSendersImported} safe senders imported');
+
+          if (migrationResults.rulesFailed > 0 ||
+              migrationResults.safeSendersFailed > 0) {
+            _logger.w(
+                'Migration had some failures: ${migrationResults.errors.length} errors');
+            // Continue anyway - partial migration better than none
+          }
+        } catch (migrationError) {
+          _logger.e('Migration failed: $migrationError');
+          // Continue anyway - database might have partial data
+          // Worst case: user re-adds rules manually
+        }
+      } else {
+        _logger.i('Database already populated - skipping migration');
+      }
+
+      // Create database stores (primary storage)
       _databaseStore = RuleDatabaseStore(databaseHelper);
       _safeSenderStore = SafeSenderDatabaseStore(databaseHelper);
 
