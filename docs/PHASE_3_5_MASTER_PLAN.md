@@ -477,234 +477,385 @@ AccountSettings:
 
 ---
 
-### SPRINT 6: Safe Sender Manager & Advanced Filtering
+### SPRINT 6: Interactive Rule & Safe Sender Management from Scan Results
 **Status**: 📋 PLANNED
-**Estimated Duration**: 12-14 hours
-**Model Assignment**: Sonnet (architecture) + Haiku (UI)
+**Estimated Duration**: 16-18 hours
+**Model Assignment**: Sonnet (architecture) + Haiku (UI + backend)
 
-**Objective**: Complete safe sender management and advanced filtering options
+**Objective**: Interactive UI to add rules and safe senders directly from unmatched emails during scan result review
 
-**Per Original Plan**:
-- Safe Sender Manager: View safe sender list, add/remove, test patterns, bulk import
-- Advanced Filtering: Second-pass processing, rule priority, custom folder targets, sender exceptions
+**Per Original Requirements**:
+- User adds safe senders from scan results (types 1-4)
+- User adds auto-delete rules from scan results (From/Subject/Body/URL)
+- Safe sender exceptions (denylist) for types 2-3
+- Date added tracking for all rules
+- New rules enabled when user selects to add them
+- Rule condition buckets: From Header, Header Text, Subject, Body, Body URLs
 
-**Screens**:
+**Database Schema** (Updated from Sprint 1):
 
-1. **Safe Sender Manager Screen**
-   - List all safe senders (email, domain, subdomain patterns)
-   - Search/filter by pattern
-   - Sort by type or date added
-   - Show matching count (emails that would match)
-   - Delete with confirmation
-   - Bulk operations (delete multiple)
-
-2. **Add Safe Sender Dialog**
-   - Pattern type selector (email/domain/subdomain)
-   - Pattern input field
-   - Auto-detection: Suggest type based on input
-   - Regex validation
-   - Preview: Show what emails would match
-   - Save button
-
-3. **Exception Management** (from Sprint 3 SafeSenderDatabaseStore)
-   - Add exceptions to domain safe senders
-   - Example: "Allow @company.com except spammer@company.com"
-   - Visual editor for exceptions
-   - Test exceptions against emails
-
-4. **Rule Priority Screen**
-   - Drag-to-reorder rule execution
-   - Show execution order
-   - Explain rule evaluation order
-   - Quick enable/disable rules
-   - Visual feedback on changes
-
-5. **Advanced Filtering Options**
-   - Second-pass processing toggle
-   - Custom folder targets for move actions
-   - Sender-specific rule exceptions
-   - Whitelist specific senders for specific rules
-
-**Features**:
-- Pattern testing: Show which emails would match
-- Bulk import from contacts (platform-specific)
-- Regex validation for patterns
-- Exception precedence (override safe sender rules)
-- Rule priority visualization
-
-**Database Schema** (extends existing):
 ```
-RuleExecution:
+Rule:
   - id (PK)
-  - rule_id (FK)
-  - execution_order (numeric)
+  - name (text)
   - enabled (boolean)
-  - updated_at (timestamp)
+  - condition_type (from_header/header_text/subject/body/body_url)
+  - patterns (JSON array of regex strings)
+  - actions (JSON: {delete: bool, move_folder: string})
+  - execution_order (numeric)
+  - date_added (timestamp)  # ← NEW
 
-SenderException:
+SafeSender:
   - id (PK)
-  - rule_id (FK)
-  - pattern (sender email/domain)
-  - exception_type (exclude_from_rule)
+  - pattern (text, regex)
+  - pattern_type (1/2/3/4 from original spec)
+  - exceptions (JSON array of exception patterns)  # ← NEW
+  - date_added (timestamp)  # ← NEW
+
+SafeSenderException:  # ← NEW
+  - id (PK)
+  - safe_sender_id (FK)
+  - exception_pattern (text, regex)
+  - description (text)
   - created_at (timestamp)
 ```
 
+**UI Flows**:
+
+1. **Add Safe Sender from Scan Result**
+
+   Dialog Flow:
+   ```
+   Select Safe Sender Type
+     ↓
+   Type 1: Exact email (user@example.com)
+     → Pattern: ^user@example\.com$
+     → Show: Will match only this email
+
+   Type 2: Specific domain (@example.com)
+     → Pattern: @example\.com$
+     → Show: Will match any@example.com
+     → Option: Add exceptions (denylist)
+
+   Type 3: Domain + subdomains (@*.example.com)
+     → Pattern: @(?:[a-z0-9-]+\.)*example\.com$
+     → Show: Will match any@sub.example.com
+     → Option: Add exceptions (denylist)
+
+   Type 4: Any subdomain match
+     → Pattern: @(?:[a-z0-9-]+\.)*(?:[a-z0-9-]+\.)*example\.com$
+     → Show: Will match across many variations
+     → Option: Add exceptions (denylist)
+
+   Confirm and Save
+     → Add to SafeSender table
+     → Set date_added = now()
+   ```
+
+   **Exception Denylist** (for Types 2-3):
+   - "Allow domain except these addresses"
+   - Add pattern that overrides safe sender match
+   - Example: Safe @company.com, except spammer@company.com
+   - Stored as JSON in exceptions field
+   - Evaluated AFTER safe sender match (per Sprint 3 SafeSenderEvaluator)
+
+2. **Add Auto-Delete Rule from Scan Result**
+
+   Rule Creation Dialog:
+   ```
+   Select Rule Type (Condition Bucket)
+     ↓
+   From Header:
+     → Use normalized from_email
+     → Pre-fill: sender@example.com
+     → Show: Type 1, 2, 3, or 4 pattern
+     → Action: Delete or Move
+
+   Header Text:
+     → Free-form header match
+     → Pre-fill: extracted header content
+     → Action: Delete or Move
+
+   Subject:
+     → Pre-fill: email subject (normalized)
+     → Apply normalization (lowercase, remove special chars)
+     → Action: Delete or Move
+
+   Body:
+     → Pre-fill: matched keyword or URL
+     → Show examples: "phone number", "domain name"
+     → Action: Delete or Move
+
+   Body URL Domain:
+     → Extract domains from links
+     → Show: list of domains found in email
+     → Select one or more to block
+     → Action: Delete or Move
+
+   Confirm and Save
+     → Add to Rule table
+     → Set date_added = now()
+     → Set enabled = true
+   ```
+
+3. **Email Details Screen** (enhanced from Sprint 4)
+
+   **Quick-Add Buttons**:
+   - "Add to Safe Senders" → Dialog flow
+   - "Add Auto-Delete From" → From Header pattern
+   - "Add Auto-Delete Subject" → Subject pattern
+   - "Add Auto-Delete Body" → Body pattern
+   - "Block URL Domain" → Extract and suggest domains
+
+   **Text Selection Helper**:
+   - Long-press on text to select
+   - Context menu: "Add this as Body pattern"
+   - URL detection: "Block this domain"
+
+**Pattern Type Detection**:
+
+Auto-detect when user enters pattern:
+```
+Input: john.doe@example.com
+  → Type 1 (exact email)
+  → Pattern: ^john\.doe@example\.com$
+
+Input: @example.com
+  → Type 2 (domain only)
+  → Pattern: @example\.com$
+
+Input: @*.example.com (user suggestive notation)
+  → Type 3 (domain + subdomains)
+  → Pattern: @(?:[a-z0-9-]+\.)*example\.com$
+```
+
+**Normalization Requirements**:
+
+- **From Header**:
+  - Lowercase
+  - Remove special characters, keep [0-9a-z_-]
+  - Examples: `John.Doe@Example.COM` → `johndoe@example.com`
+
+- **Subject/Body**:
+  - Lowercase
+  - Preserve: [0-9a-z], underscore, hyphen, period, brackets, URL special chars
+  - Allow user-specified fuzzy matching:
+    - Exact match (normal regex)
+    - Spaces removed (try again without spaces)
+    - Common letter replacements (l→1, e→3, o→0, i→1, etc.)
+  - Examples: `Really Bad Word!` → `reallybadword` (can match "rea!lly bad word" or "really b@d word")
+
 **Tasks**:
-- **Task A**: Safe sender manager UI + bulk import
-- **Task B**: Rule priority screen + execution ordering
-- **Task C**: Advanced filtering (second-pass, custom targets, exceptions)
+- **Task A**: Safe sender quick-add UI + exception denylist management
+- **Task B**: Auto-delete rule quick-add UI + pattern type detection
+- **Task C**: Text selection helper + URL domain extraction
+- **Task D**: Pattern normalization + fuzzy matching support
+
+**Database Updates**:
+- Add `date_added` field to Rule and SafeSender
+- Add `exceptions` JSON field to SafeSender (for denylist)
+- Update rule evaluation to check exceptions AFTER safe sender match
 
 **Acceptance Criteria**:
-- ✅ Safe sender CRUD operations work
-- ✅ Pattern testing shows matching emails
-- ✅ Rule priority can be reordered
-- ✅ Sender exceptions override rules
-- ✅ Custom folder targets work
-- ✅ Second-pass processing re-evaluates emails
+- ✅ Can add safe sender types 1-4 from scan result
+- ✅ Can add exceptions to safe sender types 2-3
+- ✅ Can add auto-delete rules from scan result (all condition buckets)
+- ✅ Pattern type auto-detected correctly
+- ✅ Normalization removes special characters correctly
+- ✅ Fuzzy matching works (exact, spaces removed, letter replacements)
+- ✅ New rules show in rule list
+- ✅ Date added tracked for all rules
+- ✅ Exceptions evaluated correctly (denylist overrides safe sender)
 
 **Testing**:
-- Add 5 safe sender patterns (emails, domains, subdomains)
-- Test exceptions on domain patterns
-- Reorder rules and verify evaluation order
-- Add sender exception and verify rule bypass
+- Add safe sender type 1 (exact email)
+- Add safe sender type 3 (domain + subdomains) with exception
+- Add auto-delete from header rule
+- Add auto-delete subject rule
+- Add auto-delete body URL domain rule
+- Verify fuzzy matching: "rea!lly bad word" matches "reallybadword" rule
+- Verify exception: Safe sender match overridden by exception
 
-**Next Sprint Dependency**: Sprints 7-10 use settings + safe senders
+**Next Sprint Dependency**: Sprint 7 implements background scanning using these rules
 
 ---
 
-### SPRINT 7: Background Scanning & Settings Infrastructure
+### SPRINT 7: Background Scanning Implementation - Android (WorkManager)
 **Status**: 📋 PLANNED
 **Estimated Duration**: 14-16 hours
 **Model Assignment**: Sonnet (architecture) + Haiku (implementation)
-**Platforms**: Android + Windows (iOS deferred to Phase 4+)
+**Platform**: Android
 
-**Objective**: Implement automatic background scanning with configurable frequency and settings
+**Objective**: Automatic periodic background scanning on Android with user-configured frequency
 
-**Per Original Plan**:
-- Process all emails with background sync implementation
-- Configurable scan frequency (15min, 30min, 1hr, manual only)
-- Battery and network optimization
-- Windows MSIX installer preparation
+**Per Original Requirements**:
+- Background scans run every <n> minutes (user configured: 15/30/60 min, daily, or disabled)
+- Scans check all user-enabled provider/email addresses
+- Only flags unmatched emails, does NOT process rules/delete/move
+- Uses account-specific settings (background_scan_enabled, scan_frequency)
+- Uses app-level scan mode defaults (read-only + what to process)
+- Separate unmatched list from manual scans (per Sprint 4)
 
-**Sprint 7 Part A: Settings Infrastructure**
+**Architecture** (Android WorkManager):
 
-**Screens**:
-
-1. **App Settings Screen**
-   - Default scan mode: Read-Only / Test / Full Delete
-   - UI Theme: Light / Dark / System
-   - Logging Level: Debug / Info / Warning
-   - Data retention period: 30/60/90/365 days
-
-2. **Auto-Scan Configuration**
-   - Enable/disable auto-scan
-   - Scan frequency: Disabled / 15min / 30min / 1hr / Daily
-   - WiFi-only mode (mobile optimization)
-   - Battery threshold: Pause scanning if <N% battery
-
-3. **Per-Account Settings**
-   - Auto-scan this account: Yes/No
-   - Folders to scan: Multi-select from available folders
-   - Default action: Delete / Move / None
-   - Rule evaluation order display
-
-**Database Schema**:
 ```
-AppSettings:
-  - key (PK)
-  - value (JSON)
-  - data_type (string/number/boolean)
-  - updated_at (timestamp)
+Background Scan Flow:
+1. User configures frequency in Settings (Sprint 5)
+   - BackgroundScanManager schedules PeriodicWorkRequest
+   - Frequency: 15min / 30min / 1hr / daily
 
-AccountSettings:
+2. WorkManager triggers at configured interval:
+   - System decides exact timing (may batch with other work)
+   - Worker runs even if app not in foreground
+
+3. BackgroundScanWorker executes:
+   - Load account settings (which accounts enabled for background)
+   - Load app settings (scan mode: read-only, what to process)
+   - For each enabled account:
+     - Create EmailScanner (uses same logic as manual)
+     - Fetch emails from selected folders
+     - Evaluate against rules
+     - Track unmatched emails
+   - Save ScanResult to database (replaces previous background result)
+   - Save UnmatchedEmail list (per Sprint 4 schema)
+
+4. Post-Scan:
+   - Check if unmatched count > 0
+   - If yes: Send notification with summary
+   - User can tap to review in "Process Results" UI
+
+5. Error Handling:
+   - Auth failures: Log, exponential backoff, retry next interval
+   - Network failures: Log, exponential backoff, retry next interval
+   - Max retries: 3, then skip this interval
+```
+
+**Database Schema** (Updated from Sprint 5):
+
+```
+AccountSettings:  # Already in Sprint 5
+  - background_scan_enabled (boolean)
+  - background_scan_frequency_minutes (number)
+  - selected_folders (JSON array)
+
+BackgroundScanLog:  # NEW for tracking
   - id (PK)
   - account_id (FK)
-  - auto_scan_enabled (boolean)
-  - scan_frequency (interval)
-  - default_action (enum)
-  - folders_to_scan (JSON array)
-  - updated_at (timestamp)
+  - scheduled_time (timestamp)
+  - actual_start_time (timestamp)
+  - actual_end_time (timestamp)
+  - status (success/failed/retry)
+  - error_message (text, nullable)
+  - emails_processed (count)
+  - unmatched_count (count)
 ```
-
-**Sprint 7 Part B: Background Scanning - Android**
-
-**Architecture** (WorkManager):
-```
-Background Scan Flow (Android):
-1. PeriodicWorkRequest scheduled at configured interval
-2. ScanWorker triggers:
-   - Check battery level (skip if <threshold)
-   - Check network connectivity (WiFi-only check if enabled)
-   - Load account settings
-   - Execute EmailScanner for each account
-   - Save results to database
-3. NotificationManager:
-   - Send notification if spam found
-   - Show scan summary (total emails, spam count)
-   - Tap opens app to results
-4. Backoff strategy:
-   - Exponential backoff on network failures
-   - Exponential backoff on auth failures
-   - Max retries: 3
 
 **Components**:
-1. **ScanWorker** (extends Worker)
-   - Receives scan frequency from settings
-   - Executes EmailScanner same as foreground
-   - Handles exceptions gracefully
-   - Returns success/retry/failure
+
+1. **BackgroundScanWorker** (extends Worker)
+   ```dart
+   class BackgroundScanWorker extends Worker {
+     @override
+     Future<Result> perform() async {
+       // 1. Load enabled accounts
+       // 2. For each account:
+       //    - Check if background scans enabled
+       //    - Load selected folders
+       //    - Create EmailScanner
+       //    - Execute scan (same as manual)
+       //    - Save results
+       // 3. Log execution
+       // 4. Send notification if unmatched > 0
+       return Result.success();  // WorkManager will reschedule
+     }
+   }
+   ```
 
 2. **BackgroundScanManager**
-   - Schedule/reschedule periodic work
-   - Cancel background scanning
-   - Get current schedule status
+   - `scheduleBackgroundScans()` - called from Settings when user enables/changes frequency
+   - `cancelBackgroundScans()` - called when user disables
+   - `getScheduleStatus()` - show current status to user
+   - `getNextScheduledTime()` - show when next scan will run
 
-3. **NotificationService**
-   - Notification channel for scan results
-   - Notification content (summary)
-   - Tap action → app navigation
-   - Notification persistence
+3. **BackgroundScanNotificationService**
+   - Create notification channel (unique ID)
+   - Build notification: "Background scan complete: X unmatched emails"
+   - Tap action: Navigate to "Process Results" screen
+   - Show only if unmatched_count > 0 (don't spam for clean scans)
 
 4. **Battery & Network Optimization**
-   - Check battery level before scan
-   - Skip if low battery (<threshold from settings)
-   - Respect device doze mode
-   - WiFi-only mode support
+   - Check `BatteryManager.getBatteryLevel()`
+   - Skip scan if battery < 20% (configurable in settings)
+   - Check network connectivity (`connectivity_plus` package)
+   - Skip if WiFi-only mode enabled and on cellular
+   - Respect device doze mode (WorkManager handles this)
 
-**Sprint 7 Part C: Windows Desktop Preparation**
+5. **Frequency Scheduler**
+   - 15 minutes: PeriodicWorkRequest(duration: 15 min)
+   - 30 minutes: PeriodicWorkRequest(duration: 30 min)
+   - 1 hour: PeriodicWorkRequest(duration: 60 min)
+   - Daily: PeriodicWorkRequest(duration: 1 day)
+   - Disabled: Cancel existing PeriodicWorkRequest
 
-- Document MSIX installer requirements
-- Plan Windows Task Scheduler integration (for Sprint 8)
-- Create Windows build configuration
-- Desktop-specific UI layout planning
+**Key Implementation Details**:
+
+**Scan Result Storage** (per Sprint 4):
+- Each background scan replaces previous background ScanResult
+- Maintains separate UnmatchedEmail list from manual scans
+- One list of unmatched emails per scan type
+
+**Unmatched Email Flagging** (NOT Processing):
+- Run rules evaluation on all emails
+- Emails NOT matching any rule → add to UnmatchedEmail table
+- Do NOT execute delete/move actions (read-only by default)
+- Track for user review later
+
+**Account Filter**:
+- Only scan accounts where `background_scan_enabled = true`
+- Use `selected_folders` from AccountSettings
+- If no folders selected, scan INBOX + provider junk folder (AOL: Bulk, Gmail: SPAM)
+
+**Scan Mode** (from Sprint 5 defaults):
+- Read-Only: Always (never delete/move in background)
+- Process Safe Senders: Check box from settings
+- Process Rules: Check box + which rule types to check
+  - But don't EXECUTE, only EVALUATE
+  - Track "would delete" "would move" for display later
 
 **Tasks**:
-- **Task A**: Settings infrastructure (SettingsProvider, database schema)
-- **Task B**: Android background scanning (ScanWorker, WorkManager)
-- **Task C**: Notifications + battery optimization
+- **Task A**: BackgroundScanWorker + WorkManager integration
+- **Task B**: BackgroundScanManager + frequency scheduling
+- **Task C**: Notifications + battery/network optimization
 
 **Acceptance Criteria**:
-- ✅ Settings UI works and persists
-- ✅ Background scan runs at configured interval (Android)
-- ✅ Respects battery and connectivity settings
-- ✅ Notification sent when spam found
-- ✅ Scans appear in history
-- ✅ Can enable/disable auto-scan
-- ✅ WiFi-only mode functional
+- ✅ Background scans run at configured interval
+- ✅ Scans check all enabled accounts
+- ✅ Use selected folders + account settings
+- ✅ Skip if battery low or network unavailable (when configured)
+- ✅ Notification sent when unmatched emails found
+- ✅ Results appear in "Process Results" UI
+- ✅ Unmatched list separate from manual scans
+- ✅ Can enable/disable + change frequency
+- ✅ Logs tracked for debugging
 
 **Testing**:
-- Configure auto-scan for 15 minutes
-- Suspend app, wait for background execution
-- Verify notification appears
-- Check scan history for results
-- Test battery threshold skips scan
-- Test WiFi-only mode
+- Enable background scans every 15 minutes
+- Wait (or use WorkManager test API to trigger)
+- Verify scan runs in background
+- Verify notification appears (if unmatched found)
+- Disable low-battery threshold, verify scans run
+- Enable WiFi-only, verify skips on cellular
+- Review results in "Process Results" UI
 
 **Dependencies**:
-- `workmanager` package (background tasks)
+- `workmanager` (background scheduling)
 - `flutter_local_notifications` (notifications)
+- `connectivity_plus` (network detection)
+- `battery_plus` (battery level)
+- Sprint 4: ScanResult/UnmatchedEmail storage
+- Sprint 5: Settings (frequency, enabled accounts)
 
-**Next Sprint Dependency**: Sprint 8 extends to Windows/iOS
+**Next Sprint Dependency**: Sprint 8 implements Windows background scanning
 
 ---
 
