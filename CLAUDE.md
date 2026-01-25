@@ -25,6 +25,37 @@ Startup Check:
 If any check fails, **STOP and resolve with user before accepting work**.
 
 **Note on Firebase MCP**: This project uses Firebase only for Android Gmail OAuth registration (not backend services like Firestore/Auth/Storage). The Firebase MCP server is not needed for current development workflows. It can be added later if Firebase backend services are integrated.
+
+## CRITICAL: Master Sprint Plan Location
+
+**DO NOT LOSE THIS REFERENCE** - The master plan for all 10 sprints (Phase 3.5) is stored in:
+
+**Repository File**: `docs/PHASE_3_5_MASTER_PLAN.md`
+**Full Path**: `D:\Data\Harold\github\spamfilter-multi\docs\PHASE_3_5_MASTER_PLAN.md`
+**GitHub URL**: `https://github.com/kimmeyh/spamfilter-multi/blob/develop/docs/PHASE_3_5_MASTER_PLAN.md`
+
+**Contents**:
+- Complete specifications for all 10 sprints
+- Sprint dependencies and critical path
+- Task breakdown by model (Haiku/Sonnet/Opus)
+- Effort estimates (actual vs estimated from previous sprints)
+- Risk management and contingency plans
+- Success criteria for Phase 3.5 completion
+
+**When You Need This**:
+- Starting a new sprint (find Sprint X section)
+- Creating detailed sprint plan (copy and expand from master)
+- Planning dependencies (check cross-sprint dependency graph)
+- Assigning models to tasks (reference model assignment by sprint)
+- Understanding overall Phase 3.5 roadmap
+
+**Important**:
+1. This document is IN THE REPOSITORY (not in Claude's plan storage)
+2. It persists across conversations (unlike `.claude/plans/`)
+3. Update it after each sprint completes (add actual duration, lessons learned)
+4. Reference it in the first 5 minutes of each sprint kickoff
+5. If you cannot find it, search: `find . -name "PHASE_3_5_MASTER_PLAN.md"` or `grep -r "10 sprint" docs/`
+
 ## Developer information
 1. Using Windows 11 HP Omen with all current Windows Updates installed
 2. When looking for information about the user, should always use Windows environment variables (however username is kimme as in C:\users\kimme)
