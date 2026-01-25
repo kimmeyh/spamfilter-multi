@@ -5,6 +5,11 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-01-25
+- **feat**: Implement SafeSenderDatabaseStore with exception support (Issue #66, Sprint 3 Task A)
+- **feat**: Implement SafeSenderEvaluator with pattern matching and exceptions (Issue #67, Sprint 3 Task B)
+- **feat**: Update RuleSetProvider to use SafeSenderDatabaseStore (Issue #68, Sprint 3 Task C)
+
 ### 2026-01-12
 - **test**: Add Flutter integration tests for Windows Desktop UI (Issue #46)
 - **feat**: Update Results screen to show folder • subject • rule format (Issue #47)
