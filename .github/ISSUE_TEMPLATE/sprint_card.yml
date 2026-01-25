@@ -130,6 +130,22 @@ body:
     validations:
       required: false
   - type: textarea
+    id: time_tracking
+    attributes:
+      label: Time Tracking (Update During Sprint)
+      description: |
+        Track actual time spent on this task. Update regularly during sprint execution.
+        Format: "⏱️ Task A: X hours (estimated Y-Z hours)"
+      placeholder: |
+        ⏱️ Task A: [X hours spent] (estimated [Y-Z] hours)
+        ⏱️ Task B: [X hours spent] (estimated [Y-Z] hours)
+        ⏱️ Task C: [X hours spent] (estimated [Y-Z] hours)
+
+        Update this section as you complete tasks to track actual vs. estimated effort.
+        This data helps calibrate future sprint estimates.
+    validations:
+      required: false
+  - type: textarea
     id: additional_context
     attributes:
       label: Additional Context

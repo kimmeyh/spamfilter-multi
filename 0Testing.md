@@ -1,3 +1,6 @@
+***BELOW IS NOT FOR CLAUDE CODE USE***
+***BELOW IS NOT FOR Github Copilot USE***
+
 # Run flutter unit tests
 cd d:\Data\Harold\github\spamfilter-multi\mobile-app; flutter test
 

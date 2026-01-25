@@ -1,3 +1,7 @@
+***BELOW IS NOT FOR CLAUDE CODE USE***
+***BELOW IS NOT FOR Github Copilot USE***
+
+
 Next:----------------------------------------
 Copy testing context before next prompt
 Android:

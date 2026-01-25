@@ -1,6 +1,10 @@
 # Sprint Planning and Development Workflow
 
-This document describes the sprint-based development methodology used for spamfilter-multi. For quick reference, see **CLAUDE.md > Sprint Planning and Development Workflow** section.
+This document describes the sprint-based development methodology used for spamfilter-multi.
+
+**Quick Reference**:
+- See **CLAUDE.md > Sprint Planning and Development Workflow** section for overview
+- See **SPRINT_EXECUTION_WORKFLOW.md** for step-by-step execution checklist and procedures
 
 ---
 

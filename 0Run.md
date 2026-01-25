@@ -1,6 +1,8 @@
+***BELOW IS NOT FOR CLAUDE CODE USE***
+***BELOW IS NOT FOR Github Copilot USE***
+
 # Run Windows Emulator
-#   cd D:\Data\Harold\github\spamfilter-multi\mobile-app
-#   flutter run -d windows
+cd D:\Data\Harold\github\spamfilter-multi\mobile-app; flutter run -d windows
 # If needed confirm dependencies and then re-build the app
 cd d:\Data\Harold\github\spamfilter-multi\mobile-app; flutter pub get
 cd d:\Data\Harold\github\spamfilter-multi\mobile-app; flutter build windows

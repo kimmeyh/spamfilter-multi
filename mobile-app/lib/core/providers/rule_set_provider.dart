@@ -12,6 +12,8 @@ import '../../adapters/storage/local_rule_store.dart';
 import '../../core/models/rule_set.dart';
 import '../../core/models/safe_sender_list.dart';
 import '../../core/services/pattern_compiler.dart';
+import '../../core/storage/database_helper.dart';
+import '../../core/storage/rule_database_store.dart';
 
 /// Loading state for rule data
 enum RuleLoadingState { idle, loading, success, error }
@@ -58,7 +60,8 @@ enum RuleLoadingState { idle, loading, success, error }
 /// ```
 class RuleSetProvider extends ChangeNotifier {
   late AppPaths _appPaths;
-  late LocalRuleStore _ruleStore;
+  late RuleDatabaseStore _databaseStore;
+  late LocalRuleStore _ruleStore; // Keep for YAML export (dual-write pattern)
   final PatternCompiler _patternCompiler = PatternCompiler();
   final Logger _logger = Logger();
 
@@ -77,8 +80,9 @@ class RuleSetProvider extends ChangeNotifier {
   RuleLoadingState get loadingState => _loadingState;
 
   /// Initialize the provider (must call before using)
-  /// 
-  /// This initializes AppPaths and loads rules from storage
+  ///
+  /// This initializes AppPaths and loads rules from database storage.
+  /// Uses dual-write pattern: database is primary, YAML export for version control.
   Future<void> initialize() async {
     _setLoadingState(RuleLoadingState.loading);
 
@@ -87,15 +91,19 @@ class RuleSetProvider extends ChangeNotifier {
       _appPaths = AppPaths();
       await _appPaths.initialize();
 
-      // Create rule store
+      // Create database store (primary storage)
+      final databaseHelper = DatabaseHelper();
+      _databaseStore = RuleDatabaseStore(databaseHelper);
+
+      // Create YAML store for export (secondary, for version control)
       _ruleStore = LocalRuleStore(_appPaths);
 
-      // Load rules and safe senders
+      // Load rules and safe senders from database
       await loadRules();
       await loadSafeSenders();
 
       _setLoadingState(RuleLoadingState.success);
-      _logger.i('RuleSetProvider initialized successfully');
+      _logger.i('RuleSetProvider initialized successfully with database storage');
     } catch (e) {
       _setError('Failed to initialize rules: $e');
       _setLoadingState(RuleLoadingState.error);
@@ -103,13 +111,13 @@ class RuleSetProvider extends ChangeNotifier {
     }
   }
 
-  /// Load rules from storage
+  /// Load rules from database storage
   Future<void> loadRules() async {
     try {
       _setLoadingState(RuleLoadingState.loading);
-      _rules = await _ruleStore.loadRules();
+      _rules = await _databaseStore.loadRules();
       _setLoadingState(RuleLoadingState.success);
-      _logger.i('Loaded ${_rules!.rules.length} rules');
+      _logger.i('Loaded ${_rules!.rules.length} rules from database');
       notifyListeners();
     } catch (e) {
       _setError('Failed to load rules: $e');
@@ -119,11 +127,11 @@ class RuleSetProvider extends ChangeNotifier {
     }
   }
 
-  /// Load safe senders from storage
+  /// Load safe senders from database storage
   Future<void> loadSafeSenders() async {
     try {
-      _safeSenders = await _ruleStore.loadSafeSenders();
-      _logger.i('Loaded ${_safeSenders!.safeSenders.length} safe sender patterns');
+      _safeSenders = await _databaseStore.loadSafeSenders();
+      _logger.i('Loaded ${_safeSenders!.safeSenders.length} safe sender patterns from database');
       notifyListeners();
     } catch (e) {
       _setError('Failed to load safe senders: $e');
@@ -133,10 +141,16 @@ class RuleSetProvider extends ChangeNotifier {
   }
 
   /// Add a new rule
+  ///
+  /// Saves to database first, then exports to YAML for version control.
   Future<void> addRule(Rule rule) async {
     if (_rules == null) return;
 
     try {
+      // Add to database
+      await _databaseStore.addRule(rule);
+
+      // Update local cache
       final updatedRules = [..._rules!.rules, rule];
       _rules = RuleSet(
         version: _rules!.version,
@@ -144,8 +158,9 @@ class RuleSetProvider extends ChangeNotifier {
         rules: updatedRules,
       );
 
-      // Save to storage
+      // Export to YAML for version control
       await _ruleStore.saveRules(_rules!);
+
       _logger.i('Added rule: ${rule.name}');
       notifyListeners();
     } catch (e) {
@@ -156,10 +171,16 @@ class RuleSetProvider extends ChangeNotifier {
   }
 
   /// Remove a rule by name
+  ///
+  /// Removes from database first, then exports to YAML for version control.
   Future<void> removeRule(String ruleName) async {
     if (_rules == null) return;
 
     try {
+      // Remove from database
+      await _databaseStore.deleteRule(ruleName);
+
+      // Update local cache
       final updatedRules = _rules!.rules.where((r) => r.name != ruleName).toList();
       _rules = RuleSet(
         version: _rules!.version,
@@ -167,7 +188,7 @@ class RuleSetProvider extends ChangeNotifier {
         rules: updatedRules,
       );
 
-      // Save to storage
+      // Export to YAML for version control
       await _ruleStore.saveRules(_rules!);
       _logger.i('Removed rule: $ruleName');
       notifyListeners();
@@ -179,6 +200,8 @@ class RuleSetProvider extends ChangeNotifier {
   }
 
   /// Update a rule
+  ///
+  /// Updates database first, then exports to YAML for version control.
   Future<void> updateRule(String ruleName, Rule updatedRule) async {
     if (_rules == null) return;
 
@@ -188,6 +211,10 @@ class RuleSetProvider extends ChangeNotifier {
         throw Exception('Rule not found: $ruleName');
       }
 
+      // Update in database
+      await _databaseStore.updateRule(updatedRule);
+
+      // Update local cache
       final updatedRules = [..._rules!.rules];
       updatedRules[ruleIndex] = updatedRule;
 
@@ -197,7 +224,7 @@ class RuleSetProvider extends ChangeNotifier {
         rules: updatedRules,
       );
 
-      // Save to storage
+      // Export to YAML for version control
       await _ruleStore.saveRules(_rules!);
       _logger.i('Updated rule: $ruleName');
       notifyListeners();
@@ -209,13 +236,19 @@ class RuleSetProvider extends ChangeNotifier {
   }
 
   /// Add a safe sender
+  ///
+  /// Saves to database first, then exports to YAML for version control.
   Future<void> addSafeSender(String pattern) async {
     if (_safeSenders == null) return;
 
     try {
+      // Add to database
+      await _databaseStore.addSafeSender(pattern);
+
+      // Update local cache
       _safeSenders!.add(pattern);
 
-      // Save to storage
+      // Export to YAML for version control
       await _ruleStore.saveSafeSenders(_safeSenders!);
       _logger.i('Added safe sender: $pattern');
       notifyListeners();
@@ -227,13 +260,19 @@ class RuleSetProvider extends ChangeNotifier {
   }
 
   /// Remove a safe sender
+  ///
+  /// Removes from database first, then exports to YAML for version control.
   Future<void> removeSafeSender(String pattern) async {
     if (_safeSenders == null) return;
 
     try {
+      // Remove from database
+      await _databaseStore.removeSafeSender(pattern);
+
+      // Update local cache
       _safeSenders!.remove(pattern);
 
-      // Save to storage
+      // Export to YAML for version control
       await _ruleStore.saveSafeSenders(_safeSenders!);
       _logger.i('Removed safe sender: $pattern');
       notifyListeners();
