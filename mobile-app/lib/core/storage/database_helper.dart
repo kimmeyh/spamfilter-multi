@@ -44,8 +44,10 @@ class DatabaseHelper implements RuleDatabaseProvider {
 
   /// Initialize database and create tables
   Future<Database> _initializeDatabase() async {
-    final appPaths = getAppPaths();
-    final dbPath = appPaths.databaseFilePath;
+    // Use in-memory database for testing if databaseFactory is FFI (indicates test environment)
+    final dbPath = databaseFactory.toString().contains('ffi')
+        ? 'test_db.sqlite'
+        : getAppPaths().databaseFilePath;
 
     _logger.i('Initializing database at: $dbPath');
 
@@ -208,6 +210,30 @@ class DatabaseHelper implements RuleDatabaseProvider {
         FOREIGN KEY (account_id) REFERENCES accounts(account_id)
       );
     ''');
+
+    // Unmatched emails table (emails that matched no rules during scan)
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS unmatched_emails (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        scan_result_id INTEGER NOT NULL,
+        provider_identifier_type TEXT NOT NULL,
+        provider_identifier_value TEXT NOT NULL,
+        from_email TEXT NOT NULL,
+        from_name TEXT,
+        subject TEXT,
+        body_preview TEXT,
+        folder_name TEXT NOT NULL,
+        email_date INTEGER,
+        availability_status TEXT DEFAULT 'unknown',
+        availability_checked_at INTEGER,
+        processed INTEGER DEFAULT 0,
+        created_at INTEGER NOT NULL,
+        FOREIGN KEY (scan_result_id) REFERENCES scan_results(id) ON DELETE CASCADE
+      );
+    ''');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_unmatched_scan ON unmatched_emails(scan_result_id);');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_unmatched_processed ON unmatched_emails(processed);');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_unmatched_availability ON unmatched_emails(availability_status);');
 
     _logger.i('Database tables created successfully');
   }
