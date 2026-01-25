@@ -40,26 +40,28 @@ Phase 3.5 represents the "Safe Sender & Advanced Features" phase, implementing c
 
 ## Phase 3.5 Goals & Objectives
 
-### Primary Goals
-1. **Complete Safe Sender Exception System** - Whitelist with granular exceptions
-2. **Persistent Scan Results** - Archive and query historical scans
-3. **User-Facing Management** - UI for rules, safe senders, unmatched emails
-4. **Background Scanning** - Automatic periodic scans on all platforms
-5. **Production Readiness** - Comprehensive testing, cleanup, documentation
+### Primary Goals (Per Original Requirements)
+1. **Processing Scan Results** - Backend storage + UI for reviewing and processing unmatched emails
+2. **User Application Settings** - Comprehensive settings UI for manual/background scans and per-account configuration
+3. **Interactive Rule/Safe Sender Management** - UI to add rules and safe senders from scan results
+4. **Background Scanning Implementation** - Automatic periodic scans per user settings
+5. **Production Readiness** - Testing, optimization, and release preparation
 
 ### Business Value
-- Users can define complex whitelists (domain + exceptions)
-- Automatic scanning reduces manual effort
-- Persistent results enable compliance auditing
-- Settings UI provides complete app customization
-- Database cleanup prevents performance degradation
+- Users can review and process unmatched emails interactively
+- Quick-add rules and safe senders directly from scan results
+- Flexible scanning configuration (manual vs background, frequency, scope)
+- Platform-specific optimizations (AOL and Gmail)
+- Complete rule management without manual YAML editing
 
 ### Technical Objectives
-- Complete database-first architecture
-- Clean provider-agnostic abstraction layer
-- Production-grade error handling and logging
-- Comprehensive test coverage (>90%)
-- Performance baselines established
+- Persistent scan result storage (unmatched emails)
+- One unmatched list per scan type (manual, background)
+- Smart email availability checking (external moves/deletes)
+- Provider-specific email identifiers (Message-ID, IMAP UID, etc.)
+- Safe sender exceptions (denylist override after matching)
+- Background scanning per provider/email configuration
+- Normalization for From/Subject/Body pattern matching
 
 ---
 
@@ -193,182 +195,285 @@ Phase 3.5 represents the "Safe Sender & Advanced Features" phase, implementing c
 
 ---
 
-### SPRINT 4: Interactive Inbox Trainer (Unmatched Emails Processing)
+### SPRINT 4: Processing Scan Results (Backend & UI)
 **Status**: 📋 PLANNED
-**Estimated Duration**: 12-14 hours
-**Model Assignment**: Sonnet (architecture) + Haiku (UI + backend)
+**Estimated Duration**: 14-16 hours
+**Model Assignment**: Sonnet (architecture) + Haiku (backend + UI)
 
-**Objective**: Help users create rules from unmatched emails via interactive UI (similar to Python CLI trainer)
+**Objective**: Persistent scan result storage + UI to review and process unmatched emails
 
-**Feature Overview**:
-Per original Phase 3.5 plan: "Process all 'No rule' messages via Interactive Inbox Trainer"
-- Build UI for unmatched emails (similar to Python CLI prompts)
-- Keyboard equivalents for each user action
-- Quick-add rule creation from email data
-- Immediate re-evaluation of inbox after rule addition
+**Per Original Requirements**:
+- Scan results stored in database (one per scan type: manual, background)
+- UI to review last unmatched emails from manual or background scan
+- Quick-add rules and safe senders from unmatched email list
+- Check for external moves/deletes when reviewing historical results
 
 **Database Schema** (New):
+
 ```
-UnmatchedEmail:
+ScanResult:
   - id (PK)
   - account_id (FK)
-  - email_id
-  - from_email
-  - subject
-  - received_date
-  - status (new/rule_added/ignored)
-  - rule_created_from (rule_id FK, nullable)
+  - scan_type (manual/background)
+  - scan_date (timestamp)
+  - total_emails (count)
+  - matched_count (count)
+  - no_rule_count (count)
+  - status (success/partial/failed)
+  - completed_at (timestamp, nullable)
 
-RuleCreationHistory:
+UnmatchedEmail:
   - id (PK)
-  - unmatched_email_id (FK)
-  - created_rule_id (FK)
-  - creation_method (trainer/manual/quick_add)
+  - scan_result_id (FK)
+  - provider_email_id (provider-specific identifier)
+  - from_email (normalized)
+  - subject
+  - folder_name
+  - received_date
+  - still_exists (boolean, for later reviews)
+  - processed (boolean)
+  - rule_applied_id (FK, nullable)
   - created_at (timestamp)
+
+ProviderEmailIdentifier:
+  - id (PK)
+  - provider (gmail/aol)
+  - message_id_field (IMAP UID, Gmail message ID, etc.)
+  - notes
 ```
+
+**Backend Tasks**:
+
+1. **ScanResultStore** (database CRUD)
+   - Save scan results at scan completion
+   - Replace previous result of same type (manual/background)
+   - Query unmatched emails from last manual scan
+   - Query unmatched emails from last background scan
+
+2. **UnmatchedEmailStore** (database CRUD)
+   - Retrieve unmatched emails with provider identifiers
+   - Check if email still exists in folder (per provider)
+   - Mark email as processed when user adds rule
+   - Update still_exists status when reviewing later
+
+3. **Provider Email Identifier**
+   - Gmail: Use message ID from Gmail API
+   - AOL/IMAP: Use IMAP UID + folder
+   - Implement abstraction for future providers
 
 **UI Screens**:
 
-1. **Unmatched Emails List** (trainer selection screen)
-   - Shows all unmatched emails from last scan
-   - Display: folder • from_email • subject
-   - Sort by date (newest first)
-   - Badge showing count
-   - Bottom action bar: (D)omain rule, (E)mail rule, (S)afe sender, (SD)omain safe, (I)gnore
+1. **Process Results Screen** (entry point)
+   - Shows last scan summary (manual or background)
+   - Two tabs: Manual Scan Results / Background Scan Results
+   - List of unmatched emails (scrollable, loads on demand)
+   - Each email shows: `<folder> • <from> • <subject>`
 
-2. **Domain Rule Creator**
-   - Pre-fill: domain extracted from "from" email
-   - Generate: SpamAutoDeleteHeader rule (or user-selected pattern)
-   - Confirm: Add to rules, re-evaluate inbox
-   - Show: Matching results count
+2. **Email Detail View**
+   - Full from header
+   - Full subject
+   - Email headers (view header button)
+   - Email body (view body button)
+   - Links extracted from body (clickable)
+   - Domains from links highlighted
 
-3. **Email Rule Creator**
-   - Pre-fill: exact email from sender
-   - Create: Safe sender for this exact email
-   - Confirm: Add to safe senders, re-evaluate inbox
+3. **Quick-Add Actions** (from detail or list)
+   - Add to Safe Senders:
+     - Exact email: `user@example.com`
+     - Domain: `@example.com`
+     - Wildcard domain: `^[^@\s]+@(?:[a-z0-9-]+\.)*example\.com$`
+   - Add Auto-Delete Rule:
+     - From Header: specific email, domain, or wildcard
+     - Subject: pattern to match
+     - Body: pattern to match
+     - URL domain: extract from body links
 
-4. **Safe Sender Manager** (from trainer)
-   - Add email/domain/subdomain to safe senders
-   - Manage exceptions for domains
-   - Quick-add without full manager UI
+4. **Email Status Feedback**
+   - "Not found" if email moved/deleted externally
+   - Confirmation when rule/safe sender added
+   - Progress as user scrolls (load next batch)
 
-**Keyboard Shortcuts** (as per original plan):
-- `d` - Add domain block rule (SpamAutoDeleteHeader)
-- `e` - Add exact email to safe senders
-- `s` - Add email to safe senders
-- `sd` - Add sender domain to safe senders
-- `i` - Ignore this email (mark as processed)
-- `ESC` - Return to inbox
+**Email Availability Check**:
+- When reviewing later: Check if email still in folder
+- Use provider-specific methods:
+  - Gmail: Query by message ID
+  - IMAP: Check UID still valid
+- Show "missing" state if not found
+- Don't list missing emails in processing view
+
+**Normalization for Pattern Matching**:
+- **From Header**: Lowercase, remove special chars, keep [0-9a-z_-]
+- **Subject/Body**: Lowercase, preserve: letters/numbers, underscore, hyphen, period, brackets, URL chars
+- **Fuzzy matching support**: Try exact, try spaces removed, try common letter replacements (l→1, e→3)
 
 **Tasks**:
-- **Task A**: UnmatchedEmailStore (database CRUD + tracking)
-- **Task B**: Interactive trainer UI screens (list, rule creators)
-- **Task C**: Keyboard shortcuts + immediate re-evaluation
-
-**Architecture**:
-- After each rule creation: Re-run evaluator on saved unmatched emails
-- Track which emails had rules created from them
-- Update UI to show results of rule application
+- **Task A**: ScanResultStore + UnmatchedEmailStore (database layer)
+- **Task B**: Provider email identifier abstraction (Gmail, AOL/IMAP)
+- **Task C**: Process results UI (list, detail, quick-add)
+- **Task D**: Email availability checking + normalization
 
 **Acceptance Criteria**:
-- ✅ Unmatched emails display correctly
-- ✅ Can create rule with (d/e/s/sd) keyboard shortcuts
-- ✅ Rules apply immediately (inbox re-evaluated)
-- ✅ UI shows matching results count
-- ✅ Processed emails removed from trainer list
-- ✅ Keyboard shortcuts work as documented
+- ✅ Scan results persist correctly
+- ✅ One result per scan type (replaces previous)
+- ✅ Unmatched emails list displays with proper format
+- ✅ Email details show headers/body/links
+- ✅ Email availability checked on later reviews
+- ✅ Missing emails not shown in list
+- ✅ Quick-add creates rules in database
+- ✅ Pattern normalization working correctly
 
 **Testing**:
-- Create 10 unmatched emails via scan
-- Use trainer to create rules for 5 of them
-- Verify remaining 5 still show
-- Verify results show in inbox
+- Perform manual scan, verify results saved
+- Perform background scan, verify replaces previous background result
+- Review results UI: all fields display correctly
+- Check external delete: email shows as missing
+- Quick-add safe sender, verify in database
+- Quick-add auto-delete rule, verify in database
 
-**Next Sprint Dependency**: Sprint 5 uses rule editor (advanced rule management)
+**Dependencies**:
+- Sprint 1-3: Database schema, RuleSet, SafeSender models
+- Continue: Pattern normalization helpers, provider abstraction
+
+**Next Sprint Dependency**: Sprint 5 adds User Application Settings UI
 
 ---
 
-### SPRINT 5: Rule Editor UI
+### SPRINT 5: User Application Settings (Backend & UI)
 **Status**: 📋 PLANNED
-**Estimated Duration**: 12-14 hours
-**Model Assignment**: Sonnet (architecture) + Haiku (UI)
+**Estimated Duration**: 14-16 hours
+**Model Assignment**: Sonnet (architecture) + Haiku (backend + UI)
 
-**Objective**: Advanced UI for viewing, creating, and managing spam filtering rules
+**Objective**: Comprehensive settings UI for app-wide and per-account configuration
 
-**Per Original Plan**:
-- View all rules organized by type
-- Add/remove individual patterns
-- Search/filter rules
-- Import/export YAML files
-- Validate regex patterns before saving
+**Per Original Requirements**:
+- Manual Scan Defaults (mode, rules to apply, folders)
+- Background Scan Defaults (frequency, mode, rules for all future accounts)
+- Provider/Email-Specific Settings (auth, background frequency, mode)
+- Settings accessible from Account Selection and Scan Progress screens
 
-**Screens**:
+**Database Schema** (New):
 
-1. **Rule List Screen**
-   - Display all rules with status
-   - Search/filter by rule name
-   - Sort by execution order
-   - Enable/disable toggle
-   - Delete with confirmation
-   - Bulk operations (enable/disable all, delete selected)
-
-2. **Rule Editor Screen**
-   - Create new rule or edit existing
-   - Rule name (text field)
-   - Conditions: Header, Subject, Body, From
-   - Actions: Delete, Move (with folder selector), None
-   - Execution order (numeric)
-   - Add/remove individual patterns
-   - Pattern validation with error messages
-   - Regex preview widget (show matching examples)
-
-3. **Pattern Validator Widget**
-   - Live regex validation as user types
-   - Highlight syntax errors
-   - Show matching examples from inbox (if available)
-   - Complexity analysis (warn about slow patterns)
-   - Suggest common patterns (email, domain, etc.)
-
-4. **Import/Export UI**
-   - Import YAML rules: File picker → parse → preview → confirm
-   - Export rules: Format selection → download
-   - Merge vs. replace on import
-   - Backup before import
-
-**Database Schema** (extends existing):
 ```
-RuleValidation:
+AppSettings:
+  - key (PK, text)
+  - value (JSON)
+  - data_type (string/number/boolean/json)
+  - updated_at (timestamp)
+
+AccountSettings:
   - id (PK)
-  - rule_id (FK)
-  - pattern
-  - validation_status (valid/invalid/slow)
-  - error_message (nullable)
-  - last_validated (timestamp)
-  - complexity_score (0-100)
+  - account_id (FK)
+  - background_scan_enabled (boolean)
+  - background_scan_frequency_minutes (number)
+  - scan_mode_read_only (boolean)
+  - scan_mode_process_safe_senders (boolean)
+  - scan_mode_process_rules (boolean)
+    - auto_delete_from_header (boolean)
+    - auto_delete_header_text (boolean)
+    - auto_delete_subject (boolean)
+    - auto_delete_body (boolean)
+    - auto_delete_body_urls (boolean)
+  - selected_folders (JSON array)
+  - updated_at (timestamp)
 ```
+
+**UI Navigation**:
+
+1. **Account Selection Screen** (enhancement)
+   - Add Settings button (top-right or menu)
+   - Navigate to: App Settings → Manual Scan Defaults
+
+2. **Scan Progress Screen** (enhancement)
+   - Add Settings button (top-right or menu)
+   - Navigate to: Settings → Provider/Email Setup
+
+**Settings Screens**:
+
+1. **Main Settings Screen** (entry point from Account Selection)
+   - Two tabs: Manual Scan / Background Scans
+   - Each tab contains collapsible sections
+   - Links to Provider/Email-specific settings
+
+2. **Manual Scan Defaults** (Tab 1)
+
+   **Scan Mode Section**:
+   - Read-Only (checkbox) - don't process any rules
+   - Process Safe Senders (checkbox)
+   - Process Rules (checkbox for all)
+     - Sub-checkboxes (only when "Process Rules" checked):
+       - Auto Delete: Header From
+       - Auto Delete: Header Text
+       - Auto Delete: Subject
+       - Auto Delete: Body
+       - Auto Delete: Body URLs
+
+   **Folder Selection**:
+   - Use existing "Select Folders" functionality
+   - "Select Folders to Scan" button
+   - Shows available folders per provider
+
+3. **Background Scan Defaults** (Tab 2)
+
+   **Frequency Setting**:
+   - Dropdown: Disabled / Every 15 min / Every 30 min / Every 1 hour / Daily
+
+   **Scan Mode** (same as Manual):
+   - Read-Only (checkbox)
+   - Process Safe Senders (checkbox)
+   - Process Rules (checkbox + sub-checkboxes)
+
+   **Note**: These are defaults for newly-added accounts
+
+4. **Provider/Email-Specific Settings** (separate screen)
+   - Account selector (if multiple)
+   - Provider info (auth status, last sync)
+   - Background Scans:
+     - Enabled (checkbox)
+     - Frequency (same dropdown as defaults)
+     - Scan Mode (same as above)
+   - Folder selection (same as above)
 
 **Tasks**:
-- **Task A**: Rule list screen + database queries
-- **Task B**: Rule editor screen + pattern validation
-- **Task C**: Import/export functionality
+- **Task A**: Settings database layer (AppSettings, AccountSettings CRUD)
+- **Task B**: Settings UI screens (Manual/Background defaults, Provider setup)
+- **Task C**: Settings integration (apply settings to scans, persistence)
 
 **Key Features**:
-- Real-time pattern validation (visual feedback)
-- Prevent invalid patterns from saving
-- Suggest common regex patterns
-- Show pattern examples from inbox
-- Clear error messages
+- Settings auto-persist to database
+- Changes apply immediately to next scan
+- Defaults apply to newly-added accounts
+- Per-account override of defaults
+- Clear explanations for each setting
+
+**Implementation Notes**:
+- Manual Scan Defaults: Set once, apply to all manual scans
+- Background Scan Defaults: Template for new accounts
+- Provider Settings: Override defaults for specific account
+- Folder selection: Use existing dynamic folder discovery
 
 **Acceptance Criteria**:
-- ✅ Can view all rules
-- ✅ Can create/edit/delete rules
-- ✅ Regex validation prevents invalid patterns
-- ✅ Pattern editor shows examples
-- ✅ Import/export YAML works correctly
-- ✅ Bulk operations work
-- ✅ Execution order preserved
+- ✅ Manual Scan Defaults screen displays correctly
+- ✅ Background Scan Defaults screen displays correctly
+- ✅ Can enable/disable each rule type independently
+- ✅ Folder selection works
+- ✅ Settings persist to database
+- ✅ Settings apply to next scan immediately
+- ✅ Provider/Email settings override defaults
+- ✅ New accounts use default settings
 
-**Next Sprint Dependency**: Sprint 6 adds app-wide settings integration
+**Testing**:
+- Set manual scan mode to read-only
+- Run manual scan, verify no rules applied
+- Set background frequency to 15 minutes
+- Check database for settings saved
+- Add new account, verify uses defaults
+- Override defaults for one account, verify applies
+
+**Dependencies**:
+- Sprint 4: Scan results storage (Settings need to know scan types)
+- Continue: Background scan scheduler (will use these settings)
+
+**Next Sprint Dependency**: Sprint 6 uses settings in background scanning
 
 ---
 
