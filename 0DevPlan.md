@@ -5,6 +5,17 @@
 
 ***BELOW IS NOT FOR CLAUDE CODE USE***
 ***BELOW IS NOT FOR Github Copilot USE***
+
+Undetermined where these should fit in long-term plan
+
+  - Bulk import/export or rules (safe and other)
+  - Pattern sharing? between users?
+  - ML-based suggestions
+  - GenAI-based suggestions for unmatched emails based on history
+  - GenAI-based additions based on contents of previously autodeleted emails
+    - example:  although deleted for other reasons, are there patterns in subject or body that are frequently in auto-delete URL's, phrases...
+  - Pattern analytics
+
 Phase 4 Development Goals
 - Expand to iOS platform
 - Expand to apple email 

@@ -4,7 +4,52 @@ This document describes the step-by-step process for executing sprints in the sp
 
 ---
 
+## ⚠️ CRITICAL REMINDER: Phase 4.5 Sprint Review is MANDATORY
+
+**IMPORTANT**: Phase 4.5 (Sprint Review) is a REQUIRED step for all sprints. It is not optional.
+
+**What to Remember**:
+1. Do NOT skip Phase 4.5 - it must be conducted after PR is submitted
+2. Phase 4.5 provides critical feedback for continuous improvement
+3. User can provide quick feedback - it does not take long
+4. Phase 4.5 must complete BEFORE merging PR to develop
+5. Documentation improvements from Phase 4.5 are applied to feature branch
+
+**Location**: See Phase 4.5 section below (after Phase 4: Push to Remote & Create PR)
+
+---
+
 ## Sprint Execution Checklist
+
+### **Phase 0: Sprint Pre-Kickoff**
+
+- [ ] **0.1 Verify Previous Sprint is Merged**
+  - Confirm previous sprint PR is merged to `develop`
+  - Command: `git log develop --oneline -1` should show last sprint commits
+  - Previous feature branch is deleted locally and remote
+
+- [ ] **0.2 Verify All Sprint Cards Are Closed**
+  - Run: `gh issue list --label sprint --state open`
+  - All issues from previous sprint should be CLOSED
+  - If any open, manually close them: `gh issue close #N --reason "completed"`
+
+- [ ] **0.3 Ensure Working Directory is Clean**
+  - Command: `git status` should show "nothing to commit, working tree clean"
+  - No uncommitted changes left over from previous sprint
+  - All work is pushed to remote (see 4.2)
+
+- [ ] **0.4 Verify Develop Branch is Current**
+  - Command: `git checkout develop`
+  - Command: `git pull origin develop`
+  - Local develop branch matches remote
+  - Ready to create new sprint feature branch
+
+- [ ] **0.5 Now Proceed to Phase 1: Sprint Kickoff & Planning**
+  - Create new feature branch for next sprint
+  - Create sprint cards
+  - Begin execution
+
+---
 
 ### **Phase 1: Sprint Kickoff & Planning**
 
@@ -162,12 +207,23 @@ This document describes the step-by-step process for executing sprints in the sp
 
 ---
 
-### **Phase 4.5: Sprint Review (After PR Submitted)**
+### **Phase 4.5: Sprint Review (After PR Submitted) - MANDATORY FOR ALL SPRINTS**
 
-- [ ] **4.5.1 Offer Sprint Review**
-  - Ask user: "Would you like to conduct a sprint review before approving the PR? (y/n)"
-  - Sprint review is optional but recommended for continuous improvement
+⚠️ **IMPORTANT**: Phase 4.5 is **MANDATORY and REQUIRED** for all sprints. Do NOT skip this phase.
+
+**Why Phase 4.5 is Critical**:
+- Captures lessons learned for future sprint improvements
+- Provides user feedback for process optimization
+- Documents architectural decisions and tradeoffs
+- Identifies potential issues early
+- Builds team knowledge base
+
+- [ ] **4.5.1 Offer Sprint Review (REQUIRED)**
+  - Ask user: "Would you like to conduct a sprint review before approving the PR? (Recommended)"
+  - Sprint review is MANDATORY (not optional) but can be conducted quickly
+  - User can provide brief feedback or skip answers
   - Timing: Conduct while user reviews PR, before merge
+  - **DO NOT PROCEED TO MERGE WITHOUT COMPLETING PHASE 4.5**
 
 - [ ] **4.5.2 Gather User Feedback (if review desired)**
   - Ask user for feedback on optional topics:
@@ -375,10 +431,13 @@ dart format --set-exit-if-changed lib/
 - ✅ User notified and ready for review
 
 ### When PR Approved (Phase 4.5 Complete)
-- ✅ Sprint review conducted (if desired by user)
+- ✅ Sprint review COMPLETED (MANDATORY - see Phase 4.5 above)
+- ✅ User feedback collected
 - ✅ Improvement suggestions documented
 - ✅ Agreed-upon improvements applied to documentation
 - ✅ Ready for merge
+
+**⚠️ CRITICAL**: Phase 4.5 must be completed BEFORE merge. This is not optional.
 
 ### After Merge (Cleanup Complete)
 - ✅ PR merged to develop
@@ -410,37 +469,12 @@ Once user approves PR:
    - Document improvements implemented
    - Link to PR for code artifacts
 
----
-
-## Before Starting Next Sprint - Verification
-
-Before beginning next sprint execution:
-
-- [ ] **0.1 Verify Previous Sprint is Merged**
-  - Confirm previous sprint PR is merged to `develop`
-  - Command: `git log develop --oneline -1` should show last sprint commits
-  - Previous feature branch is deleted locally and remote
-
-- [ ] **0.2 Verify All Sprint Cards Are Closed**
-  - Run: `gh issue list --label sprint --state open`
-  - All issues from previous sprint should be CLOSED
-  - If any open, manually close them: `gh issue close #N --reason "completed"`
-
-- [ ] **0.3 Ensure Working Directory is Clean**
-  - Command: `git status` should show "nothing to commit, working tree clean"
-  - No uncommitted changes left over from previous sprint
-  - All work is pushed to remote (see 4.2)
-
-- [ ] **0.4 Verify Develop Branch is Current**
-  - Command: `git checkout develop`
-  - Command: `git pull origin develop`
-  - Local develop branch matches remote
-  - Ready to create new sprint feature branch
-
-- [ ] **0.5 Now Proceed to Phase 1: Sprint Kickoff & Planning**
-  - Create new feature branch for next sprint
-  - Create sprint cards
-  - Begin execution
+4. **Clean up feature branch (OPTIONAL - User Managed)**
+   - Branch cleanup is optional and user-managed
+   - Do NOT auto-delete branch after merge
+   - User will manually delete when ready: `git branch -d feature/YYYYMMDD_Sprint_N`
+   - Remote cleanup also user-managed: `git push origin --delete feature/YYYYMMDD_Sprint_N`
+   - Keeps branch available for reference if needed
 
 ---
 
