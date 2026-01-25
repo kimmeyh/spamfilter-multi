@@ -134,6 +134,7 @@ This document describes the step-by-step process for executing sprints in the sp
 - [ ] **4.2 Push to Remote**
   - Command: `git push origin feature/YYYYMMDD_Sprint_N`
   - Verify: All commits appear on GitHub branch
+  - **CRITICAL**: This step must not be skipped - it ensures work is backed up
 
 - [ ] **4.3 Create Pull Request**
   - Go to GitHub repository
@@ -158,6 +159,58 @@ This document describes the step-by-step process for executing sprints in the sp
   - Provide summary of sprint results
   - Ask for approval or feedback
   - Note any follow-up items
+
+---
+
+### **Phase 4.5: Sprint Review (After PR Submitted)**
+
+- [ ] **4.5.1 Offer Sprint Review**
+  - Ask user: "Would you like to conduct a sprint review before approving the PR? (y/n)"
+  - Sprint review is optional but recommended for continuous improvement
+  - Timing: Conduct while user reviews PR, before merge
+
+- [ ] **4.5.2 Gather User Feedback (if review desired)**
+  - Ask user for feedback on optional topics:
+    - **Effort Accuracy**: Did actual effort match estimate?
+    - **Planning Quality**: Was the sprint plan clear and complete?
+    - **Model Assignments**: Were Haiku/Sonnet task assignments correct?
+    - **Communication**: Was progress clear? Any unanswered questions?
+    - **Requirements Clarity**: Was the specification clear?
+    - **Testing Approach**: Did the test-first approach work well?
+    - **Documentation**: Was code/PR documentation sufficient?
+    - **Process Issues**: Any friction in the sprint workflow?
+    - **Risk Management**: Were identified risks handled well?
+    - **Next Sprint Readiness**: How prepared are we for next sprint?
+  - Document user feedback verbatim
+
+- [ ] **4.5.3 Provide Claude Feedback**
+  - Share my assessment of what went well (quality, architecture, patterns)
+  - Share what could be improved (edge cases, documentation gaps)
+  - Provide specific, actionable observations
+  - Format: "What Went Well" + "What Could Be Improved"
+
+- [ ] **4.5.4 Create Improvement Suggestions**
+  - Identify common improvements from both feedbacks
+  - Prioritize: High, Medium, Low
+  - Group by category: Documentation, Process, Testing, Architecture, etc.
+  - Make suggestions optional, not mandatory
+
+- [ ] **4.5.5 Decide on Improvements**
+  - Ask user which improvements should be implemented
+  - Improvements are applied to documentation/process, not code
+  - Examples: Update SPRINT_EXECUTION_WORKFLOW.md, Create `.claude/model_assignment_heuristics.json`, etc.
+  - User selects which changes to make
+
+- [ ] **4.5.6 Update Documentation**
+  - Apply agreed-upon improvements to relevant documents
+  - Update version/date on modified documents
+  - Create new documents if needed (e.g., sprint retrospective)
+  - Commit improvements to feature branch
+
+- [ ] **4.5.7 Summarize Review Results**
+  - Provide summary of review findings
+  - List which improvements were selected for implementation
+  - Confirm PR is ready for user approval
 
 ---
 
@@ -308,36 +361,96 @@ dart format --set-exit-if-changed lib/
 
 ## Success Criteria for Sprint Completion
 
-- ✅ All sprint cards completed and closed
+### Before PR Submission (Phase 3 Complete)
+- ✅ All sprint cards completed
 - ✅ All tests passing (100% pass rate)
 - ✅ Zero code analysis errors
-- ✅ Code review completed (via Copilot or user)
-- ✅ PR created and documented
+- ✅ Local code review completed
 - ✅ No blockers remaining
-- ✅ User notified and ready for merge approval
+
+### When PR Submitted (Phase 4 Complete)
+- ✅ All commits pushed to remote
+- ✅ PR created and fully documented (see GitHub PR template)
+- ✅ Sprint card issues referenced in PR description (Closes #XX, #YY, #ZZ)
+- ✅ User notified and ready for review
+
+### When PR Approved (Phase 4.5 Complete)
+- ✅ Sprint review conducted (if desired by user)
+- ✅ Improvement suggestions documented
+- ✅ Agreed-upon improvements applied to documentation
+- ✅ Ready for merge
+
+### After Merge (Cleanup Complete)
+- ✅ PR merged to develop
+- ✅ Feature branch deleted (locally and remote)
+- ✅ All related GitHub issues closed
+- ✅ Sprint retrospective documented (if applicable)
+- ✅ Ready to begin next sprint
 
 ---
 
-## After Sprint Approval
+## After Sprint Approval - Merge & Cleanup
 
 Once user approves PR:
 
 1. **Merge to develop**
-   - PR approved and merged
-   - Branch deleted (locally and remote)
+   - PR approved and merged via GitHub
+   - Branch deleted on remote (automatic or manual)
+   - Local branch deleted: `git branch -d feature/YYYYMMDD_Sprint_N`
 
-2. **Prepare Sprint Retrospective**
-   - Document what went well
-   - Identify improvements
-   - Update heuristics if needed
+2. **Close All Related GitHub Issues**
+   - Find all sprint card issues referenced in PR (e.g., #60, #61)
+   - Close each issue: `gh issue close #N --reason "completed"`
+   - Verify all sprint cards show "Closed" status on GitHub
+   - **Note**: GitHub auto-closes issues when PR is merged if PR mentions "Closes #N", but verify all are closed
 
-3. **Plan Next Sprint**
-   - Review next sprint in plan document
-   - Gather any new requirements
-   - Prepare for Sprint N+1 kickoff
+3. **Update Sprint Completion Documentation**
+   - If sprint review was conducted: Create `docs/SPRINT_N_RETROSPECTIVE.md`
+   - Record what went well, what could improve
+   - Document improvements implemented
+   - Link to PR for code artifacts
 
 ---
 
-**Version**: 1.0
+## Before Starting Next Sprint - Verification
+
+Before beginning next sprint execution:
+
+- [ ] **0.1 Verify Previous Sprint is Merged**
+  - Confirm previous sprint PR is merged to `develop`
+  - Command: `git log develop --oneline -1` should show last sprint commits
+  - Previous feature branch is deleted locally and remote
+
+- [ ] **0.2 Verify All Sprint Cards Are Closed**
+  - Run: `gh issue list --label sprint --state open`
+  - All issues from previous sprint should be CLOSED
+  - If any open, manually close them: `gh issue close #N --reason "completed"`
+
+- [ ] **0.3 Ensure Working Directory is Clean**
+  - Command: `git status` should show "nothing to commit, working tree clean"
+  - No uncommitted changes left over from previous sprint
+  - All work is pushed to remote (see 4.2)
+
+- [ ] **0.4 Verify Develop Branch is Current**
+  - Command: `git checkout develop`
+  - Command: `git pull origin develop`
+  - Local develop branch matches remote
+  - Ready to create new sprint feature branch
+
+- [ ] **0.5 Now Proceed to Phase 1: Sprint Kickoff & Planning**
+  - Create new feature branch for next sprint
+  - Create sprint cards
+  - Begin execution
+
+---
+
+**Version**: 1.1
 **Last Updated**: January 24, 2026
-**Reference**: Based on Sprint 1 execution experience
+**Updates in 1.1**:
+- Added Phase 4.5: Sprint Review process (user feedback, improvements, documentation)
+- Added Phase 0: Pre-Sprint Verification checklist (prevents missed steps on continuation)
+- Added "After Sprint Approval - Merge & Cleanup" section
+- Emphasized "Push to Remote" as CRITICAL step with note about preventing missed steps
+- Updated Success Criteria to show progression through phases
+
+**Reference**: Based on Sprint 1 & 2 execution experience
