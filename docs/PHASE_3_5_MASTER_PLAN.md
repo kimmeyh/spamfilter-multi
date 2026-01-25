@@ -6,6 +6,12 @@
 **Total Effort**: ~60-80 hours across 10 sprints
 **Target Completion**: Q1-Q2 2026
 
+**Source & Credit**:
+- Original Phase 3.5 description: User-provided
+- Sprint 1-3 execution details: Completed and documented
+- Sprint 4-10 recreation: Based on original Phase 3.5 plan + what remains to be done
+- Planning & coordination: User oversight
+
 ---
 
 ## Table of Contents
@@ -187,23 +193,571 @@ Phase 3.5 represents the "Safe Sender & Advanced Features" phase, implementing c
 
 ---
 
-### SPRINT 4: Scan Results Persistence
+### SPRINT 4: Interactive Inbox Trainer (Unmatched Emails Processing)
 **Status**: 📋 PLANNED
-**Estimated Duration**: 10-12 hours
-**Model Assignment**: Haiku (backend) + Sonnet (architecture)
+**Estimated Duration**: 12-14 hours
+**Model Assignment**: Sonnet (architecture) + Haiku (UI + backend)
 
-**Objective**: Store scan results in database for historical analysis
+**Objective**: Help users create rules from unmatched emails via interactive UI (similar to Python CLI trainer)
+
+**Feature Overview**:
+Per original Phase 3.5 plan: "Process all 'No rule' messages via Interactive Inbox Trainer"
+- Build UI for unmatched emails (similar to Python CLI prompts)
+- Keyboard equivalents for each user action
+- Quick-add rule creation from email data
+- Immediate re-evaluation of inbox after rule addition
+
+**Database Schema** (New):
+```
+UnmatchedEmail:
+  - id (PK)
+  - account_id (FK)
+  - email_id
+  - from_email
+  - subject
+  - received_date
+  - status (new/rule_added/ignored)
+  - rule_created_from (rule_id FK, nullable)
+
+RuleCreationHistory:
+  - id (PK)
+  - unmatched_email_id (FK)
+  - created_rule_id (FK)
+  - creation_method (trainer/manual/quick_add)
+  - created_at (timestamp)
+```
+
+**UI Screens**:
+
+1. **Unmatched Emails List** (trainer selection screen)
+   - Shows all unmatched emails from last scan
+   - Display: folder • from_email • subject
+   - Sort by date (newest first)
+   - Badge showing count
+   - Bottom action bar: (D)omain rule, (E)mail rule, (S)afe sender, (SD)omain safe, (I)gnore
+
+2. **Domain Rule Creator**
+   - Pre-fill: domain extracted from "from" email
+   - Generate: SpamAutoDeleteHeader rule (or user-selected pattern)
+   - Confirm: Add to rules, re-evaluate inbox
+   - Show: Matching results count
+
+3. **Email Rule Creator**
+   - Pre-fill: exact email from sender
+   - Create: Safe sender for this exact email
+   - Confirm: Add to safe senders, re-evaluate inbox
+
+4. **Safe Sender Manager** (from trainer)
+   - Add email/domain/subdomain to safe senders
+   - Manage exceptions for domains
+   - Quick-add without full manager UI
+
+**Keyboard Shortcuts** (as per original plan):
+- `d` - Add domain block rule (SpamAutoDeleteHeader)
+- `e` - Add exact email to safe senders
+- `s` - Add email to safe senders
+- `sd` - Add sender domain to safe senders
+- `i` - Ignore this email (mark as processed)
+- `ESC` - Return to inbox
+
+**Tasks**:
+- **Task A**: UnmatchedEmailStore (database CRUD + tracking)
+- **Task B**: Interactive trainer UI screens (list, rule creators)
+- **Task C**: Keyboard shortcuts + immediate re-evaluation
 
 **Architecture**:
+- After each rule creation: Re-run evaluator on saved unmatched emails
+- Track which emails had rules created from them
+- Update UI to show results of rule application
+
+**Acceptance Criteria**:
+- ✅ Unmatched emails display correctly
+- ✅ Can create rule with (d/e/s/sd) keyboard shortcuts
+- ✅ Rules apply immediately (inbox re-evaluated)
+- ✅ UI shows matching results count
+- ✅ Processed emails removed from trainer list
+- ✅ Keyboard shortcuts work as documented
+
+**Testing**:
+- Create 10 unmatched emails via scan
+- Use trainer to create rules for 5 of them
+- Verify remaining 5 still show
+- Verify results show in inbox
+
+**Next Sprint Dependency**: Sprint 5 uses rule editor (advanced rule management)
+
+---
+
+### SPRINT 5: Rule Editor UI
+**Status**: 📋 PLANNED
+**Estimated Duration**: 12-14 hours
+**Model Assignment**: Sonnet (architecture) + Haiku (UI)
+
+**Objective**: Advanced UI for viewing, creating, and managing spam filtering rules
+
+**Per Original Plan**:
+- View all rules organized by type
+- Add/remove individual patterns
+- Search/filter rules
+- Import/export YAML files
+- Validate regex patterns before saving
+
+**Screens**:
+
+1. **Rule List Screen**
+   - Display all rules with status
+   - Search/filter by rule name
+   - Sort by execution order
+   - Enable/disable toggle
+   - Delete with confirmation
+   - Bulk operations (enable/disable all, delete selected)
+
+2. **Rule Editor Screen**
+   - Create new rule or edit existing
+   - Rule name (text field)
+   - Conditions: Header, Subject, Body, From
+   - Actions: Delete, Move (with folder selector), None
+   - Execution order (numeric)
+   - Add/remove individual patterns
+   - Pattern validation with error messages
+   - Regex preview widget (show matching examples)
+
+3. **Pattern Validator Widget**
+   - Live regex validation as user types
+   - Highlight syntax errors
+   - Show matching examples from inbox (if available)
+   - Complexity analysis (warn about slow patterns)
+   - Suggest common patterns (email, domain, etc.)
+
+4. **Import/Export UI**
+   - Import YAML rules: File picker → parse → preview → confirm
+   - Export rules: Format selection → download
+   - Merge vs. replace on import
+   - Backup before import
+
+**Database Schema** (extends existing):
+```
+RuleValidation:
+  - id (PK)
+  - rule_id (FK)
+  - pattern
+  - validation_status (valid/invalid/slow)
+  - error_message (nullable)
+  - last_validated (timestamp)
+  - complexity_score (0-100)
+```
+
+**Tasks**:
+- **Task A**: Rule list screen + database queries
+- **Task B**: Rule editor screen + pattern validation
+- **Task C**: Import/export functionality
+
+**Key Features**:
+- Real-time pattern validation (visual feedback)
+- Prevent invalid patterns from saving
+- Suggest common regex patterns
+- Show pattern examples from inbox
+- Clear error messages
+
+**Acceptance Criteria**:
+- ✅ Can view all rules
+- ✅ Can create/edit/delete rules
+- ✅ Regex validation prevents invalid patterns
+- ✅ Pattern editor shows examples
+- ✅ Import/export YAML works correctly
+- ✅ Bulk operations work
+- ✅ Execution order preserved
+
+**Next Sprint Dependency**: Sprint 6 adds app-wide settings integration
+
+---
+
+### SPRINT 6: Safe Sender Manager & Advanced Filtering
+**Status**: 📋 PLANNED
+**Estimated Duration**: 12-14 hours
+**Model Assignment**: Sonnet (architecture) + Haiku (UI)
+
+**Objective**: Complete safe sender management and advanced filtering options
+
+**Per Original Plan**:
+- Safe Sender Manager: View safe sender list, add/remove, test patterns, bulk import
+- Advanced Filtering: Second-pass processing, rule priority, custom folder targets, sender exceptions
+
+**Screens**:
+
+1. **Safe Sender Manager Screen**
+   - List all safe senders (email, domain, subdomain patterns)
+   - Search/filter by pattern
+   - Sort by type or date added
+   - Show matching count (emails that would match)
+   - Delete with confirmation
+   - Bulk operations (delete multiple)
+
+2. **Add Safe Sender Dialog**
+   - Pattern type selector (email/domain/subdomain)
+   - Pattern input field
+   - Auto-detection: Suggest type based on input
+   - Regex validation
+   - Preview: Show what emails would match
+   - Save button
+
+3. **Exception Management** (from Sprint 3 SafeSenderDatabaseStore)
+   - Add exceptions to domain safe senders
+   - Example: "Allow @company.com except spammer@company.com"
+   - Visual editor for exceptions
+   - Test exceptions against emails
+
+4. **Rule Priority Screen**
+   - Drag-to-reorder rule execution
+   - Show execution order
+   - Explain rule evaluation order
+   - Quick enable/disable rules
+   - Visual feedback on changes
+
+5. **Advanced Filtering Options**
+   - Second-pass processing toggle
+   - Custom folder targets for move actions
+   - Sender-specific rule exceptions
+   - Whitelist specific senders for specific rules
+
+**Features**:
+- Pattern testing: Show which emails would match
+- Bulk import from contacts (platform-specific)
+- Regex validation for patterns
+- Exception precedence (override safe sender rules)
+- Rule priority visualization
+
+**Database Schema** (extends existing):
+```
+RuleExecution:
+  - id (PK)
+  - rule_id (FK)
+  - execution_order (numeric)
+  - enabled (boolean)
+  - updated_at (timestamp)
+
+SenderException:
+  - id (PK)
+  - rule_id (FK)
+  - pattern (sender email/domain)
+  - exception_type (exclude_from_rule)
+  - created_at (timestamp)
+```
+
+**Tasks**:
+- **Task A**: Safe sender manager UI + bulk import
+- **Task B**: Rule priority screen + execution ordering
+- **Task C**: Advanced filtering (second-pass, custom targets, exceptions)
+
+**Acceptance Criteria**:
+- ✅ Safe sender CRUD operations work
+- ✅ Pattern testing shows matching emails
+- ✅ Rule priority can be reordered
+- ✅ Sender exceptions override rules
+- ✅ Custom folder targets work
+- ✅ Second-pass processing re-evaluates emails
+
+**Testing**:
+- Add 5 safe sender patterns (emails, domains, subdomains)
+- Test exceptions on domain patterns
+- Reorder rules and verify evaluation order
+- Add sender exception and verify rule bypass
+
+**Next Sprint Dependency**: Sprints 7-10 use settings + safe senders
+
+---
+
+### SPRINT 7: Background Scanning & Settings Infrastructure
+**Status**: 📋 PLANNED
+**Estimated Duration**: 14-16 hours
+**Model Assignment**: Sonnet (architecture) + Haiku (implementation)
+**Platforms**: Android + Windows (iOS deferred to Phase 4+)
+
+**Objective**: Implement automatic background scanning with configurable frequency and settings
+
+**Per Original Plan**:
+- Process all emails with background sync implementation
+- Configurable scan frequency (15min, 30min, 1hr, manual only)
+- Battery and network optimization
+- Windows MSIX installer preparation
+
+**Sprint 7 Part A: Settings Infrastructure**
+
+**Screens**:
+
+1. **App Settings Screen**
+   - Default scan mode: Read-Only / Test / Full Delete
+   - UI Theme: Light / Dark / System
+   - Logging Level: Debug / Info / Warning
+   - Data retention period: 30/60/90/365 days
+
+2. **Auto-Scan Configuration**
+   - Enable/disable auto-scan
+   - Scan frequency: Disabled / 15min / 30min / 1hr / Daily
+   - WiFi-only mode (mobile optimization)
+   - Battery threshold: Pause scanning if <N% battery
+
+3. **Per-Account Settings**
+   - Auto-scan this account: Yes/No
+   - Folders to scan: Multi-select from available folders
+   - Default action: Delete / Move / None
+   - Rule evaluation order display
+
+**Database Schema**:
+```
+AppSettings:
+  - key (PK)
+  - value (JSON)
+  - data_type (string/number/boolean)
+  - updated_at (timestamp)
+
+AccountSettings:
+  - id (PK)
+  - account_id (FK)
+  - auto_scan_enabled (boolean)
+  - scan_frequency (interval)
+  - default_action (enum)
+  - folders_to_scan (JSON array)
+  - updated_at (timestamp)
+```
+
+**Sprint 7 Part B: Background Scanning - Android**
+
+**Architecture** (WorkManager):
+```
+Background Scan Flow (Android):
+1. PeriodicWorkRequest scheduled at configured interval
+2. ScanWorker triggers:
+   - Check battery level (skip if <threshold)
+   - Check network connectivity (WiFi-only check if enabled)
+   - Load account settings
+   - Execute EmailScanner for each account
+   - Save results to database
+3. NotificationManager:
+   - Send notification if spam found
+   - Show scan summary (total emails, spam count)
+   - Tap opens app to results
+4. Backoff strategy:
+   - Exponential backoff on network failures
+   - Exponential backoff on auth failures
+   - Max retries: 3
+
+**Components**:
+1. **ScanWorker** (extends Worker)
+   - Receives scan frequency from settings
+   - Executes EmailScanner same as foreground
+   - Handles exceptions gracefully
+   - Returns success/retry/failure
+
+2. **BackgroundScanManager**
+   - Schedule/reschedule periodic work
+   - Cancel background scanning
+   - Get current schedule status
+
+3. **NotificationService**
+   - Notification channel for scan results
+   - Notification content (summary)
+   - Tap action → app navigation
+   - Notification persistence
+
+4. **Battery & Network Optimization**
+   - Check battery level before scan
+   - Skip if low battery (<threshold from settings)
+   - Respect device doze mode
+   - WiFi-only mode support
+
+**Sprint 7 Part C: Windows Desktop Preparation**
+
+- Document MSIX installer requirements
+- Plan Windows Task Scheduler integration (for Sprint 8)
+- Create Windows build configuration
+- Desktop-specific UI layout planning
+
+**Tasks**:
+- **Task A**: Settings infrastructure (SettingsProvider, database schema)
+- **Task B**: Android background scanning (ScanWorker, WorkManager)
+- **Task C**: Notifications + battery optimization
+
+**Acceptance Criteria**:
+- ✅ Settings UI works and persists
+- ✅ Background scan runs at configured interval (Android)
+- ✅ Respects battery and connectivity settings
+- ✅ Notification sent when spam found
+- ✅ Scans appear in history
+- ✅ Can enable/disable auto-scan
+- ✅ WiFi-only mode functional
+
+**Testing**:
+- Configure auto-scan for 15 minutes
+- Suspend app, wait for background execution
+- Verify notification appears
+- Check scan history for results
+- Test battery threshold skips scan
+- Test WiFi-only mode
+
+**Dependencies**:
+- `workmanager` package (background tasks)
+- `flutter_local_notifications` (notifications)
+
+**Next Sprint Dependency**: Sprint 8 extends to Windows/iOS
+
+---
+
+### SPRINT 8: Background Scanning - Windows Desktop & MSIX Installer
+**Status**: 📋 PLANNED
+**Estimated Duration**: 14-16 hours
+**Model Assignment**: Sonnet (architecture) + Haiku (implementation)
+**Platforms**: Windows Desktop
+
+**Objective**: Background scanning on Windows desktop + MSIX installer for app distribution
+
+**Part A: Background Scanning - Windows Desktop**
+
+**Architecture** (Windows Task Scheduler):
+```
+Windows Background Scan Flow:
+1. App creates scheduled task (PowerShell script)
+2. Task Scheduler manages execution:
+   - Trigger: Configured interval (15min, 30min, 1hr, daily)
+   - Action: Launch app with special flag
+   - Conditions: Only when user logged in
+3. App detects background mode:
+   - Execute scan silently (no UI)
+   - Save results to database
+4. Toast notification:
+   - Show results summary
+   - Tap opens app to results
+5. Error handling:
+   - Failed scans logged
+   - Retry on next scheduled interval
+```
+
+**Components**:
+1. **WindowsTaskScheduler integration**
+   - Create scheduled task via PowerShell
+   - Read current task settings
+   - Update/delete tasks
+   - Task status monitoring
+
+2. **Background Mode Detection**
+   - Launch flag: `--background-scan`
+   - Minimal UI in background mode
+   - Silent operation (no progress screen)
+   - Database logging only
+
+3. **Toast Notifications** (Windows 10+)
+   - Use windows_notification package
+   - Toast with action buttons
+   - System tray indicator
+   - Tap opens results
+
+4. **MSIX Installer**
+   - Build MSIX package
+   - Code signing configuration
+   - Microsoft Store preparation
+   - Auto-update capability
+
+**Part B: MSIX Installer & Desktop Distribution**
+
+**MSIX Configuration**:
+- Package identity: com.spamfiltermulti
+- Version: Sync with app version
+- Publisher: User's organization/name
+- Capabilities: Internet, file system access
+- Auto-updates: Windows App Installer support
+
+**Build Process**:
+1. Generate MSIX manifest
+2. Build Flutter Windows release
+3. Package into MSIX container
+4. Code sign with developer certificate
+5. Test installation on Windows 10/11
+
+**Installer Features**:
+- Automatic installation to user's Program Files
+- Start menu shortcut
+- Add/Remove Programs support
+- Auto-update capability
+- Uninstall support
+
+**Part C: Desktop-Specific UI Adjustments**
+
+**Windows Desktop UI**:
+- Larger UI for desktop (vs mobile)
+- Window resize support
+- Multi-window support (results in separate window)
+- Keyboard navigation (Tab, Enter, ESC)
+- Right-click context menus
+- Drag & drop rule ordering
+
+**Tasks**:
+- **Task A**: Windows Task Scheduler integration (PowerShell scripts, task management)
+- **Task B**: Toast notifications + background mode detection
+- **Task C**: MSIX configuration + installer build
+
+**Acceptance Criteria**:
+- ✅ Background scan runs at configured interval (Windows)
+- ✅ Can enable/disable auto-scan from settings
+- ✅ Toast notification shows scan results
+- ✅ MSIX installer builds successfully
+- ✅ App installs/uninstalls via MSIX
+- ✅ Auto-updates work
+- ✅ Desktop UI layout responsive
+
+**Testing**:
+- Create scheduled task manually, verify execution
+- Enable auto-scan, wait for task to run
+- Verify notification appears
+- Check scan history for results
+- Test MSIX installation on Windows 10 & 11
+- Verify uninstall removes all files
+
+**Dependencies**:
+- `windows_notification` (toast notifications)
+- Flutter Windows platform channel for PowerShell
+- MSIX tooling
+
+**Known Limitations**:
+- Task Scheduler requires local admin for system-wide tasks
+- Background scan only while user logged in
+- Toast notifications require Windows 10+
+
+**Note on iOS**:
+- Background scanning for iOS deferred to Phase 4 (Sprint beyond 3.5)
+- iOS has significant background execution restrictions
+- Plan: Use APNs (Apple Push Notification service) for trigger
+
+**Next Sprint Dependency**: Sprint 9 adds advanced UI/Polish
+
+---
+
+### SPRINT 9: Advanced UI & Polish
+**Status**: 📋 PLANNED
+**Estimated Duration**: 12-14 hours
+**Model Assignment**: Sonnet (architecture) + Haiku (UI)
+
+**Objective**: Complete feature parity across platforms + UI/UX polish
+
+**Per Original Plan**:
+- Android specific enhancements
+- Windows Desktop specific enhancements
+- UI/UX polish for production
+
+**Part A: Scan Results Persistence & History**
+
+**Database Schema** (new):
 ```
 ScanResult:
   - id (PK)
   - account_id (FK)
   - scan_date (timestamp)
+  - platform (Android/Windows/iOS)
   - folder_name
-  - total_emails
-  - total_matched
-  - total_no_rule
+  - total_emails (count)
+  - total_matched (count)
+  - total_no_rule (count)
+  - total_deleted_proposed (count)
+  - total_moved_proposed (count)
 
 ScanResultDetail:
   - id (PK)
@@ -211,376 +765,260 @@ ScanResultDetail:
   - email_id
   - from_email
   - subject
-  - matched_rule (nullable)
+  - folder
+  - matched_rule_id (FK, nullable)
   - action_type (delete/move/safe/none)
   - executed (boolean)
 ```
 
-**Tasks**:
-- **Task A**: ScanResultDatabaseStore (CRUD for scan results)
-- **Task B**: EmailScanner integration (save results after scan)
-- **Task C**: Query builder for historical analysis (date range, account, etc.)
-
-**Key Considerations**:
-- Database cleanup: Archive old results (>90 days) or delete
-- Performance: Index on scan_date and account_id for fast queries
-- Concurrency: Handle multiple scans from same account
-
-**Acceptance Criteria**:
-- ✅ All scans automatically saved to database
-- ✅ Can query results by date range and account
-- ✅ Can export scan history to CSV
-- ✅ 100+ scan results queries under 100ms
-
-**Next Sprint Dependency**: Sprint 5 references unmatched emails
-
----
-
-### SPRINT 5: Unmatched Email Processing
-**Status**: 📋 PLANNED
-**Estimated Duration**: 8-10 hours
-**Model Assignment**: Haiku (backend) + Sonnet (UI)
-
-**Objective**: Help users process emails that didn't match any rules
-
-**Features**:
-1. **Unmatched Email List Screen**
-   - Shows emails with no rule match
-   - Sorted by frequency (sender domain)
-   - Quick stats (total unmatched, top senders)
-
-2. **Quick Rule Creation**
-   - Add domain rule (block all from domain)
-   - Add email rule (block this email)
-   - Add to safe senders (whitelist)
-   - Immediate re-evaluation of unmatched list
-
-3. **Pattern Suggestions**
-   - Analyze unmatched emails
-   - Suggest domain patterns for blocking
-   - Suggest email patterns for whitelisting
-
-**Architecture**:
-- Extends ScanResultDetail with rule suggestion logic
-- Evaluates "what rules would help" for each unmatched email
-- Tracks user rule creation from this screen
-
-**Tasks**:
-- **Task A**: UnmatchedEmailAnalyzer (identify patterns)
-- **Task B**: QuickRuleCreator (add rules from unmatched screen)
-- **Task C**: UI screen for unmatched email management
-
-**Acceptance Criteria**:
-- ✅ Unmatched email list displays correctly
-- ✅ Can create rule from unmatched email
-- ✅ Rule immediately evaluates existing unmatched emails
-- ✅ Can add email to safe senders
-- ✅ Pattern suggestions accurate
-
-**Next Sprint Dependency**: Sprint 6 adds app-wide settings
-
----
-
-### SPRINT 6: Settings Infrastructure
-**Status**: 📋 PLANNED
-**Estimated Duration**: 10-12 hours
-**Model Assignment**: Sonnet (architecture) + Haiku (UI)
-
-**Objective**: Implement app-wide and per-account settings
-
-**Settings Categories**:
-
-1. **App-Wide Settings**:
-   - Default scan mode (read-only / test / full)
-   - Auto-scan enabled (yes/no)
-   - Scan frequency (daily / weekly / manual)
-   - Result retention (30/60/90/365 days)
-   - UI theme (light/dark)
-   - Logging level (debug/info/warning)
-
-2. **Per-Account Settings**:
-   - Auto-scan this account (yes/no)
-   - Folders to scan (INBOX, Bulk, etc.)
-   - Default action (delete/move/none)
-   - Rule execution order
-   - Exception handling (strict/lenient)
-
-3. **Database Schema**:
-   - app_settings table (key-value store)
-   - account_settings table (per account)
-   - settings_history table (audit trail)
-
-**Architecture**:
-- SettingsProvider (ChangeNotifier)
-- SettingsDatabaseStore (CRUD)
-- SettingsScreen UI (app + per-account tabs)
-- Navigation drawer integration
-
-**Tasks**:
-- **Task A**: SettingsDatabaseStore and SettingsProvider
-- **Task B**: App settings UI screen
-- **Task C**: Per-account settings UI
-
-**Acceptance Criteria**:
-- ✅ All settings persisted to database
-- ✅ Settings load correctly on app restart
-- ✅ UI reflects current settings
-- ✅ Changes apply immediately
-- ✅ Settings exportable to JSON
-
-**Next Sprint Dependency**: Sprints 7-8 use auto-scan settings
-
----
-
-### SPRINT 7: Background Scanning - Android (WorkManager)
-**Status**: 📋 PLANNED
-**Estimated Duration**: 12-14 hours
-**Model Assignment**: Sonnet (WorkManager) + Haiku (integration)
-**Platform**: Android only
-
-**Objective**: Implement periodic background scanning on Android
-
-**Architecture**:
-```
-WorkManager flow:
-1. PeriodicWorkRequest scheduled
-2. Worker runs at configured interval (15min/30min/1hr/daily)
-3. EmailScanner executes (same as foreground)
-4. Results saved to database
-5. Notification sent if spam found
-6. Battery/connectivity checks
-7. Exponential backoff on failures
-```
-
-**Components**:
-1. **ScanWorker** (extends Worker)
-   - Executes scan in background
-   - Handles network failures
-   - Logs to database
-
-2. **NotificationService**
-   - Send notification for spam found
-   - Tap opens app to results
-   - Notification channel management
-
-3. **Settings Integration**
-   - Read auto-scan frequency from settings
-   - Respect user preferences
-
-4. **Battery Optimization**
-   - Check battery level before scanning
-   - Adaptive frequency (slower when low battery)
-   - Respect device doze mode
-
-**Tasks**:
-- **Task A**: ScanWorker implementation (background scanning)
-- **Task B**: WorkManager integration (schedule/reschedule)
-- **Task C**: Notification and battery optimization
-
-**Acceptance Criteria**:
-- ✅ Background scan runs at configured interval
-- ✅ Respects device battery and connectivity
-- ✅ Handles app termination gracefully
-- ✅ Notification sent when spam found
-- ✅ Scan visible in scan history
-- ✅ Can enable/disable from settings
-
-**Next Sprint Dependency**: Sprint 8 extends to iOS/Windows
-
----
-
-### SPRINT 8: Background Scanning - iOS & Windows
-**Status**: 📋 PLANNED
-**Estimated Duration**: 12-14 hours
-**Model Assignment**: Sonnet (BGTaskScheduler/Task Scheduler)
-**Platforms**: iOS + Windows Desktop
-
-**Objective**: Implement background scanning on iOS and Windows
-
-**iOS Implementation** (BGTaskScheduler):
-```
-iOS background task flow:
-1. BGAppRefreshTaskRequest registered
-2. System schedules task (iOS decides timing)
-3. Task woken up by system
-4. ScanWorker executes (same logic)
-5. Results saved
-6. Local notification sent
-7. Task completed or rescheduled
-```
-
-**Windows Implementation** (Task Scheduler):
-```
-Windows task flow:
-1. WinRT Task Scheduler API
-2. Create scheduled task for periodic execution
-3. Trigger: Daily at configured time OR every X hours
-4. Action: Launch app or background service
-5. Results saved to database
-6. Toast notification sent
-7. App tile badge updated
-```
-
-**Components**:
-1. **iOS BGTask implementation**
-   - BGAppRefreshTaskRequest
-   - Local notifications
-   - Memory constraints handling
-
-2. **Windows Task Scheduler integration**
-   - PowerShell scripts for task creation
-   - Registry configuration
-   - Toast notification UWP API
-
-3. **Platform abstraction**
-   - Common BackgroundScanInterface
-   - Platform-specific implementations
-   - Fallback for unsupported platforms
-
-**Tasks**:
-- **Task A**: iOS BGTaskScheduler implementation
-- **Task B**: Windows Task Scheduler integration
-- **Task C**: Cross-platform notification abstraction
-
-**Acceptance Criteria**:
-- ✅ iOS: Background refresh works (test via app suspend/resume)
-- ✅ Windows: Task Scheduler integration works
-- ✅ Notifications sent on all platforms
-- ✅ Scans appear in history
-- ✅ Battery/CPU impact minimal
-
-**Testing Challenges**:
-- iOS background testing difficult (simulator limitation)
-- Windows requires real system task scheduler
-
-**Next Sprint Dependency**: Sprint 9 adds rule builder UI
-
----
-
-### SPRINT 9: Rule Builder UI
-**Status**: 📋 PLANNED
-**Estimated Duration**: 10-12 hours
-**Model Assignment**: Sonnet (architecture) + Haiku (UI)
-
-**Objective**: Advanced UI for creating and managing rules
-
 **Screens**:
 
-1. **Rule List Screen**
-   - Display all rules
-   - Search/filter by name
-   - Sort by execution order
-   - Enable/disable toggle
-   - Delete with confirmation
+1. **Scan History Screen**
+   - List all completed scans
+   - Date, account, folder, summary stats
+   - Filter by date range / account
+   - Sort by date (newest first)
+   - Tap to view scan details
 
-2. **Rule Editor Screen**
-   - Create new rule or edit existing
-   - Name, conditions, actions
-   - Add multiple conditions (OR logic)
-   - Add multiple patterns per condition
-   - Regex validation with preview
-   - Test rule against sample emails
+2. **Scan Details Screen**
+   - Scan summary (date, account, stats)
+   - Email list from scan
+   - Show: folder • from • subject • rule • action
+   - Export scan to CSV
+   - Delete scan history
 
-3. **Rule Builder Wizard**
-   - Step 1: Rule type (block domain / block email / safe sender)
-   - Step 2: Pattern entry
-   - Step 3: Action (delete / move / none)
-   - Step 4: Exceptions (optional)
-   - Step 5: Review and save
+3. **Statistics Dashboard**
+   - Total emails scanned (all time)
+   - Top spam senders
+   - Most-used rules
+   - Rule effectiveness
+   - Trends (emails/day, spam rate)
 
-4. **Safe Sender Manager**
-   - List all safe senders
-   - Add new safe sender (email/domain/subdomain)
-   - View exceptions for each safe sender
-   - Bulk import from contacts
+**Part B: Platform-Specific Enhancements**
 
-**Components**:
-- RuleListScreen
-- RuleEditorScreen
-- RuleBuilderWizard
-- SafeSenderManagerScreen
-- PatternValidator (regex validation)
-- RegexPreviewWidget (show matching examples)
+**Android Enhancements**:
+- Material Design 3 implementation
+- Swipe actions on email list (delete/move)
+- Floating action button for quick actions
+- Bottom navigation for main screens
+- App shortcuts (add rule, scan, settings)
+
+**Windows Desktop Enhancements**:
+- Maximize/minimize/close window controls
+- Multi-window support (detach results)
+- Keyboard shortcuts (Ctrl+S scan, Ctrl+N new rule, etc.)
+- Context menus (right-click options)
+- Resizable columns in lists
+- Status bar with sync status
+
+**Part C: UI/UX Polish & Accessibility**
+
+**Polish Items**:
+- Dark mode support (all platforms)
+- High contrast theme
+- Keyboard navigation (Tab, Arrow keys, Enter)
+- Screen reader support (accessibility labels)
+- Responsive layouts (handle window resize)
+- Loading indicators and progress
+- Error messages with solutions
+- Empty state UI (no results message)
+
+**Consistency Across Platforms**:
+- Same color palette
+- Same typography
+- Same spacing/padding
+- Consistent button sizes
+- Consistent icon usage
 
 **Tasks**:
-- **Task A**: Rule list and editor screens
-- **Task B**: Rule builder wizard
-- **Task C**: Safe sender manager and pattern validation
+- **Task A**: Scan history + results persistence (database, UI)
+- **Task B**: Platform-specific enhancements (Android + Windows)
+- **Task C**: UI/UX polish + accessibility features
 
 **Acceptance Criteria**:
-- ✅ Can view all rules
-- ✅ Can create new rule
-- ✅ Can edit existing rule
-- ✅ Regex validation works
-- ✅ Exceptions handled correctly
-- ✅ Rules apply immediately after save
-- ✅ Can undo deletion (with confirmation)
+- ✅ Scan history displays correctly
+- ✅ Can filter/search scan history
+- ✅ Statistics dashboard accurate
+- ✅ Dark mode works on all platforms
+- ✅ Keyboard navigation functional
+- ✅ Screen reader compatibility
+- ✅ Window resize handled
+- ✅ Consistent UI across platforms
+- ✅ Empty state messages helpful
 
-**Next Sprint Dependency**: Sprint 10 adds database cleanup
+**Testing**:
+- Run 5 scans, verify history shows all
+- Filter history by date range
+- Export scan to CSV, verify format
+- Test dark mode on all screens
+- Test keyboard navigation (Tab through UI)
+- Test window resize on Windows
+- Verify accessibility on Android
+
+**Next Sprint Dependency**: Sprint 10 adds database cleanup/optimization
 
 ---
 
-### SPRINT 10: Polish & Testing (Final Sprint)
+### SPRINT 10: Production Readiness & Testing (Final Sprint)
 **Status**: 📋 PLANNED
-**Estimated Duration**: 12-15 hours
-**Model Assignment**: Haiku (testing) + Sonnet (optimization/architecture)
+**Estimated Duration**: 14-16 hours
+**Model Assignment**: Sonnet (optimization) + Haiku (testing)
 
-**Objective**: Production readiness - cleanup, optimization, comprehensive testing
+**Objective**: Phase 3.5 completion - production-ready release with comprehensive testing and optimization
 
-**Components**:
+**Part A: Database Management**
 
-1. **Database Cleanup Service**
-   - Archive scans older than configured days
-   - Delete archived scans after retention period
-   - Defragment database
-   - Analyze and optimize indices
+**Cleanup Service**:
+- Auto-archive scans older than configured retention
+- Manual cleanup UI (Archive/Delete buttons)
+- Database vacuum (defragment)
+- Index analysis and optimization
+- Cleanup scheduler (runs weekly)
 
-2. **Database Backup/Restore**
-   - Export database to JSON (portable)
-   - Import database from JSON
-   - Export rules to YAML (already done)
-   - Import rules from YAML
+**Backup/Restore**:
+- Export all data to JSON (portable format)
+- Import from JSON with merge/replace options
+- Export rules to YAML (already implemented)
+- Import from YAML with validation
+- Backup scheduling (automatic daily backups)
+- Restore point recovery
 
-3. **Performance Optimization**
-   - Profile database queries
-   - Index commonly-queried fields
-   - Cache frequently accessed data
-   - Optimize regex compilation
+**Performance Optimization**:
+- Database index analysis (add missing indices)
+- Query optimization (profile slow queries)
+- Cache frequently-accessed data (rules, settings)
+- Regex compilation optimization
+- Memory profiling (peak usage analysis)
+- Batch operations optimization
 
-4. **Comprehensive Testing**
-   - Integration test suite (50+ tests)
-   - End-to-end workflows (account setup → scan → view results)
-   - Platform-specific tests (Android, Windows, iOS)
-   - Stress testing (1000+ rules, 10000+ emails)
-   - Long-running stability tests
+**Part B: Comprehensive Testing**
 
-5. **Documentation Updates**
-   - User guide for all new features
-   - Developer guide for extensions
-   - API documentation for providers
-   - Troubleshooting guide
+**Unit Tests**:
+- All business logic (RuleSet, Evaluator, Settings)
+- Database operations (CRUD, migration, cleanup)
+- Pattern matching (regex compilation, caching)
+- Notification scheduling (background tasks)
+- Total: 200+ tests
 
-6. **Code Quality**
-   - Remove dead code
-   - Refactor duplicated logic
-   - Update deprecations
-   - Final code analysis pass
+**Integration Tests**:
+- Full scan workflow (account setup → scan → results)
+- Rule creation from trainer
+- Safe sender management end-to-end
+- Background scan execution
+- Settings persistence and application
+- Multi-account switching
+- Total: 50+ integration tests
+
+**Platform Tests**:
+- Android emulator (multiple API versions)
+- Windows desktop (both 32 and 64-bit)
+- iOS simulator (if applicable, limited)
+- Real device testing (at least 1 real Android, 1 real Windows)
+
+**Stress Tests**:
+- 1000 rules loaded and evaluated
+- 10000 emails scanned in sequence
+- Large email bodies (1MB+)
+- Rapid scan requests (queue management)
+- Low memory conditions
+- Network failures and recovery
+
+**User Acceptance Tests**:
+- Real email accounts (AOL, Gmail)
+- Existing user rules (from desktop app)
+- All UI workflows (setup, scan, results, settings)
+- Background scanning scenarios
+- Error recovery (auth failures, network issues)
+- Multi-user testing
+
+**Part C: Documentation & Code Quality**
+
+**User Documentation**:
+- Quick start guide (setup + first scan)
+- Full feature documentation
+- Troubleshooting guide (common issues)
+- FAQ (frequently asked questions)
+- Video tutorials (if applicable)
+- Rule creation guide with examples
+
+**Developer Documentation**:
+- API reference (all public classes)
+- Architecture overview
+- Extension guide (new email provider)
+- Database schema reference
+- Build/deployment instructions
+- Contributing guidelines
+
+**Code Quality**:
+- Remove dead code and unused imports
+- Resolve all code analysis warnings
+- Update deprecated API usage
+- Add missing docstrings
+- Refactor duplicated logic
+- Final lint pass (zero errors)
+
+**Part D: Release Preparation**
+
+**Build Artifacts**:
+- Android APK (debug + release)
+- Windows executable + MSIX installer
+- Signing certificates configured
+- Version numbers aligned
+
+**Release Notes**:
+- Feature summary
+- Bug fixes from Sprints 1-10
+- Known limitations
+- System requirements
+- Installation instructions
+- Upgrade path from previous versions
+
+**App Store Preparation** (Google Play, Windows Store):
+- Screenshots (showing key features)
+- Promotional graphics
+- App description and keywords
+- Privacy policy
+- Terms of service
+- Support contact information
 
 **Tasks**:
-- **Task A**: Database cleanup and maintenance service
-- **Task B**: Backup/restore functionality
-- **Task C**: Performance optimization and profiling
-- **Task D**: Comprehensive integration test suite
-- **Task E**: Documentation and code quality
+- **Task A**: Database management (cleanup, backup/restore, optimization)
+- **Task B**: Comprehensive testing (unit, integration, platform, stress, UAT)
+- **Task C**: Documentation (user, developer, release notes)
+- **Task D**: Code quality and release preparation
 
 **Acceptance Criteria**:
-- ✅ All tests passing (90%+ coverage)
+- ✅ 200+ unit tests passing (90%+ coverage)
+- ✅ 50+ integration tests passing
 - ✅ Zero code analysis errors
-- ✅ Database efficiently indexed
+- ✅ All platform tests pass
+- ✅ Stress tests handle 1000+ rules
 - ✅ Backup/restore works correctly
-- ✅ Cleanup removes old data safely
-- ✅ Performance baseline established
-- ✅ User-facing documentation complete
+- ✅ User documentation complete
+- ✅ Release builds successful
+- ✅ APK and MSIX ready for distribution
+
+**Testing Checklist**:
+- [ ] Run `flutter test` - all 200+ tests pass
+- [ ] Run `flutter analyze` - zero errors
+- [ ] Build Android APK - no errors
+- [ ] Build Windows executable - no errors
+- [ ] Test on real Android device
+- [ ] Test on real Windows machine
+- [ ] Manual UAT on both platforms
+- [ ] Stress test with 1000 rules
+- [ ] Backup/restore workflow
+- [ ] Background scanning (Android + Windows)
+- [ ] Settings persistence
+- [ ] Multi-account switching
+
+**Metrics for Success**:
+- ✅ Test coverage: >90%
+- ✅ Code analysis: 0 errors
+- ✅ Performance: Scan 1000 emails < 30 seconds
+- ✅ Memory: Peak usage < 200MB
+- ✅ Battery: Background scan < 5% impact
+- ✅ Release: Ready for app store distribution
 
 ---
 
