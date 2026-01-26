@@ -1,11 +1,3 @@
-/// Tests for email availability checking service
-///
-/// This test suite validates:
-/// - EmailAvailabilityResult model and status calculation
-/// - Single email availability checks
-/// - Batch operations for performance
-/// - Provider identifier abstraction
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:spam_filter_mobile/core/models/provider_email_identifier.dart';
 import 'package:spam_filter_mobile/core/services/email_availability_checker.dart';

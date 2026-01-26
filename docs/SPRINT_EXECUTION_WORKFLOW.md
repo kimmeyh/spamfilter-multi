@@ -149,11 +149,50 @@ This document describes the step-by-step process for executing sprints in the sp
   - Check code analysis: `flutter analyze`
   - Ensure zero errors introduced
 
-- [ ] **3.3 Manual Testing (if applicable)**
+#### ⚡ **PARALLEL TESTING WORKFLOW (Sprint 5+)**
+
+**NEW IN SPRINT 5**: After Phase 3.2 tests pass, implement parallel workflow for efficiency:
+
+1. **Notify User Immediately** (After 3.2 tests pass)
+   - Message: "✅ Code ready for testing in your VSCode repository"
+   - Provide working branch name: `feature/YYYYMMDD_Sprint_N`
+   - Give user VSCode workspace instructions
+   - **Timing**: User can start testing RIGHT NOW
+
+2. **Claude Proceeds to Phase 4 (In Parallel)**
+   - While user tests in VSCode, Claude:
+     - Creates PR (Phase 4.3) **IMPORTANT**: To `develop` branch (NOT main)
+     - Writes documentation
+     - Conducts code review analysis
+     - Prepares Phase 4.5 review
+   - **No blocking**: User testing doesn't wait for PR
+
+3. **Phase 4.5 Complete**
+   - Claude message: "Sprint review complete, PR ready for approval"
+   - User can now review PR with full context
+   - All documentation ready for review
+
+4. **Efficiency Gain**
+   - **Estimated Savings**: 1-2 hours per sprint
+   - **Mechanism**: Parallel execution of independent tasks
+   - **Quality**: No reduction - same rigor, better parallelization
+   - **User Control**: User can test at own pace while PR is prepared
+
+**Implementation Notes**:
+- User can take their time testing (no time pressure)
+- Claude work is fully independent (no interdependencies)
+- PR includes all Sprint 4-4.5 work when user is ready to review
+- Both activities benefit from independence (faster iteration)
+
+- [ ] **3.3 Manual Testing (if applicable) - PARALLEL WITH PHASE 4**
   - Test on target platform (Android emulator, Windows desktop, etc.)
   - Verify user-facing changes work as expected
   - Check for regressions in existing features
   - Document any issues found
+  - **Reference**: See `docs/MANUAL_INTEGRATION_TESTS.md` for comprehensive test scenarios
+  - **NOTE**: Starting Sprint 5, user tests in parallel while Claude completes Phase 4-4.5
+  - **User Ready?**: Yes → Begin manual testing on working branch
+  - **Claude Meanwhile**: Proceeds to Phase 4.3 (PR creation)
 
 - [ ] **3.4 Fix Issues from Testing**
   - Address any test failures
@@ -166,6 +205,40 @@ This document describes the step-by-step process for executing sprints in the sp
   - Share with user for feedback if architectural decisions made
   - Document feedback received
   - Make any adjustments
+
+---
+
+## ✅ Approval Gates (Sprint 5+)
+
+**User Approvals**: Only at these 4 points (NOT per-task):
+
+1. **Sprint Plan Approval** (Phase 1)
+   - User reviews and approves entire sprint plan
+   - **Pre-approves all tasks** when plan is approved
+   - No per-task approvals needed during execution
+   - Confidence: HIGH (plan was detailed)
+
+2. **Sprint Start** (Phase 1)
+   - User confirms: "Ready to begin sprint"
+   - Simple confirmation, not detailed approval
+   - All task execution pre-approved
+
+3. **Sprint Review Feedback** (Phase 4.5)
+   - User provides feedback on effectiveness, efficiency, process
+   - Claude adjusts based on feedback (documentation updates)
+   - Not a blocker - more of a feedback collection point
+
+4. **PR Approval** (Phase 4 - After 4.5)
+   - User reviews final PR and code
+   - User approves for merge to develop
+   - Last formal approval before merge
+
+**Why NOT per-task?**
+- All tasks are specified in the plan
+- Plan approval means task approval
+- Tasks are interdependent (can't skip/change without new plan)
+- Per-task approval adds overhead without benefit
+- Detailed plan provides sufficient control
 
 ---
 
@@ -183,7 +256,10 @@ This document describes the step-by-step process for executing sprints in the sp
 
 - [ ] **4.3 Create Pull Request**
   - Go to GitHub repository
-  - Create PR from `feature/YYYYMMDD_Sprint_N` → `develop` branch
+  - **CRITICAL**: Create PR from `feature/YYYYMMDD_Sprint_N` → `develop` branch (NOT main)
+    - **Rule**: All Claude Code PRs target `develop` branch
+    - **Why**: `develop` is integration branch; `main` is for user-approved releases only
+    - **User Role**: Only user creates PRs to `main` after `develop` is stabilized
   - **PR Title**: `Sprint N: <Feature Name>`
   - **PR Description**: Include:
     - Summary of what's included
@@ -217,6 +293,36 @@ This document describes the step-by-step process for executing sprints in the sp
 - Documents architectural decisions and tradeoffs
 - Identifies potential issues early
 - Builds team knowledge base
+
+#### **Pre-Review: Windows Desktop Build & Test (REQUIRED)**
+
+Before conducting sprint review, build and test the Windows desktop app:
+
+- [ ] **4.5.0 Build and Run Windows Desktop App**
+  - **Purpose**: Verify Windows desktop build succeeds before PR approval
+  - **Reference**: Manual Integration Tests - `docs/MANUAL_INTEGRATION_TESTS.md`
+  - **Build Command**:
+    ```powershell
+    cd mobile-app/scripts
+    .\build-windows.ps1
+    ```
+  - **What Happens**:
+    - Clean Flutter rebuild (removes old artifacts)
+    - Secrets injected from `secrets.dev.json`
+    - Windows app compiled for debug mode
+    - App launches automatically
+    - Console displays detailed logging
+  - **Verification Checklist**:
+    - [ ] Build completes without errors
+    - [ ] App launches successfully
+    - [ ] No database initialization errors
+    - [ ] No console warnings (FFI, credentials, auth)
+    - [ ] Key features work as expected (accounts, scanning, results)
+  - **If Build Fails**:
+    - Document the error with full console output
+    - Fix the issue or create follow-up GitHub issue
+    - Do NOT proceed to PR approval until build succeeds
+  - **Next Step**: After successful build, proceed to 4.5.1
 
 - [ ] **4.5.1 Offer Sprint Review (REQUIRED)**
   - Ask user: "Would you like to conduct a sprint review before approving the PR? (Recommended)"
@@ -426,7 +532,8 @@ dart format --set-exit-if-changed lib/
 
 ### When PR Submitted (Phase 4 Complete)
 - ✅ All commits pushed to remote
-- ✅ PR created and fully documented (see GitHub PR template)
+- ✅ PR created to `develop` branch (NOT main - critical requirement)
+- ✅ PR fully documented (see GitHub PR template)
 - ✅ Sprint card issues referenced in PR description (Closes #XX, #YY, #ZZ)
 - ✅ User notified and ready for review
 

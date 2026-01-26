@@ -1,13 +1,3 @@
-/// Tests for process results screen and email card widget
-///
-/// This test suite validates:
-/// - Screen rendering with unmatched emails
-/// - Filtering by availability status
-/// - Sorting by different criteria
-/// - Search functionality
-/// - Email card display
-/// - Navigation to detail view
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:spam_filter_mobile/ui/screens/process_results_screen.dart';
@@ -148,9 +138,8 @@ class FakeUnmatchedEmailStore implements UnmatchedEmailStore {
   @override
   Future<bool> updateAvailabilityStatus(
     int emailId,
-    String status, {
-    required DateTime checkedAt,
-  }) async =>
+    String status,
+  ) async =>
       true;
 
   @override
