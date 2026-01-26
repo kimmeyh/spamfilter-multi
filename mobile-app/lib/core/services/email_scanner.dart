@@ -7,6 +7,9 @@ import '../providers/email_scan_provider.dart';
 import '../providers/rule_set_provider.dart';
 import '../services/rule_evaluator.dart';
 import '../services/pattern_compiler.dart';
+import '../storage/database_helper.dart';
+import '../storage/scan_result_store.dart';
+import '../storage/unmatched_email_store.dart';
 import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/email_providers/spam_filter_platform.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
@@ -28,13 +31,23 @@ class EmailScanner {
   });
 
   /// Scan inbox with live IMAP connection
+  /// ✨ SPRINT 4: Includes scan result persistence
   Future<void> scanInbox({
     int daysBack = 7,
     List<String> folderNames = const ['INBOX'],
+    String scanType = 'manual',
   }) async {
     SpamFilterPlatform? platform;
 
     try {
+      // ✨ SPRINT 4: Initialize persistence stores if not already done
+      final dbHelper = DatabaseHelper();
+      scanProvider.initializePersistence(
+        scanResultStore: ScanResultStore(dbHelper),
+        unmatchedEmailStore: UnmatchedEmailStore(dbHelper),
+      );
+      scanProvider.setCurrentAccountId(accountId);
+
       // 1. Get platform adapter
       platform = PlatformRegistry.getPlatform(platformId);
       if (platform == null) {
@@ -55,8 +68,12 @@ class EmailScanner {
         folderNames: folderNames,
       );
 
-      // 4. Start scan
-      scanProvider.startScan(totalEmails: messages.length);
+      // 4. Start scan (✨ SPRINT 4: Now async to enable persistence)
+      await scanProvider.startScan(
+        totalEmails: messages.length,
+        scanType: scanType,
+        foldersScanned: folderNames,
+      );
 
       // 5. Get rule evaluator
       final evaluator = RuleEvaluator(
@@ -127,11 +144,11 @@ class EmailScanner {
         );
       }
 
-      // 7. Complete scan
-      scanProvider.completeScan();
+      // 7. Complete scan (✨ SPRINT 4: Now async to persist final state)
+      await scanProvider.completeScan();
     } catch (e) {
       // Handle scan error
-      scanProvider.errorScan('Scan failed: $e');
+      await scanProvider.errorScan('Scan failed: $e');
       rethrow;
     } finally {
       // 8. Disconnect

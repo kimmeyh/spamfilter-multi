@@ -603,6 +603,41 @@ class GmailApiAdapter implements SpamFilterPlatform {
   Future<void> connect(Credentials credentials) async {
     await loadCredentials(credentials);
   }
+
+  /// Check if an email still exists (for availability tracking)
+  ///
+  /// Uses Gmail API messages.get with minimal fields to verify email exists
+  /// Returns true if email found, false if deleted
+  Future<bool> checkEmailExists(String messageId) async {
+    try {
+      if (_gmailApi == null) {
+        _logger.w('Gmail API not initialized for availability check');
+        return false;
+      }
+
+      // Try to get the message with minimal fields
+      // This is fast and only checks existence
+      await _gmailApi!.users.messages.get(
+        'me',
+        messageId,
+        format: 'minimal',
+      );
+
+      // If we get here, the message exists
+      _logger.d('Email $messageId still exists');
+      return true;
+    } catch (e) {
+      // If we get 404 or similar, message is deleted
+      if (e.toString().contains('404') || e.toString().contains('notFound')) {
+        _logger.d('Email $messageId is deleted');
+        return false;
+      }
+
+      // For other errors, log and assume deleted (safe approach)
+      _logger.e('Error checking email existence: $e');
+      return false;
+    }
+  }
 }
 
 /// HTTP client with Google auth headers

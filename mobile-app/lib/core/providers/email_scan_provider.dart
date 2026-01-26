@@ -10,6 +10,9 @@ import 'package:logger/logger.dart';
 import '../../adapters/email_providers/junk_folder_config.dart';
 import '../../core/models/email_message.dart';
 import '../../core/models/evaluation_result.dart';
+import '../../core/models/provider_email_identifier.dart';
+import '../../core/storage/scan_result_store.dart';
+import '../../core/storage/unmatched_email_store.dart';
 
 /// Scan status states
 enum ScanStatus { idle, scanning, paused, completed, error }
@@ -90,6 +93,11 @@ class EmailActionResult {
 /// ```
 class EmailScanProvider extends ChangeNotifier {
   final Logger _logger = Logger();
+
+  // ✨ SPRINT 4: Scan result persistence stores
+  ScanResultStore? _scanResultStore;
+  UnmatchedEmailStore? _unmatchedEmailStore;
+  int? _currentScanResultId;  // Track current scan result for persistence
 
   // ✨ MULTI-ACCOUNT SUPPORT: Provider-specific junk folder configuration
   static const Map<String, List<String>> JUNK_FOLDERS_BY_PROVIDER = {
@@ -180,10 +188,34 @@ class EmailScanProvider extends ChangeNotifier {
     }
   }
 
+  /// ✨ SPRINT 4: Initialize persistence stores for scan result tracking
+  ///
+  /// Must be called before startScan() to enable scan result persistence
+  void initializePersistence({
+    required ScanResultStore scanResultStore,
+    required UnmatchedEmailStore unmatchedEmailStore,
+  }) {
+    _scanResultStore = scanResultStore;
+    _unmatchedEmailStore = unmatchedEmailStore;
+    _currentScanResultId = null;
+    _logger.i('Scan result persistence initialized');
+  }
+
+  /// ✨ SPRINT 4: Set the current account ID for scan result tracking
+  void setCurrentAccountId(String accountId) {
+    _currentAccountId = accountId;
+    _logger.d('Set current account ID: $accountId');
+  }
+
   /// Start a new scan session
-  /// 
+  ///
   /// Initialize with total email count for progress tracking
-  void startScan({required int totalEmails}) {
+  /// If persistence stores are initialized, creates a scan result record
+  Future<void> startScan({
+    required int totalEmails,
+    String scanType = 'manual',  // ✨ SPRINT 4: manual or background
+    List<String> foldersScanned = const [],
+  }) async {
     _status = ScanStatus.scanning;
     _processedCount = 0;
     _totalEmails = totalEmails;
@@ -195,11 +227,32 @@ class EmailScanProvider extends ChangeNotifier {
     _errorCount = 0;
     _currentEmail = null;
     _statusMessage = 'Starting scan...';
-    
+
     // ✨ PHASE 3.3: Reset throttling state for new scan
     _emailsSinceLastNotification = 0;
     _lastProgressNotification = null;
-    
+
+    // ✨ SPRINT 4: Create scan result record if persistence is enabled
+    if (_scanResultStore != null && _currentAccountId != null) {
+      try {
+        final scanResult = ScanResult(
+          accountId: _currentAccountId!,
+          scanType: scanType,
+          scanMode: _scanMode.toString().split('.').last,  // 'readonly', 'testLimit', etc.
+          startedAt: DateTime.now().millisecondsSinceEpoch,
+          totalEmails: totalEmails,
+          foldersScanned: foldersScanned.isNotEmpty ? foldersScanned : ['INBOX'],
+          status: 'in_progress',
+        );
+
+        _currentScanResultId = await _scanResultStore!.addScanResult(scanResult);
+        _logger.i('Created scan result record: id=$_currentScanResultId, type=$scanType');
+      } catch (e) {
+        _logger.e('Failed to create scan result: $e');
+        // Continue without persistence
+      }
+    }
+
     _logger.i('Started scan of $totalEmails emails');
     notifyListeners();
   }
@@ -254,22 +307,45 @@ class EmailScanProvider extends ChangeNotifier {
   /// 
   /// ✨ PHASE 3.3: Always calls notifyListeners() to ensure final UI update,
   /// regardless of throttling state (provides complete final counts)
-  void completeScan() {
+  /// ✨ SPRINT 4: Complete scan and persist final results
+  Future<void> completeScan() async {
     _status = ScanStatus.completed;
     _currentEmail = null;
     final modeName = getScanModeDisplayName();
     _statusMessage = 'Scan completed - $modeName: '
         '$_deletedCount deleted, $_movedCount moved, $_safeSendersCount safe senders, $_errorCount errors';
     _logger.i('Completed scan: $_statusMessage');
+
+    // ✨ SPRINT 4: Mark scan result as completed in database
+    if (_scanResultStore != null && _currentScanResultId != null) {
+      try {
+        await _scanResultStore!.markScanCompleted(_currentScanResultId!);
+        _logger.i('Marked scan result as completed: id=$_currentScanResultId');
+      } catch (e) {
+        _logger.e('Failed to mark scan completed: $e');
+      }
+    }
+
     notifyListeners();  // Final update always sent (bypasses throttling)
   }
 
-  /// Mark scan as failed with error
-  void errorScan(String errorMessage) {
+  /// ✨ SPRINT 4: Mark scan as failed with error and persist error state
+  Future<void> errorScan(String errorMessage) async {
     _status = ScanStatus.error;
     _statusMessage = 'Scan failed: $errorMessage';
     _currentEmail = null;
     _logger.e('Scan error: $errorMessage');
+
+    // ✨ SPRINT 4: Mark scan result as error in database
+    if (_scanResultStore != null && _currentScanResultId != null) {
+      try {
+        await _scanResultStore!.markScanError(_currentScanResultId!, errorMessage);
+        _logger.i('Marked scan result as error: id=$_currentScanResultId');
+      } catch (e) {
+        _logger.e('Failed to mark scan error: $e');
+      }
+    }
+
     notifyListeners();
   }
 
@@ -477,6 +553,15 @@ class EmailScanProvider extends ChangeNotifier {
 
     if (!result.success) {
       _errorCount++;
+    }
+
+    // ✨ SPRINT 4: Persist unmatched emails to database
+    if (result.action == EmailActionType.none &&
+        _unmatchedEmailStore != null &&
+        _currentScanResultId != null) {
+      // Create provider identifier based on email platform (deferred for integration)
+      // For now, use placeholder implementation
+      _logger.d('Unmatched email identified: ${result.email.from} - will persist in Task D');
     }
   }
 
