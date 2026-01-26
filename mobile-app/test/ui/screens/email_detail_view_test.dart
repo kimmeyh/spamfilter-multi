@@ -1,11 +1,3 @@
-/// Tests for email detail view screen
-///
-/// This test suite validates:
-/// - Email information display
-/// - Availability status indicators
-/// - Quick-action buttons
-/// - Mark as processed functionality
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:spam_filter_mobile/ui/screens/email_detail_view.dart';
@@ -58,9 +50,8 @@ class FakeUnmatchedEmailStore implements UnmatchedEmailStore {
   @override
   Future<bool> updateAvailabilityStatus(
     int emailId,
-    String status, {
-    required DateTime checkedAt,
-  }) async =>
+    String status,
+  ) async =>
       true;
 }
 
