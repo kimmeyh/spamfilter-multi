@@ -158,6 +158,10 @@ class EmailScanProvider extends ChangeNotifier {
   int get errorCount => _errorCount;
   double get progress => _totalEmails == 0 ? 0 : _processedCount / _totalEmails;
 
+  // ✨ SPRINT 5: Convenience getters for test compatibility
+  bool get isComplete => _status == ScanStatus.completed;
+  bool get hasError => _status == ScanStatus.error;
+
   // ✨ PHASE 3.1: Scan mode getters
   ScanMode get scanMode => _scanMode;
   int? get emailTestLimit => _emailTestLimit;
