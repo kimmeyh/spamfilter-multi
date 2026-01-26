@@ -161,7 +161,7 @@ This document describes the step-by-step process for executing sprints in the sp
 
 2. **Claude Proceeds to Phase 4 (In Parallel)**
    - While user tests in VSCode, Claude:
-     - Creates PR (Phase 4.3)
+     - Creates PR (Phase 4.3) **IMPORTANT**: To `develop` branch (NOT main)
      - Writes documentation
      - Conducts code review analysis
      - Prepares Phase 4.5 review
@@ -189,6 +189,7 @@ This document describes the step-by-step process for executing sprints in the sp
   - Verify user-facing changes work as expected
   - Check for regressions in existing features
   - Document any issues found
+  - **Reference**: See `docs/MANUAL_INTEGRATION_TESTS.md` for comprehensive test scenarios
   - **NOTE**: Starting Sprint 5, user tests in parallel while Claude completes Phase 4-4.5
   - **User Ready?**: Yes → Begin manual testing on working branch
   - **Claude Meanwhile**: Proceeds to Phase 4.3 (PR creation)
@@ -255,7 +256,10 @@ This document describes the step-by-step process for executing sprints in the sp
 
 - [ ] **4.3 Create Pull Request**
   - Go to GitHub repository
-  - Create PR from `feature/YYYYMMDD_Sprint_N` → `develop` branch
+  - **CRITICAL**: Create PR from `feature/YYYYMMDD_Sprint_N` → `develop` branch (NOT main)
+    - **Rule**: All Claude Code PRs target `develop` branch
+    - **Why**: `develop` is integration branch; `main` is for user-approved releases only
+    - **User Role**: Only user creates PRs to `main` after `develop` is stabilized
   - **PR Title**: `Sprint N: <Feature Name>`
   - **PR Description**: Include:
     - Summary of what's included
@@ -289,6 +293,36 @@ This document describes the step-by-step process for executing sprints in the sp
 - Documents architectural decisions and tradeoffs
 - Identifies potential issues early
 - Builds team knowledge base
+
+#### **Pre-Review: Windows Desktop Build & Test (REQUIRED)**
+
+Before conducting sprint review, build and test the Windows desktop app:
+
+- [ ] **4.5.0 Build and Run Windows Desktop App**
+  - **Purpose**: Verify Windows desktop build succeeds before PR approval
+  - **Reference**: Manual Integration Tests - `docs/MANUAL_INTEGRATION_TESTS.md`
+  - **Build Command**:
+    ```powershell
+    cd mobile-app/scripts
+    .\build-windows.ps1
+    ```
+  - **What Happens**:
+    - Clean Flutter rebuild (removes old artifacts)
+    - Secrets injected from `secrets.dev.json`
+    - Windows app compiled for debug mode
+    - App launches automatically
+    - Console displays detailed logging
+  - **Verification Checklist**:
+    - [ ] Build completes without errors
+    - [ ] App launches successfully
+    - [ ] No database initialization errors
+    - [ ] No console warnings (FFI, credentials, auth)
+    - [ ] Key features work as expected (accounts, scanning, results)
+  - **If Build Fails**:
+    - Document the error with full console output
+    - Fix the issue or create follow-up GitHub issue
+    - Do NOT proceed to PR approval until build succeeds
+  - **Next Step**: After successful build, proceed to 4.5.1
 
 - [ ] **4.5.1 Offer Sprint Review (REQUIRED)**
   - Ask user: "Would you like to conduct a sprint review before approving the PR? (Recommended)"
@@ -498,7 +532,8 @@ dart format --set-exit-if-changed lib/
 
 ### When PR Submitted (Phase 4 Complete)
 - ✅ All commits pushed to remote
-- ✅ PR created and fully documented (see GitHub PR template)
+- ✅ PR created to `develop` branch (NOT main - critical requirement)
+- ✅ PR fully documented (see GitHub PR template)
 - ✅ Sprint card issues referenced in PR description (Closes #XX, #YY, #ZZ)
 - ✅ User notified and ready for review
 

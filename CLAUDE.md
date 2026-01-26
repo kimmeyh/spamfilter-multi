@@ -70,6 +70,53 @@ Give Claude verification loops for 2-3x quality improvement:
 5. Commit changes and sync to repository
 5. Before creating PR: run full lint and test suite
 
+## ⚠️ CRITICAL: Pull Request Branch Policy
+
+**RULE: All Claude Code PRs must target the `develop` branch, NEVER `main`.**
+
+### Branch Hierarchy
+
+```
+main (release branch - ONLY user creates PRs to main)
+  ↑ (user merges stable develop)
+develop (integration branch - ALL Claude Code PRs target this)
+  ↑ (Claude creates PRs from feature branches)
+feature/YYYYMMDD_Sprint_N (feature branches - temporary, deleted after merge)
+```
+
+### Policy Details
+
+- **Claude Code**: Creates PRs from `feature/YYYYMMDD_Sprint_N` → `develop`
+- **User**: Creates PRs from `develop` → `main` when ready for release
+- **Why**:
+  - `develop` is the integration branch for all sprint work
+  - `main` is the stable release branch for production versions
+  - Only user can approve merges to `main` (maintains clear release control)
+- **Enforcement**: All PR links in documentation and workflows reference `develop`
+
+### Example
+
+```bash
+# ✅ CORRECT: Claude creates PR to develop
+git push origin feature/20260126_Sprint_5
+# Then create PR: feature/20260126_Sprint_5 → develop
+
+# ❌ INCORRECT: Claude creates PR to main
+git push origin feature/20260126_Sprint_5
+# Then create PR: feature/20260126_Sprint_5 → main  (WRONG!)
+
+# ✅ USER ONLY: User merges develop to main for release
+git checkout main
+git pull origin main
+git merge develop
+# Then create PR for release notes if needed
+```
+
+### Reference
+
+- See `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 4.3 for PR creation instructions
+- See `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 4.5.0 for Windows build verification before approval
+
 ## Things Claude Should NOT Do
 
 <!-- Add mistakes Claude makes so it learns -->
