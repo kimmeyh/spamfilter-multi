@@ -28,14 +28,14 @@ If any check fails, **STOP and resolve with user before accepting work**.
 
 ## CRITICAL: Master Sprint Plan Location
 
-**DO NOT LOSE THIS REFERENCE** - The master plan for all 10 sprints (Phase 3.5) is stored in:
+**DO NOT LOSE THIS REFERENCE** - The master plan for all Phase 3.5 sprints is stored in:
 
 **Repository File**: `docs/PHASE_3_5_MASTER_PLAN.md`
 **Full Path**: `D:\Data\Harold\github\spamfilter-multi\docs\PHASE_3_5_MASTER_PLAN.md`
 **GitHub URL**: `https://github.com/kimmeyh/spamfilter-multi/blob/develop/docs/PHASE_3_5_MASTER_PLAN.md`
 
 **Contents**:
-- Complete specifications for all 10 sprints
+- Complete specifications for all Phase 3.5 sprints
 - Sprint dependencies and critical path
 - Task breakdown by model (Haiku/Sonnet/Opus)
 - Effort estimates (actual vs estimated from previous sprints)
@@ -52,8 +52,13 @@ If any check fails, **STOP and resolve with user before accepting work**.
 **Important**:
 1. This document is IN THE REPOSITORY (not in Claude's plan storage)
 2. It persists across conversations (unlike `.claude/plans/`)
-3. Update it after each sprint completes (add actual duration, lessons learned)
-4. Reference it in the first 5 minutes of each sprint kickoff
+3. Update it after each sprint completes (add actual duration, lessons learned, update future Sprint plans - as needed)
+4. **BEFORE EVERY SPRINT**: Reference this document as very first step
+   - Read this document before starting Phase 1: Sprint Kickoff & Planning
+   - Check for updates from previous sprint retrospective
+   - Verify Sprint N section includes actual vs estimated durations
+   - Update the master plan with any lessons learned before planning next sprint
+   - Then proceed to SPRINT_EXECUTION_WORKFLOW.md Phase 1
 5. If you cannot find it, search: `find . -name "PHASE_3_5_MASTER_PLAN.md"` or `grep -r "10 sprint" docs/`
 
 ## Developer information
@@ -153,6 +158,16 @@ git merge develop
    - Explain your thought process before and during actions
    - Use "Let me check..." or "I'm investigating..." instead of silent tool usage
    - Share intermediate findings, not just final conclusions
+
+6. **Execution Autonomy During Sprints**: Sprint plan approval authorizes all task execution
+   - When user approves sprint plan (Phase 1), this pre-approves ALL tasks through Phase 4.5 (Sprint Review)
+   - Do NOT ask for approval on individual tasks during execution
+   - Do NOT ask before starting each task (this was learned in Sprint 6)
+   - Work continuously and autonomously until: blocked/escalated, all tasks complete, or sprint review requested
+   - This autonomy is core to sprint efficiency - per-task approvals add overhead without benefit
+   - If mid-sprint changes needed: Document scope change, get re-approval, adjust plan and resume
+   - See `docs/SPRINT_STOPPING_CRITERIA.md` for when to stop working and why
+   - **Reference**: SPRINT_EXECUTION_WORKFLOW.md Phase 1.7 and §211-241 "Approval Gates"
 
 **Example of Good Co-Lead Collaboration**:
 ```
@@ -814,7 +829,13 @@ spamfilter-multi/
 ├── docs/                     # Consolidated documentation
 │   ├── OAUTH_SETUP.md        # Gmail OAuth for Android + Windows
 │   ├── TROUBLESHOOTING.md    # Common issues and fixes
-│   └── ISSUE_BACKLOG.md      # Open issues and status
+│   ├── ISSUE_BACKLOG.md      # Open issues and status
+│   ├── PHASE_3_5_MASTER_PLAN.md    # Master plan for all 10 sprints (READ FIRST!)
+│   ├── SPRINT_PLANNING.md    # Sprint planning methodology
+│   ├── SPRINT_EXECUTION_WORKFLOW.md # Step-by-step sprint execution checklist
+│   ├── PHASE_0_PRE_SPRINT_CHECKLIST.md # Pre-sprint verification checklist
+│   ├── SPRINT_STOPPING_CRITERIA.md # When/why to stop working (NEW - Sprint 6)
+│   └── WINDOWS_BASH_COMPATIBILITY.md # Bash command troubleshooting (NEW - Sprint 6)
 ├── mobile-app/
 │   ├── README.md             # App-specific quick start
 │   └── docs/
@@ -823,9 +844,11 @@ spamfilter-multi/
     └── email-rule-tester-mcp/  # Custom MCP server
 ```
 
-### Quick Reference
-- **QUICK_REFERENCE.md**: Command cheat sheet
-- **CLAUDE_CODE_SETUP_GUIDE.md**: MCP server, skills, hooks setup
+### Quick Reference & Troubleshooting
+- **QUICK_REFERENCE.md**: Command cheat sheet and skill reference
+- **WINDOWS_BASH_COMPATIBILITY.md**: Troubleshoot bash command errors on Windows WSL
+- **SPRINT_STOPPING_CRITERIA.md**: When and why to stop working during sprints
+- **CLAUDE_CODE_SETUP_GUIDE.md**: MCP server, skills, hooks setup (if referenced)
 
 ### Claude Code Tooling
 - **Custom MCP Server**: `scripts/email-rule-tester-mcp/`
