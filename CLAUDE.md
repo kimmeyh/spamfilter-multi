@@ -28,14 +28,14 @@ If any check fails, **STOP and resolve with user before accepting work**.
 
 ## CRITICAL: Master Sprint Plan Location
 
-**DO NOT LOSE THIS REFERENCE** - The master plan for all 10 sprints (Phase 3.5) is stored in:
+**DO NOT LOSE THIS REFERENCE** - The master plan for all Phase 3.5 sprints is stored in:
 
 **Repository File**: `docs/PHASE_3_5_MASTER_PLAN.md`
 **Full Path**: `D:\Data\Harold\github\spamfilter-multi\docs\PHASE_3_5_MASTER_PLAN.md`
 **GitHub URL**: `https://github.com/kimmeyh/spamfilter-multi/blob/develop/docs/PHASE_3_5_MASTER_PLAN.md`
 
 **Contents**:
-- Complete specifications for all 10 sprints
+- Complete specifications for all Phase 3.5 sprints
 - Sprint dependencies and critical path
 - Task breakdown by model (Haiku/Sonnet/Opus)
 - Effort estimates (actual vs estimated from previous sprints)
@@ -52,7 +52,7 @@ If any check fails, **STOP and resolve with user before accepting work**.
 **Important**:
 1. This document is IN THE REPOSITORY (not in Claude's plan storage)
 2. It persists across conversations (unlike `.claude/plans/`)
-3. Update it after each sprint completes (add actual duration, lessons learned)
+3. Update it after each sprint completes (add actual duration, lessons learned, update future Sprint plans - as needed)
 4. Reference it in the first 5 minutes of each sprint kickoff
 5. If you cannot find it, search: `find . -name "PHASE_3_5_MASTER_PLAN.md"` or `grep -r "10 sprint" docs/`
 
