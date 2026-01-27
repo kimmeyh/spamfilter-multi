@@ -11,15 +11,21 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 
+import '../../core/storage/rule_database_store.dart';
+import '../../core/storage/safe_sender_database_store.dart';
 import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/unmatched_email_store.dart';
+import 'email_detail_view.dart';
 
 /// ✨ SPRINT 4: Screen for processing unmatched emails from scan results
+/// ✨ SPRINT 6: Added quick-add screen integration
 class ProcessResultsScreen extends StatefulWidget {
   final int scanResultId;
   final String accountEmail;
   final ScanResultStore scanResultStore;
   final UnmatchedEmailStore unmatchedEmailStore;
+  final SafeSenderDatabaseStore? safeSenderStore;
+  final RuleDatabaseStore? ruleStore;
 
   const ProcessResultsScreen({
     Key? key,
@@ -27,6 +33,8 @@ class ProcessResultsScreen extends StatefulWidget {
     required this.accountEmail,
     required this.scanResultStore,
     required this.unmatchedEmailStore,
+    this.safeSenderStore,
+    this.ruleStore,
   }) : super(key: key);
 
   @override
@@ -261,8 +269,18 @@ class _ProcessResultsScreenState extends State<ProcessResultsScreen> {
                         return UnmatchedEmailCard(
                           email: email,
                           onTap: () {
-                            // Navigate to email detail view
                             _logger.d('Tapped email: ${email.fromEmail}');
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => EmailDetailView(
+                                  email: email,
+                                  unmatchedEmailStore: widget.unmatchedEmailStore,
+                                  safeSenderStore: widget.safeSenderStore,
+                                  ruleStore: widget.ruleStore,
+                                ),
+                              ),
+                            );
                           },
                         );
                       },

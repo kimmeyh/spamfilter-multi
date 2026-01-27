@@ -8,17 +8,27 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 
+import '../../core/models/email_message.dart';
+import '../../core/storage/rule_database_store.dart';
+import '../../core/storage/safe_sender_database_store.dart';
 import '../../core/storage/unmatched_email_store.dart';
+import 'rule_quick_add_screen.dart';
+import 'safe_sender_quick_add_screen.dart';
 
 /// ✨ SPRINT 4: Detailed view for reviewing individual unmatched emails
+/// ✨ SPRINT 6: Added quick-add screen integration
 class EmailDetailView extends StatefulWidget {
   final UnmatchedEmail email;
   final UnmatchedEmailStore unmatchedEmailStore;
+  final SafeSenderDatabaseStore? safeSenderStore;
+  final RuleDatabaseStore? ruleStore;
 
   const EmailDetailView({
     Key? key,
     required this.email,
     required this.unmatchedEmailStore,
+    this.safeSenderStore,
+    this.ruleStore,
   }) : super(key: key);
 
   @override
@@ -62,19 +72,79 @@ class _EmailDetailViewState extends State<EmailDetailView> {
   }
 
   void _addSafeSender() {
-    // TODO: Navigate to SafeSenderQuickAddScreen
+    if (widget.safeSenderStore == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Safe sender store not available')),
+      );
+      return;
+    }
+
     _logger.d('Add safe sender: ${widget.email.fromEmail}');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Add safe sender feature coming in Sprint 6')),
+
+    // Convert UnmatchedEmail to EmailMessage for quick-add screen
+    final emailMessage = EmailMessage(
+      id: widget.email.id?.toString() ?? 'unknown',
+      from: widget.email.fromEmail,
+      subject: widget.email.subject ?? '(No subject)',
+      body: widget.email.bodyPreview ?? '',
+      headers: {'from': widget.email.fromEmail},
+      receivedDate: widget.email.emailDate ?? DateTime.now(),
+      folderName: widget.email.folderName,
     );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => SafeSenderQuickAddScreen(
+          email: emailMessage,
+          safeSenderStore: widget.safeSenderStore!,
+        ),
+      ),
+    ).then((result) {
+      if (result == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Safe sender added successfully')),
+        );
+      }
+    });
   }
 
   void _createAutoDeleteRule() {
-    // TODO: Navigate to RuleQuickAddScreen
+    if (widget.ruleStore == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Rule store not available')),
+      );
+      return;
+    }
+
     _logger.d('Create auto-delete rule for: ${widget.email.fromEmail}');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Auto-delete rule feature coming in Sprint 6')),
+
+    // Convert UnmatchedEmail to EmailMessage for quick-add screen
+    final emailMessage = EmailMessage(
+      id: widget.email.id?.toString() ?? 'unknown',
+      from: widget.email.fromEmail,
+      subject: widget.email.subject ?? '(No subject)',
+      body: widget.email.bodyPreview ?? '',
+      headers: {'from': widget.email.fromEmail},
+      receivedDate: widget.email.emailDate ?? DateTime.now(),
+      folderName: widget.email.folderName,
     );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RuleQuickAddScreen(
+          email: emailMessage,
+          ruleStore: widget.ruleStore!,
+        ),
+      ),
+    ).then((result) {
+      if (result == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Rule created successfully')),
+        );
+      }
+    });
   }
 
   Color _getStatusColor(String status) {
