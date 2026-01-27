@@ -21,7 +21,16 @@ This document describes the step-by-step process for executing sprints in the sp
 
 ## Sprint Execution Checklist
 
-### **Phase 0: Sprint Pre-Kickoff**
+### **Phase 0: Sprint Pre-Kickoff** ⚠️ CRITICAL PREREQUISITE
+
+⚠️ **BEFORE BEGINNING PHASE 0**, read `docs/PHASE_3_5_MASTER_PLAN.md` (very first step):
+- Locate Sprint N section in PHASE_3_5_MASTER_PLAN.md
+- Review what is planned for this sprint
+- Check for retrospective notes from previous sprint
+- Update master plan with previous sprint's actual vs estimated duration
+- **Purpose**: Align on sprint scope before starting Phase 0 verification
+
+---
 
 - [ ] **0.1 Verify Previous Sprint is Merged**
   - Confirm previous sprint PR is merged to `develop`
@@ -97,6 +106,21 @@ This document describes the step-by-step process for executing sprints in the sp
   - Acceptance criteria clear and testable
   - Dependencies on previous sprints verified as complete
 
+- [ ] **1.7 CRITICAL: Plan Approval = Task Execution Pre-Approval**
+  - User reviews complete sprint plan (Tasks A, B, C, etc.)
+  - User approves Phase 1 sprint plan
+  - **Plan Approval = Pre-Approval for ALL Tasks A-Z through Phase 4.5 (Sprint Review)**
+  - Claude should NOT ask for approval on individual tasks
+  - Claude should NOT ask before starting each task
+  - Claude should work autonomously and continuously until:
+    - (a) Blocked/escalated (Criterion 2 in SPRINT_STOPPING_CRITERIA.md)
+    - (b) All tasks complete (Criterion 1 in SPRINT_STOPPING_CRITERIA.md)
+    - (c) Sprint review requested (Criterion 5 in SPRINT_STOPPING_CRITERIA.md)
+    - (d) Code review needed (Phase 4.5 checkpoint)
+  - If user requests mid-sprint changes: Document scope change, get re-approval, resume
+  - **Reference**: §211-241 "Approval Gates - Only 4 checkpoint points"
+  - **Additional Reference**: `docs/SPRINT_STOPPING_CRITERIA.md` for when to stop
+
 ---
 
 ### **Phase 2: Sprint Execution (Development)**
@@ -148,6 +172,20 @@ This document describes the step-by-step process for executing sprints in the sp
   - Verify all tests pass (not just new ones)
   - Check code analysis: `flutter analyze`
   - Ensure zero errors introduced
+  - **(Optional) Efficiency Checkpoint**: If context usage > 60%, suggest user run `/compact` before Phase 4 to refresh context for final PR review phase
+
+---
+
+**⚡ COMPACT SUGGESTION (Optional for Efficiency)**
+
+After Phase 3.2 all tests pass, context can be compacted for efficiency:
+- **Savings**: ~10-15% of context budget (20K-30K tokens)
+- **Timing**: Before Phase 4 (PR creation + Review)
+- **User Command**: `/compact` (if available in Claude Code)
+- **Effect**: Summarizes conversation history, preserves key context, fresh tokens for final phases
+- **No Loss**: All sprint work is committed to git, can be easily reviewed
+
+---
 
 #### ⚡ **PARALLEL TESTING WORKFLOW (Sprint 5+)**
 
@@ -280,6 +318,18 @@ This document describes the step-by-step process for executing sprints in the sp
   - Provide summary of sprint results
   - Ask for approval or feedback
   - Note any follow-up items
+
+---
+
+---
+
+**⚡ EFFICIENCY CHECKPOINT: Context Refresh (Optional)**
+
+Before Phase 4.5, if context usage is high (>70%), user can optionally run `/compact`:
+- Summarizes prior phases while preserving sprint context
+- Refreshes tokens for final review and documentation phases
+- No impact on sprint quality (all work is in git)
+- Recommended if proceeding to next sprint in same conversation
 
 ---
 
