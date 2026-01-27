@@ -10,8 +10,6 @@ import 'package:logger/logger.dart';
 
 import '../models/provider_email_identifier.dart';
 import '../../adapters/email_providers/email_provider.dart';
-import '../../adapters/email_providers/gmail_api_adapter.dart';
-import '../../adapters/email_providers/generic_imap_adapter.dart';
 
 /// Result of checking email availability
 class EmailAvailabilityResult {
