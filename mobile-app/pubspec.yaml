@@ -44,6 +44,12 @@ dependencies:
   sqflite: ^2.3.0  # SQLite for scan results, rules, settings
   sqflite_common_ffi: ^2.3.0  # SQLite FFI for desktop platforms
 
+  # Phase 3.5 Sprint 7 - Background Scanning
+  workmanager: ^0.5.2  # Background task scheduling (Android/iOS)
+  flutter_local_notifications: ^16.2.0  # Local notifications
+  connectivity_plus: ^5.0.0  # Network connectivity detection
+  battery_plus: ^5.0.0  # Battery level detection
+
   # Phase 2+ - UI Enhancement
   # flutter_svg: ^2.0.9
 

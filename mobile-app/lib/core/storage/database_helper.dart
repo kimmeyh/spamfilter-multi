@@ -235,6 +235,24 @@ class DatabaseHelper implements RuleDatabaseProvider {
     await db.execute('CREATE INDEX IF NOT EXISTS idx_unmatched_processed ON unmatched_emails(processed);');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_unmatched_availability ON unmatched_emails(availability_status);');
 
+    // Background scan log table (tracks background scan execution history)
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS background_scan_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        account_id TEXT NOT NULL,
+        scheduled_time INTEGER NOT NULL,
+        actual_start_time INTEGER,
+        actual_end_time INTEGER,
+        status TEXT NOT NULL,
+        error_message TEXT,
+        emails_processed INTEGER DEFAULT 0,
+        unmatched_count INTEGER DEFAULT 0,
+        FOREIGN KEY (account_id) REFERENCES accounts(account_id)
+      );
+    ''');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_background_scan_log_account ON background_scan_log(account_id);');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_background_scan_log_scheduled ON background_scan_log(scheduled_time DESC);');
+
     _logger.i('Database tables created successfully');
   }
 
