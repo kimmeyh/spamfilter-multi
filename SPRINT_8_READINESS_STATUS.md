@@ -69,38 +69,89 @@
 
 ---
 
-## What Happens Next
+## What Happens Next: Three Approval Checkpoints
 
-### Step 1: Your Approval
-Sprint 8 Plan is complete and awaiting your approval to proceed:
-- Review the plan at: `docs/SPRINT_8_PLAN.md`
-- Approval checklist included with 11 items
-- Two options:
-  - **Option A**: Approve and proceed with execution
-  - **Option B**: Request changes to plan before execution
+### ✅ CHECKPOINT 1: PR #92 Review & Merge Approval
 
-### Step 2: Create Feature Branch (After Approval)
-```bash
-git checkout develop
-git pull origin develop
-git checkout -b feature/20260128_Sprint_8
+**Current Status**: PR #92 open with Sprint 7 deliverables
+
+**What I'm Waiting For**:
+1. You review PR #92 (Sprint 7 code)
+2. You approve PR for merge to `develop` branch
+3. You merge PR #92 to `develop` branch
+
+**After Checkpoint 1 Approved**: Proceed to Checkpoint 2
+
+---
+
+### ⏳ CHECKPOINT 2: Recommendations & Sprint 8 Plan Approval
+
+**Current Status**: Sprint 8 Plan complete at `docs/SPRINT_8_PLAN.md`
+
+**What I'm Waiting For** (3 parts):
+
+**Part A: Approve Sprint 8 Plan**
+- Review all 4 tasks and acceptance criteria
+- Confirm effort estimate (14-18 hours)
+- Confirm model assignments (Sonnet → Haiku)
+- Use approval checklist in `docs/SPRINT_8_PLAN.md`
+
+**Part B: Approve Recommendations (3 priority levels)**
+- **Priority 1 (BEFORE Sprint 8)**: Escalation protocol, approval process, retrospective format
+- **Priority 2 (IN Sprint 8)**: Test isolation, integration testing (if time permits)
+- **Priority 3 (FUTURE)**: Dependency updates, device testing, analytics
+
+**Part C: Confirm Escalation Protocol**
+- Approved: Escalate issues to Sonnet instead of requesting approval
+- Approved: No mid-sprint approvals after plan approval (execution only)
+- Approved: Use model hierarchy for problem-solving
+
+**What I'm Waiting For**:
+- Your checkmarks in `docs/SPRINT_8_PLAN.md` CHECKPOINT 2 section
+- Your approval of all 3 parts above
+
+**After Checkpoint 2 Approved**: Proceed to Checkpoint 3
+
+---
+
+### ⏳ CHECKPOINT 3: Begin Sprint 8 Execution
+
+**What I Will Do** (automatically after Checkpoint 2):
+1. Create feature branch: `feature/20260128_Sprint_8`
+2. Begin Sprint 8 implementation (NO APPROVALS during execution)
+3. Execute Tasks A-D over 2 days (Jan 28-29)
+4. Complete with tests and PR ready for your review
+5. After Sprint 8 completion: Request approval for Sprint 8 Retrospective
+
+**No Further Approvals** during Sprint 8 execution unless:
+- Blocking issues require escalation to Sonnet
+- Architecture decisions need Sonnet review
+- Critical bugs need resolution strategy
+
+**Timeline**:
+- Day 1 (Jan 28): Tasks A + B (5-7 hours)
+- Day 2 (Jan 29): Tasks C + D (7-11 hours)
+- Result: PR ready for your review
+
+---
+
+## Workflow Structure for All Future Sprints
+
 ```
-
-### Step 3: Begin Implementation (After Approval)
-- Model: Sonnet (1h architecture review)
-- Model: Haiku (13-17h implementation + testing)
-- Duration: January 28-29 (2 days)
-
-### Step 4: Testing & Review
-- Run full test suite
-- Manual testing checklist (40 points)
-- Code analysis cleanup
-- Create PR to develop branch
-
-### Step 5: Merge & Release
-- PR review and approval
-- Merge to develop branch
-- Prepare for Phase 3.5 Release
+Sprint Execution
+    ↓
+Retrospective Complete (findings, metrics, lessons, recommendations)
+    ↓
+CHECKPOINT 1: Request PR Review Approval
+    ↓
+CHECKPOINT 2: Request Recommendations Approval
+    ↓
+CHECKPOINT 3: Begin Next Sprint Execution
+    ↓
+(NO MID-SPRINT APPROVALS - only escalate if needed)
+    ↓
+Next Sprint Complete → Back to Retrospective
+```
 
 ---
 
@@ -233,34 +284,64 @@ NotificationService (abstract interface)
 
 ---
 
-## Questions for You
+## What You Need to Do Now
 
-Before approving Sprint 8, please confirm:
+### Step 1: Review PR #92 (Sprint 7 Deliverables)
+- **Location**: GitHub PR #92
+- **What to test**: Android background scanning, notifications, optimization
+- **Acceptance**: All tests passing, zero breaking changes, production ready
+- **Action**: Approve and merge to `develop` branch
 
-1. **Plan Format**: Does the Sprint 8 plan structure match what you need?
-2. **Scope**: Are the 4 tasks (Windows scheduling, notifications, MSIX, desktop UI) appropriate for Sprint 8?
-3. **Effort Estimate**: Does 14-18 hours seem reasonable?
-4. **Start Date**: Should Sprint 8 start immediately (Jan 28-29) or defer?
-5. **Model Assignment**: Sonnet (architecture) + Haiku (implementation) appropriate?
+### Step 2: Review Sprint 7 Retrospective
+- **Location**: `docs/SPRINT_7_RETROSPECTIVE.md`
+- **What to review**:
+  - Findings (what went well, what could improve)
+  - Metrics (tasks, tests, code quality)
+  - Lessons learned (positive and areas for growth)
+  - Recommendations (Priority 1, 2, 3)
+  - Checkpoint structure (3-checkpoint workflow for future sprints)
+- **Action**: Understand retrospective content for Checkpoint 2
+
+### Step 3: Review Sprint 8 Plan
+- **Location**: `docs/SPRINT_8_PLAN.md`
+- **What to review**:
+  - Executive Summary (objectives, key metrics)
+  - Task A: Windows Task Scheduler (5-6 hours)
+  - Task B: Toast Notifications (3-4 hours)
+  - Task C: MSIX Installer (4-5 hours)
+  - Task D: Desktop UI & Testing (2-3 hours)
+  - Risk assessment, testing strategy, success criteria
+  - CHECKPOINT 2 approval section at the end
+- **Action**: Complete approval checklist at end
+
+### Step 4: Provide Your Approvals
+
+**CHECKPOINT 1** (Approve after reviewing PR #92):
+- [ ] Approve and merge PR #92 to `develop` branch
+- [ ] Comment: "Checkpoint 1 Approved - PR #92 merged"
+
+**CHECKPOINT 2** (Approve after reviewing both retrospective and plan):
+- [ ] Complete Part A checklist in `docs/SPRINT_8_PLAN.md` (10 items)
+- [ ] Complete Part B checklist in `docs/SPRINT_8_PLAN.md` (7 items)
+- [ ] Complete Part C checklist in `docs/SPRINT_8_PLAN.md` (3 items)
+- [ ] Comment: "Checkpoint 2 Approved - All recommendations and plan approved"
+
+**CHECKPOINT 3** (Automatic):
+- Once Checkpoint 2 approved, I will immediately:
+  - Create `feature/20260128_Sprint_8` branch
+  - Begin Sprint 8 implementation
+  - Execute Tasks A-D with no interruptions
+  - Complete within 2 days (Jan 28-29)
 
 ---
 
-## Next Steps
+## Status Summary
 
-**If Approved**:
-1. Create feature branch: `feature/20260128_Sprint_8`
-2. Request Sonnet's architecture review (1h)
-3. Begin Haiku implementation (Task A first)
-4. Follow execution plan (Day 1 = Tasks A+B, Day 2 = Tasks C+D)
-5. Complete testing and create PR
-
-**If Changes Needed**:
-1. Specify what should change in the plan
-2. I'll update `docs/SPRINT_8_PLAN.md`
-3. Commit updated plan and resubmit for approval
-
----
-
-**Status Summary**: Sprint 7 Complete ✅ | Sprint 8 Plan Ready ✅ | Awaiting Your Approval ⏳
+- ✅ Sprint 7 Code: Complete (all 4 tasks)
+- ✅ Sprint 7 Retrospective: Complete (findings, metrics, lessons, recommendations)
+- ✅ Sprint 8 Plan: Complete (4 tasks detailed, 14-18 hours estimated)
+- ⏳ CHECKPOINT 1: Waiting for your PR #92 approval & merge
+- ⏳ CHECKPOINT 2: Waiting for your Sprint 8 Plan & Recommendations approval
+- ⏳ CHECKPOINT 3: Will start automatically after Checkpoint 2 approved
 
 Created: January 28, 2026
