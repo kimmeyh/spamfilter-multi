@@ -439,6 +439,26 @@ dependencies:
 
 ---
 
+## Testing Requirements & Escalation Protocol
+
+**Your Testing Standard** (from Sprint 7 feedback):
+
+> "All tests should pass. Tests that cannot be resolved by model:Haiku should be escalated to be tested using model:Sonnet. Tests that cannot be resolved by model:Sonnet should be escalated to be tested using model:Opus. Only tests that cannot be resolved by model:Opus should request approval to be resolved later with a reason for why they should be delayed."
+
+**What This Means for Sprint 8**:
+
+1. **All 35+ unit tests must pass** before PR can be merged
+2. **All 6+ integration tests must pass** before PR can be merged
+3. **If tests fail**:
+   - Haiku: Try to fix immediately
+   - If Haiku cannot fix after reasonable attempt: **Escalate to Sonnet**
+   - If Sonnet cannot fix: **Escalate to Opus**
+   - If Opus cannot fix: **Request your approval with detailed reason**
+
+4. **Sprint 8 is NOT complete** until all new tests pass OR you explicitly approve delaying specific tests
+
+---
+
 ## Testing Strategy
 
 ### Unit Tests (35+ expected)
@@ -519,12 +539,21 @@ dependencies:
 - ✅ Menu bar and context menus functional
 
 #### Code Quality
-- ✅ All unit tests passing (80%+ coverage)
-- ✅ All integration tests passing (100% success)
+- ✅ **ALL unit tests passing (100% - NOT 80%)**
+- ✅ **ALL integration tests passing (100% success)**
+- ✅ All 35+ new tests created MUST pass
+- ✅ Total test suite: 679+ tests passing (100% of new tests)
 - ✅ Zero code analysis errors/warnings
 - ✅ Code follows project patterns
 - ✅ New dependencies properly integrated
 - ✅ No breaking changes
+
+**CRITICAL**: If any new test fails:
+- Haiku attempts fix (15-30 min max)
+- If still failing: Escalate to Sonnet
+- If Sonnet cannot fix: Escalate to Opus
+- If Opus cannot fix: Request approval with detailed reason
+- **SPRINT 8 IS NOT COMPLETE** until all tests pass or approval granted
 
 ---
 
@@ -566,18 +595,25 @@ dependencies:
 ## Stopping Criteria (When to Escalate)
 
 **Escalate to Sonnet if**:
-1. PowerShell script generation fails repeatedly → architectural issue
-2. Task Scheduler integration doesn't trigger background scans → platform integration issue
-3. MSIX build fails with cryptic errors → tooling/environment issue
-4. WinRT toast notification API unavailable → dependency/version issue
-5. Window resize causes major UI breakage → layout system issue
-6. Test failures suggest architectural flaw → design reconsideration needed
+1. **Test failures after 15-30 min attempts** (Haiku tries to fix, cannot solve)
+2. PowerShell script generation fails repeatedly → architectural issue
+3. Task Scheduler integration doesn't trigger background scans → platform integration issue
+4. MSIX build fails with cryptic errors → tooling/environment issue
+5. WinRT toast notification API unavailable → dependency/version issue
+6. Window resize causes major UI breakage → layout system issue
+7. Test failures suggest architectural flaw → design reconsideration needed
 
 **Escalate to Opus if**:
-1. Multiple escalations from Sonnet (complexity exceeds Sonnet capability)
-2. Critical security issue in background execution
-3. Performance optimization needed (background scan too slow)
-4. Windows-specific performance profiling needed
+1. **Test failures after Sonnet attempts** (Sonnet tried to fix, cannot solve)
+2. Multiple escalations from Sonnet (complexity exceeds Sonnet capability)
+3. Critical security issue in background execution
+4. Performance optimization needed (background scan too slow)
+5. Windows-specific performance profiling needed
+
+**Request Your Approval Only if**:
+1. **Test failures after Opus attempts** (Opus cannot resolve)
+2. Must include: detailed reason why cannot be fixed, impact assessment, proposed timeline
+3. Otherwise escalate, do not request approval for execution decisions
 
 ---
 
@@ -612,10 +648,17 @@ dependencies:
 
 These must be addressed before I begin Sprint 8 implementation:
 
-**Recommendation 1.1 - Escalation Protocol Documentation**
+**Recommendation 1.1 - Escalation Protocol & Testing Standard**
 - [ ] I should document clear escalation criteria (Haiku 15-30 min → Sonnet 30 min → Opus final)
 - [ ] I should update CLAUDE.md with an escalation decision matrix
 - [ ] I understand: Escalate instead of requesting approval for hard problems
+- [ ] **CRITICAL - Testing Protocol**: All new tests MUST pass before sprint completion
+  - Haiku tries fix for 15-30 min
+  - → Escalate to Sonnet if still failing
+  - → Escalate to Opus if Sonnet cannot fix
+  - → Request approval ONLY if Opus cannot fix (with detailed reason)
+- [ ] I understand: Sprint 8 is NOT complete until all 35+ new tests pass OR you approve delay
+- [ ] I understand: Test failures are blocking issue, must be resolved before PR merge
 
 **Recommendation 1.2 - Approval Process Clarification**
 - [ ] Approved: Only request approval for PROCESS decisions (e.g., "Should we do a retrospective?")
