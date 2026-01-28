@@ -1,3 +1,5 @@
+import 'package:logger/logger.dart';
+
 import '../models/email_message.dart';
 import '../models/rule_set.dart';
 import '../models/safe_sender_list.dart';
@@ -9,6 +11,7 @@ class RuleEvaluator {
   final RuleSet ruleSet;
   final SafeSenderList safeSenderList;
   final PatternCompiler compiler;
+  final Logger _logger = Logger();
 
   RuleEvaluator({
     required this.ruleSet,
@@ -27,16 +30,29 @@ class RuleEvaluator {
     final sortedRules = List<Rule>.from(ruleSet.rules)
       ..sort((a, b) => a.executionOrder.compareTo(b.executionOrder));
 
+    // DIAGNOSTIC: Log rule evaluation for first few emails
+    if (sortedRules.isEmpty) {
+      _logger.w('RuleEvaluator: No rules available for evaluation of "${message.subject}"');
+      return EvaluationResult.noMatch();
+    }
+
+    int enabledRuleCount = 0;
     for (final rule in sortedRules) {
-      if (!rule.enabled) continue;
+      if (!rule.enabled) {
+        _logger.d('Rule "${rule.name}" is disabled, skipping');
+        continue;
+      }
+      enabledRuleCount++;
 
       // Check exceptions first
       if (rule.exceptions != null && _matchesExceptions(message, rule.exceptions!)) {
+        _logger.d('Email "${message.subject}" matched exception in rule "${rule.name}", skipping');
         continue;
       }
 
       // Check conditions
       if (_matchesConditions(message, rule.conditions)) {
+        _logger.i('✓ Email "${message.subject}" matched rule "${rule.name}"');
         return EvaluationResult(
           shouldDelete: rule.actions.delete,
           shouldMove: rule.actions.moveToFolder != null,
@@ -47,6 +63,7 @@ class RuleEvaluator {
       }
     }
 
+    _logger.d('✗ Email "${message.subject}" did not match any of $enabledRuleCount enabled rules');
     return EvaluationResult.noMatch();
   }
 

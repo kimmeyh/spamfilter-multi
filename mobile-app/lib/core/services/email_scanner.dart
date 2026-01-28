@@ -76,6 +76,16 @@ class EmailScanner {
       );
 
       // 5. Get rule evaluator
+      // DIAGNOSTIC: Log rule and safe sender counts for troubleshooting
+      _logger.i('=== SCAN DIAGNOSTICS ===');
+      _logger.i('Rules loaded: ${ruleSetProvider.rules.rules.length}');
+      _logger.i('Safe senders loaded: ${ruleSetProvider.safeSenders.safeSenders.length}');
+      _logger.i('RuleSetProvider state: isLoading=${ruleSetProvider.isLoading}, isError=${ruleSetProvider.isError}, error=${ruleSetProvider.error}');
+      if (ruleSetProvider.rules.rules.isNotEmpty) {
+        _logger.i('First rule: ${ruleSetProvider.rules.rules[0].name} (enabled=${ruleSetProvider.rules.rules[0].enabled})');
+      }
+      _logger.i('=======================');
+
       final evaluator = RuleEvaluator(
         ruleSet: ruleSetProvider.rules,
         safeSenderList: ruleSetProvider.safeSenders,
