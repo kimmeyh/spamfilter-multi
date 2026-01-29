@@ -27,6 +27,7 @@ const int databaseVersion = 1;
 class DatabaseHelper implements RuleDatabaseProvider {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
+  static AppPaths? _appPaths;
   static final Logger _logger = Logger();
 
   factory DatabaseHelper() {
@@ -34,6 +35,11 @@ class DatabaseHelper implements RuleDatabaseProvider {
   }
 
   DatabaseHelper._internal();
+
+  /// Set AppPaths instance (must call before first database access)
+  void setAppPaths(AppPaths appPaths) {
+    _appPaths = appPaths;
+  }
 
   /// Get or initialize the database
   @override
@@ -44,10 +50,11 @@ class DatabaseHelper implements RuleDatabaseProvider {
 
   /// Initialize database and create tables
   Future<Database> _initializeDatabase() async {
-    // Use in-memory database for testing if databaseFactory is FFI (indicates test environment)
-    final dbPath = databaseFactory.toString().contains('ffi')
-        ? 'test_db.sqlite'
-        : getAppPaths().databaseFilePath;
+    if (_appPaths == null) {
+      throw StateError('AppPaths not set. Call setAppPaths() before accessing database.');
+    }
+
+    final dbPath = _appPaths!.databaseFilePath;
 
     _logger.i('Initializing database at: $dbPath');
 

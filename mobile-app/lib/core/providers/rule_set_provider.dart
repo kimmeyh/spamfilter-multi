@@ -95,8 +95,9 @@ class RuleSetProvider extends ChangeNotifier {
       _appPaths = AppPaths();
       await _appPaths.initialize();
 
-      // Create database helper
+      // Create database helper and set AppPaths
       final databaseHelper = DatabaseHelper();
+      databaseHelper.setAppPaths(_appPaths);
 
       // Check if YAML to database migration is needed (first run detection)
       final migrationManager = MigrationManager(
