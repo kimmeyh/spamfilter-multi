@@ -199,8 +199,8 @@ class BackgroundScanWindowsWorker {
         actualStartTime: DateTime.now().millisecondsSinceEpoch,
         actualEndTime: DateTime.now().millisecondsSinceEpoch,
         status: 'success',
-        emailsScanned: 0, // Placeholder - actual scan would update this
-        matchesFound: 0,  // Placeholder
+        emailsProcessed: 0, // Placeholder - actual scan would update this
+        unmatchedCount: 0,  // Placeholder
       );
 
       await logStore.updateLog(successLog);
