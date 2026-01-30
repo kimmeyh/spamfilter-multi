@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'core/providers/rule_set_provider.dart';
 import 'core/providers/email_scan_provider.dart';
+import 'core/services/background_mode_service.dart';
+import 'core/services/background_scan_windows_worker.dart';
 import 'adapters/storage/secure_credentials_store.dart';
 // import 'ui/screens/platform_selection_screen.dart'; // OLD: Direct to platform selection.
 import 'ui/screens/account_selection_screen.dart'; // NEW: Check for saved accounts first
@@ -12,7 +14,7 @@ import 'ui/screens/account_selection_screen.dart'; // NEW: Check for saved accou
 /// Global RouteObserver for tracking navigation events
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 
-void main() async {
+void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize sqflite FFI for desktop platforms (Windows, Linux, macOS)
@@ -22,13 +24,32 @@ void main() async {
     Logger().i('Initialized sqflite FFI for desktop platform');
   }
 
+  // Detect background mode from command-line arguments
+  BackgroundModeService.initialize(args);
+
+  // If running in background mode (launched by Task Scheduler), execute scan and exit
+  if (BackgroundModeService.isBackgroundMode) {
+    Logger().i('Running in BACKGROUND MODE - executing background scan');
+
+    try {
+      final success = await BackgroundScanWindowsWorker.executeBackgroundScan();
+      Logger().i('Background scan completed: ${success ? "SUCCESS" : "FAILURE"}');
+
+      // Exit after background scan completes
+      exit(success ? 0 : 1);
+    } catch (e) {
+      Logger().e('Background scan failed with exception', error: e);
+      exit(1);
+    }
+  }
+
   // UNIFIED STORAGE FIX: Migrate legacy token storage to unified storage (one-time migration)
   // This ensures users with old SecureTokenStore accounts are migrated to SecureCredentialsStore
   try {
     final credStore = SecureCredentialsStore();
     await credStore.migrateFromLegacyTokenStore();
   } catch (e) {
-    // Migration failure shouldn't block app startup
+    // Migration failure should not block app startup
     Logger().w('Legacy token migration failed: $e');
   }
 
