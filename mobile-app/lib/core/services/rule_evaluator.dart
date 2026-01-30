@@ -75,7 +75,7 @@ class RuleEvaluator {
       matches.add(_matchesPatternList(message.from, conditions.from));
     }
     if (conditions.header.isNotEmpty) {
-      matches.add(_matchesHeaderList(message.headers, conditions.header));
+      matches.add(_matchesHeaderList(message, conditions.header));
     }
     if (conditions.subject.isNotEmpty) {
       matches.add(_matchesPatternList(message.subject, conditions.subject));
@@ -98,7 +98,7 @@ class RuleEvaluator {
 
   bool _matchesExceptions(EmailMessage message, RuleExceptions exceptions) {
     return _matchesPatternList(message.from, exceptions.from) ||
-        _matchesHeaderList(message.headers, exceptions.header) ||
+        _matchesHeaderList(message, exceptions.header) ||
         _matchesPatternList(message.subject, exceptions.subject) ||
         _matchesPatternList(message.body, exceptions.body);
   }
@@ -120,19 +120,20 @@ class RuleEvaluator {
   /// Match header patterns against email headers
   /// For "From" header, match against email address only (without "from:" prefix)
   /// For other headers, match against "key:value" format (e.g., "x-spam-status:yes")
-  bool _matchesHeaderList(Map<String, String> headers, List<String> patterns) {
+  bool _matchesHeaderList(EmailMessage message, List<String> patterns) {
     if (patterns.isEmpty) return false;
 
     return patterns.any((pattern) {
       try {
         final regex = compiler.compile(pattern);
         // Check each header
-        for (final entry in headers.entries) {
+        for (final entry in message.headers.entries) {
           String testValue;
 
           // For "From" header, match against email address only (not "from:email")
+          // Use message.from which has already been extracted from "Name <email>" format
           if (entry.key.toLowerCase() == 'from') {
-            testValue = entry.value.toLowerCase().trim();
+            testValue = message.from.toLowerCase().trim();
           } else {
             // For other headers, use "key:value" format
             testValue = '${entry.key}:${entry.value}'.toLowerCase().trim();
@@ -154,7 +155,7 @@ class RuleEvaluator {
       if (_matchesPattern(message.from, pattern)) return pattern;
     }
     for (final pattern in conditions.header) {
-      if (_matchesHeaderPattern(message.headers, pattern)) return pattern;
+      if (_matchesHeaderPattern(message, pattern)) return pattern;
     }
     for (final pattern in conditions.subject) {
       if (_matchesPattern(message.subject, pattern)) return pattern;
@@ -168,15 +169,16 @@ class RuleEvaluator {
   /// Check if a single header pattern matches any header
   /// For "From" header, match against email address only (without "from:" prefix)
   /// For other headers, match against "key:value" format
-  bool _matchesHeaderPattern(Map<String, String> headers, String pattern) {
+  bool _matchesHeaderPattern(EmailMessage message, String pattern) {
     try {
       final regex = compiler.compile(pattern);
-      for (final entry in headers.entries) {
+      for (final entry in message.headers.entries) {
         String testValue;
 
         // For "From" header, match against email address only (not "from:email")
+        // Use message.from which has already been extracted from "Name <email>" format
         if (entry.key.toLowerCase() == 'from') {
-          testValue = entry.value.toLowerCase().trim();
+          testValue = message.from.toLowerCase().trim();
         } else {
           // For other headers, use "key:value" format
           testValue = '${entry.key}:${entry.value}'.toLowerCase().trim();
