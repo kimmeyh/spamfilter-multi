@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../core/providers/email_scan_provider.dart' show EmailScanProvider, EmailActionResult, EmailActionType;
 
@@ -148,6 +150,66 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     );
   }
 
+  /// Export scan results to CSV file
+  Future<void> _exportResults(
+    BuildContext context,
+    EmailScanProvider scanProvider,
+  ) async {
+    final logger = Logger();
+
+    try {
+      // Generate CSV content
+      final csvContent = scanProvider.exportResultsToCSV();
+
+      // Get downloads directory (or documents on desktop)
+      final directory = Platform.isAndroid || Platform.isIOS
+          ? await getExternalStorageDirectory()
+          : await getApplicationDocumentsDirectory();
+
+      if (directory == null) {
+        throw Exception('Could not access storage directory');
+      }
+
+      // Create filename with timestamp
+      final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-').split('.')[0];
+      final filename = 'scan_results_$timestamp.csv';
+      final filePath = '${directory.path}/$filename';
+
+      // Write CSV to file
+      final file = File(filePath);
+      await file.writeAsString(csvContent);
+
+      logger.i('✅ Exported scan results to: $filePath');
+
+      if (context.mounted) {
+        // Show success message with file path
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Results exported to:\n$filePath'),
+            duration: const Duration(seconds: 5),
+            backgroundColor: Colors.green,
+            action: SnackBarAction(
+              label: 'OK',
+              textColor: Colors.white,
+              onPressed: () {},
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      logger.e('❌ Export failed: $e');
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Export failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   /// Filter results based on current filter state
   List<EmailActionResult> _getFilteredResults(List<EmailActionResult> allResults) {
     if (_filter == null) {
@@ -195,6 +257,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
+          IconButton(
+            tooltip: 'Export Results to CSV',
+            icon: const Icon(Icons.file_download),
+            onPressed: () => _exportResults(context, scanProvider),
+          ),
           if (scanProvider.hasActionsToRevert)
             IconButton(
               tooltip: 'Revert Last Run',
