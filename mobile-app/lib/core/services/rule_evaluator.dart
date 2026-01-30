@@ -118,17 +118,27 @@ class RuleEvaluator {
   }
 
   /// Match header patterns against email headers
-  /// Headers are checked in "key:value" format (e.g., "x-spam-status:yes")
+  /// For "From" header, match against email address only (without "from:" prefix)
+  /// For other headers, match against "key:value" format (e.g., "x-spam-status:yes")
   bool _matchesHeaderList(Map<String, String> headers, List<String> patterns) {
     if (patterns.isEmpty) return false;
 
     return patterns.any((pattern) {
       try {
         final regex = compiler.compile(pattern);
-        // Check each header in "key:value" format
+        // Check each header
         for (final entry in headers.entries) {
-          final headerLine = '${entry.key}:${entry.value}'.toLowerCase().trim();
-          if (regex.hasMatch(headerLine)) {
+          String testValue;
+
+          // For "From" header, match against email address only (not "from:email")
+          if (entry.key.toLowerCase() == 'from') {
+            testValue = entry.value.toLowerCase().trim();
+          } else {
+            // For other headers, use "key:value" format
+            testValue = '${entry.key}:${entry.value}'.toLowerCase().trim();
+          }
+
+          if (regex.hasMatch(testValue)) {
             return true;
           }
         }
@@ -156,12 +166,23 @@ class RuleEvaluator {
   }
 
   /// Check if a single header pattern matches any header
+  /// For "From" header, match against email address only (without "from:" prefix)
+  /// For other headers, match against "key:value" format
   bool _matchesHeaderPattern(Map<String, String> headers, String pattern) {
     try {
       final regex = compiler.compile(pattern);
       for (final entry in headers.entries) {
-        final headerLine = '${entry.key}:${entry.value}'.toLowerCase().trim();
-        if (regex.hasMatch(headerLine)) {
+        String testValue;
+
+        // For "From" header, match against email address only (not "from:email")
+        if (entry.key.toLowerCase() == 'from') {
+          testValue = entry.value.toLowerCase().trim();
+        } else {
+          // For other headers, use "key:value" format
+          testValue = '${entry.key}:${entry.value}'.toLowerCase().trim();
+        }
+
+        if (regex.hasMatch(testValue)) {
           return true;
         }
       }
