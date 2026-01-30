@@ -1,5 +1,6 @@
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -73,16 +74,29 @@ class SpamFilterApp extends StatelessWidget {
           create: (_) => EmailScanProvider(),
         ),
       ],
-      child: MaterialApp(
-        title: 'Spam Filter Mobile',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-          useMaterial3: true,
+      child: Shortcuts(
+        shortcuts: <LogicalKeySet, Intent>{
+          // Ctrl+Q to quit (desktop platforms)
+          if (Platform.isWindows || Platform.isLinux || Platform.isMacOS)
+            LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyQ):
+                const _QuitIntent(),
+        },
+        child: Actions(
+          actions: <Type, Action<Intent>>{
+            _QuitIntent: _QuitAction(),
+          },
+          child: MaterialApp(
+            title: 'Spam Filter Mobile',
+            theme: ThemeData(
+              colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+              useMaterial3: true,
+            ),
+            // Track navigation events for account list refresh
+            navigatorObservers: [routeObserver],
+            // Initialize rules after providers are created
+            home: const _AppInitializer(),
+          ),
         ),
-        // Track navigation events for account list refresh
-        navigatorObservers: [routeObserver],
-        // Initialize rules after providers are created
-        home: const _AppInitializer(),
       ),
     );
   }
@@ -155,5 +169,22 @@ class _AppInitializerState extends State<_AppInitializer> {
     // ✨ NEW: Once rules are loaded, show account selection screen
     // This checks for saved accounts and shows them, or navigates to platform selection if none
     return const AccountSelectionScreen();
+  }
+}
+
+/// Intent for quitting the application (desktop platforms only)
+class _QuitIntent extends Intent {
+  const _QuitIntent();
+}
+
+/// Action for quitting the application
+class _QuitAction extends Action<_QuitIntent> {
+  @override
+  Object? invoke(_QuitIntent intent) {
+    // Exit the application gracefully
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      SystemNavigator.pop();
+    }
+    return null;
   }
 }
