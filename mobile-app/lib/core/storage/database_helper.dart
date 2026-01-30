@@ -27,6 +27,7 @@ const int databaseVersion = 1;
 class DatabaseHelper implements RuleDatabaseProvider {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
+  static AppPaths? _appPaths;
   static final Logger _logger = Logger();
 
   factory DatabaseHelper() {
@@ -34,6 +35,11 @@ class DatabaseHelper implements RuleDatabaseProvider {
   }
 
   DatabaseHelper._internal();
+
+  /// Set AppPaths instance (must call before first database access)
+  void setAppPaths(AppPaths appPaths) {
+    _appPaths = appPaths;
+  }
 
   /// Get or initialize the database
   @override
@@ -44,10 +50,11 @@ class DatabaseHelper implements RuleDatabaseProvider {
 
   /// Initialize database and create tables
   Future<Database> _initializeDatabase() async {
-    // Use in-memory database for testing if databaseFactory is FFI (indicates test environment)
-    final dbPath = databaseFactory.toString().contains('ffi')
-        ? 'test_db.sqlite'
-        : getAppPaths().databaseFilePath;
+    if (_appPaths == null) {
+      throw StateError('AppPaths not set. Call setAppPaths() before accessing database.');
+    }
+
+    final dbPath = _appPaths!.databaseFilePath;
 
     _logger.i('Initializing database at: $dbPath');
 
@@ -234,6 +241,24 @@ class DatabaseHelper implements RuleDatabaseProvider {
     await db.execute('CREATE INDEX IF NOT EXISTS idx_unmatched_scan ON unmatched_emails(scan_result_id);');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_unmatched_processed ON unmatched_emails(processed);');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_unmatched_availability ON unmatched_emails(availability_status);');
+
+    // Background scan log table (tracks background scan execution history)
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS background_scan_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        account_id TEXT NOT NULL,
+        scheduled_time INTEGER NOT NULL,
+        actual_start_time INTEGER,
+        actual_end_time INTEGER,
+        status TEXT NOT NULL,
+        error_message TEXT,
+        emails_processed INTEGER DEFAULT 0,
+        unmatched_count INTEGER DEFAULT 0,
+        FOREIGN KEY (account_id) REFERENCES accounts(account_id)
+      );
+    ''');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_background_scan_log_account ON background_scan_log(account_id);');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_background_scan_log_scheduled ON background_scan_log(scheduled_time DESC);');
 
     _logger.i('Database tables created successfully');
   }

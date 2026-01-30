@@ -1,6 +1,8 @@
+import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'core/providers/rule_set_provider.dart';
 import 'core/providers/email_scan_provider.dart';
 import 'adapters/storage/secure_credentials_store.dart';
@@ -12,6 +14,13 @@ final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<v
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize sqflite FFI for desktop platforms (Windows, Linux, macOS)
+  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+    Logger().i('Initialized sqflite FFI for desktop platform');
+  }
 
   // UNIFIED STORAGE FIX: Migrate legacy token storage to unified storage (one-time migration)
   // This ensures users with old SecureTokenStore accounts are migrated to SecureCredentialsStore
