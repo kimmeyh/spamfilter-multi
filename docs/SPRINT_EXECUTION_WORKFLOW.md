@@ -121,6 +121,24 @@ This document describes the step-by-step process for executing sprints in the sp
   - **Reference**: §211-241 "Approval Gates - Only 4 checkpoint points"
   - **Additional Reference**: `docs/SPRINT_STOPPING_CRITERIA.md` for when to stop
 
+  **CRITICAL CLARIFICATION - When to Ask vs When to Execute**:
+
+  ✅ **Execute WITHOUT asking** (plan-approved):
+  - Implementing tasks exactly as described in sprint plan
+  - Making implementation decisions within scope (method signatures, class names, file structure)
+  - Refactoring code to support task requirements
+  - Adding tests to validate implementation
+  - Fixing bugs discovered during task execution
+  - Architectural decisions that were implied by task acceptance criteria
+
+  ❌ **STOP and ask** (not plan-approved):
+  - New requirements not in sprint plan
+  - Scope change expanding beyond task definition
+  - Blocked on external dependency or missing information
+  - Design decision with multiple equally-valid approaches AND task does not specify which
+
+  **Decision Rule**: If task acceptance criteria can be met with this decision, execute it. Only ask if acceptance criteria do not provide enough guidance.
+
 ---
 
 ### **Phase 2: Sprint Execution (Development)**

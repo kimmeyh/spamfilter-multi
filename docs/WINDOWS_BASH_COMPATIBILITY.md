@@ -61,6 +61,68 @@ Error: Exit code 1
 | **Windows flags** | `cd /d D:\path` | `/d` flag is cmd.exe only, not bash |
 | **Mixed separators** | `dir C:\path\*.dart` | `dir` is Windows cmd, not bash |
 | **Complex path operations** | `cd "D:\Data\Harold\..."` | Even quoted, Windows paths cause confusion |
+| **PowerShell cmdlets** | `Get-Process`, `Where-Object`, `Select-Object` | These are PowerShell only - see table below |
+
+### ❌ PowerShell Cmdlets in Bash (EXIT CODE 127)
+
+**Error Pattern**: `/usr/bin/bash: line 1: Get-Process: command not found`
+
+PowerShell cmdlets do NOT work in bash. Here is the translation guide:
+
+| PowerShell Cmdlet | Bash Error | Bash Equivalent |
+|-------------------|------------|-----------------|
+| `Get-Process` | "command not found" | `ps aux` |
+| `Where-Object {...}` | "command not found" | `grep`, `awk` |
+| `Select-Object Name, Id` | "command not found" | `awk '{print $2, $11}'` |
+| `Get-ChildItem` | "command not found" | `ls`, `find` |
+| `Set-Location` | "command not found" | `cd` |
+| `Copy-Item` | "command not found" | `cp` |
+| `Remove-Item` | "command not found" | `rm` |
+| `New-Item -ItemType Directory` | "command not found" | `mkdir` |
+| `New-Item -ItemType File` | "command not found" | `touch` |
+
+**Why This Happens**:
+- Bash tool uses WSL bash by default
+- PowerShell cmdlets are NOT available in bash
+- Must translate PowerShell cmdlets to Unix equivalents OR use PowerShell
+
+**Example Error**:
+```
+Bash(Get-Process | Where-Object {$_.ProcessName -like "*spam_filter*"} | Select-Object ProcessName, Id)
+
+Error: Exit code 127
+/usr/bin/bash: line 1: Get-Process: command not found
+/usr/bin/bash: line 1: Where-Object: command not found
+/usr/bin/bash: line 1: Select-Object: command not found
+```
+
+**Correct Approaches**:
+
+**Option 1: Use PowerShell (RECOMMENDED for Windows)**:
+```powershell
+# Find spam_filter processes
+Get-Process | Where-Object {$_.ProcessName -like "*spam_filter*"} | Select-Object ProcessName, Id
+```
+
+**Option 2: Translate to Bash**:
+```bash
+# Find spam_filter processes
+ps aux | grep 'spam_filter' | awk '{print $2, $11}'
+```
+
+**Translation Examples**:
+
+| Task | PowerShell | Bash |
+|------|------------|------|
+| **List processes** | `Get-Process` | `ps aux` |
+| **Filter processes** | `Where-Object {$_.Name -like "*pattern*"}` | `grep 'pattern'` |
+| **Select columns** | `Select-Object Name, Id` | `awk '{print $2, $11}'` |
+| **Kill process** | `Stop-Process -Name "name"` | `pkill name` or `kill PID` |
+| **List files** | `Get-ChildItem` | `ls` or `find` |
+| **Find files** | `Get-ChildItem -Recurse -Filter "*.dart"` | `find . -name "*.dart"` |
+| **Count items** | `(Get-ChildItem).Count` | `ls -1 \| wc -l` |
+| **Read file** | `Get-Content file.txt` | `cat file.txt` |
+| **Test path** | `Test-Path file.txt` | `[ -f file.txt ] && echo exists` |
 
 ---
 
@@ -182,6 +244,10 @@ Use this flowchart to decide which shell to use:
 
 ```
 START: Do I need to execute a shell command?
+│
+├─ Do I need to use PowerShell cmdlets (Get-Process, Where-Object, etc.)?
+│  └─ YES → Use PowerShell (cmdlets do NOT work in bash)
+│  └─ NO → Continue
 │
 ├─ Is it a GIT operation with no path changes?
 │  └─ YES → Use Bash (git status, git log, etc.)
