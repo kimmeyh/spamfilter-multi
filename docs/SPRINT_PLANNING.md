@@ -88,12 +88,22 @@ Each sprint is composed of **Cards** (GitHub issues) broken into **Tasks** assig
   - Acceptance decision for each Card (accept/reject/rework)
   - Release notes entries
   - Data for heuristic updates
+  - **MANDATORY**: Updated CHANGELOG.md entry
+  - **MANDATORY**: Updated ALL_SPRINTS_MASTER_PLAN.md
 - **Process**:
   1. Review each completed Card against acceptance criteria
   2. Verify tests passing and code quality acceptable
   3. Approve or request changes
   4. Collect feedback on model assignment accuracy
-  5. Prepare release notes
+  5. **Update CHANGELOG.md** (MANDATORY - see SPRINT_EXECUTION_WORKFLOW.md Phase 4.5.6)
+     - Add entry under `## [Unreleased]` section
+     - Format: `### YYYY-MM-DD` with sprint summary
+     - Include all user-facing changes from sprint
+  6. **Update ALL_SPRINTS_MASTER_PLAN.md** (MANDATORY - see SPRINT_EXECUTION_WORKFLOW.md Phase 4.5.6)
+     - Add actual duration vs estimated
+     - Record lessons learned
+     - Update future sprint dependencies
+  7. Prepare release notes (if needed for major releases)
 
 #### Phase 4: Retrospective (Post-Sprint)
 - **Duration**: 30 minutes - 1 hour
@@ -102,16 +112,22 @@ Each sprint is composed of **Cards** (GitHub issues) broken into **Tasks** assig
   - Completed Cards with feedback
   - Model assignment data from sprint
   - Issues encountered
+  - Updated CHANGELOG.md and ALL_SPRINTS_MASTER_PLAN.md (from Phase 3)
 - **Outputs**:
   - Updated `/claude/model_assignment_heuristics.json`
   - Lessons learned for next sprint
   - Process improvements identified
+  - SPRINT_N_RETROSPECTIVE.md document (if detailed review conducted)
 - **Process**:
   1. Review which model assignments were accurate (Haiku completed on first try? Sonnet needed help? Etc.)
   2. Identify failed assignments and update heuristics
   3. Discuss process improvements (was task breakdown too granular? Unclear requirements?)
   4. Plan improvements for next sprint
   5. User runs `/update-heuristics` command with outcomes
+  6. **Verify MANDATORY updates completed** (from Phase 3):
+     - [ ] CHANGELOG.md updated
+     - [ ] ALL_SPRINTS_MASTER_PLAN.md updated with actuals and lessons learned
+  7. Create detailed retrospective document if needed (see `docs/SPRINT_RETROSPECTIVE.md`)
 
 ---
 

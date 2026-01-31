@@ -50,8 +50,17 @@ During sprint execution, models work autonomously until one of these stopping cr
 1. Proceed to Phase 3.3 (Manual Testing in parallel)
 2. Once testing complete → Phase 4 (PR creation)
 3. User will conduct Phase 4.5 (Sprint Review) before merge
+4. **MANDATORY Sprint Completion Updates** (Phase 4.5.6 and Step 3 after merge):
+   - [ ] Update CHANGELOG.md with sprint entry under `## [Unreleased]`
+   - [ ] Update ALL_SPRINTS_MASTER_PLAN.md with:
+     - Actual duration vs estimated
+     - Lessons learned
+     - Future sprint dependency updates
+   - [ ] Create SPRINT_N_RETROSPECTIVE.md (if review conducted)
 
 **Timing**: This is the expected normal path. No user approval needed - this was pre-approved in sprint plan approval.
+
+**Documentation Updates**: The CHANGELOG.md and ALL_SPRINTS_MASTER_PLAN.md updates are MANDATORY and must be completed before PR approval. See `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 4.5.6 and "After Sprint Approval" Step 3 for details.
 
 ---
 

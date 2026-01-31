@@ -456,11 +456,32 @@ Before conducting sprint review, build and test the Windows desktop app:
   - Examples: Update SPRINT_EXECUTION_WORKFLOW.md, Create `.claude/model_assignment_heuristics.json`, etc.
   - User selects which changes to make
 
-- [ ] **4.5.6 Update Documentation**
+- [ ] **4.5.6 Update Documentation** (MANDATORY UPDATES)
+
+  **Process Improvements** (from retrospective feedback):
   - Apply agreed-upon improvements to relevant documents
   - Update version/date on modified documents
-  - Create new documents if needed (e.g., sprint retrospective)
+  - Create new documents if needed
   - Commit improvements to feature branch
+
+  **MANDATORY Sprint Completion Updates**:
+  - [ ] **Update CHANGELOG.md** (MANDATORY - see Step 3 in "After Sprint Approval")
+    - Add entry under `## [Unreleased]` section
+    - Format: `### YYYY-MM-DD` with sprint summary
+    - Include all user-facing changes from sprint
+    - Reference PR number: `(PR #NNN)`
+    - See CLAUDE.md § Changelog Policy for format
+
+  - [ ] **Update ALL_SPRINTS_MASTER_PLAN.md** (MANDATORY - see Step 3 in "After Sprint Approval")
+    - Navigate to Sprint N section
+    - Add completion metadata (estimated vs actual duration, lessons learned)
+    - Update future sprint dependencies if needed
+    - Update risk assessments based on lessons learned
+
+  - [ ] **Create Sprint Retrospective Document** (if review conducted)
+    - Create `docs/SPRINT_N_RETROSPECTIVE.md`
+    - Use template from `docs/SPRINT_RETROSPECTIVE.md`
+    - Record feedback, improvements, and action items
 
 - [ ] **4.5.7 Summarize Review Results**
   - Provide summary of review findings
@@ -663,11 +684,39 @@ Once user approves PR:
    - Verify all sprint cards show "Closed" status on GitHub
    - **Note**: GitHub auto-closes issues when PR is merged if PR mentions "Closes #N", but verify all are closed
 
-3. **Update Sprint Completion Documentation**
-   - If sprint review was conducted: Create `docs/SPRINT_N_RETROSPECTIVE.md`
-   - Record what went well, what could improve
-   - Document improvements implemented
-   - Link to PR for code artifacts
+3. **Update Sprint Completion Documentation** (MANDATORY)
+
+   - [ ] **Update CHANGELOG.md** (MANDATORY)
+     - Add entry under `## [Unreleased]` section
+     - Format: `### YYYY-MM-DD` with sprint summary
+     - Include all user-facing changes from sprint
+     - Reference PR number: `(PR #NNN)`
+     - See CLAUDE.md § Changelog Policy for format
+
+   - [ ] **Update ALL_SPRINTS_MASTER_PLAN.md** (MANDATORY)
+     - Navigate to Sprint N section
+     - Add completion metadata:
+       ```markdown
+       ### Sprint N: [Title] (COMPLETED - YYYY-MM-DD)
+       - Estimated Duration: Xh
+       - Actual Duration: Yh (Z% variance)
+       - Model Used: Haiku/Sonnet/Opus
+       - Tasks Completed: N/N
+       - Lessons Learned:
+         - [Key lesson 1]
+         - [Key lesson 2]
+       - Improvements Implemented:
+         - [Improvement 1] → Updated [file]
+       ```
+     - Update future sprint dependencies if needed
+     - Update risk assessments based on lessons learned
+
+   - [ ] **Create Sprint Retrospective Document** (if review conducted)
+     - Create `docs/SPRINT_N_RETROSPECTIVE.md`
+     - Record what went well, what could improve
+     - Document improvements implemented
+     - Link to PR for code artifacts
+     - See `docs/SPRINT_RETROSPECTIVE.md` for template
 
 4. **Clean up feature branch (OPTIONAL - User Managed)**
    - Branch cleanup is optional and user-managed
