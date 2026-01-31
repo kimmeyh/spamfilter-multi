@@ -1,14 +1,9 @@
 import 'package:workmanager/workmanager.dart';
 import 'package:logger/logger.dart';
-import 'package:provider/provider.dart';
 
-import '../providers/email_scan_provider.dart';
-import '../providers/rule_set_provider.dart';
 import '../storage/database_helper.dart';
 import '../storage/background_scan_log_store.dart';
 import '../storage/account_store.dart';
-import '../../adapters/storage/secure_credentials_store.dart';
-import 'email_scanner.dart';
 
 /// Background scan worker task identifier
 const String backgroundScanTaskId = 'background_scan_task';
@@ -29,7 +24,6 @@ class BackgroundScanWorker {
       final dbHelper = DatabaseHelper();
       final logStore = BackgroundScanLogStore(dbHelper);
       final accountStore = AccountStore(dbHelper);
-      final credStore = SecureCredentialsStore();
 
       // Get all enabled accounts
       final accounts = await accountStore.getAllAccounts();

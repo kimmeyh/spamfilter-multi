@@ -7,10 +7,8 @@ library;
 import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 
-import '../../adapters/email_providers/junk_folder_config.dart';
 import '../../core/models/email_message.dart';
 import '../../core/models/evaluation_result.dart';
-import '../../core/models/provider_email_identifier.dart';
 import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/unmatched_email_store.dart';
 

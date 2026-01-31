@@ -145,13 +145,6 @@ class GoogleAuthService {
   StreamSubscription<GoogleSignInAccount?>? _authSubscription;
   bool _isInitialized = false;
 
-  // Client ID injected via --dart-define
-  // Prefer WINDOWS_GMAIL_DESKTOP_CLIENT_ID on Windows, fallback to GMAIL_DESKTOP_CLIENT_ID
-  static const String _clientId = String.fromEnvironment(
-    'WINDOWS_GMAIL_DESKTOP_CLIENT_ID',
-    defaultValue: String.fromEnvironment('GMAIL_DESKTOP_CLIENT_ID', defaultValue: ''),
-  );
-
   GoogleAuthService({
     SecureCredentialsStore? credentialsStore,
     List<String>? scopes,

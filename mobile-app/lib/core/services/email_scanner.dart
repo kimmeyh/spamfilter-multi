@@ -1,8 +1,6 @@
 /// Email scanning service that connects IMAP adapters with rule evaluation
 library;
 
-import 'package:logger/logger.dart';
-
 import '../providers/email_scan_provider.dart';
 import '../providers/rule_set_provider.dart';
 import '../services/rule_evaluator.dart';
@@ -10,6 +8,7 @@ import '../services/pattern_compiler.dart';
 import '../storage/database_helper.dart';
 import '../storage/scan_result_store.dart';
 import '../storage/unmatched_email_store.dart';
+import '../utils/app_logger.dart';
 import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/email_providers/spam_filter_platform.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
@@ -21,7 +20,6 @@ class EmailScanner {
   final RuleSetProvider ruleSetProvider;
   final EmailScanProvider scanProvider;
   final SecureCredentialsStore _credStore = SecureCredentialsStore();
-  final Logger _logger = Logger();
 
   EmailScanner({
     required this.platformId,
@@ -77,14 +75,14 @@ class EmailScanner {
 
       // 5. Get rule evaluator
       // DIAGNOSTIC: Log rule and safe sender counts for troubleshooting
-      _logger.i('=== SCAN DIAGNOSTICS ===');
-      _logger.i('Rules loaded: ${ruleSetProvider.rules.rules.length}');
-      _logger.i('Safe senders loaded: ${ruleSetProvider.safeSenders.safeSenders.length}');
-      _logger.i('RuleSetProvider state: isLoading=${ruleSetProvider.isLoading}, isError=${ruleSetProvider.isError}, error=${ruleSetProvider.error}');
+      AppLogger.scan('=== SCAN DIAGNOSTICS ===');
+      AppLogger.rules('Rules loaded: ${ruleSetProvider.rules.rules.length}');
+      AppLogger.rules('Safe senders loaded: ${ruleSetProvider.safeSenders.safeSenders.length}');
+      AppLogger.debug('RuleSetProvider state: isLoading=${ruleSetProvider.isLoading}, isError=${ruleSetProvider.isError}, error=${ruleSetProvider.error}');
       if (ruleSetProvider.rules.rules.isNotEmpty) {
-        _logger.i('First rule: ${ruleSetProvider.rules.rules[0].name} (enabled=${ruleSetProvider.rules.rules[0].enabled})');
+        AppLogger.rules('First rule: ${ruleSetProvider.rules.rules[0].name} (enabled=${ruleSetProvider.rules.rules[0].enabled})');
       }
-      _logger.i('=======================');
+      AppLogger.scan('=======================');
 
       final evaluator = RuleEvaluator(
         ruleSet: ruleSetProvider.rules,
@@ -166,8 +164,8 @@ class EmailScanner {
         try {
           await platform.disconnect();
         } catch (e) {
-          // Log but don't throw
-          _logger.w('Disconnect error: $e');
+          // Log but do not throw
+          AppLogger.warning('Disconnect error: $e');
         }
       }
     }

@@ -1,6 +1,135 @@
 # Troubleshooting Guide
 
+**Purpose**: Document common issues and solutions for the spamfilter-multi project.
+
+**Audience**: All contributors (Claude Code models, developers)
+
+**Last Updated**: January 31, 2026
+
+## SPRINT EXECUTION Documentation
+
+**This is part of the SPRINT EXECUTION docs** - the authoritative set of sprint process documentation. Reference these documents throughout sprint work:
+
+| Document | Purpose | When to Use |
+|----------|---------|-------------|
+| **ALL_SPRINTS_MASTER_PLAN.md** | Master plan for all sprints | Before starting any sprint, after completing a sprint |
+| **SPRINT_PLANNING.md** | Sprint planning methodology | When planning a new sprint |
+| **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 0-4.5) |
+| **SPRINT_STOPPING_CRITERIA.md** | When/why to stop working | When uncertain if blocked or should continue |
+| **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 4.5) |
+| **TESTING_STRATEGY.md** | Testing approach and requirements | When writing or reviewing tests |
+| **QUALITY_STANDARDS.md** | Quality standards for code and documentation | When writing code or documentation |
+| **TROUBLESHOOTING.md** (this doc) | Common issues and solutions | When encountering errors or debugging |
+| **PERFORMANCE_BENCHMARKS.md** | Performance metrics and tracking | When measuring performance or comparing to baseline |
+| **ARCHITECTURE.md** | System architecture and design | When making architectural decisions or understanding codebase |
+| **CHANGELOG.md** | Project change history | When documenting sprint changes (mandatory sprint completion) |
+
+---
+
+## Overview
+
 Common issues and solutions for the Spam Filter application.
+
+---
+
+## Common Development Errors
+
+### Test Binding Not Initialized
+
+**Error Message**:
+```
+MissingPluginException: No implementation found for method ...
+```
+or
+```
+ServicesBinding.defaultBinaryMessenger was accessed before the binding was initialized.
+```
+
+**Cause**: Flutter test bindings not initialized before accessing platform channels or widgets.
+
+**Solution**: Add `TestWidgetsFlutterBinding.ensureInitialized()` at the start of your test.
+
+**Example**:
+```dart
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized(); // Add this line
+
+  test('should initialize database', () async {
+    final store = SafeSenderDatabaseStore();
+    await store.initialize();
+    expect(store.isInitialized, isTrue);
+  });
+}
+```
+
+**Pre-Flight Checklist**: Before creating tests, verify binding initialization is included in template.
+
+---
+
+### AppLogger Parameter Mismatch
+
+**Error Message**:
+```
+The argument type 'String' can't be assigned to the parameter type 'Object'
+```
+or
+```
+Too many positional arguments: 1 expected, but 2 found
+```
+
+**Cause**: AppLogger methods have different signatures. `warning()` takes only message, `error()` takes message + error + stackTrace.
+
+**API Reference**:
+```dart
+// ✅ CORRECT usage
+AppLogger.warning('This is a warning');
+AppLogger.error('Error occurred', error, stackTrace);
+AppLogger.debug('Debug message');
+AppLogger.scan('Scanning 150 emails');
+AppLogger.email('Fetched email from sender@example.com');
+
+// ❌ INCORRECT usage
+AppLogger.warning('Warning', someObject);  // warning() takes only 1 parameter
+AppLogger.error('Error');  // error() requires error and stackTrace parameters
+```
+
+**Solution**: Check AppLogger method signatures:
+- `warning(String message)` - 1 parameter
+- `error(String message, Object error, StackTrace stackTrace)` - 3 parameters
+- All other methods: `methodName(String message)` - 1 parameter
+
+---
+
+### Windows Path in Grep
+
+**Error Message**:
+```
+Grep pattern failed to match: D:\path\to\file
+```
+or
+```
+No matches found (expected matches on Windows)
+```
+
+**Cause**: Windows path separators (`\`) in grep patterns are interpreted as escape characters.
+
+**Solution**: Use forward slashes (`/`) in grep patterns, even on Windows. Grep/ripgrep normalizes paths internally.
+
+**Example**:
+```bash
+# ❌ INCORRECT: Backslashes cause issues
+grep -r "D:\\Data\\Harold\\github" .
+
+# ✅ CORRECT: Use forward slashes on all platforms
+grep -r "D:/Data/Harold/github" .
+
+# ✅ CORRECT: Use relative paths when possible
+grep -r "docs/SPRINT" .
+```
+
+**Cross-Platform Patterns**: Always use `/` (forward slash) in file paths for grep patterns, even on Windows. This works correctly on all platforms (Windows, Linux, macOS).
+
+---
 
 ## Build Issues
 
@@ -29,29 +158,31 @@ Common issues and solutions for the Spam Filter application.
 
 ## Authentication Issues
 
-### Gmail: "Sign in was cancelled" (Android)
+### Android Gmail Sign-In: "Sign in was cancelled"
 
-**Cause**: SHA-1 fingerprint not registered in Firebase Console.
+**Root Cause**: SHA-1 fingerprint not registered in Firebase Console.
 
-**Solution**: See [OAuth Setup - Android](OAUTH_SETUP.md#android-setup).
+**Fix**: Extract SHA-1 (`mobile-app/android/get_sha1.bat`), add to Firebase Console, download fresh `google-services.json`, rebuild.
 
-### Gmail: "client_secret is missing" (Windows)
+**Guide**: `ANDROID_GMAIL_SIGNIN_QUICK_START.md`
 
-**Cause**: `secrets.dev.json` missing or incomplete.
+### Windows Gmail OAuth: "client_secret is missing"
 
-**Solution**: See [OAuth Setup - Secrets](OAUTH_SETUP.md#secrets-configuration).
+**Root Cause**: `secrets.dev.json` missing or incomplete.
 
-### AOL: "TLS certificate validation failed"
+**Fix**: Ensure `WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET` is in `secrets.dev.json`, rebuild with `build-windows.ps1`.
 
-**Cause**: Norton Antivirus "Email Protection" intercepting TLS connections.
+**Guide**: `WINDOWS_GMAIL_OAUTH_SETUP.md`
 
-**Solution**:
-1. Open Norton Security
-2. Go to Settings → Security → Advanced
-3. Disable "Email Protection" or add exception for IMAP
-4. Retry connection
+### Norton Antivirus Blocks IMAP
 
-**Verify Fix**:
+**Symptom**: "TLS certificate validation failed" when adding AOL/Yahoo accounts.
+
+**Root Cause**: Norton's "Email Protection" intercepts TLS connections.
+
+**Fix**: Disable Norton Email Protection in Settings → Security → Advanced → Intrusion Prevention.
+
+**Verify**:
 ```powershell
 python -c "import socket, ssl; ctx = ssl.create_default_context(); s = ctx.wrap_socket(socket.socket(), server_hostname='imap.aol.com'); s.connect(('imap.aol.com', 993)); print('OK:', s.version())"
 ```
@@ -60,57 +191,188 @@ python -c "import socket, ssl; ctx = ssl.create_default_context(); s = ctx.wrap_
 
 ## Scanning Issues
 
-### Folder selection not working
+### Phase 3.2 Folder Selection Fixes (Issue #35)
 
-**Symptom**: Selected folders ignored, only INBOX scanned.
+**Status**: ✅ COMPLETE (Jan 5, 2026)
 
-**Cause**: Fixed in Issue #35 (Jan 2026). Ensure you have latest code.
+**Issue #35 - Folder Selection Not Scanning Selected Folders**:
+- **Problem**: Selecting non-Inbox folders (e.g., "Bulk Mail") still only scanned Inbox
+- **Root Cause**: Missing state management - `scanProvider.selectedFolders` was not being set
+- **Solution**: Added `_selectedFolders` field to EmailScanProvider, connected UI callback to `setSelectedFolders()`, pass to scanner
+- **Files Modified**: `email_scan_provider.dart`, `scan_progress_screen.dart`
 
-**Solution**: Pull latest changes and rebuild.
+**Navigation Fix - Auto-Navigation Race Condition**:
+- **Problem**: Returning to Scan Progress from Account Selection caused unwanted auto-navigation to Results
+- **Root Cause**: `_previousStatus` was null on first build but scan status was completed
+- **Solution**: Initialize `_previousStatus` in `initState()` before first build
+- **Files Modified**: `scan_progress_screen.dart`
 
-### "No rule" count keeps increasing
+### Phase 3.3 Enhancement Features (Issues #36, #37)
 
-**Symptom**: "No rule" bubble shows impossible values across scans.
+**Status**: ✅ COMPLETE (Jan 5-6, 2026)
 
-**Cause**: Fixed in Phase 3.3. Counter was not reset between scans.
+**Issue #36 - Progressive UI Updates**:
+- **Problem**: UI updated for every email, causing performance issues with large scans
+- **Solution**: Throttle updates to every 10 emails OR 3 seconds (whichever comes first)
+- **Implementation**: Added `_lastProgressNotification`, `_emailsSinceLastNotification` fields
+- **Files Modified**: `email_scan_provider.dart`
 
-**Solution**: Pull latest changes and rebuild.
+**Issue #37 - Dynamic Folder Discovery**:
+- **Problem**: Folder selection limited to hardcoded lists
+- **Solution**: Call `provider.listFolders()` dynamically, added search/filter UI, loading states
+- **Features**: Gmail label discovery via API, IMAP folder listing, "Recommended" badges
+- **Files Modified**: `folder_selection_screen.dart`
 
-### Gmail emails not matching rules
+**Gmail Token Refresh Fix**:
+- **Problem**: 401 errors when selecting folders with expired OAuth tokens
+- **Solution**: Use `GoogleAuthService.getValidAccessToken()` instead of stored tokens directly
+- **Impact**: Seamless token refresh, no manual re-authentication needed
 
-**Symptom**: Rules work for AOL but not Gmail.
+**Gmail Header Format Fix**:
+- **Problem**: Gmail emails not matching rules due to "Name <email>" format vs just "email"
+- **Solution**: Added `_extractEmail()` helper to parse email from header format
+- **Files Modified**: `gmail_api_adapter.dart`
 
-**Cause**: Gmail returns "Name <email>" format, rules expect just "email".
+**Counter Accumulation Bug Fix**:
+- **Problem**: "No Rules" count accumulated across scans (showed impossible values)
+- **Solution**: Reset `_noRuleCount = 0` in `startScan()` method
+- **Files Modified**: `email_scan_provider.dart`
 
-**Solution**: Fixed in Phase 3.3. The `_extractEmail()` helper now parses the format.
+**Claude Code MCP Tools**:
+- Custom MCP server for email rule testing (`scripts/email-rule-tester-mcp/`)
+- YAML validation script (`scripts/validate-yaml-rules.ps1`)
+- Regex pattern tester (`scripts/test-regex-patterns.ps1`)
+- 10 custom skills in `.claude/skills.json`
+- 4 automated hooks in `.claude/hooks.json`
+
+**Build Script Enhancements**:
+- `-StartEmulator`: Auto-start Android emulator if none running
+- `-EmulatorName`: Specify which AVD to launch
+- `-SkipUninstall`: Preserve saved accounts during debug builds
 
 ---
 
 ## UI Issues
 
-### Auto-navigation to Results when returning to Scan Progress
+### Phase 3.1 UI/UX Enhancements (Issues #32-#34)
 
-**Cause**: Race condition in status change detection. Fixed in Issue #39.
+**Status**: ✅ COMPLETE (Jan 4, 2026)
 
-**Solution**: Pull latest changes and rebuild.
+**Issue #32 - Full Scan Mode and Persistent Selection**:
+- Added `ScanMode.fullScan` (4th mode) - permanent delete/move operations
+- Added persistent "Scan Mode" button on Scan Progress screen
+- Removed scan mode pop-up from account setup flow (default to readonly)
+- Added warning dialog for Full Scan mode (requires user confirmation)
+- Updated `recordResult()` to distinguish revertible vs permanent actions
+- Files Modified: `email_scan_provider.dart`, `account_setup_screen.dart`, `scan_progress_screen.dart`
 
-### Account cards flicker on Account Selection screen
+**Issue #33 - Scan Progress Screen UI Redesign**:
+- Removed redundant progress bar and processed count text
+- Updated to 7-bubble row: Found (Blue), Processed (Purple), Deleted (Red), Moved (Orange), Safe (Green), No rule (Grey), Errors (Dark Red)
+- Added auto-navigation to Results screen when scan completes
+- Re-enabled buttons after scan completes (idle or completed status)
+- Added scan mode to header: "Ready to scan - <mode>" / "Scan complete - <mode>"
+- Files Modified: `scan_progress_screen.dart`
 
-**Cause**: FutureBuilder recreating futures on rebuild. Fixed Dec 2025.
+**Issue #34 - Results Screen UI Redesign**:
+- Added `accountEmail` parameter (required) to show email in title
+- Updated title format: "Results - <email> - <provider>"
+- Updated summary format: "Summary - <mode>"
+- Updated bubble row to match Scan Progress (7 bubbles with exact same colors)
+- Made accountEmail required in ScanProgressScreen
+- Files Modified: `results_display_screen.dart`, `scan_progress_screen.dart`
 
-**Solution**: Account data is now cached. Pull latest changes.
+**Bubble Counts Fix**:
+- **Problem**: In Read-Only mode, bubbles showed "Deleted: 0" even when rules evaluated emails for deletion
+- **Solution**: Changed `recordResult()` to always increment counts based on rule evaluation (proposed actions), not just executed actions
+- **Impact**: All scan modes now show what WOULD happen, making Read-Only mode useful for previewing results
+- Files Modified: `email_scan_provider.dart`, `email_scan_provider_test.dart` (5 tests updated)
+
+**No Rule Tracking**:
+- Added `_noRuleCount` field and getter to EmailScanProvider
+- Added "No rule" bubble (grey #757575) between "Safe" and "Errors"
+- Tracks emails that did not match any rules (for future rule creation)
+- Increments when `action == EmailActionType.none`
+- Files Modified: `email_scan_provider.dart`, `scan_progress_screen.dart`, `results_display_screen.dart`
+
+**Test Results**: 122/122 tests passing (13 skipped integration tests requiring credentials)
+
+### Results Screen Navigation Not Returning to Account Selection
+
+**Symptom**: "Back to Accounts" button on Results Display screen returned to Scan Progress screen instead of Account Selection screen.
+
+**Root Cause**: Navigation stack was Account Selection → Scan Progress → Results Display. Using `Navigator.pop()` only popped one level back to Scan Progress.
+
+**Fix Applied (Jan 1, 2026)**: Changed navigation to use `Navigator.popUntil(context, (route) => route.isFirst)` to pop all screens until reaching Account Selection screen.
+
+**Files Modified**: `mobile-app/lib/ui/screens/results_display_screen.dart`
+
+**Impact**: "Back to Accounts" button now correctly navigates directly to Account Selection screen.
+
+### Scan Progress Status Updates Delayed
+
+**Symptom**: After clicking "Start Live Scan" and confirming scan options, screen continued to show "Ready to scan" and "No results yet" until results actually started appearing.
+
+**Root Cause**: Status only changed when `EmailScanner.scanInbox()` called `scanProvider.startScan()`, which happened after fetching emails from server.
+
+**Fix Applied (Jan 1, 2026)**: Added immediate call to `scanProvider.startScan(totalEmails: 0)` right after dialog closes, before scanner runs.
+
+**Files Modified**: `mobile-app/lib/ui/screens/scan_progress_screen.dart`
+
+**Impact**: UI immediately updates to show "Scanning in progress" and replaces "No results yet" with progress indicator.
+
+### Account Loading Flicker on Account Selection Screen
+
+**Symptom**: When returning to Account Selection screen, account cards briefly flicker showing loading state (spinner) before displaying full account details.
+
+**Root Cause**: FutureBuilder creates a new Future on every widget rebuild, causing it to show `ConnectionState.waiting` state even for already-loaded accounts.
+
+**Fix Applied (Jan 1, 2026)**: Implemented caching system in `AccountSelectionScreen`:
+- Added `Map<String, AccountDisplayData?> _accountDataCache` to store loaded account data
+- Modified `_loadAccountDisplayData()` to return cached data immediately if available
+- Background refresh via `_refreshAccountDataInBackground()` updates cache only when data changes
+- Removed loading spinner state from FutureBuilder (always shows data immediately)
+- Cache cleared when accounts are deleted
+
+**Files Modified**: `mobile-app/lib/ui/screens/account_selection_screen.dart`
+
+**Impact**: Accounts appear instantly when returning to screen, no visual flicker, still refreshes data in background to catch credential changes.
+
+**Applies to**: All account types (Gmail OAuth, AOL IMAP, Yahoo IMAP)
+
+### Account Selection Navigation and Refresh Issues
+
+**Symptom**: After completing a scan and clicking "Back to Accounts" from Results Display screen, navigation went to Platform Selection instead of Account Selection, and account list did not refresh to show newly added accounts.
+
+**Root Cause**: Delete handler used `Navigator.pushReplacement` to replace Account Selection with Platform Selection when last account was deleted (breaking navigation stack), and Account Selection screen only refreshed accounts on 2-second timer (not on navigation events).
+
+**Fix Applied (Jan 2, 2026)**:
+- Removed pushReplacement navigation from delete handler - Account Selection now stays in navigation stack and shows built-in "Add Account" UI when empty
+- Added RouteObserver and RouteAware mixin to detect navigation events and refresh account list immediately when screen becomes visible
+- Added global RouteObserver in main.dart
+- Account Selection implements RouteAware mixin with didPopNext() callback
+
+**Files Modified**: `mobile-app/lib/main.dart`, `mobile-app/lib/ui/screens/account_selection_screen.dart`
+
+**Impact**: "Back to Accounts" correctly navigates to Account Selection (not Platform Selection), account list refreshes immediately when navigating back (no delay or empty state), navigation stack preserved correctly for all account deletion scenarios.
+
+**Applies to**: All account types (Gmail OAuth, AOL IMAP, Yahoo IMAP)
 
 ---
 
 ## Git Issues
 
-### Flutter source files not tracked
+### Flutter Source Files Not Tracked by Git
 
-**Symptom**: Files in `mobile-app/lib/` do not show in git status.
+**Symptom**: Dart files in `mobile-app/lib/` do not show as modified in git status or VSCode Source Control.
 
-**Cause**: Root `.gitignore` had overly broad `lib/` exclusion.
+**Root Cause**: Root `.gitignore` had overly broad `lib/` exclusion (intended for Python lib directories) that also excluded Flutter's `mobile-app/lib/` source code directory.
 
-**Solution**: Fixed Dec 2025. The exclusion is now specific to `Archive/desktop-python/lib/`.
+**Fix Applied (Dec 30, 2025)**: Changed line 81-82 in root `.gitignore` from `lib/` to `Archive/desktop-python/lib/` to only exclude Python package directories.
+
+**Impact**: All Flutter/Dart source code in `mobile-app/lib/` is now properly tracked by git.
+
+**Note**: This was a mixed-repository issue where Python gitignore rules conflicted with Flutter project structure.
 
 ---
 

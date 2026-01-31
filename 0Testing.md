@@ -1,6 +1,9 @@
 ***BELOW IS NOT FOR CLAUDE CODE USE***
 ***BELOW IS NOT FOR Github Copilot USE***
 
+Common request for Claude Code for assisting with testing:
+Can you build and run the Windows Desktop App using D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts\build-windows.ps1 so I can do additional testing.  Please monitor "adb logcat" and other testing logs during testing.  When I provide feedback analyze my feedback and logs for any issues and errors; address as needed.
+
 # Run flutter unit tests
 cd d:\Data\Harold\github\spamfilter-multi\mobile-app; flutter test
 

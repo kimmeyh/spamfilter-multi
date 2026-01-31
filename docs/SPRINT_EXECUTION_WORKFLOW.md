@@ -2,6 +2,24 @@
 
 This document describes the step-by-step process for executing sprints in the spamfilter-multi project, based on actual experience from Sprint 1.
 
+## SPRINT EXECUTION Documentation
+
+**This is part of the SPRINT EXECUTION docs** - the authoritative set of sprint process documentation. Reference these documents throughout sprint work:
+
+| Document | Purpose | When to Use |
+|----------|---------|-------------|
+| **ALL_SPRINTS_MASTER_PLAN.md** | Master plan for all sprints | Before starting any sprint, after completing a sprint |
+| **SPRINT_PLANNING.md** | Sprint planning methodology | When planning a new sprint |
+| **SPRINT_EXECUTION_WORKFLOW.md** (this doc) | Step-by-step execution checklist | During sprint execution (Phases 0-4.5) |
+| **SPRINT_STOPPING_CRITERIA.md** | When/why to stop working | When uncertain if blocked or should continue |
+| **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 4.5) |
+| **TESTING_STRATEGY.md** | Testing approach and requirements | When writing or reviewing tests |
+| **QUALITY_STANDARDS.md** | Quality standards for code and documentation | When writing code or documentation |
+| **TROUBLESHOOTING.md** | Common issues and solutions | When encountering errors or debugging |
+| **PERFORMANCE_BENCHMARKS.md** | Performance metrics and tracking | When measuring performance or comparing to baseline |
+| **ARCHITECTURE.md** | System architecture and design | When making architectural decisions or understanding codebase |
+| **CHANGELOG.md** | Project change history | When documenting sprint changes (mandatory sprint completion) |
+
 ---
 
 ## ⚠️ CRITICAL REMINDER: Phase 4.5 Sprint Review is MANDATORY
@@ -23,12 +41,13 @@ This document describes the step-by-step process for executing sprints in the sp
 
 ### **Phase 0: Sprint Pre-Kickoff** ⚠️ CRITICAL PREREQUISITE
 
-⚠️ **BEFORE BEGINNING PHASE 0**, read `docs/PHASE_3_5_MASTER_PLAN.md` (very first step):
-- Locate Sprint N section in PHASE_3_5_MASTER_PLAN.md
-- Review what is planned for this sprint
-- Check for retrospective notes from previous sprint
-- Update master plan with previous sprint's actual vs estimated duration
-- **Purpose**: Align on sprint scope before starting Phase 0 verification
+- [ ] **0.0.1 Cache Sprint Context** (Optimization)
+  - Read ALL_SPRINTS_MASTER_PLAN.md ONCE
+  - Cache in memory:
+    - Sprint N (current) details: Objective, tasks, acceptance criteria, risks
+    - Sprint N-1 (previous) details: For summary creation in Phase 1.2.1
+  - No re-reading needed until Phase 4.5.6 (updates)
+  - **Efficiency Gain**: Reduces file reads from 3 to 1 per sprint
 
 ---
 
@@ -68,10 +87,37 @@ This document describes the step-by-step process for executing sprints in the sp
   - Pattern: Increment by 1
 
 - [ ] **1.2 Review Sprint Plan**
-  - Read comprehensive plan document (e.g., `Phase 3.5 Planning` document)
-  - Identify Sprint 2 in the plan
+  - Read ALL_SPRINTS_MASTER_PLAN.md
+  - Identify Sprint N in "Current Sprint" or "Next Sprint" section
   - Verify scope, tasks, and acceptance criteria
-  - Note any changes needed based on Sprint 1 learnings
+  - Note any changes needed based on previous sprint learnings
+
+- [ ] **1.2.1 Create Sprint Summary for Previous Sprint** (Background Process - MANDATORY)
+  - **When**: During planning for Sprint N+1, create SPRINT_<N>_SUMMARY.md for completed Sprint N
+  - **Purpose**: Archive historical sprint details from ALL_SPRINTS_MASTER_PLAN.md
+  - **Template**: Use structure from SPRINT_RETROSPECTIVE.md or previous SPRINT_<N>_SUMMARY.md files
+  - **Content Sources** (in priority order):
+    1. SPRINT_<N-1>_RETROSPECTIVE.md (if exists from Phase 4.5.6)
+    2. CHANGELOG.md (Sprint N-1 entries)
+    3. Git history (PR description, commit messages)
+    4. GitHub issues (closed sprint issues)
+
+    **Do NOT extract from ALL_SPRINTS_MASTER_PLAN.md** - it was already cleaned up in previous sprint.
+  - **Content to Include**:
+    - Sprint objective and scope
+    - Tasks completed (A, B, C, etc.)
+    - Deliverables produced
+    - Estimated vs actual duration
+    - Key decisions made
+    - Lessons learned
+    - Process improvements implemented
+    - Link to PR and GitHub issues
+  - **Update ALL_SPRINTS_MASTER_PLAN.md**: Add entry to "Past Sprint Summary" table
+  - **Example Entry**:
+    ```markdown
+    | N | SPRINT_N_SUMMARY.md | ✅ Complete | ~Xh (MMM DD-DD, 2026) |
+    ```
+  - This keeps ALL_SPRINTS_MASTER_PLAN.md focused on current/future work while preserving history
 
 - [ ] **1.3 Branch Management**
   - Check if repository is in a PR branch
@@ -103,10 +149,18 @@ This document describes the step-by-step process for executing sprints in the sp
   - All sprint cards created, linked, and in OPEN state
   - No blocking issues or dependencies unresolved
   - Model assignments reviewed and finalized
-  - Acceptance criteria clear and testable
+  - Acceptance criteria clear, testable, and QUANTIFIABLE (see SPRINT_PLANNING.md Best Practices)
+  - **VERIFY**: Sprint plan acceptance criteria match GitHub issue criteria EXACTLY (copy from issues)
+  - **VERIFY**: All acceptance criteria are quantifiable and measurable (no subjective terms)
   - Dependencies on previous sprints verified as complete
+  - Risk assessments documented for all tasks (even if "Low - maintenance work")
+  - Effort estimates included for all tasks (with 20% buffer for manual testing tasks)
 
 - [ ] **1.7 CRITICAL: Plan Approval = Task Execution Pre-Approval**
+  - **SUGGESTION**: User may optionally run `/compact` before approving plan to refresh context for execution
+    - **When Helpful**: After long planning discussions (>30K tokens used)
+    - **Benefits**: Fresh context for Phases 2-4.5, all plan details preserved in ALL_SPRINTS_MASTER_PLAN.md + GitHub issues
+    - **Not Required**: Optional optimization, not mandatory
   - User reviews complete sprint plan (Tasks A, B, C, etc.)
   - User approves Phase 1 sprint plan
   - **Plan Approval = Pre-Approval for ALL Tasks A-Z through Phase 4.5 (Sprint Review)**
@@ -149,19 +203,45 @@ This document describes the step-by-step process for executing sprints in the sp
   - Sonnet available for escalation if needed
   - Opus available for complex issues
 
+- [ ] **2.1.1 Review Architecture Guidance** (For Complex Tasks)
+  - For tasks involving new components or architectural changes:
+    - Read `docs/ARCHITECTURE.md` for system design patterns
+    - Follow existing architectural principles
+    - Document significant deviations in PR description
+
+- [ ] **2.1.2 Review Performance Benchmarks** (For Performance-Sensitive Tasks)
+  - For tasks affecting performance (database, scanning, UI rendering):
+    - Read `docs/PERFORMANCE_BENCHMARKS.md` for baseline metrics
+    - Benchmark before and after changes
+    - Document performance impact in PR description
+
 - [ ] **2.2 Testing Cycle (Per Task)**
   - **Compile**: Build the code
     - Command: `flutter build windows` or `flutter build apk` (as needed)
   - **Run Tests**: Execute test suite
     - Command: `flutter test`
     - Expected: All tests pass
+    - **Strategic Test Runs** (Efficiency Tip): Only run tests AFTER fixing identified issue, not speculatively during investigation
+      - Example: Run analyzer → identify 5 warnings → fix all 5 → THEN run tests (not after each fix)
+      - Saves time and reduces context switching
   - **Code Analysis**: Check for issues
     - Command: `flutter analyze`
     - Expected: Zero errors, acceptable warnings
+    - **Batch Similar Operations** (Efficiency Tip): Collect all warnings of same type first, then fix in one pass
+      - Example: Collect all "unused import" warnings → fix all imports in one commit
+      - Example: Collect all "unused field" warnings → remove all unused fields in one commit
+      - Reduces context switching and ensures consistency
   - **Fix Bugs**: Address any failures
     - Fix code issues
     - Update or add tests as needed
   - **Repeat**: Re-run compile/test cycle until all pass
+
+- [ ] **2.2.1 Create Test Files**
+  - For each new feature, create corresponding test file
+  - Unit tests: `test/unit/<feature>_test.dart`
+  - Integration tests: `test/integration/<feature>_integration_test.dart`
+  - Widget tests: `test/widgets/<screen>_test.dart`
+  - Minimum coverage: 80% for new code
 
 - [ ] **2.3 Commit During Development**
   - Make focused commits per logical change
@@ -173,7 +253,25 @@ This document describes the step-by-step process for executing sprints in the sp
   - Update GitHub issue comments with task progress
   - Note blockers immediately
   - Document decisions made during implementation
-  - Record actual time spent (estimate vs. actual)
+  - **Record actual time spent** (estimate vs. actual):
+    - Note start time for each task
+    - Note end time for each task
+    - Calculate actual duration
+    - Compare to estimated duration for calibration
+    - Track Claude Code effort time (visible in usage stats)
+  - **Document Risk Mitigations**:
+    - For each task with Medium or High risk, note mitigation actions taken
+    - Example: "Task B risk mitigation: Reviewed API design, validated with existing patterns"
+    - Example: "Task C risk mitigation: Benchmarked performance before changes (baseline: 45ms avg)"
+  - **Narrate Investigations**:
+    - When running diagnostic commands (analyze, tests), explain what you are checking and why
+    - Share findings immediately rather than silently making fixes
+    - Example: "I'm checking git status to see which files are tracked... Interesting - the lib/ files are not showing up."
+  - **Mid-Sprint Checkpoints**:
+    - After ~50% task completion, offer brief summary of progress
+    - Do NOT ask questions unless critical design or execution clarifications are essential
+    - Example: "Completed Tasks A-B (3/5 tasks). Task C in progress. ETA: 1h remaining."
+    - Keep user informed without interrupting flow
 
 ---
 
@@ -191,6 +289,49 @@ This document describes the step-by-step process for executing sprints in the sp
   - Check code analysis: `flutter analyze`
   - Ensure zero errors introduced
   - **(Optional) Efficiency Checkpoint**: If context usage > 60%, suggest user run `/compact` before Phase 4 to refresh context for final PR review phase
+
+- [ ] **3.2.1 Validate Risk Mitigations** (MANDATORY - End-of-Sprint Test Gate)
+  - **ALWAYS run full flutter test** before final commit, even for non-code tasks
+  - For each high-impact task (Medium/High risk), verify mitigations were executed:
+    - **Example - AppLogger migration**: Run app and check logs appear correctly
+    - **Example - Testing task**: Generate coverage report to verify coverage metrics
+    - **Example - Monitoring script**: Execute script on test suite to verify it works
+    - **Example - API changes**: Verify all callers updated and tests cover new behavior
+  - **Test New Tools** (MANDATORY when creating test tooling):
+    - When creating scripts or tools (like monitor-tests.ps1, validation scripts), validate they work on actual data
+    - Do NOT commit tools without running them on real test suite/data
+    - Example: Run monitor-tests.ps1 on full test suite to verify output format and accuracy
+    - Example: Run YAML validation script on actual rules.yaml to verify it catches errors
+  - **Tool Documentation Requirement** (MANDATORY for new scripts/tools):
+    - Include example output or demo in comments/README for all new tools
+    - Show what success looks like and what failure looks like
+    - Example: monitor-tests.ps1 should include sample output in file header comments
+    - Example: YAML validation script should show example error messages in README
+    - Makes tools self-documenting and easier to use
+  - **Cross-Platform Validation** (MANDATORY for scripts/commands):
+    - Test scripts/commands on both PowerShell and WSL before committing
+    - Verify path separators work cross-platform (use `/` not `\\` in grep patterns)
+    - Test PowerShell scripts on Windows PowerShell 5.1 AND PowerShell 7+
+    - Document platform-specific requirements in script comments
+    - Example: Test monitor-tests.ps1 on both PowerShell versions
+    - Example: Verify grep patterns work with forward slashes on Windows
+  - Document validation results:
+    - "✅ Task B risk mitigation validated: App runs, logs appear in console with correct keywords"
+    - "✅ Task C risk mitigation validated: Coverage report generated, shows 85% coverage"
+    - "✅ Task D tool validation: monitor-tests.ps1 executed on test suite, correctly identified 3 slow tests"
+    - "✅ Task D cross-platform validation: Script tested on PowerShell 5.1 and PowerShell 7, both work correctly"
+  - If validation fails, fix issues before proceeding to Phase 4
+
+- [ ] **3.3.1 Monitor Test Execution (Optional - For Debugging)**
+  - Use parallel test monitoring to track long-running tests
+  - Script: `mobile-app/scripts/monitor-tests.ps1`
+  - Usage: `.\monitor-tests.ps1 -OutputFile test-output.txt`
+  - Features:
+    - Real-time test progress monitoring
+    - Identifies slow tests
+    - Logs test execution times
+    - Useful for debugging test hangs or performance issues
+  - When to use: Tests taking > 2 minutes, or investigating test failures
 
 ---
 
@@ -304,6 +445,28 @@ After Phase 3.2 all tests pass, context can be compacted for efficiency:
   - Ensure all commits are local and staged
   - Verify git status is clean
   - Double-check all tests pass
+  - **Single PR Push** (Efficiency Tip for Maintenance Sprints):
+    - For maintenance sprints (documentation, testing, cleanup), push all work at end
+    - Do NOT push incrementally unless user explicitly requests interim review
+    - Reduces PR update overhead and keeps git history clean
+    - Exception: Feature sprints may benefit from incremental pushes for user testing
+  - **Single-Pass Documentation Updates** (Efficiency Tip):
+    - When updating workflow docs, read once and plan all changes before editing
+    - Collect all required updates in a list
+    - Make all edits in one pass
+    - Reduces file reads and ensures consistency
+
+- [ ] **4.1.1 Risk Review Gate** (MANDATORY before push to remote)
+  - **Review all sprint risks** documented in sprint plan
+  - **Confirm mitigations executed** for each risk:
+    - Low risk tasks: Quick verification (tests passed, no regressions)
+    - Medium risk tasks: Detailed validation (risk mitigation steps from Phase 3.2.1)
+    - High risk tasks: Comprehensive validation (all acceptance criteria met, mitigations proven)
+  - **Document risk review summary**:
+    - Example: "Risk review complete: 3 tasks reviewed, all mitigations executed and validated"
+    - Example: "Task A (Low risk): Tests passed. Task B (Medium risk): API design reviewed and validated. Task C (High risk): Performance benchmarked (45ms→38ms, target met)"
+  - **No user approval needed** - this is a Claude-led review to ensure quality
+  - If any risk mitigation failed or incomplete, fix before pushing to remote
 
 - [ ] **4.2 Push to Remote**
   - Command: `git push origin feature/YYYYMMDD_Sprint_N`
@@ -431,16 +594,55 @@ Before conducting sprint review, build and test the Windows desktop app:
   - Examples: Update SPRINT_EXECUTION_WORKFLOW.md, Create `.claude/model_assignment_heuristics.json`, etc.
   - User selects which changes to make
 
-- [ ] **4.5.6 Update Documentation**
+- [ ] **4.5.6 Update Documentation** (MANDATORY UPDATES)
+
+  **Process Improvements** (from retrospective feedback):
   - Apply agreed-upon improvements to relevant documents
   - Update version/date on modified documents
-  - Create new documents if needed (e.g., sprint retrospective)
+  - Create new documents if needed
   - Commit improvements to feature branch
+
+  **MANDATORY Sprint Completion Updates**:
+  - [ ] **Update CHANGELOG.md** (MANDATORY - see Step 3 in "After Sprint Approval")
+    - Add entry under `## [Unreleased]` section
+    - Format: `### YYYY-MM-DD` with sprint summary
+    - Include all user-facing changes from sprint
+    - Reference PR number: `(PR #NNN)`
+    - **Format Reference**: See CLAUDE.md § Changelog Policy for detailed format
+
+  - [ ] **Update ALL_SPRINTS_MASTER_PLAN.md** (MANDATORY - see Step 3 in "After Sprint Approval")
+    - Navigate to Sprint N section
+    - Add completion metadata (estimated vs actual duration, lessons learned)
+    - Update future sprint dependencies if needed
+    - Update risk assessments based on lessons learned
+
+  - [ ] **Create Sprint Retrospective Document** (if review conducted)
+    - Create `docs/SPRINT_N_RETROSPECTIVE.md`
+    - Use template from `docs/SPRINT_RETROSPECTIVE.md`
+    - Record feedback, improvements, and action items
 
 - [ ] **4.5.7 Summarize Review Results**
   - Provide summary of review findings
   - List which improvements were selected for implementation
   - Confirm PR is ready for user approval
+
+- [ ] **4.5.8 Proactive Next Steps** (MANDATORY after sprint completion)
+  - After sprint completion, present 3 options to user:
+    1. **Sprint Review**: Conduct formal retrospective (if not already done in 4.5)
+    2. **Start Next Sprint**: Begin planning and execution of next sprint from ALL_SPRINTS_MASTER_PLAN.md
+    3. **Ad-hoc Work**: Work on unplanned tasks or investigations outside sprint framework
+  - **Template**:
+    ```
+    Sprint N complete! What would you like to do next?
+
+    1. 📋 Sprint Review (if not already conducted)
+    2. ➡️ Start Sprint N+1 (see ALL_SPRINTS_MASTER_PLAN.md for details)
+    3. 🔧 Ad-hoc work (tasks outside sprint framework)
+
+    Please let me know your preference.
+    ```
+  - Do NOT assume what user wants - always present options
+  - This keeps momentum and clarifies next steps
 
 ---
 
@@ -638,11 +840,39 @@ Once user approves PR:
    - Verify all sprint cards show "Closed" status on GitHub
    - **Note**: GitHub auto-closes issues when PR is merged if PR mentions "Closes #N", but verify all are closed
 
-3. **Update Sprint Completion Documentation**
-   - If sprint review was conducted: Create `docs/SPRINT_N_RETROSPECTIVE.md`
-   - Record what went well, what could improve
-   - Document improvements implemented
-   - Link to PR for code artifacts
+3. **Update Sprint Completion Documentation** (MANDATORY)
+
+   - [ ] **Update CHANGELOG.md** (MANDATORY)
+     - Add entry under `## [Unreleased]` section
+     - Format: `### YYYY-MM-DD` with sprint summary
+     - Include all user-facing changes from sprint
+     - Reference PR number: `(PR #NNN)`
+     - See CLAUDE.md § Changelog Policy for format
+
+   - [ ] **Update ALL_SPRINTS_MASTER_PLAN.md** (MANDATORY)
+     - Navigate to Sprint N section
+     - Add completion metadata:
+       ```markdown
+       ### Sprint N: [Title] (COMPLETED - YYYY-MM-DD)
+       - Estimated Duration: Xh
+       - Actual Duration: Yh (Z% variance)
+       - Model Used: Haiku/Sonnet/Opus
+       - Tasks Completed: N/N
+       - Lessons Learned:
+         - [Key lesson 1]
+         - [Key lesson 2]
+       - Improvements Implemented:
+         - [Improvement 1] → Updated [file]
+       ```
+     - Update future sprint dependencies if needed
+     - Update risk assessments based on lessons learned
+
+   - [ ] **Create Sprint Retrospective Document** (if review conducted)
+     - Create `docs/SPRINT_N_RETROSPECTIVE.md`
+     - Record what went well, what could improve
+     - Document improvements implemented
+     - Link to PR for code artifacts
+     - See `docs/SPRINT_RETROSPECTIVE.md` for template
 
 4. **Clean up feature branch (OPTIONAL - User Managed)**
    - Branch cleanup is optional and user-managed

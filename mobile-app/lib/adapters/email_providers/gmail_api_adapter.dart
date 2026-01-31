@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:io' show Platform;
 import 'package:googleapis/gmail/v1.dart' as gmail;
 import 'package:http/http.dart' as http;
-import 'package:logger/logger.dart';
 import '../../adapters/auth/google_auth_service.dart';
+import '../../core/utils/app_logger.dart';
 import '../../util/redact.dart';
 
 import '../../core/models/email_message.dart';
@@ -14,19 +14,14 @@ import 'email_provider.dart';
 /// Gmail adapter using OAuth 2.0 and Gmail REST API
 /// Provides better performance than IMAP for Gmail accounts
 /// Phase 2 Sprint 4 Implementation
-/// 
+///
 /// Uses [GoogleAuthService] for unified authentication across platforms.
 class GmailApiAdapter implements SpamFilterPlatform {
   final GoogleAuthService _authService = GoogleAuthService();
 
-  late final Logger _logger;
   gmail.GmailApi? _gmailApi;
   String? _userEmail;
   bool _isConnected = false;
-
-  GmailApiAdapter() {
-    _logger = Logger();
-  }
 
   @override
   String get platformId => 'gmail';
@@ -79,7 +74,7 @@ class GmailApiAdapter implements SpamFilterPlatform {
       return true;
     } catch (e, stackTrace) {
       Redact.logError('GMAIL SIGN-IN EXCEPTION: Unexpected error', e);
-      _logger.e('Stack trace: $stackTrace');
+      AppLogger.error('Gmail sign-in error stack trace', error: e, stackTrace: stackTrace);
       return false;
     }
   }
@@ -579,7 +574,7 @@ class GmailApiAdapter implements SpamFilterPlatform {
         return;
       case FilterAction.moveToFolder:
         // Requires target folder; handled by higher-level flow. No-op here.
-        _logger.w('moveToFolder requires target folder; skipping');
+        AppLogger.warning('moveToFolder requires target folder; skipping');
         return;
       case FilterAction.markAsRead:
         // Mark read via modify
@@ -611,7 +606,7 @@ class GmailApiAdapter implements SpamFilterPlatform {
   Future<bool> checkEmailExists(String messageId) async {
     try {
       if (_gmailApi == null) {
-        _logger.w('Gmail API not initialized for availability check');
+        AppLogger.warning('Gmail API not initialized for availability check');
         return false;
       }
 
@@ -624,17 +619,17 @@ class GmailApiAdapter implements SpamFilterPlatform {
       );
 
       // If we get here, the message exists
-      _logger.d('Email $messageId still exists');
+      AppLogger.debug('Email $messageId still exists');
       return true;
     } catch (e) {
       // If we get 404 or similar, message is deleted
       if (e.toString().contains('404') || e.toString().contains('notFound')) {
-        _logger.d('Email $messageId is deleted');
+        AppLogger.debug('Email $messageId is deleted');
         return false;
       }
 
       // For other errors, log and assume deleted (safe approach)
-      _logger.e('Error checking email existence: $e');
+      AppLogger.error('Error checking email existence: $e', error: e);
       return false;
     }
   }

@@ -7,6 +7,24 @@
 **Baseline**: Sprint 3 completion
 **Author**: Claude Code (Haiku 4.5)
 
+## SPRINT EXECUTION Documentation
+
+**This is part of the SPRINT EXECUTION docs** - the authoritative set of sprint process documentation. Reference these documents throughout sprint work:
+
+| Document | Purpose | When to Use |
+|----------|---------|-------------|
+| **ALL_SPRINTS_MASTER_PLAN.md** | Master plan for all sprints | Before starting any sprint, after completing a sprint |
+| **SPRINT_PLANNING.md** | Sprint planning methodology | When planning a new sprint |
+| **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 0-4.5) |
+| **SPRINT_STOPPING_CRITERIA.md** | When/why to stop working | When uncertain if blocked or should continue |
+| **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 4.5) |
+| **TESTING_STRATEGY.md** | Testing approach and requirements | When writing or reviewing tests |
+| **QUALITY_STANDARDS.md** | Quality standards for code and documentation | When writing code or documentation |
+| **TROUBLESHOOTING.md** | Common issues and solutions | When encountering errors or debugging |
+| **PERFORMANCE_BENCHMARKS.md** (this doc) | Performance metrics and tracking | When measuring performance or comparing to baseline |
+| **ARCHITECTURE.md** | System architecture and design | When making architectural decisions or understanding codebase |
+| **CHANGELOG.md** | Project change history | When documenting sprint changes (mandatory sprint completion) |
+
 ---
 
 ## Executive Summary

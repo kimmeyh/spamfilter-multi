@@ -84,7 +84,7 @@
 
 | Document | Path | Purpose |
 |----------|------|---------|
-| **Master Plan** | `docs\PHASE_3_5_MASTER_PLAN.md` | All 10 Phase 3.5 sprints, dependencies, estimates |
+| **Master Plan** | `docs\ALL_SPRINTS_MASTER_PLAN.md` | All 10 Phase 3.5 sprints, dependencies, estimates |
 | **Execution Workflow** | `docs\SPRINT_EXECUTION_WORKFLOW.md` | Step-by-step sprint process (Phase 0-4.5) |
 | **Stopping Criteria** | `docs\SPRINT_STOPPING_CRITERIA.md` | When/why to stop working (10 criteria) |
 | **Sprint Planning** | `docs\SPRINT_PLANNING.md` | Planning methodology, ceremonies |
@@ -191,7 +191,7 @@ For common issues and fixes, see:
 | **Find safe senders** | `rules_safe_senders.yaml` |
 | **Check database path** | Windows: `C:\Users\kimme\AppData\Roaming\spam_filter_mobile\databases\` |
 | **Start new sprint** | Read `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 0-1 |
-| **View sprint plan** | `docs/PHASE_3_5_MASTER_PLAN.md` |
+| **View sprint plan** | `docs/ALL_SPRINTS_MASTER_PLAN.md` |
 | **Check when to stop** | `docs/SPRINT_STOPPING_CRITERIA.md` |
 
 ---

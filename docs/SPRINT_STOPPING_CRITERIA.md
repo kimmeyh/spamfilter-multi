@@ -4,7 +4,25 @@
 
 **Audience**: Claude Code models executing sprint tasks; User reviewing sprint execution.
 
-**Last Updated**: January 27, 2026
+**Last Updated**: January 31, 2026
+
+## SPRINT EXECUTION Documentation
+
+**This is part of the SPRINT EXECUTION docs** - the authoritative set of sprint process documentation. Reference these documents throughout sprint work:
+
+| Document | Purpose | When to Use |
+|----------|---------|-------------|
+| **ALL_SPRINTS_MASTER_PLAN.md** | Master plan for all sprints | Before starting any sprint, after completing a sprint |
+| **SPRINT_PLANNING.md** | Sprint planning methodology | When planning a new sprint |
+| **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 0-4.5) |
+| **SPRINT_STOPPING_CRITERIA.md** (this doc) | When/why to stop working | When uncertain if blocked or should continue |
+| **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 4.5) |
+| **TESTING_STRATEGY.md** | Testing approach and requirements | When writing or reviewing tests |
+| **QUALITY_STANDARDS.md** | Quality standards for code and documentation | When writing code or documentation |
+| **TROUBLESHOOTING.md** | Common issues and solutions | When encountering errors or debugging |
+| **PERFORMANCE_BENCHMARKS.md** | Performance metrics and tracking | When measuring performance or comparing to baseline |
+| **ARCHITECTURE.md** | System architecture and design | When making architectural decisions or understanding codebase |
+| **CHANGELOG.md** | Project change history | When documenting sprint changes (mandatory sprint completion) |
 
 ---
 
@@ -36,8 +54,34 @@ During sprint execution, models work autonomously until one of these stopping cr
 1. Proceed to Phase 3.3 (Manual Testing in parallel)
 2. Once testing complete → Phase 4 (PR creation)
 3. User will conduct Phase 4.5 (Sprint Review) before merge
+4. **MANDATORY Sprint Completion Updates** (Phase 4.5.6 and Step 3 after merge):
+   - [ ] Update CHANGELOG.md with sprint entry under `## [Unreleased]`
+   - [ ] Update ALL_SPRINTS_MASTER_PLAN.md with:
+     - Actual duration vs estimated
+     - Lessons learned
+     - Future sprint dependency updates
+   - [ ] Create SPRINT_N_RETROSPECTIVE.md (if review conducted)
+5. **Proactive Next Steps** (MANDATORY after sprint completion):
+   - After sprint completion, present 3 options to user:
+     1. **Sprint Review**: Conduct formal retrospective (if not already done in 4.5)
+     2. **Start Next Sprint**: Begin planning and execution of next sprint from ALL_SPRINTS_MASTER_PLAN.md
+     3. **Ad-hoc Work**: Work on unplanned tasks or investigations outside sprint framework
+   - **Template**:
+     ```
+     Sprint N complete! What would you like to do next?
+
+     1. 📋 Sprint Review (if not already conducted)
+     2. ➡️ Start Sprint N+1 (see ALL_SPRINTS_MASTER_PLAN.md for details)
+     3. 🔧 Ad-hoc work (tasks outside sprint framework)
+
+     Please let me know your preference.
+     ```
 
 **Timing**: This is the expected normal path. No user approval needed - this was pre-approved in sprint plan approval.
+
+**Documentation Updates**: The CHANGELOG.md and ALL_SPRINTS_MASTER_PLAN.md updates are MANDATORY and must be completed before PR approval. See `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 4.5.6 and "After Sprint Approval" Step 3 for details.
+
+**Historical Archiving**: Full sprint details are archived to SPRINT_<N>_SUMMARY.md during next sprint planning (Phase 1.2.1) to keep ALL_SPRINTS_MASTER_PLAN.md focused on current/future work.
 
 ---
 

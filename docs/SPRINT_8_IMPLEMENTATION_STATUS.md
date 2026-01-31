@@ -278,7 +278,7 @@ adb logcat -s flutter | grep '\[ERROR\]'
 1. User reviews Sprint 8 Retrospective
 2. User provides feedback on effectiveness, efficiency, process
 3. Create `docs/SPRINT_8_RETROSPECTIVE_FINAL.md` with user feedback incorporated
-4. Update `PHASE_3_5_MASTER_PLAN.md` with Sprint 8 actual vs estimated duration
+4. Update `ALL_SPRINTS_MASTER_PLAN.md` with Sprint 8 actual vs estimated duration
 
 **Deferred To**: After Sprint 8 PR Approval
 

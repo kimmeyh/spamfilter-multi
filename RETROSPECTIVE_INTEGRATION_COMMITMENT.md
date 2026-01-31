@@ -53,7 +53,7 @@ I will systematically update these foundational documents so that Sprint 7 learn
    - Add: Test failure escalation procedure
    - Clarify: Autonomous execution rules
 
-6. **docs/PHASE_3_5_MASTER_PLAN.md** - Master timeline
+6. **docs/ALL_SPRINTS_MASTER_PLAN.md** - Master timeline
    - Add: Sprint 7 Lessons Learned section
    - Template: For all future sprint sections
    - Track: Recommendations status (Priority 1, 2, 3)
@@ -126,7 +126,7 @@ I will systematically update these foundational documents so that Sprint 7 learn
 - Priority 3 recommendations = Schedule for future sprint
 - Next retrospective verifies recommendations were applied
 
-**Where embedded**: 3 documents (SPRINT_PLANNING.md, PHASE_0_PRE_SPRINT_CHECKLIST.md, PHASE_3_5_MASTER_PLAN.md)
+**Where embedded**: 3 documents (SPRINT_PLANNING.md, PHASE_0_PRE_SPRINT_CHECKLIST.md, ALL_SPRINTS_MASTER_PLAN.md)
 
 ---
 
@@ -146,7 +146,7 @@ I will systematically update these foundational documents so that Sprint 7 learn
 ### BEFORE SPRINT 8 BEGINS
 - [ ] Update SPRINT_PLANNING.md (major additions)
 - [ ] Update SPRINT_EXECUTION_WORKFLOW.md (multiple updates)
-- [ ] Update PHASE_3_5_MASTER_PLAN.md (lessons section)
+- [ ] Update ALL_SPRINTS_MASTER_PLAN.md (lessons section)
 
 ### BEFORE SPRINT 8 EXECUTION
 - [ ] Update QUICK_REFERENCE.md (3 new sections)

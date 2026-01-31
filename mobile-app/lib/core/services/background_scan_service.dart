@@ -1,6 +1,5 @@
 import 'package:logger/logger.dart';
 import 'background_scan_manager.dart';
-import 'background_scan_worker.dart';
 import 'background_scan_notification_service.dart';
 
 /// High-level service for managing background scanning with optimization checks
