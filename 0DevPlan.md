@@ -8,13 +8,18 @@
 
 Undetermined where these should fit in long-term plan
 
-  - Bulk import/export or rules (safe and other)
-  - Pattern sharing? between users?
-  - ML-based suggestions
-  - GenAI-based suggestions for unmatched emails based on history
-  - GenAI-based additions based on contents of previously autodeleted emails
-    - example:  although deleted for other reasons, are there patterns in subject or body that are frequently in auto-delete URL's, phrases...
-  - Pattern analytics
+  - Bulk import/export of all rules (safe and other)
+    - Needs to be in an easy format for users to read and edit (remove lines, add in a new rule based on copy/paste of another rule)
+    - format that is easy to share with other users of this application
+      - Example:  User A exports his rules, sends to User B.  User B reviews in an editor (notepad, notepad++, VSCode...), removes a few lines they don't need.  User B uploads to this application.  Upload determines for each rule:
+         - Is the rule valid is not valid, add to list of rules that could not be included
+         - else If rule exists
+             - then update or replace the rule
+             - else add the rule
+  - ML-based suggestions, Heuristic-based suggestions (find common spam detection heuristics and/or develop them based on an email account/folder I can provide)
+  - GenAI-based suggestions for unmatched emails based on history 
+  - GenAI-based additions based on contents of previously autodeleted emails (based on an email account/folder I can provide)
+    - example:  although deleted for other reasons, are there patterns in subject or body that are frequently in auto-delete emails: URL's, phrases...
 
 Phase 4 Development Goals
 - Expand to iOS platform

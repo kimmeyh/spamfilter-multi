@@ -1,9 +1,8 @@
-import 'package:logger/logger.dart';
-
 import '../models/email_message.dart';
 import '../models/rule_set.dart';
 import '../models/safe_sender_list.dart';
 import '../models/evaluation_result.dart';
+import '../utils/app_logger.dart';
 import 'pattern_compiler.dart';
 
 /// Evaluates emails against rules to determine actions
@@ -11,7 +10,6 @@ class RuleEvaluator {
   final RuleSet ruleSet;
   final SafeSenderList safeSenderList;
   final PatternCompiler compiler;
-  final Logger _logger = Logger();
 
   RuleEvaluator({
     required this.ruleSet,
@@ -32,38 +30,39 @@ class RuleEvaluator {
 
     // DIAGNOSTIC: Log rule evaluation for first few emails
     if (sortedRules.isEmpty) {
-      _logger.w('RuleEvaluator: No rules available for evaluation of "${message.subject}"');
+      AppLogger.rules('No rules available for evaluation of "${message.subject}" from ${message.from}');
       return EvaluationResult.noMatch();
     }
 
     int enabledRuleCount = 0;
     for (final rule in sortedRules) {
       if (!rule.enabled) {
-        _logger.d('Rule "${rule.name}" is disabled, skipping');
+        AppLogger.debug('Rule "${rule.name}" is disabled, skipping');
         continue;
       }
       enabledRuleCount++;
 
       // Check exceptions first
       if (rule.exceptions != null && _matchesExceptions(message, rule.exceptions!)) {
-        _logger.d('Email "${message.subject}" matched exception in rule "${rule.name}", skipping');
+        AppLogger.eval('Email "${message.subject}" from ${message.from} matched exception in rule "${rule.name}", skipping');
         continue;
       }
 
       // Check conditions
       if (_matchesConditions(message, rule.conditions)) {
-        _logger.i('✓ Email "${message.subject}" matched rule "${rule.name}"');
+        final pattern = _getMatchedPattern(message, rule.conditions);
+        AppLogger.eval('Email from ${message.from} matched rule "${rule.name}" (pattern: $pattern, subject: "${message.subject}")');
         return EvaluationResult(
           shouldDelete: rule.actions.delete,
           shouldMove: rule.actions.moveToFolder != null,
           targetFolder: rule.actions.moveToFolder,
           matchedRule: rule.name,
-          matchedPattern: _getMatchedPattern(message, rule.conditions),
+          matchedPattern: pattern,
         );
       }
     }
 
-    _logger.d('✗ Email "${message.subject}" did not match any of $enabledRuleCount enabled rules');
+    AppLogger.eval('Email "${message.subject}" from ${message.from} did not match any of $enabledRuleCount enabled rules');
     return EvaluationResult.noMatch();
   }
 
@@ -75,7 +74,7 @@ class RuleEvaluator {
       matches.add(_matchesPatternList(message.from, conditions.from));
     }
     if (conditions.header.isNotEmpty) {
-      matches.add(_matchesHeaderList(message.headers, conditions.header));
+      matches.add(_matchesHeaderList(message, conditions.header));
     }
     if (conditions.subject.isNotEmpty) {
       matches.add(_matchesPatternList(message.subject, conditions.subject));
@@ -98,7 +97,7 @@ class RuleEvaluator {
 
   bool _matchesExceptions(EmailMessage message, RuleExceptions exceptions) {
     return _matchesPatternList(message.from, exceptions.from) ||
-        _matchesHeaderList(message.headers, exceptions.header) ||
+        _matchesHeaderList(message, exceptions.header) ||
         _matchesPatternList(message.subject, exceptions.subject) ||
         _matchesPatternList(message.body, exceptions.body);
   }
@@ -118,17 +117,28 @@ class RuleEvaluator {
   }
 
   /// Match header patterns against email headers
-  /// Headers are checked in "key:value" format (e.g., "x-spam-status:yes")
-  bool _matchesHeaderList(Map<String, String> headers, List<String> patterns) {
+  /// For "From" header, match against email address only (without "from:" prefix)
+  /// For other headers, match against "key:value" format (e.g., "x-spam-status:yes")
+  bool _matchesHeaderList(EmailMessage message, List<String> patterns) {
     if (patterns.isEmpty) return false;
 
     return patterns.any((pattern) {
       try {
         final regex = compiler.compile(pattern);
-        // Check each header in "key:value" format
-        for (final entry in headers.entries) {
-          final headerLine = '${entry.key}:${entry.value}'.toLowerCase().trim();
-          if (regex.hasMatch(headerLine)) {
+        // Check each header
+        for (final entry in message.headers.entries) {
+          String testValue;
+
+          // For "From" header, match against email address only (not "from:email")
+          // Use message.from which has already been extracted from "Name <email>" format
+          if (entry.key.toLowerCase() == 'from') {
+            testValue = message.from.toLowerCase().trim();
+          } else {
+            // For other headers, use "key:value" format
+            testValue = '${entry.key}:${entry.value}'.toLowerCase().trim();
+          }
+
+          if (regex.hasMatch(testValue)) {
             return true;
           }
         }
@@ -144,7 +154,7 @@ class RuleEvaluator {
       if (_matchesPattern(message.from, pattern)) return pattern;
     }
     for (final pattern in conditions.header) {
-      if (_matchesHeaderPattern(message.headers, pattern)) return pattern;
+      if (_matchesHeaderPattern(message, pattern)) return pattern;
     }
     for (final pattern in conditions.subject) {
       if (_matchesPattern(message.subject, pattern)) return pattern;
@@ -156,12 +166,24 @@ class RuleEvaluator {
   }
 
   /// Check if a single header pattern matches any header
-  bool _matchesHeaderPattern(Map<String, String> headers, String pattern) {
+  /// For "From" header, match against email address only (without "from:" prefix)
+  /// For other headers, match against "key:value" format
+  bool _matchesHeaderPattern(EmailMessage message, String pattern) {
     try {
       final regex = compiler.compile(pattern);
-      for (final entry in headers.entries) {
-        final headerLine = '${entry.key}:${entry.value}'.toLowerCase().trim();
-        if (regex.hasMatch(headerLine)) {
+      for (final entry in message.headers.entries) {
+        String testValue;
+
+        // For "From" header, match against email address only (not "from:email")
+        // Use message.from which has already been extracted from "Name <email>" format
+        if (entry.key.toLowerCase() == 'from') {
+          testValue = message.from.toLowerCase().trim();
+        } else {
+          // For other headers, use "key:value" format
+          testValue = '${entry.key}:${entry.value}'.toLowerCase().trim();
+        }
+
+        if (regex.hasMatch(testValue)) {
           return true;
         }
       }

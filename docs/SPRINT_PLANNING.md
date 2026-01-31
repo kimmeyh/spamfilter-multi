@@ -540,7 +540,7 @@ Sprints use voluntary status tracking (not mandatory metrics):
 
 3. **Feedback Collection**:
    - Collect data on model assignment accuracy for heuristic updates
-   - Note what worked well and what didn't
+   - Note what worked well and what did not
 
 ### Release Notes
 

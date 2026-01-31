@@ -307,6 +307,38 @@ constraints (performance, maintainability, test coverage).
 
 ---
 
+### 10. 🚫 SHOULD NOT STOP - Implementation Decision
+
+**When**: Need to make implementation decision during task execution.
+
+**Examples**:
+- Should I use method A or method B?
+- Should I refactor this class or extend it?
+- Should I add parameter X to this function?
+- Should I change method signature from `foo(Map<String, String> headers)` to `foo(EmailMessage message)`?
+
+**Decision Rule**:
+1. Does task acceptance criteria specify which approach? → Use that approach
+2. Does task acceptance criteria leave it open? → Use best engineering judgment, document decision, continue
+3. Does decision fundamentally change task scope? → STOP and ask (Criterion 3: Scope Change)
+
+**Action**: Make decision, document in code comments/commit message, continue. Do NOT stop for approval.
+
+**Example - Correct Behavior**:
+```
+Task A: "Fix pattern matching to use extracted email instead of raw header"
+Acceptance Criteria: "Email pattern matching should use message.from field"
+
+Claude realizes: Need to change method signature to access message.from
+Claude checks: Does this change task scope? → No, it enables acceptance criteria
+Claude decision: Change signature, document in commit message, continue
+Claude does NOT ask: "Should I change the method signature?"
+```
+
+**Timing**: This is NOT a stopping criterion. Make decision and continue immediately.
+
+---
+
 ## What Should NOT Cause Stopping
 
 These are NOT valid reasons to stop:

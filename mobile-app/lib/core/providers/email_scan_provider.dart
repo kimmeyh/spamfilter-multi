@@ -631,7 +631,7 @@ class EmailScanProvider extends ChangeNotifier {
   }
 
   /// ✨ PHASE 2 SPRINT 3: Clear revert history without reverting
-  /// 
+  ///
   /// Confirms and accepts last run's actions permanently.
   /// Once called, actions cannot be reverted.
   void confirmLastRun() {
@@ -640,6 +640,53 @@ class EmailScanProvider extends ChangeNotifier {
       _lastRunActionIds.clear();
       _lastRunActions.clear();
       notifyListeners();
+    }
+  }
+
+  /// Export scan results to CSV format
+  ///
+  /// Returns CSV string with columns: From, Folder, Subject, Rule, Action, Status
+  /// Can be saved to file or displayed in UI
+  String exportResultsToCSV() {
+    final buffer = StringBuffer();
+
+    // CSV Header
+    buffer.writeln('"From","Folder","Subject","Rule","Action","Status"');
+
+    // CSV Rows
+    for (final result in _results) {
+      final from = _escapeCsv(result.email.from);
+      final folder = _escapeCsv(result.email.folderName);
+      final subject = _escapeCsv(result.email.subject);
+      final rule = _escapeCsv(result.evaluationResult?.matchedRule ?? 'No rule');
+      final action = _getActionName(result.action);
+      final status = result.success ? 'Success' : 'Failed';
+
+      buffer.writeln('"$from","$folder","$subject","$rule","$action","$status"');
+    }
+
+    return buffer.toString();
+  }
+
+  /// Helper to escape CSV values (handle quotes and commas)
+  String _escapeCsv(String value) {
+    // Replace double quotes with two double quotes (CSV standard)
+    return value.replaceAll('"', '""');
+  }
+
+  /// Helper to get action name for CSV export
+  String _getActionName(EmailActionType action) {
+    switch (action) {
+      case EmailActionType.delete:
+        return 'Delete';
+      case EmailActionType.moveToJunk:
+        return 'Move to Junk';
+      case EmailActionType.safeSender:
+        return 'Safe Sender';
+      case EmailActionType.markAsRead:
+        return 'Mark as Read';
+      case EmailActionType.none:
+        return 'None';
     }
   }
 }

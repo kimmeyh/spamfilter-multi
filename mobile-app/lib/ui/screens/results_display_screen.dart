@@ -1,11 +1,13 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../../core/providers/email_scan_provider.dart' show EmailScanProvider, EmailActionResult, EmailActionType;
 
 /// Displays summary of scan results bound to EmailScanProvider.
-class ResultsDisplayScreen extends StatelessWidget {
+class ResultsDisplayScreen extends StatefulWidget {
   final String platformId;
   final String platformDisplayName;
   final String accountId;
@@ -18,6 +20,14 @@ class ResultsDisplayScreen extends StatelessWidget {
     required this.accountId,
     required this.accountEmail,
   });
+
+  @override
+  State<ResultsDisplayScreen> createState() => _ResultsDisplayScreenState();
+}
+
+class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
+  // Filter state: null means show all, otherwise filter by this action type
+  EmailActionType? _filter;
 
   /// Show revert confirmation dialog and execute revert
   Future<void> _confirmAndRevert(
@@ -139,15 +149,107 @@ class ResultsDisplayScreen extends StatelessWidget {
       ],
     );
   }
+
+  /// Export scan results to CSV file
+  Future<void> _exportResults(
+    BuildContext context,
+    EmailScanProvider scanProvider,
+  ) async {
+    final logger = Logger();
+
+    try {
+      // Generate CSV content
+      final csvContent = scanProvider.exportResultsToCSV();
+
+      // Get downloads directory (or documents on desktop)
+      final directory = Platform.isAndroid || Platform.isIOS
+          ? await getExternalStorageDirectory()
+          : await getApplicationDocumentsDirectory();
+
+      if (directory == null) {
+        throw Exception('Could not access storage directory');
+      }
+
+      // Create filename with timestamp
+      final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-').split('.')[0];
+      final filename = 'scan_results_$timestamp.csv';
+      final filePath = '${directory.path}/$filename';
+
+      // Write CSV to file
+      final file = File(filePath);
+      await file.writeAsString(csvContent);
+
+      logger.i('✅ Exported scan results to: $filePath');
+
+      if (context.mounted) {
+        // Show success message with file path
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Results exported to:\n$filePath'),
+            duration: const Duration(seconds: 5),
+            backgroundColor: Colors.green,
+            action: SnackBarAction(
+              label: 'OK',
+              textColor: Colors.white,
+              onPressed: () {},
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      logger.e('❌ Export failed: $e');
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Export failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Filter results based on current filter state
+  List<EmailActionResult> _getFilteredResults(List<EmailActionResult> allResults) {
+    if (_filter == null) {
+      return allResults; // Show all
+    }
+
+    // Special handling for "No rule" - filter by action=none AND empty matched rule
+    if (_filter == EmailActionType.none) {
+      return allResults.where((result) {
+        final hasNoRule = (result.evaluationResult?.matchedRule ?? '').isEmpty;
+        return result.action == EmailActionType.none && hasNoRule;
+      }).toList();
+    }
+
+    // For other filters, filter by action type
+    return allResults.where((result) => result.action == _filter).toList();
+  }
+
+  /// Toggle filter when stat chip is clicked
+  void _toggleFilter(EmailActionType? filterType) {
+    setState(() {
+      // If clicking the same filter, clear it (show all)
+      if (_filter == filterType) {
+        _filter = null;
+      } else {
+        _filter = filterType;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final scanProvider = context.watch<EmailScanProvider>();
     final summary = scanProvider.getSummary();
-    final results = scanProvider.results;
+    final allResults = scanProvider.results;
+    final filteredResults = _getFilteredResults(allResults);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Results - $accountEmail - $platformDisplayName'),
+        title: Text('Results - ${widget.accountEmail} - ${widget.platformDisplayName}'),
         // Add explicit back button that returns to account selection
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -155,6 +257,11 @@ class ResultsDisplayScreen extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
+          IconButton(
+            tooltip: 'Export Results to CSV',
+            icon: const Icon(Icons.file_download),
+            onPressed: () => _exportResults(context, scanProvider),
+          ),
           if (scanProvider.hasActionsToRevert)
             IconButton(
               tooltip: 'Revert Last Run',
@@ -170,13 +277,22 @@ class ResultsDisplayScreen extends StatelessWidget {
           children: [
             _buildSummary(summary, scanProvider),
             const SizedBox(height: 16),
+            // Show filter status if active
+            if (_filter != null) ...[
+              _buildFilterStatus(filteredResults.length, allResults.length),
+              const SizedBox(height: 8),
+            ],
             Expanded(
-              child: results.isEmpty
-                  ? const Center(child: Text('No results yet.'))
+              child: filteredResults.isEmpty
+                  ? Center(
+                      child: _filter == null
+                          ? const Text('No results yet.')
+                          : const Text('No emails match this filter.'),
+                    )
                   : ListView.separated(
-                      itemCount: results.length,
+                      itemCount: filteredResults.length,
                       separatorBuilder: (_, __) => const Divider(height: 1),
-                      itemBuilder: (_, index) => _buildResultTile(results[index]),
+                      itemBuilder: (_, index) => _buildResultTile(filteredResults[index]),
                     ),
             ),
             // Action buttons at bottom
@@ -219,6 +335,38 @@ class ResultsDisplayScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildFilterStatus(int filteredCount, int totalCount) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.filter_list, color: Colors.blue.shade700, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Showing $filteredCount of $totalCount emails • Tap chip again to clear filter',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.blue.shade900,
+              ),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.clear, size: 16),
+            onPressed: () => _toggleFilter(null),
+            tooltip: 'Clear filter',
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSummary(Map<String, dynamic> summary, EmailScanProvider scanProvider) {
     return Card(
       child: Padding(
@@ -235,13 +383,13 @@ class ResultsDisplayScreen extends StatelessWidget {
               spacing: 12,
               runSpacing: 12,
               children: [
-                _buildStatChip('Found', scanProvider.totalEmails, const Color(0xFF2196F3), Colors.white), // Blue
-                _buildStatChip('Processed', scanProvider.processedCount, const Color(0xFF9C27B0), Colors.white), // Purple
-                _buildStatChip('Deleted', scanProvider.deletedCount, const Color(0xFFF44336), Colors.white), // Red
-                _buildStatChip('Moved', scanProvider.movedCount, const Color(0xFFFF9800), Colors.white), // Orange
-                _buildStatChip('Safe', scanProvider.safeSendersCount, const Color(0xFF4CAF50), Colors.white), // Green
-                _buildStatChip('No rule', scanProvider.noRuleCount, const Color(0xFF757575), Colors.white), // Grey
-                _buildStatChip('Errors', scanProvider.errorCount, const Color(0xFFD32F2F), Colors.white), // Dark Red
+                _buildStatChip('Found', scanProvider.totalEmails, const Color(0xFF2196F3), Colors.white, null), // Blue - not filterable
+                _buildStatChip('Processed', scanProvider.processedCount, const Color(0xFF9C27B0), Colors.white, null), // Purple - not filterable
+                _buildStatChip('Deleted', scanProvider.deletedCount, const Color(0xFFF44336), Colors.white, EmailActionType.delete), // Red
+                _buildStatChip('Moved', scanProvider.movedCount, const Color(0xFFFF9800), Colors.white, EmailActionType.moveToJunk), // Orange
+                _buildStatChip('Safe', scanProvider.safeSendersCount, const Color(0xFF4CAF50), Colors.white, EmailActionType.safeSender), // Green
+                _buildStatChip('No rule', scanProvider.noRuleCount, const Color(0xFF757575), Colors.white, EmailActionType.none), // Grey
+                _buildStatChip('Errors', scanProvider.errorCount, const Color(0xFFD32F2F), Colors.white, null, showErrors: true), // Dark Red
               ],
             ),
             // Revert info (Phase 2 Sprint 3)
@@ -278,12 +426,40 @@ class ResultsDisplayScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatChip(String label, int value, Color bg, Color fg) {
-    return Chip(
-      label: Text('$label: $value'),
-      backgroundColor: bg,
-      labelStyle: TextStyle(color: fg, fontWeight: FontWeight.bold),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+  Widget _buildStatChip(String label, int value, Color bg, Color fg, EmailActionType? filterType, {bool showErrors = false}) {
+    // Determine if this chip is currently the active filter
+    final isActive = _filter == filterType || (showErrors && _filter != null && value > 0);
+
+    return GestureDetector(
+      onTap: () {
+        // Only allow filtering for "No rule", "Deleted", "Moved", "Safe", and "Errors"
+        if (filterType != null) {
+          _toggleFilter(filterType);
+        } else if (showErrors) {
+          // For errors, filter by showing all emails with !success flag
+          // For now, we do not have a simple way to filter errors separately
+          // since they could overlap with any action type
+          // Skip error filtering for now
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Error filtering not yet implemented'),
+              duration: Duration(seconds: 1),
+            ),
+          );
+        }
+      },
+      child: Chip(
+        label: Text('$label: $value'),
+        backgroundColor: isActive ? bg.withValues(alpha: 0.7) : bg,
+        labelStyle: TextStyle(
+          color: fg,
+          fontWeight: isActive ? FontWeight.w900 : FontWeight.bold,
+        ),
+        side: isActive
+            ? const BorderSide(color: Colors.black, width: 2)
+            : BorderSide.none,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      ),
     );
   }
 

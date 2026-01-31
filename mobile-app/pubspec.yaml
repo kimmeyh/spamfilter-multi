@@ -66,3 +66,15 @@ flutter:
 
     # AOL IMAP CA certificate for custom SecurityContext
     - assets/certs/aol_ca.pem
+
+# MSIX Configuration for Windows Desktop
+msix_config:
+  display_name: Spam Filter Multi
+  publisher_display_name: Spam Filter Multi
+  identity_name: SpamFilterMulti
+  publisher: CN=SpamFilterMulti
+  msix_version: 1.0.0.0
+  logo_path: assets\icons\app_icon.png
+  capabilities: internetClient, internetClientServer, privateNetworkClientServer, runFullTrust
+  store: false
+  install_certificate: false
