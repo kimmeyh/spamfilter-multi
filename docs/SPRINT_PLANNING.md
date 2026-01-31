@@ -33,6 +33,23 @@ Each sprint is composed of **Cards** (GitHub issues) broken into **Tasks** assig
 
 ---
 
+## Backlog Refinement (Between Sprints)
+
+**When**: After sprint completion, before next sprint planning
+**Duration**: 15-30 minutes
+**Purpose**: Keep future features prioritized and well-defined
+
+**Process**:
+1. Review ALL_SPRINTS_MASTER_PLAN.md "Future Features" section
+2. Re-prioritize based on new learnings
+3. Update effort estimates based on actual sprint data
+4. Add newly identified features to backlog
+5. Remove obsolete features
+6. Update feature dependencies
+7. Update feature priorities
+
+---
+
 ## Sprint Structure
 
 ### Sprint Duration
@@ -58,6 +75,7 @@ Each sprint is composed of **Cards** (GitHub issues) broken into **Tasks** assig
   - Task breakdown for each Card (with model assignments)
   - Acceptance criteria for each Card
   - **SPRINT_<N>_SUMMARY.md** for previous sprint (background process)
+  - **NOTE**: SPRINT_N_PLAN.md is NOT needed - plan details live in ALL_SPRINTS_MASTER_PLAN.md + GitHub issues
 - **Process**:
   1. **Create SPRINT_<N>_SUMMARY.md** for previous sprint (background process - see SPRINT_EXECUTION_WORKFLOW.md § 1.2.1)
      - Archive completed sprint details from ALL_SPRINTS_MASTER_PLAN.md

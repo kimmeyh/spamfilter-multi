@@ -41,12 +41,13 @@ This document describes the step-by-step process for executing sprints in the sp
 
 ### **Phase 0: Sprint Pre-Kickoff** ⚠️ CRITICAL PREREQUISITE
 
-⚠️ **BEFORE BEGINNING PHASE 0**, read `docs/ALL_SPRINTS_MASTER_PLAN.md` (very first step):
-- Locate Sprint N section in ALL_SPRINTS_MASTER_PLAN.md
-- Review what is planned for this sprint
-- Check for retrospective notes from previous sprint
-- Update master plan with previous sprint's actual vs estimated duration
-- **Purpose**: Align on sprint scope before starting Phase 0 verification
+- [ ] **0.0.1 Cache Sprint Context** (Optimization)
+  - Read ALL_SPRINTS_MASTER_PLAN.md ONCE
+  - Cache in memory:
+    - Sprint N (current) details: Objective, tasks, acceptance criteria, risks
+    - Sprint N-1 (previous) details: For summary creation in Phase 1.2.1
+  - No re-reading needed until Phase 4.5.6 (updates)
+  - **Efficiency Gain**: Reduces file reads from 3 to 1 per sprint
 
 ---
 
@@ -95,6 +96,13 @@ This document describes the step-by-step process for executing sprints in the sp
   - **When**: During planning for Sprint N+1, create SPRINT_<N>_SUMMARY.md for completed Sprint N
   - **Purpose**: Archive historical sprint details from ALL_SPRINTS_MASTER_PLAN.md
   - **Template**: Use structure from SPRINT_RETROSPECTIVE.md or previous SPRINT_<N>_SUMMARY.md files
+  - **Content Sources** (in priority order):
+    1. SPRINT_<N-1>_RETROSPECTIVE.md (if exists from Phase 4.5.6)
+    2. CHANGELOG.md (Sprint N-1 entries)
+    3. Git history (PR description, commit messages)
+    4. GitHub issues (closed sprint issues)
+
+    **Do NOT extract from ALL_SPRINTS_MASTER_PLAN.md** - it was already cleaned up in previous sprint.
   - **Content to Include**:
     - Sprint objective and scope
     - Tasks completed (A, B, C, etc.)
@@ -149,6 +157,10 @@ This document describes the step-by-step process for executing sprints in the sp
   - Effort estimates included for all tasks (with 20% buffer for manual testing tasks)
 
 - [ ] **1.7 CRITICAL: Plan Approval = Task Execution Pre-Approval**
+  - **SUGGESTION**: User may optionally run `/compact` before approving plan to refresh context for execution
+    - **When Helpful**: After long planning discussions (>30K tokens used)
+    - **Benefits**: Fresh context for Phases 2-4.5, all plan details preserved in ALL_SPRINTS_MASTER_PLAN.md + GitHub issues
+    - **Not Required**: Optional optimization, not mandatory
   - User reviews complete sprint plan (Tasks A, B, C, etc.)
   - User approves Phase 1 sprint plan
   - **Plan Approval = Pre-Approval for ALL Tasks A-Z through Phase 4.5 (Sprint Review)**
@@ -191,6 +203,18 @@ This document describes the step-by-step process for executing sprints in the sp
   - Sonnet available for escalation if needed
   - Opus available for complex issues
 
+- [ ] **2.1.1 Review Architecture Guidance** (For Complex Tasks)
+  - For tasks involving new components or architectural changes:
+    - Read `docs/ARCHITECTURE.md` for system design patterns
+    - Follow existing architectural principles
+    - Document significant deviations in PR description
+
+- [ ] **2.1.2 Review Performance Benchmarks** (For Performance-Sensitive Tasks)
+  - For tasks affecting performance (database, scanning, UI rendering):
+    - Read `docs/PERFORMANCE_BENCHMARKS.md` for baseline metrics
+    - Benchmark before and after changes
+    - Document performance impact in PR description
+
 - [ ] **2.2 Testing Cycle (Per Task)**
   - **Compile**: Build the code
     - Command: `flutter build windows` or `flutter build apk` (as needed)
@@ -211,6 +235,13 @@ This document describes the step-by-step process for executing sprints in the sp
     - Fix code issues
     - Update or add tests as needed
   - **Repeat**: Re-run compile/test cycle until all pass
+
+- [ ] **2.2.1 Create Test Files**
+  - For each new feature, create corresponding test file
+  - Unit tests: `test/unit/<feature>_test.dart`
+  - Integration tests: `test/integration/<feature>_integration_test.dart`
+  - Widget tests: `test/widgets/<screen>_test.dart`
+  - Minimum coverage: 80% for new code
 
 - [ ] **2.3 Commit During Development**
   - Make focused commits per logical change
@@ -577,7 +608,7 @@ Before conducting sprint review, build and test the Windows desktop app:
     - Format: `### YYYY-MM-DD` with sprint summary
     - Include all user-facing changes from sprint
     - Reference PR number: `(PR #NNN)`
-    - See CLAUDE.md § Changelog Policy for format
+    - **Format Reference**: See CLAUDE.md § Changelog Policy for detailed format
 
   - [ ] **Update ALL_SPRINTS_MASTER_PLAN.md** (MANDATORY - see Step 3 in "After Sprint Approval")
     - Navigate to Sprint N section
