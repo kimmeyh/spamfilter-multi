@@ -450,7 +450,7 @@ After user approves improvements, update relevant documents:
 
 #### 1. ALL_SPRINTS_MASTER_PLAN.md
 
-Update the completed sprint section with:
+Update the current sprint section with completion metadata:
 ```markdown
 ### Sprint N: [Title] (COMPLETED - YYYY-MM-DD)
 
@@ -526,6 +526,21 @@ Create `docs/SPRINT_N_RETROSPECTIVE.md` with full retrospective details:
 - Improvements selected
 - Documentation updates applied
 - Action items for next sprint
+
+**NOTE**: This retrospective document is separate from SPRINT_<N>_SUMMARY.md:
+- **SPRINT_N_RETROSPECTIVE.md**: Created during Phase 4.5 (this phase) - Full retrospective with feedback and improvements
+- **SPRINT_<N>_SUMMARY.md**: Created during next sprint planning (Phase 1.2.1) - Historical archive of sprint details from ALL_SPRINTS_MASTER_PLAN.md
+
+#### 9. Sprint Summary Document (Created Next Sprint)
+
+**SPRINT_<N>_SUMMARY.md** is created as a background process during planning for Sprint N+1:
+- **When**: Phase 1.2.1 of next sprint (see SPRINT_EXECUTION_WORKFLOW.md)
+- **Purpose**: Archive completed sprint details from ALL_SPRINTS_MASTER_PLAN.md
+- **Content**: Sprint objective, tasks, deliverables, duration, lessons learned, improvements
+- **Benefit**: Keeps ALL_SPRINTS_MASTER_PLAN.md focused on current/future work
+- **Reference**: Added to "Past Sprint Summary" table in ALL_SPRINTS_MASTER_PLAN.md
+
+This is a background process that does not block current sprint completion. The summary is created when planning the next sprint to clean up the master plan.
 
 ---
 

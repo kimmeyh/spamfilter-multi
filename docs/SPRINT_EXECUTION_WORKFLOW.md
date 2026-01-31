@@ -86,10 +86,30 @@ This document describes the step-by-step process for executing sprints in the sp
   - Pattern: Increment by 1
 
 - [ ] **1.2 Review Sprint Plan**
-  - Read comprehensive plan document (e.g., `Phase 3.5 Planning` document)
-  - Identify Sprint 2 in the plan
+  - Read ALL_SPRINTS_MASTER_PLAN.md
+  - Identify Sprint N in "Current Sprint" or "Next Sprint" section
   - Verify scope, tasks, and acceptance criteria
-  - Note any changes needed based on Sprint 1 learnings
+  - Note any changes needed based on previous sprint learnings
+
+- [ ] **1.2.1 Create Sprint Summary for Previous Sprint** (Background Process - MANDATORY)
+  - **When**: During planning for Sprint N+1, create SPRINT_<N>_SUMMARY.md for completed Sprint N
+  - **Purpose**: Archive historical sprint details from ALL_SPRINTS_MASTER_PLAN.md
+  - **Template**: Use structure from SPRINT_RETROSPECTIVE.md or previous SPRINT_<N>_SUMMARY.md files
+  - **Content to Include**:
+    - Sprint objective and scope
+    - Tasks completed (A, B, C, etc.)
+    - Deliverables produced
+    - Estimated vs actual duration
+    - Key decisions made
+    - Lessons learned
+    - Process improvements implemented
+    - Link to PR and GitHub issues
+  - **Update ALL_SPRINTS_MASTER_PLAN.md**: Add entry to "Past Sprint Summary" table
+  - **Example Entry**:
+    ```markdown
+    | N | SPRINT_N_SUMMARY.md | ✅ Complete | ~Xh (MMM DD-DD, 2026) |
+    ```
+  - This keeps ALL_SPRINTS_MASTER_PLAN.md focused on current/future work while preserving history
 
 - [ ] **1.3 Branch Management**
   - Check if repository is in a PR branch

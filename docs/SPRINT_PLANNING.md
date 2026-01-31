@@ -57,12 +57,17 @@ Each sprint is composed of **Cards** (GitHub issues) broken into **Tasks** assig
   - Sprint backlog (Cards selected for sprint)
   - Task breakdown for each Card (with model assignments)
   - Acceptance criteria for each Card
+  - **SPRINT_<N>_SUMMARY.md** for previous sprint (background process)
 - **Process**:
-  1. User proposes sprint goal and selects Cards
-  2. Use `/plan-sprint` skill to analyze each Card and assign models/tasks
-  3. Estimate complexity (low/medium/high)
-  4. Create GitHub issues with model assignments
-  5. Review and commit to sprint backlog
+  1. **Create SPRINT_<N>_SUMMARY.md** for previous sprint (background process - see SPRINT_EXECUTION_WORKFLOW.md § 1.2.1)
+     - Archive completed sprint details from ALL_SPRINTS_MASTER_PLAN.md
+     - Update "Past Sprint Summary" table in ALL_SPRINTS_MASTER_PLAN.md
+     - Keeps master plan focused on current/future work
+  2. User proposes sprint goal and selects Cards
+  3. Use `/plan-sprint` skill to analyze each Card and assign models/tasks
+  4. Estimate complexity (low/medium/high)
+  5. Create GitHub issues with model assignments
+  6. Review and commit to sprint backlog
 
 **Example Goal**: "Improve email security by implementing DKIM validation for OAuth providers"
 
@@ -104,9 +109,10 @@ Each sprint is composed of **Cards** (GitHub issues) broken into **Tasks** assig
      - Format: `### YYYY-MM-DD` with sprint summary
      - Include all user-facing changes from sprint
   6. **Update ALL_SPRINTS_MASTER_PLAN.md** (MANDATORY - see SPRINT_EXECUTION_WORKFLOW.md Phase 4.5.6)
-     - Add actual duration vs estimated
+     - Add actual duration vs estimated to current sprint section
      - Record lessons learned
      - Update future sprint dependencies
+     - **NOTE**: Full sprint details archived to SPRINT_<N>_SUMMARY.md during next sprint planning (Phase 1)
   7. Prepare release notes (if needed for major releases)
 
 #### Phase 4: Retrospective (Post-Sprint)

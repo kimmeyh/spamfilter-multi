@@ -81,6 +81,8 @@ During sprint execution, models work autonomously until one of these stopping cr
 
 **Documentation Updates**: The CHANGELOG.md and ALL_SPRINTS_MASTER_PLAN.md updates are MANDATORY and must be completed before PR approval. See `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 4.5.6 and "After Sprint Approval" Step 3 for details.
 
+**Historical Archiving**: Full sprint details are archived to SPRINT_<N>_SUMMARY.md during next sprint planning (Phase 1.2.1) to keep ALL_SPRINTS_MASTER_PLAN.md focused on current/future work.
+
 ---
 
 ### 2. 🔄 BLOCKED - Cannot Proceed Without External Input
