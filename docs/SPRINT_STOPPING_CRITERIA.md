@@ -17,8 +17,12 @@
 | **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 0-4.5) |
 | **SPRINT_STOPPING_CRITERIA.md** (this doc) | When/why to stop working | When uncertain if blocked or should continue |
 | **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 4.5) |
+| **TESTING_STRATEGY.md** | Testing approach and requirements | When writing or reviewing tests |
+| **QUALITY_STANDARDS.md** | Quality standards for code and documentation | When writing code or documentation |
+| **TROUBLESHOOTING.md** | Common issues and solutions | When encountering errors or debugging |
 | **PERFORMANCE_BENCHMARKS.md** | Performance metrics and tracking | When measuring performance or comparing to baseline |
 | **ARCHITECTURE.md** | System architecture and design | When making architectural decisions or understanding codebase |
+| **CHANGELOG.md** | Project change history | When documenting sprint changes (mandatory sprint completion) |
 
 ---
 
@@ -57,6 +61,21 @@ During sprint execution, models work autonomously until one of these stopping cr
      - Lessons learned
      - Future sprint dependency updates
    - [ ] Create SPRINT_N_RETROSPECTIVE.md (if review conducted)
+5. **Proactive Next Steps** (MANDATORY after sprint completion):
+   - After sprint completion, present 3 options to user:
+     1. **Sprint Review**: Conduct formal retrospective (if not already done in 4.5)
+     2. **Start Next Sprint**: Begin planning and execution of next sprint from ALL_SPRINTS_MASTER_PLAN.md
+     3. **Ad-hoc Work**: Work on unplanned tasks or investigations outside sprint framework
+   - **Template**:
+     ```
+     Sprint N complete! What would you like to do next?
+
+     1. 📋 Sprint Review (if not already conducted)
+     2. ➡️ Start Sprint N+1 (see ALL_SPRINTS_MASTER_PLAN.md for details)
+     3. 🔧 Ad-hoc work (tasks outside sprint framework)
+
+     Please let me know your preference.
+     ```
 
 **Timing**: This is the expected normal path. No user approval needed - this was pre-approved in sprint plan approval.
 

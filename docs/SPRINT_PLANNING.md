@@ -13,8 +13,12 @@ This document describes the sprint-based development methodology used for spamfi
 | **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 0-4.5) |
 | **SPRINT_STOPPING_CRITERIA.md** | When/why to stop working | When uncertain if blocked or should continue |
 | **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 4.5) |
+| **TESTING_STRATEGY.md** | Testing approach and requirements | When writing or reviewing tests |
+| **QUALITY_STANDARDS.md** | Quality standards for code and documentation | When writing code or documentation |
+| **TROUBLESHOOTING.md** | Common issues and solutions | When encountering errors or debugging |
 | **PERFORMANCE_BENCHMARKS.md** | Performance metrics and tracking | When measuring performance or comparing to baseline |
 | **ARCHITECTURE.md** | System architecture and design | When making architectural decisions or understanding codebase |
+| **CHANGELOG.md** | Project change history | When documenting sprint changes (mandatory sprint completion) |
 
 ---
 
@@ -149,18 +153,41 @@ The main work item representing a deliverable feature or bug fix.
 ## Description
 Clear statement of what needs to be done and why.
 
+## Value Statement
+**This enables**: [What capability this unlocks]
+**This prevents**: [What problem this solves]
+
 ## Acceptance Criteria
-- [ ] Criterion 1
-- [ ] Criterion 2
+- [ ] Criterion 1 (quantifiable: "All unit and integration tests pass" not "comprehensive testing")
+- [ ] Criterion 2 (measurable: "Reduce analyzer warnings to 0" not "improve code quality")
 - [ ] All tests pass
 - [ ] Code review approved
 
+**IMPORTANT**: All acceptance criteria must be quantifiable and measurable. Avoid subjective terms like "comprehensive", "good quality", or "works well".
+
+**Examples**:
+- ❌ BAD: "Comprehensive testing"
+- ✅ GOOD: "All unit and integration tests are error free and produce expected results"
+- ❌ BAD: "Code quality improvements"
+- ✅ GOOD: "Reduce all warnings in production code that can be accomplished in 1 hour"
+
 ## Model Assignment
-| Task | Assigned Model | Complexity | Notes |
-|------|----------------|-----------|-------|
-| Task A: Implement core logic | Haiku | Low | Straightforward implementation |
-| Task B: Integrate with existing module | Sonnet | Medium | Requires architectural knowledge |
-| Task C: Performance optimization | Opus | High | Complex optimization algorithm |
+| Task | Assigned Model | Complexity | Effort Est. | Notes |
+|------|----------------|-----------|-------------|-------|
+| Task A: Implement core logic | Haiku | Low | 1h | Straightforward implementation |
+| Task B: Integrate with existing module | Sonnet | Medium | 2h | Requires architectural knowledge |
+| Task C: Performance optimization | Opus | High | 1.5h | Complex optimization algorithm |
+
+**Total Estimated Effort**: 4.5h + 20% buffer (0.9h) = 5.4h
+
+## Risk Assessment
+| Risk | Likelihood | Impact | Mitigation |
+|------|------------|--------|------------|
+| Task A breaks existing tests | Low | Medium | Run full test suite after implementation |
+| Task B requires API changes | Medium | High | Review API design with architect before coding |
+| Task C performance targets not met | Medium | Medium | Benchmark before and after, have rollback plan |
+
+**Risk Level**: Medium (even for maintenance work, document "Low - maintenance work" if no risks identified)
 
 ## Sprint Backlog Tracking
 - [ ] Planning: Assigned to sprint backlog
@@ -654,8 +681,44 @@ Plus new entry in learning log:
 2. **Right-Sized Cards**: Each Card should be completable in 4-8 hours with 1-2 models. If larger, break into multiple Cards.
 
 3. **Clear Acceptance Criteria**: Measurable, specific criteria. Example: "All tests pass" or "Gmail DKIM validation working on 100 test emails" - NOT "Works well" or "No regressions."
+   - **Quantifiable Criteria**: Every acceptance criterion must be measurable. Avoid subjective terms like "comprehensive", "good quality", or "works well".
+   - **Value Statement**: Each task must include "This enables..." or "This prevents..." statement explaining why the work matters.
+   - **Explicit Criteria from Issues**: Sprint plan should repeat acceptance criteria from GitHub issues (must match exactly). All criteria reflected in sprint execution/completion checklists.
 
 4. **Realistic Model Assignments**: Use `/plan-sprint` skill rather than guessing. Confidence scores reveal uncertain assignments.
+
+5. **Effort Estimation**: Include estimated hours for each task, even for maintenance sprints.
+   - **Base Estimates**: Estimate implementation time for each task
+   - **20% Buffer for Unknowns**: Add 20% time buffer to manual testing tasks for potential debugging
+   - **Examples**:
+     - Task A: 1h implementation
+     - Task B: 2h implementation + manual testing
+     - Task C: 1.5h implementation
+     - **Total**: 4.5h + 20% buffer on Task B (0.4h) = 4.9h estimated
+   - **Track Actuals**: Log actual time duration and Claude Code effort time spent per task for future estimation calibration
+
+6. **Risk Assessment**: Every sprint task must document risks (even if "Low - maintenance work").
+   - **Risk Description**: What could go wrong?
+   - **Likelihood**: Low / Medium / High
+   - **Impact**: Low / Medium / High
+   - **Mitigation Strategy**: How to prevent or minimize the risk
+   - **Examples**:
+     - "Breaking existing tests (Low/Medium): Run full test suite after implementation"
+     - "API changes required (Medium/High): Review design before coding"
+     - "Performance targets not met (Medium/Medium): Benchmark before/after with rollback plan"
+
+7. **Integration Test Coverage**: For tasks that include comprehensive testing, include all impacted integration tests that combine components.
+   - Do NOT only add unit tests - integration tests verify components work together
+   - Example: EmailScanner integration test (scanner + provider + evaluator working together)
+   - Example: Rule loading integration test (YAML service + RuleSetProvider + LocalRuleStore)
+   - Integration tests should cover data flow, state management, error handling across boundaries
+
+8. **Stretch Goals** (For Low-Complexity Sprints): Include 1-2 "stretch goal" tasks to utilize full capacity.
+   - Stretch goals are optional tasks that can be completed if primary tasks finish early
+   - Should be low-risk, low-complexity tasks that add value
+   - Examples: Additional test coverage, minor documentation improvements, code cleanup
+   - Clearly mark as "Stretch Goal" in sprint plan
+   - Do NOT block sprint completion if stretch goals are not completed
 
 ### For Smooth Execution
 

@@ -2,13 +2,27 @@
 
 **Purpose**: Conduct structured sprint reviews and retrospectives to continuously improve development effectiveness, efficiency, and process quality.
 
-**When to Use**: After PR submission (Phase 4.5 of SPRINT_EXECUTION_WORKFLOW.md), before PR approval and merge.
+**Audience**: Claude Code models conducting sprint retrospectives; User providing feedback
 
-**Related Documents**:
-- `docs/ALL_SPRINTS_MASTER_PLAN.md` - Update with actuals and lessons learned
-- `docs/SPRINT_EXECUTION_WORKFLOW.md` - Phase 4.5 integration
-- `docs/SPRINT_PLANNING.md` - Planning methodology
-- `docs/PERFORMANCE_BENCHMARKS.md` - Performance tracking
+**Last Updated**: January 31, 2026
+
+## SPRINT EXECUTION Documentation
+
+**This is part of the SPRINT EXECUTION docs** - the authoritative set of sprint process documentation. Reference these documents throughout sprint work:
+
+| Document | Purpose | When to Use |
+|----------|---------|-------------|
+| **ALL_SPRINTS_MASTER_PLAN.md** | Master plan for all sprints | Before starting any sprint, after completing a sprint |
+| **SPRINT_PLANNING.md** | Sprint planning methodology | When planning a new sprint |
+| **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 0-4.5) |
+| **SPRINT_STOPPING_CRITERIA.md** | When/why to stop working | When uncertain if blocked or should continue |
+| **SPRINT_RETROSPECTIVE.md** (this doc) | Sprint review and retrospective guide | After PR submission (Phase 4.5) |
+| **TESTING_STRATEGY.md** | Testing approach and requirements | When writing or reviewing tests |
+| **QUALITY_STANDARDS.md** | Quality standards for code and documentation | When writing code or documentation |
+| **TROUBLESHOOTING.md** | Common issues and solutions | When encountering errors or debugging |
+| **PERFORMANCE_BENCHMARKS.md** | Performance metrics and tracking | When measuring performance or comparing to baseline |
+| **ARCHITECTURE.md** | System architecture and design | When making architectural decisions or understanding codebase |
+| **CHANGELOG.md** | Project change history | When documenting sprint changes (mandatory sprint completion) |
 
 ---
 

@@ -1,6 +1,135 @@
 # Troubleshooting Guide
 
+**Purpose**: Document common issues and solutions for the spamfilter-multi project.
+
+**Audience**: All contributors (Claude Code models, developers)
+
+**Last Updated**: January 31, 2026
+
+## SPRINT EXECUTION Documentation
+
+**This is part of the SPRINT EXECUTION docs** - the authoritative set of sprint process documentation. Reference these documents throughout sprint work:
+
+| Document | Purpose | When to Use |
+|----------|---------|-------------|
+| **ALL_SPRINTS_MASTER_PLAN.md** | Master plan for all sprints | Before starting any sprint, after completing a sprint |
+| **SPRINT_PLANNING.md** | Sprint planning methodology | When planning a new sprint |
+| **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 0-4.5) |
+| **SPRINT_STOPPING_CRITERIA.md** | When/why to stop working | When uncertain if blocked or should continue |
+| **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 4.5) |
+| **TESTING_STRATEGY.md** | Testing approach and requirements | When writing or reviewing tests |
+| **QUALITY_STANDARDS.md** | Quality standards for code and documentation | When writing code or documentation |
+| **TROUBLESHOOTING.md** (this doc) | Common issues and solutions | When encountering errors or debugging |
+| **PERFORMANCE_BENCHMARKS.md** | Performance metrics and tracking | When measuring performance or comparing to baseline |
+| **ARCHITECTURE.md** | System architecture and design | When making architectural decisions or understanding codebase |
+| **CHANGELOG.md** | Project change history | When documenting sprint changes (mandatory sprint completion) |
+
+---
+
+## Overview
+
 Common issues and solutions for the Spam Filter application.
+
+---
+
+## Common Development Errors
+
+### Test Binding Not Initialized
+
+**Error Message**:
+```
+MissingPluginException: No implementation found for method ...
+```
+or
+```
+ServicesBinding.defaultBinaryMessenger was accessed before the binding was initialized.
+```
+
+**Cause**: Flutter test bindings not initialized before accessing platform channels or widgets.
+
+**Solution**: Add `TestWidgetsFlutterBinding.ensureInitialized()` at the start of your test.
+
+**Example**:
+```dart
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized(); // Add this line
+
+  test('should initialize database', () async {
+    final store = SafeSenderDatabaseStore();
+    await store.initialize();
+    expect(store.isInitialized, isTrue);
+  });
+}
+```
+
+**Pre-Flight Checklist**: Before creating tests, verify binding initialization is included in template.
+
+---
+
+### AppLogger Parameter Mismatch
+
+**Error Message**:
+```
+The argument type 'String' can't be assigned to the parameter type 'Object'
+```
+or
+```
+Too many positional arguments: 1 expected, but 2 found
+```
+
+**Cause**: AppLogger methods have different signatures. `warning()` takes only message, `error()` takes message + error + stackTrace.
+
+**API Reference**:
+```dart
+// ✅ CORRECT usage
+AppLogger.warning('This is a warning');
+AppLogger.error('Error occurred', error, stackTrace);
+AppLogger.debug('Debug message');
+AppLogger.scan('Scanning 150 emails');
+AppLogger.email('Fetched email from sender@example.com');
+
+// ❌ INCORRECT usage
+AppLogger.warning('Warning', someObject);  // warning() takes only 1 parameter
+AppLogger.error('Error');  // error() requires error and stackTrace parameters
+```
+
+**Solution**: Check AppLogger method signatures:
+- `warning(String message)` - 1 parameter
+- `error(String message, Object error, StackTrace stackTrace)` - 3 parameters
+- All other methods: `methodName(String message)` - 1 parameter
+
+---
+
+### Windows Path in Grep
+
+**Error Message**:
+```
+Grep pattern failed to match: D:\path\to\file
+```
+or
+```
+No matches found (expected matches on Windows)
+```
+
+**Cause**: Windows path separators (`\`) in grep patterns are interpreted as escape characters.
+
+**Solution**: Use forward slashes (`/`) in grep patterns, even on Windows. Grep/ripgrep normalizes paths internally.
+
+**Example**:
+```bash
+# ❌ INCORRECT: Backslashes cause issues
+grep -r "D:\\Data\\Harold\\github" .
+
+# ✅ CORRECT: Use forward slashes on all platforms
+grep -r "D:/Data/Harold/github" .
+
+# ✅ CORRECT: Use relative paths when possible
+grep -r "docs/SPRINT" .
+```
+
+**Cross-Platform Patterns**: Always use `/` (forward slash) in file paths for grep patterns, even on Windows. This works correctly on all platforms (Windows, Linux, macOS).
+
+---
 
 ## Build Issues
 
