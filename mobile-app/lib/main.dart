@@ -10,7 +10,7 @@ import 'core/services/background_mode_service.dart';
 import 'core/services/background_scan_windows_worker.dart';
 import 'adapters/storage/secure_credentials_store.dart';
 // import 'ui/screens/platform_selection_screen.dart'; // OLD: Direct to platform selection.
-import 'ui/screens/account_selection_screen.dart'; // NEW: Check for saved accounts first
+import 'ui/screens/main_navigation_screen.dart'; // NEW: Main navigation with bottom nav (Android)
 
 /// Global RouteObserver for tracking navigation events
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
@@ -88,8 +88,25 @@ class SpamFilterApp extends StatelessWidget {
           child: MaterialApp(
             title: 'Spam Filter Mobile',
             theme: ThemeData(
-              colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: Colors.blue,
+                brightness: Brightness.light,
+              ),
               useMaterial3: true,
+              // Material Design 3 card styling
+              cardTheme: const CardTheme(
+                elevation: 1,
+                margin: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              ),
+              // App bar styling
+              appBarTheme: const AppBarTheme(
+                centerTitle: false,
+                elevation: 0,
+              ),
+              // Floating action button styling
+              floatingActionButtonTheme: const FloatingActionButtonThemeData(
+                elevation: 4,
+              ),
             ),
             // Track navigation events for account list refresh
             navigatorObservers: [routeObserver],
@@ -166,9 +183,10 @@ class _AppInitializerState extends State<_AppInitializer> {
       );
     }
 
-    // ✨ NEW: Once rules are loaded, show account selection screen
-    // This checks for saved accounts and shows them, or navigates to platform selection if none
-    return const AccountSelectionScreen();
+    // ✨ NEW: Once rules are loaded, show main navigation screen
+    // On Android: Shows bottom navigation with Accounts/Rules/Settings tabs
+    // On other platforms: Shows account selection screen directly
+    return const MainNavigationScreen();
   }
 }
 

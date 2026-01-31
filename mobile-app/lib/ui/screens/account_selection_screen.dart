@@ -700,35 +700,13 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
               },
             ),
           ),
-
-          // Add new account button (fixed at bottom)
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.1),
-                  blurRadius: 4,
-                  offset: const Offset(0, -2),
-                ),
-              ],
-            ),
-            child: SafeArea(
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: _addNewAccount,
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add New Account'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                ),
-              ),
-            ),
-          ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _addNewAccount,
+        icon: const Icon(Icons.add),
+        label: const Text('Add Account'),
+        tooltip: 'Add New Account',
       ),
     );
   }

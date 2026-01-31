@@ -330,6 +330,40 @@ Priority based on: Development and testing support for implementing pre-product 
 
 ---
 
+#### F9: Database Test Refactoring (Issue #57)
+**Status**: 🐛 TECHNICAL DEBT
+**Estimated Effort**: 2-3 hours
+**Business Value**: Prevent test schema drift from production schema
+**Issue**: [#57](https://github.com/kimmeyh/spamfilter-multi/issues/57)
+
+**Problem**: Database helper tests manually copy schema DDL, which can drift from production DatabaseHelper implementation.
+
+**Solution**:
+- Refactor tests to initialize actual DatabaseHelper (with in-memory or temp path)
+- Remove duplicated schema declarations
+- Tests always validate real production DDL
+
+**Priority**: Low (technical debt, not blocking)
+
+---
+
+#### F10: Foreign Key Constraint Testing (Issue #58)
+**Status**: 🐛 TECHNICAL DEBT
+**Estimated Effort**: 1-2 hours
+**Business Value**: Ensure foreign key constraints are enforced as expected
+**Issue**: [#58](https://github.com/kimmeyh/spamfilter-multi/issues/58)
+
+**Problem**: Foreign key constraint test does not verify constraints are enforced because PRAGMA foreign_keys is not enabled in DatabaseHelper.
+
+**Solution**:
+- Enable foreign keys in DatabaseHelper at connection time
+- Update test to explicitly enable foreign keys for in-memory DB
+- Assert that insert with non-existent foreign key throws error
+
+**Priority**: Low (technical debt, not blocking)
+
+---
+
 ## Feature Details
 
 ### F1: Processing Scan Results (Detail)
@@ -343,6 +377,7 @@ CREATE TABLE scan_results (
   email_id TEXT NOT NULL,  -- Provider-specific (Message-ID, IMAP UID, etc.)
   from_address TEXT NOT NULL,
   subject TEXT NOT NULL,
+  folder_name TEXT NOT NULL,  -- Current folder location
   received_date INTEGER NOT NULL,  -- Unix timestamp
   scan_date INTEGER NOT NULL,      -- Unix timestamp
   status TEXT NOT NULL CHECK(status IN ('pending', 'processed', 'deleted', 'unavailable')),
@@ -351,59 +386,124 @@ CREATE TABLE scan_results (
 
 CREATE INDEX idx_scan_results_account_type ON scan_results(account_id, scan_type);
 CREATE INDEX idx_scan_results_status ON scan_results(status);
+
+-- Rules need date_added field for tracking
+ALTER TABLE rules ADD COLUMN date_added INTEGER;  -- Unix timestamp
+CREATE INDEX idx_rules_date_added ON rules(date_added);
+
+ALTER TABLE safe_senders ADD COLUMN date_added INTEGER;  -- Unix timestamp
+CREATE INDEX idx_safe_senders_date_added ON safe_senders(date_added);
 ```
 
 **UI Screens**:
-1. **Scan Results List**: Show unmatched emails grouped by scan type
-2. **Email Detail**: Show full email with actions (add rule, add safe sender, delete, ignore)
+
+1. **Scan Results List** (Enhanced):
+   - One wrapped line per email showing:
+     - `<folder-name> • From: <email> • Subject: <subject>`
+   - From email filtered/adjusted for viewability (extract from "Name <email>" format)
+   - Subject filtered/adjusted for viewability (truncate if needed)
+   - Tap email to see detail view
+
+2. **Email Detail Screen** (Enhanced):
+   - **View Options**:
+     - View full message header
+     - View message body (with domain link extraction)
+     - Find all domains referenced in body links
+   - **Action Buttons**:
+     - Add to Safe Senders (3 options):
+       - Specific email address (ex. `^john\.doe@aol\.com$`)
+       - Specific domain (ex. `^[^@\s]+@(?:[a-z0-9-]+\.)*ibm\.com$`)
+       - Wildcard/regex domain pattern
+     - Create Auto-Delete Rule (6 types):
+       - From Header (email or domain pattern)
+       - Message Header Content (free-form match)
+       - Subject Text (free-form match)
+       - Body Text (free-form match, ex. `800\-571\-7438` or `audacious,\ llc`)
+       - Body URL Domains (extracted from links, domain pattern)
+     - Delete Email
+     - Ignore (mark as processed, no action)
+
 3. **Batch Actions**: Select multiple emails for bulk processing
 
+**Domain Extraction from Email Body**:
+- Parse body HTML/text for URLs
+- Extract all unique domains from href links
+- Present domains for quick "block all from this domain" rule creation
+- Pattern format: `/accountryside\.com$` or `^[^@\s]+@(?:[a-z0-9-]+\.)*5hourenergy\.com$`
+
 **API Methods**:
-- `ScanResultStore.addUnmatchedEmail(accountId, scanType, email)`
+- `ScanResultStore.addUnmatchedEmail(accountId, scanType, email, folderName)`
 - `ScanResultStore.getUnmatchedEmails(accountId, scanType, status)`
 - `ScanResultStore.markEmailProcessed(id, status)`
 - `ScanResultStore.checkEmailAvailability(accountId, emailId)` - Verify email still exists
+- `EmailBodyParser.extractDomains(bodyHtml, bodyText)` - Extract all domains from links
 
 **Email Availability Checking**:
 - Before showing email detail, verify email still exists in inbox
 - If deleted/moved externally, mark as "unavailable" in scan results
 - Use provider-specific identifiers (Message-ID for Gmail, IMAP UID for IMAP)
 
+**Rule Creation with date_added**:
+- All new rules (auto-delete or safe sender) include `date_added` timestamp
+- UI can filter/sort rules by date added
+- Helps identify recently added rules for debugging
+
 **Technical Notes**:
 - One unmatched list per scan type (manual, background) to avoid mixing results
 - Scan results cleared when new scan of same type starts
-- Email content NOT stored (only metadata) to save space
+- Email content NOT stored (only metadata + folder location) to save space
+- Rules enabled by default when user creates them from UI
 
 ---
 
 ### F2: User Application Settings (Detail)
 
+**UI Entry Points**:
+- **Account Selection Screen**: Settings button (⚙️) → App-wide settings
+- **Scan Progress Screen**: Settings button (⚙️) → Provider/email address setup
+
 **Settings Categories**:
 
 1. **Manual Scan Defaults**
-   - Scan Mode: Read-Only / Preview / Live Scan / Full Scan
+   - Scan Mode:
+     - Read-Only (checkbox)
+     - Process safe senders (checkbox)
+     - Process rules (checkbox for All, OR individual checkboxes):
+       - Auto Delete Header From
+       - Auto Delete Header Text
+       - Auto Delete Subject Text
+       - Auto Delete Body Text
+       - Auto Delete Body URL domains
+   - Select folders to scan (uses current dynamic folder discovery)
    - Default Folders: Inbox, Junk, All Folders
    - Confirmation Dialogs: Enable/Disable
 
-2. **Background Scan Defaults**
+2. **Background Scan Defaults** (defaults for all future newly added provider/email addresses)
    - Enabled: Yes/No
-   - Frequency: Hourly, Daily, Weekly
+   - Frequency: Every `<n>` minutes (configurable, ex. 15, 30, 60)
+   - Scan Mode: (same options as Manual Scan Defaults above)
    - Default Folders: Inbox only, Inbox + Junk, All Folders
-   - Scan Mode: Read-Only, Preview, Live Scan (Full Scan not recommended)
 
-3. **Per-Account Settings** (Overrides)
-   - Background Scan Enabled: Yes/No (override global default)
-   - Background Scan Frequency: Hourly, Daily, Weekly (override global default)
-   - Default Folders: Account-specific folder selection
+3. **Provider/Email Address Setups** (per-account overrides)
+   - Authentication (manage credentials, re-authenticate)
+   - Background Scans:
+     - Enabled: Yes/No (override global default)
+     - Frequency: Every `<n>` minutes (override global default)
+     - Scan Mode: (same options as Manual Scan Defaults above)
+     - Default Folders: Account-specific folder selection
 
 **Storage**:
 - Settings stored in SQLite `app_settings` table
 - Per-account overrides in `account_settings` table
+- Granular rule type toggles stored as bit flags or JSON
 
 **UI**:
-- Settings screen with tabbed interface (Manual, Background, Accounts)
-- Per-account settings accessible from Account Selection screen
+- Settings screen with tabbed interface (Manual, Background, Provider/Email Addresses)
+- Provider/email address settings accessible from:
+  - Account Selection screen → Settings button
+  - Scan Progress screen → Settings button (direct to current account)
 - Clear indication when setting is overridden
+- Rule type checkboxes dynamically show/hide based on "Process rules (All)" toggle
 
 ---
 
