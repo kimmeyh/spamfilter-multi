@@ -8,6 +8,8 @@ import 'core/providers/rule_set_provider.dart';
 import 'core/providers/email_scan_provider.dart';
 import 'core/services/background_mode_service.dart';
 import 'core/services/background_scan_windows_worker.dart';
+import 'core/services/windows_system_tray_service.dart';
+import 'core/services/windows_notification_service.dart';
 import 'adapters/storage/secure_credentials_store.dart';
 // import 'ui/screens/platform_selection_screen.dart'; // OLD: Direct to platform selection.
 import 'ui/screens/main_navigation_screen.dart'; // NEW: Main navigation with bottom nav (Android)
@@ -54,6 +56,17 @@ void main(List<String> args) async {
     Logger().w('Legacy token migration failed: $e');
   }
 
+  // Initialize Windows system tray and notifications (Windows only)
+  if (Platform.isWindows) {
+    final systemTrayService = WindowsSystemTrayService();
+    await systemTrayService.initialize();
+    Logger().i('Windows system tray initialized');
+
+    final notificationService = WindowsNotificationService();
+    await notificationService.initialize();
+    Logger().i('Windows notifications initialized');
+  }
+
   runApp(const SpamFilterApp());
 }
 
@@ -76,14 +89,27 @@ class SpamFilterApp extends StatelessWidget {
       ],
       child: Shortcuts(
         shortcuts: <LogicalKeySet, Intent>{
-          // Ctrl+Q to quit (desktop platforms)
-          if (Platform.isWindows || Platform.isLinux || Platform.isMacOS)
+          // Desktop keyboard shortcuts (Windows/Linux/macOS)
+          if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) ...{
+            // Ctrl+Q: Quit application
             LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyQ):
                 const _QuitIntent(),
+            // Ctrl+N: New scan (navigate to account selection)
+            LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyN):
+                const _NewScanIntent(),
+            // Ctrl+R: Refresh current screen
+            LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyR):
+                const _RefreshIntent(),
+            // F5: Refresh (alternative)
+            LogicalKeySet(LogicalKeyboardKey.f5):
+                const _RefreshIntent(),
+          },
         },
         child: Actions(
           actions: <Type, Action<Intent>>{
             _QuitIntent: _QuitAction(),
+            _NewScanIntent: _NewScanAction(),
+            _RefreshIntent: _RefreshAction(),
           },
           child: MaterialApp(
             title: 'Spam Filter Mobile',
@@ -93,19 +119,26 @@ class SpamFilterApp extends StatelessWidget {
                 brightness: Brightness.light,
               ),
               useMaterial3: true,
-              // Material Design 3 card styling
-              cardTheme: const CardTheme(
-                elevation: 1,
-                margin: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              // Card styling (works for both Android and Windows)
+              cardTheme: CardTheme(
+                elevation: Platform.isWindows ? 0 : 1, // Fluent uses flat cards
+                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               ),
               // App bar styling
               appBarTheme: const AppBarTheme(
                 centerTitle: false,
                 elevation: 0,
               ),
-              // Floating action button styling
+              // Floating action button styling (Android only in practice)
               floatingActionButtonTheme: const FloatingActionButtonThemeData(
                 elevation: 4,
+              ),
+              // Windows-friendly dialog styling
+              dialogTheme: DialogTheme(
+                elevation: Platform.isWindows ? 2 : 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(Platform.isWindows ? 4 : 28),
+                ),
               ),
             ),
             // Track navigation events for account list refresh
@@ -203,6 +236,39 @@ class _QuitAction extends Action<_QuitIntent> {
     if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
       SystemNavigator.pop();
     }
+    return null;
+  }
+}
+
+/// Intent for starting a new scan (Ctrl+N)
+class _NewScanIntent extends Intent {
+  const _NewScanIntent();
+}
+
+/// Action for starting a new scan - navigates to account selection
+class _NewScanAction extends Action<_NewScanIntent> {
+  @override
+  Object? invoke(_NewScanIntent intent) {
+    // Navigate to account selection screen
+    // This is handled via global navigator key (not implemented yet)
+    // For now, this is a no-op - keyboard nav requires global key setup
+    Logger().i('Ctrl+N pressed: Navigate to account selection (not yet implemented)');
+    return null;
+  }
+}
+
+/// Intent for refreshing current screen (Ctrl+R or F5)
+class _RefreshIntent extends Intent {
+  const _RefreshIntent();
+}
+
+/// Action for refreshing current screen
+class _RefreshAction extends Action<_RefreshIntent> {
+  @override
+  Object? invoke(_RefreshIntent intent) {
+    // Refresh current screen
+    // This would need context-aware implementation
+    Logger().i('Ctrl+R/F5 pressed: Refresh screen (not yet implemented)');
     return null;
   }
 }

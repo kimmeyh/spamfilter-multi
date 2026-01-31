@@ -50,6 +50,10 @@ dependencies:
   connectivity_plus: ^5.0.0  # Network connectivity detection
   battery_plus: ^5.0.0  # Battery level detection
 
+  # Sprint 10 - Windows Desktop UI
+  system_tray: ^2.0.3  # System tray integration (Windows/macOS/Linux)
+  window_manager: ^0.3.7  # Window management (minimize to tray, etc.)
+
   # Phase 2+ - UI Enhancement
   # flutter_svg: ^2.0.9
 
