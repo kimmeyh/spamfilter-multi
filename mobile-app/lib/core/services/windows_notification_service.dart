@@ -15,7 +15,9 @@ class WindowsNotificationService {
 
   /// Initialize Windows notifications
   ///
-  /// Call this during app startup on Windows platform
+  /// Call this during app startup on Windows platform.
+  /// Note: flutter_local_notifications v16.2.0 does not have full Windows support,
+  /// so this service is a placeholder for future Windows notification functionality.
   Future<void> initialize() async {
     if (!Platform.isWindows) {
       return; // Only initialize on Windows
@@ -26,16 +28,9 @@ class WindowsNotificationService {
     }
 
     try {
-      // Initialize Windows notification settings
-      const WindowsInitializationSettings initializationSettingsWindows =
-          WindowsInitializationSettings(
-        appName: 'Spam Filter',
-        appUserModelId: 'com.spamfilter.spamfiltermobile',
-      );
-
-      const InitializationSettings initializationSettings = InitializationSettings(
-        windows: initializationSettingsWindows,
-      );
+      // Basic initialization without Windows-specific settings
+      // Windows support is limited in flutter_local_notifications v16.2.0
+      const InitializationSettings initializationSettings = InitializationSettings();
 
       await _notifications.initialize(
         initializationSettings,
@@ -44,7 +39,7 @@ class WindowsNotificationService {
 
       _isInitialized = true;
     } catch (e) {
-      // Initialization failed - log but don't crash
+      // Initialization failed - log but do not crash
       print('Failed to initialize Windows notifications: $e');
     }
   }
@@ -83,15 +78,13 @@ class WindowsNotificationService {
       );
 
       // Show notification
+      // Note: Using basic NotificationDetails without Windows-specific customization
+      // as flutter_local_notifications v16.2.0 does not support WindowsNotificationDetails
       await _notifications.show(
         0, // Notification ID
         'Background Scan Complete',
         '$accountEmail: $summary',
-        const NotificationDetails(
-          windows: WindowsNotificationDetails(
-            subtitle: 'Spam Filter',
-          ),
-        ),
+        const NotificationDetails(),
         payload: accountEmail, // Pass account email as payload for tap handling
       );
     } catch (e) {
@@ -112,15 +105,13 @@ class WindowsNotificationService {
     }
 
     try {
+      // Note: Using basic NotificationDetails without Windows-specific customization
+      // as flutter_local_notifications v16.2.0 does not support WindowsNotificationDetails
       await _notifications.show(
         1, // Notification ID
         'Background Scan Failed',
         '$accountEmail: $errorMessage',
-        const NotificationDetails(
-          windows: WindowsNotificationDetails(
-            subtitle: 'Spam Filter',
-          ),
-        ),
+        const NotificationDetails(),
         payload: accountEmail,
       );
     } catch (e) {
