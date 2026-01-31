@@ -51,9 +51,6 @@ class ScanScheduleStatus {
 /// Handles scheduling, cancellation, and status queries
 class BackgroundScanManager {
   static final Logger _logger = Logger();
-  static const String _statusKey = 'bg_scan_status';
-  static const String _frequencyKey = 'bg_scan_frequency';
-  static const String _nextRunKey = 'bg_scan_next_run';
 
   /// Schedule background scans at specified frequency
   /// Call this when user enables background scanning or changes frequency
