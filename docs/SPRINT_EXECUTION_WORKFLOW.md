@@ -192,6 +192,17 @@ This document describes the step-by-step process for executing sprints in the sp
   - Ensure zero errors introduced
   - **(Optional) Efficiency Checkpoint**: If context usage > 60%, suggest user run `/compact` before Phase 4 to refresh context for final PR review phase
 
+- [ ] **3.3.1 Monitor Test Execution (Optional - For Debugging)**
+  - Use parallel test monitoring to track long-running tests
+  - Script: `mobile-app/scripts/monitor-tests.ps1`
+  - Usage: `.\monitor-tests.ps1 -OutputFile test-output.txt`
+  - Features:
+    - Real-time test progress monitoring
+    - Identifies slow tests
+    - Logs test execution times
+    - Useful for debugging test hangs or performance issues
+  - When to use: Tests taking > 2 minutes, or investigating test failures
+
 ---
 
 **⚡ COMPACT SUGGESTION (Optional for Efficiency)**
