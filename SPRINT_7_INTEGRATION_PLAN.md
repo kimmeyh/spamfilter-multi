@@ -20,7 +20,7 @@ These are the permanent guidance documents that affect ALL future sprints. Sprin
 
 4. **docs/SPRINT_PLANNING.md** - How to plan each sprint
 5. **docs/SPRINT_EXECUTION_WORKFLOW.md** - How to execute each sprint
-6. **docs/PHASE_3_5_MASTER_PLAN.md** - Master timeline and lessons
+6. **docs/ALL_SPRINTS_MASTER_PLAN.md** - Master timeline and lessons
 
 ### Tier 3: Supporting (Update after Tier 1 & 2)
 
@@ -108,7 +108,7 @@ These are the permanent guidance documents that affect ALL future sprints. Sprin
 
 **Where this appears**:
 - SPRINT_PLANNING.md: Add section "Applying Previous Sprint Recommendations"
-- PHASE_3_5_MASTER_PLAN.md: Add "Lessons Learned" section after each sprint
+- ALL_SPRINTS_MASTER_PLAN.md: Add "Lessons Learned" section after each sprint
 - PHASE_0_PRE_SPRINT_CHECKLIST.md: Review previous sprint recommendations
 
 ---
@@ -274,7 +274,7 @@ These are the permanent guidance documents that affect ALL future sprints. Sprin
 
 ---
 
-### FILE 6: docs/PHASE_3_5_MASTER_PLAN.md (Master Timeline)
+### FILE 6: docs/ALL_SPRINTS_MASTER_PLAN.md (Master Timeline)
 
 **Sections to ADD** (after Sprint 7 section):
 
@@ -381,7 +381,7 @@ Add to each sprint section:
 ### Step 2: Important (BEFORE SPRINT 8 BEGINS)
 - [ ] Update SPRINT_PLANNING.md (major additions)
 - [ ] Update SPRINT_EXECUTION_WORKFLOW.md (multiple updates)
-- [ ] Update PHASE_3_5_MASTER_PLAN.md (lessons section)
+- [ ] Update ALL_SPRINTS_MASTER_PLAN.md (lessons section)
 
 ### Step 3: Supporting (BEFORE SPRINT 8 EXECUTION)
 - [ ] Update QUICK_REFERENCE.md (3 new sections)
@@ -397,7 +397,7 @@ Add to each sprint section:
 - [ ] Testing protocol is in: CLAUDE.md, SPRINT_STOPPING_CRITERIA.md, SPRINT_PLANNING.md, SPRINT_EXECUTION_WORKFLOW.md, PHASE_0_PRE_SPRINT_CHECKLIST.md
 - [ ] Checkpoint workflow is in: CLAUDE.md, SPRINT_PLANNING.md, SPRINT_EXECUTION_WORKFLOW.md, PHASE_0_PRE_SPRINT_CHECKLIST.md
 - [ ] Escalation protocol is in: CLAUDE.md, SPRINT_STOPPING_CRITERIA.md, SPRINT_EXECUTION_WORKFLOW.md
-- [ ] Recommendation integration process is in: SPRINT_PLANNING.md, PHASE_0_PRE_SPRINT_CHECKLIST.md, PHASE_3_5_MASTER_PLAN.md
+- [ ] Recommendation integration process is in: SPRINT_PLANNING.md, PHASE_0_PRE_SPRINT_CHECKLIST.md, ALL_SPRINTS_MASTER_PLAN.md
 
 ### During Sprint 8 Execution:
 - [ ] Sprint 8 plan references Sprint 7 learnings

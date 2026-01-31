@@ -28,26 +28,26 @@ If any check fails, **STOP and resolve with user before accepting work**.
 
 ## CRITICAL: Master Sprint Plan Location
 
-**DO NOT LOSE THIS REFERENCE** - The master plan for all Phase 3.5 sprints is stored in:
+**DO NOT LOSE THIS REFERENCE** - The master plan for all sprints is stored in:
 
-**Repository File**: `docs/PHASE_3_5_MASTER_PLAN.md`
-**Full Path**: `D:\Data\Harold\github\spamfilter-multi\docs\PHASE_3_5_MASTER_PLAN.md`
-**GitHub URL**: `https://github.com/kimmeyh/spamfilter-multi/blob/develop/docs/PHASE_3_5_MASTER_PLAN.md`
+**Repository File**: `docs/ALL_SPRINTS_MASTER_PLAN.md`
+**Full Path**: `D:\Data\Harold\github\spamfilter-multi\docs\ALL_SPRINTS_MASTER_PLAN.md`
+**GitHub URL**: `https://github.com/kimmeyh/spamfilter-multi/blob/develop/docs/ALL_SPRINTS_MASTER_PLAN.md`
 
 **Contents**:
-- Complete specifications for all Phase 3.5 sprints
+- Complete specifications for all sprints (Phase 3.5+)
 - Sprint dependencies and critical path
 - Task breakdown by model (Haiku/Sonnet/Opus)
 - Effort estimates (actual vs estimated from previous sprints)
 - Risk management and contingency plans
-- Success criteria for Phase 3.5 completion
+- Success criteria for sprint completion
 
 **When You Need This**:
 - Starting a new sprint (find Sprint X section)
 - Creating detailed sprint plan (copy and expand from master)
 - Planning dependencies (check cross-sprint dependency graph)
 - Assigning models to tasks (reference model assignment by sprint)
-- Understanding overall Phase 3.5 roadmap
+- Understanding overall sprint roadmap
 
 **Important**:
 1. This document is IN THE REPOSITORY (not in Claude's plan storage)
@@ -59,7 +59,7 @@ If any check fails, **STOP and resolve with user before accepting work**.
    - Verify Sprint N section includes actual vs estimated durations
    - Update the master plan with any lessons learned before planning next sprint
    - Then proceed to SPRINT_EXECUTION_WORKFLOW.md Phase 1
-5. If you cannot find it, search: `find . -name "PHASE_3_5_MASTER_PLAN.md"` or `grep -r "10 sprint" docs/`
+5. If you cannot find it, search: `find . -name "ALL_SPRINTS_MASTER_PLAN.md"` or `grep -r "sprint" docs/ALL_SPRINTS_MASTER_PLAN.md`
 
 ## Developer information
 1. Using Windows 11 HP Omen with all current Windows Updates installed
@@ -183,6 +183,22 @@ issue. Should I make it more specific to only exclude 'Archive/desktop-python/li
 ## Sprint Planning and Development Workflow
 
 **CRITICAL**: All development follows sprint-based planning with model-tiered task execution.
+
+### Sprint Execution Documentation
+
+All sprint work references the **SPRINT EXECUTION docs** - the authoritative set of sprint process documentation:
+
+| Document | Purpose | When to Use |
+|----------|---------|-------------|
+| **ALL_SPRINTS_MASTER_PLAN.md** | Master plan for all sprints | Before starting any sprint, after completing a sprint |
+| **SPRINT_PLANNING.md** | Sprint planning methodology | When planning a new sprint |
+| **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 0-4.5) |
+| **SPRINT_STOPPING_CRITERIA.md** | When/why to stop working | When uncertain if blocked or should continue |
+| **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 4.5) |
+| **PERFORMANCE_BENCHMARKS.md** | Performance metrics and tracking | When measuring performance or comparing to baseline |
+| **ARCHITECTURE.md** | System architecture and design | When making architectural decisions or understanding codebase |
+
+**Quick Reference**: These 7 documents form the complete sprint execution knowledge base. Reference them frequently during sprint work.
 
 ### Sprint Structure
 - **Sprints**: Time-boxed iterations focusing on one key enhancement

@@ -4,7 +4,21 @@
 
 **Audience**: Claude Code models executing sprint tasks; User reviewing sprint execution.
 
-**Last Updated**: January 27, 2026
+**Last Updated**: January 31, 2026
+
+## SPRINT EXECUTION Documentation
+
+**This is part of the SPRINT EXECUTION docs** - the authoritative set of sprint process documentation. Reference these documents throughout sprint work:
+
+| Document | Purpose | When to Use |
+|----------|---------|-------------|
+| **ALL_SPRINTS_MASTER_PLAN.md** | Master plan for all sprints | Before starting any sprint, after completing a sprint |
+| **SPRINT_PLANNING.md** | Sprint planning methodology | When planning a new sprint |
+| **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 0-4.5) |
+| **SPRINT_STOPPING_CRITERIA.md** (this doc) | When/why to stop working | When uncertain if blocked or should continue |
+| **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 4.5) |
+| **PERFORMANCE_BENCHMARKS.md** | Performance metrics and tracking | When measuring performance or comparing to baseline |
+| **ARCHITECTURE.md** | System architecture and design | When making architectural decisions or understanding codebase |
 
 ---
 

@@ -35,7 +35,7 @@
     "description": "Use AppPaths.getDatabasePath() at runtime to get platform-specific path"
   },
   "sprint_docs": {
-    "master_plan": "D:\\Data\\Harold\\github\\spamfilter-multi\\docs\\PHASE_3_5_MASTER_PLAN.md",
+    "master_plan": "D:\\Data\\Harold\\github\\spamfilter-multi\\docs\\ALL_SPRINTS_MASTER_PLAN.md",
     "workflow": "D:\\Data\\Harold\\github\\spamfilter-multi\\docs\\SPRINT_EXECUTION_WORKFLOW.md",
     "stopping_criteria": "D:\\Data\\Harold\\github\\spamfilter-multi\\docs\\SPRINT_STOPPING_CRITERIA.md",
     "planning": "D:\\Data\\Harold\\github\\spamfilter-multi\\docs\\SPRINT_PLANNING.md",

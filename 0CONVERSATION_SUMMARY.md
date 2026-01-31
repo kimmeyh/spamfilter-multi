@@ -3,7 +3,7 @@
 **Date**: January 25, 2026
 **Session**: Continuation of comprehensive sprint planning
 **Current Status**: Master plan complete and documented
-**Files Involved**: `docs/PHASE_3_5_MASTER_PLAN.md`, `CLAUDE.md`, `docs/SPRINT_INDEX.md`
+**Files Involved**: `docs/ALL_SPRINTS_MASTER_PLAN.md`, `CLAUDE.md`, `docs/SPRINT_INDEX.md`
 
 ---
 
@@ -34,7 +34,7 @@ The master Phase 3.5 plan document (comprehensive 10-sprint breakdown) was repea
 
 ### 1. Created Persistent Master Plan Document
 
-**File**: `docs/PHASE_3_5_MASTER_PLAN.md` (1,448 lines, comprehensive)
+**File**: `docs/ALL_SPRINTS_MASTER_PLAN.md` (1,448 lines, comprehensive)
 
 **Content Structure**:
 - Overview of Phase 3.5 goals and objectives
@@ -63,9 +63,9 @@ The master Phase 3.5 plan document (comprehensive 10-sprint breakdown) was repea
 This project has 10 planned sprints in Phase 3.5. The master plan document
 must be maintained in the repository for all sprints to reference.
 
-**Location**: `docs/PHASE_3_5_MASTER_PLAN.md`
-**Full Path**: D:\Data\Harold\github\spamfilter-multi\docs\PHASE_3_5_MASTER_PLAN.md
-**GitHub URL**: https://github.com/kimmeyh/spamfilter-multi/blob/develop/docs/PHASE_3_5_MASTER_PLAN.md
+**Location**: `docs/ALL_SPRINTS_MASTER_PLAN.md`
+**Full Path**: D:\Data\Harold\github\spamfilter-multi\docs\ALL_SPRINTS_MASTER_PLAN.md
+**GitHub URL**: https://github.com/kimmeyh/spamfilter-multi/blob/develop/docs/ALL_SPRINTS_MASTER_PLAN.md
 
 **When to Reference**:
 - At start of each sprint (reference sprint overview section)
@@ -73,7 +73,7 @@ must be maintained in the repository for all sprints to reference.
 - For time estimates (reference Resource Allocation)
 - For risk assessment (see Risk Management section)
 
-**If Master Plan is Lost**: Search repository for PHASE_3_5_MASTER_PLAN.md or
+**If Master Plan is Lost**: Search repository for ALL_SPRINTS_MASTER_PLAN.md or
 check GitHub repository docs/ folder.
 ```
 
@@ -295,7 +295,7 @@ Sprint 1 (Database)
 ### Request 1: Find Master Plan (4th occurrence)
 **User**: "this is the 4th time you could not find it... Shouldn't we put a plan like that in the repository?"
 
-**Response**: Created persistent `docs/PHASE_3_5_MASTER_PLAN.md` with complete 10-sprint plan and added location reference to CLAUDE.md.
+**Response**: Created persistent `docs/ALL_SPRINTS_MASTER_PLAN.md` with complete 10-sprint plan and added location reference to CLAUDE.md.
 
 ### Request 2: Use Original Requirements
 **User**: "Here is the original document... Use to adjust as needed, but keep current architectual decisions and updates through Sprint 3. ONLY use to update what is needed for Sprint 4 through the end."
@@ -322,7 +322,7 @@ Sprint 1 (Database)
 ## Files Created/Modified
 
 ### Created
-1. **docs/PHASE_3_5_MASTER_PLAN.md** (1,448 lines)
+1. **docs/ALL_SPRINTS_MASTER_PLAN.md** (1,448 lines)
    - Complete 10-sprint breakdown with specifications
    - Dependency analysis and critical path
    - Resource allocation and risk management
@@ -354,7 +354,7 @@ Sprint 1 (Database)
 - `eaeeb81` - docs: Add high-priority Sprint 3 improvement documentation
 
 **Master Plan Commits**:
-- Created initial `docs/PHASE_3_5_MASTER_PLAN.md` with full 10-sprint breakdown
+- Created initial `docs/ALL_SPRINTS_MASTER_PLAN.md` with full 10-sprint breakdown
 - Updated Sprints 4-5 based on original requirements (Processing Scan Results, Settings)
 - Updated Sprints 6-7 based on original requirements (Interactive Management, Android Background Scanning)
 - Sprints 8-10 already comprehensively documented
@@ -388,7 +388,7 @@ Sprint 1 (Database)
 ## Key Decisions Made
 
 ### 1. Persistent Master Plan in Repository
-**Decision**: Store master plan in `docs/PHASE_3_5_MASTER_PLAN.md` (not ephemeral plan storage)
+**Decision**: Store master plan in `docs/ALL_SPRINTS_MASTER_PLAN.md` (not ephemeral plan storage)
 
 **Rationale**:
 - Accessible across all conversations

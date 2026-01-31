@@ -1,9 +1,9 @@
-# Phase 3.5 Master Sprint Plan - Complete 10-Sprint Breakdown
+# All Sprints Master Plan - Complete Sprint Breakdown
 
-**Status**: Master planning document for all 10 sprints of Phase 3.5
+**Status**: Master planning document for all sprints (Phase 3.5+)
 **Created**: January 25, 2026
-**Last Updated**: January 25, 2026
-**Total Effort**: ~60-80 hours across 10 sprints
+**Last Updated**: January 31, 2026
+**Total Effort**: ~60-80 hours across 10 sprints (Phase 3.5)
 **Target Completion**: Q1-Q2 2026
 
 **Source & Credit**:
@@ -11,6 +11,20 @@
 - Sprint 1-3 execution details: Completed and documented
 - Sprint 4-10 recreation: Based on original Phase 3.5 plan + what remains to be done
 - Planning & coordination: User oversight
+
+## SPRINT EXECUTION Documentation
+
+**This is part of the SPRINT EXECUTION docs** - the authoritative set of sprint process documentation. Reference these documents throughout sprint work:
+
+| Document | Purpose | When to Use |
+|----------|---------|-------------|
+| **ALL_SPRINTS_MASTER_PLAN.md** (this doc) | Master plan for all sprints | Before starting any sprint, after completing a sprint |
+| **SPRINT_PLANNING.md** | Sprint planning methodology | When planning a new sprint |
+| **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 0-4.5) |
+| **SPRINT_STOPPING_CRITERIA.md** | When/why to stop working | When uncertain if blocked or should continue |
+| **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 4.5) |
+| **PERFORMANCE_BENCHMARKS.md** | Performance metrics and tracking | When measuring performance or comparing to baseline |
+| **ARCHITECTURE.md** | System architecture and design | When making architectural decisions or understanding codebase |
 
 ---
 
@@ -1412,7 +1426,7 @@ Sprint 3: Safe Sender Exceptions
 ## Document Management
 
 **This Document**:
-- **Path**: `docs/PHASE_3_5_MASTER_PLAN.md`
+- **Path**: `docs/ALL_SPRINTS_MASTER_PLAN.md`
 - **Purpose**: Central reference for all 10 sprints
 - **Update Frequency**: After each sprint completes (outcomes, lessons learned)
 - **Audience**: Claude Code agents, developers, user
@@ -1431,9 +1445,9 @@ Sprint 3: Safe Sender Exceptions
 ## Quick Reference
 
 **Finding This Document**:
-- Full Path: `D:\Data\Harold\github\spamfilter-multi\docs\PHASE_3_5_MASTER_PLAN.md`
-- In Repository: `docs/PHASE_3_5_MASTER_PLAN.md`
-- GitHub URL: `https://github.com/kimmeyh/spamfilter-multi/blob/develop/docs/PHASE_3_5_MASTER_PLAN.md`
+- Full Path: `D:\Data\Harold\github\spamfilter-multi\docs\ALL_SPRINTS_MASTER_PLAN.md`
+- In Repository: `docs/ALL_SPRINTS_MASTER_PLAN.md`
+- GitHub URL: `https://github.com/kimmeyh/spamfilter-multi/blob/develop/docs/ALL_SPRINTS_MASTER_PLAN.md`
 
 **For Future Sprints**:
 1. Reference Sprint X section above

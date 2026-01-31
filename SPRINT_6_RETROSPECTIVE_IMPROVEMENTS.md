@@ -92,7 +92,7 @@ This document summarizes all improvements implemented based on Sprint 6 Review/R
 
 **File Modified**: `CLAUDE.md`
 
-**Change**: Updated "When You Need This" section for PHASE_3_5_MASTER_PLAN.md to emphasize reading before sprint kickoff
+**Change**: Updated "When You Need This" section for ALL_SPRINTS_MASTER_PLAN.md to emphasize reading before sprint kickoff
 
 **Before**:
 ```markdown
@@ -101,7 +101,7 @@ This document summarizes all improvements implemented based on Sprint 6 Review/R
 2. It persists across conversations (unlike `.claude/plans/`)
 3. Update it after each sprint completes (add actual duration, lessons learned, update future Sprint plans - as needed)
 4. Reference it in the first 5 minutes of each sprint kickoff
-5. If you cannot find it, search: `find . -name "PHASE_3_5_MASTER_PLAN.md"` or `grep -r "10 sprint" docs/`
+5. If you cannot find it, search: `find . -name "ALL_SPRINTS_MASTER_PLAN.md"` or `grep -r "10 sprint" docs/`
 ```
 
 **After**:
@@ -116,10 +116,10 @@ This document summarizes all improvements implemented based on Sprint 6 Review/R
    - Verify Sprint N section includes actual vs estimated durations
    - Update the master plan with any lessons learned before planning next sprint
    - Then proceed to SPRINT_EXECUTION_WORKFLOW.md Phase 1
-5. If you cannot find it, search: `find . -name "PHASE_3_5_MASTER_PLAN.md"` or `grep -r "10 sprint" docs/`
+5. If you cannot find it, search: `find . -name "ALL_SPRINTS_MASTER_PLAN.md"` or `grep -r "10 sprint" docs/`
 ```
 
-**Benefit**: Makes explicit that PHASE_3_5_MASTER_PLAN.md should be read FIRST, before Phase 0-1. Prevents skipping master plan review.
+**Benefit**: Makes explicit that ALL_SPRINTS_MASTER_PLAN.md should be read FIRST, before Phase 0-1. Prevents skipping master plan review.
 
 ---
 
@@ -191,14 +191,14 @@ git status --short
 
 **File Modified**: `docs/SPRINT_EXECUTION_WORKFLOW.md`
 
-**Change**: Added emphasis that PHASE_3_5_MASTER_PLAN.md must be read BEFORE Phase 0
+**Change**: Added emphasis that ALL_SPRINTS_MASTER_PLAN.md must be read BEFORE Phase 0
 
 **Added**:
 ```markdown
 ### **Phase 0: Sprint Pre-Kickoff** ⚠️ CRITICAL PREREQUISITE
 
-⚠️ **BEFORE BEGINNING PHASE 0**, read `docs/PHASE_3_5_MASTER_PLAN.md` (very first step):
-- Locate Sprint N section in PHASE_3_5_MASTER_PLAN.md
+⚠️ **BEFORE BEGINNING PHASE 0**, read `docs/ALL_SPRINTS_MASTER_PLAN.md` (very first step):
+- Locate Sprint N section in ALL_SPRINTS_MASTER_PLAN.md
 - Review what is planned for this sprint
 - Check for retrospective notes from previous sprint
 - Update master plan with previous sprint's actual vs estimated duration
@@ -262,7 +262,7 @@ Before Phase 4.5, if context usage is high (>70%), user can optionally run `/com
 │   ├── OAUTH_SETUP.md        # Gmail OAuth for Android + Windows
 │   ├── TROUBLESHOOTING.md    # Common issues and fixes
 │   ├── ISSUE_BACKLOG.md      # Open issues and status
-│   ├── PHASE_3_5_MASTER_PLAN.md    # Master plan for all 10 sprints (READ FIRST!)
+│   ├── ALL_SPRINTS_MASTER_PLAN.md    # Master plan for all 10 sprints (READ FIRST!)
 │   ├── SPRINT_PLANNING.md    # Sprint planning methodology
 │   ├── SPRINT_EXECUTION_WORKFLOW.md # Step-by-step sprint execution checklist
 │   ├── PHASE_0_PRE_SPRINT_CHECKLIST.md # Pre-sprint verification checklist
@@ -311,14 +311,14 @@ Before Phase 4.5, if context usage is high (>70%), user can optionally run `/com
 ### Files Modified
 1. ✅ `CLAUDE.md` (2 changes)
    - Added Execution Autonomy section (point 6)
-   - Updated PHASE_3_5_MASTER_PLAN.md instructions
+   - Updated ALL_SPRINTS_MASTER_PLAN.md instructions
    - Updated Additional Resources section
 
 2. ✅ `docs/SPRINT_EXECUTION_WORKFLOW.md` (3 changes)
    - Added Phase 1.7: Plan Approval = Task Execution Pre-Approval
    - Added Phase 3.2 context compaction checkpoint
    - Added Phase 4.5 context compaction checkpoint
-   - Added Phase 0 pre-requisite: Read PHASE_3_5_MASTER_PLAN.md first
+   - Added Phase 0 pre-requisite: Read ALL_SPRINTS_MASTER_PLAN.md first
 
 ### Total Documentation Impact
 - **New lines added**: ~1,100 lines
@@ -376,7 +376,7 @@ Before Phase 4.5, if context usage is high (>70%), user can optionally run `/com
 1. ✅ Phase 1.7 added to clarify execution autonomy
 2. ✅ SPRINT_STOPPING_CRITERIA.md added for stopping guidance
 3. ✅ WINDOWS_BASH_COMPATIBILITY.md added for shell compatibility
-4. ✅ Updated PHASE_3_5_MASTER_PLAN.md pre-reading instructions
+4. ✅ Updated ALL_SPRINTS_MASTER_PLAN.md pre-reading instructions
 5. ✅ Updated documentation index to make files discoverable
 
 ---
@@ -404,7 +404,7 @@ Before Phase 4.5, if context usage is high (>70%), user can optionally run `/com
 ## Next Steps for Future Sprints
 
 ### For Claude Code Models
-1. **Before starting any sprint**: Read PHASE_3_5_MASTER_PLAN.md (new first step)
+1. **Before starting any sprint**: Read ALL_SPRINTS_MASTER_PLAN.md (new first step)
 2. **After plan approval**: Work autonomously without asking for per-task approval (use Phase 1.7)
 3. **If uncertain about stopping**: Reference SPRINT_STOPPING_CRITERIA.md decision tree
 4. **If bash command fails on Windows**: Reference WINDOWS_BASH_COMPATIBILITY.md
@@ -415,7 +415,7 @@ Before Phase 4.5, if context usage is high (>70%), user can optionally run `/com
 3. **If seeing bash errors**: Suggest model reference WINDOWS_BASH_COMPATIBILITY.md
 
 ### For Retrospectives
-1. **Each sprint review**: Update PHASE_3_5_MASTER_PLAN.md with actual vs estimated duration
+1. **Each sprint review**: Update ALL_SPRINTS_MASTER_PLAN.md with actual vs estimated duration
 2. **When discovering new issues**: Add them to SPRINT_STOPPING_CRITERIA.md or WINDOWS_BASH_COMPATIBILITY.md as needed
 3. **Document process learnings**: Update relevant guide in docs/ folder
 
@@ -449,7 +449,7 @@ Before Phase 4.5, if context usage is high (>70%), user can optionally run `/com
 → See `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 3.2 and Phase 4.5 checkpoints
 
 ### For Pre-Sprint Checklist
-→ See `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 0 (read PHASE_3_5_MASTER_PLAN.md first)
+→ See `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 0 (read ALL_SPRINTS_MASTER_PLAN.md first)
 
 ---
 

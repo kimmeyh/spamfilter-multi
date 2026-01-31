@@ -2,6 +2,20 @@
 
 This document describes the step-by-step process for executing sprints in the spamfilter-multi project, based on actual experience from Sprint 1.
 
+## SPRINT EXECUTION Documentation
+
+**This is part of the SPRINT EXECUTION docs** - the authoritative set of sprint process documentation. Reference these documents throughout sprint work:
+
+| Document | Purpose | When to Use |
+|----------|---------|-------------|
+| **ALL_SPRINTS_MASTER_PLAN.md** | Master plan for all sprints | Before starting any sprint, after completing a sprint |
+| **SPRINT_PLANNING.md** | Sprint planning methodology | When planning a new sprint |
+| **SPRINT_EXECUTION_WORKFLOW.md** (this doc) | Step-by-step execution checklist | During sprint execution (Phases 0-4.5) |
+| **SPRINT_STOPPING_CRITERIA.md** | When/why to stop working | When uncertain if blocked or should continue |
+| **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 4.5) |
+| **PERFORMANCE_BENCHMARKS.md** | Performance metrics and tracking | When measuring performance or comparing to baseline |
+| **ARCHITECTURE.md** | System architecture and design | When making architectural decisions or understanding codebase |
+
 ---
 
 ## ⚠️ CRITICAL REMINDER: Phase 4.5 Sprint Review is MANDATORY
@@ -23,8 +37,8 @@ This document describes the step-by-step process for executing sprints in the sp
 
 ### **Phase 0: Sprint Pre-Kickoff** ⚠️ CRITICAL PREREQUISITE
 
-⚠️ **BEFORE BEGINNING PHASE 0**, read `docs/PHASE_3_5_MASTER_PLAN.md` (very first step):
-- Locate Sprint N section in PHASE_3_5_MASTER_PLAN.md
+⚠️ **BEFORE BEGINNING PHASE 0**, read `docs/ALL_SPRINTS_MASTER_PLAN.md` (very first step):
+- Locate Sprint N section in ALL_SPRINTS_MASTER_PLAN.md
 - Review what is planned for this sprint
 - Check for retrospective notes from previous sprint
 - Update master plan with previous sprint's actual vs estimated duration

@@ -38,7 +38,7 @@ Sprint 8 was focused on fixing critical pattern matching bugs and UI improvement
 
 **Action Items**:
 - [ ] Update SPRINT_EXECUTION_WORKFLOW.md with Sprint 8 improvements
-- [ ] Update PHASE_3_5_MASTER_PLAN.md to reference process improvements for future sprints
+- [ ] Update ALL_SPRINTS_MASTER_PLAN.md to reference process improvements for future sprints
 - [ ] Create Sprint 9 plan that references updated workflow docs
 
 ---
@@ -326,7 +326,7 @@ Create `.claude/quick-reference.json` (machine-readable) and `docs/QUICK_REFEREN
     "description": "Use AppPaths.getDatabasePath() at runtime"
   },
   "sprint_docs": {
-    "master_plan": "${docs}\\PHASE_3_5_MASTER_PLAN.md",
+    "master_plan": "${docs}\\ALL_SPRINTS_MASTER_PLAN.md",
     "workflow": "${docs}\\SPRINT_EXECUTION_WORKFLOW.md",
     "stopping_criteria": "${docs}\\SPRINT_STOPPING_CRITERIA.md",
     "planning": "${docs}\\SPRINT_PLANNING.md"
@@ -386,7 +386,7 @@ Create `.claude/quick-reference.json` (machine-readable) and `docs/QUICK_REFEREN
 
 | Document | Path | Purpose |
 |----------|------|---------|
-| **Master Plan** | `docs\PHASE_3_5_MASTER_PLAN.md` | All 10 sprints |
+| **Master Plan** | `docs\ALL_SPRINTS_MASTER_PLAN.md` | All 10 sprints |
 | **Execution Workflow** | `docs\SPRINT_EXECUTION_WORKFLOW.md` | Step-by-step process |
 | **Stopping Criteria** | `docs\SPRINT_STOPPING_CRITERIA.md` | When/why to stop |
 | **Sprint Planning** | `docs\SPRINT_PLANNING.md` | Planning methodology |
