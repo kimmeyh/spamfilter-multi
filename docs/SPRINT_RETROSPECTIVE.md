@@ -617,12 +617,164 @@ Use this quick checklist during Phase 4.5:
 
 ---
 
+## Recommendation Presentation Format
+
+### How to Present Recommendations to User
+
+After analyzing user feedback (Phase 4.5.3), Claude should present improvement recommendations in a specific order and format for user approval.
+
+**Presentation Order**: Recommendations MUST be presented LAST, after all analysis is complete, grouped by implementation dependency, and numbered for easy approval.
+
+**Numbering System**:
+- Use `<n>` for top-level recommendations (e.g., 1, 2, 3)
+- Use `<n.n>` for sub-group items (e.g., 1.1, 1.2, 1.3)
+- Each number is unique for easy approval ("Approve recommendations 1, 3.1, 3.2, 5")
+
+### Recommendation Grouping Strategy
+
+Group recommendations by **implementation order** based on dependencies:
+
+**Group 1: Foundation - Planning & Requirements** (implement first)
+- Risk assessment requirements
+- Acceptance criteria improvements
+- Sprint planning enhancements
+- These affect all downstream work
+
+**Group 2: Execution Process** (implement second)
+- Workflow improvements
+- Testing requirements
+- Documentation standards
+- Communication guidelines
+- These affect how work is done
+
+**Group 3: Quality & Validation** (implement third)
+- Code quality standards
+- Tool validation requirements
+- Test coverage requirements
+- Cross-platform validation
+- These affect final deliverables
+
+**Group 4: Meta-Process** (implement last)
+- Retrospective improvements
+- Metrics tracking
+- Continuous improvement
+- These improve the process itself
+
+### Presentation Template
+
+```markdown
+## Sprint N Retrospective Recommendations
+
+Based on feedback analysis, here are proposed improvements grouped by implementation order:
+
+### Group 1: Foundation - Planning & Requirements
+
+**1. Risk Assessment Requirements** (Affects: Sprint planning, all tasks)
+- **What**: Every sprint task must document risks with likelihood/impact/mitigation
+- **Why**: Proactive risk identification prevents issues
+- **Implementation**: Update SPRINT_PLANNING.md templates, add risk column
+- **Effort**: 30 minutes
+- **Impact**: High - prevents unexpected blockers
+
+  **1.1 Add Risk Column to Sprint Plans**
+  - Add "Risks" section to each task template
+  - Include even for "Low - maintenance work" tasks
+
+  **1.2 Risk Validation Checklist**
+  - Add to task completion checklists
+  - Verify mitigations executed before marking complete
+
+  **1.3 Risk Review Gate**
+  - Before pushing to remote, review all task risks
+  - Confirm mitigations executed (no user approval needed)
+
+**2. Quantifiable Acceptance Criteria** (Affects: Sprint planning, task validation)
+- **What**: All acceptance criteria must be measurable
+- **Why**: Prevents ambiguity, enables objective completion verification
+- **Examples**:
+  - ❌ "Comprehensive testing"
+  - ✅ "All unit and integration tests are error free and produce expected results"
+  - ❌ "Code quality improvements"
+  - ✅ "Reduce all warnings in production code that can be accomplished in 1 hour"
+- **Implementation**: Update sprint plan templates with examples
+- **Effort**: 15 minutes
+- **Impact**: High - eliminates rework from unclear requirements
+
+  **2.1 Value Statement Requirement**
+  - Each task must include "This enables..." or "This prevents..." statement
+  - Clarifies task purpose and business value
+
+  **2.2 Explicit Acceptance Criteria in Plans**
+  - Sprint plan must repeat acceptance criteria from GitHub issues
+  - Criteria must match exactly between issue and plan
+  - All criteria reflected in sprint execution/completion checklists
+
+[... continue with Groups 2, 3, 4 ...]
+
+### Recommendation Summary
+
+**Total Recommendations**: 25
+**By Priority**:
+- High: 12 recommendations (Groups 1-2)
+- Medium: 8 recommendations (Group 3)
+- Low: 5 recommendations (Group 4)
+
+**Approval Format**:
+User can approve by number: "Approve 1, 1.1, 1.2, 2, 3.1, 5, 7, 8.1, 9"
+
+**What would you like to approve?**
+```
+
+### Implementation After Approval
+
+1. **Parse Approvals**: Extract approved recommendation numbers
+2. **Group by Document**: Group approved items by which file they affect
+3. **Apply Changes**: Update each affected document
+4. **Commit**: Single commit with all approved changes
+5. **Summarize**: List what was implemented and which documents changed
+
+### Common Recommendation Categories
+
+Use these standard categories when presenting recommendations:
+
+1. **Planning & Requirements**
+   - Risk assessment
+   - Acceptance criteria
+   - Effort estimation
+   - Sprint scope
+
+2. **Execution Process**
+   - Workflow steps
+   - Testing requirements
+   - Code review standards
+   - Communication protocols
+
+3. **Quality & Validation**
+   - Code quality standards
+   - Test coverage requirements
+   - Tool validation
+   - Cross-platform testing
+
+4. **Documentation**
+   - Required updates (CHANGELOG, master plan)
+   - Documentation standards
+   - Example/template requirements
+
+5. **Meta-Process**
+   - Retrospective improvements
+   - Metrics tracking
+   - Continuous improvement
+   - Learning capture
+
+---
+
 ## Version History
 
-**Version**: 1.0
+**Version**: 1.1
 **Date**: January 31, 2026
 **Author**: Claude Sonnet 4.5
 **Status**: Active
 
 **Updates**:
+- 1.1 (2026-01-31): Added "Recommendation Presentation Format" section with grouping strategy, numbering system, and template
 - 1.0 (2026-01-31): Initial version extracted from Sprint 8 retrospective and SPRINT_EXECUTION_WORKFLOW.md Phase 4.5
