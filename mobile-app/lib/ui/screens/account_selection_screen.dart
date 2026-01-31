@@ -4,6 +4,9 @@ import '../../adapters/storage/secure_credentials_store.dart';
 import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/email_providers/spam_filter_platform.dart';
 import '../../main.dart' show routeObserver;
+import '../widgets/skeleton_loader.dart';
+import '../widgets/empty_state.dart';
+import '../widgets/error_display.dart';
 import 'account_setup_screen.dart';
 import 'platform_selection_screen.dart';
 import 'scan_progress_screen.dart';
@@ -461,101 +464,47 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       });
     }
 
-    // Loading state
+    // Loading state with skeleton loaders
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 16),
-              Text('Loading accounts...'),
-            ],
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Select Account'),
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: ListView.builder(
+            itemCount: 3, // Show 3 skeleton cards
+            itemBuilder: (context, index) => const AccountCardSkeleton(),
           ),
         ),
       );
     }
 
-    // Error state
+    // Error state with recovery action
     if (_error != null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Error')),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: Text(
-                  _error!,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 14),
-                ),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {
-                  setState(() {
-                    _error = null;
-                    _isLoading = true;
-                  });
-                  _loadSavedAccounts();
-                },
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
+        body: GenericErrorDisplay(
+          errorMessage: _error!,
+          onRetry: () {
+            setState(() {
+              _error = null;
+              _isLoading = true;
+            });
+            _loadSavedAccounts();
+          },
         ),
       );
     }
 
-    // No saved accounts - show "Add Account" UI instead of navigating away
-    // (Navigation away via pushReplacement would break the back button behavior)
+    // No saved accounts - show empty state
     if (_savedAccounts.isEmpty) {
       return Scaffold(
         appBar: AppBar(
           title: const Text('Select Account'),
           elevation: 2,
         ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.mail_outline,
-                size: 64,
-                color: Colors.grey[400],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'No Email Accounts',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
-                child: Text(
-                  'Add your first email account to get started.',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
-                      ),
-                ),
-              ),
-              const SizedBox(height: 32),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.add),
-                label: const Text('Add Email Account'),
-                onPressed: _addNewAccount,
-              ),
-            ],
-          ),
-        ),
+        body: NoAccountsEmptyState(onAddAccount: _addNewAccount),
       );
     }
 

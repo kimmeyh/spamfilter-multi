@@ -18,22 +18,25 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _selectedIndex = 0;
 
-  // Navigation destinations
+  // Navigation destinations with accessibility labels
   static const List<NavigationDestination> _destinations = [
     NavigationDestination(
-      icon: Icon(Icons.email_outlined),
-      selectedIcon: Icon(Icons.email),
+      icon: Icon(Icons.email_outlined, semanticLabel: 'Accounts tab'),
+      selectedIcon: Icon(Icons.email, semanticLabel: 'Accounts tab selected'),
       label: 'Accounts',
+      tooltip: 'Manage email accounts',
     ),
     NavigationDestination(
-      icon: Icon(Icons.rule_outlined),
-      selectedIcon: Icon(Icons.rule),
+      icon: Icon(Icons.rule_outlined, semanticLabel: 'Rules tab'),
+      selectedIcon: Icon(Icons.rule, semanticLabel: 'Rules tab selected'),
       label: 'Rules',
+      tooltip: 'Manage spam filtering rules',
     ),
     NavigationDestination(
-      icon: Icon(Icons.settings_outlined),
-      selectedIcon: Icon(Icons.settings),
+      icon: Icon(Icons.settings_outlined, semanticLabel: 'Settings tab'),
+      selectedIcon: Icon(Icons.settings, semanticLabel: 'Settings tab selected'),
       label: 'Settings',
+      tooltip: 'App settings',
     ),
   ];
 

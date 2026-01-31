@@ -13,6 +13,7 @@ import 'core/services/windows_notification_service.dart';
 import 'adapters/storage/secure_credentials_store.dart';
 // import 'ui/screens/platform_selection_screen.dart'; // OLD: Direct to platform selection.
 import 'ui/screens/main_navigation_screen.dart'; // NEW: Main navigation with bottom nav (Android)
+import 'ui/theme/app_theme.dart';
 
 /// Global RouteObserver for tracking navigation events
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
@@ -113,34 +114,9 @@ class SpamFilterApp extends StatelessWidget {
           },
           child: MaterialApp(
             title: 'Spam Filter Mobile',
-            theme: ThemeData(
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: Colors.blue,
-                brightness: Brightness.light,
-              ),
-              useMaterial3: true,
-              // Card styling (works for both Android and Windows)
-              cardTheme: CardTheme(
-                elevation: Platform.isWindows ? 0 : 1, // Fluent uses flat cards
-                margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              ),
-              // App bar styling
-              appBarTheme: const AppBarTheme(
-                centerTitle: false,
-                elevation: 0,
-              ),
-              // Floating action button styling (Android only in practice)
-              floatingActionButtonTheme: const FloatingActionButtonThemeData(
-                elevation: 4,
-              ),
-              // Windows-friendly dialog styling
-              dialogTheme: DialogTheme(
-                elevation: Platform.isWindows ? 2 : 4,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(Platform.isWindows ? 4 : 28),
-                ),
-              ),
-            ),
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: ThemeMode.system, // Follow system theme preference
             // Track navigation events for account list refresh
             navigatorObservers: [routeObserver],
             // Initialize rules after providers are created

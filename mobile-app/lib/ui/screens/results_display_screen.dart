@@ -5,6 +5,7 @@ import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../core/providers/email_scan_provider.dart' show EmailScanProvider, EmailActionResult, EmailActionType;
+import '../widgets/empty_state.dart';
 
 /// Displays summary of scan results bound to EmailScanProvider.
 class ResultsDisplayScreen extends StatefulWidget {
@@ -296,11 +297,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                         children: [
                           SizedBox(
                             height: MediaQuery.of(context).size.height * 0.4,
-                            child: Center(
-                              child: _filter == null
-                                  ? const Text('No results yet.\nPull down to refresh.')
-                                  : const Text('No emails match this filter.'),
-                            ),
+                            child: _filter == null
+                                ? const NoResultsEmptyState()
+                                : const NoMatchingEmailsEmptyState(),
                           ),
                         ],
                       )
