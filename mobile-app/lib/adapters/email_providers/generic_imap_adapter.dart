@@ -171,20 +171,16 @@ class GenericIMAPAdapter implements SpamFilterPlatform {
     }
 
     final messages = <EmailMessage>[];
-    final sinceDate = daysBack > 0
-        ? DateTime.now().subtract(Duration(days: daysBack))
-        : null;
+    final sinceDate = DateTime.now().subtract(Duration(days: daysBack));
 
-    _logger.i('Fetching messages from ${daysBack > 0 ? "$daysBack days back" : "all time"} in folders: $folderNames');
+    _logger.i('Fetching messages from $daysBack days back in folders: $folderNames');
 
     for (final folderName in folderNames) {
       try {
         await _selectMailbox(folderName);
 
-        // Use IMAP SEARCH command with date filter or ALL
-        final searchCriteria = sinceDate != null
-            ? 'SINCE ${_formatImapDate(sinceDate)}'
-            : 'ALL';
+        // Use IMAP SEARCH command with date filter
+        final searchCriteria = 'SINCE ${_formatImapDate(sinceDate)}';
         _logger.d('Searching with criteria: $searchCriteria');
 
         final searchResult = await _imapClient!.searchMessages(
@@ -268,13 +264,13 @@ class GenericIMAPAdapter implements SpamFilterPlatform {
 
       switch (action) {
         case FilterAction.delete:
-          // Move to Trash instead of permanent delete
-          // This allows recovery if spam filter makes a mistake
-          _logger.i('Moving message ${message.id} to Trash');
-          await _imapClient!.move(
+          _logger.i('Deleting message ${message.id}');
+          await _imapClient!.store(
             sequence,
-            targetMailboxPath: 'Trash',
+            [MessageFlags.deleted],
+            action: StoreAction.add,
           );
+          await _imapClient!.expunge();
           break;
 
         case FilterAction.moveToJunk:
