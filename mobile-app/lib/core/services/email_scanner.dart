@@ -115,27 +115,41 @@ class EmailScanner {
           // Spam/phishing detected
           else if (result.shouldDelete) {
             action = EmailActionType.delete;
-            try {
-              // Delete via platform adapter
-              await platform.takeAction(
-                message: message,
-                action: FilterAction.delete,
-              );
-            } catch (e) {
-              success = false;
-              error = 'Delete failed: $e';
+
+            // ✨ FIX ISSUE #9: Only execute action if NOT in readonly mode
+            if (scanProvider.scanMode != ScanMode.readonly) {
+              try {
+                // Delete via platform adapter
+                await platform.takeAction(
+                  message: message,
+                  action: FilterAction.delete,
+                );
+              } catch (e) {
+                success = false;
+                error = 'Delete failed: $e';
+              }
+            } else {
+              // Read-only mode: log what would happen
+              AppLogger.scan('[READONLY] Would delete email: ${message.subject}');
             }
           } else if (result.shouldMove) {
             action = EmailActionType.moveToJunk;
-            try {
-              // Move to junk folder
-              await platform.takeAction(
-                message: message,
-                action: FilterAction.moveToJunk,
-              );
-            } catch (e) {
-              success = false;
-              error = 'Move failed: $e';
+
+            // ✨ FIX ISSUE #9: Only execute action if NOT in readonly mode
+            if (scanProvider.scanMode != ScanMode.readonly) {
+              try {
+                // Move to junk folder
+                await platform.takeAction(
+                  message: message,
+                  action: FilterAction.moveToJunk,
+                );
+              } catch (e) {
+                success = false;
+                error = 'Move failed: $e';
+              }
+            } else {
+              // Read-only mode: log what would happen
+              AppLogger.scan('[READONLY] Would move email to junk: ${message.subject}');
             }
           }
         }
