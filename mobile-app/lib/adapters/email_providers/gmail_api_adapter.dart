@@ -424,10 +424,12 @@ class GmailApiAdapter implements SpamFilterPlatform {
       queryParts.add('label:$folder');
     }
 
-    // Add date filter (days back)
-    final cutoffDate = DateTime.now().subtract(Duration(days: daysBack));
-    final dateStr = '${cutoffDate.year}/${cutoffDate.month.toString().padLeft(2, '0')}/${cutoffDate.day.toString().padLeft(2, '0')}';
-    queryParts.add('after:$dateStr');
+    // Add date filter (days back) - skip if daysBack=0 (scan all emails)
+    if (daysBack > 0) {
+      final cutoffDate = DateTime.now().subtract(Duration(days: daysBack));
+      final dateStr = '${cutoffDate.year}/${cutoffDate.month.toString().padLeft(2, '0')}/${cutoffDate.day.toString().padLeft(2, '0')}';
+      queryParts.add('after:$dateStr');
+    }
 
     return queryParts.join(' ');
   }
