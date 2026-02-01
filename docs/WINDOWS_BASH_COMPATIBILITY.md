@@ -219,7 +219,39 @@ cd /mnt/d/Data/Harold\ /github/spamfilter-multi
 
 ---
 
-### Scenario 3: Complex Commands Mixing Windows & Unix
+### Scenario 3: Windows Backslashes in File Paths
+
+**Error**:
+```bash
+wc -l D:\Data\Harold\github\spamfilter-multi\docs\ALL_SPRINTS_MASTER_PLAN.md
+wc: 'D:DataHaroldgithubspamfilter-multidocsALL_SPRINTS_MASTER_PLAN.md': No such file or directory
+```
+
+**Why**: Bash interprets backslashes (`\`) as escape characters, not path separators. The `\D`, `\H`, `\g`, `\s`, `\d`, `\A` sequences are consumed as escape sequences, resulting in a mangled path.
+
+**Fix Option 1**: Use forward slashes (recommended)
+```bash
+# ✅ CORRECT: Forward slashes work in bash on Windows
+wc -l "D:/Data/Harold/github/spamfilter-multi/docs/ALL_SPRINTS_MASTER_PLAN.md"
+```
+
+**Fix Option 2**: Use WSL path conversion
+```bash
+# ✅ CORRECT: Convert to WSL path format
+wc -l "/mnt/d/Data/Harold/github/spamfilter-multi/docs/ALL_SPRINTS_MASTER_PLAN.md"
+```
+
+**Fix Option 3**: Use PowerShell instead
+```powershell
+# ✅ CORRECT: PowerShell handles Windows paths natively
+Get-Content "D:\Data\Harold\github\spamfilter-multi\docs\ALL_SPRINTS_MASTER_PLAN.md" | Measure-Object -Line
+```
+
+**Key Insight**: When using bash with absolute Windows paths, ALWAYS use forward slashes (`/`) instead of backslashes (`\`), or convert to WSL path format (`/mnt/d/...`).
+
+---
+
+### Scenario 4: Complex Commands Mixing Windows & Unix
 
 **Error**:
 ```
