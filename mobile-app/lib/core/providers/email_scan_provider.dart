@@ -231,6 +231,7 @@ class EmailScanProvider extends ChangeNotifier {
     _errorCount = 0;
     _currentEmail = null;
     _statusMessage = 'Starting scan...';
+    _scanStartTime = DateTime.now();  // ✨ SPRINT 11: Record when scan started
 
     // ✨ PHASE 3.3: Reset throttling state for new scan
     _emailsSinceLastNotification = 0;

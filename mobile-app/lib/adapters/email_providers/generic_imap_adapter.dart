@@ -171,16 +171,20 @@ class GenericIMAPAdapter implements SpamFilterPlatform {
     }
 
     final messages = <EmailMessage>[];
-    final sinceDate = DateTime.now().subtract(Duration(days: daysBack));
+    final sinceDate = daysBack > 0
+        ? DateTime.now().subtract(Duration(days: daysBack))
+        : null;
 
-    _logger.i('Fetching messages from $daysBack days back in folders: $folderNames');
+    _logger.i('Fetching messages from ${daysBack > 0 ? "$daysBack days back" : "all time"} in folders: $folderNames');
 
     for (final folderName in folderNames) {
       try {
         await _selectMailbox(folderName);
 
-        // Use IMAP SEARCH command with date filter
-        final searchCriteria = 'SINCE ${_formatImapDate(sinceDate)}';
+        // Use IMAP SEARCH command with date filter or ALL
+        final searchCriteria = sinceDate != null
+            ? 'SINCE ${_formatImapDate(sinceDate)}'
+            : 'ALL';
         _logger.d('Searching with criteria: $searchCriteria');
 
         final searchResult = await _imapClient!.searchMessages(
