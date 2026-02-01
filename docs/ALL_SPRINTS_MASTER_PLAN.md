@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: January 31, 2026
+**Last Updated**: February 1, 2026 (Backlog Refinement)
 
 ## SPRINT EXECUTION Documentation
 
@@ -47,12 +47,14 @@ Historical sprint information has been moved to individual summary documents and
 | 2 | SPRINT_2_RETROSPECTIVE.md | ✅ Complete | ~6h (Jan 24, 2026) |
 | 3 | SPRINT_3_SUMMARY.md | ✅ Complete | ~8h (Jan 24-25, 2026) |
 | 9 | SPRINT_9_RETROSPECTIVE.md | ✅ Complete | ~2h (Jan 30-31, 2026) |
+| 11 | SPRINT_11_RETROSPECTIVE.md | ✅ Complete | ~12h (Jan 31 - Feb 1, 2026) |
 
 **Key Achievements**:
 - **Sprint 1**: Database foundation (SQLite schema, migration infrastructure)
 - **Sprint 2**: Database rule storage and integration
 - **Sprint 3**: Safe sender exceptions with database storage
 - **Sprint 9**: Development workflow improvements (25 process enhancements)
+- **Sprint 11**: UI Polish & Production Readiness (keyboard shortcuts, CSV export, critical bug fixes for Issue #9 readonly bypass and delete-to-trash)
 
 See CHANGELOG.md for detailed feature history.
 
@@ -60,123 +62,181 @@ See CHANGELOG.md for detailed feature history.
 
 ## Current Sprint
 
-**SPRINT 10: Advanced UI & Polish**
+**SPRINT 12: MVP Core Features + Sprint 11 Retrospective Actions**
 
-**Status**: 📋 PLANNED (not yet started)
+**Status**: 📋 PLANNED (ready to start)
 
-**Estimated Duration**: 12-14 hours
+**Estimated Duration**: 48-54 hours (multi-session sprint)
 
-**Model Assignment**: Sonnet (architecture) + Haiku (UI)
+**Model Assignment**: Sonnet (architecture, F1-F3) + Haiku (F9, F10, retrospective items)
 
-**Objective**: Complete feature parity across platforms + UI/UX polish
+**Objective**: Implement core MVP features (Settings, Scan Results Processing, Interactive Rule Management) plus address Sprint 11 retrospective technical debt
 
 **Tasks**:
-- **Task A**: Android-specific enhancements
-  - Material Design 3 components
-  - Bottom navigation with proper back handling
-  - Floating action buttons for quick actions
-  - Pull-to-refresh for scan results
 
-- **Task B**: Windows Desktop enhancements
-  - Fluent Design principles
-  - System tray integration
-  - Keyboard shortcuts (Ctrl+N for new scan, etc.)
-  - Toast notifications for background scans
+### Sprint 11 Retrospective Actions (High Priority)
+- **Task R1**: Create integration test for readonly mode enforcement
+  - Test that `ScanMode.readonly` prevents `platform.takeAction()` calls
+  - Test that `ScanMode.fullScan` allows actions
+  - Prevents regression of Issue #9
+  - **Effort**: 2-3 hours
 
-- **Task C**: Cross-platform UI polish
-  - Consistent color scheme across platforms
-  - Loading states and skeleton screens
-  - Empty states with helpful messaging
-  - Error screens with recovery actions
-  - Accessibility improvements (screen reader support, high contrast)
+- **Task R2**: Update SPRINT_EXECUTION_WORKFLOW.md Phase 3.3
+  - Clarify that Claude Code builds and runs app before user testing
+  - Document monitoring requirements
+  - Add pre-testing sanity check list
+  - **Effort**: 1-2 hours
+
+- **Task R3**: Document Windows environment workarounds
+  - Unicode encoding fixes (`PYTHONIOENCODING=utf-8`)
+  - PowerShell command best practices
+  - Add to TROUBLESHOOTING.md or WINDOWS_DEVELOPMENT_GUIDE.md
+  - **Effort**: 1-2 hours
+
+- **Task R4**: Add delete-to-trash integration tests
+  - Verify IMAP moves to Trash (not expunge)
+  - Verify Gmail uses trash API
+  - Test recovery workflow
+  - **Effort**: 2-3 hours
+
+### Technical Debt (From Backlog Refinement)
+- **Task F9**: Database Test Refactoring (Issue #57)
+  - Refactor tests to use actual DatabaseHelper (in-memory)
+  - Remove duplicated schema declarations
+  - **Effort**: 2-3 hours
+
+- **Task F10**: Foreign Key Constraint Testing (Issue #58)
+  - Enable foreign keys in DatabaseHelper at connection time
+  - Update test to verify constraints are enforced
+  - **Effort**: 1-2 hours
+
+### MVP Features (From Backlog Refinement)
+- **Task F2**: User Application Settings (HIGHEST PRIORITY)
+  - Settings UI for app-wide and per-account configuration
+  - Manual Scan Defaults (scan mode, folders, confirmations)
+  - Background Scan Defaults (frequency, enabled, folders)
+  - Per-account overrides
+  - SQLite storage for settings
+  - **Effort**: 14-16 hours
+
+- **Task F1**: Processing Scan Results
+  - Persistent scan result storage (SQLite table)
+  - Enhanced scan results list UI
+  - Email detail screen with view options
+  - Action buttons (safe sender, create rule, delete, ignore)
+  - Batch actions for bulk processing
+  - **Effort**: 14-16 hours
+
+- **Task F3**: Interactive Rule & Safe Sender Management
+  - Quick-add safe sender from email (exact or domain)
+  - Create rule from email (pattern suggestions)
+  - Safe sender exceptions
+  - Pattern testing UI
+  - **Effort**: 16-18 hours
 
 **Acceptance Criteria**:
-- [ ] Material Design 3 components implemented on Android
-- [ ] Fluent Design implemented on Windows Desktop
-- [ ] All screens have loading states and empty states
-- [ ] Keyboard shortcuts functional on Windows
-- [ ] System tray integration works on Windows
-- [ ] Pull-to-refresh works on Android
+- [ ] Readonly mode integration test prevents Issue #9 regression
+- [ ] Delete-to-trash behavior verified with integration tests
+- [ ] SPRINT_EXECUTION_WORKFLOW.md updated with pre-testing checklist
+- [ ] Windows environment issues documented
+- [ ] Database tests use actual DatabaseHelper (no schema duplication)
+- [ ] Foreign key constraints enforced and tested
+- [ ] Settings screen functional with all categories
+- [ ] Settings persist across app restarts
+- [ ] Scan results stored and retrievable
+- [ ] Email detail view shows headers and body
+- [ ] Safe sender can be added from email detail
+- [ ] Rules can be created from email detail
+- [ ] Pattern testing shows match preview
 - [ ] All tests pass (100% pass rate)
 - [ ] Zero analyzer warnings
+- [ ] Manual testing on Windows Desktop passes
 
 **Risks**:
 | Risk | Likelihood | Impact | Mitigation |
 |------|------------|--------|------------|
-| Platform-specific UI inconsistencies | Medium | Medium | Test on both platforms, document platform differences |
-| Accessibility requirements unclear | Low | High | Reference Flutter accessibility guidelines, test with screen reader |
-| System tray integration complex | Medium | Low | Use well-tested Flutter packages, have fallback UI |
+| F1/F2/F3 scope too large for single sprint | Medium | High | Prioritize F2 first, defer F3 UI polish if needed |
+| Database schema changes break existing data | Low | High | Migration scripts, backup before upgrade |
+| Pattern testing UI complexity | Medium | Medium | Start with simple exact match, add regex later |
 
-**Dependencies**: Sprints 1-3, 9 (database, safe senders, workflow improvements)
+**Dependencies**: Sprints 1-3, 11 (database foundation, readonly fix, delete-to-trash)
 
 ---
 
 ## Next Sprint
 
-**SPRINT 11: Production Readiness & Testing**
+**SPRINT 13: Background Scanning - Windows Desktop**
 
 **Status**: 📋 PLANNED
 
 **Estimated Duration**: 14-16 hours
 
-**Model Assignment**: Sonnet (optimization) + Haiku (testing)
+**Model Assignment**: Sonnet (architecture) + Haiku (implementation)
 
-**Objective**: Production-ready release with comprehensive testing and optimization
+**Objective**: Background scanning on Windows Desktop with Task Scheduler integration
 
 **Tasks**:
-- **Task A**: Database Management
-  - Implement database vacuum on app startup (if needed)
-  - Add database backup/restore functionality
-  - Create database diagnostic tool for support
+- **Task A**: Task Scheduler Integration
+  - Register periodic scan task with Windows Task Scheduler
+  - Command-line arguments for background mode (`--background-scan`)
+  - Configurable frequency from settings (F2)
 
-- **Task B**: Comprehensive Testing Suite
-  - End-to-end tests for all critical user paths
-  - Performance benchmarking for large rule sets (100+ rules, 1000+ safe senders)
-  - Stress testing with 10,000+ email inbox
-  - Cross-platform smoke tests (Android, Windows, iOS if available)
+- **Task B**: System Tray Enhancements
+  - Show scan status in system tray
+  - Notification balloon on scan completion
+  - "Run Scan Now" from tray menu
 
-- **Task C**: Error Handling & Logging
-  - Implement crash reporting (Sentry or Firebase Crashlytics)
-  - Add analytics for feature usage (privacy-preserving)
-  - Comprehensive error messages for all failure modes
-  - Log rotation and size limits
-
-- **Task D**: Performance Optimization
-  - Profile app startup time (target: <2s)
-  - Optimize database queries (add missing indexes)
-  - Reduce memory footprint for large scans
-  - Lazy loading for UI lists
+- **Task C**: MSIX Installer
+  - Package app as MSIX for distribution
+  - Auto-start registration (optional)
+  - Update mechanism
 
 **Acceptance Criteria**:
-- [ ] Database vacuum implemented and tested
-- [ ] Backup/restore functionality works correctly
-- [ ] All end-to-end tests pass on Android and Windows
-- [ ] Performance benchmarks meet targets (startup <2s, scan 1000 emails <30s)
-- [ ] Crash reporting integrated and tested
-- [ ] App startup time <2 seconds on test device
-- [ ] Memory usage <200MB for 1000 email scan
-- [ ] All tests pass (100% pass rate)
-- [ ] Test coverage ≥85%
+- [ ] Background scans run on schedule
+- [ ] System tray shows scan status
+- [ ] Notifications show scan results
+- [ ] MSIX installer works on clean Windows install
+- [ ] Auto-start functional (when enabled)
+- [ ] All tests pass
 
 **Risks**:
 | Risk | Likelihood | Impact | Mitigation |
 |------|------------|--------|------------|
-| Performance targets not achievable | Medium | High | Profile early, identify bottlenecks, have fallback targets |
-| Crash reporting adds overhead | Low | Medium | Benchmark overhead, make opt-in if needed |
-| Testing 10k inbox requires real account | High | Low | Use test data generator, supplement with real account if available |
+| Task Scheduler permissions | Medium | Medium | Document admin requirements, fallback to user-level scheduling |
+| MSIX signing requirements | Medium | Low | Self-signed for testing, defer store submission |
 
-**Dependencies**: Sprint 10 (UI polish complete)
+**Dependencies**: Sprint 12 (F2 Settings for frequency configuration)
 
 ---
 
 ## Future Features (Prioritized)
 
-Priority based on: Development and testing support for implementing pre-product release.
+**Last Refined**: February 1, 2026 (Backlog Refinement Session)
 
-### Priority 1: Core User Workflows (Required for MVP)
+Priority based on: Product Owner prioritization for MVP development.
+
+### Priority 1: MVP Core Features (Sprint 12 - In Progress)
+
+#### F2: User Application Settings (HIGHEST PRIORITY)
+**Status**: 🚀 SPRINT 12
+**Estimated Effort**: 14-16 hours
+**Business Value**: Flexible scanning configuration for manual and background scans
+
+**Overview**: Comprehensive settings UI for app-wide and per-account configuration.
+
+**Key Features**:
+- Manual Scan Defaults (scan mode, folder selection)
+- Background Scan Defaults (frequency, enabled/disabled, folders)
+- Per-account overrides (scan frequency, default folders, enabled status)
+
+**Dependencies**: None (can be implemented standalone)
+
+**See**: [Feature Details - F2](#f2-user-application-settings-detail)
+
+---
 
 #### F1: Processing Scan Results
-**Status**: 📋 PLANNED
+**Status**: 🚀 SPRINT 12
 **Estimated Effort**: 14-16 hours
 **Business Value**: Users can review and process unmatched emails interactively
 
@@ -194,26 +254,8 @@ Priority based on: Development and testing support for implementing pre-product 
 
 ---
 
-#### F2: User Application Settings
-**Status**: 📋 PLANNED
-**Estimated Effort**: 14-16 hours
-**Business Value**: Flexible scanning configuration for manual and background scans
-
-**Overview**: Comprehensive settings UI for app-wide and per-account configuration.
-
-**Key Features**:
-- Manual Scan Defaults (scan mode, folder selection)
-- Background Scan Defaults (frequency, enabled/disabled, folders)
-- Per-account overrides (scan frequency, default folders, enabled status)
-
-**Dependencies**: None (can be implemented standalone)
-
-**See**: [Feature Details - F2](#f2-user-application-settings-detail)
-
----
-
 #### F3: Interactive Rule & Safe Sender Management
-**Status**: 📋 PLANNED
+**Status**: 🚀 SPRINT 12
 **Estimated Effort**: 16-18 hours
 **Business Value**: Quick-add rules and safe senders from scan results without YAML editing
 
@@ -231,7 +273,157 @@ Priority based on: Development and testing support for implementing pre-product 
 
 ---
 
-### Priority 2: Platform-Specific Features (Enhances UX)
+#### F9: Database Test Refactoring (Issue #57)
+**Status**: 🚀 SPRINT 12
+**Estimated Effort**: 2-3 hours
+**Business Value**: Prevent test schema drift from production schema
+**Issue**: [#57](https://github.com/kimmeyh/spamfilter-multi/issues/57)
+
+**Problem**: Database helper tests manually copy schema DDL, which can drift from production DatabaseHelper implementation.
+
+**Solution**:
+- Refactor tests to initialize actual DatabaseHelper (with in-memory or temp path)
+- Remove duplicated schema declarations
+- Tests always validate real production DDL
+
+---
+
+#### F10: Foreign Key Constraint Testing (Issue #58)
+**Status**: 🚀 SPRINT 12
+**Estimated Effort**: 1-2 hours
+**Business Value**: Ensure foreign key constraints are enforced as expected
+**Issue**: [#58](https://github.com/kimmeyh/spamfilter-multi/issues/58)
+
+**Problem**: Foreign key constraint test does not verify constraints are enforced because PRAGMA foreign_keys is not enabled in DatabaseHelper.
+
+**Solution**:
+- Enable foreign keys in DatabaseHelper at connection time
+- Update test to explicitly enable foreign keys for in-memory DB
+- Assert that insert with non-existent foreign key throws error
+
+---
+
+### Priority 2: Windows Background Scanning (Sprint 13)
+
+#### F5: Background Scanning - Windows Desktop
+**Status**: 📋 PLANNED (Sprint 13)
+**Estimated Effort**: 14-16 hours
+**Platform**: Windows Desktop
+**Business Value**: Background scanning + easy app distribution on Windows
+
+**Overview**: Background scanning on Windows desktop + MSIX installer for app distribution.
+
+**Key Features**:
+- Task Scheduler integration for periodic scans
+- System tray integration with scan status
+- MSIX installer for easy distribution
+- Auto-start on Windows login (optional)
+
+**Dependencies**: F2 (User Application Settings)
+
+**See**: [Feature Details - F5](#f5-background-scanning-windows-detail)
+
+---
+
+### Priority 3: UI Automation Testing (Sprint 14)
+
+#### F11: Playwright UI Tests for Windows Desktop + Android UI Testing Strategy
+**Status**: 📋 PLANNED (Sprint 14)
+**Estimated Effort**: 12-16 hours
+**Business Value**: Automated UI regression testing, reduced manual testing burden
+
+**Overview**: Build comprehensive Playwright tests for Windows Desktop UI and determine recommended approach for Android UI testing.
+
+**Key Features**:
+- **Windows Desktop (Playwright)**:
+  - End-to-end UI tests for all screens
+  - Account selection and authentication flows
+  - Scan configuration and execution
+  - Results display and actions
+  - Settings screen interactions
+  - Keyboard shortcut verification
+  - System tray integration tests
+
+- **Android UI Testing Strategy**:
+  - Research Flutter integration testing options
+  - Evaluate Patrol, integration_test package, Appium
+  - Document recommended approach
+  - Implement initial test suite
+
+**Dependencies**: Sprint 12 (F1-F3 UI complete), Sprint 13 (F5 Windows background scanning)
+
+**Acceptance Criteria**:
+- [ ] Playwright tests cover all Windows Desktop screens
+- [ ] Tests run in CI/CD pipeline
+- [ ] Android testing approach documented
+- [ ] Initial Android UI tests implemented
+- [ ] Test coverage report generated
+
+---
+
+### Priority 4: Rule Testing & Simulation (After Sprint 14)
+
+#### F8: Rule Testing & Simulation
+**Status**: 📋 PLANNED
+**Estimated Effort**: 6-8 hours
+**Business Value**: Test rules before deployment
+
+**Overview**: UI for testing rules against sample emails before saving.
+
+**Potential Features**:
+- Load sample emails from actual inbox
+- Test rule against samples
+- Show which emails match and why
+- Pattern highlighting in email content
+
+**Dependencies**: F3 (Interactive Rule Management)
+
+**Notes**: Partially covered by F3 (pattern testing). Full simulation may be deferred.
+
+---
+
+### Priority 5: Provider Optimizations (After F8)
+
+#### F6: Provider-Specific Optimizations
+**Status**: 💡 IDEA
+**Estimated Effort**: 10-12 hours
+**Business Value**: Improved performance and reliability for AOL and Gmail
+
+**Overview**: Provider-specific optimizations leveraging unique API capabilities.
+
+**Potential Features**:
+- AOL: Bulk folder operations
+- Gmail: Label-based filtering (faster than IMAP folder scans)
+- Gmail: Batch email operations via API
+- Outlook: Graph API integration (when implemented)
+
+**Dependencies**: Core functionality complete (F1-F3)
+
+**Notes**: Defer until MVP complete. May not be needed if current performance acceptable.
+
+---
+
+### Priority 6: Multi-Account Scanning (After F6)
+
+#### F7: Multi-Account Scanning
+**Status**: 💡 IDEA
+**Estimated Effort**: 8-10 hours
+**Business Value**: Scan multiple email accounts in parallel
+
+**Overview**: Scan multiple email accounts simultaneously (parallel execution).
+
+**Potential Features**:
+- Parallel scanning with progress tracking
+- Per-account result aggregation
+- Unified unmatched email list (with account filtering)
+
+**Dependencies**: F1 (Processing Scan Results)
+
+**Notes**: Defer until MVP complete. Current sequential scanning may be sufficient.
+
+---
+
+### Priority 7: Android Background Scanning (After F7)
 
 #### F4: Background Scanning - Android (WorkManager)
 **Status**: 📋 PLANNED
@@ -253,115 +445,39 @@ Priority based on: Development and testing support for implementing pre-product 
 
 ---
 
-#### F5: Background Scanning - Windows Desktop
-**Status**: 📋 PLANNED
-**Estimated Effort**: 14-16 hours
-**Platform**: Windows Desktop
-**Business Value**: Background scanning + easy app distribution on Windows
+### HOLD: Low Priority Items
 
-**Overview**: Background scanning on Windows desktop + MSIX installer for app distribution.
+The following items are on HOLD until higher priority work is complete:
 
-**Key Features**:
-- Task Scheduler integration for periodic scans
-- System tray integration with scan status
-- MSIX installer for easy distribution
-- Auto-start on Windows login (optional)
+#### Issue #110: Enhanced CSV Export
+**Status**: ⏸️ HOLD
+**Issue**: [#110](https://github.com/kimmeyh/spamfilter-multi/issues/110)
+**Description**: Additional columns and filtering options for CSV export
+**Notes**: Nice to have, current CSV export is functional
 
-**Dependencies**: F2 (User Application Settings), F4 (Background scanning patterns established)
+#### Issue #109: Scan Options Slider Labels
+**Status**: ⏸️ HOLD
+**Issue**: [#109](https://github.com/kimmeyh/spamfilter-multi/issues/109)
+**Description**: Discrete day labels on date range slider
+**Notes**: UX enhancement, current continuous slider works
 
-**See**: [Feature Details - F5](#f5-background-scanning-windows-detail)
+#### Issue #107: Functional Keyboard Shortcuts
+**Status**: ⏸️ HOLD
+**Issue**: [#107](https://github.com/kimmeyh/spamfilter-multi/issues/107)
+**Description**: Implement action handlers for Ctrl+N, Ctrl+R/F5
+**Notes**: Placeholders work, full implementation deferred
 
----
+#### Issue #49: Sent Messages Scan for Safe Senders
+**Status**: ⏸️ HOLD
+**Issue**: [#49](https://github.com/kimmeyh/spamfilter-multi/issues/49)
+**Description**: Scan sent folder to auto-populate safe senders
+**Notes**: Large feature, deferred to post-MVP
 
-### Priority 3: Advanced Features (Nice to Have)
-
-#### F6: Provider-Specific Optimizations
-**Status**: 💡 IDEA
-**Estimated Effort**: 10-12 hours
-**Business Value**: Improved performance and reliability for AOL and Gmail
-
-**Overview**: Provider-specific optimizations leveraging unique API capabilities.
-
-**Potential Features**:
-- AOL: Bulk folder operations
-- Gmail: Label-based filtering (faster than IMAP folder scans)
-- Gmail: Batch email operations via API
-- Outlook: Graph API integration (when implemented)
-
-**Dependencies**: Core functionality complete (F1-F3)
-
-**Notes**: Defer until MVP complete. May not be needed if current performance acceptable.
-
----
-
-#### F7: Multi-Account Scanning
-**Status**: 💡 IDEA
-**Estimated Effort**: 8-10 hours
-**Business Value**: Scan multiple email accounts in parallel
-
-**Overview**: Scan multiple email accounts simultaneously (parallel execution).
-
-**Potential Features**:
-- Parallel scanning with progress tracking
-- Per-account result aggregation
-- Unified unmatched email list (with account filtering)
-
-**Dependencies**: F1 (Processing Scan Results)
-
-**Notes**: Defer until MVP complete. Current sequential scanning may be sufficient.
-
----
-
-#### F8: Rule Testing & Simulation
-**Status**: 💡 IDEA
-**Estimated Effort**: 6-8 hours
-**Business Value**: Test rules before deployment
-
-**Overview**: UI for testing rules against sample emails before saving.
-
-**Potential Features**:
-- Load sample emails from actual inbox
-- Test rule against samples
-- Show which emails match and why
-- Pattern highlighting in email content
-
-**Dependencies**: F3 (Interactive Rule Management)
-
-**Notes**: Partially covered by F3 (pattern testing). Full simulation may not be needed.
-
----
-
-#### F9: Database Test Refactoring (Issue #57)
-**Status**: 🐛 TECHNICAL DEBT
-**Estimated Effort**: 2-3 hours
-**Business Value**: Prevent test schema drift from production schema
-**Issue**: [#57](https://github.com/kimmeyh/spamfilter-multi/issues/57)
-
-**Problem**: Database helper tests manually copy schema DDL, which can drift from production DatabaseHelper implementation.
-
-**Solution**:
-- Refactor tests to initialize actual DatabaseHelper (with in-memory or temp path)
-- Remove duplicated schema declarations
-- Tests always validate real production DDL
-
-**Priority**: Low (technical debt, not blocking)
-
----
-
-#### F10: Foreign Key Constraint Testing (Issue #58)
-**Status**: 🐛 TECHNICAL DEBT
-**Estimated Effort**: 1-2 hours
-**Business Value**: Ensure foreign key constraints are enforced as expected
-**Issue**: [#58](https://github.com/kimmeyh/spamfilter-multi/issues/58)
-
-**Problem**: Foreign key constraint test does not verify constraints are enforced because PRAGMA foreign_keys is not enabled in DatabaseHelper.
-
-**Solution**:
-- Enable foreign keys in DatabaseHelper at connection time
-- Update test to explicitly enable foreign keys for in-memory DB
-- Assert that insert with non-existent foreign key throws error
-
-**Priority**: Low (technical debt, not blocking)
+#### Issue #44: Outlook.com OAuth Implementation
+**Status**: ⏸️ HOLD
+**Issue**: [#44](https://github.com/kimmeyh/spamfilter-multi/issues/44)
+**Description**: Complete Outlook.com/Office 365 OAuth with MSAL
+**Notes**: New provider, requires MSAL integration, deferred
 
 ---
 
@@ -699,11 +815,18 @@ This section tracks all open and fixed GitHub issues from code review and sprint
 
 ## Version History
 
-**Version**: 2.0
-**Date**: January 31, 2026
-**Author**: Claude Sonnet 4.5
+**Version**: 3.0
+**Date**: February 1, 2026
+**Author**: Claude Opus 4.5
 **Status**: Active
 
 **Updates**:
+- 3.0 (2026-02-01): Backlog refinement - reprioritized features per Product Owner:
+  - Sprint 12: F2 (Settings), F1 (Scan Results), F3 (Rule Management), F9, F10, Sprint 11 retrospective actions
+  - Sprint 13: F5 (Windows Background Scanning)
+  - Sprint 14: F11 (Playwright UI Tests + Android UI Testing Strategy) - NEW
+  - Priority order: F5 → F11 → F8 → F6 → F7 → F4
+  - Moved to HOLD: Issues #110, #109, #107, #49, #44
+  - Added Sprint 11 to Past Sprint Summary
 - 2.0 (2026-01-31): Restructured to focus on current/future sprints, moved historical info to summary docs
 - 1.0 (2026-01-25): Initial version with complete Phase 3.5 breakdown
