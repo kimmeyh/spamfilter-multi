@@ -7,6 +7,7 @@ import '../../main.dart' show routeObserver;
 import '../widgets/skeleton_loader.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/error_display.dart';
+import '../widgets/app_bar_with_exit.dart';
 import 'account_setup_screen.dart';
 import 'platform_selection_screen.dart';
 import 'scan_progress_screen.dart';
@@ -467,7 +468,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
     // Loading state with skeleton loaders
     if (_isLoading) {
       return Scaffold(
-        appBar: AppBar(
+        appBar: AppBarWithExit(
           title: const Text('Select Account'),
         ),
         body: Padding(
@@ -483,7 +484,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
     // Error state with recovery action
     if (_error != null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Error')),
+        appBar: AppBarWithExit(title: const Text('Error')),
         body: GenericErrorDisplay(
           errorMessage: _error!,
           onRetry: () {
@@ -500,7 +501,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
     // No saved accounts - show empty state
     if (_savedAccounts.isEmpty) {
       return Scaffold(
-        appBar: AppBar(
+        appBar: AppBarWithExit(
           title: const Text('Select Account'),
           elevation: 2,
         ),
@@ -510,7 +511,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
 
     // Show saved accounts
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBarWithExit(
         title: const Text('Select Account'),
         elevation: 2,
       ),
