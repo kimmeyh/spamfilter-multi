@@ -115,7 +115,6 @@ class EmailScanProvider extends ChangeNotifier {
   EmailMessage? _currentEmail;
   String? _statusMessage;
   String? _currentFolder;  // ✨ NEW: Track which folder is being scanned
-  DateTime? _scanStartTime;  // ✨ SPRINT 11: Track when scan started for CSV export
 
   // Results tracking
   final List<EmailActionResult> _results = [];
@@ -149,7 +148,6 @@ class EmailScanProvider extends ChangeNotifier {
   EmailMessage? get currentEmail => _currentEmail;
   String? get statusMessage => _statusMessage;
   String? get currentFolder => _currentFolder;  // ✨ NEW: Get current folder being scanned
-  DateTime? get scanStartTime => _scanStartTime;  // ✨ SPRINT 11: Get scan start timestamp
   List<EmailActionResult> get results => _results;
   int get deletedCount => _deletedCount;
   int get movedCount => _movedCount;
@@ -231,7 +229,6 @@ class EmailScanProvider extends ChangeNotifier {
     _errorCount = 0;
     _currentEmail = null;
     _statusMessage = 'Starting scan...';
-    _scanStartTime = DateTime.now();  // ✨ SPRINT 11: Record when scan started
 
     // ✨ PHASE 3.3: Reset throttling state for new scan
     _emailsSinceLastNotification = 0;
@@ -646,44 +643,24 @@ class EmailScanProvider extends ChangeNotifier {
 
   /// Export scan results to CSV format
   ///
-  /// ✨ SPRINT 11: Enhanced with additional columns:
-  /// - Scan Date (when scan was performed)
-  /// - Received Date (when email was received)
-  /// - Match Condition (which rule condition matched, if available)
-  /// - Email ID (unique identifier for tracking)
-  ///
-  /// Returns CSV string that can be saved to file or displayed in UI
+  /// Returns CSV string with columns: From, Folder, Subject, Rule, Action, Status
+  /// Can be saved to file or displayed in UI
   String exportResultsToCSV() {
     final buffer = StringBuffer();
 
-    // CSV Header - Enhanced with new columns
-    buffer.writeln(
-        '"Scan Date","Received Date","From","Folder","Subject","Rule","Match Condition","Action","Status","Email ID"');
-
-    // Format scan date (when this scan was performed)
-    final scanDate = _scanStartTime != null
-        ? _scanStartTime!.toIso8601String()
-        : 'Unknown';
+    // CSV Header
+    buffer.writeln('"From","Folder","Subject","Rule","Action","Status"');
 
     // CSV Rows
     for (final result in _results) {
-      final receivedDate = result.email.receivedDate.toIso8601String();
       final from = _escapeCsv(result.email.from);
       final folder = _escapeCsv(result.email.folderName);
       final subject = _escapeCsv(result.email.subject);
       final rule = _escapeCsv(result.evaluationResult?.matchedRule ?? 'No rule');
-
-      // Extract matched pattern from evaluation result (if available)
-      final matchCondition = _escapeCsv(
-        result.evaluationResult?.matchedPattern ?? 'N/A',
-      );
-
       final action = _getActionName(result.action);
       final status = result.success ? 'Success' : 'Failed';
-      final emailId = _escapeCsv(result.email.id);
 
-      buffer.writeln(
-          '"$scanDate","$receivedDate","$from","$folder","$subject","$rule","$matchCondition","$action","$status","$emailId"');
+      buffer.writeln('"$from","$folder","$subject","$rule","$action","$status"');
     }
 
     return buffer.toString();

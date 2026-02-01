@@ -18,9 +18,6 @@ import 'ui/theme/app_theme.dart';
 /// Global RouteObserver for tracking navigation events
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 
-/// Global navigator key for keyboard shortcuts and programmatic navigation
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -107,9 +104,6 @@ class SpamFilterApp extends StatelessWidget {
             // F5: Refresh (alternative)
             LogicalKeySet(LogicalKeyboardKey.f5):
                 const _RefreshIntent(),
-            // F1: Show keyboard shortcuts help
-            LogicalKeySet(LogicalKeyboardKey.f1):
-                const _ShowHelpIntent(),
           },
         },
         child: Actions(
@@ -117,14 +111,12 @@ class SpamFilterApp extends StatelessWidget {
             _QuitIntent: _QuitAction(),
             _NewScanIntent: _NewScanAction(),
             _RefreshIntent: _RefreshAction(),
-            _ShowHelpIntent: _ShowHelpAction(),
           },
           child: MaterialApp(
             title: 'Spam Filter Mobile',
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: ThemeMode.system, // Follow system theme preference
-            navigatorKey: navigatorKey, // Global navigator key for keyboard shortcuts
             // Track navigation events for account list refresh
             navigatorObservers: [routeObserver],
             // Initialize rules after providers are created
@@ -233,19 +225,10 @@ class _NewScanIntent extends Intent {
 class _NewScanAction extends Action<_NewScanIntent> {
   @override
   Object? invoke(_NewScanIntent intent) {
-    final context = navigatorKey.currentContext;
-    if (context == null) {
-      Logger().w('Ctrl+N: Navigator context not available');
-      return null;
-    }
-
-    // Navigate to account selection screen (popping to root first)
-    navigatorKey.currentState?.pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
-      (route) => false,
-    );
-
-    Logger().i('Ctrl+N: Navigated to account selection');
+    // Navigate to account selection screen
+    // This is handled via global navigator key (not implemented yet)
+    // For now, this is a no-op - keyboard nav requires global key setup
+    Logger().i('Ctrl+N pressed: Navigate to account selection (not yet implemented)');
     return null;
   }
 }
@@ -259,157 +242,9 @@ class _RefreshIntent extends Intent {
 class _RefreshAction extends Action<_RefreshIntent> {
   @override
   Object? invoke(_RefreshIntent intent) {
-    final context = navigatorKey.currentContext;
-    if (context == null) {
-      Logger().w('Ctrl+R/F5: Navigator context not available');
-      return null;
-    }
-
-    // Trigger a rebuild of the current route by popping and re-pushing
-    // This is a simple refresh mechanism - each screen should implement
-    // its own refresh logic if needed
-    final currentRoute = ModalRoute.of(context);
-    if (currentRoute != null) {
-      // Simple approach: Pop and immediately push back
-      // Screens with refresh logic can listen to didPopNext
-      navigatorKey.currentState?.popAndPushNamed(currentRoute.settings.name ?? '/');
-      Logger().i('Ctrl+R/F5: Refreshed current screen');
-
-      // Show visual feedback to user
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.refresh, color: Colors.white),
-              SizedBox(width: 8),
-              Text('Screen refreshed'),
-            ],
-          ),
-          duration: Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
-
+    // Refresh current screen
+    // This would need context-aware implementation
+    Logger().i('Ctrl+R/F5 pressed: Refresh screen (not yet implemented)');
     return null;
-  }
-}
-/// Intent for showing keyboard shortcuts help
-class _ShowHelpIntent extends Intent {
-  const _ShowHelpIntent();
-}
-
-/// Action for showing keyboard shortcuts help dialog
-class _ShowHelpAction extends Action<_ShowHelpIntent> {
-  @override
-  Object? invoke(_ShowHelpIntent intent) {
-    final context = navigatorKey.currentContext;
-    if (context == null) {
-      Logger().w('F1: Navigator context not available');
-      return null;
-    }
-
-    showDialog(
-      context: context,
-      builder: (context) => const KeyboardShortcutsHelpDialog(),
-    );
-
-    Logger().i('F1: Showed keyboard shortcuts help');
-    return null;
-  }
-}
-
-/// Dialog showing all available keyboard shortcuts
-class KeyboardShortcutsHelpDialog extends StatelessWidget {
-  const KeyboardShortcutsHelpDialog({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Row(
-        children: [
-          Icon(
-            Icons.keyboard,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          const SizedBox(width: 8),
-          const Text('Keyboard Shortcuts'),
-        ],
-      ),
-      content: SizedBox(
-        width: 400,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildShortcutRow(
-              context,
-              'Ctrl+N',
-              'Start new scan (return to account selection)',
-            ),
-            const SizedBox(height: 12),
-            _buildShortcutRow(
-              context,
-              'Ctrl+R or F5',
-              'Refresh current screen',
-            ),
-            const SizedBox(height: 12),
-            _buildShortcutRow(
-              context,
-              'Ctrl+Q',
-              'Quit application',
-            ),
-            const SizedBox(height: 12),
-            _buildShortcutRow(
-              context,
-              'F1',
-              'Show this help dialog',
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Close'),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildShortcutRow(BuildContext context, String keys, String description) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(4),
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
-            ),
-          ),
-          child: Text(
-            keys,
-            style: TextStyle(
-              fontFamily: 'monospace',
-              fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Text(
-              description,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          ),
-        ),
-      ],
-    );
   }
 }

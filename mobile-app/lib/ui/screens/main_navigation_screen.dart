@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'account_selection_screen.dart';
-import '../widgets/app_bar_with_exit.dart';
 
 /// Main navigation screen with bottom navigation bar (Android only)
 ///
@@ -97,7 +96,7 @@ class _PlaceholderScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBarWithExit(
+      appBar: AppBar(
         title: Text(title),
       ),
       body: Center(
