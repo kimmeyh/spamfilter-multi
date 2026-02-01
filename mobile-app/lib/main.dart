@@ -242,9 +242,38 @@ class _RefreshIntent extends Intent {
 class _RefreshAction extends Action<_RefreshIntent> {
   @override
   Object? invoke(_RefreshIntent intent) {
-    // Refresh current screen
-    // This would need context-aware implementation
-    Logger().i('Ctrl+R/F5 pressed: Refresh screen (not yet implemented)');
+    final context = navigatorKey.currentContext;
+    if (context == null) {
+      Logger().w('Ctrl+R/F5: Navigator context not available');
+      return null;
+    }
+
+    // Trigger a rebuild of the current route by popping and re-pushing
+    // This is a simple refresh mechanism - each screen should implement
+    // its own refresh logic if needed
+    final currentRoute = ModalRoute.of(context);
+    if (currentRoute != null) {
+      // Simple approach: Pop and immediately push back
+      // Screens with refresh logic can listen to didPopNext
+      navigatorKey.currentState?.popAndPushNamed(currentRoute.settings.name ?? '/');
+      Logger().i('Ctrl+R/F5: Refreshed current screen');
+
+      // Show visual feedback to user
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.refresh, color: Colors.white),
+              SizedBox(width: 8),
+              Text('Screen refreshed'),
+            ],
+          ),
+          duration: Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+
     return null;
   }
 }

@@ -75,7 +75,8 @@ class WindowsSystemTrayService {
           // Single click: Show window
           _showWindow();
         } else if (eventName == kSystemTrayEventRightClick) {
-          // Right click: Show menu (handled by system)
+          // Right click: Rebuild menu to ensure callbacks work
+          _setupTrayMenu();
         }
       });
 
