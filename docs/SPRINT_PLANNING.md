@@ -13,6 +13,7 @@ This document describes the sprint-based development methodology used for spamfi
 | **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 0-4.5) |
 | **SPRINT_STOPPING_CRITERIA.md** | When/why to stop working | When uncertain if blocked or should continue |
 | **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 4.5) |
+| **BACKLOG_REFINEMENT.md** | Backlog refinement process | When requested by Product Owner |
 | **TESTING_STRATEGY.md** | Testing approach and requirements | When writing or reviewing tests |
 | **QUALITY_STANDARDS.md** | Quality standards for code and documentation | When writing code or documentation |
 | **TROUBLESHOOTING.md** | Common issues and solutions | When encountering errors or debugging |
@@ -33,20 +34,30 @@ Each sprint is composed of **Cards** (GitHub issues) broken into **Tasks** assig
 
 ---
 
-## Backlog Refinement (Between Sprints)
+## Backlog Refinement (On-Demand)
 
-**When**: After sprint completion, before next sprint planning
-**Duration**: 15-30 minutes
-**Purpose**: Keep future features prioritized and well-defined
+**When**: Requested by Product Owner (not before every sprint)
+**Duration**: 30-60 minutes (timeboxed)
+**Purpose**: Keep future features prioritized, estimated, and ready for sprint planning
 
-**Process**:
-1. Review ALL_SPRINTS_MASTER_PLAN.md "Future Features" section
-2. Re-prioritize based on new learnings
-3. Update effort estimates based on actual sprint data
-4. Add newly identified features to backlog
-5. Remove obsolete features
-6. Update feature dependencies
-7. Update feature priorities
+**Triggers for Refinement**:
+- Product Owner explicitly requests it
+- Significant new features need scoping
+- Priorities have shifted due to business changes
+- Backlog has grown stale (items over 3 sprints old)
+- Major sprint completed that opens new possibilities
+
+**Process Summary**:
+1. **Review** - Scan current backlog, identify stale entries
+2. **Prioritize** - Re-order based on value, effort, and risk
+3. **Estimate** - Update estimates with velocity calibration
+4. **Add** - Capture newly identified work items
+5. **Cleanup** - Remove obsolete items, update dependencies
+6. **Commit** - Push changes to repository
+
+**Detailed Process**: See `BACKLOG_REFINEMENT.md` for complete step-by-step guide.
+
+**Quick Priority Changes**: Minor priority adjustments can be handled during sprint planning without full refinement session.
 
 ---
 
