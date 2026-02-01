@@ -93,7 +93,7 @@ class AccountCardSkeleton extends StatelessWidget {
           children: [
             Row(
               children: [
-                const SkeletonLoader(width: 40, height: 40, borderRadius: BorderRadius.circular(20)),
+                SkeletonLoader(width: 40, height: 40, borderRadius: BorderRadius.circular(20)),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(

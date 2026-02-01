@@ -21,7 +21,7 @@ class AppTheme {
       useMaterial3: true,
 
       // Card styling (platform-aware)
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: Platform.isWindows ? 0 : 1, // Fluent uses flat cards
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         shape: RoundedRectangleBorder(
@@ -41,7 +41,7 @@ class AppTheme {
       ),
 
       // Dialog styling (platform-aware)
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         elevation: Platform.isWindows ? 2 : 4,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(Platform.isWindows ? 4 : 28),
@@ -89,7 +89,7 @@ class AppTheme {
       useMaterial3: true,
 
       // Card styling (platform-aware)
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: Platform.isWindows ? 0 : 1,
         margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         shape: RoundedRectangleBorder(
@@ -109,7 +109,7 @@ class AppTheme {
       ),
 
       // Dialog styling (platform-aware)
-      dialogTheme: DialogTheme(
+      dialogTheme: DialogThemeData(
         elevation: Platform.isWindows ? 2 : 4,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(Platform.isWindows ? 4 : 28),
