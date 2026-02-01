@@ -449,24 +449,6 @@ Priority based on: Product Owner prioritization for MVP development.
 
 The following items are on HOLD until higher priority work is complete:
 
-#### Issue #110: Enhanced CSV Export
-**Status**: ⏸️ HOLD
-**Issue**: [#110](https://github.com/kimmeyh/spamfilter-multi/issues/110)
-**Description**: Additional columns and filtering options for CSV export
-**Notes**: Nice to have, current CSV export is functional
-
-#### Issue #109: Scan Options Slider Labels
-**Status**: ⏸️ HOLD
-**Issue**: [#109](https://github.com/kimmeyh/spamfilter-multi/issues/109)
-**Description**: Discrete day labels on date range slider
-**Notes**: UX enhancement, current continuous slider works
-
-#### Issue #107: Functional Keyboard Shortcuts
-**Status**: ⏸️ HOLD
-**Issue**: [#107](https://github.com/kimmeyh/spamfilter-multi/issues/107)
-**Description**: Implement action handlers for Ctrl+N, Ctrl+R/F5
-**Notes**: Placeholders work, full implementation deferred
-
 #### Issue #49: Sent Messages Scan for Safe Senders
 **Status**: ⏸️ HOLD
 **Issue**: [#49](https://github.com/kimmeyh/spamfilter-multi/issues/49)
@@ -755,8 +737,8 @@ This section tracks all open and fixed GitHub issues from code review and sprint
 
 | Status | Count | Issues |
 |--------|-------|--------|
-| ✅ Fixed | 8 | #4, #8, #18, #38, #39, #40, #41, #43 |
-| 🔄 Open | 1 | #44 |
+| ✅ Fixed | 12 | #4, #8, #18, #38, #39, #40, #41, #43, #107, #108, #109, #110 |
+| ⏸️ HOLD | 2 | #44, #49 |
 
 ### ✅ Fixed Issues
 
@@ -789,13 +771,35 @@ This section tracks all open and fixed GitHub issues from code review and sprint
 8. **Issue #43**: print() vs Logger inconsistency (Fixed: Jan 7, 2026)
    - Replaced 6 print() statements with Logger calls
 
-### 🔄 Open Issues
+9. **Issue #107**: Functional keyboard shortcuts (Fixed: Feb 1, 2026 - Sprint 11)
+   - Implemented Ctrl+N (New Scan), Ctrl+R/F5 (Refresh), Ctrl+Q (Quit)
+   - Visual feedback with SnackBar for refresh action
+
+10. **Issue #108**: System tray icon initialization error (Fixed: Feb 1, 2026 - Sprint 11)
+    - Fixed icon path and initialization
+    - Right-click menu persistence fixed
+
+11. **Issue #109**: Scan Options slider labels (Fixed: Feb 1, 2026 - Sprint 11)
+    - Changed from discrete to continuous slider (1-90 days) per user feedback
+    - Clear day count display
+
+12. **Issue #110**: Enhanced CSV export (Fixed: Feb 1, 2026 - Sprint 11)
+    - Added Scan Date timestamp column
+    - Additional export columns implemented
+
+### ⏸️ HOLD Issues
 
 1. **Issue #44**: Outlook.com OAuth implementation
-   - **Priority**: Deferred
-   - **Labels**: `enhancement`, `platform:outlook`
+   - **Priority**: HOLD
+   - **Labels**: `enhancement`, `platform:outlook`, `HOLD`
    - **Description**: Complete Outlook.com/Office 365 OAuth implementation with MSAL
    - **File**: `outlook_adapter.dart` (stub)
+
+2. **Issue #49**: Sent Messages Scan for Safe Senders
+   - **Priority**: HOLD
+   - **Labels**: `enhancement`, `HOLD`
+   - **Description**: Scan sent folder to auto-populate safe senders
+   - **Notes**: Large feature, deferred to post-MVP
 
 ### Test Coverage
 
@@ -826,7 +830,8 @@ This section tracks all open and fixed GitHub issues from code review and sprint
   - Sprint 13: F5 (Windows Background Scanning)
   - Sprint 14: F11 (Playwright UI Tests + Android UI Testing Strategy) - NEW
   - Priority order: F5 → F11 → F8 → F6 → F7 → F4
-  - Moved to HOLD: Issues #110, #109, #107, #49, #44
+  - Issues #107-110 completed in Sprint 11 (marked as fixed)
+  - Moved to HOLD: Issues #49, #44
   - Added Sprint 11 to Past Sprint Summary
 - 2.0 (2026-01-31): Restructured to focus on current/future sprints, moved historical info to summary docs
 - 1.0 (2026-01-25): Initial version with complete Phase 3.5 breakdown
