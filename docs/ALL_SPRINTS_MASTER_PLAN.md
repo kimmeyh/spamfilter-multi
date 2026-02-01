@@ -165,17 +165,19 @@ See CHANGELOG.md for detailed feature history.
 
 ## Next Sprint
 
-**SPRINT 13: Background Scanning - Windows Desktop**
+**SPRINT 13: Background Scanning (Windows) + Persistent Gmail Authentication**
 
 **Status**: 📋 PLANNED
 
-**Estimated Duration**: 14-16 hours
+**Estimated Duration**: 22-28 hours
 
-**Model Assignment**: Sonnet (architecture) + Haiku (implementation)
+**Model Assignment**: Sonnet (architecture, F12 research) + Haiku (implementation)
 
-**Objective**: Background scanning on Windows Desktop with Task Scheduler integration
+**Objective**: Background scanning on Windows Desktop with Task Scheduler integration, plus persistent Gmail authentication like Samsung/iPhone email apps
 
 **Tasks**:
+
+### F5: Background Scanning - Windows Desktop
 - **Task A**: Task Scheduler Integration
   - Register periodic scan task with Windows Task Scheduler
   - Command-line arguments for background mode (`--background-scan`)
@@ -191,12 +193,37 @@ See CHANGELOG.md for detailed feature history.
   - Auto-start registration (optional)
   - Update mechanism
 
+### F12: Persistent Gmail Authentication (Long-Lived Tokens)
+- **Task D**: Research Phase
+  - Investigate how Samsung Android email app achieves long-lived Gmail access (18-24+ months)
+  - Investigate how iPhone Mail app maintains persistent Gmail access
+  - Research Google OAuth 2.0 offline access and refresh token best practices
+  - Document findings and recommended approach
+
+- **Task E**: Implementation
+  - Implement recommended authentication approach
+  - Secure refresh token storage (per platform)
+  - Automatic token refresh before expiration
+  - Handle token revocation gracefully (prompt re-auth)
+  - Test token persistence across app restarts and device reboots
+
+- **Task F**: Testing & Validation
+  - Verify tokens persist for extended periods (simulate time passage if possible)
+  - Test re-authentication flow when tokens expire/revoke
+  - Document expected token lifetime
+
 **Acceptance Criteria**:
-- [ ] Background scans run on schedule
-- [ ] System tray shows scan status
-- [ ] Notifications show scan results
-- [ ] MSIX installer works on clean Windows install
-- [ ] Auto-start functional (when enabled)
+- [ ] Background scans run on schedule (F5)
+- [ ] System tray shows scan status (F5)
+- [ ] Notifications show scan results (F5)
+- [ ] MSIX installer works on clean Windows install (F5)
+- [ ] Auto-start functional (when enabled) (F5)
+- [ ] Gmail authentication persists across app restarts (F12)
+- [ ] Gmail authentication persists across device reboots (F12)
+- [ ] Refresh tokens stored securely (F12)
+- [ ] Automatic token refresh works without user intervention (F12)
+- [ ] Token revocation handled gracefully with re-auth prompt (F12)
+- [ ] Research findings documented (F12)
 - [ ] All tests pass
 
 **Risks**:
@@ -204,6 +231,9 @@ See CHANGELOG.md for detailed feature history.
 |------|------------|--------|------------|
 | Task Scheduler permissions | Medium | Medium | Document admin requirements, fallback to user-level scheduling |
 | MSIX signing requirements | Medium | Low | Self-signed for testing, defer store submission |
+| Google OAuth policy restrictions | Medium | High | Research thoroughly, may need to apply for verification |
+| Token storage security | Medium | High | Use platform-specific secure storage (Keychain, Credential Manager) |
+| Long-lived token behavior varies by platform | Medium | Medium | Test on all target platforms |
 
 **Dependencies**: Sprint 12 (F2 Settings for frequency configuration)
 
@@ -303,7 +333,7 @@ Priority based on: Product Owner prioritization for MVP development.
 
 ---
 
-### Priority 2: Windows Background Scanning (Sprint 13)
+### Priority 2: Windows Background Scanning + Persistent Gmail Auth (Sprint 13)
 
 #### F5: Background Scanning - Windows Desktop
 **Status**: 📋 PLANNED (Sprint 13)
@@ -322,6 +352,42 @@ Priority based on: Product Owner prioritization for MVP development.
 **Dependencies**: F2 (User Application Settings)
 
 **See**: [Feature Details - F5](#f5-background-scanning-windows-detail)
+
+---
+
+#### F12: Persistent Gmail Authentication (Long-Lived Tokens)
+**Status**: 📋 PLANNED (Sprint 13)
+**Estimated Effort**: 8-12 hours
+**Platform**: All (Windows, Android, iOS)
+**Business Value**: Users only need to authenticate Gmail once every 18-24+ months (like Samsung/iPhone email apps)
+
+**Overview**: Research and implement long-lived Gmail authentication similar to native email apps (Samsung Android, iPhone Mail) that only require re-authentication every 18-24+ months instead of frequently.
+
+**Research Questions**:
+- How do Samsung Android and iPhone Mail apps achieve long-lived Gmail access?
+- What OAuth 2.0 scopes and parameters enable persistent refresh tokens?
+- What are Google's policies on offline access for third-party apps?
+- Are there differences between "installed app" vs "web app" OAuth flows?
+- Does app verification status affect token lifetime?
+
+**Key Features**:
+- Research best practices for long-lived OAuth tokens
+- Implement offline access with proper refresh token handling
+- Secure refresh token storage (platform-specific secure storage)
+- Automatic token refresh before expiration
+- Graceful handling of token revocation (prompt re-auth)
+- Document expected token lifetime and any limitations
+
+**Technical Considerations**:
+- Google OAuth 2.0 `access_type=offline` parameter
+- Proper handling of `prompt=consent` for initial authorization
+- Secure storage: Windows Credential Manager, Android Keystore, iOS Keychain
+- Token refresh scheduling (before expiration)
+- Handling Google account security events (password change, suspicious activity)
+
+**Dependencies**: Current Gmail OAuth implementation (google_sign_in package)
+
+**See**: [Feature Details - F12](#f12-persistent-gmail-authentication-detail)
 
 ---
 
@@ -727,6 +793,87 @@ WorkManager.getInstance(context).enqueueUniquePeriodicWork(
 
 ---
 
+### F12: Persistent Gmail Authentication (Detail)
+
+**Problem Statement**:
+Current Gmail authentication requires frequent re-authentication (daily or weekly), while native email apps like Samsung Android Mail and iPhone Mail only require authentication once every 18-24+ months. This creates poor user experience for background scanning scenarios.
+
+**Research Areas**:
+
+1. **Google OAuth 2.0 Token Lifetime**:
+   - Default access token lifetime: 1 hour
+   - Refresh token lifetime: varies (can be long-lived with proper configuration)
+   - Factors affecting refresh token lifetime:
+     - User's Google account security settings
+     - App verification status
+     - OAuth consent screen configuration
+     - Scopes requested
+
+2. **Native Email App Approach**:
+   - Samsung Android Mail: Uses device account manager integration
+   - iPhone Mail: Uses Apple's centralized account system
+   - Both leverage system-level OAuth token management
+   - May use different OAuth client types (device vs web)
+
+3. **Best Practices for Long-Lived Access**:
+   - Request `access_type=offline` for refresh tokens
+   - Use `prompt=consent` only on first authorization
+   - Store refresh tokens securely (platform-specific)
+   - Implement proactive token refresh (before expiration)
+   - Handle incremental authorization properly
+
+**Implementation Approach**:
+
+1. **Secure Token Storage**:
+   - **Windows**: Windows Credential Manager (via `flutter_secure_storage`)
+   - **Android**: Android Keystore (via `flutter_secure_storage`)
+   - **iOS**: iOS Keychain (via `flutter_secure_storage`)
+
+2. **Token Refresh Strategy**:
+   ```dart
+   // Pseudocode for token refresh
+   Future<String> getValidAccessToken() async {
+     final credentials = await secureStorage.read('gmail_credentials');
+     if (credentials.accessTokenExpired) {
+       if (credentials.hasRefreshToken) {
+         // Refresh token before expiration
+         final newCredentials = await refreshAccessToken(credentials.refreshToken);
+         await secureStorage.write('gmail_credentials', newCredentials);
+         return newCredentials.accessToken;
+       } else {
+         // No refresh token - require re-auth
+         throw AuthenticationRequiredException();
+       }
+     }
+     return credentials.accessToken;
+   }
+   ```
+
+3. **Graceful Degradation**:
+   - If refresh fails (token revoked), prompt user to re-authenticate
+   - Show clear message explaining why re-auth is needed
+   - Preserve account configuration (only re-auth, do not lose settings)
+
+**Expected Outcomes**:
+- Users authenticate once and remain authenticated for 18-24+ months
+- Background scans work reliably without user intervention
+- Token refresh happens automatically and transparently
+- Clear error handling when re-authentication is required
+
+**Files to Modify**:
+- `mobile-app/lib/adapters/auth/google_auth_service.dart` - Token refresh logic
+- `mobile-app/lib/adapters/storage/secure_credentials_store.dart` - Secure token storage
+- `mobile-app/lib/adapters/email_providers/gmail_api_adapter.dart` - Use refreshed tokens
+
+**Testing**:
+- Verify token persists across app restarts
+- Verify token persists across device reboots
+- Simulate token expiration and verify refresh
+- Simulate token revocation and verify re-auth prompt
+- Test on Windows, Android (iOS if available)
+
+---
+
 ## Issue Backlog
 
 **Last Updated**: February 1, 2026
@@ -825,11 +972,15 @@ This section tracks all open and fixed GitHub issues from code review and sprint
 **Status**: Active
 
 **Updates**:
+- 3.1 (2026-02-01): Added F12 (Persistent Gmail Authentication) to Sprint 13
+  - Research how Samsung/iPhone email apps achieve 18-24+ month authentication
+  - Implement long-lived refresh token handling
+  - Sprint 13 now includes F5 + F12 (22-28 hours estimated)
 - 3.0 (2026-02-01): Backlog refinement - reprioritized features per Product Owner:
   - Sprint 12: F2 (Settings), F1 (Scan Results), F3 (Rule Management), F9, F10, Sprint 11 retrospective actions
   - Sprint 13: F5 (Windows Background Scanning)
   - Sprint 14: F11 (Playwright UI Tests + Android UI Testing Strategy) - NEW
-  - Priority order: F5 → F11 → F8 → F6 → F7 → F4
+  - Priority order: F5 → F12 → F11 → F8 → F6 → F7 → F4
   - Issues #107-110 completed in Sprint 11 (marked as fixed)
   - Moved to HOLD: Issues #49, #44
   - Added Sprint 11 to Past Sprint Summary
