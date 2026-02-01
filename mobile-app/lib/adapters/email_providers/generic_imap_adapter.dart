@@ -268,13 +268,13 @@ class GenericIMAPAdapter implements SpamFilterPlatform {
 
       switch (action) {
         case FilterAction.delete:
-          _logger.i('Deleting message ${message.id}');
-          await _imapClient!.store(
+          // Move to Trash instead of permanent delete
+          // This allows recovery if spam filter makes a mistake
+          _logger.i('Moving message ${message.id} to Trash');
+          await _imapClient!.move(
             sequence,
-            [MessageFlags.deleted],
-            action: StoreAction.add,
+            targetMailboxPath: 'Trash',
           );
-          await _imapClient!.expunge();
           break;
 
         case FilterAction.moveToJunk:
