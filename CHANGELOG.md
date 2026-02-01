@@ -25,6 +25,16 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-02-01 (Sprint 11)
+- **feat**: Implement functional keyboard shortcuts for Windows Desktop (Issue #107)
+- **fix**: Resolve system tray icon initialization error and menu persistence (Issue #108)
+- **feat**: Enhance scan options with continuous slider 1-90 days + All checkbox (Issue #109)
+- **feat**: Enhance CSV export with 10 columns including scan timestamp (Issue #110)
+- **CRITICAL**: Fix readonly mode bypass - now properly prevents email deletion (Issue #9)
+- **CRITICAL**: Change IMAP delete to move-to-trash instead of permanent delete
+- **feat**: Add Exit button to Windows AppBars with confirmation dialog
+- **fix**: Add visual SnackBar feedback for Ctrl+R/F5 refresh
+
 ### 2026-01-25
 - **feat**: Implement SafeSenderDatabaseStore with exception support (Issue #66, Sprint 3 Task A)
 - **feat**: Implement SafeSenderEvaluator with pattern matching and exceptions (Issue #67, Sprint 3 Task B)
