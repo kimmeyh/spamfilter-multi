@@ -724,7 +724,23 @@ class _ScanOptionsDialog extends StatefulWidget {
 }
 
 class _ScanOptionsDialogState extends State<_ScanOptionsDialog> {
-  int _daysBack = 7;
+  // Discrete day values: 1, 7, 15, 30, All (represented as 0)
+  static const List<int> _dayValues = [1, 7, 15, 30, 0]; // 0 = All
+  int _selectedIndex = 1; // Default to 7 days (index 1)
+
+  int get _selectedDays => _dayValues[_selectedIndex];
+
+  String _getDayLabel(int index) {
+    if (_dayValues[index] == 0) return 'All';
+    return '${_dayValues[index]}';
+  }
+
+  String _getDescriptionText() {
+    if (_selectedDays == 0) {
+      return 'Scan all emails (no date filter)';
+    }
+    return 'Scan last $_selectedDays day${_selectedDays == 1 ? "" : "s"}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -735,20 +751,69 @@ class _ScanOptionsDialogState extends State<_ScanOptionsDialog> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('How many days back to scan?'),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
+
+          // Clickable day labels row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(_dayValues.length, (index) {
+              final isSelected = index == _selectedIndex;
+              return GestureDetector(
+                onTap: () {
+                  setState(() => _selectedIndex = index);
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.primaryContainer
+                        : Theme.of(context).colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isSelected
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.outline.withValues(alpha: 0.3),
+                      width: isSelected ? 2 : 1,
+                    ),
+                  ),
+                  child: Text(
+                    _getDayLabel(index),
+                    style: TextStyle(
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      color: isSelected
+                          ? Theme.of(context).colorScheme.onPrimaryContainer
+                          : Theme.of(context).colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+              );
+            }),
+          ),
+
+          const SizedBox(height: 20),
+
+          // Slider with discrete steps
           Slider(
-            value: _daysBack.toDouble(),
-            min: 1,
-            max: 30,
-            divisions: 29,
-            label: '$_daysBack days',
+            value: _selectedIndex.toDouble(),
+            min: 0,
+            max: (_dayValues.length - 1).toDouble(),
+            divisions: _dayValues.length - 1,
+            label: _getDayLabel(_selectedIndex),
             onChanged: (value) {
-              setState(() => _daysBack = value.round());
+              setState(() => _selectedIndex = value.round());
             },
           ),
-          Text(
-            'Scan last $_daysBack days',
-            style: Theme.of(context).textTheme.titleMedium,
+
+          const SizedBox(height: 8),
+
+          // Description text
+          Center(
+            child: Text(
+              _getDescriptionText(),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
           ),
         ],
       ),
@@ -758,7 +823,7 @@ class _ScanOptionsDialogState extends State<_ScanOptionsDialog> {
           child: const Text('Cancel'),
         ),
         ElevatedButton(
-          onPressed: () => Navigator.of(context).pop(_daysBack),
+          onPressed: () => Navigator.of(context).pop(_selectedDays),
           child: const Text('Start Scan'),
         ),
       ],
