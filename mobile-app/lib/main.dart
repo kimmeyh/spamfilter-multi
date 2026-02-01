@@ -274,6 +274,21 @@ class _RefreshAction extends Action<_RefreshIntent> {
       // Screens with refresh logic can listen to didPopNext
       navigatorKey.currentState?.popAndPushNamed(currentRoute.settings.name ?? '/');
       Logger().i('Ctrl+R/F5: Refreshed current screen');
+
+      // Show visual feedback to user
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.refresh, color: Colors.white),
+              SizedBox(width: 8),
+              Text('Screen refreshed'),
+            ],
+          ),
+          duration: Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
 
     return null;
