@@ -35,19 +35,34 @@ class WindowsSystemTrayService {
       // Set window options
       await windowManager.setPreventClose(true); // Prevent close, minimize to tray instead
 
-      // Get icon path (assuming icon is in assets)
-      // Note: For production, use a proper .ico file
+      // Get icon path from Windows runner resources
+      // This is the same icon used for the application window
       final String iconPath = path.join(
         Directory.current.path,
+        'data',
+        'flutter_assets',
         'assets',
-        'icons',
-        'tray_icon.ico',
+        'app_icon.ico',
       );
+
+      // Fallback to runner resources if flutter assets not available
+      final String fallbackIconPath = path.join(
+        Directory.current.path,
+        'windows',
+        'runner',
+        'resources',
+        'app_icon.ico',
+      );
+
+      // Determine which icon path exists
+      final String finalIconPath = File(iconPath).existsSync()
+          ? iconPath
+          : (File(fallbackIconPath).existsSync() ? fallbackIconPath : '');
 
       // Initialize system tray
       await _systemTray.initSystemTray(
         title: 'Spam Filter',
-        iconPath: File(iconPath).existsSync() ? iconPath : '', // Use default if not found
+        iconPath: finalIconPath,
         toolTip: 'Spam Filter - Click to show',
       );
 
