@@ -5,6 +5,7 @@ import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../core/providers/email_scan_provider.dart' show EmailScanProvider, EmailActionResult, EmailActionType;
+import '../widgets/empty_state.dart';
 
 /// Displays summary of scan results bound to EmailScanProvider.
 class ResultsDisplayScreen extends StatefulWidget {
@@ -283,17 +284,31 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               const SizedBox(height: 8),
             ],
             Expanded(
-              child: filteredResults.isEmpty
-                  ? Center(
-                      child: _filter == null
-                          ? const Text('No results yet.')
-                          : const Text('No emails match this filter.'),
-                    )
-                  : ListView.separated(
-                      itemCount: filteredResults.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
-                      itemBuilder: (_, index) => _buildResultTile(filteredResults[index]),
-                    ),
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  // Trigger a rebuild to refresh the results display
+                  // Results are already in scan provider, just refresh UI
+                  setState(() {});
+                  // Small delay to show refresh animation
+                  await Future.delayed(const Duration(milliseconds: 300));
+                },
+                child: filteredResults.isEmpty
+                    ? ListView( // Wrap empty state in ListView for pull-to-refresh gesture
+                        children: [
+                          SizedBox(
+                            height: MediaQuery.of(context).size.height * 0.4,
+                            child: _filter == null
+                                ? const NoResultsEmptyState()
+                                : const NoMatchingEmailsEmptyState(),
+                          ),
+                        ],
+                      )
+                    : ListView.separated(
+                        itemCount: filteredResults.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        itemBuilder: (_, index) => _buildResultTile(filteredResults[index]),
+                      ),
+              ),
             ),
             // Action buttons at bottom
             const SizedBox(height: 16),

@@ -379,8 +379,8 @@ Create `.claude/quick-reference.json` (machine-readable) and `docs/QUICK_REFEREN
 
 | Platform | Path | Notes |
 |----------|------|-------|
-| **Windows** | `C:\Users\kimme\AppData\Roaming\spam_filter_mobile\databases\` | Use `AppPaths.getDatabasePath()` |
-| **Android** | `/data/data/com.spamfilter.mobile_app/databases/` | Access via `adb shell` |
+| **Windows** | `C:\Users\{username}\AppData\Roaming\com.example\spam_filter_mobile\spam_filter.db` | Use `AppPaths().databaseFilePath` |
+| **Android** | `/data/data/com.example.spam_filter_mobile/files/spam_filter.db` | Access via `adb shell` |
 
 ## Sprint Documentation
 

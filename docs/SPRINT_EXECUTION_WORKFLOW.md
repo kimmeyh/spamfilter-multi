@@ -356,13 +356,25 @@ After Phase 3.2 all tests pass, context can be compacted for efficiency:
    - Give user VSCode workspace instructions
    - **Timing**: User can start testing RIGHT NOW
 
-2. **Claude Proceeds to Phase 4 (In Parallel)**
+2. **Claude Proceeds to Phase 4 (In Parallel) - MANDATORY**
    - While user tests in VSCode, Claude:
-     - Creates PR (Phase 4.3) **IMPORTANT**: To `develop` branch (NOT main)
+     - **Creates PR (Phase 4.3)** - **REQUIRED, DO NOT SKIP**
+       - Target: `develop` branch (NOT main)
+       - Title format: "Sprint N: <summary>"
+       - Include all commits from feature branch
+       - Add sprint summary and task breakdown to PR description
      - Writes documentation
      - Conducts code review analysis
      - Prepares Phase 4.5 review
+   - **⚠️ CRITICAL**: PR creation is NOT optional - must happen during manual testing
    - **No blocking**: User testing doesn't wait for PR
+
+   **Why PR Creation is Mandatory During Testing**:
+   - Maximizes parallelization (independent work streams)
+   - User can review PR when ready (no waiting)
+   - All documentation complete when testing finishes
+   - Reduces total sprint time by 30-60 minutes
+   - No impact on quality (work is independent)
 
 3. **Phase 4.5 Complete**
    - Claude message: "Sprint review complete, PR ready for approval"
@@ -436,6 +448,24 @@ After Phase 3.2 all tests pass, context can be compacted for efficiency:
 - Tasks are interdependent (can't skip/change without new plan)
 - Per-task approval adds overhead without benefit
 - Detailed plan provides sufficient control
+
+**⚠️ CRITICAL REMINDER FOR CLAUDE**:
+- **DO NOT ask for approval between tasks** after sprint plan is approved
+- **DO NOT ask "Should I proceed to Task B?"** - this is pre-approved
+- **DO NOT ask "Ready for next task?"** - continue autonomously
+- **ONLY STOP FOR**: Blockers, errors, scope changes, or Phase 4.5 review
+- Sprint plan approval = approval for ALL tasks in sequence
+- Asking for per-task approval violates this workflow and delays execution
+
+**When to Stop Mid-Sprint**:
+- Tests fail and cannot fix immediately
+- Scope change discovered (requires re-planning)
+- Blocked by external dependency
+- User explicitly requests pause
+- Phase 3.3 Manual Testing complete (proceed to Phase 4 in parallel)
+- Phase 4.5 Sprint Review (REQUIRED)
+
+**Reference**: See `docs/SPRINT_STOPPING_CRITERIA.md` for complete stopping criteria
 
 ---
 

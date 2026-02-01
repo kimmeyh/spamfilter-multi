@@ -66,10 +66,13 @@ class AppPaths {
   }
 
   /// Root app support directory
-  /// 
-  /// Path: /data/user/0/com.example.spam_filter_mobile/files (Android)
-  ///       /Library/Application Support/spam_filter_mobile (iOS)
-  ///       ~/.cache/spam_filter_mobile (Desktop/Web)
+  ///
+  /// Platform-specific paths:
+  /// - Android: /data/user/0/com.example.spam_filter_mobile/files
+  /// - iOS: /Library/Application Support/spam_filter_mobile
+  /// - Windows: C:\Users\{username}\AppData\Roaming\com.example\spam_filter_mobile
+  /// - Linux: ~/.local/share/spam_filter_mobile
+  /// - macOS: ~/Library/Application Support/spam_filter_mobile
   Directory get appSupportDirectory {
     _checkInitialized();
     return _appSupportDir;
@@ -97,9 +100,16 @@ class AppPaths {
     return path.join(_rulesDir.path, 'rules_safe_senders.yaml');
   }
 
-  /// Full path to SQLite database file (Phase 3.5)
+  /// Full path to SQLite database file (Phase 3.5+)
   ///
-  /// Stores scan results, rules, settings, and scan history
+  /// Stores scan results, rules, settings, and scan history.
+  ///
+  /// Platform-specific paths:
+  /// - Windows: C:\Users\{username}\AppData\Roaming\com.example\spam_filter_mobile\spam_filter.db
+  /// - Android: /data/user/0/com.example.spam_filter_mobile/files/spam_filter.db
+  /// - iOS: /Library/Application Support/spam_filter_mobile/spam_filter.db
+  /// - Linux: ~/.local/share/spam_filter_mobile/spam_filter.db
+  /// - macOS: ~/Library/Application Support/spam_filter_mobile/spam_filter.db
   String get databaseFilePath {
     _checkInitialized();
     return path.join(_appSupportDir.path, 'spam_filter.db');

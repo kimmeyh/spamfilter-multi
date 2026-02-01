@@ -8,9 +8,12 @@ import 'core/providers/rule_set_provider.dart';
 import 'core/providers/email_scan_provider.dart';
 import 'core/services/background_mode_service.dart';
 import 'core/services/background_scan_windows_worker.dart';
+import 'core/services/windows_system_tray_service.dart';
+import 'core/services/windows_notification_service.dart';
 import 'adapters/storage/secure_credentials_store.dart';
 // import 'ui/screens/platform_selection_screen.dart'; // OLD: Direct to platform selection.
-import 'ui/screens/account_selection_screen.dart'; // NEW: Check for saved accounts first
+import 'ui/screens/main_navigation_screen.dart'; // NEW: Main navigation with bottom nav (Android)
+import 'ui/theme/app_theme.dart';
 
 /// Global RouteObserver for tracking navigation events
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
@@ -54,6 +57,17 @@ void main(List<String> args) async {
     Logger().w('Legacy token migration failed: $e');
   }
 
+  // Initialize Windows system tray and notifications (Windows only)
+  if (Platform.isWindows) {
+    final systemTrayService = WindowsSystemTrayService();
+    await systemTrayService.initialize();
+    Logger().i('Windows system tray initialized');
+
+    final notificationService = WindowsNotificationService();
+    await notificationService.initialize();
+    Logger().i('Windows notifications initialized');
+  }
+
   runApp(const SpamFilterApp());
 }
 
@@ -76,21 +90,33 @@ class SpamFilterApp extends StatelessWidget {
       ],
       child: Shortcuts(
         shortcuts: <LogicalKeySet, Intent>{
-          // Ctrl+Q to quit (desktop platforms)
-          if (Platform.isWindows || Platform.isLinux || Platform.isMacOS)
+          // Desktop keyboard shortcuts (Windows/Linux/macOS)
+          if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) ...{
+            // Ctrl+Q: Quit application
             LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyQ):
                 const _QuitIntent(),
+            // Ctrl+N: New scan (navigate to account selection)
+            LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyN):
+                const _NewScanIntent(),
+            // Ctrl+R: Refresh current screen
+            LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyR):
+                const _RefreshIntent(),
+            // F5: Refresh (alternative)
+            LogicalKeySet(LogicalKeyboardKey.f5):
+                const _RefreshIntent(),
+          },
         },
         child: Actions(
           actions: <Type, Action<Intent>>{
             _QuitIntent: _QuitAction(),
+            _NewScanIntent: _NewScanAction(),
+            _RefreshIntent: _RefreshAction(),
           },
           child: MaterialApp(
             title: 'Spam Filter Mobile',
-            theme: ThemeData(
-              colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-              useMaterial3: true,
-            ),
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: ThemeMode.system, // Follow system theme preference
             // Track navigation events for account list refresh
             navigatorObservers: [routeObserver],
             // Initialize rules after providers are created
@@ -166,9 +192,10 @@ class _AppInitializerState extends State<_AppInitializer> {
       );
     }
 
-    // ✨ NEW: Once rules are loaded, show account selection screen
-    // This checks for saved accounts and shows them, or navigates to platform selection if none
-    return const AccountSelectionScreen();
+    // ✨ NEW: Once rules are loaded, show main navigation screen
+    // On Android: Shows bottom navigation with Accounts/Rules/Settings tabs
+    // On other platforms: Shows account selection screen directly
+    return const MainNavigationScreen();
   }
 }
 
@@ -185,6 +212,39 @@ class _QuitAction extends Action<_QuitIntent> {
     if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
       SystemNavigator.pop();
     }
+    return null;
+  }
+}
+
+/// Intent for starting a new scan (Ctrl+N)
+class _NewScanIntent extends Intent {
+  const _NewScanIntent();
+}
+
+/// Action for starting a new scan - navigates to account selection
+class _NewScanAction extends Action<_NewScanIntent> {
+  @override
+  Object? invoke(_NewScanIntent intent) {
+    // Navigate to account selection screen
+    // This is handled via global navigator key (not implemented yet)
+    // For now, this is a no-op - keyboard nav requires global key setup
+    Logger().i('Ctrl+N pressed: Navigate to account selection (not yet implemented)');
+    return null;
+  }
+}
+
+/// Intent for refreshing current screen (Ctrl+R or F5)
+class _RefreshIntent extends Intent {
+  const _RefreshIntent();
+}
+
+/// Action for refreshing current screen
+class _RefreshAction extends Action<_RefreshIntent> {
+  @override
+  Object? invoke(_RefreshIntent intent) {
+    // Refresh current screen
+    // This would need context-aware implementation
+    Logger().i('Ctrl+R/F5 pressed: Refresh screen (not yet implemented)');
     return null;
   }
 }
