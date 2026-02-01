@@ -90,10 +90,11 @@
 
 | Document | Path | Purpose |
 |----------|------|---------|
-| **Master Plan** | `docs\ALL_SPRINTS_MASTER_PLAN.md` | All 10 Phase 3.5 sprints, dependencies, estimates |
-| **Execution Workflow** | `docs\SPRINT_EXECUTION_WORKFLOW.md` | Step-by-step sprint process (Phase 0-4.5) |
+| **Master Plan** | `docs\ALL_SPRINTS_MASTER_PLAN.md` | All sprints, dependencies, estimates |
+| **Execution Workflow** | `docs\SPRINT_EXECUTION_WORKFLOW.md` | Step-by-step sprint process (Phase -1 to 4.5) |
 | **Stopping Criteria** | `docs\SPRINT_STOPPING_CRITERIA.md` | When/why to stop working (10 criteria) |
 | **Sprint Planning** | `docs\SPRINT_PLANNING.md` | Planning methodology, ceremonies |
+| **Backlog Refinement** | `docs\BACKLOG_REFINEMENT.md` | On-demand backlog prioritization (when requested) |
 | **Retrospective Template** | `docs\SPRINT_RETROSPECTIVE_INTEGRATION.md` | Sprint review structure |
 
 ---

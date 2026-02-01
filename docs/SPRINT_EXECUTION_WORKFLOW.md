@@ -13,6 +13,7 @@ This document describes the step-by-step process for executing sprints in the sp
 | **SPRINT_EXECUTION_WORKFLOW.md** (this doc) | Step-by-step execution checklist | During sprint execution (Phases 0-4.5) |
 | **SPRINT_STOPPING_CRITERIA.md** | When/why to stop working | When uncertain if blocked or should continue |
 | **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 4.5) |
+| **BACKLOG_REFINEMENT.md** | Backlog refinement process | When requested by Product Owner |
 | **TESTING_STRATEGY.md** | Testing approach and requirements | When writing or reviewing tests |
 | **QUALITY_STANDARDS.md** | Quality standards for code and documentation | When writing code or documentation |
 | **TROUBLESHOOTING.md** | Common issues and solutions | When encountering errors or debugging |
@@ -38,6 +39,39 @@ This document describes the step-by-step process for executing sprints in the sp
 ---
 
 ## Sprint Execution Checklist
+
+### **Phase -1: Backlog Refinement** (OPTIONAL - On-Demand)
+
+Backlog refinement is conducted **when requested by Product Owner**, not before every sprint.
+
+- [ ] **-1.1 Check if Refinement is Requested**
+  - Product Owner explicitly requests backlog refinement
+  - Skip to Phase 0 if refinement not requested
+  - Quick priority changes can be handled during Phase 1 without full refinement
+
+- [ ] **-1.2 Conduct Refinement Session** (30-60 minutes, timeboxed)
+  - **Prepare**: Read current backlog state from ALL_SPRINTS_MASTER_PLAN.md and ISSUE_BACKLOG.md
+  - **Review**: Scan all items, identify stale entries (over 3 sprints old)
+  - **Prioritize**: Re-order based on value, effort, and risk
+  - **Estimate**: Update estimates with velocity calibration from recent sprints
+  - **Add**: Capture newly identified work items
+  - **Cleanup**: Remove obsolete items, update dependencies
+
+- [ ] **-1.3 Document Refinement Results**
+  - Update ALL_SPRINTS_MASTER_PLAN.md "Future Features" section
+  - Update ISSUE_BACKLOG.md if issues changed
+  - Commit changes: `git commit -m "docs: Backlog refinement - [date] - [summary]"`
+
+**Detailed Process**: See `BACKLOG_REFINEMENT.md` for complete step-by-step guide.
+
+**When to Request Refinement**:
+- Significant new features need scoping
+- Priorities have shifted due to business changes
+- Backlog items over 3 sprints old without review
+- Major sprint completed that opens new possibilities
+- Technical debt needs prioritization
+
+---
 
 ### **Phase 0: Sprint Pre-Kickoff** ⚠️ CRITICAL PREREQUISITE
 
