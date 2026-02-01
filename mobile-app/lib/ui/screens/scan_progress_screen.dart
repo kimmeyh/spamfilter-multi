@@ -8,6 +8,7 @@ import '../../core/providers/email_scan_provider.dart';
 import '../../core/providers/email_scan_provider.dart' show EmailActionType, EmailActionResult;
 import '../../core/providers/rule_set_provider.dart';
 import '../../core/services/email_scanner.dart';
+import '../widgets/app_bar_with_exit.dart';
 import '../screens/folder_selection_screen.dart';
 import 'results_display_screen.dart';
 
@@ -122,7 +123,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
         }
       },
       child: Scaffold(
-        appBar: AppBar(
+        appBar: AppBarWithExit(
           title: Text('Scan Progress - ${widget.platformDisplayName}'),
           // Add explicit back button that returns to account selection
           leading: IconButton(
@@ -724,7 +725,8 @@ class _ScanOptionsDialog extends StatefulWidget {
 }
 
 class _ScanOptionsDialogState extends State<_ScanOptionsDialog> {
-  int _daysBack = 7;
+  int _daysBack = 7; // Default to 7 days
+  bool _scanAll = false; // Default to date-filtered scan
 
   @override
   Widget build(BuildContext context) {
@@ -735,20 +737,49 @@ class _ScanOptionsDialogState extends State<_ScanOptionsDialog> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text('How many days back to scan?'),
-          const SizedBox(height: 16),
-          Slider(
-            value: _daysBack.toDouble(),
-            min: 1,
-            max: 30,
-            divisions: 29,
-            label: '$_daysBack days',
+          const SizedBox(height: 24),
+
+          // Continuous slider (1-90 days) - only visible when not scanning all
+          if (!_scanAll) ...[
+            Row(
+              children: [
+                const Text('1'),
+                Expanded(
+                  child: Slider(
+                    value: _daysBack.toDouble(),
+                    min: 1,
+                    max: 90,
+                    divisions: 89,
+                    label: '$_daysBack day${_daysBack == 1 ? "" : "s"}',
+                    onChanged: (value) {
+                      setState(() => _daysBack = value.round());
+                    },
+                  ),
+                ),
+                const Text('90'),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Center(
+              child: Text(
+                'Scan last $_daysBack day${_daysBack == 1 ? "" : "s"}',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // "Scan All" checkbox
+          CheckboxListTile(
+            title: const Text('Scan all emails (no date filter)'),
+            value: _scanAll,
             onChanged: (value) {
-              setState(() => _daysBack = value.round());
+              setState(() => _scanAll = value ?? false);
             },
-          ),
-          Text(
-            'Scan last $_daysBack days',
-            style: Theme.of(context).textTheme.titleMedium,
+            controlAffinity: ListTileControlAffinity.leading,
+            contentPadding: EdgeInsets.zero,
           ),
         ],
       ),
@@ -758,7 +789,7 @@ class _ScanOptionsDialogState extends State<_ScanOptionsDialog> {
           child: const Text('Cancel'),
         ),
         ElevatedButton(
-          onPressed: () => Navigator.of(context).pop(_daysBack),
+          onPressed: () => Navigator.of(context).pop(_scanAll ? 0 : _daysBack),
           child: const Text('Start Scan'),
         ),
       ],
