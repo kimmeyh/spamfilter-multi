@@ -180,7 +180,7 @@ For detailed architecture information, see:
 
 For common issues and fixes, see:
 - **General Troubleshooting**: `docs/TROUBLESHOOTING.md`
-- **Bash Compatibility**: `docs/WINDOWS_BASH_COMPATIBILITY.md`
+- **Windows Development**: `docs/WINDOWS_DEVELOPMENT_GUIDE.md` (bash, Unicode, PowerShell, builds)
 - **OAuth Setup**: `docs/OAUTH_SETUP.md`
 
 ---

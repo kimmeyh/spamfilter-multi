@@ -25,7 +25,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
-### 2026-02-01 (Sprint 11)
+### 2026-02-01 (Sprint 11 + Retrospective Implementation)
 - **feat**: Implement functional keyboard shortcuts for Windows Desktop (Issue #107)
 - **fix**: Resolve system tray icon initialization error and menu persistence (Issue #108)
 - **feat**: Enhance scan options with continuous slider 1-90 days + All checkbox (Issue #109)
@@ -34,6 +34,14 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **CRITICAL**: Change IMAP delete to move-to-trash instead of permanent delete
 - **feat**: Add Exit button to Windows AppBars with confirmation dialog
 - **fix**: Add visual SnackBar feedback for Ctrl+R/F5 refresh
+- **test**: Add integration test for readonly mode enforcement (prevents Issue #9 regression)
+- **test**: Add integration test for delete-to-trash behavior (IMAP + Gmail)
+- **docs**: Create WINDOWS_DEVELOPMENT_GUIDE.md (consolidates bash, Unicode, PowerShell, builds)
+- **docs**: Create RECOVERY_CAPABILITIES.md (audit of all destructive operations)
+- **docs**: Add Issue Backlog section to ALL_SPRINTS_MASTER_PLAN.md (tracks all open/fixed issues)
+- **docs**: Update SPRINT_EXECUTION_WORKFLOW.md Phase 3.3 with pre-testing checklist
+- **docs**: Update CLAUDE.md and QUICK_REFERENCE.md to reference new Windows guide
+- **chore**: Create test email generators (generate-test-emails.ps1, send-test-emails.py)
 
 ### 2026-01-25
 - **feat**: Implement SafeSenderDatabaseStore with exception support (Issue #66, Sprint 3 Task A)

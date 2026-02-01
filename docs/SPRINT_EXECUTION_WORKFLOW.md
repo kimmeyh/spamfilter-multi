@@ -394,14 +394,27 @@ After Phase 3.2 all tests pass, context can be compacted for efficiency:
 - Both activities benefit from independence (faster iteration)
 
 - [ ] **3.3 Manual Testing (if applicable) - PARALLEL WITH PHASE 4**
+
+  **CRITICAL**: Claude Code will build and run the Windows Desktop App (or target platform) so that user can complete manual testing. User should NOT have to build app themselves.
+
+  **Pre-Testing Checklist** (Claude Code completes BEFORE handing to user):
+  - [ ] Build succeeds without errors (`build-windows.ps1` or equivalent)
+  - [ ] App launches without crashes
+  - [ ] No immediate console errors or warnings
+  - [ ] App is running and ready for user testing
+  - [ ] Claude Code monitoring app output in background
+
+  **User Manual Testing**:
   - Test on target platform (Android emulator, Windows desktop, etc.)
   - Verify user-facing changes work as expected
   - Check for regressions in existing features
   - Document any issues found
-  - **Reference**: See `docs/MANUAL_INTEGRATION_TESTS.md` for comprehensive test scenarios
-  - **NOTE**: Starting Sprint 5, user tests in parallel while Claude completes Phase 4-4.5
-  - **User Ready?**: Yes → Begin manual testing on working branch
-  - **Claude Meanwhile**: Proceeds to Phase 4.3 (PR creation)
+
+  **Reference**: See `docs/MANUAL_INTEGRATION_TESTS.md` for comprehensive test scenarios
+
+  **NOTE**: Starting Sprint 5, user tests in parallel while Claude completes Phase 4-4.5
+  - **User Ready?**: Yes → Begin manual testing on running app
+  - **Claude Meanwhile**: Proceeds to Phase 4.3 (PR creation) while monitoring app
 
 - [ ] **3.4 Fix Issues from Testing**
   - Address any test failures

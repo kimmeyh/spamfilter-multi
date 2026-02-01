@@ -624,7 +624,7 @@ spamfilter-multi/
 │   ├── SPRINT_EXECUTION_WORKFLOW.md # Step-by-step sprint execution checklist
 │   ├── PHASE_0_PRE_SPRINT_CHECKLIST.md # Pre-sprint verification checklist
 │   ├── SPRINT_STOPPING_CRITERIA.md # When/why to stop working (NEW - Sprint 6)
-│   └── WINDOWS_BASH_COMPATIBILITY.md # Bash command troubleshooting (NEW - Sprint 6)
+│   └── WINDOWS_DEVELOPMENT_GUIDE.md # Windows development (bash, Unicode, PowerShell, builds)
 ├── mobile-app/
 │   ├── README.md             # App-specific quick start
 │   └── docs/
@@ -635,7 +635,7 @@ spamfilter-multi/
 
 ### Quick Reference & Troubleshooting
 - **QUICK_REFERENCE.md**: Command cheat sheet and skill reference
-- **WINDOWS_BASH_COMPATIBILITY.md**: Troubleshoot bash command errors on Windows WSL
+- **WINDOWS_DEVELOPMENT_GUIDE.md**: Windows development environment (bash/PowerShell, Unicode encoding, build scripts)
 - **SPRINT_STOPPING_CRITERIA.md**: When and why to stop working during sprints
 - **CLAUDE_CODE_SETUP_GUIDE.md**: MCP server, skills, hooks setup (if referenced)
 

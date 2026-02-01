@@ -628,6 +628,74 @@ WorkManager.getInstance(context).enqueueUniquePeriodicWork(
 
 ---
 
+## Issue Backlog
+
+**Last Updated**: February 1, 2026
+
+This section tracks all open and fixed GitHub issues from code review and sprint work. For detailed issue descriptions, root causes, and acceptance criteria, see `ISSUE_BACKLOG.md`.
+
+### Status Summary
+
+| Status | Count | Issues |
+|--------|-------|--------|
+| ✅ Fixed | 8 | #4, #8, #18, #38, #39, #40, #41, #43 |
+| 🔄 Open | 1 | #44 |
+
+### ✅ Fixed Issues
+
+1. **Issue #4**: Silent regex compilation failures (Fixed: Jan 3, 2026)
+   - PatternCompiler now logs and tracks invalid patterns
+   - 9 new tests added
+
+2. **Issue #8**: Header matching bug in RuleEvaluator (Fixed: Jan 3, 2026)
+   - Rules now properly check email headers instead of From field
+   - 32 new tests with 97.96% coverage
+
+3. **Issue #18**: Missing RuleEvaluator unit tests (Fixed: Jan 3, 2026)
+   - Comprehensive test suite created
+   - File: `test/unit/rule_evaluator_test.dart`
+
+4. **Issue #38**: Python-style inline regex flags (Fixed: Jan 6, 2026)
+   - PatternCompiler strips `(?i)`, `(?m)`, `(?s)`, `(?x)` flags
+   - Also fixed 23 double-@ patterns in rules_safe_senders.yaml
+
+5. **Issue #39**: Auto-navigation race condition (Fixed: Jan 7, 2026)
+   - Update `_previousStatus` inside condition block
+
+6. **Issue #40**: Hardcoded test limit (Fixed: Jan 7, 2026)
+   - Added configurable slider (5-200)
+
+7. **Issue #41**: Cross-account folder leakage (Fixed: Jan 7, 2026)
+   - Per-account folder storage with `_selectedFoldersByAccount` map
+   - 7 new tests added
+
+8. **Issue #43**: print() vs Logger inconsistency (Fixed: Jan 7, 2026)
+   - Replaced 6 print() statements with Logger calls
+
+### 🔄 Open Issues
+
+1. **Issue #44**: Outlook.com OAuth implementation
+   - **Priority**: Deferred
+   - **Labels**: `enhancement`, `platform:outlook`
+   - **Description**: Complete Outlook.com/Office 365 OAuth implementation with MSAL
+   - **File**: `outlook_adapter.dart` (stub)
+
+### Test Coverage
+
+| Metric | Value |
+|--------|-------|
+| Total Tests | 138 |
+| Passing | 138 |
+| Skipped | 13 (integration tests requiring credentials) |
+
+### References
+
+- [GitHub Issues](https://github.com/kimmeyh/spamfilter-multi/issues)
+- [ISSUE_BACKLOG.md](ISSUE_BACKLOG.md) - Detailed issue descriptions
+- [CHANGELOG.md](../CHANGELOG.md) - Recent fixes
+
+---
+
 ## Version History
 
 **Version**: 2.0
