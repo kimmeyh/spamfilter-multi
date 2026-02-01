@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
+import '../widgets/app_bar_with_exit.dart';
 
 import '../../core/providers/email_scan_provider.dart' show EmailScanProvider, EmailActionResult, EmailActionType;
 import '../widgets/empty_state.dart';
@@ -249,7 +250,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     final filteredResults = _getFilteredResults(allResults);
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBarWithExit(
         title: Text('Results - ${widget.accountEmail} - ${widget.platformDisplayName}'),
         // Add explicit back button that returns to account selection
         leading: IconButton(

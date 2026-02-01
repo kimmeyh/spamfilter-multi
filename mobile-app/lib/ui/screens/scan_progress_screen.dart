@@ -8,6 +8,7 @@ import '../../core/providers/email_scan_provider.dart';
 import '../../core/providers/email_scan_provider.dart' show EmailActionType, EmailActionResult;
 import '../../core/providers/rule_set_provider.dart';
 import '../../core/services/email_scanner.dart';
+import '../widgets/app_bar_with_exit.dart';
 import '../screens/folder_selection_screen.dart';
 import 'results_display_screen.dart';
 
@@ -122,7 +123,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
         }
       },
       child: Scaffold(
-        appBar: AppBar(
+        appBar: AppBarWithExit(
           title: Text('Scan Progress - ${widget.platformDisplayName}'),
           // Add explicit back button that returns to account selection
           leading: IconButton(
