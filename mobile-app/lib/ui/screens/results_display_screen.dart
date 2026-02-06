@@ -335,7 +335,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) => const SettingsScreen(),
+                  builder: (_) => SettingsScreen(accountId: widget.accountId),
                 ),
               );
             },

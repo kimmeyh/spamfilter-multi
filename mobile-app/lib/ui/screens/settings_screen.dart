@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/providers/email_scan_provider.dart';
+import '../../adapters/storage/secure_credentials_store.dart';
 import '../widgets/app_bar_with_exit.dart';
 
 /// Settings screen for app-wide configuration
@@ -21,14 +23,18 @@ import '../widgets/app_bar_with_exit.dart';
 /// );
 /// ```
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  final String? accountId;
+
+  const SettingsScreen({super.key, this.accountId});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
 class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProviderStateMixin {
+  final Logger _logger = Logger();
   final SettingsStore _settingsStore = SettingsStore();
+  final SecureCredentialsStore _credStore = SecureCredentialsStore();
   late TabController _tabController;
 
   // App-wide settings
@@ -47,7 +53,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 2,
+      length: 3,  // Account, Manual Scan, Background
       vsync: this,
     );
     _loadSettings();
@@ -93,6 +99,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
+            Tab(text: 'Account'),
             Tab(text: 'Manual Scan'),
             Tab(text: 'Background'),
           ],
@@ -103,10 +110,142 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           : TabBarView(
               controller: _tabController,
               children: [
+                _buildAccountTab(),
                 _buildManualScanTab(),
                 _buildBackgroundScanTab(),
               ],
             ),
+    );
+  }
+
+  Widget _buildAccountTab() {
+    // If no account selected, show message
+    if (widget.accountId == null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.account_circle_outlined, size: 64, color: Colors.grey.shade400),
+              const SizedBox(height: 16),
+              Text(
+                'No Account Selected',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Please select an email account first to configure account-specific settings.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey.shade600),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Account selected - show folder configuration buttons
+    return FutureBuilder<Map<String, String>?>(
+      future: _credStore.getCredentials(widget.accountId!),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (!snapshot.hasData || snapshot.data == null) {
+          return Center(
+            child: Text(
+              'Failed to load account information',
+              style: TextStyle(color: Colors.red.shade700),
+            ),
+          );
+        }
+
+        final credentials = snapshot.data!;
+        final email = credentials['email'] ?? 'Unknown';
+        final platform = widget.accountId!.split('-')[0]; // Extract platform from accountId
+
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            // Account info header
+            Card(
+              color: Colors.blue.shade50,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.email, color: Colors.blue.shade700),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Account Settings',
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                email,
+                                style: TextStyle(color: Colors.grey.shade700),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Folder configuration section
+            Text(
+              'Folder Settings',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Configure where emails are moved based on rules and safe senders',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+
+            // Safe Sender Folder button
+            OutlinedButton.icon(
+              icon: const Icon(Icons.folder_special_outlined),
+              label: const Text('Safe Sender Folder'),
+              onPressed: () => _configureSafeSenderFolder(platform, email),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                alignment: Alignment.centerLeft,
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // Deleted Rule Folder button
+            OutlinedButton.icon(
+              icon: const Icon(Icons.folder_delete_outlined),
+              label: const Text('Deleted Rule Folder'),
+              onPressed: () => _configureDeletedRuleFolder(platform, email),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                alignment: Alignment.centerLeft,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -404,5 +543,198 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       }).toList(),
       onChanged: (v) => v != null ? onChanged(v) : null,
     );
+  }
+
+  /// Configure safe sender folder for account
+  Future<void> _configureSafeSenderFolder(String platform, String email) async {
+    if (widget.accountId == null) return;
+
+    // Get current setting
+    final currentFolder = await _settingsStore.getAccountSafeSenderFolder(widget.accountId!);
+
+    // Show dialog to select folder
+    final result = await showDialog<String?>(
+      context: context,
+      builder: (ctx) {
+        String? selectedFolder = currentFolder;
+        return StatefulBuilder(
+          builder: (context, setState) => AlertDialog(
+            title: const Text('Move Safe Senders to Folder'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'When an email matches a safe sender rule, it will be moved to this folder:',
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: TextEditingController(text: selectedFolder ?? ''),
+                  decoration: InputDecoration(
+                    labelText: 'Folder Name',
+                    hintText: 'INBOX',
+                    helperText: platform == 'gmail'
+                        ? 'Gmail labels (e.g., INBOX, SPAM, or custom label)'
+                        : 'IMAP folder (e.g., INBOX, Junk)',
+                    border: const OutlineInputBorder(),
+                  ),
+                  onChanged: (value) {
+                    selectedFolder = value.trim().isEmpty ? null : value.trim();
+                  },
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Leave empty to use default (INBOX)',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Note: Emails already in the target folder will not be moved.',
+                  style: TextStyle(fontSize: 12, color: Colors.blue.shade700),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, selectedFolder),
+                child: const Text('Save'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (result != null || result == '') {
+      try {
+        await _settingsStore.setAccountSafeSenderFolder(
+          widget.accountId!,
+          result?.isEmpty ?? true ? null : result,
+        );
+
+        final folderName = result?.isEmpty ?? true ? 'INBOX (default)' : result!;
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Safe sender emails will be moved to: $folderName'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+
+        _logger.i('Set safe sender folder for $email to: $folderName');
+      } catch (e) {
+        _logger.e('Failed to set safe sender folder: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to save setting: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  /// Configure deleted rule folder for account
+  Future<void> _configureDeletedRuleFolder(String platform, String email) async {
+    if (widget.accountId == null) return;
+
+    // Get current setting
+    final currentFolder = await _settingsStore.getAccountDeletedRuleFolder(widget.accountId!);
+
+    // Show dialog to select folder
+    final result = await showDialog<String?>(
+      context: context,
+      builder: (ctx) {
+        String? selectedFolder = currentFolder;
+        return StatefulBuilder(
+          builder: (context, setState) => AlertDialog(
+            title: const Text('Move Deleted by Rule to Folder'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'When a rule deletes an email, it will be moved to this folder:',
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: TextEditingController(text: selectedFolder ?? ''),
+                  decoration: InputDecoration(
+                    labelText: 'Folder Name',
+                    hintText: platform == 'gmail' ? 'TRASH' : 'Trash',
+                    helperText: platform == 'gmail'
+                        ? 'Gmail labels (e.g., TRASH, SPAM, or custom label)'
+                        : 'IMAP folder (e.g., Trash, Deleted, Junk)',
+                    border: const OutlineInputBorder(),
+                  ),
+                  onChanged: (value) {
+                    selectedFolder = value.trim().isEmpty ? null : value.trim();
+                  },
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Leave empty to use default (${platform == "gmail" ? "TRASH" : "Trash"})',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, selectedFolder),
+                child: const Text('Save'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (result != null || result == '') {
+      try {
+        await _settingsStore.setAccountDeletedRuleFolder(
+          widget.accountId!,
+          result?.isEmpty ?? true ? null : result,
+        );
+
+        final folderName = result?.isEmpty ?? true
+            ? (platform == 'gmail' ? 'TRASH (default)' : 'Trash (default)')
+            : result!;
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Deleted emails will be moved to: $folderName'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+
+        _logger.i('Set deleted rule folder for $email to: $folderName');
+      } catch (e) {
+        _logger.e('Failed to set deleted rule folder: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to save setting: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
   }
 }

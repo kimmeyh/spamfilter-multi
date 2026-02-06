@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: February 1, 2026 (Backlog Refinement)
+**Last Updated**: February 6, 2026 (Sprint 13 Completion)
 
 ## SPRINT EXECUTION Documentation
 
@@ -48,6 +48,7 @@ Historical sprint information has been moved to individual summary documents and
 | 3 | SPRINT_3_SUMMARY.md | ✅ Complete | ~8h (Jan 24-25, 2026) |
 | 9 | SPRINT_9_RETROSPECTIVE.md | ✅ Complete | ~2h (Jan 30-31, 2026) |
 | 11 | SPRINT_11_RETROSPECTIVE.md | ✅ Complete | ~12h (Jan 31 - Feb 1, 2026) |
+| 13 | SPRINT_13_PLAN.md | ✅ Complete | ~3h (Feb 6, 2026) |
 
 **Key Achievements**:
 - **Sprint 1**: Database foundation (SQLite schema, migration infrastructure)
@@ -55,6 +56,7 @@ Historical sprint information has been moved to individual summary documents and
 - **Sprint 3**: Safe sender exceptions with database storage
 - **Sprint 9**: Development workflow improvements (25 process enhancements)
 - **Sprint 11**: UI Polish & Production Readiness (keyboard shortcuts, CSV export, critical bug fixes for Issue #9 readonly bypass and delete-to-trash)
+- **Sprint 13**: Account-Specific Folder Settings (per-account deleted rule folder, safe sender folder, subject cleaning, settings UI refactor)
 
 See CHANGELOG.md for detailed feature history.
 
@@ -62,14 +64,20 @@ See CHANGELOG.md for detailed feature history.
 
 ## Current Sprint
 
-**SPRINT 12: MVP Core Features + Sprint 11 Retrospective Actions**
+**No Active Sprint**
 
-**Status**: 📋 PLANNED (ready to start)
+**Status**: ⏸️ AWAITING USER DIRECTION
 
+**Last Completed Sprint**: Sprint 13 (February 6, 2026)
+- See SPRINT_13_PLAN.md for full details
+- PR #136 in review: https://github.com/kimmeyh/spamfilter-multi/pull/136
+- Features: F16A (Subject Cleaning), F15 (Settings UI), F14 (Deleted Rule Folder), F13 (Safe Sender Folder)
+
+**Next Sprint Candidates**:
+
+### Option 1: SPRINT 12 - MVP Core Features + Sprint 11 Retrospective Actions
 **Estimated Duration**: 48-54 hours (multi-session sprint)
-
 **Model Assignment**: Sonnet (architecture, F1-F3) + Haiku (F9, F10, retrospective items)
-
 **Objective**: Implement core MVP features (Settings, Scan Results Processing, Interactive Rule Management) plus address Sprint 11 retrospective technical debt
 
 **Tasks**:
@@ -165,19 +173,28 @@ See CHANGELOG.md for detailed feature history.
 
 ## Next Sprint
 
-**SPRINT 13: Background Scanning (Windows) + Persistent Gmail Authentication**
+**SPRINT 14: TBD (To Be Determined by Product Owner)**
 
-**Status**: 📋 PLANNED
+**Status**: 📋 AWAITING PLANNING
 
-**Estimated Duration**: 22-28 hours
+**Candidates**:
+- Sprint 12 (MVP Core Features + Sprint 11 Retrospective Actions)
+- Background Scanning (Windows) + Persistent Gmail Authentication (original Sprint 13 scope, deferred)
+- Playwright UI Tests for Windows Desktop + Android UI Testing Strategy
 
-**Model Assignment**: Sonnet (architecture, F12 research) + Haiku (implementation)
+**Note**: Sprint 13 was originally planned for F5 (Windows Background Scanning) + F12 (Persistent Gmail Auth) but was replanned during execution based on user priorities. The completed Sprint 13 focused on account-specific folder settings and UI refinements instead.
 
-**Objective**: Background scanning on Windows Desktop with Task Scheduler integration, plus persistent Gmail authentication like Samsung/iPhone email apps
+**Original Sprint 13 Scope (Deferred)**:
 
-**Tasks**:
+The features below were originally planned for Sprint 13 but have been deferred to a future sprint:
 
 ### F5: Background Scanning - Windows Desktop
+**Status**: 📋 DEFERRED (from original Sprint 13 plan)
+**Estimated Effort**: 14-16 hours
+
+**Overview**: Background scanning on Windows Desktop with Task Scheduler integration.
+
+**Tasks**:
 - **Task A**: Task Scheduler Integration
   - Register periodic scan task with Windows Task Scheduler
   - Command-line arguments for background mode (`--background-scan`)
@@ -194,6 +211,12 @@ See CHANGELOG.md for detailed feature history.
   - Update mechanism
 
 ### F12: Persistent Gmail Authentication (Long-Lived Tokens)
+**Status**: 📋 DEFERRED (from original Sprint 13 plan)
+**Estimated Effort**: 8-12 hours
+
+**Overview**: Research and implement long-lived Gmail authentication similar to Samsung/iPhone email apps.
+
+**Tasks**:
 - **Task D**: Research Phase
   - Investigate how Samsung Android email app achieves long-lived Gmail access (18-24+ months)
   - Investigate how iPhone Mail app maintains persistent Gmail access
@@ -212,7 +235,7 @@ See CHANGELOG.md for detailed feature history.
   - Test re-authentication flow when tokens expire/revoke
   - Document expected token lifetime
 
-**Acceptance Criteria**:
+**Acceptance Criteria** (for when F5 + F12 are scheduled):
 - [ ] Background scans run on schedule (F5)
 - [ ] System tray shows scan status (F5)
 - [ ] Notifications show scan results (F5)
@@ -235,7 +258,7 @@ See CHANGELOG.md for detailed feature history.
 | Token storage security | Medium | High | Use platform-specific secure storage (Keychain, Credential Manager) |
 | Long-lived token behavior varies by platform | Medium | Medium | Test on all target platforms |
 
-**Dependencies**: Sprint 12 (F2 Settings for frequency configuration)
+**Dependencies**: Sprint 12 (F2 Settings for frequency configuration) - if F5 + F12 are scheduled
 
 ---
 
@@ -966,12 +989,18 @@ This section tracks all open and fixed GitHub issues from code review and sprint
 
 ## Version History
 
-**Version**: 3.0
-**Date**: February 1, 2026
-**Author**: Claude Opus 4.5
+**Version**: 3.2
+**Date**: February 6, 2026
+**Author**: Claude Sonnet 4.5
 **Status**: Active
 
 **Updates**:
+- 3.2 (2026-02-06): Sprint 13 completed - Account-Specific Folder Settings
+  - Actual scope: F16A (Subject Cleaning), F15 (Settings UI), F14 (Deleted Rule Folder), F13 (Safe Sender Folder)
+  - Original scope (F5 + F12) deferred based on user priorities
+  - Duration: ~3 hours (estimated 26-33 hours, 9x faster due to scope simplification)
+  - Added Sprint 13 to Past Sprint Summary
+  - Updated Current Sprint status to "READY TO START" for Sprint 12
 - 3.1 (2026-02-01): Added F12 (Persistent Gmail Authentication) to Sprint 13
   - Research how Samsung/iPhone email apps achieve 18-24+ month authentication
   - Implement long-lived refresh token handling

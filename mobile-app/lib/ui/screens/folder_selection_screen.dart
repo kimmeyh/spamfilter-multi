@@ -319,7 +319,7 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) => const SettingsScreen(),
+                  builder: (_) => SettingsScreen(accountId: widget.accountId),
                 ),
               );
             },
