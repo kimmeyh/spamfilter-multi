@@ -23,6 +23,19 @@
 | **PERFORMANCE_BENCHMARKS.md** | Performance metrics and tracking | When measuring performance or comparing to baseline |
 | **ARCHITECTURE.md** | System architecture and design | When making architectural decisions or understanding codebase |
 | **CHANGELOG.md** | Project change history | When documenting sprint changes (mandatory sprint completion) |
+| **WINDOWS_DEVELOPMENT_GUIDE.md** | Windows shell, Unicode, PowerShell | When encountering Windows-specific issues |
+
+---
+
+## Quick Reference: Windows Issues
+
+For comprehensive Windows development guidance, see **`docs/WINDOWS_DEVELOPMENT_GUIDE.md`**.
+
+**Common Quick Fixes**:
+- **Unicode errors**: Set `$env:PYTHONIOENCODING = 'utf-8'` before running Python
+- **Path errors in bash**: Use PowerShell for Windows paths, or forward slashes in bash
+- **PowerShell cmdlets in bash**: Use PowerShell, not bash, for `Get-Process`, `Stop-Process`, etc.
+- **Build executable locked**: Run `Stop-Process -Name "spam_filter_mobile" -Force`
 
 ---
 
