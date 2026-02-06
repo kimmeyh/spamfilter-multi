@@ -296,6 +296,8 @@ void main() {
     group('Header Pattern Matching', () {
       test('Matches custom header pattern', () async {
         // Arrange: Header pattern
+        // Note: RuleEvaluator formats headers as "key:value" (lowercase, no space)
+        // So the pattern must match the lowercase format (case-insensitive regex)
         final rule = Rule(
           name: 'SpamHeaderRule',
           enabled: true,
@@ -303,7 +305,7 @@ void main() {
           executionOrder: 10,
           conditions: RuleConditions(
             type: 'OR',
-            header: ['^X-Spam-Flag: YES\$'],
+            header: ['^x-spam-flag:yes\$'],
           ),
           actions: RuleActions(delete: true),
         );

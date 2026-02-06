@@ -12,47 +12,46 @@ import 'package:spam_filter_mobile/core/storage/scan_result_store.dart';
 import 'package:spam_filter_mobile/core/storage/unmatched_email_store.dart';
 import 'package:spam_filter_mobile/core/storage/database_helper.dart';
 import 'package:spam_filter_mobile/core/models/email_message.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import '../helpers/database_test_helper.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() {
+    DatabaseTestHelper.initializeFfi();
+  });
+
   group('Scan Result Persistence Integration', () {
+    late DatabaseTestHelper testHelper;
     late DatabaseHelper databaseHelper;
     late ScanResultStore scanResultStore;
     late UnmatchedEmailStore unmatchedEmailStore;
     late EmailScanProvider scanProvider;
 
-    setUpAll(() async {
-      // Initialize FFI for testing
-      sqfliteFfiInit();
-      databaseFactory = databaseFactoryFfiNoIsolate;
+    setUp(() async {
+      // Initialize test helper with isolated database
+      testHelper = DatabaseTestHelper();
+      await testHelper.setUp();
+      databaseHelper = testHelper.dbHelper;
 
-      // Create database and stores
-      databaseHelper = DatabaseHelper();
+      // Create stores
       scanResultStore = ScanResultStore(databaseHelper);
       unmatchedEmailStore = UnmatchedEmailStore(databaseHelper);
 
-      // Create test account (or skip if already exists)
-      final db = await databaseHelper.database;
-      try {
-        await db.insert('accounts', {
-          'account_id': 'test@gmail.com',
-          'platform_id': 'gmail',
-          'email': 'test@gmail.com',
-          'display_name': 'Test User',
-          'date_added': DateTime.now().millisecondsSinceEpoch,
-        });
-      } on Exception {
-        // Account might already exist from previous test runs
-      }
-    });
+      // Create test account (required for FK constraints)
+      await testHelper.createTestAccount('test@gmail.com', platformId: 'gmail');
 
-    setUp(() {
+      // Initialize provider
       scanProvider = EmailScanProvider();
       scanProvider.initializePersistence(
         scanResultStore: scanResultStore,
         unmatchedEmailStore: unmatchedEmailStore,
       );
       scanProvider.setCurrentAccountId('test@gmail.com');
+    });
+
+    tearDown(() async {
+      await testHelper.tearDown();
     });
 
     test('Scan result is created when scan starts', () async {
@@ -283,13 +282,5 @@ void main() {
       expect(providerNoPersist.status.toString(), contains('completed'));
     });
 
-    tearDown(() {
-      scanProvider.reset();
-    });
-
-    tearDownAll(() async {
-      final db = await databaseHelper.database;
-      await db.close();
-    });
   });
 }

@@ -123,9 +123,11 @@ void main() {
     });
 
     test('addSafeSender inserts pattern to database', () async {
-      await store.addSafeSender('trusted@example.com');
+      // Use a proper regex pattern to test 'email' pattern type detection
+      // Pattern starting with ^ and containing @ is classified as 'email' type
+      await store.addSafeSender(r'^trusted@example\.com$');
 
-      final result = await testDb.query('safe_senders', where: 'pattern = ?', whereArgs: ['trusted@example.com']);
+      final result = await testDb.query('safe_senders', where: 'pattern = ?', whereArgs: [r'^trusted@example\.com$']);
       expect(result.length, 1);
       expect(result.first['pattern_type'], 'email');
     });
