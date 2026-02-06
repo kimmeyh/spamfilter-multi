@@ -11,6 +11,7 @@ import '../../core/services/email_scanner.dart';
 import '../widgets/app_bar_with_exit.dart';
 import '../screens/folder_selection_screen.dart';
 import 'results_display_screen.dart';
+import 'settings_screen.dart';
 
 /// Displays live scan progress bound to EmailScanProvider.
 /// Provides controls to start/pause/resume/reset a scan and
@@ -170,6 +171,17 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
                       accountId: widget.accountId,
                       accountEmail: widget.accountEmail,
                     ),
+                  ),
+                );
+              },
+            ),
+            IconButton(
+              tooltip: 'Settings',
+              icon: const Icon(Icons.settings),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => SettingsScreen(accountId: widget.accountId),
                   ),
                 );
               },
@@ -613,6 +625,21 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
 
     // Immediately update UI to show scan is starting
     scanProvider.startScan(totalEmails: 0);
+
+    // ✨ SPRINT 12: Navigate to Results immediately after starting scan
+    // User feedback: "Start Scan should immediately go to View Results page"
+    if (context.mounted) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ResultsDisplayScreen(
+            platformId: widget.platformId,
+            platformDisplayName: widget.platformDisplayName,
+            accountId: widget.accountId,
+            accountEmail: widget.accountEmail,
+          ),
+        ),
+      );
+    }
 
     try {
       // Create scanner

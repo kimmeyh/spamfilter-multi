@@ -17,6 +17,7 @@ import '../../adapters/email_providers/spam_filter_platform.dart';
 import '../../adapters/email_providers/generic_imap_adapter.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../adapters/auth/google_auth_service.dart';
+import 'settings_screen.dart';
 
 /// Folder selection screen for email account
 /// 
@@ -311,6 +312,19 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
       appBar: AppBar(
         title: const Text('Select Folders to Scan'),
         elevation: 0,
+        actions: [
+          IconButton(
+            tooltip: 'Settings',
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => SettingsScreen(accountId: widget.accountId),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [

@@ -145,3 +145,48 @@ class NoRulesEmptyState extends StatelessWidget {
     );
   }
 }
+
+/// Empty state shown when a scan is starting and no results are available yet
+class ScanStartedEmptyState extends StatelessWidget {
+  const ScanStartedEmptyState({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Loading indicator
+            const CircularProgressIndicator(),
+            const SizedBox(height: 24),
+
+            // Title
+            Text(
+              'Scan Started',
+              style: textTheme.headlineSmall?.copyWith(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+
+            // Message
+            Text(
+              'No results yet. Results will appear here as emails are processed.',
+              style: textTheme.bodyLarge?.copyWith(
+                color: colorScheme.onSurface.withOpacity(0.7),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

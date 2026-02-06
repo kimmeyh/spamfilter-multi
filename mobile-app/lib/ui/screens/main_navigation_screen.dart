@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'account_selection_screen.dart';
+import 'settings_screen.dart';
 import '../widgets/app_bar_with_exit.dart';
 
 /// Main navigation screen with bottom navigation bar (Android only)
@@ -49,11 +50,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       message: 'Rule management coming in Sprint 12-13 (F3)',
       icon: Icons.rule,
     ),
-    const _PlaceholderScreen(
-      title: 'Settings',
-      message: 'App settings coming in Sprint 12-13 (F2)',
-      icon: Icons.settings,
-    ),
+    const SettingsScreen(),  // Sprint 12: Real settings screen
   ];
 
   void _onDestinationSelected(int index) {
