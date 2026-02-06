@@ -179,9 +179,84 @@ See CHANGELOG.md for detailed feature history.
 
 ---
 
+## Current Sprint
+
+**SPRINT 13: Settings Refactor & Folder Management**
+
+**Status**: 📋 PLANNED (ready to start)
+
+**Estimated Duration**: 28-37 hours (multi-session sprint)
+
+**Model Assignment**: Sonnet (architecture, complexity) + Haiku (cleanup, polish)
+
+**Objective**: Refactor settings UI for clarity, implement per-account folder management for safe senders and deleted rules, clean subject line display, and reduce analyzer warnings
+
+**Tasks** (Sequential Order by Dependencies + Complexity):
+
+### Task 1: F16A - Clean Subject Lines (Issue TBD)
+- Clean subject lines in Scan Results screen and CSV export
+- Remove tabs, trim spaces, reduce repeated punctuation
+- Remove non-keyboard characters
+- **Effort**: 2-3 hours
+
+### Task 2: F15 - Account Settings UI Refactor (Issue TBD)
+- Remove confusing override sections from Account settings
+- Separate Manual Scan and Background Scan default folder settings
+- Use folder picker UI (like "Select Folders to Scan")
+- Update Manual Scan settings to show account-specific note
+- **Effort**: 6-8 hours
+- **Dependency**: Must complete before F13, F14
+
+### Task 3: F14 - Deleted Rule Folder Management (Issue TBD)
+- Add per-account "Move Deleted by Rule to Folder" setting
+- Default to provider's Trash folder
+- Update rule processing to use configured folder (not hardcoded "Trash")
+- Tag emails with rule name (provider-specific implementation)
+- **Effort**: 8-10 hours
+- **Dependency**: Requires F15 settings infrastructure
+
+### Task 4: F13 - Safe Senders Folder Management (Issue TBD)
+- Add per-account "Move Safe Senders to Folder" setting
+- Default to provider's Inbox
+- If email matches safe sender AND is already in target folder, do nothing
+- If email matches safe sender AND is NOT in target folder, move it
+- **Effort**: 10-12 hours
+- **Dependency**: Requires F15 settings infrastructure
+
+### Task 5: Issue #130 - Analyzer Warning Cleanup
+- Reduce analyzer warnings from 214 to <50
+- Fix `unnecessary_brace_in_string_interps`, `unused_import`, `curly_braces_in_flow_control_structures`
+- All tests still pass
+- **Effort**: 2-4 hours
+
+**Acceptance Criteria**:
+- [ ] Subject lines cleaned in Scan Results screen (F16A)
+- [ ] Subject lines cleaned in CSV export (F16A)
+- [ ] Settings UI refactored - Manual/Background have separate folder settings (F15)
+- [ ] Account settings override sections removed (F15)
+- [ ] Folder picker UI implemented for settings (F15)
+- [ ] Deleted rule emails move to configured folder (F14)
+- [ ] Emails tagged with rule name when deleted (F14)
+- [ ] Safe sender emails move to configured folder only if not already there (F13)
+- [ ] Safe sender folder setting defaults to Inbox (F13)
+- [ ] Analyzer warnings reduced from 214 to <50 (#130)
+- [ ] All tests pass (915+)
+- [ ] Manual testing on Windows Desktop passes
+
+**Risks**:
+| Risk | Likelihood | Impact | Mitigation |
+|------|------------|--------|------------|
+| Settings UI refactor breaks existing functionality | Low | High | Incremental changes, test after each step |
+| Folder management changes affect existing scans | Medium | High | Preserve existing behavior as default, thorough testing |
+| Subject cleaning removes important characters | Low | Medium | Conservative cleaning rules, test with real data |
+
+**Dependencies**: Sprint 12 (F2 Settings foundation)
+
+---
+
 ## Next Sprint
 
-**SPRINT 13: Background Scanning (Windows) + Persistent Gmail Authentication**
+**SPRINT 14: Background Scanning (Windows) + Persistent Gmail Authentication**
 
 **Status**: 📋 PLANNED
 
@@ -251,13 +326,13 @@ See CHANGELOG.md for detailed feature history.
 | Token storage security | Medium | High | Use platform-specific secure storage (Keychain, Credential Manager) |
 | Long-lived token behavior varies by platform | Medium | Medium | Test on all target platforms |
 
-**Dependencies**: Sprint 12 (F2 Settings for frequency configuration)
+**Dependencies**: Sprint 12 (F2 Settings for frequency configuration), Sprint 13 (F15 Settings UI)
 
 ---
 
 ## Future Features (Prioritized)
 
-**Last Refined**: February 1, 2026 (Backlog Refinement Session)
+**Last Refined**: February 6, 2026 (Sprint 13 Backlog Refinement Session)
 
 Priority based on: Product Owner prioritization for MVP development.
 
