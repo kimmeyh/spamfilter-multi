@@ -568,8 +568,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
 
   Widget _buildResultTile(EmailActionResult result) {
     // Issue #47: Title shows sender email, subtitle shows folder • subject • rule
-    final title = result.email.from.isNotEmpty
-        ? result.email.from
+    // Decode Punycode domains for display
+    final rawFrom = result.email.from;
+    final decodedFrom = PatternNormalization.normalizeAndDecodeEmail(rawFrom);
+    final title = decodedFrom.isNotEmpty
+        ? decodedFrom
         : 'Unknown sender';
     final folder = result.email.folderName;
     // Clean subject for display (remove tabs, extra spaces, repeated punctuation)
@@ -612,8 +615,13 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   void _showEmailDetailSheet(EmailActionResult result) {
     final email = result.email;
     final bodyParser = EmailBodyParser();
-    final senderEmail = bodyParser.extractEmailAddress(email.from);
-    final senderDomain = bodyParser.extractDomainFromEmail(email.from);
+    // Extract email and domain, then decode Punycode for display
+    final rawSenderEmail = bodyParser.extractEmailAddress(email.from);
+    final senderEmail = PatternNormalization.normalizeAndDecodeEmail(rawSenderEmail);
+    final rawSenderDomain = bodyParser.extractDomainFromEmail(email.from);
+    final senderDomain = rawSenderDomain != null 
+        ? PatternNormalization.decodePunycodeDomain(rawSenderDomain)
+        : null;
     final rootDomain = _extractRootDomain(senderDomain);
     final matchedRule = result.evaluationResult?.matchedRule ?? '';
     final hasNoRule = matchedRule.isEmpty || result.action == EmailActionType.none;
