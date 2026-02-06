@@ -15,11 +15,26 @@ import 'dart:io';
 /// - account_settings
 /// - background_scan_schedule
 /// - accounts
+///
+/// Note: Foreign key constraints are enforced, so tests must create
+/// parent records (accounts) before inserting child records (scan_results).
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late DatabaseHelper dbHelper;
   late String testDbPath;
+
+  /// Helper function to create a test account
+  /// Required before inserting scan_results due to FK constraint
+  Future<void> createTestAccount(String accountId, {String? email}) async {
+    await dbHelper.insertAccount({
+      'account_id': accountId,
+      'platform_id': 'test-platform',
+      'email': email ?? '$accountId@test.com',
+      'display_name': 'Test User',
+      'date_added': DateTime.now().millisecondsSinceEpoch,
+    });
+  }
 
   setUpAll(() {
     // Initialize FFI for testing
@@ -27,7 +42,7 @@ void main() {
     databaseFactory = databaseFactoryFfi;
   });
 
-  setUp() async {
+  setUp(() async {
     // Create temp database path for testing
     final tempDir = await Directory.systemTemp.createTemp('spam_filter_test_');
     testDbPath = '${tempDir.path}/test.db';
@@ -45,7 +60,7 @@ void main() {
     } catch (e) {
       // Ignore if database does not exist yet
     }
-  };
+  });
 
   tearDown(() async {
     // Close database and clean up
@@ -92,6 +107,9 @@ void main() {
 
   group('Scan Results CRUD', () {
     test('should insert scan result', () async {
+      // Create account first (FK constraint)
+      await createTestAccount('test-account');
+
       final scanId = await dbHelper.insertScanResult({
         'account_id': 'test-account',
         'scan_type': 'manual',
@@ -112,6 +130,10 @@ void main() {
     });
 
     test('should query scan results by account', () async {
+      // Create accounts first (FK constraint)
+      await createTestAccount('account-1');
+      await createTestAccount('account-2');
+
       // Insert test data
       await dbHelper.insertScanResult({
         'account_id': 'account-1',
@@ -152,6 +174,9 @@ void main() {
     });
 
     test('should get specific scan result', () async {
+      // Create account first (FK constraint)
+      await createTestAccount('test-account');
+
       final scanId = await dbHelper.insertScanResult({
         'account_id': 'test-account',
         'scan_type': 'manual',
@@ -175,6 +200,9 @@ void main() {
     });
 
     test('should update scan result', () async {
+      // Create account first (FK constraint)
+      await createTestAccount('test-account');
+
       final scanId = await dbHelper.insertScanResult({
         'account_id': 'test-account',
         'scan_type': 'manual',
@@ -209,6 +237,9 @@ void main() {
     late int scanId;
 
     setUp(() async {
+      // Create account first (FK constraint)
+      await createTestAccount('test-account');
+
       // Create a scan result for email actions
       scanId = await dbHelper.insertScanResult({
         'account_id': 'test-account',
@@ -594,6 +625,225 @@ void main() {
       expect(stats['safe_senders'], equals(1));
       expect(stats['scan_results'], equals(0));
       expect(stats['email_actions'], equals(0));
+    });
+  });
+
+  // Issue #58: Foreign Key Constraint Testing
+  group('Foreign Key Constraints', () {
+    test('should reject scan_result with non-existent account_id', () async {
+      // Attempt to insert scan_result without creating account first
+      // This should fail due to FK constraint
+      expect(
+        () async => await dbHelper.insertScanResult({
+          'account_id': 'nonexistent-account',
+          'scan_type': 'manual',
+          'scan_mode': 'readonly',
+          'started_at': DateTime.now().millisecondsSinceEpoch,
+          'total_emails': 100,
+          'processed_count': 0,
+          'deleted_count': 0,
+          'moved_count': 0,
+          'safe_sender_count': 0,
+          'no_rule_count': 0,
+          'error_count': 0,
+          'status': 'scanning',
+          'folders_scanned': '["INBOX"]',
+        }),
+        throwsA(isA<Exception>()),
+      );
+    });
+
+    test('should reject email_action with non-existent scan_result_id', () async {
+      // Create account and scan_result first
+      await createTestAccount('test-account');
+      await dbHelper.insertScanResult({
+        'account_id': 'test-account',
+        'scan_type': 'manual',
+        'scan_mode': 'readonly',
+        'started_at': DateTime.now().millisecondsSinceEpoch,
+        'total_emails': 10,
+        'processed_count': 0,
+        'deleted_count': 0,
+        'moved_count': 0,
+        'safe_sender_count': 0,
+        'no_rule_count': 0,
+        'error_count': 0,
+        'status': 'scanning',
+        'folders_scanned': '["INBOX"]',
+      });
+
+      // Attempt to insert email_action with invalid scan_result_id
+      expect(
+        () async => await dbHelper.insertEmailAction({
+          'scan_result_id': 99999, // Non-existent ID
+          'email_id': 'msg-123',
+          'email_from': 'test@example.com',
+          'email_subject': 'Test Email',
+          'email_received_date': DateTime.now().millisecondsSinceEpoch,
+          'email_folder': 'INBOX',
+          'action_type': 'delete',
+          'is_safe_sender': 0,
+          'success': 1,
+        }),
+        throwsA(isA<Exception>()),
+      );
+    });
+
+    test('should cascade delete email_actions when scan_result is deleted', () async {
+      // Create account, scan_result, and email_action
+      await createTestAccount('test-account');
+      final scanId = await dbHelper.insertScanResult({
+        'account_id': 'test-account',
+        'scan_type': 'manual',
+        'scan_mode': 'readonly',
+        'started_at': DateTime.now().millisecondsSinceEpoch,
+        'total_emails': 10,
+        'processed_count': 1,
+        'deleted_count': 1,
+        'moved_count': 0,
+        'safe_sender_count': 0,
+        'no_rule_count': 0,
+        'error_count': 0,
+        'status': 'completed',
+        'folders_scanned': '["INBOX"]',
+      });
+
+      await dbHelper.insertEmailAction({
+        'scan_result_id': scanId,
+        'email_id': 'msg-123',
+        'email_from': 'test@example.com',
+        'email_subject': 'Test Email',
+        'email_received_date': DateTime.now().millisecondsSinceEpoch,
+        'email_folder': 'INBOX',
+        'action_type': 'delete',
+        'is_safe_sender': 0,
+        'success': 1,
+      });
+
+      // Verify email_action exists
+      var actions = await dbHelper.queryEmailActions(scanResultId: scanId);
+      expect(actions.length, equals(1));
+
+      // Delete scan_result directly via database (CASCADE should delete email_actions)
+      final db = await dbHelper.database;
+      await db.delete('scan_results', where: 'id = ?', whereArgs: [scanId]);
+
+      // Verify email_actions are also deleted (CASCADE)
+      actions = await dbHelper.queryEmailActions(scanResultId: scanId);
+      expect(actions.length, equals(0));
+    });
+
+    test('should accept scan_result with valid account_id', () async {
+      // Create account first
+      await createTestAccount('valid-account');
+
+      // Insert scan_result with valid account_id
+      final scanId = await dbHelper.insertScanResult({
+        'account_id': 'valid-account',
+        'scan_type': 'manual',
+        'scan_mode': 'readonly',
+        'started_at': DateTime.now().millisecondsSinceEpoch,
+        'total_emails': 100,
+        'processed_count': 0,
+        'deleted_count': 0,
+        'moved_count': 0,
+        'safe_sender_count': 0,
+        'no_rule_count': 0,
+        'error_count': 0,
+        'status': 'scanning',
+        'folders_scanned': '["INBOX"]',
+      });
+
+      expect(scanId, greaterThan(0));
+    });
+
+    test('foreign keys pragma should be enabled', () async {
+      final db = await dbHelper.database;
+      final result = await db.rawQuery('PRAGMA foreign_keys');
+      expect(result.first['foreign_keys'], equals(1));
+    });
+  });
+
+  group('Accounts CRUD', () {
+    test('should insert account', () async {
+      final accountId = await dbHelper.insertAccount({
+        'account_id': 'test-account-id',
+        'platform_id': 'gmail',
+        'email': 'test@gmail.com',
+        'display_name': 'Test User',
+        'date_added': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      expect(accountId, greaterThan(0));
+    });
+
+    test('should query accounts', () async {
+      await dbHelper.insertAccount({
+        'account_id': 'account-1',
+        'platform_id': 'gmail',
+        'email': 'user1@gmail.com',
+        'display_name': 'User 1',
+        'date_added': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      await dbHelper.insertAccount({
+        'account_id': 'account-2',
+        'platform_id': 'aol',
+        'email': 'user2@aol.com',
+        'display_name': 'User 2',
+        'date_added': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      final accounts = await dbHelper.getAllAccounts();
+      expect(accounts.length, equals(2));
+    });
+
+    test('should get specific account', () async {
+      await dbHelper.insertAccount({
+        'account_id': 'specific-account',
+        'platform_id': 'gmail',
+        'email': 'specific@gmail.com',
+        'display_name': 'Specific User',
+        'date_added': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      final account = await dbHelper.getAccount('specific-account');
+      expect(account, isNotNull);
+      expect(account!['email'], equals('specific@gmail.com'));
+    });
+
+    test('should update account', () async {
+      await dbHelper.insertAccount({
+        'account_id': 'update-account',
+        'platform_id': 'gmail',
+        'email': 'update@gmail.com',
+        'display_name': 'Original Name',
+        'date_added': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      await dbHelper.updateAccount('update-account', {
+        'display_name': 'Updated Name',
+        'last_scanned': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      final updated = await dbHelper.getAccount('update-account');
+      expect(updated!['display_name'], equals('Updated Name'));
+      expect(updated['last_scanned'], isNotNull);
+    });
+
+    test('should delete account', () async {
+      await dbHelper.insertAccount({
+        'account_id': 'delete-account',
+        'platform_id': 'gmail',
+        'email': 'delete@gmail.com',
+        'display_name': 'Delete User',
+        'date_added': DateTime.now().millisecondsSinceEpoch,
+      });
+
+      await dbHelper.deleteAccount('delete-account');
+
+      final deleted = await dbHelper.getAccount('delete-account');
+      expect(deleted, isNull);
     });
   });
 }

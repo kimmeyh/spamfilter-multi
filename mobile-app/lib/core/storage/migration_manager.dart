@@ -180,6 +180,8 @@ class MigrationManager {
   ///
   /// Called from within _executeImportWithTransaction to ensure transaction consistency.
   /// If any rule import fails, the entire transaction will be rolled back.
+  ///
+  /// Idempotent: Rules that already exist in the database are skipped (not duplicated).
   Future<void> _importRulesWithin(Transaction txn, MigrationResults results) async {
     try {
       _logger.i('Importing rules from YAML (within transaction)');
@@ -188,8 +190,20 @@ class MigrationManager {
       final ruleSet = await _ruleStore.loadRules();
       final migrationDate = DateTime.now().millisecondsSinceEpoch;
 
+      // Get existing rule names to check for duplicates
+      final existingRules = await txn.query('rules', columns: ['name']);
+      final existingRuleNames = existingRules.map((r) => r['name'] as String).toSet();
+      _logger.d('Found ${existingRuleNames.length} existing rules in database');
+
       // Import each rule
       for (final rule in ruleSet.rules) {
+        // Check if rule already exists (idempotent migration)
+        if (existingRuleNames.contains(rule.name)) {
+          _logger.d('Skipping existing rule: ${rule.name}');
+          results.skippedRules.add('${rule.name}: already exists');
+          continue;
+        }
+
         try {
           // Convert rule to database format
           final dbRule = {
@@ -221,15 +235,11 @@ class MigrationManager {
           _logger.w('Failed to import rule "${rule.name}": $e');
           results.rulesFailed++;
           results.skippedRules.add('${rule.name}: ${e.toString()}');
-          // Re-throw to trigger transaction rollback on critical failures
-          if (e.toString().contains('UNIQUE constraint failed')) {
-            rethrow; // UNIQUE constraint violation is critical (duplicate rule name)
-          }
           // Other errors are logged but do not abort transaction
         }
       }
 
-      _logger.i('Imported ${results.rulesImported} rules, failed: ${results.rulesFailed}');
+      _logger.i('Imported ${results.rulesImported} rules, skipped: ${results.skippedRules.length}, failed: ${results.rulesFailed}');
     } catch (e) {
       _logger.e('Failed to import rules: $e');
       results.errors.add('Rules import failed: ${e.toString()}');
@@ -242,6 +252,8 @@ class MigrationManager {
   ///
   /// Called from within _executeImportWithTransaction to ensure transaction consistency.
   /// If any safe sender import fails, the entire transaction will be rolled back.
+  ///
+  /// Idempotent: Safe senders that already exist in the database are skipped (not duplicated).
   Future<void> _importSafeSendersWithin(Transaction txn, MigrationResults results) async {
     try {
       _logger.i('Importing safe senders from YAML (within transaction)');
@@ -250,8 +262,20 @@ class MigrationManager {
       final safeSenderList = await _ruleStore.loadSafeSenders();
       final migrationDate = DateTime.now().millisecondsSinceEpoch;
 
+      // Get existing patterns to check for duplicates
+      final existingSafeSenders = await txn.query('safe_senders', columns: ['pattern']);
+      final existingPatterns = existingSafeSenders.map((s) => s['pattern'] as String).toSet();
+      _logger.d('Found ${existingPatterns.length} existing safe senders in database');
+
       // Import each safe sender pattern
       for (final pattern in safeSenderList.safeSenders) {
+        // Check if pattern already exists (idempotent migration)
+        if (existingPatterns.contains(pattern)) {
+          _logger.d('Skipping existing safe sender: $pattern');
+          results.skippedSafeSenders.add('$pattern: already exists');
+          continue;
+        }
+
         try {
           // Determine pattern type based on format
           String patternType;
@@ -285,15 +309,11 @@ class MigrationManager {
           _logger.w('Failed to import safe sender "$pattern": $e');
           results.safeSendersFailed++;
           results.skippedSafeSenders.add('$pattern: ${e.toString()}');
-          // Re-throw to trigger transaction rollback on critical failures
-          if (e.toString().contains('UNIQUE constraint failed')) {
-            rethrow; // UNIQUE constraint violation is critical (duplicate pattern)
-          }
           // Other errors are logged but do not abort transaction
         }
       }
 
-      _logger.i('Imported ${results.safeSendersImported} safe senders, failed: ${results.safeSendersFailed}');
+      _logger.i('Imported ${results.safeSendersImported} safe senders, skipped: ${results.skippedSafeSenders.length}, failed: ${results.safeSendersFailed}');
     } catch (e) {
       _logger.e('Failed to import safe senders: $e');
       results.errors.add('Safe senders import failed: ${e.toString()}');
@@ -303,20 +323,23 @@ class MigrationManager {
 
 
   /// Verify migration completeness
+  ///
+  /// For idempotent migration, we verify that the database has at least
+  /// the number of newly imported items (skipped items already existed).
   Future<void> _verifyImport(MigrationResults results) async {
     try {
       _logger.i('Verifying import completeness');
 
       // Count rules in database
       final dbRules = await databaseHelper.queryRules();
-      _logger.i('Database contains ${dbRules.length} rules');
+      _logger.i('Database contains ${dbRules.length} rules (imported: ${results.rulesImported}, skipped: ${results.skippedRules.length})');
 
-      // Compare rules count with migration results
-      if (results.rulesImported != null &&
-          results.rulesImported != dbRules.length) {
+      // Verification: database should have at least as many rules as we imported
+      // (may have more due to previously existing rules)
+      if (results.rulesImported > dbRules.length) {
         final message =
-            'Verification failed: expected ${results.rulesImported} rules imported, '
-            'but found ${dbRules.length} in database';
+            'Verification failed: imported ${results.rulesImported} rules but '
+            'only found ${dbRules.length} in database';
         _logger.w(message);
         results.errors.add(message);
       } else {
@@ -326,14 +349,13 @@ class MigrationManager {
 
       // Count safe senders in database
       final dbSafeSenders = await databaseHelper.querySafeSenders();
-      _logger.i('Database contains ${dbSafeSenders.length} safe senders');
+      _logger.i('Database contains ${dbSafeSenders.length} safe senders (imported: ${results.safeSendersImported}, skipped: ${results.skippedSafeSenders.length})');
 
-      // Compare safe senders count with migration results
-      if (results.safeSendersImported != null &&
-          results.safeSendersImported != dbSafeSenders.length) {
+      // Verification: database should have at least as many safe senders as we imported
+      if (results.safeSendersImported > dbSafeSenders.length) {
         final message =
-            'Verification failed: expected ${results.safeSendersImported} safe senders imported, '
-            'but found ${dbSafeSenders.length} in database';
+            'Verification failed: imported ${results.safeSendersImported} safe senders but '
+            'only found ${dbSafeSenders.length} in database';
         _logger.w(message);
         results.errors.add(message);
       } else {
