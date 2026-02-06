@@ -53,6 +53,7 @@ dependencies:
   # Sprint 10 - Windows Desktop UI
   system_tray: ^2.0.3  # System tray integration (Windows/macOS/Linux)
   window_manager: ^0.3.7  # Window management (minimize to tray, etc.)
+  file_picker: ^8.1.4  # File and folder picker (Sprint 13 - folder selection)
 
   # Phase 2+ - UI Enhancement
   # flutter_svg: ^2.0.9

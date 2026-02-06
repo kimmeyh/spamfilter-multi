@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/providers/email_scan_provider.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
@@ -546,79 +547,75 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     );
   }
 
-  /// Configure safe sender folder for account
+  /// Configure safe sender folder for account using Windows folder picker
   Future<void> _configureSafeSenderFolder(String platform, String email) async {
     if (widget.accountId == null) return;
 
     // Get current setting
     final currentFolder = await _settingsStore.getAccountSafeSenderFolder(widget.accountId!);
 
-    // Show dialog to select folder
-    final result = await showDialog<String?>(
+    // Show informational dialog first
+    final proceed = await showDialog<bool>(
       context: context,
-      builder: (ctx) {
-        String? selectedFolder = currentFolder;
-        return StatefulBuilder(
-          builder: (context, setState) => AlertDialog(
-            title: const Text('Move Safe Senders to Folder'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'When an email matches a safe sender rule, it will be moved to this folder:',
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: TextEditingController(text: selectedFolder ?? ''),
-                  decoration: InputDecoration(
-                    labelText: 'Folder Name',
-                    hintText: 'INBOX',
-                    helperText: platform == 'gmail'
-                        ? 'Gmail labels (e.g., INBOX, SPAM, or custom label)'
-                        : 'IMAP folder (e.g., INBOX, Junk)',
-                    border: const OutlineInputBorder(),
-                  ),
-                  onChanged: (value) {
-                    selectedFolder = value.trim().isEmpty ? null : value.trim();
-                  },
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Leave empty to use default (INBOX)',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Note: Emails already in the target folder will not be moved.',
-                  style: TextStyle(fontSize: 12, color: Colors.blue.shade700),
-                ),
-              ],
+      builder: (ctx) => AlertDialog(
+        title: const Text('Move Safe Senders to Folder'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'When an email matches a safe sender rule, it will be moved to the selected folder.',
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(ctx, selectedFolder),
-                child: const Text('Save'),
-              ),
-            ],
+            const SizedBox(height: 12),
+            Text(
+              'Current folder: ${currentFolder ?? "INBOX (default)"}',
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Note: Emails already in the target folder will not be moved.',
+              style: TextStyle(fontSize: 12, color: Colors.blue.shade700),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              platform == 'gmail'
+                  ? 'You will select a folder name (e.g., INBOX, SPAM, or custom label).'
+                  : 'You will select an IMAP folder name (e.g., INBOX, Junk).',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
           ),
-        );
-      },
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Select Folder'),
+          ),
+        ],
+      ),
     );
 
-    if (result != null || result == '') {
+    if (proceed != true) return;
+
+    // Open Windows folder picker (directory mode)
+    final result = await FilePicker.platform.getDirectoryPath(
+      dialogTitle: 'Select Safe Sender Folder',
+      initialDirectory: currentFolder,
+    );
+
+    if (result != null) {
       try {
+        // Extract just the folder name (last component of path)
+        final folderName = result.split('\\').last;
+
         await _settingsStore.setAccountSafeSenderFolder(
           widget.accountId!,
-          result?.isEmpty ?? true ? null : result,
+          folderName,
         );
-
-        final folderName = result?.isEmpty ?? true ? 'INBOX (default)' : result!;
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -644,76 +641,70 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     }
   }
 
-  /// Configure deleted rule folder for account
+  /// Configure deleted rule folder for account using Windows folder picker
   Future<void> _configureDeletedRuleFolder(String platform, String email) async {
     if (widget.accountId == null) return;
 
     // Get current setting
     final currentFolder = await _settingsStore.getAccountDeletedRuleFolder(widget.accountId!);
 
-    // Show dialog to select folder
-    final result = await showDialog<String?>(
+    // Show informational dialog first
+    final proceed = await showDialog<bool>(
       context: context,
-      builder: (ctx) {
-        String? selectedFolder = currentFolder;
-        return StatefulBuilder(
-          builder: (context, setState) => AlertDialog(
-            title: const Text('Move Deleted by Rule to Folder'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'When a rule deletes an email, it will be moved to this folder:',
-                  style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: TextEditingController(text: selectedFolder ?? ''),
-                  decoration: InputDecoration(
-                    labelText: 'Folder Name',
-                    hintText: platform == 'gmail' ? 'TRASH' : 'Trash',
-                    helperText: platform == 'gmail'
-                        ? 'Gmail labels (e.g., TRASH, SPAM, or custom label)'
-                        : 'IMAP folder (e.g., Trash, Deleted, Junk)',
-                    border: const OutlineInputBorder(),
-                  ),
-                  onChanged: (value) {
-                    selectedFolder = value.trim().isEmpty ? null : value.trim();
-                  },
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Leave empty to use default (${platform == "gmail" ? "TRASH" : "Trash"})',
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                ),
-              ],
+      builder: (ctx) => AlertDialog(
+        title: const Text('Move Deleted by Rule to Folder'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'When a rule deletes an email, it will be moved to the selected folder.',
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.pop(ctx, selectedFolder),
-                child: const Text('Save'),
-              ),
-            ],
+            const SizedBox(height: 12),
+            Text(
+              'Current folder: ${currentFolder ?? (platform == "gmail" ? "TRASH (default)" : "Trash (default)")}',
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              platform == 'gmail'
+                  ? 'You will select a folder name (e.g., TRASH, SPAM, or custom label).'
+                  : 'You will select an IMAP folder name (e.g., Trash, Deleted, Junk).',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
           ),
-        );
-      },
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Select Folder'),
+          ),
+        ],
+      ),
     );
 
-    if (result != null || result == '') {
+    if (proceed != true) return;
+
+    // Open Windows folder picker (directory mode)
+    final result = await FilePicker.platform.getDirectoryPath(
+      dialogTitle: 'Select Deleted Rule Folder',
+      initialDirectory: currentFolder,
+    );
+
+    if (result != null) {
       try {
+        // Extract just the folder name (last component of path)
+        final folderName = result.split('\\').last;
+
         await _settingsStore.setAccountDeletedRuleFolder(
           widget.accountId!,
-          result?.isEmpty ?? true ? null : result,
+          folderName,
         );
-
-        final folderName = result?.isEmpty ?? true
-            ? (platform == 'gmail' ? 'TRASH (default)' : 'Trash (default)')
-            : result!;
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
