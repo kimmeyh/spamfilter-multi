@@ -36,6 +36,12 @@ class OutlookAdapter implements SpamFilterPlatform {
   @override
   AuthMethod get supportedAuthMethod => AuthMethod.oauth2;
 
+  @override
+  void setDeletedRuleFolder(String? folderName) {
+    // Issue #44: When implementing Outlook adapter, store folder name and use in takeAction
+    _logger.d('Set deleted rule folder to: ${folderName ?? "default"}');
+  }
+
   // Issue #44: Add Microsoft Graph API client and OAuth fields
   // MsalFlutter? _msal;
   // String? _accessToken;

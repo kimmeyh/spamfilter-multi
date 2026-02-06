@@ -22,6 +22,7 @@ class GmailApiAdapter implements SpamFilterPlatform {
   gmail.GmailApi? _gmailApi;
   String? _userEmail;
   bool _isConnected = false;
+  String? _deletedRuleFolder; // Gmail label to move deleted emails to (null = use 'TRASH')
 
   @override
   String get platformId => 'gmail';
@@ -34,6 +35,12 @@ class GmailApiAdapter implements SpamFilterPlatform {
 
   // Connection state used internally
   bool get isConnected => _isConnected;
+
+  @override
+  void setDeletedRuleFolder(String? folderName) {
+    _deletedRuleFolder = folderName;
+    Redact.logSafe('Set deleted rule folder to: ${folderName ?? "TRASH (default)"}');
+  }
 
   /// Initialize Gmail OAuth flow
   /// Returns true if authentication successful
@@ -278,15 +285,31 @@ class GmailApiAdapter implements SpamFilterPlatform {
     }
   }
 
-  /// Delete a Gmail message by moving it to trash.
+  /// Delete a Gmail message by moving it to configured folder (or TRASH by default).
   Future<void> deleteMessage(EmailMessage message) async {
     if (_gmailApi == null) {
       throw StateError('Not connected. Call signIn() first.');
     }
 
     try {
-      await _gmailApi!.users.messages.trash('me', message.id);
-      Redact.logSafe('Gmail message ${message.id} moved to trash');
+      final targetLabel = _deletedRuleFolder ?? 'TRASH';
+
+      if (targetLabel == 'TRASH') {
+        // Use the built-in trash() API for TRASH label
+        await _gmailApi!.users.messages.trash('me', message.id);
+        Redact.logSafe('Gmail message ${message.id} moved to trash');
+      } else {
+        // Use modify API for custom labels
+        await _gmailApi!.users.messages.modify(
+          gmail.ModifyMessageRequest(
+            addLabelIds: [targetLabel],
+            removeLabelIds: ['INBOX', 'UNREAD'],
+          ),
+          'me',
+          message.id,
+        );
+        Redact.logSafe('Gmail message ${message.id} moved to $targetLabel');
+      }
     } catch (e) {
       Redact.logError('Error deleting Gmail message', e);
       rethrow;

@@ -62,6 +62,16 @@ abstract class SpamFilterPlatform {
   /// - [action]: The action to perform
   /// 
   /// Throws [ActionException] if action fails
+  /// Configure the folder to use for deleted rule emails
+  /// 
+  /// Parameters:
+  /// - [folderName]: Name of the folder to move deleted emails to (null = use provider default)
+  /// 
+  /// Each platform has its own default:
+  /// - IMAP: 'Trash'
+  /// - Gmail: 'TRASH' (trash label)
+  void setDeletedRuleFolder(String? folderName);
+
   Future<void> takeAction({
     required EmailMessage message,
     required FilterAction action,

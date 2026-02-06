@@ -16,6 +16,7 @@ import 'package:provider/provider.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/providers/email_scan_provider.dart';
 import '../../core/providers/rule_set_provider.dart';
+import '../../core/storage/settings_store.dart';
 import 'folder_selection_screen.dart';
 
 /// Account maintenance screen
@@ -30,6 +31,7 @@ class AccountMaintenanceScreen extends StatefulWidget {
 class _AccountMaintenanceScreenState extends State<AccountMaintenanceScreen> {
   final Logger _logger = Logger();
   final SecureCredentialsStore _credStore = SecureCredentialsStore();
+  final SettingsStore _settingsStore = SettingsStore();
   List<SavedAccount> _accounts = [];
   bool _isLoading = true;
 
@@ -156,6 +158,96 @@ class _AccountMaintenanceScreenState extends State<AccountMaintenanceScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Failed to remove account: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  /// Configure deleted rule folder for account
+  Future<void> _configureDeletedRuleFolder(SavedAccount account) async {
+    // Get current setting
+    final currentFolder = await _settingsStore.getAccountDeletedRuleFolder(account.accountId);
+
+    // Show dialog to select folder
+    final result = await showDialog<String?>(
+      context: context,
+      builder: (ctx) {
+        String? selectedFolder = currentFolder;
+        return StatefulBuilder(
+          builder: (context, setState) => AlertDialog(
+            title: const Text('Move Deleted by Rule to Folder'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'When a rule deletes an email, it will be moved to this folder:',
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: TextEditingController(text: selectedFolder ?? ''),
+                  decoration: InputDecoration(
+                    labelText: 'Folder Name',
+                    hintText: account.platform == 'gmail' ? 'TRASH' : 'Trash',
+                    helperText: account.platform == 'gmail'
+                        ? 'Gmail labels (e.g., TRASH, SPAM, or custom label)'
+                        : 'IMAP folder (e.g., Trash, Deleted, Junk)',
+                    border: const OutlineInputBorder(),
+                  ),
+                  onChanged: (value) {
+                    selectedFolder = value.trim().isEmpty ? null : value.trim();
+                  },
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Leave empty to use default (${account.platform == "gmail" ? "TRASH" : "Trash"})',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, selectedFolder),
+                child: const Text('Save'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (result != null || result == '') {
+      try {
+        await _settingsStore.setAccountDeletedRuleFolder(
+          account.accountId,
+          result?.isEmpty ?? true ? null : result,
+        );
+
+        final folderName = result?.isEmpty ?? true
+            ? (account.platform == 'gmail' ? 'TRASH (default)' : 'Trash (default)')
+            : result!;
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Deleted emails will be moved to: $folderName'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+
+        _logger.i('Set deleted rule folder for ${account.email} to: $folderName');
+      } catch (e) {
+        _logger.e('Failed to set deleted rule folder: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to save setting: $e')),
           );
         }
       }
@@ -332,6 +424,13 @@ class _AccountMaintenanceScreenState extends State<AccountMaintenanceScreen> {
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 8),
+                // Deleted folder configuration
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.folder_outlined),
+                  label: const Text('Deleted Rule Folder'),
+                  onPressed: () => _configureDeletedRuleFolder(account),
                 ),
                 const SizedBox(height: 8),
                 // Remove button
