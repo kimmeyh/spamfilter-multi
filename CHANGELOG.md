@@ -26,6 +26,14 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-02-06 (Sprint 13 Backlog Refinement)
+- **docs**: Backlog refinement - Sprint 13 scope finalized (Settings Refactor & Folder Management)
+- **docs**: Sprint 14 planned (Background Scanning + Persistent Gmail Auth)
+- **feat**: F16A: Clean Subject Lines (planned)
+- **feat**: F15: Account Settings UI Refactor (planned)
+- **feat**: F14: Deleted Rule Folder Management (planned)
+- **feat**: F13: Safe Senders Folder Management (planned)
+
 ### 2026-02-06 (Sprint 12: MVP Core Features)
 - **feat**: Implement User Application Settings with SQLite storage (Issue #120, F2)
 - **feat**: Implement Processing Scan Results with EmailBodyParser (Issue #121, F1)
