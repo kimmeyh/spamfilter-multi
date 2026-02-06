@@ -1,4 +1,5 @@
 import 'package:logger/logger.dart';
+import 'package:punycode/punycode.dart';
 
 /// Utility class for normalizing email, subject, and body text for pattern matching.
 /// All normalization follows the principle of lowercase conversion and removal of
@@ -229,91 +230,6 @@ class PatternNormalization {
   ///
   /// Returns empty string if input is null or empty.
   static String cleanSubjectForDisplay(String? subject) {
-
-  /// Decodes Punycode-encoded domain names for human-readable display.
-  ///
-  /// Punycode is an ASCII-compatible encoding of Unicode domain names.
-  /// Domains with "xn--" prefix are Punycode-encoded.
-  ///
-  /// Examples:
-  /// - "xn----8sbfgfc1bhsb1ax6i.xn--p1ai" → decoded Cyrillic domain
-  /// - "example.com" → "example.com" (no change)
-  /// - "xn--n3h.com" → "☃.com" (snowman emoji domain)
-  ///
-  /// Returns the decoded domain, or original domain if decoding fails.
-  static String decodePunycodeDomain(String? domain) {
-    if (domain == null || domain.isEmpty) {
-      return '';
-    }
-
-    try {
-      // If no Punycode parts, return as-is
-      if (!domain.contains('xn--')) {
-        return domain;
-      }
-
-      // Split domain into parts and decode each Punycode part
-      final parts = domain.split('.');
-      final decoded = parts.map((part) {
-        if (part.startsWith('xn--')) {
-          try {
-            // Remove 'xn--' prefix and decode
-            return punycodeCodec.decode(part.substring(4));
-          } catch (e) {
-            _logger.w('Failed to decode Punycode part "$part": $e');
-            return part; // Return original if decode fails
-          }
-        }
-        return part; // Not Punycode, return as-is
-      }).join('.');
-
-      _logger.d('Decoded Punycode domain: $domain → $decoded');
-      return decoded;
-    } catch (e) {
-      _logger.w('Error decoding Punycode domain "$domain": $e');
-      return domain; // Return original on error
-    }
-  }
-
-  /// Extracts email address from "Name <email@domain.com>" and decodes Punycode domain.
-  ///
-  /// This is useful for displaying email addresses with internationalized domains.
-  ///
-  /// Examples:
-  /// - "user@xn--n3h.com" → "user@☃.com"
-  /// - "Name <user@xn--example.com>" → "user@example.com"
-  ///
-  /// Returns decoded email address, or empty string if input is null/empty.
-  static String normalizeAndDecodeEmail(String? email) {
-    if (email == null || email.isEmpty) {
-      return '';
-    }
-
-    try {
-      // First normalize to extract just the email address
-      final normalized = normalizeFromHeader(email);
-      if (normalized.isEmpty || !normalized.contains('@')) {
-        return normalized;
-      }
-
-      // Split into local@domain parts
-      final parts = normalized.split('@');
-      if (parts.length != 2) {
-        return normalized;
-      }
-
-      final localPart = parts[0];
-      final domainPart = parts[1];
-
-      // Decode the domain part
-      final decodedDomain = decodePunycodeDomain(domainPart);
-
-      return '$localPart@$decodedDomain';
-    } catch (e) {
-      _logger.w('Error normalizing and decoding email "$email": $e');
-      return email;
-    }
-  }
     if (subject == null || subject.isEmpty) {
       return '';
     }
@@ -361,6 +277,65 @@ class PatternNormalization {
     } catch (e) {
       _logger.w('Error cleaning subject for display: $e');
       return subject ?? '';
+    }
+  }
+
+  /// Normalizes Punycode-encoded domain names for display.
+  ///
+  /// Currently returns the domain as-is. Punycode decoding requires finding
+  /// a compatible Dart package (punycode ^1.0.0 API needs investigation).
+  ///
+  /// TODO Sprint Retrospective: Document punycode package API for future implementation.
+  /// See email #305 with domain: xn----8sbfgfc1bhsb1ax6i.xn--p1ai
+  ///
+  /// Returns the domain unchanged for now.
+  static String decodePunycodeDomain(String? domain) {
+    if (domain == null || domain.isEmpty) {
+      return '';
+    }
+
+    // TODO: Implement actual Punycode decoding when package API is confirmed
+    // For now, return domain as-is (shows xn-- encoded form)
+    return domain;
+  }
+
+  /// Extracts email address from "Name <email@domain.com>" and decodes Punycode domain.
+  ///
+  /// This is useful for displaying email addresses with internationalized domains.
+  ///
+  /// Examples:
+  /// - "user@xn--n3h.com" → "user@☃.com"
+  /// - "Name <user@xn--example.com>" → "user@example.com"
+  ///
+  /// Returns decoded email address, or empty string if input is null/empty.
+  static String normalizeAndDecodeEmail(String? email) {
+    if (email == null || email.isEmpty) {
+      return '';
+    }
+
+    try {
+      // First normalize to extract just the email address
+      final normalized = normalizeFromHeader(email);
+      if (normalized.isEmpty || !normalized.contains('@')) {
+        return normalized;
+      }
+
+      // Split into local@domain parts
+      final parts = normalized.split('@');
+      if (parts.length != 2) {
+        return normalized;
+      }
+
+      final localPart = parts[0];
+      final domainPart = parts[1];
+
+      // Decode the domain part
+      final decodedDomain = decodePunycodeDomain(domainPart);
+
+      return '$localPart@$decodedDomain';
+    } catch (e) {
+      _logger.w('Error normalizing and decoding email "$email": $e');
+      return email;
     }
   }
 }

@@ -615,14 +615,20 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   void _showEmailDetailSheet(EmailActionResult result) {
     final email = result.email;
     final bodyParser = EmailBodyParser();
-    // Extract email and domain, then decode Punycode for display
+    // Extract raw email and domain (Punycode format) - used for rule creation
     final rawSenderEmail = bodyParser.extractEmailAddress(email.from);
-    final senderEmail = PatternNormalization.normalizeAndDecodeEmail(rawSenderEmail);
     final rawSenderDomain = bodyParser.extractDomainFromEmail(email.from);
-    final senderDomain = rawSenderDomain != null 
+    // Decode for display only
+    final displaySenderEmail = PatternNormalization.normalizeAndDecodeEmail(rawSenderEmail);
+    final displaySenderDomain = rawSenderDomain != null 
         ? PatternNormalization.decodePunycodeDomain(rawSenderDomain)
         : null;
-    final rootDomain = _extractRootDomain(senderDomain);
+    // Extract root domain from RAW domain (for rule creation)
+    final rawRootDomain = _extractRootDomain(rawSenderDomain);
+    // Decode root domain for display
+    final displayRootDomain = rawRootDomain != null
+        ? PatternNormalization.decodePunycodeDomain(rawRootDomain)
+        : null;
     final matchedRule = result.evaluationResult?.matchedRule ?? '';
     final hasNoRule = matchedRule.isEmpty || result.action == EmailActionType.none;
     final isDeleted = result.action == EmailActionType.delete;
@@ -672,7 +678,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        senderEmail,
+                        displaySenderEmail,
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
@@ -703,12 +709,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                       dateStr,
                       style: TextStyle(fontSize: 11, color: Colors.grey[500]),
                     ),
-                    if (senderDomain != null) ...[
+                    if (displaySenderDomain != null) ...[
                       const SizedBox(width: 12),
                       Icon(Icons.domain, size: 14, color: Colors.grey[500]),
                       const SizedBox(width: 4),
                       Text(
-                        senderDomain,
+                        displaySenderDomain,
                         style: TextStyle(fontSize: 11, color: Colors.grey[500]),
                       ),
                     ],
@@ -748,34 +754,34 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                       _buildInlineActionButton(
                         icon: Icons.person,
                         label: 'Exact Email',
-                        subtitle: senderEmail,
+                        subtitle: displaySenderEmail,
                         color: Colors.green,
                         onTap: () {
                           Navigator.pop(sheetContext);
-                          _addSafeSender(senderEmail, 'exact');
+                          _addSafeSender(rawSenderEmail, 'exact');
                         },
                       ),
-                      if (senderDomain != null)
+                      if (rawSenderDomain != null)
                         _buildInlineActionButton(
                           icon: Icons.domain,
                           label: 'Exact Domain',
-                          subtitle: '@$senderDomain',
+                          subtitle: '@$displaySenderDomain',
                           color: Colors.green,
                           onTap: () {
                             Navigator.pop(sheetContext);
-                            _addSafeSender('@$senderDomain', 'exactDomain');
+                            _addSafeSender('@$rawSenderDomain', 'exactDomain');
                           },
                         ),
                       // Always show Entire Domain option (uses root domain or full domain if no subdomain)
-                      if (senderDomain != null)
+                      if (rawSenderDomain != null)
                         _buildInlineActionButton(
                           icon: Icons.public,
                           label: 'Entire Domain',
-                          subtitle: '@*.${rootDomain ?? senderDomain}',
+                          subtitle: '@*.${displayRootDomain ?? displaySenderDomain}',
                           color: Colors.green,
                           onTap: () {
                             Navigator.pop(sheetContext);
-                            _addSafeSender(rootDomain ?? senderDomain, 'entireDomain');
+                            _addSafeSender(rawRootDomain ?? rawSenderDomain, 'entireDomain');
                           },
                         ),
                     ],
@@ -798,34 +804,34 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                       _buildInlineActionButton(
                         icon: Icons.person_off,
                         label: 'Block Email',
-                        subtitle: senderEmail,
+                        subtitle: displaySenderEmail,
                         color: Colors.red,
                         onTap: () {
                           Navigator.pop(sheetContext);
-                          _createBlockRule('from', senderEmail);
+                          _createBlockRule('from', rawSenderEmail);
                         },
                       ),
-                      if (senderDomain != null)
+                      if (rawSenderDomain != null)
                         _buildInlineActionButton(
                           icon: Icons.domain_disabled,
                           label: 'Block Exact Domain',
-                          subtitle: '@$senderDomain',
+                          subtitle: '@$displaySenderDomain',
                           color: Colors.red,
                           onTap: () {
                             Navigator.pop(sheetContext);
-                            _createBlockRule('exactDomain', '@$senderDomain');
+                            _createBlockRule('exactDomain', '@$rawSenderDomain');
                           },
                         ),
                       // Always show Block Entire Domain option (uses root domain or full domain if no subdomain)
-                      if (senderDomain != null)
+                      if (rawSenderDomain != null)
                         _buildInlineActionButton(
                           icon: Icons.public_off,
                           label: 'Block Entire Domain',
-                          subtitle: '@*.${rootDomain ?? senderDomain}',
+                          subtitle: '@*.${displayRootDomain ?? displaySenderDomain}',
                           color: Colors.red,
                           onTap: () {
                             Navigator.pop(sheetContext);
-                            _createBlockRule('entireDomain', rootDomain ?? senderDomain);
+                            _createBlockRule('entireDomain', rawRootDomain ?? rawSenderDomain);
                           },
                         ),
                       if (cleanedSubject.isNotEmpty && cleanedSubject != '(No subject)')
