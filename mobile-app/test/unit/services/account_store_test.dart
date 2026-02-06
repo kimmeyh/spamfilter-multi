@@ -1,27 +1,28 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:spam_filter_mobile/core/storage/database_helper.dart';
 import 'package:spam_filter_mobile/core/storage/account_store.dart';
+import '../../helpers/database_test_helper.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   setUpAll(() {
-    // Initialize FFI for desktop testing
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
+    DatabaseTestHelper.initializeFfi();
   });
 
+  late DatabaseTestHelper testHelper;
   late DatabaseHelper dbHelper;
   late AccountStore accountStore;
 
   setUp(() async {
-    dbHelper = DatabaseHelper();
+    testHelper = DatabaseTestHelper();
+    await testHelper.setUp();
+    dbHelper = testHelper.dbHelper;
     accountStore = AccountStore(dbHelper);
-    // Initialize database
-    await dbHelper.database;
   });
 
   tearDown(() async {
-    await dbHelper.close();
+    await testHelper.tearDown();
   });
 
   group('AccountStore', () {

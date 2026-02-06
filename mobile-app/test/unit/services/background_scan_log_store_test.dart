@@ -1,27 +1,39 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:spam_filter_mobile/core/storage/database_helper.dart';
 import 'package:spam_filter_mobile/core/storage/background_scan_log_store.dart';
+import '../../helpers/database_test_helper.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   setUpAll(() {
-    // Initialize FFI for desktop testing
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
+    DatabaseTestHelper.initializeFfi();
   });
 
+  late DatabaseTestHelper testHelper;
   late DatabaseHelper dbHelper;
   late BackgroundScanLogStore logStore;
 
   setUp(() async {
-    dbHelper = DatabaseHelper();
+    testHelper = DatabaseTestHelper();
+    await testHelper.setUp();
+    dbHelper = testHelper.dbHelper;
     logStore = BackgroundScanLogStore(dbHelper);
-    // Initialize database
-    await dbHelper.database;
+
+    // Create test accounts (required for FK constraints on background_scan_log)
+    final testAccounts = [
+      'test-account-001', 'test-account-002', 'test-account-003',
+      'test-account-004', 'test-account-005', 'test-account-006',
+      'test-account-007', 'test-account-008', 'test-account-cleanup',
+      'account-a', 'account-b', 'other-account',
+    ];
+    for (final accountId in testAccounts) {
+      await testHelper.createTestAccount(accountId);
+    }
   });
 
   tearDown(() async {
-    await dbHelper.close();
+    await testHelper.tearDown();
   });
 
   group('BackgroundScanLogStore', () {

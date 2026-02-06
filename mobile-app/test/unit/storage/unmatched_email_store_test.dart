@@ -1,51 +1,35 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sqflite/sqflite.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:spam_filter_mobile/core/models/provider_email_identifier.dart';
 import 'package:spam_filter_mobile/core/storage/database_helper.dart';
 import 'package:spam_filter_mobile/core/storage/scan_result_store.dart';
 import 'package:spam_filter_mobile/core/storage/unmatched_email_store.dart';
+import '../../helpers/database_test_helper.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  late DatabaseTestHelper testHelper;
   late DatabaseHelper databaseHelper;
   late UnmatchedEmailStore emailStore;
   late ScanResultStore scanResultStore;
   late int testScanId;
 
   setUpAll(() {
-    sqfliteFfiInit();
-  });
-
-  setUpAll(() async {
-    // Setup FFI for all tests
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfiNoIsolate;
-
-    // Create a shared database instance for all tests
-    databaseHelper = DatabaseHelper();
-    final db = await databaseHelper.database;
-
-    // Create test account once for all tests
-    await db.insert('accounts', {
-      'account_id': 'test@gmail.com',
-      'platform_id': 'gmail',
-      'email': 'test@gmail.com',
-      'display_name': 'Test User',
-      'date_added': DateTime.now().millisecondsSinceEpoch,
-    });
+    DatabaseTestHelper.initializeFfi();
   });
 
   setUp(() async {
+    // Initialize test helper with isolated database
+    testHelper = DatabaseTestHelper();
+    await testHelper.setUp();
+    databaseHelper = testHelper.dbHelper;
+
+    // Create test account (required for FK constraints)
+    await testHelper.createTestAccount('test@gmail.com', platformId: 'gmail');
+
     emailStore = UnmatchedEmailStore(databaseHelper);
     scanResultStore = ScanResultStore(databaseHelper);
-
-    // Clear database before each test (delete in reverse FK order)
-    final db = await databaseHelper.database;
-    await db.delete('unmatched_emails');
-    await db.delete('email_actions');
-    await db.delete('scan_results');
-    // Don't delete accounts - it's created once in setUpAll
 
     // Create a test scan result to link unmatched emails to
     testScanId = await scanResultStore.addScanResult(
@@ -57,6 +41,10 @@ void main() {
         totalEmails: 100,
       ),
     );
+  });
+
+  tearDown(() async {
+    await testHelper.tearDown();
   });
 
   tearDown(() async {

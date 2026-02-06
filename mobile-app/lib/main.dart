@@ -18,6 +18,9 @@ import 'ui/theme/app_theme.dart';
 /// Global RouteObserver for tracking navigation events
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 
+/// Global NavigatorKey for keyboard shortcuts refresh action
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -113,6 +116,7 @@ class SpamFilterApp extends StatelessWidget {
             _RefreshIntent: _RefreshAction(),
           },
           child: MaterialApp(
+            navigatorKey: navigatorKey,
             title: 'Spam Filter Mobile',
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,

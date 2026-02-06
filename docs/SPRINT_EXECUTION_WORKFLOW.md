@@ -172,6 +172,14 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
   - Apply labels: `sprint`, `card`, `priority:high/medium/low`
   - Link to related issues (dependencies, related features)
 
+- [ ] **1.4.1 Verify Issue Accuracy** (before finalizing sprint cards)
+  - For bug/fix issues: Verify the issue still exists (may have been fixed in previous sprint)
+  - For test-related issues: Run `flutter test` to confirm current test state
+  - For feature issues: Verify feature does not already exist in codebase
+  - **If issue is already resolved**: Close the issue, do not include in sprint
+  - **If issue description is outdated**: Update description to reflect current state
+  - **Rationale**: Prevents wasted effort on already-resolved issues (learned from Sprint 12: Issue #119)
+
 - [ ] **1.5 Verify All Sprint Cards Are OPEN**
   - Before execution, verify all sprint cards exist and are in OPEN state
   - Command: `gh issue list --label sprint --state closed`
@@ -282,6 +290,13 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
   - Commit messages should reference related GitHub issues
   - Format: `<type>: <description> (Issue #N)`
   - Example: `feat: Implement RuleDatabaseStore (Issue #56)`
+  - **IMPORTANT: Commit after each task completes** (do not batch all commits to sprint end)
+    - Provides intermediate save points for rollback
+    - Enables better traceability of when changes were made
+    - Smaller commits are easier to review
+    - Reduces risk of losing work
+  - **Push to remote at least once per session** to backup work
+  - **Rationale**: Learned from Sprint 12 - all commits at end creates risk and reduces traceability
 
 - [ ] **2.4 Track Progress**
   - Update GitHub issue comments with task progress
@@ -432,11 +447,31 @@ After Phase 3.2 all tests pass, context can be compacted for efficiency:
   **CRITICAL**: Claude Code will build and run the Windows Desktop App (or target platform) so that user can complete manual testing. User should NOT have to build app themselves.
 
   **Pre-Testing Checklist** (Claude Code completes BEFORE handing to user):
-  - [ ] Build succeeds without errors (`build-windows.ps1` or equivalent)
-  - [ ] App launches without crashes
-  - [ ] No immediate console errors or warnings
-  - [ ] App is running and ready for user testing
-  - [ ] Claude Code monitoring app output in background
+  - [ ] **3.3.a Build the application**
+    - Windows: `cd mobile-app/scripts && .\build-windows.ps1`
+    - Android: `cd mobile-app/scripts && .\build-with-secrets.ps1 -BuildType debug -InstallToEmulator`
+    - Monitor build output for errors or warnings
+    - If build fails: Fix errors, retry, document any issues
+  - [ ] **3.3.b Verify build succeeded** without errors
+    - Check build log for compilation errors
+    - Note any warnings that may affect functionality
+  - [ ] **3.3.c Launch the application**
+    - Windows: App auto-launches from build script
+    - Android: `adb shell am start -n com.example.spam_filter_mobile/.MainActivity`
+    - Verify app opens to expected screen
+  - [ ] **3.3.d Sanity check** - quick verification before handing to user
+    - App does not crash on launch
+    - No database initialization errors in console
+    - Key UI elements are visible
+    - Console shows expected startup logging
+  - [ ] **3.3.e Notify user app is ready**
+    - Message: "✅ App built and running, ready for manual testing"
+    - Provide platform details (Windows desktop / Android emulator)
+    - Note any warnings or known issues to watch for
+  - [ ] **3.3.f Monitor app output** (Claude Code background task)
+    - Watch console for errors during user testing
+    - Report any crashes or exceptions immediately
+    - Capture relevant logs for debugging if issues arise
 
   **User Manual Testing**:
   - Test on target platform (Android emulator, Windows desktop, etc.)
@@ -960,8 +995,14 @@ Once user approves PR:
 
 ---
 
-**Version**: 1.1
-**Last Updated**: January 24, 2026
+**Version**: 1.2
+**Last Updated**: February 1, 2026
+**Updates in 1.2**:
+- Enhanced Phase 3.3 pre-testing checklist with explicit build/run steps (Issue #115)
+- Added step-by-step sub-items: build, verify, launch, sanity check, notify, monitor
+- Clarified Claude Code responsibilities for app preparation before user testing
+- Added platform-specific build commands (Windows and Android)
+
 **Updates in 1.1**:
 - Added Phase 4.5: Sprint Review process (user feedback, improvements, documentation)
 - Added Phase 0: Pre-Sprint Verification checklist (prevents missed steps on continuation)
@@ -969,4 +1010,4 @@ Once user approves PR:
 - Emphasized "Push to Remote" as CRITICAL step with note about preventing missed steps
 - Updated Success Criteria to show progression through phases
 
-**Reference**: Based on Sprint 1 & 2 execution experience
+**Reference**: Based on Sprint 1-11 execution experience

@@ -14,22 +14,26 @@ import 'package:spam_filter_mobile/core/storage/database_helper.dart';
 import 'package:spam_filter_mobile/core/utils/pattern_generation.dart';
 import 'package:spam_filter_mobile/core/utils/pattern_normalization.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import '../helpers/database_test_helper.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() {
+    DatabaseTestHelper.initializeFfi();
+  });
+
   group('Sprint 6 - Quick-Add Workflow Integration Tests', () {
+    late DatabaseTestHelper testHelper;
     late DatabaseHelper databaseHelper;
     late SafeSenderDatabaseStore safeSenderStore;
     late RuleDatabaseStore ruleStore;
 
-    setUpAll(() async {
-      // Initialize FFI for Windows testing
-      sqfliteFfiInit();
-      databaseFactory = databaseFactoryFfiNoIsolate;
-
-      // Create in-memory database for testing
-      databaseHelper = DatabaseHelper();
-      await databaseHelper.database; // Initialize schema
+    setUp(() async {
+      // Initialize test helper with isolated database
+      testHelper = DatabaseTestHelper();
+      await testHelper.setUp();
+      databaseHelper = testHelper.dbHelper;
 
       safeSenderStore = SafeSenderDatabaseStore(databaseHelper);
       ruleStore = RuleDatabaseStore(databaseHelper);
@@ -38,11 +42,8 @@ void main() {
       print('━' * 70);
     });
 
-    tearDownAll(() async {
-      // Clean up database after all tests
-      final db = await databaseHelper.database;
-      await db.delete('safe_senders');
-      await db.delete('rules');
+    tearDown(() async {
+      await testHelper.tearDown();
       print('\n✅ Sprint 6 Integration Tests - Cleanup complete');
     });
 

@@ -4,23 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## FIRST: Run Startup Check
 
-**BEFORE doing any work**, run these checks in parallel and report results to user:
+**BEFORE doing any work**, you MUST run `/startup-check` to verify the environment and restore any saved context.
 
-```
-1. mcp__plugin_serena_serena__activate_project(project="spamfilter-multi")
-2. mcp__plugin_serena_serena__check_onboarding_performed()
-3. git status --short && git branch --show-current
-4. gh issue list --limit 1  (verifies GitHub CLI)
-```
-
-**Quick summary format:**
-```
-Startup Check:
-- Serena: [activated/failed]
-- Git: [branch] with [N uncommitted files / clean]
-- GitHub CLI: [working/failed]
-- Ready: [Yes/No - if No, explain what needs fixing]
-```
+This skill will:
+1. Verify git status and branch
+2. Verify GitHub CLI is working
+3. Check for saved memory from previous session and restore it
+4. Report readiness status
 
 If any check fails, **STOP and resolve with user before accepting work**.
 

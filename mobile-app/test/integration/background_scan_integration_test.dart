@@ -1,31 +1,34 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:spam_filter_mobile/core/storage/database_helper.dart';
 import 'package:spam_filter_mobile/core/storage/background_scan_log_store.dart';
 import 'package:spam_filter_mobile/core/storage/account_store.dart';
 import 'package:spam_filter_mobile/core/services/background_scan_manager.dart';
+import '../helpers/database_test_helper.dart';
 
 /// Integration tests for background scanning workflow
 /// Tests the complete flow from account setup through scan execution
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   setUpAll(() {
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
+    DatabaseTestHelper.initializeFfi();
   });
 
+  late DatabaseTestHelper testHelper;
   late DatabaseHelper dbHelper;
   late BackgroundScanLogStore logStore;
   late AccountStore accountStore;
 
   setUp(() async {
-    dbHelper = DatabaseHelper();
+    testHelper = DatabaseTestHelper();
+    await testHelper.setUp();
+    dbHelper = testHelper.dbHelper;
     logStore = BackgroundScanLogStore(dbHelper);
     accountStore = AccountStore(dbHelper);
-    await dbHelper.database;
   });
 
   tearDown(() async {
-    await dbHelper.close();
+    await testHelper.tearDown();
   });
 
   group('Background Scan Integration - Complete Workflow', () {

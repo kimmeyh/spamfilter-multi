@@ -4,6 +4,14 @@ import 'package:spam_filter_mobile/core/services/email_scanner.dart';
 import 'package:spam_filter_mobile/core/providers/email_scan_provider.dart';
 import 'package:spam_filter_mobile/adapters/storage/secure_credentials_store.dart';
 
+/// AOL Folder Scanning Integration Tests
+///
+/// These tests require:
+/// 1. Real AOL credentials stored in secure storage
+/// 2. path_provider plugin (not available in headless test environment)
+///
+/// Skip reason: Tests require real network access and AOL credentials
+/// which are not available in CI/CD or standard test environments.
 void main() {
   group('AOL Folder Scanning Integration Tests', () {
     late RuleSetProvider ruleProvider;
@@ -15,7 +23,7 @@ void main() {
       scanProvider = EmailScanProvider();
     });
 
-    test('Verify migration ran and rules loaded from database', () async {
+    test('Verify migration ran and rules loaded from database', skip: 'Requires path_provider and real YAML files', () async {
       // Verify rules were loaded from database after migration
       expect(ruleProvider.rules, isNotNull,
           reason: 'Rules should not be null after initialization');
@@ -32,7 +40,7 @@ void main() {
           '✅ Loaded ${ruleProvider.safeSenders!.safeSenders.length} safe senders from database');
     });
 
-    test('Scan AOL Bulk Mail Testing folder - rules should match',
+    test('Scan AOL Bulk Mail Testing folder - rules should match', skip: 'Requires real AOL credentials and network access',
         () async {
       // Check if credentials exist for AOL account
       final credStore = SecureCredentialsStore();
@@ -102,8 +110,7 @@ void main() {
       }
     }, timeout: const Timeout(Duration(minutes: 5))); // Long timeout for network operation
 
-    test(
-        'Verify AOL adapter can connect and list folders',
+    test('Verify AOL adapter can connect and list folders', skip: 'Requires real AOL credentials and network access',
         () async {
       // Check if credentials exist
       final credStore = SecureCredentialsStore();

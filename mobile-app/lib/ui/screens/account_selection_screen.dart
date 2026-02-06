@@ -11,6 +11,7 @@ import '../widgets/app_bar_with_exit.dart';
 import 'account_setup_screen.dart';
 import 'platform_selection_screen.dart';
 import 'scan_progress_screen.dart';
+import 'settings_screen.dart';
 
 /// Display data for an account in the account selection list.
 class AccountDisplayData {
@@ -395,6 +396,25 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
     });
   }
 
+  /// Navigate to settings screen
+  void _openSettings() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const SettingsScreen(),
+      ),
+    );
+  }
+
+  /// Build settings icon button for AppBar
+  Widget _buildSettingsButton() {
+    return IconButton(
+      icon: const Icon(Icons.settings),
+      tooltip: 'Settings',
+      onPressed: _openSettings,
+    );
+  }
+
   /// Delete account with confirmation dialog
   Future<void> _deleteAccount(String accountId) async {
     final email = accountId; // accountId is the email
@@ -470,6 +490,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       return Scaffold(
         appBar: AppBarWithExit(
           title: const Text('Select Account'),
+          actions: [_buildSettingsButton()],
         ),
         body: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -504,6 +525,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
         appBar: AppBarWithExit(
           title: const Text('Select Account'),
           elevation: 2,
+          actions: [_buildSettingsButton()],
         ),
         body: NoAccountsEmptyState(onAddAccount: _addNewAccount),
       );
@@ -514,6 +536,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       appBar: AppBarWithExit(
         title: const Text('Select Account'),
         elevation: 2,
+        actions: [_buildSettingsButton()],
       ),
       body: Column(
         children: [

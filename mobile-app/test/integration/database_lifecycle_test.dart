@@ -1,12 +1,11 @@
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:path/path.dart' as path;
+import 'package:sqflite/sqflite.dart' show DatabaseException;
 
 import 'package:spam_filter_mobile/core/storage/database_helper.dart';
 import 'package:spam_filter_mobile/core/storage/rule_database_store.dart';
 import 'package:spam_filter_mobile/core/storage/safe_sender_database_store.dart';
-import 'package:spam_filter_mobile/adapters/storage/app_paths.dart';
+import '../helpers/database_test_helper.dart';
 
 /// Integration tests for database lifecycle operations
 ///
@@ -22,46 +21,28 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() {
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
+    DatabaseTestHelper.initializeFfi();
   });
 
   group('Database Lifecycle Integration Tests', () {
+    late DatabaseTestHelper testHelper;
     late DatabaseHelper dbHelper;
     late RuleDatabaseStore ruleStore;
     late SafeSenderDatabaseStore safeSenderStore;
-    late AppPaths appPaths;
     late String testDbPath;
 
     setUp(() async {
-      // Create temporary directory for test database
-      final tempDir = Directory.systemTemp.createTempSync('db_lifecycle_test_');
-      testDbPath = path.join(tempDir.path, 'test_spam_filter.db');
-
-      // Initialize AppPaths with test directory
-      appPaths = AppPaths();
-      await appPaths.initialize();
-
-      // Initialize database helper and stores
-      dbHelper = DatabaseHelper();
-      dbHelper.setAppPaths(appPaths);
+      testHelper = DatabaseTestHelper();
+      await testHelper.setUp();
+      dbHelper = testHelper.dbHelper;
+      testDbPath = testHelper.testDbPath;
 
       ruleStore = RuleDatabaseStore(dbHelper);
       safeSenderStore = SafeSenderDatabaseStore(dbHelper);
     });
 
     tearDown(() async {
-      // Clean up test database
-      try {
-        final db = await dbHelper.database;
-        await db.close();
-        final dbFile = File(testDbPath);
-        if (await dbFile.exists()) {
-          await dbFile.delete();
-        }
-      } catch (e) {
-        // Ignore cleanup errors
-      }
+      await testHelper.tearDown();
     });
 
     test('1. Database is created successfully', () async {
@@ -220,13 +201,11 @@ void main() {
         {
           'pattern': '^trusted@company\\.com\$',
           'pattern_type': 'email',
-          'is_enabled': 1,
           'date_added': DateTime.now().millisecondsSinceEpoch,
         },
         {
           'pattern': '^[^@\\s]+@(?:[a-z0-9-]+\\.)*trusted\\.com\$',
           'pattern_type': 'domain',
-          'is_enabled': 1,
           'date_added': DateTime.now().millisecondsSinceEpoch,
         },
       ];
@@ -246,7 +225,6 @@ void main() {
       await dbHelper.insertSafeSender({
         'pattern': '^test@example\\.com\$',
         'pattern_type': 'email',
-        'is_enabled': 1,
         'date_added': DateTime.now().millisecondsSinceEpoch,
       });
 
@@ -275,37 +253,34 @@ void main() {
         'date_added': DateTime.now().millisecondsSinceEpoch,
       });
 
-      // Act: Close database
-      final db = await dbHelper.database;
-      await db.close();
+      // Act: Close database properly via helper (so _database is reset)
+      await dbHelper.close();
 
-      // Reopen (create new helper)
+      // Reopen (create new helper with same path)
       final newHelper = DatabaseHelper();
-      newHelper.setAppPaths(appPaths);
-      final newDb = await newHelper.database;
+      newHelper.setAppPaths(testHelper.appPaths);
 
-      // Assert: Rule still exists
+      // Assert: Rule still exists after reopen
       final rules = await newHelper.queryRules();
       expect(rules.length, equals(1));
       expect(rules[0]['name'], equals('PersistenceTest'));
 
-      await newDb.close();
+      await newHelper.close();
     });
   });
 
   group('Database Schema Validation Tests', () {
+    late DatabaseTestHelper testHelper;
     late DatabaseHelper dbHelper;
-    late AppPaths appPaths;
 
     setUp(() async {
-      sqfliteFfiInit();
-      databaseFactory = databaseFactoryFfi;
+      testHelper = DatabaseTestHelper();
+      await testHelper.setUp();
+      dbHelper = testHelper.dbHelper;
+    });
 
-      appPaths = AppPaths();
-      await appPaths.initialize();
-
-      dbHelper = DatabaseHelper();
-      dbHelper.setAppPaths(appPaths);
+    tearDown(() async {
+      await testHelper.tearDown();
     });
 
     test('Rules table has UNIQUE constraint on name', () async {
@@ -336,7 +311,6 @@ void main() {
       final testSender = {
         'pattern': '^unique@example\\.com\$',
         'pattern_type': 'email',
-        'is_enabled': 1,
         'date_added': DateTime.now().millisecondsSinceEpoch,
       };
 

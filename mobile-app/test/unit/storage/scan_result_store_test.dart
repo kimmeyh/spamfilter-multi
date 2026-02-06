@@ -1,50 +1,32 @@
-import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sqflite/sqflite.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
-import 'package:spam_filter_mobile/adapters/storage/app_paths.dart';
 import 'package:spam_filter_mobile/core/storage/database_helper.dart';
 import 'package:spam_filter_mobile/core/storage/scan_result_store.dart';
+import '../../helpers/database_test_helper.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  late DatabaseTestHelper testHelper;
   late DatabaseHelper databaseHelper;
   late ScanResultStore scanResultStore;
 
   setUpAll(() {
-    sqfliteFfiInit();
-    // Use in-memory FFI database for tests
-    databaseFactory = databaseFactoryFfiNoIsolate;
+    DatabaseTestHelper.initializeFfi();
   });
 
   setUp(() async {
-    databaseHelper = DatabaseHelper();
+    testHelper = DatabaseTestHelper();
+    await testHelper.setUp();
+    databaseHelper = testHelper.dbHelper;
     scanResultStore = ScanResultStore(databaseHelper);
 
-    // Clear database before each test (delete in reverse FK order)
-    final db = await databaseHelper.database;
-    await db.delete('unmatched_emails');
-    await db.delete('email_actions');
-    await db.delete('scan_results');
-    // Don't delete accounts - reuse it across tests, or create if doesn't exist
-
-    // Ensure test account exists (required for foreign key constraint)
-    try {
-      await db.insert('accounts', {
-        'account_id': 'test@gmail.com',
-        'platform_id': 'gmail',
-        'email': 'test@gmail.com',
-        'display_name': 'Test User',
-        'date_added': DateTime.now().millisecondsSinceEpoch,
-      });
-    } catch (e) {
-      // Account already exists from previous test, that's fine
-    }
+    // Create test account (required for foreign key constraint)
+    await testHelper.createTestAccount('test@gmail.com', email: 'test@gmail.com');
   });
 
   tearDown(() async {
-    await databaseHelper.close();
+    await testHelper.tearDown();
   });
 
   group('ScanResult Model', () {
@@ -176,6 +158,9 @@ void main() {
     });
 
     test('addScanResult with all fields', () async {
+      // Create additional account for this test
+      await testHelper.createTestAccount('test@aol.com', email: 'test@aol.com');
+
       final scan = ScanResult(
         accountId: 'test@aol.com',
         scanType: 'background',
@@ -205,12 +190,10 @@ void main() {
       expect(retrieved.status, 'completed');
     });
 
-    test('addScanResult throws on database error', () async {
-      // Close database to trigger error
-      await databaseHelper.close();
-
+    test('addScanResult with invalid account_id throws FK constraint error', () async {
+      // Test that FK constraint prevents inserting with non-existent account
       final scan = ScanResult(
-        accountId: 'test@gmail.com',
+        accountId: 'nonexistent@example.com',
         scanType: 'manual',
         scanMode: 'readonly',
         startedAt: 1000,

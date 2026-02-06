@@ -26,11 +26,12 @@ void main() {
     test('should match email when all AND conditions are met', () async {
       final ruleSet = RuleSet(
         version: '1.0',
-        settings: RuleSetSettings(defaultExecutionOrderIncrement: 10),
+        settings: {'defaultExecutionOrderIncrement': 10},
         rules: [
           Rule(
             name: 'MultiConditionAND',
             enabled: true,
+            isLocal: false,
             conditions: RuleConditions(
               type: 'AND',
               from: ['@spam\\.com\$'],
@@ -67,11 +68,12 @@ void main() {
     test('should not match email when only one AND condition is met', () async {
       final ruleSet = RuleSet(
         version: '1.0',
-        settings: RuleSetSettings(defaultExecutionOrderIncrement: 10),
+        settings: {'defaultExecutionOrderIncrement': 10},
         rules: [
           Rule(
             name: 'MultiConditionAND',
             enabled: true,
+            isLocal: false,
             conditions: RuleConditions(
               type: 'AND',
               from: ['@spam\\.com\$'],
@@ -108,11 +110,12 @@ void main() {
     test('should match email with three AND conditions all met', () async {
       final ruleSet = RuleSet(
         version: '1.0',
-        settings: RuleSetSettings(defaultExecutionOrderIncrement: 10),
+        settings: {'defaultExecutionOrderIncrement': 10},
         rules: [
           Rule(
             name: 'TripleConditionAND',
             enabled: true,
+            isLocal: false,
             conditions: RuleConditions(
               type: 'AND',
               from: ['@phishing\\.net\$'],
@@ -151,11 +154,12 @@ void main() {
     test('should match email when any OR condition is met', () async {
       final ruleSet = RuleSet(
         version: '1.0',
-        settings: RuleSetSettings(defaultExecutionOrderIncrement: 10),
+        settings: {'defaultExecutionOrderIncrement': 10},
         rules: [
           Rule(
             name: 'MultiConditionOR',
             enabled: true,
+            isLocal: false,
             conditions: RuleConditions(
               type: 'OR',
               from: ['@spam\\.com\$'],
@@ -192,11 +196,12 @@ void main() {
     test('should match email when multiple OR conditions are met', () async {
       final ruleSet = RuleSet(
         version: '1.0',
-        settings: RuleSetSettings(defaultExecutionOrderIncrement: 10),
+        settings: {'defaultExecutionOrderIncrement': 10},
         rules: [
           Rule(
             name: 'MultiConditionOR',
             enabled: true,
+            isLocal: false,
             conditions: RuleConditions(
               type: 'OR',
               from: ['@spam\\.com\$'],
@@ -235,11 +240,12 @@ void main() {
     test('should skip rule when exception matches', () async {
       final ruleSet = RuleSet(
         version: '1.0',
-        settings: RuleSetSettings(defaultExecutionOrderIncrement: 10),
+        settings: {'defaultExecutionOrderIncrement': 10},
         rules: [
           Rule(
             name: 'BlockDomainWithException',
             enabled: true,
+            isLocal: false,
             conditions: RuleConditions(
               type: 'OR',
               from: ['@example\\.com\$'],
@@ -278,11 +284,12 @@ void main() {
     test('should apply rule when exception does not match', () async {
       final ruleSet = RuleSet(
         version: '1.0',
-        settings: RuleSetSettings(defaultExecutionOrderIncrement: 10),
+        settings: {'defaultExecutionOrderIncrement': 10},
         rules: [
           Rule(
             name: 'BlockDomainWithException',
             enabled: true,
+            isLocal: false,
             conditions: RuleConditions(
               type: 'OR',
               from: ['@example\\.com\$'],
@@ -321,11 +328,12 @@ void main() {
     test('should handle multiple exception patterns', () async {
       final ruleSet = RuleSet(
         version: '1.0',
-        settings: RuleSetSettings(defaultExecutionOrderIncrement: 10),
+        settings: {'defaultExecutionOrderIncrement': 10},
         rules: [
           Rule(
             name: 'BlockWithMultipleExceptions',
             enabled: true,
+            isLocal: false,
             conditions: RuleConditions(
               type: 'OR',
               subject: ['offer', 'deal', 'discount'],
@@ -379,21 +387,23 @@ void main() {
     test('should evaluate rules in execution order', () async {
       final ruleSet = RuleSet(
         version: '1.0',
-        settings: RuleSetSettings(defaultExecutionOrderIncrement: 10),
+        settings: {'defaultExecutionOrderIncrement': 10},
         rules: [
           Rule(
             name: 'LowPriorityRule',
             enabled: true,
+            isLocal: false,
             conditions: RuleConditions(
               type: 'OR',
               from: ['@example\\.com\$'],
             ),
-            actions: RuleActions(moveToFolder: 'Junk'),
+            actions: RuleActions(delete: false, moveToFolder: 'Junk'),
             executionOrder: 20,
           ),
           Rule(
             name: 'HighPriorityRule',
             enabled: true,
+            isLocal: false,
             conditions: RuleConditions(
               type: 'OR',
               from: ['@example\\.com\$'],
@@ -429,11 +439,12 @@ void main() {
     test('should stop at first matching rule', () async {
       final ruleSet = RuleSet(
         version: '1.0',
-        settings: RuleSetSettings(defaultExecutionOrderIncrement: 10),
+        settings: {'defaultExecutionOrderIncrement': 10},
         rules: [
           Rule(
             name: 'FirstRule',
             enabled: true,
+            isLocal: false,
             conditions: RuleConditions(
               type: 'OR',
               subject: ['test'],
@@ -444,11 +455,12 @@ void main() {
           Rule(
             name: 'SecondRule',
             enabled: true,
+            isLocal: false,
             conditions: RuleConditions(
               type: 'OR',
               subject: ['test'],
             ),
-            actions: RuleActions(moveToFolder: 'Archive'),
+            actions: RuleActions(delete: false, moveToFolder: 'Archive'),
             executionOrder: 20,
           ),
         ],
@@ -481,11 +493,12 @@ void main() {
     test('should bypass rules for safe senders', () async {
       final ruleSet = RuleSet(
         version: '1.0',
-        settings: RuleSetSettings(defaultExecutionOrderIncrement: 10),
+        settings: {'defaultExecutionOrderIncrement': 10},
         rules: [
           Rule(
             name: 'DeleteAll',
             enabled: true,
+            isLocal: false,
             conditions: RuleConditions(
               type: 'OR',
               from: ['@.*\\.com\$'],
@@ -522,11 +535,12 @@ void main() {
     test('should apply rules to non-safe senders', () async {
       final ruleSet = RuleSet(
         version: '1.0',
-        settings: RuleSetSettings(defaultExecutionOrderIncrement: 10),
+        settings: {'defaultExecutionOrderIncrement': 10},
         rules: [
           Rule(
             name: 'BlockSpam',
             enabled: true,
+            isLocal: false,
             conditions: RuleConditions(
               type: 'OR',
               from: ['@spam\\.com\$'],
@@ -566,11 +580,12 @@ void main() {
     test('should match complex regex patterns in subject', () async {
       final ruleSet = RuleSet(
         version: '1.0',
-        settings: RuleSetSettings(defaultExecutionOrderIncrement: 10),
+        settings: {'defaultExecutionOrderIncrement': 10},
         rules: [
           Rule(
             name: 'ComplexSubjectPattern',
             enabled: true,
+            isLocal: false,
             conditions: RuleConditions(
               type: 'OR',
               subject: ['^re:\\s*\\[external\\].*urgent'],
@@ -605,11 +620,12 @@ void main() {
     test('should match domain patterns with subdomains', () async {
       final ruleSet = RuleSet(
         version: '1.0',
-        settings: RuleSetSettings(defaultExecutionOrderIncrement: 10),
+        settings: {'defaultExecutionOrderIncrement': 10},
         rules: [
           Rule(
             name: 'BlockSubdomains',
             enabled: true,
+            isLocal: false,
             conditions: RuleConditions(
               type: 'OR',
               from: ['@(?:[a-z0-9-]+\\.)*spam\\.com\$'],
@@ -654,11 +670,12 @@ void main() {
     test('should match multiple patterns in same condition list', () async {
       final ruleSet = RuleSet(
         version: '1.0',
-        settings: RuleSetSettings(defaultExecutionOrderIncrement: 10),
+        settings: {'defaultExecutionOrderIncrement': 10},
         rules: [
           Rule(
             name: 'MultiplePatterns',
             enabled: true,
+            isLocal: false,
             conditions: RuleConditions(
               type: 'OR',
               subject: ['viagra', 'cialis', 'pills', 'pharmacy'],
@@ -705,7 +722,7 @@ void main() {
     test('should handle empty rule set', () async {
       final ruleSet = RuleSet(
         version: '1.0',
-        settings: RuleSetSettings(defaultExecutionOrderIncrement: 10),
+        settings: {'defaultExecutionOrderIncrement': 10},
         rules: [],
       );
 
@@ -734,11 +751,12 @@ void main() {
     test('should handle disabled rules', () async {
       final ruleSet = RuleSet(
         version: '1.0',
-        settings: RuleSetSettings(defaultExecutionOrderIncrement: 10),
+        settings: {'defaultExecutionOrderIncrement': 10},
         rules: [
           Rule(
             name: 'DisabledRule',
             enabled: false,
+            isLocal: false,
             conditions: RuleConditions(
               type: 'OR',
               from: ['@spam\\.com\$'],
@@ -773,11 +791,12 @@ void main() {
     test('should handle empty email fields', () async {
       final ruleSet = RuleSet(
         version: '1.0',
-        settings: RuleSetSettings(defaultExecutionOrderIncrement: 10),
+        settings: {'defaultExecutionOrderIncrement': 10},
         rules: [
           Rule(
             name: 'TestRule',
             enabled: true,
+            isLocal: false,
             conditions: RuleConditions(
               type: 'OR',
               subject: ['spam'],
@@ -812,11 +831,12 @@ void main() {
     test('should handle rule with empty condition lists', () async {
       final ruleSet = RuleSet(
         version: '1.0',
-        settings: RuleSetSettings(defaultExecutionOrderIncrement: 10),
+        settings: {'defaultExecutionOrderIncrement': 10},
         rules: [
           Rule(
             name: 'EmptyConditions',
             enabled: true,
+            isLocal: false,
             conditions: RuleConditions(
               type: 'OR',
               from: [],
@@ -853,11 +873,12 @@ void main() {
     test('should handle case-insensitive matching', () async {
       final ruleSet = RuleSet(
         version: '1.0',
-        settings: RuleSetSettings(defaultExecutionOrderIncrement: 10),
+        settings: {'defaultExecutionOrderIncrement': 10},
         rules: [
           Rule(
             name: 'CaseInsensitive',
             enabled: true,
+            isLocal: false,
             conditions: RuleConditions(
               type: 'OR',
               subject: ['spam'],
@@ -896,11 +917,12 @@ void main() {
     test('should handle whitespace in email fields', () async {
       final ruleSet = RuleSet(
         version: '1.0',
-        settings: RuleSetSettings(defaultExecutionOrderIncrement: 10),
+        settings: {'defaultExecutionOrderIncrement': 10},
         rules: [
           Rule(
             name: 'WhitespaceTest',
             enabled: true,
+            isLocal: false,
             conditions: RuleConditions(
               type: 'OR',
               subject: ['test'],
@@ -936,11 +958,12 @@ void main() {
     test('should match custom headers', () async {
       final ruleSet = RuleSet(
         version: '1.0',
-        settings: RuleSetSettings(defaultExecutionOrderIncrement: 10),
+        settings: {'defaultExecutionOrderIncrement': 10},
         rules: [
           Rule(
             name: 'SpamHeaderRule',
             enabled: true,
+            isLocal: false,
             conditions: RuleConditions(
               type: 'OR',
               header: ['x-spam-status:yes'],
@@ -975,11 +998,12 @@ void main() {
     test('should match from header via header patterns', () async {
       final ruleSet = RuleSet(
         version: '1.0',
-        settings: RuleSetSettings(defaultExecutionOrderIncrement: 10),
+        settings: {'defaultExecutionOrderIncrement': 10},
         rules: [
           Rule(
             name: 'FromHeaderRule',
             enabled: true,
+            isLocal: false,
             conditions: RuleConditions(
               type: 'OR',
               header: ['@spam\\.com\$'],
@@ -1016,16 +1040,17 @@ void main() {
     test('should mark email for move to specific folder', () async {
       final ruleSet = RuleSet(
         version: '1.0',
-        settings: RuleSetSettings(defaultExecutionOrderIncrement: 10),
+        settings: {'defaultExecutionOrderIncrement': 10},
         rules: [
           Rule(
             name: 'MoveToArchive',
             enabled: true,
+            isLocal: false,
             conditions: RuleConditions(
               type: 'OR',
               subject: ['newsletter'],
             ),
-            actions: RuleActions(moveToFolder: 'Archive'),
+            actions: RuleActions(delete: false, moveToFolder: 'Archive'),
             executionOrder: 10,
           ),
         ],

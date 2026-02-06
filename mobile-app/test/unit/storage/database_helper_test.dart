@@ -286,10 +286,23 @@ void main() {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL UNIQUE,
             enabled INTEGER NOT NULL DEFAULT 1,
+            is_local INTEGER NOT NULL DEFAULT 0,
             execution_order INTEGER NOT NULL,
             condition_type TEXT NOT NULL,
+            condition_from TEXT,
+            condition_header TEXT,
+            condition_subject TEXT,
+            condition_body TEXT,
             action_delete INTEGER NOT NULL DEFAULT 0,
+            action_move_to_folder TEXT,
+            action_assign_category TEXT,
+            exception_from TEXT,
+            exception_header TEXT,
+            exception_subject TEXT,
+            exception_body TEXT,
+            metadata TEXT,
             date_added INTEGER NOT NULL,
+            date_modified INTEGER,
             created_by TEXT DEFAULT 'manual'
           );
         ''');
@@ -298,7 +311,9 @@ void main() {
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             pattern TEXT NOT NULL UNIQUE,
             pattern_type TEXT NOT NULL,
+            exception_patterns TEXT,
             date_added INTEGER NOT NULL,
+            date_modified INTEGER,
             created_by TEXT DEFAULT 'manual'
           );
         ''');

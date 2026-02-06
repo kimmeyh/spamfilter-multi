@@ -1,0 +1,408 @@
+import 'dart:convert';
+import 'package:logger/logger.dart';
+import 'package:sqflite/sqflite.dart';
+import 'database_helper.dart';
+import '../providers/email_scan_provider.dart';
+
+/// Settings storage for app-wide and per-account configuration
+///
+/// This store provides:
+/// - App-wide settings (manual scan defaults, background scan defaults)
+/// - Per-account setting overrides
+/// - Type-safe getter/setter methods
+/// - JSON serialization for complex values (lists, maps)
+///
+/// Database Tables:
+/// - app_settings: Global app settings (key-value pairs)
+/// - account_settings: Per-account overrides (account_id + key → value)
+///
+/// Example:
+/// ```dart
+/// final store = SettingsStore();
+/// await store.initialize();
+///
+/// // Get/set app-wide settings
+/// final scanMode = await store.getManualScanMode();
+/// await store.setManualScanMode(ScanMode.readonly);
+///
+/// // Get/set per-account overrides
+/// final accountFolders = await store.getAccountFolders('gmail-user@gmail.com');
+/// await store.setAccountFolders('gmail-user@gmail.com', ['INBOX', 'Spam']);
+/// ```
+class SettingsStore {
+  final DatabaseHelper _dbHelper;
+  final Logger _logger = Logger();
+
+  SettingsStore([DatabaseHelper? dbHelper]) : _dbHelper = dbHelper ?? DatabaseHelper();
+
+  // ============================================================
+  // App-Wide Settings Keys
+  // ============================================================
+  static const String keyManualScanMode = 'manual_scan_mode';
+  static const String keyManualScanFolders = 'manual_scan_folders';
+  static const String keyConfirmDialogsEnabled = 'confirm_dialogs_enabled';
+  static const String keyBackgroundScanEnabled = 'background_scan_enabled';
+  static const String keyBackgroundScanFrequency = 'background_scan_frequency';
+  static const String keyBackgroundScanMode = 'background_scan_mode';
+  static const String keyBackgroundScanFolders = 'background_scan_folders';
+  static const String keyCsvExportDirectory = 'csv_export_directory';
+
+  // ============================================================
+  // Default Values
+  // ============================================================
+  static const ScanMode defaultManualScanMode = ScanMode.readonly;
+  static const List<String> defaultManualScanFolders = ['INBOX'];
+  static const bool defaultConfirmDialogsEnabled = true;
+  static const bool defaultBackgroundScanEnabled = false;
+  static const int defaultBackgroundScanFrequency = 15; // minutes
+  static const ScanMode defaultBackgroundScanMode = ScanMode.readonly;
+  static const List<String> defaultBackgroundScanFolders = ['INBOX'];
+  static const String? defaultCsvExportDirectory = null; // null means use Downloads folder
+
+  // ============================================================
+  // Manual Scan Settings
+  // ============================================================
+
+  /// Get the default scan mode for manual scans
+  Future<ScanMode> getManualScanMode() async {
+    final value = await _getAppSetting(keyManualScanMode);
+    if (value == null) return defaultManualScanMode;
+    return _parseScanMode(value);
+  }
+
+  /// Set the default scan mode for manual scans
+  Future<void> setManualScanMode(ScanMode mode) async {
+    await _setAppSetting(keyManualScanMode, mode.name, 'string');
+  }
+
+  /// Get the default folders to scan for manual scans
+  Future<List<String>> getManualScanFolders() async {
+    final value = await _getAppSetting(keyManualScanFolders);
+    if (value == null) return List.from(defaultManualScanFolders);
+    return _parseStringList(value);
+  }
+
+  /// Set the default folders to scan for manual scans
+  Future<void> setManualScanFolders(List<String> folders) async {
+    await _setAppSetting(keyManualScanFolders, jsonEncode(folders), 'json');
+  }
+
+  /// Get whether confirmation dialogs are enabled
+  Future<bool> getConfirmDialogsEnabled() async {
+    final value = await _getAppSetting(keyConfirmDialogsEnabled);
+    if (value == null) return defaultConfirmDialogsEnabled;
+    return value == 'true';
+  }
+
+  /// Set whether confirmation dialogs are enabled
+  Future<void> setConfirmDialogsEnabled(bool enabled) async {
+    await _setAppSetting(keyConfirmDialogsEnabled, enabled.toString(), 'bool');
+  }
+
+  // ============================================================
+  // Background Scan Settings
+  // ============================================================
+
+  /// Get whether background scanning is enabled
+  Future<bool> getBackgroundScanEnabled() async {
+    final value = await _getAppSetting(keyBackgroundScanEnabled);
+    if (value == null) return defaultBackgroundScanEnabled;
+    return value == 'true';
+  }
+
+  /// Set whether background scanning is enabled
+  Future<void> setBackgroundScanEnabled(bool enabled) async {
+    await _setAppSetting(keyBackgroundScanEnabled, enabled.toString(), 'bool');
+  }
+
+  /// Get background scan frequency in minutes
+  Future<int> getBackgroundScanFrequency() async {
+    final value = await _getAppSetting(keyBackgroundScanFrequency);
+    if (value == null) return defaultBackgroundScanFrequency;
+    return int.tryParse(value) ?? defaultBackgroundScanFrequency;
+  }
+
+  /// Set background scan frequency in minutes
+  Future<void> setBackgroundScanFrequency(int minutes) async {
+    await _setAppSetting(keyBackgroundScanFrequency, minutes.toString(), 'int');
+  }
+
+  /// Get the scan mode for background scans
+  Future<ScanMode> getBackgroundScanMode() async {
+    final value = await _getAppSetting(keyBackgroundScanMode);
+    if (value == null) return defaultBackgroundScanMode;
+    return _parseScanMode(value);
+  }
+
+  /// Set the scan mode for background scans
+  Future<void> setBackgroundScanMode(ScanMode mode) async {
+    await _setAppSetting(keyBackgroundScanMode, mode.name, 'string');
+  }
+
+  /// Get the default folders to scan for background scans
+  Future<List<String>> getBackgroundScanFolders() async {
+    final value = await _getAppSetting(keyBackgroundScanFolders);
+    if (value == null) return List.from(defaultBackgroundScanFolders);
+    return _parseStringList(value);
+  }
+
+  /// Set the default folders to scan for background scans
+  Future<void> setBackgroundScanFolders(List<String> folders) async {
+    await _setAppSetting(keyBackgroundScanFolders, jsonEncode(folders), 'json');
+  }
+
+  // ============================================================
+  // Export Settings
+  // ============================================================
+
+  /// Get the default directory for CSV exports
+  /// Returns null if not set (use system Downloads folder)
+  Future<String?> getCsvExportDirectory() async {
+    return await _getAppSetting(keyCsvExportDirectory);
+  }
+
+  /// Set the default directory for CSV exports
+  /// Pass null to clear (will use Downloads folder)
+  Future<void> setCsvExportDirectory(String? directory) async {
+    if (directory == null) {
+      await _deleteAppSetting(keyCsvExportDirectory);
+    } else {
+      await _setAppSetting(keyCsvExportDirectory, directory, 'string');
+    }
+  }
+
+  // ============================================================
+  // Per-Account Settings
+  // ============================================================
+
+  /// Get account-specific folders override
+  /// Returns null if no override set (use global default)
+  Future<List<String>?> getAccountFolders(String accountId) async {
+    final value = await _getAccountSetting(accountId, 'folders');
+    if (value == null) return null;
+    return _parseStringList(value);
+  }
+
+  /// Set account-specific folders override
+  /// Pass null to clear the override
+  Future<void> setAccountFolders(String accountId, List<String>? folders) async {
+    if (folders == null) {
+      await _deleteAccountSetting(accountId, 'folders');
+    } else {
+      await _setAccountSetting(accountId, 'folders', jsonEncode(folders), 'json');
+    }
+  }
+
+  /// Get account-specific scan mode override
+  /// Returns null if no override set (use global default)
+  Future<ScanMode?> getAccountScanMode(String accountId) async {
+    final value = await _getAccountSetting(accountId, 'scan_mode');
+    if (value == null) return null;
+    return _parseScanMode(value);
+  }
+
+  /// Set account-specific scan mode override
+  /// Pass null to clear the override
+  Future<void> setAccountScanMode(String accountId, ScanMode? mode) async {
+    if (mode == null) {
+      await _deleteAccountSetting(accountId, 'scan_mode');
+    } else {
+      await _setAccountSetting(accountId, 'scan_mode', mode.name, 'string');
+    }
+  }
+
+  /// Get account-specific background scan enabled override
+  /// Returns null if no override set (use global default)
+  Future<bool?> getAccountBackgroundEnabled(String accountId) async {
+    final value = await _getAccountSetting(accountId, 'background_enabled');
+    if (value == null) return null;
+    return value == 'true';
+  }
+
+  /// Set account-specific background scan enabled override
+  /// Pass null to clear the override
+  Future<void> setAccountBackgroundEnabled(String accountId, bool? enabled) async {
+    if (enabled == null) {
+      await _deleteAccountSetting(accountId, 'background_enabled');
+    } else {
+      await _setAccountSetting(accountId, 'background_enabled', enabled.toString(), 'bool');
+    }
+  }
+
+  /// Check if account has any setting overrides
+  Future<bool> hasAccountOverrides(String accountId) async {
+    final db = await _dbHelper.database;
+    final result = await db.query(
+      'account_settings',
+      where: 'account_id = ?',
+      whereArgs: [accountId],
+      limit: 1,
+    );
+    return result.isNotEmpty;
+  }
+
+  /// Get all account setting overrides for display
+  Future<Map<String, String>> getAccountOverrides(String accountId) async {
+    final db = await _dbHelper.database;
+    final results = await db.query(
+      'account_settings',
+      where: 'account_id = ?',
+      whereArgs: [accountId],
+    );
+
+    final overrides = <String, String>{};
+    for (final row in results) {
+      final key = row['setting_key'] as String;
+      final value = row['setting_value'] as String;
+      overrides[key] = value;
+    }
+    return overrides;
+  }
+
+  /// Clear all account setting overrides
+  Future<void> clearAccountOverrides(String accountId) async {
+    final db = await _dbHelper.database;
+    await db.delete(
+      'account_settings',
+      where: 'account_id = ?',
+      whereArgs: [accountId],
+    );
+    _logger.i('Cleared all setting overrides for account: $accountId');
+  }
+
+  // ============================================================
+  // Effective Settings (resolves account overrides)
+  // ============================================================
+
+  /// Get effective scan mode for an account (resolves override or uses global)
+  Future<ScanMode> getEffectiveScanMode(String? accountId, {bool isBackground = false}) async {
+    if (accountId != null) {
+      final override = await getAccountScanMode(accountId);
+      if (override != null) return override;
+    }
+    return isBackground ? await getBackgroundScanMode() : await getManualScanMode();
+  }
+
+  /// Get effective folders for an account (resolves override or uses global)
+  Future<List<String>> getEffectiveFolders(String? accountId, {bool isBackground = false}) async {
+    if (accountId != null) {
+      final override = await getAccountFolders(accountId);
+      if (override != null) return override;
+    }
+    return isBackground ? await getBackgroundScanFolders() : await getManualScanFolders();
+  }
+
+  /// Get effective background enabled for an account (resolves override or uses global)
+  Future<bool> getEffectiveBackgroundEnabled(String? accountId) async {
+    if (accountId != null) {
+      final override = await getAccountBackgroundEnabled(accountId);
+      if (override != null) return override;
+    }
+    return await getBackgroundScanEnabled();
+  }
+
+  // ============================================================
+  // Internal Helpers
+  // ============================================================
+
+  Future<String?> _getAppSetting(String key) async {
+    final db = await _dbHelper.database;
+    final results = await db.query(
+      'app_settings',
+      where: 'key = ?',
+      whereArgs: [key],
+    );
+    if (results.isEmpty) return null;
+    return results.first['value'] as String;
+  }
+
+  Future<void> _setAppSetting(String key, String value, String valueType) async {
+    final db = await _dbHelper.database;
+    await db.insert(
+      'app_settings',
+      {
+        'key': key,
+        'value': value,
+        'value_type': valueType,
+        'date_modified': DateTime.now().millisecondsSinceEpoch,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+    _logger.d('Set app setting: $key = $value');
+  }
+
+  Future<void> _deleteAppSetting(String key) async {
+    final db = await _dbHelper.database;
+    await db.delete(
+      'app_settings',
+      where: 'key = ?',
+      whereArgs: [key],
+    );
+    _logger.d('Deleted app setting: $key');
+  }
+
+  Future<String?> _getAccountSetting(String accountId, String key) async {
+    final db = await _dbHelper.database;
+    final results = await db.query(
+      'account_settings',
+      where: 'account_id = ? AND setting_key = ?',
+      whereArgs: [accountId, key],
+    );
+    if (results.isEmpty) return null;
+    return results.first['setting_value'] as String;
+  }
+
+  Future<void> _setAccountSetting(String accountId, String key, String value, String valueType) async {
+    final db = await _dbHelper.database;
+    await db.insert(
+      'account_settings',
+      {
+        'account_id': accountId,
+        'setting_key': key,
+        'setting_value': value,
+        'value_type': valueType,
+        'date_modified': DateTime.now().millisecondsSinceEpoch,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+    _logger.d('Set account setting: $accountId.$key = $value');
+  }
+
+  Future<void> _deleteAccountSetting(String accountId, String key) async {
+    final db = await _dbHelper.database;
+    await db.delete(
+      'account_settings',
+      where: 'account_id = ? AND setting_key = ?',
+      whereArgs: [accountId, key],
+    );
+    _logger.d('Deleted account setting: $accountId.$key');
+  }
+
+  ScanMode _parseScanMode(String value) {
+    switch (value) {
+      case 'readonly':
+        return ScanMode.readonly;
+      case 'testLimit':
+        return ScanMode.testLimit;
+      case 'testAll':
+        return ScanMode.testAll;
+      case 'fullScan':
+        return ScanMode.fullScan;
+      default:
+        _logger.w('Unknown scan mode: $value, defaulting to readonly');
+        return ScanMode.readonly;
+    }
+  }
+
+  List<String> _parseStringList(String value) {
+    try {
+      final decoded = jsonDecode(value);
+      if (decoded is List) {
+        return decoded.cast<String>();
+      }
+    } catch (e) {
+      _logger.w('Failed to parse string list: $value');
+    }
+    return [];
+  }
+}
