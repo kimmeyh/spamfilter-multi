@@ -3,7 +3,7 @@ name: validate-rules
 description: Validate YAML rule files (rules.yaml and rules_safe_senders.yaml) for syntax errors and regex pattern issues
 allowed-tools: Bash, Read
 user-invocable: true
-model: haiku
+model: claude-3-5-haiku-latest
 ---
 
 # Validate Rules

@@ -81,5 +81,5 @@ if (Test-Path $metadataFile) {
 
 $metadata | ConvertTo-Json -Depth 5 | Out-File -FilePath $metadataFile -Encoding UTF8
 
-Write-Host "✅ Sprint context saved to $currentFile"
-Write-Host "📋 Edit this file to add specific context before exiting Claude"
+Write-Host "Sprint context saved to $currentFile"
+Write-Host "Edit this file to add specific context before exiting Claude"
