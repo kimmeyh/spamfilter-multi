@@ -4,8 +4,15 @@ import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
 import '../widgets/app_bar_with_exit.dart';
+import 'scan_progress_screen.dart';
+import 'settings_screen.dart';
 
-import '../../core/providers/email_scan_provider.dart' show EmailScanProvider, EmailActionResult, EmailActionType;
+import '../../core/providers/email_scan_provider.dart' show EmailScanProvider, EmailActionResult, EmailActionType, ScanStatus;
+import '../../core/providers/rule_set_provider.dart';
+import '../../core/models/rule_set.dart' show Rule, RuleConditions, RuleActions;
+import '../../core/services/email_body_parser.dart';
+import '../../core/storage/settings_store.dart';
+import '../../core/utils/pattern_normalization.dart';
 import '../widgets/empty_state.dart';
 
 /// Displays summary of scan results bound to EmailScanProvider.
@@ -163,19 +170,41 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       // Generate CSV content
       final csvContent = scanProvider.exportResultsToCSV();
 
-      // Get downloads directory (or documents on desktop)
-      final directory = Platform.isAndroid || Platform.isIOS
-          ? await getExternalStorageDirectory()
-          : await getApplicationDocumentsDirectory();
+      // Get configured export directory from Settings, or use default
+      final settingsStore = SettingsStore();
+      final configuredDir = await settingsStore.getCsvExportDirectory();
 
-      if (directory == null) {
-        throw Exception('Could not access storage directory');
+      String exportPath;
+      if (configuredDir != null && configuredDir.isNotEmpty) {
+        // Use configured directory
+        final dir = Directory(configuredDir);
+        if (!await dir.exists()) {
+          await dir.create(recursive: true);
+        }
+        exportPath = configuredDir;
+      } else {
+        // Use default directory (downloads on mobile, documents on desktop)
+        final directory = Platform.isAndroid || Platform.isIOS
+            ? await getExternalStorageDirectory()
+            : await getApplicationDocumentsDirectory();
+
+        if (directory == null) {
+          throw Exception('Could not access storage directory');
+        }
+        exportPath = directory.path;
       }
 
       // Create filename with timestamp
       final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-').split('.')[0];
       final filename = 'scan_results_$timestamp.csv';
-      final filePath = '${directory.path}/$filename';
+      // Normalize export path - remove trailing slashes to avoid double separators
+      String normalizedPath = exportPath;
+      while (normalizedPath.endsWith('/') || normalizedPath.endsWith('\\')) {
+        normalizedPath = normalizedPath.substring(0, normalizedPath.length - 1);
+      }
+      // Use platform-appropriate path separator
+      final pathSeparator = Platform.isWindows ? '\\' : '/';
+      final filePath = '$normalizedPath$pathSeparator$filename';
 
       // Write CSV to file
       final file = File(filePath);
@@ -184,17 +213,47 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       logger.i('✅ Exported scan results to: $filePath');
 
       if (context.mounted) {
-        // Show success message with file path
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Results exported to:\n$filePath'),
-            duration: const Duration(seconds: 5),
-            backgroundColor: Colors.green,
-            action: SnackBarAction(
-              label: 'OK',
-              textColor: Colors.white,
-              onPressed: () {},
+        // Show success dialog with selectable file path for copy support
+        showDialog(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.green),
+                SizedBox(width: 8),
+                Text('Export Successful'),
+              ],
             ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Results exported to:'),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: SelectableText(
+                    filePath,
+                    style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Select the path above to copy it.',
+                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('OK'),
+              ),
+            ],
           ),
         );
       }
@@ -270,6 +329,17 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               icon: const Icon(Icons.undo),
               onPressed: () => _confirmAndRevert(context, scanProvider),
             ),
+          IconButton(
+            tooltip: 'Settings',
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => SettingsScreen(accountId: widget.accountId),
+                ),
+              );
+            },
+          ),
         ],
       ),
       body: Padding(
@@ -298,9 +368,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                         children: [
                           SizedBox(
                             height: MediaQuery.of(context).size.height * 0.4,
-                            child: _filter == null
-                                ? const NoResultsEmptyState()
-                                : const NoMatchingEmailsEmptyState(),
+                            // ✨ SPRINT 12: Show "Scan Started" when scan is in progress
+                            child: scanProvider.status == ScanStatus.scanning
+                                ? const ScanStartedEmptyState()
+                                : _filter == null
+                                    ? const NoResultsEmptyState()
+                                    : const NoMatchingEmailsEmptyState(),
                           ),
                         ],
                       )
@@ -318,6 +391,8 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () {
+                      // Dismiss any showing snackbar before navigating
+                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
                       // Pop back to Account Selection Screen (past Scan Progress)
                       Navigator.popUntil(
                         context,
@@ -332,8 +407,20 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () {
-                      // Navigate back to scan screen for new scan
-                      Navigator.pop(context);
+                      // ✨ SPRINT 12 FIX: Push replacement to Scan screen directly
+                      // This avoids navigation state issues with pop() and ensures
+                      // reliable navigation to the scan screen
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ScanProgressScreen(
+                            platformId: widget.platformId,
+                            platformDisplayName: widget.platformDisplayName,
+                            accountId: widget.accountId,
+                            accountEmail: widget.accountEmail,
+                          ),
+                        ),
+                      );
                     },
                     icon: const Icon(Icons.refresh),
                     label: const Text('Scan Again'),
@@ -485,9 +572,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         ? result.email.from
         : 'Unknown sender';
     final folder = result.email.folderName;
-    final subject = result.email.subject.isNotEmpty
-        ? result.email.subject
-        : 'No subject';
+    // Clean subject for display (remove tabs, extra spaces, repeated punctuation)
+    final rawSubject = result.email.subject;
+    final cleanedSubject = PatternNormalization.cleanSubjectForDisplay(rawSubject);
+    final subject = cleanedSubject.isNotEmpty ? cleanedSubject : 'No subject';
     // Issue #51: Display matched rule name or "No rule" if empty/null
     final matchedRule = result.evaluationResult?.matchedRule ?? '';
     final rule = matchedRule.isNotEmpty ? matchedRule : 'No rule';
@@ -501,7 +589,505 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       title: Text(title),
       subtitle: Text(subtitle),
       trailing: trailing,
+      onTap: () => _showEmailDetailSheet(result),
     );
+  }
+
+  /// Extract the root domain from a full domain (e.g., "subdomain.example.com" -> "example.com")
+  /// For domains like "pptwvrnbdho.atlantaoffre.com", returns "atlantaoffre.com"
+  String? _extractRootDomain(String? fullDomain) {
+    if (fullDomain == null || fullDomain.isEmpty) return null;
+
+    final parts = fullDomain.split('.');
+    // Need at least 2 parts for a valid domain (e.g., example.com)
+    if (parts.length < 2) return fullDomain;
+
+    // For most domains, return last 2 parts (example.com)
+    // For known TLDs like .co.uk, .com.au, etc., would need more logic
+    // For now, use simple heuristic: last 2 parts
+    return '${parts[parts.length - 2]}.${parts[parts.length - 1]}';
+  }
+
+  /// Show bottom sheet with email details and inline quick actions
+  void _showEmailDetailSheet(EmailActionResult result) {
+    final email = result.email;
+    final bodyParser = EmailBodyParser();
+    final senderEmail = bodyParser.extractEmailAddress(email.from);
+    final senderDomain = bodyParser.extractDomainFromEmail(email.from);
+    final rootDomain = _extractRootDomain(senderDomain);
+    final matchedRule = result.evaluationResult?.matchedRule ?? '';
+    final hasNoRule = matchedRule.isEmpty || result.action == EmailActionType.none;
+    final isDeleted = result.action == EmailActionType.delete;
+    final isSafeSender = result.action == EmailActionType.safeSender;
+
+    // Clean subject for display
+    final cleanedSubject = PatternNormalization.cleanSubjectForDisplay(email.subject);
+    final displaySubject = cleanedSubject.isNotEmpty ? cleanedSubject : '(No subject)';
+
+    // Format date/time
+    final dateStr = email.receivedDate.toString().substring(0, 16);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      constraints: BoxConstraints(
+        maxWidth: MediaQuery.of(context).size.width * 0.9,
+      ),
+      builder: (sheetContext) => DraggableScrollableSheet(
+        initialChildSize: 0.55,
+        minChildSize: 0.3,
+        maxChildSize: 0.85,
+        expand: false,
+        builder: (context, scrollController) => SingleChildScrollView(
+          controller: scrollController,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Handle bar
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    margin: const EdgeInsets.only(bottom: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                // One-line summary matching Results screen format
+                Row(
+                  children: [
+                    _actionIcon(result.action),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        senderEmail,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    result.success
+                        ? const Icon(Icons.check, color: Colors.green, size: 18)
+                        : const Icon(Icons.error, color: Colors.red, size: 18),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                // Subtitle line: folder • subject • rule
+                Text(
+                  '${email.folderName} • $displaySubject • ${matchedRule.isNotEmpty ? matchedRule : "No rule"}',
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+                // Date/time
+                Row(
+                  children: [
+                    Icon(Icons.schedule, size: 14, color: Colors.grey[500]),
+                    const SizedBox(width: 4),
+                    Text(
+                      dateStr,
+                      style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                    ),
+                    if (senderDomain != null) ...[
+                      const SizedBox(width: 12),
+                      Icon(Icons.domain, size: 14, color: Colors.grey[500]),
+                      const SizedBox(width: 4),
+                      Text(
+                        senderDomain,
+                        style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 8),
+                // Action result badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _getActionColor(result.action).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    _getActionDescription(result),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: _getActionColor(result.action),
+                    ),
+                  ),
+                ),
+                const Divider(height: 20),
+
+                // === SAFE SENDER SECTION ===
+                // Show for: Deleted emails, No Rule emails, or Safe Sender emails (for exception)
+                if (isDeleted || hasNoRule || isSafeSender) ...[
+                  Text(
+                    isSafeSender ? 'Update Safe Sender' : 'Add to Safe Senders',
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _buildInlineActionButton(
+                        icon: Icons.person,
+                        label: 'Exact Email',
+                        subtitle: senderEmail,
+                        color: Colors.green,
+                        onTap: () {
+                          Navigator.pop(sheetContext);
+                          _addSafeSender(senderEmail, 'exact');
+                        },
+                      ),
+                      if (senderDomain != null)
+                        _buildInlineActionButton(
+                          icon: Icons.domain,
+                          label: 'Exact Domain',
+                          subtitle: '@$senderDomain',
+                          color: Colors.green,
+                          onTap: () {
+                            Navigator.pop(sheetContext);
+                            _addSafeSender('@$senderDomain', 'exactDomain');
+                          },
+                        ),
+                      // Always show Entire Domain option (uses root domain or full domain if no subdomain)
+                      if (senderDomain != null)
+                        _buildInlineActionButton(
+                          icon: Icons.public,
+                          label: 'Entire Domain',
+                          subtitle: '@*.${rootDomain ?? senderDomain}',
+                          color: Colors.green,
+                          onTap: () {
+                            Navigator.pop(sheetContext);
+                            _addSafeSender(rootDomain ?? senderDomain, 'entireDomain');
+                          },
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                ],
+
+                // === BLOCK RULE SECTION ===
+                // Show for: No Rule emails or Safe Sender emails (to add exception/block rule)
+                if (hasNoRule || isSafeSender) ...[
+                  const Text(
+                    'Create Block Rule',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _buildInlineActionButton(
+                        icon: Icons.person_off,
+                        label: 'Block Email',
+                        subtitle: senderEmail,
+                        color: Colors.red,
+                        onTap: () {
+                          Navigator.pop(sheetContext);
+                          _createBlockRule('from', senderEmail);
+                        },
+                      ),
+                      if (senderDomain != null)
+                        _buildInlineActionButton(
+                          icon: Icons.domain_disabled,
+                          label: 'Block Exact Domain',
+                          subtitle: '@$senderDomain',
+                          color: Colors.red,
+                          onTap: () {
+                            Navigator.pop(sheetContext);
+                            _createBlockRule('exactDomain', '@$senderDomain');
+                          },
+                        ),
+                      // Always show Block Entire Domain option (uses root domain or full domain if no subdomain)
+                      if (senderDomain != null)
+                        _buildInlineActionButton(
+                          icon: Icons.public_off,
+                          label: 'Block Entire Domain',
+                          subtitle: '@*.${rootDomain ?? senderDomain}',
+                          color: Colors.red,
+                          onTap: () {
+                            Navigator.pop(sheetContext);
+                            _createBlockRule('entireDomain', rootDomain ?? senderDomain);
+                          },
+                        ),
+                      if (cleanedSubject.isNotEmpty && cleanedSubject != '(No subject)')
+                        _buildInlineActionButton(
+                          icon: Icons.subject,
+                          label: 'Block Subject',
+                          subtitle: cleanedSubject.length > 20
+                              ? '${cleanedSubject.substring(0, 20)}...'
+                              : cleanedSubject,
+                          color: Colors.orange,
+                          onTap: () {
+                            Navigator.pop(sheetContext);
+                            _createBlockRule('subject', cleanedSubject);
+                          },
+                        ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Build an inline action button (used in popup instead of dialogs)
+  Widget _buildInlineActionButton({
+    required IconData icon,
+    required String label,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          border: Border.all(color: color.withValues(alpha: 0.3)),
+          borderRadius: BorderRadius.circular(8),
+          color: color.withValues(alpha: 0.05),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 16, color: color),
+                const SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: color,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 2),
+            Text(
+              subtitle,
+              style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _getActionColor(EmailActionType action) {
+    switch (action) {
+      case EmailActionType.delete:
+        return Colors.red;
+      case EmailActionType.moveToJunk:
+        return Colors.orange;
+      case EmailActionType.safeSender:
+        return Colors.green;
+      case EmailActionType.markAsRead:
+        return Colors.blueGrey;
+      case EmailActionType.none:
+        return Colors.grey;
+    }
+  }
+
+  /// Add sender to safe senders list
+  /// Types: 'exact' (email), 'exactDomain' (@subdomain.domain.com), 'entireDomain' (@*.domain.com)
+  Future<void> _addSafeSender(String value, String type) async {
+    final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
+    final logger = Logger();
+
+    try {
+      // Create regex pattern based on type
+      String pattern;
+      String displayMessage;
+
+      switch (type) {
+        case 'exact':
+          // Exact email match - escape special chars
+          final escaped = value.replaceAll('.', r'\.').replaceAll('@', r'@');
+          pattern = '^$escaped\$';
+          displayMessage = 'Added "$value" to Safe Senders';
+          break;
+        case 'exactDomain':
+          // Exact domain match (e.g., @subdomain.domain.com)
+          final escaped = value.replaceAll('.', r'\.').replaceAll('@', r'@');
+          pattern = '^[^@\\s]+$escaped\$';
+          displayMessage = 'Added exact domain "$value" to Safe Senders';
+          break;
+        case 'entireDomain':
+          // Entire domain pattern (e.g., @*.domain.com matches any subdomain)
+          // Regex: ^[^@\s]+@(?:[a-z0-9-]+\.)*domain\.com$
+          final escaped = value.replaceAll('.', r'\.');
+          pattern = r'^[^@\s]+@(?:[a-z0-9-]+\.)*' + escaped + r'$';
+          displayMessage = 'Added entire domain "*.$value" to Safe Senders';
+          break;
+        default:
+          logger.w('Unknown safe sender type: $type');
+          return;
+      }
+
+      // Add to safe senders via provider (persists to database and YAML)
+      await ruleProvider.addSafeSender(pattern);
+
+      logger.i('✅ Added safe sender: $pattern');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(displayMessage),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
+          ),
+        );
+      }
+    } catch (e) {
+      logger.e('❌ Failed to add safe sender: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to add safe sender: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
+          ),
+        );
+      }
+    }
+  }
+
+  /// Create a block rule (persists to database and YAML)
+  /// Types: 'from' (email), 'exactDomain' (@subdomain.domain.com), 'entireDomain' (@*.domain.com), 'subject'
+  Future<void> _createBlockRule(String type, String value) async {
+    final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
+    final logger = Logger();
+
+    try {
+      // Create rule based on type
+      String pattern;
+      String ruleName;
+      String displayMessage;
+
+      switch (type) {
+        case 'from':
+          // Block exact email - escape special chars
+          final escaped = value.replaceAll('.', r'\.').replaceAll('@', r'@');
+          pattern = '^$escaped\$';
+          ruleName = 'Block_${value.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}';
+          displayMessage = 'Created rule to block email "$value"';
+          break;
+        case 'exactDomain':
+          // Block exact domain (e.g., @subdomain.domain.com)
+          final escaped = value.replaceAll('.', r'\.').replaceAll('@', r'@');
+          pattern = '$escaped\$';
+          ruleName = 'Block_ExactDomain_${value.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}';
+          displayMessage = 'Created rule to block exact domain "$value"';
+          break;
+        case 'entireDomain':
+          // Block entire domain pattern (e.g., @*.domain.com matches any subdomain)
+          // Regex: @(?:[a-z0-9-]+\.)*domain\.com$
+          final escaped = value.replaceAll('.', r'\.');
+          pattern = r'@(?:[a-z0-9-]+\.)*' + escaped + r'$';
+          ruleName = 'Block_EntireDomain_${value.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}';
+          displayMessage = 'Created rule to block entire domain "*.$value"';
+          break;
+        case 'subject':
+          // Block subject containing text - escape special regex chars
+          final escaped = value.replaceAll(RegExp(r'[.*+?^${}()|[\]\\]'), r'\$&');
+          pattern = escaped;
+          ruleName = 'Block_Subject_${value.substring(0, value.length.clamp(0, 20)).replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}';
+          displayMessage = 'Created rule to block subject containing "$value"';
+          break;
+        default:
+          logger.w('Unknown block rule type: $type');
+          return;
+      }
+
+      // Create the rule with proper types
+      final conditions = type == 'subject'
+          ? RuleConditions(type: 'OR', subject: [pattern])
+          : RuleConditions(type: 'OR', header: [pattern]);
+
+      final rule = Rule(
+        name: ruleName,
+        enabled: true,
+        isLocal: true,  // Mark as local (created in app, not from YAML)
+        executionOrder: 100,  // Default execution order
+        conditions: conditions,
+        actions: RuleActions(delete: true),
+        metadata: {
+          'comment': 'Created from Results screen on ${DateTime.now().toIso8601String().substring(0, 10)}',
+        },
+      );
+
+      // Add rule via provider (persists to database and YAML)
+      await ruleProvider.addRule(rule);
+
+      logger.i('✅ Created block rule: $ruleName with pattern: $pattern');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(displayMessage),
+            backgroundColor: Colors.blue,
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
+          ),
+        );
+      }
+    } catch (e) {
+      logger.e('❌ Failed to create block rule: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to create rule: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
+          ),
+        );
+      }
+    }
+  }
+
+  String _getActionDescription(EmailActionResult result) {
+    switch (result.action) {
+      case EmailActionType.delete:
+        return result.success ? 'Deleted' : 'Delete failed';
+      case EmailActionType.moveToJunk:
+        return result.success ? 'Moved to junk' : 'Move failed';
+      case EmailActionType.safeSender:
+        return 'Safe sender - no action';
+      case EmailActionType.markAsRead:
+        return result.success ? 'Marked as read' : 'Mark as read failed';
+      case EmailActionType.none:
+        return 'No matching rule';
+    }
   }
 
   Widget _actionIcon(EmailActionType action) {
