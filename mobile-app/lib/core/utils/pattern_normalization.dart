@@ -217,4 +217,62 @@ class PatternNormalization {
       return '';
     }
   }
+
+  /// Cleans subject text for display purposes.
+  ///
+  /// Operations:
+  /// - Replace tabs with single space
+  /// - Trim leading/trailing whitespace
+  /// - Collapse consecutive spaces to single space
+  /// - Reduce repeated punctuation (e.g., "......" → ".")
+  /// - Remove non-keyboard characters (keeps letters, numbers, common punctuation)
+  ///
+  /// Returns empty string if input is null or empty.
+  static String cleanSubjectForDisplay(String? subject) {
+    if (subject == null || subject.isEmpty) {
+      return '';
+    }
+
+    try {
+      String result = subject;
+
+      // Replace tabs with single space
+      result = result.replaceAll('\t', ' ');
+
+      // Remove non-printable and non-keyboard characters
+      // Keep: letters (any language), numbers, spaces, and common punctuation
+      // Remove: control characters, weird Unicode symbols
+      result = result.replaceAll(RegExp(r'[^\x20-\x7E\u00A0-\u00FF\u0100-\u017F\u0400-\u04FF]'), '');
+
+      // Collapse consecutive spaces to single space
+      result = result.replaceAll(RegExp(r' {2,}'), ' ');
+
+      // Reduce repeated punctuation to single (e.g., "..." → ".", "!!!" → "!")
+      // Handle common punctuation marks
+      result = result.replaceAll(RegExp(r'\.{2,}'), '.');
+      result = result.replaceAll(RegExp(r'!{2,}'), '!');
+      result = result.replaceAll(RegExp(r'\?{2,}'), '?');
+      result = result.replaceAll(RegExp(r'-{2,}'), '-');
+      result = result.replaceAll(RegExp(r'_{2,}'), '_');
+      result = result.replaceAll(RegExp(r'\*{2,}'), '*');
+      result = result.replaceAll(RegExp(r'#{2,}'), '#');
+      result = result.replaceAll(RegExp(r'@{2,}'), '@');
+      result = result.replaceAll(RegExp(r'\${2,}'), r'$');
+      result = result.replaceAll(RegExp(r'%{2,}'), '%');
+      result = result.replaceAll(RegExp(r'\^{2,}'), '^');
+      result = result.replaceAll(RegExp(r'&{2,}'), '&');
+      result = result.replaceAll(RegExp(r'\+{2,}'), '+');
+      result = result.replaceAll(RegExp(r'={2,}'), '=');
+      result = result.replaceAll(RegExp(r'~{2,}'), '~');
+      result = result.replaceAll(RegExp(r'`{2,}'), '`');
+
+      // Trim whitespace
+      result = result.trim();
+
+      return result;
+    } catch (e) {
+      _logger.w('Error cleaning subject for display: $e');
+      return subject ?? '';
+    }
+  }
 }

@@ -11,6 +11,7 @@ import '../../core/models/email_message.dart';
 import '../../core/models/evaluation_result.dart';
 import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/unmatched_email_store.dart';
+import '../../core/utils/pattern_normalization.dart';
 
 /// Scan status states
 enum ScanStatus { idle, scanning, paused, completed, error }
@@ -568,6 +569,21 @@ class EmailScanProvider extends ChangeNotifier {
       // For now, use placeholder implementation
       _logger.d('Unmatched email identified: ${result.email.from} - will persist in Task D');
     }
+
+    // ✨ SPRINT 12: Notify listeners with 2-second throttling
+    // This ensures Results page updates during scan in real-time
+    // Always notify on first result, then every 2 seconds thereafter
+    final now = DateTime.now();
+    final resultCount = _results.length;
+    final shouldNotify = resultCount == 1 ||
+        _lastProgressNotification == null ||
+        now.difference(_lastProgressNotification!) >= const Duration(seconds: 2);
+
+    if (shouldNotify) {
+      _lastProgressNotification = now;
+      _logger.d('📊 Results UI update triggered: $resultCount results');
+      notifyListeners();
+    }
   }
 
   /// ✨ PHASE 2 SPRINT 3: Revert all actions from last run
@@ -670,7 +686,9 @@ class EmailScanProvider extends ChangeNotifier {
       final receivedDate = result.email.receivedDate.toIso8601String();
       final from = _escapeCsv(result.email.from);
       final folder = _escapeCsv(result.email.folderName);
-      final subject = _escapeCsv(result.email.subject);
+      // Clean subject for CSV (remove tabs, extra spaces, repeated punctuation)
+      final cleanedSubject = PatternNormalization.cleanSubjectForDisplay(result.email.subject);
+      final subject = _escapeCsv(cleanedSubject);
       final rule = _escapeCsv(result.evaluationResult?.matchedRule ?? 'No rule');
 
       // Extract matched pattern from evaluation result (if available)
