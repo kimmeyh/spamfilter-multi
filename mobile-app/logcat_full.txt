@@ -1,0 +1,465 @@
+--------- beginning of main
+12-22 17:15:06.243   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:15:06.741   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+--------- beginning of system
+12-22 17:15:08.741   178  6391 I keystore2: system/security/keystore2/src/watchdog.rs:319 - Watchdog thread idle -> terminating. Have a great day.
+12-22 17:15:08.982  1797  1797 D BoundBrokerSvc: onUnbind: Intent { act=com.google.android.gms.feedback.internal.IFeedbackService dat=chimera-action:/... cmp=com.google.android.gms/.chimera.GmsBoundBrokerService }
+12-22 17:15:08.987  1797  1797 D BoundBrokerSvc: onUnbind: Intent { act=com.google.android.gms.measurement.START pkg=com.google.android.gms }
+12-22 17:15:09.104  1797  1866 W gle.android.gms: Reducing the number of considered missed Gc histogram windows from 128 to 100
+12-22 17:15:09.646   770   770 D StatusBarIconController: ignoring old pipeline callback because the new wifi icon is enabled
+12-22 17:15:11.098  1382  1473 I VoiceInputManagerWrapper: VoiceInputManagerWrapper.shutdownVoiceInternal():95 shutdownVoiceInternal()
+12-22 17:15:12.650   770   770 D StatusBarIconController: ignoring old pipeline callback because the new wifi icon is enabled
+12-22 17:15:13.215   552   644 D ActivityManager: freezing 1202 com.google.android.permissioncontroller
+12-22 17:15:13.944  1187  1187 D BoundBrokerSvc: onUnbind: Intent { act=com.google.android.gms.presencemanager.service.START dat=chimera-action:/... cmp=com.google.android.gms/.chimera.PersistentApiService }
+12-22 17:15:13.945   552  2125 W ProcessStats: Tracking association SourceState{f67051c com.example.spamfilter_mobile/10191 BTop #4563} whose proc state 2 is better than process ProcessState{d80417a com.google.android.gms.persistent/10129 pkg=com.google.android.gms} proc state 4 (96 skipped)
+12-22 17:15:13.948  1187  1187 D BoundBrokerSvc: onUnbind: Intent { act=com.google.android.gms.presencemanager.service.INTERNAL_IDENTITY dat=chimera-action:/... cmp=com.google.android.gms/.chimera.PersistentApiService }
+12-22 17:15:14.554   552   749 D androidtc: Initializing SystemTextClassifier, type = System
+12-22 17:15:14.555  1486  1486 I AiAiTextClassifier: onCreateTextClassificationSession = TextClassificationSessionId {9e9b26c8-8556-4732-a9f8-b7469c6fc0c3}
+12-22 17:15:14.556   552   749 D androidtc: Initializing SystemTextClassifier, type = System
+12-22 17:15:14.561  1486  1486 I AiAiTextClassifier: onCreateTextClassificationSession = TextClassificationSessionId {01507a25-7bc1-4042-8247-fea7a8783f82}
+12-22 17:15:14.562   770   770 I ClipboardListener: Clipboard overlay suppressed.
+12-22 17:15:14.563  1486  1832 I AiAiTranslate: C2T - not in a conversation
+12-22 17:15:14.567   770   770 I ClipboardListener: Clipboard overlay suppressed.
+12-22 17:15:14.579   770   770 I ClipboardListener: Clipboard overlay suppressed.
+12-22 17:15:14.676   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:15:15.655   770   770 D StatusBarIconController: ignoring old pipeline callback because the new wifi icon is enabled
+12-22 17:15:16.243   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:15:16.252   770   829 D EGL_emulation: app_time_stats: avg=16225.41ms min=16225.41ms max=16225.41ms count=1
+12-22 17:15:18.660   770   770 D StatusBarIconController: ignoring old pipeline callback because the new wifi icon is enabled
+12-22 17:15:18.996   552   644 D ActivityManager: freezing 1797 com.google.android.gms
+12-22 17:15:19.369   552   648 D ActivityManager: sync unfroze 1797 com.google.android.gms for 6
+12-22 17:15:19.410  2540  2540 I Finsky  : [2] SCH: job service start with id 9426.
+12-22 17:15:19.455  2540  6286 I Finsky  : [151] SCH: Satisfied jobs for 9426 are: 12-1
+12-22 17:15:19.473  2540  6415 I Finsky  : [159] SCH: Job 12-1 starting
+12-22 17:15:19.484  2540  2540 I Finsky  : [2] WM::SCH: Logging work start for 12-1
+12-22 17:15:19.490  1797  1797 D BoundBrokerSvc: onBind: Intent { act=com.google.android.gms.semanticlocationhistory.settings.SettingsSyncOneOffService.ACTION_TASK_READY dat=chimera-action:/... cmp=com.google.android.gms/.chimera.GmsInternalBoundBrokerService }
+12-22 17:15:19.490  1797  1797 D BoundBrokerSvc: Loading bound service for intent: Intent { act=com.google.android.gms.semanticlocationhistory.settings.SettingsSyncOneOffService.ACTION_TASK_READY dat=chimera-action:/... cmp=com.google.android.gms/.chimera.GmsInternalBoundBrokerService }
+12-22 17:15:19.491  1187  6418 I NetworkScheduler.Stats: (REDACTED) Task %s/%s started execution. cause:%s exec_start_elapsed_seconds: %s
+12-22 17:15:19.498   552   769 D NetworkStatsObservers: Unregistering RequestInfo from pid/uid:552/1000(android) for DataUsageRequest [ requestId=6, networkTemplate=NetworkTemplate: matchRule=MOBILE, matchSubscriberIds=[310260...], matchWifiNetworkKeys=[], metered=YES, defaultNetwork=NO, thresholdInBytes=3424851 ] accessLevel:3
+12-22 17:15:19.498  2540  2540 I Finsky  : [2] [ContentSync] job started
+12-22 17:15:19.498   552   688 D NetworkStatsObservers: Registering observer for RequestInfo from pid/uid:552/1000(android) for DataUsageRequest [ requestId=7, networkTemplate=NetworkTemplate: matchRule=MOBILE, matchSubscriberIds=[310260...], matchWifiNetworkKeys=[], metered=YES, defaultNetwork=NO, thresholdInBytes=3383687 ] accessLevel:3
+12-22 17:15:19.508  1187  6238 I NetworkScheduler.Stats: (REDACTED) Task %s/%s started execution. cause:%s exec_start_elapsed_seconds: %s
+12-22 17:15:19.564  1187  6238 I NetworkScheduler.Stats: (REDACTED) Task %s/%s finished executing. cause:%s result: %s elapsed_millis: %s uptime_millis: %s exec_start_elapsed_seconds: %s
+12-22 17:15:19.589  1797  2281 I fuwz    : (REDACTED) Shared storage file not found for %s
+12-22 17:15:19.591  1187  1187 D BoundBrokerSvc: onRebind: Intent { act=com.google.android.gms.auth.aang.events.services.START dat=chimera-action:/... cmp=com.google.android.gms/.chimera.PersistentApiService }
+12-22 17:15:19.637  1797  6325 I LocationHistory: [SettingsSyncOneOffTask] Synced ODLH settings for all accounts. [CONTEXT service_id=314 ]
+12-22 17:15:19.645  1797  1797 D BoundBrokerSvc: onUnbind: Intent { act=com.google.android.gms.semanticlocationhistory.settings.SettingsSyncOneOffService.ACTION_TASK_READY dat=chimera-action:/... cmp=com.google.android.gms/.chimera.GmsInternalBoundBrokerService }
+12-22 17:15:19.649  1187  6419 I NetworkScheduler.Stats: (REDACTED) Task %s/%s finished executing. cause:%s result: %s elapsed_millis: %s uptime_millis: %s exec_start_elapsed_seconds: %s
+12-22 17:15:19.681  2540  6420 I Finsky  : [160] App states replicator found 7 unowned apps
+12-22 17:15:19.700  2540  2985 I Finsky  : [54] Completed 0 account content syncs with 0 successful.
+12-22 17:15:19.701  2540  2540 I Finsky  : [2] [ContentSync] Installation state replication succeeded.
+12-22 17:15:19.701  2540  2540 I Finsky  : [2] SCH: jobFinished: 12-1. TimeElapsed: 217ms.
+12-22 17:15:19.705  2540  2540 I Finsky  : [2] WM::SCH: Logging work end for 12-1
+12-22 17:15:19.745  2540  3112 I Finsky  : [65] SCH: Scheduling phonesky job Id: 1-1337, CT: 1766402853458, Constraints: [{ L: 42841585, D: 86041585, C: CHARGING_NONE, I: IDLE_NONE, N: NET_ANY, B: BATTERY_ANY }]
+12-22 17:15:19.752  2540  3105 I Finsky  : [61] SCH: Scheduling 1 system job(s)
+12-22 17:15:19.753  2540  3105 I Finsky  : [61] SCH: Scheduling system job Id: 9429, L: 3975291, D: 47175291, C: false, I: false, N: 1
+12-22 17:15:19.768  2540  6415 I Finsky  : [159] SCH: job service finished with id 9426.
+12-22 17:15:19.854  2540  2584 W android.vending: Reducing the number of considered missed Gc histogram windows from 129 to 100
+12-22 17:15:22.613   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:15:23.027  1405  1413 W .apps.wellbeing: Reducing the number of considered missed Gc histogram windows from 128 to 100
+12-22 17:15:26.242   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:15:26.430   552   836 W ProcessStats: Tracking association SourceState{f67051c com.example.spamfilter_mobile/10191 BTop #4598} whose proc state 2 is better than process ProcessState{d80417a com.google.android.gms.persistent/10129 pkg=com.google.android.gms} proc state 4 (32 skipped)
+12-22 17:15:30.548   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:15:32.997   552   644 D ActivityManager: freezing 1405 com.google.android.apps.wellbeing
+12-22 17:15:32.998   552   644 D ActivityManager: freezing 1775 com.android.keychain
+12-22 17:15:32.999   552   644 D ActivityManager: freezing 966 com.android.settings
+12-22 17:15:34.616  1187  1187 D BoundBrokerSvc: onUnbind: Intent { act=com.google.android.gms.auth.aang.events.services.START dat=chimera-action:/... cmp=com.google.android.gms/.chimera.PersistentApiService }
+12-22 17:15:36.251   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:15:36.253   770   829 D EGL_emulation: app_time_stats: avg=20000.80ms min=20000.80ms max=20000.80ms count=1
+12-22 17:15:38.740   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:15:38.815   552   644 D ActivityManager: freezing 1797 com.google.android.gms
+12-22 17:15:46.243   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:15:46.676   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:15:51.069   552   836 W BatteryExternalStatsWorker: error reading Bluetooth stats: 11
+12-22 17:15:54.612   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:15:56.243   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:16:00.022  1486  1723 I AiAiEcho: Predicting[0]: 
+12-22 17:16:00.022  1486  1723 I AiAiEcho: EchoTargets: 
+12-22 17:16:00.022  1486  1723 I AiAiEcho: Filtered by AiAi flag check: 
+12-22 17:16:00.023  1486  1723 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata: 
+12-22 17:16:00.025  1486  1723 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+12-22 17:16:00.037   770   829 D EGL_emulation: app_time_stats: avg=23783.04ms min=23783.04ms max=23783.04ms count=1
+12-22 17:16:00.038   770   770 W PageIndicator: Total number of pages invalid: 0. Assuming 1 page.
+12-22 17:16:02.549   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:16:06.244   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:16:10.740   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:16:16.247   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:16:18.677   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:16:20.814   552   749 D androidtc: Initializing SystemTextClassifier, type = System
+12-22 17:16:20.816   552   749 D androidtc: Initializing SystemTextClassifier, type = System
+12-22 17:16:20.818  1486  1486 I AiAiTextClassifier: onCreateTextClassificationSession = TextClassificationSessionId {fc212f77-c196-45e1-b7d5-65a3bd828470}
+12-22 17:16:20.818  1486  1486 I AiAiTextClassifier: onCreateTextClassificationSession = TextClassificationSessionId {a2cebc64-fffb-4246-85ca-2aebba8e9efc}
+12-22 17:16:20.820  1486  1832 I AiAiTranslate: C2T - not in a conversation
+12-22 17:16:20.822   770   770 I ClipboardListener: Clipboard overlay suppressed.
+12-22 17:16:20.825   770   770 I ClipboardListener: Clipboard overlay suppressed.
+12-22 17:16:20.835   770   770 I ClipboardListener: Clipboard overlay suppressed.
+12-22 17:16:26.245   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:16:26.613   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:16:34.548   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:16:36.246   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:16:42.458   552  2003 D WifiNl80211Manager: Scan result ready event
+12-22 17:16:42.458   552  2003 D WifiNative: Scan result ready event
+12-22 17:16:42.816   770   770 D StatusBarIconController: ignoring old pipeline callback because the new wifi icon is enabled
+12-22 17:16:44.904  1187  6424 I AlarmManager: setExactAndAllowWhileIdle [name: GCM_HB_ALARM type: 2 triggerAtMillis: 2547185]
+12-22 17:16:44.905   552   836 D CompatibilityChangeReporter: Compat change id reported: 171306433; UID 10129; state: ENABLED
+12-22 17:16:44.905   552   836 D CompatibilityChangeReporter: Compat change id reported: 218533173; UID 10129; state: ENABLED
+12-22 17:16:44.908  1187  6424 I AlarmManager: setExactAndAllowWhileIdle [name: GCM_HB_ALARM type: 2 triggerAtMillis: 2547188]
+12-22 17:16:44.909   552   836 W ProcessStats: Tracking association SourceState{f67051c com.example.spamfilter_mobile/10191 BTop #4611} whose proc state 2 is better than process ProcessState{d80417a com.google.android.gms.persistent/10129 pkg=com.google.android.gms} proc state 4 (9 skipped)
+12-22 17:16:46.245   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:16:48.826   770   770 D StatusBarIconController: ignoring old pipeline callback because the new wifi icon is enabled
+12-22 17:16:50.583   552   749 D androidtc: Initializing SystemTextClassifier, type = System
+12-22 17:16:50.585  1486  1486 I AiAiTextClassifier: onCreateTextClassificationSession = TextClassificationSessionId {6357e069-da5a-41f5-9ef4-b209c29d0de5}
+12-22 17:16:50.586   552   749 D androidtc: Initializing SystemTextClassifier, type = System
+12-22 17:16:50.587  1486  1832 I AiAiTranslate: C2T - not in a conversation
+12-22 17:16:50.589   770   770 I ClipboardListener: Clipboard overlay suppressed.
+12-22 17:16:50.590  1486  1486 I AiAiTextClassifier: onCreateTextClassificationSession = TextClassificationSessionId {f56dab2b-fe48-4af5-aefd-d98aaa211425}
+12-22 17:16:50.591  1486  1832 I AiAiTranslate: C2T - not in a conversation
+12-22 17:16:50.591   770   770 I ClipboardListener: Clipboard overlay suppressed.
+12-22 17:16:50.600   770   770 I ClipboardListener: Clipboard overlay suppressed.
+12-22 17:16:50.676   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:16:56.248   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:16:57.843   770   770 D StatusBarIconController: ignoring old pipeline callback because the new wifi icon is enabled
+12-22 17:16:58.612   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:16:59.942   552   836 W ProcessStats: Tracking association SourceState{f67051c com.example.spamfilter_mobile/10191 BTop #4612} whose proc state 2 is better than process ProcessState{d80417a com.google.android.gms.persistent/10129 pkg=com.google.android.gms} proc state 4 (0 skipped)
+12-22 17:17:00.004  1486  1723 I AiAiEcho: Predicting[0]: 
+12-22 17:17:00.004  1486  1723 I AiAiEcho: EchoTargets: 
+12-22 17:17:00.004  1486  1723 I AiAiEcho: Filtered by AiAi flag check: 
+12-22 17:17:00.004  1486  1723 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata: 
+12-22 17:17:00.005  1486  1723 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+12-22 17:17:00.022   770   770 W PageIndicator: Total number of pages invalid: 0. Assuming 1 page.
+12-22 17:17:00.024   770   829 D EGL_emulation: app_time_stats: avg=59986.56ms min=59986.56ms max=59986.56ms count=1
+12-22 17:17:03.855   770   770 D StatusBarIconController: ignoring old pipeline callback because the new wifi icon is enabled
+12-22 17:17:06.247   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:17:06.549   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:17:12.907   552   578 I GnssLocationProvider: WakeLock acquired by handleDownloadPsdsData()
+12-22 17:17:12.909   552  6436 E GnssPsdsDownloader: No Long-Term PSDS servers were specified in the GnssConfiguration
+12-22 17:17:14.740   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:17:16.248   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:17:22.676   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:17:26.247   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:17:30.615   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:17:36.267   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:17:36.269   770   829 D EGL_emulation: app_time_stats: avg=36245.05ms min=36245.05ms max=36245.05ms count=1
+12-22 17:17:38.549   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:17:40.517   552   690 E WifiStaIfaceAidlImpl: installApfPacketFilter failed with service-specific exception: android.os.ServiceSpecificException:  (code 4)
+12-22 17:17:42.933   770   770 D StatusBarIconController: ignoring old pipeline callback because the new wifi icon is enabled
+12-22 17:17:45.940   770   770 D StatusBarIconController: ignoring old pipeline callback because the new wifi icon is enabled
+12-22 17:17:46.248   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:17:46.740   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:17:54.677   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:17:56.266   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:17:56.268   770   829 D EGL_emulation: app_time_stats: avg=19998.68ms min=19998.68ms max=19998.68ms count=1
+12-22 17:17:57.563   552   590 W ProcessStats: Tracking association SourceState{f67051c com.example.spamfilter_mobile/10191 BTop #4613} whose proc state 2 is better than process ProcessState{d80417a com.google.android.gms.persistent/10129 pkg=com.google.android.gms} proc state 4 (0 skipped)
+12-22 17:17:57.580   552   637 D ActivityManager: sync unfroze 5408 com.google.android.youtube for 6
+12-22 17:17:57.628   552  1123 D CompatibilityChangeReporter: Compat change id reported: 161252188; UID 10129; state: DISABLED
+12-22 17:17:57.630   552  1123 D ActivityManager: sync unfroze 1797 com.google.android.gms for 6
+12-22 17:17:57.635  1797  1797 D BoundBrokerSvc: onBind: Intent { act=com.google.android.gms.potokens.service.START dat=chimera-action:/... cmp=com.google.android.gms/.chimera.GmsApiService }
+12-22 17:17:57.635  1797  1797 D BoundBrokerSvc: Loading bound service for intent: Intent { act=com.google.android.gms.potokens.service.START dat=chimera-action:/... cmp=com.google.android.gms/.chimera.GmsApiService }
+12-22 17:17:57.642  1797  1797 D BoundBrokerSvc: onUnbind: Intent { act=com.google.android.gms.common.BIND_SHARED_PREFS pkg=com.google.android.gms }
+12-22 17:17:57.962   770   770 D StatusBarIconController: ignoring old pipeline callback because the new wifi icon is enabled
+12-22 17:17:57.976  5408  5630 W YouTube : Empty persistent device token received from InnerTube.
+12-22 17:17:58.117   552  1123 W AppOps  : Noting op not finished: uid 10129 pkg com.google.android.gms code 113 startTime of in progress event=1766440403796
+12-22 17:17:58.122   552  1123 W AppOps  : Noting op not finished: uid 10129 pkg com.google.android.gms code 113 startTime of in progress event=1766440403796
+12-22 17:17:58.127   552   836 W AppOps  : Noting op not finished: uid 10129 pkg com.google.android.gms code 79 startTime of in progress event=1766440405054
+12-22 17:17:58.129   552   836 W AppOps  : Noting op not finished: uid 10129 pkg com.google.android.gms code 113 startTime of in progress event=1766440403796
+12-22 17:17:58.133   552  2003 W AppOps  : Noting op not finished: uid 10129 pkg com.google.android.gms code 113 startTime of in progress event=1766440403796
+12-22 17:17:58.139  1187  2020 I ActivityScheduler: nextTriggerTime: 2438519, in 238100ms, detectorType: 39, FULL_TYPE alarmWindowMillis: 80000
+12-22 17:17:59.924   552   749 D androidtc: Initializing SystemTextClassifier, type = System
+12-22 17:17:59.925  1486  1486 I AiAiTextClassifier: onCreateTextClassificationSession = TextClassificationSessionId {7969eeca-98e2-4f28-9ad7-d7cd64a6a643}
+12-22 17:17:59.926   552   749 D androidtc: Initializing SystemTextClassifier, type = System
+12-22 17:17:59.928  1486  1832 I AiAiTranslate: C2T - not in a conversation
+12-22 17:17:59.929  1486  1486 I AiAiTextClassifier: onCreateTextClassificationSession = TextClassificationSessionId {180b6f0a-9c75-49b8-a2d8-ec2e448ecccd}
+12-22 17:17:59.932   770   770 I ClipboardListener: Clipboard overlay suppressed.
+12-22 17:17:59.935   770   770 I ClipboardListener: Clipboard overlay suppressed.
+12-22 17:17:59.948   770   770 I ClipboardListener: Clipboard overlay suppressed.
+12-22 17:18:00.021  1486  1723 I AiAiEcho: Predicting[0]: 
+12-22 17:18:00.021  1486  1723 I AiAiEcho: EchoTargets: 
+12-22 17:18:00.021  1486  1723 I AiAiEcho: Filtered by AiAi flag check: 
+12-22 17:18:00.021  1486  1723 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata: 
+12-22 17:18:00.024  1486  1723 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+12-22 17:18:00.035   770   829 D EGL_emulation: app_time_stats: avg=3766.40ms min=3766.40ms max=3766.40ms count=1
+12-22 17:18:00.037   770   770 W PageIndicator: Total number of pages invalid: 0. Assuming 1 page.
+12-22 17:18:02.612   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:18:03.978   770   770 D StatusBarIconController: ignoring old pipeline callback because the new wifi icon is enabled
+12-22 17:18:06.248   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:18:07.834   552   644 D ActivityManager: freezing 5408 com.google.android.youtube
+12-22 17:18:07.836   552   644 D ActivityManager: freezing 1797 com.google.android.gms
+12-22 17:18:10.549   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:18:16.004   770   770 D StatusBarIconController: ignoring old pipeline callback because the new wifi icon is enabled
+12-22 17:18:16.249   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:18:16.268   770   829 D EGL_emulation: app_time_stats: avg=16232.92ms min=16232.92ms max=16232.92ms count=1
+12-22 17:18:18.741   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:18:22.018   770   770 D StatusBarIconController: ignoring old pipeline callback because the new wifi icon is enabled
+12-22 17:18:26.252   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:18:26.677   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:18:34.623   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:18:36.252   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:18:36.279   770   829 D EGL_emulation: app_time_stats: avg=20011.48ms min=20011.48ms max=20011.48ms count=1
+12-22 17:18:36.307   552   749 D androidtc: Initializing SystemTextClassifier, type = System
+12-22 17:18:36.309  1486  1486 I AiAiTextClassifier: onCreateTextClassificationSession = TextClassificationSessionId {6b29f5dc-9e8b-454c-82f4-5d3c5c3cf337}
+12-22 17:18:36.310   552   749 D androidtc: Initializing SystemTextClassifier, type = System
+12-22 17:18:36.313  1486  1486 I AiAiTextClassifier: onCreateTextClassificationSession = TextClassificationSessionId {a23545e2-7e21-4952-8c33-3b43facaa0a8}
+12-22 17:18:36.314  1486  1832 I AiAiTranslate: C2T - not in a conversation
+12-22 17:18:36.316   770   770 I ClipboardListener: Clipboard overlay suppressed.
+12-22 17:18:36.317   770   770 I ClipboardListener: Clipboard overlay suppressed.
+12-22 17:18:36.325   770   770 I ClipboardListener: Clipboard overlay suppressed.
+12-22 17:18:42.549   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:18:46.251   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:18:50.740   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:18:55.081   770   770 D StatusBarIconController: ignoring old pipeline callback because the new wifi icon is enabled
+12-22 17:18:56.252   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:18:58.084   770   770 D StatusBarIconController: ignoring old pipeline callback because the new wifi icon is enabled
+12-22 17:18:58.676   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:19:00.006  1486  1723 I AiAiEcho: Predicting[0]: 
+12-22 17:19:00.006  1486  1723 I AiAiEcho: EchoTargets: 
+12-22 17:19:00.006  1486  1723 I AiAiEcho: Filtered by AiAi flag check: 
+12-22 17:19:00.007  1486  1723 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata: 
+12-22 17:19:00.008  1486  1723 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+12-22 17:19:00.023   770   770 W PageIndicator: Total number of pages invalid: 0. Assuming 1 page.
+12-22 17:19:00.025   770   829 D EGL_emulation: app_time_stats: avg=23745.30ms min=23745.30ms max=23745.30ms count=1
+12-22 17:19:06.253   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:19:06.612   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:19:09.958   552   749 D androidtc: Initializing SystemTextClassifier, type = System
+12-22 17:19:09.960  1486  1486 I AiAiTextClassifier: onCreateTextClassificationSession = TextClassificationSessionId {4c554d71-8d4d-4bed-bb5c-0a45f3179102}
+12-22 17:19:09.960   552   749 D androidtc: Initializing SystemTextClassifier, type = System
+12-22 17:19:09.964  1486  1832 I AiAiTranslate: C2T - not in a conversation
+12-22 17:19:09.965  1486  1486 I AiAiTextClassifier: onCreateTextClassificationSession = TextClassificationSessionId {55dcd769-340a-4743-97f9-f3fff58f4d2e}
+12-22 17:19:09.967   770   770 I ClipboardListener: Clipboard overlay suppressed.
+12-22 17:19:09.968   770   770 I ClipboardListener: Clipboard overlay suppressed.
+12-22 17:19:09.980   770   770 I ClipboardListener: Clipboard overlay suppressed.
+12-22 17:19:14.547   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:19:16.252   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:19:22.455   552  2003 D WifiNl80211Manager: Scan result ready event
+12-22 17:19:22.455   552  2003 D WifiNative: Scan result ready event
+12-22 17:19:26.252   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:19:30.678   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:19:35.539   552   749 D androidtc: Initializing SystemTextClassifier, type = System
+12-22 17:19:35.541  1486  1486 I AiAiTextClassifier: onCreateTextClassificationSession = TextClassificationSessionId {4d750353-9210-4d12-80f7-31b14f43b8b8}
+12-22 17:19:35.541   552   749 D androidtc: Initializing SystemTextClassifier, type = System
+12-22 17:19:35.545  1486  1832 I AiAiTranslate: C2T - not in a conversation
+12-22 17:19:35.547  1486  1486 I AiAiTextClassifier: onCreateTextClassificationSession = TextClassificationSessionId {6fc2b197-c5fa-4ab8-8f4f-189612a2bb26}
+12-22 17:19:35.547   770   770 I ClipboardListener: Clipboard overlay suppressed.
+12-22 17:19:35.548   770   770 I ClipboardListener: Clipboard overlay suppressed.
+12-22 17:19:35.555   770   770 I ClipboardListener: Clipboard overlay suppressed.
+12-22 17:19:36.253   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:19:38.613   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:19:42.669   552   637 D ActivityManager: sync unfroze 5408 com.google.android.youtube for 6
+12-22 17:19:42.716   552   637 D ActivityManager: sync unfroze 1797 com.google.android.gms for 6
+12-22 17:19:42.717   552   637 W ProcessStats: Tracking association SourceState{f67051c com.example.spamfilter_mobile/10191 BTop #4644} whose proc state 2 is better than process ProcessState{d80417a com.google.android.gms.persistent/10129 pkg=com.google.android.gms} proc state 4 (16 skipped)
+12-22 17:19:42.722  1797  1797 D BoundBrokerSvc: onUnbind: Intent { act=com.google.android.gms.potokens.service.START dat=chimera-action:/... cmp=com.google.android.gms/.chimera.GmsApiService }
+12-22 17:19:42.729   552   552 W JobScheduler: Job didn't exist in JobStore: 474ace0 {androidx.work.systemjobscheduler} #u0a139/51 @androidx.work.systemjobscheduler@com.google.android.youtube/androidx.work.impl.background.systemjob.SystemJobService
+12-22 17:19:42.770  5408  5598 W YouTube : Empty persistent device token received from InnerTube.
+12-22 17:19:42.775  5408  5431 W android.youtube: Reducing the number of considered missed Gc histogram windows from 149 to 100
+12-22 17:19:43.178   770   770 D StatusBarIconController: ignoring old pipeline callback because the new wifi icon is enabled
+12-22 17:19:46.185   770   770 D StatusBarIconController: ignoring old pipeline callback because the new wifi icon is enabled
+12-22 17:19:46.253   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:19:46.548   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:19:52.731   552   644 D ActivityManager: freezing 1797 com.google.android.gms
+12-22 17:19:52.735   552   644 D ActivityManager: freezing 5408 com.google.android.youtube
+12-22 17:19:54.741   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:19:55.204   770   770 D StatusBarIconController: ignoring old pipeline callback because the new wifi icon is enabled
+12-22 17:19:56.253   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:19:58.209   770   770 D StatusBarIconController: ignoring old pipeline callback because the new wifi icon is enabled
+12-22 17:19:59.359  6336  6372 D EGL_emulation: app_time_stats: avg=42941.00ms min=3.48ms max=300405.28ms count=7
+12-22 17:19:59.442  6336  6336 W WindowOnBackDispatcher: OnBackInvokedCallback is not enabled for the application.
+12-22 17:19:59.442  6336  6336 W WindowOnBackDispatcher: Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+12-22 17:19:59.485   413   413 D audioserver: FGS Logger Transaction failed
+12-22 17:19:59.485   413   413 D audioserver: -129
+12-22 17:19:59.513   413   506 D AudioFlinger: mixer(0x73aa4d4ac930) throttle end: throttle time(25)
+12-22 17:19:59.672   413   506 D audioserver: FGS Logger Transaction failed
+12-22 17:19:59.672   413   506 D audioserver: -129
+12-22 17:20:00.024   770   829 D EGL_emulation: app_time_stats: avg=59998.47ms min=59998.47ms max=59998.47ms count=1
+12-22 17:20:00.025  1486  1723 I AiAiEcho: Predicting[0]: 
+12-22 17:20:00.025  1486  1723 I AiAiEcho: EchoTargets: 
+12-22 17:20:00.025  1486  1723 I AiAiEcho: Filtered by AiAi flag check: 
+12-22 17:20:00.026  1486  1723 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata: 
+12-22 17:20:00.028  1486  1723 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+12-22 17:20:00.036   770   770 W PageIndicator: Total number of pages invalid: 0. Assuming 1 page.
+12-22 17:20:00.538  6336  6372 D EGL_emulation: app_time_stats: avg=24.63ms min=1.81ms max=603.51ms count=33
+12-22 17:20:00.544   413   413 D audioserver: FGS Logger Transaction failed
+12-22 17:20:00.544   413   413 D audioserver: -129
+12-22 17:20:00.557   413   506 D AudioFlinger: mixer(0x73aa4d4ac930) throttle end: throttle time(27)
+12-22 17:20:00.761   413   506 D audioserver: FGS Logger Transaction failed
+12-22 17:20:00.762   413   506 D audioserver: -129
+12-22 17:20:01.920  6336  6372 D EGL_emulation: app_time_stats: avg=22.41ms min=1.92ms max=734.23ms count=39
+12-22 17:20:02.030   413   413 D audioserver: FGS Logger Transaction failed
+12-22 17:20:02.030   413   413 D audioserver: -129
+12-22 17:20:02.257   413   506 D audioserver: FGS Logger Transaction failed
+12-22 17:20:02.257   413   506 D audioserver: -129
+12-22 17:20:02.676   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:20:05.129   357  1306 D android.hardware.audio@7.1-impl.ranchu: threadLoop: entering standby, frames: 3216128
+12-22 17:20:06.254   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:20:10.613   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:20:16.254   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:20:18.548   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:20:26.254   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:20:26.739   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:20:34.676   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:20:36.255   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:20:36.269   770   829 D EGL_emulation: app_time_stats: avg=36244.64ms min=36244.64ms max=36244.64ms count=1
+12-22 17:20:42.612   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:20:46.255   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:20:50.550   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:20:56.256   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:20:56.268   770   829 D EGL_emulation: app_time_stats: avg=19998.79ms min=19998.79ms max=19998.79ms count=1
+12-22 17:20:58.740   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:21:00.025   770   829 D EGL_emulation: app_time_stats: avg=3757.00ms min=3757.00ms max=3757.00ms count=1
+12-22 17:21:00.027  1486  1723 I AiAiEcho: Predicting[0]: 
+12-22 17:21:00.027  1486  1723 I AiAiEcho: EchoTargets: 
+12-22 17:21:00.027  1486  1723 I AiAiEcho: Filtered by AiAi flag check: 
+12-22 17:21:00.027  1486  1723 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata: 
+12-22 17:21:00.029  1486  1723 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+12-22 17:21:00.030   770   770 W PageIndicator: Total number of pages invalid: 0. Assuming 1 page.
+12-22 17:21:06.255   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:21:06.677   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:21:14.613   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:21:16.256   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:21:16.268   770   829 D EGL_emulation: app_time_stats: avg=16242.85ms min=16242.85ms max=16242.85ms count=1
+12-22 17:21:22.549   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:21:23.464   552   749 D androidtc: Initializing SystemTextClassifier, type = System
+12-22 17:21:23.467  1486  1486 I AiAiTextClassifier: onCreateTextClassificationSession = TextClassificationSessionId {657ea3a6-0272-42f5-a4cb-500e6542c611}
+12-22 17:21:23.468   552   749 D androidtc: Initializing SystemTextClassifier, type = System
+12-22 17:21:23.471  1486  1486 I AiAiTextClassifier: onCreateTextClassificationSession = TextClassificationSessionId {9cc1e5dd-743b-4f13-be32-7a23fb6e2319}
+12-22 17:21:23.471   770   770 I ClipboardListener: Clipboard overlay suppressed.
+12-22 17:21:23.472  1486  1832 I AiAiTranslate: C2T - not in a conversation
+12-22 17:21:23.476   770   770 I ClipboardListener: Clipboard overlay suppressed.
+12-22 17:21:23.481   770   770 I ClipboardListener: Clipboard overlay suppressed.
+12-22 17:21:24.770  6336  6336 I ImeTracker: com.example.spamfilter_mobile:144c1d42: onRequestShow at ORIGIN_CLIENT_SHOW_SOFT_INPUT reason SHOW_SOFT_INPUT
+12-22 17:21:24.785  6336  6336 D InputMethodManager: showSoftInput() view=J2.q{979dbc5 VFE...... .F....ID 0,0-1080,2274 #1 aid=1073741824} flags=0 reason=SHOW_SOFT_INPUT
+12-22 17:21:24.787  1382  1382 I GoogleInputMethodService: GoogleInputMethodService.onFinishInput():3227 
+12-22 17:21:24.788   552  2125 W ProcessStats: Tracking association SourceState{432585c system/1000 BFgs #4655} whose proc state 4 is better than process ProcessState{3cb6dda com.google.android.inputmethod.latin/10137 pkg=com.google.android.inputmethod.latin} proc state 6 (6 skipped)
+12-22 17:21:24.789  1382  1382 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2087 repeatCheckTimes = 0, unlocked = true
+12-22 17:21:24.789  1382  1382 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1877 onStartInput(EditorInfo{inputType=0x8021(EmailAddress) imeOptions=0x2000006 privateImeOptions=null actionName=DONE actionLabel=null actionId=0 initialSelStart=0 initialSelEnd=0 initialCapsMode=0x0 hintText=null label=null packageName=com.example.spamfilter_mobile fieldId=1 fieldName=null extras=Bundle[mParcelledData.dataSize=168]}, false)
+12-22 17:21:24.789  1382  1382 I GoogleInputMethodService: GoogleInputMethodService.shouldHideHeaderOnInitialState():4008 ShouldHideHeaderOnInitialState = false
+12-22 17:21:24.791  1382  1382 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2087 repeatCheckTimes = 2, unlocked = true
+12-22 17:21:24.797  1382  1382 I GoogleInputMethodService: GoogleInputMethodService.onStartInputView():1995 onStartInputView(EditorInfo{inputType=0x8021(EmailAddress) imeOptions=0x2000006 privateImeOptions=null actionName=DONE actionLabel=null actionId=0 initialSelStart=0 initialSelEnd=0 initialCapsMode=0x0 hintText=null label=null packageName=com.example.spamfilter_mobile fieldId=1 fieldName=null extras=Bundle[{androidx.core.view.inputmethod.EditorInfoCompat.STYLUS_HANDWRITING_ENABLED=true}]}, false)
+12-22 17:21:24.802  1382  1382 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2087 repeatCheckTimes = 2, unlocked = true
+12-22 17:21:24.808  1382  1473 I DeviceModeUtil: DeviceModeUtil.getDeviceMode():122 Get device mode phone by ui mode:1 and smallestScreenWidthDp:393
+12-22 17:21:24.812  1382  1382 W ModuleManager: ModuleManager.loadModule():450 Module erj is not available
+12-22 17:21:24.814   552   836 W FillRequestEventLogger: Couldn't find packageName: com.google.android.inputmethod.latin
+12-22 17:21:24.819  6336  6364 D EGL_emulation: app_time_stats: avg=192996.94ms min=59.64ms max=385934.22ms count=2
+12-22 17:21:24.826  6336  6372 D EGL_emulation: app_time_stats: avg=2504.83ms min=1.92ms max=82322.88ms count=33
+12-22 17:21:24.829  6336  6336 I AssistStructure: Flattened final assist data: 404 bytes, containing 1 windows, 3 views
+12-22 17:21:24.832   552  2003 D AutofillSession: createPendingIntent for request 4
+12-22 17:21:24.833   552  2003 D ContentCapturePerUserService: Notified activity assist data for activity: Token{b0a7afd ActivityRecord{651aa7 u0 com.example.spamfilter_mobile/.MainActivity t15}} without a session Id
+12-22 17:21:24.837  1382  1397 I putmethod.latin: JIT allocated 55KB for compiled code of boolean dsd.a(ikb, java.lang.Object[])
+12-22 17:21:24.845  1382  1382 I KeyboardViewUtil: KeyboardViewUtil.getKeyboardHeightRatio():189 systemKeyboardHeightRatio:1.000000; userKeyboardHeightRatio:1.000000.
+12-22 17:21:24.845  1382  1382 I AndroidIME: AbstractIme.onActivate():86 LatinIme.onActivate() : EditorInfo = inputType=0x8021(EmailAddress) imeOptions=0x2000006 privateImeOptions=null actionName=DONE actionLabel=null actionId=0 initialSelStart=0 initialSelEnd=0 initialCapsMode=0x0 hintText=null label=null packageName=com.example.spamfilter_mobile fieldId=1 fieldName=null extras=Bundle[{androidx.core.view.inputmethod.EditorInfoCompat.STYLUS_HANDWRITING_ENABLED=true}], IncognitoMode = false, DeviceLocked = false
+12-22 17:21:24.855  1382  1382 I Delight5Facilitator: Delight5Facilitator.initializeForIme():777 initializeForIme() : Locale = [en_US], layout = qwerty
+12-22 17:21:24.856  1382  1382 I VoiceInputManagerWrapper: VoiceInputManagerWrapper.cancelShutdown():55 cancelShutdown()
+12-22 17:21:24.856  1382  1382 I VoiceInputManagerWrapper: VoiceInputManagerWrapper.syncLanguagePacks():67 syncLanguagePacks()
+12-22 17:21:24.865  1382  1382 I LatinIme: LatinIme.updateEnableInlineSuggestionsOnDecoderSideFlags():1003 inline flag updated to:false
+12-22 17:21:24.881  1382  1382 I KeyboardWrapper: KeyboardWrapper.consumeEvent():275 Skip consuming an event as current keyboard is deactivated (state=0, keyboard existence=true)
+12-22 17:21:24.882  1382  4935 I SpeechFactory: SpeechRecognitionFactory.maybeScheduleAutoPackDownloadForFallback():205 maybeScheduleAutoPackDownloadForFallback()
+12-22 17:21:24.882  1382  4935 I FallbackOnDeviceRecognitionProvider: FallbackOnDeviceRecognitionProvider.maybeScheduleAutoPackDownload():195 maybeScheduleAutoPackDownload() for language tag en-US
+12-22 17:21:24.896  1382  1382 I KeyboardViewUtil: KeyboardViewUtil.calculateMaxKeyboardBodyHeight():40 leave 344 height for app when screen height:2208, header height:121 and isFullscreenMode:false, so the max keyboard body height is:1743
+12-22 17:21:24.902  1382  1382 I DeviceModeUtil: DeviceModeUtil.getDeviceMode():122 Get device mode phone by ui mode:1 and smallestScreenWidthDp:393
+12-22 17:21:24.904  1382  1382 I GoogleInputMethodService: GoogleInputMethodService.setKeyboardViewShown():3483 setKeyboardViewShown() : type = HEADER, shownType = SHOW_OPTIONAL
+12-22 17:21:24.904  1382  1382 I GoogleInputMethodService: GoogleInputMethodService.setKeyboardViewShown():3530 setKeyboardViewShown() : shouldShow = true
+12-22 17:21:24.904  1382  1382 I GoogleInputMethodService: GoogleInputMethodService.setKeyboardViewShown():3483 setKeyboardViewShown() : type = BODY, shownType = SHOW_MANDATORY
+12-22 17:21:24.905  1382  1382 I GoogleInputMethodService: GoogleInputMethodService.setKeyboardViewShown():3530 setKeyboardViewShown() : shouldShow = true
+12-22 17:21:24.905  1382  1382 I GoogleInputMethodService: GoogleInputMethodService.setKeyboardViewShown():3483 setKeyboardViewShown() : type = FLOATING_CANDIDATES, shownType = HIDE
+12-22 17:21:24.906  1382  1382 I GoogleInputMethodService: GoogleInputMethodService.setKeyboardViewShown():3530 setKeyboardViewShown() : shouldShow = false
+12-22 17:21:24.909  1382  1382 I KeyboardViewUtil: KeyboardViewUtil.calculateMaxKeyboardBodyHeight():40 leave 344 height for app when screen height:2208, header height:121 and isFullscreenMode:false, so the max keyboard body height is:1743
+12-22 17:21:24.910  1382  1382 I DeviceModeUtil: DeviceModeUtil.getDeviceMode():122 Get device mode phone by ui mode:1 and smallestScreenWidthDp:393
+12-22 17:21:24.919  1382  1382 I DeviceModeUtil: DeviceModeUtil.getDeviceMode():122 Get device mode phone by ui mode:1 and smallestScreenWidthDp:393
+12-22 17:21:24.920  1382  1382 I KeyboardModeManager: KeyboardModeManager.setInputView():364 setInputView() : supportsOneHandedMode=true
+12-22 17:21:24.920  1382  1382 I NormalModeController: NormalModeController.getKeyboardBodyViewHolderPaddingBottom():116 currentPrimeKeyboardType:SOFT systemPaddingBottom:-1
+12-22 17:21:24.922  1382  1382 I NormalModeController: NormalModeController.getKeyboardBodyViewHolderPaddingBottom():116 currentPrimeKeyboardType:SOFT systemPaddingBottom:-1
+12-22 17:21:24.923  1382  1382 I KeyboardModeManager: KeyboardModeManager.setInputView():356 setInputView() : entry=hwn{languageTag=en-US, variant=qwerty, hasLocalizedResources=true, conditionCacheKey=_device=phone_device_size=default_enable_adaptive_text_editing=true_enable_inline_suggestions_on_client_side=false_enable_large_tablet_batch_1=false_enable_large_tablet_batch_2=false_enable_more_candidates_view_for_multilingual=false_enable_nav_redesign=false_enable_number_row=false_enable_preemptive_decode=true_enable_secondary_symbols=false_expressions=normal_four_or_more_letter_rows=false_keyboard_mode=normal_language=en-US_orientation=portrait_physical_keyboard=qwerty_show_secondary_digits=true_show_suggestions=true_split_with_duplicate_keys=true_variant=qwerty, imeDef.stringId=ime_english_united_states, imeDef.className=com.google.android.apps.inputmethod.libs.latin5.LatinIme, imeDef.languageTag=en-US}
+12-22 17:21:24.928  1382  1382 I ProactiveSuggestionsHolderManager: ProactiveSuggestionsHolderManager$3.display():216 Requesting to show proactive suggestions: CLIPBOARD PREEMPTIVE_WITH_SUPPRESSION
+12-22 17:21:24.934  1382  1382 I CurrentMicStatusHolder: CurrentMicStatusHolder.onStartInputView():79 Current Mic status = {MicIconHidden-EmailInputType,}
+12-22 17:21:24.934  1382  1382 I VoiceImeExtension: VoiceImeExtension.shouldStartVoiceInputAutomatically():383 No private IME option set to start voice input.
+12-22 17:21:24.941   552  1123 D CoreBackPreview: Window{de26c8b u0 com.example.spamfilter_mobile/com.example.spamfilter_mobile.MainActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@29ec188, mPriority=0, mIsAnimationCallback=false}
+12-22 17:21:24.977   552  2003 D ActivityManager: sync unfroze 1797 com.google.android.gms for 6
+12-22 17:21:24.982  1797  1797 D BoundBrokerSvc: onBind: Intent { act=com.google.firebase.dynamiclinks.service.START pkg=com.google.android.gms }
+12-22 17:21:24.983  1797  1797 D BoundBrokerSvc: Loading bound service for intent: Intent { act=com.google.firebase.dynamiclinks.service.START pkg=com.google.android.gms }
+12-22 17:21:25.019   770   783 W System  : A resource failed to call release. 
+12-22 17:21:25.019   770   783 W System  : A resource failed to call release. 
+12-22 17:21:25.020   770   783 W System  : A resource failed to call release. 
+12-22 17:21:25.020   770   783 W System  : A resource failed to call release. 
+12-22 17:21:25.021   770   783 W System  : A resource failed to call release. 
+12-22 17:21:25.022   770   783 W System  : A resource failed to call release. 
+12-22 17:21:25.022  1382  1516 E OpenGLRenderer: Unable to match the desired swap behavior.
+12-22 17:21:25.065  6336  6336 D InsetsController: show(ime(), fromIme=true)
+12-22 17:21:25.078  1382  1382 I NormalModeController: NormalModeController.getKeyboardBodyViewHolderPaddingBottom():116 currentPrimeKeyboardType:SOFT systemPaddingBottom:-1
+12-22 17:21:25.083  1382  2181 I Delight5Decoder: Delight5DecoderWrapper.setKeyboardLayout():457 setKeyboardLayout()
+12-22 17:21:25.104  1382  1382 W TooltipLifecycleManager: TooltipLifecycleManager.dismissTooltips():159 Tooltip with id spell_check_add_to_dictionary not found in tooltipManager.
+12-22 17:21:25.154  1797  1797 D BoundBrokerSvc: onBind: Intent { act=com.google.android.gms.common.BIND_SHARED_PREFS pkg=com.google.android.gms }
+12-22 17:21:25.154  1797  1797 D BoundBrokerSvc: Loading bound service for intent: Intent { act=com.google.android.gms.common.BIND_SHARED_PREFS pkg=com.google.android.gms }
+12-22 17:21:25.162  1797  1797 D BoundBrokerSvc: onBind: Intent { act=com.google.android.mdd.service.START dat=chimera-action:/... cmp=com.google.android.gms/.chimera.GmsBoundBrokerService }
+12-22 17:21:25.162  1797  1797 D BoundBrokerSvc: Loading bound service for intent: Intent { act=com.google.android.mdd.service.START dat=chimera-action:/... cmp=com.google.android.gms/.chimera.GmsBoundBrokerService }
+12-22 17:21:25.184   552   552 W FillRequestEventLogger: Shouldn't be logging AutofillFillRequestReported again for same event
+12-22 17:21:25.185   552   552 W FillResponseEventLogger: Shouldn't be logging AutofillFillRequestReported again for same event
+12-22 17:21:25.188   552   552 D AutofillSession: clearPendingIntentLocked
+12-22 17:21:25.194  1035  1035 V InlineSuggestionRenderService: handleDestroySuggestionViews called for 0:1542751592
+12-22 17:21:25.197  1187  1201 I IPCThreadState: oneway function results for code 1 on binder at 0x7251ba1a0ed0 will be dropped but finished with status UNKNOWN_TRANSACTION and reply parcel size 80
+12-22 17:21:25.223   770   829 D EGL_emulation: app_time_stats: avg=384489.06ms min=384489.06ms max=384489.06ms count=1
+12-22 17:21:25.401  6336  6336 I ImeTracker: com.example.spamfilter_mobile:144c1d42: onShown
+12-22 17:21:26.236   770   829 D EGL_emulation: app_time_stats: avg=15.36ms min=2.04ms max=18.29ms count=61
+12-22 17:21:26.255   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:21:26.285  6336  6372 D EGL_emulation: app_time_stats: avg=53.41ms min=4.38ms max=499.17ms count=26
+12-22 17:21:27.070   413  1225 D audioserver: FGS Logger Transaction failed
+12-22 17:21:27.072   413  1225 D audioserver: -129
+12-22 17:21:27.073  1382  1516 D EGL_emulation: app_time_stats: avg=122.30ms min=1.95ms max=1737.16ms count=15
+12-22 17:21:27.242   413   506 D audioserver: FGS Logger Transaction failed
+12-22 17:21:27.242   413   506 D audioserver: -129
+12-22 17:21:27.289  1382  1382 W TooltipLifecycleManager: TooltipLifecycleManager.dismissTooltips():159 Tooltip with id spell_check_add_to_dictionary not found in tooltipManager.
+12-22 17:21:27.603  6336  6372 D EGL_emulation: app_time_stats: avg=439.16ms min=316.14ms max=502.12ms count=3
+12-22 17:21:28.002   413  1225 D audioserver: FGS Logger Transaction failed
+12-22 17:21:28.002   413  1225 D audioserver: -129
+12-22 17:21:28.011   413   506 D AudioFlinger: mixer(0x73aa4d4ac930) throttle end: throttle time(34)
+12-22 17:21:28.023  6336  6336 I ImeTracker: com.example.spamfilter_mobile:2d7f3237: onRequestHide at ORIGIN_CLIENT_HIDE_SOFT_INPUT reason HIDE_SOFT_INPUT
+12-22 17:21:28.025  1382  1382 I GoogleInputMethodService: GoogleInputMethodService.onFinishInputView():2241 
+12-22 17:21:28.026  1382  1382 W TooltipLifecycleManager: TooltipLifecycleManager.dismissTooltips():159 Tooltip with id spell_check_add_to_dictionary not found in tooltipManager.
+12-22 17:21:28.026  1382  1382 I InputBundle: InputBundle.consumeEvent():923 Skip consuming an event as keyboard status is 0
+12-22 17:21:28.028  1382  1382 I KeyboardWrapper: KeyboardWrapper.consumeEvent():275 Skip consuming an event as current keyboard is deactivated (state=0, keyboard existence=true)
+12-22 17:21:28.028  1382  1382 I VoiceInputManagerWrapper: VoiceInputManagerWrapper.shutdown():77 shutdown()
+12-22 17:21:28.029  1382  1382 I AndroidIME: AbstractIme.onDeactivate():207 LatinIme.onDeactivate()
+12-22 17:21:28.031  1382  1473 W ModuleManager: ModuleManager.loadModule():450 Module jjj is not available
+12-22 17:21:28.035  6336  6336 W WindowOnBackDispatcher: sendCancelIfRunning: isInProgress=falsecallback=ImeCallback=ImeOnBackInvokedCallback@94284969 Callback=android.window.IOnBackInvokedCallback$Stub$Proxy@54be7d
+12-22 17:21:28.037   552   573 D CoreBackPreview: Window{de26c8b u0 com.example.spamfilter_mobile/com.example.spamfilter_mobile.MainActivity}: Setting back callback OnBackInvokedCallbackInfo{mCallback=android.window.IOnBackInvokedCallback$Stub$Proxy@2ff15f7, mPriority=0, mIsAnimationCallback=false}
+12-22 17:21:28.052  6336  6364 D EGL_emulation: app_time_stats: avg=148.69ms min=0.85ms max=2631.81ms count=20
+12-22 17:21:28.215   413   506 D audioserver: FGS Logger Transaction failed
+12-22 17:21:28.215   413   506 D audioserver: -129
+12-22 17:21:28.368  6336  6336 I ImeTracker: com.example.spamfilter_mobile:999a4f92: onRequestHide at ORIGIN_CLIENT_HIDE_SOFT_INPUT reason HIDE_SOFT_INPUT_BY_INSETS_API
+12-22 17:21:28.368   552   573 I ImeTracker: com.example.spamfilter_mobile:999a4f92: onCancelled at PHASE_SERVER_SHOULD_HIDE
+12-22 17:21:28.370  6336  6336 I ImeTracker: com.example.spamfilter_mobile:2d7f3237: onHidden
+12-22 17:21:28.370   770   829 D EGL_emulation: app_time_stats: avg=51.18ms min=11.97ms max=1468.26ms count=41
+12-22 17:21:28.374  1382  1382 I GoogleInputMethodService: GoogleInputMethodService.onStartInput():1877 onStartInput(EditorInfo{inputType=0x0(NULL) imeOptions=0x0 privateImeOptions=null actionName=UNSPECIFIED actionLabel=null actionId=0 initialSelStart=-1 initialSelEnd=-1 initialCapsMode=0x0 hintText=null label=null packageName=com.example.spamfilter_mobile fieldId=0 fieldName=null extras=null}, true)
+12-22 17:21:28.374  1382  1382 I GoogleInputMethodService: GoogleInputMethodService.shouldHideHeaderOnInitialState():4008 ShouldHideHeaderOnInitialState = false
+12-22 17:21:28.374  1382  1382 I GoogleInputMethodService: GoogleInputMethodService.updateDeviceLockedStatus():2087 repeatCheckTimes = 2, unlocked = true
+12-22 17:21:28.374  1382  1382 W SessionManager: SessionManager.beginSession():53 Try to begin an already begun session [INPUT_SESSION], end it first
+12-22 17:21:29.386   770   829 D EGL_emulation: app_time_stats: avg=16.12ms min=10.04ms max=32.67ms count=59
+12-22 17:21:29.586   413  1225 D audioserver: FGS Logger Transaction failed
+12-22 17:21:29.586   413  1225 D audioserver: -129
+12-22 17:21:29.606  6336  6372 D EGL_emulation: app_time_stats: avg=55.00ms min=1.71ms max=1087.71ms count=30
+12-22 17:21:29.802   413   506 D audioserver: FGS Logger Transaction failed
+12-22 17:21:29.802   413   506 D audioserver: -129
+12-22 17:21:30.741   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:21:32.671   357  1306 D android.hardware.audio@7.1-impl.ranchu: threadLoop: entering standby, frames: 3487040
+12-22 17:21:35.313  1187  1196 I .gms.persistent: Background concurrent mark compact GC freed 345302(18MB) AllocSpace objects, 6(268KB) LOS objects, 49% free, 18MB/36MB, paused 798us,1.529ms total 115.014ms
+12-22 17:21:35.313  1187  1196 W .gms.persistent: Reducing the number of considered missed Gc histogram windows from 168 to 100
+12-22 17:21:36.256   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:21:36.270   770   829 D EGL_emulation: app_time_stats: avg=20001.89ms min=20001.89ms max=20001.89ms count=1
+12-22 17:21:38.049  1382  1473 I ProtoXDBBufferWrapper: ProtoXDBBufferWrapper.flushToStorage():153 Flushed 6 data item(s) to storage.
+12-22 17:21:38.677   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:21:40.199  1797  1797 D BoundBrokerSvc: onUnbind: Intent { act=com.google.android.mdd.service.START dat=chimera-action:/... cmp=com.google.android.gms/.chimera.GmsBoundBrokerService }
+12-22 17:21:40.204  1797  1797 D BoundBrokerSvc: onUnbind: Intent { act=com.google.firebase.dynamiclinks.service.START pkg=com.google.android.gms }
+12-22 17:21:46.271   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:21:46.612   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:21:48.029  1382  1473 I VoiceInputManagerWrapper: VoiceInputManagerWrapper.shutdownVoiceInternal():95 shutdownVoiceInternal()
+12-22 17:21:49.648   552   589 I UsageStatsService: User[0] Flushing usage stats to disk
+12-22 17:21:50.257   552   644 D ActivityManager: freezing 1797 com.google.android.gms
+12-22 17:21:54.549   758   758 I wpa_supplicant: wlan0: CTRL-EVENT-BEACON-LOSS 
+12-22 17:21:56.257   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled
+12-22 17:22:00.002  1486  1723 I AiAiEcho: Predicting[0]: 
+12-22 17:22:00.002  1486  1723 I AiAiEcho: EchoTargets: 
+12-22 17:22:00.002  1486  1723 I AiAiEcho: Filtered by AiAi flag check: 
+12-22 17:22:00.003  1486  1723 I AiAiEcho: Ranked targets strategy: SORT, count: 0, ranking metadata: 
+12-22 17:22:00.005  1486  1723 I AiAiEcho: #postPredictionTargets: Sending updates to UISurface lockscreen with targets# 0 (types=[])
+12-22 17:22:00.023   770   770 W PageIndicator: Total number of pages invalid: 0. Assuming 1 page.
+12-22 17:22:00.023   770   829 D EGL_emulation: app_time_stats: avg=23752.87ms min=23752.87ms max=23752.87ms count=1
+12-22 17:22:02.456   552  1378 D WifiNl80211Manager: Scan result ready event
+12-22 17:22:02.456   552  1378 D WifiNative: Scan result ready event
+12-22 17:22:06.259   770   770 D StatusBarIconController: ignoring old pipeline callbacks, because the new mobile icons are enabled

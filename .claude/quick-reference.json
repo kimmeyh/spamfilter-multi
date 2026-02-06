@@ -1,0 +1,57 @@
+{
+  "project_root": "D:\\Data\\Harold\\github\\spamfilter-multi",
+  "directories": {
+    "mobile_app": "D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app",
+    "scripts": "D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\scripts",
+    "docs": "D:\\Data\\Harold\\github\\spamfilter-multi\\docs",
+    "tests": "D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\test",
+    "archive": "D:\\Data\\Harold\\github\\spamfilter-multi\\archive",
+    "claude": "D:\\Data\\Harold\\github\\spamfilter-multi\\.claude"
+  },
+  "critical_files": {
+    "rules_yaml": "D:\\Data\\Harold\\github\\spamfilter-multi\\rules.yaml",
+    "safe_senders_yaml": "D:\\Data\\Harold\\github\\spamfilter-multi\\rules_safe_senders.yaml",
+    "secrets_dev": "D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\secrets.dev.json",
+    "pubspec": "D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\pubspec.yaml",
+    "claude_md": "D:\\Data\\Harold\\github\\spamfilter-multi\\CLAUDE.md",
+    "changelog": "D:\\Data\\Harold\\github\\spamfilter-multi\\CHANGELOG.md",
+    "readme": "D:\\Data\\Harold\\github\\spamfilter-multi\\README.md"
+  },
+  "build_scripts": {
+    "windows": "D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\scripts\\build-windows.ps1",
+    "android": "D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\scripts\\build-with-secrets.ps1",
+    "run_windows": "D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\scripts\\run-windows.ps1",
+    "build_apk": "D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\scripts\\build-apk.ps1"
+  },
+  "logs": {
+    "flutter_console": "Captured during build-windows.ps1 execution",
+    "adb_logcat": "adb logcat -s flutter,System.err,AndroidRuntime,DEBUG",
+    "adb_filtered": "adb logcat -s flutter | grep -E '\\[EMAIL\\]|\\[RULES\\]|\\[EVAL\\]|\\[ERROR\\]|\\[SCAN\\]'",
+    "windows_app": "Console output from build-windows.ps1 or run-windows.ps1"
+  },
+  "databases": {
+    "windows": "C:\\Users\\kimme\\AppData\\Roaming\\spam_filter_mobile\\databases\\",
+    "android": "/data/data/com.spamfilter.mobile_app/databases/",
+    "description": "Use AppPaths.getDatabasePath() at runtime to get platform-specific path"
+  },
+  "sprint_docs": {
+    "master_plan": "D:\\Data\\Harold\\github\\spamfilter-multi\\docs\\ALL_SPRINTS_MASTER_PLAN.md",
+    "workflow": "D:\\Data\\Harold\\github\\spamfilter-multi\\docs\\SPRINT_EXECUTION_WORKFLOW.md",
+    "stopping_criteria": "D:\\Data\\Harold\\github\\spamfilter-multi\\docs\\SPRINT_STOPPING_CRITERIA.md",
+    "planning": "D:\\Data\\Harold\\github\\spamfilter-multi\\docs\\SPRINT_PLANNING.md",
+    "retrospective_template": "D:\\Data\\Harold\\github\\spamfilter-multi\\docs\\SPRINT_RETROSPECTIVE_INTEGRATION.md"
+  },
+  "testing_docs": {
+    "manual_tests": "D:\\Data\\Harold\\github\\spamfilter-multi\\docs\\MANUAL_INTEGRATION_TESTS.md",
+    "test_directory": "D:\\Data\\Harold\\github\\spamfilter-multi\\mobile-app\\test"
+  },
+  "common_commands": {
+    "git_status": "git status --short",
+    "git_branch": "git branch --show-current",
+    "flutter_test": "cd mobile-app && flutter test",
+    "flutter_analyze": "cd mobile-app && flutter analyze",
+    "build_windows": "cd mobile-app/scripts && .\\build-windows.ps1",
+    "build_android": "cd mobile-app/scripts && .\\build-with-secrets.ps1 -BuildType debug -InstallToEmulator",
+    "adb_logcat_filtered": "adb logcat -s flutter,System.err,AndroidRuntime,DEBUG | grep -E '\\[EMAIL\\]|\\[RULES\\]|\\[ERROR\\]'"
+  }
+}
