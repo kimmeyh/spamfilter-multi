@@ -26,6 +26,22 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-02-06 (Sprint 12: MVP Core Features)
+- **feat**: Implement User Application Settings with SQLite storage (Issue #120, F2)
+- **feat**: Implement Processing Scan Results with EmailBodyParser (Issue #121, F1)
+- **feat**: Implement Interactive Rule & Safe Sender Management (Issue #122, F3)
+- **test**: Add readonly mode enforcement integration tests (Issue #117, R1)
+- **test**: Add delete-to-trash integration tests (Issue #118, R4)
+- **test**: Fix test compilation errors and add test infrastructure (Issue #119, F10)
+- **refactor**: Database test refactoring - use actual DatabaseHelper (Issue #57, F9)
+- **docs**: Update SPRINT_EXECUTION_WORKFLOW.md Phase 3.3 pre-testing checklist (Issue #115, R2)
+- **docs**: Document Windows environment workarounds in TROUBLESHOOTING.md (Issue #116, R3)
+- **docs**: Add Phase 1.4.1 issue verification step to workflow (Sprint 12 retrospective)
+- **docs**: Add incremental commit checkpoint to Phase 2.3 (Sprint 12 retrospective)
+- **docs**: Create SPRINT_12_SUMMARY.md with lessons learned
+- **chore**: Move sprint documents to docs/ directory for organization
+- **chore**: Update Claude Code skills and add memory management
+
 ### 2026-02-01 (Sprint 11 + Retrospective Implementation)
 - **feat**: Implement functional keyboard shortcuts for Windows Desktop (Issue #107)
 - **fix**: Resolve system tray icon initialization error and menu persistence (Issue #108)
