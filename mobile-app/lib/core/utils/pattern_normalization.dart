@@ -240,9 +240,12 @@ class PatternNormalization {
       result = result.replaceAll('\t', ' ');
 
       // Remove non-printable and non-keyboard characters
-      // Keep: letters (any language), numbers, spaces, and common punctuation
-      // Remove: control characters, weird Unicode symbols
-      result = result.replaceAll(RegExp(r'[^\x20-\x7E\u00A0-\u00FF\u0100-\u017F\u0400-\u04FF]'), '');
+      // Keep: ASCII printable characters (space through ~) which includes:
+      //   - Letters a-z, A-Z
+      //   - Numbers 0-9
+      //   - Common punctuation and symbols typically on keyboards
+      // Remove: control characters, Unicode symbols (™, ®, ©, emoji, etc.)
+      result = result.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
 
       // Collapse consecutive spaces to single space
       result = result.replaceAll(RegExp(r' {2,}'), ' ');
