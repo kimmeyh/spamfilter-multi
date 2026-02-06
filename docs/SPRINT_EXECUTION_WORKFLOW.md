@@ -172,6 +172,14 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
   - Apply labels: `sprint`, `card`, `priority:high/medium/low`
   - Link to related issues (dependencies, related features)
 
+- [ ] **1.4.1 Verify Issue Accuracy** (before finalizing sprint cards)
+  - For bug/fix issues: Verify the issue still exists (may have been fixed in previous sprint)
+  - For test-related issues: Run `flutter test` to confirm current test state
+  - For feature issues: Verify feature does not already exist in codebase
+  - **If issue is already resolved**: Close the issue, do not include in sprint
+  - **If issue description is outdated**: Update description to reflect current state
+  - **Rationale**: Prevents wasted effort on already-resolved issues (learned from Sprint 12: Issue #119)
+
 - [ ] **1.5 Verify All Sprint Cards Are OPEN**
   - Before execution, verify all sprint cards exist and are in OPEN state
   - Command: `gh issue list --label sprint --state closed`
