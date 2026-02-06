@@ -290,6 +290,13 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
   - Commit messages should reference related GitHub issues
   - Format: `<type>: <description> (Issue #N)`
   - Example: `feat: Implement RuleDatabaseStore (Issue #56)`
+  - **IMPORTANT: Commit after each task completes** (do not batch all commits to sprint end)
+    - Provides intermediate save points for rollback
+    - Enables better traceability of when changes were made
+    - Smaller commits are easier to review
+    - Reduces risk of losing work
+  - **Push to remote at least once per session** to backup work
+  - **Rationale**: Learned from Sprint 12 - all commits at end creates risk and reduces traceability
 
 - [ ] **2.4 Track Progress**
   - Update GitHub issue comments with task progress
