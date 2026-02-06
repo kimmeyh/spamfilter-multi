@@ -3,6 +3,7 @@ import 'package:logger/logger.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/providers/email_scan_provider.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
+import '../../adapters/email_providers/email_provider.dart' show Credentials;
 import '../widgets/app_bar_with_exit.dart';
 
 /// Settings screen for app-wide configuration
@@ -146,7 +147,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     }
 
     // Account selected - show folder configuration buttons
-    return FutureBuilder<Map<String, String>?>(
+    return FutureBuilder<Credentials?>(
       future: _credStore.getCredentials(widget.accountId!),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -163,7 +164,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         }
 
         final credentials = snapshot.data!;
-        final email = credentials['email'] ?? 'Unknown';
+        final email = credentials.email;
         final platform = widget.accountId!.split('-')[0]; // Extract platform from accountId
 
         return ListView(
