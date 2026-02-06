@@ -181,7 +181,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => SettingsScreen(accountId: widget.accountId),
+                    builder: (_) => const SettingsScreen(),
                   ),
                 );
               },
