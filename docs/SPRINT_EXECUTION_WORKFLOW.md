@@ -160,7 +160,8 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
   - Example: `feature/20260124_Sprint_2` or `feature/20260124_Sprint_2_Rule_Migration`
   - Switch repository to new branch: `git checkout -b <branch-name>`
 
-- [ ] **1.4 Create GitHub Sprint Cards**
+- [ ] **1.4 Create GitHub Sprint Cards** (MANDATORY - Never Skip)
+  - **CRITICAL**: GitHub issues MUST be created for ALL sprint tasks, even if sprint plan is pre-approved
   - Create one GitHub issue per task (Task A, Task B, Task C, etc.)
   - Use sprint_card.yml template from `.github/ISSUE_TEMPLATE/`
   - Fill in:
@@ -171,6 +172,7 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
     - **Complexity Score**: Cognitive load (Low/Medium/High)
   - Apply labels: `sprint`, `card`, `priority:high/medium/low`
   - Link to related issues (dependencies, related features)
+  - **Rationale**: GitHub issues provide traceability, can be referenced in commits/PRs, and close automatically when PR merges
 
 - [ ] **1.4.1 Verify Issue Accuracy** (before finalizing sprint cards)
   - For bug/fix issues: Verify the issue still exists (may have been fixed in previous sprint)
