@@ -586,6 +586,32 @@ class GmailApiAdapter implements SpamFilterPlatform {
   }
 
   @override
+  Future<void> moveToFolder({
+    required EmailMessage message,
+    required String targetFolder,
+  }) async {
+    if (_gmailApi == null) {
+      throw StateError('Not connected. Call signIn() first.');
+    }
+
+    try {
+      // Use modify API to add target label and remove INBOX
+      await _gmailApi!.users.messages.modify(
+        gmail.ModifyMessageRequest(
+          addLabelIds: [targetFolder],
+          removeLabelIds: ['INBOX', 'UNREAD'],
+        ),
+        'me',
+        message.id,
+      );
+      Redact.logSafe('Gmail message ${message.id} moved to $targetFolder');
+    } catch (e) {
+      Redact.logError('Error moving Gmail message to $targetFolder', e);
+      rethrow;
+    }
+  }
+
+  @override
   Future<void> takeAction({
     required EmailMessage message,
     required FilterAction action,

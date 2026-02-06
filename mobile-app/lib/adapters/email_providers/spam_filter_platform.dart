@@ -77,6 +77,18 @@ abstract class SpamFilterPlatform {
     required FilterAction action,
   });
 
+  /// Move message to a specific folder/label
+  ///
+  /// Parameters:
+  /// - [message]: The email message to move
+  /// - [targetFolder]: The folder/label to move to (platform-specific naming)
+  ///
+  /// Throws [ActionException] if move fails
+  Future<void> moveToFolder({
+    required EmailMessage message,
+    required String targetFolder,
+  });
+
   /// List available folders with platform-specific names
   /// 
   /// Returns list of [FolderInfo] with canonical folder types

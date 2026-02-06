@@ -110,6 +110,17 @@ class OutlookAdapter implements SpamFilterPlatform {
   }
 
   @override
+  Future<void> moveToFolder({
+    required EmailMessage message,
+    required String targetFolder,
+  }) async {
+    // Issue #44: When implementing Outlook adapter, use Graph API move operation
+    // POST /me/messages/{messageId}/move
+    // Body: {"destinationId": "{folderId}"}
+    throw UnimplementedError('Outlook adapter is Phase 2 - not yet implemented');
+  }
+
+  @override
   Future<void> takeAction({
     required EmailMessage message,
     required FilterAction action,

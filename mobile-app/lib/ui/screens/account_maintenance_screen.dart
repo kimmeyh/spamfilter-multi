@@ -164,6 +164,99 @@ class _AccountMaintenanceScreenState extends State<AccountMaintenanceScreen> {
     }
   }
 
+  /// Configure safe sender folder for account
+  Future<void> _configureSafeSenderFolder(SavedAccount account) async {
+    // Get current setting
+    final currentFolder = await _settingsStore.getAccountSafeSenderFolder(account.accountId);
+
+    // Show dialog to select folder
+    final result = await showDialog<String?>(
+      context: context,
+      builder: (ctx) {
+        String? selectedFolder = currentFolder;
+        return StatefulBuilder(
+          builder: (context, setState) => AlertDialog(
+            title: const Text('Move Safe Senders to Folder'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'When an email matches a safe sender rule, it will be moved to this folder:',
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: TextEditingController(text: selectedFolder ?? ''),
+                  decoration: InputDecoration(
+                    labelText: 'Folder Name',
+                    hintText: 'INBOX',
+                    helperText: account.platform == 'gmail'
+                        ? 'Gmail labels (e.g., INBOX, SPAM, or custom label)'
+                        : 'IMAP folder (e.g., INBOX, Junk)',
+                    border: const OutlineInputBorder(),
+                  ),
+                  onChanged: (value) {
+                    selectedFolder = value.trim().isEmpty ? null : value.trim();
+                  },
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Leave empty to use default (INBOX)',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Note: Emails already in the target folder will not be moved.',
+                  style: TextStyle(fontSize: 12, color: Colors.blue.shade700),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, selectedFolder),
+                child: const Text('Save'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (result != null || result == '') {
+      try {
+        await _settingsStore.setAccountSafeSenderFolder(
+          account.accountId,
+          result?.isEmpty ?? true ? null : result,
+        );
+
+        final folderName = result?.isEmpty ?? true ? 'INBOX (default)' : result!;
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Safe sender emails will be moved to: $folderName'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+
+        _logger.i('Set safe sender folder for ${account.email} to: $folderName');
+      } catch (e) {
+        _logger.e('Failed to set safe sender folder: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to save setting: $e')),
+          );
+        }
+      }
+    }
+  }
+
   /// Configure deleted rule folder for account
   Future<void> _configureDeletedRuleFolder(SavedAccount account) async {
     // Get current setting
@@ -426,9 +519,16 @@ class _AccountMaintenanceScreenState extends State<AccountMaintenanceScreen> {
                   ],
                 ),
                 const SizedBox(height: 8),
+                // Safe sender folder configuration
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.folder_special_outlined),
+                  label: const Text('Safe Sender Folder'),
+                  onPressed: () => _configureSafeSenderFolder(account),
+                ),
+                const SizedBox(height: 8),
                 // Deleted folder configuration
                 OutlinedButton.icon(
-                  icon: const Icon(Icons.folder_outlined),
+                  icon: const Icon(Icons.folder_delete_outlined),
                   label: const Text('Deleted Rule Folder'),
                   onPressed: () => _configureDeletedRuleFolder(account),
                 ),

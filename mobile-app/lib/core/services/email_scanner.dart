@@ -117,6 +117,30 @@ class EmailScanner {
           // Check if safe sender
           if (result.isSafeSender) {
             action = EmailActionType.safeSender;
+
+            // ✨ F13: Move safe sender to configured folder if not already there
+            final safeSenderFolder = await _settingsStore.getAccountSafeSenderFolder(accountId);
+            final targetFolder = safeSenderFolder ?? 'INBOX'; // Default to INBOX
+
+            // Only move if email is NOT already in the target folder
+            if (message.folderName != targetFolder) {
+              if (scanProvider.scanMode != ScanMode.readonly) {
+                try {
+                  AppLogger.scan('Moving safe sender email from ${message.folderName} to $targetFolder: ${message.subject}');
+                  await platform.moveToFolder(
+                    message: message,
+                    targetFolder: targetFolder,
+                  );
+                } catch (e) {
+                  success = false;
+                  error = 'Move safe sender failed: $e';
+                }
+              } else {
+                AppLogger.scan('[READONLY] Would move safe sender email to $targetFolder: ${message.subject}');
+              }
+            } else {
+              AppLogger.scan('Safe sender email already in target folder ($targetFolder), no move needed: ${message.subject}');
+            }
           }
           // Spam/phishing detected
           else if (result.shouldDelete) {
