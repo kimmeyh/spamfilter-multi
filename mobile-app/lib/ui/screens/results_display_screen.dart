@@ -54,7 +54,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   
   // Folder filter state (Item 6: folder dropdown)
   Set<String> _selectedFolders = {};
-  
+
+  // Issue 3: Cache folders for performance
+  List<String>? _cachedFolders;
+
   @override
   void initState() {
     super.initState();
@@ -417,6 +420,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     final allResults = scanProvider.results;
     final filteredResults = _getFilteredResults(allResults);
 
+    // Issue 3: Cache folders list for performance (only extract once per results set)
+    if (_cachedFolders == null || _cachedFolders!.length != allResults.map((r) => r.email.folderName).toSet().length) {
+      _cachedFolders = allResults.map((r) => r.email.folderName).toSet().toList()..sort();
+    }
+
     // Issue 2: Wrap with Focus to detect Ctrl+F keyboard shortcut
     return Focus(
       autofocus: true,
@@ -758,10 +766,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   
   /// Build folder filter dropdown chip (Item 6)
   Widget _buildFolderFilterChip(List<EmailActionResult> allResults) {
-    // Get unique folders from all results
-    final folders = allResults.map((r) => r.email.folderName).toSet().toList()..sort();
+    // Issue 3: Use cached folders for performance
+    final folders = _cachedFolders ?? [];
     final isActive = _selectedFolders.isNotEmpty;
-    
+
     return GestureDetector(
       onTap: () async {
         // Show folder selection dialog
