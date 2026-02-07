@@ -492,8 +492,18 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                 onPressed: () {
                   // Dismiss any showing snackbar before navigating
                   ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                  // Pop back to Scan Progress Screen
-                  Navigator.pop(context);
+                  // Push replacement to Scan Progress screen (same as Scan Again button)
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ScanProgressScreen(
+                        platformId: widget.platformId,
+                        platformDisplayName: widget.platformDisplayName,
+                        accountId: widget.accountId,
+                        accountEmail: widget.accountEmail,
+                      ),
+                    ),
+                  );
                 },
               ),
         actions: [
