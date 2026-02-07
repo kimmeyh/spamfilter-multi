@@ -1002,12 +1002,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                 const Divider(height: 20),
 
                 // === SAFE SENDER SECTION ===
-                // Show for: Deleted emails, No Rule emails, or Safe Sender emails (for exception)
-                if (isDeleted || hasNoRule || isSafeSender) ...[
-                  Text(
-                    isSafeSender ? 'Update Safe Sender' : 'Add to Safe Senders',
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                  ),
+                // Issue 5: Always show Safe Sender options for all emails
+                Text(
+                  isSafeSender ? 'Update Safe Sender' : 'Add to Safe Senders',
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                ),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
@@ -1073,15 +1072,13 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                ],
 
                 // === BLOCK RULE SECTION ===
-                // Show for: No Rule emails or Safe Sender emails (to add exception/block rule)
-                if (hasNoRule || isSafeSender) ...[
-                  const Text(
-                    'Create Block Rule',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                  ),
+                // Issue 5: Always show Block Rule options for all emails
+                const Text(
+                  'Create Block Rule',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                ),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
@@ -1167,7 +1164,6 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                         ),
                     ],
                   ),
-                ],
               ],
             ),
           ),
