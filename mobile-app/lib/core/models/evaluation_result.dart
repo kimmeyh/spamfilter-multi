@@ -6,6 +6,9 @@ class EvaluationResult {
   final String matchedRule;
   final String matchedPattern;
   final bool isSafeSender;
+  /// The type of pattern that matched during evaluation.
+  /// Possible values: 'exact_email', 'exact_domain', 'entire_domain', 'subject', 'body', 'header', null
+  final String? matchedPatternType;
 
   EvaluationResult({
     required this.shouldDelete,
@@ -14,16 +17,18 @@ class EvaluationResult {
     required this.matchedRule,
     required this.matchedPattern,
     this.isSafeSender = false,
+    this.matchedPatternType,
   });
 
   /// Create result for safe sender match
-  factory EvaluationResult.safeSender(String pattern) {
+  factory EvaluationResult.safeSender(String pattern, {String? patternType}) {
     return EvaluationResult(
       shouldDelete: false,
       shouldMove: false,
       matchedRule: 'SafeSender',
       matchedPattern: pattern,
       isSafeSender: true,
+      matchedPatternType: patternType,
     );
   }
 

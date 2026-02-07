@@ -1102,14 +1102,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                         label: 'Exact Email',
                         subtitle: displaySenderEmail,
                         color: Colors.green,
-                        isMatched: isSafeSender && _doesPatternMatch(
-                          result.evaluationResult?.matchedPattern,
-                          'exact_email',
-                          rawSenderEmail,
-                          rawSenderDomain,
-                          rawRootDomain,
-                          null,
-                        ),
+                        isMatched: isSafeSender && result.evaluationResult?.matchedPatternType == 'exact_email',
                         onTap: () {
                           Navigator.pop(dialogContext);
                           _addSafeSender(rawSenderEmail, 'exact');
@@ -1121,14 +1114,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                           label: 'Exact Domain',
                           subtitle: '@$displaySenderDomain',
                           color: Colors.green,
-                          isMatched: isSafeSender && _doesPatternMatch(
-                            result.evaluationResult?.matchedPattern,
-                            'exact_domain',
-                            rawSenderEmail,
-                            rawSenderDomain,
-                            rawRootDomain,
-                            null,
-                          ),
+                          isMatched: isSafeSender && result.evaluationResult?.matchedPatternType == 'exact_domain',
                           onTap: () {
                             Navigator.pop(dialogContext);
                             _addSafeSender('@$rawSenderDomain', 'exactDomain');
@@ -1141,14 +1127,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                           label: 'Entire Domain',
                           subtitle: '@*.${displayRootDomain ?? displaySenderDomain}',
                           color: Colors.green,
-                          isMatched: isSafeSender && _doesPatternMatch(
-                            result.evaluationResult?.matchedPattern,
-                            'entire_domain',
-                            rawSenderEmail,
-                            rawSenderDomain,
-                            rawRootDomain,
-                            null,
-                          ),
+                          isMatched: isSafeSender && result.evaluationResult?.matchedPatternType == 'entire_domain',
                           onTap: () {
                             Navigator.pop(dialogContext);
                             _addSafeSender(rawRootDomain ?? rawSenderDomain, 'entireDomain');
@@ -1174,14 +1153,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                         label: 'Block Email',
                         subtitle: displaySenderEmail,
                         color: Colors.red,
-                        isMatched: isDeleted && _doesPatternMatch(
-                          result.evaluationResult?.matchedPattern,
-                          'exact_email',
-                          rawSenderEmail,
-                          rawSenderDomain,
-                          rawRootDomain,
-                          null,
-                        ),
+                        isMatched: isDeleted && result.evaluationResult?.matchedPatternType == 'exact_email',
                         onTap: () {
                           Navigator.pop(dialogContext);
                           _createBlockRule('from', rawSenderEmail);
@@ -1193,14 +1165,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                           label: 'Block Exact Domain',
                           subtitle: '@$displaySenderDomain',
                           color: Colors.red,
-                          isMatched: isDeleted && _doesPatternMatch(
-                            result.evaluationResult?.matchedPattern,
-                            'exact_domain',
-                            rawSenderEmail,
-                            rawSenderDomain,
-                            rawRootDomain,
-                            null,
-                          ),
+                          isMatched: isDeleted && result.evaluationResult?.matchedPatternType == 'exact_domain',
                           onTap: () {
                             Navigator.pop(dialogContext);
                             _createBlockRule('exactDomain', '@$rawSenderDomain');
@@ -1213,14 +1178,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                           label: 'Block Entire Domain',
                           subtitle: '@*.${displayRootDomain ?? displaySenderDomain}',
                           color: Colors.red,
-                          isMatched: isDeleted && _doesPatternMatch(
-                            result.evaluationResult?.matchedPattern,
-                            'entire_domain',
-                            rawSenderEmail,
-                            rawSenderDomain,
-                            rawRootDomain,
-                            null,
-                          ),
+                          isMatched: isDeleted && result.evaluationResult?.matchedPatternType == 'entire_domain',
                           onTap: () {
                             Navigator.pop(dialogContext);
                             _createBlockRule('entireDomain', rawRootDomain ?? rawSenderDomain);
@@ -1234,14 +1192,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                               ? '${cleanedSubject.substring(0, 20)}...'
                               : cleanedSubject,
                           color: Colors.orange,
-                          isMatched: isDeleted && _doesPatternMatch(
-                            result.evaluationResult?.matchedPattern,
-                            'subject',
-                            rawSenderEmail,
-                            rawSenderDomain,
-                            rawRootDomain,
-                            cleanedSubject,
-                          ),
+                          isMatched: isDeleted && result.evaluationResult?.matchedPatternType == 'subject',
                           onTap: () {
                             Navigator.pop(dialogContext);
                             _createBlockRule('subject', cleanedSubject);
@@ -1259,58 +1210,6 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         );
       },
     );
-  }
-
-  /// Item 2: Determine if a pattern matches a specific rule type
-  /// Returns true if the matched pattern corresponds to the given rule type
-  bool _doesPatternMatch(String? matchedPattern, String patternType, String? email, String? domain, String? rootDomain, String? subject) {
-    if (matchedPattern == null || matchedPattern.isEmpty) return false;
-
-    try {
-      // Create regex from the matched pattern
-      final regex = RegExp(matchedPattern, caseSensitive: false);
-
-      switch (patternType) {
-        case 'exact_email':
-          // Check if pattern matches exact email (not domain wildcard, not other emails)
-          if (email == null) return false;
-          final normalizedEmail = PatternNormalization.normalizeFromHeader(email);
-          // Pattern should match this email, but NOT match a different email from same domain
-          if (!regex.hasMatch(normalizedEmail)) return false;
-          // Make sure it's not a domain-wide pattern by checking if it would match other emails
-          final differentEmail = 'testuser@${domain ?? "example.com"}';
-          return !regex.hasMatch(differentEmail); // If it matches different email, it's a domain pattern
-
-        case 'exact_domain':
-          // Check if pattern matches exact domain (no wildcard subdomains)
-          if (domain == null) return false;
-          final normalizedEmail = PatternNormalization.normalizeFromHeader(email ?? '');
-          final testSubdomain = 'user@subdomain.$domain';
-          // Should match email from domain, but NOT match subdomain
-          return regex.hasMatch(normalizedEmail) && !regex.hasMatch(testSubdomain);
-
-        case 'entire_domain':
-          // Check if pattern matches entire domain (with wildcard subdomains)
-          if (rootDomain == null && domain == null) return false;
-          final targetDomain = rootDomain ?? domain!;
-          final normalizedEmail = PatternNormalization.normalizeFromHeader(email ?? '');
-          final testSubdomain = 'user@subdomain.$targetDomain';
-          // Should match both main domain AND subdomain
-          return regex.hasMatch(normalizedEmail) && regex.hasMatch(testSubdomain);
-
-        case 'subject':
-          // Check if pattern matches subject
-          if (subject == null || subject.isEmpty || subject == '(No subject)') return false;
-          final normalizedSubject = PatternNormalization.normalizeSubject(subject);
-          return regex.hasMatch(normalizedSubject);
-
-        default:
-          return false;
-      }
-    } catch (e) {
-      // Invalid regex pattern
-      return false;
-    }
   }
 
   Widget _buildInlineActionButton({
