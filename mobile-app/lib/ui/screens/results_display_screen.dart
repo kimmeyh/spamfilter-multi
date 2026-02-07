@@ -451,7 +451,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
             : IconButton(
                 icon: const Icon(Icons.arrow_back),
                 tooltip: 'Back to Account Selection',
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  // Dismiss any showing snackbar before navigating
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  // Pop back to Account Selection Screen (past Scan Progress)
+                  Navigator.popUntil(context, (route) => route.isFirst);
+                },
               ),
         actions: [
           if (!_showSearch) ...[
@@ -1171,55 +1176,55 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     );
   }
 
-  /// Build an inline action button (used in popup instead of dialogs)
-  /// Item 2: Support visual indicators for matched rules
   /// Item 2: Determine if a pattern matches a specific rule type
   /// Returns true if the matched pattern corresponds to the given rule type
   bool _doesPatternMatch(String? matchedPattern, String patternType, String? email, String? domain, String? rootDomain, String? subject) {
     if (matchedPattern == null || matchedPattern.isEmpty) return false;
-    
-    // Normalize the matched pattern for comparison
-    final pattern = matchedPattern.toLowerCase();
-    
-    switch (patternType) {
-      case 'exact_email':
-        // Pattern like: ^email@domain\.com$ or @email@domain\.com$
-        if (email == null) return false;
-        final escapedEmail = RegExp.escape(email.toLowerCase());
-        return pattern.contains(escapedEmail) && 
-               (pattern.startsWith('^') || pattern.startsWith('@')) &&
-               pattern.endsWith(r'$') &&
-               !pattern.contains(r'(?:') && // Not a wildcard domain pattern
-               !pattern.contains(r'[a-z0-9-]+'); // Not a wildcard pattern
-        
-      case 'exact_domain':
-        // Pattern like: @domain\.com$ (without wildcard)
-        if (domain == null) return false;
-        final escapedDomain = RegExp.escape(domain.toLowerCase());
-        return pattern.contains('@$escapedDomain') && 
-               pattern.endsWith(r'$') &&
-               !pattern.contains(r'(?:') && // Not a wildcard domain pattern
-               !pattern.contains(r'[a-z0-9-]+'); // Not a wildcard pattern
-        
-      case 'entire_domain':
-        // Pattern like: @(?:[a-z0-9-]+\.)*domain\.com$ (wildcard domain)
-        if (rootDomain == null && domain == null) return false;
-        final targetDomain = rootDomain ?? domain!;
-        final escapedDomain = RegExp.escape(targetDomain.toLowerCase());
-        return pattern.contains(r'(?:') && 
-               pattern.contains(r'[a-z0-9-]+') &&
-               pattern.contains(escapedDomain) &&
-               pattern.endsWith(r'$');
-        
-      case 'subject':
-        // Subject patterns - check if the pattern contains subject text
-        if (subject == null || subject.isEmpty || subject == '(No subject)') return false;
-        // Subject patterns might be partial matches, so just check if pattern references subject text
-        // This is a heuristic - actual matching is complex
-        return true; // If we have a matched pattern and subject conditions exist, assume it matches
-        
-      default:
-        return false;
+
+    try {
+      // Create regex from the matched pattern
+      final regex = RegExp(matchedPattern, caseSensitive: false);
+
+      switch (patternType) {
+        case 'exact_email':
+          // Check if pattern matches exact email (not domain wildcard, not other emails)
+          if (email == null) return false;
+          final normalizedEmail = PatternNormalization.normalizeFromHeader(email);
+          // Pattern should match this email, but NOT match a different email from same domain
+          if (!regex.hasMatch(normalizedEmail)) return false;
+          // Make sure it's not a domain-wide pattern by checking if it would match other emails
+          final differentEmail = 'testuser@${domain ?? "example.com"}';
+          return !regex.hasMatch(differentEmail); // If it matches different email, it's a domain pattern
+
+        case 'exact_domain':
+          // Check if pattern matches exact domain (no wildcard subdomains)
+          if (domain == null) return false;
+          final normalizedEmail = PatternNormalization.normalizeFromHeader(email ?? '');
+          final testSubdomain = 'user@subdomain.$domain';
+          // Should match email from domain, but NOT match subdomain
+          return regex.hasMatch(normalizedEmail) && !regex.hasMatch(testSubdomain);
+
+        case 'entire_domain':
+          // Check if pattern matches entire domain (with wildcard subdomains)
+          if (rootDomain == null && domain == null) return false;
+          final targetDomain = rootDomain ?? domain!;
+          final normalizedEmail = PatternNormalization.normalizeFromHeader(email ?? '');
+          final testSubdomain = 'user@subdomain.$targetDomain';
+          // Should match both main domain AND subdomain
+          return regex.hasMatch(normalizedEmail) && regex.hasMatch(testSubdomain);
+
+        case 'subject':
+          // Check if pattern matches subject
+          if (subject == null || subject.isEmpty || subject == '(No subject)') return false;
+          final normalizedSubject = PatternNormalization.normalizeSubject(subject);
+          return regex.hasMatch(normalizedSubject);
+
+        default:
+          return false;
+      }
+    } catch (e) {
+      // Invalid regex pattern
+      return false;
     }
   }
 
