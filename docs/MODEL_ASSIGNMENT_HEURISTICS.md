@@ -257,7 +257,7 @@ START: New Task
 
 **Assignment**: 🟢 Haiku
 **Actual Effort**: 2.5 hours (estimated 2-3 hours)
-**Outcome**: ✅ SUCCESS (36 tests, 100% passing)
+**Outcome**: [OK] SUCCESS (36 tests, 100% passing)
 
 **Scoring**:
 - Cognitive Load: 25 points (database integration, new store pattern)
@@ -275,7 +275,7 @@ START: New Task
 
 **Assignment**: 🟠 Sonnet
 **Actual Effort**: 2.8 hours (estimated 3-4 hours)
-**Outcome**: ✅ SUCCESS (41 tests, 100% passing)
+**Outcome**: [OK] SUCCESS (41 tests, 100% passing)
 
 **Scoring**:
 - Cognitive Load: 20 points (pattern matching algorithm, new service)
@@ -293,7 +293,7 @@ START: New Task
 
 **Assignment**: 🟢 Haiku
 **Actual Effort**: 1.5 hours (estimated 2-3 hours)
-**Outcome**: ✅ SUCCESS (341 tests total, 0 regressions)
+**Outcome**: [OK] SUCCESS (341 tests total, 0 regressions)
 
 **Scoring**:
 - Cognitive Load: 10 points (straightforward provider refactoring)
@@ -313,9 +313,9 @@ START: New Task
 
 | Sprint | Task | Assignment | Estimate | Actual | Variance | Success |
 |--------|------|-----------|----------|--------|----------|---------|
-| 1 | A | Haiku | 2-3 hrs | 2.5 hrs | 0% | ✅ |
-| 1 | B | Sonnet | 3-4 hrs | 2.8 hrs | -20% | ✅ |
-| 3 | C | Haiku | 2-3 hrs | 1.5 hrs | -40% | ✅ |
+| 1 | A | Haiku | 2-3 hrs | 2.5 hrs | 0% | [OK] |
+| 1 | B | Sonnet | 3-4 hrs | 2.8 hrs | -20% | [OK] |
+| 3 | C | Haiku | 2-3 hrs | 1.5 hrs | -40% | [OK] |
 
 **Overall Accuracy**: 100% (3/3 tasks on schedule or ahead)
 
@@ -362,7 +362,7 @@ After each sprint, record:
 - Estimated effort (hours)
 - Actual effort (hours)
 - Variance (%)
-- Success (✅/❌)
+- Success ([OK]/[FAIL])
 - Escalations (if any)
 - Root cause of any failures
 

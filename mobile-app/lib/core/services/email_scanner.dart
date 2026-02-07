@@ -31,7 +31,7 @@ class EmailScanner {
   });
 
   /// Scan inbox with live IMAP connection
-  /// ✨ SPRINT 4: Includes scan result persistence
+  /// [NEW] SPRINT 4: Includes scan result persistence
   Future<void> scanInbox({
     int daysBack = 7,
     List<String> folderNames = const ['INBOX'],
@@ -40,7 +40,7 @@ class EmailScanner {
     SpamFilterPlatform? platform;
 
     try {
-      // ✨ SPRINT 4: Initialize persistence stores if not already done
+      // [NEW] SPRINT 4: Initialize persistence stores if not already done
       final dbHelper = DatabaseHelper();
       scanProvider.initializePersistence(
         scanResultStore: ScanResultStore(dbHelper),
@@ -72,7 +72,7 @@ class EmailScanner {
         folderNames: folderNames,
       );
 
-      // 4. Start scan (✨ SPRINT 4: Now async to enable persistence)
+      // 4. Start scan ([NEW] SPRINT 4: Now async to enable persistence)
       await scanProvider.startScan(
         totalEmails: messages.length,
         scanType: scanType,
@@ -118,7 +118,7 @@ class EmailScanner {
           if (result.isSafeSender) {
             action = EmailActionType.safeSender;
 
-            // ✨ F13: Move safe sender to configured folder if not already there
+            // [NEW] F13: Move safe sender to configured folder if not already there
             final safeSenderFolder = await _settingsStore.getAccountSafeSenderFolder(accountId);
             final targetFolder = safeSenderFolder ?? 'INBOX'; // Default to INBOX
 
@@ -146,7 +146,7 @@ class EmailScanner {
           else if (result.shouldDelete) {
             action = EmailActionType.delete;
 
-            // ✨ FIX ISSUE #9: Only execute action if NOT in readonly mode
+            // [NEW] FIX ISSUE #9: Only execute action if NOT in readonly mode
             if (scanProvider.scanMode != ScanMode.readonly) {
               try {
                 // Delete via platform adapter
@@ -165,7 +165,7 @@ class EmailScanner {
           } else if (result.shouldMove) {
             action = EmailActionType.moveToJunk;
 
-            // ✨ FIX ISSUE #9: Only execute action if NOT in readonly mode
+            // [NEW] FIX ISSUE #9: Only execute action if NOT in readonly mode
             if (scanProvider.scanMode != ScanMode.readonly) {
               try {
                 // Move to junk folder
@@ -196,7 +196,7 @@ class EmailScanner {
         );
       }
 
-      // 7. Complete scan (✨ SPRINT 4: Now async to persist final state)
+      // 7. Complete scan ([NEW] SPRINT 4: Now async to persist final state)
       await scanProvider.completeScan();
     } catch (e) {
       // Handle scan error

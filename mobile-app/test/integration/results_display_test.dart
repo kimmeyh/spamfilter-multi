@@ -22,7 +22,7 @@ void main() {
         body: 'Click here to claim your prize...',
         headers: {'from': 'spam@example.com'},
         receivedDate: DateTime.now(),
-        folderName: 'Bulk Mail',  // ✨ Phase 3.4: Folder name is critical
+        folderName: 'Bulk Mail',  // [NEW] Phase 3.4: Folder name is critical
       );
 
       final evalResult = EvaluationResult(
@@ -45,7 +45,7 @@ void main() {
       expect(actionResult.evaluationResult?.matchedRule, equals('SpamAutoDeleteHeader'));
       expect(actionResult.action, equals(EmailActionType.delete));
 
-      print('✅ EmailActionResult contains:');
+      print('[OK] EmailActionResult contains:');
       print('   Folder: ${actionResult.email.folderName}');
       print('   Subject: ${actionResult.email.subject}');
       print('   Rule: ${actionResult.evaluationResult?.matchedRule}');
@@ -86,7 +86,7 @@ void main() {
       expect(oldSubtitle, equals('newsletter@company.com • SafeSender'));
       expect(newSubtitle, equals('Inbox • Weekly Newsletter • SafeSender'));
 
-      print('✅ Subtitle format comparison:');
+      print('[OK] Subtitle format comparison:');
       print('   Old format: $oldSubtitle');
       print('   New format: $newSubtitle');
     });
@@ -159,7 +159,7 @@ void main() {
       expect(folders, contains('Bulk Mail'));
       expect(folders, contains('Spam'));
 
-      print('✅ Results from different folders verified:');
+      print('[OK] Results from different folders verified:');
       for (var result in results) {
         print('   ${result.email.folderName} • ${result.email.subject}');
       }
@@ -198,7 +198,7 @@ void main() {
       expect(provider.processedCount, equals(10));
       expect(provider.totalEmails, equals(10));
 
-      print('✅ Summary statistics verified:');
+      print('[OK] Summary statistics verified:');
       print('   Deleted: ${provider.deletedCount}');
       print('   Moved: ${provider.movedCount}');
       print('   Safe Senders: ${provider.safeSendersCount}');
@@ -221,7 +221,7 @@ void main() {
           reason: '${entry.key.name} should display as "${entry.value}"');
       }
 
-      print('✅ Scan mode display names verified');
+      print('[OK] Scan mode display names verified');
     });
 
     test('getSummary should return correct summary map', () {
@@ -242,7 +242,7 @@ void main() {
       expect(summary['safe_senders'], equals(1));
       expect(summary['status'], equals('ScanStatus.completed'));
 
-      print('✅ Summary map verified:');
+      print('[OK] Summary map verified:');
       print('   $summary');
     });
   });
@@ -327,7 +327,7 @@ void main() {
       expect(provider.results[2].evaluationResult?.matchedRule, equals('SafeSender'));
       expect(provider.results[2].evaluationResult?.matchedRule, isNot('No rule'));
 
-      print('✅ All results display actual rule names:');
+      print('[OK] All results display actual rule names:');
       for (var i = 0; i < provider.results.length; i++) {
         final rule = provider.results[i].evaluationResult?.matchedRule ?? 'No rule';
         print('   Result $i: Rule = $rule');
@@ -367,7 +367,7 @@ void main() {
       expect(displayFormat, equals('Bulk Mail • Phishing Attempt • PhishingDetected'));
       expect(rule, isNot('No rule'));
 
-      print('✅ Result display format verified:');
+      print('[OK] Result display format verified:');
       print('   Display: $displayFormat');
     });
 
@@ -400,7 +400,7 @@ void main() {
       // Display should show "No rule" as fallback
       expect(displayedRule, equals('No rule'));
 
-      print('✅ No-rule case verified:');
+      print('[OK] No-rule case verified:');
       print('   evaluationResult.matchedRule = "${result.evaluationResult?.matchedRule}"');
       print('   Display (empty -> "No rule") = "$displayedRule"');
     });
@@ -451,7 +451,7 @@ void main() {
           reason: 'Result $i should have rule: $expectedRule');
       }
 
-      print('✅ Multiple rules displayed correctly:');
+      print('[OK] Multiple rules displayed correctly:');
       for (var i = 0; i < provider.results.length; i++) {
         final rule = provider.results[i].evaluationResult?.matchedRule ?? 'No rule';
         print('   Email $i: $rule');
@@ -502,7 +502,7 @@ void main() {
       expect(errorResults.length, equals(1));
       expect(errorResults.first.error, equals('Network timeout'));
 
-      print('✅ Error tracking verified');
+      print('[OK] Error tracking verified');
       print('   Errors: ${provider.errorCount}');
       print('   Error message: ${errorResults.first.error}');
     });
@@ -528,7 +528,7 @@ void main() {
           body: 'Body',
           headers: {},
           receivedDate: DateTime.now(),
-          folderName: 'Inbox',  // ✨ Phase 3.4: Folder tracked
+          folderName: 'Inbox',  // [NEW] Phase 3.4: Folder tracked
         ),
         action: EmailActionType.delete,
         success: true,
@@ -542,7 +542,7 @@ void main() {
           body: 'Body',
           headers: {},
           receivedDate: DateTime.now(),
-          folderName: 'Bulk Mail',  // ✨ Phase 3.4: Folder tracked
+          folderName: 'Bulk Mail',  // [NEW] Phase 3.4: Folder tracked
         ),
         action: EmailActionType.delete,
         success: true,
@@ -556,7 +556,7 @@ void main() {
           body: 'Body',
           headers: {},
           receivedDate: DateTime.now(),
-          folderName: 'Spam',  // ✨ Phase 3.4: Folder tracked
+          folderName: 'Spam',  // [NEW] Phase 3.4: Folder tracked
         ),
         action: EmailActionType.delete,
         success: true,
@@ -567,7 +567,7 @@ void main() {
       expect(provider.results[1].email.folderName, equals('Bulk Mail'));
       expect(provider.results[2].email.folderName, equals('Spam'));
 
-      print('✅ Folder names preserved in results:');
+      print('[OK] Folder names preserved in results:');
       for (var result in provider.results) {
         print('   ${result.email.folderName} • ${result.email.subject}');
       }
@@ -610,7 +610,7 @@ void main() {
 
       expect(newFormat, equals('Bulk Mail • You won a million dollars! • SpamAutoDeleteHeader'));
 
-      print('✅ Phase 3.4 result tile format verified:');
+      print('[OK] Phase 3.4 result tile format verified:');
       print('   $newFormat');
     });
   });

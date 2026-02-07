@@ -70,7 +70,7 @@ void main() {
       expect(status.isConnected, isTrue);
       expect(status.errorMessage, isNull);
       
-      print('✅ Connected to AOL IMAP successfully');
+      print('[OK] Connected to AOL IMAP successfully');
       print('   Server: ${status.serverInfo}');
     }, timeout: const Timeout(Duration(seconds: 30)), 
        skip: testEmail.isEmpty || testPassword.isEmpty);
@@ -92,7 +92,7 @@ void main() {
       expect(folders, isNotEmpty);
       expect(folders.any((f) => f.displayName.toLowerCase().contains('inbox')), isTrue);
       
-      print('✅ Found ${folders.length} folders:');
+      print('[OK] Found ${folders.length} folders:');
       for (final folder in folders.take(10)) {
         print('   - ${folder.displayName} (${folder.canonicalName.name})');
       }
@@ -118,7 +118,7 @@ void main() {
         folderNames: ['Inbox'],
       );
       
-      print('✅ Fetched ${messages.length} messages from Inbox (last 7 days)');
+      print('[OK] Fetched ${messages.length} messages from Inbox (last 7 days)');
       
       if (messages.isNotEmpty) {
         final first = messages.first;
@@ -157,7 +157,7 @@ void main() {
         folderNames: ['Bulk Mail', 'Spam'],
       );
       
-      print('✅ Fetched ${messages.length} messages from spam folders (last 30 days)');
+      print('[OK] Fetched ${messages.length} messages from spam folders (last 30 days)');
       
       if (messages.isNotEmpty) {
         print('   Sample spam message:');
@@ -196,7 +196,7 @@ void main() {
       expect(msg.headers, isNotEmpty);
       expect(msg.getSenderEmail(), isNotEmpty);
       
-      print('✅ Email headers parsed successfully');
+      print('[OK] Email headers parsed successfully');
       print('   Sender email: ${msg.getSenderEmail()}');
       print('   Headers count: ${msg.headers.length}');
       

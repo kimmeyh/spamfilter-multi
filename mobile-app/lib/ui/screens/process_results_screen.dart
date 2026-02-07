@@ -17,8 +17,8 @@ import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/unmatched_email_store.dart';
 import 'email_detail_view.dart';
 
-/// ✨ SPRINT 4: Screen for processing unmatched emails from scan results
-/// ✨ SPRINT 6: Added quick-add screen integration
+/// [NEW] SPRINT 4: Screen for processing unmatched emails from scan results
+/// [NEW] SPRINT 6: Added quick-add screen integration
 class ProcessResultsScreen extends StatefulWidget {
   final int scanResultId;
   final String accountEmail;
@@ -296,7 +296,7 @@ class _ProcessResultsScreenState extends State<ProcessResultsScreen> {
   }
 }
 
-/// ✨ SPRINT 4: Card widget for displaying unmatched email summary
+/// [NEW] SPRINT 4: Card widget for displaying unmatched email summary
 class UnmatchedEmailCard extends StatelessWidget {
   final UnmatchedEmail email;
   final VoidCallback? onTap;

@@ -143,7 +143,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       try {
         // Execute revert
         await scanProvider.revertLastRun();
-        logger.i('✅ Successfully reverted ${scanProvider.revertableActionCount} actions');
+        logger.i('[OK] Successfully reverted ${scanProvider.revertableActionCount} actions');
 
         if (context.mounted) {
           // Close progress dialog
@@ -152,13 +152,13 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           // Show success message
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('✅ All changes have been reverted successfully'),
+              content: Text('[OK] All changes have been reverted successfully'),
               backgroundColor: Colors.green,
             ),
           );
         }
       } catch (e) {
-        logger.e('❌ Revert failed: $e');
+        logger.e('[FAIL] Revert failed: $e');
 
         if (context.mounted) {
           // Close progress dialog
@@ -249,7 +249,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       final file = File(filePath);
       await file.writeAsString(csvContent);
 
-      logger.i('✅ Exported scan results to: $filePath');
+      logger.i('[OK] Exported scan results to: $filePath');
 
       if (context.mounted) {
         // Show success dialog with selectable file path for copy support
@@ -297,7 +297,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         );
       }
     } catch (e) {
-      logger.e('❌ Export failed: $e');
+      logger.e('[FAIL] Export failed: $e');
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -568,7 +568,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                         children: [
                           SizedBox(
                             height: MediaQuery.of(context).size.height * 0.4,
-                            // ✨ SPRINT 12: Show "Scan Started" when scan is in progress
+                            // [NEW] SPRINT 12: Show "Scan Started" when scan is in progress
                             child: scanProvider.status == ScanStatus.scanning
                                 ? const ScanStartedEmptyState()
                                 : _filter == null
@@ -607,7 +607,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () {
-                      // ✨ SPRINT 12 FIX: Push replacement to Scan screen directly
+                      // [NEW] SPRINT 12 FIX: Push replacement to Scan screen directly
                       // This avoids navigation state issues with pop() and ensures
                       // reliable navigation to the scan screen
                       Navigator.pushReplacement(
@@ -1355,7 +1355,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       // Add to safe senders via provider (persists to database and YAML)
       await ruleProvider.addSafeSender(pattern);
 
-      logger.i('✅ Added safe sender: $pattern');
+      logger.i('[OK] Added safe sender: $pattern');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1369,7 +1369,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         );
       }
     } catch (e) {
-      logger.e('❌ Failed to add safe sender: $e');
+      logger.e('[FAIL] Failed to add safe sender: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1451,7 +1451,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       // Add rule via provider (persists to database and YAML)
       await ruleProvider.addRule(rule);
 
-      logger.i('✅ Created block rule: $ruleName with pattern: $pattern');
+      logger.i('[OK] Created block rule: $ruleName with pattern: $pattern');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1465,7 +1465,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         );
       }
     } catch (e) {
-      logger.e('❌ Failed to create block rule: $e');
+      logger.e('[FAIL] Failed to create block rule: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

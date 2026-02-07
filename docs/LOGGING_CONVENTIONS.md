@@ -174,12 +174,12 @@ void evaluate(EmailMessage message) {
 
 ### 1. Include Context in Messages
 
-❌ BAD:
+[FAIL] BAD:
 ```dart
 AppLogger.email('Fetched messages');
 ```
 
-✅ GOOD:
+[OK] GOOD:
 ```dart
 AppLogger.email('Fetched 50 messages from INBOX for user@example.com');
 ```
@@ -218,12 +218,12 @@ Do NOT log:
 - Email message bodies (log subject lines only if needed)
 - Personal identifying information (PII)
 
-✅ SAFE:
+[OK] SAFE:
 ```dart
 AppLogger.auth('OAuth token refreshed for user@gmail.com');
 ```
 
-❌ UNSAFE:
+[FAIL] UNSAFE:
 ```dart
 AppLogger.auth('OAuth token: ya29.a0AfH6SMBx...');
 ```

@@ -396,7 +396,7 @@ When loading YAML files, the following validations are performed:
 
 ## Common Mistakes
 
-### ❌ Incorrect Patterns
+### [FAIL] Incorrect Patterns
 
 ```yaml
 # BAD: Forgot to escape dot
@@ -412,7 +412,7 @@ subject: ["*urgent*"]  # Literal asterisks, not wildcard
 from: ["User@Example.com"]  # Inconsistent with export format
 ```
 
-### ✅ Correct Patterns
+### [OK] Correct Patterns
 
 ```yaml
 # GOOD: Escaped dot

@@ -94,14 +94,14 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
       setState(() {
         _isTesting = false;
         _connectionStatus = status.isConnected
-            ? '✅ Connection successful!'
-            : '❌ Connection failed: ${status.errorMessage ?? 'Unknown error'}';
+            ? '[OK] Connection successful!'
+            : '[FAIL] Connection failed: ${status.errorMessage ?? 'Unknown error'}';
       });
 
       if (status.isConnected && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('✅ Connection test successful!'),
+            content: Text('[OK] Connection test successful!'),
             backgroundColor: Colors.green,
           ),
         );
@@ -112,7 +112,7 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     } catch (e) {
       setState(() {
         _isTesting = false;
-        _connectionStatus = '❌ Connection failed: $e';
+        _connectionStatus = '[FAIL] Connection failed: $e';
       });
 
       if (mounted) {
@@ -128,11 +128,11 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
   /// Multi-account support: Creates unique accountId combining platformId + email
   /// Example: "aol-a@aol.com" allows multiple AOL accounts like "aol-b@aol.com"
   /// 
-  /// ✨ PHASE 2 SPRINT 4: Gmail OAuth handled separately via GmailOAuthScreen
+  /// [NEW] PHASE 2 SPRINT 4: Gmail OAuth handled separately via GmailOAuthScreen
   Future<void> _handleConnect() async {
     setState(() => _isLoading = true);
     
-    // ✨ Gmail uses OAuth flow - redirect to Gmail OAuth screen
+    // [NEW] Gmail uses OAuth flow - redirect to Gmail OAuth screen
     if (_isGmail) {
       setState(() => _isLoading = false);
       await _startGmailOAuth();
@@ -153,7 +153,7 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
       return;
     }
 
-    // ✨ MULTI-ACCOUNT SUPPORT: Use email as primary key
+    // [NEW] MULTI-ACCOUNT SUPPORT: Use email as primary key
     // Store platformId separately to keep fields independent
     // Email is unique identifier, platformId is stored as metadata
     final accountId = email; // Use email as the account identifier
@@ -166,7 +166,7 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
         platformId: widget.platformId,
       );
       
-      _logger.i('✅ Saved credentials for account: $accountId');
+      _logger.i('[OK] Saved credentials for account: $accountId');
     } catch (e) {
       setState(() => _isLoading = false);
       _logger.e('Failed to save credentials: $e');
@@ -183,12 +183,12 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('✅ Account $email saved successfully'),
+          content: Text('[OK] Account $email saved successfully'),
           backgroundColor: Colors.green,
         ),
       );
 
-      // ✨ PHASE 3.1: Navigate directly to ScanProgressScreen
+      // [NEW] PHASE 3.1: Navigate directly to ScanProgressScreen
       // Scan mode defaults to readonly (safe) and can be changed via persistent button
       final scanProvider = context.read<EmailScanProvider>();
       scanProvider.initializeScanMode(mode: ScanMode.readonly); // Default to safe mode
@@ -335,12 +335,12 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: _connectionStatus!.startsWith('✅')
+                  color: _connectionStatus!.startsWith('[OK]')
                       ? Colors.green.shade50
                       : Colors.red.shade50,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: _connectionStatus!.startsWith('✅')
+                    color: _connectionStatus!.startsWith('[OK]')
                         ? Colors.green
                         : Colors.red,
                   ),
@@ -349,7 +349,7 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
                   _connectionStatus!,
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: _connectionStatus!.startsWith('✅')
+                    color: _connectionStatus!.startsWith('[OK]')
                         ? Colors.green.shade900
                         : Colors.red.shade900,
                   ),
@@ -387,7 +387,7 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
 /// - testLimit: Test on limited number of emails (user-specified)
 /// - testAll: Full scan with revert capability after
 /// 
-/// ✨ PHASE 2 SPRINT 3: Read-only mode by default, safe testing
+/// [NEW] PHASE 2 SPRINT 3: Read-only mode by default, safe testing
 class _ScanModeSelector extends StatefulWidget {
   final BuildContext parentContext;
   final String platformId;
@@ -428,7 +428,7 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
 
   /// Proceed with selected scan mode
   Future<void> _proceedWithScanMode() async {
-    // ✨ PHASE 3.1: Show warning dialog for Full Scan mode
+    // [NEW] PHASE 3.1: Show warning dialog for Full Scan mode
     if (_selectedMode == ScanMode.fullScan) {
       final confirmed = await showDialog<bool>(
         context: context,
@@ -480,7 +480,7 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
     );
 
     _logger.i(
-      '🔍 Initialized scan mode: $_selectedMode'
+      '[INVESTIGATION] Initialized scan mode: $_selectedMode'
       '${testLimit != null ? ' (limit: $testLimit emails)' : ''}',
     );
 
@@ -566,7 +566,7 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
                               ),
                               const SizedBox(height: 4),
                               const Text(
-                                '📋 Safe testing - no emails modified',
+                                '[CHECKLIST] Safe testing - no emails modified',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.green,
@@ -621,7 +621,7 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
                               ),
                               const SizedBox(height: 4),
                               const Text(
-                                '📝 Apply changes to first N emails only',
+                                '[NOTES] Apply changes to first N emails only',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.orange,
@@ -717,7 +717,7 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
             ),
             const SizedBox(height: 12),
 
-            // ✨ PHASE 3.1: Full Scan mode (permanent)
+            // [NEW] PHASE 3.1: Full Scan mode (permanent)
             GestureDetector(
               onTap: () {
                 setState(() => _selectedMode = ScanMode.fullScan);
@@ -792,7 +792,7 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
                               ? 'Only first $_testLimit emails will be modified.'
                               : _selectedMode == ScanMode.testAll
                                   ? 'All actions can be reverted using "Revert Last Run" option.'
-                                  : '⚠️ PERMANENT changes - emails will be DELETED or MOVED. This action CANNOT be undone!',
+                                  : '[WARNING] PERMANENT changes - emails will be DELETED or MOVED. This action CANNOT be undone!',
                       style: TextStyle(
                         fontSize: 12,
                         color: Colors.blue.shade700,

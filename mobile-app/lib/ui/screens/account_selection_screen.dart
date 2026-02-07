@@ -44,13 +44,13 @@ class AccountDisplayData {
 /// - "Add New Account" button for setting up additional accounts
 /// - Auto-navigation to platform selection if no accounts exist
 /// 
-/// ⚠️ IMPORTANT: Credentials are platform-specific!
+/// [WARNING] IMPORTANT: Credentials are platform-specific!
 /// - Windows: Stored in Windows Credential Manager
 /// - Android: Stored in Android Keystore  
 /// - iOS: Stored in iOS Keychain
 /// - Accounts must be set up separately on each device/platform
 /// 
-/// ✨ PHASE 2 SPRINT 3: Account persistence between app runs
+/// [NEW] PHASE 2 SPRINT 3: Account persistence between app runs
 class AccountSelectionScreen extends StatefulWidget {
   const AccountSelectionScreen({super.key});
 
@@ -96,7 +96,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
   /// Called when another screen is popped and we become visible again
   @override
   void didPopNext() {
-    _logger.i('🔄 Navigated back to Account Selection - refreshing account list');
+    _logger.i('[PENDING] Navigated back to Account Selection - refreshing account list');
     _loadSavedAccounts();
   }
 
@@ -104,7 +104,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      _logger.i('🔄 App resumed - refreshing account list');
+      _logger.i('[PENDING] App resumed - refreshing account list');
       _loadSavedAccounts();
     }
   }
@@ -126,9 +126,9 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
         _isLoading = false;
         _error = null; // Clear any previous errors
       });
-      _logger.i('✅ Loaded ${accounts.length} saved accounts');
+      _logger.i('[OK] Loaded ${accounts.length} saved accounts');
     } catch (e) {
-      _logger.e('❌ Failed to load accounts: $e');
+      _logger.e('[FAIL] Failed to load accounts: $e');
       if (mounted) {
         setState(() {
           _error = 'Failed to load accounts: $e';
@@ -193,7 +193,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       final creds = await _credStore.getCredentials(accountId);
 
       if (creds == null) {
-        _logger.w('⚠️ No credentials found for account: $accountId');
+        _logger.w('[WARNING] No credentials found for account: $accountId');
         return null;
       }
 
@@ -205,7 +205,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
         // This is likely an old account where accountId was just the platformId
         // Try to infer email from accountId or use a placeholder
         email = accountId.contains('@') ? accountId : 'Account (email not set)';
-        _logger.w('⚠️ Email not properly stored for account: $accountId, using fallback: $email');
+        _logger.w('[WARNING] Email not properly stored for account: $accountId, using fallback: $email');
       }
 
       // Get platformId from storage or infer from email domain
@@ -232,14 +232,14 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
         platformId = accountId;
       }
 
-      _logger.d('✅ Loaded account data: email=$email, platformId=$platformId for accountId=$accountId');
+      _logger.d('[OK] Loaded account data: email=$email, platformId=$platformId for accountId=$accountId');
 
       return AccountDisplayData(
         email: email,
         platformId: platformId,
       );
     } catch (e) {
-      _logger.e('❌ Error loading account display data for $accountId: $e');
+      _logger.e('[FAIL] Error loading account display data for $accountId: $e');
       // Return null instead of throwing to prevent FutureBuilder from crashing
       return null;
     }

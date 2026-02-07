@@ -25,23 +25,23 @@ void main() {
       final available = await credentialStore.testAvailable();
       
       if (!available) {
-        print('⚠️ Secure storage not available on this platform');
+        print('[WARNING] Secure storage not available on this platform');
         print('   This test requires platform-native secure storage');
         expect(available, isTrue, reason: 'Secure storage must be available');
       }
       
       expect(available, isTrue);
-      print('✅ Secure storage available');
+      print('[OK] Secure storage available');
     }, skip: 'Requires platform-specific plugin (run on device or use integration test runner)');
 
     test('test all saved accounts credentials with appropriate adapters', () async {
       // Get all saved account IDs
       final accountIds = await credentialStore.getSavedAccounts();
       
-      print('\n📋 Found ${accountIds.length} saved account(s)');
+      print('\n[CHECKLIST] Found ${accountIds.length} saved account(s)');
       
       if (accountIds.isEmpty) {
-        print('⚠️ No saved credentials found in secure storage');
+        print('[WARNING] No saved credentials found in secure storage');
         print('   To test credentials, save at least one account via the app:');
         print('   - AOL Mail (email + app password)');
         print('   - Gmail (OAuth 2.0 access token)');
@@ -55,14 +55,14 @@ void main() {
 
       // Test each saved account
       for (final accountId in accountIds) {
-        print('\n🔍 Testing account: $accountId');
+        print('\n[INVESTIGATION] Testing account: $accountId');
         
         try {
           // Load credentials
           final credentials = await credentialStore.getCredentials(accountId);
           
           if (credentials == null) {
-            print('   ❌ Failed to load credentials for account: $accountId');
+            print('   [FAIL] Failed to load credentials for account: $accountId');
             results[accountId] = CredentialTestResult(
               accountId: accountId,
               email: 'unknown',
@@ -128,7 +128,7 @@ void main() {
             failureCount++;
           }
         } catch (e) {
-          print('   ❌ Error testing account: $e');
+          print('   [FAIL] Error testing account: $e');
           results[accountId] = CredentialTestResult(
             accountId: accountId,
             email: 'error',
@@ -146,14 +146,14 @@ void main() {
       print('📊 CREDENTIAL VERIFICATION SUMMARY');
       print('=' * 60);
       print('Total accounts tested: ${accountIds.length}');
-      print('✅ Valid credentials: $successCount');
-      print('❌ Invalid/Failed: $failureCount');
+      print('[OK] Valid credentials: $successCount');
+      print('[FAIL] Invalid/Failed: $failureCount');
       print('=' * 60);
 
       // Print detailed results
       print('\n📈 Detailed Results:');
       results.forEach((accountId, result) {
-        final status = result.isValid ? '✅' : '❌';
+        final status = result.isValid ? '[OK]' : '[FAIL]';
         print('\n$status $accountId');
         print('   Email: ${result.email}');
         print('   Platform: ${result.platform}');
@@ -199,11 +199,11 @@ void main() {
       }
 
       if (aolAccounts.isEmpty) {
-        print('⚠️ No AOL accounts found in saved credentials');
+        print('[WARNING] No AOL accounts found in saved credentials');
         return;
       }
 
-      print('🔍 Verifying ${aolAccounts.length} AOL account(s)...\n');
+      print('[INVESTIGATION] Verifying ${aolAccounts.length} AOL account(s)...\n');
 
       for (final accountId in aolAccounts) {
         print('Testing AOL account: $accountId');
@@ -222,9 +222,9 @@ void main() {
           expect(status.isConnected, isTrue, 
             reason: 'Should connect to AOL IMAP: ${status.errorMessage}');
           
-          print('✅ AOL account $accountId is valid');
+          print('[OK] AOL account $accountId is valid');
         } catch (e) {
-          print('❌ AOL account $accountId failed: $e');
+          print('[FAIL] AOL account $accountId failed: $e');
           rethrow;
         } finally {
           try {
@@ -252,12 +252,12 @@ void main() {
       }
 
       if (gmailAccounts.isEmpty) {
-        print('⚠️ No Gmail accounts found in saved credentials');
+        print('[WARNING] No Gmail accounts found in saved credentials');
         print('   Gmail accounts require OAuth access token');
         return;
       }
 
-      print('🔍 Verifying ${gmailAccounts.length} Gmail account(s)...\n');
+      print('[INVESTIGATION] Verifying ${gmailAccounts.length} Gmail account(s)...\n');
 
       for (final accountId in gmailAccounts) {
         print('Testing Gmail account: $accountId');
@@ -277,9 +277,9 @@ void main() {
           expect(status.isConnected, isTrue,
             reason: 'Should connect to Gmail: ${status.errorMessage}');
           
-          print('✅ Gmail account $accountId is valid');
+          print('[OK] Gmail account $accountId is valid');
         } catch (e) {
-          print('❌ Gmail account $accountId failed: $e');
+          print('[FAIL] Gmail account $accountId failed: $e');
           // Gmail OAuth might be platform-specific; don't fail test if unavailable
           if (!e.toString().contains('UnsupportedError') && 
               !e.toString().contains('not available')) {
@@ -298,7 +298,7 @@ void main() {
       final accountIds = await credentialStore.getSavedAccounts();
       
       if (accountIds.isEmpty) {
-        print('⚠️ No saved credentials to verify encryption');
+        print('[WARNING] No saved credentials to verify encryption');
         return;
       }
 
@@ -328,7 +328,7 @@ void main() {
           expect(credentials.additionalParams!.containsKey('accountId'), isTrue,
             reason: 'accountId should be in additionalParams');
 
-          print('✅ $accountId credentials properly encrypted and loaded');
+          print('[OK] $accountId credentials properly encrypted and loaded');
         }
       }
     });
@@ -337,7 +337,7 @@ void main() {
       final accountIds = await credentialStore.getSavedAccounts();
       
       if (accountIds.isEmpty) {
-        print('⚠️ No saved credentials to verify platform IDs');
+        print('[WARNING] No saved credentials to verify platform IDs');
         return;
       }
 
@@ -360,7 +360,7 @@ void main() {
               isTrue,
               reason: 'Platform ID should be one of the known providers',
             );
-            print('  ✅ Valid platform: $platformId');
+            print('  [OK] Valid platform: $platformId');
           }
         }
       }
@@ -404,7 +404,7 @@ Future<void> _testIMAPCredentials({
     final status = await adapter.testConnection();
 
     if (status.isConnected) {
-      print('   ✅ Connection successful');
+      print('   [OK] Connection successful');
       results[accountId] = CredentialTestResult(
         accountId: accountId,
         email: credentials.email,
@@ -413,7 +413,7 @@ Future<void> _testIMAPCredentials({
         isValid: true,
       );
     } else {
-      print('   ❌ Connection failed: ${status.errorMessage}');
+      print('   [FAIL] Connection failed: ${status.errorMessage}');
       results[accountId] = CredentialTestResult(
         accountId: accountId,
         email: credentials.email,
@@ -426,7 +426,7 @@ Future<void> _testIMAPCredentials({
 
     await adapter.disconnect();
   } catch (e) {
-    print('   ❌ Error: $e');
+    print('   [FAIL] Error: $e');
     results[accountId] = CredentialTestResult(
       accountId: accountId,
       email: credentials.email,
@@ -455,7 +455,7 @@ Future<void> _testGmailCredentials({
     final status = await adapter.testConnection();
 
     if (status.isConnected) {
-      print('   ✅ Connection successful');
+      print('   [OK] Connection successful');
       results[accountId] = CredentialTestResult(
         accountId: accountId,
         email: credentials.email,
@@ -464,7 +464,7 @@ Future<void> _testGmailCredentials({
         isValid: true,
       );
     } else {
-      print('   ❌ Connection failed: ${status.errorMessage}');
+      print('   [FAIL] Connection failed: ${status.errorMessage}');
       results[accountId] = CredentialTestResult(
         accountId: accountId,
         email: credentials.email,
@@ -477,7 +477,7 @@ Future<void> _testGmailCredentials({
 
     await adapter.disconnect();
   } catch (e) {
-    print('   ❌ Error: $e');
+    print('   [FAIL] Error: $e');
     
     // Gmail OAuth might fail on some platforms (expected for mobile emulator)
     if (e.toString().contains('UnsupportedError') ||

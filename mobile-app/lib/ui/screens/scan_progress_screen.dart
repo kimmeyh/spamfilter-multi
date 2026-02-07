@@ -44,13 +44,13 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
   void initState() {
     super.initState();
     
-    // ✨ PHASE 3.2: Initialize _previousStatus to prevent auto-navigation on first build
+    // [NEW] PHASE 3.2: Initialize _previousStatus to prevent auto-navigation on first build
     // This ensures we only auto-navigate when a scan ACTUALLY completes, not when
     // returning to a screen that already has completed status from a previous scan
     final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
     _previousStatus = scanProvider.status;
     
-    // ✨ ISSUE #41 FIX: Set current account for per-account folder storage
+    // [NEW] ISSUE #41 FIX: Set current account for per-account folder storage
     scanProvider.setCurrentAccount(widget.accountId);
     
     // Auto-reset scan state when navigating to this screen
@@ -63,8 +63,8 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
   Widget build(BuildContext context) {
     final scanProvider = context.watch<EmailScanProvider>();
 
-    // ✨ PHASE 3.1: Auto-navigate to Results when scan completes (Issue #33)
-    // ✨ ISSUE #39 FIX: Update _previousStatus INSIDE the if block to prevent
+    // [NEW] PHASE 3.1: Auto-navigate to Results when scan completes (Issue #33)
+    // [NEW] ISSUE #39 FIX: Update _previousStatus INSIDE the if block to prevent
     // multiple navigation callbacks if build() is called multiple times
     if (_previousStatus != ScanStatus.completed && 
         scanProvider.status == ScanStatus.completed) {
@@ -235,11 +235,11 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
     );
   }
 
-  /// ✨ PHASE 3.1: Removed redundant progress bar and text (Issue #33)
+  /// [NEW] PHASE 3.1: Removed redundant progress bar and text (Issue #33)
   /// Progress info now shown only in bubble row
 
   Widget _buildStats(EmailScanProvider scanProvider) {
-    // ✨ PHASE 3.1: Updated bubble row with Found, Processed, Deleted, Moved, Safe, No rule, Errors
+    // [NEW] PHASE 3.1: Updated bubble row with Found, Processed, Deleted, Moved, Safe, No rule, Errors
     return Wrap(
       spacing: 12,
       runSpacing: 12,
@@ -267,14 +267,14 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
   Widget _buildControls(BuildContext context, EmailScanProvider scanProvider) {
     final ruleProvider = context.watch<RuleSetProvider>();
     
-    // ✨ PHASE 3.1: Re-enable buttons after scan completes (Issue #33)
+    // [NEW] PHASE 3.1: Re-enable buttons after scan completes (Issue #33)
     final canStartScan = scanProvider.status == ScanStatus.idle || 
                          scanProvider.status == ScanStatus.completed;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-          // ✨ PHASE 3.1: Scan Mode button
+          // [NEW] PHASE 3.1: Scan Mode button
           OutlinedButton.icon(
             icon: const Icon(Icons.settings),
             label: Text('Scan Mode: ${scanProvider.getScanModeDisplayName()}'),
@@ -433,17 +433,17 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
           accountEmail: widget.accountEmail,
           onFoldersSelected: (folders) {
             logger.i('📁 Folders selected for scan: $folders');
-            // ✨ PHASE 3.2: Store selected folders in scanProvider for use during scan
-            // ✨ ISSUE #41 FIX: Pass accountId to store folders per-account
+            // [NEW] PHASE 3.2: Store selected folders in scanProvider for use during scan
+            // [NEW] ISSUE #41 FIX: Pass accountId to store folders per-account
             scanProvider.setSelectedFolders(folders, accountId: widget.accountId);
           },
         ),
       );
 
       if (selected != null && context.mounted) {
-        logger.i('✅ User confirmed folders: $selected');
-        // ✨ PHASE 3.2: Update scanProvider with final selection
-        // ✨ ISSUE #41 FIX: Pass accountId to store folders per-account
+        logger.i('[OK] User confirmed folders: $selected');
+        // [NEW] PHASE 3.2: Update scanProvider with final selection
+        // [NEW] ISSUE #41 FIX: Pass accountId to store folders per-account
         scanProvider.setSelectedFolders(selected, accountId: widget.accountId);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -454,7 +454,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
       }
     }
 
-  /// ✨ PHASE 3.1: Show scan mode selection dialog
+  /// [NEW] PHASE 3.1: Show scan mode selection dialog
   Future<void> _showScanModeDialog(
     BuildContext context,
     EmailScanProvider scanProvider,
@@ -491,7 +491,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
                     setState(() => selectedMode = value!);
                   },
                 ),
-                // ✨ ISSUE #40 FIX: Configurable test limit slider
+                // [NEW] ISSUE #40 FIX: Configurable test limit slider
                 if (selectedMode == ScanMode.testLimit)
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -626,7 +626,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
     // Immediately update UI to show scan is starting
     scanProvider.startScan(totalEmails: 0);
 
-    // ✨ SPRINT 12: Navigate to Results immediately after starting scan
+    // [NEW] SPRINT 12: Navigate to Results immediately after starting scan
     // User feedback: "Start Scan should immediately go to View Results page"
     if (context.mounted) {
       Navigator.of(context).push(
@@ -650,10 +650,10 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
         scanProvider: scanProvider,
       );
 
-      // ✨ PHASE 3.2: Use selected folders from scanProvider (defaults to ['INBOX'] if none selected)
+      // [NEW] PHASE 3.2: Use selected folders from scanProvider (defaults to ['INBOX'] if none selected)
       final foldersToScan = scanProvider.selectedFolders;
       final logger = Logger();
-      logger.i('🚀 Starting scan of folders: $foldersToScan for $daysBack days back');
+      logger.i('[LAUNCH] Starting scan of folders: $foldersToScan for $daysBack days back');
 
       // Start scan in background (will call startScan again with real count)
       await scanner.scanInbox(daysBack: daysBack, folderNames: foldersToScan);

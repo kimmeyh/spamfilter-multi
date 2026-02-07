@@ -278,12 +278,12 @@ mobile-app/test/
 
 **Test Names**: Use descriptive, complete sentences:
 ```dart
-// ✅ GOOD: Describes what, condition, and expected result
+// [OK] GOOD: Describes what, condition, and expected result
 test('should return delete action when from matches spam pattern', () { });
 test('should throw FormatException when YAML is invalid', () { });
 test('should display "No results yet" when scan has not started', () { });
 
-// ❌ BAD: Vague or incomplete
+// [FAIL] BAD: Vague or incomplete
 test('delete action', () { });
 test('invalid YAML', () { });
 test('no results', () { });
@@ -411,10 +411,10 @@ test('should return delete action when from matches spam pattern', () {
 ### Test Independence
 
 **Tests MUST be independent**:
-- ✅ Each test can run in isolation
-- ✅ No shared mutable state between tests
-- ✅ Use `setUp()` and `tearDown()` for common setup/cleanup
-- ❌ Do not rely on test execution order
+- [OK] Each test can run in isolation
+- [OK] No shared mutable state between tests
+- [OK] Use `setUp()` and `tearDown()` for common setup/cleanup
+- [FAIL] Do not rely on test execution order
 
 **Example**:
 ```dart
@@ -575,11 +575,11 @@ cd mobile-app\scripts
 
 **Use complete sentences** that describe the behavior:
 ```dart
-// ✅ GOOD
+// [OK] GOOD
 test('should return safe sender action when email matches whitelist', () { });
 test('should throw FormatException when YAML is invalid', () { });
 
-// ❌ BAD
+// [FAIL] BAD
 test('safe sender', () { });
 test('invalid YAML', () { });
 ```
@@ -588,7 +588,7 @@ test('invalid YAML', () { });
 
 **Each test should verify one behavior**:
 ```dart
-// ✅ GOOD: Two separate tests
+// [OK] GOOD: Two separate tests
 test('should match from field with regex pattern', () {
   final result = evaluator.evaluateRule(email, fromRule);
   expect(result.action, equals(EmailActionType.delete));
@@ -599,7 +599,7 @@ test('should match subject field with regex pattern', () {
   expect(result.action, equals(EmailActionType.delete));
 });
 
-// ❌ BAD: Testing multiple behaviors in one test
+// [FAIL] BAD: Testing multiple behaviors in one test
 test('should match from and subject fields', () {
   final fromResult = evaluator.evaluateRule(email, fromRule);
   final subjectResult = evaluator.evaluateRule(email, subjectRule);
@@ -612,12 +612,12 @@ test('should match from and subject fields', () {
 
 **Name test data descriptively**:
 ```dart
-// ✅ GOOD
+// [OK] GOOD
 final spamEmail = EmailMessage(from: 'spam@example.com', ...);
 final safeEmail = EmailMessage(from: 'trusted@company.com', ...);
 final deleteRule = RuleSet(actions: Actions(delete: true));
 
-// ❌ BAD
+// [FAIL] BAD
 final email1 = EmailMessage(from: 'spam@example.com', ...);
 final email2 = EmailMessage(from: 'trusted@company.com', ...);
 final rule1 = RuleSet(actions: Actions(delete: true));
@@ -700,13 +700,13 @@ void main() {
 
 **Fix**:
 ```dart
-// ❌ BAD: Missing await
+// [FAIL] BAD: Missing await
 test('should fetch emails', () {
   scanner.scanInbox(adapter); // Missing await!
   expect(provider.status, equals(ScanStatus.completed));
 });
 
-// ✅ GOOD: Properly awaited
+// [OK] GOOD: Properly awaited
 test('should fetch emails', () async {
   await scanner.scanInbox(adapter);
   expect(provider.status, equals(ScanStatus.completed));

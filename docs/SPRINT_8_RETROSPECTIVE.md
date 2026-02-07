@@ -11,11 +11,11 @@
 Sprint 8 was focused on fixing critical pattern matching bugs and UI improvements. Based on user feedback, multiple significant process improvements have been identified for future sprints.
 
 ### Sprint 8 Outcomes:
-- ✅ Fixed critical header pattern matching bug (100% → 4.2% false negatives)
-- ✅ Added CSV export for scan results
-- ✅ Implemented filter buttons for Results screen
-- ✅ All tests passing (122/122)
-- ⚠️ Process improvements needed for efficiency and testing
+- [OK] Fixed critical header pattern matching bug (100% → 4.2% false negatives)
+- [OK] Added CSV export for scan results
+- [OK] Implemented filter buttons for Results screen
+- [OK] All tests passing (122/122)
+- [WARNING] Process improvements needed for efficiency and testing
 
 ---
 
@@ -153,7 +153,7 @@ Add to Phase 1.7:
 ```markdown
 **CRITICAL CLARIFICATION - When to Ask vs When to Execute**:
 
-✅ **Execute WITHOUT asking** (plan-approved):
+[OK] **Execute WITHOUT asking** (plan-approved):
 - Implementing tasks exactly as described in sprint plan
 - Making implementation decisions within scope (method signatures, class names, file structure)
 - Refactoring code to support task requirements
@@ -161,7 +161,7 @@ Add to Phase 1.7:
 - Fixing bugs discovered during task execution
 - Architectural decisions that were implied by task acceptance criteria
 
-❌ **STOP and ask** (not plan-approved):
+[FAIL] **STOP and ask** (not plan-approved):
 - New requirements not in sprint plan
 - Scope change expanding beyond task definition
 - Blocked on external dependency or missing information
@@ -203,7 +203,7 @@ Add to `.claude/hooks.json` a hook that fires at start of Phase 2:
 Add a new criterion:
 
 ```markdown
-### 10. 🚫 SHOULD NOT STOP - Implementation Decision
+### 10. [STOP] SHOULD NOT STOP - Implementation Decision
 
 **When**: Need to make implementation decision during task execution.
 
@@ -557,8 +557,8 @@ if (Test-Path $metadataFile) {
 
 $metadata | ConvertTo-Json -Depth 5 | Out-File -FilePath $metadataFile -Encoding UTF8
 
-Write-Host "✅ Sprint context saved to $currentFile"
-Write-Host "📋 Edit this file to add specific context before exiting Claude"
+Write-Host "[OK] Sprint context saved to $currentFile"
+Write-Host "[CHECKLIST] Edit this file to add specific context before exiting Claude"
 ```
 
 **File 4**: `.claude/scripts/archive-memory.ps1`
@@ -570,7 +570,7 @@ $currentFile = "$memoryDir/current.md"
 $metadataFile = "$memoryDir/memory_metadata.json"
 
 if (!(Test-Path $currentFile)) {
-    Write-Host "⚠️  No current memory file to archive"
+    Write-Host "[WARNING]  No current memory file to archive"
     exit 0
 }
 
@@ -579,7 +579,7 @@ $timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm"
 $archiveFile = "$memoryDir/$timestamp.md"
 
 Copy-Item $currentFile $archiveFile
-Write-Host "✅ Archived to $archiveFile"
+Write-Host "[OK] Archived to $archiveFile"
 
 # Update metadata
 if (Test-Path $metadataFile) {
@@ -600,7 +600,7 @@ if (Test-Path $metadataFile) {
 
 # Remove current.md
 Remove-Item $currentFile
-Write-Host "✅ Current memory cleared"
+Write-Host "[OK] Current memory cleared"
 ```
 
 **File 5**: `.claude/hooks.json` (add startup hook)
@@ -623,7 +623,7 @@ $currentFile = "$memoryDir/current.md"
 $metadataFile = "$memoryDir/memory_metadata.json"
 
 if (Test-Path $currentFile) {
-    Write-Host "📋 Found saved sprint context!"
+    Write-Host "[CHECKLIST] Found saved sprint context!"
 
     # Load metadata
     if (Test-Path $metadataFile) {
@@ -631,13 +631,13 @@ if (Test-Path $currentFile) {
 
         # Check if status is "active"
         if ($metadata.status -eq "active") {
-            Write-Host "🔄 Restoring context for $($metadata.sprint)..."
+            Write-Host "[PENDING] Restoring context for $($metadata.sprint)..."
             Write-Host ""
             Get-Content $currentFile
             Write-Host ""
-            Write-Host "✅ Context restored. Ready to continue sprint work."
+            Write-Host "[OK] Context restored. Ready to continue sprint work."
         } else {
-            Write-Host "⚠️  Found archived context (status: $($metadata.status))"
+            Write-Host "[WARNING]  Found archived context (status: $($metadata.status))"
             Write-Host "   Run /archive-memory to clear or manually edit .claude/memory/memory_metadata.json"
         }
     }
@@ -700,9 +700,9 @@ Current CLAUDE.md size: ~43.7k characters (over 40k limit)
 
 **Content Analysis** (what can be moved):
 
-1. **OAuth Setup Details** (~5k chars) → Already in `docs/OAUTH_SETUP.md` ✅
-2. **Troubleshooting Section** (~3k chars) → Already in `docs/TROUBLESHOOTING.md` ✅
-3. **Code Review Findings** (~4k chars) → Already in `docs/ISSUE_BACKLOG.md` ✅
+1. **OAuth Setup Details** (~5k chars) → Already in `docs/OAUTH_SETUP.md` [OK]
+2. **Troubleshooting Section** (~3k chars) → Already in `docs/TROUBLESHOOTING.md` [OK]
+3. **Code Review Findings** (~4k chars) → Already in `docs/ISSUE_BACKLOG.md` [OK]
 4. **Phase 3.x Completion Details** (~6k chars) → Can move to CHANGELOG.md
 5. **Common Issues Section** (~4k chars) → Can consolidate with TROUBLESHOOTING.md
 6. **YAML Rule Format Details** (~3k chars) → Can move to `docs/RULE_FORMAT.md`
@@ -760,7 +760,7 @@ Current CLAUDE.md size: ~43.7k characters (over 40k limit)
    - iOS/macOS/Linux validation status
    - Estimated savings: ~1k chars
 
-6. **Code Review Findings** → Already in `docs/ISSUE_BACKLOG.md` ✅
+6. **Code Review Findings** → Already in `docs/ISSUE_BACKLOG.md` [OK]
    - Remove from CLAUDE.md entirely
    - Just reference: "See docs/ISSUE_BACKLOG.md for open issues"
    - Estimated savings: ~4k chars
@@ -889,7 +889,7 @@ ps aux | grep -E 'spam_filter|flutter' | awk '{print $2, $11}'
 Add new section after "What Does NOT Work in Bash":
 
 ```markdown
-### ❌ PowerShell Cmdlets in Bash
+### [FAIL] PowerShell Cmdlets in Bash
 
 | PowerShell Cmdlet | Bash Error | Bash Equivalent |
 |-------------------|------------|-----------------|
@@ -1195,10 +1195,10 @@ Add to `SPRINT_EXECUTION_WORKFLOW.md` after Phase 3.2:
 
 - [ ] **3.3.4 Joint Analysis**
   - After testing complete, Claude provides summary:
-    - ✅ What worked correctly (with log evidence)
-    - ⚠️  Warnings observed (with log excerpts)
-    - ❌ Errors encountered (with stack traces)
-    - 🔧 Suggested fixes (with file:line references)
+    - [OK] What worked correctly (with log evidence)
+    - [WARNING]  Warnings observed (with log excerpts)
+    - [FAIL] Errors encountered (with stack traces)
+    - [CONFIG] Suggested fixes (with file:line references)
   - User and Claude discuss findings
   - Prioritize issues: Critical (fix now), High (fix this sprint), Medium/Low (defer)
 
@@ -1230,19 +1230,19 @@ adb logcat -s flutter,System.err,AndroidRuntime | grep --line-buffered -E '\[EMA
 ```markdown
 ## Test Monitoring Summary (2026-01-30 16:45)
 
-### ✅ Successful Operations
+### [OK] Successful Operations
 
 - [EMAIL] Fetched 150 messages from INBOX in 2.3s
 - [RULES] Loaded 250 rules from rules.yaml in 45ms
 - [EVAL] Matched 120 emails to spam rules (no errors)
 - [SCAN] Completed scan: 150 emails processed in 8.5s
 
-### ⚠️  Warnings Observed
+### [WARNING]  Warnings Observed
 
 - [RULES] Rule "OldPattern" uses deprecated wildcard syntax (line 245)
   - Suggestion: Convert to regex pattern
 
-### ❌ Errors Encountered
+### [FAIL] Errors Encountered
 
 **Error 1: Database Lock**
 ```
@@ -1260,7 +1260,7 @@ at gmail_api_adapter.dart:89
 - **Impact**: Gmail folder discovery failed
 - **Suggested Fix**: Call `GoogleAuthService.getValidAccessToken()` before API calls (gmail_api_adapter.dart:85-95)
 
-### 🔧 Recommendations
+### [CONFIG] Recommendations
 
 1. **Critical** (fix now): Fix database lock issue
 2. **High** (fix this sprint): Add token refresh to folder discovery
@@ -1268,9 +1268,9 @@ at gmail_api_adapter.dart:89
 
 ### 📊 Performance Metrics
 
-- Rule loading: 45ms (target < 100ms) ✅
-- Email fetching: 2.3s for 150 emails (15ms/email) ✅
-- Rule evaluation: 8.5s for 150 emails (57ms/email) ⚠️  (target < 50ms/email)
+- Rule loading: 45ms (target < 100ms) [OK]
+- Email fetching: 2.3s for 150 emails (15ms/email) [OK]
+- Rule evaluation: 8.5s for 150 emails (57ms/email) [WARNING]  (target < 50ms/email)
 ```
 
 **Action Items**:
@@ -1290,12 +1290,12 @@ at gmail_api_adapter.dart:89
 **Analysis**:
 
 Current test coverage (122/122 tests):
-- ✅ RuleEvaluator: 32 tests
-- ✅ PatternCompiler: Tests exist
-- ✅ EmailScanProvider: Tests exist
-- ❌ Database operations: NO TESTS
-- ❌ YAML migration: NO TESTS
-- ❌ Comprehensive rule matching: PARTIAL (only spot checks)
+- [OK] RuleEvaluator: 32 tests
+- [OK] PatternCompiler: Tests exist
+- [OK] EmailScanProvider: Tests exist
+- [FAIL] Database operations: NO TESTS
+- [FAIL] YAML migration: NO TESTS
+- [FAIL] Comprehensive rule matching: PARTIAL (only spot checks)
 
 **Proposed Test Suite**:
 

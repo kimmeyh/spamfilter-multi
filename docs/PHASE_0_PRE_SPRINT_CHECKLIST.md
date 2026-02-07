@@ -8,9 +8,9 @@
 
 ---
 
-## ✅ Phase 0 Checklist
+## [OK] Phase 0 Checklist
 
-### 0.1 Verify Previous Sprint is Merged to Develop ✅
+### 0.1 Verify Previous Sprint is Merged to Develop [OK]
 
 **Why**: Ensures you're building on top of completed, reviewed work. Prevents conflicts and confusion.
 
@@ -39,7 +39,7 @@ git status
 
 ---
 
-### 0.2 Verify All Previous Sprint Cards Are Closed ✅
+### 0.2 Verify All Previous Sprint Cards Are Closed [OK]
 
 **Why**: Open sprint cards can block new work and cause confusion about what's complete.
 
@@ -68,7 +68,7 @@ gh issue close #<issue_number> --reason "completed"
 
 ---
 
-### 0.3 Ensure Working Directory is Clean ✅
+### 0.3 Ensure Working Directory is Clean [OK]
 
 **Why**: Uncommitted changes from previous sprint can cause conflicts and confusion.
 
@@ -105,7 +105,7 @@ git stash
 
 ---
 
-### 0.4 Verify Develop Branch is Current ✅
+### 0.4 Verify Develop Branch is Current [OK]
 
 **Why**: Ensures you're not building on stale code. Prevents merge conflicts and ensures latest tests pass.
 
@@ -136,7 +136,7 @@ git status
 
 ---
 
-### 0.5 Review Sprint Plan Documentation ✅
+### 0.5 Review Sprint Plan Documentation [OK]
 
 **Why**: Ensures you understand scope before starting implementation. Prevents scope creep and alignment issues.
 
@@ -168,7 +168,7 @@ git status
 
 ---
 
-### 0.6 Check for Continuation Issues ✅
+### 0.6 Check for Continuation Issues [OK]
 
 **Why**: Previous sessions may have left partial work. Ensures clean slate.
 
@@ -200,15 +200,15 @@ git log --oneline -5
 
 ---
 
-## ✅ All Phases Verified?
+## [OK] All Phases Verified?
 
 If you answered "yes" to all items above:
 
-✅ **YOU ARE READY TO PROCEED TO PHASE 1: SPRINT KICKOFF**
+[OK] **YOU ARE READY TO PROCEED TO PHASE 1: SPRINT KICKOFF**
 
 If any item is not complete:
 
-❌ **STOP - Do not proceed to Phase 1**
+[FAIL] **STOP - Do not proceed to Phase 1**
 - Resolve the failing check above
 - Return to Phase 0 and verify again
 - Once all items pass, proceed to Phase 1
@@ -234,7 +234,7 @@ If any item is not complete:
 
 Once all Phase 0 items are verified:
 
-1. ✅ Phase 0 Complete - Ready for Phase 1
+1. [OK] Phase 0 Complete - Ready for Phase 1
 2. → Proceed to **Phase 1: Sprint Kickoff & Planning** in SPRINT_EXECUTION_WORKFLOW.md
 3. → Create sprint feature branch
 4. → Create sprint GitHub cards

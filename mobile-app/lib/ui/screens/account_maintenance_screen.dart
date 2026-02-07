@@ -6,7 +6,7 @@
 /// - Remove accounts
 /// - Trigger one-time scans
 /// 
-/// ✨ PHASE 2 SPRINT 3: Account management and maintenance options
+/// [NEW] PHASE 2 SPRINT 3: Account management and maintenance options
 library;
 
 import 'package:flutter/material.dart';
@@ -65,7 +65,7 @@ class _AccountMaintenanceScreenState extends State<AccountMaintenanceScreen> {
         _isLoading = false;
       });
 
-      _logger.i('📋 Loaded ${_accounts.length} saved account(s)');
+      _logger.i('[CHECKLIST] Loaded ${_accounts.length} saved account(s)');
     } catch (e) {
       _logger.e('Failed to load accounts: $e');
       setState(() => _isLoading = false);
@@ -94,7 +94,7 @@ class _AccountMaintenanceScreenState extends State<AccountMaintenanceScreen> {
     );
 
     if (folders != null && mounted) {
-      _logger.i('✅ Selected folders for ${account.email}: $folders');
+      _logger.i('[OK] Selected folders for ${account.email}: $folders');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Selected: ${folders.join(", ")}'),
@@ -139,7 +139,7 @@ class _AccountMaintenanceScreenState extends State<AccountMaintenanceScreen> {
     if (confirm == true) {
       try {
         await _credStore.deleteCredentials(account.accountId);
-        _logger.i('✅ Removed account: ${account.email}');
+        _logger.i('[OK] Removed account: ${account.email}');
 
         setState(() {
           _accounts.removeWhere((a) => a.accountId == account.accountId);
@@ -148,7 +148,7 @@ class _AccountMaintenanceScreenState extends State<AccountMaintenanceScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('✅ Account removed'),
+              content: Text('[OK] Account removed'),
               backgroundColor: Colors.green,
             ),
           );
@@ -354,7 +354,7 @@ class _AccountMaintenanceScreenState extends State<AccountMaintenanceScreen> {
     // Initialize scan mode
     scanProvider.initializeScanMode(mode: ScanMode.readonly);
 
-    _logger.i('🔍 Initiating one-time scan for ${account.email}');
+    _logger.i('[INVESTIGATION] Initiating one-time scan for ${account.email}');
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

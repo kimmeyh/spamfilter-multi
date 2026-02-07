@@ -2,7 +2,7 @@
 
 **Created**: January 27, 2026
 **Sprint**: Sprint 7
-**Status**: 🎯 PLANNING - Awaiting User Approval
+**Status**: [TARGET] PLANNING - Awaiting User Approval
 **Feature Branch**: `feature/20260127_Sprint_7`
 
 ---
@@ -43,11 +43,11 @@ Implement a complete background scanning system for Android that:
 ## Scope & Dependencies
 
 ### What IS Included in Sprint 7
-1. ✅ BackgroundScanWorker (execute scans in background)
-2. ✅ BackgroundScanManager (schedule and manage background scans)
-3. ✅ Notifications with battery/network optimization
-4. ✅ Integration tests and manual testing
-5. ✅ Database schema additions (BackgroundScanLog)
+1. [OK] BackgroundScanWorker (execute scans in background)
+2. [OK] BackgroundScanManager (schedule and manage background scans)
+3. [OK] Notifications with battery/network optimization
+4. [OK] Integration tests and manual testing
+5. [OK] Database schema additions (BackgroundScanLog)
 
 ### What is NOT Included (Deferred to Later Sprints)
 - Settings UI integration (scheduled for Sprint 5 - but can also happen in Sprint 7 if time permits)
@@ -343,7 +343,7 @@ BackgroundScanNotificationService
 
 ### Definition of Done for Sprint 7
 
-✅ **Functionality**:
+[OK] **Functionality**:
 - [ ] Background scans execute at configured interval
 - [ ] All enabled accounts scanned
 - [ ] Results saved to database with ScanResult + UnmatchedEmail
@@ -351,19 +351,19 @@ BackgroundScanNotificationService
 - [ ] Battery/network optimizations working
 - [ ] Can enable/disable/change frequency
 
-✅ **Code Quality**:
+[OK] **Code Quality**:
 - [ ] All unit tests passing (80%+ coverage)
 - [ ] All integration tests passing (100% success)
 - [ ] Zero code analysis errors/warnings
 - [ ] Code follows project patterns
 
-✅ **Documentation**:
+[OK] **Documentation**:
 - [ ] Code comments for complex logic
 - [ ] Test documentation with workflows
 - [ ] Manual testing results documented
 - [ ] Database schema additions documented
 
-✅ **Performance**:
+[OK] **Performance**:
 - [ ] Background scans do not block UI
 - [ ] Scans complete within reasonable time (≤2 min for typical account)
 - [ ] Battery impact minimal (verify with Android Profiler)
@@ -456,11 +456,11 @@ For user approval of Sprint 7 Plan:
 
 ---
 
-**Sprint 7 Status**: 🎯 AWAITING USER APPROVAL
+**Sprint 7 Status**: [TARGET] AWAITING USER APPROVAL
 
 After approval, execution will follow this sequence:
-1. ✅ Phase 0 (Pre-sprint) - COMPLETE
-2. ✅ Phase 1 (Planning) - Complete (this document)
+1. [OK] Phase 0 (Pre-sprint) - COMPLETE
+2. [OK] Phase 1 (Planning) - Complete (this document)
 3. → Phase 2 (Execution) - Begin upon approval
 4. → Phase 3 (Testing) - Parallel with execution
 5. → Phase 4 (PR & Review) - After all tasks complete

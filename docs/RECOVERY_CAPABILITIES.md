@@ -16,10 +16,10 @@
 
 | Operation | Gmail | IMAP | Recoverable | Recovery Method |
 |-----------|-------|------|-------------|-----------------|
-| **Delete** | ✅ Trash API | ✅ Move to Trash | ✅ Yes | Restore from Trash folder within 30 days (Gmail) or provider retention period |
-| **Move to Junk** | ✅ Label API | ✅ Move to Junk | ✅ Yes | Move email back from Junk folder to Inbox |
-| **Mark as Read** | ✅ Modify API | ✅ STORE command | ✅ Yes | Mark as unread in email client |
-| **Mark as Spam** | ✅ Modify API | ✅ STORE flag | ✅ Yes | Remove spam flag in email client |
+| **Delete** | [OK] Trash API | [OK] Move to Trash | [OK] Yes | Restore from Trash folder within 30 days (Gmail) or provider retention period |
+| **Move to Junk** | [OK] Label API | [OK] Move to Junk | [OK] Yes | Move email back from Junk folder to Inbox |
+| **Mark as Read** | [OK] Modify API | [OK] STORE command | [OK] Yes | Mark as unread in email client |
+| **Mark as Spam** | [OK] Modify API | [OK] STORE flag | [OK] Yes | Remove spam flag in email client |
 
 ---
 
@@ -41,8 +41,8 @@ await _gmailApi!.users.messages.trash('me', message.id);
 - User can restore from Trash via Gmail UI or API
 
 **Critical Note**: The Gmail API provides two methods:
-- `users.messages.trash()` - Moves to Trash (recoverable) ✅ USED
-- `users.messages.delete()` - Permanent delete (NOT recoverable) ❌ NOT USED
+- `users.messages.trash()` - Moves to Trash (recoverable) [OK] USED
+- `users.messages.delete()` - Permanent delete (NOT recoverable) [FAIL] NOT USED
 
 ### IMAP Adapter
 
@@ -68,8 +68,8 @@ case FilterAction.delete:
 - No automatic permanent deletion
 
 **Critical Note**: The IMAP protocol provides two approaches:
-- `MOVE` command - Moves to Trash (recoverable) ✅ USED
-- `EXPUNGE` command - Permanent delete (NOT recoverable) ❌ NOT USED
+- `MOVE` command - Moves to Trash (recoverable) [OK] USED
+- `EXPUNGE` command - Permanent delete (NOT recoverable) [FAIL] NOT USED
 
 ---
 
@@ -172,16 +172,16 @@ case FilterAction.markAsSpam:
 **File**: `mobile-app/test/integration/delete_to_trash_test.dart`
 
 **Coverage**:
-- ✅ IMAP adapter moves to Trash (not EXPUNGE)
-- ✅ Gmail adapter uses trash API (not permanent delete)
-- ✅ Move to Junk uses move command (not copy+delete)
+- [OK] IMAP adapter moves to Trash (not EXPUNGE)
+- [OK] Gmail adapter uses trash API (not permanent delete)
+- [OK] Move to Junk uses move command (not copy+delete)
 
 **File**: `mobile-app/test/integration/email_scanner_readonly_mode_test.dart`
 
 **Coverage**:
-- ✅ Readonly mode prevents all takeAction() calls
-- ✅ Full scan mode allows takeAction() calls
-- ✅ Test limit mode respects email limit
+- [OK] Readonly mode prevents all takeAction() calls
+- [OK] Full scan mode allows takeAction() calls
+- [OK] Test limit mode respects email limit
 
 ---
 
@@ -221,7 +221,7 @@ case FilterAction.markAsSpam:
 
 ## Risk Assessment
 
-### Current Risk Level: **LOW** ✅
+### Current Risk Level: **LOW** [OK]
 
 **Reasons**:
 1. All delete operations use recoverable methods (Trash/trash API)
@@ -243,8 +243,8 @@ case FilterAction.markAsSpam:
 
 ### Completed (Sprint 11)
 
-1. ✅ **Integration Tests**: Created `delete_to_trash_test.dart` to verify safety features
-2. ✅ **Readonly Mode Test**: Created `email_scanner_readonly_mode_test.dart` to prevent Issue #9 regression
+1. [OK] **Integration Tests**: Created `delete_to_trash_test.dart` to verify safety features
+2. [OK] **Readonly Mode Test**: Created `email_scanner_readonly_mode_test.dart` to prevent Issue #9 regression
 
 ### Future Enhancements
 
@@ -260,11 +260,11 @@ case FilterAction.markAsSpam:
 **All destructive operations in the spam filter are recoverable**. The application uses safe deletion methods (Trash folders, trash API) instead of permanent deletion (EXPUNGE, delete API). Users have 30 days (Gmail) or indefinite time (IMAP) to restore accidentally deleted emails from Trash.
 
 **Critical Safety Features**:
-- ✅ Gmail uses `trash()` API (not `delete()`)
-- ✅ IMAP uses `MOVE` to Trash (not `EXPUNGE`)
-- ✅ Integration tests verify safety
-- ✅ Readonly mode prevents execution during testing
-- ✅ Full scan mode has confirmation dialog
+- [OK] Gmail uses `trash()` API (not `delete()`)
+- [OK] IMAP uses `MOVE` to Trash (not `EXPUNGE`)
+- [OK] Integration tests verify safety
+- [OK] Readonly mode prevents execution during testing
+- [OK] Full scan mode has confirmation dialog
 
 **Confidence Level**: **HIGH** - All code paths reviewed, tests passing, no permanent delete operations found.
 

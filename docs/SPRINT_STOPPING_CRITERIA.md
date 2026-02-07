@@ -39,7 +39,7 @@ During sprint execution, models work autonomously until one of these stopping cr
 
 ## Primary Stopping Criteria
 
-### 1. ✅ NORMAL COMPLETION - All Sprint Tasks Finished
+### 1. [OK] NORMAL COMPLETION - All Sprint Tasks Finished
 
 **When**: All tasks defined in sprint plan are complete and tested.
 
@@ -70,9 +70,9 @@ During sprint execution, models work autonomously until one of these stopping cr
      ```
      Sprint N complete! What would you like to do next?
 
-     1. 📋 Sprint Review (if not already conducted)
+     1. [CHECKLIST] Sprint Review (if not already conducted)
      2. ➡️ Start Sprint N+1 (see ALL_SPRINTS_MASTER_PLAN.md for details)
-     3. 🔧 Ad-hoc work (tasks outside sprint framework)
+     3. [CONFIG] Ad-hoc work (tasks outside sprint framework)
 
      Please let me know your preference.
      ```
@@ -85,7 +85,7 @@ During sprint execution, models work autonomously until one of these stopping cr
 
 ---
 
-### 2. 🔄 BLOCKED - Cannot Proceed Without External Input
+### 2. [PENDING] BLOCKED - Cannot Proceed Without External Input
 
 **When**: Encountered a blocker that cannot be resolved by the assigned model.
 
@@ -111,7 +111,7 @@ During sprint execution, models work autonomously until one of these stopping cr
 
 **Blocker Documentation Template**:
 ```markdown
-🚫 BLOCKED: [Brief description]
+[STOP] BLOCKED: [Brief description]
 
 Root Cause: [Why this is blocking progress]
 
@@ -128,7 +128,7 @@ What's Required to Unblock:
 
 **Example**:
 ```markdown
-🚫 BLOCKED: EmailProvider interface refactor affecting all adapters
+[STOP] BLOCKED: EmailProvider interface refactor affecting all adapters
 
 Root Cause: Current interface has hardcoded assumptions about folder
 structure. New requirement is per-provider folder discovery, which
@@ -150,7 +150,7 @@ What's Required to Unblock:
 
 ---
 
-### 3. 📋 SCOPE CHANGE - Sprint Plan Changed Mid-Sprint
+### 3. [CHECKLIST] SCOPE CHANGE - Sprint Plan Changed Mid-Sprint
 
 **When**: User requests scope change or adds/removes tasks during sprint.
 
@@ -184,7 +184,7 @@ What's Required to Unblock:
 
 ---
 
-### 4. 🐛 DISCOVERY - Unexpected Bug Found That Affects Sprint
+### 4. [BUG] DISCOVERY - Unexpected Bug Found That Affects Sprint
 
 **When**: Found a bug in existing code that is blocking or significantly impacting sprint work.
 
@@ -266,7 +266,7 @@ What's Required to Unblock:
 
 ---
 
-### 7. ❌ FAILURE - Cannot Proceed, Needs Redesign
+### 7. [FAIL] FAILURE - Cannot Proceed, Needs Redesign
 
 **When**: Fundamental design issue discovered that requires rethinking approach.
 
@@ -351,7 +351,7 @@ constraints (performance, maintainability, test coverage).
 
 ---
 
-### 10. 🚫 SHOULD NOT STOP - Implementation Decision
+### 10. [STOP] SHOULD NOT STOP - Implementation Decision
 
 **When**: Need to make implementation decision during task execution.
 
@@ -396,6 +396,103 @@ These are NOT valid reasons to stop:
 | **Feature looks incomplete** | May be intentionally minimal | Complete acceptance criteria, continue |
 | **Feeling tired/stuck** | Not an external blocker | Take a break, then continue |
 | **Minor code style issue** | Fix on next commit, continue | Document as tech debt, continue |
+| **Implementation choice** | Sprint approval pre-authorized this | Make best judgment, document, continue |
+| **Method signature change** | Needed to meet acceptance criteria | Change signature, update callers, continue |
+| **Refactor vs extend** | Engineering decision within scope | Choose based on code smell, continue |
+| **Approach uncertainty** | Test and iterate is faster | Implement, test, adjust if needed |
+| **Feature seems incomplete** | May be intentionally MVP | Complete acceptance criteria, continue |
+
+### Detailed Examples from Past Sprints (Sprint 6, Sprint 13)
+
+**Example 1: Implementation Decision (WRONG Behavior)**
+```
+Task: "Fix pattern matching to use extracted email instead of raw header"
+Acceptance Criteria: "Email pattern matching should use message.from field"
+
+[WRONG] Claude stops and asks: "Should I change the method signature to accept EmailMessage?"
+[CORRECT] Claude changes signature, documents in commit message, continues
+[WHY] Signature change is needed to access message.from field - this is within scope
+```
+
+**Example 2: Approach Uncertainty (WRONG Behavior)**
+```
+Task: "Add visual indicators to scan results"
+Acceptance Criteria: "Show checkmark for matched patterns"
+
+[WRONG] Claude stops and asks: "Should I calculate pattern type at display or store during scan?"
+[CORRECT] Claude chooses architectural approach, implements, tests, continues
+[WHY] Both approaches can meet acceptance criteria - make best judgment
+```
+
+**Example 3: Refactor Decision (WRONG Behavior)**
+```
+Task: "Improve rule evaluation performance"
+Acceptance Criteria: "Reduce evaluation time by 20%"
+
+[WRONG] Claude stops and asks: "Should I refactor RuleEvaluator or extend it?"
+[CORRECT] Claude analyzes code smell, chooses refactor, documents why, continues
+[WHY] Refactor vs extend is normal engineering decision within scope
+```
+
+**Example 4: Method Signature (CORRECT Behavior)**
+```
+Task: "Add folder filtering to results screen"
+Acceptance Criteria: "User can filter by folder name"
+
+[CORRECT] Claude adds `List<String> folders` parameter to `_getFilteredResults()`
+[CORRECT] Claude updates all call sites with new parameter
+[CORRECT] Claude continues without asking permission
+[WHY] Parameter addition needed to meet acceptance criteria
+```
+
+**Example 5: Single Test Failure (CORRECT Behavior)**
+```
+Task: "Update email scanning logic"
+
+[DURING EXECUTION] One test fails: "Expected 5 results, got 4"
+[CORRECT] Claude investigates root cause
+[CORRECT] Claude fixes bug in scanning logic
+[CORRECT] Claude re-runs tests, all pass
+[CORRECT] Claude continues to next task
+[WHY] Test failure is normal - fix and continue
+```
+
+**Example 6: Code Style Issue (CORRECT Behavior)**
+```
+Task: "Implement safe sender matching"
+
+[DURING EXECUTION] Flutter analyze shows: "Unnecessary brace in string interpolation"
+[CORRECT] Claude fixes the warning
+[CORRECT] Claude continues without reporting
+[WHY] Minor code style - fix immediately, no need to stop
+```
+
+**Example 7: Uncertainty About Completeness (WRONG Behavior)**
+```
+Task: "Add Ctrl-F search to results screen"
+Acceptance Criteria: "User can search emails with Ctrl-F keyboard shortcut"
+
+[WRONG] Claude stops and asks: "Should I also add search history? Should search be case-sensitive?"
+[CORRECT] Claude implements basic Ctrl-F search as specified
+[CORRECT] Claude documents potential enhancements as tech debt
+[WHY] Acceptance criteria specify basic search only - do not add scope
+```
+
+### Decision Rule Summary
+
+**Ask yourself**: "Does this decision enable me to meet the task acceptance criteria?"
+
+- **YES** → Make the decision, document it, continue
+- **NO** → This is scope change (Criterion 3), stop and get approval
+
+**Examples**:
+- Change method signature to access needed field? → YES, continue
+- Add new feature not in acceptance criteria? → NO, stop (scope change)
+- Choose between two valid implementation approaches? → YES, continue
+- User requests new requirement mid-sprint? → NO, stop (scope change)
+- Refactor code to improve maintainability? → If supports acceptance criteria: YES, continue
+- Fix bug discovered during testing? → If critical: YES, continue; If minor: defer or fix
+- Uncertain which of 3 architectures to use? → Choose most promising, test, iterate
 
 ---
 

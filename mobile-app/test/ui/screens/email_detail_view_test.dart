@@ -148,7 +148,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify quick-action buttons are displayed
-      // ✨ SPRINT 12: UI enhanced with tabbed view and improved action buttons
+      // [NEW] SPRINT 12: UI enhanced with tabbed view and improved action buttons
       expect(find.text('Safe Sender'), findsWidgets);
       expect(find.text('Block Rule'), findsWidgets);
     });

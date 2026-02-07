@@ -18,9 +18,9 @@ import '../../core/storage/unmatched_email_store.dart';
 import 'rule_quick_add_screen.dart';
 import 'safe_sender_quick_add_screen.dart';
 
-/// ✨ SPRINT 4: Detailed view for reviewing individual unmatched emails
-/// ✨ SPRINT 6: Added quick-add screen integration
-/// ✨ SPRINT 12: Enhanced with domain extraction, tabbed view, improved actions
+/// [NEW] SPRINT 4: Detailed view for reviewing individual unmatched emails
+/// [NEW] SPRINT 6: Added quick-add screen integration
+/// [NEW] SPRINT 12: Enhanced with domain extraction, tabbed view, improved actions
 class EmailDetailView extends StatefulWidget {
   final UnmatchedEmail email;
   final UnmatchedEmailStore unmatchedEmailStore;

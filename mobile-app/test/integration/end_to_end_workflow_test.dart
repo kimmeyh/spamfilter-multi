@@ -145,7 +145,7 @@ void main() {
       stopwatch.stop();
       final avgTime = stopwatch.elapsedMilliseconds / testEmails.length;
 
-      print('✅ Batch evaluation complete:');
+      print('[OK] Batch evaluation complete:');
       print('   Total emails: ${testEmails.length}');
       print('   Safe senders: $safeCount');
       print('   Spam detected: $spamCount');
@@ -211,7 +211,7 @@ void main() {
         print('  From: ${email.from}');
 
         if (safeSenders.isSafe(email.from)) {
-          print('  ✅ Safe sender - keeping in inbox');
+          print('  [OK] Safe sender - keeping in inbox');
           actions['safe'] = (actions['safe'] ?? 0) + 1;
         } else {
           final result = await evaluator.evaluate(email);

@@ -14,7 +14,7 @@ enum PatternType {
   custom,         // Type 4: User-provided regex
 }
 
-/// ✨ SPRINT 6 TASK B: Quick-add screen for safe sender patterns
+/// [NEW] SPRINT 6 TASK B: Quick-add screen for safe sender patterns
 class SafeSenderQuickAddScreen extends StatefulWidget {
   final EmailMessage email;
   final SafeSenderDatabaseStore safeSenderStore;

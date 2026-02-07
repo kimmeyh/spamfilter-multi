@@ -51,7 +51,7 @@ A sprint retrospective is a structured feedback session conducted after sprint w
 
 ### Mandatory vs Optional
 
-⚠️ **Sprint reviews are MANDATORY** for all sprints. They ensure:
+[WARNING] **Sprint reviews are MANDATORY** for all sprints. They ensure:
 - Quality standards are met
 - Process improvements are captured
 - Team knowledge is built
@@ -221,16 +221,16 @@ Sprint retrospectives are integrated into Phase 4.5 of the sprint execution work
 **Example Analysis**:
 ```markdown
 **Task A** (Assigned: Sonnet, Actual: Sonnet)
-- ✅ Correct assignment - architectural decisions required
+- [OK] Correct assignment - architectural decisions required
 - Confidence: High (85%)
 
 **Task B** (Assigned: Sonnet, Actual: Haiku would have worked)
-- ⚠️ Over-assignment - straightforward find/replace
+- [WARNING] Over-assignment - straightforward find/replace
 - Opportunity: Could have saved tokens with Haiku
 - Confidence: Medium (70%)
 
 **Task C** (Assigned: Haiku, Actual: Sonnet needed)
-- ❌ Under-assignment - complex edge cases required deeper reasoning
+- [FAIL] Under-assignment - complex edge cases required deeper reasoning
 - Lesson: Testing tasks with >10 edge cases = Sonnet minimum
 - Confidence: Low (50%)
 ```
@@ -322,7 +322,7 @@ Sprint retrospectives are integrated into Phase 4.5 of the sprint execution work
 **Identified Risk**: Refactoring might break existing tests
 - Likelihood: Medium, Impact: High
 - Mitigation: Run tests after each file refactored
-- **Outcome**: Did not occur - mitigation effective ✅
+- **Outcome**: Did not occur - mitigation effective [OK]
 
 **Unidentified Risk**: Windows build script incompatible with new dependency
 - Likelihood: (not identified), Impact: Medium
@@ -555,10 +555,10 @@ Track improvements across sprints to measure progress:
 
 | Sprint | Category | Improvement | Status | Impact |
 |--------|----------|-------------|--------|--------|
-| 8 | Testing | Added parallel log monitoring | ✅ Implemented | Caught 3 errors in real-time |
-| 8 | Documentation | Created QUICK_REFERENCE.md | ✅ Implemented | Reduced file lookup time by 50% |
-| 9 | Logging | Keyword-based logging with AppLogger | ✅ Implemented | Easy log filtering |
-| 9 | Process | Added risk assessment to sprint plans | ✅ Implemented | Identified 2 risks proactively |
+| 8 | Testing | Added parallel log monitoring | [OK] Implemented | Caught 3 errors in real-time |
+| 8 | Documentation | Created QUICK_REFERENCE.md | [OK] Implemented | Reduced file lookup time by 50% |
+| 9 | Logging | Keyword-based logging with AppLogger | [OK] Implemented | Easy log filtering |
+| 9 | Process | Added risk assessment to sprint plans | [OK] Implemented | Identified 2 risks proactively |
 ```
 
 ### Metrics to Track
@@ -597,12 +597,12 @@ Identify patterns over multiple sprints:
 
 ### When to Conduct Retrospective
 
-**✅ Always**:
+**[OK] Always**:
 - After every sprint (mandatory)
 - After PR created and before merge
 - When sprint work is complete
 
-**❌ Never**:
+**[FAIL] Never**:
 - During sprint execution (too early)
 - After PR already merged (too late)
 - When context will be lost
@@ -721,10 +721,10 @@ Based on feedback analysis, here are proposed improvements grouped by implementa
 - **What**: All acceptance criteria must be measurable
 - **Why**: Prevents ambiguity, enables objective completion verification
 - **Examples**:
-  - ❌ "Comprehensive testing"
-  - ✅ "All unit and integration tests are error free and produce expected results"
-  - ❌ "Code quality improvements"
-  - ✅ "Reduce all warnings in production code that can be accomplished in 1 hour"
+  - [FAIL] "Comprehensive testing"
+  - [OK] "All unit and integration tests are error free and produce expected results"
+  - [FAIL] "Code quality improvements"
+  - [OK] "Reduce all warnings in production code that can be accomplished in 1 hour"
 - **Implementation**: Update sprint plan templates with examples
 - **Effort**: 15 minutes
 - **Impact**: High - eliminates rework from unclear requirements

@@ -30,14 +30,14 @@ void main() {
       expect(ruleProvider.rules!.rules.length, greaterThan(0),
           reason: 'Should have loaded rules from YAML migration');
 
-      print('✅ Loaded ${ruleProvider.rules!.rules.length} rules from database');
+      print('[OK] Loaded ${ruleProvider.rules!.rules.length} rules from database');
       print('   Rules: ${ruleProvider.rules!.rules.map((r) => r.name).toList()}');
 
       // Verify safe senders loaded
       expect(ruleProvider.safeSenders, isNotNull,
           reason: 'Safe senders should not be null after initialization');
       print(
-          '✅ Loaded ${ruleProvider.safeSenders!.safeSenders.length} safe senders from database');
+          '[OK] Loaded ${ruleProvider.safeSenders!.safeSenders.length} safe senders from database');
     });
 
     test('Scan AOL Bulk Mail Testing folder - rules should match', skip: 'Requires real AOL credentials and network access',
@@ -48,7 +48,7 @@ void main() {
       final credentials = await credStore.getCredentials(accountId);
 
       if (credentials == null) {
-        print('⚠️  Skipping test - AOL credentials not found for $accountId');
+        print('[WARNING]  Skipping test - AOL credentials not found for $accountId');
         print('   This test requires AOL credentials to be saved in secure storage');
         return; // Skip test if no credentials
       }
@@ -63,7 +63,7 @@ void main() {
         scanProvider: scanProvider,
       );
 
-      print('🔍 Starting scan of Bulk Mail Testing folder...');
+      print('[INVESTIGATION] Starting scan of Bulk Mail Testing folder...');
 
       // Scan the Bulk Mail Testing folder (30 days back)
       await scanner.scanInbox(
@@ -104,7 +104,7 @@ void main() {
           '   Match rate: ${(matchPercentage * 100).toStringAsFixed(1)}% of emails matched rules');
 
       if (matchPercentage < 0.5) {
-        print('   ⚠️  Warning: Less than 50% of emails matched rules');
+        print('   [WARNING]  Warning: Less than 50% of emails matched rules');
         print('      Expected: Most emails in Bulk Mail Testing should match spam rules');
         print('      Actual: Only $matchedCount out of $totalEmails matched');
       }
@@ -118,7 +118,7 @@ void main() {
       final credentials = await credStore.getCredentials(accountId);
 
       if (credentials == null) {
-        print('⚠️  Skipping test - AOL credentials not found');
+        print('[WARNING]  Skipping test - AOL credentials not found');
         return; // Skip test if no credentials
       }
 
@@ -140,9 +140,9 @@ void main() {
 
         expect(scanProvider.isComplete, isTrue,
             reason: 'AOL adapter should be able to connect');
-        print('✅ AOL adapter connected successfully');
+        print('[OK] AOL adapter connected successfully');
       } catch (e) {
-        print('❌ AOL adapter connection failed: $e');
+        print('[FAIL] AOL adapter connection failed: $e');
         rethrow;
       }
     }, timeout: const Timeout(Duration(minutes: 3)));

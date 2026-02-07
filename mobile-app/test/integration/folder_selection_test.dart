@@ -161,7 +161,7 @@ void main() {
       expect(selections['sent'], isFalse, reason: 'Sent should NOT be pre-selected');
       expect(selections['custom'], isFalse, reason: 'Custom folders should NOT be pre-selected');
 
-      print('✅ Pre-selection logic verified:');
+      print('[OK] Pre-selection logic verified:');
       print('   Inbox: ${selections['inbox']}');
       print('   Bulk Mail: ${selections['bulk_mail']}');
       print('   Trash: ${selections['trash']}');
@@ -201,7 +201,7 @@ void main() {
       expect(preselectedFolders, contains('Bulk Email'));
       expect(preselectedFolders, contains('Spam'));
 
-      print('✅ AOL pre-selection verified:');
+      print('[OK] AOL pre-selection verified:');
       print('   Pre-selected folders: $preselectedFolders');
     });
   });
@@ -251,7 +251,7 @@ void main() {
         );
       }
 
-      print('✅ Folder sorting verified:');
+      print('[OK] Folder sorting verified:');
       for (var f in folders) {
         print('   ${f.displayName} (${f.canonicalName.name})');
       }
@@ -294,7 +294,7 @@ void main() {
 
       expect(filtered3.length, equals(3));
 
-      print('✅ Search/filter functionality verified');
+      print('[OK] Search/filter functionality verified');
     });
   });
 

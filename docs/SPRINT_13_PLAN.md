@@ -333,10 +333,10 @@ result = result.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
    - **Validation**: Conditional logic prevents unnecessary moves
 
 ### All Risk Mitigations Validated
-✅ All 4 tasks completed with risk mitigations in place
-✅ 932 tests passing
-✅ Analyzer clean
-✅ Windows app builds and launches successfully
+[OK] All 4 tasks completed with risk mitigations in place
+[OK] 932 tests passing
+[OK] Analyzer clean
+[OK] Windows app builds and launches successfully
 
 ---
 

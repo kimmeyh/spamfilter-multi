@@ -6,13 +6,13 @@ Code review issues tracked in GitHub. Last updated: January 7, 2026.
 
 | Status | Count | Issues |
 |--------|-------|--------|
-| ✅ Fixed | 8 | #4, #8, #18, #38, #39, #40, #41, #43 |
-| 🔄 Open | 1 | #44 |
-| 📋 Created | 1 | #44 (Outlook implementation) |
+| [OK] Fixed | 8 | #4, #8, #18, #38, #39, #40, #41, #43 |
+| [PENDING] Open | 1 | #44 |
+| [CHECKLIST] Created | 1 | #44 (Outlook implementation) |
 
 ---
 
-## ✅ Fixed GitHub Repo Issues
+## [OK] Fixed GitHub Repo Issues
 
 ### Issue #4: Silent regex compilation failures
 - **Fixed**: Jan 3, 2026
@@ -53,7 +53,7 @@ Code review issues tracked in GitHub. Last updated: January 7, 2026.
 
 ---
 
-## 🔄 Open Issues
+## [PENDING] Open Issues
 
 ### Issue #44: Outlook.com OAuth implementation
 **Priority**: Deferred | **Labels**: `enhancement`, `platform:outlook`
