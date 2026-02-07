@@ -74,97 +74,60 @@ See CHANGELOG.md for detailed feature history.
 
 **Status**: ⏸️ AWAITING USER DIRECTION
 
-**Last Completed Sprint**: Sprint 13 (February 6, 2026)
+**Last Completed Sprint**: Sprint 13 (February 7, 2026)
 - See SPRINT_13_PLAN.md for full details
-- PR #136 in review: https://github.com/kimmeyh/spamfilter-multi/pull/136
+- PR #136 merged to develop: https://github.com/kimmeyh/spamfilter-multi/pull/136
 - Features: F16A (Subject Cleaning), F15 (Settings UI), F14 (Deleted Rule Folder), F13 (Safe Sender Folder)
 
 **Next Sprint Candidates**:
 
-### Option 1: SPRINT 12 - MVP Core Features + Sprint 11 Retrospective Actions
-**Estimated Duration**: 48-54 hours (multi-session sprint)
-**Model Assignment**: Sonnet (architecture, F1-F3) + Haiku (F9, F10, retrospective items)
-**Objective**: Implement core MVP features (Settings, Scan Results Processing, Interactive Rule Management) plus address Sprint 11 retrospective technical debt
+### Option 1: Background Scanning + Persistent Gmail Auth (Original Sprint 13 Scope - Deferred)
+**Estimated Duration**: 22-28 hours
+**Model Assignment**: Sonnet (architecture, integration) + Haiku (testing)
+**Objective**: Windows background scanning with Task Scheduler + long-lived Gmail authentication
 
 **Tasks**:
+- **F5**: Background Scanning - Windows Desktop (~14-16h)
+- **F12**: Persistent Gmail Authentication (~8-12h)
 
-### Sprint 11 Retrospective Actions (High Priority)
-- **Task R1**: Create integration test for readonly mode enforcement
-  - Test that `ScanMode.readonly` prevents `platform.takeAction()` calls
-  - Test that `ScanMode.fullScan` allows actions
-  - Prevents regression of Issue #9
-  - **Effort**: 2-3 hours
+See [detailed F5/F12 specifications below](#f5-background-scanning---windows-desktop) for complete task breakdown.
 
-- **Task R2**: Update SPRINT_EXECUTION_WORKFLOW.md Phase 3.3
-  - Clarify that Claude Code builds and runs app before user testing
-  - Document monitoring requirements
-  - Add pre-testing sanity check list
-  - **Effort**: 1-2 hours
+---
 
-- **Task R3**: Document Windows environment workarounds
-  - Unicode encoding fixes (`PYTHONIOENCODING=utf-8`)
-  - PowerShell command best practices
-  - Add to TROUBLESHOOTING.md or WINDOWS_DEVELOPMENT_GUIDE.md
-  - **Effort**: 1-2 hours
+### Option 2: UI Polish + Bug Fixes + Technical Debt
+**Estimated Duration**: 15-25 hours
+**Model Assignment**: Sonnet (bug #128) + Haiku (enhancements, cleanup)
+**Objective**: Address user experience issues and code quality
 
-- **Task R4**: Add delete-to-trash integration tests
-  - Verify IMAP moves to Trash (not expunge)
-  - Verify Gmail uses trash API
-  - Test recovery workflow
-  - **Effort**: 2-3 hours
+**Tasks**:
+- **#128**: Progressive Folder Scan Updates (~4-6h) - Sonnet
+- **#123**: Settings Screen Restructure (~6-8h) - Haiku
+- **#124**: Default Folders UI Consistency (~2-3h) - Haiku
+- **#125**: Enhanced Demo Scan (~4-6h) - Haiku
+- **#126**: Windows Directory Browser (~3-4h) - Haiku
+- **#130**: Analyzer Warnings Cleanup (~4-6h) - Haiku (FINAL TASK)
 
-### Technical Debt (From Backlog Refinement)
-- **Task F9**: Database Test Refactoring (Issue #57)
-  - Refactor tests to use actual DatabaseHelper (in-memory)
-  - Remove duplicated schema declarations
-  - **Effort**: 2-3 hours
+---
 
-- **Task F10**: Foreign Key Constraint Testing (Issue #58)
-  - Enable foreign keys in DatabaseHelper at connection time
-  - Update test to verify constraints are enforced
-  - **Effort**: 1-2 hours
+### Option 3: Custom Sprint (User-Defined)
+User selects specific issues from backlog based on priorities.
 
-### MVP Features (From Backlog Refinement)
-- **Task F2**: User Application Settings (HIGHEST PRIORITY)
-  - Settings UI for app-wide and per-account configuration
-  - Manual Scan Defaults (scan mode, folders, confirmations)
-  - Background Scan Defaults (frequency, enabled, folders)
-  - Per-account overrides
-  - SQLite storage for settings
-  - **Effort**: 14-16 hours
+---
 
-- **Task F1**: Processing Scan Results
-  - Persistent scan result storage (SQLite table)
-  - Enhanced scan results list UI
-  - Email detail screen with view options
-  - Action buttons (safe sender, create rule, delete, ignore)
-  - Batch actions for bulk processing
-  - **Effort**: 14-16 hours
+**Sprint 11 Retrospective Actions**: [OK] **ALL COMPLETE**
+All 4 retrospective actions (R1-R4) were completed in Sprint 12:
+- [OK] R1: Readonly mode integration tests (Issue #117)
+- [OK] R2: SPRINT_EXECUTION_WORKFLOW.md updates (Issue #115)
+- [OK] R3: Windows environment documentation (Issue #116)
+- [OK] R4: Delete-to-trash integration tests (Issue #118)
 
-- **Task F3**: Interactive Rule & Safe Sender Management
-  - Quick-add safe sender from email (exact or domain)
-  - Create rule from email (pattern suggestions)
-  - Safe sender exceptions
-  - Pattern testing UI
-  - **Effort**: 16-18 hours
-
-**Acceptance Criteria**:
-- [ ] Readonly mode integration test prevents Issue #9 regression
-- [ ] Delete-to-trash behavior verified with integration tests
-- [ ] SPRINT_EXECUTION_WORKFLOW.md updated with pre-testing checklist
-- [ ] Windows environment issues documented
-- [ ] Database tests use actual DatabaseHelper (no schema duplication)
-- [ ] Foreign key constraints enforced and tested
-- [ ] Settings screen functional with all categories
-- [ ] Settings persist across app restarts
-- [ ] Scan results stored and retrievable
-- [ ] Email detail view shows headers and body
-- [ ] Safe sender can be added from email detail
-- [ ] Rules can be created from email detail
-- [ ] Pattern testing shows match preview
-- [ ] All tests pass (100% pass rate)
-- [ ] Zero analyzer warnings
-- [ ] Manual testing on Windows Desktop passes
+**Sprint 12 MVP Features**: [OK] **ALL COMPLETE**
+All MVP features and technical debt completed in Sprint 12:
+- [OK] F1: Processing Scan Results
+- [OK] F2: User Application Settings
+- [OK] F3: Interactive Rule & Safe Sender Management
+- [OK] F9: Database Test Refactoring (Issue #57)
+- [OK] F10: Foreign Key Constraint Testing (Issue #58)
 
 **Risks**:
 | Risk | Likelihood | Impact | Mitigation |
