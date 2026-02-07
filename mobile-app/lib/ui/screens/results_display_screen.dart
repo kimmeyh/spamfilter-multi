@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
@@ -416,7 +417,29 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     final allResults = scanProvider.results;
     final filteredResults = _getFilteredResults(allResults);
 
-    return Scaffold(
+    // Issue 2: Wrap with Focus to detect Ctrl+F keyboard shortcut
+    return Focus(
+      autofocus: true,
+      onKeyEvent: (node, event) {
+        // Detect Ctrl+F (or Cmd+F on macOS)
+        if (event is KeyDownEvent) {
+          final isCtrlPressed = event.logicalKey == LogicalKeyboardKey.controlLeft ||
+                                  event.logicalKey == LogicalKeyboardKey.controlRight ||
+                                  event.logicalKey == LogicalKeyboardKey.metaLeft ||
+                                  event.logicalKey == LogicalKeyboardKey.metaRight;
+          final isFPressed = event.logicalKey == LogicalKeyboardKey.keyF;
+
+          // Check if Ctrl/Cmd + F is pressed
+          if ((HardwareKeyboard.instance.isControlPressed || HardwareKeyboard.instance.isMetaPressed) && isFPressed) {
+            setState(() {
+              _showSearch = true;
+            });
+            return KeyEventResult.handled;
+          }
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Scaffold(
       appBar: AppBarWithExit(
         title: _showSearch
             ? TextField(
@@ -587,7 +610,8 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           ],
         ),
       ),
-    );
+    ),
+    ); // Close Focus widget for Issue 2: Ctrl+F shortcut
   }
 
   Widget _buildFilterStatus(int filteredCount, int totalCount) {
