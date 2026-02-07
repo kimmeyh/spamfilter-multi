@@ -49,9 +49,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   
   // Search state (Item 8: Ctrl-F search)
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode(); // Issue 2a: Auto-focus on Ctrl+F
   String _searchQuery = '';
   bool _showSearch = false;
-  
+
   // Folder filter state (Item 6: folder dropdown)
   Set<String> _selectedFolders = {};
 
@@ -68,10 +69,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       });
     });
   }
-  
+
   @override
   void dispose() {
     _searchController.dispose();
+    _searchFocusNode.dispose(); // Issue 2a: Dispose focus node
     super.dispose();
   }
 
@@ -442,6 +444,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
             setState(() {
               _showSearch = true;
             });
+            // Issue 2a: Auto-focus the search field after opening
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _searchFocusNode.requestFocus();
+            });
             return KeyEventResult.handled;
           }
         }
@@ -452,11 +458,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         title: _showSearch
             ? TextField(
                 controller: _searchController,
+                focusNode: _searchFocusNode, // Issue 2a: Connect focus node
                 autofocus: true,
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: Colors.black), // Issue 2b: Black text
                 decoration: const InputDecoration(
                   hintText: 'Search emails...',
-                  hintStyle: TextStyle(color: Colors.white70),
+                  hintStyle: TextStyle(color: Colors.black54), // Issue 2b: Dark gray hint
                   border: InputBorder.none,
                 ),
                 onChanged: (value) {
@@ -481,12 +488,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               )
             : IconButton(
                 icon: const Icon(Icons.arrow_back),
-                tooltip: 'Back to Account Selection',
+                tooltip: 'Back to Scan Progress',
                 onPressed: () {
                   // Dismiss any showing snackbar before navigating
                   ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                  // Pop back to Account Selection Screen (past Scan Progress)
-                  Navigator.popUntil(context, (route) => route.isFirst);
+                  // Pop back to Scan Progress Screen
+                  Navigator.pop(context);
                 },
               ),
         actions: [
