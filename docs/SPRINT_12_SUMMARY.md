@@ -20,25 +20,25 @@ Implement core MVP features (Settings, Scan Results Processing, Interactive Rule
 
 | Task | Issue | Description | Status |
 |------|-------|-------------|--------|
-| F2 | #120 | User Application Settings | ✅ Complete |
-| F1 | #121 | Processing Scan Results | ✅ Complete |
-| F3 | #122 | Interactive Rule & Safe Sender Management | ✅ Complete |
+| F2 | #120 | User Application Settings | [OK] Complete |
+| F1 | #121 | Processing Scan Results | [OK] Complete |
+| F3 | #122 | Interactive Rule & Safe Sender Management | [OK] Complete |
 
 ### Sprint 11 Retrospective Actions
 
 | Task | Issue | Description | Status |
 |------|-------|-------------|--------|
-| R1 | #117 | Readonly mode integration tests | ✅ Complete |
-| R2 | #115 | Update SPRINT_EXECUTION_WORKFLOW.md Phase 3.3 | ✅ Complete |
-| R3 | #116 | Document Windows environment workarounds | ✅ Complete |
-| R4 | #118 | Delete-to-trash integration tests | ✅ Complete |
+| R1 | #117 | Readonly mode integration tests | [OK] Complete |
+| R2 | #115 | Update SPRINT_EXECUTION_WORKFLOW.md Phase 3.3 | [OK] Complete |
+| R3 | #116 | Document Windows environment workarounds | [OK] Complete |
+| R4 | #118 | Delete-to-trash integration tests | [OK] Complete |
 
 ### Technical Debt
 
 | Task | Issue | Description | Status |
 |------|-------|-------------|--------|
-| F9 | #57 | Database test refactoring | ✅ Complete |
-| F10 | #119 | Fix test compilation errors | ✅ Complete |
+| F9 | #57 | Database test refactoring | [OK] Complete |
+| F10 | #119 | Fix test compilation errors | [OK] Complete |
 
 ---
 

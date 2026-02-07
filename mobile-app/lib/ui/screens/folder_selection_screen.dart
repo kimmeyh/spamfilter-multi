@@ -1,6 +1,6 @@
 /// Folder Selection Screen for multi-folder email scanning
 /// 
-/// ✨ PHASE 3.3: Dynamic folder discovery (Issue #37)
+/// [NEW] PHASE 3.3: Dynamic folder discovery (Issue #37)
 /// - Dynamically fetches all folders/labels from email account
 /// - Multi-select picker with search/filter
 /// - Pre-selects typical junk folders (inbox, spam, trash)
@@ -10,7 +10,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 
-// ✨ PHASE 3.3: Dynamic folder discovery (Issue #37)
+// [NEW] PHASE 3.3: Dynamic folder discovery (Issue #37)
 import 'package:googleapis/gmail/v1.dart' as gmail;
 import 'package:http/http.dart' as http;
 import '../../adapters/email_providers/spam_filter_platform.dart';
@@ -52,18 +52,18 @@ class FolderSelectionScreen extends StatefulWidget {
 class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
   final Logger _logger = Logger();
   
-  // ✨ PHASE 3.3: Dynamic folder discovery state (Issue #37)
+  // [NEW] PHASE 3.3: Dynamic folder discovery state (Issue #37)
   bool _isLoading = true;
   String? _errorMessage;
   List<FolderInfo> _allFolders = [];
   Map<String, bool> _selectedFolders = {};
   bool _selectAllChecked = false;
   
-  // ✨ PHASE 3.3: Search/filter functionality
+  // [NEW] PHASE 3.3: Search/filter functionality
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   
-  /// ✨ PHASE 3.3: Canonical folder types to pre-select
+  /// [NEW] PHASE 3.3: Canonical folder types to pre-select
   static const Set<CanonicalFolder> PRESELECT_FOLDER_TYPES = {
     CanonicalFolder.inbox,
     CanonicalFolder.junk,
@@ -73,7 +73,7 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchFoldersDynamically();  // ✨ PHASE 3.3: Dynamic discovery
+    _fetchFoldersDynamically();  // [NEW] PHASE 3.3: Dynamic discovery
     
     // Listen for search query changes
     _searchController.addListener(() {
@@ -89,7 +89,7 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
     super.dispose();
   }
 
-  /// ✨ PHASE 3.3: Fetch folders dynamically from email provider (Issue #37)
+  /// [NEW] PHASE 3.3: Fetch folders dynamically from email provider (Issue #37)
   Future<void> _fetchFoldersDynamically() async {
     setState(() {
       _isLoading = true;
@@ -101,8 +101,8 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
       List<FolderInfo> folders;
       
       if (widget.platformId == 'gmail') {
-        // ✨ Gmail: Use GoogleAuthService to get valid token (handles expiration & refresh)
-        _logger.i('🔍 Fetching Gmail folders for accountId: ${widget.accountId}');
+        // [NEW] Gmail: Use GoogleAuthService to get valid token (handles expiration & refresh)
+        _logger.i('[INVESTIGATION] Fetching Gmail folders for accountId: ${widget.accountId}');
         
         final authService = GoogleAuthService();
         
@@ -116,7 +116,7 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
           throw Exception('Unable to get valid Gmail access token for account ${widget.accountId}. Please sign in again.');
         }
         
-        _logger.i('✅ Got valid access token (${accessToken.length} chars)');
+        _logger.i('[OK] Got valid access token (${accessToken.length} chars)');
         
         final authClient = _GoogleAuthClient({'Authorization': 'Bearer $accessToken'});
         final gmailApi = gmail.GmailApi(authClient);
@@ -171,9 +171,9 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
         _isLoading = false;
       });
       
-      _logger.i('✅ Fetched ${folders.length} folders for ${widget.platformId}');
+      _logger.i('[OK] Fetched ${folders.length} folders for ${widget.platformId}');
     } catch (e) {
-      _logger.e('❌ Failed to fetch folders: $e');
+      _logger.e('[FAIL] Failed to fetch folders: $e');
       setState(() {
         _errorMessage = 'Failed to load folders: $e';
         _isLoading = false;
@@ -200,7 +200,7 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
     _logger.d('Toggle folder "$folderId": $value');
   }
 
-  /// ✨ PHASE 3.3: Get filtered folder list based on search query
+  /// [NEW] PHASE 3.3: Get filtered folder list based on search query
   List<FolderInfo> get _filteredFolders {
     if (_searchQuery.isEmpty) {
       return _allFolders;
@@ -251,7 +251,7 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
     }
   }
 
-  /// ✨ PHASE 3.3: Helper to fetch Gmail labels via API
+  /// [NEW] PHASE 3.3: Helper to fetch Gmail labels via API
   Future<List<FolderInfo>> _fetchGmailLabels(gmail.GmailApi gmailApi) async {
     try {
       final labelsResponse = await gmailApi.users.labels.list('me');
@@ -298,10 +298,10 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
         }
       }
       
-      _logger.i('✅ Fetched ${folders.length} Gmail labels');
+      _logger.i('[OK] Fetched ${folders.length} Gmail labels');
       return folders;
     } catch (e) {
-      _logger.e('❌ Failed to list Gmail labels: $e');
+      _logger.e('[FAIL] Failed to list Gmail labels: $e');
       throw Exception('Failed to list Gmail labels: $e');
     }
   }
@@ -359,7 +359,7 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
 
           const Divider(height: 1),
 
-          // ✨ PHASE 3.3: Show loading/error states (Issue #37)
+          // [NEW] PHASE 3.3: Show loading/error states (Issue #37)
           if (_isLoading)
             const Expanded(
               child: Center(
@@ -397,7 +397,7 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
             )
           else
             ...[
-              // ✨ PHASE 3.3: Search/filter box (Issue #37)
+              // [NEW] PHASE 3.3: Search/filter box (Issue #37)
               Padding(
                 padding: const EdgeInsets.all(12),
                 child: TextField(
@@ -455,7 +455,7 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
                           ),
                           const SizedBox(width: 12),
                           Expanded(child: Text(folder.displayName)),
-                          // ✨ PHASE 3.3: Show pre-selected badge
+                          // [NEW] PHASE 3.3: Show pre-selected badge
                           if (PRESELECT_FOLDER_TYPES.contains(folder.canonicalName))
                             Container(
                               padding: const EdgeInsets.symmetric(
@@ -506,7 +506,7 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
                 ElevatedButton(
                   onPressed: _selectedFolders.values.any((v) => v)
                       ? () {
-                          // ✨ PHASE 3.3: Get selected folder names (not IDs)
+                          // [NEW] PHASE 3.3: Get selected folder names (not IDs)
                           final selectedFolderIds = _selectedFolders.entries
                               .where((e) => e.value)
                               .map((e) => e.key)
@@ -518,7 +518,7 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
                               .toList();
 
                           _logger.i(
-                            '✅ Selected folders for scan: $selectedFolderNames',
+                            '[OK] Selected folders for scan: $selectedFolderNames',
                           );
 
                           // Return selection to caller (using folder names for compatibility)
@@ -537,7 +537,7 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
   }
 }
 
-/// ✨ PHASE 3.3: HTTP client with Google auth headers for direct Gmail API calls
+/// [NEW] PHASE 3.3: HTTP client with Google auth headers for direct Gmail API calls
 class _GoogleAuthClient extends http.BaseClient {
   final Map<String, String> _headers;
   final http.Client _client = http.Client();

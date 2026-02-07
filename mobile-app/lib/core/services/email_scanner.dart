@@ -7,6 +7,7 @@ import '../services/rule_evaluator.dart';
 import '../services/pattern_compiler.dart';
 import '../storage/database_helper.dart';
 import '../storage/scan_result_store.dart';
+import '../storage/settings_store.dart';
 import '../storage/unmatched_email_store.dart';
 import '../utils/app_logger.dart';
 import '../../adapters/email_providers/platform_registry.dart';
@@ -20,6 +21,7 @@ class EmailScanner {
   final RuleSetProvider ruleSetProvider;
   final EmailScanProvider scanProvider;
   final SecureCredentialsStore _credStore = SecureCredentialsStore();
+  final SettingsStore _settingsStore = SettingsStore();
 
   EmailScanner({
     required this.platformId,
@@ -29,7 +31,7 @@ class EmailScanner {
   });
 
   /// Scan inbox with live IMAP connection
-  /// ✨ SPRINT 4: Includes scan result persistence
+  /// [NEW] SPRINT 4: Includes scan result persistence
   Future<void> scanInbox({
     int daysBack = 7,
     List<String> folderNames = const ['INBOX'],
@@ -38,7 +40,7 @@ class EmailScanner {
     SpamFilterPlatform? platform;
 
     try {
-      // ✨ SPRINT 4: Initialize persistence stores if not already done
+      // [NEW] SPRINT 4: Initialize persistence stores if not already done
       final dbHelper = DatabaseHelper();
       scanProvider.initializePersistence(
         scanResultStore: ScanResultStore(dbHelper),
@@ -60,13 +62,17 @@ class EmailScanner {
 
       await platform.loadCredentials(credentials);
 
+      // 2.5. Configure deleted rule folder from account settings
+      final deletedRuleFolder = await _settingsStore.getAccountDeletedRuleFolder(accountId);
+      platform.setDeletedRuleFolder(deletedRuleFolder);
+
       // 3. Fetch messages
       final messages = await platform.fetchMessages(
         daysBack: daysBack,
         folderNames: folderNames,
       );
 
-      // 4. Start scan (✨ SPRINT 4: Now async to enable persistence)
+      // 4. Start scan ([NEW] SPRINT 4: Now async to enable persistence)
       await scanProvider.startScan(
         totalEmails: messages.length,
         scanType: scanType,
@@ -111,12 +117,36 @@ class EmailScanner {
           // Check if safe sender
           if (result.isSafeSender) {
             action = EmailActionType.safeSender;
+
+            // [NEW] F13: Move safe sender to configured folder if not already there
+            final safeSenderFolder = await _settingsStore.getAccountSafeSenderFolder(accountId);
+            final targetFolder = safeSenderFolder ?? 'INBOX'; // Default to INBOX
+
+            // Only move if email is NOT already in the target folder
+            if (message.folderName != targetFolder) {
+              if (scanProvider.scanMode != ScanMode.readonly) {
+                try {
+                  AppLogger.scan('Moving safe sender email from ${message.folderName} to $targetFolder: ${message.subject}');
+                  await platform.moveToFolder(
+                    message: message,
+                    targetFolder: targetFolder,
+                  );
+                } catch (e) {
+                  success = false;
+                  error = 'Move safe sender failed: $e';
+                }
+              } else {
+                AppLogger.scan('[READONLY] Would move safe sender email to $targetFolder: ${message.subject}');
+              }
+            } else {
+              AppLogger.scan('Safe sender email already in target folder ($targetFolder), no move needed: ${message.subject}');
+            }
           }
           // Spam/phishing detected
           else if (result.shouldDelete) {
             action = EmailActionType.delete;
 
-            // ✨ FIX ISSUE #9: Only execute action if NOT in readonly mode
+            // [NEW] FIX ISSUE #9: Only execute action if NOT in readonly mode
             if (scanProvider.scanMode != ScanMode.readonly) {
               try {
                 // Delete via platform adapter
@@ -135,7 +165,7 @@ class EmailScanner {
           } else if (result.shouldMove) {
             action = EmailActionType.moveToJunk;
 
-            // ✨ FIX ISSUE #9: Only execute action if NOT in readonly mode
+            // [NEW] FIX ISSUE #9: Only execute action if NOT in readonly mode
             if (scanProvider.scanMode != ScanMode.readonly) {
               try {
                 // Move to junk folder
@@ -166,7 +196,7 @@ class EmailScanner {
         );
       }
 
-      // 7. Complete scan (✨ SPRINT 4: Now async to persist final state)
+      // 7. Complete scan ([NEW] SPRINT 4: Now async to persist final state)
       await scanProvider.completeScan();
     } catch (e) {
       // Handle scan error
@@ -211,6 +241,10 @@ class EmailScanner {
       }
 
       await platform.loadCredentials(credentials);
+
+      // Configure deleted rule folder from account settings
+      final deletedRuleFolder = await _settingsStore.getAccountDeletedRuleFolder(accountId);
+      platform.setDeletedRuleFolder(deletedRuleFolder);
 
       // List all folders
       final folders = await platform.listFolders();

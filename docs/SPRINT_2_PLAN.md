@@ -254,10 +254,10 @@ When requirements are detailed (as with Sprint 2 plan):
 ## Dependencies & Blockers
 
 ### **Sprint 1 Dependencies**
-- ✅ DatabaseHelper (Sprint 1 Task A) - Complete
-- ✅ EvaluationResult model - Already exists
-- ✅ AppPaths - Already exists
-- ✅ YamlService - Already exists
+- [OK] DatabaseHelper (Sprint 1 Task A) - Complete
+- [OK] EvaluationResult model - Already exists
+- [OK] AppPaths - Already exists
+- [OK] YamlService - Already exists
 
 ### **Known Blockers**
 - None identified

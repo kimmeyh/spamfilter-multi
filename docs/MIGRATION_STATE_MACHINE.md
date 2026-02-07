@@ -99,9 +99,9 @@ While current implementation is functional, a state machine provides:
    │
    │ (finish 100% OR crash)
    │
-   ├─→ ✅ COMPLETED (success)
+   ├─→ [OK] COMPLETED (success)
    │
-   └─→ ❌ FAILED (error during migration)
+   └─→ [FAIL] FAILED (error during migration)
 
 (On app restart:)
 ┌─────────────┐
@@ -240,39 +240,39 @@ void _checkMigrationHealth() {
 
 ### **What We Have**
 
-1. ✅ **Atomicity via UNIQUE Constraints**
+1. [OK] **Atomicity via UNIQUE Constraints**
    - Rules with same name cannot be duplicated
    - Safe senders with same pattern cannot be duplicated
    - Multiple migrations will not create data corruption
 
-2. ✅ **Backup Before Import**
+2. [OK] **Backup Before Import**
    - Original YAML files preserved in Archive/ directory
    - Manual recovery always possible
 
-3. ✅ **Graceful Error Handling**
+3. [OK] **Graceful Error Handling**
    - Individual rule failures don't stop migration
    - Partial imports don't crash the app
    - Final status report shows what succeeded/failed
 
-4. ✅ **Clear Status Reporting**
+4. [OK] **Clear Status Reporting**
    - `MigrationResults` includes counts, errors, skipped items
    - `getMigrationStatus()` provides human-readable summary
 
 ### **What We Don't Have (Yet)**
 
-1. ❌ **Explicit State Tracking**
+1. [FAIL] **Explicit State Tracking**
    - Can't distinguish between "not started" and "crashed mid-way"
    - Current approach: assume "if has rules, completed"
 
-2. ❌ **Crash Detection**
+2. [FAIL] **Crash Detection**
    - No timestamp or "last update" tracking
    - Can't detect if migration got stuck
 
-3. ❌ **Checkpoint Recovery**
+3. [FAIL] **Checkpoint Recovery**
    - Can't resume from checkpoint if crashed at rule 3000 of 5000
    - Current approach: re-import everything (UNIQUE constraints prevent duplicates)
 
-4. ❌ **Timeout Alert**
+4. [FAIL] **Timeout Alert**
    - No monitoring if migration takes longer than expected
    - No alerting mechanism
 

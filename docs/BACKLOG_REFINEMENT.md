@@ -197,7 +197,7 @@ For newly identified work:
 
 ```markdown
 ### [Feature Name]
-**Status**: 📋 NEW (refinement date)
+**Status**: [CHECKLIST] NEW (refinement date)
 **Priority**: [Critical/High/Medium/Low]
 **Estimated Effort**: [XS/S/M/L/XL] (~N hours)
 **Value Statement**: This enables... / This prevents...

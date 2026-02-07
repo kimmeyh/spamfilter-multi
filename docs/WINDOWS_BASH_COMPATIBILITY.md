@@ -40,7 +40,7 @@ Error: Exit code 1
 
 ## What Works vs What Does NOT
 
-### ✅ What Works in Bash (WSL Environment)
+### [OK] What Works in Bash (WSL Environment)
 
 | Operation | Command | Notes |
 |-----------|---------|-------|
@@ -52,7 +52,7 @@ Error: Exit code 1
 | **File listing** | `find . -name "*.dart"` | Unix find works in current dir |
 | **Text processing** | `grep -r "pattern" .` | Relative paths work |
 
-### ❌ What Does NOT Work in Bash
+### [FAIL] What Does NOT Work in Bash
 
 | Operation | Problem | Solution |
 |-----------|---------|----------|
@@ -63,7 +63,7 @@ Error: Exit code 1
 | **Complex path operations** | `cd "D:\Data\Harold\..."` | Even quoted, Windows paths cause confusion |
 | **PowerShell cmdlets** | `Get-Process`, `Where-Object`, `Select-Object` | These are PowerShell only - see table below |
 
-### ❌ PowerShell Cmdlets in Bash (EXIT CODE 127)
+### [FAIL] PowerShell Cmdlets in Bash (EXIT CODE 127)
 
 **Error Pattern**: `/usr/bin/bash: line 1: Get-Process: command not found`
 
@@ -131,7 +131,7 @@ ps aux | grep 'spam_filter' | awk '{print $2, $11}'
 ### Pattern 1: Git Operations (No Path Changes)
 
 ```bash
-# ✅ WORKS: Stay in current directory, run git
+# [OK] WORKS: Stay in current directory, run git
 git status
 git branch --show-current
 git log --oneline -1
@@ -144,7 +144,7 @@ git commit -m "message"
 ### Pattern 2: Relative Path Operations
 
 ```bash
-# ✅ WORKS: Relative paths from current directory
+# [OK] WORKS: Relative paths from current directory
 find . -name "*.dart"
 grep -r "pattern" .
 ls -la mobile-app/lib/
@@ -155,7 +155,7 @@ ls -la mobile-app/lib/
 ### Pattern 3: WSL Path Conversion (If Needed)
 
 ```bash
-# ✅ WORKS: Convert Windows path to WSL path
+# [OK] WORKS: Convert Windows path to WSL path
 # Windows: C:\Users\kimme\path
 # WSL: /mnt/c/Users/kimme/path
 
@@ -210,10 +210,10 @@ cd D:\Data\Harold\...
 
 **Fix**: Properly quote the path
 ```bash
-# ✅ CORRECT: Single quotes work in bash
+# [OK] CORRECT: Single quotes work in bash
 cd "/mnt/d/Data/Harold/github/spamfilter-multi"
 
-# ✅ ALSO WORKS: Escape spaces with backslash
+# [OK] ALSO WORKS: Escape spaces with backslash
 cd /mnt/d/Data/Harold\ /github/spamfilter-multi
 ```
 
@@ -231,19 +231,19 @@ wc: 'D:DataHaroldgithubspamfilter-multidocsALL_SPRINTS_MASTER_PLAN.md': No such 
 
 **Fix Option 1**: Use forward slashes (recommended)
 ```bash
-# ✅ CORRECT: Forward slashes work in bash on Windows
+# [OK] CORRECT: Forward slashes work in bash on Windows
 wc -l "D:/Data/Harold/github/spamfilter-multi/docs/ALL_SPRINTS_MASTER_PLAN.md"
 ```
 
 **Fix Option 2**: Use WSL path conversion
 ```bash
-# ✅ CORRECT: Convert to WSL path format
+# [OK] CORRECT: Convert to WSL path format
 wc -l "/mnt/d/Data/Harold/github/spamfilter-multi/docs/ALL_SPRINTS_MASTER_PLAN.md"
 ```
 
 **Fix Option 3**: Use PowerShell instead
 ```powershell
-# ✅ CORRECT: PowerShell handles Windows paths natively
+# [OK] CORRECT: PowerShell handles Windows paths natively
 Get-Content "D:\Data\Harold\github\spamfilter-multi\docs\ALL_SPRINTS_MASTER_PLAN.md" | Measure-Object -Line
 ```
 
@@ -307,7 +307,7 @@ START: Do I need to execute a shell command?
 ### For Git Operations
 
 ```bash
-# ✅ GOOD: Simple git commands stay in current directory
+# [OK] GOOD: Simple git commands stay in current directory
 git status
 git branch --show-current
 git log --oneline -1
@@ -317,7 +317,7 @@ git diff main..HEAD
 ### For Flutter/Build Operations
 
 ```powershell
-# ✅ GOOD: Use PowerShell for build tools
+# [OK] GOOD: Use PowerShell for build tools
 cd "D:\Data\Harold\github\spamfilter-multi\mobile-app"
 flutter test
 flutter analyze
@@ -326,7 +326,7 @@ flutter analyze
 ### For File Operations
 
 ```bash
-# ✅ GOOD: Use relative paths in bash
+# [OK] GOOD: Use relative paths in bash
 grep -r "pattern" . --include="*.dart"
 find . -name "*.dart" -type f
 ```
@@ -334,7 +334,7 @@ find . -name "*.dart" -type f
 ### For Complex Workflows
 
 ```powershell
-# ✅ GOOD: Use PowerShell for multi-step operations
+# [OK] GOOD: Use PowerShell for multi-step operations
 cd "D:\Data\Harold\github\spamfilter-multi"
 git status
 cd mobile-app

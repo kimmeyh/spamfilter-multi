@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
@@ -34,9 +35,47 @@ class ResultsDisplayScreen extends StatefulWidget {
   State<ResultsDisplayScreen> createState() => _ResultsDisplayScreenState();
 }
 
+/// Special filter types beyond EmailActionType
+enum SpecialFilter {
+  found,      // All emails (Found)
+  processed,  // All processed emails (Processed)
+  error,      // Only emails with errors
+}
+
 class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
-  // Filter state: null means show all, otherwise filter by this action type
+  // Filter state: null means show all, otherwise filter by this action type or special filter
   EmailActionType? _filter;
+  SpecialFilter? _specialFilter;
+  
+  // Search state (Item 8: Ctrl-F search)
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode(); // Issue 2a: Auto-focus on Ctrl+F
+  String _searchQuery = '';
+  bool _showSearch = false;
+
+  // Folder filter state (Item 6: folder dropdown)
+  Set<String> _selectedFolders = {};
+
+  // Issue 3: Cache folders for performance
+  List<String>? _cachedFolders;
+
+  @override
+  void initState() {
+    super.initState();
+    // Item 4: Set Processed filter on by default
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() {
+        _specialFilter = SpecialFilter.processed;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchFocusNode.dispose(); // Issue 2a: Dispose focus node
+    super.dispose();
+  }
 
   /// Show revert confirmation dialog and execute revert
   Future<void> _confirmAndRevert(
@@ -104,7 +143,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       try {
         // Execute revert
         await scanProvider.revertLastRun();
-        logger.i('✅ Successfully reverted ${scanProvider.revertableActionCount} actions');
+        logger.i('[OK] Successfully reverted ${scanProvider.revertableActionCount} actions');
 
         if (context.mounted) {
           // Close progress dialog
@@ -113,13 +152,13 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           // Show success message
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('✅ All changes have been reverted successfully'),
+              content: Text('[OK] All changes have been reverted successfully'),
               backgroundColor: Colors.green,
             ),
           );
         }
       } catch (e) {
-        logger.e('❌ Revert failed: $e');
+        logger.e('[FAIL] Revert failed: $e');
 
         if (context.mounted) {
           // Close progress dialog
@@ -210,7 +249,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       final file = File(filePath);
       await file.writeAsString(csvContent);
 
-      logger.i('✅ Exported scan results to: $filePath');
+      logger.i('[OK] Exported scan results to: $filePath');
 
       if (context.mounted) {
         // Show success dialog with selectable file path for copy support
@@ -258,7 +297,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         );
       }
     } catch (e) {
-      logger.e('❌ Export failed: $e');
+      logger.e('[FAIL] Export failed: $e');
 
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -271,22 +310,83 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     }
   }
 
-  /// Filter results based on current filter state
+  /// Filter results based on current filter state, search query, and folder filter
   List<EmailActionResult> _getFilteredResults(List<EmailActionResult> allResults) {
-    if (_filter == null) {
-      return allResults; // Show all
+    var results = allResults;
+    
+    // Apply special filter first (Found, Processed, Error)
+    if (_specialFilter != null) {
+      switch (_specialFilter!) {
+        case SpecialFilter.found:
+          // Show all emails (no filtering)
+          break;
+        case SpecialFilter.processed:
+          // Show only successfully processed emails
+          results = results.where((result) => result.success).toList();
+          break;
+        case SpecialFilter.error:
+          // Show only emails with errors
+          results = results.where((result) => !result.success).toList();
+          break;
+      }
     }
-
-    // Special handling for "No rule" - filter by action=none AND empty matched rule
-    if (_filter == EmailActionType.none) {
-      return allResults.where((result) {
-        final hasNoRule = (result.evaluationResult?.matchedRule ?? '').isEmpty;
-        return result.action == EmailActionType.none && hasNoRule;
+    
+    // Apply action type filter
+    if (_filter != null) {
+      // Special handling for "No rule" - filter by action=none AND empty matched rule
+      if (_filter == EmailActionType.none) {
+        results = results.where((result) {
+          final hasNoRule = (result.evaluationResult?.matchedRule ?? '').isEmpty;
+          return result.action == EmailActionType.none && hasNoRule;
+        }).toList();
+      } else {
+        // For other filters, filter by action type
+        results = results.where((result) => result.action == _filter).toList();
+      }
+    }
+    
+    // Apply search filter (Item 8: Ctrl-F search)
+    if (_searchQuery.isNotEmpty) {
+      final query = _searchQuery.toLowerCase();
+      results = results.where((result) {
+        final from = result.email.from.toLowerCase();
+        final subject = result.email.subject.toLowerCase();
+        final folder = result.email.folderName.toLowerCase();
+        final rule = (result.evaluationResult?.matchedRule ?? '').toLowerCase();
+        return from.contains(query) || 
+               subject.contains(query) || 
+               folder.contains(query) ||
+               rule.contains(query);
       }).toList();
     }
-
-    // For other filters, filter by action type
-    return allResults.where((result) => result.action == _filter).toList();
+    
+    // Apply folder filter (Item 6: folder dropdown)
+    if (_selectedFolders.isNotEmpty) {
+      results = results.where((result) {
+        return _selectedFolders.contains(result.email.folderName);
+      }).toList();
+    }
+    
+    // Item 5: Sort by folder → domain.tld → email
+    results.sort((a, b) {
+      // First sort by folder
+      final folderCompare = a.email.folderName.compareTo(b.email.folderName);
+      if (folderCompare != 0) return folderCompare;
+      
+      // Then sort by domain
+      final bodyParser = EmailBodyParser();
+      final domainA = bodyParser.extractDomainFromEmail(a.email.from) ?? '';
+      final domainB = bodyParser.extractDomainFromEmail(b.email.from) ?? '';
+      final domainCompare = domainA.compareTo(domainB);
+      if (domainCompare != 0) return domainCompare;
+      
+      // Finally sort by email
+      final emailA = bodyParser.extractEmailAddress(a.email.from);
+      final emailB = bodyParser.extractEmailAddress(b.email.from);
+      return emailA.compareTo(emailB);
+    });
+    
+    return results;
   }
 
   /// Toggle filter when stat chip is clicked
@@ -297,6 +397,20 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         _filter = null;
       } else {
         _filter = filterType;
+        _specialFilter = null; // Clear special filter when action filter is set
+      }
+    });
+  }
+  
+  /// Toggle special filter (Found, Processed, Error)
+  void _toggleSpecialFilter(SpecialFilter filterType) {
+    setState(() {
+      // If clicking the same filter, clear it (show all)
+      if (_specialFilter == filterType) {
+        _specialFilter = null;
+      } else {
+        _specialFilter = filterType;
+        _filter = null; // Clear action filter when special filter is set
       }
     });
   }
@@ -308,38 +422,124 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     final allResults = scanProvider.results;
     final filteredResults = _getFilteredResults(allResults);
 
-    return Scaffold(
+    // Issue 3: Cache folders list for performance (only extract once per results set)
+    if (_cachedFolders == null || _cachedFolders!.length != allResults.map((r) => r.email.folderName).toSet().length) {
+      _cachedFolders = allResults.map((r) => r.email.folderName).toSet().toList()..sort();
+    }
+
+    // Issue 2: Wrap with Focus to detect Ctrl+F keyboard shortcut
+    return Focus(
+      autofocus: true,
+      onKeyEvent: (node, event) {
+        // Detect Ctrl+F (or Cmd+F on macOS)
+        if (event is KeyDownEvent) {
+          final isCtrlPressed = event.logicalKey == LogicalKeyboardKey.controlLeft ||
+                                  event.logicalKey == LogicalKeyboardKey.controlRight ||
+                                  event.logicalKey == LogicalKeyboardKey.metaLeft ||
+                                  event.logicalKey == LogicalKeyboardKey.metaRight;
+          final isFPressed = event.logicalKey == LogicalKeyboardKey.keyF;
+
+          // Check if Ctrl/Cmd + F is pressed
+          if ((HardwareKeyboard.instance.isControlPressed || HardwareKeyboard.instance.isMetaPressed) && isFPressed) {
+            setState(() {
+              _showSearch = true;
+            });
+            // Issue 2a: Auto-focus the search field after opening
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _searchFocusNode.requestFocus();
+            });
+            return KeyEventResult.handled;
+          }
+        }
+        return KeyEventResult.ignored;
+      },
+      child: Scaffold(
       appBar: AppBarWithExit(
-        title: Text('Results - ${widget.accountEmail} - ${widget.platformDisplayName}'),
-        // Add explicit back button that returns to account selection
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          tooltip: 'Back to Account Selection',
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'Export Results to CSV',
-            icon: const Icon(Icons.file_download),
-            onPressed: () => _exportResults(context, scanProvider),
-          ),
-          if (scanProvider.hasActionsToRevert)
-            IconButton(
-              tooltip: 'Revert Last Run',
-              icon: const Icon(Icons.undo),
-              onPressed: () => _confirmAndRevert(context, scanProvider),
-            ),
-          IconButton(
-            tooltip: 'Settings',
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => SettingsScreen(accountId: widget.accountId),
+        title: _showSearch
+            ? TextField(
+                controller: _searchController,
+                focusNode: _searchFocusNode, // Issue 2a: Connect focus node
+                autofocus: true,
+                style: const TextStyle(color: Colors.black), // Issue 2b: Black text
+                decoration: const InputDecoration(
+                  hintText: 'Search emails...',
+                  hintStyle: TextStyle(color: Colors.black54), // Issue 2b: Dark gray hint
+                  border: InputBorder.none,
                 ),
-              );
-            },
-          ),
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                  });
+                },
+              )
+            : Text('Results - ${widget.accountEmail} - ${widget.platformDisplayName}'),
+        // Add explicit back button that returns to account selection
+        leading: _showSearch
+            ? IconButton(
+                icon: const Icon(Icons.close),
+                tooltip: 'Close Search',
+                onPressed: () {
+                  setState(() {
+                    _showSearch = false;
+                    _searchQuery = '';
+                    _searchController.clear();
+                  });
+                },
+              )
+            : IconButton(
+                icon: const Icon(Icons.arrow_back),
+                tooltip: 'Back to Scan Progress',
+                onPressed: () {
+                  // Dismiss any showing snackbar before navigating
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  // Push replacement to Scan Progress screen (same as Scan Again button)
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ScanProgressScreen(
+                        platformId: widget.platformId,
+                        platformDisplayName: widget.platformDisplayName,
+                        accountId: widget.accountId,
+                        accountEmail: widget.accountEmail,
+                      ),
+                    ),
+                  );
+                },
+              ),
+        actions: [
+          if (!_showSearch) ...[
+            IconButton(
+              tooltip: 'Search (Ctrl+F)',
+              icon: const Icon(Icons.search),
+              onPressed: () {
+                setState(() {
+                  _showSearch = true;
+                });
+              },
+            ),
+            IconButton(
+              tooltip: 'Export Results to CSV',
+              icon: const Icon(Icons.file_download),
+              onPressed: () => _exportResults(context, scanProvider),
+            ),
+            if (scanProvider.hasActionsToRevert)
+              IconButton(
+                tooltip: 'Revert Last Run',
+                icon: const Icon(Icons.undo),
+                onPressed: () => _confirmAndRevert(context, scanProvider),
+              ),
+            IconButton(
+              tooltip: 'Settings',
+              icon: const Icon(Icons.settings),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => SettingsScreen(accountId: widget.accountId),
+                  ),
+                );
+              },
+            ),
+          ],
         ],
       ),
       body: Padding(
@@ -347,7 +547,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildSummary(summary, scanProvider),
+            _buildSummary(summary, scanProvider, allResults),
             const SizedBox(height: 16),
             // Show filter status if active
             if (_filter != null) ...[
@@ -368,7 +568,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                         children: [
                           SizedBox(
                             height: MediaQuery.of(context).size.height * 0.4,
-                            // ✨ SPRINT 12: Show "Scan Started" when scan is in progress
+                            // [NEW] SPRINT 12: Show "Scan Started" when scan is in progress
                             child: scanProvider.status == ScanStatus.scanning
                                 ? const ScanStartedEmptyState()
                                 : _filter == null
@@ -407,7 +607,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                 Expanded(
                   child: ElevatedButton.icon(
                     onPressed: () {
-                      // ✨ SPRINT 12 FIX: Push replacement to Scan screen directly
+                      // [NEW] SPRINT 12 FIX: Push replacement to Scan screen directly
                       // This avoids navigation state issues with pop() and ensures
                       // reliable navigation to the scan screen
                       Navigator.pushReplacement(
@@ -435,7 +635,8 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           ],
         ),
       ),
-    );
+    ),
+    ); // Close Focus widget for Issue 2: Ctrl+F shortcut
   }
 
   Widget _buildFilterStatus(int filteredCount, int totalCount) {
@@ -470,7 +671,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     );
   }
 
-  Widget _buildSummary(Map<String, dynamic> summary, EmailScanProvider scanProvider) {
+  Widget _buildSummary(Map<String, dynamic> summary, EmailScanProvider scanProvider, List<EmailActionResult> allResults) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12.0),
@@ -486,13 +687,16 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               spacing: 12,
               runSpacing: 12,
               children: [
-                _buildStatChip('Found', scanProvider.totalEmails, const Color(0xFF2196F3), Colors.white, null), // Blue - not filterable
-                _buildStatChip('Processed', scanProvider.processedCount, const Color(0xFF9C27B0), Colors.white, null), // Purple - not filterable
-                _buildStatChip('Deleted', scanProvider.deletedCount, const Color(0xFFF44336), Colors.white, EmailActionType.delete), // Red
-                _buildStatChip('Moved', scanProvider.movedCount, const Color(0xFFFF9800), Colors.white, EmailActionType.moveToJunk), // Orange
-                _buildStatChip('Safe', scanProvider.safeSendersCount, const Color(0xFF4CAF50), Colors.white, EmailActionType.safeSender), // Green
-                _buildStatChip('No rule', scanProvider.noRuleCount, const Color(0xFF757575), Colors.white, EmailActionType.none), // Grey
-                _buildStatChip('Errors', scanProvider.errorCount, const Color(0xFFD32F2F), Colors.white, null, showErrors: true), // Dark Red
+                // Item 3: Make Found/Processed/Moved/Error filterable
+                _buildSpecialStatChip('Found', scanProvider.totalEmails, const Color(0xFF2196F3), Colors.white, SpecialFilter.found),
+                _buildSpecialStatChip('Processed', scanProvider.processedCount, const Color(0xFF9C27B0), Colors.white, SpecialFilter.processed),
+                _buildStatChip('Deleted', scanProvider.deletedCount, const Color(0xFFF44336), Colors.white, EmailActionType.delete),
+                _buildStatChip('Moved', scanProvider.movedCount, const Color(0xFFFF9800), Colors.white, EmailActionType.moveToJunk),
+                _buildStatChip('Safe', scanProvider.safeSendersCount, const Color(0xFF4CAF50), Colors.white, EmailActionType.safeSender),
+                _buildStatChip('No rule', scanProvider.noRuleCount, const Color(0xFF757575), Colors.white, EmailActionType.none),
+                _buildSpecialStatChip('Errors', scanProvider.errorCount, const Color(0xFFD32F2F), Colors.white, SpecialFilter.error),
+                // Item 6: Add Folders multi-select filter
+                _buildFolderFilterChip(allResults),
               ],
             ),
             // Revert info (Phase 2 Sprint 3)
@@ -531,24 +735,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
 
   Widget _buildStatChip(String label, int value, Color bg, Color fg, EmailActionType? filterType, {bool showErrors = false}) {
     // Determine if this chip is currently the active filter
-    final isActive = _filter == filterType || (showErrors && _filter != null && value > 0);
+    final isActive = _filter == filterType;
 
     return GestureDetector(
       onTap: () {
-        // Only allow filtering for "No rule", "Deleted", "Moved", "Safe", and "Errors"
         if (filterType != null) {
           _toggleFilter(filterType);
-        } else if (showErrors) {
-          // For errors, filter by showing all emails with !success flag
-          // For now, we do not have a simple way to filter errors separately
-          // since they could overlap with any action type
-          // Skip error filtering for now
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Error filtering not yet implemented'),
-              duration: Duration(seconds: 1),
-            ),
-          );
         }
       },
       child: Chip(
@@ -565,11 +757,133 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       ),
     );
   }
+  
+  /// Build stat chip for special filters (Found, Processed, Error)
+  Widget _buildSpecialStatChip(String label, int value, Color bg, Color fg, SpecialFilter filterType) {
+    final isActive = _specialFilter == filterType;
+
+    return GestureDetector(
+      onTap: () {
+        _toggleSpecialFilter(filterType);
+      },
+      child: Chip(
+        label: Text('$label: $value'),
+        backgroundColor: isActive ? bg.withValues(alpha: 0.7) : bg,
+        labelStyle: TextStyle(
+          color: fg,
+          fontWeight: isActive ? FontWeight.w900 : FontWeight.bold,
+        ),
+        side: isActive
+            ? const BorderSide(color: Colors.black, width: 2)
+            : BorderSide.none,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      ),
+    );
+  }
+  
+  /// Build folder filter dropdown chip (Item 6)
+  Widget _buildFolderFilterChip(List<EmailActionResult> allResults) {
+    // Issue 3: Use cached folders for performance
+    final folders = _cachedFolders ?? [];
+    final isActive = _selectedFolders.isNotEmpty;
+
+    return GestureDetector(
+      onTap: () async {
+        // Show folder selection dialog
+        final selected = await showDialog<Set<String>>(
+          context: context,
+          builder: (ctx) => _buildFolderSelectionDialog(folders),
+        );
+        
+        if (selected != null) {
+          setState(() {
+            _selectedFolders = selected;
+          });
+        }
+      },
+      child: Chip(
+        label: Text(_selectedFolders.isEmpty 
+            ? 'Folders: All' 
+            : 'Folders: ${_selectedFolders.length}'),
+        avatar: const Icon(Icons.folder, size: 18),
+        backgroundColor: isActive ? Colors.indigo.withValues(alpha: 0.7) : Colors.indigo,
+        labelStyle: TextStyle(
+          color: Colors.white,
+          fontWeight: isActive ? FontWeight.w900 : FontWeight.bold,
+        ),
+        side: isActive
+            ? const BorderSide(color: Colors.black, width: 2)
+            : BorderSide.none,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      ),
+    );
+  }
+  
+  /// Build folder selection dialog
+  Widget _buildFolderSelectionDialog(List<String> folders) {
+    final tempSelected = Set<String>.from(_selectedFolders);
+    
+    return StatefulBuilder(
+      builder: (context, setDialogState) {
+        return AlertDialog(
+          title: const Text('Select Folders'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                CheckboxListTile(
+                  title: const Text('All Folders', style: TextStyle(fontWeight: FontWeight.bold)),
+                  value: tempSelected.isEmpty,
+                  onChanged: (bool? value) {
+                    setDialogState(() {
+                      if (value == true) {
+                        tempSelected.clear();
+                      }
+                    });
+                  },
+                ),
+                const Divider(),
+                ...folders.map((folder) {
+                  return CheckboxListTile(
+                    title: Text(folder),
+                    value: tempSelected.contains(folder),
+                    onChanged: (bool? value) {
+                      setDialogState(() {
+                        if (value == true) {
+                          tempSelected.add(folder);
+                        } else {
+                          tempSelected.remove(folder);
+                        }
+                      });
+                    },
+                  );
+                }),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, tempSelected),
+              child: const Text('Apply'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   Widget _buildResultTile(EmailActionResult result) {
     // Issue #47: Title shows sender email, subtitle shows folder • subject • rule
-    final title = result.email.from.isNotEmpty
-        ? result.email.from
+    // Decode Punycode domains for display
+    final rawFrom = result.email.from;
+    final decodedFrom = PatternNormalization.normalizeAndDecodeEmail(rawFrom);
+    final title = decodedFrom.isNotEmpty
+        ? decodedFrom
         : 'Unknown sender';
     final folder = result.email.folderName;
     // Clean subject for display (remove tabs, extra spaces, repeated punctuation)
@@ -584,12 +898,18 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         ? const Icon(Icons.check, color: Colors.green)
         : const Icon(Icons.error, color: Colors.red);
 
-    return ListTile(
-      leading: _actionIcon(result.action),
-      title: Text(title),
-      subtitle: Text(subtitle),
-      trailing: trailing,
-      onTap: () => _showEmailDetailSheet(result),
+    // Issue 6: Wrap with Container to capture position for popup
+    final tileKey = GlobalKey();
+
+    return Container(
+      key: tileKey,
+      child: ListTile(
+        leading: _actionIcon(result.action),
+        title: Text(title),
+        subtitle: Text(subtitle),
+        trailing: trailing,
+        onTap: () => _showEmailDetailSheet(result, itemKey: tileKey),
+      ),
     );
   }
 
@@ -608,13 +928,25 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     return '${parts[parts.length - 2]}.${parts[parts.length - 1]}';
   }
 
-  /// Show bottom sheet with email details and inline quick actions
-  void _showEmailDetailSheet(EmailActionResult result) {
+  /// Show positioned popup with email details and inline quick actions
+  /// Issue 6: CSS-like positioning - show popup below/above email item
+  void _showEmailDetailSheet(EmailActionResult result, {GlobalKey? itemKey}) {
     final email = result.email;
     final bodyParser = EmailBodyParser();
-    final senderEmail = bodyParser.extractEmailAddress(email.from);
-    final senderDomain = bodyParser.extractDomainFromEmail(email.from);
-    final rootDomain = _extractRootDomain(senderDomain);
+    // Extract raw email and domain (Punycode format) - used for rule creation
+    final rawSenderEmail = bodyParser.extractEmailAddress(email.from);
+    final rawSenderDomain = bodyParser.extractDomainFromEmail(email.from);
+    // Decode for display only
+    final displaySenderEmail = PatternNormalization.normalizeAndDecodeEmail(rawSenderEmail);
+    final displaySenderDomain = rawSenderDomain != null 
+        ? PatternNormalization.decodePunycodeDomain(rawSenderDomain)
+        : null;
+    // Extract root domain from RAW domain (for rule creation)
+    final rawRootDomain = _extractRootDomain(rawSenderDomain);
+    // Decode root domain for display
+    final displayRootDomain = rawRootDomain != null
+        ? PatternNormalization.decodePunycodeDomain(rawRootDomain)
+        : null;
     final matchedRule = result.evaluationResult?.matchedRule ?? '';
     final hasNoRule = matchedRule.isEmpty || result.action == EmailActionType.none;
     final isDeleted = result.action == EmailActionType.delete;
@@ -627,20 +959,59 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     // Format date/time
     final dateStr = email.receivedDate.toString().substring(0, 16);
 
-    showModalBottomSheet(
+    // Issue 6: Calculate position for CSS-like popup positioning
+    Offset? itemPosition;
+    Size? itemSize;
+    if (itemKey != null) {
+      final RenderBox? renderBox = itemKey.currentContext?.findRenderObject() as RenderBox?;
+      if (renderBox != null) {
+        itemPosition = renderBox.localToGlobal(Offset.zero);
+        itemSize = renderBox.size;
+      }
+    }
+
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      constraints: BoxConstraints(
-        maxWidth: MediaQuery.of(context).size.width * 0.9,
-      ),
-      builder: (sheetContext) => DraggableScrollableSheet(
-        initialChildSize: 0.55,
-        minChildSize: 0.3,
-        maxChildSize: 0.85,
-        expand: false,
-        builder: (context, scrollController) => SingleChildScrollView(
-          controller: scrollController,
-          child: Padding(
+      barrierColor: Colors.black54,
+      builder: (dialogContext) {
+        // Get screen dimensions
+        final screenSize = MediaQuery.of(context).size;
+        final screenHeight = screenSize.height;
+        final popupHeight = screenHeight * 0.6; // Approximate popup height
+
+        // Calculate position
+        double? top;
+        double? bottom;
+
+        if (itemPosition != null && itemSize != null) {
+          final itemBottom = itemPosition.dy + itemSize.height;
+          final spaceBelow = screenHeight - itemBottom;
+          final spaceAbove = itemPosition.dy;
+
+          if (spaceBelow >= popupHeight) {
+            // Show below email
+            top = itemBottom + 8; // 8px gap
+          } else if (spaceAbove >= popupHeight) {
+            // Show above email
+            bottom = screenHeight - itemPosition.dy + 8; // 8px gap
+          } else {
+            // Not enough room above or below - align with first email
+            top = itemPosition.dy;
+          }
+        }
+
+        return Stack(
+          children: [
+            Positioned(
+              top: top,
+              bottom: bottom,
+              left: 16,
+              right: 16,
+              child: Material(
+                elevation: 8,
+                borderRadius: BorderRadius.circular(12),
+                child: SingleChildScrollView(
+                  child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -664,7 +1035,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        senderEmail,
+                        displaySenderEmail,
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
@@ -695,12 +1066,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                       dateStr,
                       style: TextStyle(fontSize: 11, color: Colors.grey[500]),
                     ),
-                    if (senderDomain != null) ...[
+                    if (displaySenderDomain != null) ...[
                       const SizedBox(width: 12),
                       Icon(Icons.domain, size: 14, color: Colors.grey[500]),
                       const SizedBox(width: 4),
                       Text(
-                        senderDomain,
+                        displaySenderDomain,
                         style: TextStyle(fontSize: 11, color: Colors.grey[500]),
                       ),
                     ],
@@ -726,12 +1097,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                 const Divider(height: 20),
 
                 // === SAFE SENDER SECTION ===
-                // Show for: Deleted emails, No Rule emails, or Safe Sender emails (for exception)
-                if (isDeleted || hasNoRule || isSafeSender) ...[
-                  Text(
-                    isSafeSender ? 'Update Safe Sender' : 'Add to Safe Senders',
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                  ),
+                // Issue 5: Always show Safe Sender options for all emails
+                Text(
+                  isSafeSender ? 'Update Safe Sender' : 'Add to Safe Senders',
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                ),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
@@ -740,48 +1110,49 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                       _buildInlineActionButton(
                         icon: Icons.person,
                         label: 'Exact Email',
-                        subtitle: senderEmail,
+                        subtitle: displaySenderEmail,
                         color: Colors.green,
+                        isMatched: isSafeSender && result.evaluationResult?.matchedPatternType == 'exact_email',
                         onTap: () {
-                          Navigator.pop(sheetContext);
-                          _addSafeSender(senderEmail, 'exact');
+                          Navigator.pop(dialogContext);
+                          _addSafeSender(rawSenderEmail, 'exact');
                         },
                       ),
-                      if (senderDomain != null)
+                      if (rawSenderDomain != null)
                         _buildInlineActionButton(
                           icon: Icons.domain,
                           label: 'Exact Domain',
-                          subtitle: '@$senderDomain',
+                          subtitle: '@$displaySenderDomain',
                           color: Colors.green,
+                          isMatched: isSafeSender && result.evaluationResult?.matchedPatternType == 'exact_domain',
                           onTap: () {
-                            Navigator.pop(sheetContext);
-                            _addSafeSender('@$senderDomain', 'exactDomain');
+                            Navigator.pop(dialogContext);
+                            _addSafeSender('@$rawSenderDomain', 'exactDomain');
                           },
                         ),
                       // Always show Entire Domain option (uses root domain or full domain if no subdomain)
-                      if (senderDomain != null)
+                      if (rawSenderDomain != null)
                         _buildInlineActionButton(
                           icon: Icons.public,
                           label: 'Entire Domain',
-                          subtitle: '@*.${rootDomain ?? senderDomain}',
+                          subtitle: '@*.${displayRootDomain ?? displaySenderDomain}',
                           color: Colors.green,
+                          isMatched: isSafeSender && result.evaluationResult?.matchedPatternType == 'entire_domain',
                           onTap: () {
-                            Navigator.pop(sheetContext);
-                            _addSafeSender(rootDomain ?? senderDomain, 'entireDomain');
+                            Navigator.pop(dialogContext);
+                            _addSafeSender(rawRootDomain ?? rawSenderDomain, 'entireDomain');
                           },
                         ),
                     ],
                   ),
                   const SizedBox(height: 12),
-                ],
 
                 // === BLOCK RULE SECTION ===
-                // Show for: No Rule emails or Safe Sender emails (to add exception/block rule)
-                if (hasNoRule || isSafeSender) ...[
-                  const Text(
-                    'Create Block Rule',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                  ),
+                // Issue 5: Always show Block Rule options for all emails
+                const Text(
+                  'Create Block Rule',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                ),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
@@ -790,34 +1161,37 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                       _buildInlineActionButton(
                         icon: Icons.person_off,
                         label: 'Block Email',
-                        subtitle: senderEmail,
+                        subtitle: displaySenderEmail,
                         color: Colors.red,
+                        isMatched: isDeleted && result.evaluationResult?.matchedPatternType == 'exact_email',
                         onTap: () {
-                          Navigator.pop(sheetContext);
-                          _createBlockRule('from', senderEmail);
+                          Navigator.pop(dialogContext);
+                          _createBlockRule('from', rawSenderEmail);
                         },
                       ),
-                      if (senderDomain != null)
+                      if (rawSenderDomain != null)
                         _buildInlineActionButton(
                           icon: Icons.domain_disabled,
                           label: 'Block Exact Domain',
-                          subtitle: '@$senderDomain',
+                          subtitle: '@$displaySenderDomain',
                           color: Colors.red,
+                          isMatched: isDeleted && result.evaluationResult?.matchedPatternType == 'exact_domain',
                           onTap: () {
-                            Navigator.pop(sheetContext);
-                            _createBlockRule('exactDomain', '@$senderDomain');
+                            Navigator.pop(dialogContext);
+                            _createBlockRule('exactDomain', '@$rawSenderDomain');
                           },
                         ),
                       // Always show Block Entire Domain option (uses root domain or full domain if no subdomain)
-                      if (senderDomain != null)
+                      if (rawSenderDomain != null)
                         _buildInlineActionButton(
                           icon: Icons.public_off,
                           label: 'Block Entire Domain',
-                          subtitle: '@*.${rootDomain ?? senderDomain}',
+                          subtitle: '@*.${displayRootDomain ?? displaySenderDomain}',
                           color: Colors.red,
+                          isMatched: isDeleted && result.evaluationResult?.matchedPatternType == 'entire_domain',
                           onTap: () {
-                            Navigator.pop(sheetContext);
-                            _createBlockRule('entireDomain', rootDomain ?? senderDomain);
+                            Navigator.pop(dialogContext);
+                            _createBlockRule('entireDomain', rawRootDomain ?? rawSenderDomain);
                           },
                         ),
                       if (cleanedSubject.isNotEmpty && cleanedSubject != '(No subject)')
@@ -828,29 +1202,33 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                               ? '${cleanedSubject.substring(0, 20)}...'
                               : cleanedSubject,
                           color: Colors.orange,
+                          isMatched: isDeleted && result.evaluationResult?.matchedPatternType == 'subject',
                           onTap: () {
-                            Navigator.pop(sheetContext);
+                            Navigator.pop(dialogContext);
                             _createBlockRule('subject', cleanedSubject);
                           },
                         ),
                     ],
                   ),
-                ],
               ],
             ),
           ),
-        ),
-      ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
-  /// Build an inline action button (used in popup instead of dialogs)
   Widget _buildInlineActionButton({
     required IconData icon,
     required String label,
     required String subtitle,
     required Color color,
     required VoidCallback onTap,
+    bool isMatched = false, // Item 2: Visual indicator for current rule match
   }) {
     return InkWell(
       onTap: onTap,
@@ -858,11 +1236,18 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          border: Border.all(color: color.withValues(alpha: 0.3)),
+          border: Border.all(
+            color: isMatched ? color : color.withValues(alpha: 0.3),
+            width: isMatched ? 2 : 1, // Thicker border for matched rule
+          ),
           borderRadius: BorderRadius.circular(8),
-          color: color.withValues(alpha: 0.05),
+          color: isMatched 
+              ? color.withValues(alpha: 0.15) // Darker shade for matched
+              : color.withValues(alpha: 0.05),
         ),
-        child: Column(
+        child: Stack(
+          children: [
+            Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -883,12 +1268,32 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 2),
-            Text(
-              subtitle,
-              style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+          // Item 2: Green checkmark in top-right corner for matched rule
+          if (isMatched)
+            Positioned(
+              top: -4,
+              right: -4,
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check,
+                  size: 12,
+                  color: Colors.white,
+                ),
+              ),
             ),
           ],
         ),
@@ -950,7 +1355,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       // Add to safe senders via provider (persists to database and YAML)
       await ruleProvider.addSafeSender(pattern);
 
-      logger.i('✅ Added safe sender: $pattern');
+      logger.i('[OK] Added safe sender: $pattern');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -964,7 +1369,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         );
       }
     } catch (e) {
-      logger.e('❌ Failed to add safe sender: $e');
+      logger.e('[FAIL] Failed to add safe sender: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1046,7 +1451,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       // Add rule via provider (persists to database and YAML)
       await ruleProvider.addRule(rule);
 
-      logger.i('✅ Created block rule: $ruleName with pattern: $pattern');
+      logger.i('[OK] Created block rule: $ruleName with pattern: $pattern');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1060,7 +1465,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         );
       }
     } catch (e) {
-      logger.e('❌ Failed to create block rule: $e');
+      logger.e('[FAIL] Failed to create block rule: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

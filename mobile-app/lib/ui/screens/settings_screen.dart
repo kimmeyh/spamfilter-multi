@@ -1,14 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/providers/email_scan_provider.dart';
+import '../../adapters/storage/secure_credentials_store.dart';
+import '../../adapters/email_providers/email_provider.dart' show Credentials;
 import '../widgets/app_bar_with_exit.dart';
 
-/// Settings screen for app-wide and per-account configuration
+/// Settings screen for app-wide configuration
 ///
 /// Provides:
 /// - Manual Scan Defaults (scan mode, folders, confirmation dialogs)
 /// - Background Scan Defaults (enabled, frequency, mode, folders)
-/// - Per-account overrides (accessible from account list or account detail)
+/// - CSV Export Directory
+///
+/// Note: Folder settings are account-specific. Select an account first,
+/// then configure folders in Account Details > Folders.
 ///
 /// Usage:
 /// ```dart
@@ -18,7 +25,6 @@ import '../widgets/app_bar_with_exit.dart';
 /// );
 /// ```
 class SettingsScreen extends StatefulWidget {
-  /// Optional account ID for per-account settings
   final String? accountId;
 
   const SettingsScreen({super.key, this.accountId});
@@ -28,7 +34,9 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProviderStateMixin {
+  final Logger _logger = Logger();
   final SettingsStore _settingsStore = SettingsStore();
+  final SecureCredentialsStore _credStore = SecureCredentialsStore();
   late TabController _tabController;
 
   // App-wide settings
@@ -41,19 +49,13 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   List<String> _backgroundScanFolders = List.from(SettingsStore.defaultBackgroundScanFolders);
   String? _csvExportDirectory;
 
-  // Per-account overrides (if accountId provided)
-  bool _hasAccountOverrides = false;
-  List<String>? _accountFolders;
-  ScanMode? _accountScanMode;
-  bool? _accountBackgroundEnabled;
-
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: widget.accountId != null ? 3 : 2,
+      length: 3,  // Account, Manual Scan, Background
       vsync: this,
     );
     _loadSettings();
@@ -78,14 +80,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       _backgroundScanMode = await _settingsStore.getBackgroundScanMode();
       _backgroundScanFolders = await _settingsStore.getBackgroundScanFolders();
       _csvExportDirectory = await _settingsStore.getCsvExportDirectory();
-
-      // Load per-account overrides if accountId provided
-      if (widget.accountId != null) {
-        _hasAccountOverrides = await _settingsStore.hasAccountOverrides(widget.accountId!);
-        _accountFolders = await _settingsStore.getAccountFolders(widget.accountId!);
-        _accountScanMode = await _settingsStore.getAccountScanMode(widget.accountId!);
-        _accountBackgroundEnabled = await _settingsStore.getAccountBackgroundEnabled(widget.accountId!);
-      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -103,16 +97,13 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBarWithExit(
-        title: Text(widget.accountId != null
-            ? 'Account Settings'
-            : 'Settings'),
+        title: const Text('Settings'),
         bottom: TabBar(
           controller: _tabController,
-          tabs: [
-            const Tab(text: 'Manual Scan'),
-            const Tab(text: 'Background'),
-            if (widget.accountId != null)
-              const Tab(text: 'Account'),
+          tabs: const [
+            Tab(text: 'Account'),
+            Tab(text: 'Manual Scan'),
+            Tab(text: 'Background'),
           ],
         ),
       ),
@@ -121,12 +112,142 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           : TabBarView(
               controller: _tabController,
               children: [
+                _buildAccountTab(),
                 _buildManualScanTab(),
                 _buildBackgroundScanTab(),
-                if (widget.accountId != null)
-                  _buildAccountTab(),
               ],
             ),
+    );
+  }
+
+  Widget _buildAccountTab() {
+    // If no account selected, show message
+    if (widget.accountId == null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.account_circle_outlined, size: 64, color: Colors.grey.shade400),
+              const SizedBox(height: 16),
+              Text(
+                'No Account Selected',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Please select an email account first to configure account-specific settings.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey.shade600),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Account selected - show folder configuration buttons
+    return FutureBuilder<Credentials?>(
+      future: _credStore.getCredentials(widget.accountId!),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (!snapshot.hasData || snapshot.data == null) {
+          return Center(
+            child: Text(
+              'Failed to load account information',
+              style: TextStyle(color: Colors.red.shade700),
+            ),
+          );
+        }
+
+        final credentials = snapshot.data!;
+        final email = credentials.email;
+        final platform = widget.accountId!.split('-')[0]; // Extract platform from accountId
+
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            // Account info header
+            Card(
+              color: Colors.blue.shade50,
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.email, color: Colors.blue.shade700),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Account Settings',
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                email,
+                                style: TextStyle(color: Colors.grey.shade700),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Folder configuration section
+            Text(
+              'Folder Settings',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Configure where emails are moved based on rules and safe senders',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+
+            // Safe Sender Folder button
+            OutlinedButton.icon(
+              icon: const Icon(Icons.folder_special_outlined),
+              label: const Text('Safe Sender Folder'),
+              onPressed: () => _configureSafeSenderFolder(platform, email),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                alignment: Alignment.centerLeft,
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // Deleted Rule Folder button
+            OutlinedButton.icon(
+              icon: const Icon(Icons.folder_delete_outlined),
+              label: const Text('Deleted Rule Folder'),
+              onPressed: () => _configureDeletedRuleFolder(platform, email),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                alignment: Alignment.centerLeft,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -134,6 +255,26 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        Card(
+          color: Colors.blue.shade50,
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.blue.shade700),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Default folders are account-specific. Select an account first, '
+                    'then configure in Account Details > Folders.',
+                    style: TextStyle(color: Colors.blue.shade900, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
         _buildSectionHeader('Scan Mode'),
         _buildScanModeSelector(
           value: _manualScanMode,
@@ -303,56 +444,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     );
   }
 
-  Widget _buildAccountTab() {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      _hasAccountOverrides ? Icons.tune : Icons.settings_suggest,
-                      color: _hasAccountOverrides ? Colors.blue : Colors.grey,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      _hasAccountOverrides
-                          ? 'Account has custom settings'
-                          : 'Using global defaults',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                  ],
-                ),
-                if (_hasAccountOverrides) ...[
-                  const SizedBox(height: 8),
-                  TextButton.icon(
-                    icon: const Icon(Icons.restore),
-                    label: const Text('Reset to Global Defaults'),
-                    onPressed: _resetAccountOverrides,
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        _buildSectionHeader('Scan Mode Override'),
-        _buildAccountScanModeSelector(),
-        const SizedBox(height: 24),
-        _buildSectionHeader('Folders Override'),
-        _buildAccountFolderSelector(),
-        const SizedBox(height: 24),
-        _buildSectionHeader('Background Scan Override'),
-        _buildAccountBackgroundToggle(),
-      ],
-    );
-  }
-
   Widget _buildSectionHeader(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -456,131 +547,45 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     );
   }
 
-  Widget _buildAccountScanModeSelector() {
-    return Column(
-      children: [
-        RadioListTile<ScanMode?>(
-          title: const Text('Use Global Default'),
-          subtitle: Text('Currently: ${_manualScanMode.name}'),
-          value: null,
-          groupValue: _accountScanMode,
-          onChanged: (v) async {
-            setState(() => _accountScanMode = null);
-            await _settingsStore.setAccountScanMode(widget.accountId!, null);
-            _checkAccountOverrides();
-          },
-        ),
-        RadioListTile<ScanMode?>(
-          title: const Text('Read-Only'),
-          value: ScanMode.readonly,
-          groupValue: _accountScanMode,
-          onChanged: (v) async {
-            setState(() => _accountScanMode = v);
-            await _settingsStore.setAccountScanMode(widget.accountId!, v);
-            _checkAccountOverrides();
-          },
-        ),
-        RadioListTile<ScanMode?>(
-          title: const Text('Process Rules'),
-          value: ScanMode.fullScan,
-          groupValue: _accountScanMode,
-          onChanged: (v) async {
-            setState(() => _accountScanMode = v);
-            await _settingsStore.setAccountScanMode(widget.accountId!, v);
-            _checkAccountOverrides();
-          },
-        ),
-      ],
-    );
-  }
+  /// Configure safe sender folder for account using Windows folder picker
+  Future<void> _configureSafeSenderFolder(String platform, String email) async {
+    if (widget.accountId == null) return;
 
-  Widget _buildAccountFolderSelector() {
-    final isUsingOverride = _accountFolders != null;
-    final folders = _accountFolders ?? _manualScanFolders;
+    // Get current setting
+    final currentFolder = await _settingsStore.getAccountSafeSenderFolder(widget.accountId!);
 
-    return Column(
-      children: [
-        SwitchListTile(
-          title: const Text('Override folder selection'),
-          value: isUsingOverride,
-          onChanged: (enabled) async {
-            if (enabled) {
-              // Copy current global folders as starting point
-              _accountFolders = List.from(_manualScanFolders);
-            } else {
-              _accountFolders = null;
-            }
-            setState(() {});
-            await _settingsStore.setAccountFolders(widget.accountId!, _accountFolders);
-            _checkAccountOverrides();
-          },
-        ),
-        if (isUsingOverride)
-          Padding(
-            padding: const EdgeInsets.only(left: 16, right: 16, top: 8),
-            child: _buildFolderSelector(
-              folders: folders,
-              onChanged: (newFolders) async {
-                setState(() => _accountFolders = newFolders);
-                await _settingsStore.setAccountFolders(widget.accountId!, newFolders);
-              },
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildAccountBackgroundToggle() {
-    return Column(
-      children: [
-        RadioListTile<bool?>(
-          title: const Text('Use Global Default'),
-          subtitle: Text('Currently: ${_backgroundScanEnabled ? "Enabled" : "Disabled"}'),
-          value: null,
-          groupValue: _accountBackgroundEnabled,
-          onChanged: (v) async {
-            setState(() => _accountBackgroundEnabled = null);
-            await _settingsStore.setAccountBackgroundEnabled(widget.accountId!, null);
-            _checkAccountOverrides();
-          },
-        ),
-        RadioListTile<bool?>(
-          title: const Text('Enabled'),
-          value: true,
-          groupValue: _accountBackgroundEnabled,
-          onChanged: (v) async {
-            setState(() => _accountBackgroundEnabled = v);
-            await _settingsStore.setAccountBackgroundEnabled(widget.accountId!, v);
-            _checkAccountOverrides();
-          },
-        ),
-        RadioListTile<bool?>(
-          title: const Text('Disabled'),
-          value: false,
-          groupValue: _accountBackgroundEnabled,
-          onChanged: (v) async {
-            setState(() => _accountBackgroundEnabled = v);
-            await _settingsStore.setAccountBackgroundEnabled(widget.accountId!, v);
-            _checkAccountOverrides();
-          },
-        ),
-      ],
-    );
-  }
-
-  Future<void> _checkAccountOverrides() async {
-    final hasOverrides = await _settingsStore.hasAccountOverrides(widget.accountId!);
-    if (mounted) {
-      setState(() => _hasAccountOverrides = hasOverrides);
-    }
-  }
-
-  Future<void> _resetAccountOverrides() async {
-    final confirmed = await showDialog<bool>(
+    // Show informational dialog first
+    final proceed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Reset Account Settings'),
-        content: const Text('This will remove all custom settings for this account and use global defaults.'),
+        title: const Text('Move Safe Senders to Folder'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'When an email matches a safe sender rule, it will be moved to the selected folder.',
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Current folder: ${currentFolder ?? "INBOX (default)"}',
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Note: Emails already in the target folder will not be moved.',
+              style: TextStyle(fontSize: 12, color: Colors.blue.shade700),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              platform == 'gmail'
+                  ? 'You will select a folder name (e.g., INBOX, SPAM, or custom label).'
+                  : 'You will select an IMAP folder name (e.g., INBOX, Junk).',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            ),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -588,23 +593,139 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Reset'),
+            child: const Text('Select Folder'),
           ),
         ],
       ),
     );
 
-    if (confirmed == true) {
-      await _settingsStore.clearAccountOverrides(widget.accountId!);
-      _accountFolders = null;
-      _accountScanMode = null;
-      _accountBackgroundEnabled = null;
-      _hasAccountOverrides = false;
-      if (mounted) {
-        setState(() {});
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Account settings reset to defaults')),
+    if (proceed != true) return;
+
+    // Open Windows folder picker (directory mode)
+    final result = await FilePicker.platform.getDirectoryPath(
+      dialogTitle: 'Select Safe Sender Folder',
+      initialDirectory: currentFolder,
+    );
+
+    if (result != null) {
+      try {
+        // Extract just the folder name (last component of path)
+        final folderName = result.split('\\').last;
+
+        await _settingsStore.setAccountSafeSenderFolder(
+          widget.accountId!,
+          folderName,
         );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Safe sender emails will be moved to: $folderName'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+
+        _logger.i('Set safe sender folder for $email to: $folderName');
+      } catch (e) {
+        _logger.e('Failed to set safe sender folder: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to save setting: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  /// Configure deleted rule folder for account using Windows folder picker
+  Future<void> _configureDeletedRuleFolder(String platform, String email) async {
+    if (widget.accountId == null) return;
+
+    // Get current setting
+    final currentFolder = await _settingsStore.getAccountDeletedRuleFolder(widget.accountId!);
+
+    // Show informational dialog first
+    final proceed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Move Deleted by Rule to Folder'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'When a rule deletes an email, it will be moved to the selected folder.',
+              style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Current folder: ${currentFolder ?? (platform == "gmail" ? "TRASH (default)" : "Trash (default)")}',
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              platform == 'gmail'
+                  ? 'You will select a folder name (e.g., TRASH, SPAM, or custom label).'
+                  : 'You will select an IMAP folder name (e.g., Trash, Deleted, Junk).',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Select Folder'),
+          ),
+        ],
+      ),
+    );
+
+    if (proceed != true) return;
+
+    // Open Windows folder picker (directory mode)
+    final result = await FilePicker.platform.getDirectoryPath(
+      dialogTitle: 'Select Deleted Rule Folder',
+      initialDirectory: currentFolder,
+    );
+
+    if (result != null) {
+      try {
+        // Extract just the folder name (last component of path)
+        final folderName = result.split('\\').last;
+
+        await _settingsStore.setAccountDeletedRuleFolder(
+          widget.accountId!,
+          folderName,
+        );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Deleted emails will be moved to: $folderName'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+
+        _logger.i('Set deleted rule folder for $email to: $folderName');
+      } catch (e) {
+        _logger.e('Failed to set deleted rule folder: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to save setting: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }

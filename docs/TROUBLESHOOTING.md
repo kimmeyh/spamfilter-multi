@@ -94,14 +94,14 @@ Too many positional arguments: 1 expected, but 2 found
 
 **API Reference**:
 ```dart
-// ✅ CORRECT usage
+// [OK] CORRECT usage
 AppLogger.warning('This is a warning');
 AppLogger.error('Error occurred', error, stackTrace);
 AppLogger.debug('Debug message');
 AppLogger.scan('Scanning 150 emails');
 AppLogger.email('Fetched email from sender@example.com');
 
-// ❌ INCORRECT usage
+// [FAIL] INCORRECT usage
 AppLogger.warning('Warning', someObject);  // warning() takes only 1 parameter
 AppLogger.error('Error');  // error() requires error and stackTrace parameters
 ```
@@ -130,17 +130,111 @@ No matches found (expected matches on Windows)
 
 **Example**:
 ```bash
-# ❌ INCORRECT: Backslashes cause issues
+# [FAIL] INCORRECT: Backslashes cause issues
 grep -r "D:\\Data\\Harold\\github" .
 
-# ✅ CORRECT: Use forward slashes on all platforms
+# [OK] CORRECT: Use forward slashes on all platforms
 grep -r "D:/Data/Harold/github" .
 
-# ✅ CORRECT: Use relative paths when possible
+# [OK] CORRECT: Use relative paths when possible
 grep -r "docs/SPRINT" .
 ```
 
 **Cross-Platform Patterns**: Always use `/` (forward slash) in file paths for grep patterns, even on Windows. This works correctly on all platforms (Windows, Linux, macOS).
+
+---
+
+### Windows Backslash Paths in Bash Commands
+
+**Error Message**:
+```bash
+bash: cd: D:DataHaroldgithubspamfilter-multimobile-app: No such file or directory
+```
+or
+```bash
+/usr/bin/bash: line 1: cd: D:DataHaroldgithubspamfilter-multimobile-app: No such file or directory
+```
+
+**Cause**: Bash cannot handle Windows backslash paths - backslashes are escape characters in Bash.
+
+**Root Cause**: Using Bash for Windows commands instead of PowerShell (violates CLAUDE.md Section 259-261).
+
+**Solution**: ALWAYS use PowerShell for Windows paths, NEVER wrap PowerShell in Bash.
+
+**Examples**:
+```powershell
+# [CORRECT] Direct PowerShell execution
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-Location 'D:\Data\Harold\github\spamfilter-multi\mobile-app'; flutter test"
+
+# [WRONG] Wrapping PowerShell in Bash
+bash -c "powershell -Command 'cd D:\Data\...; flutter test'"  # Loses VSCode terminal context
+
+# [CORRECT] Using forward slashes in Bash (if Bash is required)
+bash -c "cd /d/Data/Harold/github/spamfilter-multi/mobile-app && flutter test"
+
+# [BEST] Use PowerShell directly for all Windows commands
+```
+
+**Why This Matters**:
+- Wrapping PowerShell in Bash loses VSCode terminal environment variables
+- Flutter toolchain context is not available in Bash-wrapped PowerShell
+- Build scripts fail with "flutter not found" or similar errors
+
+**Policy**: See CLAUDE.md Section 259-261 - "This project uses PowerShell as the primary shell environment on Windows"
+
+---
+
+### PowerShell Switch Parameter Syntax Error
+
+**Error Message**:
+```powershell
+build-windows.ps1 : Cannot process argument transformation on parameter 'RunAfterBuild'.
+Cannot convert the "0" value of type "System.Int32" to type "System.Management.Automation.SwitchParameter".
+At line:1 char:108
++ ... .\build-windows.ps1 -RunAfterBuild:0
++                                        ~
+```
+
+**Cause**: PowerShell switch parameters require `$true`/`$false`, not `0`/`1`.
+
+**Solution**: Use correct Boolean syntax for switch parameters.
+
+**Examples**:
+```powershell
+# [CORRECT] PowerShell switch parameter syntax
+.\build-windows.ps1 -RunAfterBuild:$true   # Enable flag
+.\build-windows.ps1 -RunAfterBuild:$false  # Disable flag
+.\build-windows.ps1 -RunAfterBuild         # Enable flag (shorthand when true)
+
+# [WRONG] Using integers
+.\build-windows.ps1 -RunAfterBuild:0       # ERROR - cannot convert Int32 to Switch
+.\build-windows.ps1 -RunAfterBuild:1       # ERROR - cannot convert Int32 to Switch
+```
+
+**Quick Reference Table**:
+| Intent | Correct Syntax | Wrong Syntax |
+|--------|---------------|--------------|
+| Enable flag | `-RunAfterBuild:$true` or `-RunAfterBuild` | `-RunAfterBuild:1` |
+| Disable flag | `-RunAfterBuild:$false` | `-RunAfterBuild:0` |
+| String parameter | `-BuildType debug` | `-BuildType:debug` (colon not needed) |
+| Integer parameter | `-Timeout 5000` | `-Timeout:5000` (colon not needed) |
+
+**Common Build Script Parameters**:
+```powershell
+# build-windows.ps1
+.\build-windows.ps1                                    # Default: RunAfterBuild=$true
+.\build-windows.ps1 -RunAfterBuild:$false              # Build without running
+.\build-windows.ps1 -Clean:$false                      # Skip clean step
+
+# build-with-secrets.ps1
+.\build-with-secrets.ps1 -BuildType debug -InstallToEmulator
+.\build-with-secrets.ps1 -BuildType release -Run
+```
+
+**PowerShell Parameter Types**:
+- **Switch**: Boolean flag (`$true`/`$false`) - Use colon syntax: `-Flag:$true`
+- **String**: Text value - No colon: `-Name "value"`
+- **Integer**: Number value - No colon: `-Count 10`
 
 ---
 
@@ -206,7 +300,7 @@ python -c "import socket, ssl; ctx = ssl.create_default_context(); s = ctx.wrap_
 
 ### Phase 3.2 Folder Selection Fixes (Issue #35)
 
-**Status**: ✅ COMPLETE (Jan 5, 2026)
+**Status**: [OK] COMPLETE (Jan 5, 2026)
 
 **Issue #35 - Folder Selection Not Scanning Selected Folders**:
 - **Problem**: Selecting non-Inbox folders (e.g., "Bulk Mail") still only scanned Inbox
@@ -222,7 +316,7 @@ python -c "import socket, ssl; ctx = ssl.create_default_context(); s = ctx.wrap_
 
 ### Phase 3.3 Enhancement Features (Issues #36, #37)
 
-**Status**: ✅ COMPLETE (Jan 5-6, 2026)
+**Status**: [OK] COMPLETE (Jan 5-6, 2026)
 
 **Issue #36 - Progressive UI Updates**:
 - **Problem**: UI updated for every email, causing performance issues with large scans
@@ -269,7 +363,7 @@ python -c "import socket, ssl; ctx = ssl.create_default_context(); s = ctx.wrap_
 
 ### Phase 3.1 UI/UX Enhancements (Issues #32-#34)
 
-**Status**: ✅ COMPLETE (Jan 4, 2026)
+**Status**: [OK] COMPLETE (Jan 4, 2026)
 
 **Issue #32 - Full Scan Mode and Persistent Selection**:
 - Added `ScanMode.fullScan` (4th mode) - permanent delete/move operations

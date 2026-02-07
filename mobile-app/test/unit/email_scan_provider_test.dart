@@ -278,7 +278,7 @@ void main() {
     });
   });
 
-  // ✨ ISSUE #41: Per-account folder selection tests
+  // [NEW] ISSUE #41: Per-account folder selection tests
   group('EmailScanProvider - Per-Account Folders (Issue #41)', () {
     test('stores folders per account', () {
       // Arrange

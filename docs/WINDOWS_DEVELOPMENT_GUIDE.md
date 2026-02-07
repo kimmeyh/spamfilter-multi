@@ -71,7 +71,7 @@ START: Do I need to execute a shell command?
 └─ DEFAULT → Use PowerShell (safer, fewer compatibility issues)
 ```
 
-### ✅ What Works in Bash (WSL)
+### [OK] What Works in Bash (WSL)
 
 | Operation | Command | Notes |
 |-----------|---------|-------|
@@ -81,7 +81,7 @@ START: Do I need to execute a shell command?
 | **File search** | `find . -name "*.dart"` | Relative paths work |
 | **Text processing** | `grep -r "pattern" .` | Relative paths work |
 
-### ❌ What Does NOT Work in Bash
+### [FAIL] What Does NOT Work in Bash
 
 | Operation | Problem | Solution |
 |-----------|---------|----------|
@@ -119,7 +119,7 @@ START: Do I need to execute a shell command?
 UnicodeEncodeError: 'charmap' codec can't encode character '\u2713' in position 0: character maps to <undefined>
 ```
 
-**Root Cause**: Windows console uses cp1252 encoding by default, which doesn't support Unicode characters like ✓ (U+2713) or ✅ (U+2705).
+**Root Cause**: Windows console uses cp1252 encoding by default, which doesn't support Unicode characters like ✓ (U+2713) or [OK] (U+2705).
 
 ### Sprint 10 & 11 Examples
 
@@ -168,11 +168,11 @@ chcp 1252
 
 For maximum compatibility, avoid Unicode characters in Python print statements:
 ```python
-# ❌ BAD: Unicode characters
+# [FAIL] BAD: Unicode characters
 print('\u2713 Success')
-print('✅ Done')
+print('[OK] Done')
 
-# ✅ GOOD: ASCII only
+# [OK] GOOD: ASCII only
 print('[OK] Success')
 print('[DONE] Done')
 ```
@@ -207,24 +207,24 @@ $env:PYTHONIOENCODING = 'utf-8'
 ### Proper Path Quoting
 
 ```powershell
-# ✅ GOOD: Quote paths with spaces
+# [OK] GOOD: Quote paths with spaces
 cd "D:\Data\Harold\github\spamfilter-multi"
 
-# ❌ BAD: No quotes
+# [FAIL] BAD: No quotes
 cd D:\Data\Harold\github\spamfilter-multi  # Error: multiple arguments
 ```
 
 ### Command Chaining
 
 ```powershell
-# ✅ GOOD: Use semicolons or separate commands
+# [OK] GOOD: Use semicolons or separate commands
 cd "D:\path"
 flutter test
 
-# ✅ ALSO GOOD: Semicolon separator
+# [OK] ALSO GOOD: Semicolon separator
 cd "D:\path"; flutter test
 
-# ❌ BAD: Mixing shell syntaxes
+# [FAIL] BAD: Mixing shell syntaxes
 cd "D:\path" && flutter test  # && is bash syntax
 ```
 
@@ -244,14 +244,14 @@ Start-Sleep -Seconds 2
 ### Executing Python Scripts
 
 ```powershell
-# ✅ RECOMMENDED: Set encoding first
+# [OK] RECOMMENDED: Set encoding first
 $env:PYTHONIOENCODING = 'utf-8'
 python script.py
 
-# ✅ ALTERNATIVE: Inline Python (avoids file encoding)
+# [OK] ALTERNATIVE: Inline Python (avoids file encoding)
 python -c "print('Hello from Python')"
 
-# ✅ HEREDOC for multi-line Python (avoids unicode issues)
+# [OK] HEREDOC for multi-line Python (avoids unicode issues)
 python << 'PYEOF'
 # Python code here (no unicode output)
 import sys

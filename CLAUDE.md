@@ -150,25 +150,53 @@ git merge develop
    - Share intermediate findings, not just final conclusions
 
 6. **Execution Autonomy During Sprints**: Sprint plan approval authorizes all task execution
-   - When user approves sprint plan (Phase 1), this pre-approves ALL tasks through Phase 4.5 (Sprint Review)
-   - Do NOT ask for approval on individual tasks during execution
-   - Do NOT ask before starting each task (this was learned in Sprint 6)
+   - **CRITICAL**: When user approves sprint plan (Phase 1), this pre-approves ALL tasks through Phase 4.5 (Sprint Review)
+   - **DO NOT** ask for approval on individual tasks during execution
+   - **DO NOT** ask before starting each task (learned in Sprint 6, reinforced in Sprint 13)
+   - **DO NOT** stop for implementation decisions - make best engineering judgment and document
    - Work continuously and autonomously until: blocked/escalated, all tasks complete, or sprint review requested
    - This autonomy is core to sprint efficiency - per-task approvals add overhead without benefit
    - If mid-sprint changes needed: Document scope change, get re-approval, adjust plan and resume
-   - See `docs/SPRINT_STOPPING_CRITERIA.md` for when to stop working and why
-   - **Reference**: SPRINT_EXECUTION_WORKFLOW.md Phase 1.7 and §211-241 "Approval Gates"
+   - See `docs/SPRINT_STOPPING_CRITERIA.md` for EXACT criteria when to stop working and why
+   - **Sprint Stopping Criteria**: ONLY stop for these reasons:
+     1. All tasks complete (Criterion 1)
+     2. Blocked on external dependency (Criterion 2)
+     3. User requests scope change (Criterion 3)
+     4. Critical bug found (Criterion 4)
+     5. User requests early review (Criterion 5)
+     6. Sprint review complete (Criterion 6)
+     7. Fundamental design failure (Criterion 7)
+     8. Context limit approaching (Criterion 8)
+     9. Time limit reached (Criterion 9)
+   - **NOT valid stopping reasons**: Implementation choices, approach uncertainty, minor code style, single test failure
+   - **Reference**: SPRINT_EXECUTION_WORKFLOW.md Phase 1.7 and SPRINT_STOPPING_CRITERIA.md
 
 **Example of Good Co-Lead Collaboration**:
 ```
-❌ BAD: [Silently runs git status, finds files missing, edits .gitignore, reports "Fixed!"]
+[BAD] [Silently runs git status, finds files missing, edits .gitignore, reports "Fixed!"]
 
-✅ GOOD: "I'm checking git status to see which files are tracked... Interesting - the
+[GOOD] "I'm checking git status to see which files are tracked... Interesting - the
 mobile-app/lib/ files are not showing up. You opened .gitignore - good thinking! Let me
 search for 'lib/' in there... Found it! Line 81 has a broad 'lib/' exclusion that's
 catching both Python lib directories AND our Flutter source code. This is a mixed-repo
 issue. Should I make it more specific to only exclude 'Archive/desktop-python/lib/'?"
 ```
+
+### Sprint Execution Autonomy - Common Mistakes
+
+**LEARN FROM PAST MISTAKES** (Sprint 6, Sprint 13): Do NOT stop for these reasons:
+
+| Situation | WRONG Behavior | CORRECT Behavior |
+|-----------|---------------|------------------|
+| Implementation choice | Stop and ask: "Should I use method A or B?" | Make best judgment, document, continue |
+| Approach uncertainty | Stop and ask: "Is this the right approach?" | Implement, test, iterate if needed |
+| Method signature change | Stop and ask: "Should I add parameter X?" | Add if needed for acceptance criteria, continue |
+| Refactor vs extend | Stop and ask: "Should I refactor or extend?" | Choose based on code smell, document, continue |
+| Single test failure | Stop and report | Fix the test, continue |
+| Code style issue | Stop and ask | Fix it or note as tech debt, continue |
+| Feature seems incomplete | Stop and verify | Complete acceptance criteria, continue |
+
+**Remember**: Sprint plan approval = blanket approval for ALL implementation decisions needed to meet acceptance criteria. Only stop for the 9 criteria in SPRINT_STOPPING_CRITERIA.md.
 
 ## Sprint Planning and Development Workflow
 
@@ -219,14 +247,24 @@ As of January 24, 2026, **sprints replace the previous phase-based development m
 - **No contractions**: Use "do not" instead of "don't", "does not" instead of "doesn't", "cannot" instead of "can't", etc.
 - **Clarity over brevity**: Write clear, complete sentences in documentation
 - **Use Logger, not print()**: Production code (`lib/`) must use `Logger` for all logging. Test files (`test/`) may use `print()`.  Exception: unit and integration tests (ex. *_test.dart files)
+- **No emojis**: Do not use emojis or special Unicode characters in code or documentation unless explicitly for customer-facing UI/UX
+  - Use text alternatives in brackets: [OK] [FAIL] [WARNING] [PENDING] [NEW] [BUG] [STOP]
+  - Exception: Customer-facing UI can use emojis when appropriate for user experience
+  - Rationale: Emojis do not render consistently across terminals and are harder to search/grep
 
 ### Example
 ```dart
-// ❌ BAD: Don't use this pattern, it won't work correctly
-// ✅ GOOD: Do not use this pattern, it will not work correctly
+// [BAD] Don't use this pattern, it won't work correctly
+// [GOOD] Do not use this pattern, it will not work correctly
 
-// ❌ BAD: Can't be null here
-// ✅ GOOD: Cannot be null here
+// [BAD] Can't be null here
+// [GOOD] Cannot be null here
+
+// [BAD] Status: ✅ Complete
+// [GOOD] Status: [OK] Complete
+
+// [BAD] Warning: ⚠️ Check this
+// [GOOD] Warning: [WARNING] Check this
 ```
 
 ## Project Overview

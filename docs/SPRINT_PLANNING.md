@@ -201,10 +201,10 @@ Clear statement of what needs to be done and why.
 **IMPORTANT**: All acceptance criteria must be quantifiable and measurable. Avoid subjective terms like "comprehensive", "good quality", or "works well".
 
 **Examples**:
-- ❌ BAD: "Comprehensive testing"
-- ✅ GOOD: "All unit and integration tests are error free and produce expected results"
-- ❌ BAD: "Code quality improvements"
-- ✅ GOOD: "Reduce all warnings in production code that can be accomplished in 1 hour"
+- [FAIL] BAD: "Comprehensive testing"
+- [OK] GOOD: "All unit and integration tests are error free and produce expected results"
+- [FAIL] BAD: "Code quality improvements"
+- [OK] GOOD: "Reduce all warnings in production code that can be accomplished in 1 hour"
 
 ## Model Assignment
 | Task | Assigned Model | Complexity | Effort Est. | Notes |
@@ -518,7 +518,7 @@ Details: Implement DKIM header validation in RuleEvaluator, add to all adapter i
 
 **Output**:
 ```
-📋 SPRINT CARD ANALYSIS
+[CHECKLIST] SPRINT CARD ANALYSIS
 
 Card: Add DKIM validation for all OAuth providers
 Complexity Score: 18/40
@@ -569,8 +569,8 @@ While executing tasks, models update the GitHub issue with progress:
 **Task Status Comment Template**:
 ```markdown
 **Status Update** - [Date] [Time]
-- Task A: ✅ Complete (8:00 AM)
-- Task B: 🔄 In Progress - [Current work description]
+- Task A: [OK] Complete (8:00 AM)
+- Task B: [PENDING] In Progress - [Current work description]
 - Task C: ⏸️ Blocked - [Reason and escalation]
 
 Confidence: [High/Medium/Low] that schedule remains on track
@@ -583,7 +583,7 @@ If a task encounters a blocker:
 
 1. **Document the blocker** in GitHub issue comment:
    ```markdown
-   🚫 BLOCKED: [Brief description of blocker]
+   [STOP] BLOCKED: [Brief description of blocker]
 
    Root cause: [Why this is blocking progress]
    Attempted solutions: [What did not work]
@@ -622,9 +622,9 @@ Sprints use voluntary status tracking (not mandatory metrics):
    - Review against acceptance criteria
 
 2. **Acceptance Decision**:
-   - ✅ **Accept**: Card meets all acceptance criteria
-   - 🔄 **Revise**: Minor issues, scheduled for follow-up task
-   - ❌ **Reject**: Does not meet criteria, return to backlog
+   - [OK] **Accept**: Card meets all acceptance criteria
+   - [PENDING] **Revise**: Minor issues, scheduled for follow-up task
+   - [FAIL] **Reject**: Does not meet criteria, return to backlog
 
 3. **Feedback Collection**:
    - Collect data on model assignment accuracy for heuristic updates

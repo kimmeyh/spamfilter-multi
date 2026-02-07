@@ -38,13 +38,13 @@ void main() {
       safeSenderStore = SafeSenderDatabaseStore(databaseHelper);
       ruleStore = RuleDatabaseStore(databaseHelper);
 
-      print('\n📋 Sprint 6 Integration Tests - Quick-Add Workflow');
+      print('\n[CHECKLIST] Sprint 6 Integration Tests - Quick-Add Workflow');
       print('━' * 70);
     });
 
     tearDown(() async {
       await testHelper.tearDown();
-      print('\n✅ Sprint 6 Integration Tests - Cleanup complete');
+      print('\n[OK] Sprint 6 Integration Tests - Cleanup complete');
     });
 
     // ============================================================================
@@ -57,7 +57,7 @@ void main() {
       await db.delete('safe_senders');
       await db.delete('rules');
 
-      print('\n🔄 Workflow 1: Add Safe Sender - Exact Email Match');
+      print('\n[PENDING] Workflow 1: Add Safe Sender - Exact Email Match');
       print('   Step 1: Review unmatched email');
 
       // Simulate unmatched email received
@@ -108,7 +108,7 @@ void main() {
       expect(savedPattern!.pattern, equals(pattern));
 
       print('      ✓ Pattern persisted to database');
-      print('\n   ✅ Workflow 1 Complete: Safe sender added successfully');
+      print('\n   [OK] Workflow 1 Complete: Safe sender added successfully');
     });
 
     test('Workflow 2: Add safe sender (Type 3 - Domain + Subdomains)', () async {
@@ -117,7 +117,7 @@ void main() {
       await db.delete('safe_senders');
       await db.delete('rules');
 
-      print('\n🔄 Workflow 2: Add Safe Sender - Domain + Subdomains');
+      print('\n[PENDING] Workflow 2: Add Safe Sender - Domain + Subdomains');
       print('   Step 1: Review unmatched email');
 
       final email = EmailMessage(
@@ -162,7 +162,7 @@ void main() {
       expect(saved!.exceptionPatterns, isNotEmpty);
 
       print('      ✓ Pattern with exceptions persisted');
-      print('\n   ✅ Workflow 2 Complete: Subdomain pattern with exceptions added');
+      print('\n   [OK] Workflow 2 Complete: Subdomain pattern with exceptions added');
     });
 
     // ============================================================================
@@ -175,7 +175,7 @@ void main() {
       await db.delete('safe_senders');
       await db.delete('rules');
 
-      print('\n🔄 Workflow 3: Create Auto-Delete Rule - From Header');
+      print('\n[PENDING] Workflow 3: Create Auto-Delete Rule - From Header');
       print('   Step 1: Review unmatched email');
 
       final email = EmailMessage(
@@ -256,7 +256,7 @@ void main() {
       expect(saved!.actions.delete, true);
 
       print('      ✓ Rule persisted to database');
-      print('\n   ✅ Workflow 3 Complete: Auto-delete rule created successfully');
+      print('\n   [OK] Workflow 3 Complete: Auto-delete rule created successfully');
     });
 
     // ============================================================================
@@ -269,7 +269,7 @@ void main() {
       await db.delete('safe_senders');
       await db.delete('rules');
 
-      print('\n🔄 Workflow 4: Create Rule - Multiple Conditions');
+      print('\n[PENDING] Workflow 4: Create Rule - Multiple Conditions');
       print('   Step 1: Review unmatched email');
 
       final email = EmailMessage(
@@ -348,7 +348,7 @@ void main() {
       expect(saved.conditions.subject, isNotEmpty);
 
       print('      ✓ Multi-condition rule persisted');
-      print('\n   ✅ Workflow 4 Complete: Complex rule with AND logic created');
+      print('\n   [OK] Workflow 4 Complete: Complex rule with AND logic created');
     });
 
     // ============================================================================
@@ -361,7 +361,7 @@ void main() {
       await db.delete('safe_senders');
       await db.delete('rules');
 
-      print('\n🔄 Workflow 5: Pattern Type Auto-Detection');
+      print('\n[PENDING] Workflow 5: Pattern Type Auto-Detection');
       print('   Step 1: Test Type 1 (exact email) detection');
 
       final pattern1 = '^user@example\\.com\$';
@@ -394,7 +394,7 @@ void main() {
       print('      Detected Type: $type0 (custom)');
       expect(type0, equals(0));
 
-      print('\n   ✅ Workflow 5 Complete: All pattern types detected correctly');
+      print('\n   [OK] Workflow 5 Complete: All pattern types detected correctly');
     });
 
     // ============================================================================
@@ -403,7 +403,7 @@ void main() {
 
     test('Workflow 6: Verify database persistence across operations', () async {
       // Add a test safe sender and rule, then verify they can be retrieved
-      print('\n🔄 Workflow 6: Database Persistence Verification');
+      print('\n[PENDING] Workflow 6: Database Persistence Verification');
 
       // Clean database and add fresh data for verification
       final db = await databaseHelper.database;
@@ -465,7 +465,7 @@ void main() {
       expect(allRules.rules, isNotEmpty);
       print('      ✓ All data loads from database correctly');
 
-      print('\n   ✅ Workflow 6 Complete: Database persistence verified');
+      print('\n   [OK] Workflow 6 Complete: Database persistence verified');
     });
 
   });

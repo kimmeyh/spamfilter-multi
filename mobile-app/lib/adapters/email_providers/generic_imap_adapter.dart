@@ -39,6 +39,7 @@ class GenericIMAPAdapter implements SpamFilterPlatform {
   ImapClient? _imapClient;
   String? _currentMailbox;
   Credentials? _credentials;
+  String? _deletedRuleFolder; // Folder to move deleted emails to (null = use default 'Trash')
 
   /// Create a generic IMAP adapter with custom settings
   GenericIMAPAdapter({
@@ -99,6 +100,12 @@ class GenericIMAPAdapter implements SpamFilterPlatform {
       displayName: 'Custom IMAP',
       platformId: 'imap',
     );
+  }
+
+  @override
+  void setDeletedRuleFolder(String? folderName) {
+    _deletedRuleFolder = folderName;
+    _logger.d('Set deleted rule folder to: ${folderName ?? "Trash (default)"}');
   }
 
   @override
@@ -242,6 +249,42 @@ class GenericIMAPAdapter implements SpamFilterPlatform {
   }
 
   @override
+  Future<void> moveToFolder({
+    required EmailMessage message,
+    required String targetFolder,
+  }) async {
+    if (_imapClient == null) {
+      throw ConnectionException('Not connected');
+    }
+
+    try {
+      // Ensure we're in the correct mailbox
+      if (_currentMailbox != message.folderName) {
+        await _selectMailbox(message.folderName);
+      }
+
+      final messageId = int.tryParse(message.id);
+      if (messageId == null) {
+        throw ActionException(
+          'Invalid message ID: ${message.id}',
+          FilterAction.moveToFolder,
+        );
+      }
+
+      final sequence = MessageSequence.fromId(messageId);
+
+      _logger.i('Moving message ${message.id} to $targetFolder');
+      await _imapClient!.move(
+        sequence,
+        targetMailboxPath: targetFolder,
+      );
+    } catch (e) {
+      _logger.e('Failed to move message ${message.id} to $targetFolder: $e');
+      throw ActionException('Move to folder failed', FilterAction.moveToFolder, e);
+    }
+  }
+
+  @override
   Future<void> takeAction({
     required EmailMessage message,
     required FilterAction action,
@@ -268,12 +311,13 @@ class GenericIMAPAdapter implements SpamFilterPlatform {
 
       switch (action) {
         case FilterAction.delete:
-          // Move to Trash instead of permanent delete
+          // Move to configured folder instead of permanent delete
           // This allows recovery if spam filter makes a mistake
-          _logger.i('Moving message ${message.id} to Trash');
+          final targetFolder = _deletedRuleFolder ?? 'Trash';
+          _logger.i('Moving message ${message.id} to $targetFolder');
           await _imapClient!.move(
             sequence,
-            targetMailboxPath: 'Trash',
+            targetMailboxPath: targetFolder,
           );
           break;
 

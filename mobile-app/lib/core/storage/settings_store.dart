@@ -229,6 +229,40 @@ class SettingsStore {
     }
   }
 
+  /// Get account-specific deleted rule folder
+  /// Returns null if not set (will default to provider-specific Trash folder)
+  Future<String?> getAccountDeletedRuleFolder(String accountId) async {
+    final value = await _getAccountSetting(accountId, 'deleted_rule_folder');
+    return value;
+  }
+
+  /// Set account-specific deleted rule folder
+  /// Pass null to clear the setting (will use provider default)
+  Future<void> setAccountDeletedRuleFolder(String accountId, String? folder) async {
+    if (folder == null) {
+      await _deleteAccountSetting(accountId, 'deleted_rule_folder');
+    } else {
+      await _setAccountSetting(accountId, 'deleted_rule_folder', folder, 'string');
+    }
+  }
+
+  /// Get account-specific safe sender folder
+  /// Returns null if not set (will default to INBOX)
+  Future<String?> getAccountSafeSenderFolder(String accountId) async {
+    final value = await _getAccountSetting(accountId, 'safe_sender_folder');
+    return value;
+  }
+
+  /// Set account-specific safe sender folder
+  /// Pass null to clear the setting (will use INBOX default)
+  Future<void> setAccountSafeSenderFolder(String accountId, String? folder) async {
+    if (folder == null) {
+      await _deleteAccountSetting(accountId, 'safe_sender_folder');
+    } else {
+      await _setAccountSetting(accountId, 'safe_sender_folder', folder, 'string');
+    }
+  }
+
   /// Check if account has any setting overrides
   Future<bool> hasAccountOverrides(String accountId) async {
     final db = await _dbHelper.database;

@@ -19,15 +19,15 @@ enum ScanStatus { idle, scanning, paused, completed, error }
 /// Email action type for categorization
 enum EmailActionType { none, safeSender, delete, moveToJunk, markAsRead }
 
-/// ✨ PHASE 3.1: Scan mode - read-only, test modes, or full production scan
+/// [NEW] PHASE 3.1: Scan mode - read-only, test modes, or full production scan
 enum ScanMode {
   readonly,   // Default: scan only, no modifications
   testLimit,  // Test mode: modify up to N emails, then stop
   testAll,    // Test mode: modify all emails (can revert)
-  fullScan,   // ✨ PHASE 3.1: Production mode - PERMANENT delete/move (cannot revert)
+  fullScan,   // [NEW] PHASE 3.1: Production mode - PERMANENT delete/move (cannot revert)
 }
 
-/// ✨ Multi-account & Multi-folder support: Junk folder configuration per provider
+/// [NEW] Multi-account & Multi-folder support: Junk folder configuration per provider
 class JunkFolderConfig {
   final String provider;  // "aol", "gmail", "outlook", etc.
   final List<String> folderNames;  // ["Junk", "Spam", "Bulk Mail"]
@@ -93,12 +93,12 @@ class EmailActionResult {
 class EmailScanProvider extends ChangeNotifier {
   final Logger _logger = Logger();
 
-  // ✨ SPRINT 4: Scan result persistence stores
+  // [NEW] SPRINT 4: Scan result persistence stores
   ScanResultStore? _scanResultStore;
   UnmatchedEmailStore? _unmatchedEmailStore;
   int? _currentScanResultId;  // Track current scan result for persistence
 
-  // ✨ MULTI-ACCOUNT SUPPORT: Provider-specific junk folder configuration
+  // [NEW] MULTI-ACCOUNT SUPPORT: Provider-specific junk folder configuration
   static const Map<String, List<String>> JUNK_FOLDERS_BY_PROVIDER = {
     'aol': ['Bulk Mail', 'Spam'],           // AOL Mail junk folders
     'gmail': ['Spam', 'Trash'],              // Gmail junk folders
@@ -115,29 +115,29 @@ class EmailScanProvider extends ChangeNotifier {
   int _totalEmails = 0;
   EmailMessage? _currentEmail;
   String? _statusMessage;
-  String? _currentFolder;  // ✨ NEW: Track which folder is being scanned
-  DateTime? _scanStartTime;  // ✨ SPRINT 11: Track when scan started for CSV export
+  String? _currentFolder;  // [NEW] NEW: Track which folder is being scanned
+  DateTime? _scanStartTime;  // [NEW] SPRINT 11: Track when scan started for CSV export
 
   // Results tracking
   final List<EmailActionResult> _results = [];
   int _deletedCount = 0;
   int _movedCount = 0;
   int _safeSendersCount = 0;
-  int _noRuleCount = 0;  // ✨ PHASE 3.1: Emails with no rule match
+  int _noRuleCount = 0;  // [NEW] PHASE 3.1: Emails with no rule match
   int _errorCount = 0;
 
-  // ✨ PHASE 2 SPRINT 3: Read-only mode & revert capability
+  // [NEW] PHASE 2 SPRINT 3: Read-only mode & revert capability
   ScanMode _scanMode = ScanMode.readonly;  // Default: read-only
   int? _emailTestLimit;  // How many emails to actually modify (for testLimit mode)
   final List<String> _lastRunActionIds = [];  // Track email IDs of actions for revert
   final List<EmailActionResult> _lastRunActions = [];  // Track actual actions for revert
 
-  // ✨ PHASE 3.2: Folder selection for scan
-  // ✨ ISSUE #41 FIX: Store folders per-account to prevent cross-account folder leakage
+  // [NEW] PHASE 3.2: Folder selection for scan
+  // [NEW] ISSUE #41 FIX: Store folders per-account to prevent cross-account folder leakage
   final Map<String, List<String>> _selectedFoldersByAccount = {};  // accountId -> folders
   String? _currentAccountId;  // Track current account for folder lookup
 
-  // ✨ PHASE 3.3: Progressive update throttling (Issue #36)
+  // [NEW] PHASE 3.3: Progressive update throttling (Issue #36)
   DateTime? _lastProgressNotification;
   int _emailsSinceLastNotification = 0;
   static const int _progressEmailInterval = 10;  // Update every 10 emails
@@ -149,34 +149,34 @@ class EmailScanProvider extends ChangeNotifier {
   int get totalEmails => _totalEmails;
   EmailMessage? get currentEmail => _currentEmail;
   String? get statusMessage => _statusMessage;
-  String? get currentFolder => _currentFolder;  // ✨ NEW: Get current folder being scanned
-  DateTime? get scanStartTime => _scanStartTime;  // ✨ SPRINT 11: Get scan start timestamp
+  String? get currentFolder => _currentFolder;  // [NEW] NEW: Get current folder being scanned
+  DateTime? get scanStartTime => _scanStartTime;  // [NEW] SPRINT 11: Get scan start timestamp
   List<EmailActionResult> get results => _results;
   int get deletedCount => _deletedCount;
   int get movedCount => _movedCount;
   int get safeSendersCount => _safeSendersCount;
-  int get noRuleCount => _noRuleCount;  // ✨ PHASE 3.1: Emails with no rule match
+  int get noRuleCount => _noRuleCount;  // [NEW] PHASE 3.1: Emails with no rule match
   int get errorCount => _errorCount;
   double get progress => _totalEmails == 0 ? 0 : _processedCount / _totalEmails;
 
-  // ✨ SPRINT 5: Convenience getters for test compatibility
+  // [NEW] SPRINT 5: Convenience getters for test compatibility
   bool get isComplete => _status == ScanStatus.completed;
   bool get hasError => _status == ScanStatus.error;
 
-  // ✨ PHASE 3.1: Scan mode getters
+  // [NEW] PHASE 3.1: Scan mode getters
   ScanMode get scanMode => _scanMode;
   int? get emailTestLimit => _emailTestLimit;
   bool get hasActionsToRevert => _lastRunActionIds.isNotEmpty;
   int get revertableActionCount => _lastRunActionIds.length;
   
-  // ✨ PHASE 3.2: Folder selection getter
-  // ✨ ISSUE #41 FIX: Return folders for current account only
+  // [NEW] PHASE 3.2: Folder selection getter
+  // [NEW] ISSUE #41 FIX: Return folders for current account only
   List<String> get selectedFolders => 
       _currentAccountId != null 
           ? (_selectedFoldersByAccount[_currentAccountId] ?? ['INBOX'])
           : ['INBOX'];
   
-  // ✨ ISSUE #41: Get current account ID
+  // [NEW] ISSUE #41: Get current account ID
   String? get currentAccountId => _currentAccountId;
   
   /// Get human-readable scan mode name for UI display
@@ -193,7 +193,7 @@ class EmailScanProvider extends ChangeNotifier {
     }
   }
 
-  /// ✨ SPRINT 4: Initialize persistence stores for scan result tracking
+  /// [NEW] SPRINT 4: Initialize persistence stores for scan result tracking
   ///
   /// Must be called before startScan() to enable scan result persistence
   void initializePersistence({
@@ -206,7 +206,7 @@ class EmailScanProvider extends ChangeNotifier {
     _logger.i('Scan result persistence initialized');
   }
 
-  /// ✨ SPRINT 4: Set the current account ID for scan result tracking
+  /// [NEW] SPRINT 4: Set the current account ID for scan result tracking
   void setCurrentAccountId(String accountId) {
     _currentAccountId = accountId;
     _logger.d('Set current account ID: $accountId');
@@ -218,7 +218,7 @@ class EmailScanProvider extends ChangeNotifier {
   /// If persistence stores are initialized, creates a scan result record
   Future<void> startScan({
     required int totalEmails,
-    String scanType = 'manual',  // ✨ SPRINT 4: manual or background
+    String scanType = 'manual',  // [NEW] SPRINT 4: manual or background
     List<String> foldersScanned = const [],
   }) async {
     _status = ScanStatus.scanning;
@@ -228,17 +228,17 @@ class EmailScanProvider extends ChangeNotifier {
     _deletedCount = 0;
     _movedCount = 0;
     _safeSendersCount = 0;
-    _noRuleCount = 0;  // ✨ FIX: Reset no-rule count on new scan
+    _noRuleCount = 0;  // [NEW] FIX: Reset no-rule count on new scan
     _errorCount = 0;
     _currentEmail = null;
     _statusMessage = 'Starting scan...';
-    _scanStartTime = DateTime.now();  // ✨ SPRINT 11: Record when scan started
+    _scanStartTime = DateTime.now();  // [NEW] SPRINT 11: Record when scan started
 
-    // ✨ PHASE 3.3: Reset throttling state for new scan
+    // [NEW] PHASE 3.3: Reset throttling state for new scan
     _emailsSinceLastNotification = 0;
     _lastProgressNotification = null;
 
-    // ✨ SPRINT 4: Create scan result record if persistence is enabled
+    // [NEW] SPRINT 4: Create scan result record if persistence is enabled
     if (_scanResultStore != null && _currentAccountId != null) {
       try {
         final scanResult = ScanResult(
@@ -265,7 +265,7 @@ class EmailScanProvider extends ChangeNotifier {
 
   /// Mark current email and update progress
   /// 
-  /// ✨ PHASE 3.3: Throttles UI updates to every 10 emails OR 3 seconds (whichever comes first)
+  /// [NEW] PHASE 3.3: Throttles UI updates to every 10 emails OR 3 seconds (whichever comes first)
   /// to avoid performance issues with large scans
   void updateProgress({
     required EmailMessage email,
@@ -276,7 +276,7 @@ class EmailScanProvider extends ChangeNotifier {
     _statusMessage = message ?? 'Processing ${email.from}...';
     _logger.d('Progress: $_processedCount / $_totalEmails');
     
-    // ✨ PHASE 3.3: Throttle UI updates (10 emails OR 3 seconds, whichever comes first)
+    // [NEW] PHASE 3.3: Throttle UI updates (10 emails OR 3 seconds, whichever comes first)
     _emailsSinceLastNotification++;
     final now = DateTime.now();
     final shouldNotify = _emailsSinceLastNotification >= _progressEmailInterval ||
@@ -311,9 +311,9 @@ class EmailScanProvider extends ChangeNotifier {
 
   /// Complete the scan successfully
   /// 
-  /// ✨ PHASE 3.3: Always calls notifyListeners() to ensure final UI update,
+  /// [NEW] PHASE 3.3: Always calls notifyListeners() to ensure final UI update,
   /// regardless of throttling state (provides complete final counts)
-  /// ✨ SPRINT 4: Complete scan and persist final results
+  /// [NEW] SPRINT 4: Complete scan and persist final results
   Future<void> completeScan() async {
     _status = ScanStatus.completed;
     _currentEmail = null;
@@ -322,7 +322,7 @@ class EmailScanProvider extends ChangeNotifier {
         '$_deletedCount deleted, $_movedCount moved, $_safeSendersCount safe senders, $_errorCount errors';
     _logger.i('Completed scan: $_statusMessage');
 
-    // ✨ SPRINT 4: Mark scan result as completed in database
+    // [NEW] SPRINT 4: Mark scan result as completed in database
     if (_scanResultStore != null && _currentScanResultId != null) {
       try {
         await _scanResultStore!.markScanCompleted(_currentScanResultId!);
@@ -335,14 +335,14 @@ class EmailScanProvider extends ChangeNotifier {
     notifyListeners();  // Final update always sent (bypasses throttling)
   }
 
-  /// ✨ SPRINT 4: Mark scan as failed with error and persist error state
+  /// [NEW] SPRINT 4: Mark scan as failed with error and persist error state
   Future<void> errorScan(String errorMessage) async {
     _status = ScanStatus.error;
     _statusMessage = 'Scan failed: $errorMessage';
     _currentEmail = null;
     _logger.e('Scan error: $errorMessage');
 
-    // ✨ SPRINT 4: Mark scan result as error in database
+    // [NEW] SPRINT 4: Mark scan result as error in database
     if (_scanResultStore != null && _currentScanResultId != null) {
       try {
         await _scanResultStore!.markScanError(_currentScanResultId!, errorMessage);
@@ -366,10 +366,10 @@ class EmailScanProvider extends ChangeNotifier {
     _deletedCount = 0;
     _movedCount = 0;
     _safeSendersCount = 0;
-    _noRuleCount = 0;  // ✨ PHASE 3.1: Reset no-rule count
+    _noRuleCount = 0;  // [NEW] PHASE 3.1: Reset no-rule count
     _errorCount = 0;
     
-    // ✨ PHASE 3.3: Reset throttling state
+    // [NEW] PHASE 3.3: Reset throttling state
     _emailsSinceLastNotification = 0;
     _lastProgressNotification = null;
     
@@ -391,7 +391,7 @@ class EmailScanProvider extends ChangeNotifier {
     };
   }
 
-  /// ✨ MULTI-FOLDER SUPPORT: Get junk folder names for provider
+  /// [NEW] MULTI-FOLDER SUPPORT: Get junk folder names for provider
   /// 
   /// Returns list of junk folder names for the given email provider.
   /// Supports multiple folders per provider (e.g., AOL has both "Bulk Mail" and "Spam").
@@ -411,7 +411,7 @@ class EmailScanProvider extends ChangeNotifier {
     return JUNK_FOLDERS_BY_PROVIDER[platformId] ?? ['Spam', 'Junk'];
   }
 
-  /// ✨ MULTI-FOLDER SUPPORT: Set current folder being scanned
+  /// [NEW] MULTI-FOLDER SUPPORT: Set current folder being scanned
   /// 
   /// Updates the provider state to reflect which folder is being scanned.
   /// Useful for UI display: "Scanning: Inbox (40/88)" vs "Scanning: Bulk Mail (88/88)"
@@ -421,7 +421,7 @@ class EmailScanProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// ✨ MULTI-FOLDER SUPPORT: Get human-readable scan status with folder
+  /// [NEW] MULTI-FOLDER SUPPORT: Get human-readable scan status with folder
   /// 
   /// Returns status message including current folder being scanned.
   /// Example: "Scanning Inbox: 40/88 emails processed"
@@ -432,7 +432,7 @@ class EmailScanProvider extends ChangeNotifier {
     return 'Scanning $_currentFolder: $_processedCount / $_totalEmails';
   }
 
-  /// ✨ PHASE 2 SPRINT 3: Initialize scan mode and test limits
+  /// [NEW] PHASE 2 SPRINT 3: Initialize scan mode and test limits
   /// 
   /// Set the scan mode before starting a scan:
   /// - readonly: scan only, no modifications (default, safe for testing)
@@ -459,17 +459,17 @@ class EmailScanProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// ✨ PHASE 3.2: Set selected folders for scan
-  /// ✨ ISSUE #41 FIX: Store folders per-account to prevent cross-account folder leakage
+  /// [NEW] PHASE 3.2: Set selected folders for scan
+  /// [NEW] ISSUE #41 FIX: Store folders per-account to prevent cross-account folder leakage
   void setSelectedFolders(List<String> folders, {String? accountId}) {
     final targetAccountId = accountId ?? _currentAccountId;
     if (targetAccountId == null) {
-      _logger.w('⚠️ No account ID specified for folder selection');
+      _logger.w('[WARNING] No account ID specified for folder selection');
       return;
     }
     
     if (folders.isEmpty) {
-      _logger.w('⚠️ No folders selected for $targetAccountId, defaulting to INBOX');
+      _logger.w('[WARNING] No folders selected for $targetAccountId, defaulting to INBOX');
       _selectedFoldersByAccount[targetAccountId] = ['INBOX'];
     } else {
       _selectedFoldersByAccount[targetAccountId] = List.from(folders);  // Create copy to avoid mutation
@@ -478,25 +478,25 @@ class EmailScanProvider extends ChangeNotifier {
     notifyListeners();
   }
   
-  /// ✨ ISSUE #41: Set current account ID for folder lookup
+  /// [NEW] ISSUE #41: Set current account ID for folder lookup
   void setCurrentAccount(String accountId) {
     _currentAccountId = accountId;
     _logger.i('📧 Current account set to: $accountId');
     // Don't notify - this is just for internal state tracking
   }
   
-  /// ✨ ISSUE #41: Get selected folders for a specific account
+  /// [NEW] ISSUE #41: Get selected folders for a specific account
   List<String> getSelectedFoldersForAccount(String accountId) {
     return _selectedFoldersByAccount[accountId] ?? ['INBOX'];
   }
   
-  /// ✨ ISSUE #41: Clear folders for a specific account
+  /// [NEW] ISSUE #41: Clear folders for a specific account
   void clearSelectedFoldersForAccount(String accountId) {
     _selectedFoldersByAccount.remove(accountId);
     _logger.i('🗑️ Cleared folder selection for $accountId');
   }
 
-  /// ✨ PHASE 3.1: Mode-aware recordResult with read-only, test modes, and full scan
+  /// [NEW] PHASE 3.1: Mode-aware recordResult with read-only, test modes, and full scan
   /// 
   /// - readonly: actions logged but NOT executed
   /// - testLimit: only first N actions executed (can revert)
@@ -522,23 +522,23 @@ class EmailScanProvider extends ChangeNotifier {
       if (_scanMode == ScanMode.testLimit || _scanMode == ScanMode.testAll) {
         _lastRunActionIds.add(result.email.id);
         _lastRunActions.add(result);
-        _logger.i('📝 Action recorded (revertable): ${result.action} - ${result.email.from}');
+        _logger.i('[NOTES] Action recorded (revertable): ${result.action} - ${result.email.from}');
       } else if (_scanMode == ScanMode.fullScan) {
         _logger.i('🔥 Action executed (PERMANENT): ${result.action} - ${result.email.from}');
       }
     } else {
       // Read-only or limit reached: log what would happen
       if (_scanMode == ScanMode.readonly) {
-        _logger.i('📋 [READONLY] Would ${result.action} email: ${result.email.from}');
+        _logger.i('[CHECKLIST] [READONLY] Would ${result.action} email: ${result.email.from}');
       } else {
-        _logger.i('📋 [LIMIT REACHED] Would ${result.action} email: ${result.email.from}');
+        _logger.i('[CHECKLIST] [LIMIT REACHED] Would ${result.action} email: ${result.email.from}');
       }
     }
 
     // Always record the result for UI/history
     _results.add(result);
 
-    // ✨ PHASE 3.1: Always update counts based on rule evaluation (what WOULD happen)
+    // [NEW] PHASE 3.1: Always update counts based on rule evaluation (what WOULD happen)
     // This ensures bubbles show proposed actions even in Read-Only mode
     switch (result.action) {
       case EmailActionType.delete:
@@ -551,7 +551,7 @@ class EmailScanProvider extends ChangeNotifier {
         _safeSendersCount++;
         break;
       case EmailActionType.none:
-        _noRuleCount++;  // ✨ PHASE 3.1: Track emails with no rule match
+        _noRuleCount++;  // [NEW] PHASE 3.1: Track emails with no rule match
         break;
       case EmailActionType.markAsRead:
         break;
@@ -561,7 +561,7 @@ class EmailScanProvider extends ChangeNotifier {
       _errorCount++;
     }
 
-    // ✨ SPRINT 4: Persist unmatched emails to database
+    // [NEW] SPRINT 4: Persist unmatched emails to database
     if (result.action == EmailActionType.none &&
         _unmatchedEmailStore != null &&
         _currentScanResultId != null) {
@@ -570,7 +570,7 @@ class EmailScanProvider extends ChangeNotifier {
       _logger.d('Unmatched email identified: ${result.email.from} - will persist in Task D');
     }
 
-    // ✨ SPRINT 12: Notify listeners with 2-second throttling
+    // [NEW] SPRINT 12: Notify listeners with 2-second throttling
     // This ensures Results page updates during scan in real-time
     // Always notify on first result, then every 2 seconds thereafter
     final now = DateTime.now();
@@ -586,7 +586,7 @@ class EmailScanProvider extends ChangeNotifier {
     }
   }
 
-  /// ✨ PHASE 2 SPRINT 3: Revert all actions from last run
+  /// [NEW] PHASE 2 SPRINT 3: Revert all actions from last run
   /// 
   /// Reverts all delete/move operations performed in last scan.
   /// Restores emails from trash/junk back to their original folders.
@@ -608,7 +608,7 @@ class EmailScanProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _logger.i('🔄 Starting revert of ${_lastRunActionIds.length} email actions');
+      _logger.i('[PENDING] Starting revert of ${_lastRunActionIds.length} email actions');
 
       // Process reversions in reverse order (undo in opposite sequence)
       for (var i = _lastRunActions.length - 1; i >= 0; i--) {
@@ -617,12 +617,12 @@ class EmailScanProvider extends ChangeNotifier {
           switch (action.action) {
             case EmailActionType.delete:
               // Restore from trash to original folder
-              _logger.d('🔄 Restoring deleted email: ${action.email.from}');
+              _logger.d('[PENDING] Restoring deleted email: ${action.email.from}');
               // await _restoreFromTrash(action.email.id, action.email.folderName);
               break;
             case EmailActionType.moveToJunk:
               // Move from junk back to inbox
-              _logger.d('🔄 Restoring moved email: ${action.email.from}');
+              _logger.d('[PENDING] Restoring moved email: ${action.email.from}');
               // await _moveFromJunkToInbox(action.email.id);
               break;
             default:
@@ -637,7 +637,7 @@ class EmailScanProvider extends ChangeNotifier {
       _lastRunActionIds.clear();
       _lastRunActions.clear();
       _statusMessage = 'Revert completed successfully';
-      _logger.i('✅ Revert completed');
+      _logger.i('[OK] Revert completed');
       notifyListeners();
     } catch (e) {
       _statusMessage = 'Revert failed: $e';
@@ -647,13 +647,13 @@ class EmailScanProvider extends ChangeNotifier {
     }
   }
 
-  /// ✨ PHASE 2 SPRINT 3: Clear revert history without reverting
+  /// [NEW] PHASE 2 SPRINT 3: Clear revert history without reverting
   ///
   /// Confirms and accepts last run's actions permanently.
   /// Once called, actions cannot be reverted.
   void confirmLastRun() {
     if (_lastRunActionIds.isNotEmpty) {
-      _logger.i('✅ Confirmed ${_lastRunActionIds.length} actions - can no longer revert');
+      _logger.i('[OK] Confirmed ${_lastRunActionIds.length} actions - can no longer revert');
       _lastRunActionIds.clear();
       _lastRunActions.clear();
       notifyListeners();
@@ -662,7 +662,7 @@ class EmailScanProvider extends ChangeNotifier {
 
   /// Export scan results to CSV format
   ///
-  /// ✨ SPRINT 11: Enhanced with additional columns:
+  /// [NEW] SPRINT 11: Enhanced with additional columns:
   /// - Scan Date (when scan was performed)
   /// - Received Date (when email was received)
   /// - Match Condition (which rule condition matched, if available)

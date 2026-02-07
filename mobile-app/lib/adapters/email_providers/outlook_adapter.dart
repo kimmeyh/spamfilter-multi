@@ -36,6 +36,12 @@ class OutlookAdapter implements SpamFilterPlatform {
   @override
   AuthMethod get supportedAuthMethod => AuthMethod.oauth2;
 
+  @override
+  void setDeletedRuleFolder(String? folderName) {
+    // Issue #44: When implementing Outlook adapter, store folder name and use in takeAction
+    _logger.d('Set deleted rule folder to: ${folderName ?? "default"}');
+  }
+
   // Issue #44: Add Microsoft Graph API client and OAuth fields
   // MsalFlutter? _msal;
   // String? _accessToken;
@@ -100,6 +106,17 @@ class OutlookAdapter implements SpamFilterPlatform {
     // 2. Fall back to client-side regex for complex rules
     // 3. Leverage Graph API filtering when possible
     
+    throw UnimplementedError('Outlook adapter is Phase 2 - not yet implemented');
+  }
+
+  @override
+  Future<void> moveToFolder({
+    required EmailMessage message,
+    required String targetFolder,
+  }) async {
+    // Issue #44: When implementing Outlook adapter, use Graph API move operation
+    // POST /me/messages/{messageId}/move
+    // Body: {"destinationId": "{folderId}"}
     throw UnimplementedError('Outlook adapter is Phase 2 - not yet implemented');
   }
 

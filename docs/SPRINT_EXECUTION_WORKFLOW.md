@@ -23,7 +23,7 @@ This document describes the step-by-step process for executing sprints in the sp
 
 ---
 
-## ⚠️ CRITICAL REMINDER: Phase 4.5 Sprint Review is MANDATORY
+## [WARNING] CRITICAL REMINDER: Phase 4.5 Sprint Review is MANDATORY
 
 **IMPORTANT**: Phase 4.5 (Sprint Review) is a REQUIRED step for all sprints. It is not optional.
 
@@ -73,7 +73,7 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
 
 ---
 
-### **Phase 0: Sprint Pre-Kickoff** ⚠️ CRITICAL PREREQUISITE
+### **Phase 0: Sprint Pre-Kickoff** [WARNING] CRITICAL PREREQUISITE
 
 - [ ] **0.0.1 Cache Sprint Context** (Optimization)
   - Read ALL_SPRINTS_MASTER_PLAN.md ONCE
@@ -149,7 +149,7 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
   - **Update ALL_SPRINTS_MASTER_PLAN.md**: Add entry to "Past Sprint Summary" table
   - **Example Entry**:
     ```markdown
-    | N | SPRINT_N_SUMMARY.md | ✅ Complete | ~Xh (MMM DD-DD, 2026) |
+    | N | SPRINT_N_SUMMARY.md | [OK] Complete | ~Xh (MMM DD-DD, 2026) |
     ```
   - This keeps ALL_SPRINTS_MASTER_PLAN.md focused on current/future work while preserving history
 
@@ -160,7 +160,8 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
   - Example: `feature/20260124_Sprint_2` or `feature/20260124_Sprint_2_Rule_Migration`
   - Switch repository to new branch: `git checkout -b <branch-name>`
 
-- [ ] **1.4 Create GitHub Sprint Cards**
+- [ ] **1.4 Create GitHub Sprint Cards** (MANDATORY - Never Skip)
+  - **CRITICAL**: GitHub issues MUST be created for ALL sprint tasks, even if sprint plan is pre-approved
   - Create one GitHub issue per task (Task A, Task B, Task C, etc.)
   - Use sprint_card.yml template from `.github/ISSUE_TEMPLATE/`
   - Fill in:
@@ -171,6 +172,7 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
     - **Complexity Score**: Cognitive load (Low/Medium/High)
   - Apply labels: `sprint`, `card`, `priority:high/medium/low`
   - Link to related issues (dependencies, related features)
+  - **Rationale**: GitHub issues provide traceability, can be referenced in commits/PRs, and close automatically when PR merges
 
 - [ ] **1.4.1 Verify Issue Accuracy** (before finalizing sprint cards)
   - For bug/fix issues: Verify the issue still exists (may have been fixed in previous sprint)
@@ -219,7 +221,7 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
 
   **CRITICAL CLARIFICATION - When to Ask vs When to Execute**:
 
-  ✅ **Execute WITHOUT asking** (plan-approved):
+  [OK] **Execute WITHOUT asking** (plan-approved):
   - Implementing tasks exactly as described in sprint plan
   - Making implementation decisions within scope (method signatures, class names, file structure)
   - Refactoring code to support task requirements
@@ -227,7 +229,7 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
   - Fixing bugs discovered during task execution
   - Architectural decisions that were implied by task acceptance criteria
 
-  ❌ **STOP and ask** (not plan-approved):
+  [FAIL] **STOP and ask** (not plan-approved):
   - New requirements not in sprint plan
   - Scope change expanding beyond task definition
   - Blocked on external dependency or missing information
@@ -365,10 +367,10 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
     - Example: Test monitor-tests.ps1 on both PowerShell versions
     - Example: Verify grep patterns work with forward slashes on Windows
   - Document validation results:
-    - "✅ Task B risk mitigation validated: App runs, logs appear in console with correct keywords"
-    - "✅ Task C risk mitigation validated: Coverage report generated, shows 85% coverage"
-    - "✅ Task D tool validation: monitor-tests.ps1 executed on test suite, correctly identified 3 slow tests"
-    - "✅ Task D cross-platform validation: Script tested on PowerShell 5.1 and PowerShell 7, both work correctly"
+    - "[OK] Task B risk mitigation validated: App runs, logs appear in console with correct keywords"
+    - "[OK] Task C risk mitigation validated: Coverage report generated, shows 85% coverage"
+    - "[OK] Task D tool validation: monitor-tests.ps1 executed on test suite, correctly identified 3 slow tests"
+    - "[OK] Task D cross-platform validation: Script tested on PowerShell 5.1 and PowerShell 7, both work correctly"
   - If validation fails, fix issues before proceeding to Phase 4
 
 - [ ] **3.3.1 Monitor Test Execution (Optional - For Debugging)**
@@ -400,7 +402,7 @@ After Phase 3.2 all tests pass, context can be compacted for efficiency:
 **NEW IN SPRINT 5**: After Phase 3.2 tests pass, implement parallel workflow for efficiency:
 
 1. **Notify User Immediately** (After 3.2 tests pass)
-   - Message: "✅ Code ready for testing in your VSCode repository"
+   - Message: "[OK] Code ready for testing in your VSCode repository"
    - Provide working branch name: `feature/YYYYMMDD_Sprint_N`
    - Give user VSCode workspace instructions
    - **Timing**: User can start testing RIGHT NOW
@@ -415,7 +417,7 @@ After Phase 3.2 all tests pass, context can be compacted for efficiency:
      - Writes documentation
      - Conducts code review analysis
      - Prepares Phase 4.5 review
-   - **⚠️ CRITICAL**: PR creation is NOT optional - must happen during manual testing
+   - **[WARNING] CRITICAL**: PR creation is NOT optional - must happen during manual testing
    - **No blocking**: User testing doesn't wait for PR
 
    **Why PR Creation is Mandatory During Testing**:
@@ -442,7 +444,7 @@ After Phase 3.2 all tests pass, context can be compacted for efficiency:
 - PR includes all Sprint 4-4.5 work when user is ready to review
 - Both activities benefit from independence (faster iteration)
 
-- [ ] **3.3 Manual Testing (if applicable) - PARALLEL WITH PHASE 4**
+- [ ] **3.3 Manual Testing  - PARALLEL WITH PHASE 4**
 
   **CRITICAL**: Claude Code will build and run the Windows Desktop App (or target platform) so that user can complete manual testing. User should NOT have to build app themselves.
 
@@ -465,7 +467,7 @@ After Phase 3.2 all tests pass, context can be compacted for efficiency:
     - Key UI elements are visible
     - Console shows expected startup logging
   - [ ] **3.3.e Notify user app is ready**
-    - Message: "✅ App built and running, ready for manual testing"
+    - Message: "[OK] App built and running, ready for manual testing"
     - Provide platform details (Windows desktop / Android emulator)
     - Note any warnings or known issues to watch for
   - [ ] **3.3.f Monitor app output** (Claude Code background task)
@@ -499,7 +501,7 @@ After Phase 3.2 all tests pass, context can be compacted for efficiency:
 
 ---
 
-## ✅ Approval Gates (Sprint 5+)
+## [OK] Approval Gates (Sprint 5+)
 
 **User Approvals**: Only at these 4 points (NOT per-task):
 
@@ -531,7 +533,7 @@ After Phase 3.2 all tests pass, context can be compacted for efficiency:
 - Per-task approval adds overhead without benefit
 - Detailed plan provides sufficient control
 
-**⚠️ CRITICAL REMINDER FOR CLAUDE**:
+**[WARNING] CRITICAL REMINDER FOR CLAUDE**:
 - **DO NOT ask for approval between tasks** after sprint plan is approved
 - **DO NOT ask "Should I proceed to Task B?"** - this is pre-approved
 - **DO NOT ask "Ready for next task?"** - continue autonomously
@@ -628,7 +630,7 @@ Before Phase 4.5, if context usage is high (>70%), user can optionally run `/com
 
 ### **Phase 4.5: Sprint Review (After PR Submitted) - MANDATORY FOR ALL SPRINTS**
 
-⚠️ **IMPORTANT**: Phase 4.5 is **MANDATORY and REQUIRED** for all sprints. Do NOT skip this phase.
+[WARNING] **IMPORTANT**: Phase 4.5 is **MANDATORY and REQUIRED** for all sprints. Do NOT skip this phase.
 
 **Why Phase 4.5 is Critical**:
 - Captures lessons learned for future sprint improvements
@@ -747,9 +749,9 @@ Before conducting sprint review, build and test the Windows desktop app:
     ```
     Sprint N complete! What would you like to do next?
 
-    1. 📋 Sprint Review (if not already conducted)
+    1. [CHECKLIST] Sprint Review (if not already conducted)
     2. ➡️ Start Sprint N+1 (see ALL_SPRINTS_MASTER_PLAN.md for details)
-    3. 🔧 Ad-hoc work (tasks outside sprint framework)
+    3. [CONFIG] Ad-hoc work (tasks outside sprint framework)
 
     Please let me know your preference.
     ```
@@ -799,10 +801,10 @@ Brief description of what this sprint delivers.
 - Description: What was done
 
 ## Code Quality
-- ✅ <N> tests passing (was <M> before)
-- ✅ Zero code analysis issues
-- ✅ <X> lines of code added
-- ✅ <Y> lines of code removed/refactored
+- [OK] <N> tests passing (was <M> before)
+- [OK] Zero code analysis issues
+- [OK] <X> lines of code added
+- [OK] <Y> lines of code removed/refactored
 
 ## Related GitHub Issues
 - Closes #XX (Task A)
@@ -906,34 +908,34 @@ dart format --set-exit-if-changed lib/
 ## Success Criteria for Sprint Completion
 
 ### Before PR Submission (Phase 3 Complete)
-- ✅ All sprint cards completed
-- ✅ All tests passing (100% pass rate)
-- ✅ Zero code analysis errors
-- ✅ Local code review completed
-- ✅ No blockers remaining
+- [OK] All sprint cards completed
+- [OK] All tests passing (100% pass rate)
+- [OK] Zero code analysis errors
+- [OK] Local code review completed
+- [OK] No blockers remaining
 
 ### When PR Submitted (Phase 4 Complete)
-- ✅ All commits pushed to remote
-- ✅ PR created to `develop` branch (NOT main - critical requirement)
-- ✅ PR fully documented (see GitHub PR template)
-- ✅ Sprint card issues referenced in PR description (Closes #XX, #YY, #ZZ)
-- ✅ User notified and ready for review
+- [OK] All commits pushed to remote
+- [OK] PR created to `develop` branch (NOT main - critical requirement)
+- [OK] PR fully documented (see GitHub PR template)
+- [OK] Sprint card issues referenced in PR description (Closes #XX, #YY, #ZZ)
+- [OK] User notified and ready for review
 
 ### When PR Approved (Phase 4.5 Complete)
-- ✅ Sprint review COMPLETED (MANDATORY - see Phase 4.5 above)
-- ✅ User feedback collected
-- ✅ Improvement suggestions documented
-- ✅ Agreed-upon improvements applied to documentation
-- ✅ Ready for merge
+- [OK] Sprint review COMPLETED (MANDATORY - see Phase 4.5 above)
+- [OK] User feedback collected
+- [OK] Improvement suggestions documented
+- [OK] Agreed-upon improvements applied to documentation
+- [OK] Ready for merge
 
-**⚠️ CRITICAL**: Phase 4.5 must be completed BEFORE merge. This is not optional.
+**[WARNING] CRITICAL**: Phase 4.5 must be completed BEFORE merge. This is not optional.
 
 ### After Merge (Cleanup Complete)
-- ✅ PR merged to develop
-- ✅ Feature branch deleted (locally and remote)
-- ✅ All related GitHub issues closed
-- ✅ Sprint retrospective documented (if applicable)
-- ✅ Ready to begin next sprint
+- [OK] PR merged to develop
+- [OK] Feature branch deleted (locally and remote)
+- [OK] All related GitHub issues closed
+- [OK] Sprint retrospective documented (if applicable)
+- [OK] Ready to begin next sprint
 
 ---
 

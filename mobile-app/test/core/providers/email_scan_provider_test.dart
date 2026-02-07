@@ -1,6 +1,6 @@
 /// Unit tests for Phase 2 Sprint 3: Scan modes and read-only testing
 /// 
-/// ✨ PHASE 2 SPRINT 3: Read-only mode, test limits, and revert capability
+/// [NEW] PHASE 2 SPRINT 3: Read-only mode, test limits, and revert capability
 /// 
 /// Tests verify:
 /// - Readonly mode prevents all email modifications (safe by default)
@@ -118,7 +118,7 @@ void main() {
 
         provider.recordResult(result);
 
-        // ✨ PHASE 3.1: In readonly mode, counts show what WOULD happen (proposed actions)
+        // [NEW] PHASE 3.1: In readonly mode, counts show what WOULD happen (proposed actions)
         // but actions are NOT executed (hasActionsToRevert remains false)
         expect(provider.deletedCount, 1); // Shows proposed action
         expect(provider.hasActionsToRevert, isFalse); // Not executed
@@ -150,7 +150,7 @@ void main() {
 
         provider.recordResult(result);
 
-        // ✨ PHASE 3.1: In readonly mode, counts show what WOULD happen (proposed actions)
+        // [NEW] PHASE 3.1: In readonly mode, counts show what WOULD happen (proposed actions)
         expect(provider.movedCount, 1); // Shows proposed action
         expect(provider.hasActionsToRevert, isFalse); // Not executed
       });
@@ -175,7 +175,7 @@ void main() {
 
         provider.recordResult(result);
 
-        // ✨ PHASE 3.1: In readonly mode, counts show what WOULD happen (proposed actions)
+        // [NEW] PHASE 3.1: In readonly mode, counts show what WOULD happen (proposed actions)
         expect(provider.safeSendersCount, 1); // Shows proposed action
         expect(provider.hasActionsToRevert, isFalse); // Not executed
       });
@@ -234,7 +234,7 @@ void main() {
           provider.recordResult(result);
         }
 
-        // ✨ PHASE 3.1: Counts show all proposed actions (5), but only 3 executed
+        // [NEW] PHASE 3.1: Counts show all proposed actions (5), but only 3 executed
         expect(provider.deletedCount, 5); // All proposed actions
         expect(provider.revertableActionCount, 3); // Only executed (within limit)
         expect(provider.hasActionsToRevert, isTrue);
@@ -262,7 +262,7 @@ void main() {
 
         provider.recordResult(result);
 
-        // ✨ PHASE 3.1: Counts show proposed actions (1), but none executed (limit = 0)
+        // [NEW] PHASE 3.1: Counts show proposed actions (1), but none executed (limit = 0)
         expect(provider.deletedCount, 1); // Proposed action
         expect(provider.hasActionsToRevert, isFalse); // Not executed
       });

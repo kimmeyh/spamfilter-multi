@@ -286,10 +286,10 @@ class EmailScanner {
 
 **Example**:
 ```dart
-// ❌ BAD: Using print() in production code
+// [FAIL] BAD: Using print() in production code
 print('Scanning 150 emails...');
 
-// ✅ GOOD: Using AppLogger with keyword
+// [OK] GOOD: Using AppLogger with keyword
 AppLogger.scan('Starting inbox scan: 150 emails to process');
 ```
 
@@ -332,14 +332,14 @@ Future<void> _fetchEmails() async { }
 
 **Example**:
 ```dart
-// ✅ GOOD
+// [OK] GOOD
 AppLogger.scan('Processing $count emails from $folder');
 final widget = Container(
   padding: EdgeInsets.all(16),
   child: Text('Hello'),
 );
 
-// ❌ BAD
+// [FAIL] BAD
 AppLogger.scan('Processing ${count} emails from ${folder}');  // Unnecessary braces
 final widget = Container(
   padding: EdgeInsets.all(16), child: Text('Hello'));  // No trailing comma

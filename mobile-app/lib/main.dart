@@ -196,7 +196,7 @@ class _AppInitializerState extends State<_AppInitializer> {
       );
     }
 
-    // ✨ NEW: Once rules are loaded, show main navigation screen
+    // [NEW] NEW: Once rules are loaded, show main navigation screen
     // On Android: Shows bottom navigation with Accounts/Rules/Settings tabs
     // On other platforms: Shows account selection screen directly
     return const MainNavigationScreen();
