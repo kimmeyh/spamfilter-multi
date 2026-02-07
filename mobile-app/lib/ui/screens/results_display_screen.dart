@@ -881,12 +881,18 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         ? const Icon(Icons.check, color: Colors.green)
         : const Icon(Icons.error, color: Colors.red);
 
-    return ListTile(
-      leading: _actionIcon(result.action),
-      title: Text(title),
-      subtitle: Text(subtitle),
-      trailing: trailing,
-      onTap: () => _showEmailDetailSheet(result),
+    // Issue 6: Wrap with Container to capture position for popup
+    final tileKey = GlobalKey();
+
+    return Container(
+      key: tileKey,
+      child: ListTile(
+        leading: _actionIcon(result.action),
+        title: Text(title),
+        subtitle: Text(subtitle),
+        trailing: trailing,
+        onTap: () => _showEmailDetailSheet(result, itemKey: tileKey),
+      ),
     );
   }
 
@@ -905,8 +911,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     return '${parts[parts.length - 2]}.${parts[parts.length - 1]}';
   }
 
-  /// Show bottom sheet with email details and inline quick actions
-  void _showEmailDetailSheet(EmailActionResult result) {
+  /// Show positioned popup with email details and inline quick actions
+  /// Issue 6: CSS-like positioning - show popup below/above email item
+  void _showEmailDetailSheet(EmailActionResult result, {GlobalKey? itemKey}) {
     final email = result.email;
     final bodyParser = EmailBodyParser();
     // Extract raw email and domain (Punycode format) - used for rule creation
@@ -935,20 +942,59 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     // Format date/time
     final dateStr = email.receivedDate.toString().substring(0, 16);
 
-    showModalBottomSheet(
+    // Issue 6: Calculate position for CSS-like popup positioning
+    Offset? itemPosition;
+    Size? itemSize;
+    if (itemKey != null) {
+      final RenderBox? renderBox = itemKey.currentContext?.findRenderObject() as RenderBox?;
+      if (renderBox != null) {
+        itemPosition = renderBox.localToGlobal(Offset.zero);
+        itemSize = renderBox.size;
+      }
+    }
+
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      constraints: BoxConstraints(
-        maxWidth: MediaQuery.of(context).size.width * 0.9,
-      ),
-      builder: (sheetContext) => DraggableScrollableSheet(
-        initialChildSize: 0.55,
-        minChildSize: 0.3,
-        maxChildSize: 0.85,
-        expand: false,
-        builder: (context, scrollController) => SingleChildScrollView(
-          controller: scrollController,
-          child: Padding(
+      barrierColor: Colors.black54,
+      builder: (dialogContext) {
+        // Get screen dimensions
+        final screenSize = MediaQuery.of(context).size;
+        final screenHeight = screenSize.height;
+        final popupHeight = screenHeight * 0.6; // Approximate popup height
+
+        // Calculate position
+        double? top;
+        double? bottom;
+
+        if (itemPosition != null && itemSize != null) {
+          final itemBottom = itemPosition.dy + itemSize.height;
+          final spaceBelow = screenHeight - itemBottom;
+          final spaceAbove = itemPosition.dy;
+
+          if (spaceBelow >= popupHeight) {
+            // Show below email
+            top = itemBottom + 8; // 8px gap
+          } else if (spaceAbove >= popupHeight) {
+            // Show above email
+            bottom = screenHeight - itemPosition.dy + 8; // 8px gap
+          } else {
+            // Not enough room above or below - align with first email
+            top = itemPosition.dy;
+          }
+        }
+
+        return Stack(
+          children: [
+            Positioned(
+              top: top,
+              bottom: bottom,
+              left: 16,
+              right: 16,
+              child: Material(
+                elevation: 8,
+                borderRadius: BorderRadius.circular(12),
+                child: SingleChildScrollView(
+                  child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1058,7 +1104,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                           null,
                         ),
                         onTap: () {
-                          Navigator.pop(sheetContext);
+                          Navigator.pop(dialogContext);
                           _addSafeSender(rawSenderEmail, 'exact');
                         },
                       ),
@@ -1077,7 +1123,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                             null,
                           ),
                           onTap: () {
-                            Navigator.pop(sheetContext);
+                            Navigator.pop(dialogContext);
                             _addSafeSender('@$rawSenderDomain', 'exactDomain');
                           },
                         ),
@@ -1097,7 +1143,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                             null,
                           ),
                           onTap: () {
-                            Navigator.pop(sheetContext);
+                            Navigator.pop(dialogContext);
                             _addSafeSender(rawRootDomain ?? rawSenderDomain, 'entireDomain');
                           },
                         ),
@@ -1130,7 +1176,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                           null,
                         ),
                         onTap: () {
-                          Navigator.pop(sheetContext);
+                          Navigator.pop(dialogContext);
                           _createBlockRule('from', rawSenderEmail);
                         },
                       ),
@@ -1149,7 +1195,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                             null,
                           ),
                           onTap: () {
-                            Navigator.pop(sheetContext);
+                            Navigator.pop(dialogContext);
                             _createBlockRule('exactDomain', '@$rawSenderDomain');
                           },
                         ),
@@ -1169,7 +1215,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                             null,
                           ),
                           onTap: () {
-                            Navigator.pop(sheetContext);
+                            Navigator.pop(dialogContext);
                             _createBlockRule('entireDomain', rawRootDomain ?? rawSenderDomain);
                           },
                         ),
@@ -1190,7 +1236,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                             cleanedSubject,
                           ),
                           onTap: () {
-                            Navigator.pop(sheetContext);
+                            Navigator.pop(dialogContext);
                             _createBlockRule('subject', cleanedSubject);
                           },
                         ),
@@ -1199,8 +1245,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               ],
             ),
           ),
-        ),
-      ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
