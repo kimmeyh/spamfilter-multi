@@ -351,8 +351,10 @@ class _AccountMaintenanceScreenState extends State<AccountMaintenanceScreen> {
   Future<void> _triggerOneTimeScan(SavedAccount account) async {
     final scanProvider = context.read<EmailScanProvider>();
 
-    // Initialize scan mode
-    scanProvider.initializeScanMode(mode: ScanMode.readonly);
+    // [UPDATED] ISSUE #123: Initialize scan mode from Settings (single source of truth)
+    final settingsStore = SettingsStore();
+    final manualScanMode = await settingsStore.getManualScanMode();
+    scanProvider.initializeScanMode(mode: manualScanMode);
 
     _logger.i('[INVESTIGATION] Initiating one-time scan for ${account.email}');
 

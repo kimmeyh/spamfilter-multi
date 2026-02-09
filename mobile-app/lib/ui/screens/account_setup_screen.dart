@@ -5,6 +5,7 @@ import '../../adapters/email_providers/email_provider.dart';
 import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/providers/email_scan_provider.dart';
+import '../../core/storage/settings_store.dart';
 import 'scan_progress_screen.dart';
 import 'gmail_oauth_screen.dart';
 
@@ -189,9 +190,11 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
       );
 
       // [NEW] PHASE 3.1: Navigate directly to ScanProgressScreen
-      // Scan mode defaults to readonly (safe) and can be changed via persistent button
+      // [UPDATED] ISSUE #123: Scan mode from Settings (single source of truth)
       final scanProvider = context.read<EmailScanProvider>();
-      scanProvider.initializeScanMode(mode: ScanMode.readonly); // Default to safe mode
+      final settingsStore = SettingsStore();
+      final manualScanMode = await settingsStore.getManualScanMode();
+      scanProvider.initializeScanMode(mode: manualScanMode);
       
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
