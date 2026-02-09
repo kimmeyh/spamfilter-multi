@@ -230,6 +230,11 @@ class MockSpamFilterPlatform implements SpamFilterPlatform {
   }
 
   @override
+  void setDeletedRuleFolder(String? folderName) {
+    // No-op for testing
+  }
+
+  @override
   Future<List<EmailMessage>> fetchMessages({
     required int daysBack,
     required List<String> folderNames,
@@ -246,6 +251,14 @@ class MockSpamFilterPlatform implements SpamFilterPlatform {
     if (onTakeAction != null) {
       onTakeAction!();
     }
+  }
+
+  @override
+  Future<void> moveToFolder({
+    required EmailMessage message,
+    required String targetFolder,
+  }) async {
+    // No-op for testing
   }
 
   @override
