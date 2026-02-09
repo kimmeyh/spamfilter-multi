@@ -138,10 +138,11 @@ class EmailScanProvider extends ChangeNotifier {
   String? _currentAccountId;  // Track current account for folder lookup
 
   // [NEW] PHASE 3.3: Progressive update throttling (Issue #36)
+  // [UPDATED] ISSUE #128: Reduced from 3s to 2s for more responsive folder updates
   DateTime? _lastProgressNotification;
   int _emailsSinceLastNotification = 0;
   static const int _progressEmailInterval = 10;  // Update every 10 emails
-  static const Duration _progressTimeInterval = Duration(seconds: 3);  // OR every 3 seconds
+  static const Duration _progressTimeInterval = Duration(seconds: 2);  // OR every 2 seconds (was 3s)
 
   // Getters
   ScanStatus get status => _status;
