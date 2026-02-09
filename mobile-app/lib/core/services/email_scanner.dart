@@ -1,6 +1,7 @@
 /// Email scanning service that connects IMAP adapters with rule evaluation
 library;
 
+import '../models/email_message.dart';
 import '../providers/email_scan_provider.dart';
 import '../providers/rule_set_provider.dart';
 import '../services/rule_evaluator.dart';
@@ -66,11 +67,61 @@ class EmailScanner {
       final deletedRuleFolder = await _settingsStore.getAccountDeletedRuleFolder(accountId);
       platform.setDeletedRuleFolder(deletedRuleFolder);
 
-      // 3. Fetch messages
-      final messages = await platform.fetchMessages(
-        daysBack: daysBack,
-        folderNames: folderNames,
-      );
+      // 3. [UPDATED] ISSUE #128: Fetch messages folder-by-folder for progress reporting
+      final List<EmailMessage> messages = [];
+      for (final folderName in folderNames) {
+        // [NEW] ISSUE #128: Report folder being fetched
+        scanProvider.setCurrentFolder(folderName);
+        scanProvider.updateProgress(
+          email: EmailMessage(
+            id: '',
+            from: '',
+            subject: 'Searching folder "$folderName"...',
+            body: '',
+            headers: {},
+            receivedDate: DateTime.now(),
+            folderName: folderName,
+          ),
+          message: 'Searching folder "$folderName"...',
+        );
+
+        // Fetch messages from this folder
+        final folderMessages = await platform.fetchMessages(
+          daysBack: daysBack,
+          folderNames: [folderName],  // Fetch one folder at a time
+        );
+
+        messages.addAll(folderMessages);
+
+        // [NEW] ISSUE #128: Report folder completion
+        if (folderMessages.isNotEmpty) {
+          scanProvider.updateProgress(
+            email: EmailMessage(
+              id: '',
+              from: '',
+              subject: 'Found ${folderMessages.length} emails in "$folderName"',
+              body: '',
+              headers: {},
+              receivedDate: DateTime.now(),
+              folderName: folderName,
+            ),
+            message: 'Found ${folderMessages.length} emails in "$folderName", continuing...',
+          );
+        } else {
+          scanProvider.updateProgress(
+            email: EmailMessage(
+              id: '',
+              from: '',
+              subject: 'No emails found in "$folderName"',
+              body: '',
+              headers: {},
+              receivedDate: DateTime.now(),
+              folderName: folderName,
+            ),
+            message: 'No emails found in "$folderName", continuing...',
+          );
+        }
+      }
 
       // 4. Start scan ([NEW] SPRINT 4: Now async to enable persistence)
       await scanProvider.startScan(

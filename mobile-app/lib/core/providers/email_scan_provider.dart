@@ -318,10 +318,12 @@ class EmailScanProvider extends ChangeNotifier {
   Future<void> completeScan() async {
     _status = ScanStatus.completed;
     _currentEmail = null;
+    _currentFolder = null;  // [NEW] ISSUE #128: Clear folder on completion
     final modeName = getScanModeDisplayName();
-    _statusMessage = 'Scan completed - $modeName: '
-        '$_deletedCount deleted, $_movedCount moved, $_safeSendersCount safe senders, $_errorCount errors';
-    _logger.i('Completed scan: $_statusMessage');
+    // [UPDATED] ISSUE #128: Show "Scan complete." message
+    _statusMessage = 'Scan complete.';
+    _logger.i('Completed scan - $modeName: '
+        '$_deletedCount deleted, $_movedCount moved, $_safeSendersCount safe senders, $_errorCount errors');
 
     // [NEW] SPRINT 4: Mark scan result as completed in database
     if (_scanResultStore != null && _currentScanResultId != null) {
