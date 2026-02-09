@@ -25,9 +25,9 @@ import '../widgets/app_bar_with_exit.dart';
 /// );
 /// ```
 class SettingsScreen extends StatefulWidget {
-  final String? accountId;
+  final String accountId;
 
-  const SettingsScreen({super.key, this.accountId});
+  const SettingsScreen({super.key, required this.accountId});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -71,14 +71,23 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     setState(() => _isLoading = true);
 
     try {
-      // Load app-wide settings
-      _manualScanMode = await _settingsStore.getManualScanMode();
-      _manualScanFolders = await _settingsStore.getManualScanFolders();
+      // [UPDATED] ISSUE #123: Load per-account settings (with app-wide fallback)
+      final accountManualMode = await _settingsStore.getAccountManualScanMode(widget.accountId);
+      _manualScanMode = accountManualMode ?? await _settingsStore.getManualScanMode();
+
+      final accountManualFolders = await _settingsStore.getAccountManualScanFolders(widget.accountId);
+      _manualScanFolders = accountManualFolders ?? await _settingsStore.getManualScanFolders();
+
       _confirmDialogsEnabled = await _settingsStore.getConfirmDialogsEnabled();
       _backgroundScanEnabled = await _settingsStore.getBackgroundScanEnabled();
       _backgroundScanFrequency = await _settingsStore.getBackgroundScanFrequency();
-      _backgroundScanMode = await _settingsStore.getBackgroundScanMode();
-      _backgroundScanFolders = await _settingsStore.getBackgroundScanFolders();
+
+      final accountBgMode = await _settingsStore.getAccountBackgroundScanMode(widget.accountId);
+      _backgroundScanMode = accountBgMode ?? await _settingsStore.getBackgroundScanMode();
+
+      final accountBgFolders = await _settingsStore.getAccountBackgroundScanFolders(widget.accountId);
+      _backgroundScanFolders = accountBgFolders ?? await _settingsStore.getBackgroundScanFolders();
+
       _csvExportDirectory = await _settingsStore.getCsvExportDirectory();
     } catch (e) {
       if (mounted) {
@@ -121,35 +130,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   }
 
   Widget _buildAccountTab() {
-    // If no account selected, show message
-    if (widget.accountId == null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.account_circle_outlined, size: 64, color: Colors.grey.shade400),
-              const SizedBox(height: 16),
-              Text(
-                'No Account Selected',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Please select an email account first to configure account-specific settings.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey.shade600),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // Account selected - show folder configuration buttons
+    // [UPDATED] ISSUE #123: accountId now required, no null check needed
     return FutureBuilder<Credentials?>(
-      future: _credStore.getCredentials(widget.accountId!),
+      future: _credStore.getCredentials(widget.accountId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -166,7 +149,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
         final credentials = snapshot.data!;
         final email = credentials.email;
-        final platform = widget.accountId!.split('-')[0]; // Extract platform from accountId
+        final platform = widget.accountId.split('-')[0]; // Extract platform from accountId
 
         return ListView(
           padding: const EdgeInsets.all(16),
@@ -280,7 +263,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           value: _manualScanMode,
           onChanged: (mode) async {
             setState(() => _manualScanMode = mode);
-            await _settingsStore.setManualScanMode(mode);
+            // [UPDATED] ISSUE #123: Save per-account manual scan mode
+            await _settingsStore.setAccountManualScanMode(widget.accountId, mode);
           },
         ),
         const SizedBox(height: 24),
@@ -289,7 +273,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           folders: _manualScanFolders,
           onChanged: (folders) async {
             setState(() => _manualScanFolders = folders);
-            await _settingsStore.setManualScanFolders(folders);
+            // [UPDATED] ISSUE #123: Save per-account manual scan folders
+            await _settingsStore.setAccountManualScanFolders(widget.accountId, folders);
           },
         ),
         const SizedBox(height: 24),
@@ -427,7 +412,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             value: _backgroundScanMode,
             onChanged: (mode) async {
               setState(() => _backgroundScanMode = mode);
-              await _settingsStore.setBackgroundScanMode(mode);
+              // [UPDATED] ISSUE #123: Save per-account background scan mode
+              await _settingsStore.setAccountBackgroundScanMode(widget.accountId, mode);
             },
           ),
           const SizedBox(height: 24),
@@ -436,7 +422,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             folders: _backgroundScanFolders,
             onChanged: (folders) async {
               setState(() => _backgroundScanFolders = folders);
-              await _settingsStore.setBackgroundScanFolders(folders);
+              // [UPDATED] ISSUE #123: Save per-account background scan folders
+              await _settingsStore.setAccountBackgroundScanFolders(widget.accountId, folders);
             },
           ),
         ],
@@ -455,6 +442,19 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         ),
       ),
     );
+  }
+
+  /// [NEW] ISSUE #123: Get provider-specific default junk folders
+  List<String> _getProviderDefaultFolders(String platformId) {
+    // Based on EmailScanProvider.JUNK_FOLDERS_BY_PROVIDER
+    const providerFolders = {
+      'aol': ['Bulk Mail', 'Spam'],
+      'gmail': ['Spam', 'Trash'],
+      'outlook': ['Junk Email', 'Spam'],
+      'yahoo': ['Bulk', 'Spam'],
+      'icloud': ['Junk', 'Trash'],
+    };
+    return providerFolders[platformId] ?? ['Spam', 'Junk'];
   }
 
   Widget _buildScanModeSelector({
@@ -492,7 +492,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     required List<String> folders,
     required Future<void> Function(List<String>) onChanged,
   }) {
-    final availableFolders = ['INBOX', 'Junk', 'Spam', 'Bulk Mail', 'All Folders'];
+    // [UPDATED] ISSUE #123: Provider-specific folder defaults
+    final platform = widget.accountId.split('-')[0];
+    final providerFolders = _getProviderDefaultFolders(platform);
+    final availableFolders = ['INBOX', ...providerFolders, 'All Folders'];
 
     return Wrap(
       spacing: 8,
@@ -549,10 +552,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
   /// Configure safe sender folder for account using Windows folder picker
   Future<void> _configureSafeSenderFolder(String platform, String email) async {
-    if (widget.accountId == null) return;
-
     // Get current setting
-    final currentFolder = await _settingsStore.getAccountSafeSenderFolder(widget.accountId!);
+    final currentFolder = await _settingsStore.getAccountSafeSenderFolder(widget.accountId);
 
     // Show informational dialog first
     final proceed = await showDialog<bool>(
@@ -613,7 +614,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         final folderName = result.split('\\').last;
 
         await _settingsStore.setAccountSafeSenderFolder(
-          widget.accountId!,
+          widget.accountId,
           folderName,
         );
 
@@ -643,10 +644,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
   /// Configure deleted rule folder for account using Windows folder picker
   Future<void> _configureDeletedRuleFolder(String platform, String email) async {
-    if (widget.accountId == null) return;
-
     // Get current setting
-    final currentFolder = await _settingsStore.getAccountDeletedRuleFolder(widget.accountId!);
+    final currentFolder = await _settingsStore.getAccountDeletedRuleFolder(widget.accountId);
 
     // Show informational dialog first
     final proceed = await showDialog<bool>(
@@ -702,7 +701,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         final folderName = result.split('\\').last;
 
         await _settingsStore.setAccountDeletedRuleFolder(
-          widget.accountId!,
+          widget.accountId,
           folderName,
         );
 
