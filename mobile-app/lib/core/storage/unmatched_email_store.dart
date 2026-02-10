@@ -4,12 +4,12 @@
 /// - Storing emails that did not match any rules during scans
 /// - Tracking email availability (still exists, deleted, moved)
 /// - Marking emails as processed by user
+library;
+
 /// - Provider-specific email identifiers (Gmail message ID, IMAP UID)
 
 import 'package:logger/logger.dart';
-import 'package:sqflite/sqflite.dart';
 
-import '../models/provider_email_identifier.dart';
 import 'database_helper.dart';
 
 /// Model class for unmatched emails

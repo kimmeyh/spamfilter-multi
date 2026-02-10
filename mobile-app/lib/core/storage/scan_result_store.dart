@@ -4,6 +4,8 @@
 /// - Creating scan result records for manual and background scans
 /// - Tracking scan metadata (type, mode, counts, status)
 /// - Updating counts as scan progresses
+library;
+
 /// - Retrieving scan results by account or date
 /// - Deleting scan results (with cascade to unmatched emails)
 

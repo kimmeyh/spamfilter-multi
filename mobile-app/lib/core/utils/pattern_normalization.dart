@@ -1,5 +1,4 @@
 import 'package:logger/logger.dart';
-import 'package:punycode/punycode.dart';
 
 /// Utility class for normalizing email, subject, and body text for pattern matching.
 /// All normalization follows the principle of lowercase conversion and removal of

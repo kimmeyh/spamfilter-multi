@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:spam_filter_mobile/core/models/email_message.dart';
-import 'package:spam_filter_mobile/core/models/rule_set.dart';
+
 import 'package:spam_filter_mobile/core/models/evaluation_result.dart';
 import 'package:spam_filter_mobile/core/providers/email_scan_provider.dart';
 import 'package:spam_filter_mobile/core/providers/rule_set_provider.dart';
@@ -257,6 +257,21 @@ class MockSpamFilterPlatform implements SpamFilterPlatform {
   Future<void> moveToFolder({
     required EmailMessage message,
     required String targetFolder,
+  }) async {
+    // No-op for testing
+  }
+
+  @override
+  Future<void> markAsRead({
+    required EmailMessage message,
+  }) async {
+    // No-op for testing
+  }
+
+  @override
+  Future<void> applyFlag({
+    required EmailMessage message,
+    required String flagName,
   }) async {
     // No-op for testing
   }

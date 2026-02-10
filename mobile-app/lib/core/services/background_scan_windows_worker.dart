@@ -6,7 +6,6 @@ import '../storage/account_store.dart';
 import '../providers/rule_set_provider.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../adapters/storage/app_paths.dart';
-import 'email_scanner.dart';
 
 /// Windows-specific background scan worker
 ///
@@ -181,7 +180,7 @@ class BackgroundScanWindowsWorker {
       }
 
       final account = accountResult.first;
-      final email = account['email'] as String;
+      // final email = account['email'] as String; // Reserved for future logging
 
       // Get folders to scan (default to INBOX if not configured)
       final folders = await _getScannedFolders(accountId, dbHelper);
@@ -226,8 +225,8 @@ class BackgroundScanWindowsWorker {
       );
 
       if (result.isNotEmpty) {
-        final foldersJson = result.first['setting_value'] as String;
-        // Parse JSON array of folder names
+        // final foldersJson = result.first['setting_value'] as String;
+        // TODO: Parse JSON array of folder names
         // For now, return default
         return ['INBOX'];
       }

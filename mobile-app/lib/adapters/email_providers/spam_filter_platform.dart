@@ -89,6 +89,38 @@ abstract class SpamFilterPlatform {
     required String targetFolder,
   });
 
+  /// Mark message as read
+  ///
+  /// Parameters:
+  /// - [message]: The email message to mark as read
+  ///
+  /// Throws [ActionException] if operation fails
+  ///
+  /// [ISSUE #138] Added for enhanced deleted email processing
+  Future<void> markAsRead({
+    required EmailMessage message,
+  });
+
+  /// Apply flag/label/category to message with rule name
+  ///
+  /// Parameters:
+  /// - [message]: The email message to flag
+  /// - [flagName]: The flag/label/category name (typically rule name)
+  ///
+  /// Provider-specific behavior:
+  /// - Gmail: Creates label "SpamFilter/{flagName}" and applies it
+  /// - IMAP: Adds keyword "$SpamFilter-{flagName}" if server supports custom keywords
+  /// - AOL: Same as IMAP (uses IMAP keywords)
+  ///
+  /// Throws [ActionException] if operation fails
+  /// Returns silently if provider does not support flagging (e.g., IMAP server without PERMANENTFLAGS \*)
+  ///
+  /// [ISSUE #138] Added for enhanced deleted email processing
+  Future<void> applyFlag({
+    required EmailMessage message,
+    required String flagName,
+  });
+
   /// List available folders with platform-specific names
   /// 
   /// Returns list of [FolderInfo] with canonical folder types

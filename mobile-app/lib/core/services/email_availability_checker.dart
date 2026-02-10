@@ -5,6 +5,7 @@
 /// - Batch checking for performance
 /// - Handling provider-specific APIs (Gmail REST, IMAP)
 /// - Graceful error handling for network issues
+library;
 
 import 'package:logger/logger.dart';
 

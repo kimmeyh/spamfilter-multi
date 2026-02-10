@@ -200,11 +200,32 @@ class EmailScanner {
             // [NEW] FIX ISSUE #9: Only execute action if NOT in readonly mode
             if (scanProvider.scanMode != ScanMode.readonly) {
               try {
-                // Delete via platform adapter
+                // Delete via platform adapter (moves to trash/deleted folder)
                 await platform.takeAction(
                   message: message,
                   action: FilterAction.delete,
                 );
+
+                // [NEW] ISSUE #138: Mark deleted email as read
+                try {
+                  await platform.markAsRead(message: message);
+                } catch (e) {
+                  AppLogger.warning('Failed to mark deleted email as read: $e');
+                  // Continue - mark as read is enhancement, not critical
+                }
+
+                // [NEW] ISSUE #138: Apply flag/label with rule name
+                if (result.matchedRule.isNotEmpty) {
+                  try {
+                    await platform.applyFlag(
+                      message: message,
+                      flagName: result.matchedRule,
+                    );
+                  } catch (e) {
+                    AppLogger.warning('Failed to apply flag to deleted email: $e');
+                    // Continue - flagging is enhancement, not critical
+                  }
+                }
               } catch (e) {
                 success = false;
                 error = 'Delete failed: $e';

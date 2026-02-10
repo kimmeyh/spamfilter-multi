@@ -7,6 +7,8 @@
 /// - Summary statistics display
 /// - Scan mode display in summary
 
+library;
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:spam_filter_mobile/core/models/email_message.dart';
 import 'package:spam_filter_mobile/core/models/evaluation_result.dart';

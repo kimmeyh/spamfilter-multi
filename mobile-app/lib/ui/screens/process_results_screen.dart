@@ -25,6 +25,8 @@ class ProcessResultsScreen extends StatefulWidget {
   final ScanResultStore scanResultStore;
   final UnmatchedEmailStore unmatchedEmailStore;
   final SafeSenderDatabaseStore? safeSenderStore;
+library;
+
   final RuleDatabaseStore? ruleStore;
 
   const ProcessResultsScreen({

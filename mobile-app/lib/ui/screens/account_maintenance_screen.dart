@@ -15,7 +15,6 @@ import 'package:provider/provider.dart';
 
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/providers/email_scan_provider.dart';
-import '../../core/providers/rule_set_provider.dart';
 import '../../core/storage/settings_store.dart';
 import 'folder_selection_screen.dart';
 

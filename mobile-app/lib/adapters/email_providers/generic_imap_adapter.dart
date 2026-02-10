@@ -284,6 +284,104 @@ class GenericIMAPAdapter implements SpamFilterPlatform {
     }
   }
 
+  /// [ISSUE #138] Mark message as read using IMAP STORE command
+  @override
+  Future<void> markAsRead({
+    required EmailMessage message,
+  }) async {
+    if (_imapClient == null) {
+      throw ConnectionException('Not connected');
+    }
+
+    try {
+      // Ensure we're in the correct mailbox
+      if (_currentMailbox != message.folderName) {
+        await _selectMailbox(message.folderName);
+      }
+
+      final messageId = int.tryParse(message.id);
+      if (messageId == null) {
+        throw ActionException(
+          'Invalid message ID: ${message.id}',
+          FilterAction.markAsRead,
+        );
+      }
+
+      final sequence = MessageSequence.fromId(messageId);
+
+      _logger.i('Marking message ${message.id} as read');
+      await _imapClient!.store(
+        sequence,
+        [MessageFlags.seen],
+        action: StoreAction.add,
+      );
+    } catch (e) {
+      _logger.e('Failed to mark message ${message.id} as read: $e');
+      throw ActionException('Mark as read failed', FilterAction.markAsRead, e);
+    }
+  }
+
+  /// [ISSUE #138] Apply IMAP keyword flag with rule name (if server supports it)
+  @override
+  Future<void> applyFlag({
+    required EmailMessage message,
+    required String flagName,
+  }) async {
+    if (_imapClient == null) {
+      throw ConnectionException('Not connected');
+    }
+
+    try {
+      // Ensure we're in the correct mailbox
+      if (_currentMailbox != message.folderName) {
+        await _selectMailbox(message.folderName);
+      }
+
+      final messageId = int.tryParse(message.id);
+      if (messageId == null) {
+        throw ActionException(
+          'Invalid message ID: ${message.id}',
+          FilterAction.markAsRead, // Reuse markAsRead for now
+        );
+      }
+
+      final sequence = MessageSequence.fromId(messageId);
+
+      // Sanitize flag name for IMAP keyword (no spaces, max 30 chars)
+      final sanitized = _sanitizeFlagName(flagName);
+      final keyword = 'SpamFilter-$sanitized';
+
+      _logger.i('Applying IMAP keyword "$keyword" to message ${message.id}');
+      try {
+        await _imapClient!.store(
+          sequence,
+          [keyword],
+          action: StoreAction.add,
+          silent: false,
+        );
+        _logger.i('Successfully applied keyword: $keyword');
+      } catch (e) {
+        // Server may not support custom keywords - log warning but continue
+        _logger.w('Failed to apply keyword (server may not support custom keywords): $e');
+        // Do not throw - flagging is enhancement, not critical
+      }
+    } catch (e) {
+      _logger.e('Error applying IMAP keyword: $e');
+      // Do not throw - flagging is enhancement, not critical
+    }
+  }
+
+  /// Sanitize rule name for IMAP keyword (alphanumeric, hyphens, underscores only, max 30 chars)
+  String _sanitizeFlagName(String name) {
+    // Replace spaces and special chars with underscores
+    String sanitized = name.replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+    // Truncate to 30 chars
+    if (sanitized.length > 30) {
+      sanitized = sanitized.substring(0, 30);
+    }
+    return sanitized;
+  }
+
   @override
   Future<void> takeAction({
     required EmailMessage message,

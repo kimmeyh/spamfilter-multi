@@ -2,8 +2,8 @@
 
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/core/models/rule_set.dart';
-import 'package:spam_filter_mobile/core/models/safe_sender_list.dart';
+
+
 import 'package:spam_filter_mobile/core/services/yaml_service.dart';
 import 'package:spam_filter_mobile/core/services/pattern_compiler.dart';
 

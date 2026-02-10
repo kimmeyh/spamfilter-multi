@@ -6,14 +6,16 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:spam_filter_mobile/core/models/email_message.dart';
 import 'package:spam_filter_mobile/core/models/rule_set.dart';
-import 'package:spam_filter_mobile/core/models/safe_sender_list.dart';
+library;
+
+
 import 'package:spam_filter_mobile/core/storage/rule_database_store.dart';
 import 'package:spam_filter_mobile/core/storage/safe_sender_database_store.dart'
     show SafeSenderDatabaseStore, SafeSenderPattern;
 import 'package:spam_filter_mobile/core/storage/database_helper.dart';
 import 'package:spam_filter_mobile/core/utils/pattern_generation.dart';
 import 'package:spam_filter_mobile/core/utils/pattern_normalization.dart';
-import 'package:sqflite/sqflite.dart';
+
 import '../helpers/database_test_helper.dart';
 
 void main() {

@@ -186,6 +186,24 @@ class OutlookAdapter implements SpamFilterPlatform {
   }
 
   @override
+  Future<void> markAsRead({
+    required EmailMessage message,
+  }) async {
+    // TODO Issue #44: Implement mark as read using Microsoft Graph API
+    throw UnimplementedError('Mark as read not yet implemented for Outlook');
+  }
+
+  @override
+  Future<void> applyFlag({
+    required EmailMessage message,
+    required String flagName,
+  }) async {
+    // TODO Issue #44: Implement apply category using Microsoft Graph API
+    // Use /messages/{id}/categories endpoint
+    throw UnimplementedError('Apply flag not yet implemented for Outlook');
+  }
+
+  @override
   Future<void> disconnect() async {
     // Issue #44: Implement disconnect
     // 

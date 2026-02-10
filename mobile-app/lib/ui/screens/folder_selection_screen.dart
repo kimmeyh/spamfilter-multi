@@ -152,9 +152,13 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
         if (a.canonicalName == CanonicalFolder.inbox) return -1;
         if (b.canonicalName == CanonicalFolder.inbox) return 1;
         if (PRESELECT_FOLDER_TYPES.contains(a.canonicalName) &&
-            !PRESELECT_FOLDER_TYPES.contains(b.canonicalName)) return -1;
+            !PRESELECT_FOLDER_TYPES.contains(b.canonicalName)) {
+          return -1;
+        }
         if (!PRESELECT_FOLDER_TYPES.contains(a.canonicalName) &&
-            PRESELECT_FOLDER_TYPES.contains(b.canonicalName)) return 1;
+            PRESELECT_FOLDER_TYPES.contains(b.canonicalName)) {
+          return 1;
+        }
         return a.displayName.compareTo(b.displayName);
       });
       
