@@ -282,7 +282,11 @@ class EmailScanProvider extends ChangeNotifier {
     String? message,
   }) {
     _currentEmail = email;
-    _processedCount++;
+    // [FIX] ISSUE #128: Only increment processedCount for actual emails, not status messages
+    // Status messages have empty email IDs
+    if (email.id.isNotEmpty) {
+      _processedCount++;
+    }
     _statusMessage = message ?? 'Processing ${email.from}...';
     _logger.d('Progress: $_processedCount / $_totalEmails');
     

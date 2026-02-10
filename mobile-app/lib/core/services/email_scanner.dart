@@ -201,25 +201,40 @@ class EmailScanner {
             // [NEW] FIX ISSUE #9: Only execute action if NOT in readonly mode
             if (scanProvider.scanMode != ScanMode.readonly) {
               try {
+                // Get target folder before moving
+                final deletedRuleFolder = await _settingsStore.getAccountDeletedRuleFolder(accountId);
+                final targetFolder = deletedRuleFolder ?? 'Trash';
+                
                 // Delete via platform adapter (moves to trash/deleted folder)
                 await platform.takeAction(
                   message: message,
                   action: FilterAction.delete,
                 );
 
-                // [NEW] ISSUE #138: Mark deleted email as read
+                // [FIX] ISSUE #138: Update message folderName to target folder for subsequent operations
+                final movedMessage = EmailMessage(
+                  id: message.id,
+                  from: message.from,
+                  subject: message.subject,
+                  body: message.body,
+                  headers: message.headers,
+                  receivedDate: message.receivedDate,
+                  folderName: targetFolder,  // Now in the destination folder
+                );
+
+                // [NEW] ISSUE #138: Mark deleted email as read (now in correct folder)
                 try {
-                  await platform.markAsRead(message: message);
+                  await platform.markAsRead(message: movedMessage);
                 } catch (e) {
                   AppLogger.warning('Failed to mark deleted email as read: $e');
                   // Continue - mark as read is enhancement, not critical
                 }
 
-                // [NEW] ISSUE #138: Apply flag/label with rule name
+                // [NEW] ISSUE #138: Apply flag/label with rule name (now in correct folder)
                 if (result.matchedRule.isNotEmpty) {
                   try {
                     await platform.applyFlag(
-                      message: message,
+                      message: movedMessage,
                       flagName: result.matchedRule,
                     );
                   } catch (e) {

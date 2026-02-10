@@ -548,62 +548,35 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
     }
   }
 
-  void _startDemoScan(EmailScanProvider scanProvider) {
-    scanProvider.startScan(totalEmails: 10);
-
-    // Record some sample results
-    for (int i = 0; i < 10; i++) {
-      final email = EmailMessage(
-        id: 'msg_$i',
-        from: 'sender$i@example.com',
-        subject: 'Sample subject $i',
-        body: 'Body of sample email $i',
-        headers: const {},
-        receivedDate: DateTime.now(),
-        folderName: 'INBOX',
+  /// [UPDATED] ISSUE #125: Use MockEmailProvider with 50+ sample emails
+  Future<void> _startDemoScan(EmailScanProvider scanProvider) async {
+    final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
+    
+    // Create scanner with MockEmailProvider (50+ sample emails)
+    final scanner = EmailScanner(
+      platformId: 'demo',  // Use demo platform
+      accountId: 'demo@example.com',
+      ruleSetProvider: ruleProvider,
+      scanProvider: scanProvider,
+    );
+    
+    try {
+      // Run scan with MockEmailProvider (will load 50+ sample emails)
+      await scanner.scanInbox(
+        daysBack: 30,
+        folderNames: ['INBOX', 'Spam', 'Bulk'],
+        scanType: 'demo',
       );
-
-      final action = switch (i % 3) {
-        0 => EmailActionType.delete,
-        1 => EmailActionType.moveToJunk,
-        _ => EmailActionType.safeSender,
-      };
-
-      // Issue #51: Create proper EvaluationResult with rule names for demo scan
-      // This ensures the results display shows actual rule names instead of "No rule"
-      final evalResult = switch (action) {
-        EmailActionType.delete => EvaluationResult(
-          shouldDelete: true,
-          shouldMove: false,
-          matchedRule: 'SpamAutoDeleteHeader',
-          matchedPattern: 'sender$i@.*',
-        ),
-        EmailActionType.moveToJunk => EvaluationResult(
-          shouldDelete: false,
-          shouldMove: true,
-          targetFolder: 'Junk',
-          matchedRule: 'MarketingBulkMove',
-          matchedPattern: 'marketing.*',
-        ),
-        EmailActionType.safeSender => EvaluationResult.safeSender('^sender$i@example\\.com\$'),
-        _ => EvaluationResult.noMatch(),
-      };
-
-      scanProvider.updateProgress(
-        email: email,
-        message: 'Demo processing ${email.subject}',
-      );
-      scanProvider.recordResult(
-        EmailActionResult(
-          email: email,
-          evaluationResult: evalResult,
-          action: action,
-          success: true,
-        ),
-      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Demo scan failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
-
-    scanProvider.completeScan();
   }
 
   Widget _actionIcon(EmailActionType action) {
