@@ -157,14 +157,15 @@ class GenericIMAPAdapter implements SpamFilterPlatform {
       // Map handshake and network errors to connection failures so the UI
       // reports the real root cause instead of "Authentication failed".
       if (e is HandshakeException) {
-        throw ConnectionException('TLS certificate validation failed', e);
+        throw ConnectionException('TLS certificate validation failed: ${e.toString()}', e);
       }
       if (e is SocketException || e is TimeoutException) {
-        throw ConnectionException('Network connection failed', e);
+        throw ConnectionException('Network connection failed: ${e.toString()}', e);
       }
 
       // Fallback: treat other errors as connection failures
-      throw ConnectionException('IMAP connection failed', e);
+      // [UPDATED] Include underlying error details in message for better debugging
+      throw ConnectionException('IMAP connection failed: ${e.toString()}', e);
     }
   }
 

@@ -644,8 +644,19 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     List<String> currentFolders,
     Future<void> Function(List<String>) onChanged,
   ) async {
-    final platformId = widget.accountId.split('-')[0];
-    final email = widget.accountId.split('-').sublist(1).join('-');
+    // [FIX] ISSUE #123+#124: Get platformId from credentials store
+    // accountId in Settings is just the email address, not platform-email format
+    final credStore = SecureCredentialsStore();
+    final platformId = await credStore.getPlatformId(widget.accountId);
+    
+    if (platformId == null || platformId.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not determine email platform')),
+        );
+      }
+      return;
+    }
 
     await Navigator.push(
       context,
@@ -653,7 +664,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         builder: (context) => FolderSelectionScreen(
           platformId: platformId,
           accountId: widget.accountId,
-          accountEmail: email,
+          accountEmail: widget.accountId, // accountId IS the email
           onFoldersSelected: (selectedFolders) async {
             await onChanged(selectedFolders);
             setState(() {
