@@ -264,6 +264,15 @@ class EmailScanProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// [NEW] ISSUE #128: Increment total emails found during folder-by-folder fetch
+  ///
+  /// Call this as emails are discovered to update the "Found" count progressively
+  void incrementFoundEmails(int count) {
+    _totalEmails += count;
+    _logger.d('Found emails updated: $_totalEmails total');
+    notifyListeners();
+  }
+
   /// Mark current email and update progress
   /// 
   /// [NEW] PHASE 3.3: Throttles UI updates to every 10 emails OR 3 seconds (whichever comes first)

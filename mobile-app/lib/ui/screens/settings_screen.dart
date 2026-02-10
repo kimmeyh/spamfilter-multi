@@ -6,6 +6,7 @@ import '../../core/providers/email_scan_provider.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../adapters/email_providers/email_provider.dart' show Credentials;
 import '../widgets/app_bar_with_exit.dart';
+import 'folder_selection_screen.dart';
 
 /// Settings screen for app-wide configuration
 ///
@@ -461,30 +462,135 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     required ScanMode value,
     required Future<void> Function(ScanMode) onChanged,
   }) {
-    return Column(
-      children: [
-        RadioListTile<ScanMode>(
-          title: const Text('Read-Only'),
-          subtitle: const Text('Scan only, no modifications'),
-          value: ScanMode.readonly,
-          groupValue: value,
-          onChanged: (v) => v != null ? onChanged(v) : null,
+    // [UPDATED] ISSUE #123+#124: New scan mode UI with checkboxes
+    // Determine current state
+    final bool isReadOnly = value == ScanMode.readonly;
+    final bool processSafeSenders = value == ScanMode.testAll || value == ScanMode.fullScan;
+    final bool processRules = value == ScanMode.fullScan;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Scan Mode',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            
+            // Read-Only Mode Toggle
+            SwitchListTile(
+              title: const Text('Read-Only Mode'),
+              subtitle: const Text(
+                'NO changes to emails, but rules can be added/changed',
+              ),
+              value: isReadOnly,
+              onChanged: (enabled) async {
+                if (enabled) {
+                  // Switch to read-only mode
+                  await onChanged(ScanMode.readonly);
+                } else {
+                  // Switch to testAll (safe senders only) as default when disabling read-only
+                  await onChanged(ScanMode.testAll);
+                }
+              },
+            ),
+            
+            const Divider(),
+            
+            // Process Safe Senders Checkbox (disabled if Read-Only)
+            CheckboxListTile(
+              title: const Text('Process Safe Senders'),
+              subtitle: const Text(
+                'Move safe sender emails to configured folder',
+              ),
+              value: processSafeSenders && !isReadOnly,
+              onChanged: isReadOnly ? null : (enabled) async {
+                if (enabled == true) {
+                  // Enable safe senders - either testAll (safe only) or fullScan (if rules also enabled)
+                  if (processRules) {
+                    await onChanged(ScanMode.fullScan); // Both enabled
+                  } else {
+                    await onChanged(ScanMode.testAll); // Safe senders only
+                  }
+                } else {
+                  // Disable safe senders - switch to fullScan if rules enabled, otherwise readonly
+                  if (processRules) {
+                    // TODO: Need new mode for "Rules only, no safe senders"
+                    // For now, keep fullScan (both enabled)
+                    await onChanged(ScanMode.fullScan);
+                  } else {
+                    await onChanged(ScanMode.readonly);
+                  }
+                }
+              },
+            ),
+            
+            // Process Rules Checkbox (disabled if Read-Only)
+            CheckboxListTile(
+              title: const Text('Process Rules'),
+              subtitle: const Text(
+                'Delete/move emails, mark as read, add tags for matched rules',
+              ),
+              value: processRules && !isReadOnly,
+              onChanged: isReadOnly ? null : (enabled) async {
+                if (enabled == true) {
+                  // Enable rules - switch to fullScan (which processes both safe senders and rules)
+                  await onChanged(ScanMode.fullScan);
+                } else {
+                  // Disable rules - switch to testAll if safe senders enabled, otherwise readonly
+                  if (processSafeSenders) {
+                    await onChanged(ScanMode.testAll);
+                  } else {
+                    await onChanged(ScanMode.readonly);
+                  }
+                }
+              },
+            ),
+            
+            const SizedBox(height: 8),
+            
+            // Current mode indicator
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    isReadOnly ? Icons.visibility : Icons.play_arrow,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      isReadOnly
+                        ? 'Read-Only: No changes will be made'
+                        : processSafeSenders && processRules
+                          ? 'Active: Processing safe senders and rules'
+                          : processSafeSenders
+                            ? 'Active: Processing safe senders only'
+                            : processRules
+                              ? 'Active: Processing rules only'
+                              : 'Inactive: No processing enabled',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-        RadioListTile<ScanMode>(
-          title: const Text('Process Safe Senders'),
-          subtitle: const Text('Mark safe sender emails, no deletions'),
-          value: ScanMode.testAll,
-          groupValue: value,
-          onChanged: (v) => v != null ? onChanged(v) : null,
-        ),
-        RadioListTile<ScanMode>(
-          title: const Text('Process Rules'),
-          subtitle: const Text('Apply rules (delete/move emails)'),
-          value: ScanMode.fullScan,
-          groupValue: value,
-          onChanged: (v) => v != null ? onChanged(v) : null,
-        ),
-      ],
+      ),
     );
   }
 
@@ -492,41 +598,70 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     required List<String> folders,
     required Future<void> Function(List<String>) onChanged,
   }) {
-    // [UPDATED] ISSUE #123: Provider-specific folder defaults
-    final platform = widget.accountId.split('-')[0];
-    final providerFolders = _getProviderDefaultFolders(platform);
-    final availableFolders = ['INBOX', ...providerFolders, 'All Folders'];
+    // [UPDATED] ISSUE #123+#124: Show "Select Folders" button to open folder selection dialog
+    return Card(
+      child: Column(
+        children: [
+          ListTile(
+            leading: const Icon(Icons.folder_outlined),
+            title: const Text('Selected Folders'),
+            subtitle: Text(
+              folders.isEmpty
+                ? 'No folders selected (defaults will be used)'
+                : folders.join(', '),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            trailing: FilledButton.icon(
+              onPressed: () => _openFolderSelection(folders, onChanged),
+              icon: const Icon(Icons.create_new_folder),
+              label: const Text('Select Folders'),
+            ),
+          ),
+          if (folders.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: folders.map((folder) => Chip(
+                  label: Text(folder, style: const TextStyle(fontSize: 12)),
+                  deleteIcon: const Icon(Icons.close, size: 16),
+                  onDeleted: () {
+                    final newFolders = List<String>.from(folders)..remove(folder);
+                    onChanged(newFolders);
+                  },
+                )).toList(),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: availableFolders.map((folder) {
-        final isSelected = folders.contains(folder);
-        return FilterChip(
-          label: Text(folder),
-          selected: isSelected,
-          onSelected: (selected) {
-            final newFolders = List<String>.from(folders);
-            if (selected) {
-              if (folder == 'All Folders') {
-                newFolders.clear();
-                newFolders.add('All Folders');
-              } else {
-                newFolders.remove('All Folders');
-                if (!newFolders.contains(folder)) {
-                  newFolders.add(folder);
-                }
-              }
-            } else {
-              newFolders.remove(folder);
-              if (newFolders.isEmpty) {
-                newFolders.add('INBOX');
-              }
-            }
-            onChanged(newFolders);
+  /// [NEW] ISSUE #123+#124: Open folder selection screen
+  Future<void> _openFolderSelection(
+    List<String> currentFolders,
+    Future<void> Function(List<String>) onChanged,
+  ) async {
+    final platformId = widget.accountId.split('-')[0];
+    final email = widget.accountId.split('-').sublist(1).join('-');
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FolderSelectionScreen(
+          platformId: platformId,
+          accountId: widget.accountId,
+          accountEmail: email,
+          onFoldersSelected: (selectedFolders) async {
+            await onChanged(selectedFolders);
+            setState(() {
+              // Update will happen via onChanged callback
+            });
           },
-        );
-      }).toList(),
+        ),
+      ),
     );
   }
 

@@ -325,6 +325,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       if (platform != null) {
         final authMethod = platform.supportedAuthMethod;
         return switch (authMethod) {
+          AuthMethod.none => 'None (Demo)',
           AuthMethod.oauth2 => 'OAuth 2.0',
           AuthMethod.appPassword => 'App Password',
           AuthMethod.basicAuth => 'Basic Auth',

@@ -8,6 +8,7 @@ import '../../core/providers/email_scan_provider.dart';
 import '../../core/providers/email_scan_provider.dart' show EmailActionType, EmailActionResult;
 import '../../core/providers/rule_set_provider.dart';
 import '../../core/services/email_scanner.dart';
+import '../../core/storage/settings_store.dart'; // [NEW] ISSUE #138: Load scan mode from settings
 import '../widgets/app_bar_with_exit.dart';
 import '../screens/folder_selection_screen.dart';
 import 'results_display_screen.dart';
@@ -219,12 +220,45 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
       ScanStatus.error => 'Scan failed',
     };
 
+    // [NEW] ISSUE #125: Show demo mode indicator if using demo platform
+    final isDemoMode = widget.platformId == 'demo';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          statusText,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                statusText,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+            if (isDemoMode)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade100,
+                  border: Border.all(color: Colors.amber.shade700),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.science, size: 16, color: Colors.amber.shade900),
+                    const SizedBox(width: 4),
+                    Text(
+                      'DEMO MODE',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.amber.shade900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
         ),
         const SizedBox(height: 4),
         Text(
@@ -459,6 +493,14 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
     );
 
     if (daysBack == null) return; // User cancelled
+
+    // [NEW] ISSUE #138: Load scan mode from account settings BEFORE starting scan
+    final settingsStore = SettingsStore();
+    final scanMode = await settingsStore.getAccountManualScanMode(widget.accountId) ?? ScanMode.readonly;
+    scanProvider.initializeScanMode(mode: scanMode);
+    
+    final logger = Logger();
+    logger.i('[ISSUE #138] Loaded scan mode for manual scan: $scanMode');
 
     // Immediately update UI to show scan is starting
     scanProvider.startScan(totalEmails: 0);

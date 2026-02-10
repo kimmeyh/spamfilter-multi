@@ -16,13 +16,20 @@ class PlatformSelectionScreen extends StatefulWidget {
 }
 
 class _PlatformSelectionScreenState extends State<PlatformSelectionScreen> {
-  // Removed unused _selectedPlatformId and _isTesting fields
+  // [NEW] ISSUE #125: Demo mode toggle state
+  bool _showDemoMode = false;
 
   /// Get all supported platforms for display
   List<PlatformInfo> _getSupportedPlatforms() {
     final allPlatforms = PlatformRegistry.getSupportedPlatforms();
-    // Filter to Phase 1 + Phase 2 platforms only (exclude Phase 3+ for now)
-    return allPlatforms.where((p) => p.phase <= 2).toList();
+    
+    // [UPDATED] ISSUE #125: Include demo mode (phase 0) if toggle enabled
+    // Otherwise, filter to Phase 1 + Phase 2 platforms only (exclude Phase 3+ for now)
+    if (_showDemoMode) {
+      return allPlatforms.where((p) => p.phase <= 2 || p.phase == 0).toList();
+    } else {
+      return allPlatforms.where((p) => p.phase <= 2 && p.phase != 0).toList();
+    }
   }
 
   /// Navigate to account setup screen for selected platform
@@ -87,6 +94,21 @@ class _PlatformSelectionScreenState extends State<PlatformSelectionScreen> {
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Colors.grey[600],
                         ),
+                  ),
+                  const SizedBox(height: 16),
+                  // [NEW] ISSUE #125: Demo Mode toggle
+                  Card(
+                    color: _showDemoMode 
+                      ? Theme.of(context).colorScheme.primaryContainer
+                      : Theme.of(context).colorScheme.surfaceContainerHighest,
+                    child: SwitchListTile(
+                      title: const Text('Show Demo Mode'),
+                      subtitle: const Text('Test with 50+ sample emails (no email account needed)'),
+                      value: _showDemoMode,
+                      onChanged: (enabled) {
+                        setState(() => _showDemoMode = enabled);
+                      },
+                    ),
                   ),
                 ],
               ),
@@ -316,6 +338,7 @@ class _PlatformSelectionScreenState extends State<PlatformSelectionScreen> {
   /// Get auth method display label
   String _getAuthMethodLabel(AuthMethod authMethod) {
     return switch (authMethod) {
+      AuthMethod.none => 'No Authentication (Demo)',
       AuthMethod.appPassword => 'App Password Authentication',
       AuthMethod.oauth2 => 'OAuth 2.0 Sign-In',
       AuthMethod.basicAuth => 'Email & Password',

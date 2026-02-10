@@ -67,7 +67,14 @@ class EmailScanner {
       final deletedRuleFolder = await _settingsStore.getAccountDeletedRuleFolder(accountId);
       platform.setDeletedRuleFolder(deletedRuleFolder);
 
-      // 3. [UPDATED] ISSUE #128: Fetch messages folder-by-folder for progress reporting
+      // 3. [UPDATED] ISSUE #128: Start scan with 0 emails, will increment as found
+      await scanProvider.startScan(
+        totalEmails: 0,
+        scanType: scanType,
+        foldersScanned: folderNames,
+      );
+
+      // 4. [UPDATED] ISSUE #128: Fetch messages folder-by-folder for progress reporting
       final List<EmailMessage> messages = [];
       for (final folderName in folderNames) {
         // [NEW] ISSUE #128: Report folder being fetched
@@ -93,8 +100,9 @@ class EmailScanner {
 
         messages.addAll(folderMessages);
 
-        // [NEW] ISSUE #128: Report folder completion
+        // [NEW] ISSUE #128: Increment found count and report folder completion
         if (folderMessages.isNotEmpty) {
+          scanProvider.incrementFoundEmails(folderMessages.length);
           scanProvider.updateProgress(
             email: EmailMessage(
               id: '',
@@ -122,13 +130,6 @@ class EmailScanner {
           );
         }
       }
-
-      // 4. Start scan ([NEW] SPRINT 4: Now async to enable persistence)
-      await scanProvider.startScan(
-        totalEmails: messages.length,
-        scanType: scanType,
-        foldersScanned: folderNames,
-      );
 
       // 5. Get rule evaluator
       // DIAGNOSTIC: Log rule and safe sender counts for troubleshooting

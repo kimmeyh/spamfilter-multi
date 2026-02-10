@@ -139,6 +139,9 @@ abstract class SpamFilterPlatform {
 
 /// Authentication methods supported by various platforms
 enum AuthMethod {
+  /// No authentication required (Demo mode)
+  none,
+
   /// OAuth 2.0 (Google, Microsoft, Yahoo)
   oauth2,
 
