@@ -398,36 +398,35 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           },
         ),
         const Divider(),
-        if (_backgroundScanEnabled) ...[
-          _buildSectionHeader('Frequency'),
-          _buildFrequencySelector(
-            value: _backgroundScanFrequency,
-            onChanged: (freq) async {
-              setState(() => _backgroundScanFrequency = freq);
-              await _settingsStore.setBackgroundScanFrequency(freq);
-            },
-          ),
-          const SizedBox(height: 24),
-          _buildSectionHeader('Scan Mode'),
-          _buildScanModeSelector(
-            value: _backgroundScanMode,
-            onChanged: (mode) async {
-              setState(() => _backgroundScanMode = mode);
-              // [UPDATED] ISSUE #123: Save per-account background scan mode
-              await _settingsStore.setAccountBackgroundScanMode(widget.accountId, mode);
-            },
-          ),
-          const SizedBox(height: 24),
-          _buildSectionHeader('Folders'),
-          _buildFolderSelector(
-            folders: _backgroundScanFolders,
-            onChanged: (folders) async {
-              setState(() => _backgroundScanFolders = folders);
-              // [UPDATED] ISSUE #123: Save per-account background scan folders
-              await _settingsStore.setAccountBackgroundScanFolders(widget.accountId, folders);
-            },
-          ),
-        ],
+        // [UPDATED] ISSUE #123+#124: Show UI sections even when Background Scan is OFF
+        _buildSectionHeader('Frequency'),
+        _buildFrequencySelector(
+          value: _backgroundScanFrequency,
+          onChanged: (freq) async {
+            setState(() => _backgroundScanFrequency = freq);
+            await _settingsStore.setBackgroundScanFrequency(freq);
+          },
+        ),
+        const SizedBox(height: 24),
+        _buildSectionHeader('Default Folders'),
+        _buildFolderSelector(
+          folders: _backgroundScanFolders,
+          onChanged: (folders) async {
+            setState(() => _backgroundScanFolders = folders);
+            // [UPDATED] ISSUE #123: Save per-account background scan folders
+            await _settingsStore.setAccountBackgroundScanFolders(widget.accountId, folders);
+          },
+        ),
+        const SizedBox(height: 24),
+        _buildSectionHeader('Scan Mode'),
+        _buildScanModeSelector(
+          value: _backgroundScanMode,
+          onChanged: (mode) async {
+            setState(() => _backgroundScanMode = mode);
+            // [UPDATED] ISSUE #123: Save per-account background scan mode
+            await _settingsStore.setAccountBackgroundScanMode(widget.accountId, mode);
+          },
+        ),
       ],
     );
   }
@@ -463,10 +462,14 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     required Future<void> Function(ScanMode) onChanged,
   }) {
     // [UPDATED] ISSUE #123+#124: New scan mode UI with checkboxes
-    // Determine current state
+    // Scan mode mapping:
+    // - readonly: neither safe senders nor rules
+    // - testAll: safe senders only
+    // - testLimit: rules only (repurposed)
+    // - fullScan: both safe senders and rules
     final bool isReadOnly = value == ScanMode.readonly;
     final bool processSafeSenders = value == ScanMode.testAll || value == ScanMode.fullScan;
-    final bool processRules = value == ScanMode.fullScan;
+    final bool processRules = value == ScanMode.testLimit || value == ScanMode.fullScan;
 
     return Card(
       child: Padding(
@@ -511,20 +514,18 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               value: processSafeSenders && !isReadOnly,
               onChanged: isReadOnly ? null : (enabled) async {
                 if (enabled == true) {
-                  // Enable safe senders - either testAll (safe only) or fullScan (if rules also enabled)
+                  // [UPDATED] ISSUE #123+#124: Enable safe senders
                   if (processRules) {
                     await onChanged(ScanMode.fullScan); // Both enabled
                   } else {
                     await onChanged(ScanMode.testAll); // Safe senders only
                   }
                 } else {
-                  // Disable safe senders - switch to fullScan if rules enabled, otherwise readonly
+                  // [FIXED] ISSUE #123+#124: Disable safe senders - use testLimit for rules only
                   if (processRules) {
-                    // TODO: Need new mode for "Rules only, no safe senders"
-                    // For now, keep fullScan (both enabled)
-                    await onChanged(ScanMode.fullScan);
+                    await onChanged(ScanMode.testLimit); // Rules only, no safe senders
                   } else {
-                    await onChanged(ScanMode.readonly);
+                    await onChanged(ScanMode.readonly); // Neither
                   }
                 }
               },
@@ -532,21 +533,25 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             
             // Process Rules Checkbox (disabled if Read-Only)
             CheckboxListTile(
-              title: const Text('Process Rules'),
+              title: const Text('Process all other Rules'),
               subtitle: const Text(
                 'Delete/move emails, mark as read, add tags for matched rules',
               ),
               value: processRules && !isReadOnly,
               onChanged: isReadOnly ? null : (enabled) async {
                 if (enabled == true) {
-                  // Enable rules - switch to fullScan (which processes both safe senders and rules)
-                  await onChanged(ScanMode.fullScan);
-                } else {
-                  // Disable rules - switch to testAll if safe senders enabled, otherwise readonly
+                  // [UPDATED] ISSUE #123+#124: Enable rules
                   if (processSafeSenders) {
-                    await onChanged(ScanMode.testAll);
+                    await onChanged(ScanMode.fullScan); // Both enabled
                   } else {
-                    await onChanged(ScanMode.readonly);
+                    await onChanged(ScanMode.testLimit); // Rules only
+                  }
+                } else {
+                  // [UPDATED] ISSUE #123+#124: Disable rules
+                  if (processSafeSenders) {
+                    await onChanged(ScanMode.testAll); // Safe senders only
+                  } else {
+                    await onChanged(ScanMode.readonly); // Neither
                   }
                 }
               },
@@ -658,6 +663,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       return;
     }
 
+    // [UPDATED] ISSUE #123+#124: Pass current folders as initial selection
     await Navigator.push(
       context,
       MaterialPageRoute(
@@ -665,6 +671,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           platformId: platformId,
           accountId: widget.accountId,
           accountEmail: widget.accountId, // accountId IS the email
+          initialSelectedFolders: currentFolders, // Pre-populate with saved folders
           onFoldersSelected: (selectedFolders) async {
             await onChanged(selectedFolders);
             setState(() {

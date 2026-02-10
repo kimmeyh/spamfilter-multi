@@ -186,11 +186,12 @@ class EmailScanProvider extends ChangeNotifier {
       case ScanMode.readonly:
         return 'Read-Only';
       case ScanMode.testLimit:
-        return 'Test Limited Emails';
+        // [UPDATED] ISSUE #123+#124: Repurposed testLimit for "rules only" mode
+        return 'Process Rules Only';
       case ScanMode.testAll:
-        return 'Full Scan with Revert';
+        return 'Process Safe Senders Only';
       case ScanMode.fullScan:
-        return 'Full Scan';
+        return 'Process Safe Senders + Rules';
     }
   }
 

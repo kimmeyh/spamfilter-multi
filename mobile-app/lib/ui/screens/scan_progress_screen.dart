@@ -449,6 +449,10 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
     ) async {
       final logger = Logger();
 
+      // [NEW] ISSUE #123+#124: Load saved default folders from Manual Scan tab
+      final settingsStore = SettingsStore();
+      final savedFolders = await settingsStore.getAccountManualScanFolders(widget.accountId);
+
       final selected = await showModalBottomSheet<List<String>>(
         context: context,
         isScrollControlled: true,
@@ -456,6 +460,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
           platformId: widget.platformId,
           accountId: widget.accountId,
           accountEmail: widget.accountEmail,
+          initialSelectedFolders: savedFolders, // Pre-populate with saved folders
           onFoldersSelected: (folders) {
             logger.i('📁 Folders selected for scan: $folders');
             // [NEW] PHASE 3.2: Store selected folders in scanProvider for use during scan
@@ -529,8 +534,17 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
         scanProvider: scanProvider,
       );
 
-      // [NEW] PHASE 3.2: Use selected folders from scanProvider (defaults to ['INBOX'] if none selected)
-      final foldersToScan = scanProvider.selectedFolders;
+      // [UPDATED] ISSUE #123+#124: Use selected folders, or saved default folders if none selected
+      var foldersToScan = scanProvider.selectedFolders;
+
+      // If no folders selected via "Select Folders", use saved default folders from Manual Scan tab
+      if (foldersToScan.isEmpty || foldersToScan == ['INBOX']) {
+        final savedFolders = await settingsStore.getAccountManualScanFolders(widget.accountId);
+        if (savedFolders != null && savedFolders.isNotEmpty) {
+          foldersToScan = savedFolders;
+        }
+      }
+
       final logger = Logger();
       logger.i('[LAUNCH] Starting scan of folders: $foldersToScan for $daysBack days back');
 

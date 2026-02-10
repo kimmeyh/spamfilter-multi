@@ -37,12 +37,16 @@ class FolderSelectionScreen extends StatefulWidget {
   /// Returns list of selected folder names
   final Function(List<String>) onFoldersSelected;
 
+  /// [NEW] ISSUE #123+#124: Initial selected folders to pre-populate
+  final List<String>? initialSelectedFolders;
+
   const FolderSelectionScreen({
     super.key,
     required this.platformId,
     required this.accountId,
     this.accountEmail,
     required this.onFoldersSelected,
+    this.initialSelectedFolders,
   });
 
   @override
@@ -162,10 +166,15 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
         return a.displayName.compareTo(b.displayName);
       });
       
-      // Pre-select folders based on canonical type
+      // [UPDATED] ISSUE #123+#124: Pre-select folders based on initial selection or canonical type
       final selections = <String, bool>{};
       for (var folder in folders) {
-        selections[folder.id] = PRESELECT_FOLDER_TYPES.contains(folder.canonicalName);
+        // If initialSelectedFolders provided, use that; otherwise use canonical type
+        if (widget.initialSelectedFolders != null) {
+          selections[folder.id] = widget.initialSelectedFolders!.contains(folder.displayName);
+        } else {
+          selections[folder.id] = PRESELECT_FOLDER_TYPES.contains(folder.canonicalName);
+        }
       }
       
       setState(() {

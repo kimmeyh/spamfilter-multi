@@ -176,7 +176,8 @@ class EmailScanner {
 
             // Only move if email is NOT already in the target folder
             if (message.folderName != targetFolder) {
-              if (scanProvider.scanMode != ScanMode.readonly) {
+              // [UPDATED] ISSUE #123+#124: Skip safe sender processing in testLimit mode (rules only)
+              if (scanProvider.scanMode != ScanMode.readonly && scanProvider.scanMode != ScanMode.testLimit) {
                 try {
                   AppLogger.scan('Moving safe sender email from ${message.folderName} to $targetFolder: ${message.subject}');
                   await platform.moveToFolder(
