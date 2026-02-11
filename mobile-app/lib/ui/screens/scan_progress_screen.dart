@@ -534,19 +534,23 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
         scanProvider: scanProvider,
       );
 
-      // [UPDATED] ISSUE #123+#124: Use selected folders, or saved default folders if none selected
-      var foldersToScan = scanProvider.selectedFolders;
+      // [FIXED] ISSUE #123+#124: Use saved default folders from Manual Scan tab
+      // The Settings screen saves folders per-account; we always use those
+      final scanLogger = Logger();
+      List<String> foldersToScan;
 
-      // If no folders selected via "Select Folders", use saved default folders from Manual Scan tab
-      if (foldersToScan.isEmpty || foldersToScan == ['INBOX']) {
-        final savedFolders = await settingsStore.getAccountManualScanFolders(widget.accountId);
-        if (savedFolders != null && savedFolders.isNotEmpty) {
-          foldersToScan = savedFolders;
-        }
+      // Load saved default folders from Settings > Manual Scan tab
+      final savedFolders = await settingsStore.getAccountManualScanFolders(widget.accountId);
+      if (savedFolders != null && savedFolders.isNotEmpty) {
+        foldersToScan = savedFolders;
+        scanLogger.i('[FOLDERS] Using saved default folders from Manual Scan tab: $foldersToScan');
+      } else {
+        // Fallback to INBOX if no folders configured
+        foldersToScan = ['INBOX'];
+        scanLogger.i('[FOLDERS] No folders configured in Settings, using default: $foldersToScan');
       }
 
-      final logger = Logger();
-      logger.i('[LAUNCH] Starting scan of folders: $foldersToScan for $daysBack days back');
+      scanLogger.i('[LAUNCH] Starting scan of folders: $foldersToScan for $daysBack days back');
 
       // Start scan in background (will call startScan again with real count)
       await scanner.scanInbox(daysBack: daysBack, folderNames: foldersToScan);
