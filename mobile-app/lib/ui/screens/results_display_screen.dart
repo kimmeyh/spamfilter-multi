@@ -8,7 +8,7 @@ import '../widgets/app_bar_with_exit.dart';
 import 'scan_progress_screen.dart';
 import 'settings_screen.dart';
 
-import '../../core/providers/email_scan_provider.dart' show EmailScanProvider, EmailActionResult, EmailActionType, ScanStatus;
+import '../../core/providers/email_scan_provider.dart' show EmailScanProvider, EmailActionResult, EmailActionType, ScanStatus, ScanMode;
 import '../../core/providers/rule_set_provider.dart';
 import '../../core/models/rule_set.dart' show Rule, RuleConditions, RuleActions;
 import '../../core/services/email_body_parser.dart';
@@ -522,12 +522,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               icon: const Icon(Icons.file_download),
               onPressed: () => _exportResults(context, scanProvider),
             ),
-            if (scanProvider.hasActionsToRevert)
-              IconButton(
-                tooltip: 'Revert Last Run',
-                icon: const Icon(Icons.undo),
-                onPressed: () => _confirmAndRevert(context, scanProvider),
-              ),
+            // [REMOVED] ISSUE #123+#124: Revert button removed - no longer needed
             IconButton(
               tooltip: 'Settings',
               icon: const Icon(Icons.settings),
@@ -672,6 +667,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   }
 
   Widget _buildSummary(Map<String, dynamic> summary, EmailScanProvider scanProvider, List<EmailActionResult> allResults) {
+    // [UPDATED] ISSUE #123+#124: Show context based on scan mode
+    final scanMode = scanProvider.scanMode;
+    final isReadOnly = scanMode == ScanMode.readonly;
+    final isSafeSendersOnly = scanMode == ScanMode.testAll;
+    final isRulesOnly = scanMode == ScanMode.testLimit;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12.0),
@@ -690,45 +691,63 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                 // Item 3: Make Found/Processed/Moved/Error filterable
                 _buildSpecialStatChip('Found', scanProvider.totalEmails, const Color(0xFF2196F3), Colors.white, SpecialFilter.found),
                 _buildSpecialStatChip('Processed', scanProvider.processedCount, const Color(0xFF9C27B0), Colors.white, SpecialFilter.processed),
-                _buildStatChip('Deleted', scanProvider.deletedCount, const Color(0xFFF44336), Colors.white, EmailActionType.delete),
-                _buildStatChip('Moved', scanProvider.movedCount, const Color(0xFFFF9800), Colors.white, EmailActionType.moveToJunk),
-                _buildStatChip('Safe', scanProvider.safeSendersCount, const Color(0xFF4CAF50), Colors.white, EmailActionType.safeSender),
+                // [UPDATED] ISSUE #123+#124: Show "(not processed)" for rule actions in safe-senders-only mode
+                _buildStatChipWithMode(
+                  isSafeSendersOnly || isReadOnly ? 'Deleted (not processed)' : 'Deleted',
+                  scanProvider.deletedCount,
+                  isSafeSendersOnly || isReadOnly ? const Color(0xFFEF9A9A) : const Color(0xFFF44336),
+                  isSafeSendersOnly || isReadOnly ? Colors.black54 : Colors.white,
+                  EmailActionType.delete,
+                ),
+                _buildStatChipWithMode(
+                  isSafeSendersOnly || isReadOnly ? 'Moved (not processed)' : 'Moved',
+                  scanProvider.movedCount,
+                  isSafeSendersOnly || isReadOnly ? const Color(0xFFFFCC80) : const Color(0xFFFF9800),
+                  isSafeSendersOnly || isReadOnly ? Colors.black54 : Colors.white,
+                  EmailActionType.moveToJunk,
+                ),
+                // [UPDATED] ISSUE #123+#124: Show "(not processed)" for safe senders in rules-only mode
+                _buildStatChipWithMode(
+                  isRulesOnly || isReadOnly ? 'Safe (not processed)' : 'Safe',
+                  scanProvider.safeSendersCount,
+                  isRulesOnly || isReadOnly ? const Color(0xFFA5D6A7) : const Color(0xFF4CAF50),
+                  isRulesOnly || isReadOnly ? Colors.black54 : Colors.white,
+                  EmailActionType.safeSender,
+                ),
                 _buildStatChip('No rule', scanProvider.noRuleCount, const Color(0xFF757575), Colors.white, EmailActionType.none),
                 _buildSpecialStatChip('Errors', scanProvider.errorCount, const Color(0xFFD32F2F), Colors.white, SpecialFilter.error),
                 // Item 6: Add Folders multi-select filter
                 _buildFolderFilterChip(allResults),
               ],
             ),
-            // Revert info (Phase 2 Sprint 3)
-            if (scanProvider.hasActionsToRevert) ...[
-              const SizedBox(height: 12),
-              const Divider(),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.info, color: Colors.orange.shade700, size: 20),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        '${scanProvider.revertableActionCount} action(s) can be undone. Use Revert button above.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.orange.shade900,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
           ],
         ),
+      ),
+    );
+  }
+
+  /// Build stat chip with mode-aware styling
+  Widget _buildStatChipWithMode(String label, int value, Color bg, Color fg, EmailActionType? filterType) {
+    final isActive = _filter == filterType;
+
+    return GestureDetector(
+      onTap: () {
+        if (filterType != null) {
+          _toggleFilter(filterType);
+        }
+      },
+      child: Chip(
+        label: Text('$label: $value'),
+        backgroundColor: isActive ? bg.withValues(alpha: 0.7) : bg,
+        labelStyle: TextStyle(
+          color: fg,
+          fontWeight: isActive ? FontWeight.w900 : FontWeight.bold,
+          fontSize: label.contains('not processed') ? 11 : 14,
+        ),
+        side: isActive
+            ? const BorderSide(color: Colors.black, width: 2)
+            : BorderSide.none,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       ),
     );
   }
