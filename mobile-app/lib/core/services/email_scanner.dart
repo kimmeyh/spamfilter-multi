@@ -199,8 +199,9 @@ class EmailScanner {
           else if (result.shouldDelete) {
             action = EmailActionType.delete;
 
-            // [NEW] FIX ISSUE #9: Only execute action if NOT in readonly mode
-            if (scanProvider.scanMode != ScanMode.readonly) {
+            // [UPDATED] ISSUE #123+#124: Skip rule processing in testAll mode (safe senders only)
+            // Only execute action if NOT in readonly mode AND NOT in testAll mode
+            if (scanProvider.scanMode != ScanMode.readonly && scanProvider.scanMode != ScanMode.testAll) {
               try {
                 // Get target folder before moving
                 final deletedRuleFolder = await _settingsStore.getAccountDeletedRuleFolder(accountId);
@@ -248,14 +249,16 @@ class EmailScanner {
                 error = 'Delete failed: $e';
               }
             } else {
-              // Read-only mode: log what would happen
-              AppLogger.scan('[READONLY] Would delete email: ${message.subject}');
+              // Read-only or testAll (safe senders only) mode: log what would happen
+              final modeDesc = scanProvider.scanMode == ScanMode.testAll ? 'SAFE_SENDERS_ONLY' : 'READONLY';
+              AppLogger.scan('[$modeDesc] Would delete email: ${message.subject}');
             }
           } else if (result.shouldMove) {
             action = EmailActionType.moveToJunk;
 
-            // [NEW] FIX ISSUE #9: Only execute action if NOT in readonly mode
-            if (scanProvider.scanMode != ScanMode.readonly) {
+            // [UPDATED] ISSUE #123+#124: Skip rule processing in testAll mode (safe senders only)
+            // Only execute action if NOT in readonly mode AND NOT in testAll mode
+            if (scanProvider.scanMode != ScanMode.readonly && scanProvider.scanMode != ScanMode.testAll) {
               try {
                 // Move to junk folder
                 await platform.takeAction(
@@ -267,8 +270,9 @@ class EmailScanner {
                 error = 'Move failed: $e';
               }
             } else {
-              // Read-only mode: log what would happen
-              AppLogger.scan('[READONLY] Would move email to junk: ${message.subject}');
+              // Read-only or testAll (safe senders only) mode: log what would happen
+              final modeDesc = scanProvider.scanMode == ScanMode.testAll ? 'SAFE_SENDERS_ONLY' : 'READONLY';
+              AppLogger.scan('[$modeDesc] Would move email to junk: ${message.subject}');
             }
           }
         }
