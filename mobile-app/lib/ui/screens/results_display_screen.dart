@@ -954,12 +954,15 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   void _showEmailDetailSheet(EmailActionResult result, {GlobalKey? itemKey}) {
     final email = result.email;
     final bodyParser = EmailBodyParser();
-    // Extract raw email and domain (Punycode format) - used for rule creation
+    // Extract raw email and domain (Punycode format) - used for block rule creation
     final rawSenderEmail = bodyParser.extractEmailAddress(email.from);
     final rawSenderDomain = bodyParser.extractDomainFromEmail(email.from);
+    // Normalized email (plus-sign stripped) - used for safe sender pattern creation
+    // This matches how SafeSenderList.findMatch() normalizes emails during evaluation
+    final normalizedSenderEmail = PatternNormalization.normalizeFromHeader(email.from);
     // Decode for display only
     final displaySenderEmail = PatternNormalization.normalizeAndDecodeEmail(rawSenderEmail);
-    final displaySenderDomain = rawSenderDomain != null 
+    final displaySenderDomain = rawSenderDomain != null
         ? PatternNormalization.decodePunycodeDomain(rawSenderDomain)
         : null;
     // Extract root domain from RAW domain (for rule creation)
@@ -1136,7 +1139,8 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                         isMatched: isSafeSender && result.evaluationResult?.matchedPatternType == 'exact_email',
                         onTap: () {
                           Navigator.pop(dialogContext);
-                          _addSafeSender(rawSenderEmail, 'exact');
+                          // Use normalized email (plus-signs stripped) to match SafeSenderList evaluation
+                          _addSafeSender(normalizedSenderEmail, 'exact');
                         },
                       ),
                       if (rawSenderDomain != null)
