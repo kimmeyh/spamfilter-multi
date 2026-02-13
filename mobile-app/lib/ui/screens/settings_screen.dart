@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
-import 'package:file_picker/file_picker.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/providers/email_scan_provider.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
@@ -703,182 +702,141 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     );
   }
 
-  /// Configure safe sender folder for account using Windows folder picker
+  /// Configure safe sender folder for account using email folder picker
+  /// [UPDATED] Sprint 14: Use FolderSelectionScreen instead of Windows file picker
   Future<void> _configureSafeSenderFolder(String platform, String email) async {
     // Get current setting
     final currentFolder = await _settingsStore.getAccountSafeSenderFolder(widget.accountId);
 
-    // Show informational dialog first
-    final proceed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Move Safe Senders to Folder'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'When an email matches a safe sender rule, it will be moved to the selected folder.',
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Current folder: ${currentFolder ?? "INBOX (default)"}',
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Note: Emails already in the target folder will not be moved.',
-              style: TextStyle(fontSize: 12, color: Colors.blue.shade700),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              platform == 'gmail'
-                  ? 'You will select a folder name (e.g., INBOX, SPAM, or custom label).'
-                  : 'You will select an IMAP folder name (e.g., INBOX, Junk).',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-            ),
-          ],
+    // [FIX] Sprint 14: Get platformId from credentials store
+    final credStore = SecureCredentialsStore();
+    final platformId = await credStore.getPlatformId(widget.accountId);
+
+    if (platformId == null || platformId.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not determine email platform')),
+        );
+      }
+      return;
+    }
+
+    // [UPDATED] Sprint 14: Use FolderSelectionScreen with singleSelect mode
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FolderSelectionScreen(
+          platformId: platformId,
+          accountId: widget.accountId,
+          accountEmail: widget.accountId,
+          initialSelectedFolders: currentFolder != null ? [currentFolder] : null,
+          singleSelect: true,
+          title: 'Select Safe Sender Folder',
+          buttonLabel: 'Select Folder',
+          onFoldersSelected: (selectedFolders) async {
+            if (selectedFolders.isNotEmpty) {
+              final folderName = selectedFolders.first;
+              try {
+                await _settingsStore.setAccountSafeSenderFolder(
+                  widget.accountId,
+                  folderName,
+                );
+
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Safe sender emails will be moved to: $folderName'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+
+                _logger.i('Set safe sender folder for $email to: $folderName');
+                setState(() {}); // Refresh UI
+              } catch (e) {
+                _logger.e('Failed to set safe sender folder: $e');
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to save setting: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            }
+          },
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Select Folder'),
-          ),
-        ],
       ),
     );
-
-    if (proceed != true) return;
-
-    // Open Windows folder picker (directory mode)
-    final result = await FilePicker.platform.getDirectoryPath(
-      dialogTitle: 'Select Safe Sender Folder',
-      initialDirectory: currentFolder,
-    );
-
-    if (result != null) {
-      try {
-        // Extract just the folder name (last component of path)
-        final folderName = result.split('\\').last;
-
-        await _settingsStore.setAccountSafeSenderFolder(
-          widget.accountId,
-          folderName,
-        );
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Safe sender emails will be moved to: $folderName'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-
-        _logger.i('Set safe sender folder for $email to: $folderName');
-      } catch (e) {
-        _logger.e('Failed to set safe sender folder: $e');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to save setting: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    }
   }
 
-  /// Configure deleted rule folder for account using Windows folder picker
+  /// Configure deleted rule folder for account using email folder picker
+  /// [UPDATED] Sprint 14: Use FolderSelectionScreen instead of Windows file picker
   Future<void> _configureDeletedRuleFolder(String platform, String email) async {
     // Get current setting
     final currentFolder = await _settingsStore.getAccountDeletedRuleFolder(widget.accountId);
 
-    // Show informational dialog first
-    final proceed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Move Deleted by Rule to Folder'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'When a rule deletes an email, it will be moved to the selected folder.',
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Current folder: ${currentFolder ?? (platform == "gmail" ? "TRASH (default)" : "Trash (default)")}',
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              platform == 'gmail'
-                  ? 'You will select a folder name (e.g., TRASH, SPAM, or custom label).'
-                  : 'You will select an IMAP folder name (e.g., Trash, Deleted, Junk).',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-            ),
-          ],
+    // [FIX] Sprint 14: Get platformId from credentials store
+    final credStore = SecureCredentialsStore();
+    final platformId = await credStore.getPlatformId(widget.accountId);
+
+    if (platformId == null || platformId.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not determine email platform')),
+        );
+      }
+      return;
+    }
+
+    // [UPDATED] Sprint 14: Use FolderSelectionScreen with singleSelect mode
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FolderSelectionScreen(
+          platformId: platformId,
+          accountId: widget.accountId,
+          accountEmail: widget.accountId,
+          initialSelectedFolders: currentFolder != null ? [currentFolder] : null,
+          singleSelect: true,
+          title: 'Select Deleted Rule Folder',
+          buttonLabel: 'Select Folder',
+          onFoldersSelected: (selectedFolders) async {
+            if (selectedFolders.isNotEmpty) {
+              final folderName = selectedFolders.first;
+              try {
+                await _settingsStore.setAccountDeletedRuleFolder(
+                  widget.accountId,
+                  folderName,
+                );
+
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Deleted emails will be moved to: $folderName'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+
+                _logger.i('Set deleted rule folder for $email to: $folderName');
+                setState(() {}); // Refresh UI
+              } catch (e) {
+                _logger.e('Failed to set deleted rule folder: $e');
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to save setting: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            }
+          },
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Select Folder'),
-          ),
-        ],
       ),
     );
-
-    if (proceed != true) return;
-
-    // Open Windows folder picker (directory mode)
-    final result = await FilePicker.platform.getDirectoryPath(
-      dialogTitle: 'Select Deleted Rule Folder',
-      initialDirectory: currentFolder,
-    );
-
-    if (result != null) {
-      try {
-        // Extract just the folder name (last component of path)
-        final folderName = result.split('\\').last;
-
-        await _settingsStore.setAccountDeletedRuleFolder(
-          widget.accountId,
-          folderName,
-        );
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Deleted emails will be moved to: $folderName'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-
-        _logger.i('Set deleted rule folder for $email to: $folderName');
-      } catch (e) {
-        _logger.e('Failed to set deleted rule folder: $e');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to save setting: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    }
   }
 }
