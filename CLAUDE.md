@@ -119,6 +119,38 @@ git merge develop
 - Don't skip error handling
 - Don't commit without running tests first
 - Don't make breaking changes without discussion
+- Don't use Edit tool without first using Read tool on that file in the SAME conversation turn
+- Don't assume file content from earlier reads - always re-read before editing after any significant work or context compaction
+- Don't use Linux-only tools on Windows (see Windows Tool Restrictions below)
+
+## Windows Tool Restrictions
+
+**CRITICAL**: This is a Windows development environment. Many Linux tools are NOT available.
+
+**DO NOT USE** these tools (not installed):
+- `jq` - Use `gh --jq` flag or PowerShell `ConvertFrom-Json` instead
+- `sed` - Use the Edit tool instead
+- `awk` - Use PowerShell or the Grep tool instead
+- `grep` (bash) - Use the Grep tool instead
+- `find` (bash) - Use the Glob tool instead
+- `cat` - Use the Read tool instead
+
+**ALWAYS USE** native alternatives:
+```powershell
+# Instead of: gh issue view 123 --json body | jq '.body'
+# Use: gh issue view 123 --json body --jq '.body'
+
+# Instead of: cat file.txt | grep pattern
+# Use: Grep tool with pattern and file path
+
+# Instead of: find . -name "*.dart"
+# Use: Glob tool with pattern "**/*.dart"
+```
+
+**GitHub CLI has built-in JSON processing**:
+- `gh issue view 123 --json title,body` - returns JSON
+- `gh issue view 123 --json title --jq '.title'` - extracts field
+- `gh pr list --json number,title` - list with specific fields
 
 ## Development Philosophy: Co-Lead Developer Collaboration
 

@@ -160,6 +160,38 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
   - Example: `feature/20260124_Sprint_2` or `feature/20260124_Sprint_2_Rule_Migration`
   - Switch repository to new branch: `git checkout -b <branch-name>`
 
+- [ ] **1.3.1 Create Draft PR Immediately** (RECOMMENDED - Early Visibility)
+  - **When**: Immediately after branch creation and sprint plan approval
+  - **Why**: Provides visibility into sprint progress from the start
+  - **How**:
+    ```powershell
+    git push -u origin feature/YYYYMMDD_Sprint_N
+    gh pr create --draft --title "Sprint N: [Title]" --body "Sprint plan: [link or summary]"
+    ```
+  - **Benefits**:
+    - User can track progress via PR at any time
+    - Commits appear in PR as work progresses
+    - No end-of-sprint rush to create PR
+    - Draft status indicates work in progress
+  - **PR Body Template**:
+    ```markdown
+    ## Sprint N: [Title]
+
+    **Status**: [DRAFT] In Progress
+
+    ### Sprint Plan
+    - [ ] Task A: [description]
+    - [ ] Task B: [description]
+    - [ ] Task C: [description]
+
+    ### GitHub Issues
+    - Closes #XX, #YY, #ZZ
+
+    ---
+    *This PR will be updated as tasks complete. Mark ready for review when Phase 3 testing passes.*
+    ```
+  - **Note**: Convert from draft to ready when Phase 3.2 tests pass
+
 - [ ] **1.4 Create GitHub Sprint Cards** (MANDATORY - Never Skip)
   - **CRITICAL**: GitHub issues MUST be created for ALL sprint tasks, even if sprint plan is pre-approved
   - Create one GitHub issue per task (Task A, Task B, Task C, etc.)
