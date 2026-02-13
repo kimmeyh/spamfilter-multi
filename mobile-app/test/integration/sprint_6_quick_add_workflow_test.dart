@@ -1,14 +1,12 @@
 /// Sprint 6 End-to-End Tests: Quick-Add Workflow Integration
 /// Tests complete user workflows from unmatched email review through rule/safe sender creation
+library;
 
 // ignore_for_file: avoid_print
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:spam_filter_mobile/core/models/email_message.dart';
 import 'package:spam_filter_mobile/core/models/rule_set.dart';
-library;
-
-
 import 'package:spam_filter_mobile/core/storage/rule_database_store.dart';
 import 'package:spam_filter_mobile/core/storage/safe_sender_database_store.dart'
     show SafeSenderDatabaseStore, SafeSenderPattern;

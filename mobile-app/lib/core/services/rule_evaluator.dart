@@ -18,25 +18,28 @@ class RuleEvaluator {
   });
 
   /// Evaluate an email and return the action to take
+  ///
+  /// Priority order:
+  /// 1. Check safe senders FIRST - if matched, email is safe (whitelist wins)
+  /// 2. Check rules (in execution order) - if matched, apply rule action
+  /// 3. No match - return no action
+  ///
+  /// Note: When adding a block rule through the UI, conflicting safe sender
+  /// patterns should be removed by the quick-add screen.
   Future<EvaluationResult> evaluate(EmailMessage message) async {
-    // Check safe senders first
+    // Check safe senders FIRST (whitelist has priority)
     final safeSenderMatch = safeSenderList.findMatch(message.from);
     if (safeSenderMatch != null) {
+      AppLogger.eval('Email from ${message.from} matched safe sender (pattern: ${safeSenderMatch.pattern})');
       return EvaluationResult.safeSender(
         safeSenderMatch.pattern,
         patternType: safeSenderMatch.patternType,
       );
     }
 
-    // Evaluate rules in execution order
+    // Evaluate rules (in execution order)
     final sortedRules = List<Rule>.from(ruleSet.rules)
       ..sort((a, b) => a.executionOrder.compareTo(b.executionOrder));
-
-    // DIAGNOSTIC: Log rule evaluation for first few emails
-    if (sortedRules.isEmpty) {
-      AppLogger.rules('No rules available for evaluation of "${message.subject}" from ${message.from}');
-      return EvaluationResult.noMatch();
-    }
 
     int enabledRuleCount = 0;
     for (final rule in sortedRules) {
@@ -69,7 +72,11 @@ class RuleEvaluator {
       }
     }
 
-    AppLogger.eval('Email "${message.subject}" from ${message.from} did not match any of $enabledRuleCount enabled rules');
+    if (enabledRuleCount == 0) {
+      AppLogger.rules('No rules available for evaluation of "${message.subject}" from ${message.from}');
+    } else {
+      AppLogger.eval('Email "${message.subject}" from ${message.from} did not match any of $enabledRuleCount enabled rules or safe senders');
+    }
     return EvaluationResult.noMatch();
   }
 

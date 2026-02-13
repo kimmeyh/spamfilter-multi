@@ -13,6 +13,11 @@ class PatternNormalization {
   /// - "Name <user@example.com>" → "user@example.com"
   /// - "user@example.com (Name)" → "user@example.com"
   ///
+  /// Also handles plus-sign subaddressing (RFC 5233):
+  /// - "invoice+statements+acct_123@stripe.com" → "acct_123@stripe.com"
+  /// Everything before the last + in the local part is stripped, keeping only
+  /// the final tag and domain.
+  ///
   /// Keeps characters: [0-9a-z@._+-]
   /// Removes: spaces, parentheses, angle brackets
   ///
@@ -41,6 +46,23 @@ class PatternNormalization {
 
       // Keep only alphanumeric, @, ., _, +, -
       result = result.replaceAll(RegExp(r'[^0-9a-z@._+-]'), '');
+
+      // Handle plus-sign subaddressing (RFC 5233)
+      // "invoice+statements+acct_123@stripe.com" → "acct_123@stripe.com"
+      // Strip everything before the last + in the local part
+      if (result.contains('@') && result.contains('+')) {
+        final atIndex = result.indexOf('@');
+        final localPart = result.substring(0, atIndex);
+        final domain = result.substring(atIndex);
+
+        // Find the last + in the local part
+        final lastPlusIndex = localPart.lastIndexOf('+');
+        if (lastPlusIndex >= 0 && lastPlusIndex < localPart.length - 1) {
+          // Keep only the part after the last +
+          final canonicalLocal = localPart.substring(lastPlusIndex + 1);
+          result = canonicalLocal + domain;
+        }
+      }
 
       return result;
     } catch (e) {

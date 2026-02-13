@@ -563,12 +563,14 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                         children: [
                           SizedBox(
                             height: MediaQuery.of(context).size.height * 0.4,
-                            // [NEW] SPRINT 12: Show "Scan Started" when scan is in progress
+                            // [UPDATED] ISSUE #123+#124: Show appropriate message based on scan status
                             child: scanProvider.status == ScanStatus.scanning
                                 ? const ScanStartedEmptyState()
-                                : _filter == null
-                                    ? const NoResultsEmptyState()
-                                    : const NoMatchingEmailsEmptyState(),
+                                : scanProvider.status == ScanStatus.completed && _filter == null
+                                    ? const ScanCompleteNoEmailsEmptyState()
+                                    : _filter == null
+                                        ? const NoResultsEmptyState()
+                                        : const NoMatchingEmailsEmptyState(),
                           ),
                         ],
                       )

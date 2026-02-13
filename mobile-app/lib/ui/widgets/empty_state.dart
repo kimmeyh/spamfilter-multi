@@ -113,6 +113,20 @@ class NoResultsEmptyState extends StatelessWidget {
   }
 }
 
+/// [NEW] ISSUE #123+#124: Show when scan completed but no emails were found
+class ScanCompleteNoEmailsEmptyState extends StatelessWidget {
+  const ScanCompleteNoEmailsEmptyState({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const EmptyState(
+      icon: Icons.check_circle_outline,
+      title: 'Scan Complete',
+      message: 'No emails were found in the selected folders for the specified time period.',
+    );
+  }
+}
+
 class NoMatchingEmailsEmptyState extends StatelessWidget {
   const NoMatchingEmailsEmptyState({super.key});
 

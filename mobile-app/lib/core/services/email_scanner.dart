@@ -55,13 +55,14 @@ class EmailScanner {
         throw Exception('Platform $platformId not supported');
       }
 
-      // 2. Load credentials
-      final credentials = await _credStore.getCredentials(accountId);
-      if (credentials == null) {
-        throw Exception('No credentials found for account $accountId');
+      // 2. Load credentials (skip for demo platform)
+      if (platformId != 'demo') {
+        final credentials = await _credStore.getCredentials(accountId);
+        if (credentials == null) {
+          throw Exception('No credentials found for account $accountId');
+        }
+        await platform.loadCredentials(credentials);
       }
-
-      await platform.loadCredentials(credentials);
 
       // 2.5. Configure deleted rule folder from account settings
       final deletedRuleFolder = await _settingsStore.getAccountDeletedRuleFolder(accountId);
@@ -206,44 +207,38 @@ class EmailScanner {
                 // Get target folder before moving
                 final deletedRuleFolder = await _settingsStore.getAccountDeletedRuleFolder(accountId);
                 final targetFolder = deletedRuleFolder ?? 'Trash';
-                
-                // Delete via platform adapter (moves to trash/deleted folder)
+
+                // [FIXED] ISSUE #138: Mark as read and apply flag BEFORE moving
+                // IMAP message IDs are folder-specific, so we must do these operations
+                // while the message is still in the original folder
+                try {
+                  await platform.markAsRead(message: message);
+                  AppLogger.scan('Marked email as read: ${message.subject}');
+                } catch (e) {
+                  AppLogger.warning('Failed to mark email as read before move: $e');
+                  // Continue - mark as read is enhancement, not critical
+                }
+
+                // Apply flag/label with rule name (before move)
+                if (result.matchedRule.isNotEmpty) {
+                  try {
+                    await platform.applyFlag(
+                      message: message,
+                      flagName: result.matchedRule,
+                    );
+                    AppLogger.scan('Applied flag "${result.matchedRule}" to email: ${message.subject}');
+                  } catch (e) {
+                    AppLogger.warning('Failed to apply flag before move: $e');
+                    // Continue - flagging is enhancement, not critical
+                  }
+                }
+
+                // Now move the email (delete via platform adapter moves to trash/deleted folder)
                 await platform.takeAction(
                   message: message,
                   action: FilterAction.delete,
                 );
-
-                // [FIX] ISSUE #138: Update message folderName to target folder for subsequent operations
-                final movedMessage = EmailMessage(
-                  id: message.id,
-                  from: message.from,
-                  subject: message.subject,
-                  body: message.body,
-                  headers: message.headers,
-                  receivedDate: message.receivedDate,
-                  folderName: targetFolder,  // Now in the destination folder
-                );
-
-                // [NEW] ISSUE #138: Mark deleted email as read (now in correct folder)
-                try {
-                  await platform.markAsRead(message: movedMessage);
-                } catch (e) {
-                  AppLogger.warning('Failed to mark deleted email as read: $e');
-                  // Continue - mark as read is enhancement, not critical
-                }
-
-                // [NEW] ISSUE #138: Apply flag/label with rule name (now in correct folder)
-                if (result.matchedRule.isNotEmpty) {
-                  try {
-                    await platform.applyFlag(
-                      message: movedMessage,
-                      flagName: result.matchedRule,
-                    );
-                  } catch (e) {
-                    AppLogger.warning('Failed to apply flag to deleted email: $e');
-                    // Continue - flagging is enhancement, not critical
-                  }
-                }
+                AppLogger.scan('Moved email to $targetFolder: ${message.subject}');
               } catch (e) {
                 success = false;
                 error = 'Delete failed: $e';
