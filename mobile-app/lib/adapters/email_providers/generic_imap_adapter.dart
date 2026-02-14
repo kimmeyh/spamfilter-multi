@@ -20,13 +20,14 @@ import 'dart:io';
 import 'package:enough_mail/enough_mail.dart';
 import 'package:logger/logger.dart';
 
+import '../../core/models/batch_action_result.dart';
 import '../../core/models/email_message.dart';
 import '../../core/models/evaluation_result.dart';
 import 'spam_filter_platform.dart';
 import 'email_provider.dart';
 
 /// Generic IMAP implementation for multiple email providers
-class GenericIMAPAdapter implements SpamFilterPlatform {
+class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform {
   final String _imapHost;
   final int _imapPort;
   final bool _isSecure;
@@ -492,6 +493,214 @@ class GenericIMAPAdapter implements SpamFilterPlatform {
       _logger.e('[IMAP] Failed to perform action $action on message ${message.id}: $e');
       throw ActionException('Action failed', action, e);
     }
+  }
+
+  // --- Batch Operation Overrides (Issue #144) ---
+  // Use IMAP UID sequence sets for batch operations.
+  // A single UID STORE/MOVE command with multiple UIDs is far more efficient
+  // than individual commands per message.
+
+  @override
+  Future<BatchActionResult> markAsReadBatch(List<EmailMessage> messages) async {
+    if (_imapClient == null || messages.isEmpty) {
+      return BatchActionResult.allSuccess(messages.map((m) => m.id).toList());
+    }
+
+    await _checkAndReconnect();
+
+    // Group messages by folder (IMAP requires selecting mailbox first)
+    final byFolder = _groupByFolder(messages);
+    final succeeded = <String>[];
+    final failed = <String, String>{};
+
+    for (final entry in byFolder.entries) {
+      try {
+        await _selectMailbox(entry.key);
+        final uids = _parseUids(entry.value);
+        if (uids.isEmpty) continue;
+
+        final sequence = MessageSequence.fromIds(uids, isUid: true);
+        _logger.i('[IMAP] BATCH UID STORE +Seen on ${uids.length} messages (op #$_operationCount)');
+        await _imapClient!.uidStore(
+          sequence,
+          [MessageFlags.seen],
+          action: StoreAction.add,
+        );
+        _operationCount++;
+        succeeded.addAll(entry.value.map((m) => m.id));
+      } catch (e) {
+        _logger.e('[IMAP] Batch markAsRead failed for folder ${entry.key}: $e');
+        // Fall back to single-message processing for this folder
+        for (final message in entry.value) {
+          try {
+            await markAsRead(message: message);
+            succeeded.add(message.id);
+          } catch (e2) {
+            failed[message.id] = e2.toString();
+          }
+        }
+      }
+    }
+
+    return BatchActionResult(succeededIds: succeeded, failedIds: failed);
+  }
+
+  @override
+  Future<BatchActionResult> applyFlagBatch(
+    List<EmailMessage> messages,
+    String flagName,
+  ) async {
+    if (_imapClient == null || messages.isEmpty) {
+      return BatchActionResult.allSuccess(messages.map((m) => m.id).toList());
+    }
+
+    final sanitized = _sanitizeFlagName(flagName);
+    final keyword = 'SpamFilter-$sanitized';
+    final byFolder = _groupByFolder(messages);
+    final succeeded = <String>[];
+    final failed = <String, String>{};
+
+    for (final entry in byFolder.entries) {
+      try {
+        await _selectMailbox(entry.key);
+        final uids = _parseUids(entry.value);
+        if (uids.isEmpty) continue;
+
+        final sequence = MessageSequence.fromIds(uids, isUid: true);
+        _logger.i('[IMAP] BATCH UID STORE +keyword "$keyword" on ${uids.length} messages (op #$_operationCount)');
+        await _imapClient!.uidStore(
+          sequence,
+          [keyword],
+          action: StoreAction.add,
+          silent: false,
+        );
+        _operationCount++;
+        succeeded.addAll(entry.value.map((m) => m.id));
+      } catch (e) {
+        // Server may not support custom keywords — log but do not fail the batch
+        _logger.w('[IMAP] Batch applyFlag failed for folder ${entry.key}: $e');
+        succeeded.addAll(entry.value.map((m) => m.id));
+      }
+    }
+
+    return BatchActionResult(succeededIds: succeeded, failedIds: failed);
+  }
+
+  @override
+  Future<BatchActionResult> moveToFolderBatch(
+    List<EmailMessage> messages,
+    String targetFolder,
+  ) async {
+    if (_imapClient == null || messages.isEmpty) {
+      return BatchActionResult.allSuccess(messages.map((m) => m.id).toList());
+    }
+
+    await _checkAndReconnect();
+
+    final byFolder = _groupByFolder(messages);
+    final succeeded = <String>[];
+    final failed = <String, String>{};
+
+    for (final entry in byFolder.entries) {
+      try {
+        await _selectMailbox(entry.key);
+        final uids = _parseUids(entry.value);
+        if (uids.isEmpty) continue;
+
+        final sequence = MessageSequence.fromIds(uids, isUid: true);
+        _logger.i('[IMAP] BATCH UID MOVE ${uids.length} messages to $targetFolder (op #$_operationCount)');
+        await _imapClient!.uidMove(
+          sequence,
+          targetMailboxPath: targetFolder,
+        );
+        _operationCount++;
+        succeeded.addAll(entry.value.map((m) => m.id));
+      } catch (e) {
+        _logger.e('[IMAP] Batch move failed for folder ${entry.key}: $e');
+        // Fall back to single-message processing for this folder
+        for (final message in entry.value) {
+          try {
+            await moveToFolder(message: message, targetFolder: targetFolder);
+            succeeded.add(message.id);
+          } catch (e2) {
+            failed[message.id] = e2.toString();
+          }
+        }
+      }
+    }
+
+    return BatchActionResult(succeededIds: succeeded, failedIds: failed);
+  }
+
+  @override
+  Future<BatchActionResult> takeActionBatch(
+    List<EmailMessage> messages,
+    FilterAction action,
+  ) async {
+    if (_imapClient == null || messages.isEmpty) {
+      return BatchActionResult.allSuccess(messages.map((m) => m.id).toList());
+    }
+
+    // Route to specific batch method based on action type
+    switch (action) {
+      case FilterAction.delete:
+        final targetFolder = _deletedRuleFolder ?? 'Trash';
+        return moveToFolderBatch(messages, targetFolder);
+      case FilterAction.moveToJunk:
+      case FilterAction.moveToFolder:
+        return moveToFolderBatch(messages, 'Junk');
+      case FilterAction.markAsRead:
+        return markAsReadBatch(messages);
+      case FilterAction.markAsSpam:
+        // Batch store $Junk flag
+        await _checkAndReconnect();
+        final byFolder = _groupByFolder(messages);
+        final succeeded = <String>[];
+        final failed = <String, String>{};
+        for (final entry in byFolder.entries) {
+          try {
+            await _selectMailbox(entry.key);
+            final uids = _parseUids(entry.value);
+            if (uids.isEmpty) continue;
+            final sequence = MessageSequence.fromIds(uids, isUid: true);
+            await _imapClient!.uidStore(
+              sequence,
+              [r'$Junk'],
+              action: StoreAction.add,
+            );
+            _operationCount++;
+            succeeded.addAll(entry.value.map((m) => m.id));
+          } catch (e) {
+            for (final message in entry.value) {
+              failed[message.id] = e.toString();
+            }
+          }
+        }
+        return BatchActionResult(succeededIds: succeeded, failedIds: failed);
+    }
+  }
+
+  /// Group messages by folder name for batch operations
+  Map<String, List<EmailMessage>> _groupByFolder(List<EmailMessage> messages) {
+    final grouped = <String, List<EmailMessage>>{};
+    for (final message in messages) {
+      grouped.putIfAbsent(message.folderName, () => []).add(message);
+    }
+    return grouped;
+  }
+
+  /// Parse UIDs from message IDs, skipping invalid ones
+  List<int> _parseUids(List<EmailMessage> messages) {
+    final uids = <int>[];
+    for (final message in messages) {
+      final uid = int.tryParse(message.id);
+      if (uid != null) {
+        uids.add(uid);
+      } else {
+        _logger.w('[IMAP] Invalid message UID: ${message.id}');
+      }
+    }
+    return uids;
   }
 
   @override
