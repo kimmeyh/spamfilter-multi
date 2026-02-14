@@ -1,6 +1,7 @@
 /// Email scanning service that connects IMAP adapters with rule evaluation
 library;
 
+import '../models/email_message.dart';
 import '../providers/email_scan_provider.dart';
 import '../providers/rule_set_provider.dart';
 import '../services/rule_evaluator.dart';
@@ -54,30 +55,82 @@ class EmailScanner {
         throw Exception('Platform $platformId not supported');
       }
 
-      // 2. Load credentials
-      final credentials = await _credStore.getCredentials(accountId);
-      if (credentials == null) {
-        throw Exception('No credentials found for account $accountId');
+      // 2. Load credentials (skip for demo platform)
+      if (platformId != 'demo') {
+        final credentials = await _credStore.getCredentials(accountId);
+        if (credentials == null) {
+          throw Exception('No credentials found for account $accountId');
+        }
+        await platform.loadCredentials(credentials);
       }
-
-      await platform.loadCredentials(credentials);
 
       // 2.5. Configure deleted rule folder from account settings
       final deletedRuleFolder = await _settingsStore.getAccountDeletedRuleFolder(accountId);
       platform.setDeletedRuleFolder(deletedRuleFolder);
 
-      // 3. Fetch messages
-      final messages = await platform.fetchMessages(
-        daysBack: daysBack,
-        folderNames: folderNames,
-      );
-
-      // 4. Start scan ([NEW] SPRINT 4: Now async to enable persistence)
+      // 3. [UPDATED] ISSUE #128: Start scan with 0 emails, will increment as found
       await scanProvider.startScan(
-        totalEmails: messages.length,
+        totalEmails: 0,
         scanType: scanType,
         foldersScanned: folderNames,
       );
+
+      // 4. [UPDATED] ISSUE #128: Fetch messages folder-by-folder for progress reporting
+      final List<EmailMessage> messages = [];
+      for (final folderName in folderNames) {
+        // [NEW] ISSUE #128: Report folder being fetched
+        scanProvider.setCurrentFolder(folderName);
+        scanProvider.updateProgress(
+          email: EmailMessage(
+            id: '',
+            from: '',
+            subject: 'Searching folder "$folderName"...',
+            body: '',
+            headers: {},
+            receivedDate: DateTime.now(),
+            folderName: folderName,
+          ),
+          message: 'Searching folder "$folderName"...',
+        );
+
+        // Fetch messages from this folder
+        final folderMessages = await platform.fetchMessages(
+          daysBack: daysBack,
+          folderNames: [folderName],  // Fetch one folder at a time
+        );
+
+        messages.addAll(folderMessages);
+
+        // [NEW] ISSUE #128: Increment found count and report folder completion
+        if (folderMessages.isNotEmpty) {
+          scanProvider.incrementFoundEmails(folderMessages.length);
+          scanProvider.updateProgress(
+            email: EmailMessage(
+              id: '',
+              from: '',
+              subject: 'Found ${folderMessages.length} emails in "$folderName"',
+              body: '',
+              headers: {},
+              receivedDate: DateTime.now(),
+              folderName: folderName,
+            ),
+            message: 'Found ${folderMessages.length} emails in "$folderName", continuing...',
+          );
+        } else {
+          scanProvider.updateProgress(
+            email: EmailMessage(
+              id: '',
+              from: '',
+              subject: 'No emails found in "$folderName"',
+              body: '',
+              headers: {},
+              receivedDate: DateTime.now(),
+              folderName: folderName,
+            ),
+            message: 'No emails found in "$folderName", continuing...',
+          );
+        }
+      }
 
       // 5. Get rule evaluator
       // DIAGNOSTIC: Log rule and safe sender counts for troubleshooting
@@ -124,7 +177,8 @@ class EmailScanner {
 
             // Only move if email is NOT already in the target folder
             if (message.folderName != targetFolder) {
-              if (scanProvider.scanMode != ScanMode.readonly) {
+              // [UPDATED] ISSUE #123+#124: Skip safe sender processing in testLimit mode (rules only)
+              if (scanProvider.scanMode != ScanMode.readonly && scanProvider.scanMode != ScanMode.testLimit) {
                 try {
                   AppLogger.scan('Moving safe sender email from ${message.folderName} to $targetFolder: ${message.subject}');
                   await platform.moveToFolder(
@@ -146,27 +200,60 @@ class EmailScanner {
           else if (result.shouldDelete) {
             action = EmailActionType.delete;
 
-            // [NEW] FIX ISSUE #9: Only execute action if NOT in readonly mode
-            if (scanProvider.scanMode != ScanMode.readonly) {
+            // [UPDATED] ISSUE #123+#124: Skip rule processing in testAll mode (safe senders only)
+            // Only execute action if NOT in readonly mode AND NOT in testAll mode
+            if (scanProvider.scanMode != ScanMode.readonly && scanProvider.scanMode != ScanMode.testAll) {
               try {
-                // Delete via platform adapter
+                // Get target folder before moving
+                final deletedRuleFolder = await _settingsStore.getAccountDeletedRuleFolder(accountId);
+                final targetFolder = deletedRuleFolder ?? 'Trash';
+
+                // [FIXED] ISSUE #138: Mark as read and apply flag BEFORE moving
+                // IMAP message IDs are folder-specific, so we must do these operations
+                // while the message is still in the original folder
+                try {
+                  await platform.markAsRead(message: message);
+                  AppLogger.scan('Marked email as read: ${message.subject}');
+                } catch (e) {
+                  AppLogger.warning('Failed to mark email as read before move: $e');
+                  // Continue - mark as read is enhancement, not critical
+                }
+
+                // Apply flag/label with rule name (before move)
+                if (result.matchedRule.isNotEmpty) {
+                  try {
+                    await platform.applyFlag(
+                      message: message,
+                      flagName: result.matchedRule,
+                    );
+                    AppLogger.scan('Applied flag "${result.matchedRule}" to email: ${message.subject}');
+                  } catch (e) {
+                    AppLogger.warning('Failed to apply flag before move: $e');
+                    // Continue - flagging is enhancement, not critical
+                  }
+                }
+
+                // Now move the email (delete via platform adapter moves to trash/deleted folder)
                 await platform.takeAction(
                   message: message,
                   action: FilterAction.delete,
                 );
+                AppLogger.scan('Moved email to $targetFolder: ${message.subject}');
               } catch (e) {
                 success = false;
                 error = 'Delete failed: $e';
               }
             } else {
-              // Read-only mode: log what would happen
-              AppLogger.scan('[READONLY] Would delete email: ${message.subject}');
+              // Read-only or testAll (safe senders only) mode: log what would happen
+              final modeDesc = scanProvider.scanMode == ScanMode.testAll ? 'SAFE_SENDERS_ONLY' : 'READONLY';
+              AppLogger.scan('[$modeDesc] Would delete email: ${message.subject}');
             }
           } else if (result.shouldMove) {
             action = EmailActionType.moveToJunk;
 
-            // [NEW] FIX ISSUE #9: Only execute action if NOT in readonly mode
-            if (scanProvider.scanMode != ScanMode.readonly) {
+            // [UPDATED] ISSUE #123+#124: Skip rule processing in testAll mode (safe senders only)
+            // Only execute action if NOT in readonly mode AND NOT in testAll mode
+            if (scanProvider.scanMode != ScanMode.readonly && scanProvider.scanMode != ScanMode.testAll) {
               try {
                 // Move to junk folder
                 await platform.takeAction(
@@ -178,8 +265,9 @@ class EmailScanner {
                 error = 'Move failed: $e';
               }
             } else {
-              // Read-only mode: log what would happen
-              AppLogger.scan('[READONLY] Would move email to junk: ${message.subject}');
+              // Read-only or testAll (safe senders only) mode: log what would happen
+              final modeDesc = scanProvider.scanMode == ScanMode.testAll ? 'SAFE_SENDERS_ONLY' : 'READONLY';
+              AppLogger.scan('[$modeDesc] Would move email to junk: ${message.subject}');
             }
           }
         }

@@ -9,6 +9,7 @@ library;
 import 'spam_filter_platform.dart';
 import 'generic_imap_adapter.dart';
 import 'gmail_api_adapter.dart';
+import 'mock_email_provider.dart'; // [NEW] ISSUE #125: Demo mode
 // import 'gmail_adapter.dart';  // Phase 2 legacy stub
 // import 'outlook_adapter.dart';  // Phase 2
 
@@ -24,6 +25,7 @@ class PlatformRegistry {
     'yahoo': () => GenericIMAPAdapter.yahoo(),
     'icloud': () => GenericIMAPAdapter.icloud(),
     'imap': () => GenericIMAPAdapter.custom(),
+    'demo': () => MockEmailProvider(), // [NEW] ISSUE #125: Demo mode with 50+ sample emails
     // Phase 2 additions:
     // 'gmail': () => GmailAdapter(),
     // 'outlook': () => OutlookAdapter(),
@@ -52,6 +54,17 @@ class PlatformRegistry {
   /// Returns list sorted by implementation phase and display name
   static List<PlatformInfo> getSupportedPlatforms() {
     return [
+      // [NEW] ISSUE #125: Demo Mode - 50+ sample emails for testing
+      PlatformInfo(
+        id: 'demo',
+        displayName: 'Demo Mode (Testing)',
+        phase: 0, // Show first when enabled
+        authMethod: AuthMethod.none,
+        icon: 'assets/icons/demo.png',
+        description: '50+ sample emails for testing spam filtering rules',
+        setupInstructions: 'Demo mode requires no authentication. Sample emails will be generated automatically.',
+      ),
+
       // Phase 1 - MVP (IMAP-based)
       PlatformInfo(
         id: 'aol',

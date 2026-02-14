@@ -138,10 +138,11 @@ class EmailScanProvider extends ChangeNotifier {
   String? _currentAccountId;  // Track current account for folder lookup
 
   // [NEW] PHASE 3.3: Progressive update throttling (Issue #36)
+  // [UPDATED] ISSUE #128: Reduced from 3s to 2s for more responsive folder updates
   DateTime? _lastProgressNotification;
   int _emailsSinceLastNotification = 0;
   static const int _progressEmailInterval = 10;  // Update every 10 emails
-  static const Duration _progressTimeInterval = Duration(seconds: 3);  // OR every 3 seconds
+  static const Duration _progressTimeInterval = Duration(seconds: 2);  // OR every 2 seconds (was 3s)
 
   // Getters
   ScanStatus get status => _status;
@@ -185,11 +186,12 @@ class EmailScanProvider extends ChangeNotifier {
       case ScanMode.readonly:
         return 'Read-Only';
       case ScanMode.testLimit:
-        return 'Test Limited Emails';
+        // [UPDATED] ISSUE #123+#124: Repurposed testLimit for "rules only" mode
+        return 'Process Rules Only';
       case ScanMode.testAll:
-        return 'Full Scan with Revert';
+        return 'Process Safe Senders Only';
       case ScanMode.fullScan:
-        return 'Full Scan';
+        return 'Process Safe Senders + Rules';
     }
   }
 
@@ -263,6 +265,15 @@ class EmailScanProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// [NEW] ISSUE #128: Increment total emails found during folder-by-folder fetch
+  ///
+  /// Call this as emails are discovered to update the "Found" count progressively
+  void incrementFoundEmails(int count) {
+    _totalEmails += count;
+    _logger.d('Found emails updated: $_totalEmails total');
+    notifyListeners();
+  }
+
   /// Mark current email and update progress
   /// 
   /// [NEW] PHASE 3.3: Throttles UI updates to every 10 emails OR 3 seconds (whichever comes first)
@@ -272,7 +283,11 @@ class EmailScanProvider extends ChangeNotifier {
     String? message,
   }) {
     _currentEmail = email;
-    _processedCount++;
+    // [FIX] ISSUE #128: Only increment processedCount for actual emails, not status messages
+    // Status messages have empty email IDs
+    if (email.id.isNotEmpty) {
+      _processedCount++;
+    }
     _statusMessage = message ?? 'Processing ${email.from}...';
     _logger.d('Progress: $_processedCount / $_totalEmails');
     
@@ -317,10 +332,12 @@ class EmailScanProvider extends ChangeNotifier {
   Future<void> completeScan() async {
     _status = ScanStatus.completed;
     _currentEmail = null;
+    _currentFolder = null;  // [NEW] ISSUE #128: Clear folder on completion
     final modeName = getScanModeDisplayName();
-    _statusMessage = 'Scan completed - $modeName: '
-        '$_deletedCount deleted, $_movedCount moved, $_safeSendersCount safe senders, $_errorCount errors';
-    _logger.i('Completed scan: $_statusMessage');
+    // [UPDATED] ISSUE #128: Show "Scan complete." message
+    _statusMessage = 'Scan complete.';
+    _logger.i('Completed scan - $modeName: '
+        '$_deletedCount deleted, $_movedCount moved, $_safeSendersCount safe senders, $_errorCount errors');
 
     // [NEW] SPRINT 4: Mark scan result as completed in database
     if (_scanResultStore != null && _currentScanResultId != null) {

@@ -8,6 +8,7 @@ import '../../core/providers/email_scan_provider.dart';
 import '../../core/providers/email_scan_provider.dart' show EmailActionType, EmailActionResult;
 import '../../core/providers/rule_set_provider.dart';
 import '../../core/services/email_scanner.dart';
+import '../../core/storage/settings_store.dart'; // [NEW] ISSUE #138: Load scan mode from settings
 import '../widgets/app_bar_with_exit.dart';
 import '../screens/folder_selection_screen.dart';
 import 'results_display_screen.dart';
@@ -219,12 +220,45 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
       ScanStatus.error => 'Scan failed',
     };
 
+    // [NEW] ISSUE #125: Show demo mode indicator if using demo platform
+    final isDemoMode = widget.platformId == 'demo';
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          statusText,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                statusText,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+            if (isDemoMode)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade100,
+                  border: Border.all(color: Colors.amber.shade700),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.science, size: 16, color: Colors.amber.shade900),
+                    const SizedBox(width: 4),
+                    Text(
+                      'DEMO MODE',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.amber.shade900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
         ),
         const SizedBox(height: 4),
         Text(
@@ -274,15 +308,6 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-          // [NEW] PHASE 3.1: Scan Mode button
-          OutlinedButton.icon(
-            icon: const Icon(Icons.settings),
-            label: Text('Scan Mode: ${scanProvider.getScanModeDisplayName()}'),
-            onPressed: canStartScan
-                ? () => _showScanModeDialog(context, scanProvider)
-                : null,
-          ),
-          const SizedBox(height: 12),
           // Folder selection button (Phase 2 Sprint 3)
           ElevatedButton.icon(
             icon: const Icon(Icons.folder_open),
@@ -424,6 +449,10 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
     ) async {
       final logger = Logger();
 
+      // [NEW] ISSUE #123+#124: Load saved default folders from Manual Scan tab
+      final settingsStore = SettingsStore();
+      final savedFolders = await settingsStore.getAccountManualScanFolders(widget.accountId);
+
       final selected = await showModalBottomSheet<List<String>>(
         context: context,
         isScrollControlled: true,
@@ -431,6 +460,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
           platformId: widget.platformId,
           accountId: widget.accountId,
           accountEmail: widget.accountEmail,
+          initialSelectedFolders: savedFolders, // Pre-populate with saved folders
           onFoldersSelected: (folders) {
             logger.i('📁 Folders selected for scan: $folders');
             // [NEW] PHASE 3.2: Store selected folders in scanProvider for use during scan
@@ -455,160 +485,6 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
     }
 
   /// [NEW] PHASE 3.1: Show scan mode selection dialog
-  Future<void> _showScanModeDialog(
-    BuildContext context,
-    EmailScanProvider scanProvider,
-  ) async {
-    ScanMode selectedMode = scanProvider.scanMode;
-    int testLimit = scanProvider.emailTestLimit ?? 50;
-
-    await showDialog(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Select Scan Mode'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Read-Only
-                RadioListTile<ScanMode>(
-                  value: ScanMode.readonly,
-                  groupValue: selectedMode,
-                  title: const Text('Read-Only'),
-                  subtitle: const Text('Safe testing - no emails modified'),
-                  onChanged: (value) {
-                    setState(() => selectedMode = value!);
-                  },
-                ),
-                // Test Limited Emails
-                RadioListTile<ScanMode>(
-                  value: ScanMode.testLimit,
-                  groupValue: selectedMode,
-                  title: const Text('Test Limited Emails'),
-                  subtitle: Text('Modify up to $testLimit emails'),
-                  onChanged: (value) {
-                    setState(() => selectedMode = value!);
-                  },
-                ),
-                // [NEW] ISSUE #40 FIX: Configurable test limit slider
-                if (selectedMode == ScanMode.testLimit)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 8),
-                        Text(
-                          'Email limit: $testLimit',
-                          style: const TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        Slider(
-                          value: testLimit.toDouble(),
-                          min: 5,
-                          max: 200,
-                          divisions: 39,
-                          label: '$testLimit emails',
-                          onChanged: (value) {
-                            setState(() => testLimit = value.round());
-                          },
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('5', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                            const Text('200', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                // Full Scan with Revert
-                RadioListTile<ScanMode>(
-                  value: ScanMode.testAll,
-                  groupValue: selectedMode,
-                  title: const Text('Full Scan with Revert'),
-                  subtitle: const Text('All changes (can revert)'),
-                  onChanged: (value) {
-                    setState(() => selectedMode = value!);
-                  },
-                ),
-                // Full Scan (PERMANENT)
-                RadioListTile<ScanMode>(
-                  value: ScanMode.fullScan,
-                  groupValue: selectedMode,
-                  title: const Text('Full Scan'),
-                  subtitle: const Text('PERMANENT delete/move (cannot revert)', 
-                    style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-                  onChanged: (value) {
-                    setState(() => selectedMode = value!);
-                  },
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                // Show warning for Full Scan mode
-                if (selectedMode == ScanMode.fullScan) {
-                  final confirmed = await showDialog<bool>(
-                    context: dialogContext,
-                    barrierDismissible: false,
-                    builder: (ctx) => AlertDialog(
-                      title: const Row(
-                        children: [
-                          Icon(Icons.warning, color: Colors.red),
-                          SizedBox(width: 8),
-                          Text('Warning: Full Scan Mode'),
-                        ],
-                      ),
-                      content: const Text(
-                        'Full Scan mode will PERMANENTLY delete or move emails based on your rules.\n\n'
-                        'This action CANNOT be undone.\n\n'
-                        'Are you sure you want to enable Full Scan mode?',
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx, false),
-                          child: const Text('Cancel'),
-                        ),
-                        ElevatedButton(
-                          onPressed: () => Navigator.pop(ctx, true),
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                          child: const Text('Enable Full Scan'),
-                        ),
-                      ],
-                    ),
-                  );
-                  
-                  if (confirmed != true) {
-                    return; // User cancelled
-                  }
-                }
-
-                // Apply the mode
-                scanProvider.initializeScanMode(
-                  mode: selectedMode,
-                  testLimit: selectedMode == ScanMode.testLimit ? testLimit : null,
-                );
-                
-                if (dialogContext.mounted) {
-                  Navigator.pop(dialogContext);
-                }
-              },
-              child: const Text('Apply'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   /// Start a real IMAP scan
   Future<void> _startRealScan(
     BuildContext context,
@@ -622,6 +498,14 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
     );
 
     if (daysBack == null) return; // User cancelled
+
+    // [NEW] ISSUE #138: Load scan mode from account settings BEFORE starting scan
+    final settingsStore = SettingsStore();
+    final scanMode = await settingsStore.getAccountManualScanMode(widget.accountId) ?? ScanMode.readonly;
+    scanProvider.initializeScanMode(mode: scanMode);
+    
+    final logger = Logger();
+    logger.i('[ISSUE #138] Loaded scan mode for manual scan: $scanMode');
 
     // Immediately update UI to show scan is starting
     scanProvider.startScan(totalEmails: 0);
@@ -650,10 +534,23 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
         scanProvider: scanProvider,
       );
 
-      // [NEW] PHASE 3.2: Use selected folders from scanProvider (defaults to ['INBOX'] if none selected)
-      final foldersToScan = scanProvider.selectedFolders;
-      final logger = Logger();
-      logger.i('[LAUNCH] Starting scan of folders: $foldersToScan for $daysBack days back');
+      // [FIXED] ISSUE #123+#124: Use saved default folders from Manual Scan tab
+      // The Settings screen saves folders per-account; we always use those
+      final scanLogger = Logger();
+      List<String> foldersToScan;
+
+      // Load saved default folders from Settings > Manual Scan tab
+      final savedFolders = await settingsStore.getAccountManualScanFolders(widget.accountId);
+      if (savedFolders != null && savedFolders.isNotEmpty) {
+        foldersToScan = savedFolders;
+        scanLogger.i('[FOLDERS] Using saved default folders from Manual Scan tab: $foldersToScan');
+      } else {
+        // Fallback to INBOX if no folders configured
+        foldersToScan = ['INBOX'];
+        scanLogger.i('[FOLDERS] No folders configured in Settings, using default: $foldersToScan');
+      }
+
+      scanLogger.i('[LAUNCH] Starting scan of folders: $foldersToScan for $daysBack days back');
 
       // Start scan in background (will call startScan again with real count)
       await scanner.scanInbox(daysBack: daysBack, folderNames: foldersToScan);
@@ -669,62 +566,35 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
     }
   }
 
-  void _startDemoScan(EmailScanProvider scanProvider) {
-    scanProvider.startScan(totalEmails: 10);
-
-    // Record some sample results
-    for (int i = 0; i < 10; i++) {
-      final email = EmailMessage(
-        id: 'msg_$i',
-        from: 'sender$i@example.com',
-        subject: 'Sample subject $i',
-        body: 'Body of sample email $i',
-        headers: const {},
-        receivedDate: DateTime.now(),
-        folderName: 'INBOX',
+  /// [UPDATED] ISSUE #125: Use MockEmailProvider with 50+ sample emails
+  Future<void> _startDemoScan(EmailScanProvider scanProvider) async {
+    final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
+    
+    // Create scanner with MockEmailProvider (50+ sample emails)
+    final scanner = EmailScanner(
+      platformId: 'demo',  // Use demo platform
+      accountId: 'demo@example.com',
+      ruleSetProvider: ruleProvider,
+      scanProvider: scanProvider,
+    );
+    
+    try {
+      // Run scan with MockEmailProvider (will load 50+ sample emails)
+      await scanner.scanInbox(
+        daysBack: 30,
+        folderNames: ['INBOX', 'Spam', 'Bulk'],
+        scanType: 'demo',
       );
-
-      final action = switch (i % 3) {
-        0 => EmailActionType.delete,
-        1 => EmailActionType.moveToJunk,
-        _ => EmailActionType.safeSender,
-      };
-
-      // Issue #51: Create proper EvaluationResult with rule names for demo scan
-      // This ensures the results display shows actual rule names instead of "No rule"
-      final evalResult = switch (action) {
-        EmailActionType.delete => EvaluationResult(
-          shouldDelete: true,
-          shouldMove: false,
-          matchedRule: 'SpamAutoDeleteHeader',
-          matchedPattern: 'sender$i@.*',
-        ),
-        EmailActionType.moveToJunk => EvaluationResult(
-          shouldDelete: false,
-          shouldMove: true,
-          targetFolder: 'Junk',
-          matchedRule: 'MarketingBulkMove',
-          matchedPattern: 'marketing.*',
-        ),
-        EmailActionType.safeSender => EvaluationResult.safeSender('^sender$i@example\\.com\$'),
-        _ => EvaluationResult.noMatch(),
-      };
-
-      scanProvider.updateProgress(
-        email: email,
-        message: 'Demo processing ${email.subject}',
-      );
-      scanProvider.recordResult(
-        EmailActionResult(
-          email: email,
-          evaluationResult: evalResult,
-          action: action,
-          success: true,
-        ),
-      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Demo scan failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
-
-    scanProvider.completeScan();
   }
 
   Widget _actionIcon(EmailActionType action) {

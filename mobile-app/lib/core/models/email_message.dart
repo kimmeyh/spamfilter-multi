@@ -1,3 +1,5 @@
+import '../utils/pattern_normalization.dart';
+
 /// Represents an email message across all providers
 class EmailMessage {
   final String id;
@@ -19,8 +21,9 @@ class EmailMessage {
   });
 
   /// Extract sender email from 'From' header
+  /// Uses PatternNormalization to handle plus-sign subaddressing
   String getSenderEmail() {
-    return from.toLowerCase().trim();
+    return PatternNormalization.normalizeFromHeader(from);
   }
 
   /// Get header value by key (case-insensitive)

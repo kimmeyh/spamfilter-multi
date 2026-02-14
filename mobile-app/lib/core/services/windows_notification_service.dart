@@ -1,11 +1,13 @@
 import 'dart:io';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:logger/logger.dart';
 
 /// Windows toast notification service
 ///
 /// Provides Windows 10/11 toast notifications for background scan results.
 /// Uses flutter_local_notifications for cross-platform support.
 class WindowsNotificationService {
+  static final Logger _logger = Logger();
   static final WindowsNotificationService _instance = WindowsNotificationService._internal();
   factory WindowsNotificationService() => _instance;
   WindowsNotificationService._internal();
@@ -40,14 +42,14 @@ class WindowsNotificationService {
       _isInitialized = true;
     } catch (e) {
       // Initialization failed - log but do not crash
-      print('Failed to initialize Windows notifications: $e');
+      _logger.w('Failed to initialize Windows notifications: $e');
     }
   }
 
   /// Handle notification tap
   void _onNotificationTapped(NotificationResponse response) {
     // TODO: Navigate to results screen based on notification payload
-    print('Notification tapped: ${response.payload}');
+    _logger.d('Notification tapped: ${response.payload}');
   }
 
   /// Show background scan completion notification
@@ -88,7 +90,7 @@ class WindowsNotificationService {
         payload: accountEmail, // Pass account email as payload for tap handling
       );
     } catch (e) {
-      print('Failed to show notification: $e');
+      _logger.w('Failed to show notification: $e');
     }
   }
 
@@ -115,7 +117,7 @@ class WindowsNotificationService {
         payload: accountEmail,
       );
     } catch (e) {
-      print('Failed to show error notification: $e');
+      _logger.w('Failed to show error notification: $e');
     }
   }
 

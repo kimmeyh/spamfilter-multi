@@ -611,6 +611,103 @@ class GmailApiAdapter implements SpamFilterPlatform {
     }
   }
 
+  /// [ISSUE #138] Mark message as read by removing UNREAD label
+  @override
+  Future<void> markAsRead({
+    required EmailMessage message,
+  }) async {
+    if (_gmailApi == null) {
+      throw StateError('Not connected. Call signIn() first.');
+    }
+
+    try {
+      await _gmailApi!.users.messages.modify(
+        gmail.ModifyMessageRequest(removeLabelIds: ['UNREAD']),
+        'me',
+        message.id,
+      );
+      Redact.logSafe('Gmail message ${message.id} marked as read');
+    } catch (e) {
+      Redact.logError('Error marking Gmail message as read', e);
+      rethrow;
+    }
+  }
+
+  /// [ISSUE #138] Apply Gmail label with rule name for tracking
+  @override
+  Future<void> applyFlag({
+    required EmailMessage message,
+    required String flagName,
+  }) async {
+    if (_gmailApi == null) {
+      throw StateError('Not connected. Call signIn() first.');
+    }
+
+    try {
+      // Sanitize flag name for Gmail label
+      final sanitized = _sanitizeLabelName(flagName);
+      final labelName = 'SpamFilter/$sanitized';
+
+      // Get or create label
+      final labelId = await _getOrCreateLabel(labelName);
+
+      // Apply label to message
+      await _gmailApi!.users.messages.modify(
+        gmail.ModifyMessageRequest(addLabelIds: [labelId]),
+        'me',
+        message.id,
+      );
+      Redact.logSafe('Gmail message ${message.id} flagged with label: $labelName');
+    } catch (e) {
+      Redact.logError('Error applying Gmail label', e);
+      rethrow;
+    }
+  }
+
+  /// Sanitize rule name for Gmail label (max 225 chars, replace problematic chars)
+  String _sanitizeLabelName(String name) {
+    // Replace forward slashes with hyphens (avoid nested label confusion)
+    String sanitized = name.replaceAll('/', '-');
+    // Truncate to 200 chars (leave room for 'SpamFilter/' prefix)
+    if (sanitized.length > 200) {
+      sanitized = sanitized.substring(0, 200);
+    }
+    return sanitized;
+  }
+
+  /// Get existing label ID or create new label
+  Future<String> _getOrCreateLabel(String labelName) async {
+    if (_gmailApi == null) {
+      throw StateError('Not connected');
+    }
+
+    try {
+      // List all labels to find existing
+      final labelsResponse = await _gmailApi!.users.labels.list('me');
+      final existingLabel = labelsResponse.labels?.firstWhere(
+        (label) => label.name == labelName,
+        orElse: () => gmail.Label(),
+      );
+
+      if (existingLabel != null && existingLabel.id != null) {
+        return existingLabel.id!;
+      }
+
+      // Label doesn't exist, create it
+      final newLabel = gmail.Label()
+        ..name = labelName
+        ..labelListVisibility = 'labelShow'
+        ..messageListVisibility = 'show';
+
+      final createdLabel = await _gmailApi!.users.labels.create(newLabel, 'me');
+      Redact.logSafe('Created Gmail label: $labelName');
+      return createdLabel.id!;
+    } catch (e) {
+      Redact.logError('Error getting/creating Gmail label', e);
+      rethrow;
+    }
+  }
+
   @override
   Future<void> takeAction({
     required EmailMessage message,

@@ -5,13 +5,13 @@ import 'package:logger/logger.dart';
 import 'package:spam_filter_mobile/adapters/storage/secure_credentials_store.dart';
 import 'package:spam_filter_mobile/adapters/email_providers/generic_imap_adapter.dart';
 import 'package:spam_filter_mobile/adapters/email_providers/gmail_api_adapter.dart';
-import 'package:spam_filter_mobile/adapters/email_providers/spam_filter_platform.dart';
+
 import 'package:spam_filter_mobile/adapters/email_providers/email_provider.dart';
 
 void main() {
   group('Credential Verification - All Platforms', () {
     late SecureCredentialsStore credentialStore;
-    final logger = Logger();
+    // final logger = Logger(); // Reserved for future debugging
 
     setUp(() {
       credentialStore = SecureCredentialsStore();

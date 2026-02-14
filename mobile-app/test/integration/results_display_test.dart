@@ -7,6 +7,8 @@
 /// - Summary statistics display
 /// - Scan mode display in summary
 
+library;
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:spam_filter_mobile/core/models/email_message.dart';
 import 'package:spam_filter_mobile/core/models/evaluation_result.dart';
@@ -208,11 +210,12 @@ void main() {
 
     test('Scan mode display name should be correct for each mode', () {
       // Test all scan modes
+      // [UPDATED] Sprint 14 Issue #123+#124: Scan mode names repurposed
       final modeDisplayNames = {
         ScanMode.readonly: 'Read-Only',
-        ScanMode.testLimit: 'Test Limited Emails',
-        ScanMode.testAll: 'Full Scan with Revert',
-        ScanMode.fullScan: 'Full Scan',
+        ScanMode.testLimit: 'Process Rules Only',
+        ScanMode.testAll: 'Process Safe Senders Only',
+        ScanMode.fullScan: 'Process Safe Senders + Rules',
       };
 
       for (var entry in modeDisplayNames.entries) {

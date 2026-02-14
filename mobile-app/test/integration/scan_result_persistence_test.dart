@@ -5,6 +5,7 @@
 /// - Unmatched email tracking
 /// - Scan result retrieval from database
 /// - Persistence across app restarts (simulated)
+library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:spam_filter_mobile/core/providers/email_scan_provider.dart';

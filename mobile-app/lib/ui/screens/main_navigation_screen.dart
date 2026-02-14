@@ -50,7 +50,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       message: 'Rule management coming in Sprint 12-13 (F3)',
       icon: Icons.rule,
     ),
-    const SettingsScreen(),  // Sprint 12: Real settings screen
+    // [UPDATED] ISSUE #123: Settings now requires accountId
+    // Access from Account Details > Settings button instead
+    const _PlaceholderScreen(
+      title: 'Settings',
+      message: 'Configure account settings from Account Details screen',
+      icon: Icons.settings,
+    ),
   ];
 
   void _onDestinationSelected(int index) {

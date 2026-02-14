@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: February 6, 2026 (Sprint 13 Completion)
+**Last Updated**: February 13, 2026 (Sprint 14 Completion)
 
 ## SPRINT EXECUTION Documentation
 
@@ -52,6 +52,7 @@ Historical sprint information has been moved to individual summary documents and
 | 11 | SPRINT_11_SUMMARY.md | [OK] Complete | ~12h (Jan 31 - Feb 1, 2026) |
 | 12 | SPRINT_12_SUMMARY.md | [OK] Complete | ~48h (Feb 1-6, 2026) |
 | 13 | SPRINT_13_PLAN.md | [OK] Complete | ~3h (Feb 6, 2026) |
+| 14 | sprint_14_plan.md | [OK] Complete | ~8h (Feb 7-13, 2026) |
 
 **Key Achievements**:
 - **Sprint 1**: Database foundation (SQLite schema, migration infrastructure)
@@ -63,6 +64,7 @@ Historical sprint information has been moved to individual summary documents and
 - **Sprint 11**: UI Polish & Production Readiness (keyboard shortcuts, CSV export, critical bug fixes for Issue #9 readonly bypass and delete-to-trash)
 - **Sprint 12**: MVP Core Features (Settings, Scan Results Processing, Interactive Rule Management) + Sprint 11 retrospective actions
 - **Sprint 13**: Account-Specific Folder Settings (per-account deleted rule folder, safe sender folder, subject cleaning, settings UI refactor)
+- **Sprint 14**: Settings Restructure + UX Improvements (progressive scan updates, Demo Mode, enhanced delete processing, plus-sign safe sender fix)
 
 See CHANGELOG.md for detailed feature history.
 
@@ -74,10 +76,16 @@ See CHANGELOG.md for detailed feature history.
 
 **Status**: ⏸️ AWAITING USER DIRECTION
 
-**Last Completed Sprint**: Sprint 13 (February 7, 2026)
-- See SPRINT_13_PLAN.md for full details
-- PR #136 merged to develop: https://github.com/kimmeyh/spamfilter-multi/pull/136
-- Features: F16A (Subject Cleaning), F15 (Settings UI), F14 (Deleted Rule Folder), F13 (Safe Sender Folder)
+**Last Completed Sprint**: Sprint 14 (February 7-13, 2026)
+- See `.claude/plans/sprint_14_plan.md` for full details
+- PR #143 open for review: https://github.com/kimmeyh/spamfilter-multi/pull/143
+- Features:
+  - #128: Progressive folder-by-folder scan updates (2-second refresh)
+  - #123 + #124: Settings Screen restructure with Default Folders UI
+  - #125: Enhanced Demo Scan with 50+ sample emails
+  - #138: Enhanced Deleted Email Processing (mark-as-read, rule tagging)
+  - #130: Analyzer warnings reduced to 48 (<50 target)
+  - Bug fix: Safe sender pattern creation for plus-sign emails
 
 **Next Sprint Candidates**:
 
@@ -500,6 +508,66 @@ Priority based on: Product Owner prioritization for MVP development.
 **Dependencies**: F2 (User Application Settings for frequency configuration)
 
 **See**: [Feature Details - F4](#f4-background-scanning-android-detail)
+
+---
+
+### Priority 8: Settings Management UI + Performance
+
+#### F17: Manage Safe Senders UI in Settings
+**Status**: [CHECKLIST] PLANNED
+**Estimated Effort**: 6-8 hours
+**Issue**: To be created
+**Business Value**: Users can view, edit, and delete safe sender patterns without database access
+
+**Overview**: Add a "Manage Safe Senders" section to Settings that displays all safe sender patterns with ability to view details, edit, and delete.
+
+**Key Features**:
+- List all safe sender patterns with pattern type (exact email, domain, subdomain)
+- Show pattern details (date added, created by, exception patterns)
+- Delete individual safe sender patterns
+- Search/filter safe senders
+- Export safe senders to YAML (already exists via RuleSetProvider)
+
+**Dependencies**: None (database storage already complete)
+
+---
+
+#### F18: Manage Rules UI in Settings
+**Status**: [CHECKLIST] PLANNED
+**Estimated Effort**: 8-10 hours
+**Issue**: To be created
+**Business Value**: Users can view, edit, and delete block rules without YAML editing
+
+**Overview**: Add a "Manage Rules" section to Settings that displays all block rules with ability to view details, edit, enable/disable, and delete.
+
+**Key Features**:
+- List all rules with name, action (delete/move), enabled status
+- Show rule details (patterns, conditions, execution order)
+- Enable/disable individual rules
+- Delete individual rules
+- Reorder rules (execution priority)
+- Export rules to YAML (already exists via RuleSetProvider)
+
+**Dependencies**: None (database storage already complete)
+
+---
+
+#### F19: Batch Email Processing (Performance)
+**Status**: [CHECKLIST] PLANNED
+**Estimated Effort**: 10-16 hours
+**Issue**: [#144](https://github.com/kimmeyh/spamfilter-multi/issues/144)
+**Business Value**: Significant performance improvement for users with large spam volumes
+
+**Overview**: Process emails in batches of 10 instead of one-at-a-time to reduce network round-trips.
+
+**Key Features**:
+- Batch IMAP commands (STORE, MOVE) for 10 emails at a time
+- Graceful error handling (if 1 of 10 fails, other 9 still process)
+- Individual error reporting per email
+- Configurable batch size (default: 10)
+- Works with Gmail API batch requests and IMAP message sequence sets
+
+**Dependencies**: None
 
 ---
 

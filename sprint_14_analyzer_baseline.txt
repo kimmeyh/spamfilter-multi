@@ -1,0 +1,223 @@
+
+┌─────────────────────────────────────────────────────────┐
+│ A new version of Flutter is available!                  │
+│                                                         │
+│ To update to the latest version, run "flutter upgrade". │
+└─────────────────────────────────────────────────────────┘
+Analyzing mobile-app...                                         
+
+   info - Use interpolation to compose strings and values - lib\adapters\email_providers\generic_imap_adapter.dart:140:13 - prefer_interpolation_to_compose_strings
+   info - Angle brackets will be interpreted as HTML - lib\adapters\email_providers\gmail_api_adapter.dart:460:40 - unintended_html_in_doc_comment
+   info - Unnecessary braces in a string interpolation - lib\adapters\email_providers\gmail_windows_oauth_handler.dart:61:31 - unnecessary_brace_in_string_interps
+warning - The operand can't be 'null', so the condition is always 'false' - lib\adapters\email_providers\gmail_windows_oauth_handler.dart:143:18 - unnecessary_null_comparison
+   info - Use 'whereType' to select elements of a given type - lib\adapters\storage\local_rule_store.dart:191:23 - prefer_iterable_wheretype
+   info - Unnecessary braces in a string interpolation - lib\adapters\storage\secure_credentials_store.dart:88:15 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\adapters\storage\secure_credentials_store.dart:95:17 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\adapters\storage\secure_credentials_store.dart:105:15 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\adapters\storage\secure_credentials_store.dart:112:17 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\adapters\storage\secure_credentials_store.dart:134:15 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\adapters\storage\secure_credentials_store.dart:165:15 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\adapters\storage\secure_credentials_store.dart:170:15 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\adapters\storage\secure_credentials_store.dart:188:15 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\adapters\storage\secure_credentials_store.dart:217:15 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\adapters\storage\secure_credentials_store.dart:217:43 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\adapters\storage\secure_credentials_store.dart:236:15 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\adapters\storage\secure_credentials_store.dart:236:43 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\adapters\storage\secure_credentials_store.dart:259:15 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\adapters\storage\secure_credentials_store.dart:278:15 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\adapters\storage\secure_credentials_store.dart:301:35 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\adapters\storage\secure_credentials_store.dart:312:15 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\adapters\storage\secure_credentials_store.dart:326:15 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\adapters\storage\secure_credentials_store.dart:344:15 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\adapters\storage\secure_credentials_store.dart:364:15 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\adapters\storage\secure_credentials_store.dart:380:15 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\adapters\storage\secure_credentials_store.dart:385:15 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\adapters\storage\secure_credentials_store.dart:390:35 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\adapters\storage\secure_credentials_store.dart:391:35 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\adapters\storage\secure_credentials_store.dart:393:35 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\adapters\storage\secure_credentials_store.dart:394:35 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\adapters\storage\secure_credentials_store.dart:398:15 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\adapters\storage\secure_credentials_store.dart:402:35 - unnecessary_brace_in_string_interps
+   info - Unnecessary braces in a string interpolation - lib\adapters\storage\secure_credentials_store.dart:406:15 - unnecessary_brace_in_string_interps
+   info - The constant name 'JUNK_FOLDERS_BY_PROVIDER' isn't a lowerCamelCase identifier - lib\core\providers\email_scan_provider.dart:102:42 - constant_identifier_names
+warning - Unused import: 'email_scanner.dart' - lib\core\services\background_scan_windows_worker.dart:9:8 - unused_import
+warning - The value of the local variable 'email' isn't used - lib\core\services\background_scan_windows_worker.dart:184:13 - unused_local_variable
+warning - The value of the local variable 'foldersJson' isn't used - lib\core\services\background_scan_windows_worker.dart:229:15 - unused_local_variable
+   info - Dangling library doc comment - lib\core\services\email_availability_checker.dart:1:1 - dangling_library_doc_comments
+   info - Don't invoke 'print' in production code - lib\core\services\windows_notification_service.dart:43:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\windows_notification_service.dart:50:5 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\windows_notification_service.dart:91:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\windows_notification_service.dart:118:7 - avoid_print
+   info - Don't invoke 'print' in production code - lib\core\services\windows_system_tray_service.dart:87:7 - avoid_print
+warning - The value of the local variable 'escapedAppName' isn't used - lib\core\services\windows_toast_notification_service.dart:93:11 - unused_local_variable
+warning - Unused import: '../models/rule_set.dart' - lib\core\services\yaml_export_service.dart:3:8 - unused_import
+   info - Dangling library doc comment - lib\core\storage\scan_result_store.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - lib\core\storage\unmatched_email_store.dart:1:1 - dangling_library_doc_comments
+warning - Unused import: 'package:sqflite/sqflite.dart' - lib\core\storage\unmatched_email_store.dart:10:8 - unused_import
+warning - Unused import: '../models/provider_email_identifier.dart' - lib\core\storage\unmatched_email_store.dart:12:8 - unused_import
+warning - Unused import: 'package:punycode/punycode.dart' - lib\core\utils\pattern_normalization.dart:2:8 - unused_import
+   info - Angle brackets will be interpreted as HTML - lib\core\utils\pattern_normalization.dart:10:48 - unintended_html_in_doc_comment
+   info - Angle brackets will be interpreted as HTML - lib\core\utils\pattern_normalization.dart:14:15 - unintended_html_in_doc_comment
+warning - The left operand can't be null, so the right operand is never executed - lib\core\utils\pattern_normalization.dart:279:25 - dead_null_aware_expression
+   info - Angle brackets will be interpreted as HTML - lib\core\utils\pattern_normalization.dart:302:41 - unintended_html_in_doc_comment
+   info - Angle brackets will be interpreted as HTML - lib\core\utils\pattern_normalization.dart:308:15 - unintended_html_in_doc_comment
+warning - A value for optional parameter 'key' isn't ever given - lib\main.dart:137:32 - unused_element_parameter
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\gmail_manual_token_screen.dart:235:53 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\screens\gmail_webview_oauth_screen.dart:206:35 - deprecated_member_use
+warning - Unused import: '../../core/providers/rule_set_provider.dart' - lib\ui\screens\account_maintenance_screen.dart:18:8 - unused_import
+   info - Don't use 'BuildContext's across async gaps - lib\ui\screens\account_maintenance_screen.dart:174:7 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\ui\screens\account_maintenance_screen.dart:267:7 - use_build_context_synchronously
+warning - Unused import: 'account_setup_screen.dart' - lib\ui\screens\account_selection_screen.dart:11:8 - unused_import
+warning - The declaration '_getAccountDetails' isn't referenced - lib\ui\screens\account_selection_screen.dart:145:31 - unused_element
+warning - The declaration '_showScanModeSelector' isn't referenced - lib\ui\screens\account_setup_screen.dart:236:8 - unused_element
+   info - Don't use 'BuildContext's across async gaps - lib\ui\screens\account_setup_screen.dart:469:26 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps, guarded by an unrelated 'mounted' check - lib\ui\screens\account_setup_screen.dart:498:24 - use_build_context_synchronously
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\ui\screens\account_setup_screen.dart:554:27 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\ui\screens\account_setup_screen.dart:555:27 - deprecated_member_use
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\ui\screens\account_setup_screen.dart:609:27 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\ui\screens\account_setup_screen.dart:610:27 - deprecated_member_use
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\ui\screens\account_setup_screen.dart:688:27 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\ui\screens\account_setup_screen.dart:689:27 - deprecated_member_use
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\ui\screens\account_setup_screen.dart:743:27 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\ui\screens\account_setup_screen.dart:744:27 - deprecated_member_use
+   info - The constant name 'PRESELECT_FOLDER_TYPES' isn't a lowerCamelCase identifier - lib\ui\screens\folder_selection_screen.dart:67:37 - constant_identifier_names
+   info - Statements in an if should be enclosed in a block - lib\ui\screens\folder_selection_screen.dart:155:64 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\ui\screens\folder_selection_screen.dart:157:63 - curly_braces_in_flow_control_structures
+warning - Unused import: '../../adapters/email_providers/email_provider.dart' - lib\ui\screens\gmail_oauth_screen.dart:7:8 - unused_import
+   info - Parameter 'key' could be a super parameter - lib\ui\screens\gmail_oauth_screen.dart:22:9 - use_super_parameters
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\screens\gmail_oauth_screen.dart:194:30 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps - lib\ui\screens\gmail_oauth_screen.dart:266:59 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\ui\screens\gmail_oauth_screen.dart:376:61 - use_build_context_synchronously
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\screens\main_navigation_screen.dart:107:60 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\screens\main_navigation_screen.dart:116:70 - deprecated_member_use
+   info - Unnecessary use of 'toList' in a spread - lib\ui\screens\platform_selection_screen.dart:106:24 - unnecessary_to_list_in_spreads
+   info - Unnecessary use of 'toList' in a spread - lib\ui\screens\platform_selection_screen.dart:115:24 - unnecessary_to_list_in_spreads
+   info - Dangling library doc comment - lib\ui\screens\process_results_screen.dart:1:1 - dangling_library_doc_comments
+   info - Parameter 'key' could be a super parameter - lib\ui\screens\process_results_screen.dart:30:9 - use_super_parameters
+warning - The value of the local variable 'scanResult' isn't used - lib\ui\screens\process_results_screen.dart:174:17 - unused_local_variable
+   info - Parameter 'key' could be a super parameter - lib\ui\screens\process_results_screen.dart:304:9 - use_super_parameters
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\screens\process_results_screen.dart:371:78 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\screens\process_results_screen.dart:383:52 - deprecated_member_use
+warning - The value of the local variable 'isCtrlPressed' isn't used - lib\ui\screens\results_display_screen.dart:436:17 - unused_local_variable
+warning - A value for optional parameter 'showErrors' isn't ever given - lib\ui\screens\results_display_screen.dart:736:105 - unused_element_parameter
+warning - The value of the local variable 'hasNoRule' isn't used - lib\ui\screens\results_display_screen.dart:951:11 - unused_local_variable
+   info - Parameter 'key' could be a super parameter - lib\ui\screens\rule_quick_add_screen.dart:17:9 - use_super_parameters
+warning - The declaration '_validatePattern' isn't referenced - lib\ui\screens\rule_quick_add_screen.dart:93:8 - unused_element
+warning - The declaration '_getControllerForBucket' isn't referenced - lib\ui\screens\rule_quick_add_screen.dart:103:25 - unused_element
+warning - The declaration '_getBucketLabel' isn't referenced - lib\ui\screens\rule_quick_add_screen.dart:116:10 - unused_element
+warning - The declaration '_getSuggestedPattern' isn't referenced - lib\ui\screens\rule_quick_add_screen.dart:129:10 - unused_element
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\ui\screens\rule_quick_add_screen.dart:460:15 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\ui\screens\rule_quick_add_screen.dart:461:15 - deprecated_member_use
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\ui\screens\rule_quick_add_screen.dart:469:15 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\ui\screens\rule_quick_add_screen.dart:470:15 - deprecated_member_use
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\ui\screens\rule_quick_add_screen.dart:493:15 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\ui\screens\rule_quick_add_screen.dart:494:15 - deprecated_member_use
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\ui\screens\rule_quick_add_screen.dart:502:15 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\ui\screens\rule_quick_add_screen.dart:503:15 - deprecated_member_use
+   info - Parameter 'key' could be a super parameter - lib\ui\screens\safe_sender_quick_add_screen.dart:22:9 - use_super_parameters
+   info - The private field _exceptionPatterns could be 'final' - lib\ui\screens\safe_sender_quick_add_screen.dart:41:16 - prefer_final_fields
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\ui\screens\safe_sender_quick_add_screen.dart:423:15 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\ui\screens\safe_sender_quick_add_screen.dart:424:15 - deprecated_member_use
+   info - The import of '../../core/providers/email_scan_provider.dart' is unnecessary because all of the used elements are also provided by the import of '../../core/providers/email_scan_provider.dart' - lib\ui\screens\scan_progress_screen.dart:8:8 - unnecessary_import
+   info - 'onPopInvoked' is deprecated and shouldn't be used. Use onPopInvokedWithResult instead. This feature was deprecated after v3.22.0-12.0.pre - lib\ui\screens\scan_progress_screen.dart:93:7 - deprecated_member_use
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\ui\screens\scan_progress_screen.dart:477:19 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\ui\screens\scan_progress_screen.dart:480:19 - deprecated_member_use
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\ui\screens\scan_progress_screen.dart:487:19 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\ui\screens\scan_progress_screen.dart:490:19 - deprecated_member_use
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\ui\screens\scan_progress_screen.dart:529:19 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\ui\screens\scan_progress_screen.dart:532:19 - deprecated_member_use
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\ui\screens\scan_progress_screen.dart:539:19 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\ui\screens\scan_progress_screen.dart:543:19 - deprecated_member_use
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\ui\screens\settings_screen.dart:470:11 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\ui\screens\settings_screen.dart:471:11 - deprecated_member_use
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\ui\screens\settings_screen.dart:477:11 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\ui\screens\settings_screen.dart:478:11 - deprecated_member_use
+   info - 'groupValue' is deprecated and shouldn't be used. Use a RadioGroup ancestor to manage group value instead. This feature was deprecated after v3.32.0-0.0.pre - lib\ui\screens\settings_screen.dart:484:11 - deprecated_member_use
+   info - 'onChanged' is deprecated and shouldn't be used. Use RadioGroup to handle value change instead. This feature was deprecated after v3.32.0-0.0.pre - lib\ui\screens\settings_screen.dart:485:11 - deprecated_member_use
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\ui\screens\settings_screen.dart:537:7 - deprecated_member_use
+   info - Don't use 'BuildContext's across async gaps - lib\ui\screens\settings_screen.dart:559:7 - use_build_context_synchronously
+   info - Don't use 'BuildContext's across async gaps - lib\ui\screens\settings_screen.dart:653:7 - use_build_context_synchronously
+   info - 'announce' is deprecated and shouldn't be used. Use sendAnnouncement instead. This API is incompatible with multiple windows. This feature was deprecated after v3.35.0-0.1.pre - lib\ui\utils\accessibility_helper.dart:58:22 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\widgets\empty_state.dart:38:42 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\widgets\empty_state.dart:57:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\widgets\empty_state.dart:183:46 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\ui\widgets\error_display.dart:56:46 - deprecated_member_use
+warning - Unused import: 'package:spam_filter_mobile/core/models/email_message.dart' - test\adapters\email_providers\gmail_api_adapter_test.dart:4:8 - unused_import
+   info - Parameter 'dir' could be a super parameter - test\helpers\database_test_helper.dart:123:3 - use_super_parameters
+warning - The '!' will have no effect because the receiver can't be null - test\integration\aol_folder_scan_test.dart:30:32 - unnecessary_non_null_assertion
+   info - Don't invoke 'print' in production code - test\integration\aol_folder_scan_test.dart:33:7 - avoid_print
+warning - The '!' will have no effect because the receiver can't be null - test\integration\aol_folder_scan_test.dart:33:46 - unnecessary_non_null_assertion
+   info - Don't invoke 'print' in production code - test\integration\aol_folder_scan_test.dart:34:7 - avoid_print
+warning - The '!' will have no effect because the receiver can't be null - test\integration\aol_folder_scan_test.dart:34:44 - unnecessary_non_null_assertion
+   info - Don't invoke 'print' in production code - test\integration\aol_folder_scan_test.dart:39:7 - avoid_print
+warning - The '!' will have no effect because the receiver can't be null - test\integration\aol_folder_scan_test.dart:40:50 - unnecessary_non_null_assertion
+   info - Don't invoke 'print' in production code - test\integration\aol_folder_scan_test.dart:51:9 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration\aol_folder_scan_test.dart:52:9 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration\aol_folder_scan_test.dart:56:7 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration\aol_folder_scan_test.dart:66:7 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration\aol_folder_scan_test.dart:87:7 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration\aol_folder_scan_test.dart:88:7 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration\aol_folder_scan_test.dart:89:7 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration\aol_folder_scan_test.dart:90:7 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration\aol_folder_scan_test.dart:91:7 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration\aol_folder_scan_test.dart:92:7 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration\aol_folder_scan_test.dart:93:7 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration\aol_folder_scan_test.dart:94:7 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration\aol_folder_scan_test.dart:103:7 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration\aol_folder_scan_test.dart:107:9 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration\aol_folder_scan_test.dart:108:9 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration\aol_folder_scan_test.dart:109:9 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration\aol_folder_scan_test.dart:121:9 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration\aol_folder_scan_test.dart:135:9 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration\aol_folder_scan_test.dart:143:9 - avoid_print
+   info - Don't invoke 'print' in production code - test\integration\aol_folder_scan_test.dart:145:9 - avoid_print
+warning - Unused import: 'package:spam_filter_mobile/adapters/email_providers/spam_filter_platform.dart' - test\integration\credential_verification_test.dart:8:8 - unused_import
+warning - The value of the local variable 'logger' isn't used - test\integration\credential_verification_test.dart:14:11 - unused_local_variable
+warning - The receiver can't be null, so the null-aware operator '?.' is unnecessary - test\integration\credential_verification_test.dart:103:39 - invalid_null_aware_operator
+warning - The left operand can't be null, so the right operand is never executed - test\integration\credential_verification_test.dart:123:39 - dead_null_aware_expression
+   info - Use interpolation to compose strings and values - test\integration\credential_verification_test.dart:145:13 - prefer_interpolation_to_compose_strings
+warning - The receiver can't be null, so the null-aware operator '?.' is unnecessary - test\integration\credential_verification_test.dart:195:55 - invalid_null_aware_operator
+warning - The value of the local variable 'safeSenderStore' isn't used - test\integration\database_lifecycle_test.dart:31:34 - unused_local_variable
+warning - The value of the local variable 'testDbPath' isn't used - test\integration\database_lifecycle_test.dart:32:17 - unused_local_variable
+warning - The library 'package:enough_mail/enough_mail.dart' doesn't export a member with the hidden name 'Credentials' - test\integration\delete_to_trash_test.dart:7:52 - undefined_hidden_name
+warning - The value of the field '_mockClient' isn't used - test\integration\delete_to_trash_test.dart:130:24 - unused_field
+warning - The value of the field '_mockApi' isn't used - test\integration\delete_to_trash_test.dart:148:22 - unused_field
+warning - Unused import: 'package:spam_filter_mobile/core/models/rule_set.dart' - test\integration\email_scanner_readonly_mode_test.dart:3:8 - unused_import
+  error - Missing concrete implementations of 'abstract class SpamFilterPlatform.moveToFolder' and 'abstract class SpamFilterPlatform.setDeletedRuleFolder' - test\integration\email_scanner_readonly_mode_test.dart:210:7 - non_abstract_class_inherits_abstract_member
+   info - Use interpolation to compose strings and values - test\integration\end_to_end_workflow_test.dart:232:13 - prefer_interpolation_to_compose_strings
+   info - Dangling library doc comment - test\integration\folder_selection_test.dart:3:1 - dangling_library_doc_comments
+   info - Statements in an if should be enclosed in a block - test\integration\folder_selection_test.dart:227:56 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - test\integration\folder_selection_test.dart:229:55 - curly_braces_in_flow_control_structures
+warning - Unused import: 'package:spam_filter_mobile/core/models/email_message.dart' - test\integration\imap_adapter_test.dart:4:8 - unused_import
+   info - Dangling library doc comment - test\integration\results_display_test.dart:3:1 - dangling_library_doc_comments
+   info - Angle brackets will be interpreted as HTML - test\integration\results_display_test.dart:6:36 - unintended_html_in_doc_comment
+   info - Angle brackets will be interpreted as HTML - test\integration\results_display_test.dart:6:47 - unintended_html_in_doc_comment
+   info - Angle brackets will be interpreted as HTML - test\integration\results_display_test.dart:6:59 - unintended_html_in_doc_comment
+   info - Dangling library doc comment - test\integration\scan_provider_state_test.dart:3:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - test\integration\scan_result_persistence_test.dart:1:1 - dangling_library_doc_comments
+   info - Dangling library doc comment - test\integration\sprint_6_quick_add_workflow_test.dart:1:1 - dangling_library_doc_comments
+warning - Unused import: 'package:spam_filter_mobile/core/models/safe_sender_list.dart' - test\integration\sprint_6_quick_add_workflow_test.dart:9:8 - unused_import
+warning - Unused import: 'package:sqflite/sqflite.dart' - test\integration\sprint_6_quick_add_workflow_test.dart:16:8 - unused_import
+   info - Use interpolation to compose strings and values - test\integration\sprint_6_quick_add_workflow_test.dart:207:24 - prefer_interpolation_to_compose_strings
+   info - Unnecessary escape in string literal - test\integration\sprint_6_quick_add_workflow_test.dart:415:40 - unnecessary_string_escapes
+warning - Unused import: 'package:spam_filter_mobile/core/models/rule_set.dart' - test\integration\yaml_loading_test.dart:5:8 - unused_import
+warning - Unused import: 'package:spam_filter_mobile/core/models/safe_sender_list.dart' - test\integration\yaml_loading_test.dart:6:8 - unused_import
+warning - The receiver can't be null, so the null-aware operator '?.' is unnecessary - test\integration\yaml_loading_test.dart:45:34 - invalid_null_aware_operator
+warning - The receiver can't be null, so the null-aware operator '?.' is unnecessary - test\integration\yaml_loading_test.dart:46:32 - invalid_null_aware_operator
+warning - The receiver can't be null, so the null-aware operator '?.' is unnecessary - test\integration\yaml_loading_test.dart:47:35 - invalid_null_aware_operator
+warning - The receiver can't be null, so the null-aware operator '?.' is unnecessary - test\integration\yaml_loading_test.dart:48:32 - invalid_null_aware_operator
+warning - The operand can't be 'null', so the condition is always 'true' - test\integration\yaml_loading_test.dart:76:22 - unnecessary_null_comparison
+warning - The operand can't be 'null', so the condition is always 'true' - test\integration\yaml_loading_test.dart:100:36 - unnecessary_null_comparison
+warning - The '!' will have no effect because the receiver can't be null - test\integration\yaml_loading_test.dart:101:52 - unnecessary_non_null_assertion
+warning - The operand can't be 'null', so the condition is always 'true' - test\integration\yaml_loading_test.dart:103:34 - unnecessary_null_comparison
+warning - The '!' will have no effect because the receiver can't be null - test\integration\yaml_loading_test.dart:104:50 - unnecessary_non_null_assertion
+warning - The operand can't be 'null', so the condition is always 'true' - test\integration\yaml_loading_test.dart:106:37 - unnecessary_null_comparison
+warning - The '!' will have no effect because the receiver can't be null - test\integration\yaml_loading_test.dart:107:53 - unnecessary_non_null_assertion
+warning - The operand can't be 'null', so the condition is always 'true' - test\integration\yaml_loading_test.dart:109:34 - unnecessary_null_comparison
+warning - The '!' will have no effect because the receiver can't be null - test\integration\yaml_loading_test.dart:110:50 - unnecessary_non_null_assertion
+warning - The method doesn't override an inherited method - test\ui\screens\rule_quick_add_screen_test.dart:86:16 - override_on_non_overriding_member
+   info - The import of 'package:sqflite/sqflite.dart' is unnecessary because all of the used elements are also provided by the import of 'package:sqflite_common_ffi/sqflite_ffi.dart' - test\unit\storage\database_helper_test.dart:2:8 - unnecessary_import
+   info - The import of 'package:sqflite/sqflite.dart' is unnecessary because all of the used elements are also provided by the import of 'package:sqflite_common_ffi/sqflite_ffi.dart' - test\unit\storage\rule_database_store_test.dart:2:8 - unnecessary_import
+warning - The value of the local variable 'email' isn't used - test\unit\storage\unmatched_email_store_test.dart:668:13 - unused_local_variable
+
+213 issues found. (ran in 7.9s)

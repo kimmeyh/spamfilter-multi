@@ -7,6 +7,8 @@
 /// - Folder type recognition for various email providers
 /// - Pre-selection of recommended folders
 /// - Search/filter functionality for folder list
+library;
+
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:spam_filter_mobile/adapters/email_providers/spam_filter_platform.dart';
@@ -224,9 +226,13 @@ void main() {
         if (a.canonicalName == CanonicalFolder.inbox) return -1;
         if (b.canonicalName == CanonicalFolder.inbox) return 1;
         if (preselectTypes.contains(a.canonicalName) &&
-            !preselectTypes.contains(b.canonicalName)) return -1;
+            !preselectTypes.contains(b.canonicalName)) {
+          return -1;
+        }
         if (!preselectTypes.contains(a.canonicalName) &&
-            preselectTypes.contains(b.canonicalName)) return 1;
+            preselectTypes.contains(b.canonicalName)) {
+          return 1;
+        }
         return a.displayName.compareTo(b.displayName);
       });
 

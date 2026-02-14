@@ -4,6 +4,7 @@ import 'package:logger/logger.dart';
 import '../../core/models/email_message.dart';
 import '../../core/models/rule_set.dart';
 import '../../core/storage/rule_database_store.dart';
+import '../../core/storage/safe_sender_database_store.dart';
 import '../../core/utils/pattern_normalization.dart';
 import '../../core/utils/pattern_generation.dart';
 
@@ -13,11 +14,13 @@ enum ConditionBucket { fromHeader, subject, body, bodyUrl }
 class RuleQuickAddScreen extends StatefulWidget {
   final EmailMessage email;
   final RuleDatabaseStore ruleStore;
+  final SafeSenderDatabaseStore? safeSenderStore;
 
   const RuleQuickAddScreen({
     Key? key,
     required this.email,
     required this.ruleStore,
+    this.safeSenderStore,
   }) : super(key: key);
 
   @override
@@ -157,6 +160,45 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
     }
   }
 
+  /// Remove safe senders that would conflict with the new block rule
+  /// Returns the number of safe senders removed
+  Future<int> _removeConflictingSafeSenders() async {
+    if (widget.safeSenderStore == null) return 0;
+
+    try {
+      final safeSenders = await widget.safeSenderStore!.loadSafeSenders();
+      int removedCount = 0;
+
+      for (final safeSender in safeSenders) {
+        // Check if the safe sender pattern matches the email being blocked
+        try {
+          final regex = RegExp(safeSender.pattern, caseSensitive: false);
+          if (regex.hasMatch(_normalizedEmail)) {
+            _logger.i('Removing conflicting safe sender: ${safeSender.pattern}');
+            await widget.safeSenderStore!.removeSafeSender(safeSender.pattern);
+            removedCount++;
+          }
+        } catch (e) {
+          // If pattern is not valid regex, check exact match
+          if (safeSender.pattern.toLowerCase() == _normalizedEmail.toLowerCase()) {
+            _logger.i('Removing conflicting safe sender (exact match): ${safeSender.pattern}');
+            await widget.safeSenderStore!.removeSafeSender(safeSender.pattern);
+            removedCount++;
+          }
+        }
+      }
+
+      if (removedCount > 0) {
+        _logger.i('Removed $removedCount conflicting safe sender(s)');
+      }
+
+      return removedCount;
+    } catch (e) {
+      _logger.w('Failed to check/remove conflicting safe senders: $e');
+      return 0;
+    }
+  }
+
   Future<void> _saveRule() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -220,12 +262,22 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
         },
       );
 
+      // Remove conflicting safe senders that match this email
+      // This ensures the new block rule will take effect
+      int removedSafeSenders = 0;
+      if (widget.safeSenderStore != null) {
+        removedSafeSenders = await _removeConflictingSafeSenders();
+      }
+
       await widget.ruleStore.addRule(rule);
       _logger.i('Added rule: ${rule.name}');
 
       if (mounted) {
+        final message = removedSafeSenders > 0
+            ? 'Rule added. Removed $removedSafeSenders conflicting safe sender(s).'
+            : 'Rule added successfully';
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Rule added successfully'), backgroundColor: Colors.green),
+          SnackBar(content: Text(message), backgroundColor: Colors.green),
         );
         Navigator.pop(context, true);
       }

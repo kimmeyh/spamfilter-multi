@@ -263,6 +263,86 @@ class SettingsStore {
     }
   }
 
+  // ============================================================
+  // [NEW] ISSUE #123: Per-Account Manual Scan Settings
+  // ============================================================
+
+  /// Get account-specific manual scan mode
+  /// Returns null if not set (will use app-wide default)
+  Future<ScanMode?> getAccountManualScanMode(String accountId) async {
+    final value = await _getAccountSetting(accountId, 'manual_scan_mode');
+    if (value == null) return null;
+    return ScanMode.values.firstWhere((e) => e.name == value);
+  }
+
+  /// Set account-specific manual scan mode
+  /// Pass null to clear (will use app-wide default)
+  Future<void> setAccountManualScanMode(String accountId, ScanMode? mode) async {
+    if (mode == null) {
+      await _deleteAccountSetting(accountId, 'manual_scan_mode');
+    } else {
+      await _setAccountSetting(accountId, 'manual_scan_mode', mode.name, 'string');
+    }
+  }
+
+  /// Get account-specific manual scan folders
+  /// Returns null if not set (will use app-wide default)
+  Future<List<String>?> getAccountManualScanFolders(String accountId) async {
+    final value = await _getAccountSetting(accountId, 'manual_scan_folders');
+    if (value == null) return null;
+    return _parseStringList(value);
+  }
+
+  /// Set account-specific manual scan folders
+  /// Pass null to clear (will use app-wide default)
+  Future<void> setAccountManualScanFolders(String accountId, List<String>? folders) async {
+    if (folders == null) {
+      await _deleteAccountSetting(accountId, 'manual_scan_folders');
+    } else {
+      await _setAccountSetting(accountId, 'manual_scan_folders', jsonEncode(folders), 'json');
+    }
+  }
+
+  // ============================================================
+  // [NEW] ISSUE #123: Per-Account Background Scan Settings
+  // ============================================================
+
+  /// Get account-specific background scan mode
+  /// Returns null if not set (will use app-wide default)
+  Future<ScanMode?> getAccountBackgroundScanMode(String accountId) async {
+    final value = await _getAccountSetting(accountId, 'background_scan_mode');
+    if (value == null) return null;
+    return ScanMode.values.firstWhere((e) => e.name == value);
+  }
+
+  /// Set account-specific background scan mode
+  /// Pass null to clear (will use app-wide default)
+  Future<void> setAccountBackgroundScanMode(String accountId, ScanMode? mode) async {
+    if (mode == null) {
+      await _deleteAccountSetting(accountId, 'background_scan_mode');
+    } else {
+      await _setAccountSetting(accountId, 'background_scan_mode', mode.name, 'string');
+    }
+  }
+
+  /// Get account-specific background scan folders
+  /// Returns null if not set (will use app-wide default)
+  Future<List<String>?> getAccountBackgroundScanFolders(String accountId) async {
+    final value = await _getAccountSetting(accountId, 'background_scan_folders');
+    if (value == null) return null;
+    return _parseStringList(value);
+  }
+
+  /// Set account-specific background scan folders
+  /// Pass null to clear (will use app-wide default)
+  Future<void> setAccountBackgroundScanFolders(String accountId, List<String>? folders) async {
+    if (folders == null) {
+      await _deleteAccountSetting(accountId, 'background_scan_folders');
+    } else {
+      await _setAccountSetting(accountId, 'background_scan_folders', jsonEncode(folders), 'json');
+    }
+  }
+
   /// Check if account has any setting overrides
   Future<bool> hasAccountOverrides(String accountId) async {
     final db = await _dbHelper.database;

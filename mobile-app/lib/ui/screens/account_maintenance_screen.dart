@@ -15,7 +15,6 @@ import 'package:provider/provider.dart';
 
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/providers/email_scan_provider.dart';
-import '../../core/providers/rule_set_provider.dart';
 import '../../core/storage/settings_store.dart';
 import 'folder_selection_screen.dart';
 
@@ -351,8 +350,10 @@ class _AccountMaintenanceScreenState extends State<AccountMaintenanceScreen> {
   Future<void> _triggerOneTimeScan(SavedAccount account) async {
     final scanProvider = context.read<EmailScanProvider>();
 
-    // Initialize scan mode
-    scanProvider.initializeScanMode(mode: ScanMode.readonly);
+    // [UPDATED] ISSUE #123: Initialize scan mode from Settings (single source of truth)
+    final settingsStore = SettingsStore();
+    final manualScanMode = await settingsStore.getManualScanMode();
+    scanProvider.initializeScanMode(mode: manualScanMode);
 
     _logger.i('[INVESTIGATION] Initiating one-time scan for ${account.email}');
 

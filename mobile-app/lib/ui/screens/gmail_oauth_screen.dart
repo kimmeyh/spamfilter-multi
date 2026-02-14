@@ -4,7 +4,6 @@ import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 
 import '../../adapters/auth/google_auth_service.dart';
-import '../../adapters/email_providers/email_provider.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/providers/email_scan_provider.dart';
 import '../../screens/gmail_webview_oauth_screen.dart';

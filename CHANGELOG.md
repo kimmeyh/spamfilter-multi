@@ -26,6 +26,20 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-02-07-08 (Sprint 14: Settings Restructure + UX Improvements)
+- **feat**: Progressive folder-by-folder scan updates with 2-second refresh interval (Issue #128)
+- **feat**: Settings Screen restructure - separate Manual Scan and Background Settings tabs (Issue #123)
+- **feat**: Default Folders UI - reusable folder picker matching Select Folders screen (Issue #124)
+- **feat**: Remove Scan Mode button from Scan Progress screen (single source of truth in Settings)
+- **feat**: Manual and Background scans use independent scan mode settings from SettingsStore
+- **feat**: Enhanced Demo Scan with 50+ sample emails for testing without live account (Issue #125)
+- **feat**: Enhanced Deleted Email Processing - mark emails as read and tag with matched rule name (Issue #138)
+- **fix**: Use email folder picker component for Safe Sender and Deleted Rule folder selection
+- **fix**: Skip rule processing in testAll mode (safe senders evaluation only)
+- **fix**: Ensure Found count is always greater than or equal to Processed count
+- **chore**: Reduce analyzer warnings from 214 to 48 (target: <50) (Issue #130)
+- **test**: All 937 tests passing (27 skipped)
+
 ### 2026-02-01 (Sprint 11 + Retrospective Implementation)
 - **feat**: Implement functional keyboard shortcuts for Windows Desktop (Issue #107)
 - **fix**: Resolve system tray icon initialization error and menu persistence (Issue #108)

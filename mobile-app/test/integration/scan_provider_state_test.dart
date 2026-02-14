@@ -7,6 +7,8 @@
 /// - Multi-account folder selection isolation
 /// - Progressive update throttling
 /// - Scan mode behavior (readonly, testLimit, testAll, fullScan)
+library;
+
 /// - Revert capability tracking
 
 import 'package:flutter_test/flutter_test.dart';

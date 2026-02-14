@@ -8,7 +8,6 @@ import '../widgets/skeleton_loader.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/error_display.dart';
 import '../widgets/app_bar_with_exit.dart';
-import 'account_setup_screen.dart';
 import 'platform_selection_screen.dart';
 import 'scan_progress_screen.dart';
 import 'settings_screen.dart';
@@ -283,6 +282,24 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
     }
   }
 
+  /// Get display name for platform
+  String _getPlatformDisplayName(String platformId) {
+    switch (platformId.toLowerCase()) {
+      case 'aol':
+        return 'AOL Mail';
+      case 'gmail':
+        return 'Gmail';
+      case 'outlook':
+        return 'Outlook.com';
+      case 'yahoo':
+        return 'Yahoo Mail';
+      case 'icloud':
+        return 'iCloud Mail';
+      default:
+        return platformId.toUpperCase();
+    }
+  }
+
   /// Get color for platform
   Color _getPlatformColor(String platformId) {
     switch (platformId.toLowerCase()) {
@@ -308,6 +325,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       if (platform != null) {
         final authMethod = platform.supportedAuthMethod;
         return switch (authMethod) {
+          AuthMethod.none => 'None (Demo)',
           AuthMethod.oauth2 => 'OAuth 2.0',
           AuthMethod.appPassword => 'App Password',
           AuthMethod.basicAuth => 'Basic Auth',
@@ -397,13 +415,53 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
   }
 
   /// Navigate to settings screen
-  void _openSettings() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const SettingsScreen(),
+  /// [UPDATED] ISSUE #123: Settings requires accountId, show account selector dialog
+  void _openSettings() async {
+    if (_savedAccounts.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please add an email account first')),
+      );
+      return;
+    }
+
+    // Show account selection dialog
+    final selected = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Select Account'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: _savedAccounts.map((accountId) {
+            // Extract platform and email from accountId (format: "platform-email")
+            final parts = accountId.split('-');
+            final platformId = parts[0];
+            final email = parts.sublist(1).join('-');
+            
+            return ListTile(
+              leading: Icon(_getPlatformIcon(platformId)),
+              title: Text(email),
+              subtitle: Text(_getPlatformDisplayName(platformId)),
+              onTap: () => Navigator.pop(ctx, accountId),
+            );
+          }).toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+        ],
       ),
     );
+
+    if (selected != null && mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SettingsScreen(accountId: selected),
+        ),
+      );
+    }
   }
 
   /// Build settings icon button for AppBar

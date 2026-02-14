@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
-import 'package:file_picker/file_picker.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/providers/email_scan_provider.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../adapters/email_providers/email_provider.dart' show Credentials;
 import '../widgets/app_bar_with_exit.dart';
+import 'folder_selection_screen.dart';
 
 /// Settings screen for app-wide configuration
 ///
@@ -25,9 +25,9 @@ import '../widgets/app_bar_with_exit.dart';
 /// );
 /// ```
 class SettingsScreen extends StatefulWidget {
-  final String? accountId;
+  final String accountId;
 
-  const SettingsScreen({super.key, this.accountId});
+  const SettingsScreen({super.key, required this.accountId});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -71,14 +71,23 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     setState(() => _isLoading = true);
 
     try {
-      // Load app-wide settings
-      _manualScanMode = await _settingsStore.getManualScanMode();
-      _manualScanFolders = await _settingsStore.getManualScanFolders();
+      // [UPDATED] ISSUE #123: Load per-account settings (with app-wide fallback)
+      final accountManualMode = await _settingsStore.getAccountManualScanMode(widget.accountId);
+      _manualScanMode = accountManualMode ?? await _settingsStore.getManualScanMode();
+
+      final accountManualFolders = await _settingsStore.getAccountManualScanFolders(widget.accountId);
+      _manualScanFolders = accountManualFolders ?? await _settingsStore.getManualScanFolders();
+
       _confirmDialogsEnabled = await _settingsStore.getConfirmDialogsEnabled();
       _backgroundScanEnabled = await _settingsStore.getBackgroundScanEnabled();
       _backgroundScanFrequency = await _settingsStore.getBackgroundScanFrequency();
-      _backgroundScanMode = await _settingsStore.getBackgroundScanMode();
-      _backgroundScanFolders = await _settingsStore.getBackgroundScanFolders();
+
+      final accountBgMode = await _settingsStore.getAccountBackgroundScanMode(widget.accountId);
+      _backgroundScanMode = accountBgMode ?? await _settingsStore.getBackgroundScanMode();
+
+      final accountBgFolders = await _settingsStore.getAccountBackgroundScanFolders(widget.accountId);
+      _backgroundScanFolders = accountBgFolders ?? await _settingsStore.getBackgroundScanFolders();
+
       _csvExportDirectory = await _settingsStore.getCsvExportDirectory();
     } catch (e) {
       if (mounted) {
@@ -121,35 +130,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   }
 
   Widget _buildAccountTab() {
-    // If no account selected, show message
-    if (widget.accountId == null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.account_circle_outlined, size: 64, color: Colors.grey.shade400),
-              const SizedBox(height: 16),
-              Text(
-                'No Account Selected',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Please select an email account first to configure account-specific settings.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey.shade600),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // Account selected - show folder configuration buttons
+    // [UPDATED] ISSUE #123: accountId now required, no null check needed
     return FutureBuilder<Credentials?>(
-      future: _credStore.getCredentials(widget.accountId!),
+      future: _credStore.getCredentials(widget.accountId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -166,7 +149,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
         final credentials = snapshot.data!;
         final email = credentials.email;
-        final platform = widget.accountId!.split('-')[0]; // Extract platform from accountId
+        final platform = widget.accountId.split('-')[0]; // Extract platform from accountId
 
         return ListView(
           padding: const EdgeInsets.all(16),
@@ -280,7 +263,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           value: _manualScanMode,
           onChanged: (mode) async {
             setState(() => _manualScanMode = mode);
-            await _settingsStore.setManualScanMode(mode);
+            // [UPDATED] ISSUE #123: Save per-account manual scan mode
+            await _settingsStore.setAccountManualScanMode(widget.accountId, mode);
           },
         ),
         const SizedBox(height: 24),
@@ -289,7 +273,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           folders: _manualScanFolders,
           onChanged: (folders) async {
             setState(() => _manualScanFolders = folders);
-            await _settingsStore.setManualScanFolders(folders);
+            // [UPDATED] ISSUE #123: Save per-account manual scan folders
+            await _settingsStore.setAccountManualScanFolders(widget.accountId, folders);
           },
         ),
         const SizedBox(height: 24),
@@ -412,34 +397,35 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           },
         ),
         const Divider(),
-        if (_backgroundScanEnabled) ...[
-          _buildSectionHeader('Frequency'),
-          _buildFrequencySelector(
-            value: _backgroundScanFrequency,
-            onChanged: (freq) async {
-              setState(() => _backgroundScanFrequency = freq);
-              await _settingsStore.setBackgroundScanFrequency(freq);
-            },
-          ),
-          const SizedBox(height: 24),
-          _buildSectionHeader('Scan Mode'),
-          _buildScanModeSelector(
-            value: _backgroundScanMode,
-            onChanged: (mode) async {
-              setState(() => _backgroundScanMode = mode);
-              await _settingsStore.setBackgroundScanMode(mode);
-            },
-          ),
-          const SizedBox(height: 24),
-          _buildSectionHeader('Folders'),
-          _buildFolderSelector(
-            folders: _backgroundScanFolders,
-            onChanged: (folders) async {
-              setState(() => _backgroundScanFolders = folders);
-              await _settingsStore.setBackgroundScanFolders(folders);
-            },
-          ),
-        ],
+        // [UPDATED] ISSUE #123+#124: Show UI sections even when Background Scan is OFF
+        _buildSectionHeader('Frequency'),
+        _buildFrequencySelector(
+          value: _backgroundScanFrequency,
+          onChanged: (freq) async {
+            setState(() => _backgroundScanFrequency = freq);
+            await _settingsStore.setBackgroundScanFrequency(freq);
+          },
+        ),
+        const SizedBox(height: 24),
+        _buildSectionHeader('Default Folders'),
+        _buildFolderSelector(
+          folders: _backgroundScanFolders,
+          onChanged: (folders) async {
+            setState(() => _backgroundScanFolders = folders);
+            // [UPDATED] ISSUE #123: Save per-account background scan folders
+            await _settingsStore.setAccountBackgroundScanFolders(widget.accountId, folders);
+          },
+        ),
+        const SizedBox(height: 24),
+        _buildSectionHeader('Scan Mode'),
+        _buildScanModeSelector(
+          value: _backgroundScanMode,
+          onChanged: (mode) async {
+            setState(() => _backgroundScanMode = mode);
+            // [UPDATED] ISSUE #123: Save per-account background scan mode
+            await _settingsStore.setAccountBackgroundScanMode(widget.accountId, mode);
+          },
+        ),
       ],
     );
   }
@@ -457,34 +443,158 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     );
   }
 
+  /// [NEW] ISSUE #123: Get provider-specific default junk folders
+  List<String> _getProviderDefaultFolders(String platformId) {
+    // Based on EmailScanProvider.JUNK_FOLDERS_BY_PROVIDER
+    const providerFolders = {
+      'aol': ['Bulk Mail', 'Spam'],
+      'gmail': ['Spam', 'Trash'],
+      'outlook': ['Junk Email', 'Spam'],
+      'yahoo': ['Bulk', 'Spam'],
+      'icloud': ['Junk', 'Trash'],
+    };
+    return providerFolders[platformId] ?? ['Spam', 'Junk'];
+  }
+
   Widget _buildScanModeSelector({
     required ScanMode value,
     required Future<void> Function(ScanMode) onChanged,
   }) {
-    return Column(
-      children: [
-        RadioListTile<ScanMode>(
-          title: const Text('Read-Only'),
-          subtitle: const Text('Scan only, no modifications'),
-          value: ScanMode.readonly,
-          groupValue: value,
-          onChanged: (v) => v != null ? onChanged(v) : null,
+    // [UPDATED] ISSUE #123+#124: New scan mode UI with checkboxes
+    // Scan mode mapping:
+    // - readonly: neither safe senders nor rules
+    // - testAll: safe senders only
+    // - testLimit: rules only (repurposed)
+    // - fullScan: both safe senders and rules
+    final bool isReadOnly = value == ScanMode.readonly;
+    final bool processSafeSenders = value == ScanMode.testAll || value == ScanMode.fullScan;
+    final bool processRules = value == ScanMode.testLimit || value == ScanMode.fullScan;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Scan Mode',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            
+            // Read-Only Mode Toggle
+            SwitchListTile(
+              title: const Text('Read-Only Mode'),
+              subtitle: const Text(
+                'NO changes to emails, but rules can be added/changed',
+              ),
+              value: isReadOnly,
+              onChanged: (enabled) async {
+                if (enabled) {
+                  // Switch to read-only mode
+                  await onChanged(ScanMode.readonly);
+                } else {
+                  // Switch to testAll (safe senders only) as default when disabling read-only
+                  await onChanged(ScanMode.testAll);
+                }
+              },
+            ),
+            
+            const Divider(),
+            
+            // Process Safe Senders Checkbox (disabled if Read-Only)
+            CheckboxListTile(
+              title: const Text('Process Safe Senders'),
+              subtitle: const Text(
+                'Move safe sender emails to configured folder',
+              ),
+              value: processSafeSenders && !isReadOnly,
+              onChanged: isReadOnly ? null : (enabled) async {
+                if (enabled == true) {
+                  // [UPDATED] ISSUE #123+#124: Enable safe senders
+                  if (processRules) {
+                    await onChanged(ScanMode.fullScan); // Both enabled
+                  } else {
+                    await onChanged(ScanMode.testAll); // Safe senders only
+                  }
+                } else {
+                  // [FIXED] ISSUE #123+#124: Disable safe senders - use testLimit for rules only
+                  if (processRules) {
+                    await onChanged(ScanMode.testLimit); // Rules only, no safe senders
+                  } else {
+                    await onChanged(ScanMode.readonly); // Neither
+                  }
+                }
+              },
+            ),
+            
+            // Process Rules Checkbox (disabled if Read-Only)
+            CheckboxListTile(
+              title: const Text('Process all other Rules'),
+              subtitle: const Text(
+                'Delete/move emails, mark as read, add tags for matched rules',
+              ),
+              value: processRules && !isReadOnly,
+              onChanged: isReadOnly ? null : (enabled) async {
+                if (enabled == true) {
+                  // [UPDATED] ISSUE #123+#124: Enable rules
+                  if (processSafeSenders) {
+                    await onChanged(ScanMode.fullScan); // Both enabled
+                  } else {
+                    await onChanged(ScanMode.testLimit); // Rules only
+                  }
+                } else {
+                  // [UPDATED] ISSUE #123+#124: Disable rules
+                  if (processSafeSenders) {
+                    await onChanged(ScanMode.testAll); // Safe senders only
+                  } else {
+                    await onChanged(ScanMode.readonly); // Neither
+                  }
+                }
+              },
+            ),
+            
+            const SizedBox(height: 8),
+            
+            // Current mode indicator
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    isReadOnly ? Icons.visibility : Icons.play_arrow,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      isReadOnly
+                        ? 'Read-Only: No changes will be made'
+                        : processSafeSenders && processRules
+                          ? 'Active: Processing safe senders and rules'
+                          : processSafeSenders
+                            ? 'Active: Processing safe senders only'
+                            : processRules
+                              ? 'Active: Processing rules only'
+                              : 'Inactive: No processing enabled',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-        RadioListTile<ScanMode>(
-          title: const Text('Process Safe Senders'),
-          subtitle: const Text('Mark safe sender emails, no deletions'),
-          value: ScanMode.testAll,
-          groupValue: value,
-          onChanged: (v) => v != null ? onChanged(v) : null,
-        ),
-        RadioListTile<ScanMode>(
-          title: const Text('Process Rules'),
-          subtitle: const Text('Apply rules (delete/move emails)'),
-          value: ScanMode.fullScan,
-          groupValue: value,
-          onChanged: (v) => v != null ? onChanged(v) : null,
-        ),
-      ],
+      ),
     );
   }
 
@@ -492,38 +602,83 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     required List<String> folders,
     required Future<void> Function(List<String>) onChanged,
   }) {
-    final availableFolders = ['INBOX', 'Junk', 'Spam', 'Bulk Mail', 'All Folders'];
+    // [UPDATED] ISSUE #123+#124: Show "Select Folders" button to open folder selection dialog
+    return Card(
+      child: Column(
+        children: [
+          ListTile(
+            leading: const Icon(Icons.folder_outlined),
+            title: const Text('Selected Folders'),
+            subtitle: Text(
+              folders.isEmpty
+                ? 'No folders selected (defaults will be used)'
+                : folders.join(', '),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            trailing: FilledButton.icon(
+              onPressed: () => _openFolderSelection(folders, onChanged),
+              icon: const Icon(Icons.create_new_folder),
+              label: const Text('Select Folders'),
+            ),
+          ),
+          if (folders.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: folders.map((folder) => Chip(
+                  label: Text(folder, style: const TextStyle(fontSize: 12)),
+                  deleteIcon: const Icon(Icons.close, size: 16),
+                  onDeleted: () {
+                    final newFolders = List<String>.from(folders)..remove(folder);
+                    onChanged(newFolders);
+                  },
+                )).toList(),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: availableFolders.map((folder) {
-        final isSelected = folders.contains(folder);
-        return FilterChip(
-          label: Text(folder),
-          selected: isSelected,
-          onSelected: (selected) {
-            final newFolders = List<String>.from(folders);
-            if (selected) {
-              if (folder == 'All Folders') {
-                newFolders.clear();
-                newFolders.add('All Folders');
-              } else {
-                newFolders.remove('All Folders');
-                if (!newFolders.contains(folder)) {
-                  newFolders.add(folder);
-                }
-              }
-            } else {
-              newFolders.remove(folder);
-              if (newFolders.isEmpty) {
-                newFolders.add('INBOX');
-              }
-            }
-            onChanged(newFolders);
-          },
+  /// [NEW] ISSUE #123+#124: Open folder selection screen
+  Future<void> _openFolderSelection(
+    List<String> currentFolders,
+    Future<void> Function(List<String>) onChanged,
+  ) async {
+    // [FIX] ISSUE #123+#124: Get platformId from credentials store
+    // accountId in Settings is just the email address, not platform-email format
+    final credStore = SecureCredentialsStore();
+    final platformId = await credStore.getPlatformId(widget.accountId);
+    
+    if (platformId == null || platformId.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not determine email platform')),
         );
-      }).toList(),
+      }
+      return;
+    }
+
+    // [UPDATED] ISSUE #123+#124: Pass current folders as initial selection
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FolderSelectionScreen(
+          platformId: platformId,
+          accountId: widget.accountId,
+          accountEmail: widget.accountId, // accountId IS the email
+          initialSelectedFolders: currentFolders, // Pre-populate with saved folders
+          onFoldersSelected: (selectedFolders) async {
+            await onChanged(selectedFolders);
+            setState(() {
+              // Update will happen via onChanged callback
+            });
+          },
+        ),
+      ),
     );
   }
 
@@ -547,186 +702,141 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     );
   }
 
-  /// Configure safe sender folder for account using Windows folder picker
+  /// Configure safe sender folder for account using email folder picker
+  /// [UPDATED] Sprint 14: Use FolderSelectionScreen instead of Windows file picker
   Future<void> _configureSafeSenderFolder(String platform, String email) async {
-    if (widget.accountId == null) return;
-
     // Get current setting
-    final currentFolder = await _settingsStore.getAccountSafeSenderFolder(widget.accountId!);
+    final currentFolder = await _settingsStore.getAccountSafeSenderFolder(widget.accountId);
 
-    // Show informational dialog first
-    final proceed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Move Safe Senders to Folder'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'When an email matches a safe sender rule, it will be moved to the selected folder.',
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Current folder: ${currentFolder ?? "INBOX (default)"}',
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Note: Emails already in the target folder will not be moved.',
-              style: TextStyle(fontSize: 12, color: Colors.blue.shade700),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              platform == 'gmail'
-                  ? 'You will select a folder name (e.g., INBOX, SPAM, or custom label).'
-                  : 'You will select an IMAP folder name (e.g., INBOX, Junk).',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-            ),
-          ],
+    // [FIX] Sprint 14: Get platformId from credentials store
+    final credStore = SecureCredentialsStore();
+    final platformId = await credStore.getPlatformId(widget.accountId);
+
+    if (platformId == null || platformId.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not determine email platform')),
+        );
+      }
+      return;
+    }
+
+    // [UPDATED] Sprint 14: Use FolderSelectionScreen with singleSelect mode
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FolderSelectionScreen(
+          platformId: platformId,
+          accountId: widget.accountId,
+          accountEmail: widget.accountId,
+          initialSelectedFolders: currentFolder != null ? [currentFolder] : null,
+          singleSelect: true,
+          title: 'Select Safe Sender Folder',
+          buttonLabel: 'Select Folder',
+          onFoldersSelected: (selectedFolders) async {
+            if (selectedFolders.isNotEmpty) {
+              final folderName = selectedFolders.first;
+              try {
+                await _settingsStore.setAccountSafeSenderFolder(
+                  widget.accountId,
+                  folderName,
+                );
+
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Safe sender emails will be moved to: $folderName'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+
+                _logger.i('Set safe sender folder for $email to: $folderName');
+                setState(() {}); // Refresh UI
+              } catch (e) {
+                _logger.e('Failed to set safe sender folder: $e');
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to save setting: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            }
+          },
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Select Folder'),
-          ),
-        ],
       ),
     );
-
-    if (proceed != true) return;
-
-    // Open Windows folder picker (directory mode)
-    final result = await FilePicker.platform.getDirectoryPath(
-      dialogTitle: 'Select Safe Sender Folder',
-      initialDirectory: currentFolder,
-    );
-
-    if (result != null) {
-      try {
-        // Extract just the folder name (last component of path)
-        final folderName = result.split('\\').last;
-
-        await _settingsStore.setAccountSafeSenderFolder(
-          widget.accountId!,
-          folderName,
-        );
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Safe sender emails will be moved to: $folderName'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-
-        _logger.i('Set safe sender folder for $email to: $folderName');
-      } catch (e) {
-        _logger.e('Failed to set safe sender folder: $e');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to save setting: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    }
   }
 
-  /// Configure deleted rule folder for account using Windows folder picker
+  /// Configure deleted rule folder for account using email folder picker
+  /// [UPDATED] Sprint 14: Use FolderSelectionScreen instead of Windows file picker
   Future<void> _configureDeletedRuleFolder(String platform, String email) async {
-    if (widget.accountId == null) return;
-
     // Get current setting
-    final currentFolder = await _settingsStore.getAccountDeletedRuleFolder(widget.accountId!);
+    final currentFolder = await _settingsStore.getAccountDeletedRuleFolder(widget.accountId);
 
-    // Show informational dialog first
-    final proceed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Move Deleted by Rule to Folder'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'When a rule deletes an email, it will be moved to the selected folder.',
-              style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Current folder: ${currentFolder ?? (platform == "gmail" ? "TRASH (default)" : "Trash (default)")}',
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              platform == 'gmail'
-                  ? 'You will select a folder name (e.g., TRASH, SPAM, or custom label).'
-                  : 'You will select an IMAP folder name (e.g., Trash, Deleted, Junk).',
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-            ),
-          ],
+    // [FIX] Sprint 14: Get platformId from credentials store
+    final credStore = SecureCredentialsStore();
+    final platformId = await credStore.getPlatformId(widget.accountId);
+
+    if (platformId == null || platformId.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not determine email platform')),
+        );
+      }
+      return;
+    }
+
+    // [UPDATED] Sprint 14: Use FolderSelectionScreen with singleSelect mode
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => FolderSelectionScreen(
+          platformId: platformId,
+          accountId: widget.accountId,
+          accountEmail: widget.accountId,
+          initialSelectedFolders: currentFolder != null ? [currentFolder] : null,
+          singleSelect: true,
+          title: 'Select Deleted Rule Folder',
+          buttonLabel: 'Select Folder',
+          onFoldersSelected: (selectedFolders) async {
+            if (selectedFolders.isNotEmpty) {
+              final folderName = selectedFolders.first;
+              try {
+                await _settingsStore.setAccountDeletedRuleFolder(
+                  widget.accountId,
+                  folderName,
+                );
+
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Deleted emails will be moved to: $folderName'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+
+                _logger.i('Set deleted rule folder for $email to: $folderName');
+                setState(() {}); // Refresh UI
+              } catch (e) {
+                _logger.e('Failed to set deleted rule folder: $e');
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to save setting: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            }
+          },
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Select Folder'),
-          ),
-        ],
       ),
     );
-
-    if (proceed != true) return;
-
-    // Open Windows folder picker (directory mode)
-    final result = await FilePicker.platform.getDirectoryPath(
-      dialogTitle: 'Select Deleted Rule Folder',
-      initialDirectory: currentFolder,
-    );
-
-    if (result != null) {
-      try {
-        // Extract just the folder name (last component of path)
-        final folderName = result.split('\\').last;
-
-        await _settingsStore.setAccountDeletedRuleFolder(
-          widget.accountId!,
-          folderName,
-        );
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Deleted emails will be moved to: $folderName'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-
-        _logger.i('Set deleted rule folder for $email to: $folderName');
-      } catch (e) {
-        _logger.e('Failed to set deleted rule folder: $e');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Failed to save setting: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    }
   }
 }

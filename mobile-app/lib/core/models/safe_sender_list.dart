@@ -1,3 +1,5 @@
+import '../utils/pattern_normalization.dart';
+
 /// Represents the safe senders whitelist
 class SafeSenderList {
   final List<String> safeSenders;
@@ -20,15 +22,17 @@ class SafeSenderList {
   }
 
   /// Check if email matches any safe sender pattern
+  /// Uses PatternNormalization to handle plus-sign subaddressing
   bool isSafe(String email) {
-    final normalized = email.toLowerCase().trim();
+    final normalized = PatternNormalization.normalizeFromHeader(email);
     return safeSenders.any((pattern) => _matchesPattern(normalized, pattern));
   }
 
   /// Check if email matches any safe sender pattern and return match info
   /// Returns a tuple of (pattern, patternType) or null if no match
+  /// Uses PatternNormalization to handle plus-sign subaddressing
   ({String pattern, String patternType})? findMatch(String email) {
-    final normalized = email.toLowerCase().trim();
+    final normalized = PatternNormalization.normalizeFromHeader(email);
     for (final pattern in safeSenders) {
       if (_matchesPattern(normalized, pattern)) {
         return (pattern: pattern, patternType: _determinePatternType(pattern));

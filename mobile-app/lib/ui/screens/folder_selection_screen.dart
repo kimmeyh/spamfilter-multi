@@ -37,12 +37,29 @@ class FolderSelectionScreen extends StatefulWidget {
   /// Returns list of selected folder names
   final Function(List<String>) onFoldersSelected;
 
+  /// [NEW] ISSUE #123+#124: Initial selected folders to pre-populate
+  final List<String>? initialSelectedFolders;
+
+  /// [NEW] Sprint 14: Single select mode for Safe Sender / Deleted Rule folder
+  /// When true, only one folder can be selected (radio button style)
+  final bool singleSelect;
+
+  /// [NEW] Sprint 14: Custom title for the screen
+  final String? title;
+
+  /// [NEW] Sprint 14: Custom button label
+  final String? buttonLabel;
+
   const FolderSelectionScreen({
     super.key,
     required this.platformId,
     required this.accountId,
     this.accountEmail,
     required this.onFoldersSelected,
+    this.initialSelectedFolders,
+    this.singleSelect = false,
+    this.title,
+    this.buttonLabel,
   });
 
   @override
@@ -152,16 +169,25 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
         if (a.canonicalName == CanonicalFolder.inbox) return -1;
         if (b.canonicalName == CanonicalFolder.inbox) return 1;
         if (PRESELECT_FOLDER_TYPES.contains(a.canonicalName) &&
-            !PRESELECT_FOLDER_TYPES.contains(b.canonicalName)) return -1;
+            !PRESELECT_FOLDER_TYPES.contains(b.canonicalName)) {
+          return -1;
+        }
         if (!PRESELECT_FOLDER_TYPES.contains(a.canonicalName) &&
-            PRESELECT_FOLDER_TYPES.contains(b.canonicalName)) return 1;
+            PRESELECT_FOLDER_TYPES.contains(b.canonicalName)) {
+          return 1;
+        }
         return a.displayName.compareTo(b.displayName);
       });
       
-      // Pre-select folders based on canonical type
+      // [UPDATED] ISSUE #123+#124: Pre-select folders based on initial selection or canonical type
       final selections = <String, bool>{};
       for (var folder in folders) {
-        selections[folder.id] = PRESELECT_FOLDER_TYPES.contains(folder.canonicalName);
+        // If initialSelectedFolders provided, use that; otherwise use canonical type
+        if (widget.initialSelectedFolders != null) {
+          selections[folder.id] = widget.initialSelectedFolders!.contains(folder.displayName);
+        } else {
+          selections[folder.id] = PRESELECT_FOLDER_TYPES.contains(folder.canonicalName);
+        }
       }
       
       setState(() {
@@ -193,11 +219,17 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
   /// Toggle individual folder
   void _toggleFolder(String folderId, bool value) {
     setState(() {
+      // [NEW] Sprint 14: Single select mode - deselect all others first
+      if (widget.singleSelect && value) {
+        _selectedFolders.updateAll((_, __) => false);
+      }
       _selectedFolders[folderId] = value;
-      // Update "Select All" checkbox based on individual selections
-      _selectAllChecked = _selectedFolders.values.every((v) => v);
+      // Update "Select All" checkbox based on individual selections (not applicable in single select)
+      if (!widget.singleSelect) {
+        _selectAllChecked = _selectedFolders.values.every((v) => v);
+      }
     });
-    _logger.d('Toggle folder "$folderId": $value');
+    _logger.d('Toggle folder "$folderId": $value (singleSelect: ${widget.singleSelect})');
   }
 
   /// [NEW] PHASE 3.3: Get filtered folder list based on search query
@@ -310,7 +342,7 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Select Folders to Scan'),
+        title: Text(widget.title ?? 'Select Folders to Scan'),
         elevation: 0,
         actions: [
           IconButton(
@@ -420,22 +452,37 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
                 ),
               ),
 
-              // "Select All" checkbox
-              CheckboxListTile(
-                title: const Text(
-                  'Select All Folders',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+              // "Select All" checkbox (hidden in single select mode)
+              if (!widget.singleSelect) ...[
+                CheckboxListTile(
+                  title: const Text(
+                    'Select All Folders',
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    '${_allFolders.length} folders available',
+                    style: const TextStyle(fontSize: 11),
+                  ),
+                  value: _selectAllChecked,
+                  onChanged: (value) => _toggleAll(value ?? false),
+                  activeColor: Colors.blue,
                 ),
-                subtitle: Text(
-                  '${_allFolders.length} folders available',
-                  style: const TextStyle(fontSize: 11),
+                const Divider(),
+              ] else ...[
+                // [NEW] Sprint 14: Single select mode instruction
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Text(
+                    'Select one folder (${_allFolders.length} available)',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
                 ),
-                value: _selectAllChecked,
-                onChanged: (value) => _toggleAll(value ?? false),
-                activeColor: Colors.blue,
-              ),
-
-              const Divider(),
+                const Divider(),
+              ],
 
               // Individual folder list with dynamic folders
               Expanded(
@@ -445,6 +492,41 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
                     final folder = _filteredFolders[index];
                     final isSelected = _selectedFolders[folder.id] ?? false;
 
+                    // [NEW] Sprint 14: Use RadioListTile for single select mode
+                    if (widget.singleSelect) {
+                      return RadioListTile<String>(
+                        title: Row(
+                          children: [
+                            Icon(
+                              _getFolderIcon(folder),
+                              size: 20,
+                              color: isSelected ? Colors.blue : Colors.grey,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(child: Text(folder.displayName)),
+                          ],
+                        ),
+                        subtitle: _getFolderDescription(folder) != null
+                            ? Text(
+                                _getFolderDescription(folder)!,
+                                style: const TextStyle(fontSize: 11),
+                              )
+                            : null,
+                        value: folder.id,
+                        groupValue: _selectedFolders.entries
+                            .where((e) => e.value)
+                            .map((e) => e.key)
+                            .firstOrNull,
+                        onChanged: (value) {
+                          if (value != null) {
+                            _toggleFolder(value, true);
+                          }
+                        },
+                        activeColor: Colors.blue,
+                      );
+                    }
+
+                    // Multi-select mode: use CheckboxListTile
                     return CheckboxListTile(
                       title: Row(
                         children: [
@@ -511,14 +593,14 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
                               .where((e) => e.value)
                               .map((e) => e.key)
                               .toSet();
-                          
+
                           final selectedFolderNames = _allFolders
                               .where((f) => selectedFolderIds.contains(f.id))
                               .map((f) => f.displayName)
                               .toList();
 
                           _logger.i(
-                            '[OK] Selected folders for scan: $selectedFolderNames',
+                            '[OK] Selected folders: $selectedFolderNames (singleSelect: ${widget.singleSelect})',
                           );
 
                           // Return selection to caller (using folder names for compatibility)
@@ -526,7 +608,7 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
                           Navigator.pop(context, selectedFolderNames);
                         }
                       : null,
-                  child: const Text('Scan Selected Folders'),
+                  child: Text(widget.buttonLabel ?? 'Scan Selected Folders'),
                 ),
               ],
             ),

@@ -40,9 +40,23 @@ void main() {
       });
 
       test('keeps valid email characters: dots and hyphens', () {
+        // Note: Plus-sign subaddressing (RFC 5233) strips everything before the last +
+        // 'user.name+tag@my-domain.com' → 'tag@my-domain.com'
+        expect(
+          PatternNormalization.normalizeFromHeader('user.name@my-domain.com'),
+          'user.name@my-domain.com',
+        );
+      });
+
+      test('handles plus-sign subaddressing (RFC 5233)', () {
+        // Plus-sign subaddressing strips everything before the last + in local part
         expect(
           PatternNormalization.normalizeFromHeader('user.name+tag@my-domain.com'),
-          'user.name+tag@my-domain.com',
+          'tag@my-domain.com',
+        );
+        expect(
+          PatternNormalization.normalizeFromHeader('invoice+statements+acct_123@stripe.com'),
+          'acct_123@stripe.com',
         );
       });
 
