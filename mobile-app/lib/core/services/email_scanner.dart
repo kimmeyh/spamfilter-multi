@@ -161,7 +161,11 @@ class EmailScanner {
       // --- Phase 6a: Evaluate all emails ---
       final evaluatedEmails = <_EvaluatedEmail>[];
       final safeSenderFolder = await _settingsStore.getAccountSafeSenderFolder(accountId);
-      final safeSenderTarget = safeSenderFolder ?? 'INBOX';
+      // Normalize INBOX to uppercase for RFC 3501 compliance (INBOX is case-insensitive
+      // per spec, but some IMAP servers may not handle mixed-case correctly)
+      final rawTarget = safeSenderFolder ?? 'INBOX';
+      final safeSenderTarget = rawTarget.toLowerCase() == 'inbox' ? 'INBOX' : rawTarget;
+      AppLogger.scan('Safe sender target folder: "$safeSenderTarget" (raw: "$rawTarget")');
 
       for (final message in messages) {
         scanProvider.updateProgress(
@@ -228,8 +232,17 @@ class EmailScanner {
 
       // Execute delete batch: markAsRead + applyFlag + takeAction
       if (deleteEmails.isNotEmpty) {
+        // Use synthetic status message (empty ID) to avoid incrementing processedCount
         scanProvider.updateProgress(
-          email: deleteEmails.first.message,
+          email: EmailMessage(
+            id: '',
+            from: '',
+            subject: 'Batch processing ${deleteEmails.length} emails for deletion...',
+            body: '',
+            headers: {},
+            receivedDate: DateTime.now(),
+            folderName: '',
+          ),
           message: 'Batch processing ${deleteEmails.length} emails for deletion...',
         );
 
@@ -292,7 +305,15 @@ class EmailScanner {
       // Execute moveToJunk batch
       if (moveToJunkEmails.isNotEmpty) {
         scanProvider.updateProgress(
-          email: moveToJunkEmails.first.message,
+          email: EmailMessage(
+            id: '',
+            from: '',
+            subject: 'Batch moving ${moveToJunkEmails.length} emails to junk...',
+            body: '',
+            headers: {},
+            receivedDate: DateTime.now(),
+            folderName: '',
+          ),
           message: 'Batch moving ${moveToJunkEmails.length} emails to junk...',
         );
 
@@ -313,9 +334,22 @@ class EmailScanner {
       }
 
       // Execute safe sender move batch
+      AppLogger.scan('Safe sender move batch: ${safeSenderMoveEmails.length} emails to move (canExecuteSafeSenders=$canExecuteSafeSenders, target="$safeSenderTarget")');
       if (safeSenderMoveEmails.isNotEmpty) {
+        for (final evaluated in safeSenderMoveEmails) {
+          AppLogger.scan('  Safe sender to move: id=${evaluated.message.id}, from="${evaluated.message.from}", folder="${evaluated.message.folderName}"');
+        }
+
         scanProvider.updateProgress(
-          email: safeSenderMoveEmails.first.message,
+          email: EmailMessage(
+            id: '',
+            from: '',
+            subject: 'Batch moving ${safeSenderMoveEmails.length} safe sender emails...',
+            body: '',
+            headers: {},
+            receivedDate: DateTime.now(),
+            folderName: '',
+          ),
           message: 'Batch moving ${safeSenderMoveEmails.length} safe sender emails...',
         );
 
@@ -325,12 +359,25 @@ class EmailScanner {
             safeSenderMessages,
             safeSenderTarget,
           );
-          AppLogger.scan('Batch safe sender move to $safeSenderTarget: ${moveResult.successCount} succeeded, ${moveResult.failureCount} failed');
+          AppLogger.scan('Batch safe sender move to "$safeSenderTarget": ${moveResult.successCount} succeeded, ${moveResult.failureCount} failed');
+          if (moveResult.failedIds.isNotEmpty) {
+            AppLogger.warning('Safe sender move failures: ${moveResult.failedIds}');
+          }
           batchErrors.addAll(moveResult.failedIds);
         } catch (e) {
           AppLogger.warning('Batch safe sender move failed entirely: $e');
           for (final evaluated in safeSenderMoveEmails) {
             batchErrors[evaluated.message.id] = 'Move safe sender failed: $e';
+          }
+        }
+      } else {
+        // Log why safe sender batch is empty
+        final safeSenderEvaluated = evaluatedEmails.where((e) => e.action == EmailActionType.safeSender).toList();
+        if (safeSenderEvaluated.isNotEmpty) {
+          AppLogger.scan('Safe sender emails found but not added to batch:');
+          for (final e in safeSenderEvaluated) {
+            final inTarget = e.message.folderName == safeSenderTarget;
+            AppLogger.scan('  id=${e.message.id}, folder="${e.message.folderName}", alreadyInTarget=$inTarget, canExecute=$canExecuteSafeSenders');
           }
         }
       }

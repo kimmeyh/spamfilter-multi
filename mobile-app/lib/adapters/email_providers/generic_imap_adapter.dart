@@ -158,6 +158,10 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       );
 
       _logger.i('[IMAP] Successfully authenticated to $displayName');
+
+      // Log server capabilities for diagnostics (custom keyword support, etc.)
+      final capabilities = _imapClient?.serverInfo.capabilities ?? [];
+      _logger.i('[IMAP] Server capabilities: ${capabilities.map((c) => c.name).toList()}');
     } catch (e) {
       _logger.e('[IMAP] Failed to load credentials: $e');
       if (e is AuthenticationException) {
@@ -577,8 +581,9 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
         _operationCount++;
         succeeded.addAll(entry.value.map((m) => m.id));
       } catch (e) {
-        // Server may not support custom keywords — log but do not fail the batch
-        _logger.w('[IMAP] Batch applyFlag failed for folder ${entry.key}: $e');
+        // Server may not support custom keywords — log warning but do not fail the batch
+        // AOL and some other IMAP servers do not support custom keywords (no \* in PERMANENTFLAGS)
+        _logger.w('[IMAP] Batch applyFlag failed for folder ${entry.key} (server may not support custom keywords): $e');
         succeeded.addAll(entry.value.map((m) => m.id));
       }
     }
@@ -591,7 +596,9 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     List<EmailMessage> messages,
     String targetFolder,
   ) async {
+    _logger.i('[IMAP] moveToFolderBatch called: ${messages.length} messages to "$targetFolder"');
     if (_imapClient == null || messages.isEmpty) {
+      _logger.i('[IMAP] moveToFolderBatch skipped: client=${_imapClient != null}, messages=${messages.length}');
       return BatchActionResult.allSuccess(messages.map((m) => m.id).toList());
     }
 
@@ -603,17 +610,22 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
 
     for (final entry in byFolder.entries) {
       try {
+        _logger.i('[IMAP] moveToFolderBatch: selecting source folder "${entry.key}" for ${entry.value.length} messages');
         await _selectMailbox(entry.key);
         final uids = _parseUids(entry.value);
-        if (uids.isEmpty) continue;
+        if (uids.isEmpty) {
+          _logger.w('[IMAP] moveToFolderBatch: no valid UIDs parsed, skipping');
+          continue;
+        }
 
         final sequence = MessageSequence.fromIds(uids, isUid: true);
-        _logger.i('[IMAP] BATCH UID MOVE ${uids.length} messages to $targetFolder (op #$_operationCount)');
+        _logger.i('[IMAP] BATCH UID MOVE ${uids.length} messages (UIDs: $uids) from "${entry.key}" to "$targetFolder" (op #$_operationCount)');
         await _imapClient!.uidMove(
           sequence,
           targetMailboxPath: targetFolder,
         );
         _operationCount++;
+        _logger.i('[IMAP] BATCH UID MOVE completed successfully');
         succeeded.addAll(entry.value.map((m) => m.id));
       } catch (e) {
         _logger.e('[IMAP] Batch move failed for folder ${entry.key}: $e');
@@ -629,6 +641,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       }
     }
 
+    _logger.i('[IMAP] moveToFolderBatch result: ${succeeded.length} succeeded, ${failed.length} failed');
     return BatchActionResult(succeededIds: succeeded, failedIds: failed);
   }
 
