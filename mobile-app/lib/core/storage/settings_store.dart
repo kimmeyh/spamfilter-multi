@@ -389,8 +389,22 @@ class SettingsStore {
   // ============================================================
 
   /// Get effective scan mode for an account (resolves override or uses global)
+  ///
+  /// Resolution order:
+  /// 1. Account-specific background/manual scan mode override
+  /// 2. Account-specific generic scan mode override
+  /// 3. App-wide background/manual scan mode default
   Future<ScanMode> getEffectiveScanMode(String? accountId, {bool isBackground = false}) async {
     if (accountId != null) {
+      // Check background/manual-specific override first
+      if (isBackground) {
+        final bgOverride = await getAccountBackgroundScanMode(accountId);
+        if (bgOverride != null) return bgOverride;
+      } else {
+        final manualOverride = await getAccountManualScanMode(accountId);
+        if (manualOverride != null) return manualOverride;
+      }
+      // Fall back to generic account override
       final override = await getAccountScanMode(accountId);
       if (override != null) return override;
     }
@@ -398,8 +412,22 @@ class SettingsStore {
   }
 
   /// Get effective folders for an account (resolves override or uses global)
+  ///
+  /// Resolution order:
+  /// 1. Account-specific background/manual scan folders override
+  /// 2. Account-specific generic folders override
+  /// 3. App-wide background/manual scan folders default
   Future<List<String>> getEffectiveFolders(String? accountId, {bool isBackground = false}) async {
     if (accountId != null) {
+      // Check background/manual-specific override first
+      if (isBackground) {
+        final bgOverride = await getAccountBackgroundScanFolders(accountId);
+        if (bgOverride != null) return bgOverride;
+      } else {
+        final manualOverride = await getAccountManualScanFolders(accountId);
+        if (manualOverride != null) return manualOverride;
+      }
+      // Fall back to generic account override
       final override = await getAccountFolders(accountId);
       if (override != null) return override;
     }

@@ -264,6 +264,7 @@ class BackgroundScanWindowsWorker {
     );
 
     _logger.d('Scan mode: ${scanMode.name}, folders: $folders');
+    await _bgLog('Scan settings for $accountId: mode=${scanMode.name}, folders=$folders');
 
     // Create a headless scan provider (no UI listeners in background mode)
     final scanProvider = EmailScanProvider();
