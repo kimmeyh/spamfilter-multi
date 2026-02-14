@@ -6,6 +6,7 @@ import '../../adapters/storage/secure_credentials_store.dart';
 import '../../adapters/email_providers/email_provider.dart' show Credentials;
 import '../widgets/app_bar_with_exit.dart';
 import 'folder_selection_screen.dart';
+import 'safe_senders_management_screen.dart';
 
 /// Settings screen for app-wide configuration
 ///
@@ -223,6 +224,40 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               icon: const Icon(Icons.folder_delete_outlined),
               label: const Text('Deleted Rule Folder'),
               onPressed: () => _configureDeletedRuleFolder(platform, email),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                alignment: Alignment.centerLeft,
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Data management section
+            Text(
+              'Data Management',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'View and manage safe sender patterns and block rules',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+
+            // Manage Safe Senders button
+            OutlinedButton.icon(
+              icon: const Icon(Icons.security_outlined),
+              label: const Text('Manage Safe Senders'),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const SafeSendersManagementScreen(),
+                  ),
+                );
+              },
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 alignment: Alignment.centerLeft,
