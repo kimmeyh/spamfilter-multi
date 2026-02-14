@@ -6,6 +6,7 @@ import '../../adapters/storage/secure_credentials_store.dart';
 import '../../adapters/email_providers/email_provider.dart' show Credentials;
 import '../widgets/app_bar_with_exit.dart';
 import 'folder_selection_screen.dart';
+import 'rules_management_screen.dart';
 import 'safe_senders_management_screen.dart';
 
 /// Settings screen for app-wide configuration
@@ -255,6 +256,25 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                   context,
                   MaterialPageRoute(
                     builder: (_) => const SafeSendersManagementScreen(),
+                  ),
+                );
+              },
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                alignment: Alignment.centerLeft,
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // Manage Rules button
+            OutlinedButton.icon(
+              icon: const Icon(Icons.rule_outlined),
+              label: const Text('Manage Rules'),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const RulesManagementScreen(),
                   ),
                 );
               },
