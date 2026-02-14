@@ -54,12 +54,9 @@ $trigger
     -RestartCount 3 `
     -RestartInterval (New-TimeSpan -Minutes 5)
 
-# Create principal (run as current user)
-\$principal = New-ScheduledTaskPrincipal -UserId "\$env:USERNAME" -LogonType S4U
-
-# Register the task
+# Register the task (runs as current user when logged in)
 try {
-    Register-ScheduledTask -TaskName \$taskName -Action \$action -Trigger \$trigger -Settings \$settings -Principal \$principal -Force
+    Register-ScheduledTask -TaskName \$taskName -Action \$action -Trigger \$trigger -Settings \$settings -Force
     Write-Host "SUCCESS: Task '\$taskName' created successfully"
     exit 0
 } catch {
@@ -189,13 +186,13 @@ try {
   static String _getTriggerForFrequency(ScanFrequency frequency) {
     switch (frequency) {
       case ScanFrequency.every15min:
-        return '''\$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 15) -RepetitionDuration ([TimeSpan]::MaxValue)''';
+        return '''\$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 15) -RepetitionDuration (New-TimeSpan -Days 365)''';
 
       case ScanFrequency.every30min:
-        return '''\$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 30) -RepetitionDuration ([TimeSpan]::MaxValue)''';
+        return '''\$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 30) -RepetitionDuration (New-TimeSpan -Days 365)''';
 
       case ScanFrequency.every1hour:
-        return '''\$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Hours 1) -RepetitionDuration ([TimeSpan]::MaxValue)''';
+        return '''\$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Hours 1) -RepetitionDuration (New-TimeSpan -Days 365)''';
 
       case ScanFrequency.daily:
         return '''\$trigger = New-ScheduledTaskTrigger -Daily -At "09:00AM"''';

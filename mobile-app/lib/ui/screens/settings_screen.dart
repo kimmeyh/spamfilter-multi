@@ -426,22 +426,43 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   /// Create, update, or delete the Windows Task Scheduler task
   Future<void> _updateWindowsScheduledTask({required bool enabled}) async {
     try {
+      bool success;
       if (enabled) {
         final frequency = ScanFrequency.fromMinutes(_backgroundScanFrequency);
         if (frequency == ScanFrequency.disabled) return;
 
         final exists = await WindowsTaskSchedulerService.taskExists();
         if (exists) {
-          await WindowsTaskSchedulerService.updateScheduledTask(
+          success = await WindowsTaskSchedulerService.updateScheduledTask(
               frequency: frequency);
         } else {
-          await WindowsTaskSchedulerService.createScheduledTask(
+          success = await WindowsTaskSchedulerService.createScheduledTask(
               frequency: frequency);
         }
-        _logger.i('Windows scheduled task updated: ${frequency.label}');
+
+        if (success) {
+          _logger.i('Windows scheduled task updated: ${frequency.label}');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                  content: Text(
+                      'Background scan scheduled every ${frequency.label}')),
+            );
+          }
+        } else {
+          _logger.e('Windows scheduled task creation returned false');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                  content: Text('Failed to create Windows scheduled task')),
+            );
+          }
+        }
       } else {
-        await WindowsTaskSchedulerService.deleteScheduledTask();
-        _logger.i('Windows scheduled task deleted');
+        success = await WindowsTaskSchedulerService.deleteScheduledTask();
+        if (success) {
+          _logger.i('Windows scheduled task deleted');
+        }
       }
     } catch (e) {
       _logger.e('Failed to update Windows scheduled task', error: e);
