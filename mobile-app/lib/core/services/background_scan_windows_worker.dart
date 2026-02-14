@@ -3,14 +3,17 @@ import 'package:logger/logger.dart';
 import '../storage/database_helper.dart';
 import '../storage/background_scan_log_store.dart';
 import '../storage/account_store.dart';
+import '../storage/settings_store.dart';
+import '../providers/email_scan_provider.dart';
 import '../providers/rule_set_provider.dart';
-import '../../adapters/storage/secure_credentials_store.dart';
+import '../services/email_scanner.dart';
 import '../../adapters/storage/app_paths.dart';
 
 /// Windows-specific background scan worker
 ///
 /// Executes background email scans for all enabled accounts on Windows desktop.
-/// Similar to BackgroundScanWorker but adapted for Windows Task Scheduler execution.
+/// Launched by Windows Task Scheduler with --background-scan flag.
+/// Integrates with EmailScanner for full rule evaluation and batch processing.
 class BackgroundScanWindowsWorker {
   static final Logger _logger = Logger();
 
@@ -33,7 +36,7 @@ class BackgroundScanWindowsWorker {
 
       final logStore = BackgroundScanLogStore(dbHelper);
       final accountStore = AccountStore(dbHelper);
-      final credStore = SecureCredentialsStore();
+      final settingsStore = SettingsStore();
 
       // Initialize rule set provider
       final ruleSetProvider = RuleSetProvider();
@@ -49,52 +52,60 @@ class BackgroundScanWindowsWorker {
 
       // Scan each enabled account
       for (final account in accounts) {
+        final accountId = account['account_id'] as String;
         try {
           // Check if background scans enabled for this account
-          final isBackgroundEnabled = await _isBackgroundScanEnabled(
-            accountId: account['account_id'] as String,
-            dbHelper: dbHelper,
-          );
+          final isBackgroundEnabled =
+              await settingsStore.getEffectiveBackgroundEnabled(accountId);
 
           if (!isBackgroundEnabled) {
-            _logger.d('Background scans disabled for account ${account['account_id']}');
+            _logger.d('Background scans disabled for account $accountId');
             continue;
           }
 
           // Log the scheduled execution
+          final startTime = DateTime.now().millisecondsSinceEpoch;
           final logEntry = BackgroundScanLogEntry(
-            accountId: account['account_id'] as String,
-            scheduledTime: DateTime.now().millisecondsSinceEpoch,
-            actualStartTime: DateTime.now().millisecondsSinceEpoch,
-            status: 'success', // Will be updated if fails
+            accountId: accountId,
+            scheduledTime: startTime,
+            actualStartTime: startTime,
+            status: 'running',
           );
 
           final logId = await logStore.insertLog(logEntry);
 
           // Execute scan for this account
           try {
-            await _scanAccount(
-              accountId: account['account_id'] as String,
+            final result = await _scanAccount(
+              accountId: accountId,
               platformId: account['platform_id'] as String,
               dbHelper: dbHelper,
-              logId: logId,
-              logStore: logStore,
               ruleSetProvider: ruleSetProvider,
-              credStore: credStore,
+              settingsStore: settingsStore,
             );
+
+            // Update log with success
+            final successLog = BackgroundScanLogEntry(
+              id: logId,
+              accountId: accountId,
+              scheduledTime: startTime,
+              actualStartTime: startTime,
+              actualEndTime: DateTime.now().millisecondsSinceEpoch,
+              status: 'success',
+              emailsProcessed: result.emailsProcessed,
+              unmatchedCount: result.unmatchedCount,
+            );
+            await logStore.updateLog(successLog);
             successCount++;
           } catch (e) {
-            _logger.e(
-              'Failed to scan account ${account['account_id']}',
-              error: e,
-            );
+            _logger.e('Failed to scan account $accountId', error: e);
 
             // Update log with failure
             final failedLog = BackgroundScanLogEntry(
               id: logId,
-              accountId: account['account_id'] as String,
-              scheduledTime: DateTime.now().millisecondsSinceEpoch,
-              actualStartTime: DateTime.now().millisecondsSinceEpoch,
+              accountId: accountId,
+              scheduledTime: startTime,
+              actualStartTime: startTime,
               actualEndTime: DateTime.now().millisecondsSinceEpoch,
               status: 'failed',
               errorMessage: e.toString(),
@@ -127,114 +138,68 @@ class BackgroundScanWindowsWorker {
     }
   }
 
-  /// Check if background scanning is enabled for an account
-  static Future<bool> _isBackgroundScanEnabled({
-    required String accountId,
-    required DatabaseHelper dbHelper,
-  }) async {
-    try {
-      final db = await dbHelper.database;
-      final result = await db.query(
-        'account_settings',
-        where: 'account_id = ? AND setting_key = ?',
-        whereArgs: [accountId, 'background_scan_enabled'],
-        limit: 1,
-      );
-
-      if (result.isEmpty) {
-        return false;
-      }
-
-      final value = result.first['setting_value'] as String;
-      return value.toLowerCase() == 'true';
-    } catch (e) {
-      _logger.e('Failed to check background scan enabled status', error: e);
-      return false;
-    }
-  }
-
-  /// Scan a single account
-  static Future<void> _scanAccount({
+  /// Scan a single account using EmailScanner
+  static Future<_ScanResult> _scanAccount({
     required String accountId,
     required String platformId,
     required DatabaseHelper dbHelper,
-    required int logId,
-    required BackgroundScanLogStore logStore,
     required RuleSetProvider ruleSetProvider,
-    required SecureCredentialsStore credStore,
+    required SettingsStore settingsStore,
   }) async {
     _logger.i('Scanning account: $accountId (platform: $platformId)');
 
-    try {
-      // Get account details
-      final db = await dbHelper.database;
-      final accountResult = await db.query(
-        'accounts',
-        where: 'account_id = ?',
-        whereArgs: [accountId],
-        limit: 1,
-      );
+    // Get effective background scan settings for this account
+    final scanMode = await settingsStore.getEffectiveScanMode(
+      accountId,
+      isBackground: true,
+    );
+    final folders = await settingsStore.getEffectiveFolders(
+      accountId,
+      isBackground: true,
+    );
 
-      if (accountResult.isEmpty) {
-        throw Exception('Account not found: $accountId');
-      }
+    _logger.d('Scan mode: ${scanMode.name}, folders: $folders');
 
-      final account = accountResult.first;
-      // final email = account['email'] as String; // Reserved for future logging
+    // Create a headless scan provider (no UI listeners in background mode)
+    final scanProvider = EmailScanProvider();
+    scanProvider.initializeScanMode(mode: scanMode);
 
-      // Get folders to scan (default to INBOX if not configured)
-      final folders = await _getScannedFolders(accountId, dbHelper);
-      _logger.d('Scanning folders: $folders');
+    // Create and run the email scanner
+    final scanner = EmailScanner(
+      platformId: platformId,
+      accountId: accountId,
+      ruleSetProvider: ruleSetProvider,
+      scanProvider: scanProvider,
+    );
 
-      // Note: Full email scanning logic would integrate with EmailScanner here
-      // For Sprint 8, we are focusing on Task Scheduler integration
-      // The actual scanning will reuse the EmailScanner from Sprint 4
+    await scanner.scanInbox(
+      folderNames: folders,
+      scanType: 'background',
+    );
 
-      // Update log with success
-      final successLog = BackgroundScanLogEntry(
-        id: logId,
-        accountId: accountId,
-        scheduledTime: DateTime.now().millisecondsSinceEpoch,
-        actualStartTime: DateTime.now().millisecondsSinceEpoch,
-        actualEndTime: DateTime.now().millisecondsSinceEpoch,
-        status: 'success',
-        emailsProcessed: 0, // Placeholder - actual scan would update this
-        unmatchedCount: 0,  // Placeholder
-      );
+    // Extract results from the scan provider
+    final emailsProcessed = scanProvider.processedCount;
+    final unmatchedCount = scanProvider.noRuleCount;
 
-      await logStore.updateLog(successLog);
-      _logger.i('Account scan completed: $accountId');
-    } catch (e) {
-      _logger.e('Failed to scan account: $accountId', error: e);
-      rethrow;
-    }
+    _logger.i(
+      'Account scan completed: $accountId - '
+      'processed $emailsProcessed, unmatched $unmatchedCount',
+    );
+
+    return _ScanResult(
+      emailsProcessed: emailsProcessed,
+      unmatchedCount: unmatchedCount,
+    );
   }
+}
 
-  /// Get folders configured for scanning
-  static Future<List<String>> _getScannedFolders(
-    String accountId,
-    DatabaseHelper dbHelper,
-  ) async {
-    try {
-      final db = await dbHelper.database;
-      final result = await db.query(
-        'account_settings',
-        where: 'account_id = ? AND setting_key = ?',
-        whereArgs: [accountId, 'scanned_folders'],
-        limit: 1,
-      );
+/// Internal result holder for a single account scan
+class _ScanResult {
+  final int emailsProcessed;
+  final int unmatchedCount;
 
-      if (result.isNotEmpty) {
-        // final foldersJson = result.first['setting_value'] as String;
-        // TODO: Parse JSON array of folder names
-        // For now, return default
-        return ['INBOX'];
-      }
-
-      return ['INBOX']; // Default
-    } catch (e) {
-      _logger.w('Failed to get scanned folders, using default', error: e);
-      return ['INBOX'];
-    }
-  }
+  const _ScanResult({
+    required this.emailsProcessed,
+    required this.unmatchedCount,
+  });
 }

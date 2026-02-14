@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import '../../core/services/background_scan_manager.dart' show ScanFrequency;
+import '../../core/services/windows_task_scheduler_service.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/providers/email_scan_provider.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
@@ -421,6 +423,38 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     }
   }
 
+  /// Create, update, or delete the Windows Task Scheduler task
+  Future<void> _updateWindowsScheduledTask({required bool enabled}) async {
+    try {
+      if (enabled) {
+        final frequency = ScanFrequency.fromMinutes(_backgroundScanFrequency);
+        if (frequency == ScanFrequency.disabled) return;
+
+        final exists = await WindowsTaskSchedulerService.taskExists();
+        if (exists) {
+          await WindowsTaskSchedulerService.updateScheduledTask(
+              frequency: frequency);
+        } else {
+          await WindowsTaskSchedulerService.createScheduledTask(
+              frequency: frequency);
+        }
+        _logger.i('Windows scheduled task updated: ${frequency.label}');
+      } else {
+        await WindowsTaskSchedulerService.deleteScheduledTask();
+        _logger.i('Windows scheduled task deleted');
+      }
+    } catch (e) {
+      _logger.e('Failed to update Windows scheduled task', error: e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content:
+                  Text('Failed to update Windows scheduled task: $e')),
+        );
+      }
+    }
+  }
+
   Widget _buildBackgroundScanTab() {
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -432,6 +466,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           onChanged: (value) async {
             setState(() => _backgroundScanEnabled = value);
             await _settingsStore.setBackgroundScanEnabled(value);
+            // On Windows, create or delete the Task Scheduler task
+            if (Platform.isWindows) {
+              await _updateWindowsScheduledTask(enabled: value);
+            }
           },
         ),
         const Divider(),
@@ -442,6 +480,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           onChanged: (freq) async {
             setState(() => _backgroundScanFrequency = freq);
             await _settingsStore.setBackgroundScanFrequency(freq);
+            // On Windows, update the Task Scheduler frequency if enabled
+            if (Platform.isWindows && _backgroundScanEnabled) {
+              await _updateWindowsScheduledTask(enabled: true);
+            }
           },
         ),
         const SizedBox(height: 24),
