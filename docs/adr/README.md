@@ -10,6 +10,17 @@ This directory contains Architectural Decision Records for the spamfilter-multi 
 | [0002](0002-adapter-pattern-email-providers.md) | Adapter Pattern for Email Providers | Accepted | ~2025-10 |
 | [0003](0003-regex-only-pattern-matching.md) | Regex-Only Pattern Matching | Accepted | 2025-11-10 |
 | [0004](0004-dual-write-sqlite-yaml.md) | Dual-Write Storage (SQLite + YAML Export) | Accepted | ~2026-01 |
+| [0005](0005-safe-senders-evaluated-before-rules.md) | Safe Senders Evaluated Before Rules | Accepted | ~2025-10 |
+| [0006](0006-four-progressive-scan-modes.md) | Four Progressive Scan Modes | Accepted | ~2025-10 |
+| [0007](0007-move-to-trash-not-permanent-delete.md) | Move-to-Trash, Not Permanent Delete | Accepted | ~2026-02 |
+| [0008](0008-platform-native-secure-credential-storage.md) | Platform-Native Secure Credential Storage | Accepted | ~2025-10 |
+| [0009](0009-provider-pattern-state-management.md) | Provider Pattern for State Management | Accepted | ~2025-10 |
+| [0010](0010-normalized-database-schema.md) | Normalized Database Schema (9 Tables) | Accepted | ~2026-01 |
+| [0011](0011-desktop-oauth-loopback-redirect-pkce.md) | Desktop OAuth via Loopback Redirect with PKCE | Accepted | ~2025-10 |
+| [0012](0012-apppaths-platform-storage-abstraction.md) | AppPaths Platform Storage Abstraction | Accepted | ~2025-10 |
+| [0013](0013-per-account-settings-with-inheritance.md) | Per-Account Settings with Inheritance | Accepted | ~2026-01 |
+| [0014](0014-windows-background-scanning-task-scheduler.md) | Windows Background Scanning via Task Scheduler | Accepted | ~2026-02 |
+| [0015](0015-gitflow-branching-strategy.md) | GitFlow Branching Strategy | Accepted | ~2026-01 |
 
 ## Creating a New ADR
 
