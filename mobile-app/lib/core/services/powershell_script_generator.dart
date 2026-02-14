@@ -54,6 +54,16 @@ $trigger
     -RestartCount 3 `
     -RestartInterval (New-TimeSpan -Minutes 5)
 
+# Enable Task Scheduler history if not already enabled (requires elevation)
+try {
+    wevtutil set-log Microsoft-Windows-TaskScheduler/Operational /enabled:true 2>\$null
+    if (\$LASTEXITCODE -eq 0) {
+        Write-Host "INFO: Enabled Task Scheduler history logging"
+    }
+} catch {
+    # Not critical - history can be enabled manually via Task Scheduler > Enable All Tasks History
+}
+
 # Register the task (runs as current user when logged in)
 try {
     Register-ScheduledTask -TaskName \$taskName -Action \$action -Trigger \$trigger -Settings \$settings -Force
