@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:logger/logger.dart';
+import 'package:path/path.dart' as path;
 
 import '../storage/database_helper.dart';
 import '../storage/background_scan_log_store.dart';
@@ -150,6 +151,14 @@ class BackgroundScanWindowsWorker {
             );
             await logStore.updateLog(successLog);
             await _bgLog('Account $accountId scan SUCCESS: ${result.emailsProcessed} processed, ${result.unmatchedCount} unmatched');
+
+            // Export debug CSV if enabled
+            await _exportDebugCsvIfEnabled(
+              scanProvider: result.scanProvider,
+              accountId: accountId,
+              settingsStore: settingsStore,
+            );
+
             successCount++;
           } catch (e, stackTrace) {
             _logger.e('Failed to scan account $accountId', error: e);
@@ -243,6 +252,62 @@ class BackgroundScanWindowsWorker {
     }
   }
 
+  /// Export debug CSV if the setting is enabled
+  ///
+  /// Writes scan results to a timestamped CSV file in the configured export
+  /// directory (or the app logs directory as fallback). Useful for debugging
+  /// background scan behavior without a UI.
+  static Future<void> _exportDebugCsvIfEnabled({
+    required EmailScanProvider scanProvider,
+    required String accountId,
+    required SettingsStore settingsStore,
+  }) async {
+    try {
+      final debugCsvEnabled = await settingsStore.getBackgroundScanDebugCsv();
+      if (!debugCsvEnabled) return;
+
+      final csvContent = scanProvider.exportResultsToCSV();
+      if (csvContent.trim().isEmpty) {
+        await _bgLog('Debug CSV: no results to export');
+        return;
+      }
+
+      // Determine export directory: configured CSV dir > app logs dir
+      String exportDir;
+      final configuredDir = await settingsStore.getCsvExportDirectory();
+      if (configuredDir != null && configuredDir.isNotEmpty) {
+        exportDir = configuredDir;
+      } else {
+        // Fall back to app data logs directory
+        exportDir = '${Platform.environment['APPDATA']}'
+            '\\com.example\\spam_filter_mobile\\logs';
+      }
+
+      // Ensure directory exists
+      final dir = Directory(exportDir);
+      if (!await dir.exists()) {
+        await dir.create(recursive: true);
+      }
+
+      // Sanitize account ID for filename (replace @ and . with _)
+      final safeAccountId = accountId
+          .replaceAll('@', '_at_')
+          .replaceAll('.', '_');
+      final timestamp = DateTime.now()
+          .toIso8601String()
+          .replaceAll(':', '-')
+          .split('.')[0];
+      final filename = 'background_scan_${safeAccountId}_$timestamp.csv';
+      final filePath = path.join(exportDir, filename);
+
+      await File(filePath).writeAsString(csvContent);
+      await _bgLog('Debug CSV exported: $filePath (${csvContent.split('\n').length - 1} rows)');
+    } catch (e) {
+      await _bgLog('Debug CSV export failed: $e');
+      // Not critical - do not rethrow
+    }
+  }
+
   /// Scan a single account using EmailScanner
   static Future<_ScanResult> _scanAccount({
     required String accountId,
@@ -295,6 +360,7 @@ class BackgroundScanWindowsWorker {
     return _ScanResult(
       emailsProcessed: emailsProcessed,
       unmatchedCount: unmatchedCount,
+      scanProvider: scanProvider,
     );
   }
 }
@@ -303,9 +369,11 @@ class BackgroundScanWindowsWorker {
 class _ScanResult {
   final int emailsProcessed;
   final int unmatchedCount;
+  final EmailScanProvider scanProvider;
 
   const _ScanResult({
     required this.emailsProcessed,
     required this.unmatchedCount,
+    required this.scanProvider,
   });
 }

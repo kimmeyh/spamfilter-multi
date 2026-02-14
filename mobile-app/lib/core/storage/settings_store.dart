@@ -46,6 +46,7 @@ class SettingsStore {
   static const String keyBackgroundScanMode = 'background_scan_mode';
   static const String keyBackgroundScanFolders = 'background_scan_folders';
   static const String keyCsvExportDirectory = 'csv_export_directory';
+  static const String keyBackgroundScanDebugCsv = 'background_scan_debug_csv';
 
   // ============================================================
   // Default Values
@@ -58,6 +59,7 @@ class SettingsStore {
   static const ScanMode defaultBackgroundScanMode = ScanMode.readonly;
   static const List<String> defaultBackgroundScanFolders = ['INBOX'];
   static const String? defaultCsvExportDirectory = null; // null means use Downloads folder
+  static const bool defaultBackgroundScanDebugCsv = false;
 
   // ============================================================
   // Manual Scan Settings
@@ -149,6 +151,18 @@ class SettingsStore {
   /// Set the default folders to scan for background scans
   Future<void> setBackgroundScanFolders(List<String> folders) async {
     await _setAppSetting(keyBackgroundScanFolders, jsonEncode(folders), 'json');
+  }
+
+  /// Get whether debug CSV export is enabled for background scans
+  Future<bool> getBackgroundScanDebugCsv() async {
+    final value = await _getAppSetting(keyBackgroundScanDebugCsv);
+    if (value == null) return defaultBackgroundScanDebugCsv;
+    return value == 'true';
+  }
+
+  /// Set whether debug CSV export is enabled for background scans
+  Future<void> setBackgroundScanDebugCsv(bool enabled) async {
+    await _setAppSetting(keyBackgroundScanDebugCsv, enabled.toString(), 'bool');
   }
 
   // ============================================================

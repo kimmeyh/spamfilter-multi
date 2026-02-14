@@ -54,6 +54,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   int _backgroundScanFrequency = SettingsStore.defaultBackgroundScanFrequency;
   ScanMode _backgroundScanMode = SettingsStore.defaultBackgroundScanMode;
   List<String> _backgroundScanFolders = List.from(SettingsStore.defaultBackgroundScanFolders);
+  bool _backgroundScanDebugCsv = SettingsStore.defaultBackgroundScanDebugCsv;
   String? _csvExportDirectory;
 
   bool _isLoading = true;
@@ -95,6 +96,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       final accountBgFolders = await _settingsStore.getAccountBackgroundScanFolders(widget.accountId);
       _backgroundScanFolders = accountBgFolders ?? await _settingsStore.getBackgroundScanFolders();
 
+      _backgroundScanDebugCsv = await _settingsStore.getBackgroundScanDebugCsv();
       _csvExportDirectory = await _settingsStore.getCsvExportDirectory();
     } catch (e) {
       if (mounted) {
@@ -525,6 +527,17 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             setState(() => _backgroundScanMode = mode);
             // [UPDATED] ISSUE #123: Save per-account background scan mode
             await _settingsStore.setAccountBackgroundScanMode(widget.accountId, mode);
+          },
+        ),
+        const SizedBox(height: 24),
+        _buildSectionHeader('Debug'),
+        SwitchListTile(
+          title: const Text('Export CSV After Each Scan'),
+          subtitle: const Text('Write scan results CSV for debugging'),
+          value: _backgroundScanDebugCsv,
+          onChanged: (value) async {
+            setState(() => _backgroundScanDebugCsv = value);
+            await _settingsStore.setBackgroundScanDebugCsv(value);
           },
         ),
       ],
