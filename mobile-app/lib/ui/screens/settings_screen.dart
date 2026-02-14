@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import '../../core/storage/settings_store.dart';
@@ -386,55 +389,35 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   }
 
   Future<void> _selectCsvExportDirectory() async {
-    // Note: file_picker package required for full implementation
-    // For now, show a dialog to enter path manually
-    final controller = TextEditingController(text: _csvExportDirectory ?? '');
+    try {
+      final selectedDirectory = await FilePicker.platform.getDirectoryPath(
+        dialogTitle: 'Select CSV Export Directory',
+        initialDirectory: _csvExportDirectory,
+      );
 
-    final result = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('CSV Export Directory'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Enter the full path where CSV exports should be saved:'),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              decoration: const InputDecoration(
-                labelText: 'Directory Path',
-                hintText: 'C:\\Users\\YourName\\Documents\\SpamFilter',
-                border: OutlineInputBorder(),
-              ),
-              autofocus: true,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Leave empty to use the system Downloads folder.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
+      if (selectedDirectory != null) {
+        // Validate the directory exists and is writable
+        final dir = Directory(selectedDirectory);
+        if (!await dir.exists()) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                  content: Text('Selected directory does not exist')),
+            );
+          }
+          return;
+        }
 
-    if (result != null) {
-      final directory = result.isEmpty ? null : result;
-      setState(() => _csvExportDirectory = directory);
-      await _settingsStore.setCsvExportDirectory(directory);
+        setState(() => _csvExportDirectory = selectedDirectory);
+        await _settingsStore.setCsvExportDirectory(selectedDirectory);
+      }
+    } catch (e) {
+      _logger.e('Failed to open directory picker', error: e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to open directory browser: $e')),
+        );
+      }
     }
   }
 
