@@ -26,6 +26,15 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-02-14 (Sprint 16: Scan Configuration, Log Viewer, and Rule Conflict Detection)
+- **feat**: Persistent days-back scan settings for Manual and Background scans with per-account overrides (Issue #153)
+- **feat**: Scan Options dialog defaults to "Scan all emails" with saved preferences (Issue #150)
+- **feat**: Rename "Scan Progress" screen to "Manual Scan" and remove folder selection button (Issue #151)
+- **feat**: Background scan log viewer screen with account filter, summary stats, and expandable log cards (Issue #152)
+- **feat**: Rule override/conflict detection - warns users when existing rules or safe senders would prevent new rule from being evaluated (Issue #139)
+- **chore**: Remove unused imports from Sprint 16 changes (5 analyzer warnings fixed)
+- **test**: 16 new unit tests for RuleConflictDetector (977 tests passing, 28 skipped)
+
 ### 2026-02-14-15 (Sprint 15: Bug Fixes, Performance, and Settings Management)
 - **fix**: Resolve 100-delete limit bug - IMAP sequence IDs shifted after each delete, causing wrong messages to be targeted after ~100 operations. Switched to UID-based operations throughout (Issue #145)
 - **feat**: Batch email processing - evaluate all emails first, then execute actions in batches using IMAP UID sequence sets. Reduces IMAP round-trips from 3N to ~3 batch operations (Issue #144)
