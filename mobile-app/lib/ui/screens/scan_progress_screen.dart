@@ -10,7 +10,6 @@ import '../../core/providers/rule_set_provider.dart';
 import '../../core/services/email_scanner.dart';
 import '../../core/storage/settings_store.dart'; // [NEW] ISSUE #138: Load scan mode from settings
 import '../widgets/app_bar_with_exit.dart';
-import '../screens/folder_selection_screen.dart';
 import 'results_display_screen.dart';
 import 'settings_screen.dart';
 
@@ -126,7 +125,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
       },
       child: Scaffold(
         appBar: AppBarWithExit(
-          title: Text('Scan Progress - ${widget.platformDisplayName}'),
+          title: Text('Manual Scan - ${widget.platformDisplayName}'),
           // Add explicit back button that returns to account selection
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
@@ -308,15 +307,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-          // Folder selection button (Phase 2 Sprint 3)
-          ElevatedButton.icon(
-            icon: const Icon(Icons.folder_open),
-            label: const Text('Select Folders to Scan'),
-            onPressed: canStartScan
-                ? () => _showFolderSelection(context, scanProvider)
-                : null,
-          ),
-          const SizedBox(height: 12),
+          // [REMOVED] ISSUE #151: Folder selection removed - use Settings > Manual > Default Folders
         Row(
           children: [
             Expanded(
@@ -442,48 +433,6 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
     );
   }
 
-    /// Show folder selection screen (Phase 2 Sprint 3)
-    Future<void> _showFolderSelection(
-      BuildContext context,
-      EmailScanProvider scanProvider,
-    ) async {
-      final logger = Logger();
-
-      // [NEW] ISSUE #123+#124: Load saved default folders from Manual Scan tab
-      final settingsStore = SettingsStore();
-      final savedFolders = await settingsStore.getAccountManualScanFolders(widget.accountId);
-
-      final selected = await showModalBottomSheet<List<String>>(
-        context: context,
-        isScrollControlled: true,
-        builder: (ctx) => FolderSelectionScreen(
-          platformId: widget.platformId,
-          accountId: widget.accountId,
-          accountEmail: widget.accountEmail,
-          initialSelectedFolders: savedFolders, // Pre-populate with saved folders
-          onFoldersSelected: (folders) {
-            logger.i('📁 Folders selected for scan: $folders');
-            // [NEW] PHASE 3.2: Store selected folders in scanProvider for use during scan
-            // [NEW] ISSUE #41 FIX: Pass accountId to store folders per-account
-            scanProvider.setSelectedFolders(folders, accountId: widget.accountId);
-          },
-        ),
-      );
-
-      if (selected != null && context.mounted) {
-        logger.i('[OK] User confirmed folders: $selected');
-        // [NEW] PHASE 3.2: Update scanProvider with final selection
-        // [NEW] ISSUE #41 FIX: Pass accountId to store folders per-account
-        scanProvider.setSelectedFolders(selected, accountId: widget.accountId);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Ready to scan: ${selected.join(", ")}'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    }
-
   /// [NEW] PHASE 3.1: Show scan mode selection dialog
   /// Start a real IMAP scan
   Future<void> _startRealScan(
@@ -491,10 +440,10 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
     EmailScanProvider scanProvider,
     RuleSetProvider ruleProvider,
   ) async {
-    // Show options dialog
+    // Show options dialog - [UPDATED] ISSUE #150: Pass accountId for persistent settings
     final daysBack = await showDialog<int>(
       context: context,
-      builder: (ctx) => const _ScanOptionsDialog(),
+      builder: (ctx) => _ScanOptionsDialog(accountId: widget.accountId),
     );
 
     if (daysBack == null) return; // User cancelled
@@ -614,19 +563,58 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
 }
 
 /// Dialog for scan options
+/// [UPDATED] ISSUE #150: Loads defaults from SettingsStore and persists selection
 class _ScanOptionsDialog extends StatefulWidget {
-  const _ScanOptionsDialog();
+  final String accountId;
+
+  const _ScanOptionsDialog({required this.accountId});
 
   @override
   State<_ScanOptionsDialog> createState() => _ScanOptionsDialogState();
 }
 
 class _ScanOptionsDialogState extends State<_ScanOptionsDialog> {
-  int _daysBack = 7; // Default to 7 days
-  bool _scanAll = false; // Default to date-filtered scan
+  int _daysBack = 7;
+  bool _scanAll = true; // [UPDATED] ISSUE #150: Default to "Scan all emails"
+  bool _isLoading = true;
+  final SettingsStore _settingsStore = SettingsStore();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedSetting();
+  }
+
+  Future<void> _loadSavedSetting() async {
+    final savedDaysBack = await _settingsStore.getEffectiveDaysBack(
+      widget.accountId,
+      isBackground: false,
+    );
+    if (mounted) {
+      setState(() {
+        if (savedDaysBack == 0) {
+          _scanAll = true;
+          _daysBack = 7; // Visual slider default when scanning all
+        } else {
+          _scanAll = false;
+          _daysBack = savedDaysBack.clamp(1, 90);
+        }
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const AlertDialog(
+        content: SizedBox(
+          height: 80,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
+
     return AlertDialog(
       title: const Text('Scan Options'),
       content: Column(
@@ -636,8 +624,25 @@ class _ScanOptionsDialogState extends State<_ScanOptionsDialog> {
           const Text('How many days back to scan?'),
           const SizedBox(height: 24),
 
+          // "Scan All" checkbox - [UPDATED] ISSUE #150: shown first, checked by default
+          CheckboxListTile(
+            title: const Text('Scan all emails (no date filter)'),
+            value: _scanAll,
+            onChanged: (value) {
+              setState(() {
+                _scanAll = value ?? false;
+                if (!_scanAll && _daysBack < 1) {
+                  _daysBack = 7; // Reset to 7 when unchecking
+                }
+              });
+            },
+            controlAffinity: ListTileControlAffinity.leading,
+            contentPadding: EdgeInsets.zero,
+          ),
+
           // Continuous slider (1-90 days) - only visible when not scanning all
           if (!_scanAll) ...[
+            const SizedBox(height: 8),
             Row(
               children: [
                 const Text('1'),
@@ -649,7 +654,10 @@ class _ScanOptionsDialogState extends State<_ScanOptionsDialog> {
                     divisions: 89,
                     label: '$_daysBack day${_daysBack == 1 ? "" : "s"}',
                     onChanged: (value) {
-                      setState(() => _daysBack = value.round());
+                      setState(() {
+                        _daysBack = value.round();
+                        _scanAll = false; // Slider interaction unchecks scan all
+                      });
                     },
                   ),
                 ),
@@ -665,19 +673,7 @@ class _ScanOptionsDialogState extends State<_ScanOptionsDialog> {
                     ),
               ),
             ),
-            const SizedBox(height: 16),
           ],
-
-          // "Scan All" checkbox
-          CheckboxListTile(
-            title: const Text('Scan all emails (no date filter)'),
-            value: _scanAll,
-            onChanged: (value) {
-              setState(() => _scanAll = value ?? false);
-            },
-            controlAffinity: ListTileControlAffinity.leading,
-            contentPadding: EdgeInsets.zero,
-          ),
         ],
       ),
       actions: [
@@ -686,7 +682,14 @@ class _ScanOptionsDialogState extends State<_ScanOptionsDialog> {
           child: const Text('Cancel'),
         ),
         ElevatedButton(
-          onPressed: () => Navigator.of(context).pop(_scanAll ? 0 : _daysBack),
+          onPressed: () async {
+            final result = _scanAll ? 0 : _daysBack;
+            // [NEW] ISSUE #150: Persist selection for next time
+            await _settingsStore.setAccountManualDaysBack(widget.accountId, result);
+            if (context.mounted) {
+              Navigator.of(context).pop(result);
+            }
+          },
           child: const Text('Start Scan'),
         ),
       ],

@@ -328,8 +328,14 @@ class BackgroundScanWindowsWorker {
       isBackground: true,
     );
 
-    _logger.d('Scan mode: ${scanMode.name}, folders: $folders');
-    await _bgLog('Scan settings for $accountId: mode=${scanMode.name}, folders=$folders');
+    // [NEW] ISSUE #153: Load days-back setting for background scans
+    final daysBack = await settingsStore.getEffectiveDaysBack(
+      accountId,
+      isBackground: true,
+    );
+
+    _logger.d('Scan mode: ${scanMode.name}, folders: $folders, daysBack: $daysBack');
+    await _bgLog('Scan settings for $accountId: mode=${scanMode.name}, folders=$folders, daysBack=$daysBack');
 
     // Create a headless scan provider (no UI listeners in background mode)
     final scanProvider = EmailScanProvider();
@@ -344,6 +350,7 @@ class BackgroundScanWindowsWorker {
     );
 
     await scanner.scanInbox(
+      daysBack: daysBack,
       folderNames: folders,
       scanType: 'background',
     );

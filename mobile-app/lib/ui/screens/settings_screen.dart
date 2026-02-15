@@ -56,6 +56,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   List<String> _backgroundScanFolders = List.from(SettingsStore.defaultBackgroundScanFolders);
   bool _backgroundScanDebugCsv = SettingsStore.defaultBackgroundScanDebugCsv;
   String? _csvExportDirectory;
+  int _manualDaysBack = SettingsStore.defaultManualScanDaysBack;
+  int _backgroundDaysBack = SettingsStore.defaultBackgroundScanDaysBack;
 
   bool _isLoading = true;
 
@@ -98,6 +100,13 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
       _backgroundScanDebugCsv = await _settingsStore.getBackgroundScanDebugCsv();
       _csvExportDirectory = await _settingsStore.getCsvExportDirectory();
+
+      // [NEW] ISSUE #153: Load days-back settings (per-account with app-wide fallback)
+      final accountManualDays = await _settingsStore.getAccountManualDaysBack(widget.accountId);
+      _manualDaysBack = accountManualDays ?? await _settingsStore.getManualScanDaysBack();
+
+      final accountBgDays = await _settingsStore.getAccountBackgroundDaysBack(widget.accountId);
+      _backgroundDaysBack = accountBgDays ?? await _settingsStore.getBackgroundScanDaysBack();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -330,6 +339,16 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           },
         ),
         const SizedBox(height: 24),
+        // [NEW] ISSUE #153: Scan range (days back / all emails)
+        _buildSectionHeader('Scan Range'),
+        _buildScanRangeSelector(
+          daysBack: _manualDaysBack,
+          onChanged: (daysBack) async {
+            setState(() => _manualDaysBack = daysBack);
+            await _settingsStore.setAccountManualDaysBack(widget.accountId, daysBack);
+          },
+        ),
+        const SizedBox(height: 24),
         _buildSectionHeader('Default Folders'),
         _buildFolderSelector(
           folders: _manualScanFolders,
@@ -507,6 +526,16 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             if (Platform.isWindows && _backgroundScanEnabled) {
               await _updateWindowsScheduledTask(enabled: true);
             }
+          },
+        ),
+        const SizedBox(height: 24),
+        // [NEW] ISSUE #153: Scan range (days back / all emails)
+        _buildSectionHeader('Scan Range'),
+        _buildScanRangeSelector(
+          daysBack: _backgroundDaysBack,
+          onChanged: (daysBack) async {
+            setState(() => _backgroundDaysBack = daysBack);
+            await _settingsStore.setAccountBackgroundDaysBack(widget.accountId, daysBack);
           },
         ),
         const SizedBox(height: 24),
@@ -791,6 +820,106 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               // Update will happen via onChanged callback
             });
           },
+        ),
+      ),
+    );
+  }
+
+  /// [NEW] ISSUE #153: Build scan range selector (days back / all emails)
+  Widget _buildScanRangeSelector({
+    required int daysBack,
+    required Future<void> Function(int) onChanged,
+  }) {
+    final bool scanAll = daysBack == 0;
+    // Use a local slider value that is independent of the "scan all" toggle
+    // When scanAll is true, show 7 as the visual slider default
+    final int sliderValue = scanAll ? 7 : daysBack;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Scan Range',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            CheckboxListTile(
+              title: const Text('Scan all emails'),
+              subtitle: const Text('No date filter - scans entire mailbox'),
+              value: scanAll,
+              onChanged: (value) async {
+                if (value == true) {
+                  await onChanged(0); // 0 = all emails
+                } else {
+                  await onChanged(7); // Default to 7 days when unchecking
+                }
+              },
+              controlAffinity: ListTileControlAffinity.leading,
+              contentPadding: EdgeInsets.zero,
+            ),
+            if (!scanAll) ...[
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Text('1'),
+                  Expanded(
+                    child: Slider(
+                      value: sliderValue.toDouble().clamp(1, 90),
+                      min: 1,
+                      max: 90,
+                      divisions: 89,
+                      label: '$sliderValue day${sliderValue == 1 ? "" : "s"}',
+                      onChanged: (value) async {
+                        await onChanged(value.round());
+                      },
+                    ),
+                  ),
+                  const Text('90'),
+                ],
+              ),
+              Center(
+                child: Text(
+                  'Scan last $sliderValue day${sliderValue == 1 ? "" : "s"}',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    scanAll ? Icons.all_inbox : Icons.date_range,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      scanAll
+                        ? 'Will scan all emails in selected folders'
+                        : 'Will scan emails from the last $sliderValue day${sliderValue == 1 ? "" : "s"}',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
