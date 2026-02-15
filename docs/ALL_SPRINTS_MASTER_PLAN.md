@@ -53,6 +53,7 @@ Historical sprint information has been moved to individual summary documents and
 | 12 | SPRINT_12_SUMMARY.md | [OK] Complete | ~48h (Feb 1-6, 2026) |
 | 13 | SPRINT_13_PLAN.md | [OK] Complete | ~3h (Feb 6, 2026) |
 | 14 | sprint_14_plan.md | [OK] Complete | ~8h (Feb 7-13, 2026) |
+| 15 | sprint_15_plan.md | [OK] Complete | ~16h (Feb 14-15, 2026) |
 
 **Key Achievements**:
 - **Sprint 1**: Database foundation (SQLite schema, migration infrastructure)
@@ -65,6 +66,7 @@ Historical sprint information has been moved to individual summary documents and
 - **Sprint 12**: MVP Core Features (Settings, Scan Results Processing, Interactive Rule Management) + Sprint 11 retrospective actions
 - **Sprint 13**: Account-Specific Folder Settings (per-account deleted rule folder, safe sender folder, subject cleaning, settings UI refactor)
 - **Sprint 14**: Settings Restructure + UX Improvements (progressive scan updates, Demo Mode, enhanced delete processing, plus-sign safe sender fix)
+- **Sprint 15**: Bug Fixes, Performance, and Settings Management (100-delete limit fix via UID migration, batch email processing, Safe Senders/Rules management UIs, Windows directory browser, Windows background scanning with Task Scheduler, 15 ADRs)
 
 See CHANGELOG.md for detailed feature history.
 
@@ -74,48 +76,51 @@ See CHANGELOG.md for detailed feature history.
 
 **No Active Sprint**
 
-**Status**: ⏸️ AWAITING USER DIRECTION
+**Status**: AWAITING SPRINT 16 PLANNING
 
-**Last Completed Sprint**: Sprint 14 (February 7-13, 2026)
-- See `.claude/plans/sprint_14_plan.md` for full details
-- PR #143 open for review: https://github.com/kimmeyh/spamfilter-multi/pull/143
-- Features:
-  - #128: Progressive folder-by-folder scan updates (2-second refresh)
-  - #123 + #124: Settings Screen restructure with Default Folders UI
-  - #125: Enhanced Demo Scan with 50+ sample emails
-  - #138: Enhanced Deleted Email Processing (mark-as-read, rule tagging)
-  - #130: Analyzer warnings reduced to 48 (<50 target)
-  - Bug fix: Safe sender pattern creation for plus-sign emails
+**Last Completed Sprint**: Sprint 15 (February 14-15, 2026)
+- See `.claude/plans/sprint_15_plan.md` for full details
+- PR #146 merged to develop: https://github.com/kimmeyh/spamfilter-multi/pull/146
+- Features completed:
+  - #145: 100-delete limit bug fix (UID migration)
+  - #144: Batch email processing (IMAP UID sequence sets)
+  - F17/#147: Manage Safe Senders UI in Settings
+  - F18/#148: Manage Rules UI in Settings
+  - #126: Windows native directory browser for CSV export
+  - F5: Windows background scanning with Task Scheduler
+  - Debug CSV export toggle for background scans
+  - Safe sender INBOX normalization fix
+  - Processed > found counter fix
+  - 15 Architecture Decision Records (ADR-0001 through ADR-0015)
+- Testing feedback filed as GitHub issues for future sprints:
+  - #149: Manage Rules UI overhaul (split combined rules, search, filter)
+  - #150: Scan Options default to "Scan all emails"
+  - #151: Rename Scan Progress to Manual Scan
+  - #152: Background scan log viewer
+  - #153: Days back setting for Manual and Background scans
+  - #154: Auto-remove safe sender entries when converting to delete rules
 
 **Next Sprint Candidates**:
 
-### Option 1: Background Scanning + Persistent Gmail Auth (Original Sprint 13 Scope - Deferred)
-**Estimated Duration**: 22-28 hours
-**Model Assignment**: Sonnet (architecture, integration) + Haiku (testing)
-**Objective**: Windows background scanning with Task Scheduler + long-lived Gmail authentication
+### Option 1: User Testing Feedback Features
+**Estimated Duration**: 20-30 hours
+**Objective**: Address testing feedback from Sprint 15
+
+**Tasks** (from GitHub issues):
+- **#149**: Manage Rules UI overhaul - split combined rules, search, filter (~12-16h)
+- **#150**: Scan Options UX - default "Scan all emails" with days slider (~3-4h)
+- **#151**: Rename Scan Progress to Manual Scan (~2-3h)
+- **#153**: Days back setting for Manual and Background scans (~4-6h)
+- **#154**: Auto-remove safe sender entries when converting to delete rules (~4-6h)
+
+### Option 2: Background Scan Enhancements + Gmail Auth
+**Estimated Duration**: 20-28 hours
+**Objective**: Improve background scanning and add persistent Gmail auth
 
 **Tasks**:
-- **F5**: Background Scanning - Windows Desktop (~14-16h)
+- **#152**: Background scan log viewer (~8-10h)
 - **F12**: Persistent Gmail Authentication (~8-12h)
-
-See [detailed F5/F12 specifications below](#f5-background-scanning---windows-desktop) for complete task breakdown.
-
----
-
-### Option 2: UI Polish + Bug Fixes + Technical Debt
-**Estimated Duration**: 15-25 hours
-**Model Assignment**: Sonnet (bug #128) + Haiku (enhancements, cleanup)
-**Objective**: Address user experience issues and code quality
-
-**Tasks**:
-- **#128**: Progressive Folder Scan Updates (~4-6h) - Sonnet
-- **#123**: Settings Screen Restructure (~6-8h) - Haiku
-- **#124**: Default Folders UI Consistency (~2-3h) - Haiku
-- **#125**: Enhanced Demo Scan (~4-6h) - Haiku
-- **#126**: Windows Directory Browser (~3-4h) - Haiku
-- **#130**: Analyzer Warnings Cleanup (~4-6h) - Haiku (FINAL TASK)
-
----
+- Background scan enhancements (days back setting, log review)
 
 ### Option 3: Custom Sprint (User-Defined)
 User selects specific issues from backlog based on priorities.
@@ -336,7 +341,7 @@ Priority based on: Product Owner prioritization for MVP development.
 ### Priority 2: Windows Background Scanning + Persistent Gmail Auth (Sprint 13)
 
 #### F5: Background Scanning - Windows Desktop
-**Status**: [CHECKLIST] PLANNED (Sprint 13)
+**Status**: [OK] COMPLETED (Sprint 15, PR #146)
 **Estimated Effort**: 14-16 hours
 **Platform**: Windows Desktop
 **Business Value**: Background scanning + easy app distribution on Windows

@@ -26,6 +26,22 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-02-14-15 (Sprint 15: Bug Fixes, Performance, and Settings Management)
+- **fix**: Resolve 100-delete limit bug - IMAP sequence IDs shifted after each delete, causing wrong messages to be targeted after ~100 operations. Switched to UID-based operations throughout (Issue #145)
+- **feat**: Batch email processing - evaluate all emails first, then execute actions in batches using IMAP UID sequence sets. Reduces IMAP round-trips from 3N to ~3 batch operations (Issue #144)
+- **feat**: Manage Safe Senders UI in Settings - view, search, delete safe sender patterns (Issue #147)
+- **feat**: Manage Rules UI in Settings - view, search, delete block rules with rule type indicators (Issue #148)
+- **feat**: Windows native directory browser for CSV export path selection (Issue #126)
+- **feat**: Windows background scanning with Task Scheduler integration - headless scan mode, configurable frequency, per-account folder/mode settings (F5)
+- **feat**: Debug CSV export toggle for background scans - writes scan results CSV after each background run
+- **fix**: Background scan headless execution - account loading from SecureCredentialsStore, FK constraint compliance
+- **fix**: Background scan uses correct per-account folders and scan mode (background-specific settings override)
+- **fix**: Safe sender INBOX normalization for RFC 3501 compliance (mixed-case "Inbox" to "INBOX")
+- **fix**: Processed count exceeding found count - batch progress messages no longer increment processedCount
+- **docs**: Architecture Decision Records (ADR-0001 through ADR-0015) documenting 15 key architectural decisions
+- **docs**: Sprint 14 Summary document
+- **test**: Batch action result tests and batch operations mixin tests (961 tests passing, 28 skipped)
+
 ### 2026-02-07-08 (Sprint 14: Settings Restructure + UX Improvements)
 - **feat**: Progressive folder-by-folder scan updates with 2-second refresh interval (Issue #128)
 - **feat**: Settings Screen restructure - separate Manual Scan and Background Settings tabs (Issue #123)
