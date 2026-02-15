@@ -450,5 +450,6 @@ Group C (Independent):
 - [ ] #139 implemented - Rule override warnings on add/edit
 - [ ] All tests passing (961+)
 - [ ] Analyzer warnings stable (under 10)
+- [ ] Windows desktop app built and launched (Phase 3.3)
 - [ ] Manual testing confirms all features
 - [ ] PR created targeting develop branch

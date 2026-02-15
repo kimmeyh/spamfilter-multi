@@ -49,9 +49,14 @@ During sprint execution, models work autonomously until one of these stopping cr
 - [ ] Code analysis shows zero errors
 - [ ] Local code review completed
 - [ ] No known blockers or regressions
+- [ ] **Windows desktop app built and launched successfully** (Phase 3.3)
 
 **Action**:
-1. Proceed to Phase 3.3 (Manual Testing in parallel)
+1. **Build and launch the app** (MANDATORY before manual testing - Phase 3.3)
+   - Windows: `cd mobile-app/scripts && .\build-windows.ps1`
+   - Verify build succeeds, app launches, no database errors
+   - User should NOT have to build app themselves
+2. Proceed to Phase 3.3 (Manual Testing in parallel)
 2. Once testing complete → Phase 4 (PR creation)
 3. User will conduct Phase 4.5 (Sprint Review) before merge
 4. **MANDATORY Sprint Completion Updates** (Phase 4.5.6 and Step 3 after merge):
