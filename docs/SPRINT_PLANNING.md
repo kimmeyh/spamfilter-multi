@@ -143,6 +143,12 @@ Each sprint is composed of **Cards** (GitHub issues) broken into **Tasks** assig
      - Update future sprint dependencies
      - **NOTE**: Full sprint details archived to SPRINT_<N>_SUMMARY.md during next sprint planning (Phase 1)
   7. Prepare release notes (if needed for major releases)
+  8. **Build and Launch Application** (MANDATORY - Phase 3.3 in SPRINT_EXECUTION_WORKFLOW.md)
+     - Claude Code MUST build and launch the app BEFORE declaring ready for manual testing
+     - Windows: `cd mobile-app/scripts && .\build-windows.ps1`
+     - Android: `cd mobile-app/scripts && .\build-with-secrets.ps1 -BuildType debug -InstallToEmulator`
+     - Verify build succeeds and app launches without errors
+     - User should NOT have to build the app themselves
 
 #### Phase 4: Retrospective (Post-Sprint)
 - **Duration**: 30 minutes - 1 hour

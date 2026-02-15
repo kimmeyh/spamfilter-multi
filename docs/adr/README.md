@@ -21,6 +21,16 @@ This directory contains Architectural Decision Records for the spamfilter-multi 
 | [0013](0013-per-account-settings-with-inheritance.md) | Per-Account Settings with Inheritance | Accepted | ~2026-01 |
 | [0014](0014-windows-background-scanning-task-scheduler.md) | Windows Background Scanning via Task Scheduler | Accepted | ~2026-02 |
 | [0015](0015-gitflow-branching-strategy.md) | GitFlow Branching Strategy | Accepted | ~2026-01 |
+| [0016](0016-sprint-model-tiering-haiku-sonnet-opus.md) | Sprint Model Tiering (Haiku/Sonnet/Opus) | Accepted | ~2026-01 |
+| [0017](0017-powershell-build-automation.md) | PowerShell as Primary Build and Automation Shell | Accepted | ~2025-10 |
+| [0018](0018-windows-toast-notifications-powershell.md) | Windows Toast Notifications via PowerShell | Accepted | ~2026-02 |
+| [0019](0019-windows-system-tray-integration.md) | Windows System Tray Integration | Accepted | ~2026-02 |
+| [0020](0020-demo-mode-synthetic-emails.md) | Demo Mode with Synthetic Emails | Accepted | ~2025-10 |
+| [0021](0021-yaml-to-database-one-time-migration.md) | YAML-to-Database One-Time Migration | Accepted | ~2026-01 |
+| [0022](0022-throttled-ui-progress-updates.md) | Throttled UI Progress Updates | Accepted | ~2025-10 |
+| [0023](0023-in-memory-pattern-caching.md) | In-Memory Pattern Caching | Accepted | ~2025-10 |
+| [0024](0024-canonical-folder-mapping.md) | Canonical Folder Mapping | Accepted | ~2026-01 |
+| [0025](0025-changelog-per-commit-policy.md) | CHANGELOG Updated Per Commit Policy | Accepted | ~2026-01 |
 
 ## Creating a New ADR
 

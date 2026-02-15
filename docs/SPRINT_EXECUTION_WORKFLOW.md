@@ -476,9 +476,9 @@ After Phase 3.2 all tests pass, context can be compacted for efficiency:
 - PR includes all Sprint 4-4.5 work when user is ready to review
 - Both activities benefit from independence (faster iteration)
 
-- [ ] **3.3 Manual Testing  - PARALLEL WITH PHASE 4**
+- [ ] **3.3 Build App and Prepare for Manual Testing - PARALLEL WITH PHASE 4**
 
-  **CRITICAL**: Claude Code will build and run the Windows Desktop App (or target platform) so that user can complete manual testing. User should NOT have to build app themselves.
+  **CRITICAL**: Claude Code MUST build and run the Windows Desktop App (or target platform) BEFORE declaring the sprint ready for manual testing. User should NOT have to build app themselves. This step is MANDATORY - do NOT skip it.
 
   **Pre-Testing Checklist** (Claude Code completes BEFORE handing to user):
   - [ ] **3.3.a Build the application**

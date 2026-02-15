@@ -140,6 +140,23 @@ class BackgroundScanLogStore {
     }
   }
 
+  /// Get all log entries across all accounts, sorted newest first
+  Future<List<BackgroundScanLogEntry>> getAllLogs({int? limit}) async {
+    try {
+      final db = await _dbHelper.database;
+      final result = await db.query(
+        'background_scan_log',
+        orderBy: 'scheduled_time DESC',
+        limit: limit,
+      );
+
+      return result.map((map) => BackgroundScanLogEntry.fromMap(map)).toList();
+    } catch (e) {
+      _logger.e('Failed to get all background scan logs', error: e);
+      rethrow;
+    }
+  }
+
   /// Get log entries with given status
   Future<List<BackgroundScanLogEntry>> getLogsByStatus(String status) async {
     try {
