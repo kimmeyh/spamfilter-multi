@@ -207,7 +207,7 @@ void main() {
 }
 
 /// Mock platform for testing
-class MockSpamFilterPlatform implements SpamFilterPlatform {
+class MockSpamFilterPlatform with BatchOperationsMixin implements SpamFilterPlatform {
   List<EmailMessage> _testEmails = [];
   Function()? onTakeAction;
 

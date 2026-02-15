@@ -12,7 +12,7 @@ import 'email_provider.dart';
 import 'spam_filter_platform.dart';
 
 /// Mock email provider for demo mode
-class MockEmailProvider implements SpamFilterPlatform {
+class MockEmailProvider with BatchOperationsMixin implements SpamFilterPlatform {
   /// Track actions performed during demo scan (for testing/verification)
   final List<Map<String, dynamic>> _actionLog = [];
 

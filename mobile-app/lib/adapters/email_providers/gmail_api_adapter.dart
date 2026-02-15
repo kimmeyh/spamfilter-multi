@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 import 'package:googleapis/gmail/v1.dart' as gmail;
 import 'package:http/http.dart' as http;
 import '../../adapters/auth/google_auth_service.dart';
+import '../../core/models/batch_action_result.dart';
 import '../../core/utils/app_logger.dart';
 import '../../util/redact.dart';
 
@@ -16,7 +17,7 @@ import 'email_provider.dart';
 /// Phase 2 Sprint 4 Implementation
 ///
 /// Uses [GoogleAuthService] for unified authentication across platforms.
-class GmailApiAdapter implements SpamFilterPlatform {
+class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
   final GoogleAuthService _authService = GoogleAuthService();
 
   gmail.GmailApi? _gmailApi;
@@ -745,6 +746,298 @@ class GmailApiAdapter implements SpamFilterPlatform {
   // Backwards compatibility: some tests expect `connect(credentials)`
   Future<void> connect(Credentials credentials) async {
     await loadCredentials(credentials);
+  }
+
+  // --- Native Gmail Batch Operations (Issue #144) ---
+  // Gmail API supports batchModify (up to 1000 IDs) and batchDelete.
+  // These override the single-message fallbacks from BatchOperationsMixin.
+
+  /// Gmail batch size limit per API call
+  static const int _gmailBatchLimit = 1000;
+
+  /// Mark multiple messages as read using Gmail batchModify API
+  @override
+  Future<BatchActionResult> markAsReadBatch(List<EmailMessage> messages) async {
+    if (_gmailApi == null) {
+      return BatchActionResult.allFailed(
+        messages.map((m) => m.id).toList(),
+        'Not connected. Call signIn() first.',
+      );
+    }
+    if (messages.isEmpty) {
+      return const BatchActionResult(succeededIds: [], failedIds: {});
+    }
+
+    final allIds = messages.map((m) => m.id).toList();
+    final succeeded = <String>[];
+    final failed = <String, String>{};
+
+    // Process in chunks of _gmailBatchLimit
+    for (var i = 0; i < allIds.length; i += _gmailBatchLimit) {
+      final chunk = allIds.sublist(
+        i,
+        i + _gmailBatchLimit > allIds.length ? allIds.length : i + _gmailBatchLimit,
+      );
+      try {
+        await _gmailApi!.users.messages.batchModify(
+          gmail.BatchModifyMessagesRequest(
+            ids: chunk,
+            removeLabelIds: ['UNREAD'],
+          ),
+          'me',
+        );
+        succeeded.addAll(chunk);
+        Redact.logSafe('Gmail batch markAsRead: ${chunk.length} messages');
+      } catch (e) {
+        // Batch failed - fall back to individual operations for this chunk
+        Redact.logError('Gmail batch markAsRead failed for chunk, falling back to individual', e);
+        for (final id in chunk) {
+          try {
+            await _gmailApi!.users.messages.modify(
+              gmail.ModifyMessageRequest(removeLabelIds: ['UNREAD']),
+              'me',
+              id,
+            );
+            succeeded.add(id);
+          } catch (individualError) {
+            failed[id] = individualError.toString();
+          }
+        }
+      }
+    }
+
+    return BatchActionResult(succeededIds: succeeded, failedIds: failed);
+  }
+
+  /// Apply flag/label to multiple messages using Gmail batchModify API
+  @override
+  Future<BatchActionResult> applyFlagBatch(
+    List<EmailMessage> messages,
+    String flagName,
+  ) async {
+    if (_gmailApi == null) {
+      return BatchActionResult.allFailed(
+        messages.map((m) => m.id).toList(),
+        'Not connected. Call signIn() first.',
+      );
+    }
+    if (messages.isEmpty) {
+      return const BatchActionResult(succeededIds: [], failedIds: {});
+    }
+
+    // Get or create the label first (single operation for the whole batch)
+    final String labelId;
+    try {
+      final sanitized = _sanitizeLabelName(flagName);
+      final labelName = 'SpamFilter/$sanitized';
+      labelId = await _getOrCreateLabel(labelName);
+    } catch (e) {
+      return BatchActionResult.allFailed(
+        messages.map((m) => m.id).toList(),
+        'Failed to get/create label: $e',
+      );
+    }
+
+    final allIds = messages.map((m) => m.id).toList();
+    final succeeded = <String>[];
+    final failed = <String, String>{};
+
+    for (var i = 0; i < allIds.length; i += _gmailBatchLimit) {
+      final chunk = allIds.sublist(
+        i,
+        i + _gmailBatchLimit > allIds.length ? allIds.length : i + _gmailBatchLimit,
+      );
+      try {
+        await _gmailApi!.users.messages.batchModify(
+          gmail.BatchModifyMessagesRequest(
+            ids: chunk,
+            addLabelIds: [labelId],
+          ),
+          'me',
+        );
+        succeeded.addAll(chunk);
+        Redact.logSafe('Gmail batch applyFlag "$flagName": ${chunk.length} messages');
+      } catch (e) {
+        Redact.logError('Gmail batch applyFlag failed for chunk, falling back to individual', e);
+        for (final id in chunk) {
+          try {
+            await _gmailApi!.users.messages.modify(
+              gmail.ModifyMessageRequest(addLabelIds: [labelId]),
+              'me',
+              id,
+            );
+            succeeded.add(id);
+          } catch (individualError) {
+            failed[id] = individualError.toString();
+          }
+        }
+      }
+    }
+
+    return BatchActionResult(succeededIds: succeeded, failedIds: failed);
+  }
+
+  /// Move multiple messages to a folder using Gmail batchModify API
+  @override
+  Future<BatchActionResult> moveToFolderBatch(
+    List<EmailMessage> messages,
+    String targetFolder,
+  ) async {
+    if (_gmailApi == null) {
+      return BatchActionResult.allFailed(
+        messages.map((m) => m.id).toList(),
+        'Not connected. Call signIn() first.',
+      );
+    }
+    if (messages.isEmpty) {
+      return const BatchActionResult(succeededIds: [], failedIds: {});
+    }
+
+    final allIds = messages.map((m) => m.id).toList();
+    final succeeded = <String>[];
+    final failed = <String, String>{};
+
+    for (var i = 0; i < allIds.length; i += _gmailBatchLimit) {
+      final chunk = allIds.sublist(
+        i,
+        i + _gmailBatchLimit > allIds.length ? allIds.length : i + _gmailBatchLimit,
+      );
+      try {
+        await _gmailApi!.users.messages.batchModify(
+          gmail.BatchModifyMessagesRequest(
+            ids: chunk,
+            addLabelIds: [targetFolder],
+            removeLabelIds: ['INBOX', 'UNREAD'],
+          ),
+          'me',
+        );
+        succeeded.addAll(chunk);
+        Redact.logSafe('Gmail batch moveToFolder "$targetFolder": ${chunk.length} messages');
+      } catch (e) {
+        Redact.logError('Gmail batch moveToFolder failed for chunk, falling back to individual', e);
+        for (final id in chunk) {
+          try {
+            await _gmailApi!.users.messages.modify(
+              gmail.ModifyMessageRequest(
+                addLabelIds: [targetFolder],
+                removeLabelIds: ['INBOX', 'UNREAD'],
+              ),
+              'me',
+              id,
+            );
+            succeeded.add(id);
+          } catch (individualError) {
+            failed[id] = individualError.toString();
+          }
+        }
+      }
+    }
+
+    return BatchActionResult(succeededIds: succeeded, failedIds: failed);
+  }
+
+  /// Execute batch actions using Gmail batch API
+  ///
+  /// For delete actions, uses batchModify to add TRASH label (matching single-message behavior).
+  /// Gmail's batchDelete permanently deletes messages, which is too destructive.
+  @override
+  Future<BatchActionResult> takeActionBatch(
+    List<EmailMessage> messages,
+    FilterAction action,
+  ) async {
+    if (_gmailApi == null) {
+      return BatchActionResult.allFailed(
+        messages.map((m) => m.id).toList(),
+        'Not connected. Call signIn() first.',
+      );
+    }
+    if (messages.isEmpty) {
+      return const BatchActionResult(succeededIds: [], failedIds: {});
+    }
+
+    switch (action) {
+      case FilterAction.delete:
+        final targetLabel = _deletedRuleFolder ?? 'TRASH';
+        if (targetLabel == 'TRASH') {
+          // Use batchModify to add TRASH label (safer than batchDelete which is permanent)
+          return _batchModifyLabels(
+            messages,
+            addLabelIds: ['TRASH'],
+            removeLabelIds: ['INBOX', 'UNREAD'],
+            operationName: 'delete (trash)',
+          );
+        } else {
+          // Move to configured folder
+          return moveToFolderBatch(messages, targetLabel);
+        }
+
+      case FilterAction.moveToJunk:
+      case FilterAction.markAsSpam:
+        return _batchModifyLabels(
+          messages,
+          addLabelIds: ['SPAM'],
+          removeLabelIds: ['INBOX', 'UNREAD'],
+          operationName: 'moveToJunk',
+        );
+
+      case FilterAction.markAsRead:
+        return markAsReadBatch(messages);
+
+      case FilterAction.moveToFolder:
+        // No target folder specified in FilterAction; fall back to single-message
+        AppLogger.warning('takeActionBatch with moveToFolder requires target folder; falling back to individual');
+        return super.takeActionBatch(messages, action);
+    }
+  }
+
+  /// Internal helper for batch label modifications with chunking and fallback
+  Future<BatchActionResult> _batchModifyLabels(
+    List<EmailMessage> messages, {
+    List<String>? addLabelIds,
+    List<String>? removeLabelIds,
+    required String operationName,
+  }) async {
+    final allIds = messages.map((m) => m.id).toList();
+    final succeeded = <String>[];
+    final failed = <String, String>{};
+
+    for (var i = 0; i < allIds.length; i += _gmailBatchLimit) {
+      final chunk = allIds.sublist(
+        i,
+        i + _gmailBatchLimit > allIds.length ? allIds.length : i + _gmailBatchLimit,
+      );
+      try {
+        await _gmailApi!.users.messages.batchModify(
+          gmail.BatchModifyMessagesRequest(
+            ids: chunk,
+            addLabelIds: addLabelIds,
+            removeLabelIds: removeLabelIds,
+          ),
+          'me',
+        );
+        succeeded.addAll(chunk);
+        Redact.logSafe('Gmail batch $operationName: ${chunk.length} messages');
+      } catch (e) {
+        Redact.logError('Gmail batch $operationName failed for chunk, falling back to individual', e);
+        for (final id in chunk) {
+          try {
+            await _gmailApi!.users.messages.modify(
+              gmail.ModifyMessageRequest(
+                addLabelIds: addLabelIds,
+                removeLabelIds: removeLabelIds,
+              ),
+              'me',
+              id,
+            );
+            succeeded.add(id);
+          } catch (individualError) {
+            failed[id] = individualError.toString();
+          }
+        }
+      }
+    }
+
+    return BatchActionResult(succeededIds: succeeded, failedIds: failed);
   }
 
   /// Check if an email still exists (for availability tracking)

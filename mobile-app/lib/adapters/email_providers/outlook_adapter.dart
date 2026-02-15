@@ -24,7 +24,7 @@ import 'email_provider.dart';
 /// 
 /// NOTE: Phase 2 - Not yet implemented
 /// Requires: msal_flutter, http packages
-class OutlookAdapter implements SpamFilterPlatform {
+class OutlookAdapter with BatchOperationsMixin implements SpamFilterPlatform {
   final Logger _logger = Logger();
 
   @override

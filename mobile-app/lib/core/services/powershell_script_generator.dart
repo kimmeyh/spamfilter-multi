@@ -54,12 +54,19 @@ $trigger
     -RestartCount 3 `
     -RestartInterval (New-TimeSpan -Minutes 5)
 
-# Create principal (run as current user)
-\$principal = New-ScheduledTaskPrincipal -UserId "\$env:USERNAME" -LogonType S4U
-
-# Register the task
+# Enable Task Scheduler history if not already enabled (requires elevation)
 try {
-    Register-ScheduledTask -TaskName \$taskName -Action \$action -Trigger \$trigger -Settings \$settings -Principal \$principal -Force
+    wevtutil set-log Microsoft-Windows-TaskScheduler/Operational /enabled:true 2>\$null
+    if (\$LASTEXITCODE -eq 0) {
+        Write-Host "INFO: Enabled Task Scheduler history logging"
+    }
+} catch {
+    # Not critical - history can be enabled manually via Task Scheduler > Enable All Tasks History
+}
+
+# Register the task (runs as current user when logged in)
+try {
+    Register-ScheduledTask -TaskName \$taskName -Action \$action -Trigger \$trigger -Settings \$settings -Force
     Write-Host "SUCCESS: Task '\$taskName' created successfully"
     exit 0
 } catch {
@@ -189,13 +196,13 @@ try {
   static String _getTriggerForFrequency(ScanFrequency frequency) {
     switch (frequency) {
       case ScanFrequency.every15min:
-        return '''\$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 15) -RepetitionDuration ([TimeSpan]::MaxValue)''';
+        return '''\$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 15) -RepetitionDuration (New-TimeSpan -Days 365)''';
 
       case ScanFrequency.every30min:
-        return '''\$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 30) -RepetitionDuration ([TimeSpan]::MaxValue)''';
+        return '''\$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 30) -RepetitionDuration (New-TimeSpan -Days 365)''';
 
       case ScanFrequency.every1hour:
-        return '''\$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Hours 1) -RepetitionDuration ([TimeSpan]::MaxValue)''';
+        return '''\$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Hours 1) -RepetitionDuration (New-TimeSpan -Days 365)''';
 
       case ScanFrequency.daily:
         return '''\$trigger = New-ScheduledTaskTrigger -Daily -At "09:00AM"''';

@@ -46,6 +46,7 @@ class SettingsStore {
   static const String keyBackgroundScanMode = 'background_scan_mode';
   static const String keyBackgroundScanFolders = 'background_scan_folders';
   static const String keyCsvExportDirectory = 'csv_export_directory';
+  static const String keyBackgroundScanDebugCsv = 'background_scan_debug_csv';
 
   // ============================================================
   // Default Values
@@ -58,6 +59,7 @@ class SettingsStore {
   static const ScanMode defaultBackgroundScanMode = ScanMode.readonly;
   static const List<String> defaultBackgroundScanFolders = ['INBOX'];
   static const String? defaultCsvExportDirectory = null; // null means use Downloads folder
+  static const bool defaultBackgroundScanDebugCsv = false;
 
   // ============================================================
   // Manual Scan Settings
@@ -149,6 +151,18 @@ class SettingsStore {
   /// Set the default folders to scan for background scans
   Future<void> setBackgroundScanFolders(List<String> folders) async {
     await _setAppSetting(keyBackgroundScanFolders, jsonEncode(folders), 'json');
+  }
+
+  /// Get whether debug CSV export is enabled for background scans
+  Future<bool> getBackgroundScanDebugCsv() async {
+    final value = await _getAppSetting(keyBackgroundScanDebugCsv);
+    if (value == null) return defaultBackgroundScanDebugCsv;
+    return value == 'true';
+  }
+
+  /// Set whether debug CSV export is enabled for background scans
+  Future<void> setBackgroundScanDebugCsv(bool enabled) async {
+    await _setAppSetting(keyBackgroundScanDebugCsv, enabled.toString(), 'bool');
   }
 
   // ============================================================
@@ -389,8 +403,22 @@ class SettingsStore {
   // ============================================================
 
   /// Get effective scan mode for an account (resolves override or uses global)
+  ///
+  /// Resolution order:
+  /// 1. Account-specific background/manual scan mode override
+  /// 2. Account-specific generic scan mode override
+  /// 3. App-wide background/manual scan mode default
   Future<ScanMode> getEffectiveScanMode(String? accountId, {bool isBackground = false}) async {
     if (accountId != null) {
+      // Check background/manual-specific override first
+      if (isBackground) {
+        final bgOverride = await getAccountBackgroundScanMode(accountId);
+        if (bgOverride != null) return bgOverride;
+      } else {
+        final manualOverride = await getAccountManualScanMode(accountId);
+        if (manualOverride != null) return manualOverride;
+      }
+      // Fall back to generic account override
       final override = await getAccountScanMode(accountId);
       if (override != null) return override;
     }
@@ -398,8 +426,22 @@ class SettingsStore {
   }
 
   /// Get effective folders for an account (resolves override or uses global)
+  ///
+  /// Resolution order:
+  /// 1. Account-specific background/manual scan folders override
+  /// 2. Account-specific generic folders override
+  /// 3. App-wide background/manual scan folders default
   Future<List<String>> getEffectiveFolders(String? accountId, {bool isBackground = false}) async {
     if (accountId != null) {
+      // Check background/manual-specific override first
+      if (isBackground) {
+        final bgOverride = await getAccountBackgroundScanFolders(accountId);
+        if (bgOverride != null) return bgOverride;
+      } else {
+        final manualOverride = await getAccountManualScanFolders(accountId);
+        if (manualOverride != null) return manualOverride;
+      }
+      // Fall back to generic account override
       final override = await getAccountFolders(accountId);
       if (override != null) return override;
     }

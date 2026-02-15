@@ -1,11 +1,18 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import '../../core/services/background_scan_manager.dart' show ScanFrequency;
+import '../../core/services/windows_task_scheduler_service.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/providers/email_scan_provider.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../adapters/email_providers/email_provider.dart' show Credentials;
 import '../widgets/app_bar_with_exit.dart';
 import 'folder_selection_screen.dart';
+import 'rules_management_screen.dart';
+import 'safe_senders_management_screen.dart';
 
 /// Settings screen for app-wide configuration
 ///
@@ -47,6 +54,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   int _backgroundScanFrequency = SettingsStore.defaultBackgroundScanFrequency;
   ScanMode _backgroundScanMode = SettingsStore.defaultBackgroundScanMode;
   List<String> _backgroundScanFolders = List.from(SettingsStore.defaultBackgroundScanFolders);
+  bool _backgroundScanDebugCsv = SettingsStore.defaultBackgroundScanDebugCsv;
   String? _csvExportDirectory;
 
   bool _isLoading = true;
@@ -88,6 +96,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       final accountBgFolders = await _settingsStore.getAccountBackgroundScanFolders(widget.accountId);
       _backgroundScanFolders = accountBgFolders ?? await _settingsStore.getBackgroundScanFolders();
 
+      _backgroundScanDebugCsv = await _settingsStore.getBackgroundScanDebugCsv();
       _csvExportDirectory = await _settingsStore.getCsvExportDirectory();
     } catch (e) {
       if (mounted) {
@@ -228,6 +237,59 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 alignment: Alignment.centerLeft,
               ),
             ),
+
+            const SizedBox(height: 24),
+
+            // Data management section
+            Text(
+              'Data Management',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'View and manage safe sender patterns and block rules',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+
+            // Manage Safe Senders button
+            OutlinedButton.icon(
+              icon: const Icon(Icons.security_outlined),
+              label: const Text('Manage Safe Senders'),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const SafeSendersManagementScreen(),
+                  ),
+                );
+              },
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                alignment: Alignment.centerLeft,
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // Manage Rules button
+            OutlinedButton.icon(
+              icon: const Icon(Icons.rule_outlined),
+              label: const Text('Manage Rules'),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const RulesManagementScreen(),
+                  ),
+                );
+              },
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                alignment: Alignment.centerLeft,
+              ),
+            ),
           ],
         );
       },
@@ -331,55 +393,88 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   }
 
   Future<void> _selectCsvExportDirectory() async {
-    // Note: file_picker package required for full implementation
-    // For now, show a dialog to enter path manually
-    final controller = TextEditingController(text: _csvExportDirectory ?? '');
+    try {
+      final selectedDirectory = await FilePicker.platform.getDirectoryPath(
+        dialogTitle: 'Select CSV Export Directory',
+        initialDirectory: _csvExportDirectory,
+      );
 
-    final result = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('CSV Export Directory'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Enter the full path where CSV exports should be saved:'),
-            const SizedBox(height: 16),
-            TextField(
-              controller: controller,
-              decoration: const InputDecoration(
-                labelText: 'Directory Path',
-                hintText: 'C:\\Users\\YourName\\Documents\\SpamFilter',
-                border: OutlineInputBorder(),
-              ),
-              autofocus: true,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Leave empty to use the system Downloads folder.',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
+      if (selectedDirectory != null) {
+        // Validate the directory exists and is writable
+        final dir = Directory(selectedDirectory);
+        if (!await dir.exists()) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                  content: Text('Selected directory does not exist')),
+            );
+          }
+          return;
+        }
 
-    if (result != null) {
-      final directory = result.isEmpty ? null : result;
-      setState(() => _csvExportDirectory = directory);
-      await _settingsStore.setCsvExportDirectory(directory);
+        setState(() => _csvExportDirectory = selectedDirectory);
+        await _settingsStore.setCsvExportDirectory(selectedDirectory);
+      }
+    } catch (e) {
+      _logger.e('Failed to open directory picker', error: e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to open directory browser: $e')),
+        );
+      }
+    }
+  }
+
+  /// Create, update, or delete the Windows Task Scheduler task
+  Future<void> _updateWindowsScheduledTask({required bool enabled}) async {
+    try {
+      bool success;
+      if (enabled) {
+        final frequency = ScanFrequency.fromMinutes(_backgroundScanFrequency);
+        if (frequency == ScanFrequency.disabled) return;
+
+        final exists = await WindowsTaskSchedulerService.taskExists();
+        if (exists) {
+          success = await WindowsTaskSchedulerService.updateScheduledTask(
+              frequency: frequency);
+        } else {
+          success = await WindowsTaskSchedulerService.createScheduledTask(
+              frequency: frequency);
+        }
+
+        if (success) {
+          _logger.i('Windows scheduled task updated: ${frequency.label}');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                  content: Text(
+                      'Background scan scheduled every ${frequency.label}')),
+            );
+          }
+        } else {
+          _logger.e('Windows scheduled task creation returned false');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                  content: Text('Failed to create Windows scheduled task')),
+            );
+          }
+        }
+      } else {
+        success = await WindowsTaskSchedulerService.deleteScheduledTask();
+        if (success) {
+          _logger.i('Windows scheduled task deleted');
+        }
+      }
+    } catch (e) {
+      _logger.e('Failed to update Windows scheduled task', error: e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content:
+                  Text('Failed to update Windows scheduled task: $e')),
+        );
+      }
     }
   }
 
@@ -394,6 +489,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           onChanged: (value) async {
             setState(() => _backgroundScanEnabled = value);
             await _settingsStore.setBackgroundScanEnabled(value);
+            // On Windows, create or delete the Task Scheduler task
+            if (Platform.isWindows) {
+              await _updateWindowsScheduledTask(enabled: value);
+            }
           },
         ),
         const Divider(),
@@ -404,6 +503,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           onChanged: (freq) async {
             setState(() => _backgroundScanFrequency = freq);
             await _settingsStore.setBackgroundScanFrequency(freq);
+            // On Windows, update the Task Scheduler frequency if enabled
+            if (Platform.isWindows && _backgroundScanEnabled) {
+              await _updateWindowsScheduledTask(enabled: true);
+            }
           },
         ),
         const SizedBox(height: 24),
@@ -424,6 +527,17 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             setState(() => _backgroundScanMode = mode);
             // [UPDATED] ISSUE #123: Save per-account background scan mode
             await _settingsStore.setAccountBackgroundScanMode(widget.accountId, mode);
+          },
+        ),
+        const SizedBox(height: 24),
+        _buildSectionHeader('Debug'),
+        SwitchListTile(
+          title: const Text('Export CSV After Each Scan'),
+          subtitle: const Text('Write scan results CSV for debugging'),
+          value: _backgroundScanDebugCsv,
+          onChanged: (value) async {
+            setState(() => _backgroundScanDebugCsv = value);
+            await _settingsStore.setBackgroundScanDebugCsv(value);
           },
         ),
       ],

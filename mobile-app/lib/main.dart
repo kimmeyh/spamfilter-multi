@@ -1,4 +1,4 @@
-import 'dart:io' show Platform, exit;
+import 'dart:io' show File, FileMode, Platform, exit;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
@@ -36,16 +36,35 @@ void main(List<String> args) async {
 
   // If running in background mode (launched by Task Scheduler), execute scan and exit
   if (BackgroundModeService.isBackgroundMode) {
-    Logger().i('Running in BACKGROUND MODE - executing background scan');
+    // Use file-based logging since headless mode has no console
+    final logFile = File('${Platform.environment['APPDATA']}\\com.example\\spam_filter_mobile\\logs\\background_scan.log');
+    Future<void> bgLog(String message) async {
+      try {
+        final timestamp = DateTime.now().toIso8601String();
+        await logFile.parent.create(recursive: true);
+        await logFile.writeAsString(
+          '[$timestamp] $message\n',
+          mode: FileMode.append,
+        );
+      } catch (_) {
+        // Cannot log - silently continue
+      }
+    }
+
+    await bgLog('=== Background scan started ===');
+    await bgLog('Args: $args');
+    await bgLog('Executable: ${Platform.resolvedExecutable}');
 
     try {
+      await bgLog('Calling executeBackgroundScan...');
       final success = await BackgroundScanWindowsWorker.executeBackgroundScan();
-      Logger().i('Background scan completed: ${success ? "SUCCESS" : "FAILURE"}');
+      await bgLog('Background scan completed: ${success ? "SUCCESS" : "FAILURE"}');
 
       // Exit after background scan completes
       exit(success ? 0 : 1);
-    } catch (e) {
-      Logger().e('Background scan failed with exception', error: e);
+    } catch (e, stackTrace) {
+      await bgLog('Background scan EXCEPTION: $e');
+      await bgLog('Stack trace: $stackTrace');
       exit(1);
     }
   }

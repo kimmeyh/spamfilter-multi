@@ -5,6 +5,7 @@
 /// Gmail, Outlook, IMAP servers, and any future email platforms.
 library;
 
+import '../../core/models/batch_action_result.dart';
 import '../../core/models/email_message.dart';
 import '../../core/models/evaluation_result.dart';
 import 'email_provider.dart';
@@ -132,9 +133,102 @@ abstract class SpamFilterPlatform {
   Future<ConnectionStatus> testConnection();
 
   /// Disconnect and cleanup resources
-  /// 
+  ///
   /// Should be called when done with this platform instance
   Future<void> disconnect();
+
+  // --- Batch Operations (Issue #144) ---
+  // Batch methods for processing multiple emails in one operation.
+  // Adapters should override for native batch support (IMAP sequence sets, Gmail batch API).
+  // Default implementations are provided by BatchOperationsMixin.
+
+  /// Mark multiple messages as read in a single batch operation.
+  Future<BatchActionResult> markAsReadBatch(List<EmailMessage> messages);
+
+  /// Apply flag/keyword to multiple messages in a single batch operation.
+  Future<BatchActionResult> applyFlagBatch(List<EmailMessage> messages, String flagName);
+
+  /// Move multiple messages to a target folder in a single batch operation.
+  Future<BatchActionResult> moveToFolderBatch(List<EmailMessage> messages, String targetFolder);
+
+  /// Execute an action on multiple messages in a single batch operation.
+  Future<BatchActionResult> takeActionBatch(List<EmailMessage> messages, FilterAction action);
+}
+
+/// Mixin providing default single-message fallback implementations for batch operations.
+///
+/// [ISSUE #144] Adapters that do not have native batch support can mix this in
+/// to get working batch methods that process messages one at a time.
+/// Adapters with native batch support (IMAP, Gmail) should override these methods.
+mixin BatchOperationsMixin implements SpamFilterPlatform {
+  @override
+  Future<BatchActionResult> markAsReadBatch(List<EmailMessage> messages) async {
+    final succeeded = <String>[];
+    final failed = <String, String>{};
+    for (final message in messages) {
+      try {
+        await markAsRead(message: message);
+        succeeded.add(message.id);
+      } catch (e) {
+        failed[message.id] = e.toString();
+      }
+    }
+    return BatchActionResult(succeededIds: succeeded, failedIds: failed);
+  }
+
+  @override
+  Future<BatchActionResult> applyFlagBatch(
+    List<EmailMessage> messages,
+    String flagName,
+  ) async {
+    final succeeded = <String>[];
+    final failed = <String, String>{};
+    for (final message in messages) {
+      try {
+        await applyFlag(message: message, flagName: flagName);
+        succeeded.add(message.id);
+      } catch (e) {
+        failed[message.id] = e.toString();
+      }
+    }
+    return BatchActionResult(succeededIds: succeeded, failedIds: failed);
+  }
+
+  @override
+  Future<BatchActionResult> moveToFolderBatch(
+    List<EmailMessage> messages,
+    String targetFolder,
+  ) async {
+    final succeeded = <String>[];
+    final failed = <String, String>{};
+    for (final message in messages) {
+      try {
+        await moveToFolder(message: message, targetFolder: targetFolder);
+        succeeded.add(message.id);
+      } catch (e) {
+        failed[message.id] = e.toString();
+      }
+    }
+    return BatchActionResult(succeededIds: succeeded, failedIds: failed);
+  }
+
+  @override
+  Future<BatchActionResult> takeActionBatch(
+    List<EmailMessage> messages,
+    FilterAction action,
+  ) async {
+    final succeeded = <String>[];
+    final failed = <String, String>{};
+    for (final message in messages) {
+      try {
+        await takeAction(message: message, action: action);
+        succeeded.add(message.id);
+      } catch (e) {
+        failed[message.id] = e.toString();
+      }
+    }
+    return BatchActionResult(succeededIds: succeeded, failedIds: failed);
+  }
 }
 
 /// Authentication methods supported by various platforms

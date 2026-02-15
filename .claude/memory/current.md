@@ -1,40 +1,76 @@
 # Sprint Context Save
 
-**Sprint**: Sprint 12
-**Date**: 2026-02-05 23:45:00
-**Branch**: feature/20260201_Sprint_12
+**Sprint**: Sprint 15
+**Date**: 2026-02-14 16:45:00
+**Branch**: feature/20260214_Sprint_15
 **Status**: In Progress
 
 ## Current Tasks
 
-- [x] Investigate why /startup-check doesn't run automatically
-- [x] Identify the mechanism for auto-running skills on startup
-- [x] Implement fix to ensure /startup-check runs every startup
-- [ ] Test and verify the fix works
+### Ongoing Investigations
+- [x] Create GitHub issues for F17 and F18 (Completed)
+- [x] Set up initial investigation for #145 (100-delete limit bug)
+- [ ] Continue implementing #145 bug fix
+- [ ] Implement batch processing (F19/#144)
+
+### Pending Tasks
+- [ ] Implement Manage Safe Senders UI (F17/#147)
+- [ ] Implement Manage Rules UI (F18/#148)
+- [ ] Add Windows directory browser (#126)
+- [ ] Begin Windows background scanning (F5)
 
 ## Recent Work
 
-- Updated `.claude/settings.local.json` to add `SessionStart` hook with `startup` matcher
-- Added `Skill(startup-check)` to allowed skills
-- Validated JSON configuration for hook and permissions
+### Sprint 15 Planning
+- Created comprehensive Sprint 15 plan covering:
+  - #145 (100-delete limit bug fix)
+  - F19/#144 (Batch email processing)
+  - F17 (Manage Safe Senders UI)
+  - F18 (Manage Rules UI)
+  - #126 (Windows directory browser)
+  - F5 (Windows background scanning)
+
+### Backlog Refinement
+- Reviewed and prioritized open issues
+- Created GitHub issues for F17 and F18
+- Approved sprint plan with user blanket authorization
+
+### Initial Investigations
+- Analyzed generic_imap_adapter.dart for potential connection issues
+- Started logging and connection tracking modifications
 
 ## Next Steps
 
-1. Verify the `SessionStart` hook works as expected
-2. Test the automatic `/startup-check` on a new session
-3. Confirm memory restore functionality works correctly
-4. Delete obsolete `save-memory.ps1` script if no longer needed
+1. Complete investigation of #145 (100-delete limit bug)
+   - Add detailed logging in IMAP adapter
+   - Implement reconnect strategy
+   - Add operation count tracking
+
+2. Begin batch processing implementation (F19/#144)
+   - Modify email_scanner.dart to support batch operations
+   - Implement error handling for partial batch failures
+
+3. Prepare for UI management screens
+   - Create SafeSendersManagementScreen
+   - Create RulesManagementScreen
+   - Update database helper for management operations
 
 ## Blockers/Notes
 
-- Skill invocation is limited within the same session
-- Manually tracking context save/restore steps
-- May need to adjust hook configuration if `/startup-check` doesn't run smoothly
+- Ensure AOL IMAP connection reliability during extended scans
+- Verify batch processing doesn't negatively impact existing scan logic
+- Maintain existing test coverage during refactoring
+
+**Specific Focus Areas**:
+- Investigate why scan stops after 100 deletes
+- Implement graceful error recovery
+- Minimize disruption to existing scan workflow
 
 ---
 
 **Instructions for Claude on Resume**:
 1. Read this context file on startup
-2. Verify git branch matches sprint
-3. Continue from "Next Steps" section above
-4. Check if any tasks marked complete since last save
+2. Verify git branch matches feature/20260214_Sprint_15
+3. Continue investigation of #145 bug
+4. If no immediate progress, run full test suite to establish baseline
+5. Consult SPRINT_STOPPING_CRITERIA.md for any stopping conditions

@@ -2,6 +2,7 @@
 library;
 
 import '../models/email_message.dart';
+import '../models/evaluation_result.dart';
 import '../providers/email_scan_provider.dart';
 import '../providers/rule_set_provider.dart';
 import '../services/rule_evaluator.dart';
@@ -149,137 +150,266 @@ class EmailScanner {
         compiler: PatternCompiler(),
       );
 
-      // 6. Process each email
+      // 6. [UPDATED] ISSUE #144: Two-phase processing - evaluate all, then batch execute
+      //
+      // Phase 6a: Evaluate all emails and determine actions
+      // Phase 6b: Execute actions in batches using platform batch APIs
+      //
+      // This reduces IMAP/API calls from 3N (markAsRead + applyFlag + takeAction per email)
+      // to ~3 batch operations total, significantly improving performance for large scans.
+
+      // --- Phase 6a: Evaluate all emails ---
+      final evaluatedEmails = <_EvaluatedEmail>[];
+      final safeSenderFolder = await _settingsStore.getAccountSafeSenderFolder(accountId);
+      // Normalize INBOX to uppercase for RFC 3501 compliance (INBOX is case-insensitive
+      // per spec, but some IMAP servers may not handle mixed-case correctly)
+      final rawTarget = safeSenderFolder ?? 'INBOX';
+      final safeSenderTarget = rawTarget.toLowerCase() == 'inbox' ? 'INBOX' : rawTarget;
+      AppLogger.scan('Safe sender target folder: "$safeSenderTarget" (raw: "$rawTarget")');
+
       for (final message in messages) {
-        // Update progress
         scanProvider.updateProgress(
           email: message,
-          message: 'Processing: ${message.subject}',
+          message: 'Evaluating: ${message.subject}',
         );
 
-        // Evaluate email
         final result = await evaluator.evaluate(message);
-
-        // Determine action
         EmailActionType action = EmailActionType.none;
-        bool success = true;
-        String? error;
 
-        // Check if matched a rule (empty string means no match)
         if (result.matchedRule.isNotEmpty) {
-          // Check if safe sender
           if (result.isSafeSender) {
             action = EmailActionType.safeSender;
-
-            // [NEW] F13: Move safe sender to configured folder if not already there
-            final safeSenderFolder = await _settingsStore.getAccountSafeSenderFolder(accountId);
-            final targetFolder = safeSenderFolder ?? 'INBOX'; // Default to INBOX
-
-            // Only move if email is NOT already in the target folder
-            if (message.folderName != targetFolder) {
-              // [UPDATED] ISSUE #123+#124: Skip safe sender processing in testLimit mode (rules only)
-              if (scanProvider.scanMode != ScanMode.readonly && scanProvider.scanMode != ScanMode.testLimit) {
-                try {
-                  AppLogger.scan('Moving safe sender email from ${message.folderName} to $targetFolder: ${message.subject}');
-                  await platform.moveToFolder(
-                    message: message,
-                    targetFolder: targetFolder,
-                  );
-                } catch (e) {
-                  success = false;
-                  error = 'Move safe sender failed: $e';
-                }
-              } else {
-                AppLogger.scan('[READONLY] Would move safe sender email to $targetFolder: ${message.subject}');
-              }
-            } else {
-              AppLogger.scan('Safe sender email already in target folder ($targetFolder), no move needed: ${message.subject}');
-            }
-          }
-          // Spam/phishing detected
-          else if (result.shouldDelete) {
+          } else if (result.shouldDelete) {
             action = EmailActionType.delete;
-
-            // [UPDATED] ISSUE #123+#124: Skip rule processing in testAll mode (safe senders only)
-            // Only execute action if NOT in readonly mode AND NOT in testAll mode
-            if (scanProvider.scanMode != ScanMode.readonly && scanProvider.scanMode != ScanMode.testAll) {
-              try {
-                // Get target folder before moving
-                final deletedRuleFolder = await _settingsStore.getAccountDeletedRuleFolder(accountId);
-                final targetFolder = deletedRuleFolder ?? 'Trash';
-
-                // [FIXED] ISSUE #138: Mark as read and apply flag BEFORE moving
-                // IMAP message IDs are folder-specific, so we must do these operations
-                // while the message is still in the original folder
-                try {
-                  await platform.markAsRead(message: message);
-                  AppLogger.scan('Marked email as read: ${message.subject}');
-                } catch (e) {
-                  AppLogger.warning('Failed to mark email as read before move: $e');
-                  // Continue - mark as read is enhancement, not critical
-                }
-
-                // Apply flag/label with rule name (before move)
-                if (result.matchedRule.isNotEmpty) {
-                  try {
-                    await platform.applyFlag(
-                      message: message,
-                      flagName: result.matchedRule,
-                    );
-                    AppLogger.scan('Applied flag "${result.matchedRule}" to email: ${message.subject}');
-                  } catch (e) {
-                    AppLogger.warning('Failed to apply flag before move: $e');
-                    // Continue - flagging is enhancement, not critical
-                  }
-                }
-
-                // Now move the email (delete via platform adapter moves to trash/deleted folder)
-                await platform.takeAction(
-                  message: message,
-                  action: FilterAction.delete,
-                );
-                AppLogger.scan('Moved email to $targetFolder: ${message.subject}');
-              } catch (e) {
-                success = false;
-                error = 'Delete failed: $e';
-              }
-            } else {
-              // Read-only or testAll (safe senders only) mode: log what would happen
-              final modeDesc = scanProvider.scanMode == ScanMode.testAll ? 'SAFE_SENDERS_ONLY' : 'READONLY';
-              AppLogger.scan('[$modeDesc] Would delete email: ${message.subject}');
-            }
           } else if (result.shouldMove) {
             action = EmailActionType.moveToJunk;
-
-            // [UPDATED] ISSUE #123+#124: Skip rule processing in testAll mode (safe senders only)
-            // Only execute action if NOT in readonly mode AND NOT in testAll mode
-            if (scanProvider.scanMode != ScanMode.readonly && scanProvider.scanMode != ScanMode.testAll) {
-              try {
-                // Move to junk folder
-                await platform.takeAction(
-                  message: message,
-                  action: FilterAction.moveToJunk,
-                );
-              } catch (e) {
-                success = false;
-                error = 'Move failed: $e';
-              }
-            } else {
-              // Read-only or testAll (safe senders only) mode: log what would happen
-              final modeDesc = scanProvider.scanMode == ScanMode.testAll ? 'SAFE_SENDERS_ONLY' : 'READONLY';
-              AppLogger.scan('[$modeDesc] Would move email to junk: ${message.subject}');
-            }
           }
         }
 
-        // Record result
+        evaluatedEmails.add(_EvaluatedEmail(
+          message: message,
+          result: result,
+          action: action,
+        ));
+      }
+
+      // --- Phase 6b: Batch execute actions ---
+      final bool canExecuteRules =
+          scanProvider.scanMode != ScanMode.readonly &&
+          scanProvider.scanMode != ScanMode.testAll;
+      final bool canExecuteSafeSenders =
+          scanProvider.scanMode != ScanMode.readonly &&
+          scanProvider.scanMode != ScanMode.testLimit;
+
+      // Collect emails by action type for batch processing
+      final deleteEmails = <_EvaluatedEmail>[];
+      final moveToJunkEmails = <_EvaluatedEmail>[];
+      final safeSenderMoveEmails = <_EvaluatedEmail>[];
+
+      for (final evaluated in evaluatedEmails) {
+        switch (evaluated.action) {
+          case EmailActionType.delete:
+            if (canExecuteRules) deleteEmails.add(evaluated);
+            break;
+          case EmailActionType.moveToJunk:
+            if (canExecuteRules) moveToJunkEmails.add(evaluated);
+            break;
+          case EmailActionType.safeSender:
+            // Only add if not already in target folder
+            if (canExecuteSafeSenders &&
+                evaluated.message.folderName != safeSenderTarget) {
+              safeSenderMoveEmails.add(evaluated);
+            }
+            break;
+          case EmailActionType.none:
+          case EmailActionType.markAsRead:
+            break;
+        }
+      }
+
+      // Track batch results for recording
+      final batchErrors = <String, String>{}; // messageId -> error
+
+      // Execute delete batch: markAsRead + applyFlag + takeAction
+      if (deleteEmails.isNotEmpty) {
+        // Use synthetic status message (empty ID) to avoid incrementing processedCount
+        scanProvider.updateProgress(
+          email: EmailMessage(
+            id: '',
+            from: '',
+            subject: 'Batch processing ${deleteEmails.length} emails for deletion...',
+            body: '',
+            headers: {},
+            receivedDate: DateTime.now(),
+            folderName: '',
+          ),
+          message: 'Batch processing ${deleteEmails.length} emails for deletion...',
+        );
+
+        final deleteMessages = deleteEmails.map((e) => e.message).toList();
+
+        // Step 1: Batch mark as read (before move, enhancement - do not block on failure)
+        try {
+          final markResult = await platform.markAsReadBatch(deleteMessages);
+          AppLogger.scan('Batch markAsRead: ${markResult.successCount} succeeded, ${markResult.failureCount} failed');
+        } catch (e) {
+          AppLogger.warning('Batch markAsRead failed entirely: $e');
+        }
+
+        // Step 2: Batch apply flags grouped by rule name
+        final flagGroups = <String, List<EmailMessage>>{};
+        for (final evaluated in deleteEmails) {
+          if (evaluated.result.matchedRule.isNotEmpty) {
+            flagGroups
+                .putIfAbsent(evaluated.result.matchedRule, () => [])
+                .add(evaluated.message);
+          }
+        }
+        for (final entry in flagGroups.entries) {
+          try {
+            final flagResult = await platform.applyFlagBatch(entry.value, entry.key);
+            AppLogger.scan('Batch applyFlag "${entry.key}": ${flagResult.successCount} succeeded, ${flagResult.failureCount} failed');
+          } catch (e) {
+            AppLogger.warning('Batch applyFlag "${entry.key}" failed entirely: $e');
+          }
+        }
+
+        // Step 3: Batch delete (move to trash/configured folder)
+        try {
+          final deleteResult = await platform.takeActionBatch(
+            deleteMessages,
+            FilterAction.delete,
+          );
+          AppLogger.scan('Batch delete: ${deleteResult.successCount} succeeded, ${deleteResult.failureCount} failed');
+          // Track failures
+          batchErrors.addAll(deleteResult.failedIds);
+        } catch (e) {
+          AppLogger.warning('Batch delete failed entirely: $e');
+          for (final msg in deleteMessages) {
+            batchErrors[msg.id] = 'Delete failed: $e';
+          }
+        }
+      } else if (canExecuteRules) {
+        // Log readonly/testAll mode for delete-eligible emails
+        final readonlyDeletes = evaluatedEmails
+            .where((e) => e.action == EmailActionType.delete)
+            .toList();
+        if (readonlyDeletes.isNotEmpty) {
+          final modeDesc = scanProvider.scanMode == ScanMode.testAll
+              ? 'SAFE_SENDERS_ONLY'
+              : 'READONLY';
+          AppLogger.scan('[$modeDesc] Would delete ${readonlyDeletes.length} emails');
+        }
+      }
+
+      // Execute moveToJunk batch
+      if (moveToJunkEmails.isNotEmpty) {
+        scanProvider.updateProgress(
+          email: EmailMessage(
+            id: '',
+            from: '',
+            subject: 'Batch moving ${moveToJunkEmails.length} emails to junk...',
+            body: '',
+            headers: {},
+            receivedDate: DateTime.now(),
+            folderName: '',
+          ),
+          message: 'Batch moving ${moveToJunkEmails.length} emails to junk...',
+        );
+
+        try {
+          final junkMessages = moveToJunkEmails.map((e) => e.message).toList();
+          final junkResult = await platform.takeActionBatch(
+            junkMessages,
+            FilterAction.moveToJunk,
+          );
+          AppLogger.scan('Batch moveToJunk: ${junkResult.successCount} succeeded, ${junkResult.failureCount} failed');
+          batchErrors.addAll(junkResult.failedIds);
+        } catch (e) {
+          AppLogger.warning('Batch moveToJunk failed entirely: $e');
+          for (final evaluated in moveToJunkEmails) {
+            batchErrors[evaluated.message.id] = 'Move to junk failed: $e';
+          }
+        }
+      }
+
+      // Execute safe sender move batch
+      AppLogger.scan('Safe sender move batch: ${safeSenderMoveEmails.length} emails to move (canExecuteSafeSenders=$canExecuteSafeSenders, target="$safeSenderTarget")');
+      if (safeSenderMoveEmails.isNotEmpty) {
+        for (final evaluated in safeSenderMoveEmails) {
+          AppLogger.scan('  Safe sender to move: id=${evaluated.message.id}, from="${evaluated.message.from}", folder="${evaluated.message.folderName}"');
+        }
+
+        scanProvider.updateProgress(
+          email: EmailMessage(
+            id: '',
+            from: '',
+            subject: 'Batch moving ${safeSenderMoveEmails.length} safe sender emails...',
+            body: '',
+            headers: {},
+            receivedDate: DateTime.now(),
+            folderName: '',
+          ),
+          message: 'Batch moving ${safeSenderMoveEmails.length} safe sender emails...',
+        );
+
+        try {
+          final safeSenderMessages = safeSenderMoveEmails.map((e) => e.message).toList();
+          final moveResult = await platform.moveToFolderBatch(
+            safeSenderMessages,
+            safeSenderTarget,
+          );
+          AppLogger.scan('Batch safe sender move to "$safeSenderTarget": ${moveResult.successCount} succeeded, ${moveResult.failureCount} failed');
+          if (moveResult.failedIds.isNotEmpty) {
+            AppLogger.warning('Safe sender move failures: ${moveResult.failedIds}');
+          }
+          batchErrors.addAll(moveResult.failedIds);
+        } catch (e) {
+          AppLogger.warning('Batch safe sender move failed entirely: $e');
+          for (final evaluated in safeSenderMoveEmails) {
+            batchErrors[evaluated.message.id] = 'Move safe sender failed: $e';
+          }
+        }
+      } else {
+        // Log why safe sender batch is empty
+        final safeSenderEvaluated = evaluatedEmails.where((e) => e.action == EmailActionType.safeSender).toList();
+        if (safeSenderEvaluated.isNotEmpty) {
+          AppLogger.scan('Safe sender emails found but not added to batch:');
+          for (final e in safeSenderEvaluated) {
+            final inTarget = e.message.folderName == safeSenderTarget;
+            AppLogger.scan('  id=${e.message.id}, folder="${e.message.folderName}", alreadyInTarget=$inTarget, canExecute=$canExecuteSafeSenders');
+          }
+        }
+      }
+
+      // Log readonly mode actions
+      if (!canExecuteRules) {
+        final readonlyDeletes = evaluatedEmails.where((e) => e.action == EmailActionType.delete).length;
+        final readonlyJunk = evaluatedEmails.where((e) => e.action == EmailActionType.moveToJunk).length;
+        if (readonlyDeletes > 0 || readonlyJunk > 0) {
+          final modeDesc = scanProvider.scanMode == ScanMode.testAll
+              ? 'SAFE_SENDERS_ONLY'
+              : 'READONLY';
+          AppLogger.scan('[$modeDesc] Would delete $readonlyDeletes, move to junk $readonlyJunk emails');
+        }
+      }
+      if (!canExecuteSafeSenders) {
+        final readonlySafe = evaluatedEmails.where((e) => e.action == EmailActionType.safeSender).length;
+        if (readonlySafe > 0) {
+          AppLogger.scan('[READONLY] Would move $readonlySafe safe sender emails to $safeSenderTarget');
+        }
+      }
+
+      // Record all results
+      for (final evaluated in evaluatedEmails) {
+        final errorMsg = batchErrors[evaluated.message.id];
         scanProvider.recordResult(
           EmailActionResult(
-            email: message,
-            evaluationResult: result,
-            action: action,
-            success: success,
-            error: error,
+            email: evaluated.message,
+            evaluationResult: evaluated.result,
+            action: evaluated.action,
+            success: errorMsg == null,
+            error: errorMsg,
           ),
         );
       }
@@ -359,4 +489,17 @@ class EmailScanner {
       rethrow;
     }
   }
+}
+
+/// Internal helper for holding an evaluated email with its determined action
+class _EvaluatedEmail {
+  final EmailMessage message;
+  final EvaluationResult result;
+  final EmailActionType action;
+
+  const _EvaluatedEmail({
+    required this.message,
+    required this.result,
+    required this.action,
+  });
 }
