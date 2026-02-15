@@ -11,6 +11,7 @@ import '../../adapters/storage/secure_credentials_store.dart';
 import '../../adapters/email_providers/email_provider.dart' show Credentials;
 import '../widgets/app_bar_with_exit.dart';
 import 'folder_selection_screen.dart';
+import 'background_scan_log_screen.dart';
 import 'rules_management_screen.dart';
 import 'safe_senders_management_screen.dart';
 
@@ -567,6 +568,21 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           onChanged: (value) async {
             setState(() => _backgroundScanDebugCsv = value);
             await _settingsStore.setBackgroundScanDebugCsv(value);
+          },
+        ),
+        const SizedBox(height: 24),
+        _buildSectionHeader('History'),
+        ListTile(
+          leading: const Icon(Icons.history),
+          title: const Text('View Scan History'),
+          subtitle: const Text('View past background scan runs and results'),
+          trailing: const Icon(Icons.chevron_right),
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const BackgroundScanLogScreen(),
+              ),
+            );
           },
         ),
       ],
