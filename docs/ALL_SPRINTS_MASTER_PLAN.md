@@ -110,22 +110,13 @@ See CHANGELOG.md for detailed feature history.
 - **#159**: Test Background Scan button (~3-4h)
 - **#149**: Manage Rules UI overhaul - split combined rules, search, filter (~12-16h)
 
-### Option 2: Documentation and Process
-**Estimated Duration**: 8-12 hours
-**Objective**: Improve sprint workflow documentation
+### Option 2: Technical Improvements
+**Estimated Duration**: 12-18 hours
+**Objective**: Technical debt and rule management improvements
 
 **Tasks**:
-- **#160**: Renumber Sprint Execution Workflow phases (~6-8h)
 - **#154**: Auto-remove safe sender entries when converting to delete rules (~4-6h)
-
-### Option 2: Background Scan Enhancements + Gmail Auth
-**Estimated Duration**: 20-28 hours
-**Objective**: Improve background scanning and add persistent Gmail auth
-
-**Tasks**:
-- **#152**: Background scan log viewer (~8-10h)
 - **F12**: Persistent Gmail Authentication (~8-12h)
-- Background scan enhancements (days back setting, log review)
 
 ### Option 3: Custom Sprint (User-Defined)
 User selects specific issues from backlog based on priorities.
