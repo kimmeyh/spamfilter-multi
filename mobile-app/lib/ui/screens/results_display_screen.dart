@@ -750,7 +750,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     final isRulesOnly = scanMode == ScanMode.testLimit;
 
     // [NEW] Testing feedback FB-4: Determine if showing live or historical results
-    final hasLiveResults = allResults.isNotEmpty || scanProvider.status == ScanStatus.scanning;
+    // Use scanProvider.results (not allResults) to distinguish live scan from historical data.
+    // allResults includes _historicalResults loaded from database, which should not
+    // trigger the live scan bubble path.
+    final hasLiveResults = scanProvider.results.isNotEmpty || scanProvider.status == ScanStatus.scanning;
     final showingHistorical = !hasLiveResults && _lastCompletedScan != null;
 
     // Build scan type and time info
