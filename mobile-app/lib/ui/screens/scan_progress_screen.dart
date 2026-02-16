@@ -415,9 +415,10 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
     // Load scan mode from account settings
     final scanMode = await settingsStore.getAccountManualScanMode(widget.accountId) ?? ScanMode.readonly;
     scanProvider.initializeScanMode(mode: scanMode);
-    
+
     final logger = Logger();
-    logger.i('[ISSUE #138] Loaded scan mode for manual scan: $scanMode');
+    logger.i('[SCAN_SCREEN] accountId=${widget.accountId}, platformId=${widget.platformId}');
+    logger.i('[SCAN_SCREEN] Loaded settings: scanMode=$scanMode, daysBack=$daysBack');
 
     // Immediately update UI to show scan is starting
     scanProvider.startScan(totalEmails: 0);
@@ -462,11 +463,13 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
         scanLogger.i('[FOLDERS] No folders configured in Settings, using default: $foldersToScan');
       }
 
-      scanLogger.i('[LAUNCH] Starting scan of folders: $foldersToScan for $daysBack days back');
+      scanLogger.i('[SCAN_SCREEN] Starting scan: folders=$foldersToScan, daysBack=$daysBack');
 
       // Start scan in background (will call startScan again with real count)
       await scanner.scanInbox(daysBack: daysBack, folderNames: foldersToScan);
-    } catch (e) {
+      scanLogger.i('[SCAN_SCREEN] scanInbox() completed successfully');
+    } catch (e, st) {
+      logger.e('[SCAN_SCREEN] SCAN EXCEPTION: $e\n$st');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

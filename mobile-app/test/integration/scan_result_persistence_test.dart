@@ -192,7 +192,7 @@ void main() {
         foldersScanned: ['INBOX'],
       );
 
-      // Simulate progress updates
+      // Simulate progress updates and record results
       for (int i = 0; i < 5; i++) {
         final email = EmailMessage(
           id: 'email-$i',
@@ -208,6 +208,12 @@ void main() {
           email: email,
           message: 'Processing email $i',
         );
+        // processedCount increments via recordResult, not updateProgress
+        scanProvider.recordResult(EmailActionResult(
+          email: email,
+          action: EmailActionType.none,
+          success: true,
+        ));
       }
 
       // Verify progress state

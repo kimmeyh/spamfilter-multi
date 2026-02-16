@@ -9,6 +9,7 @@ import 'package:logger/logger.dart';
 
 import '../../core/models/email_message.dart';
 import '../../core/models/evaluation_result.dart';
+import '../../core/storage/database_helper.dart';
 import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/unmatched_email_store.dart';
 import '../../core/utils/pattern_normalization.dart';
@@ -97,6 +98,7 @@ class EmailScanProvider extends ChangeNotifier {
   ScanResultStore? _scanResultStore;
   UnmatchedEmailStore? _unmatchedEmailStore;
   int? _currentScanResultId;  // Track current scan result for persistence
+  DatabaseHelper? _databaseHelper;  // For email_actions persistence
 
   // [NEW] MULTI-ACCOUNT SUPPORT: Provider-specific junk folder configuration
   static const Map<String, List<String>> JUNK_FOLDERS_BY_PROVIDER = {
@@ -201,9 +203,11 @@ class EmailScanProvider extends ChangeNotifier {
   void initializePersistence({
     required ScanResultStore scanResultStore,
     required UnmatchedEmailStore unmatchedEmailStore,
+    DatabaseHelper? databaseHelper,
   }) {
     _scanResultStore = scanResultStore;
     _unmatchedEmailStore = unmatchedEmailStore;
+    _databaseHelper = databaseHelper;
     _currentScanResultId = null;
     _logger.i('Scan result persistence initialized');
   }
@@ -283,11 +287,8 @@ class EmailScanProvider extends ChangeNotifier {
     String? message,
   }) {
     _currentEmail = email;
-    // [FIX] ISSUE #128: Only increment processedCount for actual emails, not status messages
-    // Status messages have empty email IDs
-    if (email.id.isNotEmpty) {
-      _processedCount++;
-    }
+    // Note: processedCount is now incremented in recordResult() so that
+    // processed/deleted/safe counts all update together after batch operations.
     _statusMessage = message ?? 'Processing ${email.from}...';
     _logger.d('Progress: $_processedCount / $_totalEmails');
     
@@ -339,17 +340,62 @@ class EmailScanProvider extends ChangeNotifier {
     _logger.i('Completed scan - $modeName: '
         '$_deletedCount deleted, $_movedCount moved, $_safeSendersCount safe senders, $_errorCount errors');
 
-    // [NEW] SPRINT 4: Mark scan result as completed in database
+    // [NEW] SPRINT 4: Mark scan result as completed and persist final counts
     if (_scanResultStore != null && _currentScanResultId != null) {
       try {
+        // Persist final counts before marking as completed
+        await _scanResultStore!.updateScanResultFields(_currentScanResultId!, {
+          'total_emails': _totalEmails,
+          'processed_count': _processedCount,
+          'deleted_count': _deletedCount,
+          'moved_count': _movedCount,
+          'safe_sender_count': _safeSendersCount,
+          'no_rule_count': _noRuleCount,
+          'error_count': _errorCount,
+        });
         await _scanResultStore!.markScanCompleted(_currentScanResultId!);
-        _logger.i('Marked scan result as completed: id=$_currentScanResultId');
+        _logger.i('Marked scan result as completed with counts: id=$_currentScanResultId');
+
+        // Persist individual email actions for historical "View Results" display
+        await _persistEmailActions();
       } catch (e) {
         _logger.e('Failed to mark scan completed: $e');
       }
     }
 
     notifyListeners();  // Final update always sent (bypasses throttling)
+  }
+
+  /// Persist individual email actions to database for historical "View Results"
+  ///
+  /// Batch-inserts all results at scan completion for performance.
+  /// Allows "View Results" to display detailed email list from past scans.
+  Future<void> _persistEmailActions() async {
+    if (_databaseHelper == null || _currentScanResultId == null || _results.isEmpty) {
+      return;
+    }
+
+    try {
+      final actions = _results.map((r) => <String, dynamic>{
+        'scan_result_id': _currentScanResultId!,
+        'email_id': r.email.id,
+        'email_from': r.email.from,
+        'email_subject': r.email.subject,
+        'email_received_date': r.email.receivedDate.millisecondsSinceEpoch,
+        'email_folder': r.email.folderName,
+        'action_type': r.action.name,
+        'matched_rule_name': r.evaluationResult?.matchedRule,
+        'matched_pattern': r.evaluationResult?.matchedPattern,
+        'is_safe_sender': r.action == EmailActionType.safeSender ? 1 : 0,
+        'success': r.success ? 1 : 0,
+        'error_message': r.error,
+      }).toList();
+
+      await _databaseHelper!.insertEmailActionBatch(actions);
+      _logger.i('Persisted ${actions.length} email actions for scan $_currentScanResultId');
+    } catch (e) {
+      _logger.e('Failed to persist email actions: $e');
+    }
   }
 
   /// [NEW] SPRINT 4: Mark scan as failed with error and persist error state
@@ -520,6 +566,8 @@ class EmailScanProvider extends ChangeNotifier {
   /// - testAll: all actions executed (can revert)
   /// - fullScan: all actions executed PERMANENTLY (cannot revert)
   void recordResult(EmailActionResult result) {
+    _logger.d('[RECORD] recordResult called: action=${result.action}, email=${result.email.from}, success=${result.success}');
+
     // Determine if this action should actually be executed
     bool shouldExecuteAction;
     if (_scanMode == ScanMode.fullScan) {
@@ -554,6 +602,7 @@ class EmailScanProvider extends ChangeNotifier {
 
     // Always record the result for UI/history
     _results.add(result);
+    _processedCount++;
 
     // [NEW] PHASE 3.1: Always update counts based on rule evaluation (what WOULD happen)
     // This ensures bubbles show proposed actions even in Read-Only mode

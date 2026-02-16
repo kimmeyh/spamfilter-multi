@@ -10,6 +10,7 @@ import 'settings_screen.dart';
 
 import '../../core/providers/email_scan_provider.dart' show EmailScanProvider, EmailActionResult, EmailActionType, ScanStatus, ScanMode;
 import '../../core/providers/rule_set_provider.dart';
+import '../../core/models/email_message.dart';
 import '../../core/models/rule_set.dart' show Rule, RuleConditions, RuleActions;
 import '../../core/services/email_body_parser.dart';
 import '../../core/storage/database_helper.dart';
@@ -65,6 +66,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   ScanResult? _lastCompletedScan;
   bool _hasEverScanned = false;
   bool _historicalLoaded = false;
+  List<EmailActionResult> _historicalResults = [];
 
   @override
   void initState() {
@@ -79,16 +81,50 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     _loadLastCompletedScan();
   }
 
-  /// Load the most recent completed scan from database
+  /// Load the most recent completed scan and its email actions from database
   Future<void> _loadLastCompletedScan() async {
     try {
       final dbHelper = DatabaseHelper();
       final scanResultStore = ScanResultStore(dbHelper);
       final lastScan = await scanResultStore.getLatestCompletedScan(widget.accountId);
+
+      List<EmailActionResult> historicalResults = [];
+      if (lastScan != null && lastScan.id != null) {
+        // Load individual email actions for this scan
+        final actionMaps = await dbHelper.queryEmailActions(
+          scanResultId: lastScan.id,
+        );
+        historicalResults = actionMaps.map((map) {
+          final email = EmailMessage(
+            id: map['email_id'] as String? ?? '',
+            from: map['email_from'] as String? ?? '',
+            subject: map['email_subject'] as String? ?? '',
+            body: '',
+            headers: {},
+            receivedDate: DateTime.fromMillisecondsSinceEpoch(
+              (map['email_received_date'] as int?) ?? 0,
+            ),
+            folderName: map['email_folder'] as String? ?? '',
+          );
+          final actionStr = map['action_type'] as String? ?? 'none';
+          final action = EmailActionType.values.firstWhere(
+            (e) => e.name == actionStr,
+            orElse: () => EmailActionType.none,
+          );
+          return EmailActionResult(
+            email: email,
+            action: action,
+            success: (map['success'] as int?) == 1,
+            error: map['error_message'] as String?,
+          );
+        }).toList();
+      }
+
       if (mounted) {
         setState(() {
           _lastCompletedScan = lastScan;
           _hasEverScanned = lastScan != null;
+          _historicalResults = historicalResults;
           _historicalLoaded = true;
         });
       }
@@ -451,7 +487,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   Widget build(BuildContext context) {
     final scanProvider = context.watch<EmailScanProvider>();
     final summary = scanProvider.getSummary();
-    final allResults = scanProvider.results;
+    final liveResults = scanProvider.results;
+
+    // Use historical results from database when no live results available
+    final allResults = liveResults.isNotEmpty ? liveResults : _historicalResults;
     final filteredResults = _getFilteredResults(allResults);
 
     // Issue 3: Cache folders list for performance (only extract once per results set)
