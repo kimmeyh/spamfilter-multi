@@ -1,6 +1,10 @@
 ***BELOW IS NOT FOR CLAUDE CODE USE***
 ***BELOW IS NOT FOR Github Copilot USE***
-
+Common Prompts:
+- Sprint approval:
+Sprint plan approved, proceed with execution.  
+All Sprint asks and sub-tasks are approved.  Continue without addition approvals until Full Manual Testing.
+Do not stop to ask questions unless meeting the criteria in D:\Data\Harold\github\spamfilter-multi\docs\SPRINT_STOPPING_CRITERIA.md
 Next:----------------------------------------
 What is the way that Samsung Galaxy S24+ Android email address does authentication for gmail, as it only requests authentication once over multiple years, but the current Windows Desktop and Android app method here seems to need to request an update about once per day?
 
