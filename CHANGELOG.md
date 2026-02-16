@@ -26,7 +26,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
-### 2026-02-15 (Sprint 16: User Testing Feedback)
+### 2026-02-15-16 (Sprint 16: User Testing Feedback)
 - **feat**: Scan range slider always visible and interactive, "Scan all emails" checkbox overrides slider value (FB-1)
 - **feat**: Background scan default changed to "all emails" instead of 7 days (FB-1)
 - **feat**: Remove Scan Options dialog popup - Start Live Scan uses Settings directly (FB-2)
@@ -34,6 +34,8 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **feat**: View Results shows last completed scan (live or background) with scan type and timestamp (FB-4)
 - **feat**: "No Results Yet" message only shown when no scan history exists at all (FB-5)
 - **fix**: Auto-repair Windows Task Scheduler executable path after app rebuild (FB-6)
+- **feat**: Persist individual email actions to database for historical View Results display - both manual and background scans (FB-7)
+- **fix**: Historical View Results summary bubbles now show correct counts from database instead of empty live scan provider values (FB-8)
 
 ### 2026-02-14 (Sprint 16: Scan Configuration, Log Viewer, and Rule Conflict Detection)
 - **feat**: Persistent days-back scan settings for Manual and Background scans with per-account overrides (Issue #153)
