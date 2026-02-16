@@ -14,9 +14,9 @@
 |----------|---------|-------------|
 | **ALL_SPRINTS_MASTER_PLAN.md** (this doc) | Master plan for all sprints | Before starting any sprint, after completing a sprint |
 | **SPRINT_PLANNING.md** | Sprint planning methodology | When planning a new sprint |
-| **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases -1 to 4.5) |
+| **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 1-7) |
 | **SPRINT_STOPPING_CRITERIA.md** | When/why to stop working | When uncertain if blocked or should continue |
-| **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 4.5) |
+| **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 7) |
 | **BACKLOG_REFINEMENT.md** | Backlog refinement process | When requested by Product Owner |
 | **TESTING_STRATEGY.md** | Testing approach and requirements | When writing or reviewing tests |
 | **QUALITY_STANDARDS.md** | Quality standards for code and documentation | When writing code or documentation |
@@ -53,6 +53,7 @@ Historical sprint information has been moved to individual summary documents and
 | 12 | SPRINT_12_SUMMARY.md | [OK] Complete | ~48h (Feb 1-6, 2026) |
 | 13 | SPRINT_13_PLAN.md | [OK] Complete | ~3h (Feb 6, 2026) |
 | 14 | sprint_14_plan.md | [OK] Complete | ~8h (Feb 7-13, 2026) |
+| 15 | sprint_15_plan.md | [OK] Complete | ~16h (Feb 14-15, 2026) |
 
 **Key Achievements**:
 - **Sprint 1**: Database foundation (SQLite schema, migration infrastructure)
@@ -65,6 +66,8 @@ Historical sprint information has been moved to individual summary documents and
 - **Sprint 12**: MVP Core Features (Settings, Scan Results Processing, Interactive Rule Management) + Sprint 11 retrospective actions
 - **Sprint 13**: Account-Specific Folder Settings (per-account deleted rule folder, safe sender folder, subject cleaning, settings UI refactor)
 - **Sprint 14**: Settings Restructure + UX Improvements (progressive scan updates, Demo Mode, enhanced delete processing, plus-sign safe sender fix)
+- **Sprint 15**: Bug Fixes, Performance, and Settings Management (100-delete limit fix via UID migration, batch email processing, Safe Senders/Rules management UIs, Windows directory browser, Windows background scanning with Task Scheduler, 15 ADRs)
+- **Sprint 16**: UX Polish, Scan Configuration, and Rule Intelligence (persistent days-back settings, scan options defaults, Manual Scan rename, background scan log viewer, rule override/conflict detection, scan result persistence for historical View Results, 8 rounds of user testing feedback)
 
 See CHANGELOG.md for detailed feature history.
 
@@ -74,48 +77,55 @@ See CHANGELOG.md for detailed feature history.
 
 **No Active Sprint**
 
-**Status**: ⏸️ AWAITING USER DIRECTION
+**Status**: AWAITING SPRINT 17 PLANNING
 
-**Last Completed Sprint**: Sprint 14 (February 7-13, 2026)
-- See `.claude/plans/sprint_14_plan.md` for full details
-- PR #143 open for review: https://github.com/kimmeyh/spamfilter-multi/pull/143
-- Features:
-  - #128: Progressive folder-by-folder scan updates (2-second refresh)
-  - #123 + #124: Settings Screen restructure with Default Folders UI
-  - #125: Enhanced Demo Scan with 50+ sample emails
-  - #138: Enhanced Deleted Email Processing (mark-as-read, rule tagging)
-  - #130: Analyzer warnings reduced to 48 (<50 target)
-  - Bug fix: Safe sender pattern creation for plus-sign emails
+**Last Completed Sprint**: Sprint 16 (February 15-16, 2026)
+- PR #155: https://github.com/kimmeyh/spamfilter-multi/pull/155
+- Features completed:
+  - #153: Persistent days-back settings for Manual and Background scans
+  - #150: Scan Options defaults to "Scan all emails" with saved preferences
+  - #151: Renamed "Scan Progress" to "Manual Scan", removed folder selector
+  - #152: Background scan log viewer with account filter and summary stats
+  - #139: Rule override/conflict detection with warning dialogs
+  - FB-1 through FB-8: User testing feedback (scan slider, simplified UI, result persistence)
+  - 10 new ADRs (ADR-0016 through ADR-0025)
+- Retrospective: `docs/sprint_16_retrospective.md`
+- New issues filed from testing feedback:
+  - #156: Manual Scan status text formatting
+  - #157: Clear Results screen before new Live Scan
+  - #158: Consolidated Scan History (unified background + manual)
+  - #159: Test Background Scan button
+  - #160: Renumber Sprint Execution Workflow phases
 
 **Next Sprint Candidates**:
 
-### Option 1: Background Scanning + Persistent Gmail Auth (Original Sprint 13 Scope - Deferred)
-**Estimated Duration**: 22-28 hours
-**Model Assignment**: Sonnet (architecture, integration) + Haiku (testing)
-**Objective**: Windows background scanning with Task Scheduler + long-lived Gmail authentication
+### Option 1: Scan History and UX Improvements
+**Estimated Duration**: 20-30 hours
+**Objective**: Consolidate scan history and continue UX improvements
+
+**Tasks** (from GitHub issues):
+- **#158**: Consolidated Scan History - unified background/manual view (~12-16h)
+- **#156**: Manual Scan status text formatting (~1-2h)
+- **#157**: Clear Results screen before new Live Scan (~2-3h)
+- **#159**: Test Background Scan button (~3-4h)
+- **#149**: Manage Rules UI overhaul - split combined rules, search, filter (~12-16h)
+
+### Option 2: Documentation and Process
+**Estimated Duration**: 8-12 hours
+**Objective**: Improve sprint workflow documentation
 
 **Tasks**:
-- **F5**: Background Scanning - Windows Desktop (~14-16h)
+- **#160**: Renumber Sprint Execution Workflow phases (~6-8h)
+- **#154**: Auto-remove safe sender entries when converting to delete rules (~4-6h)
+
+### Option 2: Background Scan Enhancements + Gmail Auth
+**Estimated Duration**: 20-28 hours
+**Objective**: Improve background scanning and add persistent Gmail auth
+
+**Tasks**:
+- **#152**: Background scan log viewer (~8-10h)
 - **F12**: Persistent Gmail Authentication (~8-12h)
-
-See [detailed F5/F12 specifications below](#f5-background-scanning---windows-desktop) for complete task breakdown.
-
----
-
-### Option 2: UI Polish + Bug Fixes + Technical Debt
-**Estimated Duration**: 15-25 hours
-**Model Assignment**: Sonnet (bug #128) + Haiku (enhancements, cleanup)
-**Objective**: Address user experience issues and code quality
-
-**Tasks**:
-- **#128**: Progressive Folder Scan Updates (~4-6h) - Sonnet
-- **#123**: Settings Screen Restructure (~6-8h) - Haiku
-- **#124**: Default Folders UI Consistency (~2-3h) - Haiku
-- **#125**: Enhanced Demo Scan (~4-6h) - Haiku
-- **#126**: Windows Directory Browser (~3-4h) - Haiku
-- **#130**: Analyzer Warnings Cleanup (~4-6h) - Haiku (FINAL TASK)
-
----
+- Background scan enhancements (days back setting, log review)
 
 ### Option 3: Custom Sprint (User-Defined)
 User selects specific issues from backlog based on priorities.
@@ -336,7 +346,7 @@ Priority based on: Product Owner prioritization for MVP development.
 ### Priority 2: Windows Background Scanning + Persistent Gmail Auth (Sprint 13)
 
 #### F5: Background Scanning - Windows Desktop
-**Status**: [CHECKLIST] PLANNED (Sprint 13)
+**Status**: [OK] COMPLETED (Sprint 15, PR #146)
 **Estimated Effort**: 14-16 hours
 **Platform**: Windows Desktop
 **Business Value**: Background scanning + easy app distribution on Windows
@@ -1024,14 +1034,601 @@ This section tracks all open and fixed GitHub issues from code review and sprint
 
 ---
 
+## Google Play Store Readiness
+
+**Added**: February 15, 2026
+**Status**: Planning (features identified, architectural decisions pending)
+**Objective**: Identify and plan all features, configurations, and policy compliance needed to publish the app on the Google Play Store.
+
+### Current App Assessment
+
+The app is approximately 60-70% ready for Play Store publication. Core spam filtering functionality is complete and production-ready. The remaining work is primarily administrative (signing, permissions, policies, branding) and compliance-related (Gmail API verification, privacy policy, data safety declarations).
+
+**What is already done**:
+- Core spam filtering functionality (complete and tested)
+- Secure credential storage via `flutter_secure_storage` (encrypted at rest)
+- OAuth 2.0 implementation for Gmail (Android + Windows)
+- IMAP support for AOL, Yahoo, generic providers
+- 185+ automated tests passing
+- Multi-account support
+- Background scanning architecture (WorkManager on Android, Task Scheduler on Windows)
+- Notification infrastructure (`flutter_local_notifications`)
+- Accessibility helper foundation (`accessibility_helper.dart`)
+- MSIX configuration for Windows (in `pubspec.yaml`)
+
+### Gap Analysis Summary
+
+| Area | Current State | Play Store Required | Gap Severity |
+|------|--------------|---------------------|-------------|
+| Application ID | `com.example.spamfiltermobile` | Unique reverse-domain ID | BLOCKING |
+| Release Signing | Debug keys only | Production keystore + Play App Signing | BLOCKING |
+| App Bundle Format | APK builds only | AAB (Android App Bundle) required | BLOCKING |
+| Privacy Policy | None | Publicly hosted URL required | BLOCKING |
+| Gmail OAuth Verification | Unverified (dev-only) | Restricted scope verification + CASA audit | BLOCKING |
+| Android Permissions | INTERNET only (debug/profile) | INTERNET, POST_NOTIFICATIONS, WAKE_LOCK, etc. | BLOCKING |
+| Data Safety Form | Not started | Required in Play Console | BLOCKING |
+| Content Rating | Not started | IARC questionnaire required | BLOCKING |
+| App Version | 0.1.0 | Must be 1.0.0+ for release | HIGH |
+| Adaptive Icons | No (only legacy mipmap) | Required for Android 8+ (API 26+) | HIGH |
+| ProGuard/R8 Rules | None configured | Needed for obfuscation and size | HIGH |
+| Store Listing Assets | None | Icon 512x512, feature graphic 1024x500, screenshots | HIGH |
+| App Label | `spamfilter_mobile` | User-friendly display name | HIGH |
+| Target SDK | Flutter default (~34) | API 35 required now; API 36 expected by Aug 2026 | MEDIUM |
+| 16 KB Page Size | Unknown | Required for updates by May 1, 2026 | MEDIUM |
+| Localization | None (all strings hardcoded) | English sufficient, but l10n structure recommended | LOW |
+| Crash Reporting | Firebase Analytics included but unused | Recommended for production monitoring | LOW |
+| Database Encryption | SQLite unencrypted | Recommended for scan results data | LOW |
+
+### Feature List: Google Play Store Publication
+
+#### GP-1: Application Identity and Branding
+
+**Priority**: BLOCKING
+**Estimated Effort**: 4-6 hours
+**ADR Required**: ADR-0026 (Application Identity and Package Naming)
+
+**Description**: Change the application from development defaults to production-ready identity.
+
+**Tasks**:
+- Choose and register a unique application ID (e.g., `com.yourname.spamfilter` or similar)
+- Update `applicationId` in `android/app/build.gradle.kts`
+- Update `namespace` in `android/app/build.gradle.kts`
+- Update `android:label` in `AndroidManifest.xml` to user-friendly name
+- Update `msix_config` in `pubspec.yaml` to match new identity
+- Update OAuth redirect URI scheme if application ID changes
+- Re-register with Firebase Console under new application ID
+- Update `google-services.json` for new package name
+
+**Decision Points** (ADR-0026):
+- What application ID / package name to use?
+- What user-facing app name to display?
+- Should the app use a branded name or descriptive name?
+- Domain registration implications for reverse-domain package naming
+
+---
+
+#### GP-2: Release Signing and Play App Signing
+
+**Priority**: BLOCKING
+**Estimated Effort**: 4-6 hours
+**ADR Required**: ADR-0027 (Android Release Signing Strategy)
+
+**Description**: Configure production signing for release builds and enroll in Google Play App Signing.
+
+**Tasks**:
+- Generate a production keystore (upload key)
+- Configure `signingConfigs.release` in `build.gradle.kts`
+- Secure keystore file (NEVER commit to git)
+- Create keystore backup strategy (loss = cannot update app)
+- Enroll in Play App Signing (Google manages the signing key)
+- Build AAB (Android App Bundle) instead of APK
+- Configure `flutter build appbundle` in build scripts
+- Update `build-apk.ps1` to `build-aab.ps1` or add AAB target
+- Test signed release build on physical device
+
+**Decision Points** (ADR-0027):
+- Where to store the keystore securely (local only vs cloud backup)?
+- Upload key vs app signing key management approach?
+- How to integrate signing into existing PowerShell build scripts?
+- Should signing credentials be injected at build time (like secrets.dev.json) or stored locally?
+
+---
+
+#### GP-3: Android Manifest Permissions
+
+**Priority**: BLOCKING
+**Estimated Effort**: 4-6 hours
+**ADR Required**: ADR-0028 (Android Permission Strategy)
+
+**Description**: Declare all required permissions in the main AndroidManifest.xml and implement runtime permission requests for dangerous permissions.
+
+**Current State**: Only `INTERNET` is declared (and only in debug/profile manifests, not main).
+
+**Permissions Needed**:
+
+| Permission | Type | Why Needed |
+|-----------|------|-----------|
+| `INTERNET` | Normal | Network access for IMAP/Gmail API |
+| `POST_NOTIFICATIONS` | Dangerous (API 33+) | Background scan completion notifications |
+| `RECEIVE_BOOT_COMPLETED` | Normal | Resume scheduled background scans after reboot |
+| `WAKE_LOCK` | Normal | Keep CPU awake during background scan |
+| `FOREGROUND_SERVICE` | Normal | Run background scan as foreground service (API 34+) |
+| `FOREGROUND_SERVICE_DATA_SYNC` | Normal (API 34+) | Foreground service type for data sync |
+
+**Tasks**:
+- Add all required permissions to main `AndroidManifest.xml`
+- Implement runtime permission request for `POST_NOTIFICATIONS` (Android 13+)
+- Create permission request UI flow (explain why notification permission is needed)
+- Handle permission denial gracefully (background scans work but no notifications)
+- Register notification channel before requesting permission
+- Test on Android 13+ (API 33+) and older API levels
+- Declare foreground service type for background scanning (API 34+)
+
+**Decision Points** (ADR-0028):
+- When to request notification permission (on first launch vs when enabling background scans)?
+- How to handle permission denial (silent degradation vs repeated prompts)?
+- Whether to use `SCHEDULE_EXACT_ALARM` or `SCHEDULE_INEXACT_ALARM` for background scheduling?
+- Foreground service approach for long-running scans (API 34+ requires foreground service type)?
+
+---
+
+#### GP-4: Gmail API OAuth Verification
+
+**Priority**: BLOCKING
+**Estimated Effort**: 40-80 hours (includes CASA audit timeline of 2-6 months)
+**ADR Required**: ADR-0029 (Gmail API Scope and Verification Strategy)
+
+**Description**: Complete Google's three-tier OAuth verification process required for public apps using restricted Gmail scopes.
+
+**Critical Context**: The app currently uses `gmail.modify` scope (restricted). Any app using restricted Gmail API scopes must complete:
+1. **Brand Verification** (2-3 business days) - Domain ownership, app name, privacy policy URL
+2. **Sensitive Scope Verification** - Justification for each scope, demonstration video
+3. **Restricted Scope Verification** - CASA (Cloud Application Security Assessment) by approved third-party lab
+
+**CASA Security Assessment**:
+- Based on OWASP ASVS standard
+- Approved labs: TAC Security, Leviathan Security, DEKRA, Bishop Fox, Prescient Security
+- Cost: Tier 2 ($500-$1,800/app), Tier 3 ($4,500-$8,000+/app)
+- Some sources report $15,000-$75,000+ for full restricted scope verification
+- Timeline: 2-6 months from start to approval
+- Renewal: Annual (every 12 months)
+
+**Tasks**:
+- Register a domain for the app (needed for brand verification)
+- Create Google Cloud project for production (separate from development)
+- Configure OAuth consent screen for production
+- Submit for brand verification
+- Prepare scope justification documentation
+- Record demonstration video showing OAuth flow and scope usage
+- Prepare for CASA security assessment
+- Engage approved CASA assessor
+- Complete assessment and submit Letter of Assessment (LOA) to Google
+- Budget for annual renewal
+
+**Decision Points** (ADR-0029):
+- Which Gmail API scopes to request (minimum necessary)?
+  - `gmail.modify` (current) vs `gmail.readonly` + separate move/delete operations?
+  - Can the app use `gmail.metadata` for scan-only mode and `gmail.modify` only when user enables delete mode?
+  - IMAP `mail.google.com` scope vs Gmail REST API scopes?
+- Should the app use incremental/granular scope authorization?
+- Which CASA assessment tier and which approved lab?
+- Budget allocation for initial assessment and annual renewals?
+- Is a separate production Google Cloud project needed?
+- Timeline for verification process (this is the longest lead-time item)?
+
+---
+
+#### GP-5: Privacy Policy and Legal Documents
+
+**Priority**: BLOCKING
+**Estimated Effort**: 8-16 hours (including legal review)
+**ADR Required**: ADR-0030 (Privacy and Data Governance Strategy)
+
+**Description**: Create and publish a comprehensive privacy policy, terms of service, and data handling documentation required by both Google Play Store and Google API Services User Data Policy.
+
+**Requirements**:
+- Privacy policy must be on a publicly accessible, non-geofenced URL
+- Must comprehensively disclose: data accessed, collected, used, shared, and stored
+- Must be consistent with Play Store Data Safety form declarations
+- Must comply with Google API Services User Data Policy (additional requirements for Gmail access)
+- Must address GDPR (EU) and CCPA (California) requirements
+- Must describe user data deletion process
+
+**Google API Services User Data Policy Specific Requirements**:
+- Data use limited to practices explicitly disclosed in privacy policy
+- Prohibited: selling data, serving ads based on email content, surveillance
+- Must request minimum scopes necessary (principle of least privilege)
+- Human access to user data prohibited except with explicit consent
+- Must be able to delete user data upon request
+
+**Tasks**:
+- Draft privacy policy covering all data handling practices
+- Draft terms of service
+- Host privacy policy on a public URL (website needed)
+- Create in-app privacy policy link
+- Document data retention and deletion policies
+- Create account/data deletion mechanism (required by Jan 28, 2026 policy)
+- Implement in-app data deletion feature
+- Create web-accessible data deletion request process
+- Legal review of all documents
+
+**Decision Points** (ADR-0030):
+- Where to host privacy policy (GitHub Pages, dedicated website, app landing page)?
+- What data retention period for scan results?
+- How to implement account deletion (in-app only vs also web-based)?
+- Whether to collect any analytics/crash reporting data (impacts privacy disclosures)?
+- How to handle GDPR data subject access requests?
+- Legal review approach (self-drafted vs attorney-reviewed)?
+
+---
+
+#### GP-6: Play Store Listing and Assets
+
+**Priority**: HIGH
+**Estimated Effort**: 8-12 hours
+
+**Description**: Create all required and recommended Play Store listing assets.
+
+**Required Assets**:
+| Asset | Specification |
+|-------|-------------|
+| App Icon (Play Store) | 512 x 512 px, max 1024 KB |
+| Feature Graphic | 1024 x 500 px, JPG or 24-bit PNG (no alpha) |
+| Phone Screenshots | Min 2, max 8; sides 320-3840 px, 16:9 aspect ratio |
+| App Title | Max 30 characters |
+| Short Description | Max 80 characters |
+| Full Description | Max 4,000 characters |
+| Developer Email | Public contact email |
+
+**Recommended Assets**:
+| Asset | Specification |
+|-------|-------------|
+| Tablet Screenshots | For large screen support |
+| Promotional Video | YouTube URL |
+| 7-inch Tablet Screenshots | 2-8 screenshots |
+| 10-inch Tablet Screenshots | 2-8 screenshots |
+
+**Tasks**:
+- Design professional app icon (512x512 for store + adaptive icon for device)
+- Create feature graphic (1024x500)
+- Capture app screenshots on phone (2-8 screenshots showing key features)
+- Write app title, short description, and full description
+- Set up developer contact email
+- Complete content rating questionnaire (IARC)
+- Complete Data Safety form
+- Select app category and tags
+- Prepare release notes for first version
+
+---
+
+#### GP-7: Adaptive Icons and App Branding
+
+**Priority**: HIGH
+**Estimated Effort**: 4-6 hours
+**ADR Required**: ADR-0031 (App Icon and Visual Identity)
+
+**Description**: Create adaptive icons (required for Android 8+/API 26+), replace legacy mipmap icons, and establish visual identity.
+
+**Current State**: Only legacy `ic_launcher.png` files exist in mipmap density folders. No adaptive icon (foreground/background) layers, no round icon variant.
+
+**Tasks**:
+- Design app icon with foreground and background layers
+- Create `ic_launcher_foreground.xml` (or PNG) for adaptive icon
+- Create `ic_launcher_background.xml` (or solid color)
+- Generate all density variants (mdpi through xxxhdpi)
+- Create round icon variant (`ic_launcher_round`)
+- Update `AndroidManifest.xml` with `android:roundIcon`
+- Create branded splash screen (replace white placeholder)
+- Create 512x512 high-res icon for Play Store listing
+
+**Decision Points** (ADR-0031):
+- App icon design approach (shield/filter metaphor, email icon, abstract)?
+- Color scheme and brand identity?
+- Use flutter_launcher_icons package for generation or manual creation?
+- Splash screen design (branded vs minimal)?
+
+---
+
+#### GP-8: Android Target SDK and 16 KB Page Size Compliance
+
+**Priority**: MEDIUM
+**Estimated Effort**: 4-8 hours
+
+**Description**: Ensure the app meets current and upcoming Android API level and memory page size requirements.
+
+**Requirements**:
+- **Now**: Target API 35 (Android 15) for new app submissions
+- **By August 2026** (projected): Target API 36 (Android 16)
+- **By May 1, 2026**: Support 16 KB memory page sizes for app updates
+
+**16 KB Page Size Requirements**:
+- Flutter stable 3.32.8 or later
+- Android Gradle Plugin 8.7.3 or newer
+- NDK r28 or newer preferred
+- All native dependencies must be compatible
+
+**Tasks**:
+- Verify current Flutter version and upgrade if needed
+- Update Android Gradle Plugin to 8.7.3+
+- Verify NDK version compatibility
+- Update `targetSdkVersion` to 35 (or 36 when available)
+- Update `compileSdkVersion` accordingly
+- Test app on Android 15 emulator/device
+- Verify all dependencies are 16 KB page size compatible
+- Run Android lint checks for API 35 compatibility
+- Test on large screen / foldable devices (adaptive app quality)
+
+---
+
+#### GP-9: ProGuard/R8 Code Optimization
+
+**Priority**: HIGH
+**Estimated Effort**: 4-6 hours
+
+**Description**: Configure R8 (ProGuard replacement) for code shrinking, obfuscation, and optimization in release builds.
+
+**Current State**: No `proguard-rules.pro` file exists. Release builds are unobfuscated and unoptimized.
+
+**Tasks**:
+- Create `proguard-rules.pro` with keep rules for:
+  - Firebase Analytics classes
+  - Google API client libraries
+  - enough_mail IMAP library
+  - flutter_secure_storage
+  - flutter_appauth OAuth classes
+  - google_sign_in classes
+  - workmanager classes
+  - Reflection-dependent classes
+- Enable `minifyEnabled true` for release builds
+- Enable `shrinkResources true` for release builds
+- Test release build thoroughly (R8 can break reflection-dependent code)
+- Measure APK/AAB size reduction
+- Verify all OAuth flows work after obfuscation
+- Verify IMAP connections work after obfuscation
+
+---
+
+#### GP-10: Data Safety Form Declarations
+
+**Priority**: BLOCKING
+**Estimated Effort**: 2-4 hours (after privacy policy is complete)
+
+**Description**: Complete the Google Play Data Safety form accurately, consistent with the privacy policy.
+
+**Data the App Handles**:
+
+| Data Type | Collected? | Shared? | Processing | Encryption |
+|-----------|-----------|---------|-----------|-----------|
+| Email address | Yes (for account login) | No | On-device only | Yes (flutter_secure_storage) |
+| Email message metadata | Transient (scan only) | No | On-device only | No (in-memory only) |
+| Email message content | Transient (scan only) | No | On-device only | No (in-memory only) |
+| OAuth tokens | Yes | No | On-device only | Yes (flutter_secure_storage) |
+| IMAP passwords | Yes | No | On-device only | Yes (flutter_secure_storage) |
+| Scan results | Yes (local DB) | No | On-device only | No (SQLite unencrypted) |
+| Spam filter rules | Yes (local DB) | No | On-device only | No (SQLite unencrypted) |
+| App settings | Yes (local DB) | No | On-device only | No (SQLite unencrypted) |
+
+**Key Declarations**:
+- No data shared with third parties
+- No advertising SDKs
+- No analytics data collected (Firebase Analytics included but not initialized)
+- All data encrypted in transit (TLS/HTTPS for IMAP and Gmail API)
+- Authentication tokens encrypted at rest
+- Users can request data deletion
+
+**Tasks**:
+- Complete all sections of the Data Safety form in Play Console
+- Cross-reference with privacy policy for consistency
+- Document which third-party libraries collect data (if any)
+- Verify Firebase Analytics is either removed or properly disclosed
+
+---
+
+#### GP-11: Account and Data Deletion Feature
+
+**Priority**: HIGH (required by Google Play policy effective Jan 28, 2026)
+**Estimated Effort**: 8-12 hours
+**ADR Required**: ADR-0032 (User Data Deletion Strategy)
+
+**Description**: Implement user account and data deletion, discoverable both within the app and via a web interface.
+
+**Google Play Requirement**: If the app allows users to create accounts, it must allow them to request account deletion. The deletion option must be discoverable both in-app and outside the app (e.g., via a website).
+
+**Tasks**:
+- Create in-app "Delete Account" feature in Settings
+- Delete all local data for account: credentials, tokens, scan results, settings
+- Delete all local data for app-wide settings if last account removed
+- Revoke OAuth tokens with Google/providers on account deletion
+- Create web-based data deletion request process (or landing page with instructions)
+- Show confirmation dialog before deletion (irreversible)
+- Handle partial deletion gracefully (e.g., if token revocation fails but local data is deleted)
+- Document data deletion in privacy policy
+
+**Decision Points** (ADR-0032):
+- What constitutes an "account" in this app (email provider login vs local app account)?
+- Should deletion be per-account or all-app-data?
+- How to handle the web-based deletion requirement (website form vs email request)?
+- What data to retain after deletion (if any) for security/compliance?
+- Should deleted account data be wiped immediately or scheduled for deletion?
+
+---
+
+#### GP-12: Firebase Analytics Decision
+
+**Priority**: MEDIUM
+**Estimated Effort**: 2-4 hours
+**ADR Required**: ADR-0033 (Analytics and Crash Reporting Strategy)
+
+**Description**: Decide whether to use Firebase Analytics / Crashlytics for production monitoring, or remove the Firebase dependency entirely.
+
+**Current State**: Firebase BOM and Analytics are included in `build.gradle.kts` dependencies but are NOT actively initialized or used in Dart code. The `google-services.json` file is present for Firebase project configuration.
+
+**Impact**: Any analytics/crash reporting must be disclosed in the Data Safety form and privacy policy. This directly affects GP-5 and GP-10.
+
+**Tasks**:
+- Decide: Enable Firebase Analytics + Crashlytics, or remove Firebase entirely?
+- If enabling: Initialize Firebase in `main.dart`, configure Crashlytics, update privacy disclosures
+- If removing: Remove `firebase-bom` and `firebase-analytics` from `build.gradle.kts`, remove `google-services.json` if no longer needed for OAuth
+- Note: `google-services.json` may still be needed for Google Sign-In on Android regardless of Firebase usage
+
+**Decision Points** (ADR-0033):
+- Is crash reporting valuable enough to justify privacy disclosure complexity?
+- Firebase Analytics vs Crashlytics-only vs no telemetry?
+- If analytics enabled, what events to track (only crashes, or also usage patterns)?
+- User opt-in vs opt-out for analytics?
+- Impact on privacy policy and Data Safety form?
+
+---
+
+#### GP-13: Persistent Gmail Authentication for Production
+
+**Priority**: HIGH (directly impacts user experience and CASA audit)
+**Estimated Effort**: 8-12 hours (overlaps with existing F12 feature)
+
+**Description**: This is a Play Store-specific expansion of the existing F12 feature. For production Gmail access, tokens must be long-lived and properly managed per Google's requirements. This also directly affects the CASA security assessment.
+
+**Additional Production Considerations**:
+- Token lifetime depends on app verification status (unverified apps get 7-day token expiry)
+- CASA audit will evaluate token storage security
+- Google API Services User Data Policy requires minimum scope principle
+- Refresh token revocation handling must be robust for production
+
+**Note**: This feature overlaps with existing F12 (Persistent Gmail Authentication). When scheduled, GP-13 requirements should be merged with F12.
+
+---
+
+#### GP-14: IMAP vs Gmail REST API Architecture Decision
+
+**Priority**: HIGH (affects GP-4 scope verification)
+**Estimated Effort**: 12-20 hours (if migration needed)
+**ADR Required**: ADR-0034 (Gmail Access Method for Production)
+
+**Description**: The app currently uses Gmail REST API with `gmail.modify` scope for Gmail accounts and IMAP with app passwords for other providers. For Google's scope verification, the choice of API method and scope directly impacts verification complexity and cost.
+
+**Key Considerations**:
+- IMAP with OAuth requires `mail.google.com` scope (broadest restricted scope)
+- Gmail REST API allows more granular scopes (`gmail.modify`, `gmail.readonly`)
+- Google may reject `mail.google.com` scope and require narrower scopes
+- `gmail.modify` covers read + label + move + delete (but not permanent delete)
+- The app currently uses `gmail.modify` which is appropriate for move-to-trash behavior
+
+**Decision Points** (ADR-0034):
+- Should Gmail accounts continue using REST API exclusively (current approach)?
+- Could the app use `gmail.readonly` for scan mode and only request `gmail.modify` when user enables delete/move?
+- Is incremental authorization worth the UX complexity?
+- What is the minimum scope set that satisfies all app features?
+- How does scope selection affect CASA audit scope and cost?
+
+---
+
+#### GP-15: Version Numbering and Release Strategy
+
+**Priority**: HIGH
+**Estimated Effort**: 2-4 hours
+
+**Description**: Establish version numbering for Play Store releases and plan the release lifecycle.
+
+**Current State**: Version is `0.1.0` in `pubspec.yaml`. Play Store requires `versionCode` to increment with every upload.
+
+**Tasks**:
+- Set initial release version (e.g., `1.0.0`)
+- Establish `versionCode` numbering scheme (must increment monotonically)
+- Update `pubspec.yaml` version
+- Update `msix_config` version to match
+- Plan release cycle (how often to publish updates)
+- Decide on release track strategy (internal testing -> closed testing -> open testing -> production)
+- Document version management process
+
+---
+
+#### GP-16: Google Play Developer Account Setup
+
+**Priority**: BLOCKING
+**Estimated Effort**: 2-4 hours
+
+**Description**: Register for a Google Play Developer account and complete identity verification.
+
+**Requirements**:
+- One-time $25 registration fee
+- Developer identity verification (becoming mandatory in select regions Sep 2026, globally 2027)
+- Provide legal name, address, email, phone number
+- Accept Google Play Developer Distribution Agreement
+
+**Tasks**:
+- Register Google Play Developer account
+- Complete identity verification
+- Set up payment profile (even for free apps)
+- Configure developer profile (public-facing)
+- Create developer contact email
+
+---
+
+### Architectural Decisions Required
+
+The following proposed ADRs capture decisions that must be made before Play Store publication. Each ADR is in "Proposed" status with decision criteria and key considerations, but no decisions have been determined yet.
+
+| ADR | Title | Blocking Feature |
+|-----|-------|-----------------|
+| ADR-0026 | Application Identity and Package Naming | GP-1 |
+| ADR-0027 | Android Release Signing Strategy | GP-2 |
+| ADR-0028 | Android Permission Strategy | GP-3 |
+| ADR-0029 | Gmail API Scope and Verification Strategy | GP-4 |
+| ADR-0030 | Privacy and Data Governance Strategy | GP-5 |
+| ADR-0031 | App Icon and Visual Identity | GP-7 |
+| ADR-0032 | User Data Deletion Strategy | GP-11 |
+| ADR-0033 | Analytics and Crash Reporting Strategy | GP-12 |
+| ADR-0034 | Gmail Access Method for Production | GP-14 |
+
+### Estimated Total Effort
+
+| Category | Effort Range | Notes |
+|----------|-------------|-------|
+| Technical features (GP-1,2,3,7,8,9,15) | 26-42 hours | Build config, permissions, icons, SDK |
+| Policy and compliance (GP-4,5,10,16) | 52-104 hours | Gmail verification is 2-6 months elapsed |
+| User-facing features (GP-6,11,12,13) | 26-40 hours | Store listing, deletion, analytics, auth |
+| Architecture decisions (ADR-0026 through 0034) | 8-16 hours | Research and document decisions |
+| **Total** | **112-202 hours** | Plus 2-6 months for Gmail verification |
+
+### Critical Path
+
+The longest lead-time item is **GP-4 (Gmail API OAuth Verification)** which requires 2-6 months elapsed time for the CASA security assessment. This should be started as early as possible, even while other features are in development.
+
+**Recommended Sequencing**:
+1. **Immediate**: GP-16 (Developer Account) + GP-1 (Application Identity) + ADR-0026
+2. **Early**: GP-4 (Begin Gmail Verification process) + GP-5 (Privacy Policy) + ADR-0029, ADR-0030
+3. **Sprint Work**: GP-2,3,7,8,9 (Technical features) + ADR-0027, ADR-0028, ADR-0031
+4. **After Privacy Policy**: GP-10 (Data Safety Form) + GP-11 (Account Deletion) + ADR-0032
+5. **Before Submission**: GP-6 (Store Listing) + GP-15 (Versioning)
+6. **Decision**: GP-12 (Analytics) + GP-14 (Gmail API method) + ADR-0033, ADR-0034
+
+### Cost Estimates
+
+| Item | Cost | Frequency |
+|------|------|-----------|
+| Google Play Developer Account | $25 | One-time |
+| CASA Security Assessment (Tier 2) | $500-$1,800 | Annual |
+| CASA Security Assessment (Tier 3) | $4,500-$8,000+ | Annual |
+| Domain registration (for brand verification) | $12-$20/year | Annual |
+| Privacy policy hosting | $0-$10/month | Monthly (or free via GitHub Pages) |
+| **Minimum Annual Cost** | ~$550-$1,850 | After initial $25 |
+| **Maximum Annual Cost** | ~$4,600-$8,100+ | If Tier 3 CASA required |
+
+---
+
 ## Version History
 
-**Version**: 3.2
-**Date**: February 6, 2026
-**Author**: Claude Sonnet 4.5
+**Version**: 3.3
+**Date**: February 15, 2026
+**Author**: Claude Opus 4.6
 **Status**: Active
 
 **Updates**:
+- 3.3 (2026-02-15): Added Google Play Store Readiness section
+  - Deep dive analysis of Play Store requirements vs current app state
+  - 16 features identified (GP-1 through GP-16) with effort estimates
+  - 9 architectural decisions identified (ADR-0026 through ADR-0034) in Proposed status
+  - Gap analysis, critical path, cost estimates, and recommended sequencing
+  - Gmail API restricted scope verification identified as longest lead-time item (2-6 months)
 - 3.2 (2026-02-06): Sprint 13 completed - Account-Specific Folder Settings
   - Actual scope: F16A (Subject Cleaning), F15 (Settings UI), F14 (Deleted Rule Folder), F13 (Safe Sender Folder)
   - Original scope (F5 + F12) deferred based on user priorities

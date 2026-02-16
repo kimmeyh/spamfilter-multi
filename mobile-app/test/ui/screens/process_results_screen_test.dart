@@ -45,6 +45,9 @@ class FakeScanResultStore implements ScanResultStore {
       null;
 
   @override
+  Future<ScanResult?> getLatestCompletedScan(String accountId) async => null;
+
+  @override
   Future<bool> updateScanResult(int scanResultId, ScanResult updates) async => true;
 
   @override

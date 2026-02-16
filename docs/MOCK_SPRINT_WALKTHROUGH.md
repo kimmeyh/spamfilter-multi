@@ -19,11 +19,11 @@
 
 ---
 
-## Phase 0: Sprint Pre-Kickoff (Pre-work before planning)
+## Phase 2: Sprint Pre-Kickoff (Pre-work before planning)
 
-**Document Reference**: SPRINT_EXECUTION_WORKFLOW.md § Phase 0
+**Document Reference**: SPRINT_EXECUTION_WORKFLOW.md § Phase 2
 
-### Step 0.0: Read ALL_SPRINTS_MASTER_PLAN.md FIRST
+### Step 2.0: Read ALL_SPRINTS_MASTER_PLAN.md FIRST
 
 **Action**: Read `docs/ALL_SPRINTS_MASTER_PLAN.md` to understand Sprint 10 scope
 
@@ -42,7 +42,7 @@
 
 ---
 
-### Step 0.1: Verify Previous Sprint is Merged
+### Step 2.1: Verify Previous Sprint is Merged
 
 **Action**: `git log develop --oneline -1`
 
@@ -57,7 +57,7 @@
 
 ---
 
-### Step 0.2: Verify All Sprint Cards Are Closed
+### Step 2.2: Verify All Sprint Cards Are Closed
 
 **Action**: `gh issue list --label sprint --state open`
 
@@ -67,7 +67,7 @@
 
 ---
 
-### Step 0.3: Ensure Working Directory is Clean
+### Step 2.3: Ensure Working Directory is Clean
 
 **Action**: `git status`
 
@@ -77,7 +77,7 @@
 
 ---
 
-### Step 0.4: Verify Develop Branch is Current
+### Step 2.4: Verify Develop Branch is Current
 
 **Action**:
 ```bash
@@ -91,11 +91,11 @@ git pull origin develop
 
 ---
 
-### Step 0.5: Proceed to Phase 1
+### Step 2.5: Proceed to Phase 3
 
 **Status**: All pre-flight checks passed [OK]
 
-**Total Phase 0 Time**: ~4 minutes
+**Total Phase 2 Time**: ~4 minutes
 
 **Files Read**: 1 (ALL_SPRINTS_MASTER_PLAN.md)
 
@@ -103,11 +103,11 @@ git pull origin develop
 
 ---
 
-## Phase 1: Sprint Kickoff & Planning
+## Phase 3: Sprint Kickoff & Planning
 
-**Document Reference**: SPRINT_EXECUTION_WORKFLOW.md § Phase 1
+**Document Reference**: SPRINT_EXECUTION_WORKFLOW.md § Phase 3
 
-### Step 1.1: Determine Next Sprint Number
+### Step 3.1: Determine Next Sprint Number
 
 **Current Context**:
 - Last completed: Sprint 9
@@ -119,9 +119,9 @@ git pull origin develop
 
 ---
 
-### Step 1.2: Review Sprint Plan
+### Step 3.2: Review Sprint Plan
 
-**Action**: Already read ALL_SPRINTS_MASTER_PLAN.md in Phase 0 [OK]
+**Action**: Already read ALL_SPRINTS_MASTER_PLAN.md in Phase 2 [OK]
 
 **No re-read needed** - information still in context
 
@@ -131,15 +131,15 @@ git pull origin develop
 - Estimated: 12-14 hours
 - Model: Sonnet (architecture) + Haiku (UI)
 
-**Time**: 30 seconds (review notes from Phase 0)
+**Time**: 30 seconds (review notes from Phase 2)
 
 ---
 
-### Step 1.2.1: Create Sprint Summary for Previous Sprint (MANDATORY)
+### Step 3.2.1: Create Sprint Summary for Previous Sprint (MANDATORY)
 
 **Action**: Create `docs/SPRINT_9_SUMMARY.md` to archive Sprint 9 details
 
-**Document Reference**: SPRINT_EXECUTION_WORKFLOW.md § 1.2.1
+**Document Reference**: SPRINT_EXECUTION_WORKFLOW.md § 3.2.1
 
 **Content Sources**:
 - ALL_SPRINTS_MASTER_PLAN.md (Sprint 9 section - needs to be read to extract)
@@ -151,7 +151,7 @@ git pull origin develop
 
 **ISSUE IDENTIFIED**: ALL_SPRINTS_MASTER_PLAN.md was already restructured in previous commit. Sprint 9 details are in "Past Sprint Summary" table, not in full detail. Need to use SPRINT_9_RETROSPECTIVE.md if it exists, or reconstruct from git history.
 
-**Resolution**: For this mock, assume SPRINT_9_RETROSPECTIVE.md exists from Phase 4.5 of Sprint 9.
+**Resolution**: For this mock, assume SPRINT_9_RETROSPECTIVE.md exists from Phase 7 of Sprint 9.
 
 **Files Read**:
 - `docs/SPRINT_9_RETROSPECTIVE.md` (if exists) OR extract from git log/CHANGELOG.md
@@ -237,7 +237,7 @@ Address Sprint 8 retrospective improvements - documentation, logging, testing, a
 
 ---
 
-### Step 1.3: Branch Management
+### Step 3.3: Branch Management
 
 **Action**: Create feature branch for Sprint 10
 
@@ -251,7 +251,7 @@ git checkout -b feature/20260131_Sprint_10
 
 ---
 
-### Step 1.4: Create GitHub Issues
+### Step 3.4: Create GitHub Issues
 
 **Document Reference**: SPRINT_PLANNING.md § Issue Templates
 
@@ -330,7 +330,7 @@ gh issue create --title "Sprint 10 - Task C - Cross-Platform UI Polish" --body "
 
 ---
 
-### Step 1.5: Create Sprint Plan Document
+### Step 3.5: Create Sprint Plan Document
 
 **Action**: Create `docs/SPRINT_10_PLAN.md`
 
@@ -356,7 +356,7 @@ gh issue create --title "Sprint 10 - Task C - Cross-Platform UI Polish" --body "
 
 ---
 
-### Step 1.6: Verify Sprint Readiness
+### Step 3.6: Verify Sprint Readiness
 
 **Checklist**:
 - [x] All sprint cards created (Issues #104, #105, #106) [OK]
@@ -373,7 +373,7 @@ gh issue create --title "Sprint 10 - Task C - Cross-Platform UI Polish" --body "
 
 ---
 
-### Step 1.7: Plan Approval (USER APPROVAL GATE #1)
+### Step 3.7: Plan Approval (USER APPROVAL GATE #1)
 
 **Action**: Present sprint plan to user for approval
 
@@ -402,13 +402,13 @@ Ready to proceed?
 
 **User Response**: "Approved - proceed with Sprint 10"
 
-**CRITICAL**: This approval pre-approves ALL tasks A-C through Phase 4.5. No per-task approvals needed during execution.
+**CRITICAL**: This approval pre-approves ALL tasks A-C through Phase 7. No per-task approvals needed during execution.
 
 **Time**: 1 minute (waiting for user response)
 
 ---
 
-### Phase 1 Summary
+### Phase 3 Summary
 
 **Total Time**: ~22 minutes
 **Files Read**: 2 (ALL_SPRINTS_MASTER_PLAN.md x2)
@@ -418,17 +418,17 @@ Ready to proceed?
 **User Approvals**: 1 (Plan approval - gates all execution)
 
 **Observations**:
-- ALL_SPRINTS_MASTER_PLAN.md read twice (Phase 0 and Phase 1.2.1)
-- Could optimize: Read once in Phase 0, extract Sprint 9 details for summary, review Sprint 10 details for planning
+- ALL_SPRINTS_MASTER_PLAN.md read twice (Phase 2 and Phase 3.2.1)
+- Could optimize: Read once in Phase 2, extract Sprint 9 details for summary, review Sprint 10 details for planning
 - Separate SPRINT_N_PLAN.md document seems redundant
 
 ---
 
-## Phase 2: Sprint Execution (Development)
+## Phase 4: Sprint Execution (Development)
 
-**Document Reference**: SPRINT_EXECUTION_WORKFLOW.md § Phase 2
+**Document Reference**: SPRINT_EXECUTION_WORKFLOW.md § Phase 4
 
-### Step 2.1: Start Task Execution
+### Step 4.1: Start Task Execution
 
 **Task Order**:
 1. Task A: Android enhancements (Haiku)
@@ -441,7 +441,7 @@ Ready to proceed?
 
 ---
 
-### Step 2.2: Testing Cycle (Per Task)
+### Step 4.2: Testing Cycle (Per Task)
 
 **For Task A** (example):
 
@@ -468,7 +468,7 @@ Ready to proceed?
 
 ---
 
-### Step 2.3: Commit During Development
+### Step 4.3: Commit During Development
 
 **After each logical change**:
 
@@ -483,7 +483,7 @@ git commit -m "feat: Implement Material Design 3 components for Android (Issue #
 
 ---
 
-### Step 2.4: Track Progress
+### Step 4.4: Track Progress
 
 **Actions**:
 - Update GitHub issue #104 with progress comment
@@ -515,7 +515,7 @@ No blockers.
 
 ---
 
-### Step 2.5: Mid-Sprint Checkpoint (~50% completion)
+### Step 4.5: Mid-Sprint Checkpoint (~50% completion)
 
 **After Tasks A and B complete** (50% of 3 tasks):
 
@@ -539,7 +539,7 @@ No blockers encountered.
 
 ---
 
-### Phase 2 Summary
+### Phase 4 Summary
 
 **Total Time**: ~21 hours (actual execution time for all tasks)
 **Files Read**: 50+ (code files, documentation)
@@ -550,11 +550,11 @@ No blockers encountered.
 
 ---
 
-## Phase 3: Code Review & Testing
+## Phase 5: Code Review & Testing
 
-**Document Reference**: SPRINT_EXECUTION_WORKFLOW.md § Phase 3
+**Document Reference**: SPRINT_EXECUTION_WORKFLOW.md § Phase 5
 
-### Step 3.1: Local Code Review
+### Step 5.1: Local Code Review
 
 **Action**: Review all changes for quality
 
@@ -571,7 +571,7 @@ No blockers encountered.
 
 ---
 
-### Step 3.2: Run Complete Test Suite
+### Step 5.2: Run Complete Test Suite
 
 **Command**: `flutter test`
 
@@ -591,9 +591,9 @@ No issues found!
 
 ---
 
-### Step 3.2.1: Validate Risk Mitigations (MANDATORY)
+### Step 5.2.1: Validate Risk Mitigations (MANDATORY)
 
-**Document Reference**: SPRINT_EXECUTION_WORKFLOW.md § 3.2.1
+**Document Reference**: SPRINT_EXECUTION_WORKFLOW.md § 5.2.1
 
 **End-of-Sprint Test Gate**: [OK] Full flutter test already run
 
@@ -635,9 +635,9 @@ No issues found!
 
 ---
 
-### Step 3.3: Manual Testing (Parallel with Phase 4)
+### Step 5.3: Manual Testing (Parallel with Phase 6)
 
-**Per SPRINT_EXECUTION_WORKFLOW.md**: User can test in parallel while Claude proceeds to Phase 4
+**Per SPRINT_EXECUTION_WORKFLOW.md**: User can test in parallel while Claude proceeds to Phase 6
 
 **Action**: Notify user
 
@@ -653,13 +653,13 @@ Platform tests needed:
 You can start testing now. I'll proceed with creating the PR.
 ```
 
-**User Action**: Tests in VSCode (parallel with Phase 4)
+**User Action**: Tests in VSCode (parallel with Phase 6)
 
 **Time**: 1 minute (notification)
 
 ---
 
-### Phase 3 Summary
+### Phase 5 Summary
 
 **Total Time**: ~51 minutes
 **Tests Run**: 122 tests (all passing)
@@ -668,11 +668,11 @@ You can start testing now. I'll proceed with creating the PR.
 
 ---
 
-## Phase 4: Push to Remote & Create PR
+## Phase 6: Push to Remote & Create PR
 
-**Document Reference**: SPRINT_EXECUTION_WORKFLOW.md § Phase 4
+**Document Reference**: SPRINT_EXECUTION_WORKFLOW.md § Phase 6
 
-### Step 4.1: Finalize All Changes
+### Step 6.1: Finalize All Changes
 
 **Checks**:
 - [x] All commits local and staged [OK]
@@ -687,9 +687,9 @@ You can start testing now. I'll proceed with creating the PR.
 
 ---
 
-### Step 4.1.1: Risk Review Gate (MANDATORY)
+### Step 6.1.1: Risk Review Gate (MANDATORY)
 
-**Document Reference**: SPRINT_EXECUTION_WORKFLOW.md § 4.1.1
+**Document Reference**: SPRINT_EXECUTION_WORKFLOW.md § 6.1.1
 
 **Review All Sprint Risks**:
 
@@ -718,7 +718,7 @@ Risk review complete: 3 tasks reviewed, all mitigations executed and validated.
 
 ---
 
-### Step 4.2: Push to Remote
+### Step 6.2: Push to Remote
 
 **Command**: `git push origin feature/20260131_Sprint_10`
 
@@ -728,7 +728,7 @@ Risk review complete: 3 tasks reviewed, all mitigations executed and validated.
 
 ---
 
-### Step 4.3: Create Pull Request
+### Step 6.3: Create Pull Request
 
 **Document Reference**: GitHub PR template
 
@@ -801,7 +801,7 @@ Closes #104, #105, #106
 
 ---
 
-### Step 4.4: Notify User
+### Step 6.4: Notify User
 
 **Message**:
 ```
@@ -813,14 +813,14 @@ Target: develop
 All tasks complete, tests passing, risk mitigations validated.
 Manual testing results pending (you're testing in parallel).
 
-Ready for Phase 4.5 (Sprint Review) when you're ready.
+Ready for Phase 7 (Sprint Review) when you're ready.
 ```
 
 **Time**: 1 minute
 
 ---
 
-### Phase 4 Summary
+### Phase 6 Summary
 
 **Total Time**: ~10 minutes
 **PR Created**: #107
@@ -828,11 +828,11 @@ Ready for Phase 4.5 (Sprint Review) when you're ready.
 
 ---
 
-## Phase 4.5: Sprint Review (After PR Submitted) - MANDATORY
+## Phase 7: Sprint Review (After PR Submitted) - MANDATORY
 
-**Document Reference**: SPRINT_EXECUTION_WORKFLOW.md § Phase 4.5, SPRINT_RETROSPECTIVE.md
+**Document Reference**: SPRINT_EXECUTION_WORKFLOW.md § Phase 7, SPRINT_RETROSPECTIVE.md
 
-### Step 4.5.0: Windows Desktop Build & Test (REQUIRED)
+### Step 7.1: Windows Desktop Build & Test (REQUIRED)
 
 **Action**: Build Windows desktop app and verify functionality
 
@@ -853,7 +853,7 @@ cd mobile-app/scripts
 
 ---
 
-### Step 4.5.1: Conduct Sprint Review
+### Step 7.2: Conduct Sprint Review
 
 **Document Reference**: SPRINT_RETROSPECTIVE.md § Sprint Review Process
 
@@ -901,7 +901,7 @@ cd mobile-app/scripts
 
 ---
 
-### Step 4.5.2: Gather User Feedback (USER INTERACTION #2)
+### Step 7.3: Gather User Feedback (USER INTERACTION #2)
 
 **Action**: Request user feedback
 
@@ -945,7 +945,7 @@ No concerns - approved for merge.
 
 ---
 
-### Step 4.5.3: Provide Claude Analysis
+### Step 7.4: Provide Claude Analysis
 
 **Document Reference**: SPRINT_RETROSPECTIVE.md § Claude Analysis Framework
 
@@ -967,7 +967,7 @@ No concerns - approved for merge.
 
 ---
 
-### Step 4.5.4: Create Improvement Suggestions
+### Step 7.5: Create Improvement Suggestions
 
 **Document Reference**: SPRINT_RETROSPECTIVE.md § Improvement Suggestions
 
@@ -981,7 +981,7 @@ No concerns - approved for merge.
 2. **Earlier Mid-Sprint Checkpoint** (Medium Priority)
    - What: Move checkpoint to 25-30% completion instead of 50%
    - Why: Earlier feedback opportunity
-   - Where: SPRINT_EXECUTION_WORKFLOW.md § 2.4
+   - Where: SPRINT_EXECUTION_WORKFLOW.md § 4.4
 
 3. **UI Performance Benchmarking** (Low Priority)
    - What: Add UI rendering benchmarks to TESTING_STRATEGY.md
@@ -992,7 +992,7 @@ No concerns - approved for merge.
 
 ---
 
-### Step 4.5.5: Decide on Improvements (USER INTERACTION #3)
+### Step 7.6: Decide on Improvements (USER INTERACTION #3)
 
 **Action**: Ask user which improvements to implement
 
@@ -1022,9 +1022,9 @@ Defer #3 to Sprint 11 (Production Readiness).
 
 ---
 
-### Step 4.5.6: Update Documentation (MANDATORY UPDATES)
+### Step 7.7: Update Documentation (MANDATORY UPDATES)
 
-**Document Reference**: SPRINT_EXECUTION_WORKFLOW.md § 4.5.6
+**Document Reference**: SPRINT_EXECUTION_WORKFLOW.md § 7.7
 
 #### Process Improvements (from user approval)
 
@@ -1118,7 +1118,7 @@ Defer #3 to Sprint 11 (Production Readiness).
 **Status**: [CHECKLIST] PLANNED (not yet started)
 ```
 
-**Note**: Sprint 10 details stay in master plan until Sprint 11 planning (Phase 1.2.1) when SPRINT_10_SUMMARY.md will be created.
+**Note**: Sprint 10 details stay in master plan until Sprint 11 planning (Phase 3.2.1) when SPRINT_10_SUMMARY.md will be created.
 
 **File Modified**: 1 (ALL_SPRINTS_MASTER_PLAN.md)
 
@@ -1209,7 +1209,7 @@ Tasks:
 
 ---
 
-### Step 4.5.7: Summarize Review Results
+### Step 7.8: Summarize Review Results
 
 **Message to User**:
 ```
@@ -1231,7 +1231,7 @@ PR #107 ready for approval and merge to develop.
 
 ---
 
-### Step 4.5.8: Proactive Next Steps (MANDATORY)
+### Step 7.9: Proactive Next Steps (MANDATORY)
 
 **Message to User**:
 ```
@@ -1250,7 +1250,7 @@ Please let me know your preference.
 
 ---
 
-### Phase 4.5 Summary
+### Phase 7 Summary
 
 **Total Time**: ~41 minutes
 **Files Read**: 3 (SPRINT_PLANNING.md, SPRINT_EXECUTION_WORKFLOW.md, CHANGELOG.md)
@@ -1291,7 +1291,7 @@ gh issue close #106 --reason "completed"
 
 ### Step 3: Update Sprint Completion Documentation (MANDATORY)
 
-**Already completed in Phase 4.5.6** [OK]
+**Already completed in Phase 7.7** [OK]
 
 - [OK] CHANGELOG.md updated
 - [OK] ALL_SPRINTS_MASTER_PLAN.md updated
@@ -1322,12 +1322,12 @@ git branch -d feature/20260131_Sprint_10
 
 | Phase | Time | User Interactions |
 |-------|------|-------------------|
-| Phase 0: Pre-Kickoff | 4 min | 0 |
-| Phase 1: Planning | 22 min | 1 (Plan approval) |
-| Phase 2: Execution | 21h | 1 (Mid-sprint checkpoint - info only) |
-| Phase 3: Testing | 51 min | 0 |
-| Phase 4: PR Creation | 10 min | 0 |
-| Phase 4.5: Review | 41 min | 3 (Feedback, Approvals, Next steps) |
+| Phase 2: Pre-Kickoff | 4 min | 0 |
+| Phase 3: Planning | 22 min | 1 (Plan approval) |
+| Phase 4: Execution | 21h | 1 (Mid-sprint checkpoint - info only) |
+| Phase 5: Testing | 51 min | 0 |
+| Phase 6: PR Creation | 10 min | 0 |
+| Phase 7: Review | 41 min | 3 (Feedback, Approvals, Next steps) |
 | Cleanup | User-managed | 1 (Merge PR) |
 | **Total** | **~22.5h** | **6 interactions** |
 
@@ -1335,11 +1335,11 @@ git branch -d feature/20260131_Sprint_10
 
 | File | Read Count | Purpose |
 |------|------------|---------|
-| ALL_SPRINTS_MASTER_PLAN.md | 3 | Phase 0 (scope), Phase 1.2.1 (Sprint 9 extract), Phase 4.5.6 (update) |
-| SPRINT_PLANNING.md | 1 | Phase 4.5.6 (update UI buffer) |
-| SPRINT_EXECUTION_WORKFLOW.md | 1 | Phase 4.5.6 (update checkpoint) |
-| CHANGELOG.md | 1 | Phase 4.5.6 (add entries) |
-| Code files | 50+ | Phase 2 (implementation) |
+| ALL_SPRINTS_MASTER_PLAN.md | 3 | Phase 2 (scope), Phase 3.2.1 (Sprint 9 extract), Phase 7.7 (update) |
+| SPRINT_PLANNING.md | 1 | Phase 7.7 (update UI buffer) |
+| SPRINT_EXECUTION_WORKFLOW.md | 1 | Phase 7.7 (update checkpoint) |
+| CHANGELOG.md | 1 | Phase 7.7 (add entries) |
+| Code files | 50+ | Phase 4 (implementation) |
 | **Total** | **56+** | |
 
 ### Files Modified
@@ -1357,8 +1357,8 @@ git branch -d feature/20260131_Sprint_10
 
 | File | Purpose |
 |------|---------|
-| SPRINT_9_SUMMARY.md | Archive Sprint 9 details (Phase 1.2.1) |
-| SPRINT_10_RETROSPECTIVE.md | Full retrospective (Phase 4.5.6) |
+| SPRINT_9_SUMMARY.md | Archive Sprint 9 details (Phase 3.2.1) |
+| SPRINT_10_RETROSPECTIVE.md | Full retrospective (Phase 7.7) |
 | Code files | 5-10 new widget files |
 | **Total** | **7-12** |
 
@@ -1366,10 +1366,10 @@ git branch -d feature/20260131_Sprint_10
 
 | Gate | Phase | Purpose |
 |------|-------|---------|
-| 1. Plan Approval | 1.7 | Pre-approve all task execution |
-| 2. Feedback Request | 4.5.2 | Gather sprint feedback |
-| 3. Improvement Approval | 4.5.5 | Approve documentation updates |
-| 4. Next Steps | 4.5.8 | Determine next action |
+| 1. Plan Approval | 3.7 | Pre-approve all task execution |
+| 2. Feedback Request | 7.3 | Gather sprint feedback |
+| 3. Improvement Approval | 7.6 | Approve documentation updates |
+| 4. Next Steps | 7.9 | Determine next action |
 | 5. PR Merge | Cleanup | Merge to develop |
 | **Total** | **5** | **Only critical decision points** |
 
@@ -1388,8 +1388,8 @@ git branch -d feature/20260131_Sprint_10
 - Feedback loops at appropriate points
 
 **Minor Issues**:
-- Phase 0 and Phase 1.2 both read ALL_SPRINTS_MASTER_PLAN.md (could optimize)
-- Phase 1.2.1 requires re-reading Sprint N details that were just archived
+- Phase 2 and Phase 3.2 both read ALL_SPRINTS_MASTER_PLAN.md (could optimize)
+- Phase 3.2.1 requires re-reading Sprint N details that were just archived
 
 ---
 
@@ -1398,12 +1398,12 @@ git branch -d feature/20260131_Sprint_10
 **[OK] YES** - Order is correct for sprint execution
 
 **Phase Sequence**:
-1. Phase 0: Pre-flight checks (prerequisites verified)
-2. Phase 1: Planning (scope defined, approved)
-3. Phase 2: Execution (code written)
-4. Phase 3: Testing (quality verified)
-5. Phase 4: PR creation (work packaged)
-6. Phase 4.5: Review (feedback gathered, improvements made)
+1. Phase 2: Pre-flight checks (prerequisites verified)
+2. Phase 3: Planning (scope defined, approved)
+3. Phase 4: Execution (code written)
+4. Phase 5: Testing (quality verified)
+5. Phase 6: PR creation (work packaged)
+6. Phase 7: Review (feedback gathered, improvements made)
 7. Cleanup: Merge (work integrated)
 
 **All dependencies respected** [OK]
@@ -1420,9 +1420,9 @@ git branch -d feature/20260131_Sprint_10
 - Checklist format makes it easy to follow
 
 **Links to Other Docs**:
-- [OK] Links to ALL_SPRINTS_MASTER_PLAN.md (Phase 0, Phase 1.2)
-- [OK] Links to SPRINT_PLANNING.md (Phase 1 issue templates)
-- [OK] Links to SPRINT_RETROSPECTIVE.md (Phase 4.5)
+- [OK] Links to ALL_SPRINTS_MASTER_PLAN.md (Phase 2, Phase 3.2)
+- [OK] Links to SPRINT_PLANNING.md (Phase 3 issue templates)
+- [OK] Links to SPRINT_RETROSPECTIVE.md (Phase 7)
 - [OK] Links to SPRINT_STOPPING_CRITERIA.md (when to stop)
 - [OK] Links to QUALITY_STANDARDS.md (code quality checks)
 - [OK] Links to TESTING_STRATEGY.md (testing requirements)
@@ -1439,20 +1439,20 @@ git branch -d feature/20260131_Sprint_10
 
 **Files Touched Every Sprint**:
 
-1. **CHANGELOG.md** [OK] Mentioned (Phase 4.5.6 MANDATORY)
-2. **ALL_SPRINTS_MASTER_PLAN.md** [OK] Mentioned (Phase 0, Phase 1.2.1, Phase 4.5.6 MANDATORY)
-3. **SPRINT_<N>_SUMMARY.md** [OK] Mentioned (Phase 1.2.1 - new requirement)
-4. **SPRINT_<N>_RETROSPECTIVE.md** [OK] Mentioned (Phase 4.5.6)
-5. **GitHub Issues** [OK] Mentioned (Phase 1.4, Phase 2.4)
-6. **Git commits** [OK] Mentioned (Phase 2.3)
-7. **Pull Request** [OK] Mentioned (Phase 4.3)
+1. **CHANGELOG.md** [OK] Mentioned (Phase 7.7 MANDATORY)
+2. **ALL_SPRINTS_MASTER_PLAN.md** [OK] Mentioned (Phase 2, Phase 3.2.1, Phase 7.7 MANDATORY)
+3. **SPRINT_<N>_SUMMARY.md** [OK] Mentioned (Phase 3.2.1 - new requirement)
+4. **SPRINT_<N>_RETROSPECTIVE.md** [OK] Mentioned (Phase 7.7)
+5. **GitHub Issues** [OK] Mentioned (Phase 3.4, Phase 4.4)
+6. **Git commits** [OK] Mentioned (Phase 4.3)
+7. **Pull Request** [OK] Mentioned (Phase 6.3)
 
 **Potentially Missing**:
 - ❓ **.claude/plans/** - Are sprint plans stored here? (Not mentioned)
 - ❓ **Test files** - Mentioned implicitly but not explicitly in checklist
 - ❓ **README.md** - Should it be updated for major features? (Not mentioned)
 
-**Recommendation**: Add explicit checklist item for test file creation in Phase 2
+**Recommendation**: Add explicit checklist item for test file creation in Phase 4
 
 ---
 
@@ -1462,10 +1462,10 @@ git branch -d feature/20260131_Sprint_10
 
 | Scrum Ceremony | Our Process | Alignment |
 |----------------|-------------|-----------|
-| Sprint Planning | Phase 1 | [OK] YES - Clear goal, task breakdown, estimation |
-| Daily Standup | Phase 2.4 (Mid-sprint checkpoint) | [WARNING] PARTIAL - Only 1 checkpoint per sprint (should be more frequent for long sprints) |
-| Sprint Review | Phase 4.5.1-4.5.2 | [OK] YES - Demo work, gather feedback |
-| Sprint Retrospective | Phase 4.5.3-4.5.5 | [OK] YES - What went well, what to improve |
+| Sprint Planning | Phase 3 | [OK] YES - Clear goal, task breakdown, estimation |
+| Daily Standup | Phase 4.4 (Mid-sprint checkpoint) | [WARNING] PARTIAL - Only 1 checkpoint per sprint (should be more frequent for long sprints) |
+| Sprint Review | Phase 7.2-7.3 | [OK] YES - Demo work, gather feedback |
+| Sprint Retrospective | Phase 7.4-7.6 | [OK] YES - What went well, what to improve |
 | Backlog Refinement | Not explicit | [FAIL] MISSING - No ongoing backlog grooming |
 
 **Scrum Principles**:
@@ -1490,8 +1490,8 @@ git branch -d feature/20260131_Sprint_10
 **Efficiency Analysis**:
 
 **File Re-Reading**:
-- [FAIL] ALL_SPRINTS_MASTER_PLAN.md read 3 times (Phase 0, Phase 1.2.1, Phase 4.5.6)
-  - **Optimization**: Read once in Phase 0, cache Sprint N and Sprint N-1 details
+- [FAIL] ALL_SPRINTS_MASTER_PLAN.md read 3 times (Phase 2, Phase 3.2.1, Phase 7.7)
+  - **Optimization**: Read once in Phase 2, cache Sprint N and Sprint N-1 details
 - [OK] Other docs read once per phase (SPRINT_PLANNING.md, SPRINT_EXECUTION_WORKFLOW.md, etc.)
 
 **Duplication of Effort**:
@@ -1522,21 +1522,21 @@ git branch -d feature/20260131_Sprint_10
 
 | Approval | Phase | Necessary? | Justification |
 |----------|-------|------------|---------------|
-| Plan Approval | 1.7 | [OK] YES | Critical - Gates all execution, defines scope |
-| Mid-Sprint Checkpoint | 2.5 | [OK] NO APPROVAL | Informational only [OK] |
-| Manual Testing Notification | 3.3 | [OK] NO APPROVAL | Parallel work [OK] |
-| Feedback Request | 4.5.2 | [OK] YES | Human-in-loop quality check |
-| Improvement Approval | 4.5.5 | [OK] YES | User decides which process changes to make |
-| Next Steps | 4.5.8 | [WARNING] MAYBE | Could auto-proceed to cleanup if user pre-approved |
+| Plan Approval | 3.7 | [OK] YES | Critical - Gates all execution, defines scope |
+| Mid-Sprint Checkpoint | 4.5 | [OK] NO APPROVAL | Informational only [OK] |
+| Manual Testing Notification | 5.3 | [OK] NO APPROVAL | Parallel work [OK] |
+| Feedback Request | 7.3 | [OK] YES | Human-in-loop quality check |
+| Improvement Approval | 7.6 | [OK] YES | User decides which process changes to make |
+| Next Steps | 7.9 | [WARNING] MAYBE | Could auto-proceed to cleanup if user pre-approved |
 | PR Merge | Cleanup | [OK] YES | Final quality gate before integration |
 
 **Total Approvals**: 5 (reduced from potential 10+ if every task required approval)
 
-**Pre-Approval Mechanism**: [OK] Plan approval at Phase 1.7 pre-approves ALL task execution (excellent!)
+**Pre-Approval Mechanism**: [OK] Plan approval at Phase 3.7 pre-approves ALL task execution (excellent!)
 
 **Recommendations**:
 - [OK] Current approval gates are appropriate
-- [WARNING] Consider making "Next Steps" (4.5.8) optional if user pre-specified next action in plan approval
+- [WARNING] Consider making "Next Steps" (7.9) optional if user pre-specified next action in plan approval
 
 ---
 
@@ -1544,9 +1544,9 @@ git branch -d feature/20260131_Sprint_10
 
 ### 1. Optimize File Reading in Phase 0/1
 
-**Issue**: ALL_SPRINTS_MASTER_PLAN.md read 3 times across Phase 0, 1.2.1, and 4.5.6
+**Issue**: ALL_SPRINTS_MASTER_PLAN.md read 3 times across Phase 2, 3.2.1, and 7.7
 
-**Recommendation**: Add to Phase 0:
+**Recommendation**: Add to Phase 2:
 
 ```markdown
 - [ ] **0.0.1 Cache Sprint Context** (Optimization)
@@ -1555,10 +1555,10 @@ git branch -d feature/20260131_Sprint_10
     - Sprint N (current) details: Objective, tasks, acceptance criteria, risks
     - Sprint N-1 (previous) details: For summary creation in Phase 1.2.1
     - Sprint N+1 (next) details: For planning next sprint
-  - No re-reading needed until Phase 4.5.6 (updates)
+  - No re-reading needed until Phase 7.7 (updates)
 ```
 
-**Benefit**: Reduces 3 reads to 2 reads (Phase 0 + Phase 4.5.6 only)
+**Benefit**: Reduces 3 reads to 2 reads (Phase 2 + Phase 7.7 only)
 
 ---
 
@@ -1583,7 +1583,7 @@ git branch -d feature/20260131_Sprint_10
 
 **Issue**: Test files created but not explicitly mentioned in workflow
 
-**Recommendation**: Add to Phase 2.2:
+**Recommendation**: Add to Phase 4.2:
 
 ```markdown
 - [ ] **2.2.1 Create Test Files**
@@ -1628,7 +1628,7 @@ git branch -d feature/20260131_Sprint_10
 
 **Issue**: Missing explicit links in SPRINT_EXECUTION_WORKFLOW.md
 
-**Recommendation**: Add to Phase 2.1:
+**Recommendation**: Add to Phase 4.1:
 
 ```markdown
 - [ ] **2.1.1 Review Architecture Guidance** (For Complex Tasks)
@@ -1652,7 +1652,7 @@ git branch -d feature/20260131_Sprint_10
 
 **Issue**: CHANGELOG.md updates mentioned but format not linked
 
-**Recommendation**: Update Phase 4.5.6:
+**Recommendation**: Update Phase 7.7:
 
 ```markdown
 - [ ] **Update CHANGELOG.md** (MANDATORY)
@@ -1669,13 +1669,13 @@ git branch -d feature/20260131_Sprint_10
 
 ### 7. Clarify SPRINT_<N>_SUMMARY.md Content Source
 
-**Issue**: Phase 1.2.1 unclear on where to get Sprint N-1 details after restructuring
+**Issue**: Phase 3.2.1 unclear on where to get Sprint N-1 details after restructuring
 
-**Recommendation**: Update SPRINT_EXECUTION_WORKFLOW.md § 1.2.1:
+**Recommendation**: Update SPRINT_EXECUTION_WORKFLOW.md § 3.2.1:
 
 ```markdown
 **Content Sources** (in priority order):
-1. SPRINT_<N-1>_RETROSPECTIVE.md (if exists from Phase 4.5.6)
+1. SPRINT_<N-1>_RETROSPECTIVE.md (if exists from Phase 7.7)
 2. CHANGELOG.md (Sprint N-1 entries)
 3. Git history (PR description, commit messages)
 4. GitHub issues (closed sprint issues)
@@ -1697,17 +1697,17 @@ git branch -d feature/20260131_Sprint_10
 ### Context Budget Management
 
 **Monitor context usage throughout sprint**:
-- Phase 0-1: ~5-10% (reading, planning)
-- Phase 2: ~40-60% (implementation)
-- Phase 3-4: ~10-20% (testing, PR creation)
-- Phase 4.5: ~10-20% (review, retrospective)
+- Phase 2-3: ~5-10% (reading, planning)
+- Phase 4: ~40-60% (implementation)
+- Phase 5-6: ~10-20% (testing, PR creation)
+- Phase 7: ~10-20% (review, retrospective)
 
-**If context usage > 70% before Phase 4.5**:
+**If context usage > 70% before Phase 7**:
 - Suggest user run `/compact` to refresh context
 - Summarize prior phases while preserving sprint details
 - All work in git, can reference commits if needed
 
-**Critical**: Reserve 20-30% context for Phase 4.5 (review requires reading multiple docs)
+**Critical**: Reserve 20-30% context for Phase 7 (review requires reading multiple docs)
 ```
 
 **Benefit**: Prevents running out of context before critical review phase
@@ -1733,7 +1733,7 @@ git branch -d feature/20260131_Sprint_10
 3. **Missing Explicit Steps**: Test file creation not explicitly in checklist
 4. **Missing Scrum Element**: No backlog refinement process
 5. **Missing Links**: ARCHITECTURE.md, PERFORMANCE_BENCHMARKS.md not explicitly linked
-6. **Content Source Unclear**: Phase 1.2.1 unclear where to get Sprint N-1 details post-restructuring
+6. **Content Source Unclear**: Phase 3.2.1 unclear where to get Sprint N-1 details post-restructuring
 7. **No Context Monitoring**: No guidance on managing context budget
 
 ### Process Score: 8.5/10
@@ -1745,7 +1745,7 @@ git branch -d feature/20260131_Sprint_10
 ## NEXT STEPS
 
 **Implement 8 recommendations**:
-1. Add context caching optimization to Phase 0
+1. Add context caching optimization to Phase 2
 2. Eliminate SPRINT_N_PLAN.md requirement
 3. Add explicit test file creation checklist
 4. Add backlog refinement process

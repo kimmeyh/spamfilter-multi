@@ -190,6 +190,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     required List<String> folderNames,
   }) async {
     if (_imapClient == null) {
+      _logger.e('[IMAP] fetchMessages called but _imapClient is NULL');
       throw ConnectionException('Not connected - call loadCredentials first');
     }
 
@@ -198,29 +199,34 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
         ? DateTime.now().subtract(Duration(days: daysBack))
         : null;
 
-    _logger.i('Fetching messages from ${daysBack > 0 ? "$daysBack days back" : "all time"} in folders: $folderNames');
+    _logger.i('[IMAP] fetchMessages: daysBack=$daysBack, sinceDate=$sinceDate, folders=$folderNames');
+    _logger.i('[IMAP] fetchMessages: _imapClient connected=${_imapClient != null}, currentMailbox=$_currentMailbox');
 
     for (final folderName in folderNames) {
       try {
+        _logger.i('[IMAP] fetchMessages: Selecting mailbox "$folderName"...');
         await _selectMailbox(folderName);
+        _logger.i('[IMAP] fetchMessages: Mailbox "$folderName" selected, currentMailbox=$_currentMailbox');
 
         // [ISSUE #145] Use UID SEARCH for stable message identifiers
         final searchCriteria = sinceDate != null
             ? 'SINCE ${_formatImapDate(sinceDate)}'
             : 'ALL';
-        _logger.d('UID searching with criteria: $searchCriteria');
+        _logger.i('[IMAP] fetchMessages: UID SEARCH criteria="$searchCriteria" in "$folderName"');
 
         final searchResult = await _imapClient!.uidSearchMessages(
           searchCriteria: searchCriteria,
         );
 
+        _logger.i('[IMAP] fetchMessages: Search result: matchingSequence=${searchResult.matchingSequence}, isEmpty=${searchResult.matchingSequence?.isEmpty}');
+
         if (searchResult.matchingSequence == null ||
             searchResult.matchingSequence!.isEmpty) {
-          _logger.i('No messages found in $folderName');
+          _logger.i('[IMAP] fetchMessages: No messages found in "$folderName" (matchingSequence null or empty)');
           continue;
         }
 
-        _logger.i('Found ${searchResult.matchingSequence!.length} messages in $folderName');
+        _logger.i('[IMAP] fetchMessages: Found ${searchResult.matchingSequence!.length} UIDs in "$folderName"');
 
         // [ISSUE #145] Fetch message details using UID FETCH
         final fetchedMessages = await _fetchMessageDetails(
@@ -228,14 +234,15 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
           folderName,
         );
 
+        _logger.i('[IMAP] fetchMessages: Fetched ${fetchedMessages.length} message details from "$folderName"');
         messages.addAll(fetchedMessages);
-      } catch (e) {
-        _logger.e('Error fetching from $folderName: $e');
+      } catch (e, st) {
+        _logger.e('[IMAP] fetchMessages: ERROR fetching from "$folderName": $e\n$st');
         // Continue with other folders even if one fails
       }
     }
 
-    _logger.i('Total messages fetched: ${messages.length}');
+    _logger.i('[IMAP] fetchMessages: COMPLETE - Total messages fetched across all folders: ${messages.length}');
     return messages;
   }
 
@@ -838,14 +845,17 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
 
   Future<void> _selectMailbox(String mailboxName) async {
     if (_currentMailbox == mailboxName) {
+      _logger.d('[IMAP] _selectMailbox: Already in "$mailboxName", skipping');
       return; // Already selected
     }
 
     try {
-      await _imapClient!.selectMailboxByPath(mailboxName);
+      _logger.i('[IMAP] _selectMailbox: Selecting "$mailboxName" (was: "$_currentMailbox")');
+      final mailbox = await _imapClient!.selectMailboxByPath(mailboxName);
       _currentMailbox = mailboxName;
-      _logger.d('Selected mailbox: $mailboxName');
+      _logger.i('[IMAP] _selectMailbox: Selected "$mailboxName" - messagesExists=${mailbox.messagesExists}, messagesRecent=${mailbox.messagesRecent}, uidValidity=${mailbox.uidValidity}');
     } catch (e) {
+      _logger.e('[IMAP] _selectMailbox: FAILED to select "$mailboxName": $e');
       throw FetchException('Failed to select mailbox: $mailboxName', e);
     }
   }

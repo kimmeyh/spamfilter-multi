@@ -4,14 +4,14 @@ Single-page reference for sprint execution. Copy to sprint plan and check off du
 
 ---
 
-## Phase 0: Pre-Kickoff
+## Phase 2: Pre-Kickoff
 
 - [ ] Previous sprint PR merged to `develop`
 - [ ] Previous sprint cards closed
 - [ ] Working directory clean (`git status`)
 - [ ] Local develop branch current (`git pull origin develop`)
 
-## Phase 1: Kickoff & Planning
+## Phase 3: Kickoff & Planning
 
 - [ ] Sprint number determined (N = previous + 1)
 - [ ] Read ALL_SPRINTS_MASTER_PLAN.md for Sprint N
@@ -22,7 +22,7 @@ Single-page reference for sprint execution. Copy to sprint plan and check off du
 - [ ] Sprint plan reviewed and approved by user
 - [ ] **Draft PR created immediately** (optional but recommended)
 
-## Phase 2: Execution
+## Phase 4: Execution
 
 - [ ] Tasks assigned to appropriate models (Haiku/Sonnet/Opus)
 - [ ] Each task: Code → Build → Test → Analyze → Commit
@@ -30,7 +30,7 @@ Single-page reference for sprint execution. Copy to sprint plan and check off du
 - [ ] Progress tracked in GitHub issue comments
 - [ ] Pushed to remote at least once during session
 
-## Phase 3: Review & Testing
+## Phase 5: Review & Testing
 
 - [ ] Local code review complete
 - [ ] Full test suite passing (`flutter test`)
@@ -40,7 +40,7 @@ Single-page reference for sprint execution. Copy to sprint plan and check off du
 - [ ] Manual testing complete (user)
 - [ ] Issues from testing fixed
 
-## Phase 4: Push & PR
+## Phase 6: Push & PR
 
 - [ ] All changes committed and clean
 - [ ] Risk review gate passed
@@ -50,7 +50,7 @@ Single-page reference for sprint execution. Copy to sprint plan and check off du
 - [ ] PR references issues: `Closes #XX, #YY, #ZZ`
 - [ ] User notified PR is ready
 
-## Phase 4.5: Sprint Review (MANDATORY)
+## Phase 7: Sprint Review (MANDATORY)
 
 - [ ] Windows desktop build verified
 - [ ] Sprint review offered to user

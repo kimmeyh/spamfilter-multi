@@ -47,6 +47,8 @@ class SettingsStore {
   static const String keyBackgroundScanFolders = 'background_scan_folders';
   static const String keyCsvExportDirectory = 'csv_export_directory';
   static const String keyBackgroundScanDebugCsv = 'background_scan_debug_csv';
+  static const String keyManualScanDaysBack = 'manual_scan_days_back';
+  static const String keyBackgroundScanDaysBack = 'background_scan_days_back';
 
   // ============================================================
   // Default Values
@@ -60,6 +62,8 @@ class SettingsStore {
   static const List<String> defaultBackgroundScanFolders = ['INBOX'];
   static const String? defaultCsvExportDirectory = null; // null means use Downloads folder
   static const bool defaultBackgroundScanDebugCsv = false;
+  static const int defaultManualScanDaysBack = 0; // 0 = all emails
+  static const int defaultBackgroundScanDaysBack = 0; // 0 = all emails
 
   // ============================================================
   // Manual Scan Settings
@@ -163,6 +167,38 @@ class SettingsStore {
   /// Set whether debug CSV export is enabled for background scans
   Future<void> setBackgroundScanDebugCsv(bool enabled) async {
     await _setAppSetting(keyBackgroundScanDebugCsv, enabled.toString(), 'bool');
+  }
+
+  // ============================================================
+  // Days Back Settings
+  // ============================================================
+
+  /// Get the default days back for manual scans
+  /// Returns 0 for "all emails" or 1-90 for days back
+  Future<int> getManualScanDaysBack() async {
+    final value = await _getAppSetting(keyManualScanDaysBack);
+    if (value == null) return defaultManualScanDaysBack;
+    return int.tryParse(value) ?? defaultManualScanDaysBack;
+  }
+
+  /// Set the default days back for manual scans
+  /// Pass 0 for "all emails" or 1-90 for days back
+  Future<void> setManualScanDaysBack(int daysBack) async {
+    await _setAppSetting(keyManualScanDaysBack, daysBack.toString(), 'int');
+  }
+
+  /// Get the default days back for background scans
+  /// Returns 0 for "all emails" or 1-90 for days back
+  Future<int> getBackgroundScanDaysBack() async {
+    final value = await _getAppSetting(keyBackgroundScanDaysBack);
+    if (value == null) return defaultBackgroundScanDaysBack;
+    return int.tryParse(value) ?? defaultBackgroundScanDaysBack;
+  }
+
+  /// Set the default days back for background scans
+  /// Pass 0 for "all emails" or 1-90 for days back
+  Future<void> setBackgroundScanDaysBack(int daysBack) async {
+    await _setAppSetting(keyBackgroundScanDaysBack, daysBack.toString(), 'int');
   }
 
   // ============================================================
@@ -357,6 +393,46 @@ class SettingsStore {
     }
   }
 
+  // ============================================================
+  // Per-Account Days Back Settings
+  // ============================================================
+
+  /// Get account-specific manual scan days back
+  /// Returns null if not set (will use app-wide default)
+  Future<int?> getAccountManualDaysBack(String accountId) async {
+    final value = await _getAccountSetting(accountId, 'manual_days_back');
+    if (value == null) return null;
+    return int.tryParse(value);
+  }
+
+  /// Set account-specific manual scan days back
+  /// Pass null to clear (will use app-wide default)
+  Future<void> setAccountManualDaysBack(String accountId, int? daysBack) async {
+    if (daysBack == null) {
+      await _deleteAccountSetting(accountId, 'manual_days_back');
+    } else {
+      await _setAccountSetting(accountId, 'manual_days_back', daysBack.toString(), 'int');
+    }
+  }
+
+  /// Get account-specific background scan days back
+  /// Returns null if not set (will use app-wide default)
+  Future<int?> getAccountBackgroundDaysBack(String accountId) async {
+    final value = await _getAccountSetting(accountId, 'background_days_back');
+    if (value == null) return null;
+    return int.tryParse(value);
+  }
+
+  /// Set account-specific background scan days back
+  /// Pass null to clear (will use app-wide default)
+  Future<void> setAccountBackgroundDaysBack(String accountId, int? daysBack) async {
+    if (daysBack == null) {
+      await _deleteAccountSetting(accountId, 'background_days_back');
+    } else {
+      await _setAccountSetting(accountId, 'background_days_back', daysBack.toString(), 'int');
+    }
+  }
+
   /// Check if account has any setting overrides
   Future<bool> hasAccountOverrides(String accountId) async {
     final db = await _dbHelper.database;
@@ -446,6 +522,24 @@ class SettingsStore {
       if (override != null) return override;
     }
     return isBackground ? await getBackgroundScanFolders() : await getManualScanFolders();
+  }
+
+  /// Get effective days back for an account (resolves override or uses global)
+  ///
+  /// Resolution order:
+  /// 1. Account-specific manual/background days back override
+  /// 2. App-wide manual/background days back default
+  Future<int> getEffectiveDaysBack(String? accountId, {bool isBackground = false}) async {
+    if (accountId != null) {
+      if (isBackground) {
+        final bgOverride = await getAccountBackgroundDaysBack(accountId);
+        if (bgOverride != null) return bgOverride;
+      } else {
+        final manualOverride = await getAccountManualDaysBack(accountId);
+        if (manualOverride != null) return manualOverride;
+      }
+    }
+    return isBackground ? await getBackgroundScanDaysBack() : await getManualScanDaysBack();
   }
 
   /// Get effective background enabled for an account (resolves override or uses global)

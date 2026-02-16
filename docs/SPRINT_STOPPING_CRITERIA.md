@@ -14,9 +14,9 @@
 |----------|---------|-------------|
 | **ALL_SPRINTS_MASTER_PLAN.md** | Master plan for all sprints | Before starting any sprint, after completing a sprint |
 | **SPRINT_PLANNING.md** | Sprint planning methodology | When planning a new sprint |
-| **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 0-4.5) |
+| **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 1-7) |
 | **SPRINT_STOPPING_CRITERIA.md** (this doc) | When/why to stop working | When uncertain if blocked or should continue |
-| **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 4.5) |
+| **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 7) |
 | **TESTING_STRATEGY.md** | Testing approach and requirements | When writing or reviewing tests |
 | **QUALITY_STANDARDS.md** | Quality standards for code and documentation | When writing code or documentation |
 | **TROUBLESHOOTING.md** | Common issues and solutions | When encountering errors or debugging |
@@ -49,12 +49,17 @@ During sprint execution, models work autonomously until one of these stopping cr
 - [ ] Code analysis shows zero errors
 - [ ] Local code review completed
 - [ ] No known blockers or regressions
+- [ ] **Windows desktop app built and launched successfully** (Phase 5.3)
 
 **Action**:
-1. Proceed to Phase 3.3 (Manual Testing in parallel)
-2. Once testing complete → Phase 4 (PR creation)
-3. User will conduct Phase 4.5 (Sprint Review) before merge
-4. **MANDATORY Sprint Completion Updates** (Phase 4.5.6 and Step 3 after merge):
+1. **Build and launch the app** (MANDATORY before manual testing - Phase 5.3)
+   - Windows: `cd mobile-app/scripts && .\build-windows.ps1`
+   - Verify build succeeds, app launches, no database errors
+   - User should NOT have to build app themselves
+2. Proceed to Phase 5.3 (Manual Testing in parallel)
+2. Once testing complete → Phase 6 (PR creation)
+3. User will conduct Phase 7 (Sprint Review) before merge
+4. **MANDATORY Sprint Completion Updates** (Phase 7.7 and Step 3 after merge):
    - [ ] Update CHANGELOG.md with sprint entry under `## [Unreleased]`
    - [ ] Update ALL_SPRINTS_MASTER_PLAN.md with:
      - Actual duration vs estimated
@@ -79,9 +84,9 @@ During sprint execution, models work autonomously until one of these stopping cr
 
 **Timing**: This is the expected normal path. No user approval needed - this was pre-approved in sprint plan approval.
 
-**Documentation Updates**: The CHANGELOG.md and ALL_SPRINTS_MASTER_PLAN.md updates are MANDATORY and must be completed before PR approval. See `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 4.5.6 and "After Sprint Approval" Step 3 for details.
+**Documentation Updates**: The CHANGELOG.md and ALL_SPRINTS_MASTER_PLAN.md updates are MANDATORY and must be completed before PR approval. See `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 7.7 and "After Sprint Approval" Step 3 for details.
 
-**Historical Archiving**: Full sprint details are archived to SPRINT_<N>_SUMMARY.md during next sprint planning (Phase 1.2.1) to keep ALL_SPRINTS_MASTER_PLAN.md focused on current/future work.
+**Historical Archiving**: Full sprint details are archived to SPRINT_<N>_SUMMARY.md during next sprint planning (Phase 3.2.1) to keep ALL_SPRINTS_MASTER_PLAN.md focused on current/future work.
 
 ---
 
@@ -236,7 +241,7 @@ What's Required to Unblock:
 **Action**:
 1. Complete current task to stable state
 2. Commit any in-progress work
-3. Proceed to Phase 4.5 (Sprint Review)
+3. Proceed to Phase 7 (Sprint Review)
 4. Provide feedback, collect user feedback
 5. Decide: (a) Resume sprint, (b) Wrap up and merge, (c) Adjust scope
 
@@ -244,9 +249,9 @@ What's Required to Unblock:
 
 ---
 
-### 6. 🏁 SPRINT REVIEW COMPLETE - Phase 4.5 Done
+### 6. 🏁 SPRINT REVIEW COMPLETE - Phase 7 Done
 
-**When**: Phase 4.5 (Sprint Review) is complete, documentation improved, ready for PR merge.
+**When**: Phase 7 (Sprint Review) is complete, documentation improved, ready for PR merge.
 
 **Indicators**:
 - [ ] Windows build successful
@@ -256,7 +261,7 @@ What's Required to Unblock:
 - [ ] PR ready for user approval
 
 **Action**:
-1. Notify user: "Phase 4.5 complete, PR ready for review and approval"
+1. Notify user: "Phase 7 complete, PR ready for review and approval"
 2. Wait for user to review PR
 3. Once approved: Merge to develop branch
 4. Cleanup: Delete feature branch, close sprint cards
@@ -343,8 +348,8 @@ constraints (performance, maintainability, test coverage).
 **Action**:
 1. Complete current task to stable state
 2. Commit all work
-3. Proceed to Phase 4 (PR creation) if not already there
-4. Proceed to Phase 4.5 (Sprint Review)
+3. Proceed to Phase 6 (PR creation) if not already there
+4. Proceed to Phase 7 (Sprint Review)
 5. Wrap up and await merge
 
 **Timing**: Respect scheduled sprint boundaries. Better to complete remaining tasks next sprint than to extend indefinitely.
@@ -523,7 +528,7 @@ START: Am I working on sprint tasks?
 │  ├─ YES → Stop (Criterion 5: Review Request)
 │  └─ NO → Continue
 │
-├─ Is Phase 4.5 (Sprint Review) complete?
+├─ Is Phase 7 (Sprint Review) complete?
 │  ├─ YES → Stop (Criterion 6: Sprint Review Complete)
 │  └─ NO → Continue
 │
