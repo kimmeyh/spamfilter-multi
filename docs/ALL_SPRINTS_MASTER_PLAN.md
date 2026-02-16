@@ -67,6 +67,7 @@ Historical sprint information has been moved to individual summary documents and
 - **Sprint 13**: Account-Specific Folder Settings (per-account deleted rule folder, safe sender folder, subject cleaning, settings UI refactor)
 - **Sprint 14**: Settings Restructure + UX Improvements (progressive scan updates, Demo Mode, enhanced delete processing, plus-sign safe sender fix)
 - **Sprint 15**: Bug Fixes, Performance, and Settings Management (100-delete limit fix via UID migration, batch email processing, Safe Senders/Rules management UIs, Windows directory browser, Windows background scanning with Task Scheduler, 15 ADRs)
+- **Sprint 16**: UX Polish, Scan Configuration, and Rule Intelligence (persistent days-back settings, scan options defaults, Manual Scan rename, background scan log viewer, rule override/conflict detection, scan result persistence for historical View Results, 8 rounds of user testing feedback)
 
 See CHANGELOG.md for detailed feature history.
 
@@ -76,41 +77,45 @@ See CHANGELOG.md for detailed feature history.
 
 **No Active Sprint**
 
-**Status**: AWAITING SPRINT 16 PLANNING
+**Status**: AWAITING SPRINT 17 PLANNING
 
-**Last Completed Sprint**: Sprint 15 (February 14-15, 2026)
-- See `.claude/plans/sprint_15_plan.md` for full details
-- PR #146 merged to develop: https://github.com/kimmeyh/spamfilter-multi/pull/146
+**Last Completed Sprint**: Sprint 16 (February 15-16, 2026)
+- PR #155: https://github.com/kimmeyh/spamfilter-multi/pull/155
 - Features completed:
-  - #145: 100-delete limit bug fix (UID migration)
-  - #144: Batch email processing (IMAP UID sequence sets)
-  - F17/#147: Manage Safe Senders UI in Settings
-  - F18/#148: Manage Rules UI in Settings
-  - #126: Windows native directory browser for CSV export
-  - F5: Windows background scanning with Task Scheduler
-  - Debug CSV export toggle for background scans
-  - Safe sender INBOX normalization fix
-  - Processed > found counter fix
-  - 15 Architecture Decision Records (ADR-0001 through ADR-0015)
-- Testing feedback filed as GitHub issues for future sprints:
-  - #149: Manage Rules UI overhaul (split combined rules, search, filter)
-  - #150: Scan Options default to "Scan all emails"
-  - #151: Rename Scan Progress to Manual Scan
-  - #152: Background scan log viewer
-  - #153: Days back setting for Manual and Background scans
-  - #154: Auto-remove safe sender entries when converting to delete rules
+  - #153: Persistent days-back settings for Manual and Background scans
+  - #150: Scan Options defaults to "Scan all emails" with saved preferences
+  - #151: Renamed "Scan Progress" to "Manual Scan", removed folder selector
+  - #152: Background scan log viewer with account filter and summary stats
+  - #139: Rule override/conflict detection with warning dialogs
+  - FB-1 through FB-8: User testing feedback (scan slider, simplified UI, result persistence)
+  - 10 new ADRs (ADR-0016 through ADR-0025)
+- Retrospective: `docs/sprint_16_retrospective.md`
+- New issues filed from testing feedback:
+  - #156: Manual Scan status text formatting
+  - #157: Clear Results screen before new Live Scan
+  - #158: Consolidated Scan History (unified background + manual)
+  - #159: Test Background Scan button
+  - #160: Renumber Sprint Execution Workflow phases
 
 **Next Sprint Candidates**:
 
-### Option 1: User Testing Feedback Features
+### Option 1: Scan History and UX Improvements
 **Estimated Duration**: 20-30 hours
-**Objective**: Address testing feedback from Sprint 15
+**Objective**: Consolidate scan history and continue UX improvements
 
 **Tasks** (from GitHub issues):
+- **#158**: Consolidated Scan History - unified background/manual view (~12-16h)
+- **#156**: Manual Scan status text formatting (~1-2h)
+- **#157**: Clear Results screen before new Live Scan (~2-3h)
+- **#159**: Test Background Scan button (~3-4h)
 - **#149**: Manage Rules UI overhaul - split combined rules, search, filter (~12-16h)
-- **#150**: Scan Options UX - default "Scan all emails" with days slider (~3-4h)
-- **#151**: Rename Scan Progress to Manual Scan (~2-3h)
-- **#153**: Days back setting for Manual and Background scans (~4-6h)
+
+### Option 2: Documentation and Process
+**Estimated Duration**: 8-12 hours
+**Objective**: Improve sprint workflow documentation
+
+**Tasks**:
+- **#160**: Renumber Sprint Execution Workflow phases (~6-8h)
 - **#154**: Auto-remove safe sender entries when converting to delete rules (~4-6h)
 
 ### Option 2: Background Scan Enhancements + Gmail Auth
