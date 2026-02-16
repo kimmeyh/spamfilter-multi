@@ -166,6 +166,9 @@ try {
     \$taskInfo = Get-ScheduledTaskInfo -TaskName \$taskName -ErrorAction Stop
 
     # Output JSON format for parsing
+    # Include executable path for path verification on app startup
+    \$execPath = if (\$task.Actions[0].Execute) { \$task.Actions[0].Execute } else { \$null }
+
     \$output = @{
         "exists" = \$true
         "state" = \$task.State
@@ -174,6 +177,7 @@ try {
         "nextRunTime" = if (\$taskInfo.NextRunTime) { \$taskInfo.NextRunTime.ToString("o") } else { \$null }
         "lastResult" = \$taskInfo.LastTaskResult
         "triggerFrequency" = if (\$task.Triggers[0].Repetition.Interval) { \$task.Triggers[0].Repetition.Interval } else { "Once" }
+        "executablePath" = \$execPath
     } | ConvertTo-Json
 
     Write-Host \$output

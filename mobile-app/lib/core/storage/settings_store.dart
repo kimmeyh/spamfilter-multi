@@ -63,7 +63,7 @@ class SettingsStore {
   static const String? defaultCsvExportDirectory = null; // null means use Downloads folder
   static const bool defaultBackgroundScanDebugCsv = false;
   static const int defaultManualScanDaysBack = 0; // 0 = all emails
-  static const int defaultBackgroundScanDaysBack = 7; // 7 days for background
+  static const int defaultBackgroundScanDaysBack = 0; // 0 = all emails
 
   // ============================================================
   // Manual Scan Settings

@@ -12,6 +12,8 @@ import '../../core/providers/email_scan_provider.dart' show EmailScanProvider, E
 import '../../core/providers/rule_set_provider.dart';
 import '../../core/models/rule_set.dart' show Rule, RuleConditions, RuleActions;
 import '../../core/services/email_body_parser.dart';
+import '../../core/storage/database_helper.dart';
+import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/utils/pattern_normalization.dart';
 import '../widgets/empty_state.dart';
@@ -46,7 +48,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   // Filter state: null means show all, otherwise filter by this action type or special filter
   EmailActionType? _filter;
   SpecialFilter? _specialFilter;
-  
+
   // Search state (Item 8: Ctrl-F search)
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode(); // Issue 2a: Auto-focus on Ctrl+F
@@ -59,6 +61,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   // Issue 3: Cache folders for performance
   List<String>? _cachedFolders;
 
+  // [NEW] Testing feedback FB-4/FB-5: Historical scan result data
+  ScanResult? _lastCompletedScan;
+  bool _hasEverScanned = false;
+  bool _historicalLoaded = false;
+
   @override
   void initState() {
     super.initState();
@@ -68,6 +75,31 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         _specialFilter = SpecialFilter.processed;
       });
     });
+    // Load last completed scan for historical display
+    _loadLastCompletedScan();
+  }
+
+  /// Load the most recent completed scan from database
+  Future<void> _loadLastCompletedScan() async {
+    try {
+      final dbHelper = DatabaseHelper();
+      final scanResultStore = ScanResultStore(dbHelper);
+      final lastScan = await scanResultStore.getLatestCompletedScan(widget.accountId);
+      if (mounted) {
+        setState(() {
+          _lastCompletedScan = lastScan;
+          _hasEverScanned = lastScan != null;
+          _historicalLoaded = true;
+        });
+      }
+    } catch (e) {
+      // If loading fails, continue with empty state
+      if (mounted) {
+        setState(() {
+          _historicalLoaded = true;
+        });
+      }
+    }
   }
 
   @override
@@ -563,14 +595,17 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                         children: [
                           SizedBox(
                             height: MediaQuery.of(context).size.height * 0.4,
-                            // [UPDATED] ISSUE #123+#124: Show appropriate message based on scan status
+                            // [UPDATED] Testing feedback FB-5: Only show "No Results Yet"
+                            // if no scan has EVER been run for this account
                             child: scanProvider.status == ScanStatus.scanning
                                 ? const ScanStartedEmptyState()
                                 : scanProvider.status == ScanStatus.completed && _filter == null
                                     ? const ScanCompleteNoEmailsEmptyState()
-                                    : _filter == null
-                                        ? const NoResultsEmptyState()
-                                        : const NoMatchingEmailsEmptyState(),
+                                    : _filter != null
+                                        ? const NoMatchingEmailsEmptyState()
+                                        : (_historicalLoaded && !_hasEverScanned)
+                                            ? const NoResultsEmptyState()
+                                            : const ScanCompleteNoEmailsEmptyState(),
                           ),
                         ],
                       )
@@ -675,6 +710,23 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     final isSafeSendersOnly = scanMode == ScanMode.testAll;
     final isRulesOnly = scanMode == ScanMode.testLimit;
 
+    // [NEW] Testing feedback FB-4: Determine if showing live or historical results
+    final hasLiveResults = allResults.isNotEmpty || scanProvider.status == ScanStatus.scanning;
+    final showingHistorical = !hasLiveResults && _lastCompletedScan != null;
+
+    // Build scan type and time info
+    String? scanTypeLabel;
+    String? scanTimeLabel;
+    if (hasLiveResults) {
+      scanTypeLabel = 'Live Scan';
+    } else if (showingHistorical && _lastCompletedScan != null) {
+      scanTypeLabel = _lastCompletedScan!.scanType == 'background' ? 'Background Scan' : 'Live Scan';
+      if (_lastCompletedScan!.completedAt != null) {
+        final completedDate = DateTime.fromMillisecondsSinceEpoch(_lastCompletedScan!.completedAt!);
+        scanTimeLabel = 'Completed: ${completedDate.toString().substring(0, 16)}';
+      }
+    }
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12.0),
@@ -682,49 +734,134 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Summary - ${scanProvider.getScanModeDisplayName()}',
+              hasLiveResults
+                ? 'Summary - ${scanProvider.getScanModeDisplayName()}'
+                : showingHistorical
+                  ? 'Last Scan Results'
+                  : 'Summary',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
+            if (scanTypeLabel != null || scanTimeLabel != null) ...[
+              const SizedBox(height: 4),
+              Wrap(
+                spacing: 12,
+                children: [
+                  if (scanTypeLabel != null)
+                    Text(
+                      scanTypeLabel,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[700],
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  if (scanTimeLabel != null)
+                    Text(
+                      scanTimeLabel,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                ],
+              ),
+            ],
             const SizedBox(height: 8),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                // Item 3: Make Found/Processed/Moved/Error filterable
-                _buildSpecialStatChip('Found', scanProvider.totalEmails, const Color(0xFF2196F3), Colors.white, SpecialFilter.found),
-                _buildSpecialStatChip('Processed', scanProvider.processedCount, const Color(0xFF9C27B0), Colors.white, SpecialFilter.processed),
-                // [UPDATED] ISSUE #123+#124: Show "(not processed)" for rule actions in safe-senders-only mode
-                _buildStatChipWithMode(
-                  isSafeSendersOnly || isReadOnly ? 'Deleted (not processed)' : 'Deleted',
-                  scanProvider.deletedCount,
-                  isSafeSendersOnly || isReadOnly ? const Color(0xFFEF9A9A) : const Color(0xFFF44336),
-                  isSafeSendersOnly || isReadOnly ? Colors.black54 : Colors.white,
-                  EmailActionType.delete,
-                ),
-                _buildStatChipWithMode(
-                  isSafeSendersOnly || isReadOnly ? 'Moved (not processed)' : 'Moved',
-                  scanProvider.movedCount,
-                  isSafeSendersOnly || isReadOnly ? const Color(0xFFFFCC80) : const Color(0xFFFF9800),
-                  isSafeSendersOnly || isReadOnly ? Colors.black54 : Colors.white,
-                  EmailActionType.moveToJunk,
-                ),
-                // [UPDATED] ISSUE #123+#124: Show "(not processed)" for safe senders in rules-only mode
-                _buildStatChipWithMode(
-                  isRulesOnly || isReadOnly ? 'Safe (not processed)' : 'Safe',
-                  scanProvider.safeSendersCount,
-                  isRulesOnly || isReadOnly ? const Color(0xFFA5D6A7) : const Color(0xFF4CAF50),
-                  isRulesOnly || isReadOnly ? Colors.black54 : Colors.white,
-                  EmailActionType.safeSender,
-                ),
-                _buildStatChip('No rule', scanProvider.noRuleCount, const Color(0xFF757575), Colors.white, EmailActionType.none),
-                _buildSpecialStatChip('Errors', scanProvider.errorCount, const Color(0xFFD32F2F), Colors.white, SpecialFilter.error),
-                // Item 6: Add Folders multi-select filter
-                _buildFolderFilterChip(allResults),
-              ],
-            ),
+            // [UPDATED] Testing feedback FB-4: Show historical counts when no live data
+            if (showingHistorical && _lastCompletedScan != null)
+              _buildHistoricalStats(_lastCompletedScan!)
+            else
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  // Item 3: Make Found/Processed/Moved/Error filterable
+                  _buildSpecialStatChip('Found', scanProvider.totalEmails, const Color(0xFF2196F3), Colors.white, SpecialFilter.found),
+                  _buildSpecialStatChip('Processed', scanProvider.processedCount, const Color(0xFF9C27B0), Colors.white, SpecialFilter.processed),
+                  // [UPDATED] ISSUE #123+#124: Show "(not processed)" for rule actions in safe-senders-only mode
+                  _buildStatChipWithMode(
+                    isSafeSendersOnly || isReadOnly ? 'Deleted (not processed)' : 'Deleted',
+                    scanProvider.deletedCount,
+                    isSafeSendersOnly || isReadOnly ? const Color(0xFFEF9A9A) : const Color(0xFFF44336),
+                    isSafeSendersOnly || isReadOnly ? Colors.black54 : Colors.white,
+                    EmailActionType.delete,
+                  ),
+                  _buildStatChipWithMode(
+                    isSafeSendersOnly || isReadOnly ? 'Moved (not processed)' : 'Moved',
+                    scanProvider.movedCount,
+                    isSafeSendersOnly || isReadOnly ? const Color(0xFFFFCC80) : const Color(0xFFFF9800),
+                    isSafeSendersOnly || isReadOnly ? Colors.black54 : Colors.white,
+                    EmailActionType.moveToJunk,
+                  ),
+                  // [UPDATED] ISSUE #123+#124: Show "(not processed)" for safe senders in rules-only mode
+                  _buildStatChipWithMode(
+                    isRulesOnly || isReadOnly ? 'Safe (not processed)' : 'Safe',
+                    scanProvider.safeSendersCount,
+                    isRulesOnly || isReadOnly ? const Color(0xFFA5D6A7) : const Color(0xFF4CAF50),
+                    isRulesOnly || isReadOnly ? Colors.black54 : Colors.white,
+                    EmailActionType.safeSender,
+                  ),
+                  _buildStatChip('No rule', scanProvider.noRuleCount, const Color(0xFF757575), Colors.white, EmailActionType.none),
+                  _buildSpecialStatChip('Errors', scanProvider.errorCount, const Color(0xFFD32F2F), Colors.white, SpecialFilter.error),
+                  // Item 6: Add Folders multi-select filter
+                  _buildFolderFilterChip(allResults),
+                ],
+              ),
           ],
         ),
       ),
+    );
+  }
+
+  /// Build stat chips from historical scan result (non-interactive, display only)
+  Widget _buildHistoricalStats(ScanResult scan) {
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: [
+        Chip(
+          label: Text('Found: ${scan.totalEmails}'),
+          backgroundColor: const Color(0xFF2196F3),
+          labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        ),
+        Chip(
+          label: Text('Processed: ${scan.processedCount}'),
+          backgroundColor: const Color(0xFF9C27B0),
+          labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        ),
+        Chip(
+          label: Text('Deleted: ${scan.deletedCount}'),
+          backgroundColor: const Color(0xFFF44336),
+          labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        ),
+        Chip(
+          label: Text('Moved: ${scan.movedCount}'),
+          backgroundColor: const Color(0xFFFF9800),
+          labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        ),
+        Chip(
+          label: Text('Safe: ${scan.safeSenderCount}'),
+          backgroundColor: const Color(0xFF4CAF50),
+          labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        ),
+        Chip(
+          label: Text('No rule: ${scan.noRuleCount}'),
+          backgroundColor: const Color(0xFF757575),
+          labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        ),
+        Chip(
+          label: Text('Errors: ${scan.errorCount}'),
+          backgroundColor: const Color(0xFFD32F2F),
+          labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        ),
+      ],
     );
   }
 

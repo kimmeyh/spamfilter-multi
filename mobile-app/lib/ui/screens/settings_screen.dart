@@ -878,35 +878,39 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               controlAffinity: ListTileControlAffinity.leading,
               contentPadding: EdgeInsets.zero,
             ),
-            if (!scanAll) ...[
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  const Text('1'),
-                  Expanded(
-                    child: Slider(
-                      value: sliderValue.toDouble().clamp(1, 90),
-                      min: 1,
-                      max: 90,
-                      divisions: 89,
-                      label: '$sliderValue day${sliderValue == 1 ? "" : "s"}',
-                      onChanged: (value) async {
-                        await onChanged(value.round());
-                      },
-                    ),
-                  ),
-                  const Text('90'),
-                ],
-              ),
-              Center(
-                child: Text(
-                  'Scan last $sliderValue day${sliderValue == 1 ? "" : "s"}',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Text('1'),
+                Expanded(
+                  child: Slider(
+                    value: sliderValue.toDouble().clamp(1, 90),
+                    min: 1,
+                    max: 90,
+                    divisions: 89,
+                    label: '$sliderValue day${sliderValue == 1 ? "" : "s"}',
+                    onChanged: (value) async {
+                      // Moving the slider unchecks "Scan all emails"
+                      await onChanged(value.round());
+                    },
                   ),
                 ),
+                const Text('90'),
+              ],
+            ),
+            Center(
+              child: Text(
+                scanAll
+                  ? 'Slider value overridden by "Scan all emails"'
+                  : 'Scan last $sliderValue day${sliderValue == 1 ? "" : "s"}',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: scanAll
+                    ? Theme.of(context).colorScheme.onSurfaceVariant
+                    : null,
+                ),
               ),
-            ],
+            ),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.all(12),

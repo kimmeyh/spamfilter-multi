@@ -293,6 +293,32 @@ class ScanResultStore {
     }
   }
 
+  /// Get the most recent completed scan for a specific account (any type)
+  ///
+  /// Returns the latest completed scan (manual or background), or null if none exist
+  Future<ScanResult?> getLatestCompletedScan(String accountId) async {
+    try {
+      final db = await _databaseHelper.database;
+      final maps = await db.query(
+        'scan_results',
+        where: 'account_id = ? AND status = ?',
+        whereArgs: [accountId, 'completed'],
+        orderBy: 'completed_at DESC',
+        limit: 1,
+      );
+
+      if (maps.isEmpty) {
+        _logger.d('No completed scans found for account $accountId');
+        return null;
+      }
+
+      return ScanResult.fromMap(maps.first);
+    } catch (e) {
+      _logger.e('Failed to get latest completed scan: $e');
+      rethrow;
+    }
+  }
+
   /// Update scan result record
   ///
   /// Returns true on success, false if scan not found, throws exception on error

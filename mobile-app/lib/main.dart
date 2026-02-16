@@ -10,6 +10,7 @@ import 'core/services/background_mode_service.dart';
 import 'core/services/background_scan_windows_worker.dart';
 import 'core/services/windows_system_tray_service.dart';
 import 'core/services/windows_notification_service.dart';
+import 'core/services/windows_task_scheduler_service.dart';
 import 'adapters/storage/secure_credentials_store.dart';
 // import 'ui/screens/platform_selection_screen.dart'; // OLD: Direct to platform selection.
 import 'ui/screens/main_navigation_screen.dart'; // NEW: Main navigation with bottom nav (Android)
@@ -88,6 +89,16 @@ void main(List<String> args) async {
     final notificationService = WindowsNotificationService();
     await notificationService.initialize();
     Logger().i('Windows notifications initialized');
+
+    // Verify and repair task scheduler executable path after rebuild
+    try {
+      final repaired = await WindowsTaskSchedulerService.verifyAndRepairTaskPath();
+      if (repaired) {
+        Logger().i('Task scheduler path repaired after app rebuild');
+      }
+    } catch (e) {
+      Logger().w('Task scheduler path verification failed: $e');
+    }
   }
 
   runApp(const SpamFilterApp());

@@ -199,6 +199,73 @@ class WindowsTaskSchedulerService {
     return status['exists'] == true;
   }
 
+  /// Verify and repair the scheduled task executable path
+  ///
+  /// Checks if the registered task's executable path matches the current
+  /// running app path. If mismatched (e.g., after a rebuild), deletes and
+  /// recreates the task with the correct path and same frequency.
+  ///
+  /// Returns true if repair was needed and performed, false otherwise.
+  static Future<bool> verifyAndRepairTaskPath() async {
+    try {
+      if (!Platform.isWindows) return false;
+
+      final status = await getScheduleStatus();
+      if (status['exists'] != true) {
+        _logger.d('No scheduled task exists, nothing to repair');
+        return false;
+      }
+
+      final registeredPath = status['executablePath'] as String?;
+      final currentPath = Platform.resolvedExecutable;
+
+      if (registeredPath == null || registeredPath.isEmpty) {
+        _logger.w('Could not determine registered executable path');
+        return false;
+      }
+
+      // Normalize paths for comparison (case-insensitive on Windows)
+      if (registeredPath.toLowerCase() == currentPath.toLowerCase()) {
+        _logger.d('Task executable path is correct, no repair needed');
+        return false;
+      }
+
+      _logger.i('Task executable path mismatch detected');
+      _logger.i('  Registered: $registeredPath');
+      _logger.i('  Current:    $currentPath');
+
+      // Determine current frequency from trigger info
+      final triggerFrequency = status['triggerFrequency'] as String? ?? '';
+      ScanFrequency frequency = ScanFrequency.every1hour; // default fallback
+
+      if (triggerFrequency.contains('15')) {
+        frequency = ScanFrequency.every15min;
+      } else if (triggerFrequency.contains('30')) {
+        frequency = ScanFrequency.every30min;
+      } else if (triggerFrequency.contains('1:00') || triggerFrequency.contains('01:00') || triggerFrequency.contains('PT1H')) {
+        frequency = ScanFrequency.every1hour;
+      } else if (triggerFrequency == 'Once') {
+        frequency = ScanFrequency.daily;
+      }
+
+      // Delete old task and recreate with current path
+      _logger.i('Repairing task with frequency: ${frequency.label}');
+      await deleteScheduledTask();
+      final success = await createScheduledTask(frequency: frequency);
+
+      if (success) {
+        _logger.i('Task path repaired successfully');
+      } else {
+        _logger.e('Failed to repair task path');
+      }
+
+      return success;
+    } catch (e) {
+      _logger.e('Exception during task path verification', error: e);
+      return false;
+    }
+  }
+
   /// Execute a PowerShell script and return the result
   ///
   /// Runs PowerShell with ExecutionPolicy Bypass to allow script execution

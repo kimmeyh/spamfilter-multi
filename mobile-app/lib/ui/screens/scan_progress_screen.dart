@@ -268,79 +268,47 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
   /// [NEW] PHASE 3.1: Removed redundant progress bar and text (Issue #33)
   /// Progress info now shown only in bubble row
 
+  /// [UPDATED] Testing feedback: Removed stat bubbles from Manual Scan screen.
+  /// During active scan, shows a simple progress indicator.
   Widget _buildStats(EmailScanProvider scanProvider) {
-    // [NEW] PHASE 3.1: Updated bubble row with Found, Processed, Deleted, Moved, Safe, No rule, Errors
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: [
-        _buildStatChip('Found', scanProvider.totalEmails, const Color(0xFF2196F3), Colors.white), // Blue
-        _buildStatChip('Processed', scanProvider.processedCount, const Color(0xFF9C27B0), Colors.white), // Purple
-        _buildStatChip('Deleted', scanProvider.deletedCount, const Color(0xFFF44336), Colors.white), // Red
-        _buildStatChip('Moved', scanProvider.movedCount, const Color(0xFFFF9800), Colors.white), // Orange
-        _buildStatChip('Safe', scanProvider.safeSendersCount, const Color(0xFF4CAF50), Colors.white), // Green
-        _buildStatChip('No rule', scanProvider.noRuleCount, const Color(0xFF757575), Colors.white), // Grey
-        _buildStatChip('Errors', scanProvider.errorCount, const Color(0xFFD32F2F), Colors.white), // Dark Red
-      ],
-    );
+    if (scanProvider.status == ScanStatus.scanning) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            'Scanning... ${scanProvider.processedCount} emails processed',
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          ),
+        ],
+      );
+    }
+    // When not scanning, show nothing (no stat bubbles)
+    return const SizedBox.shrink();
   }
 
-  Widget _buildStatChip(String label, int value, Color bg, Color fg) {
-    return Chip(
-      label: Text('$label: $value'),
-      backgroundColor: bg,
-      labelStyle: TextStyle(color: fg, fontWeight: FontWeight.bold),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-    );
-  }
-
+  /// [UPDATED] Testing feedback: Simplified controls - removed pause, complete buttons.
+  /// Start Live Scan now uses Settings directly (no dialog popup).
   Widget _buildControls(BuildContext context, EmailScanProvider scanProvider) {
     final ruleProvider = context.watch<RuleSetProvider>();
-    
-    // [NEW] PHASE 3.1: Re-enable buttons after scan completes (Issue #33)
-    final canStartScan = scanProvider.status == ScanStatus.idle || 
+
+    final canStartScan = scanProvider.status == ScanStatus.idle ||
                          scanProvider.status == ScanStatus.completed;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-          // [REMOVED] ISSUE #151: Folder selection removed - use Settings > Manual > Default Folders
-        Row(
-          children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.play_arrow),
-                label: const Text('Start Live Scan'),
-                onPressed: canStartScan
-                    ? () => _startRealScan(context, scanProvider, ruleProvider)
-                    : null,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: ElevatedButton.icon(
-                icon: Icon(scanProvider.status == ScanStatus.paused ? Icons.play_arrow : Icons.pause),
-                label: Text(scanProvider.status == ScanStatus.paused ? 'Resume' : 'Pause'),
-                onPressed: scanProvider.status == ScanStatus.scanning
-                    ? scanProvider.pauseScan
-                    : scanProvider.status == ScanStatus.paused
-                        ? scanProvider.resumeScan
-                        : null,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.check_circle),
-                label: const Text('Complete'),
-                onPressed: scanProvider.status == ScanStatus.scanning ? scanProvider.completeScan : null,
-              ),
-            ),
-          ],
+        ElevatedButton.icon(
+          icon: const Icon(Icons.play_arrow),
+          label: const Text('Start Live Scan'),
+          onPressed: canStartScan
+              ? () => _startRealScan(context, scanProvider, ruleProvider)
+              : null,
         ),
         const SizedBox(height: 12),
         ElevatedButton.icon(
@@ -430,23 +398,21 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
     );
   }
 
-  /// [NEW] PHASE 3.1: Show scan mode selection dialog
-  /// Start a real IMAP scan
+  /// [UPDATED] Testing feedback: Removed Scan Options dialog - uses Settings directly.
+  /// Start a real IMAP scan using Settings > Manual > Scan Range
   Future<void> _startRealScan(
     BuildContext context,
     EmailScanProvider scanProvider,
     RuleSetProvider ruleProvider,
   ) async {
-    // Show options dialog - [UPDATED] ISSUE #150: Pass accountId for persistent settings
-    final daysBack = await showDialog<int>(
-      context: context,
-      builder: (ctx) => _ScanOptionsDialog(accountId: widget.accountId),
+    // Load scan configuration directly from Settings (no dialog popup)
+    final settingsStore = SettingsStore();
+    final daysBack = await settingsStore.getEffectiveDaysBack(
+      widget.accountId,
+      isBackground: false,
     );
 
-    if (daysBack == null) return; // User cancelled
-
-    // [NEW] ISSUE #138: Load scan mode from account settings BEFORE starting scan
-    final settingsStore = SettingsStore();
+    // Load scan mode from account settings
     final scanMode = await settingsStore.getAccountManualScanMode(widget.accountId) ?? ScanMode.readonly;
     scanProvider.initializeScanMode(mode: scanMode);
     
@@ -559,137 +525,5 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
   }
 }
 
-/// Dialog for scan options
-/// [UPDATED] ISSUE #150: Loads defaults from SettingsStore and persists selection
-class _ScanOptionsDialog extends StatefulWidget {
-  final String accountId;
-
-  const _ScanOptionsDialog({required this.accountId});
-
-  @override
-  State<_ScanOptionsDialog> createState() => _ScanOptionsDialogState();
-}
-
-class _ScanOptionsDialogState extends State<_ScanOptionsDialog> {
-  int _daysBack = 7;
-  bool _scanAll = true; // [UPDATED] ISSUE #150: Default to "Scan all emails"
-  bool _isLoading = true;
-  final SettingsStore _settingsStore = SettingsStore();
-
-  @override
-  void initState() {
-    super.initState();
-    _loadSavedSetting();
-  }
-
-  Future<void> _loadSavedSetting() async {
-    final savedDaysBack = await _settingsStore.getEffectiveDaysBack(
-      widget.accountId,
-      isBackground: false,
-    );
-    if (mounted) {
-      setState(() {
-        if (savedDaysBack == 0) {
-          _scanAll = true;
-          _daysBack = 7; // Visual slider default when scanning all
-        } else {
-          _scanAll = false;
-          _daysBack = savedDaysBack.clamp(1, 90);
-        }
-        _isLoading = false;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const AlertDialog(
-        content: SizedBox(
-          height: 80,
-          child: Center(child: CircularProgressIndicator()),
-        ),
-      );
-    }
-
-    return AlertDialog(
-      title: const Text('Scan Options'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('How many days back to scan?'),
-          const SizedBox(height: 24),
-
-          // "Scan All" checkbox - [UPDATED] ISSUE #150: shown first, checked by default
-          CheckboxListTile(
-            title: const Text('Scan all emails (no date filter)'),
-            value: _scanAll,
-            onChanged: (value) {
-              setState(() {
-                _scanAll = value ?? false;
-                if (!_scanAll && _daysBack < 1) {
-                  _daysBack = 7; // Reset to 7 when unchecking
-                }
-              });
-            },
-            controlAffinity: ListTileControlAffinity.leading,
-            contentPadding: EdgeInsets.zero,
-          ),
-
-          // Continuous slider (1-90 days) - only visible when not scanning all
-          if (!_scanAll) ...[
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Text('1'),
-                Expanded(
-                  child: Slider(
-                    value: _daysBack.toDouble(),
-                    min: 1,
-                    max: 90,
-                    divisions: 89,
-                    label: '$_daysBack day${_daysBack == 1 ? "" : "s"}',
-                    onChanged: (value) {
-                      setState(() {
-                        _daysBack = value.round();
-                        _scanAll = false; // Slider interaction unchecks scan all
-                      });
-                    },
-                  ),
-                ),
-                const Text('90'),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Center(
-              child: Text(
-                'Scan last $_daysBack day${_daysBack == 1 ? "" : "s"}',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
-            ),
-          ],
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: () async {
-            final result = _scanAll ? 0 : _daysBack;
-            // [NEW] ISSUE #150: Persist selection for next time
-            await _settingsStore.setAccountManualDaysBack(widget.accountId, result);
-            if (context.mounted) {
-              Navigator.of(context).pop(result);
-            }
-          },
-          child: const Text('Start Scan'),
-        ),
-      ],
-    );
-  }
-}
+// [REMOVED] Testing feedback: _ScanOptionsDialog removed.
+// Scan now starts directly using Settings > Manual > Scan Range configuration.
