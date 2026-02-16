@@ -11,9 +11,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 |----------|---------|-------------|
 | **ALL_SPRINTS_MASTER_PLAN.md** | Master plan for all sprints | Before starting any sprint, after completing a sprint |
 | **SPRINT_PLANNING.md** | Sprint planning methodology | When planning a new sprint |
-| **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases -1 to 4.5) |
+| **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 1-7) |
 | **SPRINT_STOPPING_CRITERIA.md** | When/why to stop working | When uncertain if blocked or should continue |
-| **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 4.5) |
+| **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 7) |
 | **BACKLOG_REFINEMENT.md** | Backlog refinement process | When requested by Product Owner |
 | **TESTING_STRATEGY.md** | Testing approach and requirements | When writing or reviewing tests |
 | **QUALITY_STANDARDS.md** | Quality standards for code and documentation | When writing code or documentation |
@@ -25,6 +25,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ---
 
 ## [Unreleased]
+
+### 2026-02-16 (Sprint 16: Phase Renumbering)
+- **docs**: Renumber sprint workflow phases from -1/0/1/2/3/4/4.5 to sequential 1-7 across 16 documents (Issue #160)
 
 ### 2026-02-15-16 (Sprint 16: User Testing Feedback)
 - **feat**: Scan range slider always visible and interactive, "Scan all emails" checkbox overrides slider value (FB-1)

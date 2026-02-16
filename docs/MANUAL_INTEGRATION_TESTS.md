@@ -2,7 +2,7 @@
 
 **Purpose**: Document the manual integration testing procedures conducted before PR approval to verify cross-platform functionality and user workflows.
 
-**When to Conduct**: After Phase 3.2 (automated tests pass) and before Phase 4.5 completes (user approval of PR).
+**When to Conduct**: After Phase 5.2 (automated tests pass) and before Phase 7 completes (user approval of PR).
 
 **Scope**: This guide covers testing scenarios for the current sprint features on both Windows desktop and Android platforms.
 
@@ -338,7 +338,7 @@ Each sprint may have specific areas to focus on. Update this section as needed:
 
 ### Sprint 5 (Documentation & Workflow)
 - Verify parallel testing workflow functions
-- Verify new Phase 4.5 documentation is clear
+- Verify new Phase 7 documentation is clear
 - Verify Windows build executes cleanly
 
 ### Sprint 6+ (Future)
@@ -390,6 +390,6 @@ If you find issues during manual testing:
 **Status**: Ready for use in Sprint 6+
 
 **References**:
-- `SPRINT_EXECUTION_WORKFLOW.md` - Phase 4.5 calls this document
+- `SPRINT_EXECUTION_WORKFLOW.md` - Phase 7 calls this document
 - `CLAUDE.md` - Project overview and setup
 - `mobile-app/README.md` - App-specific quick start

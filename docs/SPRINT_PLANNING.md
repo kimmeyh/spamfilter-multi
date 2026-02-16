@@ -10,9 +10,9 @@ This document describes the sprint-based development methodology used for spamfi
 |----------|---------|-------------|
 | **ALL_SPRINTS_MASTER_PLAN.md** | Master plan for all sprints | Before starting any sprint, after completing a sprint |
 | **SPRINT_PLANNING.md** (this doc) | Sprint planning methodology | When planning a new sprint |
-| **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 0-4.5) |
+| **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 1-7) |
 | **SPRINT_STOPPING_CRITERIA.md** | When/why to stop working | When uncertain if blocked or should continue |
-| **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 4.5) |
+| **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 7) |
 | **BACKLOG_REFINEMENT.md** | Backlog refinement process | When requested by Product Owner |
 | **TESTING_STRATEGY.md** | Testing approach and requirements | When writing or reviewing tests |
 | **QUALITY_STANDARDS.md** | Quality standards for code and documentation | When writing code or documentation |
@@ -88,7 +88,7 @@ Each sprint is composed of **Cards** (GitHub issues) broken into **Tasks** assig
   - **SPRINT_<N>_SUMMARY.md** for previous sprint (background process)
   - **NOTE**: SPRINT_N_PLAN.md is NOT needed - plan details live in ALL_SPRINTS_MASTER_PLAN.md + GitHub issues
 - **Process**:
-  1. **Create SPRINT_<N>_SUMMARY.md** for previous sprint (background process - see SPRINT_EXECUTION_WORKFLOW.md § 1.2.1)
+  1. **Create SPRINT_<N>_SUMMARY.md** for previous sprint (background process - see SPRINT_EXECUTION_WORKFLOW.md § 3.2.1)
      - Archive completed sprint details from ALL_SPRINTS_MASTER_PLAN.md
      - Update "Past Sprint Summary" table in ALL_SPRINTS_MASTER_PLAN.md
      - Keeps master plan focused on current/future work
@@ -133,17 +133,17 @@ Each sprint is composed of **Cards** (GitHub issues) broken into **Tasks** assig
   2. Verify tests passing and code quality acceptable
   3. Approve or request changes
   4. Collect feedback on model assignment accuracy
-  5. **Update CHANGELOG.md** (MANDATORY - see SPRINT_EXECUTION_WORKFLOW.md Phase 4.5.6)
+  5. **Update CHANGELOG.md** (MANDATORY - see SPRINT_EXECUTION_WORKFLOW.md Phase 7.7)
      - Add entry under `## [Unreleased]` section
      - Format: `### YYYY-MM-DD` with sprint summary
      - Include all user-facing changes from sprint
-  6. **Update ALL_SPRINTS_MASTER_PLAN.md** (MANDATORY - see SPRINT_EXECUTION_WORKFLOW.md Phase 4.5.6)
+  6. **Update ALL_SPRINTS_MASTER_PLAN.md** (MANDATORY - see SPRINT_EXECUTION_WORKFLOW.md Phase 7.7)
      - Add actual duration vs estimated to current sprint section
      - Record lessons learned
      - Update future sprint dependencies
-     - **NOTE**: Full sprint details archived to SPRINT_<N>_SUMMARY.md during next sprint planning (Phase 1)
+     - **NOTE**: Full sprint details archived to SPRINT_<N>_SUMMARY.md during next sprint planning (Phase 3)
   7. Prepare release notes (if needed for major releases)
-  8. **Build and Launch Application** (MANDATORY - Phase 3.3 in SPRINT_EXECUTION_WORKFLOW.md)
+  8. **Build and Launch Application** (MANDATORY - Phase 5.3 in SPRINT_EXECUTION_WORKFLOW.md)
      - Claude Code MUST build and launch the app BEFORE declaring ready for manual testing
      - Windows: `cd mobile-app/scripts && .\build-windows.ps1`
      - Android: `cd mobile-app/scripts && .\build-with-secrets.ps1 -BuildType debug -InstallToEmulator`
@@ -157,7 +157,7 @@ Each sprint is composed of **Cards** (GitHub issues) broken into **Tasks** assig
   - Completed Cards with feedback
   - Model assignment data from sprint
   - Issues encountered
-  - Updated CHANGELOG.md and ALL_SPRINTS_MASTER_PLAN.md (from Phase 3)
+  - Updated CHANGELOG.md and ALL_SPRINTS_MASTER_PLAN.md (from Phase 5)
 - **Outputs**:
   - Updated `/claude/model_assignment_heuristics.json`
   - Lessons learned for next sprint

@@ -109,8 +109,8 @@ git merge develop
 
 ### Reference
 
-- See `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 4.3 for PR creation instructions
-- See `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 4.5.0 for Windows build verification before approval
+- See `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 6.3 for PR creation instructions
+- See `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 7.1 for Windows build verification before approval
 
 ## Things Claude Should NOT Do
 
@@ -182,7 +182,7 @@ git merge develop
    - Share intermediate findings, not just final conclusions
 
 6. **Execution Autonomy During Sprints**: Sprint plan approval authorizes all task execution
-   - **CRITICAL**: When user approves sprint plan (Phase 1), this pre-approves ALL tasks through Phase 4.5 (Sprint Review)
+   - **CRITICAL**: When user approves sprint plan (Phase 3), this pre-approves ALL tasks through Phase 7 (Sprint Review)
    - **DO NOT** ask for approval on individual tasks during execution
    - **DO NOT** ask before starting each task (learned in Sprint 6, reinforced in Sprint 13)
    - **DO NOT** stop for implementation decisions - make best engineering judgment and document
@@ -201,7 +201,7 @@ git merge develop
      8. Context limit approaching (Criterion 8)
      9. Time limit reached (Criterion 9)
    - **NOT valid stopping reasons**: Implementation choices, approach uncertainty, minor code style, single test failure
-   - **Reference**: SPRINT_EXECUTION_WORKFLOW.md Phase 1.7 and SPRINT_STOPPING_CRITERIA.md
+   - **Reference**: SPRINT_EXECUTION_WORKFLOW.md Phase 3.7 and SPRINT_STOPPING_CRITERIA.md
 
 **Example of Good Co-Lead Collaboration**:
 ```
@@ -242,9 +242,9 @@ All sprint work references the **SPRINT EXECUTION docs** - the authoritative set
 |----------|---------|-------------|
 | **ALL_SPRINTS_MASTER_PLAN.md** | Master plan for all sprints | Before starting any sprint, after completing a sprint |
 | **SPRINT_PLANNING.md** | Sprint planning methodology | When planning a new sprint |
-| **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 0-4.5) |
+| **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 1-7) |
 | **SPRINT_STOPPING_CRITERIA.md** | When/why to stop working | When uncertain if blocked or should continue |
-| **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 4.5) |
+| **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 7) |
 | **TESTING_STRATEGY.md** | Testing approach and requirements | When writing or reviewing tests |
 | **QUALITY_STANDARDS.md** | Quality standards for code and documentation | When writing code or documentation |
 | **TROUBLESHOOTING.md** | Common issues and solutions | When encountering errors or debugging |
