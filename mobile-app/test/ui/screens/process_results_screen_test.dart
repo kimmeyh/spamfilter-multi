@@ -72,6 +72,12 @@ class FakeScanResultStore implements ScanResultStore {
 
   @override
   Future<int> getIncompleteScansCount() async => 0;
+
+  @override
+  Future<List<ScanResult>> getAllScanHistory({int? limit, String? scanType}) async => [];
+
+  @override
+  Future<int> purgeOldScanResults(int retentionDays) async => 0;
 }
 
 class FakeUnmatchedEmailStore implements UnmatchedEmailStore {
