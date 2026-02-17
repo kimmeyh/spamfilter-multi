@@ -37,6 +37,8 @@ class ScanProgressScreen extends StatefulWidget {
 
 class _ScanProgressScreenState extends State<ScanProgressScreen> {
   ScanStatus? _previousStatus;
+  List<String> _configuredFolders = ['INBOX'];
+  ScanMode _configuredMode = ScanMode.readonly;
 
   @override
   void initState() {
@@ -55,6 +57,21 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       scanProvider.reset();
     });
+
+    // Load configured scan settings for display in header
+    _loadConfiguredSettings();
+  }
+
+  Future<void> _loadConfiguredSettings() async {
+    final settingsStore = SettingsStore();
+    final folders = await settingsStore.getAccountManualScanFolders(widget.accountId);
+    final mode = await settingsStore.getAccountManualScanMode(widget.accountId);
+    if (mounted) {
+      setState(() {
+        _configuredFolders = (folders != null && folders.isNotEmpty) ? folders : ['INBOX'];
+        _configuredMode = mode ?? ScanMode.readonly;
+      });
+    }
   }
 
   @override
@@ -207,10 +224,10 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
 
   Widget _buildHeader(EmailScanProvider scanProvider) {
     final modeName = scanProvider.getScanModeDisplayName();
+    final isReady = scanProvider.status == ScanStatus.idle && scanProvider.results.isEmpty;
+
     final statusText = switch (scanProvider.status) {
-      ScanStatus.idle => scanProvider.results.isEmpty
-          ? 'Ready to scan - $modeName'
-          : 'Idle',
+      ScanStatus.idle => isReady ? 'Ready to Scan' : 'Idle',
       ScanStatus.scanning => 'Scanning in progress',
       ScanStatus.paused => 'Paused',
       ScanStatus.completed => 'Scan complete - $modeName',
@@ -219,6 +236,9 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
 
     // [NEW] ISSUE #125: Show demo mode indicator if using demo platform
     final isDemoMode = widget.platformId == 'demo';
+
+    // [NEW] ISSUE #156: Display configured mode name from settings
+    final configuredModeName = _scanModeDisplayName(_configuredMode);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -258,10 +278,24 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
           ],
         ),
         const SizedBox(height: 4),
-        Text(
-          scanProvider.statusMessage ?? 'Waiting to begin...',
-          style: const TextStyle(color: Colors.grey),
-        ),
+        // [NEW] ISSUE #156: Show scan mode and folders when ready to scan
+        if (isReady) ...[
+          Text(
+            'Mode: $configuredModeName',
+            style: const TextStyle(color: Colors.grey),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Folders: ${_configuredFolders.join(", ")}',
+            style: const TextStyle(color: Colors.grey),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 2,
+          ),
+        ] else
+          Text(
+            scanProvider.statusMessage ?? 'Waiting to begin...',
+            style: const TextStyle(color: Colors.grey),
+          ),
       ],
     );
   }
@@ -510,6 +544,19 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
           ),
         );
       }
+    }
+  }
+
+  String _scanModeDisplayName(ScanMode mode) {
+    switch (mode) {
+      case ScanMode.readonly:
+        return 'Read-Only';
+      case ScanMode.testLimit:
+        return 'Process Rules Only';
+      case ScanMode.testAll:
+        return 'Process Safe Senders Only';
+      case ScanMode.fullScan:
+        return 'Process Safe Senders + Rules';
     }
   }
 
