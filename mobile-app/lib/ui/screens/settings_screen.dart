@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import '../../core/services/background_scan_manager.dart' show ScanFrequency;
+import '../../core/services/background_scan_windows_worker.dart';
 import '../../core/services/windows_task_scheduler_service.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/providers/email_scan_provider.dart';
@@ -62,6 +63,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   int _scanHistoryRetentionDays = SettingsStore.defaultScanHistoryRetentionDays;
 
   bool _isLoading = true;
+  bool _isTestingScan = false;
 
   @override
   void initState() {
@@ -574,6 +576,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           },
         ),
         const SizedBox(height: 24),
+        // [NEW] ISSUE #159: Test Background Scan button
+        _buildSectionHeader('Test'),
+        _buildTestBackgroundScanButton(),
+        const SizedBox(height: 24),
         _buildSectionHeader('History'),
         ListTile(
           leading: const Icon(Icons.timelapse),
@@ -612,6 +618,88 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         ),
       ],
     );
+  }
+
+  /// [NEW] ISSUE #159: Test Background Scan button
+  /// Triggers a one-time background scan and directs user to View Scan History
+  Widget _buildTestBackgroundScanButton() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ElevatedButton.icon(
+          icon: _isTestingScan
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                )
+              : const Icon(Icons.play_circle_outline),
+          label: Text(_isTestingScan ? 'Running...' : 'Test Background Scan'),
+          onPressed: _isTestingScan ? null : _runTestBackgroundScan,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'When the background scan is complete, the log can be found in '
+          'Manual Scan > View Scan History.',
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+        ),
+        const SizedBox(height: 4),
+        TextButton.icon(
+          icon: const Icon(Icons.history, size: 16),
+          label: const Text('Go to View Scan History'),
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const ScanHistoryScreen(),
+              ),
+            );
+          },
+        ),
+      ],
+    );
+  }
+
+  /// Execute a one-time background scan for testing
+  Future<void> _runTestBackgroundScan() async {
+    setState(() => _isTestingScan = true);
+
+    try {
+      if (Platform.isWindows) {
+        final success = await BackgroundScanWindowsWorker.executeBackgroundScan();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(success
+                  ? 'Background scan completed. Check View Scan History for results.'
+                  : 'Background scan failed. Check View Scan History for details.'),
+              backgroundColor: success ? Colors.green : Colors.red,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Test background scan is only supported on Windows desktop.'),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Background scan error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isTestingScan = false);
+      }
+    }
   }
 
   Widget _buildSectionHeader(String title) {
