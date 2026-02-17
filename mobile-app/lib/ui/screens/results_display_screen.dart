@@ -501,8 +501,14 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     final summary = scanProvider.getSummary();
     final liveResults = scanProvider.results;
 
-    // Use historical results from database when no live results available
-    final allResults = liveResults.isNotEmpty ? liveResults : _historicalResults;
+    // [NEW] ISSUE #157: When a live scan is active (scanning/paused), always use
+    // live results even if empty (scan just started). Only show historical results
+    // when truly idle with no live results.
+    final isLiveScanActive = scanProvider.status == ScanStatus.scanning ||
+        scanProvider.status == ScanStatus.paused;
+    final allResults = (liveResults.isNotEmpty || isLiveScanActive)
+        ? liveResults
+        : _historicalResults;
     final filteredResults = _getFilteredResults(allResults);
 
     // Issue 3: Cache folders list for performance (only extract once per results set)
