@@ -197,23 +197,35 @@ try {
   }
 
   /// Generate trigger configuration for given frequency
+  ///
+  /// [FIX] ISSUE #161: Changed from -Once -At (Get-Date) to -Daily trigger
+  /// with repetition. The -Once trigger with a past start time does not
+  /// persist across reboots reliably on Windows. Using -Daily -At midnight
+  /// with RepetitionInterval ensures the task runs consistently even after
+  /// system restarts.
   static String _getTriggerForFrequency(ScanFrequency frequency) {
     switch (frequency) {
       case ScanFrequency.every15min:
-        return '''\$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 15) -RepetitionDuration (New-TimeSpan -Days 365)''';
+        return r'''$trigger = New-ScheduledTaskTrigger -Daily -At "12:00AM"
+$trigger.Repetition.Interval = (New-TimeSpan -Minutes 15).ToString()
+$trigger.Repetition.Duration = (New-TimeSpan -Days 1).ToString()''';
 
       case ScanFrequency.every30min:
-        return '''\$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 30) -RepetitionDuration (New-TimeSpan -Days 365)''';
+        return r'''$trigger = New-ScheduledTaskTrigger -Daily -At "12:00AM"
+$trigger.Repetition.Interval = (New-TimeSpan -Minutes 30).ToString()
+$trigger.Repetition.Duration = (New-TimeSpan -Days 1).ToString()''';
 
       case ScanFrequency.every1hour:
-        return '''\$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Hours 1) -RepetitionDuration (New-TimeSpan -Days 365)''';
+        return r'''$trigger = New-ScheduledTaskTrigger -Daily -At "12:00AM"
+$trigger.Repetition.Interval = (New-TimeSpan -Hours 1).ToString()
+$trigger.Repetition.Duration = (New-TimeSpan -Days 1).ToString()''';
 
       case ScanFrequency.daily:
-        return '''\$trigger = New-ScheduledTaskTrigger -Daily -At "09:00AM"''';
+        return r'$trigger = New-ScheduledTaskTrigger -Daily -At "09:00AM"';
 
       case ScanFrequency.disabled:
         // Should not happen, but provide fallback
-        return '''\$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddDays(365)''';
+        return r'$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddDays(365)';
     }
   }
 
