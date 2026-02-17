@@ -8,6 +8,7 @@ import '../../core/services/email_scanner.dart';
 import '../../core/storage/settings_store.dart'; // [NEW] ISSUE #138: Load scan mode from settings
 import '../widgets/app_bar_with_exit.dart';
 import 'results_display_screen.dart';
+import 'scan_history_screen.dart';
 import 'settings_screen.dart';
 
 /// Displays live scan progress bound to EmailScanProvider.
@@ -157,12 +158,12 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
           ),
           actions: [
             IconButton(
-              tooltip: 'View results',
-              icon: const Icon(Icons.list_alt),
+              tooltip: 'View Scan History',
+              icon: const Icon(Icons.history),
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => ResultsDisplayScreen(
+                    builder: (_) => ScanHistoryScreen(
                       platformId: widget.platformId,
                       platformDisplayName: widget.platformDisplayName,
                       accountId: widget.accountId,
@@ -320,12 +321,12 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
         ),
         const SizedBox(height: 12),
         OutlinedButton.icon(
-          icon: const Icon(Icons.list_alt),
-          label: const Text('View results'),
+          icon: const Icon(Icons.history),
+          label: const Text('View Scan History'),
           onPressed: () {
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) => ResultsDisplayScreen(
+                builder: (_) => ScanHistoryScreen(
                   platformId: widget.platformId,
                   platformDisplayName: widget.platformDisplayName,
                   accountId: widget.accountId,

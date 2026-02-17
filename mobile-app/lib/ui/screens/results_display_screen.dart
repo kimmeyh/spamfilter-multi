@@ -26,12 +26,16 @@ class ResultsDisplayScreen extends StatefulWidget {
   final String accountId;
   final String accountEmail;
 
+  /// Optional: load a specific historical scan by ID (from Scan History screen)
+  final int? historicalScanId;
+
   const ResultsDisplayScreen({
     super.key,
     required this.platformId,
     required this.platformDisplayName,
     required this.accountId,
     required this.accountEmail,
+    this.historicalScanId,
   });
 
   @override
@@ -82,11 +86,19 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   }
 
   /// Load the most recent completed scan and its email actions from database
+  /// If historicalScanId is provided, loads that specific scan instead
   Future<void> _loadLastCompletedScan() async {
     try {
       final dbHelper = DatabaseHelper();
       final scanResultStore = ScanResultStore(dbHelper);
-      final lastScan = await scanResultStore.getLatestCompletedScan(widget.accountId);
+
+      // Load specific scan if historicalScanId provided, otherwise latest
+      final ScanResult? lastScan;
+      if (widget.historicalScanId != null) {
+        lastScan = await scanResultStore.getScanResultById(widget.historicalScanId!);
+      } else {
+        lastScan = await scanResultStore.getLatestCompletedScan(widget.accountId);
+      }
 
       List<EmailActionResult> historicalResults = [];
       if (lastScan != null && lastScan.id != null) {

@@ -11,7 +11,7 @@ import '../../adapters/storage/secure_credentials_store.dart';
 import '../../adapters/email_providers/email_provider.dart' show Credentials;
 import '../widgets/app_bar_with_exit.dart';
 import 'folder_selection_screen.dart';
-import 'background_scan_log_screen.dart';
+import 'scan_history_screen.dart';
 import 'rules_management_screen.dart';
 import 'safe_senders_management_screen.dart';
 
@@ -59,6 +59,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   String? _csvExportDirectory;
   int _manualDaysBack = SettingsStore.defaultManualScanDaysBack;
   int _backgroundDaysBack = SettingsStore.defaultBackgroundScanDaysBack;
+  int _scanHistoryRetentionDays = SettingsStore.defaultScanHistoryRetentionDays;
 
   bool _isLoading = true;
 
@@ -108,6 +109,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
       final accountBgDays = await _settingsStore.getAccountBackgroundDaysBack(widget.accountId);
       _backgroundDaysBack = accountBgDays ?? await _settingsStore.getBackgroundScanDaysBack();
+
+      _scanHistoryRetentionDays = await _settingsStore.getScanHistoryRetentionDays();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -573,14 +576,36 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         const SizedBox(height: 24),
         _buildSectionHeader('History'),
         ListTile(
+          leading: const Icon(Icons.timelapse),
+          title: const Text('Keep History For'),
+          subtitle: Text('$_scanHistoryRetentionDays days'),
+          trailing: DropdownButton<int>(
+            value: _scanHistoryRetentionDays,
+            underline: const SizedBox(),
+            items: const [
+              DropdownMenuItem(value: 3, child: Text('3 days')),
+              DropdownMenuItem(value: 7, child: Text('7 days')),
+              DropdownMenuItem(value: 14, child: Text('14 days')),
+              DropdownMenuItem(value: 30, child: Text('30 days')),
+              DropdownMenuItem(value: 90, child: Text('90 days')),
+            ],
+            onChanged: (value) async {
+              if (value != null) {
+                setState(() => _scanHistoryRetentionDays = value);
+                await _settingsStore.setScanHistoryRetentionDays(value);
+              }
+            },
+          ),
+        ),
+        ListTile(
           leading: const Icon(Icons.history),
           title: const Text('View Scan History'),
-          subtitle: const Text('View past background scan runs and results'),
+          subtitle: const Text('View all past scan runs and results'),
           trailing: const Icon(Icons.chevron_right),
           onTap: () {
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) => const BackgroundScanLogScreen(),
+                builder: (_) => const ScanHistoryScreen(),
               ),
             );
           },
