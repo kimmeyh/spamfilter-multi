@@ -26,6 +26,16 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-02-17 (Sprint 17: Scan History, Background Scan Fixes, Conflict Auto-Removal)
+- **feat**: Consolidated Scan History screen replacing separate background scan log viewer - unified view of all manual and background scans with type filter chips, summary stats, and tap-to-view (Issue #158)
+- **feat**: Scan history retention setting (3/7/14/30/90 days) with automatic purge of old entries (Issue #158)
+- **feat**: Manual Scan screen shows configured scan mode and folders in idle status (Issue #156)
+- **fix**: Clear Results screen before starting new Live Scan - no longer shows stale historical results (Issue #157)
+- **fix**: Windows Task Scheduler background scan not running after reboot - changed trigger from -Once to -Daily with RepetitionInterval (Issue #161)
+- **fix**: Auto-recreate missing Task Scheduler task on app startup when background scanning is enabled (Issue #161)
+- **feat**: Test Background Scan button in Settings for manual verification of background scan functionality (Issue #159)
+- **feat**: Auto-remove conflicting rules when adding safe sender, and vice versa - bidirectional conflict resolution (Issue #154)
+
 ### 2026-02-16 (Sprint 16: Phase Renumbering)
 - **docs**: Renumber sprint workflow phases from -1/0/1/2/3/4/4.5 to sequential 1-7 across 16 documents (Issue #160)
 
