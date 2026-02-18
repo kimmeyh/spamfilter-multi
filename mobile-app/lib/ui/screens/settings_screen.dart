@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
 import '../../core/services/background_scan_manager.dart' show ScanFrequency;
 import '../../core/services/background_scan_windows_worker.dart';
@@ -719,6 +720,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 child: TextField(
                   controller: _retentionDaysController,
                   keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(3),
+                  ],
                   decoration: const InputDecoration(
                     isDense: true,
                     contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
