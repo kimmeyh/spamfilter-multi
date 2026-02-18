@@ -715,7 +715,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           subtitle: Row(
             children: [
               SizedBox(
-                width: 70,
+                width: 80,
                 child: TextField(
                   controller: _retentionDaysController,
                   keyboardType: TextInputType.number,
@@ -723,7 +723,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                     isDense: true,
                     contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                     border: OutlineInputBorder(),
-                    suffixText: 'days',
                   ),
                   onSubmitted: (value) => _updateRetentionDays(value),
                   onEditingComplete: () => _updateRetentionDays(_retentionDaysController.text),
