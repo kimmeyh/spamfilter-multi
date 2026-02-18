@@ -577,22 +577,29 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               )
             : IconButton(
                 icon: const Icon(Icons.arrow_back),
-                tooltip: 'Back to Scan Progress',
+                tooltip: widget.historicalScanId != null
+                    ? 'Back to Scan History'
+                    : 'Back to Scan Progress',
                 onPressed: () {
                   // Dismiss any showing snackbar before navigating
                   ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                  // Push replacement to Scan Progress screen (same as Scan Again button)
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ScanProgressScreen(
-                        platformId: widget.platformId,
-                        platformDisplayName: widget.platformDisplayName,
-                        accountId: widget.accountId,
-                        accountEmail: widget.accountEmail,
+                  if (widget.historicalScanId != null) {
+                    // [FIX] FB-1: When viewing from Scan History, pop back to history screen
+                    Navigator.pop(context);
+                  } else {
+                    // Push replacement to Scan Progress screen (same as Scan Again button)
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ScanProgressScreen(
+                          platformId: widget.platformId,
+                          platformDisplayName: widget.platformDisplayName,
+                          accountId: widget.accountId,
+                          accountEmail: widget.accountEmail,
+                        ),
                       ),
-                    ),
-                  );
+                    );
+                  }
                 },
               ),
         actions: [
@@ -675,52 +682,66 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
             ),
             // Action buttons at bottom
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      // Dismiss any showing snackbar before navigating
-                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                      // Pop back to Account Selection Screen (past Scan Progress)
-                      Navigator.popUntil(
-                        context,
-                        (route) => route.isFirst,
-                      );
-                    },
-                    icon: const Icon(Icons.home),
-                    label: const Text('Back to Accounts'),
-                  ),
+            if (widget.historicalScanId != null)
+              // [FIX] FB-1: When viewing from Scan History, show single back button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    Navigator.pop(context);
+                  },
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text('Back to Scan History'),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      // [NEW] SPRINT 12 FIX: Push replacement to Scan screen directly
-                      // This avoids navigation state issues with pop() and ensures
-                      // reliable navigation to the scan screen
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ScanProgressScreen(
-                            platformId: widget.platformId,
-                            platformDisplayName: widget.platformDisplayName,
-                            accountId: widget.accountId,
-                            accountEmail: widget.accountEmail,
-                          ),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Scan Again'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
+              )
+            else
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        // Dismiss any showing snackbar before navigating
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                        // Pop back to Account Selection Screen (past Scan Progress)
+                        Navigator.popUntil(
+                          context,
+                          (route) => route.isFirst,
+                        );
+                      },
+                      icon: const Icon(Icons.home),
+                      label: const Text('Back to Accounts'),
                     ),
                   ),
-                ),
-              ],
-            ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        // [NEW] SPRINT 12 FIX: Push replacement to Scan screen directly
+                        // This avoids navigation state issues with pop() and ensures
+                        // reliable navigation to the scan screen
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ScanProgressScreen(
+                              platformId: widget.platformId,
+                              platformDisplayName: widget.platformDisplayName,
+                              accountId: widget.accountId,
+                              accountEmail: widget.accountEmail,
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Scan Again'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
           ],
         ),
       ),

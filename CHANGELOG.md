@@ -35,6 +35,11 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **fix**: Auto-recreate missing Task Scheduler task on app startup when background scanning is enabled (Issue #161)
 - **feat**: Test Background Scan button in Settings for manual verification of background scan functionality (Issue #159)
 - **feat**: Auto-remove conflicting rules when adding safe sender, and vice versa - bidirectional conflict resolution (Issue #154)
+- **fix**: Skip Task Scheduler management in debug mode - prevents broken scheduled tasks from temporary debug executable paths (Bug #3)
+- **fix**: Prevent duplicate scan_results database records - UI-only startScan call no longer persists to database (Bug #2)
+- **feat**: Reorganize Settings - move Test button before Frequency, move Scan History to Account tab (FB-4/FB-3)
+- **feat**: Custom retention days input (1-999) with quick-select chips replacing dropdown (FB-2)
+- **fix**: Scan History navigation - back button returns to Scan History screen instead of Scan Progress when viewing historical results (FB-1)
 
 ### 2026-02-16 (Sprint 16: Phase Renumbering)
 - **docs**: Renumber sprint workflow phases from -1/0/1/2/3/4/4.5 to sequential 1-7 across 16 documents (Issue #160)
