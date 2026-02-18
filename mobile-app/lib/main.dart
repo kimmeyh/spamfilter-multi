@@ -1,4 +1,5 @@
 import 'dart:io' show File, FileMode, Platform, exit;
+import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
@@ -92,36 +93,43 @@ void main(List<String> args) async {
     await notificationService.initialize();
     Logger().i('Windows notifications initialized');
 
-    // Verify and repair task scheduler executable path after rebuild
-    try {
-      final repaired = await WindowsTaskSchedulerService.verifyAndRepairTaskPath();
-      if (repaired) {
-        Logger().i('Task scheduler path repaired after app rebuild');
-      }
-    } catch (e) {
-      Logger().w('Task scheduler path verification failed: $e');
-    }
-
-    // [FIX] ISSUE #161: Ensure scheduled task exists if background scanning is enabled
-    // The task may be missing after reboot, system cleanup, or failed recreation
-    try {
-      final settingsStore = SettingsStore();
-      final bgEnabled = await settingsStore.getBackgroundScanEnabled();
-      if (bgEnabled) {
-        final freqMinutes = await settingsStore.getBackgroundScanFrequency();
-        final frequency = ScanFrequency.values.firstWhere(
-          (f) => f.minutes == freqMinutes,
-          orElse: () => ScanFrequency.every15min,
-        );
-        final recreated = await WindowsTaskSchedulerService.ensureTaskExists(
-          frequency: frequency,
-        );
-        if (recreated) {
-          Logger().i('Background scan task recreated (was missing from Task Scheduler)');
+    // Only manage Task Scheduler in release mode - in debug/flutter run mode,
+    // Platform.resolvedExecutable points to a temporary runner path that will
+    // not exist after the debug session ends, creating a broken scheduled task.
+    if (kReleaseMode) {
+      // Verify and repair task scheduler executable path after rebuild
+      try {
+        final repaired = await WindowsTaskSchedulerService.verifyAndRepairTaskPath();
+        if (repaired) {
+          Logger().i('Task scheduler path repaired after app rebuild');
         }
+      } catch (e) {
+        Logger().w('Task scheduler path verification failed: $e');
       }
-    } catch (e) {
-      Logger().w('Background scan task verification failed: $e');
+
+      // [FIX] ISSUE #161: Ensure scheduled task exists if background scanning is enabled
+      // The task may be missing after reboot, system cleanup, or failed recreation
+      try {
+        final settingsStore = SettingsStore();
+        final bgEnabled = await settingsStore.getBackgroundScanEnabled();
+        if (bgEnabled) {
+          final freqMinutes = await settingsStore.getBackgroundScanFrequency();
+          final frequency = ScanFrequency.values.firstWhere(
+            (f) => f.minutes == freqMinutes,
+            orElse: () => ScanFrequency.every15min,
+          );
+          final recreated = await WindowsTaskSchedulerService.ensureTaskExists(
+            frequency: frequency,
+          );
+          if (recreated) {
+            Logger().i('Background scan task recreated (was missing from Task Scheduler)');
+          }
+        }
+      } catch (e) {
+        Logger().w('Background scan task verification failed: $e');
+      }
+    } else {
+      Logger().i('Skipping Task Scheduler management in debug mode');
     }
   }
 
