@@ -724,8 +724,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                     contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                     border: OutlineInputBorder(),
                   ),
+                  onChanged: (value) => _updateRetentionDays(value, showError: false),
                   onSubmitted: (value) => _updateRetentionDays(value),
-                  onEditingComplete: () => _updateRetentionDays(_retentionDaysController.text),
                 ),
               ),
               const SizedBox(width: 4),
@@ -760,14 +760,15 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     );
   }
 
-  /// Parse and save custom retention days from text input
-  void _updateRetentionDays(String value) {
+  /// Parse and save custom retention days from text input.
+  /// [showError] controls whether invalid input shows a snackbar (false during typing).
+  void _updateRetentionDays(String value, {bool showError = true}) {
     final days = int.tryParse(value);
     if (days != null && days >= 1 && days <= 999) {
       setState(() => _scanHistoryRetentionDays = days);
       _settingsStore.setScanHistoryRetentionDays(days);
-    } else {
-      // Reset to current value if invalid
+    } else if (showError) {
+      // Reset to current value if invalid (only on explicit submit)
       _retentionDaysController.text = _scanHistoryRetentionDays.toString();
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
