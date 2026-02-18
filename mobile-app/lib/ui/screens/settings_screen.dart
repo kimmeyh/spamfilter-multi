@@ -64,6 +64,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
   bool _isLoading = true;
   bool _isTestingScan = false;
+  late TextEditingController _retentionDaysController;
 
   @override
   void initState() {
@@ -72,12 +73,16 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       length: 3,  // Account, Manual Scan, Background
       vsync: this,
     );
+    _retentionDaysController = TextEditingController(
+      text: _scanHistoryRetentionDays.toString(),
+    );
     _loadSettings();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _retentionDaysController.dispose();
     super.dispose();
   }
 
@@ -113,6 +118,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       _backgroundDaysBack = accountBgDays ?? await _settingsStore.getBackgroundScanDaysBack();
 
       _scanHistoryRetentionDays = await _settingsStore.getScanHistoryRetentionDays();
+      _retentionDaysController.text = _scanHistoryRetentionDays.toString();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -304,6 +310,37 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 alignment: Alignment.centerLeft,
               ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // [MOVED] FB-3: Scan History section moved from Background tab to Account tab
+            Text(
+              'Scan History',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Manage scan history retention and view past scan results',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            _buildRetentionDaysSelector(),
+            const SizedBox(height: 8),
+            ListTile(
+              leading: const Icon(Icons.history),
+              title: const Text('View Scan History'),
+              subtitle: const Text('View all past scan runs and results'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const ScanHistoryScreen(),
+                  ),
+                );
+              },
             ),
           ],
         );
@@ -521,6 +558,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           },
         ),
         const Divider(),
+        // [UPDATED] FB-4: Test section moved before Frequency
+        _buildSectionHeader('Test'),
+        _buildTestBackgroundScanButton(),
+        const SizedBox(height: 24),
         // [UPDATED] ISSUE #123+#124: Show UI sections even when Background Scan is OFF
         _buildSectionHeader('Frequency'),
         _buildFrequencySelector(
@@ -573,47 +614,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           onChanged: (value) async {
             setState(() => _backgroundScanDebugCsv = value);
             await _settingsStore.setBackgroundScanDebugCsv(value);
-          },
-        ),
-        const SizedBox(height: 24),
-        // [NEW] ISSUE #159: Test Background Scan button
-        _buildSectionHeader('Test'),
-        _buildTestBackgroundScanButton(),
-        const SizedBox(height: 24),
-        _buildSectionHeader('History'),
-        ListTile(
-          leading: const Icon(Icons.timelapse),
-          title: const Text('Keep History For'),
-          subtitle: Text('$_scanHistoryRetentionDays days'),
-          trailing: DropdownButton<int>(
-            value: _scanHistoryRetentionDays,
-            underline: const SizedBox(),
-            items: const [
-              DropdownMenuItem(value: 3, child: Text('3 days')),
-              DropdownMenuItem(value: 7, child: Text('7 days')),
-              DropdownMenuItem(value: 14, child: Text('14 days')),
-              DropdownMenuItem(value: 30, child: Text('30 days')),
-              DropdownMenuItem(value: 90, child: Text('90 days')),
-            ],
-            onChanged: (value) async {
-              if (value != null) {
-                setState(() => _scanHistoryRetentionDays = value);
-                await _settingsStore.setScanHistoryRetentionDays(value);
-              }
-            },
-          ),
-        ),
-        ListTile(
-          leading: const Icon(Icons.history),
-          title: const Text('View Scan History'),
-          subtitle: const Text('View all past scan runs and results'),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => const ScanHistoryScreen(),
-              ),
-            );
           },
         ),
       ],
@@ -699,6 +699,83 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       if (mounted) {
         setState(() => _isTestingScan = false);
       }
+    }
+  }
+
+  /// [NEW] FB-2: Retention days selector with text field and quick-select chips
+  Widget _buildRetentionDaysSelector() {
+    const quickOptions = [7, 14, 30, 90, 365];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ListTile(
+          leading: const Icon(Icons.timelapse),
+          title: const Text('Keep Scan History for'),
+          subtitle: Row(
+            children: [
+              SizedBox(
+                width: 70,
+                child: TextField(
+                  controller: _retentionDaysController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    border: OutlineInputBorder(),
+                    suffixText: 'days',
+                  ),
+                  onSubmitted: (value) => _updateRetentionDays(value),
+                  onEditingComplete: () => _updateRetentionDays(_retentionDaysController.text),
+                ),
+              ),
+              const SizedBox(width: 4),
+              const Text('days'),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8),
+          child: Wrap(
+            spacing: 8,
+            children: quickOptions.map((days) {
+              final label = days >= 365 ? '1 year' : '$days days';
+              return ChoiceChip(
+                label: Text(label, style: const TextStyle(fontSize: 12)),
+                selected: _scanHistoryRetentionDays == days,
+                onSelected: (selected) {
+                  if (selected) {
+                    setState(() {
+                      _scanHistoryRetentionDays = days;
+                      _retentionDaysController.text = days.toString();
+                    });
+                    _settingsStore.setScanHistoryRetentionDays(days);
+                  }
+                },
+                visualDensity: VisualDensity.compact,
+              );
+            }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Parse and save custom retention days from text input
+  void _updateRetentionDays(String value) {
+    final days = int.tryParse(value);
+    if (days != null && days >= 1 && days <= 999) {
+      setState(() => _scanHistoryRetentionDays = days);
+      _settingsStore.setScanHistoryRetentionDays(days);
+    } else {
+      // Reset to current value if invalid
+      _retentionDaysController.text = _scanHistoryRetentionDays.toString();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a number between 1 and 999'),
+          backgroundColor: Colors.orange,
+        ),
+      );
     }
   }
 
