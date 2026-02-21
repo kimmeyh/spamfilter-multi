@@ -25,7 +25,7 @@ If any check fails, **STOP and resolve with user before accepting work**.
 **GitHub URL**: `https://github.com/kimmeyh/spamfilter-multi/blob/develop/docs/ALL_SPRINTS_MASTER_PLAN.md`
 
 **Contents**:
-- Complete specifications for all sprints (Phase 3.5+)
+- Complete specifications for all sprints
 - Sprint dependencies and critical path
 - Task breakdown by model (Haiku/Sonnet/Opus)
 - Effort estimates (actual vs estimated from previous sprints)
@@ -216,7 +216,7 @@ issue. Should I make it more specific to only exclude 'Archive/desktop-python/li
 
 ### Sprint Execution Autonomy - Common Mistakes
 
-**LEARN FROM PAST MISTAKES** (Sprint 6, Sprint 13): Do NOT stop for these reasons:
+**LEARN FROM PAST MISTAKES**: Do NOT stop for these reasons:SPRINT_CHECKLIST
 
 | Situation | WRONG Behavior | CORRECT Behavior |
 |-----------|---------------|------------------|
@@ -679,7 +679,7 @@ spamfilter-multi/
 │   ├── OAUTH_SETUP.md        # Gmail OAuth for Android + Windows
 │   ├── TROUBLESHOOTING.md    # Common issues and fixes
 │   ├── ISSUE_BACKLOG.md      # Open issues and status
-│   ├── ALL_SPRINTS_MASTER_PLAN.md   # Master plan for all sprints (READ FIRST!)
+│   ├── ALL_SPRINTS_MASTER_PLAN.md    # Master plan for all future sprints and backlog items (features, issues, bugs...)
 │   ├── SPRINT_PLANNING.md    # Sprint planning methodology
 │   ├── SPRINT_EXECUTION_WORKFLOW.md # Step-by-step sprint execution checklist
 │   ├── SPRINT_CHECKLIST.md   # Single-page sprint execution checklist
