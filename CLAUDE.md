@@ -65,7 +65,7 @@ Give Claude verification loops for 2-3x quality improvement:
 5. Commit changes and sync to repository
 5. Before creating PR: run full lint and test suite
 
-## ⚠️ CRITICAL: Pull Request Branch Policy
+## [WARNING] CRITICAL: Pull Request Branch Policy
 
 **RULE: All Claude Code PRs must target the `develop` branch, NEVER `main`.**
 
@@ -73,16 +73,16 @@ Give Claude verification loops for 2-3x quality improvement:
 
 ```
 main (release branch - ONLY user creates PRs to main)
-  ↑ (user merges stable develop)
+  ^ (user merges stable develop)
 develop (integration branch - ALL Claude Code PRs target this)
-  ↑ (Claude creates PRs from feature branches)
+  ^ (Claude creates PRs from feature branches)
 feature/YYYYMMDD_Sprint_N (feature branches - temporary, deleted after merge)
 ```
 
 ### Policy Details
 
-- **Claude Code**: Creates PRs from `feature/YYYYMMDD_Sprint_N` → `develop`
-- **User**: Creates PRs from `develop` → `main` when ready for release
+- **Claude Code**: Creates PRs from `feature/YYYYMMDD_Sprint_N` -> `develop`
+- **User**: Creates PRs from `develop` -> `main` when ready for release
 - **Why**:
   - `develop` is the integration branch for all sprint work
   - `main` is the stable release branch for production versions
@@ -92,15 +92,15 @@ feature/YYYYMMDD_Sprint_N (feature branches - temporary, deleted after merge)
 ### Example
 
 ```bash
-# ✅ CORRECT: Claude creates PR to develop
+# [OK] CORRECT: Claude creates PR to develop
 git push origin feature/20260126_Sprint_5
-# Then create PR: feature/20260126_Sprint_5 → develop
+# Then create PR: feature/20260126_Sprint_5 -> develop
 
-# ❌ INCORRECT: Claude creates PR to main
+# [FAIL] INCORRECT: Claude creates PR to main
 git push origin feature/20260126_Sprint_5
-# Then create PR: feature/20260126_Sprint_5 → main  (WRONG!)
+# Then create PR: feature/20260126_Sprint_5 -> main  (WRONG!)
 
-# ✅ USER ONLY: User merges develop to main for release
+# [OK] USER ONLY: User merges develop to main for release
 git checkout main
 git pull origin main
 git merge develop
@@ -303,29 +303,9 @@ As of January 24, 2026, **sprints replace the previous phase-based development m
 
 Cross-platform email spam filtering application built with 100% Flutter/Dart for all platforms (Windows, macOS, Linux, Android, iOS). The app uses IMAP/OAuth protocols to support multiple email providers (AOL, Gmail, Yahoo, Outlook.com, ProtonMail) with a single codebase and portable YAML rule sets.
 
-**Current Status**: Phase 3.3 Complete - All automated tests passing (122/122), folder selection fixed, dynamic folder discovery implemented, progressive UI updates with throttling, Gmail header parsing fixed, Claude Code MCP tools added.
+**Current Status**: Sprint 17 complete (Feb 2026) - 977 tests passing, sprint-based development model.
 
-**Latest Updates**: January 6, 2026 - Phase 3.2 & 3.3 Complete:
-
-**Phase 3.3 - Enhancement Features (Jan 5-6, 2026)**:
-- ✅ **Issue #36**: Progressive UI updates with throttling (every 10 emails OR 3 seconds)
-- ✅ **Issue #37**: Dynamic folder discovery - fetches real folders from email providers
-- ✅ **Gmail Token Refresh**: Folder discovery now uses `getValidAccessToken()` for automatic token refresh
-- ✅ **Gmail Header Fix**: Extract email from "Name <email>" format for rule matching
-- ✅ **Counter Bug Fix**: Reset `_noRuleCount` in `startScan()` to prevent accumulation across scans
-- ✅ **Claude Code MCP Tools**: Custom MCP server for YAML validation, regex testing, rule simulation
-- ✅ **Build Script Enhancements**: `-StartEmulator`, `-EmulatorName`, `-SkipUninstall` flags
-
-**Phase 3.2 - Bug Fixes (Jan 4-5, 2026)**:
-- ✅ **Issue #35**: Folder selection now correctly scans selected folders (not just INBOX)
-- ✅ **Navigation Fix**: Prevent unwanted auto-navigation to Results when returning to Scan Progress
-
-**Phase 3.1 - UI/UX Enhancements (Jan 4, 2026)**:
-- ✅ **Issue #32**: Full Scan mode added (4th scan mode) with persistent mode selector and warning dialogs
-- ✅ **Issue #33**: Scan Progress UI redesigned - removed redundant elements, added Found/Processed bubbles, auto-navigation to Results
-- ✅ **Issue #34**: Results Screen UI redesigned - shows email address in title, mode in summary, matching bubble design
-- ✅ **Bubble Counts Fix**: All scan modes now show proposed actions (what WOULD happen)
-- ✅ **No Rule Tracking**: Added "No rule" bubble (grey) to track emails with no rule match
+**For detailed status**: See `CHANGELOG.md` for feature history and `docs/ALL_SPRINTS_MASTER_PLAN.md` for sprint roadmap and completion records.
 
 ## Repository Structure
 
@@ -474,7 +454,7 @@ For complete structure, pattern conventions, examples, and validation rules, see
 - Requires Firebase project with Android app registered
 - Must add SHA-1 fingerprint to Firebase Console
 - Run `mobile-app/android/get_sha1.bat` to extract fingerprint
-- Download `google-services.json` from Firebase Console → `mobile-app/android/app/google-services.json`
+- Download `google-services.json` from Firebase Console -> `mobile-app/android/app/google-services.json`
 - See `ANDROID_GMAIL_SIGNIN_QUICK_START.md` for complete setup
 
 #### Windows Desktop
@@ -508,11 +488,7 @@ For complete structure, pattern conventions, examples, and validation rules, see
 
 ## Testing Strategy
 
-**Total Tests**: 122 passing (as of Jan 2026)
-- **Phase 1 Regression**: 27 tests (core models, services)
-- **Phase 2.0 Tests**: 23 tests (AppPaths, SecureCredentialsStore, EmailScanProvider)
-- **Phase 2.1 Tests**: 31 tests (adapters, providers, integration)
-- **Phase 2.2 Tests**: 41 tests (RuleEvaluator, PatternCompiler with error tracking)
+**Total Tests**: 977 passing (as of Sprint 17, Feb 2026). Run `flutter test` to verify current count.
 
 ### Test Organization
 ```
@@ -541,11 +517,6 @@ For comprehensive troubleshooting, see `docs/TROUBLESHOOTING.md`.
 - **Norton Blocks IMAP**: Disable "Email Protection" in Norton Settings
 - **Windows OAuth Fails**: Ensure `secrets.dev.json` contains `WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET`
 - **Git Not Tracking Files**: Fixed Dec 2025 - update `.gitignore`
-
-**Recent Phase Completions** (see `CHANGELOG.md` for full details):
-- **Phase 3.3** (Jan 5-6, 2026): Progressive UI updates, dynamic folder discovery, Gmail fixes, Claude Code tools
-- **Phase 3.2** (Jan 4-5, 2026): Folder selection fixes, auto-navigation fixes
-- **Phase 3.1** (Jan 4, 2026): Full Scan mode, UI redesign, bubble counts fix, No Rule tracking
 
 ## Development Workflow
 
@@ -579,13 +550,13 @@ This project follows [Keep a Changelog](https://keepachangelog.com/) conventions
 **Example Entry**:
 ```markdown
 ### 2026-01-12
-- **feat**: Update Results screen to show folder • subject • rule format (Issue #47)
+- **feat**: Update Results screen to show folder - subject - rule format (Issue #47)
 - **feat**: Add AOL Bulk/Bulk Email folder recognition as junk folders (Issue #48)
 ```
 
 ### Releasing (After PR Merge to main)
 
-This project uses **GitFlow**: feature branches → `develop` → `main`
+This project uses **GitFlow**: feature branches -> `develop` -> `main`
 
 - **PRs to `develop`**: Entries stay in `[Unreleased]` - these are integration builds
 - **PRs to `main`**: Move entries from `[Unreleased]` to a versioned release - these are production releases
@@ -638,33 +609,9 @@ When `develop` is merged to `main`, create a versioned release:
 - **Production Delete Mode**: Not yet validated with spam-heavy inbox (read-only mode tested)
 - **iOS/macOS/Linux**: Not yet validated (architecture supports, testing pending)
 
-## Code Review Findings & Issue Backlog (January 2026)
+## Issue Backlog
 
-A comprehensive code review of the Flutter spam filter codebase identified **11 high-confidence issues** with specific file:line references. All issues have been documented in the GitHub repository.
-
-### Completed Issues (3)
-- **Issue #18 ✅ COMPLETE (Jan 3, 2026)**: Created comprehensive RuleEvaluator test suite - 32 tests with 97.96% coverage, includes anti-spoofing verification (`rule_evaluator_test.dart`)
-- **Issue #8 ✅ FIXED (Jan 3, 2026)**: Header matching bug in RuleEvaluator - Rules now properly check email headers instead of From field (`rule_evaluator.dart:53-141`)
-- **Issue #4 ✅ FIXED (Jan 3, 2026)**: Silent regex compilation failures - Invalid patterns now logged and tracked for UI visibility (`pattern_compiler.dart:1-66`)
-
-### Critical Issues Remaining (2)
-- **Issue #9**: Scan mode bypass in EmailScanner - readonly mode still deletes emails (`email_scanner.dart:66-125`)
-- **Issue #10**: Credential type confusion in SecureCredentialsStore (`secure_credentials_store.dart:137-161`)
-
-### High Priority Issues (4)
-- **Issue #11**: Silent regex compilation failures in PatternCompiler (DUPLICATE - see Issue #4 ✅ FIXED)
-- **Issue #12**: Missing refresh token storage on Android (`google_auth_service.dart:422-428`)
-- **Issue #13**: Overly broad exception mapping in GenericIMAPAdapter (`generic_imap_adapter.dart:146-165`)
-- **Issue #14**: Duplicate scan mode enforcement logic (`email_scan_provider.dart:315-358`)
-- **Issue #15**: Inconsistent logging - mix of print() and Logger (9 occurrences in main.dart, adapters)
-
-### Medium/Low Priority Issues (2)
-- **Issue #16**: PatternCompiler cache grows unbounded (medium priority)
-- **Issue #17**: EmailMessage.getHeader() returns empty string instead of null (low priority)
-
-**Complete Details**: See `GITHUB_ISSUES_BACKLOG.md` for full problem descriptions, root causes, proposed solutions, and acceptance criteria for all 11 issues.
-
-**Progress Summary**: 3 of 11 issues fixed (27% complete). Test suite expanded from 81 to 122 tests (+50% growth).
+For current issue status, use GitHub Issues: `gh issue list --state open`
 
 ## Additional Resources
 
@@ -672,6 +619,7 @@ A comprehensive code review of the Flutter spam filter codebase identified **11 
 ```
 spamfilter-multi/
 ├── 0*.md                     # Developer workflow files (DO NOT read or modify)
+├── archive\                  # All archive files should be ignored unless specifically asked to read for reference (DO NOT read or modify)
 ├── CHANGELOG.md              # Feature/bug updates (newest first)
 ├── CLAUDE.md                 # Primary documentation (this file)
 ├── README.md                 # Project overview
