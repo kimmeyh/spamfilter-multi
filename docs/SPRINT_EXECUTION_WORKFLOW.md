@@ -125,6 +125,8 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
   - Create sprint cards
   - Begin execution
 
+**[CHECKPOINT]** Before proceeding to Phase 3, re-read Phase 3 items in `docs/SPRINT_CHECKLIST.md`.
+
 ---
 
 ### **Phase 3: Sprint Kickoff & Planning**
@@ -141,11 +143,11 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
   - Note any changes needed based on previous sprint learnings
 
 - [ ] **3.2.1 Create Sprint Summary for Previous Sprint** (Background Process - MANDATORY)
-  - **When**: During planning for Sprint N+1, create SPRINT_<N>_SUMMARY.md for completed Sprint N
+  - **When**: During planning for Sprint N+1, create `docs/sprints/SPRINT_<N>_SUMMARY.md` for completed Sprint N
   - **Purpose**: Archive historical sprint details from ALL_SPRINTS_MASTER_PLAN.md
-  - **Template**: Use structure from SPRINT_RETROSPECTIVE.md or previous SPRINT_<N>_SUMMARY.md files
+  - **Template**: Use structure from SPRINT_RETROSPECTIVE.md or previous `docs/sprints/SPRINT_<N>_SUMMARY.md` files
   - **Content Sources** (in priority order):
-    1. SPRINT_<N-1>_RETROSPECTIVE.md (if exists from Phase 7.6)
+    1. `docs/sprints/SPRINT_<N-1>_RETROSPECTIVE.md` (if exists from Phase 7.7)
     2. CHANGELOG.md (Sprint N-1 entries)
     3. Git history (PR description, commit messages)
     4. GitHub issues (closed sprint issues)
@@ -163,9 +165,16 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
   - **Update ALL_SPRINTS_MASTER_PLAN.md**: Add entry to "Past Sprint Summary" table
   - **Example Entry**:
     ```markdown
-    | N | SPRINT_N_SUMMARY.md | [OK] Complete | ~Xh (MMM DD-DD, 2026) |
+    | N | docs/sprints/SPRINT_N_SUMMARY.md | [OK] Complete | ~Xh (MMM DD-DD, 2026) |
     ```
   - This keeps ALL_SPRINTS_MASTER_PLAN.md focused on current/future work while preserving history
+
+- [ ] **3.2.2 Create Sprint Plan Document** (MANDATORY)
+  - Create `docs/sprints/SPRINT_N_PLAN.md` for the current sprint
+  - **Content**: Sprint objective, tasks (A, B, C...), acceptance criteria, risk assessment, model assignments
+  - **Source**: Copy from ALL_SPRINTS_MASTER_PLAN.md Sprint N section and expand with implementation details
+  - **Why**: Provides a durable, self-contained record of what was planned for this sprint
+  - **Naming Convention**: Uppercase `SPRINT_N_PLAN.md` (e.g., `SPRINT_17_PLAN.md`)
 
 - [ ] **3.3 Branch Management**
   - Check if repository is in a PR branch
@@ -283,6 +292,8 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
 
   **Decision Rule**: If task acceptance criteria can be met with this decision, execute it. Only ask if acceptance criteria do not provide enough guidance.
 
+**[CHECKPOINT]** Before proceeding to Phase 4, re-read Phase 4 items in `docs/SPRINT_CHECKLIST.md`.
+
 ---
 
 ### **Phase 4: Sprint Execution (Development)**
@@ -369,6 +380,8 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
     - Do NOT ask questions unless critical design or execution clarifications are essential
     - Example: "Completed Tasks A-B (3/5 tasks). Task C in progress. ETA: 1h remaining."
     - Keep user informed without interrupting flow
+
+**[CHECKPOINT]** Before proceeding to Phase 5, re-read Phase 5 items in `docs/SPRINT_CHECKLIST.md`.
 
 ---
 
@@ -545,6 +558,8 @@ After Phase 5.2 all tests pass, context can be compacted for efficiency:
   - Document feedback received
   - Make any adjustments
 
+**[CHECKPOINT]** Before proceeding to Phase 6, re-read Phase 6 items in `docs/SPRINT_CHECKLIST.md`.
+
 ---
 
 ## [OK] Approval Gates (Sprint 5+)
@@ -659,6 +674,8 @@ After Phase 5.2 all tests pass, context can be compacted for efficiency:
   - Provide summary of sprint results
   - Ask for approval or feedback
   - Note any follow-up items
+
+**[CHECKPOINT]** [WARNING] Phase 7 is MANDATORY. Re-read Phase 7 items in `docs/SPRINT_CHECKLIST.md` before proceeding. DO NOT declare sprint complete until Phase 7 is finished.
 
 ---
 
@@ -776,10 +793,21 @@ Before conducting sprint review, build and test the Windows desktop app:
     - Update future sprint dependencies if needed
     - Update risk assessments based on lessons learned
 
-  - [ ] **Create Sprint Retrospective Document** (if review conducted)
-    - Create `docs/SPRINT_N_RETROSPECTIVE.md`
+  - [ ] **Create Sprint Retrospective Document** (MANDATORY)
+    - Create `docs/sprints/SPRINT_N_RETROSPECTIVE.md`
     - Use template from `docs/SPRINT_RETROSPECTIVE.md`
     - Record feedback, improvements, and action items
+
+  - [ ] **Create Sprint Summary Document** (MANDATORY - can be deferred to Phase 3.2.1 of next sprint)
+    - Create `docs/sprints/SPRINT_N_SUMMARY.md`
+    - Content: Sprint objective, tasks completed, deliverables, estimated vs actual duration, key decisions, lessons learned
+    - **If created now**: Use current sprint context (most accurate)
+    - **If deferred**: Created in Phase 3.2.1 of Sprint N+1 from CHANGELOG, git history, and retrospective
+
+  - [ ] **Update ARCHITECTURE.md** (CONDITIONAL - when architecture changes occur)
+    - If sprint introduced new components, patterns, or architectural changes
+    - Update relevant sections of `docs/ARCHITECTURE.md`
+    - Skip if sprint was purely bug fixes, documentation, or minor UI changes
 
 - [ ] **7.8 Summarize Review Results**
   - Provide summary of review findings
@@ -1028,7 +1056,7 @@ Once user approves PR:
      - Update risk assessments based on lessons learned
 
    - [ ] **Create Sprint Retrospective Document** (if review conducted)
-     - Create `docs/SPRINT_N_RETROSPECTIVE.md`
+     - Create `docs/sprints/SPRINT_N_RETROSPECTIVE.md`
      - Record what went well, what could improve
      - Document improvements implemented
      - Link to PR for code artifacts

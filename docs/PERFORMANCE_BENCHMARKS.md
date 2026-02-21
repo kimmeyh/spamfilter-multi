@@ -498,7 +498,7 @@ Monitor for performance complaints:
 ## Reference
 
 **Related Documents**:
-- `docs/SPRINT_3_REVIEW.md` - Architecture and implementation details
+- `docs/sprints/SPRINT_3_REVIEW.md` - Architecture and implementation details
 - `lib/core/services/safe_sender_evaluator.dart` - Evaluation algorithm
 - `lib/core/storage/safe_sender_database_store.dart` - Database operations
 

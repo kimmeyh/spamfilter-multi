@@ -150,9 +150,9 @@ safe_senders table:
 - `test/unit/services/safe_sender_evaluator_test.dart` (459 lines, 41 tests)
 
 **Documentation Files**:
-- `docs/SPRINT_3_REVIEW.md` - Comprehensive review
-- `docs/SPRINT_3_SUMMARY.md` - Quick reference
-- `docs/SPRINT_3_COMPLETION_REPORT.md` - Formal report
+- `docs/sprints/SPRINT_3_REVIEW.md` - Comprehensive review
+- `docs/sprints/SPRINT_3_SUMMARY.md` - Quick reference
+- `docs/sprints/SPRINT_3_COMPLETION_REPORT.md` - Formal report
 - `CHANGELOG.md` - Updated with Sprint 3 entries
 
 ### Review Checklist
@@ -326,7 +326,7 @@ CREATE INDEX idx_safe_senders_pattern ON safe_senders(pattern);
 ### Code Review Prerequisites
 - [ ] Run full test suite: `flutter test`
 - [ ] Run analyzer: `flutter analyze`
-- [ ] Review documentation: `docs/SPRINT_3_*.md`
+- [ ] Review documentation: `docs/sprints/SPRINT_3_*.md`
 - [ ] Check commits: Recent 6 commits
 - [ ] Verify time tracking: All issues updated
 
@@ -348,9 +348,9 @@ CREATE INDEX idx_safe_senders_pattern ON safe_senders(pattern);
 **Review Location**: Feature branch `feature/20260124_Sprint_3`
 
 **Documentation Links**:
-- Quick Reference: `docs/SPRINT_3_SUMMARY.md`
-- Detailed Review: `docs/SPRINT_3_REVIEW.md`
-- Formal Report: `docs/SPRINT_3_COMPLETION_REPORT.md`
+- Quick Reference: `docs/sprints/SPRINT_3_SUMMARY.md`
+- Detailed Review: `docs/sprints/SPRINT_3_REVIEW.md`
+- Formal Report: `docs/sprints/SPRINT_3_COMPLETION_REPORT.md`
 
 ### For Sprint 4 Planning
 **Available For Discussion**:

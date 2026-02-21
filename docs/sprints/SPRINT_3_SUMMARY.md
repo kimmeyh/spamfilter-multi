@@ -238,7 +238,7 @@ Result: ✓ SAFE SENDER
 - `test/unit/services/safe_sender_evaluator_test.dart` - 41 tests
 
 ### Documentation
-- `docs/SPRINT_3_REVIEW.md` - Comprehensive review
+- `docs/sprints/SPRINT_3_REVIEW.md` - Comprehensive review
 - `CHANGELOG.md` - Feature entries
 
 ---
@@ -265,7 +265,7 @@ Result: ✓ SAFE SENDER
 
 ## Quick Links
 
-- **Sprint 3 Review**: `docs/SPRINT_3_REVIEW.md` (comprehensive)
+- **Sprint 3 Review**: `docs/sprints/SPRINT_3_REVIEW.md` (comprehensive)
 - **Implementation Details**: See individual task commits
 - **Database Schema**: `docs/DATABASE_SCHEMA.md`
 - **Architecture**: `CLAUDE.md` § Architecture

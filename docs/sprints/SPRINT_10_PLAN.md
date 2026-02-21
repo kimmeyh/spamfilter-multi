@@ -143,7 +143,7 @@ Implement comprehensive UI enhancements across Android and Windows Desktop platf
 - `CLAUDE.md`
 - `docs/app_paths.dart`
 - `docs/QUICK_REFERENCE.md`
-- `docs/SPRINT_8_RETROSPECTIVE.md`
+- `docs/sprints/SPRINT_8_RETROSPECTIVE.md`
 - `docs/WINDOWS_BASH_COMPATIBILITY.md`
 - `docs/SPRINT_EXECUTION_WORKFLOW.md`
 
@@ -220,7 +220,7 @@ Based on Sprint 10 findings, create issues for:
 
 ## References
 
-- **Sprint 9 Retrospective**: docs/SPRINT_9_RETROSPECTIVE.md
+- **Sprint 9 Retrospective**: docs/sprints/SPRINT_9_RETROSPECTIVE.md
 - **Master Plan**: docs/ALL_SPRINTS_MASTER_PLAN.md
 - **Architecture**: docs/ARCHITECTURE.md
 - **Workflow**: docs/SPRINT_EXECUTION_WORKFLOW.md

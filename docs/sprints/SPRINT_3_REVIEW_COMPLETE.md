@@ -95,7 +95,7 @@ User selected all 7 suggestions with priority guidance:
    - Memory usage and regression testing thresholds
    - Optimization opportunities prioritized
 
-3. `docs/SPRINT_3_REVIEW.md` § Edge Cases (HIGH PRIORITY)
+3. `docs/sprints/SPRINT_3_REVIEW.md` § Edge Cases (HIGH PRIORITY)
    - 300+ lines added to existing review document
    - 10 major edge case categories documented
    - Test cases and implementation details for each
@@ -109,7 +109,7 @@ User selected all 7 suggestions with priority guidance:
    - Updated Success Criteria to emphasize Phase 4.5 completion
    - Clarified branch cleanup is "OPTIONAL - User Managed"
 
-2. `docs/SPRINT_3_REVIEW_FEEDBACK.md` (NEW)
+2. `docs/sprints/SPRINT_3_REVIEW_FEEDBACK.md` (NEW)
    - Documents all user feedback responses
    - Lists all 7 improvement suggestions with descriptions
    - Records user selections and rationale
@@ -173,7 +173,7 @@ User selected all 7 suggestions with priority guidance:
 
 ### 3. Edge Cases Documentation (HIGH PRIORITY) [OK]
 
-**Update**: `docs/SPRINT_3_REVIEW.md` (300+ lines added)
+**Update**: `docs/sprints/SPRINT_3_REVIEW.md` (300+ lines added)
 
 **New Section**: "Edge Cases & Complex Scenarios"
 
@@ -255,7 +255,7 @@ User selected all 7 suggestions with priority guidance:
 
 ### 5. SPRINT_3_REVIEW_FEEDBACK.md (DOCUMENTATION) [OK]
 
-**New File**: `docs/SPRINT_3_REVIEW_FEEDBACK.md` (245 lines)
+**New File**: `docs/sprints/SPRINT_3_REVIEW_FEEDBACK.md` (245 lines)
 
 **Content**:
 - User feedback responses (all feedback topics)
@@ -274,9 +274,9 @@ User selected all 7 suggestions with priority guidance:
 |------|------|---------|--------|
 | `docs/MODEL_ASSIGNMENT_HEURISTICS.md` | NEW | Formalize model assignment decisions | [OK] Created |
 | `docs/PERFORMANCE_BENCHMARKS.md` | NEW | Baseline performance metrics | [OK] Created |
-| `docs/SPRINT_3_REVIEW.md` | UPDATED | Add explicit edge cases section | [OK] Updated |
+| `docs/sprints/SPRINT_3_REVIEW.md` | UPDATED | Add explicit edge cases section | [OK] Updated |
 | `docs/SPRINT_EXECUTION_WORKFLOW.md` | UPDATED | Make Phase 4.5 mandatory, clarify branch policy | [OK] Updated |
-| `docs/SPRINT_3_REVIEW_FEEDBACK.md` | NEW | Document review feedback and selections | [OK] Created |
+| `docs/sprints/SPRINT_3_REVIEW_FEEDBACK.md` | NEW | Document review feedback and selections | [OK] Created |
 
 **Total Changes**:
 - 5 files created/updated
@@ -364,17 +364,17 @@ User selected all 7 suggestions with priority guidance:
 ## Documentation Index
 
 **Sprint 3 Review Documents** (Created):
-1. `docs/SPRINT_3_REVIEW.md` - Main comprehensive review (600+ lines)
-2. `docs/SPRINT_3_SUMMARY.md` - Quick reference guide (280+ lines)
-3. `docs/SPRINT_3_COMPLETION_REPORT.md` - Formal completion report (450+ lines)
-4. `docs/SPRINT_3_TO_SPRINT_4_HANDOFF.md` - Transition plan (390+ lines)
+1. `docs/sprints/SPRINT_3_REVIEW.md` - Main comprehensive review (600+ lines)
+2. `docs/sprints/SPRINT_3_SUMMARY.md` - Quick reference guide (280+ lines)
+3. `docs/sprints/SPRINT_3_COMPLETION_REPORT.md` - Formal completion report (450+ lines)
+4. `docs/sprints/SPRINT_3_TO_SPRINT_4_HANDOFF.md` - Transition plan (390+ lines)
 5. `SPRINT_3_EXECUTIVE_SUMMARY.txt` - High-level metrics (text format)
 6. `SPRINT_3_READY_FOR_REVIEW.md` - Code review checklist
 
 **Process & Improvement Documents** (Created):
 7. `docs/SPRINT_EXECUTION_WORKFLOW.md` - Updated workflow with mandatory Phase 4.5
-8. `docs/SPRINT_3_FORMAL_REVIEW.md` - Phase 4.5 formal review process
-9. `docs/SPRINT_3_REVIEW_FEEDBACK.md` - User feedback documentation
+8. `docs/sprints/SPRINT_3_FORMAL_REVIEW.md` - Phase 4.5 formal review process
+9. `docs/sprints/SPRINT_3_REVIEW_FEEDBACK.md` - User feedback documentation
 
 **Reference Documents** (Created):
 10. `docs/MODEL_ASSIGNMENT_HEURISTICS.md` - Model assignment decision framework

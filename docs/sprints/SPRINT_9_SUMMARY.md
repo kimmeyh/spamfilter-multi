@@ -247,8 +247,8 @@ After merge:
 
 ## References
 
-- **Sprint Plan**: docs/SPRINT_9_PLAN.md
-- **Retrospective**: docs/SPRINT_9_RETROSPECTIVE.md
+- **Sprint Plan**: docs/sprints/SPRINT_9_PLAN.md
+- **Retrospective**: docs/sprints/SPRINT_9_RETROSPECTIVE.md
 - **Master Plan**: docs/ALL_SPRINTS_MASTER_PLAN.md (Sprint 9 section)
 - **PR #103**: https://github.com/kimmeyh/spamfilter-multi/pull/103
 

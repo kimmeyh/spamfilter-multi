@@ -21,7 +21,7 @@ This document tracks the implementation of 25 approved recommendations from Spri
 - **Files to Update**:
   - `SPRINT_PLANNING.md`: Add risk assessment to task template
   - `SPRINT_EXECUTION_WORKFLOW.md`: Add risk documentation to Phase 2 (task execution)
-  - `docs/SPRINT_9_APPROVED_RECOMMENDATIONS.md`: This document tracks implementation
+  - `docs/sprints/SPRINT_9_APPROVED_RECOMMENDATIONS.md`: This document tracks implementation
 - **Implementation**: Add risk assessment template to sprint planning section
 
 **1.2 Risk Column in Sprint Plans**

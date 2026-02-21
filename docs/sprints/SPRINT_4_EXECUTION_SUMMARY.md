@@ -179,7 +179,7 @@
 2. **Create Sprint Summary Template**
    - Decide location and format
    - Include: Retrospective, commits, schema, files, tests
-   - Example: docs/SPRINT_5_SUMMARY.md
+   - Example: docs/sprints/SPRINT_5_SUMMARY.md
 
 3. **Investigate Hook Error**
    - Understand: PreToolUse:Edit error origin

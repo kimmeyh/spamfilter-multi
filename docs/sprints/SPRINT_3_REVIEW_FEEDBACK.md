@@ -68,7 +68,7 @@
 
 **3. Explicit Edge Cases Documentation**
    - **Purpose**: Document complex scenarios covered by tests
-   - **File**: Update `docs/SPRINT_3_REVIEW.md` § Testing Highlights
+   - **File**: Update `docs/sprints/SPRINT_3_REVIEW.md` § Testing Highlights
    - **Content**:
      - Whitespace handling in emails
      - Case-insensitive matching behavior
@@ -234,7 +234,7 @@
 
 3. `docs/PERFORMANCE_BENCHMARKS.md` (new file, HIGH priority)
 
-4. `docs/SPRINT_3_REVIEW.md` (add Edge Cases section, HIGH priority)
+4. `docs/sprints/SPRINT_3_REVIEW.md` (add Edge Cases section, HIGH priority)
 
 **Status**: Ready to implement
 

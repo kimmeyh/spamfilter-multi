@@ -276,7 +276,7 @@ Implement core MVP features (Settings, Scan Results Processing, Interactive Rule
 
 ## References
 
-- **Sprint 11 Summary**: docs/SPRINT_11_SUMMARY.md
+- **Sprint 11 Summary**: docs/sprints/SPRINT_11_SUMMARY.md
 - **Master Plan**: docs/ALL_SPRINTS_MASTER_PLAN.md (Sprint 12 section)
 - **Workflow**: docs/SPRINT_EXECUTION_WORKFLOW.md
 

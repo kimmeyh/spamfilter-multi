@@ -39,21 +39,23 @@
 
 ## Past Sprint Summary
 
-Historical sprint information has been moved to individual summary documents and CHANGELOG.md. For detailed retrospectives, see:
+Historical sprint information has been moved to individual summary documents in `docs/sprints/` and CHANGELOG.md. For detailed retrospectives, see:
 
 | Sprint | Summary Document | Status | Duration |
 |--------|------------------|--------|----------|
-| 1 | SPRINT_1_RETROSPECTIVE.md | [OK] Complete | ~4h (Jan 19-24, 2026) |
-| 2 | SPRINT_2_RETROSPECTIVE.md | [OK] Complete | ~6h (Jan 24, 2026) |
-| 3 | SPRINT_3_SUMMARY.md | [OK] Complete | ~8h (Jan 24-25, 2026) |
-| 8 | SPRINT_8_SUMMARY.md | [OK] Complete | ~12h (Jan 31, 2026) |
-| 9 | SPRINT_9_SUMMARY.md | [OK] Complete | ~2h (Jan 30-31, 2026) |
-| 10 | SPRINT_10_SUMMARY.md | [OK] Complete | ~20h (Feb 1, 2026) |
-| 11 | SPRINT_11_SUMMARY.md | [OK] Complete | ~12h (Jan 31 - Feb 1, 2026) |
-| 12 | SPRINT_12_SUMMARY.md | [OK] Complete | ~48h (Feb 1-6, 2026) |
-| 13 | SPRINT_13_PLAN.md | [OK] Complete | ~3h (Feb 6, 2026) |
-| 14 | sprint_14_plan.md | [OK] Complete | ~8h (Feb 7-13, 2026) |
-| 15 | sprint_15_plan.md | [OK] Complete | ~16h (Feb 14-15, 2026) |
+| 1 | docs/sprints/SPRINT_1_RETROSPECTIVE.md | [OK] Complete | ~4h (Jan 19-24, 2026) |
+| 2 | docs/sprints/SPRINT_2_RETROSPECTIVE.md | [OK] Complete | ~6h (Jan 24, 2026) |
+| 3 | docs/sprints/SPRINT_3_SUMMARY.md | [OK] Complete | ~8h (Jan 24-25, 2026) |
+| 8 | docs/sprints/SPRINT_8_SUMMARY.md | [OK] Complete | ~12h (Jan 31, 2026) |
+| 9 | docs/sprints/SPRINT_9_SUMMARY.md | [OK] Complete | ~2h (Jan 30-31, 2026) |
+| 10 | docs/sprints/SPRINT_10_SUMMARY.md | [OK] Complete | ~20h (Feb 1, 2026) |
+| 11 | docs/sprints/SPRINT_11_SUMMARY.md | [OK] Complete | ~12h (Jan 31 - Feb 1, 2026) |
+| 12 | docs/sprints/SPRINT_12_SUMMARY.md | [OK] Complete | ~48h (Feb 1-6, 2026) |
+| 13 | docs/sprints/SPRINT_13_PLAN.md | [OK] Complete | ~3h (Feb 6, 2026) |
+| 14 | docs/sprints/SPRINT_14_PLAN.md | [OK] Complete | ~8h (Feb 7-13, 2026) |
+| 15 | docs/sprints/SPRINT_15_PLAN.md | [OK] Complete | ~16h (Feb 14-15, 2026) |
+| 16 | docs/sprints/SPRINT_16_PLAN.md | [OK] Complete | ~6h (Feb 15-16, 2026) |
+| 17 | docs/sprints/SPRINT_17_SUMMARY.md | [OK] Complete | ~20h (Feb 17-21, 2026) |
 
 **Key Achievements**:
 - **Sprint 1**: Database foundation (SQLite schema, migration infrastructure)

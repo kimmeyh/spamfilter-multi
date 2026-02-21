@@ -107,7 +107,7 @@ Sprint 10 delivered comprehensive UI enhancements across Android and Windows Des
 - `CLAUDE.md` - Windows database paths
 - `docs/app_paths.dart` - Platform-specific path documentation
 - `docs/QUICK_REFERENCE.md` - Database path fixes
-- `docs/SPRINT_8_RETROSPECTIVE.md` - Database path fixes
+- `docs/sprints/SPRINT_8_RETROSPECTIVE.md` - Database path fixes
 - `docs/WINDOWS_BASH_COMPATIBILITY.md` - Bash error documentation
 - `docs/SPRINT_EXECUTION_WORKFLOW.md` - Process improvements
 
@@ -205,8 +205,8 @@ After merge:
 
 ## References
 
-- **Sprint Plan**: docs/SPRINT_10_PLAN.md
-- **Sprint 9 Retrospective**: docs/SPRINT_9_RETROSPECTIVE.md
+- **Sprint Plan**: docs/sprints/SPRINT_10_PLAN.md
+- **Sprint 9 Retrospective**: docs/sprints/SPRINT_9_RETROSPECTIVE.md
 - **Master Plan**: docs/ALL_SPRINTS_MASTER_PLAN.md
 - **PR #111**: https://github.com/kimmeyh/spamfilter-multi/pull/111
 

@@ -266,8 +266,8 @@ Use `database_test_helper.dart` and other shared utilities for Sprint 13 tests.
 
 ## References
 
-- **Sprint Plan**: docs/SPRINT_12_PLAN.md
-- **Sprint Summary**: docs/SPRINT_12_SUMMARY.md
+- **Sprint Plan**: docs/sprints/SPRINT_12_PLAN.md
+- **Sprint Summary**: docs/sprints/SPRINT_12_SUMMARY.md
 - **Master Plan**: docs/ALL_SPRINTS_MASTER_PLAN.md
 - **PR #129**: https://github.com/kimmeyh/spamfilter-multi/pull/129
 

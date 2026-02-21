@@ -384,13 +384,13 @@ Improvements Selected: 1, 2, 3 (Model Heuristics, Performance Benchmarks, Edge C
 
 ## Review Documents Reference
 
-- **Main Sprint 3 Documentation**: `docs/SPRINT_3_REVIEW.md`
-- **Quick Reference**: `docs/SPRINT_3_SUMMARY.md`
-- **Completion Report**: `docs/SPRINT_3_COMPLETION_REPORT.md`
-- **Handoff**: `docs/SPRINT_3_TO_SPRINT_4_HANDOFF.md`
+- **Main Sprint 3 Documentation**: `docs/sprints/SPRINT_3_REVIEW.md`
+- **Quick Reference**: `docs/sprints/SPRINT_3_SUMMARY.md`
+- **Completion Report**: `docs/sprints/SPRINT_3_COMPLETION_REPORT.md`
+- **Handoff**: `docs/sprints/SPRINT_3_TO_SPRINT_4_HANDOFF.md`
 - **Executive Summary**: `SPRINT_3_EXECUTIVE_SUMMARY.txt`
 - **Code Review Ready**: `SPRINT_3_READY_FOR_REVIEW.md`
-- **This Formal Review**: `docs/SPRINT_3_FORMAL_REVIEW.md` (current file)
+- **This Formal Review**: `docs/sprints/SPRINT_3_FORMAL_REVIEW.md` (current file)
 
 ---
 

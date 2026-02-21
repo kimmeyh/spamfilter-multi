@@ -31,7 +31,7 @@
 
 ## Sprint 8 Plan Status
 
-**[OK] Comprehensive Plan Created**: `docs/SPRINT_8_PLAN.md`
+**[OK] Comprehensive Plan Created**: `docs/sprints/SPRINT_8_PLAN.md`
 
 ### Plan Contents
 - **Executive Summary**: Clear objectives for Windows background scanning, MSIX installer, desktop UI
@@ -86,7 +86,7 @@
 
 ### ⏳ CHECKPOINT 2: Recommendations & Sprint 8 Plan Approval
 
-**Current Status**: Sprint 8 Plan complete at `docs/SPRINT_8_PLAN.md`
+**Current Status**: Sprint 8 Plan complete at `docs/sprints/SPRINT_8_PLAN.md`
 
 **What I'm Waiting For** (3 parts):
 
@@ -94,7 +94,7 @@
 - Review all 4 tasks and acceptance criteria
 - Confirm effort estimate (14-18 hours)
 - Confirm model assignments (Sonnet → Haiku)
-- Use approval checklist in `docs/SPRINT_8_PLAN.md`
+- Use approval checklist in `docs/sprints/SPRINT_8_PLAN.md`
 
 **Part B: Approve Recommendations (3 priority levels)**
 - **Priority 1 (BEFORE Sprint 8)**: Escalation protocol, approval process, retrospective format
@@ -107,7 +107,7 @@
 - Approved: Use model hierarchy for problem-solving
 
 **What I'm Waiting For**:
-- Your checkmarks in `docs/SPRINT_8_PLAN.md` CHECKPOINT 2 section
+- Your checkmarks in `docs/sprints/SPRINT_8_PLAN.md` CHECKPOINT 2 section
 - Your approval of all 3 parts above
 
 **After Checkpoint 2 Approved**: Proceed to Checkpoint 3
@@ -293,7 +293,7 @@ NotificationService (abstract interface)
 - **Action**: Approve and merge to `develop` branch
 
 ### Step 2: Review Sprint 7 Retrospective
-- **Location**: `docs/SPRINT_7_RETROSPECTIVE.md`
+- **Location**: `docs/sprints/SPRINT_7_RETROSPECTIVE.md`
 - **What to review**:
   - Findings (what went well, what could improve)
   - Metrics (tasks, tests, code quality)
@@ -303,7 +303,7 @@ NotificationService (abstract interface)
 - **Action**: Understand retrospective content for Checkpoint 2
 
 ### Step 3: Review Sprint 8 Plan
-- **Location**: `docs/SPRINT_8_PLAN.md`
+- **Location**: `docs/sprints/SPRINT_8_PLAN.md`
 - **What to review**:
   - Executive Summary (objectives, key metrics)
   - Task A: Windows Task Scheduler (5-6 hours)
@@ -321,9 +321,9 @@ NotificationService (abstract interface)
 - [ ] Comment: "Checkpoint 1 Approved - PR #92 merged"
 
 **CHECKPOINT 2** (Approve after reviewing both retrospective and plan):
-- [ ] Complete Part A checklist in `docs/SPRINT_8_PLAN.md` (10 items)
-- [ ] Complete Part B checklist in `docs/SPRINT_8_PLAN.md` (7 items)
-- [ ] Complete Part C checklist in `docs/SPRINT_8_PLAN.md` (3 items)
+- [ ] Complete Part A checklist in `docs/sprints/SPRINT_8_PLAN.md` (10 items)
+- [ ] Complete Part B checklist in `docs/sprints/SPRINT_8_PLAN.md` (7 items)
+- [ ] Complete Part C checklist in `docs/sprints/SPRINT_8_PLAN.md` (3 items)
 - [ ] Comment: "Checkpoint 2 Approved - All recommendations and plan approved"
 
 **CHECKPOINT 3** (Automatic):

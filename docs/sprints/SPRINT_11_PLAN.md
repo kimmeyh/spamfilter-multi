@@ -393,8 +393,8 @@ All critical bugs fixed and validated:
 
 ## References
 
-- **Sprint 10 Summary**: docs/SPRINT_10_SUMMARY.md
-- **Sprint 11 Retrospective**: docs/SPRINT_11_RETROSPECTIVE.md
+- **Sprint 10 Summary**: docs/sprints/SPRINT_10_SUMMARY.md
+- **Sprint 11 Retrospective**: docs/sprints/SPRINT_11_RETROSPECTIVE.md
 - **Master Plan**: docs/ALL_SPRINTS_MASTER_PLAN.md
 - **Workflow**: docs/SPRINT_EXECUTION_WORKFLOW.md
 

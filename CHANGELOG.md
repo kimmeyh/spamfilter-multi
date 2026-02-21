@@ -48,6 +48,8 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **feat**: Scan History subtitle consolidated: duration | mode | Folders in single line with updated mode names
 - **fix**: Rename "Last Scan Results" to "Scan Results"
 - **test**: Fix PowerShell script generator test assertion (RepetitionInterval -> Repetition.Interval)
+- **docs**: Sprint retrospective improvements S1-S7 - phase transition checkpoints, mandatory sprint document creation, docs/sprints/ reorganization, /phase-check skill
+- **chore**: Move 46 per-sprint documents from docs/ to docs/sprints/ with standardized uppercase naming
 
 ### 2026-02-16 (Sprint 16: Phase Renumbering)
 - **docs**: Renumber sprint workflow phases from -1/0/1/2/3/4/4.5 to sequential 1-7 across 16 documents (Issue #160)

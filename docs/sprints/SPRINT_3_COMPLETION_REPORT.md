@@ -415,8 +415,8 @@ Regex Pattern: ^[^@\s]+@company\.com$
 ## References
 
 ### Documentation Files
-- `docs/SPRINT_3_REVIEW.md` - Comprehensive review
-- `docs/SPRINT_3_SUMMARY.md` - Quick reference
+- `docs/sprints/SPRINT_3_REVIEW.md` - Comprehensive review
+- `docs/sprints/SPRINT_3_SUMMARY.md` - Quick reference
 - `CHANGELOG.md` - Feature entries
 - `docs/DATABASE_SCHEMA.md` - Schema reference
 - `CLAUDE.md` § Architecture - Architecture overview

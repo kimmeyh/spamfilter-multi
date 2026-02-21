@@ -497,12 +497,12 @@ The implementation provides a solid foundation for Phase 3.5 background scanning
 
 ## CHECKPOINT 2: Sprint Planning & Recommendations Approval ⏳
 
-**Status**: Sprint 8 Plan created (docs/SPRINT_8_PLAN.md), awaiting approval
+**Status**: Sprint 8 Plan created (docs/sprints/SPRINT_8_PLAN.md), awaiting approval
 
 **Before Starting Sprint 8 Implementation**:
 
 ### Part A: Approve the Plan
-Review: `docs/SPRINT_8_PLAN.md`
+Review: `docs/sprints/SPRINT_8_PLAN.md`
 
 **Approval Checklist**:
 - [ ] Sprint objectives clear (Windows background scanning + MSIX installer + desktop UI)

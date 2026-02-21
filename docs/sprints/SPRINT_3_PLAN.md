@@ -350,7 +350,7 @@ Sprint 4 will likely focus on:
 ## References
 
 - **Phase 3.5 Plan**: Safe Sender Exceptions (from earlier phase planning)
-- **Sprint 2 Retrospective**: `docs/SPRINT_2_RETROSPECTIVE.md`
+- **Sprint 2 Retrospective**: `docs/sprints/SPRINT_2_RETROSPECTIVE.md`
 - **Sprint Execution Workflow**: `docs/SPRINT_EXECUTION_WORKFLOW.md`
 - **Database Helper**: `lib/core/storage/database_helper.dart`
 

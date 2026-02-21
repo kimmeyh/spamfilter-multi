@@ -272,12 +272,12 @@ adb logcat -s flutter | grep '\[ERROR\]'
 **Status**: ⏳ **NOT STARTED**
 
 **What Was Created**:
-- `docs/SPRINT_8_RETROSPECTIVE.md` (comprehensive analysis of all 11 categories)
+- `docs/sprints/SPRINT_8_RETROSPECTIVE.md` (comprehensive analysis of all 11 categories)
 
 **What Remains**:
 1. User reviews Sprint 8 Retrospective
 2. User provides feedback on effectiveness, efficiency, process
-3. Create `docs/SPRINT_8_RETROSPECTIVE_FINAL.md` with user feedback incorporated
+3. Create `docs/sprints/SPRINT_8_RETROSPECTIVE_FINAL.md` with user feedback incorporated
 4. Update `ALL_SPRINTS_MASTER_PLAN.md` with Sprint 8 actual vs estimated duration
 
 **Deferred To**: After Sprint 8 PR Approval
@@ -318,7 +318,7 @@ adb logcat -s flutter | grep '\[ERROR\]'
 1. `docs/SPRINT_EXECUTION_WORKFLOW.md` (modified)
 2. `docs/SPRINT_STOPPING_CRITERIA.md` (modified)
 3. `docs/WINDOWS_BASH_COMPATIBILITY.md` (modified)
-4. `docs/SPRINT_8_RETROSPECTIVE.md` (new)
+4. `docs/sprints/SPRINT_8_RETROSPECTIVE.md` (new)
 5. `docs/LOGGING_CONVENTIONS.md` (new)
 6. `docs/QUICK_REFERENCE.md` (new)
 7. `.claude/quick-reference.json` (new)

@@ -679,12 +679,16 @@ spamfilter-multi/
 │   ├── OAUTH_SETUP.md        # Gmail OAuth for Android + Windows
 │   ├── TROUBLESHOOTING.md    # Common issues and fixes
 │   ├── ISSUE_BACKLOG.md      # Open issues and status
-│   ├── PHASE_3_5_MASTER_PLAN.md    # Master plan for all 10 sprints (READ FIRST!)
+│   ├── ALL_SPRINTS_MASTER_PLAN.md   # Master plan for all sprints (READ FIRST!)
 │   ├── SPRINT_PLANNING.md    # Sprint planning methodology
 │   ├── SPRINT_EXECUTION_WORKFLOW.md # Step-by-step sprint execution checklist
-│   ├── PHASE_0_PRE_SPRINT_CHECKLIST.md # Pre-sprint verification checklist
+│   ├── SPRINT_CHECKLIST.md   # Single-page sprint execution checklist
 │   ├── SPRINT_STOPPING_CRITERIA.md # When/why to stop working (NEW - Sprint 6)
-│   └── WINDOWS_DEVELOPMENT_GUIDE.md # Windows development (bash, Unicode, PowerShell, builds)
+│   ├── WINDOWS_DEVELOPMENT_GUIDE.md # Windows development (bash, Unicode, PowerShell, builds)
+│   └── sprints/              # Per-sprint documentation (plans, retrospectives, summaries)
+│       ├── SPRINT_N_PLAN.md          # Created at sprint start (Phase 3)
+│       ├── SPRINT_N_RETROSPECTIVE.md # Created at sprint end (Phase 7)
+│       └── SPRINT_N_SUMMARY.md       # Created during next sprint planning (Phase 3.2.1)
 ├── mobile-app/
 │   ├── README.md             # App-specific quick start
 │   └── docs/
@@ -702,8 +706,12 @@ spamfilter-multi/
 ### Claude Code Tooling
 - **Custom MCP Server**: `scripts/email-rule-tester-mcp/`
 - **Validation Scripts**: `scripts/validate-yaml-rules.ps1`, `scripts/test-regex-patterns.ps1`
-- **Skills Config**: `.claude/skills.json` (10 custom skills)
-- **Hooks Config**: `.claude/hooks.json` (pre-commit validation, post-checkout pub get)
+- **Skills**:
+  - `/startup-check` - Environment health check and memory restore
+  - `/phase-check` - Sprint phase transition checkpoint (verify phase complete, preview next phase)
+  - `/plan-sprint` - Sprint planning with model assignments
+  - `/full-test` - Run all Flutter tests and analyze code quality
+  - `/memory-save` and `/memory-restore` - Save/restore sprint context across sessions
 
 ### Archives (gitignored)
 - **Archive/**: Historical docs, legacy Python desktop app, completed phase reports

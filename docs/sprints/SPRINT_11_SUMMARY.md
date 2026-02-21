@@ -309,7 +309,7 @@ Based on Sprint 10 feedback and Sprint 11 learnings, implemented all approved re
 5. `docs/RECOVERY_CAPABILITIES.md` (safety audit)
 6. `mobile-app/scripts/generate-test-emails.ps1` (PowerShell test data)
 7. `mobile-app/scripts/send-test-emails.py` (Python email sender)
-8. `docs/SPRINT_11_RETROSPECTIVE.md` (Sprint 11 learnings)
+8. `docs/sprints/SPRINT_11_RETROSPECTIVE.md` (Sprint 11 learnings)
 
 ### Modified Files (12)
 1. `mobile-app/lib/main.dart` (keyboard shortcuts + refresh action)
@@ -395,8 +395,8 @@ After merge:
 
 ## References
 
-- **Sprint Plan**: docs/SPRINT_11_PLAN.md
-- **Sprint 11 Retrospective**: docs/SPRINT_11_RETROSPECTIVE.md
+- **Sprint Plan**: docs/sprints/SPRINT_11_PLAN.md
+- **Sprint 11 Retrospective**: docs/sprints/SPRINT_11_RETROSPECTIVE.md
 - **Master Plan**: docs/ALL_SPRINTS_MASTER_PLAN.md
 - **PR #114**: https://github.com/kimmeyh/spamfilter-multi/pull/114
 

@@ -89,7 +89,7 @@ flutter analyze  # Should show 0 issues
 - `test/unit/services/safe_sender_evaluator_test.dart` (459 lines, 41 tests)
 
 **Documentation**:
-- `docs/SPRINT_3_REVIEW.md` - Start here for comprehensive overview
+- `docs/sprints/SPRINT_3_REVIEW.md` - Start here for comprehensive overview
 - `SPRINT_3_EXECUTIVE_SUMMARY.txt` - Quick metrics and status
 
 ### 5. Key Areas to Review
