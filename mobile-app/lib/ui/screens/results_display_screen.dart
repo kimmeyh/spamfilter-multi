@@ -641,7 +641,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
             _buildSummary(summary, scanProvider, allResults),
             const SizedBox(height: 16),
             // Show filter status if active
-            if (_filter != null) ...[
+            if (_filter != null || _specialFilter != null || _selectedFolders.isNotEmpty) ...[
               _buildFilterStatus(filteredResults.length, allResults.length),
               const SizedBox(height: 8),
             ],
@@ -818,7 +818,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               hasLiveResults
                 ? 'Summary - ${scanProvider.getScanModeDisplayName()}'
                 : showingHistorical
-                  ? 'Last Scan Results'
+                  ? 'Scan Results'
                   : 'Summary',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
@@ -848,101 +848,67 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               ),
             ],
             const SizedBox(height: 8),
-            // [UPDATED] Testing feedback FB-4: Show historical counts when no live data
-            if (showingHistorical && _lastCompletedScan != null)
-              _buildHistoricalStats(_lastCompletedScan!)
-            else
-              Wrap(
+            // [UPDATED] FB-2a: Use same interactive filter chips for both live and historical
+            Builder(builder: (_) {
+              // Compute counts from allResults (works for both live and historical)
+              final foundCount = showingHistorical
+                  ? (_lastCompletedScan?.totalEmails ?? allResults.length)
+                  : scanProvider.totalEmails;
+              final processedCount = showingHistorical
+                  ? allResults.length
+                  : scanProvider.processedCount;
+              final deletedCount = showingHistorical
+                  ? allResults.where((r) => r.action == EmailActionType.delete).length
+                  : scanProvider.deletedCount;
+              final movedCount = showingHistorical
+                  ? allResults.where((r) => r.action == EmailActionType.moveToJunk).length
+                  : scanProvider.movedCount;
+              final safeCount = showingHistorical
+                  ? allResults.where((r) => r.action == EmailActionType.safeSender).length
+                  : scanProvider.safeSendersCount;
+              final noRuleCount = showingHistorical
+                  ? allResults.where((r) => r.action == EmailActionType.none).length
+                  : scanProvider.noRuleCount;
+              final errorCount = showingHistorical
+                  ? allResults.where((r) => !r.success).length
+                  : scanProvider.errorCount;
+
+              return Wrap(
                 spacing: 12,
                 runSpacing: 12,
                 children: [
-                  // Item 3: Make Found/Processed/Moved/Error filterable
-                  _buildSpecialStatChip('Found', scanProvider.totalEmails, const Color(0xFF2196F3), Colors.white, SpecialFilter.found),
-                  _buildSpecialStatChip('Processed', scanProvider.processedCount, const Color(0xFF9C27B0), Colors.white, SpecialFilter.processed),
-                  // [UPDATED] ISSUE #123+#124: Show "(not processed)" for rule actions in safe-senders-only mode
+                  _buildSpecialStatChip('Found', foundCount, const Color(0xFF2196F3), Colors.white, SpecialFilter.found),
+                  _buildSpecialStatChip('Processed', processedCount, const Color(0xFF9C27B0), Colors.white, SpecialFilter.processed),
                   _buildStatChipWithMode(
                     isSafeSendersOnly || isReadOnly ? 'Deleted (not processed)' : 'Deleted',
-                    scanProvider.deletedCount,
+                    deletedCount,
                     isSafeSendersOnly || isReadOnly ? const Color(0xFFEF9A9A) : const Color(0xFFF44336),
                     isSafeSendersOnly || isReadOnly ? Colors.black54 : Colors.white,
                     EmailActionType.delete,
                   ),
                   _buildStatChipWithMode(
                     isSafeSendersOnly || isReadOnly ? 'Moved (not processed)' : 'Moved',
-                    scanProvider.movedCount,
+                    movedCount,
                     isSafeSendersOnly || isReadOnly ? const Color(0xFFFFCC80) : const Color(0xFFFF9800),
                     isSafeSendersOnly || isReadOnly ? Colors.black54 : Colors.white,
                     EmailActionType.moveToJunk,
                   ),
-                  // [UPDATED] ISSUE #123+#124: Show "(not processed)" for safe senders in rules-only mode
                   _buildStatChipWithMode(
                     isRulesOnly || isReadOnly ? 'Safe (not processed)' : 'Safe',
-                    scanProvider.safeSendersCount,
+                    safeCount,
                     isRulesOnly || isReadOnly ? const Color(0xFFA5D6A7) : const Color(0xFF4CAF50),
                     isRulesOnly || isReadOnly ? Colors.black54 : Colors.white,
                     EmailActionType.safeSender,
                   ),
-                  _buildStatChip('No rule', scanProvider.noRuleCount, const Color(0xFF757575), Colors.white, EmailActionType.none),
-                  _buildSpecialStatChip('Errors', scanProvider.errorCount, const Color(0xFFD32F2F), Colors.white, SpecialFilter.error),
-                  // Item 6: Add Folders multi-select filter
+                  _buildStatChip('No rule', noRuleCount, const Color(0xFF757575), Colors.white, EmailActionType.none),
+                  _buildSpecialStatChip('Errors', errorCount, const Color(0xFFD32F2F), Colors.white, SpecialFilter.error),
                   _buildFolderFilterChip(allResults),
                 ],
-              ),
+              );
+            }),
           ],
         ),
       ),
-    );
-  }
-
-  /// Build stat chips from historical scan result (non-interactive, display only)
-  Widget _buildHistoricalStats(ScanResult scan) {
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: [
-        Chip(
-          label: Text('Found: ${scan.totalEmails}'),
-          backgroundColor: const Color(0xFF2196F3),
-          labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        ),
-        Chip(
-          label: Text('Processed: ${scan.processedCount}'),
-          backgroundColor: const Color(0xFF9C27B0),
-          labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        ),
-        Chip(
-          label: Text('Deleted: ${scan.deletedCount}'),
-          backgroundColor: const Color(0xFFF44336),
-          labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        ),
-        Chip(
-          label: Text('Moved: ${scan.movedCount}'),
-          backgroundColor: const Color(0xFFFF9800),
-          labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        ),
-        Chip(
-          label: Text('Safe: ${scan.safeSenderCount}'),
-          backgroundColor: const Color(0xFF4CAF50),
-          labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        ),
-        Chip(
-          label: Text('No rule: ${scan.noRuleCount}'),
-          backgroundColor: const Color(0xFF757575),
-          labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        ),
-        Chip(
-          label: Text('Errors: ${scan.errorCount}'),
-          backgroundColor: const Color(0xFFD32F2F),
-          labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        ),
-      ],
     );
   }
 

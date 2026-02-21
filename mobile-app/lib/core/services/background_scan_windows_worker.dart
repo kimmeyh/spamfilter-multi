@@ -150,7 +150,7 @@ class BackgroundScanWindowsWorker {
               unmatchedCount: result.unmatchedCount,
             );
             await logStore.updateLog(successLog);
-            await _bgLog('Account $accountId scan SUCCESS: ${result.emailsProcessed} processed, ${result.unmatchedCount} unmatched');
+            await _bgLog('Account $accountId scan SUCCESS: Processed: ${result.emailsProcessed}, Deleted: ${result.deletedCount}, Moved: ${result.movedCount}, Safe: ${result.safeCount}, No Rule: ${result.unmatchedCount}, Errors: ${result.errorCount}');
 
             // Export debug CSV if enabled
             await _exportDebugCsvIfEnabled(
@@ -357,16 +357,25 @@ class BackgroundScanWindowsWorker {
 
     // Extract results from the scan provider
     final emailsProcessed = scanProvider.processedCount;
+    final deletedCount = scanProvider.deletedCount;
+    final movedCount = scanProvider.movedCount;
+    final safeCount = scanProvider.safeSendersCount;
     final unmatchedCount = scanProvider.noRuleCount;
+    final errorCount = scanProvider.errorCount;
 
     _logger.i(
       'Account scan completed: $accountId - '
-      'processed $emailsProcessed, unmatched $unmatchedCount',
+      'Processed: $emailsProcessed, Deleted: $deletedCount, Moved: $movedCount, '
+      'Safe: $safeCount, No Rule: $unmatchedCount, Errors: $errorCount',
     );
 
     return _ScanResult(
       emailsProcessed: emailsProcessed,
+      deletedCount: deletedCount,
+      movedCount: movedCount,
+      safeCount: safeCount,
       unmatchedCount: unmatchedCount,
+      errorCount: errorCount,
       scanProvider: scanProvider,
     );
   }
@@ -375,12 +384,20 @@ class BackgroundScanWindowsWorker {
 /// Internal result holder for a single account scan
 class _ScanResult {
   final int emailsProcessed;
+  final int deletedCount;
+  final int movedCount;
+  final int safeCount;
   final int unmatchedCount;
+  final int errorCount;
   final EmailScanProvider scanProvider;
 
   const _ScanResult({
     required this.emailsProcessed,
+    required this.deletedCount,
+    required this.movedCount,
+    required this.safeCount,
     required this.unmatchedCount,
+    required this.errorCount,
     required this.scanProvider,
   });
 }

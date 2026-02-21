@@ -543,14 +543,25 @@ class ScanResultStore {
           .subtract(Duration(days: retentionDays))
           .millisecondsSinceEpoch;
 
-      final count = await db.delete(
+      // Purge completed scans older than retention period
+      final completedCount = await db.delete(
         'scan_results',
         where: 'completed_at IS NOT NULL AND completed_at < ?',
         whereArgs: [cutoff],
       );
 
+      // Purge orphan in_progress scans (no completed_at) older than retention period
+      // These can occur from interrupted scans or the duplicate-record bug
+      final orphanCount = await db.delete(
+        'scan_results',
+        where: 'completed_at IS NULL AND started_at < ?',
+        whereArgs: [cutoff],
+      );
+
+      final count = completedCount + orphanCount;
       if (count > 0) {
-        _logger.i('Purged $count scan results older than $retentionDays days');
+        _logger.i('Purged $count scan results older than $retentionDays days'
+            ' ($completedCount completed, $orphanCount orphaned)');
       }
       return count;
     } catch (e) {
