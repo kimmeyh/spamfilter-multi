@@ -3,8 +3,8 @@
 #------------------------------------------------------------
 # HK 20241023 These are items I know are specific to me
 *.hk
-# Archive directory (includes historical docs, legacy code, completed reports)
-archive/
+# Archive directories that have not github tracking (includes historical docs, legacy code, completed reports)
+archiveNT/
 
 # Windows shortcuts (personal local files)
 *.lnk
