@@ -782,18 +782,26 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   }
 
   Widget _buildSummary(Map<String, dynamic> summary, EmailScanProvider scanProvider, List<EmailActionResult> allResults) {
-    // [UPDATED] ISSUE #123+#124: Show context based on scan mode
-    final scanMode = scanProvider.scanMode;
-    final isReadOnly = scanMode == ScanMode.readonly;
-    final isSafeSendersOnly = scanMode == ScanMode.testAll;
-    final isRulesOnly = scanMode == ScanMode.testLimit;
-
     // [NEW] Testing feedback FB-4: Determine if showing live or historical results
-    // Use scanProvider.results (not allResults) to distinguish live scan from historical data.
-    // allResults includes _historicalResults loaded from database, which should not
-    // trigger the live scan bubble path.
     final hasLiveResults = scanProvider.results.isNotEmpty || scanProvider.status == ScanStatus.scanning;
     final showingHistorical = !hasLiveResults && _lastCompletedScan != null;
+
+    // [UPDATED] FB-2a: Use historical scan's mode when showing historical results,
+    // not the live provider's mode (which defaults to readonly when idle)
+    final bool isReadOnly;
+    final bool isSafeSendersOnly;
+    final bool isRulesOnly;
+    if (showingHistorical && _lastCompletedScan != null) {
+      final historicalMode = _lastCompletedScan!.scanMode;
+      isReadOnly = historicalMode == 'readonly';
+      isSafeSendersOnly = historicalMode == 'testAll';
+      isRulesOnly = historicalMode == 'testLimit';
+    } else {
+      final scanMode = scanProvider.scanMode;
+      isReadOnly = scanMode == ScanMode.readonly;
+      isSafeSendersOnly = scanMode == ScanMode.testAll;
+      isRulesOnly = scanMode == ScanMode.testLimit;
+    }
 
     // Build scan type and time info
     String? scanTypeLabel;

@@ -318,14 +318,17 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
                 ],
               ),
               const SizedBox(height: 6),
-              // Details row: mode, duration, counts
-              Row(
-                children: [
-                  Text(
-                    '$modeLabel  |  $durationStr',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
-                  ),
-                ],
+              // Details row: duration | scan mode | Folders: list
+              Text(
+                [
+                  durationStr,
+                  modeLabel,
+                  if (scan.foldersScanned.isNotEmpty)
+                    'Folders: ${scan.foldersScanned.join(", ")}',
+                ].join('  |  '),
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 2,
               ),
               const SizedBox(height: 4),
               // Counts row
@@ -343,15 +346,6 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
                     _buildCountLabel('Errors', scan.errorCount, Colors.red),
                 ],
               ),
-              // Folders scanned
-              if (scan.foldersScanned.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(
-                  'Folders: ${scan.foldersScanned.join(", ")}',
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
               // Error message
               if (isError && scan.errorMessage != null) ...[
                 const SizedBox(height: 4),
@@ -360,18 +354,6 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
                   style: TextStyle(fontSize: 12, color: Colors.red.shade700),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                ),
-              ],
-              // Tap hint for completed scans
-              if (isCompleted && widget.platformId != null) ...[
-                const SizedBox(height: 4),
-                Text(
-                  'Tap to view details',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.blue.shade400,
-                    fontStyle: FontStyle.italic,
-                  ),
                 ),
               ],
             ],
@@ -395,13 +377,13 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
   String _scanModeLabel(String scanMode) {
     switch (scanMode) {
       case 'readonly':
-        return 'Read Only';
+        return 'Read-Only';
       case 'testLimit':
-        return 'Test Limit';
+        return 'Process Rules Only';
       case 'testAll':
-        return 'Test All';
+        return 'Process Safe Senders Only';
       case 'fullScan':
-        return 'Full Scan';
+        return 'Process Safe Senders + Rules';
       default:
         return scanMode;
     }
