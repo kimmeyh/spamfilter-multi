@@ -142,7 +142,7 @@ git status
 
 **Steps**:
 1. Find the Sprint Plan document:
-   - Example: `docs/SPRINT_4_PLAN.md` or `docs/Phase_3.5_Planning.md`
+   - Example: `docs/sprints/SPRINT_4_PLAN.md` or `docs/Phase_3.5_Planning.md`
 
 2. Read the entire plan:
    - [ ] Understand what will be built and why

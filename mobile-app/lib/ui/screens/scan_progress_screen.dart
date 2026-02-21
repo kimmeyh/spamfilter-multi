@@ -8,6 +8,7 @@ import '../../core/services/email_scanner.dart';
 import '../../core/storage/settings_store.dart'; // [NEW] ISSUE #138: Load scan mode from settings
 import '../widgets/app_bar_with_exit.dart';
 import 'results_display_screen.dart';
+import 'scan_history_screen.dart';
 import 'settings_screen.dart';
 
 /// Displays live scan progress bound to EmailScanProvider.
@@ -36,6 +37,8 @@ class ScanProgressScreen extends StatefulWidget {
 
 class _ScanProgressScreenState extends State<ScanProgressScreen> {
   ScanStatus? _previousStatus;
+  List<String> _configuredFolders = ['INBOX'];
+  ScanMode _configuredMode = ScanMode.readonly;
 
   @override
   void initState() {
@@ -54,6 +57,21 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       scanProvider.reset();
     });
+
+    // Load configured scan settings for display in header
+    _loadConfiguredSettings();
+  }
+
+  Future<void> _loadConfiguredSettings() async {
+    final settingsStore = SettingsStore();
+    final folders = await settingsStore.getAccountManualScanFolders(widget.accountId);
+    final mode = await settingsStore.getAccountManualScanMode(widget.accountId);
+    if (mounted) {
+      setState(() {
+        _configuredFolders = (folders != null && folders.isNotEmpty) ? folders : ['INBOX'];
+        _configuredMode = mode ?? ScanMode.readonly;
+      });
+    }
   }
 
   @override
@@ -157,12 +175,12 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
           ),
           actions: [
             IconButton(
-              tooltip: 'View results',
-              icon: const Icon(Icons.list_alt),
+              tooltip: 'View Scan History',
+              icon: const Icon(Icons.history),
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => ResultsDisplayScreen(
+                    builder: (_) => ScanHistoryScreen(
                       platformId: widget.platformId,
                       platformDisplayName: widget.platformDisplayName,
                       accountId: widget.accountId,
@@ -206,10 +224,10 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
 
   Widget _buildHeader(EmailScanProvider scanProvider) {
     final modeName = scanProvider.getScanModeDisplayName();
+    final isReady = scanProvider.status == ScanStatus.idle && scanProvider.results.isEmpty;
+
     final statusText = switch (scanProvider.status) {
-      ScanStatus.idle => scanProvider.results.isEmpty
-          ? 'Ready to scan - $modeName'
-          : 'Idle',
+      ScanStatus.idle => isReady ? 'Ready to Scan' : 'Idle',
       ScanStatus.scanning => 'Scanning in progress',
       ScanStatus.paused => 'Paused',
       ScanStatus.completed => 'Scan complete - $modeName',
@@ -218,6 +236,9 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
 
     // [NEW] ISSUE #125: Show demo mode indicator if using demo platform
     final isDemoMode = widget.platformId == 'demo';
+
+    // [NEW] ISSUE #156: Display configured mode name from settings
+    final configuredModeName = _scanModeDisplayName(_configuredMode);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -257,10 +278,24 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
           ],
         ),
         const SizedBox(height: 4),
-        Text(
-          scanProvider.statusMessage ?? 'Waiting to begin...',
-          style: const TextStyle(color: Colors.grey),
-        ),
+        // [NEW] ISSUE #156: Show scan mode and folders when ready to scan
+        if (isReady) ...[
+          Text(
+            'Mode: $configuredModeName',
+            style: const TextStyle(color: Colors.grey),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Folders: ${_configuredFolders.join(", ")}',
+            style: const TextStyle(color: Colors.grey),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 2,
+          ),
+        ] else
+          Text(
+            scanProvider.statusMessage ?? 'Waiting to begin...',
+            style: const TextStyle(color: Colors.grey),
+          ),
       ],
     );
   }
@@ -320,12 +355,12 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
         ),
         const SizedBox(height: 12),
         OutlinedButton.icon(
-          icon: const Icon(Icons.list_alt),
-          label: const Text('View results'),
+          icon: const Icon(Icons.history),
+          label: const Text('View Scan History'),
           onPressed: () {
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) => ResultsDisplayScreen(
+                builder: (_) => ScanHistoryScreen(
                   platformId: widget.platformId,
                   platformDisplayName: widget.platformDisplayName,
                   accountId: widget.accountId,
@@ -420,8 +455,9 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
     logger.i('[SCAN_SCREEN] accountId=${widget.accountId}, platformId=${widget.platformId}');
     logger.i('[SCAN_SCREEN] Loaded settings: scanMode=$scanMode, daysBack=$daysBack');
 
-    // Immediately update UI to show scan is starting
-    scanProvider.startScan(totalEmails: 0);
+    // Immediately update UI to show scan is starting (no database record -
+    // the EmailScanner.executeScan() will create the real persisted record)
+    scanProvider.startScan(totalEmails: 0, persist: false);
 
     // [NEW] SPRINT 12: Navigate to Results immediately after starting scan
     // User feedback: "Start Scan should immediately go to View Results page"
@@ -509,6 +545,19 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
           ),
         );
       }
+    }
+  }
+
+  String _scanModeDisplayName(ScanMode mode) {
+    switch (mode) {
+      case ScanMode.readonly:
+        return 'Read-Only';
+      case ScanMode.testLimit:
+        return 'Process Rules Only';
+      case ScanMode.testAll:
+        return 'Process Safe Senders Only';
+      case ScanMode.fullScan:
+        return 'Process Safe Senders + Rules';
     }
   }
 

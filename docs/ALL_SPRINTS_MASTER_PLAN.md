@@ -39,21 +39,23 @@
 
 ## Past Sprint Summary
 
-Historical sprint information has been moved to individual summary documents and CHANGELOG.md. For detailed retrospectives, see:
+Historical sprint information has been moved to individual summary documents in `docs/sprints/` and CHANGELOG.md. For detailed retrospectives, see:
 
 | Sprint | Summary Document | Status | Duration |
 |--------|------------------|--------|----------|
-| 1 | SPRINT_1_RETROSPECTIVE.md | [OK] Complete | ~4h (Jan 19-24, 2026) |
-| 2 | SPRINT_2_RETROSPECTIVE.md | [OK] Complete | ~6h (Jan 24, 2026) |
-| 3 | SPRINT_3_SUMMARY.md | [OK] Complete | ~8h (Jan 24-25, 2026) |
-| 8 | SPRINT_8_SUMMARY.md | [OK] Complete | ~12h (Jan 31, 2026) |
-| 9 | SPRINT_9_SUMMARY.md | [OK] Complete | ~2h (Jan 30-31, 2026) |
-| 10 | SPRINT_10_SUMMARY.md | [OK] Complete | ~20h (Feb 1, 2026) |
-| 11 | SPRINT_11_SUMMARY.md | [OK] Complete | ~12h (Jan 31 - Feb 1, 2026) |
-| 12 | SPRINT_12_SUMMARY.md | [OK] Complete | ~48h (Feb 1-6, 2026) |
-| 13 | SPRINT_13_PLAN.md | [OK] Complete | ~3h (Feb 6, 2026) |
-| 14 | sprint_14_plan.md | [OK] Complete | ~8h (Feb 7-13, 2026) |
-| 15 | sprint_15_plan.md | [OK] Complete | ~16h (Feb 14-15, 2026) |
+| 1 | docs/sprints/SPRINT_1_RETROSPECTIVE.md | [OK] Complete | ~4h (Jan 19-24, 2026) |
+| 2 | docs/sprints/SPRINT_2_RETROSPECTIVE.md | [OK] Complete | ~6h (Jan 24, 2026) |
+| 3 | docs/sprints/SPRINT_3_SUMMARY.md | [OK] Complete | ~8h (Jan 24-25, 2026) |
+| 8 | docs/sprints/SPRINT_8_SUMMARY.md | [OK] Complete | ~12h (Jan 31, 2026) |
+| 9 | docs/sprints/SPRINT_9_SUMMARY.md | [OK] Complete | ~2h (Jan 30-31, 2026) |
+| 10 | docs/sprints/SPRINT_10_SUMMARY.md | [OK] Complete | ~20h (Feb 1, 2026) |
+| 11 | docs/sprints/SPRINT_11_SUMMARY.md | [OK] Complete | ~12h (Jan 31 - Feb 1, 2026) |
+| 12 | docs/sprints/SPRINT_12_SUMMARY.md | [OK] Complete | ~48h (Feb 1-6, 2026) |
+| 13 | docs/sprints/SPRINT_13_PLAN.md | [OK] Complete | ~3h (Feb 6, 2026) |
+| 14 | docs/sprints/SPRINT_14_PLAN.md | [OK] Complete | ~8h (Feb 7-13, 2026) |
+| 15 | docs/sprints/SPRINT_15_PLAN.md | [OK] Complete | ~16h (Feb 14-15, 2026) |
+| 16 | docs/sprints/SPRINT_16_PLAN.md | [OK] Complete | ~6h (Feb 15-16, 2026) |
+| 17 | docs/sprints/SPRINT_17_SUMMARY.md | [OK] Complete | ~20h (Feb 17-21, 2026) |
 
 **Key Achievements**:
 - **Sprint 1**: Database foundation (SQLite schema, migration infrastructure)
@@ -569,6 +571,47 @@ Priority based on: Product Owner prioritization for MVP development.
 - Works with Gmail API batch requests and IMAP message sequence sets
 
 **Dependencies**: None
+
+---
+
+### Priority 9: Scan Results Enhancements
+
+#### F20: Common Email Provider Domain Reference Table
+**Status**: [CHECKLIST] PLANNED
+**Estimated Effort**: 3-4 hours
+**Issue**: To be created
+**Business Value**: Enables smarter rule suggestions and processing for emails from common providers vs organizational domains
+
+**Overview**: Maintain an application-level reference table of common email provider domains (gmail.com, aol.com, yahoo.com, outlook.com, hotmail.com, live.com, protonmail.com, etc.). Loaded into memory at scan time for matching against Deleted, Safe, and No Rule results.
+
+**Key Features**:
+- Application-managed table (not user-editable settings)
+- Loaded into memory at scan time for fast matching
+- Covers major providers: Gmail, AOL, Yahoo, Microsoft (outlook.com, hotmail.com, live.com, msn.com), Proton (protonmail.com, proton.me, pm.me), iCloud, Zoho, GMX, mail.com
+- Used by rule suggestion logic to distinguish personal provider emails from business/organizational domains
+- Database-backed with seed data on first launch
+
+**Dependencies**: None
+
+---
+
+#### F21: Inline Rule Assignment from Scan Results with Visual Tracking
+**Status**: [CHECKLIST] PLANNED
+**Estimated Effort**: 12-16 hours
+**Issue**: To be created
+**Business Value**: Users can assign rules to unmatched emails directly from scan results and track progress visually
+
+**Overview**: While reviewing Scan Results (from either View Scan History or Start Live Scan), users can add rules to emails with "No rule" matches. After assigning, the list and detail views update to reflect the new assignment.
+
+**Key Features**:
+- Add Safe Sender or Block Rule directly from No Rule email entries in Scan Results
+- Rule type options: Exact Email, Exact Domain, Entire Domain, Block Email, Block Exact Domain, Block Entire Domain, Block Subject
+- After adding a rule, the Scan Results list item updates to show assignment: `<folder> . <subject> . No rule . New rule: <Safe Sender/Block Rule> . <rule name>`
+- Visual tracking so user can see which No Rule items now have rules assigned during review session
+- Re-opening email detail view after rule assignment shows the newly matched rule highlighted in bold (same styling as existing rule matches)
+- Re-evaluation of rules against the email when detail view is opened (not cached scan-time result)
+
+**Dependencies**: F3 (Interactive Rule & Safe Sender Management), F20 (Common Email Provider Domains - for smart suggestions)
 
 ---
 

@@ -26,6 +26,31 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-02-17 (Sprint 17: Scan History, Background Scan Fixes, Conflict Auto-Removal)
+- **feat**: Consolidated Scan History screen replacing separate background scan log viewer - unified view of all manual and background scans with type filter chips, summary stats, and tap-to-view (Issue #158)
+- **feat**: Scan history retention setting (3/7/14/30/90 days) with automatic purge of old entries (Issue #158)
+- **feat**: Manual Scan screen shows configured scan mode and folders in idle status (Issue #156)
+- **fix**: Clear Results screen before starting new Live Scan - no longer shows stale historical results (Issue #157)
+- **fix**: Windows Task Scheduler background scan not running after reboot - changed trigger from -Once to -Daily with RepetitionInterval (Issue #161)
+- **fix**: Auto-recreate missing Task Scheduler task on app startup when background scanning is enabled (Issue #161)
+- **feat**: Test Background Scan button in Settings for manual verification of background scan functionality (Issue #159)
+- **feat**: Auto-remove conflicting rules when adding safe sender, and vice versa - bidirectional conflict resolution (Issue #154)
+- **fix**: Skip Task Scheduler management in debug mode - prevents broken scheduled tasks from temporary debug executable paths (Bug #3)
+- **fix**: Prevent duplicate scan_results database records - UI-only startScan call no longer persists to database (Bug #2)
+- **feat**: Reorganize Settings - move Test button before Frequency, move Scan History to Account tab (FB-4/FB-3)
+- **feat**: Custom retention days input (1-999) with quick-select chips replacing dropdown (FB-2)
+- **fix**: Scan History navigation - back button returns to Scan History screen instead of Scan Progress when viewing historical results (FB-1)
+- **fix**: Retention days field saves on every keystroke, adds digits-only input validation with 3-char max
+- **feat**: Background scan log includes full stats: Processed, Deleted, Moved, Safe, No Rule, Errors
+- **fix**: Purge orphaned in_progress scan records during retention cleanup
+- **feat**: Historical scan results use same interactive filter chips and folder filter as live scan results
+- **fix**: Historical scan mode labels now use stored mode (not live provider default) - fullScan no longer shows "(not processed)"
+- **feat**: Scan History subtitle consolidated: duration | mode | Folders in single line with updated mode names
+- **fix**: Rename "Last Scan Results" to "Scan Results"
+- **test**: Fix PowerShell script generator test assertion (RepetitionInterval -> Repetition.Interval)
+- **docs**: Sprint retrospective improvements S1-S7 - phase transition checkpoints, mandatory sprint document creation, docs/sprints/ reorganization, /phase-check skill
+- **chore**: Move 46 per-sprint documents from docs/ to docs/sprints/ with standardized uppercase naming
+
 ### 2026-02-16 (Sprint 16: Phase Renumbering)
 - **docs**: Renumber sprint workflow phases from -1/0/1/2/3/4/4.5 to sequential 1-7 across 16 documents (Issue #160)
 

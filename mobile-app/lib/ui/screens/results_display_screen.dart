@@ -26,12 +26,16 @@ class ResultsDisplayScreen extends StatefulWidget {
   final String accountId;
   final String accountEmail;
 
+  /// Optional: load a specific historical scan by ID (from Scan History screen)
+  final int? historicalScanId;
+
   const ResultsDisplayScreen({
     super.key,
     required this.platformId,
     required this.platformDisplayName,
     required this.accountId,
     required this.accountEmail,
+    this.historicalScanId,
   });
 
   @override
@@ -82,11 +86,19 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   }
 
   /// Load the most recent completed scan and its email actions from database
+  /// If historicalScanId is provided, loads that specific scan instead
   Future<void> _loadLastCompletedScan() async {
     try {
       final dbHelper = DatabaseHelper();
       final scanResultStore = ScanResultStore(dbHelper);
-      final lastScan = await scanResultStore.getLatestCompletedScan(widget.accountId);
+
+      // Load specific scan if historicalScanId provided, otherwise latest
+      final ScanResult? lastScan;
+      if (widget.historicalScanId != null) {
+        lastScan = await scanResultStore.getScanResultById(widget.historicalScanId!);
+      } else {
+        lastScan = await scanResultStore.getLatestCompletedScan(widget.accountId);
+      }
 
       List<EmailActionResult> historicalResults = [];
       if (lastScan != null && lastScan.id != null) {
@@ -489,8 +501,14 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     final summary = scanProvider.getSummary();
     final liveResults = scanProvider.results;
 
-    // Use historical results from database when no live results available
-    final allResults = liveResults.isNotEmpty ? liveResults : _historicalResults;
+    // [NEW] ISSUE #157: When a live scan is active (scanning/paused), always use
+    // live results even if empty (scan just started). Only show historical results
+    // when truly idle with no live results.
+    final isLiveScanActive = scanProvider.status == ScanStatus.scanning ||
+        scanProvider.status == ScanStatus.paused;
+    final allResults = (liveResults.isNotEmpty || isLiveScanActive)
+        ? liveResults
+        : _historicalResults;
     final filteredResults = _getFilteredResults(allResults);
 
     // Issue 3: Cache folders list for performance (only extract once per results set)
@@ -559,22 +577,29 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               )
             : IconButton(
                 icon: const Icon(Icons.arrow_back),
-                tooltip: 'Back to Scan Progress',
+                tooltip: widget.historicalScanId != null
+                    ? 'Back to Scan History'
+                    : 'Back to Scan Progress',
                 onPressed: () {
                   // Dismiss any showing snackbar before navigating
                   ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                  // Push replacement to Scan Progress screen (same as Scan Again button)
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => ScanProgressScreen(
-                        platformId: widget.platformId,
-                        platformDisplayName: widget.platformDisplayName,
-                        accountId: widget.accountId,
-                        accountEmail: widget.accountEmail,
+                  if (widget.historicalScanId != null) {
+                    // [FIX] FB-1: When viewing from Scan History, pop back to history screen
+                    Navigator.pop(context);
+                  } else {
+                    // Push replacement to Scan Progress screen (same as Scan Again button)
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ScanProgressScreen(
+                          platformId: widget.platformId,
+                          platformDisplayName: widget.platformDisplayName,
+                          accountId: widget.accountId,
+                          accountEmail: widget.accountEmail,
+                        ),
                       ),
-                    ),
-                  );
+                    );
+                  }
                 },
               ),
         actions: [
@@ -616,7 +641,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
             _buildSummary(summary, scanProvider, allResults),
             const SizedBox(height: 16),
             // Show filter status if active
-            if (_filter != null) ...[
+            if (_filter != null || _specialFilter != null || _selectedFolders.isNotEmpty) ...[
               _buildFilterStatus(filteredResults.length, allResults.length),
               const SizedBox(height: 8),
             ],
@@ -657,52 +682,66 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
             ),
             // Action buttons at bottom
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      // Dismiss any showing snackbar before navigating
-                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                      // Pop back to Account Selection Screen (past Scan Progress)
-                      Navigator.popUntil(
-                        context,
-                        (route) => route.isFirst,
-                      );
-                    },
-                    icon: const Icon(Icons.home),
-                    label: const Text('Back to Accounts'),
-                  ),
+            if (widget.historicalScanId != null)
+              // [FIX] FB-1: When viewing from Scan History, show single back button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    Navigator.pop(context);
+                  },
+                  icon: const Icon(Icons.arrow_back),
+                  label: const Text('Back to Scan History'),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      // [NEW] SPRINT 12 FIX: Push replacement to Scan screen directly
-                      // This avoids navigation state issues with pop() and ensures
-                      // reliable navigation to the scan screen
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ScanProgressScreen(
-                            platformId: widget.platformId,
-                            platformDisplayName: widget.platformDisplayName,
-                            accountId: widget.accountId,
-                            accountEmail: widget.accountEmail,
-                          ),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Scan Again'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
+              )
+            else
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        // Dismiss any showing snackbar before navigating
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                        // Pop back to Account Selection Screen (past Scan Progress)
+                        Navigator.popUntil(
+                          context,
+                          (route) => route.isFirst,
+                        );
+                      },
+                      icon: const Icon(Icons.home),
+                      label: const Text('Back to Accounts'),
                     ),
                   ),
-                ),
-              ],
-            ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        // [NEW] SPRINT 12 FIX: Push replacement to Scan screen directly
+                        // This avoids navigation state issues with pop() and ensures
+                        // reliable navigation to the scan screen
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ScanProgressScreen(
+                              platformId: widget.platformId,
+                              platformDisplayName: widget.platformDisplayName,
+                              accountId: widget.accountId,
+                              accountEmail: widget.accountEmail,
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Scan Again'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
           ],
         ),
       ),
@@ -743,18 +782,26 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   }
 
   Widget _buildSummary(Map<String, dynamic> summary, EmailScanProvider scanProvider, List<EmailActionResult> allResults) {
-    // [UPDATED] ISSUE #123+#124: Show context based on scan mode
-    final scanMode = scanProvider.scanMode;
-    final isReadOnly = scanMode == ScanMode.readonly;
-    final isSafeSendersOnly = scanMode == ScanMode.testAll;
-    final isRulesOnly = scanMode == ScanMode.testLimit;
-
     // [NEW] Testing feedback FB-4: Determine if showing live or historical results
-    // Use scanProvider.results (not allResults) to distinguish live scan from historical data.
-    // allResults includes _historicalResults loaded from database, which should not
-    // trigger the live scan bubble path.
     final hasLiveResults = scanProvider.results.isNotEmpty || scanProvider.status == ScanStatus.scanning;
     final showingHistorical = !hasLiveResults && _lastCompletedScan != null;
+
+    // [UPDATED] FB-2a: Use historical scan's mode when showing historical results,
+    // not the live provider's mode (which defaults to readonly when idle)
+    final bool isReadOnly;
+    final bool isSafeSendersOnly;
+    final bool isRulesOnly;
+    if (showingHistorical && _lastCompletedScan != null) {
+      final historicalMode = _lastCompletedScan!.scanMode;
+      isReadOnly = historicalMode == 'readonly';
+      isSafeSendersOnly = historicalMode == 'testAll';
+      isRulesOnly = historicalMode == 'testLimit';
+    } else {
+      final scanMode = scanProvider.scanMode;
+      isReadOnly = scanMode == ScanMode.readonly;
+      isSafeSendersOnly = scanMode == ScanMode.testAll;
+      isRulesOnly = scanMode == ScanMode.testLimit;
+    }
 
     // Build scan type and time info
     String? scanTypeLabel;
@@ -779,7 +826,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               hasLiveResults
                 ? 'Summary - ${scanProvider.getScanModeDisplayName()}'
                 : showingHistorical
-                  ? 'Last Scan Results'
+                  ? 'Scan Results'
                   : 'Summary',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
@@ -809,101 +856,67 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               ),
             ],
             const SizedBox(height: 8),
-            // [UPDATED] Testing feedback FB-4: Show historical counts when no live data
-            if (showingHistorical && _lastCompletedScan != null)
-              _buildHistoricalStats(_lastCompletedScan!)
-            else
-              Wrap(
+            // [UPDATED] FB-2a: Use same interactive filter chips for both live and historical
+            Builder(builder: (_) {
+              // Compute counts from allResults (works for both live and historical)
+              final foundCount = showingHistorical
+                  ? (_lastCompletedScan?.totalEmails ?? allResults.length)
+                  : scanProvider.totalEmails;
+              final processedCount = showingHistorical
+                  ? allResults.length
+                  : scanProvider.processedCount;
+              final deletedCount = showingHistorical
+                  ? allResults.where((r) => r.action == EmailActionType.delete).length
+                  : scanProvider.deletedCount;
+              final movedCount = showingHistorical
+                  ? allResults.where((r) => r.action == EmailActionType.moveToJunk).length
+                  : scanProvider.movedCount;
+              final safeCount = showingHistorical
+                  ? allResults.where((r) => r.action == EmailActionType.safeSender).length
+                  : scanProvider.safeSendersCount;
+              final noRuleCount = showingHistorical
+                  ? allResults.where((r) => r.action == EmailActionType.none).length
+                  : scanProvider.noRuleCount;
+              final errorCount = showingHistorical
+                  ? allResults.where((r) => !r.success).length
+                  : scanProvider.errorCount;
+
+              return Wrap(
                 spacing: 12,
                 runSpacing: 12,
                 children: [
-                  // Item 3: Make Found/Processed/Moved/Error filterable
-                  _buildSpecialStatChip('Found', scanProvider.totalEmails, const Color(0xFF2196F3), Colors.white, SpecialFilter.found),
-                  _buildSpecialStatChip('Processed', scanProvider.processedCount, const Color(0xFF9C27B0), Colors.white, SpecialFilter.processed),
-                  // [UPDATED] ISSUE #123+#124: Show "(not processed)" for rule actions in safe-senders-only mode
+                  _buildSpecialStatChip('Found', foundCount, const Color(0xFF2196F3), Colors.white, SpecialFilter.found),
+                  _buildSpecialStatChip('Processed', processedCount, const Color(0xFF9C27B0), Colors.white, SpecialFilter.processed),
                   _buildStatChipWithMode(
                     isSafeSendersOnly || isReadOnly ? 'Deleted (not processed)' : 'Deleted',
-                    scanProvider.deletedCount,
+                    deletedCount,
                     isSafeSendersOnly || isReadOnly ? const Color(0xFFEF9A9A) : const Color(0xFFF44336),
                     isSafeSendersOnly || isReadOnly ? Colors.black54 : Colors.white,
                     EmailActionType.delete,
                   ),
                   _buildStatChipWithMode(
                     isSafeSendersOnly || isReadOnly ? 'Moved (not processed)' : 'Moved',
-                    scanProvider.movedCount,
+                    movedCount,
                     isSafeSendersOnly || isReadOnly ? const Color(0xFFFFCC80) : const Color(0xFFFF9800),
                     isSafeSendersOnly || isReadOnly ? Colors.black54 : Colors.white,
                     EmailActionType.moveToJunk,
                   ),
-                  // [UPDATED] ISSUE #123+#124: Show "(not processed)" for safe senders in rules-only mode
                   _buildStatChipWithMode(
                     isRulesOnly || isReadOnly ? 'Safe (not processed)' : 'Safe',
-                    scanProvider.safeSendersCount,
+                    safeCount,
                     isRulesOnly || isReadOnly ? const Color(0xFFA5D6A7) : const Color(0xFF4CAF50),
                     isRulesOnly || isReadOnly ? Colors.black54 : Colors.white,
                     EmailActionType.safeSender,
                   ),
-                  _buildStatChip('No rule', scanProvider.noRuleCount, const Color(0xFF757575), Colors.white, EmailActionType.none),
-                  _buildSpecialStatChip('Errors', scanProvider.errorCount, const Color(0xFFD32F2F), Colors.white, SpecialFilter.error),
-                  // Item 6: Add Folders multi-select filter
+                  _buildStatChip('No rule', noRuleCount, const Color(0xFF757575), Colors.white, EmailActionType.none),
+                  _buildSpecialStatChip('Errors', errorCount, const Color(0xFFD32F2F), Colors.white, SpecialFilter.error),
                   _buildFolderFilterChip(allResults),
                 ],
-              ),
+              );
+            }),
           ],
         ),
       ),
-    );
-  }
-
-  /// Build stat chips from historical scan result (non-interactive, display only)
-  Widget _buildHistoricalStats(ScanResult scan) {
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: [
-        Chip(
-          label: Text('Found: ${scan.totalEmails}'),
-          backgroundColor: const Color(0xFF2196F3),
-          labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        ),
-        Chip(
-          label: Text('Processed: ${scan.processedCount}'),
-          backgroundColor: const Color(0xFF9C27B0),
-          labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        ),
-        Chip(
-          label: Text('Deleted: ${scan.deletedCount}'),
-          backgroundColor: const Color(0xFFF44336),
-          labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        ),
-        Chip(
-          label: Text('Moved: ${scan.movedCount}'),
-          backgroundColor: const Color(0xFFFF9800),
-          labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        ),
-        Chip(
-          label: Text('Safe: ${scan.safeSenderCount}'),
-          backgroundColor: const Color(0xFF4CAF50),
-          labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        ),
-        Chip(
-          label: Text('No rule: ${scan.noRuleCount}'),
-          backgroundColor: const Color(0xFF757575),
-          labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        ),
-        Chip(
-          label: Text('Errors: ${scan.errorCount}'),
-          backgroundColor: const Color(0xFFD32F2F),
-          labelStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        ),
-      ],
     );
   }
 

@@ -496,6 +496,80 @@ class ScanResultStore {
     }
   }
 
+  /// Get all scan history across all accounts, newest first
+  ///
+  /// Returns all completed scans (manual and background) for display
+  /// in the unified scan history screen. Optionally filter by scan type.
+  Future<List<ScanResult>> getAllScanHistory({
+    int? limit,
+    String? scanType,
+  }) async {
+    try {
+      final db = await _databaseHelper.database;
+      String? where;
+      List<dynamic>? whereArgs;
+
+      if (scanType != null) {
+        where = 'scan_type = ?';
+        whereArgs = [scanType];
+      }
+
+      final maps = await db.query(
+        'scan_results',
+        where: where,
+        whereArgs: whereArgs,
+        orderBy: 'started_at DESC',
+        limit: limit,
+      );
+
+      final results = maps.map(ScanResult.fromMap).toList();
+      _logger.d('Retrieved ${results.length} scan history entries');
+      return results;
+    } catch (e) {
+      _logger.e('Failed to get scan history: $e');
+      rethrow;
+    }
+  }
+
+  /// Purge scan results older than the specified retention period
+  ///
+  /// Deletes all scan_results (and cascades to email_actions, unmatched_emails)
+  /// where completed_at is older than retentionDays ago.
+  /// Returns the number of purged scan records.
+  Future<int> purgeOldScanResults(int retentionDays) async {
+    try {
+      final db = await _databaseHelper.database;
+      final cutoff = DateTime.now()
+          .subtract(Duration(days: retentionDays))
+          .millisecondsSinceEpoch;
+
+      // Purge completed scans older than retention period
+      final completedCount = await db.delete(
+        'scan_results',
+        where: 'completed_at IS NOT NULL AND completed_at < ?',
+        whereArgs: [cutoff],
+      );
+
+      // Purge orphan in_progress scans (no completed_at) older than retention period
+      // These can occur from interrupted scans or the duplicate-record bug
+      final orphanCount = await db.delete(
+        'scan_results',
+        where: 'completed_at IS NULL AND started_at < ?',
+        whereArgs: [cutoff],
+      );
+
+      final count = completedCount + orphanCount;
+      if (count > 0) {
+        _logger.i('Purged $count scan results older than $retentionDays days'
+            ' ($completedCount completed, $orphanCount orphaned)');
+      }
+      return count;
+    } catch (e) {
+      _logger.e('Failed to purge old scan results: $e');
+      rethrow;
+    }
+  }
+
   /// Get count of incomplete scans
   Future<int> getIncompleteScansCount() async {
     try {

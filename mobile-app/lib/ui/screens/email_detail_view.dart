@@ -202,6 +202,7 @@ class _EmailDetailViewState extends State<EmailDetailView>
         builder: (context) => SafeSenderQuickAddScreen(
           email: emailMessage,
           safeSenderStore: widget.safeSenderStore!,
+          ruleStore: widget.ruleStore,
         ),
       ),
     ).then((result) {

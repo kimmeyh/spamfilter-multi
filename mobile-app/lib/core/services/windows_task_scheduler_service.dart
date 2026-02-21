@@ -199,6 +199,43 @@ class WindowsTaskSchedulerService {
     return status['exists'] == true;
   }
 
+  /// Ensure the scheduled task exists when background scanning is enabled
+  ///
+  /// [FIX] ISSUE #161: If background scanning is enabled in settings but
+  /// the task is missing from Task Scheduler (e.g., after reboot, system
+  /// cleanup, or failed recreation), this method recreates it.
+  ///
+  /// Returns true if the task was recreated, false if it already exists
+  /// or recreation is not needed.
+  static Future<bool> ensureTaskExists({
+    required ScanFrequency frequency,
+  }) async {
+    try {
+      if (!Platform.isWindows) return false;
+      if (frequency == ScanFrequency.disabled) return false;
+
+      final status = await getScheduleStatus();
+      if (status['exists'] == true) {
+        _logger.d('Scheduled task already exists, no recreation needed');
+        return false;
+      }
+
+      _logger.i('Scheduled task is missing - recreating with frequency: ${frequency.label}');
+      final success = await createScheduledTask(frequency: frequency);
+
+      if (success) {
+        _logger.i('Scheduled task recreated successfully');
+      } else {
+        _logger.e('Failed to recreate scheduled task');
+      }
+
+      return success;
+    } catch (e) {
+      _logger.e('Exception during task existence check', error: e);
+      return false;
+    }
+  }
+
   /// Verify and repair the scheduled task executable path
   ///
   /// Checks if the registered task's executable path matches the current

@@ -1,0 +1,67 @@
+{
+  "change_id": "test-reorganization-2025-07-05",
+  "date": "2025-07-05",
+  "time": "afternoon",
+  "description": "Relocated all test files to pytest/ directory for better organization",
+  "details": {
+    "moved_files": [
+      "test_withOutlook_rulesYAML_compare_inport_to_export.py",
+      "test_withOutlook_rulesYAML_compare_safe_senders_mport_to_export.py", 
+      "test_file_content.py",
+      "test_folder_list_changes.py",
+      "test_import_compatibility.py",
+      "test_second_pass_implementation.py"
+    ],
+    "from_location": "root directory",
+    "to_location": "pytest/ directory",
+    "changes_made": [
+      "Updated all import paths to use sys.path.append for parent directory access",
+      "Fixed file path references to use absolute paths instead of relative paths",
+      "Added conftest.py with pytest configuration and mock fixtures",
+      "Updated tests to handle Outlook dependency gracefully with mocks",
+      "Modified tests to skip appropriately when Outlook folders are not available"
+    ],
+    "test_results": {
+      "total_tests": 12,
+      "passed": 11,
+      "skipped": 1,
+      "failed": 0,
+      "warnings": 0,
+      "command": "python -m pytest pytest/ -v"
+    },
+    "documentation_updates": [
+      "memory-bank/config.json - added testing guidelines",
+      "memory-bank/development-standards.md - updated testing requirements",
+      "Updated all references to use pytest/ directory"
+    ]
+  },
+  "reasons": [
+    "Better organization and separation of test files",
+    "Cleaner root directory structure", 
+    "Standard pytest directory structure",
+    "Easier test management and execution",
+    "Improved development workflow"
+  ],
+  "implementation_approach": {
+    "step1": "Moved all test_*.py files from root to pytest/ directory",
+    "step2": "Updated import paths in all test files",
+    "step3": "Fixed file path references to use absolute paths",
+    "step4": "Created conftest.py for pytest configuration",
+    "step5": "Added Outlook dependency mocking",
+    "step6": "Updated documentation and memory-bank files",
+    "step7": "Validated all tests pass without errors or warnings"
+  },
+  "validation": {
+    "all_tests_pass": true,
+    "no_warnings": true,
+    "proper_imports": true,
+    "correct_file_paths": true,
+    "documentation_updated": true
+  },
+  "future_reference": {
+    "test_command": "python -m pytest pytest/ -v",
+    "test_location": "pytest/",
+    "new_test_files": "should be placed in pytest/ directory",
+    "import_pattern": "sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))"
+  }
+}

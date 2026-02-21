@@ -226,6 +226,7 @@ class EmailScanProvider extends ChangeNotifier {
     required int totalEmails,
     String scanType = 'manual',  // [NEW] SPRINT 4: manual or background
     List<String> foldersScanned = const [],
+    bool persist = true,  // [FIX] SPRINT 17: Allow UI-only startScan without creating db record
   }) async {
     _status = ScanStatus.scanning;
     _processedCount = 0;
@@ -245,7 +246,7 @@ class EmailScanProvider extends ChangeNotifier {
     _lastProgressNotification = null;
 
     // [NEW] SPRINT 4: Create scan result record if persistence is enabled
-    if (_scanResultStore != null && _currentAccountId != null) {
+    if (persist && _scanResultStore != null && _currentAccountId != null) {
       try {
         final scanResult = ScanResult(
           accountId: _currentAccountId!,

@@ -1,0 +1,30 @@
+
+#HK 20241023 Initial
+pywin32
+o365            # also installed: urllib3, tzdata, soupsieve, PyJWT, pycparser, oauthlib, idna, charset-normalizer, certifi,
+                #   tzlocal, requests, cffi, beautifulsoup4, requests-oauthlib, cryptography, o365, msal
+requests        # Already installed via O365, but will use directly
+msal
+PyYAML          # Note:  allows the import of "yaml" - all other requirements are already installed
+pytest          # For unit tests
+pytest-cov      # For code coverage in unit tests
+
+# Below is a list of all the Python v3.12 Standard Library packages that can be imported, but do not need to be installed:
+#   Entries I use often:  copy, datetime, json, logging, math, os, pwd, re, sys, time, traceback, yaml,,
+#   Built-in modules:
+#   atexit,builtins,errno,faulthandler,gc,itertools,marshal,math,posix,pwd,sys,time,xxsubtype
+#   File-based modules:
+#   abc,aifc,antigravity,argparse,ast,asynchat,asyncio,asyncore,base64,bdb,bisect,bz2,cProfile,calendar,cgi,cgitb,chunk,
+#   cmd,code,codecs,codeop,collections,colorsys,compileall,concurrent,configparser,contextlib,contextvars,copy,copyreg,
+#   crypt,csv,ctypes,curses,dataclasses,datetime,dbm,decimal,difflib,dis,distutils,doctest,email,encodings,ensurepip,
+#   enum,filecmp,fileinput,fnmatch,fractions,ftplib,functools,genericpath,getopt,getpass,gettext,glob,graphlib,gzip,
+#   hashlib,heapq,hmac,html,http,idlelib,imaplib,imghdr,imp,importlib,inspect,io,ipaddress,json,keyword,lib2to3,
+#   linecache,locale,logging,lzma,mailbox,mailcap,mimetypes,modulefinder,multiprocessing,netrc,nntplib,ntpath,
+#   nturl2path,numbers,opcode,operator,optparse,os,pathlib,pdb,pickle,pickletools,pipes,pkgutil,platform,plistlib,
+#   poplib,posixpath,pprint,profile,pstats,pty,py_compile,pyclbr,pydoc,pydoc_data,queue,quopri,random,re,reprlib,
+#   rlcompleter,runpy,sched,secrets,selectors,shelve,shlex,shutil,signal,site,smtpd,smtplib,sndhdr,socket,
+#   socketserver,sqlite3,sre_compile,sre_constants,sre_parse,ssl,stat,statistics,string,stringprep,struct,subprocess,
+#   sunau,symtable,sysconfig,tabnanny,tarfile,telnetlib,tempfile,textwrap,this,threading,timeit,tkinter,token,tokenize,
+#   tomllib,trace,traceback,tracemalloc,tty,turtle,turtledemo,types,typing,unittest,urllib,uu,uuid,venv,warnings,wave,
+#   weakref,webbrowser,wsgiref,xdrlib,xml,xmlrpc,zipapp,zipfile,zipimport,zoneinfo
+

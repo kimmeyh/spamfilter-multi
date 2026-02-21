@@ -1,0 +1,18 @@
+{
+  "date": "2025-12-10",
+  "summary": "Phase 2 kickoff for mobile app storage and OAuth readiness",
+  "changes": [
+    "Activated OAuth/API dependencies: googleapis, google_sign_in, msal_flutter, http",
+    "Added AppPaths helper to anchor rules and safe senders in application support directory",
+    "Added LocalRuleStore for YAML persistence with default file scaffolding",
+    "Added SecureCredentialsStore for encrypted credential handling",
+    "Pinned msal_flutter to ^2.0.1 for compatibility",
+    "Fixed YAML export quoting to preserve apostrophes during round-trip"
+  ],
+  "next_actions": [
+    "Wire storage layer into Provider-based state management",
+    "Connect Gmail/Outlook adapters to secure credential storage",
+    "Add tests for storage read/write and credential flows",
+    "Prioritize provider rollout order: AOL → Gmail → Outlook"
+  ]
+}

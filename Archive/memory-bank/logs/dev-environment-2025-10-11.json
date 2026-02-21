@@ -1,0 +1,8 @@
+{
+  "date": "2025-10-11",
+  "summary": "Added developer environment guide and linked from CLI usage",
+  "changes": [
+    { "file": "memory-bank/dev-environment.md", "action": "added" },
+    { "file": "memory-bank/cli-usage.md", "action": "updated", "details": ["Added link to dev-environment guide"] }
+  ]
+}

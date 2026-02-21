@@ -49,6 +49,7 @@ class SettingsStore {
   static const String keyBackgroundScanDebugCsv = 'background_scan_debug_csv';
   static const String keyManualScanDaysBack = 'manual_scan_days_back';
   static const String keyBackgroundScanDaysBack = 'background_scan_days_back';
+  static const String keyScanHistoryRetentionDays = 'scan_history_retention_days';
 
   // ============================================================
   // Default Values
@@ -64,6 +65,7 @@ class SettingsStore {
   static const bool defaultBackgroundScanDebugCsv = false;
   static const int defaultManualScanDaysBack = 0; // 0 = all emails
   static const int defaultBackgroundScanDaysBack = 0; // 0 = all emails
+  static const int defaultScanHistoryRetentionDays = 7; // days to keep scan history
 
   // ============================================================
   // Manual Scan Settings
@@ -199,6 +201,22 @@ class SettingsStore {
   /// Pass 0 for "all emails" or 1-90 for days back
   Future<void> setBackgroundScanDaysBack(int daysBack) async {
     await _setAppSetting(keyBackgroundScanDaysBack, daysBack.toString(), 'int');
+  }
+
+  // ============================================================
+  // Scan History Settings
+  // ============================================================
+
+  /// Get how many days to keep scan history (default 7)
+  Future<int> getScanHistoryRetentionDays() async {
+    final value = await _getAppSetting(keyScanHistoryRetentionDays);
+    if (value == null) return defaultScanHistoryRetentionDays;
+    return int.tryParse(value) ?? defaultScanHistoryRetentionDays;
+  }
+
+  /// Set how many days to keep scan history
+  Future<void> setScanHistoryRetentionDays(int days) async {
+    await _setAppSetting(keyScanHistoryRetentionDays, days.toString(), 'int');
   }
 
   // ============================================================
