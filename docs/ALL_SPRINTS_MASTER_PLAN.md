@@ -572,6 +572,47 @@ Priority based on: Product Owner prioritization for MVP development.
 
 ---
 
+### Priority 9: Scan Results Enhancements
+
+#### F20: Common Email Provider Domain Reference Table
+**Status**: [CHECKLIST] PLANNED
+**Estimated Effort**: 3-4 hours
+**Issue**: To be created
+**Business Value**: Enables smarter rule suggestions and processing for emails from common providers vs organizational domains
+
+**Overview**: Maintain an application-level reference table of common email provider domains (gmail.com, aol.com, yahoo.com, outlook.com, hotmail.com, live.com, protonmail.com, etc.). Loaded into memory at scan time for matching against Deleted, Safe, and No Rule results.
+
+**Key Features**:
+- Application-managed table (not user-editable settings)
+- Loaded into memory at scan time for fast matching
+- Covers major providers: Gmail, AOL, Yahoo, Microsoft (outlook.com, hotmail.com, live.com, msn.com), Proton (protonmail.com, proton.me, pm.me), iCloud, Zoho, GMX, mail.com
+- Used by rule suggestion logic to distinguish personal provider emails from business/organizational domains
+- Database-backed with seed data on first launch
+
+**Dependencies**: None
+
+---
+
+#### F21: Inline Rule Assignment from Scan Results with Visual Tracking
+**Status**: [CHECKLIST] PLANNED
+**Estimated Effort**: 12-16 hours
+**Issue**: To be created
+**Business Value**: Users can assign rules to unmatched emails directly from scan results and track progress visually
+
+**Overview**: While reviewing Scan Results (from either View Scan History or Start Live Scan), users can add rules to emails with "No rule" matches. After assigning, the list and detail views update to reflect the new assignment.
+
+**Key Features**:
+- Add Safe Sender or Block Rule directly from No Rule email entries in Scan Results
+- Rule type options: Exact Email, Exact Domain, Entire Domain, Block Email, Block Exact Domain, Block Entire Domain, Block Subject
+- After adding a rule, the Scan Results list item updates to show assignment: `<folder> . <subject> . No rule . New rule: <Safe Sender/Block Rule> . <rule name>`
+- Visual tracking so user can see which No Rule items now have rules assigned during review session
+- Re-opening email detail view after rule assignment shows the newly matched rule highlighted in bold (same styling as existing rule matches)
+- Re-evaluation of rules against the email when detail view is opened (not cached scan-time result)
+
+**Dependencies**: F3 (Interactive Rule & Safe Sender Management), F20 (Common Email Provider Domains - for smart suggestions)
+
+---
+
 ### HOLD: Low Priority Items
 
 The following items are on HOLD until higher priority work is complete:
