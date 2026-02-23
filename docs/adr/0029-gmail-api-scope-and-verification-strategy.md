@@ -2,11 +2,11 @@
 
 ## Status
 
-Proposed
+Accepted
 
 ## Date
 
-2026-02-15
+2026-02-15 (proposed), 2026-02-22 (accepted)
 
 ## Context
 
@@ -89,63 +89,64 @@ Without verification:
 
 ## Decision
 
-**TO BE DETERMINED** - This ADR captures the decision criteria. The decision will be made by the Product Owner.
+**Phased approach**: Keep `gmail.modify` scope, defer CASA verification until financially viable.
 
-### Options Under Consideration
+### Phase 1: Unverified OAuth (Alpha/Beta Testing)
+- Keep Gmail REST API with `gmail.modify` + `userinfo.email` scope (current implementation)
+- Use Google Cloud Console in **Testing** mode (100 hand-picked test users)
+- Accept 7-day refresh token expiry for testers
+- No verification needed, no cost
+- Purpose: validate OAuth flow, confirm Google Play setup, alpha/beta testing
+- Option to move to "Published + Unverified" during beta for normal token lifetimes (still 100 user cap)
 
-#### Option A: Use `gmail.modify` (Current Approach)
-- Request `gmail.modify` + `userinfo.email`
-- Covers all app features (read, move, trash)
-- Requires restricted scope verification + CASA audit
-- Simplest implementation (no scope changes needed)
+### Phase 2: Gmail App Passwords via IMAP (General Users)
+- Gmail users beyond alpha/beta use app passwords with `GenericImapAdapter`
+- Same IMAP path already used for AOL and Yahoo -- no new code needed
+- No OAuth, no verification, no user caps, no token expiry
+- Requires users to have 2FA enabled and create an app password manually
+- Provides Gmail support without any Google verification requirements
 
-#### Option B: Incremental Authorization (`gmail.readonly` + Upgrade to `gmail.modify`)
-- Start with `gmail.readonly` for scan/read-only mode
-- Request `gmail.modify` only when user enables delete/move actions
-- Both are restricted scopes (no reduction in verification requirements)
-- More complex UX (two permission prompts)
-- May demonstrate principle of least privilege to Google reviewers
+### Phase 3: CASA Verification (ON HOLD)
+- Pursue CASA verification when: (a) app has 2,500+ active Gmail IMAP users at $3 annually or yearly revenue exceeds $5,000 (covering annual CASA cost)
+- Enables unlimited OAuth users with long-lived tokens and clean consent screen
+- Estimated cost: $550-$8,000+/year depending on CASA tier
+- Estimated timeline: 2-6 months from start to approval
+- Annual renewal required
 
-#### Option C: Use `gmail.metadata` for Scan + `gmail.modify` for Actions
-- Request `gmail.metadata` for scanning (headers only, no body)
-- Request `gmail.modify` only when user enables delete/move
-- Limitation: Body-text rules would not work in metadata-only mode
-- Both are restricted (no verification benefit)
+### Rationale
 
-#### Option D: Avoid Gmail API Entirely (IMAP Only)
-- Use IMAP with OAuth for Gmail accounts (scope: `mail.google.com`)
-- `mail.google.com` is also restricted (broadest scope)
-- Google may reject this during verification and require narrower scopes
-- Would require rearchitecting Gmail adapter
-
-### Decision Criteria
-
-1. **Verification cost and timeline**: Which approach minimizes CASA assessment scope and cost?
-2. **User experience**: How many permission prompts is acceptable?
-3. **Feature completeness**: All scan modes (including body-text rules) must work
-4. **Google reviewer perception**: Does incremental authorization demonstrate good faith?
-5. **Annual renewal**: What is the ongoing cost commitment?
-6. **Implementation complexity**: How much code changes are needed?
-7. **Go/no-go decision**: Is the cost/effort justified for Play Store publication?
-
-### Key Points
-
-- ALL Gmail data access scopes (except `gmail.labels` and `gmail.send`) are restricted
-- There is no way to access Gmail email content with a non-restricted scope
-- Incremental authorization does not reduce the verification requirement (both scopes are restricted)
-- The CASA audit evaluates the app's security practices, not just scope usage
-- CASA assessment cost is a recurring annual expense
-- The verification process is the longest lead-time item for Play Store publication (2-6 months)
-- This decision may determine whether Play Store publication is financially viable
-- Alternative: Publish on Play Store without Gmail support initially (AOL, Yahoo, generic IMAP only)
+- ALL Gmail data access scopes are restricted -- there is no way to avoid CASA for OAuth
+- The phased approach matches investment to revenue/user base
+- Phase 1 proves the OAuth flow works (code is ready for Phase 3)
+- Phase 2 provides Gmail support for all users without verification cost
+- Phase 3 is a business decision triggered by concrete revenue metrics, not a technical decision
+- No code changes needed between phases (all adapters already exist)
 
 ## Alternatives Considered
 
-Analysis deferred until decision criteria are evaluated by Product Owner.
+| Option | Verdict | Reason |
+|--------|---------|--------|
+| Option A: `gmail.modify` only (CASA required) | Partially adopted (Phase 1/3) | CASA cost not justified until app is viable |
+| Option B: Incremental authorization | Rejected | Both scopes are restricted; adds UX complexity with no verification benefit |
+| Option C: `gmail.metadata` + upgrade | Rejected | Body-text rules would not work; both scopes still restricted |
+| Option D: IMAP with OAuth (`mail.google.com`) | Rejected | Broadest scope, hardest to justify to Google reviewers |
 
 ## Consequences
 
-To be documented after decision is made.
+### Positive
+- Zero upfront cost for Gmail support
+- App can launch with Gmail support immediately (app passwords)
+- OAuth infrastructure proven during alpha/beta, ready for CASA when triggered
+- Clear financial trigger prevents premature investment
+
+### Negative
+- Alpha/beta Gmail testers experience 7-day token re-authentication (acceptable for testers)
+- General users must manually create Gmail app passwords (less convenient than OAuth)
+- Google may deprecate app passwords in the future (mitigated: CASA path is ready when needed)
+
+### Neutral
+- No code changes required for any phase transition
+- F12 (Persistent Gmail Auth) is resolved: token lifetime is a verification status issue, not a code issue
 
 ## References
 

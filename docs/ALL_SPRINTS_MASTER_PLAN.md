@@ -117,8 +117,8 @@ See CHANGELOG.md for detailed feature history.
 **Objective**: Technical debt and rule management improvements
 
 **Tasks**:
-- **#154**: Auto-remove safe sender entries when converting to delete rules (~4-6h)
-- **F12**: Persistent Gmail Authentication (~8-12h)
+- **#154**: Auto-remove safe sender entries when converting to delete rules (~4-6h) -- **BUG confirmed by user testing 2026-02-23**: Changing `no-reply@notification.circle.so` from Safe Sender to Block Entire Domain fails silently; safe sender entry not removed, block rule does not take effect
+- **F12B**: Gmail Dual-Auth UX and Account Tracking (~10-16h)
 
 ### Option 3: Custom Sprint (User-Defined)
 User selects specific issues from backlog based on priorities.
@@ -191,54 +191,31 @@ The features below were originally planned for Sprint 13 but have been deferred 
   - Update mechanism
 
 ### F12: Persistent Gmail Authentication (Long-Lived Tokens)
-**Status**: [CHECKLIST] DEFERRED (from original Sprint 13 plan)
-**Estimated Effort**: 8-12 hours
+**Status**: [OK] RESOLVED (2026-02-22 - Architecture Review)
+**Estimated Effort**: 0 hours (no code changes needed)
 
-**Overview**: Research and implement long-lived Gmail authentication similar to Samsung/iPhone email apps.
+**Resolution**: F12 is not a code problem. Investigation during the ADR-0029/0034 architecture review revealed that token lifetime depends on **app verification status**, not code implementation:
 
-**Tasks**:
-- **Task D**: Research Phase
-  - Investigate how Samsung Android email app achieves long-lived Gmail access (18-24+ months)
-  - Investigate how iPhone Mail app maintains persistent Gmail access
-  - Research Google OAuth 2.0 offline access and refresh token best practices
-  - Document findings and recommended approach
+| App Status | Token Lifetime | User Cap |
+|------------|---------------|----------|
+| Testing mode (unverified) | 7 days | 100 hand-picked |
+| Published + Unverified | Standard (months) | 100 total |
+| Published + Verified (CASA) | Standard (months) | Unlimited |
 
-- **Task E**: Implementation
-  - Implement recommended authentication approach
-  - Secure refresh token storage (per platform)
-  - Automatic token refresh before expiration
-  - Handle token revocation gracefully (prompt re-auth)
-  - Test token persistence across app restarts and device reboots
+The existing codebase already has all required infrastructure:
+- `google_auth_service.dart`: `getValidAccessToken()`, `_refreshToken()`, secure token storage
+- `SecureCredentialsStore`: Platform-native encrypted refresh token storage
+- Automatic token refresh with retry logic
 
-- **Task F**: Testing & Validation
-  - Verify tokens persist for extended periods (simulate time passage if possible)
-  - Test re-authentication flow when tokens expire/revoke
-  - Document expected token lifetime
+**Decision** (see ADR-0029, ADR-0034):
+- **Phase 1**: Unverified OAuth for alpha/beta (accept 7-day tokens for 100 testers)
+- **Phase 2**: Gmail app passwords via IMAP for general users (no token expiry)
+- **Phase 3 (ON HOLD)**: CASA verification for unlimited OAuth users
+- **CASA Trigger**: Pursue CASA verification when: (a) app has 2,500+ active Gmail IMAP users at $3 annually or yearly revenue exceeds $5,000 (covering annual CASA cost)
 
-**Acceptance Criteria** (for when F5 + F12 are scheduled):
-- [ ] Background scans run on schedule (F5)
-- [ ] System tray shows scan status (F5)
-- [ ] Notifications show scan results (F5)
-- [ ] MSIX installer works on clean Windows install (F5)
-- [ ] Auto-start functional (when enabled) (F5)
-- [ ] Gmail authentication persists across app restarts (F12)
-- [ ] Gmail authentication persists across device reboots (F12)
-- [ ] Refresh tokens stored securely (F12)
-- [ ] Automatic token refresh works without user intervention (F12)
-- [ ] Token revocation handled gracefully with re-auth prompt (F12)
-- [ ] Research findings documented (F12)
-- [ ] All tests pass
+**Original Tasks** (Task D research, Task E implementation, Task F testing): All resolved without code changes. Research completed during architecture review; implementation already exists; testing not needed (behavior is Google-side, not app-side).
 
-**Risks**:
-| Risk | Likelihood | Impact | Mitigation |
-|------|------------|--------|------------|
-| Task Scheduler permissions | Medium | Medium | Document admin requirements, fallback to user-level scheduling |
-| MSIX signing requirements | Medium | Low | Self-signed for testing, defer store submission |
-| Google OAuth policy restrictions | Medium | High | Research thoroughly, may need to apply for verification |
-| Token storage security | Medium | High | Use platform-specific secure storage (Keychain, Credential Manager) |
-| Long-lived token behavior varies by platform | Medium | Medium | Test on all target platforms |
-
-**Dependencies**: Sprint 12 (F2 Settings for frequency configuration) - if F5 + F12 are scheduled
+**Dependencies**: None remaining. ADR-0029 and ADR-0034 are now Accepted.
 
 ---
 
@@ -359,38 +336,36 @@ Priority based on: Product Owner prioritization for MVP development.
 ---
 
 #### F12: Persistent Gmail Authentication (Long-Lived Tokens)
-**Status**: [CHECKLIST] PLANNED (Sprint 13)
-**Estimated Effort**: 8-12 hours
+**Status**: [OK] RESOLVED (2026-02-22 - Architecture Review)
+**Estimated Effort**: 0 hours (no code changes needed - resolved as verification issue, not code issue)
 **Platform**: All (Windows, Android, iOS)
-**Business Value**: Users only need to authenticate Gmail once every 18-24+ months (like Samsung/iPhone email apps)
 
-**Overview**: Research and implement long-lived Gmail authentication similar to native email apps (Samsung Android, iPhone Mail) that only require re-authentication every 18-24+ months instead of frequently.
+**Resolution**: Token lifetime depends on app verification status (Testing=7 days, Published+Unverified=months with 100 user cap, Verified=months with no cap). All required code infrastructure already exists in `google_auth_service.dart`. See ADR-0029 and ADR-0034 for the phased Gmail authentication strategy.
 
-**Research Questions**:
-- How do Samsung Android and iPhone Mail apps achieve long-lived Gmail access?
-- What OAuth 2.0 scopes and parameters enable persistent refresh tokens?
-- What are Google's policies on offline access for third-party apps?
-- Are there differences between "installed app" vs "web app" OAuth flows?
-- Does app verification status affect token lifetime?
+**Research Questions -- ANSWERED**:
+- Samsung/iPhone achieve long-lived access because they are **verified apps** with CASA certification
+- `access_type=offline` is already implemented; token lifetime is a verification status issue
+- Google restricts ALL Gmail content scopes as restricted (CASA required for verification)
+- App verification status **does** affect token lifetime (the key finding)
 
-**Key Features**:
-- Research best practices for long-lived OAuth tokens
-- Implement offline access with proper refresh token handling
-- Secure refresh token storage (platform-specific secure storage)
-- Automatic token refresh before expiration
-- Graceful handling of token revocation (prompt re-auth)
-- Document expected token lifetime and any limitations
+**Decision**: Three-phase approach (ADR-0029 + ADR-0034):
+1. Unverified OAuth for alpha/beta (100 testers, 7-day tokens)
+2. Gmail app passwords via IMAP for general users (no token expiry)
+3. CASA verification ON HOLD until revenue trigger: 2,500+ users at $3/yr or $5,000/yr revenue
 
-**Technical Considerations**:
-- Google OAuth 2.0 `access_type=offline` parameter
-- Proper handling of `prompt=consent` for initial authorization
-- Secure storage: Windows Credential Manager, Android Keystore, iOS Keychain
-- Token refresh scheduling (before expiration)
-- Handling Google account security events (password change, suspicious activity)
+**Follow-up**: See F12B (Gmail Dual-Auth UX and Account Tracking) for implementation work to support the dual-path strategy.
 
-**Dependencies**: Current Gmail OAuth implementation (google_sign_in package)
+---
 
-**See**: [Feature Details - F12](#f12-persistent-gmail-authentication-detail)
+#### F12B: Gmail Dual-Auth UX and Account Tracking
+**Status**: [CHECKLIST] PLANNED
+**Estimated Effort**: 10-16 hours
+**Platform**: All (Windows, Android, iOS)
+**Business Value**: In-app walkthroughs for both Gmail auth methods, per-account auth method tracking, correct adapter routing
+
+**Overview**: Implements the dual-path Gmail authentication strategy decided in ADR-0029 and ADR-0034. Adds auth method selection UI, in-app setup walkthroughs for OAuth and app passwords, per-account auth method persistence, and adapter routing. Also removes unused `AuthMethod.apiKey`.
+
+**See**: [Feature Details - F12B](#f12b-gmail-dual-auth-ux-and-account-tracking)
 
 ---
 
@@ -899,82 +874,123 @@ WorkManager.getInstance(context).enqueueUniquePeriodicWork(
 
 ### F12: Persistent Gmail Authentication (Detail)
 
-**Problem Statement**:
+**Status**: [OK] RESOLVED (2026-02-22)
+
+**Original Problem Statement**:
 Current Gmail authentication requires frequent re-authentication (daily or weekly), while native email apps like Samsung Android Mail and iPhone Mail only require authentication once every 18-24+ months. This creates poor user experience for background scanning scenarios.
 
-**Research Areas**:
+**Root Cause Analysis (Completed 2026-02-22)**:
 
-1. **Google OAuth 2.0 Token Lifetime**:
-   - Default access token lifetime: 1 hour
-   - Refresh token lifetime: varies (can be long-lived with proper configuration)
-   - Factors affecting refresh token lifetime:
-     - User's Google account security settings
-     - App verification status
-     - OAuth consent screen configuration
-     - Scopes requested
+The frequent re-authentication is caused by **Google's app verification status**, not missing code:
 
-2. **Native Email App Approach**:
-   - Samsung Android Mail: Uses device account manager integration
-   - iPhone Mail: Uses Apple's centralized account system
-   - Both leverage system-level OAuth token management
-   - May use different OAuth client types (device vs web)
+| App Status | Refresh Token Lifetime | User Cap |
+|------------|----------------------|----------|
+| Testing mode (Cloud Console) | 7 days | 100 hand-picked test users |
+| Published + Unverified | Standard (months) | 100 total lifetime users |
+| Published + Verified (CASA) | Standard (months/years) | Unlimited |
 
-3. **Best Practices for Long-Lived Access**:
-   - Request `access_type=offline` for refresh tokens
-   - Use `prompt=consent` only on first authorization
-   - Store refresh tokens securely (platform-specific)
-   - Implement proactive token refresh (before expiration)
-   - Handle incremental authorization properly
+Samsung and iPhone email apps achieve 18-24+ month tokens because they are **CASA-verified apps** with system-level OAuth integration. This is a verification privilege, not a code technique.
 
-**Implementation Approach**:
+**Existing Code Infrastructure** (already implemented, no changes needed):
+- `google_auth_service.dart`: `getValidAccessToken()`, `_refreshToken()`, `access_type=offline`
+- `SecureCredentialsStore`: Platform-native encrypted storage (Windows Credential Manager, Android Keystore, iOS Keychain)
+- `GmailApiAdapter`: Uses refreshed tokens automatically
 
-1. **Secure Token Storage**:
-   - **Windows**: Windows Credential Manager (via `flutter_secure_storage`)
-   - **Android**: Android Keystore (via `flutter_secure_storage`)
-   - **iOS**: iOS Keychain (via `flutter_secure_storage`)
+**Resolution**: Three-phase Gmail authentication strategy (ADR-0029 + ADR-0034):
+1. **Alpha/Beta**: Unverified OAuth (7-day tokens, 100 test users) -- validates flow
+2. **General Availability**: Gmail app passwords via IMAP (no token expiry, unlimited users)
+3. **ON HOLD**: CASA verification when revenue justifies cost (2,500+ users at $3/yr or $5,000/yr revenue)
 
-2. **Token Refresh Strategy**:
-   ```dart
-   // Pseudocode for token refresh
-   Future<String> getValidAccessToken() async {
-     final credentials = await secureStorage.read('gmail_credentials');
-     if (credentials.accessTokenExpired) {
-       if (credentials.hasRefreshToken) {
-         // Refresh token before expiration
-         final newCredentials = await refreshAccessToken(credentials.refreshToken);
-         await secureStorage.write('gmail_credentials', newCredentials);
-         return newCredentials.accessToken;
-       } else {
-         // No refresh token - require re-auth
-         throw AuthenticationRequiredException();
-       }
-     }
-     return credentials.accessToken;
-   }
-   ```
+**No files need modification** for this feature. All token refresh, secure storage, and graceful degradation logic already exists.
 
-3. **Graceful Degradation**:
-   - If refresh fails (token revoked), prompt user to re-authenticate
-   - Show clear message explaining why re-auth is needed
-   - Preserve account configuration (only re-auth, do not lose settings)
+---
 
-**Expected Outcomes**:
-- Users authenticate once and remain authenticated for 18-24+ months
-- Background scans work reliably without user intervention
-- Token refresh happens automatically and transparently
-- Clear error handling when re-authentication is required
+### F12B: Gmail Dual-Auth UX and Account Tracking
+
+**Status**: [CHECKLIST] PLANNED
+**Estimated Effort**: 10-16 hours
+**Platform**: All (Windows, Android, iOS)
+**Business Value**: Enables Gmail users to choose between OAuth (alpha/beta) and app passwords (GA), with in-app guidance and correct adapter routing per account.
+**Dependencies**: F12 (resolved), ADR-0029 (accepted), ADR-0034 (accepted)
+
+**Problem Statement**:
+With the dual-path Gmail authentication strategy (ADR-0034), the app needs to:
+1. Let Gmail users choose their auth method (OAuth vs app password)
+2. Guide users through setup for each method with in-app walkthroughs
+3. Track which auth method each Gmail account uses
+4. Route to the correct adapter (`GmailApiAdapter` for OAuth, `GenericImapAdapter` for app password) on reconnect
+5. Remove unused auth methods from the `AuthMethod` enum (`apiKey` is defined but never used)
+
+**Task A: Gmail Auth Method Selection UI** (~3-4h, Sonnet)
+- Add auth method choice to Gmail platform selection flow
+- When user selects "Gmail" in `platform_selection_screen.dart`, present two options:
+  - "Sign in with Google (OAuth)" -- for alpha/beta testers (note: tokens expire after 7 days for unverified app)
+  - "Use Gmail App Password (IMAP)" -- for general users (note: requires 2FA enabled)
+- Store selected auth method with account record
+- Route to appropriate adapter based on selection
+
+**Task B: In-App Setup Walkthrough - Gmail OAuth** (~2-3h, Haiku)
+- Create walkthrough screen/dialog explaining:
+  - What to expect: Google consent screen, "unverified app" warning, how to proceed
+  - Token behavior: access may expire after 7 days, user will need to re-authenticate
+  - When re-authentication is needed: clear prompt with "Sign in again" button
+  - What data the app accesses (read email, move to trash, list folders)
+- Show walkthrough on first Gmail OAuth setup, with "Do not show again" option
+
+**Task C: In-App Setup Walkthrough - Gmail App Password** (~2-3h, Haiku)
+- Create walkthrough screen/dialog with step-by-step instructions:
+  1. Go to Google Account (myaccount.google.com)
+  2. Security > 2-Step Verification (must be enabled first)
+  3. App Passwords > Select app > Generate
+  4. Copy the 16-character password
+  5. Enter it in the app
+- Include note: "App passwords require 2-Step Verification to be enabled on your Google account"
+- Include note: "App passwords do not expire -- you only need to set this up once"
+- Show walkthrough on first Gmail app password setup, with "Do not show again" option
+
+**Task D: Per-Account Auth Method Tracking** (~3-4h, Sonnet)
+- Modify `PlatformRegistry` to support Gmail with two auth methods:
+  - Current: Gmail is hardcoded to `AuthMethod.oauth2`
+  - New: Gmail offers `AuthMethod.oauth2` OR `AuthMethod.appPassword`
+- Store selected auth method in `accounts` database table (new column or use existing metadata)
+- On scan/reconnect, use stored auth method to select correct adapter:
+  - `AuthMethod.oauth2` -> `GmailApiAdapter` (existing Gmail REST API path)
+  - `AuthMethod.appPassword` -> `GenericImapAdapter` with Gmail IMAP config (`imap.gmail.com:993`)
+- Add Gmail IMAP config to `GenericImapAdapter` factory (new `.gmail()` constructor or config entry)
+
+**Task E: Remove Unused Auth Methods** (~1-2h, Haiku)
+- Remove `AuthMethod.apiKey` from enum (ProtonMail Bridge -- not implemented, no adapter exists)
+- Audit all `AuthMethod` references and remove dead code paths
+- Update tests to reflect removed enum value
 
 **Files to Modify**:
-- `mobile-app/lib/adapters/auth/google_auth_service.dart` - Token refresh logic
-- `mobile-app/lib/adapters/storage/secure_credentials_store.dart` - Secure token storage
-- `mobile-app/lib/adapters/email_providers/gmail_api_adapter.dart` - Use refreshed tokens
+- `lib/adapters/email_providers/platform_registry.dart` - Gmail dual-auth config, remove apiKey
+- `lib/adapters/email_providers/spam_filter_platform.dart` - Remove `apiKey` from AuthMethod enum
+- `lib/adapters/email_providers/generic_imap_adapter.dart` - Add `.gmail()` factory constructor
+- `lib/ui/screens/platform_selection_screen.dart` - Gmail auth method choice UI
+- `lib/ui/screens/account_setup_screen.dart` - Route to correct setup flow
+- `lib/core/storage/database_helper.dart` - Store auth method per account (if not already tracked)
+- New: `lib/ui/screens/gmail_oauth_walkthrough.dart` (or dialog widget)
+- New: `lib/ui/screens/gmail_app_password_walkthrough.dart` (or dialog widget)
 
-**Testing**:
-- Verify token persists across app restarts
-- Verify token persists across device reboots
-- Simulate token expiration and verify refresh
-- Simulate token revocation and verify re-auth prompt
-- Test on Windows, Android (iOS if available)
+**Acceptance Criteria**:
+- [ ] Gmail platform selection offers choice: OAuth or App Password
+- [ ] In-app walkthrough shown for Gmail OAuth setup (explains consent screen, 7-day tokens, re-auth)
+- [ ] In-app walkthrough shown for Gmail App Password setup (step-by-step Google Account instructions)
+- [ ] Selected auth method stored per Gmail account in database
+- [ ] On reconnect/scan, correct adapter used based on stored auth method
+- [ ] Gmail IMAP via app password works end-to-end (connect, scan, move, delete)
+- [ ] Gmail OAuth continues to work as before (no regression)
+- [ ] `AuthMethod.apiKey` removed from codebase
+- [ ] All existing tests pass, new tests added for dual-auth routing
+- [ ] Walkthroughs have "Do not show again" option
+
+**Risks**:
+| Risk | Likelihood | Impact | Mitigation |
+|------|------------|--------|------------|
+| Gmail IMAP config differences from AOL/Yahoo | Low | Medium | Test with real Gmail account; Gmail IMAP is well-documented |
+| Google deprecates app passwords | Low (years) | High | CASA path ready when triggered; monitor Google announcements |
+| User confusion with two auth options | Medium | Medium | Clear walkthrough explains trade-offs; recommend app password for non-testers |
 
 ---
 
@@ -1119,25 +1135,49 @@ The app is approximately 60-70% ready for Play Store publication. Core spam filt
 
 **Priority**: BLOCKING
 **Estimated Effort**: 4-6 hours
-**ADR Required**: ADR-0026 (Application Identity and Package Naming)
+**ADR**: ADR-0026 (Application Identity and Package Naming) - **Accepted**
+
+**Decision (2026-02-23)**:
+- **Domain**: `myemailspamfilter.com` (available, to be registered)
+- **Application ID**: `com.myemailspamfilter`
+- **App Name**: `MyEmailSpamFilter`
 
 **Description**: Change the application from development defaults to production-ready identity.
 
-**Tasks**:
-- Choose and register a unique application ID (e.g., `com.yourname.spamfilter` or similar)
-- Update `applicationId` in `android/app/build.gradle.kts`
-- Update `namespace` in `android/app/build.gradle.kts`
-- Update `android:label` in `AndroidManifest.xml` to user-friendly name
-- Update `msix_config` in `pubspec.yaml` to match new identity
-- Update OAuth redirect URI scheme if application ID changes
-- Re-register with Firebase Console under new application ID
-- Update `google-services.json` for new package name
+**Prerequisite**: Register `myemailspamfilter.com` domain before starting implementation.
 
-**Decision Points** (ADR-0026):
-- What application ID / package name to use?
-- What user-facing app name to display?
-- Should the app use a branded name or descriptive name?
-- Domain registration implications for reverse-domain package naming
+**Tasks**:
+
+*Task A: Android Identity Update* (~1-2h, Haiku)
+- Update `applicationId` to `com.myemailspamfilter` in `android/app/build.gradle.kts`
+- Update `namespace` to `com.myemailspamfilter` in `android/app/build.gradle.kts`
+- Update `android:label` to `MyEmailSpamFilter` in `AndroidManifest.xml`
+- Update any Kotlin/Java package references if they exist
+
+*Task B: Windows MSIX Identity Update* (~1h, Haiku)
+- Update `identity_name` to `MyEmailSpamFilter` in `pubspec.yaml` msix_config
+- Update `display_name` to `MyEmailSpamFilter` in `pubspec.yaml` msix_config
+- Update `publisher_display_name` to `MyEmailSpamFilter` in `pubspec.yaml` msix_config
+
+*Task C: Firebase Re-registration* (~1-2h, Haiku)
+- Re-register Android app in Firebase Console with new package name `com.myemailspamfilter`
+- Add SHA-1 fingerprint for new package
+- Download new `google-services.json`
+- Place in `mobile-app/android/app/google-services.json`
+
+*Task D: Codebase References Update* (~1h, Haiku)
+- Search entire codebase for `com.example.spamfiltermobile` and `spam_filter_mobile` references
+- Update AppPaths storage directory name if hardcoded
+- Update any test fixtures that reference the old package name
+- Verify OAuth redirect URI is unaffected (should be independent)
+
+*Task E: Verification* (~1h, Haiku)
+- Build and run on Android emulator (verify new package name)
+- Build and run on Windows (verify MSIX identity)
+- Run full test suite
+- Verify Google Sign-In still works with new package name + new `google-services.json`
+
+**Note**: Existing debug installations must be uninstalled before installing the renamed app. Saved credentials under the old package name will be orphaned (users re-authenticate once).
 
 ---
 
@@ -1208,18 +1248,15 @@ The app is approximately 60-70% ready for Play Store publication. Core spam filt
 
 #### GP-4: Gmail API OAuth Verification
 
-**Priority**: BLOCKING
+**Priority**: ON HOLD (deferred until revenue trigger)
 **Estimated Effort**: 40-80 hours (includes CASA audit timeline of 2-6 months)
-**ADR Required**: ADR-0029 (Gmail API Scope and Verification Strategy)
+**ADR**: ADR-0029 (Gmail API Scope and Verification Strategy) - **Accepted**
+
+**Decision (2026-02-22)**: CASA verification is ON HOLD. Pursue CASA verification when: (a) app has 2,500+ active Gmail IMAP users at $3 annually or yearly revenue exceeds $5,000 (covering annual CASA cost). Until then, Gmail users use app passwords via IMAP (Phase 2) and alpha/beta testers use unverified OAuth (Phase 1). See ADR-0029 and ADR-0034 for full strategy.
 
 **Description**: Complete Google's three-tier OAuth verification process required for public apps using restricted Gmail scopes.
 
-**Critical Context**: The app currently uses `gmail.modify` scope (restricted). Any app using restricted Gmail API scopes must complete:
-1. **Brand Verification** (2-3 business days) - Domain ownership, app name, privacy policy URL
-2. **Sensitive Scope Verification** - Justification for each scope, demonstration video
-3. **Restricted Scope Verification** - CASA (Cloud Application Security Assessment) by approved third-party lab
-
-**CASA Security Assessment**:
+**CASA Security Assessment** (for when triggered):
 - Based on OWASP ASVS standard
 - Approved labs: TAC Security, Leviathan Security, DEKRA, Bishop Fox, Prescient Security
 - Cost: Tier 2 ($500-$1,800/app), Tier 3 ($4,500-$8,000+/app)
@@ -1227,7 +1264,7 @@ The app is approximately 60-70% ready for Play Store publication. Core spam filt
 - Timeline: 2-6 months from start to approval
 - Renewal: Annual (every 12 months)
 
-**Tasks**:
+**Tasks** (deferred until CASA trigger):
 - Register a domain for the app (needed for brand verification)
 - Create Google Cloud project for production (separate from development)
 - Configure OAuth consent screen for production
@@ -1239,13 +1276,9 @@ The app is approximately 60-70% ready for Play Store publication. Core spam filt
 - Complete assessment and submit Letter of Assessment (LOA) to Google
 - Budget for annual renewal
 
-**Decision Points** (ADR-0029):
-- Which Gmail API scopes to request (minimum necessary)?
-  - `gmail.modify` (current) vs `gmail.readonly` + separate move/delete operations?
-  - Can the app use `gmail.metadata` for scan-only mode and `gmail.modify` only when user enables delete mode?
-  - IMAP `mail.google.com` scope vs Gmail REST API scopes?
-- Should the app use incremental/granular scope authorization?
-- Which CASA assessment tier and which approved lab?
+**Scope Decision** (ADR-0029 - Accepted):
+- Use `gmail.modify` scope (current implementation, covers all features)
+- No incremental authorization (both scopes are restricted, adds UX complexity with no verification benefit)
 - Budget allocation for initial assessment and annual renewals?
 - Is a separate production Google Cloud project needed?
 - Timeline for verification process (this is the longest lead-time item)?
@@ -1516,42 +1549,20 @@ The app is approximately 60-70% ready for Play Store publication. Core spam filt
 
 #### GP-13: Persistent Gmail Authentication for Production
 
-**Priority**: HIGH (directly impacts user experience and CASA audit)
-**Estimated Effort**: 8-12 hours (overlaps with existing F12 feature)
+**Priority**: [OK] RESOLVED (merged with F12, 2026-02-22)
+**Estimated Effort**: 0 hours (no code changes needed)
 
-**Description**: This is a Play Store-specific expansion of the existing F12 feature. For production Gmail access, tokens must be long-lived and properly managed per Google's requirements. This also directly affects the CASA security assessment.
-
-**Additional Production Considerations**:
-- Token lifetime depends on app verification status (unverified apps get 7-day token expiry)
-- CASA audit will evaluate token storage security
-- Google API Services User Data Policy requires minimum scope principle
-- Refresh token revocation handling must be robust for production
-
-**Note**: This feature overlaps with existing F12 (Persistent Gmail Authentication). When scheduled, GP-13 requirements should be merged with F12.
+**Resolution**: Merged with F12. Token lifetime is determined by app verification status, not code implementation. All required code infrastructure already exists. See ADR-0029 and ADR-0034 for the phased Gmail authentication strategy and CASA verification trigger.
 
 ---
 
 #### GP-14: IMAP vs Gmail REST API Architecture Decision
 
-**Priority**: HIGH (affects GP-4 scope verification)
-**Estimated Effort**: 12-20 hours (if migration needed)
-**ADR Required**: ADR-0034 (Gmail Access Method for Production)
+**Priority**: [OK] RESOLVED (ADR-0034 Accepted, 2026-02-22)
+**Estimated Effort**: 0 hours (no migration needed - dual-path uses existing adapters)
+**ADR**: ADR-0034 (Gmail Access Method for Production) - **Accepted**
 
-**Description**: The app currently uses Gmail REST API with `gmail.modify` scope for Gmail accounts and IMAP with app passwords for other providers. For Google's scope verification, the choice of API method and scope directly impacts verification complexity and cost.
-
-**Key Considerations**:
-- IMAP with OAuth requires `mail.google.com` scope (broadest restricted scope)
-- Gmail REST API allows more granular scopes (`gmail.modify`, `gmail.readonly`)
-- Google may reject `mail.google.com` scope and require narrower scopes
-- `gmail.modify` covers read + label + move + delete (but not permanent delete)
-- The app currently uses `gmail.modify` which is appropriate for move-to-trash behavior
-
-**Decision Points** (ADR-0034):
-- Should Gmail accounts continue using REST API exclusively (current approach)?
-- Could the app use `gmail.readonly` for scan mode and only request `gmail.modify` when user enables delete/move?
-- Is incremental authorization worth the UX complexity?
-- What is the minimum scope set that satisfies all app features?
-- How does scope selection affect CASA audit scope and cost?
+**Decision**: Dual-path approach. Gmail REST API with OAuth for alpha/beta testers (existing `GmailApiAdapter`). Gmail app passwords via IMAP for general users (existing `GenericImapAdapter`). CASA verification deferred until revenue trigger (2,500+ users at $3/yr or $5,000/yr). No code changes needed -- both adapters already exist and are tested.
 
 ---
 
@@ -1599,19 +1610,19 @@ The app is approximately 60-70% ready for Play Store publication. Core spam filt
 
 ### Architectural Decisions Required
 
-The following proposed ADRs capture decisions that must be made before Play Store publication. Each ADR is in "Proposed" status with decision criteria and key considerations, but no decisions have been determined yet.
+The following ADRs capture decisions for Play Store publication. ADR-0029 and ADR-0034 have been accepted; the remaining are proposed with decision criteria and key considerations.
 
-| ADR | Title | Blocking Feature |
-|-----|-------|-----------------|
-| ADR-0026 | Application Identity and Package Naming | GP-1 |
-| ADR-0027 | Android Release Signing Strategy | GP-2 |
-| ADR-0028 | Android Permission Strategy | GP-3 |
-| ADR-0029 | Gmail API Scope and Verification Strategy | GP-4 |
-| ADR-0030 | Privacy and Data Governance Strategy | GP-5 |
-| ADR-0031 | App Icon and Visual Identity | GP-7 |
-| ADR-0032 | User Data Deletion Strategy | GP-11 |
-| ADR-0033 | Analytics and Crash Reporting Strategy | GP-12 |
-| ADR-0034 | Gmail Access Method for Production | GP-14 |
+| ADR | Title | Blocking Feature | Status |
+|-----|-------|-----------------|--------|
+| ADR-0026 | Application Identity and Package Naming | GP-1 | **Accepted** |
+| ADR-0027 | Android Release Signing Strategy | GP-2 | Proposed |
+| ADR-0028 | Android Permission Strategy | GP-3 | Proposed |
+| ADR-0029 | Gmail API Scope and Verification Strategy | GP-4 | **Accepted** |
+| ADR-0030 | Privacy and Data Governance Strategy | GP-5 | Proposed |
+| ADR-0031 | App Icon and Visual Identity | GP-7 | Proposed |
+| ADR-0032 | User Data Deletion Strategy | GP-11 | Proposed |
+| ADR-0033 | Analytics and Crash Reporting Strategy | GP-12 | Proposed |
+| ADR-0034 | Gmail Access Method for Production | GP-14 | **Accepted** |
 
 ### Estimated Total Effort
 
@@ -1625,15 +1636,16 @@ The following proposed ADRs capture decisions that must be made before Play Stor
 
 ### Critical Path
 
-The longest lead-time item is **GP-4 (Gmail API OAuth Verification)** which requires 2-6 months elapsed time for the CASA security assessment. This should be started as early as possible, even while other features are in development.
+GP-4 (Gmail API OAuth Verification) is ON HOLD until the revenue trigger is met. GP-13 (Persistent Gmail Auth) and GP-14 (Gmail API method) are RESOLVED. This significantly simplifies the Play Store readiness path -- the app can launch with Gmail app password support without any CASA verification.
 
-**Recommended Sequencing**:
+**Recommended Sequencing** (updated 2026-02-22):
 1. **Immediate**: GP-16 (Developer Account) + GP-1 (Application Identity) + ADR-0026
-2. **Early**: GP-4 (Begin Gmail Verification process) + GP-5 (Privacy Policy) + ADR-0029, ADR-0030
+2. **Early**: GP-5 (Privacy Policy) + ADR-0030
 3. **Sprint Work**: GP-2,3,7,8,9 (Technical features) + ADR-0027, ADR-0028, ADR-0031
 4. **After Privacy Policy**: GP-10 (Data Safety Form) + GP-11 (Account Deletion) + ADR-0032
 5. **Before Submission**: GP-6 (Store Listing) + GP-15 (Versioning)
-6. **Decision**: GP-12 (Analytics) + GP-14 (Gmail API method) + ADR-0033, ADR-0034
+6. **Decision**: GP-12 (Analytics) + ADR-0033
+7. **Deferred**: GP-4 (CASA Verification) -- trigger: 2,500+ Gmail IMAP users at $3/yr or $5,000/yr revenue
 
 ### Cost Estimates
 

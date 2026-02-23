@@ -2,11 +2,11 @@
 
 ## Status
 
-Proposed
+Accepted
 
 ## Date
 
-2026-02-15
+2026-02-15 (proposed), 2026-02-22 (accepted)
 
 ## Context
 
@@ -74,70 +74,64 @@ Token behavior differs based on app verification status:
 
 ## Decision
 
-**TO BE DETERMINED** - This ADR captures the decision criteria. The decision will be made by the Product Owner.
+**Dual-path approach**: Gmail REST API OAuth for alpha/beta testers, Gmail app passwords via IMAP for general users. CASA verification deferred until financially viable.
 
-### Options Under Consideration
+### Chosen Approach: Option D (Dual Path) with Phased Rollout
 
-#### Option A: Keep Gmail REST API with `gmail.modify` (Current)
-- No code changes needed
-- `gmail.modify` scope covers read + label + move + trash
-- Must complete restricted scope verification + CASA audit
-- Most granular scope that covers all features
+**Phase 1 - Alpha/Beta**: Gmail REST API with OAuth (unverified, `gmail.modify` scope)
+- Current `GmailApiAdapter` used as-is, no code changes
+- Google Cloud Console in Testing mode (100 hand-picked test users)
+- 7-day token expiry acceptable for testers
+- Validates OAuth flow and Google Play Store setup
 
-#### Option B: Gmail REST API with Incremental Scopes
-- Start with `gmail.readonly` for scanning
-- Upgrade to `gmail.modify` when user enables delete/move actions
-- Both are restricted (same verification requirement)
-- Demonstrates "principle of least privilege" to Google reviewers
-- More complex UX (two permission prompts at different times)
+**Phase 2 - General Availability**: Gmail app passwords via IMAP
+- Gmail users configure app passwords in Google Account settings
+- Uses existing `GenericImapAdapter` (same as AOL/Yahoo) -- no new code needed
+- No OAuth, no verification, no user caps, no token expiry concerns
+- Setup: Google Account > Security > 2-Step Verification > App Passwords
+- Requires 2FA enabled on Google account
 
-#### Option C: IMAP with Gmail App Passwords (No OAuth)
-- Users manually create Gmail app passwords
-- Same IMAP path as AOL/Yahoo
-- No OAuth verification needed at all
-- Worst user experience (manual app password creation)
-- Does not work for accounts with Advanced Protection
+**Phase 3 - ON HOLD**: Full OAuth after CASA verification
+- Pursue CASA verification when: (a) app has 2,500+ active Gmail IMAP users at $3 annually or yearly revenue exceeds $5,000 (covering annual CASA cost)
+- Upgrades Gmail users from app passwords to seamless OAuth sign-in
+- No code changes needed (OAuth path already proven in Phase 1)
 
-#### Option D: Dual Path (OAuth for Verified, App Password for Unverified)
-- Ship initially with app password support for Gmail (like AOL/Yahoo)
-- Add OAuth sign-in after completing verification process
-- Allows earlier Play Store launch
-- Most complex to implement and maintain
+### Rationale
 
-#### Option E: Launch Without Gmail Support
-- Publish on Play Store with AOL, Yahoo, and generic IMAP only
-- Add Gmail support after completing OAuth verification
-- Fastest path to Play Store
-- Excludes the largest email provider
-
-### Decision Criteria
-
-1. **Time to market**: How quickly can the app be published on Play Store?
-2. **User experience**: OAuth sign-in vs manual app password for Gmail users
-3. **Verification cost and timeline**: $500-$8,000+ annually, 2-6 months initial
-4. **Feature completeness**: All scan and delete features must work
-5. **User base**: Gmail is the dominant email provider (users will expect it)
-6. **Maintenance**: Annual CASA renewal commitment
-7. **Alternative providers**: App already supports AOL, Yahoo, generic IMAP without OAuth
-
-### Key Points
-
-- There is no non-restricted scope that allows reading Gmail message content
-- The CASA audit requirement applies regardless of which restricted scope is chosen
-- `gmail.modify` is the most appropriate single scope for the app's functionality
-- Gmail app passwords require manual user setup (less user-friendly than OAuth)
-- Google may deprecate app passwords in the future (they have already removed basic auth for Workspace)
-- The app could launch without Gmail support and add it later (phased approach)
-- This decision is closely tied to ADR-0029 (scope strategy) and has financial implications
-- IMAP with OAuth (`mail.google.com`) is the broadest scope and hardest to justify during verification
+- Dual path is the only approach that provides Gmail support at launch without CASA cost
+- Both code paths (`GmailApiAdapter` and `GenericImapAdapter`) already exist and are tested
+- Phase 1 proves OAuth works, Phase 2 provides broad Gmail access, Phase 3 is a business trigger
+- Gmail app passwords may be deprecated by Google eventually, but CASA path will be ready
+- This approach does NOT exclude Gmail users (Option E rejected for this reason)
 
 ## Alternatives Considered
 
-Analysis deferred until decision criteria are evaluated by Product Owner.
+| Option | Verdict | Reason |
+|--------|---------|--------|
+| Option A: REST API + CASA now | Rejected | CASA cost ($550-$8,000+/yr) not justified before revenue |
+| Option B: Incremental scopes | Rejected | Both scopes restricted; UX complexity with no verification benefit |
+| Option C: App passwords only | Partially adopted (Phase 2) | Provides GA Gmail support without CASA |
+| Option D: Dual path | **Adopted** | Best balance of UX, cost, and time to market |
+| Option E: No Gmail | Rejected | Excludes largest email provider; unnecessary given app password path |
 
 ## Consequences
 
-To be documented after decision is made.
+### Positive
+- Gmail support available from day one (app passwords in Phase 2)
+- Zero upfront CASA cost
+- OAuth infrastructure validated during alpha/beta (Phase 1)
+- Clear, measurable trigger for CASA investment (revenue-based)
+- No new code needed for any phase -- all adapters already exist
+
+### Negative
+- General users must manually create Gmail app passwords (less convenient than OAuth)
+- App password setup requires 2FA enabled (increasingly common but still a requirement)
+- Does not work for Google accounts with Advanced Protection enabled (edge case)
+
+### Neutral
+- Google may deprecate app passwords in the future -- mitigated by having CASA-ready OAuth path
+- ADR-0029 and this ADR share the same phased approach (decisions are consistent)
+- F12 (Persistent Gmail Auth) is resolved: not a code problem, but a verification status issue
 
 ## References
 

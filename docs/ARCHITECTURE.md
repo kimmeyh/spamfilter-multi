@@ -688,23 +688,37 @@ mobile-app/
 - Extensible rule actions (custom scripts)
 - Third-party email provider plugins
 
-### Google Play Store Readiness (Proposed ADRs 0026-0034)
-Product readiness decisions documented as proposed ADRs. See `docs/adr/` for details:
-- ADR-0026: Application Identity and Package Naming
-- ADR-0027: Android Release Signing Strategy
-- ADR-0028: Android Permission Strategy
-- ADR-0029: Gmail API Scope and Verification Strategy
-- ADR-0030: Privacy and Data Governance Strategy
-- ADR-0031: App Icon and Visual Identity
-- ADR-0032: User Data Deletion Strategy
-- ADR-0033: Analytics and Crash Reporting Strategy
-- ADR-0034: Gmail Access Method for Production
+### Google Play Store Readiness (ADRs 0026-0034)
+Product readiness decisions documented as ADRs. See `docs/adr/` for details:
+- ADR-0026: Application Identity and Package Naming (**Accepted** - `com.myemailspamfilter`, app name "MyEmailSpamFilter", domain `myemailspamfilter.com`)
+- ADR-0027: Android Release Signing Strategy (Proposed)
+- ADR-0028: Android Permission Strategy (Proposed)
+- ADR-0029: Gmail API Scope and Verification Strategy (**Accepted** - phased: unverified OAuth for alpha/beta, defer CASA until revenue justifies cost)
+- ADR-0030: Privacy and Data Governance Strategy (Proposed)
+- ADR-0031: App Icon and Visual Identity (Proposed)
+- ADR-0032: User Data Deletion Strategy (Proposed)
+- ADR-0033: Analytics and Crash Reporting Strategy (Proposed)
+- ADR-0034: Gmail Access Method for Production (**Accepted** - dual-path: OAuth for alpha/beta, app passwords for GA, CASA on hold)
+
+### Gmail Authentication Strategy (ADR-0029 + ADR-0034 + F12)
+
+Gmail authentication follows a three-phase approach that matches investment to app viability:
+
+| Phase | Method | Users | Token Lifetime | Cost |
+|-------|--------|-------|---------------|------|
+| 1. Alpha/Beta | Gmail REST API + OAuth (unverified) | 100 test users | 7 days (Testing mode) | $0 |
+| 2. General Availability | Gmail app passwords via IMAP | Unlimited | No expiry | $0 |
+| 3. Verified OAuth (ON HOLD) | Gmail REST API + OAuth (CASA verified) | Unlimited | Months/years | $550-$8,000+/yr |
+
+**CASA Trigger**: Pursue CASA verification when: (a) app has 2,500+ active Gmail IMAP users at $3 annually or yearly revenue exceeds $5,000 (covering annual CASA cost).
+
+**Key insight**: F12 (Persistent Gmail Auth) is not a code problem. The existing `google_auth_service.dart` already has `getValidAccessToken()`, `_refreshToken()`, and secure token storage. Token lifetime depends on app verification status, not code implementation.
 
 ---
 
 ## Architecture Decision Records
 
-All architectural decisions are documented as ADRs in `docs/adr/`. Currently 25 accepted and 9 proposed.
+All architectural decisions are documented as ADRs in `docs/adr/`. Currently 28 accepted and 6 proposed.
 
 **Accepted ADRs** (0001-0025):
 

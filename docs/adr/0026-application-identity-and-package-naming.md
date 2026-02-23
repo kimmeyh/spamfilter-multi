@@ -2,11 +2,11 @@
 
 ## Status
 
-Proposed
+Accepted
 
 ## Date
 
-2026-02-15
+2026-02-15 (proposed), 2026-02-23 (accepted)
 
 ## Context
 
@@ -33,33 +33,42 @@ The user-facing app name (`android:label`) appears on the home screen, in the ap
 
 ## Decision
 
-**TO BE DETERMINED** - This ADR captures the decision criteria. The decision will be made by the Product Owner.
+**Option B: App-Specific Domain** with `myemailspamfilter.com`.
 
-### Options Under Consideration
+### Application Identity
 
-#### Option A: Branded Name with Personal Domain
-- Application ID: `com.[personal-domain].[appname]`
-- Example: `com.kimmeyh.spamfilter`
-- Requires: Domain ownership for brand verification
+| Property | Current (Development) | New (Production) |
+|----------|----------------------|-----------------|
+| **Domain** | None | `myemailspamfilter.com` |
+| **Application ID** (Android) | `com.example.spamfiltermobile` | `com.myemailspamfilter` |
+| **Namespace** (Android) | `com.example.spamfiltermobile` | `com.myemailspamfilter` |
+| **App Label** (Android) | `spamfilter_mobile` | `MyEmailSpamFilter` |
+| **MSIX Identity** (Windows) | `SpamFilterMulti` | `MyEmailSpamFilter` |
+| **MSIX Display Name** (Windows) | `Spam Filter Multi` | `MyEmailSpamFilter` |
+| **iOS Bundle ID** (future) | `com.example.spamFilterMobile` | `com.myemailspamfilter` |
 
-#### Option B: App-Specific Domain
-- Application ID: `com.[app-specific-domain].app`
-- Example: `com.spamfiltermulti.app`
-- Requires: Registering a new domain
+### User-Facing Name
 
-#### Option C: Generic Developer Name
-- Application ID: `dev.[developer-name].[appname]`
-- Example: `dev.harold.spamfilter`
-- Does not require domain registration
+**MyEmailSpamFilter** (18 characters, under 30-char Play Store limit)
 
-### Decision Criteria
+### Domain
 
-1. **Permanence**: Application ID cannot change after publication
-2. **Brand verification**: Google OAuth requires domain ownership for brand verification
-3. **Cross-platform consistency**: Should work as Android package name, iOS bundle ID, Windows MSIX identity
-4. **User perception**: User-facing app name should be professional and descriptive
-5. **SEO/discoverability**: Play Store listing name helps users find the app
-6. **Character limits**: Play Store title max 30 characters
+**myemailspamfilter.com** -- available as of 2026-02-23 (WHOIS confirmed unregistered).
+
+Domain will be used for:
+- Reverse-domain application ID (`com.myemailspamfilter`)
+- Google OAuth brand verification (Tier 1)
+- Privacy policy hosting (required for Play Store)
+- App website / Play Store developer profile link
+
+### Rationale
+
+- `.com` is the most universally recognized and trusted TLD
+- "myemailspamfilter" contains strong SEO keywords ("email", "spam", "filter")
+- App-specific domain keeps app identity separate from personal developer identity
+- Domain cost is minimal (~$10-15/yr)
+- Application ID `com.myemailspamfilter` follows standard reverse-domain convention
+- "MyEmailSpamFilter" is descriptive, user-friendly, and exactly describes the app
 
 ### Key Points
 
@@ -67,14 +76,40 @@ The user-facing app name (`android:label`) appears on the home screen, in the ap
 - Firebase Console must be reconfigured for the new package name (download new `google-services.json`)
 - flutter_secure_storage on Android uses the package name for keystore alias isolation
 - Any existing debug installations will be treated as a different app after ID change
+- Domain must be registered before starting brand verification (GP-4 Phase 3, when triggered)
 
 ## Alternatives Considered
 
-Analysis deferred until decision criteria are evaluated by Product Owner.
+| Option | Verdict | Reason |
+|--------|---------|--------|
+| `com.kimmeyh.spamfilter` (personal domain) | Rejected | Ties app permanently to personal identity |
+| `app.myspamfilter` (`.app` TLD) | Rejected | `myspamfilter.com` was taken; `.com` is more universally trusted |
+| `dev.harold.spamfilter` (no domain) | Rejected | Would need a domain eventually for brand verification and privacy policy |
+| `myspamfilter.com` | Unavailable | Registered since 2003 by CSC Corporate Domains |
+| `myspamfilter.app` | Available but not chosen | `.com` preferred for familiarity and SEO |
 
 ## Consequences
 
-To be documented after decision is made.
+### Positive
+- Professional, permanent application identity ready for Play Store
+- Domain provides hosting for privacy policy, website, and brand verification
+- SEO-friendly domain with natural search keywords
+- Clean reverse-domain application ID
+
+### Negative
+- Requires domain registration (~$10-15/yr recurring cost)
+- Renaming requires updating multiple config files, Firebase re-registration, and new `google-services.json`
+- Existing debug installations on devices will need to be uninstalled and reinstalled
+
+### Migration Impact
+- **Android**: Update `applicationId`, `namespace` in `build.gradle.kts`; update `android:label` in `AndroidManifest.xml`
+- **Windows**: Update `msix_config` in `pubspec.yaml` (identity_name, display_name, publisher_display_name)
+- **Firebase**: Re-register Android app with new package name, download new `google-services.json`
+- **Credentials**: Existing secure storage entries under old package name will be orphaned (users re-authenticate once)
+- **OAuth**: No changes needed (redirect URI is independent of package name)
+- **Database**: AppPaths directory changes on some platforms (data migration needed or clean start)
+
+See feature **GP-1A** in `docs/ALL_SPRINTS_MASTER_PLAN.md` for the implementation task breakdown.
 
 ## References
 
