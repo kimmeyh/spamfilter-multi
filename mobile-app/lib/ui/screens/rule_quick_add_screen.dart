@@ -9,6 +9,7 @@ import '../../core/storage/rule_database_store.dart';
 import '../../core/storage/safe_sender_database_store.dart';
 import '../../core/utils/pattern_normalization.dart';
 import '../../core/utils/pattern_generation.dart';
+import 'rule_test_screen.dart';
 
 enum RuleActionType { delete, move }
 enum ConditionBucket { fromHeader, subject, body, bodyUrl }
@@ -430,6 +431,39 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
       appBar: AppBar(
         title: const Text('Create Auto-Delete Rule'),
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.science),
+            tooltip: 'Test pattern against sample emails',
+            onPressed: () {
+              // Determine the active pattern and condition type
+              String? pattern;
+              String conditionType = 'from';
+              if (_selectedBuckets[ConditionBucket.fromHeader] == true &&
+                  _fromPatternController.text.isNotEmpty) {
+                pattern = _fromPatternController.text;
+                conditionType = 'header';
+              } else if (_selectedBuckets[ConditionBucket.subject] == true &&
+                  _subjectPatternController.text.isNotEmpty) {
+                pattern = _subjectPatternController.text;
+                conditionType = 'subject';
+              } else if (_selectedBuckets[ConditionBucket.body] == true &&
+                  _bodyPatternController.text.isNotEmpty) {
+                pattern = _bodyPatternController.text;
+                conditionType = 'body';
+              }
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => RuleTestScreen(
+                    initialPattern: pattern,
+                    initialConditionType: conditionType,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: Form(
         key: _formKey,
