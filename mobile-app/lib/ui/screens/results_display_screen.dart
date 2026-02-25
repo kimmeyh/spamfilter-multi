@@ -21,6 +21,7 @@ import '../../core/storage/database_helper.dart';
 import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/utils/pattern_normalization.dart';
+import '../../core/data/common_email_providers.dart';
 import '../widgets/empty_state.dart';
 
 /// Displays summary of scan results bound to EmailScanProvider.
@@ -1329,6 +1330,37 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                   ),
                 ),
                 const Divider(height: 20),
+
+                // === SHARED PROVIDER HINT ===
+                if (rawSenderDomain != null &&
+                    CommonEmailProviders.isCommonProvider(rawSenderDomain)) ...[
+                  Builder(builder: (_) {
+                    final providerName = CommonEmailProviders.getProviderName(rawSenderDomain) ?? 'Unknown';
+                    return Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.info_outline, size: 16, color: Colors.amber[800]),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '$providerName is a shared email provider. '
+                              'Use "Exact Email" when adding rules for this sender.',
+                              style: TextStyle(fontSize: 11, color: Colors.amber[900]),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                  const SizedBox(height: 12),
+                ],
 
                 // === SAFE SENDER SECTION ===
                 // Issue 5: Always show Safe Sender options for all emails
