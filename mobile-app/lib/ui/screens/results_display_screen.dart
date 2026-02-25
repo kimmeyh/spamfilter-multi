@@ -13,6 +13,7 @@ import '../../core/providers/rule_set_provider.dart';
 import '../../core/models/email_message.dart';
 import '../../core/models/rule_set.dart' show Rule, RuleConditions, RuleActions;
 import '../../core/services/email_body_parser.dart';
+import '../../core/services/rule_conflict_resolver.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/settings_store.dart';
@@ -1538,6 +1539,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   Future<void> _addSafeSender(String value, String type) async {
     final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
     final logger = Logger();
+    final conflictResolver = RuleConflictResolver();
 
     try {
       // Create regex pattern based on type
@@ -1569,8 +1571,19 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           return;
       }
 
+      // Remove conflicting block rules before adding safe sender (Issue #154)
+      final conflicts = await conflictResolver.removeConflictingRules(
+        emailAddress: value,
+        ruleProvider: ruleProvider,
+      );
+
       // Add to safe senders via provider (persists to database and YAML)
       await ruleProvider.addSafeSender(pattern);
+
+      // Include conflict removal info in display message
+      if (conflicts.conflictsRemoved > 0) {
+        displayMessage += ' (removed ${conflicts.conflictsRemoved} conflicting rule${conflicts.conflictsRemoved > 1 ? "s" : ""})';
+      }
 
       logger.i('[OK] Added safe sender: $pattern');
 
@@ -1579,7 +1592,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           SnackBar(
             content: Text(displayMessage),
             backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
+            duration: const Duration(seconds: 3),
             behavior: SnackBarBehavior.floating,
             margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
           ),
@@ -1606,6 +1619,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   Future<void> _createBlockRule(String type, String value) async {
     final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
     final logger = Logger();
+    final conflictResolver = RuleConflictResolver();
 
     try {
       // Create rule based on type
@@ -1648,6 +1662,16 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           return;
       }
 
+      // Remove conflicting safe senders before adding block rule (Issue #154)
+      // Subject-based rules do not conflict with safe senders (which match on from address)
+      ConflictResolutionResult conflicts = ConflictResolutionResult.empty;
+      if (type != 'subject') {
+        conflicts = await conflictResolver.removeConflictingSafeSenders(
+          emailAddress: value,
+          ruleProvider: ruleProvider,
+        );
+      }
+
       // Create the rule with proper types
       final conditions = type == 'subject'
           ? RuleConditions(type: 'OR', subject: [pattern])
@@ -1668,6 +1692,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       // Add rule via provider (persists to database and YAML)
       await ruleProvider.addRule(rule);
 
+      // Include conflict removal info in display message
+      if (conflicts.conflictsRemoved > 0) {
+        displayMessage += ' (removed ${conflicts.conflictsRemoved} conflicting safe sender${conflicts.conflictsRemoved > 1 ? "s" : ""})';
+      }
+
       logger.i('[OK] Created block rule: $ruleName with pattern: $pattern');
 
       if (mounted) {
@@ -1675,7 +1704,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           SnackBar(
             content: Text(displayMessage),
             backgroundColor: Colors.blue,
-            duration: const Duration(seconds: 2),
+            duration: const Duration(seconds: 3),
             behavior: SnackBarBehavior.floating,
             margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
           ),
