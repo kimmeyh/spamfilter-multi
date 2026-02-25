@@ -26,6 +26,15 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-02-24 (Sprint 18: Rule Quality and Testing Tooling)
+- **fix**: Add conflict detection to inline rule assignment popup - safe sender and block rule conflicts now auto-resolved from Results screen (Issue #154)
+- **docs**: Subject (S1-S6) and body (B1-B4) content rule pattern standards with guidelines, examples, and anti-patterns (Issue #141)
+- **feat**: PatternCompiler.validatePattern() warns about unescaped dots, redundant wildcards, empty alternation, repeated chars (Issue #141)
+- **feat**: Common email provider domain reference table - 15 providers, 50+ domains with O(1) lookup (Issue #167, F20)
+- **feat**: Inline rule assignment re-evaluation - Results screen updates immediately after adding safe sender or block rule (Issue #168, F21)
+- **feat**: Rule Testing and Simulation UI - test regex patterns against sample emails from recent scans with match highlighting (Issue #169, F8)
+- **test**: 95 new tests (conflict resolver 16, pattern standards 48, email providers 30, rule test screen 17) - total 1088
+
 ### 2026-02-17 (Sprint 17: Scan History, Background Scan Fixes, Conflict Auto-Removal)
 - **feat**: Consolidated Scan History screen replacing separate background scan log viewer - unified view of all manual and background scans with type filter chips, summary stats, and tap-to-view (Issue #158)
 - **feat**: Scan history retention setting (3/7/14/30/90 days) with automatic purge of old entries (Issue #158)
