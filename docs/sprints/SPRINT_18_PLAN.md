@@ -2,7 +2,7 @@
 
 **Sprint**: 18
 **Branch**: `feature/20260224_Sprint_18`
-**PR**: TBD targeting `develop`
+**PR**: [#170](https://github.com/kimmeyh/spamfilter-multi/pull/170) targeting `develop`
 **Planned Duration**: ~22-32h
 **Start Date**: February 24, 2026
 
