@@ -135,11 +135,28 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
             (e) => e.name == actionStr,
             orElse: () => EmailActionType.none,
           );
+          // Reconstruct EvaluationResult from stored database fields
+          // so historical scans show matched rule names and popup highlighting
+          final matchedRuleName = map['matched_rule_name'] as String? ?? '';
+          final matchedPattern = map['matched_pattern'] as String? ?? '';
+          final isSafeSender = (map['is_safe_sender'] as int?) == 1;
+          final hasEvaluation = matchedRuleName.isNotEmpty || isSafeSender;
+          final evaluationResult = hasEvaluation
+              ? EvaluationResult(
+                  shouldDelete: action == EmailActionType.delete,
+                  shouldMove: action == EmailActionType.moveToJunk,
+                  matchedRule: matchedRuleName,
+                  matchedPattern: matchedPattern,
+                  isSafeSender: isSafeSender,
+                )
+              : null;
+
           return EmailActionResult(
             email: email,
             action: action,
             success: (map['success'] as int?) == 1,
             error: map['error_message'] as String?,
+            evaluationResult: evaluationResult,
           );
         }).toList();
       }
@@ -423,20 +440,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       }
     }
     
-    // Apply action type filter
+    // Apply action type filter using effective action (accounts for re-evaluation overrides)
     if (_filter != null) {
-      // Special handling for "No rule" - filter by action=none AND empty matched rule
-      // F21: Use effective evaluation (includes inline assignment overrides)
-      if (_filter == EmailActionType.none) {
-        results = results.where((result) {
-          final effectiveEval = _getEffectiveEvaluation(result);
-          final hasNoRule = (effectiveEval?.matchedRule ?? '').isEmpty;
-          return result.action == EmailActionType.none && hasNoRule;
-        }).toList();
-      } else {
-        // For other filters, filter by action type
-        results = results.where((result) => result.action == _filter).toList();
-      }
+      results = results.where((result) => _getEffectiveAction(result) == _filter).toList();
     }
     
     // Apply search filter (Item 8: Ctrl-F search)
@@ -881,17 +887,18 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               final processedCount = showingHistorical
                   ? allResults.length
                   : scanProvider.processedCount;
-              final deletedCount = showingHistorical
-                  ? allResults.where((r) => r.action == EmailActionType.delete).length
+              // Use effective action to account for inline re-evaluation overrides
+              final deletedCount = _evaluationOverrides.isNotEmpty || showingHistorical
+                  ? allResults.where((r) => _getEffectiveAction(r) == EmailActionType.delete).length
                   : scanProvider.deletedCount;
-              final movedCount = showingHistorical
-                  ? allResults.where((r) => r.action == EmailActionType.moveToJunk).length
+              final movedCount = _evaluationOverrides.isNotEmpty || showingHistorical
+                  ? allResults.where((r) => _getEffectiveAction(r) == EmailActionType.moveToJunk).length
                   : scanProvider.movedCount;
-              final safeCount = showingHistorical
-                  ? allResults.where((r) => r.action == EmailActionType.safeSender).length
+              final safeCount = _evaluationOverrides.isNotEmpty || showingHistorical
+                  ? allResults.where((r) => _getEffectiveAction(r) == EmailActionType.safeSender).length
                   : scanProvider.safeSendersCount;
-              final noRuleCount = showingHistorical
-                  ? allResults.where((r) => r.action == EmailActionType.none).length
+              final noRuleCount = _evaluationOverrides.isNotEmpty || showingHistorical
+                  ? allResults.where((r) => _getEffectiveAction(r) == EmailActionType.none).length
                   : scanProvider.noRuleCount;
               final errorCount = showingHistorical
                   ? allResults.where((r) => !r.success).length
@@ -1594,6 +1601,23 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     return _evaluationOverrides[key] ?? result.evaluationResult;
   }
 
+  /// Get the effective action type, accounting for re-evaluation overrides.
+  /// After inline rule assignment, the original action (e.g., none) may no longer
+  /// reflect the current evaluation (e.g., should now be delete or safeSender).
+  EmailActionType _getEffectiveAction(EmailActionResult result) {
+    final eval = _getEffectiveEvaluation(result);
+    if (eval == null) return result.action;
+    // Only override if there is an evaluation override for this email
+    final key = _getEmailKey(result.email);
+    if (!_evaluationOverrides.containsKey(key)) return result.action;
+    // Derive action from the override evaluation
+    if (eval.isSafeSender) return EmailActionType.safeSender;
+    if (eval.shouldDelete) return EmailActionType.delete;
+    if (eval.shouldMove) return EmailActionType.moveToJunk;
+    if (eval.matchedRule.isEmpty) return EmailActionType.none;
+    return result.action;
+  }
+
   /// Re-evaluate an email against the current rules and safe senders.
   ///
   /// Creates a fresh RuleEvaluator with the latest rules from RuleSetProvider
@@ -1650,8 +1674,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       }
 
       // Remove conflicting block rules before adding safe sender (Issue #154)
+      // Use full email address for conflict matching (domain-only values do not match rule patterns)
+      final senderEmail = email != null
+          ? EmailBodyParser().extractEmailAddress(email.from).toLowerCase().trim()
+          : value;
       final conflicts = await conflictResolver.removeConflictingRules(
-        emailAddress: value,
+        emailAddress: senderEmail,
         ruleProvider: ruleProvider,
       );
 
@@ -1748,10 +1776,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
 
       // Remove conflicting safe senders before adding block rule (Issue #154)
       // Subject-based rules do not conflict with safe senders (which match on from address)
+      // Use full email address for conflict matching (domain-only values do not match safe sender patterns)
       ConflictResolutionResult conflicts = ConflictResolutionResult.empty;
-      if (type != 'subject') {
+      if (type != 'subject' && email != null) {
+        final senderEmail = EmailBodyParser().extractEmailAddress(email.from).toLowerCase().trim();
         conflicts = await conflictResolver.removeConflictingSafeSenders(
-          emailAddress: value,
+          emailAddress: senderEmail,
           ruleProvider: ruleProvider,
         );
       }

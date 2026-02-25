@@ -26,6 +26,14 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-02-25 (Sprint 18: Bug Fixes from Testing Feedback)
+- **fix**: Conflict detection for "Block Entire Domain" now passes full email address to resolver instead of bare domain (Issue #154)
+- **fix**: Scan History shows correct rule match info instead of "No rule" for all entries
+- **fix**: Inline rule re-evaluation now updates filter counts and list membership immediately (Issue #168)
+- **fix**: Background scan RepetitionDuration changed from 1 day to 365 days for reliable recurring execution
+- **fix**: Settings > View Scan History now passes account context for email detail drill-down
+- **feat**: Shared email provider hint in email detail popup for Gmail, Yahoo, etc. (Issue #167)
+
 ### 2026-02-24 (Sprint 18: Rule Quality and Testing Tooling)
 - **fix**: Add conflict detection to inline rule assignment popup - safe sender and block rule conflicts now auto-resolved from Results screen (Issue #154)
 - **docs**: Subject (S1-S6) and body (B1-B4) content rule pattern standards with guidelines, examples, and anti-patterns (Issue #141)

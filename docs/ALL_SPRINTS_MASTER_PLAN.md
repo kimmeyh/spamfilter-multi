@@ -123,6 +123,8 @@ All incomplete features, bugs, and spikes in relative priority order. HOLD items
 | 14 | Enhancement | YAML Rules Import/Export UI in Settings (F22) | ~8-12h | -- | [Detail](#f22-yaml-rules-importexport-ui) |
 | 15 | Enhancement | Rule Splitting Migration Script (F23) | ~6-8h | -- | [Detail](#f23-rule-splitting-migration-script) |
 | 16 | Enhancement | Manage Rules Category Filter Chips (F24) | ~4-6h | -- | [Detail](#f24-manage-rules-category-filter-chips) |
+| 17 | Enhancement | Rule Testing UI Enhancements (F25) | ~6-8h | -- | [Detail](#f25-rule-testing-ui-enhancements) |
+| 18 | Enhancement | Safe Senders Management Filter Chips (F26) | ~4-6h | -- | [Detail](#f26-safe-senders-management-filter-chips) |
 
 ### HOLD Items
 
@@ -400,6 +402,42 @@ This section contains detailed specifications for incomplete items only. Complet
 - "Other" - all rules not in the above categories
 
 **Dependencies**: F23 (Rule Splitting Migration) must run first so rules have the new naming convention
+
+---
+
+### F25: Rule Testing UI Enhancements
+
+**Status**: Planned
+**Estimated Effort**: ~6-8h
+
+**Overview**: Enhance the Rule Testing screen (Settings > Tools > Test Rule Pattern) with additional capabilities to make it a more complete rule authoring tool.
+
+**Enhancements**:
+1. **Example Email Addresses**: Pre-populate the "Match against" list with email addresses from the Demo Scan data, giving users real addresses to test against without needing a live scan
+2. **Plain Text to Regex Conversion**: When a user enters a plain text pattern (no regex metacharacters) and presses Enter/Test, automatically convert it to the equivalent regex pattern and display both
+3. **Edit Rules with Test Tool**: Add a way to open an existing rule in the test tool from the Manage Rules screen, allowing users to modify and test patterns before saving
+
+**Dependencies**: None (builds on existing Rule Testing UI from Sprint 18)
+
+---
+
+### F26: Safe Senders Management Filter Chips
+
+**Status**: Planned
+**Estimated Effort**: ~4-6h
+
+**Overview**: Add filter chips to Settings > Account > Manage Safe Senders to categorize safe sender rules by their pattern type, making it easier to browse and manage large lists.
+
+**Filter Categories**:
+- "Exact Email" - patterns matching a specific email address (e.g., `^user@domain\.com$`)
+- "Exact Domain" - patterns matching an exact domain (e.g., `^[^@\s]+@domain\.com$`)
+- "Entire Domain" - patterns matching domain and all subdomains (e.g., `^[^@\s]+@(?:[a-z0-9-]+\.)*domain\.com$`)
+- "Top Level Domains" - patterns matching TLDs (e.g., `\.edu$`, `\.gov$`)
+- "Other" - all rules not matching the above categories
+
+**Note**: These categories should replace current "Domain" / "Domain + Subdomains" labels with the more user-friendly names above.
+
+**Dependencies**: None
 
 ---
 

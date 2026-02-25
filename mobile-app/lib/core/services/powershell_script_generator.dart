@@ -208,17 +208,17 @@ try {
       case ScanFrequency.every15min:
         return r'''$trigger = New-ScheduledTaskTrigger -Daily -At "12:00AM"
 $trigger.Repetition.Interval = (New-TimeSpan -Minutes 15).ToString()
-$trigger.Repetition.Duration = (New-TimeSpan -Days 1).ToString()''';
+$trigger.Repetition.Duration = (New-TimeSpan -Days 365).ToString()''';
 
       case ScanFrequency.every30min:
         return r'''$trigger = New-ScheduledTaskTrigger -Daily -At "12:00AM"
 $trigger.Repetition.Interval = (New-TimeSpan -Minutes 30).ToString()
-$trigger.Repetition.Duration = (New-TimeSpan -Days 1).ToString()''';
+$trigger.Repetition.Duration = (New-TimeSpan -Days 365).ToString()''';
 
       case ScanFrequency.every1hour:
         return r'''$trigger = New-ScheduledTaskTrigger -Daily -At "12:00AM"
 $trigger.Repetition.Interval = (New-TimeSpan -Hours 1).ToString()
-$trigger.Repetition.Duration = (New-TimeSpan -Days 1).ToString()''';
+$trigger.Repetition.Duration = (New-TimeSpan -Days 365).ToString()''';
 
       case ScanFrequency.daily:
         return r'$trigger = New-ScheduledTaskTrigger -Daily -At "09:00AM"';
