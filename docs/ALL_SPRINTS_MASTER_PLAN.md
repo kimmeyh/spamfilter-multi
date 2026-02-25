@@ -120,6 +120,9 @@ All incomplete features, bugs, and spikes in relative priority order. HOLD items
 | 11 | Enhancement | Background Scanning - Android / WorkManager (F4) | ~14-16h | -- | [Detail](#f4-background-scanning-android) |
 | 12 | Enhancement | Provider-Specific Optimizations (F6) | ~10-12h | -- | [Detail](#f6-provider-specific-optimizations) |
 | 13 | Enhancement | Multi-Account Scanning (F7) | ~8-10h | -- | [Detail](#f7-multi-account-scanning) |
+| 14 | Enhancement | YAML Rules Import/Export UI in Settings (F22) | ~8-12h | -- | [Detail](#f22-yaml-rules-importexport-ui) |
+| 15 | Enhancement | Rule Splitting Migration Script (F23) | ~6-8h | -- | [Detail](#f23-rule-splitting-migration-script) |
+| 16 | Enhancement | Manage Rules Category Filter Chips (F24) | ~4-6h | -- | [Detail](#f24-manage-rules-category-filter-chips) |
 
 ### HOLD Items
 
@@ -329,6 +332,74 @@ This section contains detailed specifications for incomplete items only. Complet
 **Dependencies**: Scan Results (completed Sprint 12)
 
 **Notes**: Defer until MVP complete. Current sequential scanning may be sufficient.
+
+---
+
+### F22: YAML Rules Import/Export UI
+
+**Status**: Planned
+**Estimated Effort**: ~8-12h
+
+**Overview**: Add user-facing YAML import and export functionality in Settings > Account tab, allowing users to export rules/safe senders to YAML files and import from YAML files.
+
+**Backend State**: `YamlService.exportRules()` and `YamlService.loadRules()` already exist. `YamlExportService` handles dual-write (database + YAML). Missing: UI triggers, file picker, conflict resolution, user feedback.
+
+**Features**:
+- Export rules to user-selected directory (with automatic backup)
+- Export safe senders to user-selected directory
+- Import rules from YAML file with preview and conflict resolution (merge/replace/skip)
+- Import safe senders from YAML file
+- Validation display before import (show errors/warnings)
+- Import status summary (success/failed counts)
+
+**Follow-up**: After import/export is stable, remove duplicate YAML storage (currently rules are stored in both SQLite and YAML asset files). SQLite becomes sole source of truth; YAML used only for import/export.
+
+**Dependencies**: None (backend methods exist)
+
+---
+
+### F23: Rule Splitting Migration Script
+
+**Status**: Planned
+**Estimated Effort**: ~6-8h
+
+**Overview**: One-time Dart CLI script to break apart the 4 monolithic rules (`SpamAutoDeleteHeader`, `SpamAutoDeleteFrom`, `SpamAutoDeleteBody`, `SpamAutoDeleteSubject`) into individual, well-named rules based on what each pattern actually blocks.
+
+**Splitting Logic**:
+- **SpamAutoDeleteHeader** patterns classified by regex structure:
+  - Entire domain (`@(?:[a-z0-9-]+\.)*domain\.com$`) -> `Block_EntireDomain_<domain>`
+  - Exact domain (`@domain\.com$`) -> `Block_ExactDomain_<domain>`
+  - Exact email (`^user@domain\.com$`) -> `Block_ExactEmail_<user_domain>`
+  - TLD (`\.<tld>$`) -> `Block_TopLevelDomain_<tld>`
+- **SpamAutoDeleteFrom** patterns: Convert from `from:` to `header:` matching, then same classification
+- **SpamAutoDeleteBody** patterns: `BlockBody_<cleaned_regex>` (use cleaned-up regex as name)
+- **SpamAutoDeleteSubject** patterns: `BlockSubject_<cleaned_regex>` (use cleaned-up regex as name)
+- Skip duplicates (if target rule name already exists)
+- Remove migrated patterns from original monolithic rules
+
+**Deliverable**: Dart CLI script in `scripts/` directory, run once, produces updated `rules.yaml`
+
+**Dependencies**: F22 (YAML Import/Export UI) for reimporting the split rules into the app database
+
+---
+
+### F24: Manage Rules Category Filter Chips
+
+**Status**: Planned
+**Estimated Effort**: ~4-6h
+
+**Overview**: Replace current "Header"/"Body"/"Subject" filter chips in Settings > Manage Rules with more meaningful categories that match the new rule naming convention from F23.
+
+**New Filter Categories**:
+- "Block Email" - rules matching `Block_ExactEmail_*`
+- "Block Exact Domain" - rules matching `Block_ExactDomain_*`
+- "Block Entire Domain" - rules matching `Block_EntireDomain_*`
+- "Block Top Level Domains" - rules matching `Block_TopLevelDomain_*`
+- "Block Body" - rules matching `BlockBody_*`
+- "Block Subject" - rules matching `BlockSubject_*`
+- "Other" - all rules not in the above categories
+
+**Dependencies**: F23 (Rule Splitting Migration) must run first so rules have the new naming convention
 
 ---
 
