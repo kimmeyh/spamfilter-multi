@@ -3,7 +3,7 @@ name: memory-restore
 description: Restore sprint context from saved memory file
 allowed-tools: Bash, Read, Write
 user-invocable: true
-model: claude-3-5-haiku-latest
+model: haiku
 ---
 
 # Memory Restore Skill

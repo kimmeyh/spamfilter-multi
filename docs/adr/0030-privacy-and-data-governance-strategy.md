@@ -2,11 +2,11 @@
 
 ## Status
 
-Proposed
+Accepted
 
 ## Date
 
-2026-02-15
+2026-02-15 (proposed), 2026-02-24 (accepted)
 
 ## Context
 
@@ -66,95 +66,104 @@ If the app allows users to create accounts, it must:
 
 ## Decision
 
-**TO BE DETERMINED** - This ADR captures the decision criteria. The decision will be made by the Product Owner.
+Four sub-decisions made for privacy and data governance:
 
-### Options Under Consideration
+### 1. Privacy Policy Hosting: Dedicated Website (`myemailspamfilter.com`)
 
-#### Privacy Policy Hosting
+Host the privacy policy on the app domain registered per ADR-0026.
 
-##### Option A: GitHub Pages
-- Free hosting via GitHub Pages
-- URL: `https://[username].github.io/spamfilter-multi/privacy`
-- Versioned in repository alongside code
-- Easy to update
+| Page | URL | Purpose |
+|------|-----|---------|
+| Privacy Policy | `myemailspamfilter.com/privacy` | Required by Play Store and Google API User Data Policy |
+| Account Deletion | `myemailspamfilter.com/delete` | Required by Play Store (Jan 28, 2026 policy) |
+| App Landing Page | `myemailspamfilter.com` | Play Store developer profile link |
 
-##### Option B: Dedicated Website
-- Custom domain (e.g., `spamfiltermulti.com`)
-- Full control over presentation
-- Can also host app landing page, data deletion form
-- Cost: $12-$20/year for domain + hosting
+**Hosting method**: GitHub Pages with custom domain (free hosting, versioned in repository).
 
-##### Option C: Third-Party Privacy Policy Generator
-- Services like Termly, TermsFeed, Iubenda
-- Template-based generation
-- Auto-hosted on their domain
-- Cost: $0-$10/month
+### 2. Analytics and Data Collection: Zero Telemetry
 
-#### Analytics and Data Collection
+Remove Firebase Analytics dependency entirely. No crash reporting, no usage analytics, no telemetry of any kind.
 
-##### Option A: Zero Telemetry
-- Remove Firebase Analytics entirely
-- No crash reporting
-- Simplest privacy disclosure ("we collect no data beyond what you provide")
-- Hardest to debug production issues
+**Privacy statement**: "We do not collect, transmit, or store any data on our servers. All data remains on your device."
 
-##### Option B: Crash Reporting Only
-- Firebase Crashlytics (crash reports + stack traces)
-- No usage analytics
-- Must disclose in privacy policy and Data Safety form
-- Helpful for production stability
+**Implementation**:
+- Remove `firebase-analytics` from `android/app/build.gradle.kts` dependencies
+- Keep `google-services.json` (still needed for Google Sign-In on Android)
+- Firebase BOM may still be needed for Google Sign-In; only remove analytics-specific dependencies
 
-##### Option C: Full Analytics
-- Firebase Analytics + Crashlytics
-- Usage patterns, feature adoption, retention
-- Most useful for product decisions
-- Most complex privacy disclosures
+**Rationale**: The app has no backend server. Zero telemetry is the cleanest privacy story and simplifies the Data Safety form and privacy policy significantly. Crash reporting can be added later (ADR-0033) if production debugging becomes a real problem.
 
-#### Data Retention
+### 3. Data Retention: Indefinite Local Storage (User-Controlled Deletion)
 
-##### Option A: Indefinite Local Storage
-- Scan results retained until user deletes
-- No automatic cleanup
-- Simplest implementation
+Scan results retained on-device indefinitely until the user deletes them. No automatic cleanup.
 
-##### Option B: Time-Based Retention
-- Auto-delete scan results after N days
-- Configurable retention period in settings
-- Privacy-friendly
+**Privacy statement**: "Scan results are stored locally on your device until you delete them."
 
-##### Option C: Session-Based
-- Scan results cleared on each new scan
-- Minimal data retention
-- Most privacy-friendly but least useful
+**Rationale**: Already implemented. User has full control via account deletion in the app. Time-based retention (Option B) is a nice-to-have but not needed for launch.
 
-### Decision Criteria
+### 4. Account Deletion: In-App + Web Page
 
-1. **Legal compliance**: Must satisfy GDPR, CCPA, Google API User Data Policy
-2. **Google verification**: Privacy policy quality affects OAuth verification outcome
-3. **User trust**: Transparency about data handling builds trust
-4. **Maintenance**: Privacy policy must be updated when app features change
-5. **Cost**: Hosting and legal review costs
-6. **CASA audit alignment**: Privacy practices evaluated during security assessment
-7. **Data minimization**: Less data collected = simpler compliance
+**In-app**: Delete button in account management screen that removes:
+- Credentials from `SecureCredentialsStore`
+- Scan history from SQLite (`scan_results`, `email_actions` for that account)
+- Account settings from SQLite (`account_settings` for that account)
+- Account record from SQLite (`accounts` table)
 
-### Key Points
+**External (web)**: Page at `myemailspamfilter.com/delete` explaining:
+- All data is stored locally on the user's device
+- No data is stored on any server
+- To delete data, open the app and go to Account Management > Delete Account
+- If the app is uninstalled, all local data is automatically removed by the OS
 
-- The app's local-only processing model is a significant privacy advantage
-- The Google API Services User Data Policy has specific prohibitions for Gmail data
-- Account deletion must be available both in-app and externally (website/email)
-- Firebase Analytics dependency should be resolved (either use it and disclose, or remove it)
-- The privacy policy is needed before submitting for Gmail OAuth verification (GP-4/ADR-0029)
-- The Data Safety form must be consistent with the privacy policy
-- GDPR requires disclosure of on-device data storage in privacy policy
-- No attorney is on the team; legal review approach must be decided
+**Rationale**: Since there is no backend server, there is no server-side data to delete. The web page satisfies the Google Play requirement for an external deletion mechanism while being honest about the local-only architecture.
+
+### Legal Review: Template-Based Approach
+
+Use an open-source privacy policy generator as the starting template, then customize for:
+- Google API Services User Data Policy compliance (Gmail-specific requirements)
+- GDPR and CCPA disclosure requirements
+- Local-only data processing model
+- Zero telemetry declaration
+
+**Recommended template tools** (in order of preference):
+1. [App Privacy Policy Generator](https://app-privacy-policy-generator.firebaseapp.com/) (nisrulz) - free, open source, supports "No Tracking" mode
+2. [Privacy Policy for No Data Collection](https://www.privacypolicygenerator.info/privacy-policy-no-data-collection/) - template specifically for apps that do not collect data
+3. [ArthurGareginyan/privacy-policy-template](https://github.com/ArthurGareginyan/privacy-policy-template) - Markdown/TXT template, easy to customize
+
+**Customization required**: Template output must be augmented with:
+- Google API Services User Data Policy compliance section (prohibited uses, minimum scope, no human access)
+- Specific disclosure of data types from the Context section of this ADR (credentials stored encrypted, email content transient, etc.)
+- Account deletion instructions
+
+**Note**: No attorney on the team. Templates provide reasonable legal coverage for indie apps. Professional legal review can be added later if the app scales.
 
 ## Alternatives Considered
 
-Analysis deferred until decision criteria are evaluated by Product Owner.
+| Sub-Decision | Option Chosen | Alternatives Rejected | Reason |
+|-------------|--------------|----------------------|--------|
+| Hosting | B: Dedicated website | A: GitHub Pages (no custom domain), C: Third-party generator (hosted on their domain) | Domain already registered (ADR-0026); multi-purpose site |
+| Analytics | A: Zero telemetry | B: Crash reporting only, C: Full analytics | Simplest privacy story; no backend means no server-side debugging anyway |
+| Retention | A: Indefinite local | B: Time-based (configurable), C: Session-based | Already implemented; user controls deletion; time-based is future nice-to-have |
+| Legal review | Template-based | Attorney review | Cost-effective for indie app; can add legal review later if needed |
 
 ## Consequences
 
-To be documented after decision is made.
+### Positive
+- Strongest possible privacy position ("we never see your data")
+- Simplest Data Safety form (declare minimal data collection)
+- No ongoing analytics costs or privacy disclosure maintenance
+- Account deletion is straightforward (local data only)
+- Privacy policy hosted on owned domain with full control
+
+### Negative
+- No crash reporting means production issues are harder to diagnose (users must report bugs manually)
+- Template-based privacy policy may not cover all edge cases (mitigated: can add legal review later)
+- Must maintain privacy policy page when app features change
+
+### Neutral
+- Firebase Analytics dependency removal is a code task (GP-12 / ADR-0033)
+- Account deletion feature (GP-11 / ADR-0032) is implementation work for a future sprint
+- Privacy policy must be written and published before Play Store submission (GP-5)
 
 ## References
 

@@ -242,7 +242,7 @@ This section contains detailed specifications for incomplete items only. Complet
 - **Task D**: Per-Account Auth Method Tracking (~3-4h) -- store and route to correct adapter per account
 - **Task E**: Remove Unused Auth Methods (~1-2h) -- remove `AuthMethod.apiKey`, audit dead code
 
-**Dependencies**: ADR-0029, ADR-0034 (decisions needed before implementation)
+**Dependencies**: ADR-0029 (Accepted), ADR-0034 (Accepted) -- decisions made, ready for implementation
 
 **Acceptance Criteria**:
 - [ ] Gmail platform selection offers choice: OAuth or App Password
@@ -368,11 +368,11 @@ All GP items are HOLD. When taken off hold, they should be added to "Next Sprint
 
 | ID | Title | Est. Effort | ADR | Priority |
 |----|-------|-------------|-----|----------|
-| GP-1 | Application Identity and Branding | ~4-6h | ADR-0026 (Proposed) | BLOCKING |
+| GP-1 | Application Identity and Branding | ~4-6h | ADR-0026 (Accepted) | BLOCKING |
 | GP-2 | Release Signing and Play App Signing | ~4-6h | ADR-0027 (Proposed) | BLOCKING |
 | GP-3 | Android Manifest Permissions | ~4-6h | ADR-0028 (Proposed) | BLOCKING |
-| GP-4 | Gmail API OAuth Verification (CASA) | ~40-80h | ADR-0029 (Proposed) | BLOCKING (ON HOLD -- trigger: 2,500+ users or $5K/yr revenue) |
-| GP-5 | Privacy Policy and Legal Documents | ~8-16h | ADR-0030 (Proposed) | BLOCKING |
+| GP-4 | Gmail API OAuth Verification (CASA) | ~40-80h | ADR-0029 (Accepted) | BLOCKING (ON HOLD -- trigger: 2,500+ users or $5K/yr revenue) |
+| GP-5 | Privacy Policy and Legal Documents | ~8-16h | ADR-0030 (Accepted) | BLOCKING |
 | GP-6 | Play Store Listing and Assets | ~8-12h | -- | HIGH |
 | GP-7 | Adaptive Icons and App Branding | ~4-6h | ADR-0031 (Proposed) | HIGH |
 | GP-8 | Android Target SDK + 16 KB Page Size | ~4-8h | -- | MEDIUM |
@@ -381,7 +381,7 @@ All GP items are HOLD. When taken off hold, they should be added to "Next Sprint
 | GP-11 | Account and Data Deletion Feature | ~8-12h | ADR-0032 (Proposed) | HIGH |
 | GP-12 | Firebase Analytics Decision | ~2-4h | ADR-0033 (Proposed) | MEDIUM |
 | GP-13 | Persistent Gmail Auth for Production | 0h | -- | RESOLVED (merged with F12, see ADR-0029/0034) |
-| GP-14 | IMAP vs Gmail REST API Decision | 0h | ADR-0034 (Proposed) | RESOLVED (dual-path, no migration needed) |
+| GP-14 | IMAP vs Gmail REST API Decision | 0h | ADR-0034 (Accepted) | RESOLVED (dual-path, no migration needed) |
 | GP-15 | Version Numbering and Release Strategy | ~2-4h | -- | HIGH |
 | GP-16 | Google Play Developer Account Setup | ~2-4h | -- | BLOCKING |
 
@@ -393,20 +393,21 @@ Full detail for each GP item is preserved below for reference when these items a
 
 #### GP-1: Application Identity and Branding
 
-**ADR**: ADR-0026 (Proposed)
+**ADR**: ADR-0026 (Accepted)
 **Estimated Effort**: ~4-6h
 
 Change the application from development defaults to production-ready identity.
 
-**Tasks**:
-- Update `applicationId` to production value in `android/app/build.gradle.kts`
-- Update `namespace` in `android/app/build.gradle.kts`
-- Update `android:label` in `AndroidManifest.xml` to user-friendly name
-- Update `msix_config` in `pubspec.yaml` to match new identity
-- Re-register with Firebase Console under new application ID
-- Update `google-services.json` for new package name
+**Decision**: Domain `myemailspamfilter.com`, Application ID `com.myemailspamfilter`, App Name `MyEmailSpamFilter`.
 
-**Note**: Domain `myemailspamfilter.com` selected (Issue #166 -- registration pending).
+**Tasks**:
+- Task A: Update `applicationId` to `com.myemailspamfilter` in `android/app/build.gradle.kts`
+- Task B: Update `namespace` to `com.myemailspamfilter` in `android/app/build.gradle.kts`
+- Task C: Update `android:label` to `MyEmailSpamFilter` in `AndroidManifest.xml`
+- Task D: Update `msix_config` in `pubspec.yaml` to match new identity
+- Task E: Re-register with Firebase Console under new application ID and download new `google-services.json`
+
+**Prerequisite**: Domain `myemailspamfilter.com` must be registered first (Issue #166 -- spike).
 
 ---
 
@@ -439,7 +440,7 @@ Declare all required permissions and implement runtime permission requests.
 
 #### GP-4: Gmail API OAuth Verification (CASA)
 
-**ADR**: ADR-0029 (Proposed)
+**ADR**: ADR-0029 (Accepted)
 **Estimated Effort**: ~40-80h (2-6 months elapsed)
 
 Complete Google's three-tier verification for restricted Gmail scopes. CASA security assessment by approved third-party lab.
@@ -448,14 +449,18 @@ Complete Google's three-tier verification for restricted Gmail scopes. CASA secu
 
 **Cost**: Tier 2 ($500-$1,800/yr), Tier 3 ($4,500-$8,000+/yr)
 
+**Phased approach** (per ADR-0029): Phase 1 uses unverified OAuth for alpha/beta (up to 100 users). Phase 2 adds Gmail app passwords via IMAP for general users. Phase 3 (this GP item) pursues CASA when revenue justifies cost.
+
 ---
 
 #### GP-5: Privacy Policy and Legal Documents
 
-**ADR**: ADR-0030 (Proposed)
+**ADR**: ADR-0030 (Accepted)
 **Estimated Effort**: ~8-16h
 
 Create and publish privacy policy, terms of service, and data handling documentation required by Play Store and Google API Services User Data Policy.
+
+**Decision** (per ADR-0030): Host on `myemailspamfilter.com` via GitHub Pages. Zero telemetry (remove Firebase Analytics). Indefinite local storage with user-controlled deletion. In-app + web page account deletion. Template-based legal review.
 
 ---
 
@@ -538,15 +543,15 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | ADR | Title | Blocking Feature | Status |
 |-----|-------|-----------------|--------|
-| ADR-0026 | Application Identity and Package Naming | GP-1 | Proposed |
+| ADR-0026 | Application Identity and Package Naming | GP-1 | Accepted |
 | ADR-0027 | Android Release Signing Strategy | GP-2 | Proposed |
 | ADR-0028 | Android Permission Strategy | GP-3 | Proposed |
-| ADR-0029 | Gmail API Scope and Verification Strategy | GP-4 | Proposed |
-| ADR-0030 | Privacy and Data Governance Strategy | GP-5 | Proposed |
+| ADR-0029 | Gmail API Scope and Verification Strategy | GP-4 | Accepted |
+| ADR-0030 | Privacy and Data Governance Strategy | GP-5 | Accepted |
 | ADR-0031 | App Icon and Visual Identity | GP-7 | Proposed |
 | ADR-0032 | User Data Deletion Strategy | GP-11 | Proposed |
 | ADR-0033 | Analytics and Crash Reporting Strategy | GP-12 | Proposed |
-| ADR-0034 | Gmail Access Method for Production | GP-14 | Proposed |
+| ADR-0034 | Gmail Access Method for Production | GP-14 | Accepted |
 
 ### Recommended Sequencing (when taken off hold)
 

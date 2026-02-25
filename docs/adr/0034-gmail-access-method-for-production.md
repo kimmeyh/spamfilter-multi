@@ -2,11 +2,11 @@
 
 ## Status
 
-Proposed
+Accepted
 
 ## Date
 
-2026-02-15
+2026-02-15 (proposed), 2026-02-22 (accepted)
 
 ## Context
 
@@ -74,70 +74,62 @@ Token behavior differs based on app verification status:
 
 ## Decision
 
-**TO BE DETERMINED** - This ADR captures the decision criteria. The decision will be made by the Product Owner.
+**Option D adopted (Dual Path)** with phased rollout matching ADR-0029:
 
-### Options Under Consideration
+### Path 1: Gmail REST API with OAuth (Alpha/Beta Testers)
 
-#### Option A: Keep Gmail REST API with `gmail.modify` (Current)
-- No code changes needed
-- `gmail.modify` scope covers read + label + move + trash
-- Must complete restricted scope verification + CASA audit
-- Most granular scope that covers all features
+Keep the existing `GmailApiAdapter` with `gmail.modify` scope for alpha/beta testers. Limited to 100 users in Testing mode. Testers accept weekly re-authentication (7-day token expiry) and "unverified app" warning.
 
-#### Option B: Gmail REST API with Incremental Scopes
-- Start with `gmail.readonly` for scanning
-- Upgrade to `gmail.modify` when user enables delete/move actions
-- Both are restricted (same verification requirement)
-- Demonstrates "principle of least privilege" to Google reviewers
-- More complex UX (two permission prompts at different times)
+- No code changes to existing Gmail adapter
+- Existing `GoogleAuthService` handles token refresh
+- Suitable for development, testing, and early adopter feedback
 
-#### Option C: IMAP with Gmail App Passwords (No OAuth)
-- Users manually create Gmail app passwords
-- Same IMAP path as AOL/Yahoo
-- No OAuth verification needed at all
-- Worst user experience (manual app password creation)
-- Does not work for accounts with Advanced Protection
+### Path 2: Gmail via IMAP with App Passwords (General Users)
 
-#### Option D: Dual Path (OAuth for Verified, App Password for Unverified)
-- Ship initially with app password support for Gmail (like AOL/Yahoo)
-- Add OAuth sign-in after completing verification process
-- Allows earlier Play Store launch
-- Most complex to implement and maintain
+Add Gmail as an IMAP provider option using the existing `GenericImapAdapter`. Users create Gmail app passwords and enter them in the app, same flow as AOL and Yahoo.
 
-#### Option E: Launch Without Gmail Support
-- Publish on Play Store with AOL, Yahoo, and generic IMAP only
-- Add Gmail support after completing OAuth verification
-- Fastest path to Play Store
-- Excludes the largest email provider
+**Gmail IMAP settings**:
+- Server: `imap.gmail.com`
+- Port: 993
+- Security: SSL/TLS
+- Authentication: App password
 
-### Decision Criteria
+**Implementation**: Add Gmail IMAP configuration to `PlatformRegistry` (new `.gmailImap()` factory or similar). The app must track which auth method (OAuth vs app password) is used per Gmail account.
 
-1. **Time to market**: How quickly can the app be published on Play Store?
-2. **User experience**: OAuth sign-in vs manual app password for Gmail users
-3. **Verification cost and timeline**: $500-$8,000+ annually, 2-6 months initial
-4. **Feature completeness**: All scan and delete features must work
-5. **User base**: Gmail is the dominant email provider (users will expect it)
-6. **Maintenance**: Annual CASA renewal commitment
-7. **Alternative providers**: App already supports AOL, Yahoo, generic IMAP without OAuth
+### Path 3: Full OAuth (After CASA Verification)
 
-### Key Points
-
-- There is no non-restricted scope that allows reading Gmail message content
-- The CASA audit requirement applies regardless of which restricted scope is chosen
-- `gmail.modify` is the most appropriate single scope for the app's functionality
-- Gmail app passwords require manual user setup (less user-friendly than OAuth)
-- Google may deprecate app passwords in the future (they have already removed basic auth for Workspace)
-- The app could launch without Gmail support and add it later (phased approach)
-- This decision is closely tied to ADR-0029 (scope strategy) and has financial implications
-- IMAP with OAuth (`mail.google.com`) is the broadest scope and hardest to justify during verification
+When CASA verification is completed (trigger: 2,500+ users or $5K/yr revenue per ADR-0029), OAuth becomes available for all users with long-lived tokens. At that point, app passwords remain as a fallback option.
 
 ## Alternatives Considered
 
-Analysis deferred until decision criteria are evaluated by Product Owner.
+| Option | Verdict | Reason |
+|--------|---------|--------|
+| A: Gmail REST API only (`gmail.modify`) | Partially adopted (Path 1) | Good for alpha/beta but requires CASA for general use |
+| B: Incremental scopes | Rejected | No verification benefit (both scopes restricted), more complex UX |
+| C: App passwords only | Partially adopted (Path 2) | Good for general users but worse UX; risk of future deprecation |
+| D: Dual path | **Adopted** | Best balance of coverage and cost; matches phased ADR-0029 strategy |
+| E: No Gmail support | Rejected | Gmail is dominant provider; excluding it limits app utility significantly |
 
 ## Consequences
 
-To be documented after decision is made.
+### Positive
+- Gmail support available at launch (via app passwords) without CASA verification
+- Alpha/beta testers get premium OAuth experience
+- No upfront CASA cost
+- Reuses existing `GenericImapAdapter` for Gmail IMAP (minimal new code)
+- All scan and delete features work via both paths
+
+### Negative
+- Two Gmail auth paths to maintain (OAuth + IMAP)
+- General users must manually create app passwords (in-app walkthrough needed, see F12B)
+- App passwords do not work for Google accounts with Advanced Protection
+- Google may deprecate app passwords in the future
+- Per-account auth method tracking adds complexity to account management
+
+### Neutral
+- `GmailApiAdapter` and `GenericImapAdapter` both remain (no removal)
+- F12B feature implements the dual-auth UX, walkthroughs, and account tracking
+- Migration from app password to OAuth is seamless when CASA is completed (user just re-authenticates)
 
 ## References
 

@@ -2,7 +2,7 @@
 
 **Purpose**: Detailed architectural documentation for the spamfilter-multi Flutter application
 
-**Last Updated**: February 21, 2026
+**Last Updated**: February 24, 2026
 
 ## SPRINT EXECUTION Documentation
 
@@ -688,23 +688,40 @@ mobile-app/
 - Extensible rule actions (custom scripts)
 - Third-party email provider plugins
 
-### Google Play Store Readiness (Proposed ADRs 0026-0034)
-Product readiness decisions documented as proposed ADRs. See `docs/adr/` for details:
-- ADR-0026: Application Identity and Package Naming
+### Google Play Store Readiness (ADRs 0026-0034)
+
+Product readiness decisions documented as ADRs. See `docs/adr/` for details.
+
+**Accepted**:
+- ADR-0026: Application Identity -- Domain `myemailspamfilter.com`, App ID `com.myemailspamfilter`, App Name `MyEmailSpamFilter`
+- ADR-0029: Gmail API Scope Strategy -- Phased approach: unverified OAuth for alpha/beta, app passwords for general users, CASA deferred until 2,500+ users or $5K/yr revenue
+- ADR-0030: Privacy and Data Governance -- Zero telemetry, host privacy policy on `myemailspamfilter.com` via GitHub Pages, indefinite local storage, in-app + web account deletion
+- ADR-0034: Gmail Access Method -- Dual path: Gmail REST API (OAuth) for alpha/beta, Gmail IMAP (app passwords) for general users
+
+**Proposed** (decisions pending):
 - ADR-0027: Android Release Signing Strategy
 - ADR-0028: Android Permission Strategy
-- ADR-0029: Gmail API Scope and Verification Strategy
-- ADR-0030: Privacy and Data Governance Strategy
 - ADR-0031: App Icon and Visual Identity
 - ADR-0032: User Data Deletion Strategy
 - ADR-0033: Analytics and Crash Reporting Strategy
-- ADR-0034: Gmail Access Method for Production
+
+### Gmail Authentication Strategy (ADR-0029, ADR-0034)
+
+The app supports two Gmail access paths, matching investment to viability:
+
+| Phase | Method | Users | Scope | Verification |
+|-------|--------|-------|-------|--------------|
+| 1 (Alpha/Beta) | Gmail REST API + OAuth | Up to 100 testers | `gmail.modify` | None (Testing mode) |
+| 2 (General) | Gmail IMAP + App Passwords | Unlimited | N/A (no OAuth) | None |
+| 3 (Future) | Gmail REST API + Verified OAuth | Unlimited | `gmail.modify` | CASA audit required |
+
+**CASA trigger**: Pursue verification when app has 2,500+ active Gmail IMAP users at $3/yr or yearly revenue exceeds $5,000.
 
 ---
 
 ## Architecture Decision Records
 
-All architectural decisions are documented as ADRs in `docs/adr/`. Currently 25 accepted and 9 proposed.
+All architectural decisions are documented as ADRs in `docs/adr/`. Currently 29 accepted and 5 proposed.
 
 **Accepted ADRs** (0001-0025):
 
@@ -741,6 +758,7 @@ All architectural decisions are documented as ADRs in `docs/adr/`. Currently 25 
 **Document Version**: 2.0
 **Created**: January 30, 2026
 **Major Revision**: February 21, 2026 (updated to reflect Sprint 17 completion, all 12 identified gaps resolved)
+**Update**: February 24, 2026 (ADR-0026/0029/0030/0034 accepted, Gmail auth strategy documented)
 **Related Documents**:
 - `docs/RULE_FORMAT.md` - YAML rule specification
 - `docs/adr/` - Architecture Decision Records (ADR-0001 through ADR-0034)
