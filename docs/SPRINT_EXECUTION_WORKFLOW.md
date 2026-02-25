@@ -91,11 +91,14 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
 
 - [ ] **2.1 Cache Sprint Context** (Optimization)
   - Read ALL_SPRINTS_MASTER_PLAN.md ONCE
+  - Verify "Last Completed Sprint" section reflects the most recent sprint (update if stale)
+  - Review "Next Sprint Candidates" table for prioritized work items
   - Cache in memory:
-    - Sprint N (current) details: Objective, tasks, acceptance criteria, risks
-    - Sprint N-1 (previous) details: For summary creation in Phase 3.2.1
+    - Next Sprint Candidates: prioritized table of features, bugs, and tasks
+    - Last Completed Sprint details: For summary creation in Phase 3.2.1
   - No re-reading needed until Phase 7.6 (updates)
   - **Efficiency Gain**: Reduces file reads from 3 to 1 per sprint
+  - **Reference**: See "Maintenance Guide" at top of ALL_SPRINTS_MASTER_PLAN.md for update rules
 
 ---
 
@@ -137,8 +140,10 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
   - Pattern: Increment by 1
 
 - [ ] **3.2 Review Sprint Plan**
-  - Read ALL_SPRINTS_MASTER_PLAN.md
-  - Identify Sprint N in "Current Sprint" or "Next Sprint" section
+  - Read ALL_SPRINTS_MASTER_PLAN.md (if not cached in Phase 2.1)
+  - Review "Next Sprint Candidates" table for prioritized work items
+  - Select items for Sprint N based on priority, dependencies, and capacity
+  - Review "Feature and Bug Details" section for selected items
   - Verify scope, tasks, and acceptance criteria
   - Note any changes needed based on previous sprint learnings
 
@@ -787,11 +792,13 @@ Before conducting sprint review, build and test the Windows desktop app:
     - Reference PR number: `(PR #NNN)`
     - **Format Reference**: See CLAUDE.md Changelog Policy for detailed format
 
-  - [ ] **Update ALL_SPRINTS_MASTER_PLAN.md** (MANDATORY - see Step 3 in "After Sprint Approval")
-    - Navigate to Sprint N section
-    - Add completion metadata (estimated vs actual duration, lessons learned)
-    - Update future sprint dependencies if needed
-    - Update risk assessments based on lessons learned
+  - [ ] **Update ALL_SPRINTS_MASTER_PLAN.md** (MANDATORY - follow Maintenance Guide rules)
+    - Update "Last Completed Sprint" section with Sprint N details (objective, tasks, PR link)
+    - Add row to "Past Sprint Summary" table
+    - Remove completed items from "Next Sprint Candidates" table
+    - Remove completed feature/bug detail sections from "Feature and Bug Details"
+    - Update priorities or add new items discovered during sprint
+    - **Reference**: See "Maintenance Guide" at top of ALL_SPRINTS_MASTER_PLAN.md for all rules
 
   - [ ] **Create Sprint Retrospective Document** (MANDATORY)
     - Create `docs/sprints/SPRINT_N_RETROSPECTIVE.md`

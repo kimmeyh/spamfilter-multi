@@ -35,7 +35,7 @@ These documents MUST be created/updated during each sprint:
 ## Phase 3: Kickoff & Planning
 
 - [ ] Sprint number determined (N = previous + 1)
-- [ ] Read ALL_SPRINTS_MASTER_PLAN.md for Sprint N
+- [ ] Read ALL_SPRINTS_MASTER_PLAN.md "Next Sprint Candidates" table
 - [ ] Created `docs/sprints/SPRINT_(N-1)_SUMMARY.md` for previous sprint (3.2.1)
 - [ ] **Created `docs/sprints/SPRINT_N_PLAN.md`** for current sprint (3.2.2 - MANDATORY)
 - [ ] Created feature branch: `feature/YYYYMMDD_Sprint_N`
@@ -91,7 +91,7 @@ These documents MUST be created/updated during each sprint:
 - [ ] Improvements decided (which to implement)
 - [ ] **Sprint Documents updated**:
   - [ ] CHANGELOG.md updated (all sprint entries present)
-  - [ ] ALL_SPRINTS_MASTER_PLAN.md updated (completion metadata)
+  - [ ] ALL_SPRINTS_MASTER_PLAN.md updated (per Maintenance Guide rules)
   - [ ] `docs/sprints/SPRINT_N_RETROSPECTIVE.md` created (MANDATORY)
   - [ ] `docs/sprints/SPRINT_N_SUMMARY.md` created (or deferred to next sprint Phase 3.2.1)
   - [ ] ARCHITECTURE.md updated (if architecture changed)

@@ -450,18 +450,17 @@ After user approves improvements, update relevant documents:
 
 #### 1. ALL_SPRINTS_MASTER_PLAN.md
 
-Update the current sprint section with completion metadata:
-```markdown
-### Sprint N: [Title] (COMPLETED - YYYY-MM-DD)
+Update per the Maintenance Guide at the top of the document:
+- Update "Last Completed Sprint" section with Sprint N details
+- Add row to "Past Sprint Summary" table
+- Remove completed items from "Next Sprint Candidates" table
+- Remove completed feature/bug detail sections
+- Update priorities or add new items discovered during sprint
 
-**Estimated Duration**: Xh
-**Actual Duration**: Yh (Z% variance)
-**Model Used**: Haiku/Sonnet/Opus
-**Tasks Completed**: N/N
-**Lessons Learned**:
-- [Key lesson 1]
-- [Key lesson 2]
-- [Key lesson 3]
+```markdown
+### Last Completed Sprint: Sprint N - [Title]
+**Completed**: YYYY-MM-DD | **Duration**: ~Xh | **PR**: #NNN
+**Tasks**: Brief list of what was done
 
 **Improvements Implemented**:
 - [Improvement 1] → Updated [file]
@@ -529,18 +528,18 @@ Create `docs/SPRINT_N_RETROSPECTIVE.md` with full retrospective details:
 
 **NOTE**: This retrospective document is separate from SPRINT_<N>_SUMMARY.md:
 - **SPRINT_N_RETROSPECTIVE.md**: Created during Phase 7 (this phase) - Full retrospective with feedback and improvements
-- **SPRINT_<N>_SUMMARY.md**: Created during next sprint planning (Phase 3.2.1) - Historical archive of sprint details from ALL_SPRINTS_MASTER_PLAN.md
+- **SPRINT_<N>_SUMMARY.md**: Created during next sprint planning (Phase 3.2.1) - Historical archive of sprint details
 
 #### 9. Sprint Summary Document (Created Next Sprint)
 
 **SPRINT_<N>_SUMMARY.md** is created as a background process during planning for Sprint N+1:
 - **When**: Phase 3.2.1 of next sprint (see SPRINT_EXECUTION_WORKFLOW.md)
-- **Purpose**: Archive completed sprint details from ALL_SPRINTS_MASTER_PLAN.md
+- **Purpose**: Archive historical sprint details for reference
 - **Content**: Sprint objective, tasks, deliverables, duration, lessons learned, improvements
-- **Benefit**: Keeps ALL_SPRINTS_MASTER_PLAN.md focused on current/future work
+- **Sources**: Retrospective, CHANGELOG, git history, GitHub issues (NOT from ALL_SPRINTS_MASTER_PLAN.md -- completed details are already removed)
 - **Reference**: Added to "Past Sprint Summary" table in ALL_SPRINTS_MASTER_PLAN.md
 
-This is a background process that does not block current sprint completion. The summary is created when planning the next sprint to clean up the master plan.
+This is a background process that does not block current sprint completion.
 
 ---
 
@@ -615,7 +614,7 @@ Use this quick checklist during Phase 7:
 - [ ] User feedback collected on 12 categories (7.3)
 - [ ] Claude analyzed feedback and proposed improvements (7.4)
 - [ ] User selected improvements to implement (7.5)
-- [ ] ALL_SPRINTS_MASTER_PLAN.md updated with actuals (7.7)
+- [ ] ALL_SPRINTS_MASTER_PLAN.md updated per Maintenance Guide (7.7)
 - [ ] Relevant workflow docs updated with improvements (7.7)
 - [ ] CHANGELOG.md updated with sprint entry (7.7)
 - [ ] Sprint retrospective document created (7.7)

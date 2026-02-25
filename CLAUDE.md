@@ -25,30 +25,29 @@ If any check fails, **STOP and resolve with user before accepting work**.
 **GitHub URL**: `https://github.com/kimmeyh/spamfilter-multi/blob/develop/docs/ALL_SPRINTS_MASTER_PLAN.md`
 
 **Contents**:
-- Complete specifications for all sprints
-- Sprint dependencies and critical path
-- Task breakdown by model (Haiku/Sonnet/Opus)
-- Effort estimates (actual vs estimated from previous sprints)
-- Risk management and contingency plans
-- Success criteria for sprint completion
+- Maintenance Guide (how/when to update the document)
+- Past Sprint Summary (table with links to per-sprint docs)
+- Last Completed Sprint details
+- Next Sprint Candidates (unified prioritized table of features, bugs, tasks)
+- Feature and Bug Details (incomplete items only)
+- Google Play Store Readiness (HOLD section)
 
 **When You Need This**:
-- Starting a new sprint (find Sprint X section)
-- Creating detailed sprint plan (copy and expand from master)
-- Planning dependencies (check cross-sprint dependency graph)
-- Assigning models to tasks (reference model assignment by sprint)
-- Understanding overall sprint roadmap
+- Starting a new sprint (review "Next Sprint Candidates" table)
+- Selecting sprint scope (check priorities and dependencies)
+- Understanding feature details (read "Feature and Bug Details" section)
+- Reviewing past sprint history (follow links in "Past Sprint Summary" table)
+- Planning Google Play Store work (review "Google Play Store Readiness" section)
 
 **Important**:
 1. This document is IN THE REPOSITORY (not in Claude's plan storage)
 2. It persists across conversations (unlike `.claude/plans/`)
-3. Update it after each sprint completes (add actual duration, lessons learned, update future Sprint plans - as needed)
+3. Update it after each sprint per the Maintenance Guide at the top of the document
 4. **BEFORE EVERY SPRINT**: Reference this document as very first step
-   - Read this document before starting Phase 1: Sprint Kickoff & Planning
-   - Check for updates from previous sprint retrospective
-   - Verify Sprint N section includes actual vs estimated durations
-   - Update the master plan with any lessons learned before planning next sprint
-   - Then proceed to SPRINT_EXECUTION_WORKFLOW.md Phase 1
+   - Read this document before starting Phase 2: Sprint Pre-Kickoff
+   - Review "Next Sprint Candidates" table for prioritized work items
+   - Verify "Last Completed Sprint" section is current
+   - Then proceed to SPRINT_EXECUTION_WORKFLOW.md Phase 2
 5. If you cannot find it, search: `find . -name "ALL_SPRINTS_MASTER_PLAN.md"` or `grep -r "sprint" docs/ALL_SPRINTS_MASTER_PLAN.md`
 
 ## Developer information
@@ -305,7 +304,7 @@ Cross-platform email spam filtering application built with 100% Flutter/Dart for
 
 **Current Status**: Sprint 17 complete (Feb 2026) - 977 tests passing, sprint-based development model.
 
-**For detailed status**: See `CHANGELOG.md` for feature history and `docs/ALL_SPRINTS_MASTER_PLAN.md` for sprint roadmap and completion records.
+**For detailed status**: See `CHANGELOG.md` for feature history and `docs/ALL_SPRINTS_MASTER_PLAN.md` for planned work and sprint history.
 
 ## Repository Structure
 

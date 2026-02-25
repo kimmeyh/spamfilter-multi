@@ -86,10 +86,10 @@ Each sprint is composed of **Cards** (GitHub issues) broken into **Tasks** assig
   - Task breakdown for each Card (with model assignments)
   - Acceptance criteria for each Card
   - **SPRINT_<N>_SUMMARY.md** for previous sprint (background process)
-  - **NOTE**: SPRINT_N_PLAN.md is NOT needed - plan details live in ALL_SPRINTS_MASTER_PLAN.md + GitHub issues
+  - **SPRINT_N_PLAN.md** for current sprint (MANDATORY - see SPRINT_EXECUTION_WORKFLOW.md § 3.2.2)
 - **Process**:
   1. **Create SPRINT_<N>_SUMMARY.md** for previous sprint (background process - see SPRINT_EXECUTION_WORKFLOW.md § 3.2.1)
-     - Archive completed sprint details from ALL_SPRINTS_MASTER_PLAN.md
+     - Use retrospective, CHANGELOG, git history, and GitHub issues as sources
      - Update "Past Sprint Summary" table in ALL_SPRINTS_MASTER_PLAN.md
      - Keeps master plan focused on current/future work
   2. User proposes sprint goal and selects Cards
