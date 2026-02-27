@@ -179,7 +179,7 @@ class SpamFilterApp extends StatelessWidget {
           },
           child: MaterialApp(
             navigatorKey: navigatorKey,
-            title: 'Spam Filter Mobile',
+            title: 'MyEmailSpamFilter',
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: ThemeMode.system, // Follow system theme preference

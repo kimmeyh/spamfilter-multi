@@ -102,7 +102,7 @@ void main() {
         // Assert
         expect(
           WindowsToastNotificationService.appId,
-          equals('SpamFilterMulti.BackgroundScan'),
+          equals('MyEmailSpamFilter.BackgroundScan'),
         );
       });
 
@@ -110,7 +110,7 @@ void main() {
         // Assert
         expect(
           WindowsToastNotificationService.appName,
-          equals('Spam Filter Multi'),
+          equals('MyEmailSpamFilter'),
         );
       });
     });
