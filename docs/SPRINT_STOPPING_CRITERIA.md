@@ -76,7 +76,7 @@ During sprint execution, models work autonomously until one of these stopping cr
      Sprint N complete! What would you like to do next?
 
      1. [CHECKLIST] Sprint Review (if not already conducted)
-     2. ➡️ Start Sprint N+1 (see ALL_SPRINTS_MASTER_PLAN.md for details)
+     2. [NEXT] Start Sprint N+1 (see ALL_SPRINTS_MASTER_PLAN.md for details)
      3. [CONFIG] Ad-hoc work (tasks outside sprint framework)
 
      Please let me know your preference.
@@ -229,7 +229,7 @@ What's Required to Unblock:
 
 ---
 
-### 5. ⏸️ REVIEW REQUEST - User Requests Sprint Review Early
+### 5. [PAUSE] REVIEW REQUEST - User Requests Sprint Review Early
 
 **When**: User explicitly requests sprint review before all tasks complete.
 
@@ -249,7 +249,7 @@ What's Required to Unblock:
 
 ---
 
-### 6. 🏁 SPRINT REVIEW COMPLETE - Phase 7 Done
+### 6. [DONE] SPRINT REVIEW COMPLETE - Phase 7 Done
 
 **When**: Phase 7 (Sprint Review) is complete, documentation improved, ready for PR merge.
 
@@ -315,7 +315,7 @@ constraints (performance, maintainability, test coverage).
 
 ---
 
-### 8. 📊 CONTEXT LIMIT APPROACHING - Efficiency Break
+### 8. [WARNING] CONTEXT LIMIT APPROACHING - Efficiency Break
 
 **When**: Context usage approaches limit and continued work becomes inefficient.
 
@@ -336,7 +336,7 @@ constraints (performance, maintainability, test coverage).
 
 ---
 
-### 9. ⏰ TIME LIMIT REACHED - Scheduled End of Sprint
+### 9. [STOP] TIME LIMIT REACHED - Scheduled End of Sprint
 
 **When**: Sprint duration reaches planned limit (e.g., "Sprint lasts until Friday 5 PM").
 

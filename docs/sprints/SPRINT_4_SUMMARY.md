@@ -17,7 +17,7 @@ Implement persistent storage and UI for reviewing/processing unmatched emails fr
 
 ---
 
-## 📊 Sprint Metrics
+## [METRICS] Sprint Metrics
 
 | Metric | Value |
 |--------|-------|
@@ -85,7 +85,7 @@ All commits made in Sprint 4:
 
 ---
 
-## 🗄️ Database Schema Changes
+## Database Schema Changes
 
 ### New Tables Created
 

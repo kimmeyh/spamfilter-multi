@@ -168,8 +168,8 @@ Sprint 7 successfully implemented a complete background email scanning system fo
 **What This Means**:
 - [FAIL] **Sprint 7 is NOT complete** per your requirements
 - [FAIL] **25 new failing tests must be resolved** (not accepted as-is)
-- ⏳ **Requires Sonnet escalation before Checkpoint 1**
-- ⏳ **Cannot merge PR #92 until test failures resolved**
+- [PENDING] **Requires Sonnet escalation before Checkpoint 1**
+- [PENDING] **Cannot merge PR #92 until test failures resolved**
 
 **My Error**:
 I failed to follow your escalation protocol. Instead of:
@@ -184,11 +184,11 @@ I accepted the failures and documented them as "acceptable for new code paths" -
 This must be added to CHECKPOINT 1 (before PR #92 can be approved):
 
 **ACTION ITEM - TEST FAILURE RESOLUTION**:
-1. ⏳ Escalate to Sonnet: Assess DatabaseHelper singleton refactoring options
-2. ⏳ Sonnet determines: Can we fix test isolation? (likely yes)
-3. ⏳ If fixable by Sonnet: Implement fix, re-run tests until all pass
-4. ⏳ If not fixable by Sonnet: Escalate to Opus
-5. ⏳ Only if Opus cannot resolve: Request your approval with detailed reason
+1. [PENDING] Escalate to Sonnet: Assess DatabaseHelper singleton refactoring options
+2. [PENDING] Sonnet determines: Can we fix test isolation? (likely yes)
+3. [PENDING] If fixable by Sonnet: Implement fix, re-run tests until all pass
+4. [PENDING] If not fixable by Sonnet: Escalate to Opus
+5. [PENDING] Only if Opus cannot resolve: Request your approval with detailed reason
 6. [OK] **Then**: All 55 new tests passing → PR #92 ready for merge
 
 **DO NOT PROCEED TO CHECKPOINT 2 until this is resolved.**
@@ -435,7 +435,7 @@ The implementation provides a solid foundation for Phase 3.5 background scanning
 
 ---
 
-## CHECKPOINT 1: Test Resolution & PR Review ⏳
+## CHECKPOINT 1: Test Resolution & PR Review [PENDING]
 
 **Status**: Sprint 7 code written, PR #92 created, BUT 25 NEW TESTS ARE FAILING
 
@@ -477,9 +477,9 @@ The implementation provides a solid foundation for Phase 3.5 background scanning
 **What I'm Waiting For**:
 
 **BLOCKING - Do NOT approve PR #92 until**:
-1. ⏳ I escalate this to Sonnet
-2. ⏳ Sonnet assesses options
-3. ⏳ Either: Tests fixed (all 55 passing) OR your approval for delayed resolution
+1. [PENDING] I escalate this to Sonnet
+2. [PENDING] Sonnet assesses options
+3. [PENDING] Either: Tests fixed (all 55 passing) OR your approval for delayed resolution
 4. [OK] Then: PR #92 ready for merge
 
 **PR #92 Contents** (currently on hold):
@@ -495,7 +495,7 @@ The implementation provides a solid foundation for Phase 3.5 background scanning
 
 ---
 
-## CHECKPOINT 2: Sprint Planning & Recommendations Approval ⏳
+## CHECKPOINT 2: Sprint Planning & Recommendations Approval [PENDING]
 
 **Status**: Sprint 8 Plan created (docs/sprints/SPRINT_8_PLAN.md), awaiting approval
 
@@ -553,7 +553,7 @@ Review: `docs/sprints/SPRINT_8_PLAN.md`
 
 ---
 
-## CHECKPOINT 3: Start Sprint 8 Implementation ⏳
+## CHECKPOINT 3: Start Sprint 8 Implementation [PENDING]
 
 **Status**: Awaiting Checkpoint 1 & 2 approvals
 
@@ -602,9 +602,9 @@ Sprint Complete → Return to Checkpoint 1
 - [OK] Code Complete (all 4 tasks done)
 - [OK] Tests Complete (611/644 passing)
 - [OK] Retrospective Complete (findings, metrics, lessons, recommendations)
-- ⏳ Checkpoint 1: Waiting for your PR #92 approval
-- ⏳ Checkpoint 2: Waiting for your Recommendations approval
-- ⏳ Checkpoint 3: Waiting for your Sprint 8 Plan approval
+- [PENDING] Checkpoint 1: Waiting for your PR #92 approval
+- [PENDING] Checkpoint 2: Waiting for your Recommendations approval
+- [PENDING] Checkpoint 3: Waiting for your Sprint 8 Plan approval
 
 ---
 

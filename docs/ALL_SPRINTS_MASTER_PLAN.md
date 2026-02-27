@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: February 24, 2026 (Document restructuring)
+**Last Updated**: February 27, 2026 (Sprint 18 completion)
 
 ## How to Maintain This Document
 
@@ -82,6 +82,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 15 | docs/sprints/SPRINT_15_PLAN.md | [OK] Complete | ~16h (Feb 14-15, 2026) |
 | 16 | docs/sprints/SPRINT_16_PLAN.md | [OK] Complete | ~6h (Feb 15-16, 2026) |
 | 17 | docs/sprints/SPRINT_17_SUMMARY.md | [OK] Complete | ~20h (Feb 17-21, 2026) |
+| 18 | docs/sprints/SPRINT_18_RETROSPECTIVE.md | [OK] Complete | Feb 24-27, 2026 |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -89,17 +90,17 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 17** (February 17-21, 2026)
-- **PR**: [#162](https://github.com/kimmeyh/spamfilter-multi/pull/162) (merged to develop)
-- **Features**: Consolidated Scan History (#158), Manual Scan config display (#156), Clear Results before Live Scan (#157), Windows Task Scheduler fix (#161), Test Background Scan button (#159), Auto-remove conflicting rules (#154 -- partial fix, bug still present)
-- **Tests**: 977 passed, 28 skipped, 0 failures
-- **Retrospective**: docs/sprints/SPRINT_17_RETROSPECTIVE.md
+**Sprint 18** (February 24-27, 2026)
+- **PR**: [#170](https://github.com/kimmeyh/spamfilter-multi/pull/170) (targeting develop)
+- **Features**: Safe sender/block rule conflict detection (#154), Subject/body content rule standards (#141), Common email provider domains F20 (#167), Inline rule assignment F21 (#168), Rule testing UI F8 (#169), Architecture v2.0 (#164), 5 bug fixes, F22-F26 backlog items
+- **Tests**: 1088 passed
+- **Retrospective**: docs/sprints/SPRINT_18_RETROSPECTIVE.md
 
 ---
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: February 24, 2026 (backlog refinement)
+**Last Reviewed**: February 27, 2026 (Sprint 18 completion)
 
 All incomplete features, bugs, and spikes in relative priority order. HOLD items grouped at bottom. Each item links to its detail section (if one exists) or GitHub Issue.
 
@@ -107,24 +108,20 @@ All incomplete features, bugs, and spikes in relative priority order. HOLD items
 
 | # | Type | Title | Est. Effort | Issue | Detail |
 |---|------|-------|-------------|-------|--------|
-| 1 | Bug | Safe sender to block rule conversion fails silently | ~4-6h | [#154](https://github.com/kimmeyh/spamfilter-multi/issues/154) | [Detail](#bug-154-safe-sender-to-block-rule-conversion) |
-| 2 | Spike | Register myemailspamfilter.com domain | ~1h | [#166](https://github.com/kimmeyh/spamfilter-multi/issues/166) | User action (not sprint work) |
-| 3 | Bug | Android app not tested in several sprints | ~2-4h | [#163](https://github.com/kimmeyh/spamfilter-multi/issues/163) | Validation sprint needed |
+| 1 | Spike | Register myemailspamfilter.com domain | ~1h | [#166](https://github.com/kimmeyh/spamfilter-multi/issues/166) | User action (not sprint work) |
+| 2 | Bug | Android app not tested in several sprints | ~2-4h | [#163](https://github.com/kimmeyh/spamfilter-multi/issues/163) | Validation sprint needed |
+| 3 | Enhancement | Folder Selection Save-on-Selection UX (F27) | ~4-6h | [#172](https://github.com/kimmeyh/spamfilter-multi/issues/172) | [Detail](#f27-folder-selection-save-on-selection-ux) |
 | 4 | Enhancement | Manage Rules UI: split combined rules, search, filter | ~12-16h | [#149](https://github.com/kimmeyh/spamfilter-multi/issues/149) | [Detail](#f149-manage-rules-ui-overhaul) |
-| 5 | Enhancement | Common Email Provider Domain Reference Table (F20) | ~3-4h | [#167](https://github.com/kimmeyh/spamfilter-multi/issues/167) | [Detail](#f20-common-email-provider-domain-reference-table) |
-| 6 | Enhancement | Inline Rule Assignment from Scan Results with Visual Tracking (F21) | ~4-6h | [#168](https://github.com/kimmeyh/spamfilter-multi/issues/168) | [Detail](#f21-inline-rule-assignment-from-scan-results) |
-| 7 | Enhancement | Rule Testing and Simulation (F8) | ~6-8h | [#169](https://github.com/kimmeyh/spamfilter-multi/issues/169) | [Detail](#f8-rule-testing-and-simulation) |
-| 8 | Tech Debt | Subject and Body Content Rule Standards | ~4-6h | [#141](https://github.com/kimmeyh/spamfilter-multi/issues/141) | -- |
-| 9 | Enhancement | Gmail Dual-Auth UX and Account Tracking (F12B) | ~10-16h | -- | [Detail](#f12b-gmail-dual-auth-ux-and-account-tracking) |
-| 10 | Enhancement | Playwright UI Tests + Android UI Testing Strategy (F11) | ~12-16h | -- | [Detail](#f11-playwright-ui-tests-and-android-ui-testing) |
-| 11 | Enhancement | Background Scanning - Android / WorkManager (F4) | ~14-16h | -- | [Detail](#f4-background-scanning-android) |
-| 12 | Enhancement | Provider-Specific Optimizations (F6) | ~10-12h | -- | [Detail](#f6-provider-specific-optimizations) |
-| 13 | Enhancement | Multi-Account Scanning (F7) | ~8-10h | -- | [Detail](#f7-multi-account-scanning) |
-| 14 | Enhancement | YAML Rules Import/Export UI in Settings (F22) | ~8-12h | -- | [Detail](#f22-yaml-rules-importexport-ui) |
-| 15 | Enhancement | Rule Splitting Migration Script (F23) | ~6-8h | -- | [Detail](#f23-rule-splitting-migration-script) |
-| 16 | Enhancement | Manage Rules Category Filter Chips (F24) | ~4-6h | -- | [Detail](#f24-manage-rules-category-filter-chips) |
-| 17 | Enhancement | Rule Testing UI Enhancements (F25) | ~6-8h | -- | [Detail](#f25-rule-testing-ui-enhancements) |
-| 18 | Enhancement | Safe Senders Management Filter Chips (F26) | ~4-6h | -- | [Detail](#f26-safe-senders-management-filter-chips) |
+| 5 | Enhancement | Gmail Dual-Auth UX and Account Tracking (F12B) | ~10-16h | -- | [Detail](#f12b-gmail-dual-auth-ux-and-account-tracking) |
+| 6 | Enhancement | Playwright UI Tests + Android UI Testing Strategy (F11) | ~12-16h | -- | [Detail](#f11-playwright-ui-tests-and-android-ui-testing) |
+| 7 | Enhancement | Background Scanning - Android / WorkManager (F4) | ~14-16h | -- | [Detail](#f4-background-scanning-android) |
+| 8 | Enhancement | Provider-Specific Optimizations (F6) | ~10-12h | -- | [Detail](#f6-provider-specific-optimizations) |
+| 9 | Enhancement | Multi-Account Scanning (F7) | ~8-10h | -- | [Detail](#f7-multi-account-scanning) |
+| 10 | Enhancement | YAML Rules Import/Export UI in Settings (F22) | ~8-12h | -- | [Detail](#f22-yaml-rules-importexport-ui) |
+| 11 | Enhancement | Rule Splitting Migration Script (F23) | ~6-8h | -- | [Detail](#f23-rule-splitting-migration-script) |
+| 12 | Enhancement | Manage Rules Category Filter Chips (F24) | ~4-6h | -- | [Detail](#f24-manage-rules-category-filter-chips) |
+| 13 | Enhancement | Rule Testing UI Enhancements (F25) | ~6-8h | -- | [Detail](#f25-rule-testing-ui-enhancements) |
+| 14 | Enhancement | Safe Senders Management Filter Chips (F26) | ~4-6h | -- | [Detail](#f26-safe-senders-management-filter-chips) |
 
 ### HOLD Items
 
@@ -143,24 +140,22 @@ All incomplete features, bugs, and spikes in relative priority order. HOLD items
 
 This section contains detailed specifications for incomplete items only. Completed features have their details in sprint documents and CHANGELOG.md.
 
-### Bug #154: Safe Sender to Block Rule Conversion
+### F27: Folder Selection Save-on-Selection UX
 
-**Status**: Open (Sprint 17 fix incomplete)
-**Issue**: [#154](https://github.com/kimmeyh/spamfilter-multi/issues/154)
+**Status**: Planned
+**Issue**: [#172](https://github.com/kimmeyh/spamfilter-multi/issues/172)
 **Estimated Effort**: ~4-6h
 
-**Problem**: When a user changes an email/domain from a Safe Sender to a Block Rule (via Quick Add or Manage Rules), the corresponding safe sender entry is not removed. Since safe senders are evaluated first, the block rule never fires.
+**Overview**: Change "Select Folders to Scan" dialog in Settings (Manual and Background) to instantly save on selection, removing Cancel and "Scan Selected Folder" buttons. Matches UX pattern used by other Settings controls.
 
-**User-Reported Reproduction** (2026-02-23): `no-reply@notification.circle.so` -- user attempted "Block Entire Domain" multiple times; app continues showing "Safe Sender Entire Domain".
+**Behavior**:
+- "Select All Folders" checked -> instantly check all folders and save
+- "Select All Folders" unchecked -> instantly uncheck all folders and save
+- Individual folder checked -> clicking unchecks and saves immediately
+- Individual folder unchecked -> clicking checks and saves immediately
+- Remove Cancel and "Scan Selected Folder" buttons
 
-**Root Cause**: The RuleQuickAddScreen and rule management UI add new delete rules but do not check for or remove existing safe sender entries for the same address/domain.
-
-**Acceptance Criteria**:
-- [ ] Adding a delete rule checks for matching safe sender entries
-- [ ] Matching safe sender entries are removed (with confirmation)
-- [ ] Adding a safe sender checks for matching delete rules
-- [ ] Matching delete rules are removed (with confirmation)
-- [ ] Both rules and safe senders are updated atomically
+**Scope**: Settings > Manual Scan and Settings > Background Scan folder selection
 
 ---
 
@@ -171,65 +166,6 @@ This section contains detailed specifications for incomplete items only. Complet
 **Estimated Effort**: ~12-16h
 
 **Overview**: Split combined rules into separate views, add search and filter capabilities to the Manage Rules UI.
-
----
-
-### F21: Inline Rule Assignment from Scan Results
-
-**Status**: Sprint 18, Task D (most implementation exists -- verification and completion)
-**Estimated Effort**: ~4-6h
-**Issue**: [#168](https://github.com/kimmeyh/spamfilter-multi/issues/168)
-
-**Overview**: While reviewing Scan Results (from either View Scan History or Start Live Scan), users can add rules to emails with "No rule" matches. After assigning, the list and detail views update to reflect the new assignment.
-
-**Key Features**:
-- Add Safe Sender or Block Rule directly from No Rule email entries in Scan Results
-- Rule type options: Exact Email, Exact Domain, Entire Domain, Block Email, Block Exact Domain, Block Entire Domain, Block Subject
-- After adding a rule, the Scan Results list item updates to show assignment
-- Visual tracking so user can see which No Rule items now have rules assigned during review session
-- Re-opening email detail view after rule assignment shows the newly matched rule
-- Re-evaluation of rules against the email when detail view is opened (not cached scan-time result)
-
-**Dependencies**: F20 (Common Email Provider Domains - for smart suggestions)
-
----
-
-### F20: Common Email Provider Domain Reference Table
-
-**Status**: Sprint 18, Task C
-**Estimated Effort**: ~3-4h
-**Issue**: [#167](https://github.com/kimmeyh/spamfilter-multi/issues/167)
-
-**Overview**: Maintain an application-level reference table of common email provider domains (gmail.com, aol.com, yahoo.com, outlook.com, hotmail.com, live.com, protonmail.com, etc.). Loaded into memory at scan time for matching against Deleted, Safe, and No Rule results.
-
-**Key Features**:
-- Application-managed table (not user-editable settings)
-- Loaded into memory at scan time for fast matching
-- Covers major providers: Gmail, AOL, Yahoo, Microsoft (outlook.com, hotmail.com, live.com, msn.com), Proton (protonmail.com, proton.me, pm.me), iCloud, Zoho, GMX, mail.com
-- Used by rule suggestion logic to distinguish personal provider emails from business/organizational domains
-- Database-backed with seed data on first launch
-
-**Dependencies**: None
-
----
-
-### F8: Rule Testing and Simulation
-
-**Status**: Sprint 18, Task E
-**Estimated Effort**: ~6-8h
-**Issue**: [#169](https://github.com/kimmeyh/spamfilter-multi/issues/169)
-
-**Overview**: UI for testing rules against sample emails before saving.
-
-**Key Features**:
-- Load sample emails from actual inbox
-- Test rule against samples
-- Show which emails match and why
-- Pattern highlighting in email content
-
-**Dependencies**: F3 (Interactive Rule Management -- completed Sprint 12)
-
-**Notes**: Partially covered by F3 pattern testing. Full simulation may be deferred.
 
 ---
 
@@ -688,6 +624,7 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 4.1 | 2026-02-27 | Sprint 18 completion: removed completed items (#154, #141, #167, #168, #169), added F27 (Folder Selection UX), updated Last Completed Sprint and Past Sprint Summary |
 | 4.0 | 2026-02-24 | Major restructure: added Maintenance Guide, unified Next Sprint Candidates list, removed completed feature details (F1/F2/F3/F5/F9/F10/F12/F17/F18), removed stale sections (Next Sprint TBD, Issue Backlog, Sprint 11/12 actions), integrated GP items into single priority view, condensed GP details |
 | 3.3 | 2026-02-15 | Added Google Play Store Readiness section (GP-1 through GP-16, ADR-0026 through ADR-0034) |
 | 3.2 | 2026-02-06 | Sprint 13 completed |

@@ -185,29 +185,29 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## Version History
 
 ### Phase 3.3 - Enhancement Features (January 5-6, 2026)
-**Status**: ✅ COMPLETE
+**Status**: [OK] COMPLETE
 
 **Features**:
-- ✅ **Issue #36**: Progressive UI updates with throttling (every 10 emails OR 3 seconds)
-- ✅ **Issue #37**: Dynamic folder discovery - fetches real folders from email providers
-- ✅ **Gmail Token Refresh**: Folder discovery now uses `getValidAccessToken()` for automatic token refresh
-- ✅ **Gmail Header Fix**: Extract email from "Name <email>" format for rule matching
-- ✅ **Counter Bug Fix**: Reset `_noRuleCount` in `startScan()` to prevent accumulation across scans
-- ✅ **Claude Code MCP Tools**: Custom MCP server for YAML validation, regex testing, rule simulation
-- ✅ **Build Script Enhancements**: `-StartEmulator`, `-EmulatorName`, `-SkipUninstall` flags
+- [OK] **Issue #36**: Progressive UI updates with throttling (every 10 emails OR 3 seconds)
+- [OK] **Issue #37**: Dynamic folder discovery - fetches real folders from email providers
+- [OK] **Gmail Token Refresh**: Folder discovery now uses `getValidAccessToken()` for automatic token refresh
+- [OK] **Gmail Header Fix**: Extract email from "Name <email>" format for rule matching
+- [OK] **Counter Bug Fix**: Reset `_noRuleCount` in `startScan()` to prevent accumulation across scans
+- [OK] **Claude Code MCP Tools**: Custom MCP server for YAML validation, regex testing, rule simulation
+- [OK] **Build Script Enhancements**: `-StartEmulator`, `-EmulatorName`, `-SkipUninstall` flags
 
 **Impact**: Improved user experience with responsive UI updates, dynamic folder selection, and enhanced OAuth reliability
 
 ---
 
 ### Phase 3.2 - Bug Fixes (January 4-5, 2026)
-**Status**: ✅ COMPLETE
+**Status**: [OK] COMPLETE
 
 **Fixes**:
-- ✅ **Issue #35**: Folder selection now correctly scans selected folders (not just INBOX)
+- [OK] **Issue #35**: Folder selection now correctly scans selected folders (not just INBOX)
   - **Problem**: Selecting non-Inbox folders (e.g., "Bulk Mail") still only scanned Inbox
   - **Solution**: Added `_selectedFolders` field to EmailScanProvider, connected UI callback
-- ✅ **Navigation Fix**: Prevent unwanted auto-navigation to Results when returning to Scan Progress
+- [OK] **Navigation Fix**: Prevent unwanted auto-navigation to Results when returning to Scan Progress
   - **Problem**: Returning to Scan Progress from Account Selection caused unwanted auto-navigation
   - **Solution**: Initialize `_previousStatus` in `initState()` before first build
 
@@ -218,32 +218,32 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ---
 
 ### Phase 3.1 - UI/UX Enhancements (January 4, 2026)
-**Status**: ✅ COMPLETE
+**Status**: [OK] COMPLETE
 
 **Features**:
-- ✅ **Issue #32**: Full Scan mode added (4th scan mode) with persistent mode selector and warning dialogs
+- [OK] **Issue #32**: Full Scan mode added (4th scan mode) with persistent mode selector and warning dialogs
   - Added `ScanMode.fullScan` for permanent delete/move operations
   - Added persistent "Scan Mode" button on Scan Progress screen
   - Removed scan mode pop-up from account setup flow (default to readonly)
   - Added warning dialog for Full Scan mode (requires user confirmation)
 
-- ✅ **Issue #33**: Scan Progress UI redesigned
+- [OK] **Issue #33**: Scan Progress UI redesigned
   - Removed redundant progress bar and processed count text
   - Updated to 7-bubble row: Found (Blue), Processed (Purple), Deleted (Red), Moved (Orange), Safe (Green), No rule (Grey), Errors (Dark Red)
   - Added auto-navigation to Results screen when scan completes
   - Re-enabled buttons after scan completes
 
-- ✅ **Issue #34**: Results Screen UI redesigned
+- [OK] **Issue #34**: Results Screen UI redesigned
   - Added `accountEmail` parameter to show email in title
   - Updated title format: "Results - <email> - <provider>"
   - Updated summary format: "Summary - <mode>"
   - Matched bubble row to Scan Progress (7 bubbles with exact same colors)
 
-- ✅ **Bubble Counts Fix**: All scan modes now show proposed actions (what WOULD happen)
+- [OK] **Bubble Counts Fix**: All scan modes now show proposed actions (what WOULD happen)
   - Changed `recordResult()` to always increment counts based on rule evaluation
   - Read-Only mode now useful for previewing results
 
-- ✅ **No Rule Tracking**: Added "No rule" bubble (grey) to track emails with no rule match
+- [OK] **No Rule Tracking**: Added "No rule" bubble (grey) to track emails with no rule match
   - Added `_noRuleCount` field and getter to EmailScanProvider
   - Tracks emails that did not match any rules (for future rule creation)
 

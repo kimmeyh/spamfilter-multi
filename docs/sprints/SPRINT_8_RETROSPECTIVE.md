@@ -642,7 +642,7 @@ if (Test-Path $currentFile) {
         }
     }
 } else {
-    Write-Host "ℹ️  No saved context found. Starting fresh."
+    Write-Host "[INFO]  No saved context found. Starting fresh."
 }
 ```
 
@@ -1266,7 +1266,7 @@ at gmail_api_adapter.dart:89
 2. **High** (fix this sprint): Add token refresh to folder discovery
 3. **Medium** (defer): Update deprecated wildcard rules
 
-### 📊 Performance Metrics
+### [METRICS] Performance Metrics
 
 - Rule loading: 45ms (target < 100ms) [OK]
 - Email fetching: 2.3s for 150 emails (15ms/email) [OK]

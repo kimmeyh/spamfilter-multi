@@ -189,8 +189,9 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
   - Switch repository to new branch: `git checkout -b <branch-name>`
 
 - [ ] **3.3.1 Create Draft PR Immediately** (RECOMMENDED - Early Visibility)
-  - **When**: Immediately after branch creation and sprint plan approval
+  - **When**: Immediately after branch creation and sprint plan approval (at Phase 4 start)
   - **Why**: Provides visibility into sprint progress from the start
+  - **Important**: Create a NEW draft PR for each sprint. Do not reuse PRs from planning/architecture phases, as this makes the PR history and description less clean. The draft PR should represent the sprint work from the beginning.
   - **How**:
     ```powershell
     git push -u origin feature/YYYYMMDD_Sprint_N

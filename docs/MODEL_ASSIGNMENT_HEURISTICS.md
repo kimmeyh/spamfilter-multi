@@ -25,7 +25,7 @@ Task assignment follows a **complexity-based heuristic** that considers three fa
 
 ## Model Capabilities
 
-### 🟢 Haiku (Fast, Focused, Pattern-Based)
+### [HAIKU] Haiku (Fast, Focused, Pattern-Based)
 
 **Best For**:
 - Well-defined CRUD operations
@@ -55,7 +55,7 @@ Task assignment follows a **complexity-based heuristic** that considers three fa
 
 ---
 
-### 🟠 Sonnet (Balanced, Architectural, Refactoring)
+### [SONNET] Sonnet (Balanced, Architectural, Refactoring)
 
 **Best For**:
 - Architectural decisions with tradeoffs
@@ -86,7 +86,7 @@ Task assignment follows a **complexity-based heuristic** that considers three fa
 
 ---
 
-### 🔴 Opus (Deep Analysis, Critical Path, Novel Problems)
+### [OPUS] Opus (Deep Analysis, Critical Path, Novel Problems)
 
 **Best For**:
 - Novel problems with no clear solution pattern
@@ -255,7 +255,7 @@ START: New Task
 
 ### Sprint 1 - Task A: SafeSenderDatabaseStore (HAIKU)
 
-**Assignment**: 🟢 Haiku
+**Assignment**: [HAIKU] Haiku
 **Actual Effort**: 2.5 hours (estimated 2-3 hours)
 **Outcome**: [OK] SUCCESS (36 tests, 100% passing)
 
@@ -273,7 +273,7 @@ START: New Task
 
 ### Sprint 1 - Task B: SafeSenderEvaluator (SONNET)
 
-**Assignment**: 🟠 Sonnet
+**Assignment**: [SONNET] Sonnet
 **Actual Effort**: 2.8 hours (estimated 3-4 hours)
 **Outcome**: [OK] SUCCESS (41 tests, 100% passing)
 
@@ -291,7 +291,7 @@ START: New Task
 
 ### Sprint 3 - Task C: RuleSetProvider Integration (HAIKU)
 
-**Assignment**: 🟢 Haiku
+**Assignment**: [HAIKU] Haiku
 **Actual Effort**: 1.5 hours (estimated 2-3 hours)
 **Outcome**: [OK] SUCCESS (341 tests total, 0 regressions)
 

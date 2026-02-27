@@ -577,7 +577,7 @@ While executing tasks, models update the GitHub issue with progress:
 **Status Update** - [Date] [Time]
 - Task A: [OK] Complete (8:00 AM)
 - Task B: [PENDING] In Progress - [Current work description]
-- Task C: ⏸️ Blocked - [Reason and escalation]
+- Task C: [BLOCKED] - [Reason and escalation]
 
 Confidence: [High/Medium/Low] that schedule remains on track
 Next: [What happens next]

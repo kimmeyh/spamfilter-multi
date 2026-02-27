@@ -61,7 +61,7 @@
 
 ---
 
-## 📊 SPRINT METRICS
+## [METRICS] SPRINT METRICS
 
 ### Code Delivery
 | Metric | Result |

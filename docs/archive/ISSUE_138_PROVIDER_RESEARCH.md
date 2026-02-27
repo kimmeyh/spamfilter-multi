@@ -180,10 +180,10 @@ await graphClient.users['me'].messages[messageId].categories.add({
 
 | Provider | Mechanism | Max Name Length | Special Chars | Webmail Visible | Desktop Client Visible |
 |----------|-----------|----------------|---------------|-----------------|----------------------|
-| **Gmail** | Labels | 225 chars | Yes (most) | ✅ Yes | ✅ Yes (via IMAP) |
-| **IMAP** | Keywords | 32-64 chars* | Limited | ❌ No (usually) | ✅ Yes (some clients) |
-| **AOL** | IMAP Keywords | 32-64 chars* | Limited | ❌ No | ✅ Yes (Thunderbird, etc.) |
-| **Outlook** | Categories | 255 chars | Yes | ✅ Yes (future) | ✅ Yes (future) |
+| **Gmail** | Labels | 225 chars | Yes (most) | [OK] Yes | [OK] Yes (via IMAP) |
+| **IMAP** | Keywords | 32-64 chars* | Limited | [FAIL] No (usually) | [OK] Yes (some clients) |
+| **AOL** | IMAP Keywords | 32-64 chars* | Limited | [FAIL] No | [OK] Yes (Thunderbird, etc.) |
+| **Outlook** | Categories | 255 chars | Yes | [OK] Yes (future) | [OK] Yes (future) |
 
 *Server-dependent
 
@@ -192,7 +192,7 @@ await graphClient.users['me'].messages[messageId].categories.add({
 ## Recommendations
 
 ### Gmail
-✅ **Use Labels API** - Full featured, well supported, visible in all Gmail clients.
+[OK] **Use Labels API** - Full featured, well supported, visible in all Gmail clients.
 
 **Implementation**:
 - Create nested label: `SpamFilter/{RuleName}`
@@ -200,7 +200,7 @@ await graphClient.users['me'].messages[messageId].categories.add({
 - Label persists with email
 
 ### Generic IMAP
-⚠️ **Use Keywords with Fallback** - Limited server support, may not work everywhere.
+[WARNING] **Use Keywords with Fallback** - Limited server support, may not work everywhere.
 
 **Implementation**:
 - Check `PERMANENTFLAGS` for `\*` (custom keywords supported)
@@ -209,7 +209,7 @@ await graphClient.users['me'].messages[messageId].categories.add({
 - Sanitize rule name: Replace spaces with underscores, limit length to 32 chars
 
 ### AOL
-⚠️ **Same as Generic IMAP** - Use IMAP keywords, limited webmail visibility.
+[WARNING] **Same as Generic IMAP** - Use IMAP keywords, limited webmail visibility.
 
 **Implementation**:
 - Same as Generic IMAP (AOL uses standard IMAP)
@@ -286,9 +286,9 @@ await graphClient.users['me'].messages[messageId].categories.add({
 
 ## Next Steps
 
-1. ✅ Task A Complete - Research documented
-2. ⏭️ Task B - Implement mark-as-read for all providers
-3. ⏭️ Task C - Ensure rule name captured in evaluation
-4. ⏭️ Task D - Implement flagging (Gmail labels, IMAP keywords)
-5. ⏭️ Task E - Integration testing
+1. [OK] Task A Complete - Research documented
+2. [NEXT] Task B - Implement mark-as-read for all providers
+3. [NEXT] Task C - Ensure rule name captured in evaluation
+4. [NEXT] Task D - Implement flagging (Gmail labels, IMAP keywords)
+5. [NEXT] Task E - Integration testing
 

@@ -379,7 +379,7 @@ notifyListeners() for UI updates
 |----------|-------|--------|
 | Sprint 3 New Tests | 77 | [OK] 100% |
 | Existing Tests | 262+ | [OK] 100% |
-| Skipped Tests | 13 | ⏭️ Credentials |
+| Skipped Tests | 13 | [SKIP] Credentials |
 | Failed Tests | 2 | [WARNING] Pre-Sprint 2 |
 | **Total** | **341** | **[OK] 95.8%** |
 

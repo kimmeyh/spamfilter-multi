@@ -84,7 +84,7 @@
 
 ---
 
-### ⏳ CHECKPOINT 2: Recommendations & Sprint 8 Plan Approval
+### [PENDING] CHECKPOINT 2: Recommendations & Sprint 8 Plan Approval
 
 **Current Status**: Sprint 8 Plan complete at `docs/sprints/SPRINT_8_PLAN.md`
 
@@ -114,7 +114,7 @@
 
 ---
 
-### ⏳ CHECKPOINT 3: Begin Sprint 8 Execution
+### [PENDING] CHECKPOINT 3: Begin Sprint 8 Execution
 
 **What I Will Do** (automatically after Checkpoint 2):
 1. Create feature branch: `feature/20260128_Sprint_8`
@@ -340,8 +340,8 @@ NotificationService (abstract interface)
 - [OK] Sprint 7 Code: Complete (all 4 tasks)
 - [OK] Sprint 7 Retrospective: Complete (findings, metrics, lessons, recommendations)
 - [OK] Sprint 8 Plan: Complete (4 tasks detailed, 14-18 hours estimated)
-- ⏳ CHECKPOINT 1: Waiting for your PR #92 approval & merge
-- ⏳ CHECKPOINT 2: Waiting for your Sprint 8 Plan & Recommendations approval
-- ⏳ CHECKPOINT 3: Will start automatically after Checkpoint 2 approved
+- [PENDING] CHECKPOINT 1: Waiting for your PR #92 approval & merge
+- [PENDING] CHECKPOINT 2: Waiting for your Sprint 8 Plan & Recommendations approval
+- [PENDING] CHECKPOINT 3: Will start automatically after Checkpoint 2 approved
 
 Created: January 28, 2026

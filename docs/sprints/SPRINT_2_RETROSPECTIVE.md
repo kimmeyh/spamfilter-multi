@@ -115,7 +115,7 @@ Sprint 2 successfully delivered SQLite database storage for rules and safe sende
 
 **Improvement Completed**:
 - [OK] Added time tracking section to sprint card template
-- [OK] Template now includes format: "⏱️ Task A: X hours (estimated Y-Z hours)"
+- [OK] Template now includes format: "[TIME] Task A: X hours (estimated Y-Z hours)"
 - [OK] Instructions to update during sprint execution
 - [OK] Note that data helps calibrate future estimates
 
@@ -197,7 +197,7 @@ Sprint 2 successfully delivered SQLite database storage for rules and safe sende
 | Code Analysis | [OK] Zero issues |
 | All Tests Passing | [OK] 264 passing |
 | Regression Tests | [OK] Zero regressions |
-| Manual Testing | ⏳ Ready for user testing |
+| Manual Testing | [PENDING] Ready for user testing |
 | Code Review | [OK] Approved (see PR #65) |
 | Security Issues | [OK] None identified |
 
@@ -232,7 +232,7 @@ Sprint 2 successfully delivered SQLite database storage for rules and safe sende
 
 3. **Time Tracking Template**
    - Added time tracking section to sprint card issue template
-   - Format: "⏱️ Task A: X hours (estimated Y-Z hours)"
+   - Format: "[TIME] Task A: X hours (estimated Y-Z hours)"
    - Instructions to update during execution
    - Note that data calibrates future estimates
 
@@ -273,11 +273,11 @@ Sprint 2 successfully delivered SQLite database storage for rules and safe sende
 5. [OK] Success Criteria reorganized by completion phase
 
 ### **Process Changes Recommended for Future**
-1. ⏳ Enforce time tracking updates during execution
-2. ⏳ Add Architecture Decision section to all retrospectives
-3. ⏳ Include performance tests for data-heavy operations
-4. ⏳ Document async exception test patterns (Sonnet to create guide)
-5. ⏳ Explicitly list Task 0 prerequisites in sprint plans
+1. [PENDING] Enforce time tracking updates during execution
+2. [PENDING] Add Architecture Decision section to all retrospectives
+3. [PENDING] Include performance tests for data-heavy operations
+4. [PENDING] Document async exception test patterns (Sonnet to create guide)
+5. [PENDING] Explicitly list Task 0 prerequisites in sprint plans
 
 ---
 
