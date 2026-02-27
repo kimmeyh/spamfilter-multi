@@ -32,6 +32,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **feat**: Folder selection now saves instantly on toggle - Cancel and Scan buttons removed in multi-select mode (Issue #172, F27)
 - **feat**: Safe senders screen filter chips for pattern categories - Exact Email, Exact Domain, Entire Domain, Other (Issue #180, F26)
 - **feat**: YAML import/export UI in Settings - export rules and safe senders to file, import from file with validation (Issue #179, F22)
+- **feat**: Gmail dual-auth - choose Google Sign-In (OAuth) or App Password (IMAP) when adding Gmail account (Issue #178, F12B)
 
 ---
 
