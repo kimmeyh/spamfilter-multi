@@ -31,6 +31,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **feat**: Application identity rebranded to MyEmailSpamFilter with com.myemailspamfilter package (Issue #182, GP-1)
 - **feat**: Folder selection now saves instantly on toggle - Cancel and Scan buttons removed in multi-select mode (Issue #172, F27)
 - **feat**: Safe senders screen filter chips for pattern categories - Exact Email, Exact Domain, Entire Domain, Other (Issue #180, F26)
+- **feat**: YAML import/export UI in Settings - export rules and safe senders to file, import from file with validation (Issue #179, F22)
 
 ---
 
