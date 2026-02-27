@@ -26,6 +26,18 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-02-27 (Sprint 19)
+- **chore**: Tag v0.5.0 release, update pubspec.yaml version to 0.5.0+1 (Issue #181, GP-15)
+
+---
+
+## [0.5.0] - 2026-02-27
+
+First tagged release. Covers Sprints 1-18 plus hotfix #176.
+
+### 2026-02-27 (Hotfix)
+- **fix**: Windows Task Scheduler repetition trigger fails silently - changed from property-based Repetition setting to inline -RepetitionInterval/-RepetitionDuration parameters (Issue #176)
+
 ### 2026-02-25 (Sprint 18: Bug Fixes from Testing Feedback)
 - **fix**: Conflict detection for "Block Entire Domain" now passes full email address to resolver instead of bare domain (Issue #154)
 - **fix**: Scan History shows correct rule match info instead of "No rule" for all entries
@@ -265,3 +277,10 @@ See git history for detailed changes prior to Phase 3.1.
 - Phase 2.1: Adapter and provider implementations
 - Phase 2.0: AppPaths, SecureCredentialsStore, EmailScanProvider
 - Phase 1: Core models, services, and foundation (27 tests)
+
+---
+
+## Version Links
+
+[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/kimmeyh/spamfilter-multi/releases/tag/v0.5.0
