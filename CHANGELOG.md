@@ -28,6 +28,8 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ### 2026-02-27 (Sprint 19)
 - **chore**: Tag v0.5.0 release, update pubspec.yaml version to 0.5.0+1 (Issue #181, GP-15)
+- **feat**: Application identity rebranded to MyEmailSpamFilter with com.myemailspamfilter package (Issue #182, GP-1)
+- **feat**: Folder selection now saves instantly on toggle - Cancel and Scan buttons removed in multi-select mode (Issue #172, F27)
 
 ---
 
