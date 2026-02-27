@@ -198,27 +198,23 @@ try {
 
   /// Generate trigger configuration for given frequency
   ///
-  /// [FIX] ISSUE #161: Changed from -Once -At (Get-Date) to -Daily trigger
-  /// with repetition. The -Once trigger with a past start time does not
-  /// persist across reboots reliably on Windows. Using -Daily -At midnight
-  /// with RepetitionInterval ensures the task runs consistently even after
-  /// system restarts.
+  /// Uses -Once trigger with -RepetitionInterval and -RepetitionDuration
+  /// parameters for sub-daily frequencies. The repetition parameters must
+  /// be passed directly to New-ScheduledTaskTrigger (not set as properties
+  /// after creation, as the Repetition sub-object is null on new triggers).
+  ///
+  /// [FIX] ISSUE #161: -Once with past start time does not persist across
+  /// reboots. Using -At "12:00AM" with repetition ensures consistent runs.
   static String _getTriggerForFrequency(ScanFrequency frequency) {
     switch (frequency) {
       case ScanFrequency.every15min:
-        return r'''$trigger = New-ScheduledTaskTrigger -Daily -At "12:00AM"
-$trigger.Repetition.Interval = (New-TimeSpan -Minutes 15).ToString()
-$trigger.Repetition.Duration = (New-TimeSpan -Days 365).ToString()''';
+        return r'$trigger = New-ScheduledTaskTrigger -Once -At "12:00AM" -RepetitionInterval (New-TimeSpan -Minutes 15) -RepetitionDuration (New-TimeSpan -Days 365)';
 
       case ScanFrequency.every30min:
-        return r'''$trigger = New-ScheduledTaskTrigger -Daily -At "12:00AM"
-$trigger.Repetition.Interval = (New-TimeSpan -Minutes 30).ToString()
-$trigger.Repetition.Duration = (New-TimeSpan -Days 365).ToString()''';
+        return r'$trigger = New-ScheduledTaskTrigger -Once -At "12:00AM" -RepetitionInterval (New-TimeSpan -Minutes 30) -RepetitionDuration (New-TimeSpan -Days 365)';
 
       case ScanFrequency.every1hour:
-        return r'''$trigger = New-ScheduledTaskTrigger -Daily -At "12:00AM"
-$trigger.Repetition.Interval = (New-TimeSpan -Hours 1).ToString()
-$trigger.Repetition.Duration = (New-TimeSpan -Days 365).ToString()''';
+        return r'$trigger = New-ScheduledTaskTrigger -Once -At "12:00AM" -RepetitionInterval (New-TimeSpan -Hours 1) -RepetitionDuration (New-TimeSpan -Days 365)';
 
       case ScanFrequency.daily:
         return r'$trigger = New-ScheduledTaskTrigger -Daily -At "09:00AM"';
