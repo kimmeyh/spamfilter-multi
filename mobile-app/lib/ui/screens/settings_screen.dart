@@ -11,6 +11,7 @@ import '../../core/storage/settings_store.dart';
 import '../../core/providers/email_scan_provider.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../adapters/email_providers/email_provider.dart' show Credentials;
+import '../../adapters/email_providers/platform_registry.dart';
 import '../widgets/app_bar_with_exit.dart';
 import 'folder_selection_screen.dart';
 import 'scan_history_screen.dart';
@@ -335,13 +336,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               title: const Text('View Scan History'),
               subtitle: const Text('View all past scan runs and results'),
               trailing: const Icon(Icons.chevron_right),
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const ScanHistoryScreen(),
-                  ),
-                );
-              },
+              onTap: () => _navigateToScanHistory(),
             ),
           ],
         );
@@ -648,13 +643,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         TextButton.icon(
           icon: const Icon(Icons.history, size: 16),
           label: const Text('Go to View Scan History'),
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => const ScanHistoryScreen(),
-              ),
-            );
-          },
+          onPressed: () => _navigateToScanHistory(),
         ),
       ],
     );
@@ -993,6 +982,30 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  /// Navigate to Scan History with account context
+  ///
+  /// Looks up platformId from credentials store so ScanHistoryScreen
+  /// can display email details when tapping scan entries.
+  Future<void> _navigateToScanHistory() async {
+    final platformId = await _credStore.getPlatformId(widget.accountId);
+    final platformDisplayName = platformId != null
+        ? (PlatformRegistry.getPlatform(platformId)?.displayName ?? platformId)
+        : null;
+
+    if (!mounted) return;
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ScanHistoryScreen(
+          accountId: widget.accountId,
+          accountEmail: widget.accountId,
+          platformId: platformId,
+          platformDisplayName: platformDisplayName,
+        ),
       ),
     );
   }

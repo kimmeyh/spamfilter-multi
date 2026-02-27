@@ -11,12 +11,17 @@ import 'settings_screen.dart';
 import '../../core/providers/email_scan_provider.dart' show EmailScanProvider, EmailActionResult, EmailActionType, ScanStatus, ScanMode;
 import '../../core/providers/rule_set_provider.dart';
 import '../../core/models/email_message.dart';
+import '../../core/models/evaluation_result.dart';
 import '../../core/models/rule_set.dart' show Rule, RuleConditions, RuleActions;
 import '../../core/services/email_body_parser.dart';
+import '../../core/services/pattern_compiler.dart';
+import '../../core/services/rule_conflict_resolver.dart';
+import '../../core/services/rule_evaluator.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/utils/pattern_normalization.dart';
+import '../../core/data/common_email_providers.dart';
 import '../widgets/empty_state.dart';
 
 /// Displays summary of scan results bound to EmailScanProvider.
@@ -72,6 +77,13 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   bool _historicalLoaded = false;
   List<EmailActionResult> _historicalResults = [];
 
+  // F21: Track re-evaluated results for emails modified during this session.
+  // Key is email.from + email.subject (unique enough for a single scan session).
+  // When a user adds a rule inline, the email is re-evaluated against current
+  // rules and the new EvaluationResult is stored here. This persists during
+  // the review session so the user can see which items they have assigned rules to.
+  final Map<String, EvaluationResult> _evaluationOverrides = {};
+
   @override
   void initState() {
     super.initState();
@@ -123,11 +135,28 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
             (e) => e.name == actionStr,
             orElse: () => EmailActionType.none,
           );
+          // Reconstruct EvaluationResult from stored database fields
+          // so historical scans show matched rule names and popup highlighting
+          final matchedRuleName = map['matched_rule_name'] as String? ?? '';
+          final matchedPattern = map['matched_pattern'] as String? ?? '';
+          final isSafeSender = (map['is_safe_sender'] as int?) == 1;
+          final hasEvaluation = matchedRuleName.isNotEmpty || isSafeSender;
+          final evaluationResult = hasEvaluation
+              ? EvaluationResult(
+                  shouldDelete: action == EmailActionType.delete,
+                  shouldMove: action == EmailActionType.moveToJunk,
+                  matchedRule: matchedRuleName,
+                  matchedPattern: matchedPattern,
+                  isSafeSender: isSafeSender,
+                )
+              : null;
+
           return EmailActionResult(
             email: email,
             action: action,
             success: (map['success'] as int?) == 1,
             error: map['error_message'] as String?,
+            evaluationResult: evaluationResult,
           );
         }).toList();
       }
@@ -411,18 +440,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       }
     }
     
-    // Apply action type filter
+    // Apply action type filter using effective action (accounts for re-evaluation overrides)
     if (_filter != null) {
-      // Special handling for "No rule" - filter by action=none AND empty matched rule
-      if (_filter == EmailActionType.none) {
-        results = results.where((result) {
-          final hasNoRule = (result.evaluationResult?.matchedRule ?? '').isEmpty;
-          return result.action == EmailActionType.none && hasNoRule;
-        }).toList();
-      } else {
-        // For other filters, filter by action type
-        results = results.where((result) => result.action == _filter).toList();
-      }
+      results = results.where((result) => _getEffectiveAction(result) == _filter).toList();
     }
     
     // Apply search filter (Item 8: Ctrl-F search)
@@ -432,9 +452,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         final from = result.email.from.toLowerCase();
         final subject = result.email.subject.toLowerCase();
         final folder = result.email.folderName.toLowerCase();
-        final rule = (result.evaluationResult?.matchedRule ?? '').toLowerCase();
-        return from.contains(query) || 
-               subject.contains(query) || 
+        // F21: Use effective evaluation for search
+        final effectiveEval = _getEffectiveEvaluation(result);
+        final rule = (effectiveEval?.matchedRule ?? '').toLowerCase();
+        return from.contains(query) ||
+               subject.contains(query) ||
                folder.contains(query) ||
                rule.contains(query);
       }).toList();
@@ -865,17 +887,18 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               final processedCount = showingHistorical
                   ? allResults.length
                   : scanProvider.processedCount;
-              final deletedCount = showingHistorical
-                  ? allResults.where((r) => r.action == EmailActionType.delete).length
+              // Use effective action to account for inline re-evaluation overrides
+              final deletedCount = _evaluationOverrides.isNotEmpty || showingHistorical
+                  ? allResults.where((r) => _getEffectiveAction(r) == EmailActionType.delete).length
                   : scanProvider.deletedCount;
-              final movedCount = showingHistorical
-                  ? allResults.where((r) => r.action == EmailActionType.moveToJunk).length
+              final movedCount = _evaluationOverrides.isNotEmpty || showingHistorical
+                  ? allResults.where((r) => _getEffectiveAction(r) == EmailActionType.moveToJunk).length
                   : scanProvider.movedCount;
-              final safeCount = showingHistorical
-                  ? allResults.where((r) => r.action == EmailActionType.safeSender).length
+              final safeCount = _evaluationOverrides.isNotEmpty || showingHistorical
+                  ? allResults.where((r) => _getEffectiveAction(r) == EmailActionType.safeSender).length
                   : scanProvider.safeSendersCount;
-              final noRuleCount = showingHistorical
-                  ? allResults.where((r) => r.action == EmailActionType.none).length
+              final noRuleCount = _evaluationOverrides.isNotEmpty || showingHistorical
+                  ? allResults.where((r) => _getEffectiveAction(r) == EmailActionType.none).length
                   : scanProvider.noRuleCount;
               final errorCount = showingHistorical
                   ? allResults.where((r) => !r.success).length
@@ -1104,7 +1127,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     final cleanedSubject = PatternNormalization.cleanSubjectForDisplay(rawSubject);
     final subject = cleanedSubject.isNotEmpty ? cleanedSubject : 'No subject';
     // Issue #51: Display matched rule name or "No rule" if empty/null
-    final matchedRule = result.evaluationResult?.matchedRule ?? '';
+    // F21: Use effective evaluation (includes inline assignment overrides)
+    final effectiveEval = _getEffectiveEvaluation(result);
+    final matchedRule = effectiveEval?.matchedRule ?? '';
     final rule = matchedRule.isNotEmpty ? matchedRule : 'No rule';
     final subtitle = '$folder • $subject • $rule';
     final trailing = result.success
@@ -1163,10 +1188,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     final displayRootDomain = rawRootDomain != null
         ? PatternNormalization.decodePunycodeDomain(rawRootDomain)
         : null;
-    final matchedRule = result.evaluationResult?.matchedRule ?? '';
-    final hasNoRule = matchedRule.isEmpty || result.action == EmailActionType.none;
-    final isDeleted = result.action == EmailActionType.delete;
-    final isSafeSender = result.action == EmailActionType.safeSender;
+    // F21: Use effective evaluation (re-evaluated after inline rule assignment)
+    final effectiveEval = _getEffectiveEvaluation(result);
+    final matchedRule = effectiveEval?.matchedRule ?? '';
+    final isDeleted = effectiveEval?.shouldDelete == true;
+    final isSafeSender = effectiveEval?.isSafeSender == true;
 
     // Clean subject for display
     final cleanedSubject = PatternNormalization.cleanSubjectForDisplay(email.subject);
@@ -1312,6 +1338,37 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                 ),
                 const Divider(height: 20),
 
+                // === SHARED PROVIDER HINT ===
+                if (rawSenderDomain != null &&
+                    CommonEmailProviders.isCommonProvider(rawSenderDomain)) ...[
+                  Builder(builder: (_) {
+                    final providerName = CommonEmailProviders.getProviderName(rawSenderDomain) ?? 'Unknown';
+                    return Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: Colors.amber.withValues(alpha: 0.4)),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.info_outline, size: 16, color: Colors.amber[800]),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '$providerName is a shared email provider. '
+                              'Use "Exact Email" when adding rules for this sender.',
+                              style: TextStyle(fontSize: 11, color: Colors.amber[900]),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+                  const SizedBox(height: 12),
+                ],
+
                 // === SAFE SENDER SECTION ===
                 // Issue 5: Always show Safe Sender options for all emails
                 Text(
@@ -1328,11 +1385,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                         label: 'Exact Email',
                         subtitle: displaySenderEmail,
                         color: Colors.green,
-                        isMatched: isSafeSender && result.evaluationResult?.matchedPatternType == 'exact_email',
+                        isMatched: isSafeSender && effectiveEval?.matchedPatternType == 'exact_email',
                         onTap: () {
                           Navigator.pop(dialogContext);
                           // Use normalized email (plus-signs stripped) to match SafeSenderList evaluation
-                          _addSafeSender(normalizedSenderEmail, 'exact');
+                          _addSafeSender(normalizedSenderEmail, 'exact', email: email);
                         },
                       ),
                       if (rawSenderDomain != null)
@@ -1341,10 +1398,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                           label: 'Exact Domain',
                           subtitle: '@$displaySenderDomain',
                           color: Colors.green,
-                          isMatched: isSafeSender && result.evaluationResult?.matchedPatternType == 'exact_domain',
+                          isMatched: isSafeSender && effectiveEval?.matchedPatternType == 'exact_domain',
                           onTap: () {
                             Navigator.pop(dialogContext);
-                            _addSafeSender('@$rawSenderDomain', 'exactDomain');
+                            _addSafeSender('@$rawSenderDomain', 'exactDomain', email: email);
                           },
                         ),
                       // Always show Entire Domain option (uses root domain or full domain if no subdomain)
@@ -1354,10 +1411,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                           label: 'Entire Domain',
                           subtitle: '@*.${displayRootDomain ?? displaySenderDomain}',
                           color: Colors.green,
-                          isMatched: isSafeSender && result.evaluationResult?.matchedPatternType == 'entire_domain',
+                          isMatched: isSafeSender && effectiveEval?.matchedPatternType == 'entire_domain',
                           onTap: () {
                             Navigator.pop(dialogContext);
-                            _addSafeSender(rawRootDomain ?? rawSenderDomain, 'entireDomain');
+                            _addSafeSender(rawRootDomain ?? rawSenderDomain, 'entireDomain', email: email);
                           },
                         ),
                     ],
@@ -1380,10 +1437,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                         label: 'Block Email',
                         subtitle: displaySenderEmail,
                         color: Colors.red,
-                        isMatched: isDeleted && result.evaluationResult?.matchedPatternType == 'exact_email',
+                        isMatched: isDeleted && effectiveEval?.matchedPatternType == 'exact_email',
                         onTap: () {
                           Navigator.pop(dialogContext);
-                          _createBlockRule('from', rawSenderEmail);
+                          _createBlockRule('from', rawSenderEmail, email: email);
                         },
                       ),
                       if (rawSenderDomain != null)
@@ -1392,10 +1449,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                           label: 'Block Exact Domain',
                           subtitle: '@$displaySenderDomain',
                           color: Colors.red,
-                          isMatched: isDeleted && result.evaluationResult?.matchedPatternType == 'exact_domain',
+                          isMatched: isDeleted && effectiveEval?.matchedPatternType == 'exact_domain',
                           onTap: () {
                             Navigator.pop(dialogContext);
-                            _createBlockRule('exactDomain', '@$rawSenderDomain');
+                            _createBlockRule('exactDomain', '@$rawSenderDomain', email: email);
                           },
                         ),
                       // Always show Block Entire Domain option (uses root domain or full domain if no subdomain)
@@ -1405,10 +1462,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                           label: 'Block Entire Domain',
                           subtitle: '@*.${displayRootDomain ?? displaySenderDomain}',
                           color: Colors.red,
-                          isMatched: isDeleted && result.evaluationResult?.matchedPatternType == 'entire_domain',
+                          isMatched: isDeleted && effectiveEval?.matchedPatternType == 'entire_domain',
                           onTap: () {
                             Navigator.pop(dialogContext);
-                            _createBlockRule('entireDomain', rawRootDomain ?? rawSenderDomain);
+                            _createBlockRule('entireDomain', rawRootDomain ?? rawSenderDomain, email: email);
                           },
                         ),
                       if (cleanedSubject.isNotEmpty && cleanedSubject != '(No subject)')
@@ -1419,10 +1476,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                               ? '${cleanedSubject.substring(0, 20)}...'
                               : cleanedSubject,
                           color: Colors.orange,
-                          isMatched: isDeleted && result.evaluationResult?.matchedPatternType == 'subject',
+                          isMatched: isDeleted && effectiveEval?.matchedPatternType == 'subject',
                           onTap: () {
                             Navigator.pop(dialogContext);
-                            _createBlockRule('subject', cleanedSubject);
+                            _createBlockRule('subject', cleanedSubject, email: email);
                           },
                         ),
                     ],
@@ -1533,11 +1590,58 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     }
   }
 
+  /// Generate a stable key for an email to track evaluation overrides.
+  String _getEmailKey(EmailMessage email) {
+    return '${email.from}|${email.subject}|${email.receivedDate.toIso8601String()}';
+  }
+
+  /// Get the effective EvaluationResult for an email, checking overrides first.
+  EvaluationResult? _getEffectiveEvaluation(EmailActionResult result) {
+    final key = _getEmailKey(result.email);
+    return _evaluationOverrides[key] ?? result.evaluationResult;
+  }
+
+  /// Get the effective action type, accounting for re-evaluation overrides.
+  /// After inline rule assignment, the original action (e.g., none) may no longer
+  /// reflect the current evaluation (e.g., should now be delete or safeSender).
+  EmailActionType _getEffectiveAction(EmailActionResult result) {
+    final eval = _getEffectiveEvaluation(result);
+    if (eval == null) return result.action;
+    // Only override if there is an evaluation override for this email
+    final key = _getEmailKey(result.email);
+    if (!_evaluationOverrides.containsKey(key)) return result.action;
+    // Derive action from the override evaluation
+    if (eval.isSafeSender) return EmailActionType.safeSender;
+    if (eval.shouldDelete) return EmailActionType.delete;
+    if (eval.shouldMove) return EmailActionType.moveToJunk;
+    if (eval.matchedRule.isEmpty) return EmailActionType.none;
+    return result.action;
+  }
+
+  /// Re-evaluate an email against the current rules and safe senders.
+  ///
+  /// Creates a fresh RuleEvaluator with the latest rules from RuleSetProvider
+  /// and evaluates the email. Stores the result in [_evaluationOverrides] so
+  /// subsequent displays (list tile, popup) reflect the current rule state.
+  Future<EvaluationResult> _reEvaluateEmail(EmailMessage email) async {
+    final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
+    final evaluator = RuleEvaluator(
+      ruleSet: ruleProvider.rules,
+      safeSenderList: ruleProvider.safeSenders,
+      compiler: PatternCompiler(),
+    );
+    final result = await evaluator.evaluate(email);
+    final key = _getEmailKey(email);
+    _evaluationOverrides[key] = result;
+    return result;
+  }
+
   /// Add sender to safe senders list
   /// Types: 'exact' (email), 'exactDomain' (@subdomain.domain.com), 'entireDomain' (@*.domain.com)
-  Future<void> _addSafeSender(String value, String type) async {
+  Future<void> _addSafeSender(String value, String type, {EmailMessage? email}) async {
     final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
     final logger = Logger();
+    final conflictResolver = RuleConflictResolver();
 
     try {
       // Create regex pattern based on type
@@ -1569,17 +1673,38 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           return;
       }
 
+      // Remove conflicting block rules before adding safe sender (Issue #154)
+      // Use full email address for conflict matching (domain-only values do not match rule patterns)
+      final senderEmail = email != null
+          ? EmailBodyParser().extractEmailAddress(email.from).toLowerCase().trim()
+          : value;
+      final conflicts = await conflictResolver.removeConflictingRules(
+        emailAddress: senderEmail,
+        ruleProvider: ruleProvider,
+      );
+
       // Add to safe senders via provider (persists to database and YAML)
       await ruleProvider.addSafeSender(pattern);
 
+      // Include conflict removal info in display message
+      if (conflicts.conflictsRemoved > 0) {
+        displayMessage += ' (removed ${conflicts.conflictsRemoved} conflicting rule${conflicts.conflictsRemoved > 1 ? "s" : ""})';
+      }
+
       logger.i('[OK] Added safe sender: $pattern');
 
+      // F21: Re-evaluate email against updated rules and refresh list
+      if (email != null) {
+        await _reEvaluateEmail(email);
+      }
+
       if (mounted) {
+        setState(() {}); // Refresh list to show updated rule assignment
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(displayMessage),
             backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
+            duration: const Duration(seconds: 3),
             behavior: SnackBarBehavior.floating,
             margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
           ),
@@ -1603,9 +1728,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
 
   /// Create a block rule (persists to database and YAML)
   /// Types: 'from' (email), 'exactDomain' (@subdomain.domain.com), 'entireDomain' (@*.domain.com), 'subject'
-  Future<void> _createBlockRule(String type, String value) async {
+  Future<void> _createBlockRule(String type, String value, {EmailMessage? email}) async {
     final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
     final logger = Logger();
+    final conflictResolver = RuleConflictResolver();
 
     try {
       // Create rule based on type
@@ -1648,6 +1774,18 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           return;
       }
 
+      // Remove conflicting safe senders before adding block rule (Issue #154)
+      // Subject-based rules do not conflict with safe senders (which match on from address)
+      // Use full email address for conflict matching (domain-only values do not match safe sender patterns)
+      ConflictResolutionResult conflicts = ConflictResolutionResult.empty;
+      if (type != 'subject' && email != null) {
+        final senderEmail = EmailBodyParser().extractEmailAddress(email.from).toLowerCase().trim();
+        conflicts = await conflictResolver.removeConflictingSafeSenders(
+          emailAddress: senderEmail,
+          ruleProvider: ruleProvider,
+        );
+      }
+
       // Create the rule with proper types
       final conditions = type == 'subject'
           ? RuleConditions(type: 'OR', subject: [pattern])
@@ -1668,14 +1806,25 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       // Add rule via provider (persists to database and YAML)
       await ruleProvider.addRule(rule);
 
+      // Include conflict removal info in display message
+      if (conflicts.conflictsRemoved > 0) {
+        displayMessage += ' (removed ${conflicts.conflictsRemoved} conflicting safe sender${conflicts.conflictsRemoved > 1 ? "s" : ""})';
+      }
+
       logger.i('[OK] Created block rule: $ruleName with pattern: $pattern');
 
+      // F21: Re-evaluate email against updated rules and refresh list
+      if (email != null) {
+        await _reEvaluateEmail(email);
+      }
+
       if (mounted) {
+        setState(() {}); // Refresh list to show updated rule assignment
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(displayMessage),
             backgroundColor: Colors.blue,
-            duration: const Duration(seconds: 2),
+            duration: const Duration(seconds: 3),
             behavior: SnackBarBehavior.floating,
             margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
           ),

@@ -10,7 +10,7 @@
 
 ---
 
-## ⏳ CHECKPOINT 2: AWAITING YOUR APPROVAL TO PROCEED
+## [PENDING] CHECKPOINT 2: AWAITING YOUR APPROVAL TO PROCEED
 
 **This is an approval request. Before I begin Sprint 8 implementation, I need your approval on**:
 
@@ -619,7 +619,7 @@ dependencies:
 
 ---
 
-## 🔴 CHECKPOINT 2: APPROVAL REQUEST FOR SPRINT 8
+## [STOP] CHECKPOINT 2: APPROVAL REQUEST FOR SPRINT 8
 
 **Status**: AWAITING YOUR APPROVAL - Do not proceed with Sprint 8 implementation until you approve
 
@@ -697,7 +697,7 @@ These must be addressed before I begin Sprint 8 implementation:
 
 ---
 
-## 🟢 APPROVAL SUMMARY
+## [OK] APPROVAL SUMMARY
 
 **I am requesting your approval on ALL THREE parts above**:
 

@@ -144,7 +144,7 @@ UnicodeEncodeError: 'charmap' codec can't encode character '\u2713'
 
 ---
 
-## Key Learnings 📚
+## Key Learnings
 
 ### 1. Code Review Backlog Issues Are Critical
 - **Issue #9** sat in backlog for weeks, caused production-blocking bug

@@ -143,7 +143,7 @@ Sprint 1 successfully delivered the database foundation for Phase 3.5. All plann
 
 **For Next Sprint**:
 - [ ] Log actual time spent on each task in GitHub issue comments
-- [ ] Format: "⏱️ Task A: X hours (estimated Y-Z hours)"
+- [ ] Format: "[TIME] Task A: X hours (estimated Y-Z hours)"
 - [ ] Analyze at retrospective: Which estimates were accurate? Which were off? Why?
 - [ ] Update estimation heuristics based on data
 
@@ -249,7 +249,7 @@ Sprint 1 successfully delivered the database foundation for Phase 3.5. All plann
 | All Tests Passing | [OK] 40+ new tests |
 | Regression Tests | [OK] 122+ existing tests verified |
 | Manual Testing | [OK] Checklist provided |
-| Code Review | ⏳ Ready for review |
+| Code Review | [PENDING] Ready for review |
 | Security Issues | [OK] None identified |
 
 ---
@@ -274,9 +274,9 @@ Sprint 1 successfully delivered the database foundation for Phase 3.5. All plann
 ### **Process Changes to Implement**
 1. [OK] Created SPRINT_EXECUTION_WORKFLOW.md with formalized process
 2. [OK] Created SPRINT_2_PLAN.md as example for all future sprint plans
-3. ⏳ Create .claude/model_assignment_heuristics.json for tracking
-4. ⏳ Add time tracking to GitHub issue comment template
-5. ⏳ Add manual device testing as acceptance criterion
+3. [PENDING] Create .claude/model_assignment_heuristics.json for tracking
+4. [PENDING] Add time tracking to GitHub issue comment template
+5. [PENDING] Add manual device testing as acceptance criterion
 
 ---
 

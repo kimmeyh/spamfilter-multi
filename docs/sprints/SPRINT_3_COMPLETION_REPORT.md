@@ -117,7 +117,7 @@ Sprint 3 successfully delivered all three planned tasks ahead of schedule with z
 |----------|-------|--------|
 | New Sprint 3 Tests | 77 | [OK] Pass |
 | Existing Tests | 262+ | [OK] Pass |
-| Skipped Tests | 13 | ⏭️ Credentials |
+| Skipped Tests | 13 | [SKIP] Credentials |
 | Failed Tests | 2 | [WARNING] Pre-Sprint 2 |
 | **Total** | **341** | **[OK] 95.8%** |
 

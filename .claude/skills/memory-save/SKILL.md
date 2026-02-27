@@ -3,7 +3,7 @@ name: memory-save
 description: Save current sprint context to memory for later restoration
 allowed-tools: Bash, Read, Write
 user-invocable: true
-model: claude-3-5-haiku-latest
+model: haiku
 ---
 
 # Memory Save Skill

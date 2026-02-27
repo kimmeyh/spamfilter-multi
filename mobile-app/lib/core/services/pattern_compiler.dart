@@ -76,4 +76,52 @@ class PatternCompiler {
 
   /// Check if a pattern is valid (compiled successfully)
   bool isPatternValid(String pattern) => !_failures.containsKey(pattern);
+
+  /// Validate a pattern and return warnings for common mistakes.
+  ///
+  /// Unlike [compile], this does not cache the pattern. It checks for
+  /// structural issues that indicate the pattern may not work as intended.
+  /// Returns an empty list if no warnings are found.
+  ///
+  /// Warnings do not prevent pattern compilation; they help users write
+  /// better patterns.
+  List<String> validatePattern(String pattern) {
+    final warnings = <String>[];
+
+    // Check for unescaped dots in domain-like patterns
+    // e.g. "@spam.com$" should be "@spam\.com$"
+    final domainLike = RegExp(r'@[a-z0-9-]+\.[a-z]+\$?$');
+    if (domainLike.hasMatch(pattern) && !pattern.contains(r'\.')) {
+      warnings.add('Pattern contains unescaped dot in what appears to be a domain. '
+          'Use "\\." for literal dot (e.g., "@spam\\.com\$").');
+    }
+
+    // Check for redundant leading wildcards like ".*.*"
+    if (pattern.contains('.*.*')) {
+      warnings.add('Pattern contains redundant ".*.*". '
+          'A single ".*" already matches everything.');
+    }
+
+    // Check for empty alternation branches like "(foo|)" or "(|bar)"
+    if (RegExp(r'\(\||\|\)|\|\|').hasMatch(pattern)) {
+      warnings.add('Pattern contains empty alternation branch. '
+          'Empty branches match everything, which is likely unintended.');
+    }
+
+    // Check for patterns with 3+ repeated literal characters that will
+    // not match after body normalization reduces them
+    final repeatedChars = RegExp(r'(.)\1{2,}');
+    if (repeatedChars.hasMatch(pattern)) {
+      final match = repeatedChars.firstMatch(pattern)!;
+      final char = match.group(1);
+      // Only warn for non-regex metacharacters
+      if (char != null && !r'.*+?{}[]()|\^$'.contains(char)) {
+        warnings.add('Pattern contains 3+ repeated "$char" characters. '
+            'Body normalization reduces these to 1 character. '
+            'Match the normalized form instead.');
+      }
+    }
+
+    return warnings;
+  }
 }

@@ -4,7 +4,7 @@
 **Date**: January 24, 2026
 **Focus**: Safe Sender Exceptions - Domain safe senders with email/subdomain exceptions
 **Duration**: Estimated 10-14 hours
-**Status**: 🔵 PLANNED - Ready for kickoff
+**Status**: [PLANNED] - Ready for kickoff
 
 ---
 
@@ -34,7 +34,7 @@ This feature builds on Sprint 2's database foundation and maintains the dual-wri
 ## Task Breakdown
 
 ### **Task A: Implement SafeSenderDatabaseStore**
-**Model Assignment**: 🟢 Haiku
+**Model Assignment**: [HAIKU] Haiku
 **Complexity**: Low-Medium
 **Estimated Time**: 2-3 hours
 
@@ -59,7 +59,7 @@ This feature builds on Sprint 2's database foundation and maintains the dual-wri
 ---
 
 ### **Task B: Implement SafeSenderEvaluator with Exceptions**
-**Model Assignment**: 🟠 Sonnet
+**Model Assignment**: [SONNET] Sonnet
 **Complexity**: Medium
 **Estimated Time**: 3-4 hours
 
@@ -103,7 +103,7 @@ This feature builds on Sprint 2's database foundation and maintains the dual-wri
 ---
 
 ### **Task C: Update RuleSetProvider to Use SafeSenderDatabaseStore**
-**Model Assignment**: 🟢 Haiku
+**Model Assignment**: [HAIKU] Haiku
 **Complexity**: Low
 **Estimated Time**: 2-3 hours
 
@@ -132,7 +132,7 @@ This feature builds on Sprint 2's database foundation and maintains the dual-wri
 ---
 
 ### **Task D: Create UI for Managing Safe Sender Exceptions**
-**Model Assignment**: 🟢 Haiku
+**Model Assignment**: [HAIKU] Haiku
 **Complexity**: Medium
 **Estimated Time**: 3-4 hours
 
@@ -172,7 +172,7 @@ This feature builds on Sprint 2's database foundation and maintains the dual-wri
 ---
 
 ### **Task E: Integration Testing**
-**Model Assignment**: 🟢 Haiku
+**Model Assignment**: [HAIKU] Haiku
 **Complexity**: Medium
 **Estimated Time**: 2-3 hours
 
@@ -358,4 +358,4 @@ Sprint 4 will likely focus on:
 
 **Version**: 1.0
 **Created**: January 24, 2026
-**Status**: 🔵 PLANNED - Ready for Phase 1 Kickoff
+**Status**: [PLANNED] - Ready for Phase 1 Kickoff

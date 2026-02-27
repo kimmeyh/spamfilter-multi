@@ -3,7 +3,7 @@ name: phase-check
 description: Sprint phase transition checkpoint - verify current phase complete and review next phase
 allowed-tools: Read
 user-invocable: true
-model: claude-3-5-haiku-latest
+model: haiku
 ---
 
 # Phase Transition Checkpoint

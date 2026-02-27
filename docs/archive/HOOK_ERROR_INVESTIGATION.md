@@ -204,7 +204,7 @@ If similar errors appear in future sprints:
 
 ---
 
-## 📚 References
+## References
 
 - **Error First Appeared**: Sprint 4 Windows rebuild (January 25, 2026)
 - **Related PR**: #77
@@ -214,7 +214,7 @@ If similar errors appear in future sprints:
 
 ---
 
-## ✍️ Sign-Off
+## [NOTES] Sign-Off
 
 **Investigation Status**: [OK] COMPLETE
 

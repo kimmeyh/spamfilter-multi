@@ -505,7 +505,7 @@ Task A - Android Enhancements: 50% complete
 [OK] Material Design 3 components implemented (all buttons, cards, dialogs use MD3)
 [OK] Bottom navigation with back handling working correctly
 [PENDING] FAB + pull-to-refresh in progress
-⏳ Testing pending
+[PENDING] Testing pending
 
 Actual time so far: 2h (vs 3.5h estimated for first 50%)
 No blockers.
@@ -1181,7 +1181,7 @@ Tasks:
 2. [OK] Earlier Mid-Sprint Checkpoint (Medium Priority)
    - Moved checkpoint to 25-30% completion in SPRINT_EXECUTION_WORKFLOW.md
 
-3. ⏳ UI Performance Benchmarking (Low Priority)
+3. [PENDING] UI Performance Benchmarking (Low Priority)
    - Deferred to Sprint 11 (Production Readiness)
 
 ## Lessons Learned
@@ -1238,7 +1238,7 @@ PR #107 ready for approval and merge to develop.
 Sprint 10 complete! What would you like to do next?
 
 1. [CHECKLIST] Merge PR #107 and clean up
-2. ➡️ Start Sprint 11: Production Readiness & Testing (see ALL_SPRINTS_MASTER_PLAN.md)
+2. [NEXT] Start Sprint 11: Production Readiness & Testing (see ALL_SPRINTS_MASTER_PLAN.md)
 3. [CONFIG] Ad-hoc work (tasks outside sprint framework)
 
 Please let me know your preference.
@@ -1448,9 +1448,9 @@ git branch -d feature/20260131_Sprint_10
 7. **Pull Request** [OK] Mentioned (Phase 6.3)
 
 **Potentially Missing**:
-- ❓ **.claude/plans/** - Are sprint plans stored here? (Not mentioned)
-- ❓ **Test files** - Mentioned implicitly but not explicitly in checklist
-- ❓ **README.md** - Should it be updated for major features? (Not mentioned)
+- [?] **.claude/plans/** - Are sprint plans stored here? (Not mentioned)
+- [?] **Test files** - Mentioned implicitly but not explicitly in checklist
+- [?] **README.md** - Should it be updated for major features? (Not mentioned)
 
 **Recommendation**: Add explicit checklist item for test file creation in Phase 4
 
