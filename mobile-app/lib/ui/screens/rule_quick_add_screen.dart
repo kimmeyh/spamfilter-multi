@@ -3,9 +3,13 @@ import 'package:logger/logger.dart';
 
 import '../../core/models/email_message.dart';
 import '../../core/models/rule_set.dart';
+import '../../core/models/safe_sender_list.dart';
+import '../../core/services/rule_conflict_detector.dart';
 import '../../core/storage/rule_database_store.dart';
+import '../../core/storage/safe_sender_database_store.dart';
 import '../../core/utils/pattern_normalization.dart';
 import '../../core/utils/pattern_generation.dart';
+import 'rule_test_screen.dart';
 
 enum RuleActionType { delete, move }
 enum ConditionBucket { fromHeader, subject, body, bodyUrl }
@@ -13,11 +17,13 @@ enum ConditionBucket { fromHeader, subject, body, bodyUrl }
 class RuleQuickAddScreen extends StatefulWidget {
   final EmailMessage email;
   final RuleDatabaseStore ruleStore;
+  final SafeSenderDatabaseStore? safeSenderStore;
 
   const RuleQuickAddScreen({
     Key? key,
     required this.email,
     required this.ruleStore,
+    this.safeSenderStore,
   }) : super(key: key);
 
   @override
@@ -157,6 +163,205 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
     }
   }
 
+  /// Remove safe senders that would conflict with the new block rule
+  /// Returns the number of safe senders removed
+  Future<int> _removeConflictingSafeSenders() async {
+    if (widget.safeSenderStore == null) return 0;
+
+    try {
+      final safeSenders = await widget.safeSenderStore!.loadSafeSenders();
+      int removedCount = 0;
+
+      for (final safeSender in safeSenders) {
+        // Check if the safe sender pattern matches the email being blocked
+        try {
+          final regex = RegExp(safeSender.pattern, caseSensitive: false);
+          if (regex.hasMatch(_normalizedEmail)) {
+            _logger.i('Removing conflicting safe sender: ${safeSender.pattern}');
+            await widget.safeSenderStore!.removeSafeSender(safeSender.pattern);
+            removedCount++;
+          }
+        } catch (e) {
+          // If pattern is not valid regex, check exact match
+          if (safeSender.pattern.toLowerCase() == _normalizedEmail.toLowerCase()) {
+            _logger.i('Removing conflicting safe sender (exact match): ${safeSender.pattern}');
+            await widget.safeSenderStore!.removeSafeSender(safeSender.pattern);
+            removedCount++;
+          }
+        }
+      }
+
+      if (removedCount > 0) {
+        _logger.i('Removed $removedCount conflicting safe sender(s)');
+      }
+
+      return removedCount;
+    } catch (e) {
+      _logger.w('Failed to check/remove conflicting safe senders: $e');
+      return 0;
+    }
+  }
+
+  /// Build the Rule object from current form state
+  Future<Rule> _buildRuleFromForm() async {
+    final executionOrder = await _getNextExecutionOrder();
+    final fromPatterns = _selectedBuckets[ConditionBucket.fromHeader]! && _fromPatternController.text.isNotEmpty
+        ? [_fromPatternController.text]
+        : <String>[];
+    final subjectPatterns = _selectedBuckets[ConditionBucket.subject]! && _subjectPatternController.text.isNotEmpty
+        ? [_subjectPatternController.text]
+        : <String>[];
+    final bodyPatterns = <String>[];
+    if (_selectedBuckets[ConditionBucket.body]! && _bodyPatternController.text.isNotEmpty) {
+      bodyPatterns.add(_bodyPatternController.text);
+    }
+    if (_selectedBuckets[ConditionBucket.bodyUrl]! && _bodyUrlPatternController.text.isNotEmpty) {
+      bodyPatterns.add(_bodyUrlPatternController.text);
+    }
+
+    final conditions = RuleConditions(
+      type: _conditionLogic,
+      from: fromPatterns,
+      header: <String>[],
+      subject: subjectPatterns,
+      body: bodyPatterns,
+    );
+
+    final actions = RuleActions(
+      delete: _selectedAction == RuleActionType.delete,
+      moveToFolder: _selectedAction == RuleActionType.move ? _moveToFolderController.text.trim() : null,
+    );
+
+    return Rule(
+      name: _ruleNameController.text.trim(),
+      enabled: true,
+      isLocal: true,
+      executionOrder: executionOrder,
+      conditions: conditions,
+      actions: actions,
+      metadata: {
+        'created_by': 'quick_add',
+        'source_email_id': widget.email.id,
+        'source_from': widget.email.from,
+      },
+    );
+  }
+
+  /// Check for rule conflicts before saving
+  Future<List<RuleConflict>> _checkForConflicts(Rule newRule) async {
+    try {
+      final detector = RuleConflictDetector();
+      final ruleSet = await widget.ruleStore.loadRules();
+
+      // Load safe senders if store is available
+      SafeSenderList safeSenderList;
+      if (widget.safeSenderStore != null) {
+        final safeSenders = await widget.safeSenderStore!.loadSafeSenders();
+        safeSenderList = SafeSenderList(
+          safeSenders: safeSenders.map((s) => s.pattern).toList(),
+        );
+      } else {
+        safeSenderList = SafeSenderList(safeSenders: []);
+      }
+
+      return detector.detectConflicts(
+        email: widget.email,
+        newRule: newRule,
+        ruleSet: ruleSet,
+        safeSenderList: safeSenderList,
+      );
+    } catch (e) {
+      _logger.w('Failed to check for rule conflicts: $e');
+      return [];
+    }
+  }
+
+  /// Show conflict warning dialog and return true if user wants to proceed
+  Future<bool> _showConflictWarning(List<RuleConflict> conflicts) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700),
+            const SizedBox(width: 8),
+            const Text('Rule Conflict Detected'),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'The new rule may not take effect because existing rules '
+                'or safe senders would match this email first:',
+              ),
+              const SizedBox(height: 16),
+              ...conflicts.map((c) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Card(
+                  color: c.isSafeSenderConflict
+                      ? Colors.green.shade50
+                      : Colors.orange.shade50,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              c.isSafeSenderConflict
+                                  ? Icons.verified_user
+                                  : Icons.rule,
+                              size: 16,
+                              color: c.isSafeSenderConflict
+                                  ? Colors.green.shade700
+                                  : Colors.orange.shade700,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                c.conflictingRuleName,
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          c.description,
+                          style: const TextStyle(fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              )),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Save Anyway'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
   Future<void> _saveRule() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -178,54 +383,34 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
     setState(() => _isSaving = true);
 
     try {
-      final executionOrder = await _getNextExecutionOrder();
-      final fromPatterns = _selectedBuckets[ConditionBucket.fromHeader]! && _fromPatternController.text.isNotEmpty
-          ? [_fromPatternController.text]
-          : <String>[];
-      final subjectPatterns = _selectedBuckets[ConditionBucket.subject]! && _subjectPatternController.text.isNotEmpty
-          ? [_subjectPatternController.text]
-          : <String>[];
-      final bodyPatterns = <String>[];
-      if (_selectedBuckets[ConditionBucket.body]! && _bodyPatternController.text.isNotEmpty) {
-        bodyPatterns.add(_bodyPatternController.text);
-      }
-      if (_selectedBuckets[ConditionBucket.bodyUrl]! && _bodyUrlPatternController.text.isNotEmpty) {
-        bodyPatterns.add(_bodyUrlPatternController.text);
+      final rule = await _buildRuleFromForm();
+
+      // [NEW] ISSUE #139: Check for rule conflicts before saving
+      final conflicts = await _checkForConflicts(rule);
+      if (conflicts.isNotEmpty && mounted) {
+        final proceed = await _showConflictWarning(conflicts);
+        if (!proceed) {
+          setState(() => _isSaving = false);
+          return;
+        }
       }
 
-      final conditions = RuleConditions(
-        type: _conditionLogic,
-        from: fromPatterns,
-        header: <String>[],
-        subject: subjectPatterns,
-        body: bodyPatterns,
-      );
-
-      final actions = RuleActions(
-        delete: _selectedAction == RuleActionType.delete,
-        moveToFolder: _selectedAction == RuleActionType.move ? _moveToFolderController.text.trim() : null,
-      );
-
-      final rule = Rule(
-        name: _ruleNameController.text.trim(),
-        enabled: true,
-        isLocal: true,
-        executionOrder: executionOrder,
-        conditions: conditions,
-        actions: actions,
-        metadata: {
-          'created_by': 'quick_add',
-          'source_email_id': widget.email.id,
-          'source_from': widget.email.from,
-        },
-      );
+      // Remove conflicting safe senders that match this email
+      // This ensures the new block rule will take effect
+      int removedSafeSenders = 0;
+      if (widget.safeSenderStore != null) {
+        removedSafeSenders = await _removeConflictingSafeSenders();
+      }
 
       await widget.ruleStore.addRule(rule);
       _logger.i('Added rule: ${rule.name}');
 
       if (mounted) {
+        final message = removedSafeSenders > 0
+            ? 'Rule added. Removed $removedSafeSenders conflicting safe sender(s).'
+            : 'Rule added successfully';
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Rule added successfully'), backgroundColor: Colors.green),
+          SnackBar(content: Text(message), backgroundColor: Colors.green),
         );
         Navigator.pop(context, true);
       }
@@ -246,6 +431,39 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
       appBar: AppBar(
         title: const Text('Create Auto-Delete Rule'),
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.science),
+            tooltip: 'Test pattern against sample emails',
+            onPressed: () {
+              // Determine the active pattern and condition type
+              String? pattern;
+              String conditionType = 'from';
+              if (_selectedBuckets[ConditionBucket.fromHeader] == true &&
+                  _fromPatternController.text.isNotEmpty) {
+                pattern = _fromPatternController.text;
+                conditionType = 'header';
+              } else if (_selectedBuckets[ConditionBucket.subject] == true &&
+                  _subjectPatternController.text.isNotEmpty) {
+                pattern = _subjectPatternController.text;
+                conditionType = 'subject';
+              } else if (_selectedBuckets[ConditionBucket.body] == true &&
+                  _bodyPatternController.text.isNotEmpty) {
+                pattern = _bodyPatternController.text;
+                conditionType = 'body';
+              }
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => RuleTestScreen(
+                    initialPattern: pattern,
+                    initialConditionType: conditionType,
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: Form(
         key: _formKey,

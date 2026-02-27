@@ -2,15 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
 
-import '../../core/models/email_message.dart';
-import '../../core/models/evaluation_result.dart';
 import '../../core/providers/email_scan_provider.dart';
-import '../../core/providers/email_scan_provider.dart' show EmailActionType, EmailActionResult;
 import '../../core/providers/rule_set_provider.dart';
 import '../../core/services/email_scanner.dart';
+import '../../core/storage/settings_store.dart'; // [NEW] ISSUE #138: Load scan mode from settings
 import '../widgets/app_bar_with_exit.dart';
-import '../screens/folder_selection_screen.dart';
 import 'results_display_screen.dart';
+import 'scan_history_screen.dart';
 import 'settings_screen.dart';
 
 /// Displays live scan progress bound to EmailScanProvider.
@@ -39,32 +37,49 @@ class ScanProgressScreen extends StatefulWidget {
 
 class _ScanProgressScreenState extends State<ScanProgressScreen> {
   ScanStatus? _previousStatus;
+  List<String> _configuredFolders = ['INBOX'];
+  ScanMode _configuredMode = ScanMode.readonly;
 
   @override
   void initState() {
     super.initState();
     
-    // ✨ PHASE 3.2: Initialize _previousStatus to prevent auto-navigation on first build
+    // [NEW] PHASE 3.2: Initialize _previousStatus to prevent auto-navigation on first build
     // This ensures we only auto-navigate when a scan ACTUALLY completes, not when
     // returning to a screen that already has completed status from a previous scan
     final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
     _previousStatus = scanProvider.status;
     
-    // ✨ ISSUE #41 FIX: Set current account for per-account folder storage
+    // [NEW] ISSUE #41 FIX: Set current account for per-account folder storage
     scanProvider.setCurrentAccount(widget.accountId);
     
     // Auto-reset scan state when navigating to this screen
     WidgetsBinding.instance.addPostFrameCallback((_) {
       scanProvider.reset();
     });
+
+    // Load configured scan settings for display in header
+    _loadConfiguredSettings();
+  }
+
+  Future<void> _loadConfiguredSettings() async {
+    final settingsStore = SettingsStore();
+    final folders = await settingsStore.getAccountManualScanFolders(widget.accountId);
+    final mode = await settingsStore.getAccountManualScanMode(widget.accountId);
+    if (mounted) {
+      setState(() {
+        _configuredFolders = (folders != null && folders.isNotEmpty) ? folders : ['INBOX'];
+        _configuredMode = mode ?? ScanMode.readonly;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final scanProvider = context.watch<EmailScanProvider>();
 
-    // ✨ PHASE 3.1: Auto-navigate to Results when scan completes (Issue #33)
-    // ✨ ISSUE #39 FIX: Update _previousStatus INSIDE the if block to prevent
+    // [NEW] PHASE 3.1: Auto-navigate to Results when scan completes (Issue #33)
+    // [NEW] ISSUE #39 FIX: Update _previousStatus INSIDE the if block to prevent
     // multiple navigation callbacks if build() is called multiple times
     if (_previousStatus != ScanStatus.completed && 
         scanProvider.status == ScanStatus.completed) {
@@ -125,7 +140,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
       },
       child: Scaffold(
         appBar: AppBarWithExit(
-          title: Text('Scan Progress - ${widget.platformDisplayName}'),
+          title: Text('Manual Scan - ${widget.platformDisplayName}'),
           // Add explicit back button that returns to account selection
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
@@ -160,12 +175,12 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
           ),
           actions: [
             IconButton(
-              tooltip: 'View results',
-              icon: const Icon(Icons.list_alt),
+              tooltip: 'View Scan History',
+              icon: const Icon(Icons.history),
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => ResultsDisplayScreen(
+                    builder: (_) => ScanHistoryScreen(
                       platformId: widget.platformId,
                       platformDisplayName: widget.platformDisplayName,
                       accountId: widget.accountId,
@@ -209,125 +224,126 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
 
   Widget _buildHeader(EmailScanProvider scanProvider) {
     final modeName = scanProvider.getScanModeDisplayName();
+    final isReady = scanProvider.status == ScanStatus.idle && scanProvider.results.isEmpty;
+
     final statusText = switch (scanProvider.status) {
-      ScanStatus.idle => scanProvider.results.isEmpty
-          ? 'Ready to scan - $modeName'
-          : 'Idle',
+      ScanStatus.idle => isReady ? 'Ready to Scan' : 'Idle',
       ScanStatus.scanning => 'Scanning in progress',
       ScanStatus.paused => 'Paused',
       ScanStatus.completed => 'Scan complete - $modeName',
       ScanStatus.error => 'Scan failed',
     };
 
+    // [NEW] ISSUE #125: Show demo mode indicator if using demo platform
+    final isDemoMode = widget.platformId == 'demo';
+
+    // [NEW] ISSUE #156: Display configured mode name from settings
+    final configuredModeName = _scanModeDisplayName(_configuredMode);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          statusText,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                statusText,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+            if (isDemoMode)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade100,
+                  border: Border.all(color: Colors.amber.shade700),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.science, size: 16, color: Colors.amber.shade900),
+                    const SizedBox(width: 4),
+                    Text(
+                      'DEMO MODE',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.amber.shade900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
         ),
         const SizedBox(height: 4),
-        Text(
-          scanProvider.statusMessage ?? 'Waiting to begin...',
-          style: const TextStyle(color: Colors.grey),
-        ),
+        // [NEW] ISSUE #156: Show scan mode and folders when ready to scan
+        if (isReady) ...[
+          Text(
+            'Mode: $configuredModeName',
+            style: const TextStyle(color: Colors.grey),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Folders: ${_configuredFolders.join(", ")}',
+            style: const TextStyle(color: Colors.grey),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 2,
+          ),
+        ] else
+          Text(
+            scanProvider.statusMessage ?? 'Waiting to begin...',
+            style: const TextStyle(color: Colors.grey),
+          ),
       ],
     );
   }
 
-  /// ✨ PHASE 3.1: Removed redundant progress bar and text (Issue #33)
+  /// [NEW] PHASE 3.1: Removed redundant progress bar and text (Issue #33)
   /// Progress info now shown only in bubble row
 
+  /// [UPDATED] Testing feedback: Removed stat bubbles from Manual Scan screen.
+  /// During active scan, shows a simple progress indicator.
   Widget _buildStats(EmailScanProvider scanProvider) {
-    // ✨ PHASE 3.1: Updated bubble row with Found, Processed, Deleted, Moved, Safe, No rule, Errors
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: [
-        _buildStatChip('Found', scanProvider.totalEmails, const Color(0xFF2196F3), Colors.white), // Blue
-        _buildStatChip('Processed', scanProvider.processedCount, const Color(0xFF9C27B0), Colors.white), // Purple
-        _buildStatChip('Deleted', scanProvider.deletedCount, const Color(0xFFF44336), Colors.white), // Red
-        _buildStatChip('Moved', scanProvider.movedCount, const Color(0xFFFF9800), Colors.white), // Orange
-        _buildStatChip('Safe', scanProvider.safeSendersCount, const Color(0xFF4CAF50), Colors.white), // Green
-        _buildStatChip('No rule', scanProvider.noRuleCount, const Color(0xFF757575), Colors.white), // Grey
-        _buildStatChip('Errors', scanProvider.errorCount, const Color(0xFFD32F2F), Colors.white), // Dark Red
-      ],
-    );
+    if (scanProvider.status == ScanStatus.scanning) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            'Scanning... ${scanProvider.processedCount} emails processed',
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          ),
+        ],
+      );
+    }
+    // When not scanning, show nothing (no stat bubbles)
+    return const SizedBox.shrink();
   }
 
-  Widget _buildStatChip(String label, int value, Color bg, Color fg) {
-    return Chip(
-      label: Text('$label: $value'),
-      backgroundColor: bg,
-      labelStyle: TextStyle(color: fg, fontWeight: FontWeight.bold),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-    );
-  }
-
+  /// [UPDATED] Testing feedback: Simplified controls - removed pause, complete buttons.
+  /// Start Live Scan now uses Settings directly (no dialog popup).
   Widget _buildControls(BuildContext context, EmailScanProvider scanProvider) {
     final ruleProvider = context.watch<RuleSetProvider>();
-    
-    // ✨ PHASE 3.1: Re-enable buttons after scan completes (Issue #33)
-    final canStartScan = scanProvider.status == ScanStatus.idle || 
+
+    final canStartScan = scanProvider.status == ScanStatus.idle ||
                          scanProvider.status == ScanStatus.completed;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-          // ✨ PHASE 3.1: Scan Mode button
-          OutlinedButton.icon(
-            icon: const Icon(Icons.settings),
-            label: Text('Scan Mode: ${scanProvider.getScanModeDisplayName()}'),
-            onPressed: canStartScan
-                ? () => _showScanModeDialog(context, scanProvider)
-                : null,
-          ),
-          const SizedBox(height: 12),
-          // Folder selection button (Phase 2 Sprint 3)
-          ElevatedButton.icon(
-            icon: const Icon(Icons.folder_open),
-            label: const Text('Select Folders to Scan'),
-            onPressed: canStartScan
-                ? () => _showFolderSelection(context, scanProvider)
-                : null,
-          ),
-          const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.play_arrow),
-                label: const Text('Start Live Scan'),
-                onPressed: canStartScan
-                    ? () => _startRealScan(context, scanProvider, ruleProvider)
-                    : null,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: ElevatedButton.icon(
-                icon: Icon(scanProvider.status == ScanStatus.paused ? Icons.play_arrow : Icons.pause),
-                label: Text(scanProvider.status == ScanStatus.paused ? 'Resume' : 'Pause'),
-                onPressed: scanProvider.status == ScanStatus.scanning
-                    ? scanProvider.pauseScan
-                    : scanProvider.status == ScanStatus.paused
-                        ? scanProvider.resumeScan
-                        : null,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.check_circle),
-                label: const Text('Complete'),
-                onPressed: scanProvider.status == ScanStatus.scanning ? scanProvider.completeScan : null,
-              ),
-            ),
-          ],
+        ElevatedButton.icon(
+          icon: const Icon(Icons.play_arrow),
+          label: const Text('Start Live Scan'),
+          onPressed: canStartScan
+              ? () => _startRealScan(context, scanProvider, ruleProvider)
+              : null,
         ),
         const SizedBox(height: 12),
         ElevatedButton.icon(
@@ -339,12 +355,12 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
         ),
         const SizedBox(height: 12),
         OutlinedButton.icon(
-          icon: const Icon(Icons.list_alt),
-          label: const Text('View results'),
+          icon: const Icon(Icons.history),
+          label: const Text('View Scan History'),
           onPressed: () {
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (_) => ResultsDisplayScreen(
+                builder: (_) => ScanHistoryScreen(
                   platformId: widget.platformId,
                   platformDisplayName: widget.platformDisplayName,
                   accountId: widget.accountId,
@@ -417,216 +433,33 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
     );
   }
 
-    /// Show folder selection screen (Phase 2 Sprint 3)
-    Future<void> _showFolderSelection(
-      BuildContext context,
-      EmailScanProvider scanProvider,
-    ) async {
-      final logger = Logger();
-
-      final selected = await showModalBottomSheet<List<String>>(
-        context: context,
-        isScrollControlled: true,
-        builder: (ctx) => FolderSelectionScreen(
-          platformId: widget.platformId,
-          accountId: widget.accountId,
-          accountEmail: widget.accountEmail,
-          onFoldersSelected: (folders) {
-            logger.i('📁 Folders selected for scan: $folders');
-            // ✨ PHASE 3.2: Store selected folders in scanProvider for use during scan
-            // ✨ ISSUE #41 FIX: Pass accountId to store folders per-account
-            scanProvider.setSelectedFolders(folders, accountId: widget.accountId);
-          },
-        ),
-      );
-
-      if (selected != null && context.mounted) {
-        logger.i('✅ User confirmed folders: $selected');
-        // ✨ PHASE 3.2: Update scanProvider with final selection
-        // ✨ ISSUE #41 FIX: Pass accountId to store folders per-account
-        scanProvider.setSelectedFolders(selected, accountId: widget.accountId);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Ready to scan: ${selected.join(", ")}'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    }
-
-  /// ✨ PHASE 3.1: Show scan mode selection dialog
-  Future<void> _showScanModeDialog(
-    BuildContext context,
-    EmailScanProvider scanProvider,
-  ) async {
-    ScanMode selectedMode = scanProvider.scanMode;
-    int testLimit = scanProvider.emailTestLimit ?? 50;
-
-    await showDialog(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Select Scan Mode'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Read-Only
-                RadioListTile<ScanMode>(
-                  value: ScanMode.readonly,
-                  groupValue: selectedMode,
-                  title: const Text('Read-Only'),
-                  subtitle: const Text('Safe testing - no emails modified'),
-                  onChanged: (value) {
-                    setState(() => selectedMode = value!);
-                  },
-                ),
-                // Test Limited Emails
-                RadioListTile<ScanMode>(
-                  value: ScanMode.testLimit,
-                  groupValue: selectedMode,
-                  title: const Text('Test Limited Emails'),
-                  subtitle: Text('Modify up to $testLimit emails'),
-                  onChanged: (value) {
-                    setState(() => selectedMode = value!);
-                  },
-                ),
-                // ✨ ISSUE #40 FIX: Configurable test limit slider
-                if (selectedMode == ScanMode.testLimit)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 8),
-                        Text(
-                          'Email limit: $testLimit',
-                          style: const TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        Slider(
-                          value: testLimit.toDouble(),
-                          min: 5,
-                          max: 200,
-                          divisions: 39,
-                          label: '$testLimit emails',
-                          onChanged: (value) {
-                            setState(() => testLimit = value.round());
-                          },
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text('5', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                            const Text('200', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                // Full Scan with Revert
-                RadioListTile<ScanMode>(
-                  value: ScanMode.testAll,
-                  groupValue: selectedMode,
-                  title: const Text('Full Scan with Revert'),
-                  subtitle: const Text('All changes (can revert)'),
-                  onChanged: (value) {
-                    setState(() => selectedMode = value!);
-                  },
-                ),
-                // Full Scan (PERMANENT)
-                RadioListTile<ScanMode>(
-                  value: ScanMode.fullScan,
-                  groupValue: selectedMode,
-                  title: const Text('Full Scan'),
-                  subtitle: const Text('PERMANENT delete/move (cannot revert)', 
-                    style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-                  onChanged: (value) {
-                    setState(() => selectedMode = value!);
-                  },
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                // Show warning for Full Scan mode
-                if (selectedMode == ScanMode.fullScan) {
-                  final confirmed = await showDialog<bool>(
-                    context: dialogContext,
-                    barrierDismissible: false,
-                    builder: (ctx) => AlertDialog(
-                      title: const Row(
-                        children: [
-                          Icon(Icons.warning, color: Colors.red),
-                          SizedBox(width: 8),
-                          Text('Warning: Full Scan Mode'),
-                        ],
-                      ),
-                      content: const Text(
-                        'Full Scan mode will PERMANENTLY delete or move emails based on your rules.\n\n'
-                        'This action CANNOT be undone.\n\n'
-                        'Are you sure you want to enable Full Scan mode?',
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(ctx, false),
-                          child: const Text('Cancel'),
-                        ),
-                        ElevatedButton(
-                          onPressed: () => Navigator.pop(ctx, true),
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                          child: const Text('Enable Full Scan'),
-                        ),
-                      ],
-                    ),
-                  );
-                  
-                  if (confirmed != true) {
-                    return; // User cancelled
-                  }
-                }
-
-                // Apply the mode
-                scanProvider.initializeScanMode(
-                  mode: selectedMode,
-                  testLimit: selectedMode == ScanMode.testLimit ? testLimit : null,
-                );
-                
-                if (dialogContext.mounted) {
-                  Navigator.pop(dialogContext);
-                }
-              },
-              child: const Text('Apply'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Start a real IMAP scan
+  /// [UPDATED] Testing feedback: Removed Scan Options dialog - uses Settings directly.
+  /// Start a real IMAP scan using Settings > Manual > Scan Range
   Future<void> _startRealScan(
     BuildContext context,
     EmailScanProvider scanProvider,
     RuleSetProvider ruleProvider,
   ) async {
-    // Show options dialog
-    final daysBack = await showDialog<int>(
-      context: context,
-      builder: (ctx) => const _ScanOptionsDialog(),
+    // Load scan configuration directly from Settings (no dialog popup)
+    final settingsStore = SettingsStore();
+    final daysBack = await settingsStore.getEffectiveDaysBack(
+      widget.accountId,
+      isBackground: false,
     );
 
-    if (daysBack == null) return; // User cancelled
+    // Load scan mode from account settings
+    final scanMode = await settingsStore.getAccountManualScanMode(widget.accountId) ?? ScanMode.readonly;
+    scanProvider.initializeScanMode(mode: scanMode);
 
-    // Immediately update UI to show scan is starting
-    scanProvider.startScan(totalEmails: 0);
+    final logger = Logger();
+    logger.i('[SCAN_SCREEN] accountId=${widget.accountId}, platformId=${widget.platformId}');
+    logger.i('[SCAN_SCREEN] Loaded settings: scanMode=$scanMode, daysBack=$daysBack');
 
-    // ✨ SPRINT 12: Navigate to Results immediately after starting scan
+    // Immediately update UI to show scan is starting (no database record -
+    // the EmailScanner.executeScan() will create the real persisted record)
+    scanProvider.startScan(totalEmails: 0, persist: false);
+
+    // [NEW] SPRINT 12: Navigate to Results immediately after starting scan
     // User feedback: "Start Scan should immediately go to View Results page"
     if (context.mounted) {
       Navigator.of(context).push(
@@ -650,14 +483,29 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
         scanProvider: scanProvider,
       );
 
-      // ✨ PHASE 3.2: Use selected folders from scanProvider (defaults to ['INBOX'] if none selected)
-      final foldersToScan = scanProvider.selectedFolders;
-      final logger = Logger();
-      logger.i('🚀 Starting scan of folders: $foldersToScan for $daysBack days back');
+      // [FIXED] ISSUE #123+#124: Use saved default folders from Manual Scan tab
+      // The Settings screen saves folders per-account; we always use those
+      final scanLogger = Logger();
+      List<String> foldersToScan;
+
+      // Load saved default folders from Settings > Manual Scan tab
+      final savedFolders = await settingsStore.getAccountManualScanFolders(widget.accountId);
+      if (savedFolders != null && savedFolders.isNotEmpty) {
+        foldersToScan = savedFolders;
+        scanLogger.i('[FOLDERS] Using saved default folders from Manual Scan tab: $foldersToScan');
+      } else {
+        // Fallback to INBOX if no folders configured
+        foldersToScan = ['INBOX'];
+        scanLogger.i('[FOLDERS] No folders configured in Settings, using default: $foldersToScan');
+      }
+
+      scanLogger.i('[SCAN_SCREEN] Starting scan: folders=$foldersToScan, daysBack=$daysBack');
 
       // Start scan in background (will call startScan again with real count)
       await scanner.scanInbox(daysBack: daysBack, folderNames: foldersToScan);
-    } catch (e) {
+      scanLogger.i('[SCAN_SCREEN] scanInbox() completed successfully');
+    } catch (e, st) {
+      logger.e('[SCAN_SCREEN] SCAN EXCEPTION: $e\n$st');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -669,62 +517,48 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
     }
   }
 
-  void _startDemoScan(EmailScanProvider scanProvider) {
-    scanProvider.startScan(totalEmails: 10);
-
-    // Record some sample results
-    for (int i = 0; i < 10; i++) {
-      final email = EmailMessage(
-        id: 'msg_$i',
-        from: 'sender$i@example.com',
-        subject: 'Sample subject $i',
-        body: 'Body of sample email $i',
-        headers: const {},
-        receivedDate: DateTime.now(),
-        folderName: 'INBOX',
+  /// [UPDATED] ISSUE #125: Use MockEmailProvider with 50+ sample emails
+  Future<void> _startDemoScan(EmailScanProvider scanProvider) async {
+    final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
+    
+    // Create scanner with MockEmailProvider (50+ sample emails)
+    final scanner = EmailScanner(
+      platformId: 'demo',  // Use demo platform
+      accountId: 'demo@example.com',
+      ruleSetProvider: ruleProvider,
+      scanProvider: scanProvider,
+    );
+    
+    try {
+      // Run scan with MockEmailProvider (will load 50+ sample emails)
+      await scanner.scanInbox(
+        daysBack: 30,
+        folderNames: ['INBOX', 'Spam', 'Bulk'],
+        scanType: 'demo',
       );
-
-      final action = switch (i % 3) {
-        0 => EmailActionType.delete,
-        1 => EmailActionType.moveToJunk,
-        _ => EmailActionType.safeSender,
-      };
-
-      // Issue #51: Create proper EvaluationResult with rule names for demo scan
-      // This ensures the results display shows actual rule names instead of "No rule"
-      final evalResult = switch (action) {
-        EmailActionType.delete => EvaluationResult(
-          shouldDelete: true,
-          shouldMove: false,
-          matchedRule: 'SpamAutoDeleteHeader',
-          matchedPattern: 'sender$i@.*',
-        ),
-        EmailActionType.moveToJunk => EvaluationResult(
-          shouldDelete: false,
-          shouldMove: true,
-          targetFolder: 'Junk',
-          matchedRule: 'MarketingBulkMove',
-          matchedPattern: 'marketing.*',
-        ),
-        EmailActionType.safeSender => EvaluationResult.safeSender('^sender$i@example\\.com\$'),
-        _ => EvaluationResult.noMatch(),
-      };
-
-      scanProvider.updateProgress(
-        email: email,
-        message: 'Demo processing ${email.subject}',
-      );
-      scanProvider.recordResult(
-        EmailActionResult(
-          email: email,
-          evaluationResult: evalResult,
-          action: action,
-          success: true,
-        ),
-      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Demo scan failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
+  }
 
-    scanProvider.completeScan();
+  String _scanModeDisplayName(ScanMode mode) {
+    switch (mode) {
+      case ScanMode.readonly:
+        return 'Read-Only';
+      case ScanMode.testLimit:
+        return 'Process Rules Only';
+      case ScanMode.testAll:
+        return 'Process Safe Senders Only';
+      case ScanMode.fullScan:
+        return 'Process Safe Senders + Rules';
+    }
   }
 
   Widget _actionIcon(EmailActionType action) {
@@ -743,83 +577,5 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
   }
 }
 
-/// Dialog for scan options
-class _ScanOptionsDialog extends StatefulWidget {
-  const _ScanOptionsDialog();
-
-  @override
-  State<_ScanOptionsDialog> createState() => _ScanOptionsDialogState();
-}
-
-class _ScanOptionsDialogState extends State<_ScanOptionsDialog> {
-  int _daysBack = 7; // Default to 7 days
-  bool _scanAll = false; // Default to date-filtered scan
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Scan Options'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('How many days back to scan?'),
-          const SizedBox(height: 24),
-
-          // Continuous slider (1-90 days) - only visible when not scanning all
-          if (!_scanAll) ...[
-            Row(
-              children: [
-                const Text('1'),
-                Expanded(
-                  child: Slider(
-                    value: _daysBack.toDouble(),
-                    min: 1,
-                    max: 90,
-                    divisions: 89,
-                    label: '$_daysBack day${_daysBack == 1 ? "" : "s"}',
-                    onChanged: (value) {
-                      setState(() => _daysBack = value.round());
-                    },
-                  ),
-                ),
-                const Text('90'),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Center(
-              child: Text(
-                'Scan last $_daysBack day${_daysBack == 1 ? "" : "s"}',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-
-          // "Scan All" checkbox
-          CheckboxListTile(
-            title: const Text('Scan all emails (no date filter)'),
-            value: _scanAll,
-            onChanged: (value) {
-              setState(() => _scanAll = value ?? false);
-            },
-            controlAffinity: ListTileControlAffinity.leading,
-            contentPadding: EdgeInsets.zero,
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        ElevatedButton(
-          onPressed: () => Navigator.of(context).pop(_scanAll ? 0 : _daysBack),
-          child: const Text('Start Scan'),
-        ),
-      ],
-    );
-  }
-}
+// [REMOVED] Testing feedback: _ScanOptionsDialog removed.
+// Scan now starts directly using Settings > Manual > Scan Range configuration.

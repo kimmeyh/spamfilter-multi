@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:spam_filter_mobile/core/models/email_message.dart';
-import 'package:spam_filter_mobile/core/models/rule_set.dart';
+
 import 'package:spam_filter_mobile/core/models/evaluation_result.dart';
 import 'package:spam_filter_mobile/core/providers/email_scan_provider.dart';
 import 'package:spam_filter_mobile/core/providers/rule_set_provider.dart';
@@ -207,7 +207,7 @@ void main() {
 }
 
 /// Mock platform for testing
-class MockSpamFilterPlatform implements SpamFilterPlatform {
+class MockSpamFilterPlatform with BatchOperationsMixin implements SpamFilterPlatform {
   List<EmailMessage> _testEmails = [];
   Function()? onTakeAction;
 
@@ -230,6 +230,11 @@ class MockSpamFilterPlatform implements SpamFilterPlatform {
   }
 
   @override
+  void setDeletedRuleFolder(String? folderName) {
+    // No-op for testing
+  }
+
+  @override
   Future<List<EmailMessage>> fetchMessages({
     required int daysBack,
     required List<String> folderNames,
@@ -246,6 +251,29 @@ class MockSpamFilterPlatform implements SpamFilterPlatform {
     if (onTakeAction != null) {
       onTakeAction!();
     }
+  }
+
+  @override
+  Future<void> moveToFolder({
+    required EmailMessage message,
+    required String targetFolder,
+  }) async {
+    // No-op for testing
+  }
+
+  @override
+  Future<void> markAsRead({
+    required EmailMessage message,
+  }) async {
+    // No-op for testing
+  }
+
+  @override
+  Future<void> applyFlag({
+    required EmailMessage message,
+    required String flagName,
+  }) async {
+    // No-op for testing
   }
 
   @override

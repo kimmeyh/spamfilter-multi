@@ -11,16 +11,18 @@ import 'package:logger/logger.dart';
 
 import '../../core/models/email_message.dart';
 import '../../core/models/rule_set.dart';
+import '../../core/models/safe_sender_list.dart';
 import '../../core/services/email_body_parser.dart';
+import '../../core/services/rule_conflict_detector.dart';
 import '../../core/storage/rule_database_store.dart';
 import '../../core/storage/safe_sender_database_store.dart';
 import '../../core/storage/unmatched_email_store.dart';
 import 'rule_quick_add_screen.dart';
 import 'safe_sender_quick_add_screen.dart';
 
-/// ✨ SPRINT 4: Detailed view for reviewing individual unmatched emails
-/// ✨ SPRINT 6: Added quick-add screen integration
-/// ✨ SPRINT 12: Enhanced with domain extraction, tabbed view, improved actions
+/// [NEW] SPRINT 4: Detailed view for reviewing individual unmatched emails
+/// [NEW] SPRINT 6: Added quick-add screen integration
+/// [NEW] SPRINT 12: Enhanced with domain extraction, tabbed view, improved actions
 class EmailDetailView extends StatefulWidget {
   final UnmatchedEmail email;
   final UnmatchedEmailStore unmatchedEmailStore;
@@ -200,6 +202,7 @@ class _EmailDetailViewState extends State<EmailDetailView>
         builder: (context) => SafeSenderQuickAddScreen(
           email: emailMessage,
           safeSenderStore: widget.safeSenderStore!,
+          ruleStore: widget.ruleStore,
         ),
       ),
     ).then((result) {
@@ -375,6 +378,14 @@ class _EmailDetailViewState extends State<EmailDetailView>
         },
       );
 
+      // [NEW] ISSUE #139: Check for rule conflicts before saving
+      final emailMessage = _createEmailMessage();
+      final conflicts = await _detectConflicts(rule, emailMessage);
+      if (conflicts.isNotEmpty && mounted) {
+        final proceed = await _showConflictWarning(conflicts);
+        if (!proceed) return;
+      }
+
       await widget.ruleStore!.addRule(rule);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -391,6 +402,92 @@ class _EmailDetailViewState extends State<EmailDetailView>
     }
   }
 
+  /// [NEW] ISSUE #139: Detect rule conflicts for inline quick-add
+  Future<List<RuleConflict>> _detectConflicts(Rule newRule, EmailMessage email) async {
+    try {
+      if (widget.ruleStore == null) return [];
+      final detector = RuleConflictDetector();
+      final ruleSet = await widget.ruleStore!.loadRules();
+
+      SafeSenderList safeSenderList;
+      if (widget.safeSenderStore != null) {
+        final safeSenders = await widget.safeSenderStore!.loadSafeSenders();
+        safeSenderList = SafeSenderList(
+          safeSenders: safeSenders.map((s) => s.pattern).toList(),
+        );
+      } else {
+        safeSenderList = SafeSenderList(safeSenders: []);
+      }
+
+      return detector.detectConflicts(
+        email: email,
+        newRule: newRule,
+        ruleSet: ruleSet,
+        safeSenderList: safeSenderList,
+      );
+    } catch (e) {
+      _logger.w('Failed to check for rule conflicts: $e');
+      return [];
+    }
+  }
+
+  /// [NEW] ISSUE #139: Show conflict warning dialog
+  Future<bool> _showConflictWarning(List<RuleConflict> conflicts) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700),
+            const SizedBox(width: 8),
+            const Text('Rule Conflict Detected'),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'The new rule may not take effect because existing rules '
+                'or safe senders would match this email first:',
+              ),
+              const SizedBox(height: 12),
+              ...conflicts.map((c) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  c.description,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: c.isSafeSenderConflict
+                        ? Colors.green.shade700
+                        : Colors.orange.shade700,
+                  ),
+                ),
+              )),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Save Anyway'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
   void _navigateToRuleScreen() {
     final emailMessage = _createEmailMessage();
     Navigator.push(
@@ -399,6 +496,7 @@ class _EmailDetailViewState extends State<EmailDetailView>
         builder: (context) => RuleQuickAddScreen(
           email: emailMessage,
           ruleStore: widget.ruleStore!,
+          safeSenderStore: widget.safeSenderStore,
         ),
       ),
     ).then((result) {

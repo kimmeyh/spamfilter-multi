@@ -1,8 +1,7 @@
 {
   "current_save": ".claude/memory/current.md",
+  "last_updated": "2026-02-14T16:45:00Z",
+  "sprint": "Sprint 15",
   "status": "active",
-  "sprint": "Sprint 12",
-  "last_updated": "2026-02-05T23:45:00Z",
-  "archived_saves": [],
-  "pending_restore": true
+  "pending_restore": false
 }

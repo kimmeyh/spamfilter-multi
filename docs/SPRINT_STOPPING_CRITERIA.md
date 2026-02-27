@@ -14,9 +14,9 @@
 |----------|---------|-------------|
 | **ALL_SPRINTS_MASTER_PLAN.md** | Master plan for all sprints | Before starting any sprint, after completing a sprint |
 | **SPRINT_PLANNING.md** | Sprint planning methodology | When planning a new sprint |
-| **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 0-4.5) |
+| **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 1-7) |
 | **SPRINT_STOPPING_CRITERIA.md** (this doc) | When/why to stop working | When uncertain if blocked or should continue |
-| **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 4.5) |
+| **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 7) |
 | **TESTING_STRATEGY.md** | Testing approach and requirements | When writing or reviewing tests |
 | **QUALITY_STANDARDS.md** | Quality standards for code and documentation | When writing code or documentation |
 | **TROUBLESHOOTING.md** | Common issues and solutions | When encountering errors or debugging |
@@ -39,7 +39,7 @@ During sprint execution, models work autonomously until one of these stopping cr
 
 ## Primary Stopping Criteria
 
-### 1. ✅ NORMAL COMPLETION - All Sprint Tasks Finished
+### 1. [OK] NORMAL COMPLETION - All Sprint Tasks Finished
 
 **When**: All tasks defined in sprint plan are complete and tested.
 
@@ -49,12 +49,17 @@ During sprint execution, models work autonomously until one of these stopping cr
 - [ ] Code analysis shows zero errors
 - [ ] Local code review completed
 - [ ] No known blockers or regressions
+- [ ] **Windows desktop app built and launched successfully** (Phase 5.3)
 
 **Action**:
-1. Proceed to Phase 3.3 (Manual Testing in parallel)
-2. Once testing complete → Phase 4 (PR creation)
-3. User will conduct Phase 4.5 (Sprint Review) before merge
-4. **MANDATORY Sprint Completion Updates** (Phase 4.5.6 and Step 3 after merge):
+1. **Build and launch the app** (MANDATORY before manual testing - Phase 5.3)
+   - Windows: `cd mobile-app/scripts && .\build-windows.ps1`
+   - Verify build succeeds, app launches, no database errors
+   - User should NOT have to build app themselves
+2. Proceed to Phase 5.3 (Manual Testing in parallel)
+2. Once testing complete → Phase 6 (PR creation)
+3. User will conduct Phase 7 (Sprint Review) before merge
+4. **MANDATORY Sprint Completion Updates** (Phase 7.7 and Step 3 after merge):
    - [ ] Update CHANGELOG.md with sprint entry under `## [Unreleased]`
    - [ ] Update ALL_SPRINTS_MASTER_PLAN.md with:
      - Actual duration vs estimated
@@ -70,22 +75,22 @@ During sprint execution, models work autonomously until one of these stopping cr
      ```
      Sprint N complete! What would you like to do next?
 
-     1. 📋 Sprint Review (if not already conducted)
-     2. ➡️ Start Sprint N+1 (see ALL_SPRINTS_MASTER_PLAN.md for details)
-     3. 🔧 Ad-hoc work (tasks outside sprint framework)
+     1. [CHECKLIST] Sprint Review (if not already conducted)
+     2. [NEXT] Start Sprint N+1 (see ALL_SPRINTS_MASTER_PLAN.md for details)
+     3. [CONFIG] Ad-hoc work (tasks outside sprint framework)
 
      Please let me know your preference.
      ```
 
 **Timing**: This is the expected normal path. No user approval needed - this was pre-approved in sprint plan approval.
 
-**Documentation Updates**: The CHANGELOG.md and ALL_SPRINTS_MASTER_PLAN.md updates are MANDATORY and must be completed before PR approval. See `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 4.5.6 and "After Sprint Approval" Step 3 for details.
+**Documentation Updates**: The CHANGELOG.md and ALL_SPRINTS_MASTER_PLAN.md updates are MANDATORY and must be completed before PR approval. See `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 7.7 and "After Sprint Approval" Step 3 for details.
 
-**Historical Archiving**: Full sprint details are archived to SPRINT_<N>_SUMMARY.md during next sprint planning (Phase 1.2.1) to keep ALL_SPRINTS_MASTER_PLAN.md focused on current/future work.
+**Historical Archiving**: Full sprint details are archived to SPRINT_<N>_SUMMARY.md during next sprint planning (Phase 3.2.1) to keep ALL_SPRINTS_MASTER_PLAN.md focused on current/future work.
 
 ---
 
-### 2. 🔄 BLOCKED - Cannot Proceed Without External Input
+### 2. [PENDING] BLOCKED - Cannot Proceed Without External Input
 
 **When**: Encountered a blocker that cannot be resolved by the assigned model.
 
@@ -111,7 +116,7 @@ During sprint execution, models work autonomously until one of these stopping cr
 
 **Blocker Documentation Template**:
 ```markdown
-🚫 BLOCKED: [Brief description]
+[STOP] BLOCKED: [Brief description]
 
 Root Cause: [Why this is blocking progress]
 
@@ -128,7 +133,7 @@ What's Required to Unblock:
 
 **Example**:
 ```markdown
-🚫 BLOCKED: EmailProvider interface refactor affecting all adapters
+[STOP] BLOCKED: EmailProvider interface refactor affecting all adapters
 
 Root Cause: Current interface has hardcoded assumptions about folder
 structure. New requirement is per-provider folder discovery, which
@@ -150,7 +155,7 @@ What's Required to Unblock:
 
 ---
 
-### 3. 📋 SCOPE CHANGE - Sprint Plan Changed Mid-Sprint
+### 3. [CHECKLIST] SCOPE CHANGE - Sprint Plan Changed Mid-Sprint
 
 **When**: User requests scope change or adds/removes tasks during sprint.
 
@@ -184,7 +189,7 @@ What's Required to Unblock:
 
 ---
 
-### 4. 🐛 DISCOVERY - Unexpected Bug Found That Affects Sprint
+### 4. [BUG] DISCOVERY - Unexpected Bug Found That Affects Sprint
 
 **When**: Found a bug in existing code that is blocking or significantly impacting sprint work.
 
@@ -224,7 +229,7 @@ What's Required to Unblock:
 
 ---
 
-### 5. ⏸️ REVIEW REQUEST - User Requests Sprint Review Early
+### 5. [PAUSE] REVIEW REQUEST - User Requests Sprint Review Early
 
 **When**: User explicitly requests sprint review before all tasks complete.
 
@@ -236,7 +241,7 @@ What's Required to Unblock:
 **Action**:
 1. Complete current task to stable state
 2. Commit any in-progress work
-3. Proceed to Phase 4.5 (Sprint Review)
+3. Proceed to Phase 7 (Sprint Review)
 4. Provide feedback, collect user feedback
 5. Decide: (a) Resume sprint, (b) Wrap up and merge, (c) Adjust scope
 
@@ -244,9 +249,9 @@ What's Required to Unblock:
 
 ---
 
-### 6. 🏁 SPRINT REVIEW COMPLETE - Phase 4.5 Done
+### 6. [DONE] SPRINT REVIEW COMPLETE - Phase 7 Done
 
-**When**: Phase 4.5 (Sprint Review) is complete, documentation improved, ready for PR merge.
+**When**: Phase 7 (Sprint Review) is complete, documentation improved, ready for PR merge.
 
 **Indicators**:
 - [ ] Windows build successful
@@ -256,7 +261,7 @@ What's Required to Unblock:
 - [ ] PR ready for user approval
 
 **Action**:
-1. Notify user: "Phase 4.5 complete, PR ready for review and approval"
+1. Notify user: "Phase 7 complete, PR ready for review and approval"
 2. Wait for user to review PR
 3. Once approved: Merge to develop branch
 4. Cleanup: Delete feature branch, close sprint cards
@@ -266,7 +271,7 @@ What's Required to Unblock:
 
 ---
 
-### 7. ❌ FAILURE - Cannot Proceed, Needs Redesign
+### 7. [FAIL] FAILURE - Cannot Proceed, Needs Redesign
 
 **When**: Fundamental design issue discovered that requires rethinking approach.
 
@@ -310,7 +315,7 @@ constraints (performance, maintainability, test coverage).
 
 ---
 
-### 8. 📊 CONTEXT LIMIT APPROACHING - Efficiency Break
+### 8. [WARNING] CONTEXT LIMIT APPROACHING - Efficiency Break
 
 **When**: Context usage approaches limit and continued work becomes inefficient.
 
@@ -331,7 +336,7 @@ constraints (performance, maintainability, test coverage).
 
 ---
 
-### 9. ⏰ TIME LIMIT REACHED - Scheduled End of Sprint
+### 9. [STOP] TIME LIMIT REACHED - Scheduled End of Sprint
 
 **When**: Sprint duration reaches planned limit (e.g., "Sprint lasts until Friday 5 PM").
 
@@ -343,15 +348,15 @@ constraints (performance, maintainability, test coverage).
 **Action**:
 1. Complete current task to stable state
 2. Commit all work
-3. Proceed to Phase 4 (PR creation) if not already there
-4. Proceed to Phase 4.5 (Sprint Review)
+3. Proceed to Phase 6 (PR creation) if not already there
+4. Proceed to Phase 7 (Sprint Review)
 5. Wrap up and await merge
 
 **Timing**: Respect scheduled sprint boundaries. Better to complete remaining tasks next sprint than to extend indefinitely.
 
 ---
 
-### 10. 🚫 SHOULD NOT STOP - Implementation Decision
+### 10. [STOP] SHOULD NOT STOP - Implementation Decision
 
 **When**: Need to make implementation decision during task execution.
 
@@ -396,6 +401,103 @@ These are NOT valid reasons to stop:
 | **Feature looks incomplete** | May be intentionally minimal | Complete acceptance criteria, continue |
 | **Feeling tired/stuck** | Not an external blocker | Take a break, then continue |
 | **Minor code style issue** | Fix on next commit, continue | Document as tech debt, continue |
+| **Implementation choice** | Sprint approval pre-authorized this | Make best judgment, document, continue |
+| **Method signature change** | Needed to meet acceptance criteria | Change signature, update callers, continue |
+| **Refactor vs extend** | Engineering decision within scope | Choose based on code smell, continue |
+| **Approach uncertainty** | Test and iterate is faster | Implement, test, adjust if needed |
+| **Feature seems incomplete** | May be intentionally MVP | Complete acceptance criteria, continue |
+
+### Detailed Examples from Past Sprints (Sprint 6, Sprint 13)
+
+**Example 1: Implementation Decision (WRONG Behavior)**
+```
+Task: "Fix pattern matching to use extracted email instead of raw header"
+Acceptance Criteria: "Email pattern matching should use message.from field"
+
+[WRONG] Claude stops and asks: "Should I change the method signature to accept EmailMessage?"
+[CORRECT] Claude changes signature, documents in commit message, continues
+[WHY] Signature change is needed to access message.from field - this is within scope
+```
+
+**Example 2: Approach Uncertainty (WRONG Behavior)**
+```
+Task: "Add visual indicators to scan results"
+Acceptance Criteria: "Show checkmark for matched patterns"
+
+[WRONG] Claude stops and asks: "Should I calculate pattern type at display or store during scan?"
+[CORRECT] Claude chooses architectural approach, implements, tests, continues
+[WHY] Both approaches can meet acceptance criteria - make best judgment
+```
+
+**Example 3: Refactor Decision (WRONG Behavior)**
+```
+Task: "Improve rule evaluation performance"
+Acceptance Criteria: "Reduce evaluation time by 20%"
+
+[WRONG] Claude stops and asks: "Should I refactor RuleEvaluator or extend it?"
+[CORRECT] Claude analyzes code smell, chooses refactor, documents why, continues
+[WHY] Refactor vs extend is normal engineering decision within scope
+```
+
+**Example 4: Method Signature (CORRECT Behavior)**
+```
+Task: "Add folder filtering to results screen"
+Acceptance Criteria: "User can filter by folder name"
+
+[CORRECT] Claude adds `List<String> folders` parameter to `_getFilteredResults()`
+[CORRECT] Claude updates all call sites with new parameter
+[CORRECT] Claude continues without asking permission
+[WHY] Parameter addition needed to meet acceptance criteria
+```
+
+**Example 5: Single Test Failure (CORRECT Behavior)**
+```
+Task: "Update email scanning logic"
+
+[DURING EXECUTION] One test fails: "Expected 5 results, got 4"
+[CORRECT] Claude investigates root cause
+[CORRECT] Claude fixes bug in scanning logic
+[CORRECT] Claude re-runs tests, all pass
+[CORRECT] Claude continues to next task
+[WHY] Test failure is normal - fix and continue
+```
+
+**Example 6: Code Style Issue (CORRECT Behavior)**
+```
+Task: "Implement safe sender matching"
+
+[DURING EXECUTION] Flutter analyze shows: "Unnecessary brace in string interpolation"
+[CORRECT] Claude fixes the warning
+[CORRECT] Claude continues without reporting
+[WHY] Minor code style - fix immediately, no need to stop
+```
+
+**Example 7: Uncertainty About Completeness (WRONG Behavior)**
+```
+Task: "Add Ctrl-F search to results screen"
+Acceptance Criteria: "User can search emails with Ctrl-F keyboard shortcut"
+
+[WRONG] Claude stops and asks: "Should I also add search history? Should search be case-sensitive?"
+[CORRECT] Claude implements basic Ctrl-F search as specified
+[CORRECT] Claude documents potential enhancements as tech debt
+[WHY] Acceptance criteria specify basic search only - do not add scope
+```
+
+### Decision Rule Summary
+
+**Ask yourself**: "Does this decision enable me to meet the task acceptance criteria?"
+
+- **YES** → Make the decision, document it, continue
+- **NO** → This is scope change (Criterion 3), stop and get approval
+
+**Examples**:
+- Change method signature to access needed field? → YES, continue
+- Add new feature not in acceptance criteria? → NO, stop (scope change)
+- Choose between two valid implementation approaches? → YES, continue
+- User requests new requirement mid-sprint? → NO, stop (scope change)
+- Refactor code to improve maintainability? → If supports acceptance criteria: YES, continue
+- Fix bug discovered during testing? → If critical: YES, continue; If minor: defer or fix
+- Uncertain which of 3 architectures to use? → Choose most promising, test, iterate
 
 ---
 
@@ -426,7 +528,7 @@ START: Am I working on sprint tasks?
 │  ├─ YES → Stop (Criterion 5: Review Request)
 │  └─ NO → Continue
 │
-├─ Is Phase 4.5 (Sprint Review) complete?
+├─ Is Phase 7 (Sprint Review) complete?
 │  ├─ YES → Stop (Criterion 6: Sprint Review Complete)
 │  └─ NO → Continue
 │

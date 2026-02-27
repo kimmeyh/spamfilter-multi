@@ -25,30 +25,29 @@ If any check fails, **STOP and resolve with user before accepting work**.
 **GitHub URL**: `https://github.com/kimmeyh/spamfilter-multi/blob/develop/docs/ALL_SPRINTS_MASTER_PLAN.md`
 
 **Contents**:
-- Complete specifications for all sprints (Phase 3.5+)
-- Sprint dependencies and critical path
-- Task breakdown by model (Haiku/Sonnet/Opus)
-- Effort estimates (actual vs estimated from previous sprints)
-- Risk management and contingency plans
-- Success criteria for sprint completion
+- Maintenance Guide (how/when to update the document)
+- Past Sprint Summary (table with links to per-sprint docs)
+- Last Completed Sprint details
+- Next Sprint Candidates (unified prioritized table of features, bugs, tasks)
+- Feature and Bug Details (incomplete items only)
+- Google Play Store Readiness (HOLD section)
 
 **When You Need This**:
-- Starting a new sprint (find Sprint X section)
-- Creating detailed sprint plan (copy and expand from master)
-- Planning dependencies (check cross-sprint dependency graph)
-- Assigning models to tasks (reference model assignment by sprint)
-- Understanding overall sprint roadmap
+- Starting a new sprint (review "Next Sprint Candidates" table)
+- Selecting sprint scope (check priorities and dependencies)
+- Understanding feature details (read "Feature and Bug Details" section)
+- Reviewing past sprint history (follow links in "Past Sprint Summary" table)
+- Planning Google Play Store work (review "Google Play Store Readiness" section)
 
 **Important**:
 1. This document is IN THE REPOSITORY (not in Claude's plan storage)
 2. It persists across conversations (unlike `.claude/plans/`)
-3. Update it after each sprint completes (add actual duration, lessons learned, update future Sprint plans - as needed)
+3. Update it after each sprint per the Maintenance Guide at the top of the document
 4. **BEFORE EVERY SPRINT**: Reference this document as very first step
-   - Read this document before starting Phase 1: Sprint Kickoff & Planning
-   - Check for updates from previous sprint retrospective
-   - Verify Sprint N section includes actual vs estimated durations
-   - Update the master plan with any lessons learned before planning next sprint
-   - Then proceed to SPRINT_EXECUTION_WORKFLOW.md Phase 1
+   - Read this document before starting Phase 2: Sprint Pre-Kickoff
+   - Review "Next Sprint Candidates" table for prioritized work items
+   - Verify "Last Completed Sprint" section is current
+   - Then proceed to SPRINT_EXECUTION_WORKFLOW.md Phase 2
 5. If you cannot find it, search: `find . -name "ALL_SPRINTS_MASTER_PLAN.md"` or `grep -r "sprint" docs/ALL_SPRINTS_MASTER_PLAN.md`
 
 ## Developer information
@@ -65,7 +64,7 @@ Give Claude verification loops for 2-3x quality improvement:
 5. Commit changes and sync to repository
 5. Before creating PR: run full lint and test suite
 
-## ⚠️ CRITICAL: Pull Request Branch Policy
+## [WARNING] CRITICAL: Pull Request Branch Policy
 
 **RULE: All Claude Code PRs must target the `develop` branch, NEVER `main`.**
 
@@ -73,16 +72,16 @@ Give Claude verification loops for 2-3x quality improvement:
 
 ```
 main (release branch - ONLY user creates PRs to main)
-  ↑ (user merges stable develop)
+  ^ (user merges stable develop)
 develop (integration branch - ALL Claude Code PRs target this)
-  ↑ (Claude creates PRs from feature branches)
+  ^ (Claude creates PRs from feature branches)
 feature/YYYYMMDD_Sprint_N (feature branches - temporary, deleted after merge)
 ```
 
 ### Policy Details
 
-- **Claude Code**: Creates PRs from `feature/YYYYMMDD_Sprint_N` → `develop`
-- **User**: Creates PRs from `develop` → `main` when ready for release
+- **Claude Code**: Creates PRs from `feature/YYYYMMDD_Sprint_N` -> `develop`
+- **User**: Creates PRs from `develop` -> `main` when ready for release
 - **Why**:
   - `develop` is the integration branch for all sprint work
   - `main` is the stable release branch for production versions
@@ -92,15 +91,15 @@ feature/YYYYMMDD_Sprint_N (feature branches - temporary, deleted after merge)
 ### Example
 
 ```bash
-# ✅ CORRECT: Claude creates PR to develop
+# [OK] CORRECT: Claude creates PR to develop
 git push origin feature/20260126_Sprint_5
-# Then create PR: feature/20260126_Sprint_5 → develop
+# Then create PR: feature/20260126_Sprint_5 -> develop
 
-# ❌ INCORRECT: Claude creates PR to main
+# [FAIL] INCORRECT: Claude creates PR to main
 git push origin feature/20260126_Sprint_5
-# Then create PR: feature/20260126_Sprint_5 → main  (WRONG!)
+# Then create PR: feature/20260126_Sprint_5 -> main  (WRONG!)
 
-# ✅ USER ONLY: User merges develop to main for release
+# [OK] USER ONLY: User merges develop to main for release
 git checkout main
 git pull origin main
 git merge develop
@@ -109,8 +108,8 @@ git merge develop
 
 ### Reference
 
-- See `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 4.3 for PR creation instructions
-- See `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 4.5.0 for Windows build verification before approval
+- See `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 6.3 for PR creation instructions
+- See `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 7.1 for Windows build verification before approval
 
 ## Things Claude Should NOT Do
 
@@ -119,6 +118,38 @@ git merge develop
 - Don't skip error handling
 - Don't commit without running tests first
 - Don't make breaking changes without discussion
+- Don't use Edit tool without first using Read tool on that file in the SAME conversation turn
+- Don't assume file content from earlier reads - always re-read before editing after any significant work or context compaction
+- Don't use Linux-only tools on Windows (see Windows Tool Restrictions below)
+
+## Windows Tool Restrictions
+
+**CRITICAL**: This is a Windows development environment. Many Linux tools are NOT available.
+
+**DO NOT USE** these tools (not installed):
+- `jq` - Use `gh --jq` flag or PowerShell `ConvertFrom-Json` instead
+- `sed` - Use the Edit tool instead
+- `awk` - Use PowerShell or the Grep tool instead
+- `grep` (bash) - Use the Grep tool instead
+- `find` (bash) - Use the Glob tool instead
+- `cat` - Use the Read tool instead
+
+**ALWAYS USE** native alternatives:
+```powershell
+# Instead of: gh issue view 123 --json body | jq '.body'
+# Use: gh issue view 123 --json body --jq '.body'
+
+# Instead of: cat file.txt | grep pattern
+# Use: Grep tool with pattern and file path
+
+# Instead of: find . -name "*.dart"
+# Use: Glob tool with pattern "**/*.dart"
+```
+
+**GitHub CLI has built-in JSON processing**:
+- `gh issue view 123 --json title,body` - returns JSON
+- `gh issue view 123 --json title --jq '.title'` - extracts field
+- `gh pr list --json number,title` - list with specific fields
 
 ## Development Philosophy: Co-Lead Developer Collaboration
 
@@ -150,25 +181,53 @@ git merge develop
    - Share intermediate findings, not just final conclusions
 
 6. **Execution Autonomy During Sprints**: Sprint plan approval authorizes all task execution
-   - When user approves sprint plan (Phase 1), this pre-approves ALL tasks through Phase 4.5 (Sprint Review)
-   - Do NOT ask for approval on individual tasks during execution
-   - Do NOT ask before starting each task (this was learned in Sprint 6)
+   - **CRITICAL**: When user approves sprint plan (Phase 3), this pre-approves ALL tasks through Phase 7 (Sprint Review)
+   - **DO NOT** ask for approval on individual tasks during execution
+   - **DO NOT** ask before starting each task (learned in Sprint 6, reinforced in Sprint 13)
+   - **DO NOT** stop for implementation decisions - make best engineering judgment and document
    - Work continuously and autonomously until: blocked/escalated, all tasks complete, or sprint review requested
    - This autonomy is core to sprint efficiency - per-task approvals add overhead without benefit
    - If mid-sprint changes needed: Document scope change, get re-approval, adjust plan and resume
-   - See `docs/SPRINT_STOPPING_CRITERIA.md` for when to stop working and why
-   - **Reference**: SPRINT_EXECUTION_WORKFLOW.md Phase 1.7 and §211-241 "Approval Gates"
+   - See `docs/SPRINT_STOPPING_CRITERIA.md` for EXACT criteria when to stop working and why
+   - **Sprint Stopping Criteria**: ONLY stop for these reasons:
+     1. All tasks complete (Criterion 1)
+     2. Blocked on external dependency (Criterion 2)
+     3. User requests scope change (Criterion 3)
+     4. Critical bug found (Criterion 4)
+     5. User requests early review (Criterion 5)
+     6. Sprint review complete (Criterion 6)
+     7. Fundamental design failure (Criterion 7)
+     8. Context limit approaching (Criterion 8)
+     9. Time limit reached (Criterion 9)
+   - **NOT valid stopping reasons**: Implementation choices, approach uncertainty, minor code style, single test failure
+   - **Reference**: SPRINT_EXECUTION_WORKFLOW.md Phase 3.7 and SPRINT_STOPPING_CRITERIA.md
 
 **Example of Good Co-Lead Collaboration**:
 ```
-❌ BAD: [Silently runs git status, finds files missing, edits .gitignore, reports "Fixed!"]
+[BAD] [Silently runs git status, finds files missing, edits .gitignore, reports "Fixed!"]
 
-✅ GOOD: "I'm checking git status to see which files are tracked... Interesting - the
+[GOOD] "I'm checking git status to see which files are tracked... Interesting - the
 mobile-app/lib/ files are not showing up. You opened .gitignore - good thinking! Let me
 search for 'lib/' in there... Found it! Line 81 has a broad 'lib/' exclusion that's
 catching both Python lib directories AND our Flutter source code. This is a mixed-repo
 issue. Should I make it more specific to only exclude 'Archive/desktop-python/lib/'?"
 ```
+
+### Sprint Execution Autonomy - Common Mistakes
+
+**LEARN FROM PAST MISTAKES**: Do NOT stop for these reasons:SPRINT_CHECKLIST
+
+| Situation | WRONG Behavior | CORRECT Behavior |
+|-----------|---------------|------------------|
+| Implementation choice | Stop and ask: "Should I use method A or B?" | Make best judgment, document, continue |
+| Approach uncertainty | Stop and ask: "Is this the right approach?" | Implement, test, iterate if needed |
+| Method signature change | Stop and ask: "Should I add parameter X?" | Add if needed for acceptance criteria, continue |
+| Refactor vs extend | Stop and ask: "Should I refactor or extend?" | Choose based on code smell, document, continue |
+| Single test failure | Stop and report | Fix the test, continue |
+| Code style issue | Stop and ask | Fix it or note as tech debt, continue |
+| Feature seems incomplete | Stop and verify | Complete acceptance criteria, continue |
+
+**Remember**: Sprint plan approval = blanket approval for ALL implementation decisions needed to meet acceptance criteria. Only stop for the 9 criteria in SPRINT_STOPPING_CRITERIA.md.
 
 ## Sprint Planning and Development Workflow
 
@@ -182,9 +241,9 @@ All sprint work references the **SPRINT EXECUTION docs** - the authoritative set
 |----------|---------|-------------|
 | **ALL_SPRINTS_MASTER_PLAN.md** | Master plan for all sprints | Before starting any sprint, after completing a sprint |
 | **SPRINT_PLANNING.md** | Sprint planning methodology | When planning a new sprint |
-| **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 0-4.5) |
+| **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 1-7) |
 | **SPRINT_STOPPING_CRITERIA.md** | When/why to stop working | When uncertain if blocked or should continue |
-| **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 4.5) |
+| **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 7) |
 | **TESTING_STRATEGY.md** | Testing approach and requirements | When writing or reviewing tests |
 | **QUALITY_STANDARDS.md** | Quality standards for code and documentation | When writing code or documentation |
 | **TROUBLESHOOTING.md** | Common issues and solutions | When encountering errors or debugging |
@@ -219,43 +278,33 @@ As of January 24, 2026, **sprints replace the previous phase-based development m
 - **No contractions**: Use "do not" instead of "don't", "does not" instead of "doesn't", "cannot" instead of "can't", etc.
 - **Clarity over brevity**: Write clear, complete sentences in documentation
 - **Use Logger, not print()**: Production code (`lib/`) must use `Logger` for all logging. Test files (`test/`) may use `print()`.  Exception: unit and integration tests (ex. *_test.dart files)
+- **No emojis**: Do not use emojis or special Unicode characters in code or documentation unless explicitly for customer-facing UI/UX
+  - Use text alternatives in brackets: [OK] [FAIL] [WARNING] [PENDING] [NEW] [BUG] [STOP]
+  - Exception: Customer-facing UI can use emojis when appropriate for user experience
+  - Rationale: Emojis do not render consistently across terminals and are harder to search/grep
 
 ### Example
 ```dart
-// ❌ BAD: Don't use this pattern, it won't work correctly
-// ✅ GOOD: Do not use this pattern, it will not work correctly
+// [BAD] Don't use this pattern, it won't work correctly
+// [GOOD] Do not use this pattern, it will not work correctly
 
-// ❌ BAD: Can't be null here
-// ✅ GOOD: Cannot be null here
+// [BAD] Can't be null here
+// [GOOD] Cannot be null here
+
+// [BAD] Status: ✅ Complete
+// [GOOD] Status: [OK] Complete
+
+// [BAD] Warning: ⚠️ Check this
+// [GOOD] Warning: [WARNING] Check this
 ```
 
 ## Project Overview
 
 Cross-platform email spam filtering application built with 100% Flutter/Dart for all platforms (Windows, macOS, Linux, Android, iOS). The app uses IMAP/OAuth protocols to support multiple email providers (AOL, Gmail, Yahoo, Outlook.com, ProtonMail) with a single codebase and portable YAML rule sets.
 
-**Current Status**: Phase 3.3 Complete - All automated tests passing (122/122), folder selection fixed, dynamic folder discovery implemented, progressive UI updates with throttling, Gmail header parsing fixed, Claude Code MCP tools added.
+**Current Status**: Sprint 17 complete (Feb 2026) - 977 tests passing, sprint-based development model.
 
-**Latest Updates**: January 6, 2026 - Phase 3.2 & 3.3 Complete:
-
-**Phase 3.3 - Enhancement Features (Jan 5-6, 2026)**:
-- ✅ **Issue #36**: Progressive UI updates with throttling (every 10 emails OR 3 seconds)
-- ✅ **Issue #37**: Dynamic folder discovery - fetches real folders from email providers
-- ✅ **Gmail Token Refresh**: Folder discovery now uses `getValidAccessToken()` for automatic token refresh
-- ✅ **Gmail Header Fix**: Extract email from "Name <email>" format for rule matching
-- ✅ **Counter Bug Fix**: Reset `_noRuleCount` in `startScan()` to prevent accumulation across scans
-- ✅ **Claude Code MCP Tools**: Custom MCP server for YAML validation, regex testing, rule simulation
-- ✅ **Build Script Enhancements**: `-StartEmulator`, `-EmulatorName`, `-SkipUninstall` flags
-
-**Phase 3.2 - Bug Fixes (Jan 4-5, 2026)**:
-- ✅ **Issue #35**: Folder selection now correctly scans selected folders (not just INBOX)
-- ✅ **Navigation Fix**: Prevent unwanted auto-navigation to Results when returning to Scan Progress
-
-**Phase 3.1 - UI/UX Enhancements (Jan 4, 2026)**:
-- ✅ **Issue #32**: Full Scan mode added (4th scan mode) with persistent mode selector and warning dialogs
-- ✅ **Issue #33**: Scan Progress UI redesigned - removed redundant elements, added Found/Processed bubbles, auto-navigation to Results
-- ✅ **Issue #34**: Results Screen UI redesigned - shows email address in title, mode in summary, matching bubble design
-- ✅ **Bubble Counts Fix**: All scan modes now show proposed actions (what WOULD happen)
-- ✅ **No Rule Tracking**: Added "No rule" bubble (grey) to track emails with no rule match
+**For detailed status**: See `CHANGELOG.md` for feature history and `docs/ALL_SPRINTS_MASTER_PLAN.md` for planned work and sprint history.
 
 ## Repository Structure
 
@@ -404,7 +453,7 @@ For complete structure, pattern conventions, examples, and validation rules, see
 - Requires Firebase project with Android app registered
 - Must add SHA-1 fingerprint to Firebase Console
 - Run `mobile-app/android/get_sha1.bat` to extract fingerprint
-- Download `google-services.json` from Firebase Console → `mobile-app/android/app/google-services.json`
+- Download `google-services.json` from Firebase Console -> `mobile-app/android/app/google-services.json`
 - See `ANDROID_GMAIL_SIGNIN_QUICK_START.md` for complete setup
 
 #### Windows Desktop
@@ -438,11 +487,7 @@ For complete structure, pattern conventions, examples, and validation rules, see
 
 ## Testing Strategy
 
-**Total Tests**: 122 passing (as of Jan 2026)
-- **Phase 1 Regression**: 27 tests (core models, services)
-- **Phase 2.0 Tests**: 23 tests (AppPaths, SecureCredentialsStore, EmailScanProvider)
-- **Phase 2.1 Tests**: 31 tests (adapters, providers, integration)
-- **Phase 2.2 Tests**: 41 tests (RuleEvaluator, PatternCompiler with error tracking)
+**Total Tests**: 977 passing (as of Sprint 17, Feb 2026). Run `flutter test` to verify current count.
 
 ### Test Organization
 ```
@@ -471,11 +516,6 @@ For comprehensive troubleshooting, see `docs/TROUBLESHOOTING.md`.
 - **Norton Blocks IMAP**: Disable "Email Protection" in Norton Settings
 - **Windows OAuth Fails**: Ensure `secrets.dev.json` contains `WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET`
 - **Git Not Tracking Files**: Fixed Dec 2025 - update `.gitignore`
-
-**Recent Phase Completions** (see `CHANGELOG.md` for full details):
-- **Phase 3.3** (Jan 5-6, 2026): Progressive UI updates, dynamic folder discovery, Gmail fixes, Claude Code tools
-- **Phase 3.2** (Jan 4-5, 2026): Folder selection fixes, auto-navigation fixes
-- **Phase 3.1** (Jan 4, 2026): Full Scan mode, UI redesign, bubble counts fix, No Rule tracking
 
 ## Development Workflow
 
@@ -509,13 +549,13 @@ This project follows [Keep a Changelog](https://keepachangelog.com/) conventions
 **Example Entry**:
 ```markdown
 ### 2026-01-12
-- **feat**: Update Results screen to show folder • subject • rule format (Issue #47)
+- **feat**: Update Results screen to show folder - subject - rule format (Issue #47)
 - **feat**: Add AOL Bulk/Bulk Email folder recognition as junk folders (Issue #48)
 ```
 
 ### Releasing (After PR Merge to main)
 
-This project uses **GitFlow**: feature branches → `develop` → `main`
+This project uses **GitFlow**: feature branches -> `develop` -> `main`
 
 - **PRs to `develop`**: Entries stay in `[Unreleased]` - these are integration builds
 - **PRs to `main`**: Move entries from `[Unreleased]` to a versioned release - these are production releases
@@ -568,33 +608,9 @@ When `develop` is merged to `main`, create a versioned release:
 - **Production Delete Mode**: Not yet validated with spam-heavy inbox (read-only mode tested)
 - **iOS/macOS/Linux**: Not yet validated (architecture supports, testing pending)
 
-## Code Review Findings & Issue Backlog (January 2026)
+## Issue Backlog
 
-A comprehensive code review of the Flutter spam filter codebase identified **11 high-confidence issues** with specific file:line references. All issues have been documented in the GitHub repository.
-
-### Completed Issues (3)
-- **Issue #18 ✅ COMPLETE (Jan 3, 2026)**: Created comprehensive RuleEvaluator test suite - 32 tests with 97.96% coverage, includes anti-spoofing verification (`rule_evaluator_test.dart`)
-- **Issue #8 ✅ FIXED (Jan 3, 2026)**: Header matching bug in RuleEvaluator - Rules now properly check email headers instead of From field (`rule_evaluator.dart:53-141`)
-- **Issue #4 ✅ FIXED (Jan 3, 2026)**: Silent regex compilation failures - Invalid patterns now logged and tracked for UI visibility (`pattern_compiler.dart:1-66`)
-
-### Critical Issues Remaining (2)
-- **Issue #9**: Scan mode bypass in EmailScanner - readonly mode still deletes emails (`email_scanner.dart:66-125`)
-- **Issue #10**: Credential type confusion in SecureCredentialsStore (`secure_credentials_store.dart:137-161`)
-
-### High Priority Issues (4)
-- **Issue #11**: Silent regex compilation failures in PatternCompiler (DUPLICATE - see Issue #4 ✅ FIXED)
-- **Issue #12**: Missing refresh token storage on Android (`google_auth_service.dart:422-428`)
-- **Issue #13**: Overly broad exception mapping in GenericIMAPAdapter (`generic_imap_adapter.dart:146-165`)
-- **Issue #14**: Duplicate scan mode enforcement logic (`email_scan_provider.dart:315-358`)
-- **Issue #15**: Inconsistent logging - mix of print() and Logger (9 occurrences in main.dart, adapters)
-
-### Medium/Low Priority Issues (2)
-- **Issue #16**: PatternCompiler cache grows unbounded (medium priority)
-- **Issue #17**: EmailMessage.getHeader() returns empty string instead of null (low priority)
-
-**Complete Details**: See `GITHUB_ISSUES_BACKLOG.md` for full problem descriptions, root causes, proposed solutions, and acceptance criteria for all 11 issues.
-
-**Progress Summary**: 3 of 11 issues fixed (27% complete). Test suite expanded from 81 to 122 tests (+50% growth).
+For current issue status, use GitHub Issues: `gh issue list --state open`
 
 ## Additional Resources
 
@@ -602,6 +618,7 @@ A comprehensive code review of the Flutter spam filter codebase identified **11 
 ```
 spamfilter-multi/
 ├── 0*.md                     # Developer workflow files (DO NOT read or modify)
+├── archive\                  # All archive files should be ignored unless specifically asked to read for reference (DO NOT read or modify)
 ├── CHANGELOG.md              # Feature/bug updates (newest first)
 ├── CLAUDE.md                 # Primary documentation (this file)
 ├── README.md                 # Project overview
@@ -609,12 +626,16 @@ spamfilter-multi/
 │   ├── OAUTH_SETUP.md        # Gmail OAuth for Android + Windows
 │   ├── TROUBLESHOOTING.md    # Common issues and fixes
 │   ├── ISSUE_BACKLOG.md      # Open issues and status
-│   ├── PHASE_3_5_MASTER_PLAN.md    # Master plan for all 10 sprints (READ FIRST!)
+│   ├── ALL_SPRINTS_MASTER_PLAN.md    # Master plan for all future sprints and backlog items (features, issues, bugs...)
 │   ├── SPRINT_PLANNING.md    # Sprint planning methodology
 │   ├── SPRINT_EXECUTION_WORKFLOW.md # Step-by-step sprint execution checklist
-│   ├── PHASE_0_PRE_SPRINT_CHECKLIST.md # Pre-sprint verification checklist
+│   ├── SPRINT_CHECKLIST.md   # Single-page sprint execution checklist
 │   ├── SPRINT_STOPPING_CRITERIA.md # When/why to stop working (NEW - Sprint 6)
-│   └── WINDOWS_DEVELOPMENT_GUIDE.md # Windows development (bash, Unicode, PowerShell, builds)
+│   ├── WINDOWS_DEVELOPMENT_GUIDE.md # Windows development (bash, Unicode, PowerShell, builds)
+│   └── sprints/              # Per-sprint documentation (plans, retrospectives, summaries)
+│       ├── SPRINT_N_PLAN.md          # Created at sprint start (Phase 3)
+│       ├── SPRINT_N_RETROSPECTIVE.md # Created at sprint end (Phase 7)
+│       └── SPRINT_N_SUMMARY.md       # Created during next sprint planning (Phase 3.2.1)
 ├── mobile-app/
 │   ├── README.md             # App-specific quick start
 │   └── docs/
@@ -632,8 +653,12 @@ spamfilter-multi/
 ### Claude Code Tooling
 - **Custom MCP Server**: `scripts/email-rule-tester-mcp/`
 - **Validation Scripts**: `scripts/validate-yaml-rules.ps1`, `scripts/test-regex-patterns.ps1`
-- **Skills Config**: `.claude/skills.json` (10 custom skills)
-- **Hooks Config**: `.claude/hooks.json` (pre-commit validation, post-checkout pub get)
+- **Skills**:
+  - `/startup-check` - Environment health check and memory restore
+  - `/phase-check` - Sprint phase transition checkpoint (verify phase complete, preview next phase)
+  - `/plan-sprint` - Sprint planning with model assignments
+  - `/full-test` - Run all Flutter tests and analyze code quality
+  - `/memory-save` and `/memory-restore` - Save/restore sprint context across sessions
 
 ### Archives (gitignored)
 - **Archive/**: Historical docs, legacy Python desktop app, completed phase reports

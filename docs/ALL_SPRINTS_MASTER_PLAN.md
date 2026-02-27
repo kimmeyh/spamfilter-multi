@@ -1,22 +1,48 @@
 # All Sprints Master Plan
 
-**Purpose**: Master planning document for current sprint, next sprint, and future features under consideration.
+**Purpose**: Single source of truth for all planned work -- features, bugs, spikes, and Google Play Store readiness items. Used alongside GitHub Issues for sprint planning and backlog management.
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: February 1, 2026 (Backlog Refinement)
+**Last Updated**: February 27, 2026 (Sprint 18 completion)
+
+## How to Maintain This Document
+
+This section describes when and how to update this document during sprint execution. Referenced by SPRINT_EXECUTION_WORKFLOW.md (Phases 2.1, 3.2, 7.7), SPRINT_CHECKLIST.md, SPRINT_PLANNING.md, and SPRINT_RETROSPECTIVE.md.
+
+### When to Update
+
+| Sprint Phase | What to Update |
+|-------------|----------------|
+| **Phase 2 (Pre-Kickoff)** | Verify "Last Completed Sprint" is current; confirm all items from completed sprint are marked done or removed |
+| **Phase 3 (Planning)** | Review "Next Sprint Candidates" for completeness; add any new items found in GitHub Issues; re-prioritize list; move selected items into sprint plan |
+| **Phase 7 (Retrospective)** | Update "Past Sprint Summary" table; update "Last Completed Sprint"; remove completed feature/bug detail sections; add new issues discovered during sprint |
+| **Backlog Refinement** | Full review of all sections; re-prioritize; add/remove items; verify GitHub Issue alignment |
+
+### Maintenance Rules
+
+1. **One list of incomplete work**: The "Next Sprint Candidates" section is THE single prioritized list. Do not create duplicate tracking elsewhere in this document.
+2. **Remove completed work**: When a feature, bug, or spike is completed, remove its detail section from "Feature and Bug Details". History lives in sprint docs (`docs/sprints/`), CHANGELOG.md, and closed GitHub Issues.
+3. **GitHub Issue alignment**: Every item in "Next Sprint Candidates" should reference a GitHub Issue number if one exists. Items without issues get issues created when added to a Sprint Plan.
+4. **HOLD items last**: Items on HOLD are grouped at the bottom of the candidates list with a brief reason.
+5. **Keep it current**: The "Last Updated" date at the top must reflect the most recent edit. Stale content erodes trust in the document.
+6. **Minimal history**: Past Sprint Summary is a table of links. No completed feature details, no completed retrospective actions, no completed MVP feature lists.
+7. **Detail sections are optional**: Not every candidate needs a detail section. Simple bugs or small features can be fully described in GitHub Issues alone. Only add detail sections for items that need architecture notes, task breakdowns, or context beyond what fits in a GitHub Issue.
+8. **Cross-reference integrity**: When updating this document, verify that SPRINT_EXECUTION_WORKFLOW.md and SPRINT_CHECKLIST.md references remain accurate. Both reference this Maintenance Guide by name.
+
+---
 
 ## SPRINT EXECUTION Documentation
 
-**This is part of the SPRINT EXECUTION docs** - the authoritative set of sprint process documentation. Reference these documents throughout sprint work:
+**This is part of the SPRINT EXECUTION docs** - the authoritative set of sprint process documentation:
 
 | Document | Purpose | When to Use |
 |----------|---------|-------------|
-| **ALL_SPRINTS_MASTER_PLAN.md** (this doc) | Master plan for all sprints | Before starting any sprint, after completing a sprint |
+| **ALL_SPRINTS_MASTER_PLAN.md** (this doc) | Master plan and backlog for all sprints | Before starting any sprint, after completing a sprint |
 | **SPRINT_PLANNING.md** | Sprint planning methodology | When planning a new sprint |
-| **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases -1 to 4.5) |
+| **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 1-7) |
 | **SPRINT_STOPPING_CRITERIA.md** | When/why to stop working | When uncertain if blocked or should continue |
-| **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 4.5) |
+| **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 7) |
 | **BACKLOG_REFINEMENT.md** | Backlog refinement process | When requested by Product Owner |
 | **TESTING_STRATEGY.md** | Testing approach and requirements | When writing or reviewing tests |
 | **QUALITY_STANDARDS.md** | Quality standards for code and documentation | When writing code or documentation |
@@ -30,430 +56,190 @@
 ## Table of Contents
 
 1. [Past Sprint Summary](#past-sprint-summary)
-2. [Current Sprint](#current-sprint)
-3. [Next Sprint](#next-sprint)
-4. [Future Features (Prioritized)](#future-features-prioritized)
-5. [Feature Details](#feature-details)
+2. [Last Completed Sprint](#last-completed-sprint)
+3. [Next Sprint Candidates](#next-sprint-candidates)
+4. [Feature and Bug Details](#feature-and-bug-details)
+5. [Google Play Store Readiness (HOLD)](#google-play-store-readiness-hold)
 
 ---
 
 ## Past Sprint Summary
 
-Historical sprint information has been moved to individual summary documents and CHANGELOG.md. For detailed retrospectives, see:
+Historical sprint information lives in individual documents in `docs/sprints/` and CHANGELOG.md.
 
 | Sprint | Summary Document | Status | Duration |
 |--------|------------------|--------|----------|
-| 1 | SPRINT_1_RETROSPECTIVE.md | ✅ Complete | ~4h (Jan 19-24, 2026) |
-| 2 | SPRINT_2_RETROSPECTIVE.md | ✅ Complete | ~6h (Jan 24, 2026) |
-| 3 | SPRINT_3_SUMMARY.md | ✅ Complete | ~8h (Jan 24-25, 2026) |
-| 9 | SPRINT_9_RETROSPECTIVE.md | ✅ Complete | ~2h (Jan 30-31, 2026) |
-| 11 | SPRINT_11_RETROSPECTIVE.md | ✅ Complete | ~12h (Jan 31 - Feb 1, 2026) |
+| 1 | docs/sprints/SPRINT_1_RETROSPECTIVE.md | [OK] Complete | ~4h (Jan 19-24, 2026) |
+| 2 | docs/sprints/SPRINT_2_RETROSPECTIVE.md | [OK] Complete | ~6h (Jan 24, 2026) |
+| 3 | docs/sprints/SPRINT_3_SUMMARY.md | [OK] Complete | ~8h (Jan 24-25, 2026) |
+| 8 | docs/sprints/SPRINT_8_SUMMARY.md | [OK] Complete | ~12h (Jan 31, 2026) |
+| 9 | docs/sprints/SPRINT_9_SUMMARY.md | [OK] Complete | ~2h (Jan 30-31, 2026) |
+| 10 | docs/sprints/SPRINT_10_SUMMARY.md | [OK] Complete | ~20h (Feb 1, 2026) |
+| 11 | docs/sprints/SPRINT_11_SUMMARY.md | [OK] Complete | ~12h (Jan 31 - Feb 1, 2026) |
+| 12 | docs/sprints/SPRINT_12_SUMMARY.md | [OK] Complete | ~48h (Feb 1-6, 2026) |
+| 13 | docs/sprints/SPRINT_13_PLAN.md | [OK] Complete | ~3h (Feb 6, 2026) |
+| 14 | docs/sprints/SPRINT_14_PLAN.md | [OK] Complete | ~8h (Feb 7-13, 2026) |
+| 15 | docs/sprints/SPRINT_15_PLAN.md | [OK] Complete | ~16h (Feb 14-15, 2026) |
+| 16 | docs/sprints/SPRINT_16_PLAN.md | [OK] Complete | ~6h (Feb 15-16, 2026) |
+| 17 | docs/sprints/SPRINT_17_SUMMARY.md | [OK] Complete | ~20h (Feb 17-21, 2026) |
+| 18 | docs/sprints/SPRINT_18_RETROSPECTIVE.md | [OK] Complete | Feb 24-27, 2026 |
 
-**Key Achievements**:
-- **Sprint 1**: Database foundation (SQLite schema, migration infrastructure)
-- **Sprint 2**: Database rule storage and integration
-- **Sprint 3**: Safe sender exceptions with database storage
-- **Sprint 9**: Development workflow improvements (25 process enhancements)
-- **Sprint 11**: UI Polish & Production Readiness (keyboard shortcuts, CSV export, critical bug fixes for Issue #9 readonly bypass and delete-to-trash)
-
-See CHANGELOG.md for detailed feature history.
+**Key Achievements**: See CHANGELOG.md for detailed feature history.
 
 ---
 
-## Current Sprint
+## Last Completed Sprint
 
-**SPRINT 12: MVP Core Features + Sprint 11 Retrospective Actions**
+**Sprint 18** (February 24-27, 2026)
+- **PR**: [#170](https://github.com/kimmeyh/spamfilter-multi/pull/170) (targeting develop)
+- **Features**: Safe sender/block rule conflict detection (#154), Subject/body content rule standards (#141), Common email provider domains F20 (#167), Inline rule assignment F21 (#168), Rule testing UI F8 (#169), Architecture v2.0 (#164), 5 bug fixes, F22-F26 backlog items
+- **Tests**: 1088 passed
+- **Retrospective**: docs/sprints/SPRINT_18_RETROSPECTIVE.md
 
-**Status**: 📋 PLANNED (ready to start)
+---
 
-**Estimated Duration**: 48-54 hours (multi-session sprint)
+## Next Sprint Candidates
 
-**Model Assignment**: Sonnet (architecture, F1-F3) + Haiku (F9, F10, retrospective items)
+**Last Reviewed**: February 27, 2026 (Sprint 18 completion)
 
-**Objective**: Implement core MVP features (Settings, Scan Results Processing, Interactive Rule Management) plus address Sprint 11 retrospective technical debt
+All incomplete features, bugs, and spikes in relative priority order. HOLD items grouped at bottom. Each item links to its detail section (if one exists) or GitHub Issue.
+
+### Active Items
+
+| # | Type | Title | Est. Effort | Issue | Detail |
+|---|------|-------|-------------|-------|--------|
+| 1 | Spike | Register myemailspamfilter.com domain | ~1h | [#166](https://github.com/kimmeyh/spamfilter-multi/issues/166) | User action (not sprint work) |
+| 2 | Bug | Android app not tested in several sprints | ~2-4h | [#163](https://github.com/kimmeyh/spamfilter-multi/issues/163) | Validation sprint needed |
+| 3 | Enhancement | Folder Selection Save-on-Selection UX (F27) | ~4-6h | [#172](https://github.com/kimmeyh/spamfilter-multi/issues/172) | [Detail](#f27-folder-selection-save-on-selection-ux) |
+| 4 | Enhancement | Manage Rules UI: split combined rules, search, filter | ~12-16h | [#149](https://github.com/kimmeyh/spamfilter-multi/issues/149) | [Detail](#f149-manage-rules-ui-overhaul) |
+| 5 | Enhancement | Gmail Dual-Auth UX and Account Tracking (F12B) | ~10-16h | -- | [Detail](#f12b-gmail-dual-auth-ux-and-account-tracking) |
+| 6 | Enhancement | Playwright UI Tests + Android UI Testing Strategy (F11) | ~12-16h | -- | [Detail](#f11-playwright-ui-tests-and-android-ui-testing) |
+| 7 | Enhancement | Background Scanning - Android / WorkManager (F4) | ~14-16h | -- | [Detail](#f4-background-scanning-android) |
+| 8 | Enhancement | Provider-Specific Optimizations (F6) | ~10-12h | -- | [Detail](#f6-provider-specific-optimizations) |
+| 9 | Enhancement | Multi-Account Scanning (F7) | ~8-10h | -- | [Detail](#f7-multi-account-scanning) |
+| 10 | Enhancement | YAML Rules Import/Export UI in Settings (F22) | ~8-12h | -- | [Detail](#f22-yaml-rules-importexport-ui) |
+| 11 | Enhancement | Rule Splitting Migration Script (F23) | ~6-8h | -- | [Detail](#f23-rule-splitting-migration-script) |
+| 12 | Enhancement | Manage Rules Category Filter Chips (F24) | ~4-6h | -- | [Detail](#f24-manage-rules-category-filter-chips) |
+| 13 | Enhancement | Rule Testing UI Enhancements (F25) | ~6-8h | -- | [Detail](#f25-rule-testing-ui-enhancements) |
+| 14 | Enhancement | Safe Senders Management Filter Chips (F26) | ~4-6h | -- | [Detail](#f26-safe-senders-management-filter-chips) |
+
+### HOLD Items
+
+| # | Type | Title | Est. Effort | Issue | Reason |
+|---|------|-------|-------------|-------|--------|
+| H1 | Enhancement | GenAI Pattern Suggestions - Crowdsourced Spam Intelligence | TBD | [#142](https://github.com/kimmeyh/spamfilter-multi/issues/142) | Post-MVP, research needed |
+| H2 | Tech Debt | Rule Pattern Consistency - Domain Matching Standards | ~4-6h | [#140](https://github.com/kimmeyh/spamfilter-multi/issues/140) | Deferred to post-MVP |
+| H3 | Enhancement | Requirements Documentation System | TBD | [#137](https://github.com/kimmeyh/spamfilter-multi/issues/137) | Process improvement, not urgent |
+| H4 | Enhancement | Sent Messages Scan for Safe Senders | ~12-16h | [#49](https://github.com/kimmeyh/spamfilter-multi/issues/49) | Large feature, post-MVP |
+| H5 | Enhancement | Outlook.com OAuth Implementation | ~16-20h | [#44](https://github.com/kimmeyh/spamfilter-multi/issues/44) | New provider, MSAL integration, post-MVP |
+| H6 | Google Play | All GP-1 through GP-16 items | ~112-202h total | -- | [See Google Play Store Readiness](#google-play-store-readiness-hold) |
+
+---
+
+## Feature and Bug Details
+
+This section contains detailed specifications for incomplete items only. Completed features have their details in sprint documents and CHANGELOG.md.
+
+### F27: Folder Selection Save-on-Selection UX
+
+**Status**: Planned
+**Issue**: [#172](https://github.com/kimmeyh/spamfilter-multi/issues/172)
+**Estimated Effort**: ~4-6h
+
+**Overview**: Change "Select Folders to Scan" dialog in Settings (Manual and Background) to instantly save on selection, removing Cancel and "Scan Selected Folder" buttons. Matches UX pattern used by other Settings controls.
+
+**Behavior**:
+- "Select All Folders" checked -> instantly check all folders and save
+- "Select All Folders" unchecked -> instantly uncheck all folders and save
+- Individual folder checked -> clicking unchecks and saves immediately
+- Individual folder unchecked -> clicking checks and saves immediately
+- Remove Cancel and "Scan Selected Folder" buttons
+
+**Scope**: Settings > Manual Scan and Settings > Background Scan folder selection
+
+---
+
+### F149: Manage Rules UI Overhaul
+
+**Status**: Planned
+**Issue**: [#149](https://github.com/kimmeyh/spamfilter-multi/issues/149)
+**Estimated Effort**: ~12-16h
+
+**Overview**: Split combined rules into separate views, add search and filter capabilities to the Manage Rules UI.
+
+---
+
+### F12B: Gmail Dual-Auth UX and Account Tracking
+
+**Status**: Planned
+**Estimated Effort**: ~10-16h
+
+**Overview**: Implements the dual-path Gmail authentication strategy (ADR-0029, ADR-0034). Adds auth method selection UI, in-app setup walkthroughs for OAuth and app passwords, per-account auth method persistence, and adapter routing. Also removes unused `AuthMethod.apiKey`.
 
 **Tasks**:
+- **Task A**: Gmail Auth Method Selection UI (~3-4h) -- choice between OAuth and App Password during Gmail setup
+- **Task B**: In-App Setup Walkthrough - Gmail OAuth (~2-3h) -- explains consent screen, 7-day tokens, re-auth
+- **Task C**: In-App Setup Walkthrough - Gmail App Password (~2-3h) -- step-by-step Google Account instructions
+- **Task D**: Per-Account Auth Method Tracking (~3-4h) -- store and route to correct adapter per account
+- **Task E**: Remove Unused Auth Methods (~1-2h) -- remove `AuthMethod.apiKey`, audit dead code
 
-### Sprint 11 Retrospective Actions (High Priority)
-- **Task R1**: Create integration test for readonly mode enforcement
-  - Test that `ScanMode.readonly` prevents `platform.takeAction()` calls
-  - Test that `ScanMode.fullScan` allows actions
-  - Prevents regression of Issue #9
-  - **Effort**: 2-3 hours
-
-- **Task R2**: Update SPRINT_EXECUTION_WORKFLOW.md Phase 3.3
-  - Clarify that Claude Code builds and runs app before user testing
-  - Document monitoring requirements
-  - Add pre-testing sanity check list
-  - **Effort**: 1-2 hours
-
-- **Task R3**: Document Windows environment workarounds
-  - Unicode encoding fixes (`PYTHONIOENCODING=utf-8`)
-  - PowerShell command best practices
-  - Add to TROUBLESHOOTING.md or WINDOWS_DEVELOPMENT_GUIDE.md
-  - **Effort**: 1-2 hours
-
-- **Task R4**: Add delete-to-trash integration tests
-  - Verify IMAP moves to Trash (not expunge)
-  - Verify Gmail uses trash API
-  - Test recovery workflow
-  - **Effort**: 2-3 hours
-
-### Technical Debt (From Backlog Refinement)
-- **Task F9**: Database Test Refactoring (Issue #57)
-  - Refactor tests to use actual DatabaseHelper (in-memory)
-  - Remove duplicated schema declarations
-  - **Effort**: 2-3 hours
-
-- **Task F10**: Foreign Key Constraint Testing (Issue #58)
-  - Enable foreign keys in DatabaseHelper at connection time
-  - Update test to verify constraints are enforced
-  - **Effort**: 1-2 hours
-
-### MVP Features (From Backlog Refinement)
-- **Task F2**: User Application Settings (HIGHEST PRIORITY)
-  - Settings UI for app-wide and per-account configuration
-  - Manual Scan Defaults (scan mode, folders, confirmations)
-  - Background Scan Defaults (frequency, enabled, folders)
-  - Per-account overrides
-  - SQLite storage for settings
-  - **Effort**: 14-16 hours
-
-- **Task F1**: Processing Scan Results
-  - Persistent scan result storage (SQLite table)
-  - Enhanced scan results list UI
-  - Email detail screen with view options
-  - Action buttons (safe sender, create rule, delete, ignore)
-  - Batch actions for bulk processing
-  - **Effort**: 14-16 hours
-
-- **Task F3**: Interactive Rule & Safe Sender Management
-  - Quick-add safe sender from email (exact or domain)
-  - Create rule from email (pattern suggestions)
-  - Safe sender exceptions
-  - Pattern testing UI
-  - **Effort**: 16-18 hours
+**Dependencies**: ADR-0029 (Accepted), ADR-0034 (Accepted) -- decisions made, ready for implementation
 
 **Acceptance Criteria**:
-- [ ] Readonly mode integration test prevents Issue #9 regression
-- [ ] Delete-to-trash behavior verified with integration tests
-- [ ] SPRINT_EXECUTION_WORKFLOW.md updated with pre-testing checklist
-- [ ] Windows environment issues documented
-- [ ] Database tests use actual DatabaseHelper (no schema duplication)
-- [ ] Foreign key constraints enforced and tested
-- [ ] Settings screen functional with all categories
-- [ ] Settings persist across app restarts
-- [ ] Scan results stored and retrievable
-- [ ] Email detail view shows headers and body
-- [ ] Safe sender can be added from email detail
-- [ ] Rules can be created from email detail
-- [ ] Pattern testing shows match preview
-- [ ] All tests pass (100% pass rate)
-- [ ] Zero analyzer warnings
-- [ ] Manual testing on Windows Desktop passes
-
-**Risks**:
-| Risk | Likelihood | Impact | Mitigation |
-|------|------------|--------|------------|
-| F1/F2/F3 scope too large for single sprint | Medium | High | Prioritize F2 first, defer F3 UI polish if needed |
-| Database schema changes break existing data | Low | High | Migration scripts, backup before upgrade |
-| Pattern testing UI complexity | Medium | Medium | Start with simple exact match, add regex later |
-
-**Dependencies**: Sprints 1-3, 11 (database foundation, readonly fix, delete-to-trash)
+- [ ] Gmail platform selection offers choice: OAuth or App Password
+- [ ] In-app walkthroughs shown for each method
+- [ ] Selected auth method stored per Gmail account in database
+- [ ] On reconnect/scan, correct adapter used based on stored auth method
+- [ ] Gmail IMAP via app password works end-to-end
+- [ ] Gmail OAuth continues to work (no regression)
+- [ ] `AuthMethod.apiKey` removed from codebase
+- [ ] All existing tests pass, new tests added for dual-auth routing
 
 ---
 
-## Next Sprint
+### F11: Playwright UI Tests and Android UI Testing
 
-**SPRINT 13: Background Scanning (Windows) + Persistent Gmail Authentication**
-
-**Status**: 📋 PLANNED
-
-**Estimated Duration**: 22-28 hours
-
-**Model Assignment**: Sonnet (architecture, F12 research) + Haiku (implementation)
-
-**Objective**: Background scanning on Windows Desktop with Task Scheduler integration, plus persistent Gmail authentication like Samsung/iPhone email apps
-
-**Tasks**:
-
-### F5: Background Scanning - Windows Desktop
-- **Task A**: Task Scheduler Integration
-  - Register periodic scan task with Windows Task Scheduler
-  - Command-line arguments for background mode (`--background-scan`)
-  - Configurable frequency from settings (F2)
-
-- **Task B**: System Tray Enhancements
-  - Show scan status in system tray
-  - Notification balloon on scan completion
-  - "Run Scan Now" from tray menu
-
-- **Task C**: MSIX Installer
-  - Package app as MSIX for distribution
-  - Auto-start registration (optional)
-  - Update mechanism
-
-### F12: Persistent Gmail Authentication (Long-Lived Tokens)
-- **Task D**: Research Phase
-  - Investigate how Samsung Android email app achieves long-lived Gmail access (18-24+ months)
-  - Investigate how iPhone Mail app maintains persistent Gmail access
-  - Research Google OAuth 2.0 offline access and refresh token best practices
-  - Document findings and recommended approach
-
-- **Task E**: Implementation
-  - Implement recommended authentication approach
-  - Secure refresh token storage (per platform)
-  - Automatic token refresh before expiration
-  - Handle token revocation gracefully (prompt re-auth)
-  - Test token persistence across app restarts and device reboots
-
-- **Task F**: Testing & Validation
-  - Verify tokens persist for extended periods (simulate time passage if possible)
-  - Test re-authentication flow when tokens expire/revoke
-  - Document expected token lifetime
-
-**Acceptance Criteria**:
-- [ ] Background scans run on schedule (F5)
-- [ ] System tray shows scan status (F5)
-- [ ] Notifications show scan results (F5)
-- [ ] MSIX installer works on clean Windows install (F5)
-- [ ] Auto-start functional (when enabled) (F5)
-- [ ] Gmail authentication persists across app restarts (F12)
-- [ ] Gmail authentication persists across device reboots (F12)
-- [ ] Refresh tokens stored securely (F12)
-- [ ] Automatic token refresh works without user intervention (F12)
-- [ ] Token revocation handled gracefully with re-auth prompt (F12)
-- [ ] Research findings documented (F12)
-- [ ] All tests pass
-
-**Risks**:
-| Risk | Likelihood | Impact | Mitigation |
-|------|------------|--------|------------|
-| Task Scheduler permissions | Medium | Medium | Document admin requirements, fallback to user-level scheduling |
-| MSIX signing requirements | Medium | Low | Self-signed for testing, defer store submission |
-| Google OAuth policy restrictions | Medium | High | Research thoroughly, may need to apply for verification |
-| Token storage security | Medium | High | Use platform-specific secure storage (Keychain, Credential Manager) |
-| Long-lived token behavior varies by platform | Medium | Medium | Test on all target platforms |
-
-**Dependencies**: Sprint 12 (F2 Settings for frequency configuration)
-
----
-
-## Future Features (Prioritized)
-
-**Last Refined**: February 1, 2026 (Backlog Refinement Session)
-
-Priority based on: Product Owner prioritization for MVP development.
-
-### Priority 1: MVP Core Features (Sprint 12 - In Progress)
-
-#### F2: User Application Settings (HIGHEST PRIORITY)
-**Status**: 🚀 SPRINT 12
-**Estimated Effort**: 14-16 hours
-**Business Value**: Flexible scanning configuration for manual and background scans
-
-**Overview**: Comprehensive settings UI for app-wide and per-account configuration.
-
-**Key Features**:
-- Manual Scan Defaults (scan mode, folder selection)
-- Background Scan Defaults (frequency, enabled/disabled, folders)
-- Per-account overrides (scan frequency, default folders, enabled status)
-
-**Dependencies**: None (can be implemented standalone)
-
-**See**: [Feature Details - F2](#f2-user-application-settings-detail)
-
----
-
-#### F1: Processing Scan Results
-**Status**: 🚀 SPRINT 12
-**Estimated Effort**: 14-16 hours
-**Business Value**: Users can review and process unmatched emails interactively
-
-**Overview**: Backend storage + UI for reviewing and processing unmatched emails (emails that did not match any rules during scan).
-
-**Key Features**:
-- Persistent scan result storage (SQLite table)
-- One unmatched list per scan type (manual, background)
-- Email availability checking (verify email still exists before action)
-- Provider-specific email identifiers (Message-ID, IMAP UID, etc.)
-
-**Dependencies**: Database foundation (Sprint 1-3 complete)
-
-**See**: [Feature Details - F1](#f1-processing-scan-results-detail)
-
----
-
-#### F3: Interactive Rule & Safe Sender Management
-**Status**: 🚀 SPRINT 12
-**Estimated Effort**: 16-18 hours
-**Business Value**: Quick-add rules and safe senders from scan results without YAML editing
-
-**Overview**: Interactive UI to add rules and safe senders directly from unmatched emails during scan result review.
-
-**Key Features**:
-- Quick-add safe sender from email
-- Create rule from email (with pattern suggestions)
-- Safe sender exceptions (denylist specific patterns while allowing domain)
-- Pattern testing UI (test rule before saving)
-
-**Dependencies**: F1 (Processing Scan Results), Database foundation
-
-**See**: [Feature Details - F3](#f3-interactive-rule-safe-sender-management-detail)
-
----
-
-#### F9: Database Test Refactoring (Issue #57)
-**Status**: 🚀 SPRINT 12
-**Estimated Effort**: 2-3 hours
-**Business Value**: Prevent test schema drift from production schema
-**Issue**: [#57](https://github.com/kimmeyh/spamfilter-multi/issues/57)
-
-**Problem**: Database helper tests manually copy schema DDL, which can drift from production DatabaseHelper implementation.
-
-**Solution**:
-- Refactor tests to initialize actual DatabaseHelper (with in-memory or temp path)
-- Remove duplicated schema declarations
-- Tests always validate real production DDL
-
----
-
-#### F10: Foreign Key Constraint Testing (Issue #58)
-**Status**: 🚀 SPRINT 12
-**Estimated Effort**: 1-2 hours
-**Business Value**: Ensure foreign key constraints are enforced as expected
-**Issue**: [#58](https://github.com/kimmeyh/spamfilter-multi/issues/58)
-
-**Problem**: Foreign key constraint test does not verify constraints are enforced because PRAGMA foreign_keys is not enabled in DatabaseHelper.
-
-**Solution**:
-- Enable foreign keys in DatabaseHelper at connection time
-- Update test to explicitly enable foreign keys for in-memory DB
-- Assert that insert with non-existent foreign key throws error
-
----
-
-### Priority 2: Windows Background Scanning + Persistent Gmail Auth (Sprint 13)
-
-#### F5: Background Scanning - Windows Desktop
-**Status**: 📋 PLANNED (Sprint 13)
-**Estimated Effort**: 14-16 hours
-**Platform**: Windows Desktop
-**Business Value**: Background scanning + easy app distribution on Windows
-
-**Overview**: Background scanning on Windows desktop + MSIX installer for app distribution.
-
-**Key Features**:
-- Task Scheduler integration for periodic scans
-- System tray integration with scan status
-- MSIX installer for easy distribution
-- Auto-start on Windows login (optional)
-
-**Dependencies**: F2 (User Application Settings)
-
-**See**: [Feature Details - F5](#f5-background-scanning-windows-detail)
-
----
-
-#### F12: Persistent Gmail Authentication (Long-Lived Tokens)
-**Status**: 📋 PLANNED (Sprint 13)
-**Estimated Effort**: 8-12 hours
-**Platform**: All (Windows, Android, iOS)
-**Business Value**: Users only need to authenticate Gmail once every 18-24+ months (like Samsung/iPhone email apps)
-
-**Overview**: Research and implement long-lived Gmail authentication similar to native email apps (Samsung Android, iPhone Mail) that only require re-authentication every 18-24+ months instead of frequently.
-
-**Research Questions**:
-- How do Samsung Android and iPhone Mail apps achieve long-lived Gmail access?
-- What OAuth 2.0 scopes and parameters enable persistent refresh tokens?
-- What are Google's policies on offline access for third-party apps?
-- Are there differences between "installed app" vs "web app" OAuth flows?
-- Does app verification status affect token lifetime?
-
-**Key Features**:
-- Research best practices for long-lived OAuth tokens
-- Implement offline access with proper refresh token handling
-- Secure refresh token storage (platform-specific secure storage)
-- Automatic token refresh before expiration
-- Graceful handling of token revocation (prompt re-auth)
-- Document expected token lifetime and any limitations
-
-**Technical Considerations**:
-- Google OAuth 2.0 `access_type=offline` parameter
-- Proper handling of `prompt=consent` for initial authorization
-- Secure storage: Windows Credential Manager, Android Keystore, iOS Keychain
-- Token refresh scheduling (before expiration)
-- Handling Google account security events (password change, suspicious activity)
-
-**Dependencies**: Current Gmail OAuth implementation (google_sign_in package)
-
-**See**: [Feature Details - F12](#f12-persistent-gmail-authentication-detail)
-
----
-
-### Priority 3: UI Automation Testing (Sprint 14)
-
-#### F11: Playwright UI Tests for Windows Desktop + Android UI Testing Strategy
-**Status**: 📋 PLANNED (Sprint 14)
-**Estimated Effort**: 12-16 hours
-**Business Value**: Automated UI regression testing, reduced manual testing burden
+**Status**: Planned
+**Estimated Effort**: ~12-16h
 
 **Overview**: Build comprehensive Playwright tests for Windows Desktop UI and determine recommended approach for Android UI testing.
 
 **Key Features**:
-- **Windows Desktop (Playwright)**:
-  - End-to-end UI tests for all screens
-  - Account selection and authentication flows
-  - Scan configuration and execution
-  - Results display and actions
-  - Settings screen interactions
-  - Keyboard shortcut verification
-  - System tray integration tests
+- **Windows Desktop (Playwright)**: End-to-end UI tests for all screens (accounts, scanning, results, settings)
+- **Android UI Testing Strategy**: Research Flutter integration testing options (Patrol, integration_test, Appium), document recommended approach, implement initial suite
 
-- **Android UI Testing Strategy**:
-  - Research Flutter integration testing options
-  - Evaluate Patrol, integration_test package, Appium
-  - Document recommended approach
-  - Implement initial test suite
-
-**Dependencies**: Sprint 12 (F1-F3 UI complete), Sprint 13 (F5 Windows background scanning)
+**Dependencies**: Core UI features complete (Sprints 12-17)
 
 **Acceptance Criteria**:
 - [ ] Playwright tests cover all Windows Desktop screens
 - [ ] Tests run in CI/CD pipeline
 - [ ] Android testing approach documented
 - [ ] Initial Android UI tests implemented
-- [ ] Test coverage report generated
 
 ---
 
-### Priority 4: Rule Testing & Simulation (After Sprint 14)
+### F4: Background Scanning - Android
 
-#### F8: Rule Testing & Simulation
-**Status**: 📋 PLANNED
-**Estimated Effort**: 6-8 hours
-**Business Value**: Test rules before deployment
+**Status**: Planned
+**Estimated Effort**: ~14-16h
+**Platform**: Android
 
-**Overview**: UI for testing rules against sample emails before saving.
+**Overview**: Automatic periodic background scanning on Android with user-configured frequency using WorkManager.
 
-**Potential Features**:
-- Load sample emails from actual inbox
-- Test rule against samples
-- Show which emails match and why
-- Pattern highlighting in email content
+**Key Features**:
+- WorkManager for periodic background jobs
+- Configurable scan frequency (hourly, daily, weekly)
+- Battery-aware scheduling (defer when battery low)
+- Notification on scan completion with results summary
 
-**Dependencies**: F3 (Interactive Rule Management)
-
-**Notes**: Partially covered by F3 (pattern testing). Full simulation may be deferred.
+**Dependencies**: Settings infrastructure (completed Sprint 12)
 
 ---
 
-### Priority 5: Provider Optimizations (After F8)
+### F6: Provider-Specific Optimizations
 
-#### F6: Provider-Specific Optimizations
-**Status**: 💡 IDEA
-**Estimated Effort**: 10-12 hours
-**Business Value**: Improved performance and reliability for AOL and Gmail
+**Status**: Idea
+**Estimated Effort**: ~10-12h
 
 **Overview**: Provider-specific optimizations leveraging unique API capabilities.
 
@@ -463,18 +249,16 @@ Priority based on: Product Owner prioritization for MVP development.
 - Gmail: Batch email operations via API
 - Outlook: Graph API integration (when implemented)
 
-**Dependencies**: Core functionality complete (F1-F3)
+**Dependencies**: Core functionality complete
 
 **Notes**: Defer until MVP complete. May not be needed if current performance acceptable.
 
 ---
 
-### Priority 6: Multi-Account Scanning (After F6)
+### F7: Multi-Account Scanning
 
-#### F7: Multi-Account Scanning
-**Status**: 💡 IDEA
-**Estimated Effort**: 8-10 hours
-**Business Value**: Scan multiple email accounts in parallel
+**Status**: Idea
+**Estimated Effort**: ~8-10h
 
 **Overview**: Scan multiple email accounts simultaneously (parallel execution).
 
@@ -483,506 +267,368 @@ Priority based on: Product Owner prioritization for MVP development.
 - Per-account result aggregation
 - Unified unmatched email list (with account filtering)
 
-**Dependencies**: F1 (Processing Scan Results)
+**Dependencies**: Scan Results (completed Sprint 12)
 
 **Notes**: Defer until MVP complete. Current sequential scanning may be sufficient.
 
 ---
 
-### Priority 7: Android Background Scanning (After F7)
+### F22: YAML Rules Import/Export UI
 
-#### F4: Background Scanning - Android (WorkManager)
-**Status**: 📋 PLANNED
-**Estimated Effort**: 14-16 hours
-**Platform**: Android
-**Business Value**: Automatic periodic background scanning per user settings
+**Status**: Planned
+**Estimated Effort**: ~8-12h
 
-**Overview**: Automatic periodic background scanning on Android with user-configured frequency.
+**Overview**: Add user-facing YAML import and export functionality in Settings > Account tab, allowing users to export rules/safe senders to YAML files and import from YAML files.
 
-**Key Features**:
-- WorkManager for periodic background jobs
-- Configurable scan frequency (hourly, daily, weekly)
-- Battery-aware scheduling (defer when battery low)
-- Notification on scan completion with results summary
+**Backend State**: `YamlService.exportRules()` and `YamlService.loadRules()` already exist. `YamlExportService` handles dual-write (database + YAML). Missing: UI triggers, file picker, conflict resolution, user feedback.
 
-**Dependencies**: F2 (User Application Settings for frequency configuration)
+**Features**:
+- Export rules to user-selected directory (with automatic backup)
+- Export safe senders to user-selected directory
+- Import rules from YAML file with preview and conflict resolution (merge/replace/skip)
+- Import safe senders from YAML file
+- Validation display before import (show errors/warnings)
+- Import status summary (success/failed counts)
 
-**See**: [Feature Details - F4](#f4-background-scanning-android-detail)
+**Follow-up**: After import/export is stable, remove duplicate YAML storage (currently rules are stored in both SQLite and YAML asset files). SQLite becomes sole source of truth; YAML used only for import/export.
 
----
-
-### HOLD: Low Priority Items
-
-The following items are on HOLD until higher priority work is complete:
-
-#### Issue #49: Sent Messages Scan for Safe Senders
-**Status**: ⏸️ HOLD
-**Issue**: [#49](https://github.com/kimmeyh/spamfilter-multi/issues/49)
-**Description**: Scan sent folder to auto-populate safe senders
-**Notes**: Large feature, deferred to post-MVP
-
-#### Issue #44: Outlook.com OAuth Implementation
-**Status**: ⏸️ HOLD
-**Issue**: [#44](https://github.com/kimmeyh/spamfilter-multi/issues/44)
-**Description**: Complete Outlook.com/Office 365 OAuth with MSAL
-**Notes**: New provider, requires MSAL integration, deferred
+**Dependencies**: None (backend methods exist)
 
 ---
 
-## Feature Details
+### F23: Rule Splitting Migration Script
 
-### F1: Processing Scan Results (Detail)
+**Status**: Planned
+**Estimated Effort**: ~6-8h
 
-**Database Schema**:
-```sql
-CREATE TABLE scan_results (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  account_id TEXT NOT NULL,
-  scan_type TEXT NOT NULL CHECK(scan_type IN ('manual', 'background')),
-  email_id TEXT NOT NULL,  -- Provider-specific (Message-ID, IMAP UID, etc.)
-  from_address TEXT NOT NULL,
-  subject TEXT NOT NULL,
-  folder_name TEXT NOT NULL,  -- Current folder location
-  received_date INTEGER NOT NULL,  -- Unix timestamp
-  scan_date INTEGER NOT NULL,      -- Unix timestamp
-  status TEXT NOT NULL CHECK(status IN ('pending', 'processed', 'deleted', 'unavailable')),
-  UNIQUE(account_id, scan_type, email_id)
-);
+**Overview**: One-time Dart CLI script to break apart the 4 monolithic rules (`SpamAutoDeleteHeader`, `SpamAutoDeleteFrom`, `SpamAutoDeleteBody`, `SpamAutoDeleteSubject`) into individual, well-named rules based on what each pattern actually blocks.
 
-CREATE INDEX idx_scan_results_account_type ON scan_results(account_id, scan_type);
-CREATE INDEX idx_scan_results_status ON scan_results(status);
+**Splitting Logic**:
+- **SpamAutoDeleteHeader** patterns classified by regex structure:
+  - Entire domain (`@(?:[a-z0-9-]+\.)*domain\.com$`) -> `Block_EntireDomain_<domain>`
+  - Exact domain (`@domain\.com$`) -> `Block_ExactDomain_<domain>`
+  - Exact email (`^user@domain\.com$`) -> `Block_ExactEmail_<user_domain>`
+  - TLD (`\.<tld>$`) -> `Block_TopLevelDomain_<tld>`
+- **SpamAutoDeleteFrom** patterns: Convert from `from:` to `header:` matching, then same classification
+- **SpamAutoDeleteBody** patterns: `BlockBody_<cleaned_regex>` (use cleaned-up regex as name)
+- **SpamAutoDeleteSubject** patterns: `BlockSubject_<cleaned_regex>` (use cleaned-up regex as name)
+- Skip duplicates (if target rule name already exists)
+- Remove migrated patterns from original monolithic rules
 
--- Rules need date_added field for tracking
-ALTER TABLE rules ADD COLUMN date_added INTEGER;  -- Unix timestamp
-CREATE INDEX idx_rules_date_added ON rules(date_added);
+**Deliverable**: Dart CLI script in `scripts/` directory, run once, produces updated `rules.yaml`
 
-ALTER TABLE safe_senders ADD COLUMN date_added INTEGER;  -- Unix timestamp
-CREATE INDEX idx_safe_senders_date_added ON safe_senders(date_added);
-```
-
-**UI Screens**:
-
-1. **Scan Results List** (Enhanced):
-   - One wrapped line per email showing:
-     - `<folder-name> • From: <email> • Subject: <subject>`
-   - From email filtered/adjusted for viewability (extract from "Name <email>" format)
-   - Subject filtered/adjusted for viewability (truncate if needed)
-   - Tap email to see detail view
-
-2. **Email Detail Screen** (Enhanced):
-   - **View Options**:
-     - View full message header
-     - View message body (with domain link extraction)
-     - Find all domains referenced in body links
-   - **Action Buttons**:
-     - Add to Safe Senders (3 options):
-       - Specific email address (ex. `^john\.doe@aol\.com$`)
-       - Specific domain (ex. `^[^@\s]+@(?:[a-z0-9-]+\.)*ibm\.com$`)
-       - Wildcard/regex domain pattern
-     - Create Auto-Delete Rule (6 types):
-       - From Header (email or domain pattern)
-       - Message Header Content (free-form match)
-       - Subject Text (free-form match)
-       - Body Text (free-form match, ex. `800\-571\-7438` or `audacious,\ llc`)
-       - Body URL Domains (extracted from links, domain pattern)
-     - Delete Email
-     - Ignore (mark as processed, no action)
-
-3. **Batch Actions**: Select multiple emails for bulk processing
-
-**Domain Extraction from Email Body**:
-- Parse body HTML/text for URLs
-- Extract all unique domains from href links
-- Present domains for quick "block all from this domain" rule creation
-- Pattern format: `/accountryside\.com$` or `^[^@\s]+@(?:[a-z0-9-]+\.)*5hourenergy\.com$`
-
-**API Methods**:
-- `ScanResultStore.addUnmatchedEmail(accountId, scanType, email, folderName)`
-- `ScanResultStore.getUnmatchedEmails(accountId, scanType, status)`
-- `ScanResultStore.markEmailProcessed(id, status)`
-- `ScanResultStore.checkEmailAvailability(accountId, emailId)` - Verify email still exists
-- `EmailBodyParser.extractDomains(bodyHtml, bodyText)` - Extract all domains from links
-
-**Email Availability Checking**:
-- Before showing email detail, verify email still exists in inbox
-- If deleted/moved externally, mark as "unavailable" in scan results
-- Use provider-specific identifiers (Message-ID for Gmail, IMAP UID for IMAP)
-
-**Rule Creation with date_added**:
-- All new rules (auto-delete or safe sender) include `date_added` timestamp
-- UI can filter/sort rules by date added
-- Helps identify recently added rules for debugging
-
-**Technical Notes**:
-- One unmatched list per scan type (manual, background) to avoid mixing results
-- Scan results cleared when new scan of same type starts
-- Email content NOT stored (only metadata + folder location) to save space
-- Rules enabled by default when user creates them from UI
+**Dependencies**: F22 (YAML Import/Export UI) for reimporting the split rules into the app database
 
 ---
 
-### F2: User Application Settings (Detail)
+### F24: Manage Rules Category Filter Chips
 
-**UI Entry Points**:
-- **Account Selection Screen**: Settings button (⚙️) → App-wide settings
-- **Scan Progress Screen**: Settings button (⚙️) → Provider/email address setup
+**Status**: Planned
+**Estimated Effort**: ~4-6h
 
-**Settings Categories**:
+**Overview**: Replace current "Header"/"Body"/"Subject" filter chips in Settings > Manage Rules with more meaningful categories that match the new rule naming convention from F23.
 
-1. **Manual Scan Defaults**
-   - Scan Mode:
-     - Read-Only (checkbox)
-     - Process safe senders (checkbox)
-     - Process rules (checkbox for All, OR individual checkboxes):
-       - Auto Delete Header From
-       - Auto Delete Header Text
-       - Auto Delete Subject Text
-       - Auto Delete Body Text
-       - Auto Delete Body URL domains
-   - Select folders to scan (uses current dynamic folder discovery)
-   - Default Folders: Inbox, Junk, All Folders
-   - Confirmation Dialogs: Enable/Disable
+**New Filter Categories**:
+- "Block Email" - rules matching `Block_ExactEmail_*`
+- "Block Exact Domain" - rules matching `Block_ExactDomain_*`
+- "Block Entire Domain" - rules matching `Block_EntireDomain_*`
+- "Block Top Level Domains" - rules matching `Block_TopLevelDomain_*`
+- "Block Body" - rules matching `BlockBody_*`
+- "Block Subject" - rules matching `BlockSubject_*`
+- "Other" - all rules not in the above categories
 
-2. **Background Scan Defaults** (defaults for all future newly added provider/email addresses)
-   - Enabled: Yes/No
-   - Frequency: Every `<n>` minutes (configurable, ex. 15, 30, 60)
-   - Scan Mode: (same options as Manual Scan Defaults above)
-   - Default Folders: Inbox only, Inbox + Junk, All Folders
-
-3. **Provider/Email Address Setups** (per-account overrides)
-   - Authentication (manage credentials, re-authenticate)
-   - Background Scans:
-     - Enabled: Yes/No (override global default)
-     - Frequency: Every `<n>` minutes (override global default)
-     - Scan Mode: (same options as Manual Scan Defaults above)
-     - Default Folders: Account-specific folder selection
-
-**Storage**:
-- Settings stored in SQLite `app_settings` table
-- Per-account overrides in `account_settings` table
-- Granular rule type toggles stored as bit flags or JSON
-
-**UI**:
-- Settings screen with tabbed interface (Manual, Background, Provider/Email Addresses)
-- Provider/email address settings accessible from:
-  - Account Selection screen → Settings button
-  - Scan Progress screen → Settings button (direct to current account)
-- Clear indication when setting is overridden
-- Rule type checkboxes dynamically show/hide based on "Process rules (All)" toggle
+**Dependencies**: F23 (Rule Splitting Migration) must run first so rules have the new naming convention
 
 ---
 
-### F3: Interactive Rule & Safe Sender Management (Detail)
+### F25: Rule Testing UI Enhancements
 
-**User Workflows**:
+**Status**: Planned
+**Estimated Effort**: ~6-8h
 
-1. **Add Safe Sender from Email**:
-   - User clicks "Add Safe Sender" on email in scan results
-   - UI shows: Exact email OR entire domain
-   - Pattern preview: `^john\.doe@company\.com$` or `^[^@\s]+@(?:[a-z0-9-]+\.)*company\.com$`
-   - User confirms → Added to safe senders database
+**Overview**: Enhance the Rule Testing screen (Settings > Tools > Test Rule Pattern) with additional capabilities to make it a more complete rule authoring tool.
 
-2. **Create Rule from Email**:
-   - User clicks "Create Rule" on email in scan results
-   - UI suggests patterns based on email:
-     - From: Exact email or domain pattern
-     - Subject: Keywords or regex pattern
-     - Body: Keywords or regex pattern
-   - User selects field(s) and action (delete/move)
-   - Pattern testing: Show which sample emails match
-   - User confirms → Rule added to database
+**Enhancements**:
+1. **Example Email Addresses**: Pre-populate the "Match against" list with email addresses from the Demo Scan data, giving users real addresses to test against without needing a live scan
+2. **Plain Text to Regex Conversion**: When a user enters a plain text pattern (no regex metacharacters) and presses Enter/Test, automatically convert it to the equivalent regex pattern and display both
+3. **Edit Rules with Test Tool**: Add a way to open an existing rule in the test tool from the Manage Rules screen, allowing users to modify and test patterns before saving
 
-3. **Safe Sender Exceptions**:
-   - User can add exceptions to safe sender patterns
-   - Example: Allow `@company.com` but block `spam@company.com`
-   - Stored in `safe_sender_exceptions` table
-   - Evaluated AFTER safe sender check
-
-**Pattern Suggestions**:
-- From patterns:
-  - Exact: `^sender@domain\.com$`
-  - Domain: `^[^@\s]+@(?:[a-z0-9-]+\.)*domain\.com$`
-- Subject patterns:
-  - Keywords: `\bkeyword1\b|\bkeyword2\b`
-  - Exact match: `^exact subject line$`
-- Body patterns:
-  - Keywords with context: `\bspecial offer\b.*\bclick here\b`
-
-**UI Components**:
-- Pattern builder wizard (step-by-step)
-- Pattern testing panel (test against sample emails)
-- Pattern preview (show regex with explanation)
+**Dependencies**: None (builds on existing Rule Testing UI from Sprint 18)
 
 ---
 
-### F4: Background Scanning - Android (Detail)
+### F26: Safe Senders Management Filter Chips
 
-**WorkManager Configuration**:
-```dart
-PeriodicWorkRequest scanWork = PeriodicWorkRequest.Builder(
-  EmailScanWorker.class,
-  scanFrequencyHours, TimeUnit.HOURS
-)
-  .setConstraints(Constraints.Builder()
-    .setRequiredNetworkType(NetworkType.CONNECTED)
-    .setRequiresBatteryNotLow(true)
-    .build())
-  .build();
+**Status**: Planned
+**Estimated Effort**: ~4-6h
 
-WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-  "background_email_scan",
-  ExistingPeriodicWorkPolicy.REPLACE,
-  scanWork
-);
-```
+**Overview**: Add filter chips to Settings > Account > Manage Safe Senders to categorize safe sender rules by their pattern type, making it easier to browse and manage large lists.
 
-**Scan Frequency Options**:
-- Hourly (minimum Android allows: 15 minutes, but respect battery)
-- Daily (recommended default)
-- Weekly
+**Filter Categories**:
+- "Exact Email" - patterns matching a specific email address (e.g., `^user@domain\.com$`)
+- "Exact Domain" - patterns matching an exact domain (e.g., `^[^@\s]+@domain\.com$`)
+- "Entire Domain" - patterns matching domain and all subdomains (e.g., `^[^@\s]+@(?:[a-z0-9-]+\.)*domain\.com$`)
+- "Top Level Domains" - patterns matching TLDs (e.g., `\.edu$`, `\.gov$`)
+- "Other" - all rules not matching the above categories
 
-**Notification**:
-- Show notification on scan completion
-- Summary: "Scanned 150 emails, 12 matched rules (5 deleted, 7 moved)"
-- Tap notification → Open Results screen
+**Note**: These categories should replace current "Domain" / "Domain + Subdomains" labels with the more user-friendly names above.
 
-**Battery Awareness**:
-- Defer scan if battery <15%
-- Use WorkManager constraints for network and battery
+**Dependencies**: None
 
 ---
 
-### F5: Background Scanning - Windows Detail
+## Google Play Store Readiness (HOLD)
 
-**Task Scheduler Integration**:
-```xml
-<Task>
-  <Triggers>
-    <CalendarTrigger>
-      <Repetition>
-        <Interval>PT1H</Interval> <!-- Hourly -->
-      </Repetition>
-    </CalendarTrigger>
-  </Triggers>
-  <Actions>
-    <Exec>
-      <Command>spamfilter.exe</Command>
-      <Arguments>--background-scan</Arguments>
-    </Exec>
-  </Actions>
-</Task>
-```
+**Added**: February 15, 2026
+**Status**: HOLD -- All GP items are on hold pending Product Owner prioritization
+**Objective**: Features, configurations, and policy compliance needed to publish on the Google Play Store.
 
-**System Tray Integration**:
-- Show icon in system tray with scan status
-- Right-click menu:
-  - "Run Scan Now"
-  - "View Results"
-  - "Settings"
-  - "Exit"
-- Notification balloon on scan completion
+### Current App Assessment
 
-**MSIX Installer**:
-- Package app as MSIX for Windows Store distribution
-- Auto-update capability via Windows Store
-- Installer registers app for auto-start (optional)
+The app is approximately 60-70% ready for Play Store publication. Core spam filtering functionality is complete and production-ready. The remaining work is primarily administrative (signing, permissions, policies, branding) and compliance-related (Gmail API verification, privacy policy, data safety declarations).
 
-**Auto-Start**:
-- Optional: Start app on Windows login (minimized to system tray)
-- Controlled by setting in app preferences
+### Gap Analysis Summary
 
----
+| Area | Current State | Play Store Required | Gap Severity |
+|------|--------------|---------------------|-------------|
+| Application ID | `com.example.spamfiltermobile` | Unique reverse-domain ID | BLOCKING |
+| Release Signing | Debug keys only | Production keystore + Play App Signing | BLOCKING |
+| App Bundle Format | APK builds only | AAB (Android App Bundle) required | BLOCKING |
+| Privacy Policy | None | Publicly hosted URL required | BLOCKING |
+| Gmail OAuth Verification | Unverified (dev-only) | Restricted scope verification + CASA audit | BLOCKING |
+| Android Permissions | INTERNET only (debug/profile) | INTERNET, POST_NOTIFICATIONS, WAKE_LOCK, etc. | BLOCKING |
+| Data Safety Form | Not started | Required in Play Console | BLOCKING |
+| Content Rating | Not started | IARC questionnaire required | BLOCKING |
+| App Version | 0.1.0 | Must be 1.0.0+ for release | HIGH |
+| Adaptive Icons | No (only legacy mipmap) | Required for Android 8+ (API 26+) | HIGH |
+| ProGuard/R8 Rules | None configured | Needed for obfuscation and size | HIGH |
+| Store Listing Assets | None | Icon 512x512, feature graphic 1024x500, screenshots | HIGH |
+| App Label | `spamfilter_mobile` | User-friendly display name | HIGH |
+| Target SDK | Flutter default (~34) | API 35 required now; API 36 expected by Aug 2026 | MEDIUM |
+| 16 KB Page Size | Unknown | Required for updates by May 1, 2026 | MEDIUM |
 
-### F12: Persistent Gmail Authentication (Detail)
+### GP Feature List
 
-**Problem Statement**:
-Current Gmail authentication requires frequent re-authentication (daily or weekly), while native email apps like Samsung Android Mail and iPhone Mail only require authentication once every 18-24+ months. This creates poor user experience for background scanning scenarios.
+All GP items are HOLD. When taken off hold, they should be added to "Next Sprint Candidates" above.
 
-**Research Areas**:
+| ID | Title | Est. Effort | ADR | Priority |
+|----|-------|-------------|-----|----------|
+| GP-1 | Application Identity and Branding | ~4-6h | ADR-0026 (Accepted) | BLOCKING |
+| GP-2 | Release Signing and Play App Signing | ~4-6h | ADR-0027 (Proposed) | BLOCKING |
+| GP-3 | Android Manifest Permissions | ~4-6h | ADR-0028 (Proposed) | BLOCKING |
+| GP-4 | Gmail API OAuth Verification (CASA) | ~40-80h | ADR-0029 (Accepted) | BLOCKING (ON HOLD -- trigger: 2,500+ users or $5K/yr revenue) |
+| GP-5 | Privacy Policy and Legal Documents | ~8-16h | ADR-0030 (Accepted) | BLOCKING |
+| GP-6 | Play Store Listing and Assets | ~8-12h | -- | HIGH |
+| GP-7 | Adaptive Icons and App Branding | ~4-6h | ADR-0031 (Proposed) | HIGH |
+| GP-8 | Android Target SDK + 16 KB Page Size | ~4-8h | -- | MEDIUM |
+| GP-9 | ProGuard/R8 Code Optimization | ~4-6h | -- | HIGH |
+| GP-10 | Data Safety Form Declarations | ~2-4h | -- | BLOCKING |
+| GP-11 | Account and Data Deletion Feature | ~8-12h | ADR-0032 (Proposed) | HIGH |
+| GP-12 | Firebase Analytics Decision | ~2-4h | ADR-0033 (Proposed) | MEDIUM |
+| GP-13 | Persistent Gmail Auth for Production | 0h | -- | RESOLVED (merged with F12, see ADR-0029/0034) |
+| GP-14 | IMAP vs Gmail REST API Decision | 0h | ADR-0034 (Accepted) | RESOLVED (dual-path, no migration needed) |
+| GP-15 | Version Numbering and Release Strategy | ~2-4h | -- | HIGH |
+| GP-16 | Google Play Developer Account Setup | ~2-4h | -- | BLOCKING |
 
-1. **Google OAuth 2.0 Token Lifetime**:
-   - Default access token lifetime: 1 hour
-   - Refresh token lifetime: varies (can be long-lived with proper configuration)
-   - Factors affecting refresh token lifetime:
-     - User's Google account security settings
-     - App verification status
-     - OAuth consent screen configuration
-     - Scopes requested
+**Total Estimated Effort**: ~112-202 hours (plus 2-6 months for CASA verification if triggered)
 
-2. **Native Email App Approach**:
-   - Samsung Android Mail: Uses device account manager integration
-   - iPhone Mail: Uses Apple's centralized account system
-   - Both leverage system-level OAuth token management
-   - May use different OAuth client types (device vs web)
+### GP Detail Sections
 
-3. **Best Practices for Long-Lived Access**:
-   - Request `access_type=offline` for refresh tokens
-   - Use `prompt=consent` only on first authorization
-   - Store refresh tokens securely (platform-specific)
-   - Implement proactive token refresh (before expiration)
-   - Handle incremental authorization properly
+Full detail for each GP item is preserved below for reference when these items are taken off hold.
 
-**Implementation Approach**:
+#### GP-1: Application Identity and Branding
 
-1. **Secure Token Storage**:
-   - **Windows**: Windows Credential Manager (via `flutter_secure_storage`)
-   - **Android**: Android Keystore (via `flutter_secure_storage`)
-   - **iOS**: iOS Keychain (via `flutter_secure_storage`)
+**ADR**: ADR-0026 (Accepted)
+**Estimated Effort**: ~4-6h
 
-2. **Token Refresh Strategy**:
-   ```dart
-   // Pseudocode for token refresh
-   Future<String> getValidAccessToken() async {
-     final credentials = await secureStorage.read('gmail_credentials');
-     if (credentials.accessTokenExpired) {
-       if (credentials.hasRefreshToken) {
-         // Refresh token before expiration
-         final newCredentials = await refreshAccessToken(credentials.refreshToken);
-         await secureStorage.write('gmail_credentials', newCredentials);
-         return newCredentials.accessToken;
-       } else {
-         // No refresh token - require re-auth
-         throw AuthenticationRequiredException();
-       }
-     }
-     return credentials.accessToken;
-   }
-   ```
+Change the application from development defaults to production-ready identity.
 
-3. **Graceful Degradation**:
-   - If refresh fails (token revoked), prompt user to re-authenticate
-   - Show clear message explaining why re-auth is needed
-   - Preserve account configuration (only re-auth, do not lose settings)
+**Decision**: Domain `myemailspamfilter.com`, Application ID `com.myemailspamfilter`, App Name `MyEmailSpamFilter`.
 
-**Expected Outcomes**:
-- Users authenticate once and remain authenticated for 18-24+ months
-- Background scans work reliably without user intervention
-- Token refresh happens automatically and transparently
-- Clear error handling when re-authentication is required
+**Tasks**:
+- Task A: Update `applicationId` to `com.myemailspamfilter` in `android/app/build.gradle.kts`
+- Task B: Update `namespace` to `com.myemailspamfilter` in `android/app/build.gradle.kts`
+- Task C: Update `android:label` to `MyEmailSpamFilter` in `AndroidManifest.xml`
+- Task D: Update `msix_config` in `pubspec.yaml` to match new identity
+- Task E: Re-register with Firebase Console under new application ID and download new `google-services.json`
 
-**Files to Modify**:
-- `mobile-app/lib/adapters/auth/google_auth_service.dart` - Token refresh logic
-- `mobile-app/lib/adapters/storage/secure_credentials_store.dart` - Secure token storage
-- `mobile-app/lib/adapters/email_providers/gmail_api_adapter.dart` - Use refreshed tokens
-
-**Testing**:
-- Verify token persists across app restarts
-- Verify token persists across device reboots
-- Simulate token expiration and verify refresh
-- Simulate token revocation and verify re-auth prompt
-- Test on Windows, Android (iOS if available)
+**Prerequisite**: Domain `myemailspamfilter.com` must be registered first (Issue #166 -- spike).
 
 ---
 
-## Issue Backlog
+#### GP-2: Release Signing and Play App Signing
 
-**Last Updated**: February 1, 2026
+**ADR**: ADR-0027 (Proposed)
+**Estimated Effort**: ~4-6h
 
-This section tracks all open and fixed GitHub issues from code review and sprint work. For detailed issue descriptions, root causes, and acceptance criteria, see `ISSUE_BACKLOG.md`.
+Configure production signing for release builds and enroll in Google Play App Signing.
 
-### Status Summary
+**Tasks**:
+- Generate production keystore (upload key)
+- Configure `signingConfigs.release` in `build.gradle.kts`
+- Secure keystore file (NEVER commit to git)
+- Build AAB (Android App Bundle) instead of APK
+- Test signed release build on physical device
 
-| Status | Count | Issues |
-|--------|-------|--------|
-| ✅ Fixed | 12 | #4, #8, #18, #38, #39, #40, #41, #43, #107, #108, #109, #110 |
-| ⏸️ HOLD | 2 | #44, #49 |
+---
 
-### ✅ Fixed Issues
+#### GP-3: Android Manifest Permissions
 
-1. **Issue #4**: Silent regex compilation failures (Fixed: Jan 3, 2026)
-   - PatternCompiler now logs and tracks invalid patterns
-   - 9 new tests added
+**ADR**: ADR-0028 (Proposed)
+**Estimated Effort**: ~4-6h
 
-2. **Issue #8**: Header matching bug in RuleEvaluator (Fixed: Jan 3, 2026)
-   - Rules now properly check email headers instead of From field
-   - 32 new tests with 97.96% coverage
+Declare all required permissions and implement runtime permission requests.
 
-3. **Issue #18**: Missing RuleEvaluator unit tests (Fixed: Jan 3, 2026)
-   - Comprehensive test suite created
-   - File: `test/unit/rule_evaluator_test.dart`
+**Permissions Needed**: INTERNET, POST_NOTIFICATIONS (API 33+), RECEIVE_BOOT_COMPLETED, WAKE_LOCK, FOREGROUND_SERVICE (API 34+), FOREGROUND_SERVICE_DATA_SYNC (API 34+)
 
-4. **Issue #38**: Python-style inline regex flags (Fixed: Jan 6, 2026)
-   - PatternCompiler strips `(?i)`, `(?m)`, `(?s)`, `(?x)` flags
-   - Also fixed 23 double-@ patterns in rules_safe_senders.yaml
+---
 
-5. **Issue #39**: Auto-navigation race condition (Fixed: Jan 7, 2026)
-   - Update `_previousStatus` inside condition block
+#### GP-4: Gmail API OAuth Verification (CASA)
 
-6. **Issue #40**: Hardcoded test limit (Fixed: Jan 7, 2026)
-   - Added configurable slider (5-200)
+**ADR**: ADR-0029 (Accepted)
+**Estimated Effort**: ~40-80h (2-6 months elapsed)
 
-7. **Issue #41**: Cross-account folder leakage (Fixed: Jan 7, 2026)
-   - Per-account folder storage with `_selectedFoldersByAccount` map
-   - 7 new tests added
+Complete Google's three-tier verification for restricted Gmail scopes. CASA security assessment by approved third-party lab.
 
-8. **Issue #43**: print() vs Logger inconsistency (Fixed: Jan 7, 2026)
-   - Replaced 6 print() statements with Logger calls
+**ON HOLD** -- Trigger: 2,500+ active Gmail IMAP users at $3/yr or $5,000/yr revenue.
 
-9. **Issue #107**: Functional keyboard shortcuts (Fixed: Feb 1, 2026 - Sprint 11)
-   - Implemented Ctrl+N (New Scan), Ctrl+R/F5 (Refresh), Ctrl+Q (Quit)
-   - Visual feedback with SnackBar for refresh action
+**Cost**: Tier 2 ($500-$1,800/yr), Tier 3 ($4,500-$8,000+/yr)
 
-10. **Issue #108**: System tray icon initialization error (Fixed: Feb 1, 2026 - Sprint 11)
-    - Fixed icon path and initialization
-    - Right-click menu persistence fixed
+**Phased approach** (per ADR-0029): Phase 1 uses unverified OAuth for alpha/beta (up to 100 users). Phase 2 adds Gmail app passwords via IMAP for general users. Phase 3 (this GP item) pursues CASA when revenue justifies cost.
 
-11. **Issue #109**: Scan Options slider labels (Fixed: Feb 1, 2026 - Sprint 11)
-    - Changed from discrete to continuous slider (1-90 days) per user feedback
-    - Clear day count display
+---
 
-12. **Issue #110**: Enhanced CSV export (Fixed: Feb 1, 2026 - Sprint 11)
-    - Added Scan Date timestamp column
-    - Additional export columns implemented
+#### GP-5: Privacy Policy and Legal Documents
 
-### ⏸️ HOLD Issues
+**ADR**: ADR-0030 (Accepted)
+**Estimated Effort**: ~8-16h
 
-1. **Issue #44**: Outlook.com OAuth implementation
-   - **Priority**: HOLD
-   - **Labels**: `enhancement`, `platform:outlook`, `HOLD`
-   - **Description**: Complete Outlook.com/Office 365 OAuth implementation with MSAL
-   - **File**: `outlook_adapter.dart` (stub)
+Create and publish privacy policy, terms of service, and data handling documentation required by Play Store and Google API Services User Data Policy.
 
-2. **Issue #49**: Sent Messages Scan for Safe Senders
-   - **Priority**: HOLD
-   - **Labels**: `enhancement`, `HOLD`
-   - **Description**: Scan sent folder to auto-populate safe senders
-   - **Notes**: Large feature, deferred to post-MVP
+**Decision** (per ADR-0030): Host on `myemailspamfilter.com` via GitHub Pages. Zero telemetry (remove Firebase Analytics). Indefinite local storage with user-controlled deletion. In-app + web page account deletion. Template-based legal review.
 
-### Test Coverage
+---
 
-| Metric | Value |
-|--------|-------|
-| Total Tests | 138 |
-| Passing | 138 |
-| Skipped | 13 (integration tests requiring credentials) |
+#### GP-6: Play Store Listing and Assets
 
-### References
+**Estimated Effort**: ~8-12h
 
-- [GitHub Issues](https://github.com/kimmeyh/spamfilter-multi/issues)
-- [ISSUE_BACKLOG.md](ISSUE_BACKLOG.md) - Detailed issue descriptions
-- [CHANGELOG.md](../CHANGELOG.md) - Recent fixes
+Create all required Play Store listing assets: icon (512x512), feature graphic (1024x500), screenshots, descriptions, content rating, Data Safety form.
+
+---
+
+#### GP-7: Adaptive Icons and App Branding
+
+**ADR**: ADR-0031 (Proposed)
+**Estimated Effort**: ~4-6h
+
+Create adaptive icons (required for Android 8+), replace legacy mipmap icons, establish visual identity.
+
+---
+
+#### GP-8: Android Target SDK and 16 KB Page Size
+
+**Estimated Effort**: ~4-8h
+
+Update target SDK to API 35+, ensure 16 KB page size compatibility (required by May 1, 2026 for app updates).
+
+---
+
+#### GP-9: ProGuard/R8 Code Optimization
+
+**Estimated Effort**: ~4-6h
+
+Configure R8 for code shrinking, obfuscation, and optimization in release builds.
+
+---
+
+#### GP-10: Data Safety Form Declarations
+
+**Estimated Effort**: ~2-4h (after GP-5 privacy policy)
+
+Complete Google Play Data Safety form. All data is on-device only, no sharing, no advertising SDKs.
+
+---
+
+#### GP-11: Account and Data Deletion Feature
+
+**ADR**: ADR-0032 (Proposed)
+**Estimated Effort**: ~8-12h
+
+Implement user account and data deletion (required by Google Play policy). Must be discoverable in-app and via web interface.
+
+---
+
+#### GP-12: Firebase Analytics Decision
+
+**ADR**: ADR-0033 (Proposed)
+**Estimated Effort**: ~2-4h
+
+Decide whether to use Firebase Analytics/Crashlytics or remove Firebase dependency. Impacts GP-5 and GP-10 disclosures.
+
+---
+
+#### GP-15: Version Numbering and Release Strategy
+
+**Estimated Effort**: ~2-4h
+
+Set initial release version (1.0.0+), establish versionCode numbering, plan release track strategy.
+
+---
+
+#### GP-16: Google Play Developer Account Setup
+
+**Estimated Effort**: ~2-4h
+
+Register Google Play Developer account ($25 one-time), complete identity verification, set up payment profile.
+
+---
+
+### Architectural Decisions Required
+
+| ADR | Title | Blocking Feature | Status |
+|-----|-------|-----------------|--------|
+| ADR-0026 | Application Identity and Package Naming | GP-1 | Accepted |
+| ADR-0027 | Android Release Signing Strategy | GP-2 | Proposed |
+| ADR-0028 | Android Permission Strategy | GP-3 | Proposed |
+| ADR-0029 | Gmail API Scope and Verification Strategy | GP-4 | Accepted |
+| ADR-0030 | Privacy and Data Governance Strategy | GP-5 | Accepted |
+| ADR-0031 | App Icon and Visual Identity | GP-7 | Proposed |
+| ADR-0032 | User Data Deletion Strategy | GP-11 | Proposed |
+| ADR-0033 | Analytics and Crash Reporting Strategy | GP-12 | Proposed |
+| ADR-0034 | Gmail Access Method for Production | GP-14 | Accepted |
+
+### Recommended Sequencing (when taken off hold)
+
+1. **Immediate**: GP-16 (Developer Account) + GP-1 (Application Identity) + ADR-0026
+2. **Early**: GP-5 (Privacy Policy) + ADR-0030
+3. **Sprint Work**: GP-2, GP-3, GP-7, GP-8, GP-9 (Technical features) + related ADRs
+4. **After Privacy Policy**: GP-10 (Data Safety Form) + GP-11 (Account Deletion) + ADR-0032
+5. **Before Submission**: GP-6 (Store Listing) + GP-15 (Versioning)
+6. **Decision**: GP-12 (Analytics) + ADR-0033
+7. **Deferred**: GP-4 (CASA Verification) -- trigger: revenue/user threshold
+
+### Cost Estimates
+
+| Item | Cost | Frequency |
+|------|------|-----------|
+| Google Play Developer Account | $25 | One-time |
+| CASA Security Assessment (Tier 2) | $500-$1,800 | Annual |
+| CASA Security Assessment (Tier 3) | $4,500-$8,000+ | Annual |
+| Domain registration | $12-$20/year | Annual |
+| Privacy policy hosting | $0-$10/month | Monthly (or free via GitHub Pages) |
 
 ---
 
 ## Version History
 
-**Version**: 3.0
-**Date**: February 1, 2026
-**Author**: Claude Opus 4.5
-**Status**: Active
-
-**Updates**:
-- 3.1 (2026-02-01): Added F12 (Persistent Gmail Authentication) to Sprint 13
-  - Research how Samsung/iPhone email apps achieve 18-24+ month authentication
-  - Implement long-lived refresh token handling
-  - Sprint 13 now includes F5 + F12 (22-28 hours estimated)
-- 3.0 (2026-02-01): Backlog refinement - reprioritized features per Product Owner:
-  - Sprint 12: F2 (Settings), F1 (Scan Results), F3 (Rule Management), F9, F10, Sprint 11 retrospective actions
-  - Sprint 13: F5 (Windows Background Scanning)
-  - Sprint 14: F11 (Playwright UI Tests + Android UI Testing Strategy) - NEW
-  - Priority order: F5 → F12 → F11 → F8 → F6 → F7 → F4
-  - Issues #107-110 completed in Sprint 11 (marked as fixed)
-  - Moved to HOLD: Issues #49, #44
-  - Added Sprint 11 to Past Sprint Summary
-- 2.0 (2026-01-31): Restructured to focus on current/future sprints, moved historical info to summary docs
-- 1.0 (2026-01-25): Initial version with complete Phase 3.5 breakdown
+| Version | Date | Summary |
+|---------|------|---------|
+| 4.1 | 2026-02-27 | Sprint 18 completion: removed completed items (#154, #141, #167, #168, #169), added F27 (Folder Selection UX), updated Last Completed Sprint and Past Sprint Summary |
+| 4.0 | 2026-02-24 | Major restructure: added Maintenance Guide, unified Next Sprint Candidates list, removed completed feature details (F1/F2/F3/F5/F9/F10/F12/F17/F18), removed stale sections (Next Sprint TBD, Issue Backlog, Sprint 11/12 actions), integrated GP items into single priority view, condensed GP details |
+| 3.3 | 2026-02-15 | Added Google Play Store Readiness section (GP-1 through GP-16, ADR-0026 through ADR-0034) |
+| 3.2 | 2026-02-06 | Sprint 13 completed |
+| 3.1 | 2026-02-01 | Added F12 to Sprint 13 |
+| 3.0 | 2026-02-01 | Backlog refinement, reprioritized features |
+| 2.0 | 2026-01-31 | Restructured to focus on current/future sprints |
+| 1.0 | 2026-01-25 | Initial version |

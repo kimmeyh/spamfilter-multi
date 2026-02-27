@@ -216,8 +216,8 @@ class GmailWindowsOAuthHandler {
             ..statusCode = 200
             ..headers.contentType = ContentType.html
             ..write(code != null
-                ? '<html><head><title>Success</title></head><body style="font-family: Arial; text-align: center; padding: 50px;"><h1 style="color: #4CAF50;">✅ Authentication Successful!</h1><p>You can close this window and return to the app.</p></body></html>'
-                : '<html><head><title>Error</title></head><body style="font-family: Arial; text-align: center; padding: 50px;"><h1 style="color: #f44336;">❌ Authentication Failed</h1><p>Error: ${error ?? "Unknown error"}</p><p>Please try again.</p></body></html>');
+                ? '<html><head><title>Success</title></head><body style="font-family: Arial; text-align: center; padding: 50px;"><h1 style="color: #4CAF50;">[OK] Authentication Successful!</h1><p>You can close this window and return to the app.</p></body></html>'
+                : '<html><head><title>Error</title></head><body style="font-family: Arial; text-align: center; padding: 50px;"><h1 style="color: #f44336;">[FAIL] Authentication Failed</h1><p>Error: ${error ?? "Unknown error"}</p><p>Please try again.</p></body></html>');
           await request.response.close();
 
           if (!completer.isCompleted) {

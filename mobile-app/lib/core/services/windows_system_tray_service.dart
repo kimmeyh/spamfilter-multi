@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:system_tray/system_tray.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:path/path.dart' as path;
+import 'package:logger/logger.dart';
 
 /// Windows system tray integration service
 ///
@@ -13,6 +14,7 @@ import 'package:path/path.dart' as path;
 /// - Show/hide window
 /// - Exit application
 class WindowsSystemTrayService {
+  static final Logger _logger = Logger();
   final SystemTray _systemTray = SystemTray();
   bool _isInitialized = false;
 
@@ -84,7 +86,7 @@ class WindowsSystemTrayService {
     } catch (e) {
       // Initialization failed - log but don't crash
       // App will continue without system tray
-      print('Failed to initialize system tray: $e');
+      _logger.w('Failed to initialize system tray: $e');
     }
   }
 

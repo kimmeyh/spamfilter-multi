@@ -18,21 +18,28 @@ class RuleEvaluator {
   });
 
   /// Evaluate an email and return the action to take
+  ///
+  /// Priority order:
+  /// 1. Check safe senders FIRST - if matched, email is safe (whitelist wins)
+  /// 2. Check rules (in execution order) - if matched, apply rule action
+  /// 3. No match - return no action
+  ///
+  /// Note: When adding a block rule through the UI, conflicting safe sender
+  /// patterns should be removed by the quick-add screen.
   Future<EvaluationResult> evaluate(EmailMessage message) async {
-    // Check safe senders first
-    if (safeSenderList.isSafe(message.from)) {
-      return EvaluationResult.safeSender(message.from);
+    // Check safe senders FIRST (whitelist has priority)
+    final safeSenderMatch = safeSenderList.findMatch(message.from);
+    if (safeSenderMatch != null) {
+      AppLogger.eval('Email from ${message.from} matched safe sender (pattern: ${safeSenderMatch.pattern})');
+      return EvaluationResult.safeSender(
+        safeSenderMatch.pattern,
+        patternType: safeSenderMatch.patternType,
+      );
     }
 
-    // Evaluate rules in execution order
+    // Evaluate rules (in execution order)
     final sortedRules = List<Rule>.from(ruleSet.rules)
       ..sort((a, b) => a.executionOrder.compareTo(b.executionOrder));
-
-    // DIAGNOSTIC: Log rule evaluation for first few emails
-    if (sortedRules.isEmpty) {
-      AppLogger.rules('No rules available for evaluation of "${message.subject}" from ${message.from}');
-      return EvaluationResult.noMatch();
-    }
 
     int enabledRuleCount = 0;
     for (final rule in sortedRules) {
@@ -50,19 +57,26 @@ class RuleEvaluator {
 
       // Check conditions
       if (_matchesConditions(message, rule.conditions)) {
-        final pattern = _getMatchedPattern(message, rule.conditions);
-        AppLogger.eval('Email from ${message.from} matched rule "${rule.name}" (pattern: $pattern, subject: "${message.subject}")');
+        final matchInfo = _getMatchedPatternWithType(message, rule.conditions);
+        final pattern = matchInfo.pattern;
+        final patternType = matchInfo.patternType;
+        AppLogger.eval('Email from ${message.from} matched rule "${rule.name}" (pattern: $pattern, type: $patternType, subject: "${message.subject}")');
         return EvaluationResult(
           shouldDelete: rule.actions.delete,
           shouldMove: rule.actions.moveToFolder != null,
           targetFolder: rule.actions.moveToFolder,
           matchedRule: rule.name,
           matchedPattern: pattern,
+          matchedPatternType: patternType,
         );
       }
     }
 
-    AppLogger.eval('Email "${message.subject}" from ${message.from} did not match any of $enabledRuleCount enabled rules');
+    if (enabledRuleCount == 0) {
+      AppLogger.rules('No rules available for evaluation of "${message.subject}" from ${message.from}');
+    } else {
+      AppLogger.eval('Email "${message.subject}" from ${message.from} did not match any of $enabledRuleCount enabled rules or safe senders');
+    }
     return EvaluationResult.noMatch();
   }
 
@@ -149,20 +163,86 @@ class RuleEvaluator {
     });
   }
 
-  String _getMatchedPattern(EmailMessage message, RuleConditions conditions) {
+  /// Get matched pattern along with its type for visual indicators
+  ({String pattern, String? patternType}) _getMatchedPatternWithType(
+      EmailMessage message, RuleConditions conditions) {
+    // Check 'from' field patterns first
     for (final pattern in conditions.from) {
-      if (_matchesPattern(message.from, pattern)) return pattern;
+      if (_matchesPattern(message.from, pattern)) {
+        return (pattern: pattern, patternType: _determinePatternType(pattern, 'from'));
+      }
     }
+    // Check 'header' field patterns
     for (final pattern in conditions.header) {
-      if (_matchesHeaderPattern(message, pattern)) return pattern;
+      if (_matchesHeaderPattern(message, pattern)) {
+        return (pattern: pattern, patternType: _determinePatternType(pattern, 'header'));
+      }
     }
+    // Check 'subject' field patterns
     for (final pattern in conditions.subject) {
-      if (_matchesPattern(message.subject, pattern)) return pattern;
+      if (_matchesPattern(message.subject, pattern)) {
+        return (pattern: pattern, patternType: 'subject');
+      }
     }
+    // Check 'body' field patterns
     for (final pattern in conditions.body) {
-      if (_matchesPattern(message.body, pattern)) return pattern;
+      if (_matchesPattern(message.body, pattern)) {
+        return (pattern: pattern, patternType: 'body');
+      }
     }
-    return '';
+    return (pattern: '', patternType: null);
+  }
+
+  /// Determine the pattern type based on the pattern and field type
+  String? _determinePatternType(String pattern, String fieldType) {
+    // If from subject/body/header fields, use field type
+    if (fieldType == 'subject') return 'subject';
+    if (fieldType == 'body') return 'body';
+
+    // For 'from' and 'header' field patterns, analyze the regex
+    // Check for subdomain wildcard patterns (entire domain)
+    // Patterns like: @(?:[a-z0-9-]+\.)*domain\.com$
+    if (pattern.contains(r'(?:') || pattern.contains(r'[a-z0-9-]+\.)*')) {
+      return 'entire_domain';
+    }
+
+    // Check if pattern includes username part (exact email)
+    // Patterns like: ^user@domain\.com$ or specific\.user@domain\.com$
+    // Look for patterns that have specific content before @ (not wildcards)
+    if (pattern.contains('@')) {
+      // Find the position of @ in the pattern
+      final atIndex = pattern.indexOf('@');
+      if (atIndex > 0) {
+        final beforeAt = pattern.substring(0, atIndex);
+        // If there is specific text before @ that is not just anchors or wildcards
+        // and not a character class like [^@\s]+, it is an exact email
+        if (!beforeAt.endsWith('[^@\\s]+') &&
+            !beforeAt.endsWith(r'[^@\s]+') &&
+            !beforeAt.contains(r'(?:') &&
+            beforeAt != '^' &&
+            beforeAt != '') {
+          // Check if it starts with ^ and has actual characters
+          final cleanBefore = beforeAt.startsWith('^') ? beforeAt.substring(1) : beforeAt;
+          if (cleanBefore.isNotEmpty && !cleanBefore.startsWith('[')) {
+            return 'exact_email';
+          }
+        }
+      }
+    }
+
+    // Check for exact domain pattern (matches @domain.com without subdomains)
+    // Patterns like: ^[^@\s]+@domain\.com$ or @domain\.com$
+    if (pattern.contains('@') && !pattern.contains(r'(?:') && !pattern.contains(r'[a-z0-9-]+\.)*')) {
+      return 'exact_domain';
+    }
+
+    // For header field without @, it is a header pattern
+    if (fieldType == 'header') {
+      return 'header';
+    }
+
+    // Default fallback for from patterns
+    return 'exact_domain';
   }
 
   /// Check if a single header pattern matches any header

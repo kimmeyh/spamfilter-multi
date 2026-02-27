@@ -5,6 +5,7 @@
 /// - Unmatched email tracking
 /// - Scan result retrieval from database
 /// - Persistence across app restarts (simulated)
+library;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:spam_filter_mobile/core/providers/email_scan_provider.dart';
@@ -191,7 +192,7 @@ void main() {
         foldersScanned: ['INBOX'],
       );
 
-      // Simulate progress updates
+      // Simulate progress updates and record results
       for (int i = 0; i < 5; i++) {
         final email = EmailMessage(
           id: 'email-$i',
@@ -207,6 +208,12 @@ void main() {
           email: email,
           message: 'Processing email $i',
         );
+        // processedCount increments via recordResult, not updateProgress
+        scanProvider.recordResult(EmailActionResult(
+          email: email,
+          action: EmailActionType.none,
+          success: true,
+        ));
       }
 
       // Verify progress state

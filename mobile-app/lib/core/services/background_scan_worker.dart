@@ -4,6 +4,7 @@ import 'package:logger/logger.dart';
 import '../storage/database_helper.dart';
 import '../storage/background_scan_log_store.dart';
 import '../storage/account_store.dart';
+import '../storage/settings_store.dart';  // [NEW] ISSUE #123+#124
 
 /// Background scan worker task identifier
 const String backgroundScanTaskId = 'background_scan_task';
@@ -185,38 +186,32 @@ class BackgroundScanWorker {
     _logger.d('Completed background scan for account: $accountId');
   }
 
-  /// Get selected folders for background scanning
+  /// [UPDATED] ISSUE #123+#124: Get selected folders for background scanning from SettingsStore
   static Future<List<String>> _getSelectedFolders({
     required String accountId,
     required DatabaseHelper dbHelper,
   }) async {
     try {
-      final db = await dbHelper.database;
-      final result = await db.query(
-        'background_scan_schedule',
-        where: 'account_id = ?',
-        whereArgs: [accountId],
-        limit: 1,
-      );
+      // Use SettingsStore to get account-specific background scan folders
+      // This ensures consistency with Settings > Background tab configuration
+      final settingsStore = SettingsStore();
+      final folders = await settingsStore.getAccountBackgroundScanFolders(accountId);
 
-      if (result.isEmpty) {
-        // Default: INBOX + provider junk folder
-        return ['INBOX', 'SPAM']; // Will be enhanced per platform in future
+      if (folders != null && folders.isNotEmpty) {
+        _logger.d('[FOLDERS] Background scan using saved folders for $accountId: $folders');
+        return folders;
       }
 
-      final foldersJson = result.first['folders'] as String?;
-      if (foldersJson == null || foldersJson.isEmpty) {
-        return ['INBOX', 'SPAM'];
+      // Fallback to app-wide default folders if no account-specific folders
+      final appFolders = await settingsStore.getBackgroundScanFolders();
+      if (appFolders.isNotEmpty) {
+        _logger.d('[FOLDERS] Background scan using app-wide default folders: $appFolders');
+        return appFolders;
       }
 
-      // Parse JSON array of folder names
-      try {
-        final folders = (foldersJson as List<dynamic>?)?.cast<String>() ?? [];
-        return folders.isNotEmpty ? folders : ['INBOX', 'SPAM'];
-      } catch (e) {
-        _logger.w('Failed to parse selected folders', error: e);
-        return ['INBOX', 'SPAM'];
-      }
+      // Last resort: default to INBOX + SPAM
+      _logger.d('[FOLDERS] Background scan using hardcoded default: INBOX, SPAM');
+      return ['INBOX', 'SPAM'];
     } catch (e) {
       _logger.e('Failed to get selected folders', error: e);
       return ['INBOX', 'SPAM'];

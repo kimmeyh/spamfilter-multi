@@ -1,0 +1,50 @@
+Analyzing mobile-app...                                         
+
+warning - The operand can't be 'null', so the condition is always 'false' - lib\adapters\email_providers\gmail_windows_oauth_handler.dart:143:18 - unnecessary_null_comparison
+warning - The value of the field '_tokenPrefix' isn't used - lib\adapters\storage\secure_credentials_store.dart:55:23 - unused_field
+  error - Expected an identifier - lib\adapters\storage\secure_credentials_store.dart:88:16 - missing_identifier
+  error - Undefined name '_email' - lib\adapters\storage\secure_credentials_store.dart:88:17 - undefined_identifier
+  error - Expected an identifier - lib\adapters\storage\secure_credentials_store.dart:95:18 - missing_identifier
+  error - Undefined name '_platformId' - lib\adapters\storage\secure_credentials_store.dart:95:19 - undefined_identifier
+  error - Expected an identifier - lib\adapters\storage\secure_credentials_store.dart:105:16 - missing_identifier
+  error - Undefined name '_password' - lib\adapters\storage\secure_credentials_store.dart:105:17 - undefined_identifier
+  error - Expected an identifier - lib\adapters\storage\secure_credentials_store.dart:112:18 - missing_identifier
+  error - Undefined name '_accessToken' - lib\adapters\storage\secure_credentials_store.dart:112:19 - undefined_identifier
+  error - Expected an identifier - lib\adapters\storage\secure_credentials_store.dart:134:16 - missing_identifier
+  error - Undefined name '_email' - lib\adapters\storage\secure_credentials_store.dart:134:17 - undefined_identifier
+  error - Undefined name '_platformId' - lib\adapters\storage\secure_credentials_store.dart:145:39 - undefined_identifier
+  error - Expected an identifier - lib\adapters\storage\secure_credentials_store.dart:165:16 - missing_identifier
+  error - Undefined name '_password' - lib\adapters\storage\secure_credentials_store.dart:165:17 - undefined_identifier
+  error - Expected an identifier - lib\adapters\storage\secure_credentials_store.dart:170:16 - missing_identifier
+  error - Undefined name '_accessToken' - lib\adapters\storage\secure_credentials_store.dart:170:17 - undefined_identifier
+  error - Expected an identifier - lib\adapters\storage\secure_credentials_store.dart:188:16 - missing_identifier
+  error - Undefined name '_platformId' - lib\adapters\storage\secure_credentials_store.dart:188:17 - undefined_identifier
+  error - Expected an identifier - lib\adapters\storage\secure_credentials_store.dart:217:16 - missing_identifier
+  error - Undefined name '_' - lib\adapters\storage\secure_credentials_store.dart:217:17 - undefined_identifier
+  error - Expected an identifier - lib\adapters\storage\secure_credentials_store.dart:217:19 - missing_identifier
+  error - Expected an identifier - lib\adapters\storage\secure_credentials_store.dart:236:16 - missing_identifier
+  error - Undefined name '_' - lib\adapters\storage\secure_credentials_store.dart:236:17 - undefined_identifier
+  error - Expected an identifier - lib\adapters\storage\secure_credentials_store.dart:236:19 - missing_identifier
+  error - Expected an identifier - lib\adapters\storage\secure_credentials_store.dart:259:16 - missing_identifier
+  error - Undefined name '_gmail_tokens' - lib\adapters\storage\secure_credentials_store.dart:259:17 - undefined_identifier
+  error - Expected an identifier - lib\adapters\storage\secure_credentials_store.dart:278:16 - missing_identifier
+  error - Undefined name '_gmail_tokens' - lib\adapters\storage\secure_credentials_store.dart:278:17 - undefined_identifier
+  error - Expected an identifier - lib\adapters\storage\secure_credentials_store.dart:301:36 - missing_identifier
+  error - Undefined name '_gmail_tokens' - lib\adapters\storage\secure_credentials_store.dart:301:37 - undefined_identifier
+  error - Expected an identifier - lib\adapters\storage\secure_credentials_store.dart:312:16 - missing_identifier
+  error - Undefined name '_gmail_tokens' - lib\adapters\storage\secure_credentials_store.dart:312:17 - undefined_identifier
+  error - Expected an identifier - lib\adapters\storage\secure_credentials_store.dart:326:16 - missing_identifier
+  error - Undefined name '_platformId' - lib\adapters\storage\secure_credentials_store.dart:326:17 - undefined_identifier
+  error - Expected an identifier - lib\adapters\storage\secure_credentials_store.dart:344:16 - missing_identifier
+  error - Undefined name '_platformId' - lib\adapters\storage\secure_credentials_store.dart:344:17 - undefined_identifier
+  error - Expected an identifier - lib\adapters\storage\secure_credentials_store.dart:364:16 - missing_identifier
+  error - Undefined name '_email' - lib\adapters\storage\secure_credentials_store.dart:364:17 - undefined_identifier
+  error - Expected an identifier - lib\adapters\storage\secure_credentials_store.dart:380:16 - missing_identifier
+  error - Undefined name '_email' - lib\adapters\storage\secure_credentials_store.dart:380:17 - undefined_identifier
+  error - Expected an identifier - lib\adapters\storage\secure_credentials_store.dart:385:16 - missing_identifier
+  error - Undefined name '_password' - lib\adapters\storage\secure_credentials_store.dart:385:17 - undefined_identifier
+  error - Expected an identifier - lib\adapters\storage\secure_credentials_store.dart:390:36 - missing_identifier
+  error - Undefined name '_access_token' - lib\adapters\storage\secure_credentials_store.dart:390:37 - undefined_identifier
+  error - Expected an identifier - lib\adapters\storage\secure_credentials_store.dart:391:36 - missing_identifier
+  error - Undefined name '_refresh_token' - lib\adapters\storage\secure_credentials_store.dart:391:37 - undefined_identifier
+  error - Expected an identifier - lib\adapters\storage\secure_credentials_store.dart:393:36 - missing_identifier

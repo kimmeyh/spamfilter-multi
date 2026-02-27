@@ -1,0 +1,34 @@
+{
+  "date": "2025-10-11",
+  "branch": "feature/20251010_update_memory_bank",
+  "summary": "Align memory-bank with regex-default mode and current code behavior",
+  "changes": [
+    {
+      "file": "memory-bank/config.json",
+      "action": "updated",
+      "details": [
+        "last_updated/version bump",
+        "documented sources include/exclude (excludes 0dev_prompts.md)",
+        "runtime reflects regex default and active files",
+        "cli flags documented",
+        "notes on exporters and backups"
+      ]
+    },
+    {
+      "file": "memory-bank/memory-bank.json",
+      "action": "updated",
+      "details": [
+        "added regex YAML files to configuration_files",
+        "active_mode set to regex (default)",
+        "active_files paths set to regex variants",
+        "branch and last_major_update refreshed",
+        "key improvements list expanded"
+      ]
+    },
+    { "file": "memory-bank/processing-flow.md", "action": "added" },
+    { "file": "memory-bank/yaml-schemas.md", "action": "added" },
+    { "file": "memory-bank/regex-conventions.md", "action": "added" },
+    { "file": "memory-bank/cli-usage.md", "action": "added" },
+    { "file": "memory-bank/quality-invariants.md", "action": "added" }
+  ]
+}

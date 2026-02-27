@@ -5,6 +5,7 @@
 /// Gmail, Outlook, IMAP servers, and any future email platforms.
 library;
 
+import '../../core/models/batch_action_result.dart';
 import '../../core/models/email_message.dart';
 import '../../core/models/evaluation_result.dart';
 import 'email_provider.dart';
@@ -62,9 +63,63 @@ abstract class SpamFilterPlatform {
   /// - [action]: The action to perform
   /// 
   /// Throws [ActionException] if action fails
+  /// Configure the folder to use for deleted rule emails
+  /// 
+  /// Parameters:
+  /// - [folderName]: Name of the folder to move deleted emails to (null = use provider default)
+  /// 
+  /// Each platform has its own default:
+  /// - IMAP: 'Trash'
+  /// - Gmail: 'TRASH' (trash label)
+  void setDeletedRuleFolder(String? folderName);
+
   Future<void> takeAction({
     required EmailMessage message,
     required FilterAction action,
+  });
+
+  /// Move message to a specific folder/label
+  ///
+  /// Parameters:
+  /// - [message]: The email message to move
+  /// - [targetFolder]: The folder/label to move to (platform-specific naming)
+  ///
+  /// Throws [ActionException] if move fails
+  Future<void> moveToFolder({
+    required EmailMessage message,
+    required String targetFolder,
+  });
+
+  /// Mark message as read
+  ///
+  /// Parameters:
+  /// - [message]: The email message to mark as read
+  ///
+  /// Throws [ActionException] if operation fails
+  ///
+  /// [ISSUE #138] Added for enhanced deleted email processing
+  Future<void> markAsRead({
+    required EmailMessage message,
+  });
+
+  /// Apply flag/label/category to message with rule name
+  ///
+  /// Parameters:
+  /// - [message]: The email message to flag
+  /// - [flagName]: The flag/label/category name (typically rule name)
+  ///
+  /// Provider-specific behavior:
+  /// - Gmail: Creates label "SpamFilter/{flagName}" and applies it
+  /// - IMAP: Adds keyword "$SpamFilter-{flagName}" if server supports custom keywords
+  /// - AOL: Same as IMAP (uses IMAP keywords)
+  ///
+  /// Throws [ActionException] if operation fails
+  /// Returns silently if provider does not support flagging (e.g., IMAP server without PERMANENTFLAGS \*)
+  ///
+  /// [ISSUE #138] Added for enhanced deleted email processing
+  Future<void> applyFlag({
+    required EmailMessage message,
+    required String flagName,
   });
 
   /// List available folders with platform-specific names
@@ -78,13 +133,109 @@ abstract class SpamFilterPlatform {
   Future<ConnectionStatus> testConnection();
 
   /// Disconnect and cleanup resources
-  /// 
+  ///
   /// Should be called when done with this platform instance
   Future<void> disconnect();
+
+  // --- Batch Operations (Issue #144) ---
+  // Batch methods for processing multiple emails in one operation.
+  // Adapters should override for native batch support (IMAP sequence sets, Gmail batch API).
+  // Default implementations are provided by BatchOperationsMixin.
+
+  /// Mark multiple messages as read in a single batch operation.
+  Future<BatchActionResult> markAsReadBatch(List<EmailMessage> messages);
+
+  /// Apply flag/keyword to multiple messages in a single batch operation.
+  Future<BatchActionResult> applyFlagBatch(List<EmailMessage> messages, String flagName);
+
+  /// Move multiple messages to a target folder in a single batch operation.
+  Future<BatchActionResult> moveToFolderBatch(List<EmailMessage> messages, String targetFolder);
+
+  /// Execute an action on multiple messages in a single batch operation.
+  Future<BatchActionResult> takeActionBatch(List<EmailMessage> messages, FilterAction action);
+}
+
+/// Mixin providing default single-message fallback implementations for batch operations.
+///
+/// [ISSUE #144] Adapters that do not have native batch support can mix this in
+/// to get working batch methods that process messages one at a time.
+/// Adapters with native batch support (IMAP, Gmail) should override these methods.
+mixin BatchOperationsMixin implements SpamFilterPlatform {
+  @override
+  Future<BatchActionResult> markAsReadBatch(List<EmailMessage> messages) async {
+    final succeeded = <String>[];
+    final failed = <String, String>{};
+    for (final message in messages) {
+      try {
+        await markAsRead(message: message);
+        succeeded.add(message.id);
+      } catch (e) {
+        failed[message.id] = e.toString();
+      }
+    }
+    return BatchActionResult(succeededIds: succeeded, failedIds: failed);
+  }
+
+  @override
+  Future<BatchActionResult> applyFlagBatch(
+    List<EmailMessage> messages,
+    String flagName,
+  ) async {
+    final succeeded = <String>[];
+    final failed = <String, String>{};
+    for (final message in messages) {
+      try {
+        await applyFlag(message: message, flagName: flagName);
+        succeeded.add(message.id);
+      } catch (e) {
+        failed[message.id] = e.toString();
+      }
+    }
+    return BatchActionResult(succeededIds: succeeded, failedIds: failed);
+  }
+
+  @override
+  Future<BatchActionResult> moveToFolderBatch(
+    List<EmailMessage> messages,
+    String targetFolder,
+  ) async {
+    final succeeded = <String>[];
+    final failed = <String, String>{};
+    for (final message in messages) {
+      try {
+        await moveToFolder(message: message, targetFolder: targetFolder);
+        succeeded.add(message.id);
+      } catch (e) {
+        failed[message.id] = e.toString();
+      }
+    }
+    return BatchActionResult(succeededIds: succeeded, failedIds: failed);
+  }
+
+  @override
+  Future<BatchActionResult> takeActionBatch(
+    List<EmailMessage> messages,
+    FilterAction action,
+  ) async {
+    final succeeded = <String>[];
+    final failed = <String, String>{};
+    for (final message in messages) {
+      try {
+        await takeAction(message: message, action: action);
+        succeeded.add(message.id);
+      } catch (e) {
+        failed[message.id] = e.toString();
+      }
+    }
+    return BatchActionResult(succeededIds: succeeded, failedIds: failed);
+  }
 }
 
 /// Authentication methods supported by various platforms
 enum AuthMethod {
+  /// No authentication required (Demo mode)
+  none,
+
   /// OAuth 2.0 (Google, Microsoft, Yahoo)
   oauth2,
 

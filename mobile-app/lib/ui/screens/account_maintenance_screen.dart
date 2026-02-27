@@ -6,7 +6,7 @@
 /// - Remove accounts
 /// - Trigger one-time scans
 /// 
-/// ✨ PHASE 2 SPRINT 3: Account management and maintenance options
+/// [NEW] PHASE 2 SPRINT 3: Account management and maintenance options
 library;
 
 import 'package:flutter/material.dart';
@@ -15,7 +15,7 @@ import 'package:provider/provider.dart';
 
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/providers/email_scan_provider.dart';
-import '../../core/providers/rule_set_provider.dart';
+import '../../core/storage/settings_store.dart';
 import 'folder_selection_screen.dart';
 
 /// Account maintenance screen
@@ -30,6 +30,7 @@ class AccountMaintenanceScreen extends StatefulWidget {
 class _AccountMaintenanceScreenState extends State<AccountMaintenanceScreen> {
   final Logger _logger = Logger();
   final SecureCredentialsStore _credStore = SecureCredentialsStore();
+  final SettingsStore _settingsStore = SettingsStore();
   List<SavedAccount> _accounts = [];
   bool _isLoading = true;
 
@@ -63,7 +64,7 @@ class _AccountMaintenanceScreenState extends State<AccountMaintenanceScreen> {
         _isLoading = false;
       });
 
-      _logger.i('📋 Loaded ${_accounts.length} saved account(s)');
+      _logger.i('[CHECKLIST] Loaded ${_accounts.length} saved account(s)');
     } catch (e) {
       _logger.e('Failed to load accounts: $e');
       setState(() => _isLoading = false);
@@ -92,7 +93,7 @@ class _AccountMaintenanceScreenState extends State<AccountMaintenanceScreen> {
     );
 
     if (folders != null && mounted) {
-      _logger.i('✅ Selected folders for ${account.email}: $folders');
+      _logger.i('[OK] Selected folders for ${account.email}: $folders');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Selected: ${folders.join(", ")}'),
@@ -137,7 +138,7 @@ class _AccountMaintenanceScreenState extends State<AccountMaintenanceScreen> {
     if (confirm == true) {
       try {
         await _credStore.deleteCredentials(account.accountId);
-        _logger.i('✅ Removed account: ${account.email}');
+        _logger.i('[OK] Removed account: ${account.email}');
 
         setState(() {
           _accounts.removeWhere((a) => a.accountId == account.accountId);
@@ -146,7 +147,7 @@ class _AccountMaintenanceScreenState extends State<AccountMaintenanceScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('✅ Account removed'),
+              content: Text('[OK] Account removed'),
               backgroundColor: Colors.green,
             ),
           );
@@ -162,14 +163,199 @@ class _AccountMaintenanceScreenState extends State<AccountMaintenanceScreen> {
     }
   }
 
+  /// Configure safe sender folder for account
+  Future<void> _configureSafeSenderFolder(SavedAccount account) async {
+    // Get current setting
+    final currentFolder = await _settingsStore.getAccountSafeSenderFolder(account.accountId);
+
+    // Show dialog to select folder
+    final result = await showDialog<String?>(
+      context: context,
+      builder: (ctx) {
+        String? selectedFolder = currentFolder;
+        return StatefulBuilder(
+          builder: (context, setState) => AlertDialog(
+            title: const Text('Move Safe Senders to Folder'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'When an email matches a safe sender rule, it will be moved to this folder:',
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: TextEditingController(text: selectedFolder ?? ''),
+                  decoration: InputDecoration(
+                    labelText: 'Folder Name',
+                    hintText: 'INBOX',
+                    helperText: account.platform == 'gmail'
+                        ? 'Gmail labels (e.g., INBOX, SPAM, or custom label)'
+                        : 'IMAP folder (e.g., INBOX, Junk)',
+                    border: const OutlineInputBorder(),
+                  ),
+                  onChanged: (value) {
+                    selectedFolder = value.trim().isEmpty ? null : value.trim();
+                  },
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Leave empty to use default (INBOX)',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Note: Emails already in the target folder will not be moved.',
+                  style: TextStyle(fontSize: 12, color: Colors.blue.shade700),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, selectedFolder),
+                child: const Text('Save'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (result != null || result == '') {
+      try {
+        await _settingsStore.setAccountSafeSenderFolder(
+          account.accountId,
+          result?.isEmpty ?? true ? null : result,
+        );
+
+        final folderName = result?.isEmpty ?? true ? 'INBOX (default)' : result!;
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Safe sender emails will be moved to: $folderName'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+
+        _logger.i('Set safe sender folder for ${account.email} to: $folderName');
+      } catch (e) {
+        _logger.e('Failed to set safe sender folder: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to save setting: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  /// Configure deleted rule folder for account
+  Future<void> _configureDeletedRuleFolder(SavedAccount account) async {
+    // Get current setting
+    final currentFolder = await _settingsStore.getAccountDeletedRuleFolder(account.accountId);
+
+    // Show dialog to select folder
+    final result = await showDialog<String?>(
+      context: context,
+      builder: (ctx) {
+        String? selectedFolder = currentFolder;
+        return StatefulBuilder(
+          builder: (context, setState) => AlertDialog(
+            title: const Text('Move Deleted by Rule to Folder'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'When a rule deletes an email, it will be moved to this folder:',
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: TextEditingController(text: selectedFolder ?? ''),
+                  decoration: InputDecoration(
+                    labelText: 'Folder Name',
+                    hintText: account.platform == 'gmail' ? 'TRASH' : 'Trash',
+                    helperText: account.platform == 'gmail'
+                        ? 'Gmail labels (e.g., TRASH, SPAM, or custom label)'
+                        : 'IMAP folder (e.g., Trash, Deleted, Junk)',
+                    border: const OutlineInputBorder(),
+                  ),
+                  onChanged: (value) {
+                    selectedFolder = value.trim().isEmpty ? null : value.trim();
+                  },
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Leave empty to use default (${account.platform == "gmail" ? "TRASH" : "Trash"})',
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, selectedFolder),
+                child: const Text('Save'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (result != null || result == '') {
+      try {
+        await _settingsStore.setAccountDeletedRuleFolder(
+          account.accountId,
+          result?.isEmpty ?? true ? null : result,
+        );
+
+        final folderName = result?.isEmpty ?? true
+            ? (account.platform == 'gmail' ? 'TRASH (default)' : 'Trash (default)')
+            : result!;
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Deleted emails will be moved to: $folderName'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+
+        _logger.i('Set deleted rule folder for ${account.email} to: $folderName');
+      } catch (e) {
+        _logger.e('Failed to set deleted rule folder: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to save setting: $e')),
+          );
+        }
+      }
+    }
+  }
+
   /// Trigger one-time scan for account
   Future<void> _triggerOneTimeScan(SavedAccount account) async {
     final scanProvider = context.read<EmailScanProvider>();
 
-    // Initialize scan mode
-    scanProvider.initializeScanMode(mode: ScanMode.readonly);
+    // [UPDATED] ISSUE #123: Initialize scan mode from Settings (single source of truth)
+    final settingsStore = SettingsStore();
+    final manualScanMode = await settingsStore.getManualScanMode();
+    scanProvider.initializeScanMode(mode: manualScanMode);
 
-    _logger.i('🔍 Initiating one-time scan for ${account.email}');
+    _logger.i('[INVESTIGATION] Initiating one-time scan for ${account.email}');
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -332,6 +518,20 @@ class _AccountMaintenanceScreenState extends State<AccountMaintenanceScreen> {
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 8),
+                // Safe sender folder configuration
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.folder_special_outlined),
+                  label: const Text('Safe Sender Folder'),
+                  onPressed: () => _configureSafeSenderFolder(account),
+                ),
+                const SizedBox(height: 8),
+                // Deleted folder configuration
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.folder_delete_outlined),
+                  label: const Text('Deleted Rule Folder'),
+                  onPressed: () => _configureDeletedRuleFolder(account),
                 ),
                 const SizedBox(height: 8),
                 // Remove button

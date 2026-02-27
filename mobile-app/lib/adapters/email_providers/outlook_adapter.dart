@@ -24,7 +24,7 @@ import 'email_provider.dart';
 /// 
 /// NOTE: Phase 2 - Not yet implemented
 /// Requires: msal_flutter, http packages
-class OutlookAdapter implements SpamFilterPlatform {
+class OutlookAdapter with BatchOperationsMixin implements SpamFilterPlatform {
   final Logger _logger = Logger();
 
   @override
@@ -35,6 +35,12 @@ class OutlookAdapter implements SpamFilterPlatform {
 
   @override
   AuthMethod get supportedAuthMethod => AuthMethod.oauth2;
+
+  @override
+  void setDeletedRuleFolder(String? folderName) {
+    // Issue #44: When implementing Outlook adapter, store folder name and use in takeAction
+    _logger.d('Set deleted rule folder to: ${folderName ?? "default"}');
+  }
 
   // Issue #44: Add Microsoft Graph API client and OAuth fields
   // MsalFlutter? _msal;
@@ -104,6 +110,17 @@ class OutlookAdapter implements SpamFilterPlatform {
   }
 
   @override
+  Future<void> moveToFolder({
+    required EmailMessage message,
+    required String targetFolder,
+  }) async {
+    // Issue #44: When implementing Outlook adapter, use Graph API move operation
+    // POST /me/messages/{messageId}/move
+    // Body: {"destinationId": "{folderId}"}
+    throw UnimplementedError('Outlook adapter is Phase 2 - not yet implemented');
+  }
+
+  @override
   Future<void> takeAction({
     required EmailMessage message,
     required FilterAction action,
@@ -166,6 +183,24 @@ class OutlookAdapter implements SpamFilterPlatform {
     // 5. Handle OAuth errors gracefully
     
     throw UnimplementedError('Outlook adapter is Phase 2 - not yet implemented');
+  }
+
+  @override
+  Future<void> markAsRead({
+    required EmailMessage message,
+  }) async {
+    // TODO Issue #44: Implement mark as read using Microsoft Graph API
+    throw UnimplementedError('Mark as read not yet implemented for Outlook');
+  }
+
+  @override
+  Future<void> applyFlag({
+    required EmailMessage message,
+    required String flagName,
+  }) async {
+    // TODO Issue #44: Implement apply category using Microsoft Graph API
+    // Use /messages/{id}/categories endpoint
+    throw UnimplementedError('Apply flag not yet implemented for Outlook');
   }
 
   @override

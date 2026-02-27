@@ -73,9 +73,9 @@ cd mobile-app/scripts
 ### Android Emulator Requirements
 
 The emulator MUST use a Google APIs image (not AOSP):
-- ✅ `Google APIs ARM64 v8a`
-- ✅ `Google Play ARM64 v8a`
-- ❌ `Android Open Source Project ARM64 v8a` (No Google Services)
+- [OK] `Google APIs ARM64 v8a`
+- [OK] `Google Play ARM64 v8a`
+- [FAIL] `Android Open Source Project ARM64 v8a` (No Google Services)
 
 Check in Android Studio → Virtual Device Manager → Edit device → System image.
 

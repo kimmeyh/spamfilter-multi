@@ -10,9 +10,9 @@ This document describes the sprint-based development methodology used for spamfi
 |----------|---------|-------------|
 | **ALL_SPRINTS_MASTER_PLAN.md** | Master plan for all sprints | Before starting any sprint, after completing a sprint |
 | **SPRINT_PLANNING.md** (this doc) | Sprint planning methodology | When planning a new sprint |
-| **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 0-4.5) |
+| **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 1-7) |
 | **SPRINT_STOPPING_CRITERIA.md** | When/why to stop working | When uncertain if blocked or should continue |
-| **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 4.5) |
+| **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 7) |
 | **BACKLOG_REFINEMENT.md** | Backlog refinement process | When requested by Product Owner |
 | **TESTING_STRATEGY.md** | Testing approach and requirements | When writing or reviewing tests |
 | **QUALITY_STANDARDS.md** | Quality standards for code and documentation | When writing code or documentation |
@@ -86,10 +86,10 @@ Each sprint is composed of **Cards** (GitHub issues) broken into **Tasks** assig
   - Task breakdown for each Card (with model assignments)
   - Acceptance criteria for each Card
   - **SPRINT_<N>_SUMMARY.md** for previous sprint (background process)
-  - **NOTE**: SPRINT_N_PLAN.md is NOT needed - plan details live in ALL_SPRINTS_MASTER_PLAN.md + GitHub issues
+  - **SPRINT_N_PLAN.md** for current sprint (MANDATORY - see SPRINT_EXECUTION_WORKFLOW.md § 3.2.2)
 - **Process**:
-  1. **Create SPRINT_<N>_SUMMARY.md** for previous sprint (background process - see SPRINT_EXECUTION_WORKFLOW.md § 1.2.1)
-     - Archive completed sprint details from ALL_SPRINTS_MASTER_PLAN.md
+  1. **Create SPRINT_<N>_SUMMARY.md** for previous sprint (background process - see SPRINT_EXECUTION_WORKFLOW.md § 3.2.1)
+     - Use retrospective, CHANGELOG, git history, and GitHub issues as sources
      - Update "Past Sprint Summary" table in ALL_SPRINTS_MASTER_PLAN.md
      - Keeps master plan focused on current/future work
   2. User proposes sprint goal and selects Cards
@@ -133,16 +133,22 @@ Each sprint is composed of **Cards** (GitHub issues) broken into **Tasks** assig
   2. Verify tests passing and code quality acceptable
   3. Approve or request changes
   4. Collect feedback on model assignment accuracy
-  5. **Update CHANGELOG.md** (MANDATORY - see SPRINT_EXECUTION_WORKFLOW.md Phase 4.5.6)
+  5. **Update CHANGELOG.md** (MANDATORY - see SPRINT_EXECUTION_WORKFLOW.md Phase 7.7)
      - Add entry under `## [Unreleased]` section
      - Format: `### YYYY-MM-DD` with sprint summary
      - Include all user-facing changes from sprint
-  6. **Update ALL_SPRINTS_MASTER_PLAN.md** (MANDATORY - see SPRINT_EXECUTION_WORKFLOW.md Phase 4.5.6)
+  6. **Update ALL_SPRINTS_MASTER_PLAN.md** (MANDATORY - see SPRINT_EXECUTION_WORKFLOW.md Phase 7.7)
      - Add actual duration vs estimated to current sprint section
      - Record lessons learned
      - Update future sprint dependencies
-     - **NOTE**: Full sprint details archived to SPRINT_<N>_SUMMARY.md during next sprint planning (Phase 1)
+     - **NOTE**: Full sprint details archived to SPRINT_<N>_SUMMARY.md during next sprint planning (Phase 3)
   7. Prepare release notes (if needed for major releases)
+  8. **Build and Launch Application** (MANDATORY - Phase 5.3 in SPRINT_EXECUTION_WORKFLOW.md)
+     - Claude Code MUST build and launch the app BEFORE declaring ready for manual testing
+     - Windows: `cd mobile-app/scripts && .\build-windows.ps1`
+     - Android: `cd mobile-app/scripts && .\build-with-secrets.ps1 -BuildType debug -InstallToEmulator`
+     - Verify build succeeds and app launches without errors
+     - User should NOT have to build the app themselves
 
 #### Phase 4: Retrospective (Post-Sprint)
 - **Duration**: 30 minutes - 1 hour
@@ -151,7 +157,7 @@ Each sprint is composed of **Cards** (GitHub issues) broken into **Tasks** assig
   - Completed Cards with feedback
   - Model assignment data from sprint
   - Issues encountered
-  - Updated CHANGELOG.md and ALL_SPRINTS_MASTER_PLAN.md (from Phase 3)
+  - Updated CHANGELOG.md and ALL_SPRINTS_MASTER_PLAN.md (from Phase 5)
 - **Outputs**:
   - Updated `/claude/model_assignment_heuristics.json`
   - Lessons learned for next sprint
@@ -201,10 +207,10 @@ Clear statement of what needs to be done and why.
 **IMPORTANT**: All acceptance criteria must be quantifiable and measurable. Avoid subjective terms like "comprehensive", "good quality", or "works well".
 
 **Examples**:
-- ❌ BAD: "Comprehensive testing"
-- ✅ GOOD: "All unit and integration tests are error free and produce expected results"
-- ❌ BAD: "Code quality improvements"
-- ✅ GOOD: "Reduce all warnings in production code that can be accomplished in 1 hour"
+- [FAIL] BAD: "Comprehensive testing"
+- [OK] GOOD: "All unit and integration tests are error free and produce expected results"
+- [FAIL] BAD: "Code quality improvements"
+- [OK] GOOD: "Reduce all warnings in production code that can be accomplished in 1 hour"
 
 ## Model Assignment
 | Task | Assigned Model | Complexity | Effort Est. | Notes |
@@ -518,7 +524,7 @@ Details: Implement DKIM header validation in RuleEvaluator, add to all adapter i
 
 **Output**:
 ```
-📋 SPRINT CARD ANALYSIS
+[CHECKLIST] SPRINT CARD ANALYSIS
 
 Card: Add DKIM validation for all OAuth providers
 Complexity Score: 18/40
@@ -569,9 +575,9 @@ While executing tasks, models update the GitHub issue with progress:
 **Task Status Comment Template**:
 ```markdown
 **Status Update** - [Date] [Time]
-- Task A: ✅ Complete (8:00 AM)
-- Task B: 🔄 In Progress - [Current work description]
-- Task C: ⏸️ Blocked - [Reason and escalation]
+- Task A: [OK] Complete (8:00 AM)
+- Task B: [PENDING] In Progress - [Current work description]
+- Task C: [BLOCKED] - [Reason and escalation]
 
 Confidence: [High/Medium/Low] that schedule remains on track
 Next: [What happens next]
@@ -583,7 +589,7 @@ If a task encounters a blocker:
 
 1. **Document the blocker** in GitHub issue comment:
    ```markdown
-   🚫 BLOCKED: [Brief description of blocker]
+   [STOP] BLOCKED: [Brief description of blocker]
 
    Root cause: [Why this is blocking progress]
    Attempted solutions: [What did not work]
@@ -622,9 +628,9 @@ Sprints use voluntary status tracking (not mandatory metrics):
    - Review against acceptance criteria
 
 2. **Acceptance Decision**:
-   - ✅ **Accept**: Card meets all acceptance criteria
-   - 🔄 **Revise**: Minor issues, scheduled for follow-up task
-   - ❌ **Reject**: Does not meet criteria, return to backlog
+   - [OK] **Accept**: Card meets all acceptance criteria
+   - [PENDING] **Revise**: Minor issues, scheduled for follow-up task
+   - [FAIL] **Reject**: Does not meet criteria, return to backlog
 
 3. **Feedback Collection**:
    - Collect data on model assignment accuracy for heuristic updates

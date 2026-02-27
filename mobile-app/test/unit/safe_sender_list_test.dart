@@ -95,5 +95,41 @@ void main() {
       expect(list.isSafe('Admin@Example.Com'), isTrue);
       expect(list.isSafe('ADMIN@EXAMPLE.COM'), isTrue);
     });
+
+    test('handles plus-sign subaddressing (RFC 5233)', () {
+      // When user saves a safe sender for the normalized email (after + stripping),
+      // it should match emails with any + prefix
+      // Note: 'acct_14q5YPLkDs2kpeJz' normalizes to 'acct_14q5yplkds2kpejz' (lowercase)
+      final list = SafeSenderList(safeSenders: [
+        r'^acct_14q5yplkds2kpejz@stripe\.com$',
+      ]);
+
+      // Exact match (normalized form)
+      expect(list.isSafe('acct_14q5yplkds2kpejz@stripe.com'), isTrue);
+
+      // Plus-sign subaddressing: everything before last + is stripped
+      // 'invoice+statements+acct_14q5YPLkDs2kpeJz@stripe.com' normalizes to:
+      // 'acct_14q5yplkds2kpejz@stripe.com' (lowercase)
+      expect(list.isSafe('invoice+statements+acct_14q5YPLkDs2kpeJz@stripe.com'), isTrue);
+
+      // Single + prefix also works
+      expect(list.isSafe('tag+acct_14q5yplkds2kpejz@stripe.com'), isTrue);
+
+      // Different account should NOT match
+      expect(list.isSafe('invoice+statements+acct_OTHER@stripe.com'), isFalse);
+    });
+
+    test('findMatch returns pattern info for plus-sign emails', () {
+      final list = SafeSenderList(safeSenders: [
+        r'^acct_14q5yplkds2kpejz@stripe\.com$',
+      ]);
+
+      // Test findMatch which is used by RuleEvaluator
+      final match = list.findMatch('invoice+statements+acct_14q5YPLkDs2kpeJz@stripe.com');
+
+      expect(match, isNotNull);
+      expect(match!.pattern, equals(r'^acct_14q5yplkds2kpejz@stripe\.com$'));
+      expect(match.patternType, equals('exact_email'));
+    });
   });
 }

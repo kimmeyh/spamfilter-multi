@@ -54,12 +54,19 @@ $trigger
     -RestartCount 3 `
     -RestartInterval (New-TimeSpan -Minutes 5)
 
-# Create principal (run as current user)
-\$principal = New-ScheduledTaskPrincipal -UserId "\$env:USERNAME" -LogonType S4U
-
-# Register the task
+# Enable Task Scheduler history if not already enabled (requires elevation)
 try {
-    Register-ScheduledTask -TaskName \$taskName -Action \$action -Trigger \$trigger -Settings \$settings -Principal \$principal -Force
+    wevtutil set-log Microsoft-Windows-TaskScheduler/Operational /enabled:true 2>\$null
+    if (\$LASTEXITCODE -eq 0) {
+        Write-Host "INFO: Enabled Task Scheduler history logging"
+    }
+} catch {
+    # Not critical - history can be enabled manually via Task Scheduler > Enable All Tasks History
+}
+
+# Register the task (runs as current user when logged in)
+try {
+    Register-ScheduledTask -TaskName \$taskName -Action \$action -Trigger \$trigger -Settings \$settings -Force
     Write-Host "SUCCESS: Task '\$taskName' created successfully"
     exit 0
 } catch {
@@ -159,6 +166,9 @@ try {
     \$taskInfo = Get-ScheduledTaskInfo -TaskName \$taskName -ErrorAction Stop
 
     # Output JSON format for parsing
+    # Include executable path for path verification on app startup
+    \$execPath = if (\$task.Actions[0].Execute) { \$task.Actions[0].Execute } else { \$null }
+
     \$output = @{
         "exists" = \$true
         "state" = \$task.State
@@ -167,6 +177,7 @@ try {
         "nextRunTime" = if (\$taskInfo.NextRunTime) { \$taskInfo.NextRunTime.ToString("o") } else { \$null }
         "lastResult" = \$taskInfo.LastTaskResult
         "triggerFrequency" = if (\$task.Triggers[0].Repetition.Interval) { \$task.Triggers[0].Repetition.Interval } else { "Once" }
+        "executablePath" = \$execPath
     } | ConvertTo-Json
 
     Write-Host \$output
@@ -186,23 +197,35 @@ try {
   }
 
   /// Generate trigger configuration for given frequency
+  ///
+  /// [FIX] ISSUE #161: Changed from -Once -At (Get-Date) to -Daily trigger
+  /// with repetition. The -Once trigger with a past start time does not
+  /// persist across reboots reliably on Windows. Using -Daily -At midnight
+  /// with RepetitionInterval ensures the task runs consistently even after
+  /// system restarts.
   static String _getTriggerForFrequency(ScanFrequency frequency) {
     switch (frequency) {
       case ScanFrequency.every15min:
-        return '''\$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 15) -RepetitionDuration ([TimeSpan]::MaxValue)''';
+        return r'''$trigger = New-ScheduledTaskTrigger -Daily -At "12:00AM"
+$trigger.Repetition.Interval = (New-TimeSpan -Minutes 15).ToString()
+$trigger.Repetition.Duration = (New-TimeSpan -Days 365).ToString()''';
 
       case ScanFrequency.every30min:
-        return '''\$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 30) -RepetitionDuration ([TimeSpan]::MaxValue)''';
+        return r'''$trigger = New-ScheduledTaskTrigger -Daily -At "12:00AM"
+$trigger.Repetition.Interval = (New-TimeSpan -Minutes 30).ToString()
+$trigger.Repetition.Duration = (New-TimeSpan -Days 365).ToString()''';
 
       case ScanFrequency.every1hour:
-        return '''\$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Hours 1) -RepetitionDuration ([TimeSpan]::MaxValue)''';
+        return r'''$trigger = New-ScheduledTaskTrigger -Daily -At "12:00AM"
+$trigger.Repetition.Interval = (New-TimeSpan -Hours 1).ToString()
+$trigger.Repetition.Duration = (New-TimeSpan -Days 365).ToString()''';
 
       case ScanFrequency.daily:
-        return '''\$trigger = New-ScheduledTaskTrigger -Daily -At "09:00AM"''';
+        return r'$trigger = New-ScheduledTaskTrigger -Daily -At "09:00AM"';
 
       case ScanFrequency.disabled:
         // Should not happen, but provide fallback
-        return '''\$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddDays(365)''';
+        return r'$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddDays(365)';
     }
   }
 

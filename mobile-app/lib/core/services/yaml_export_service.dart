@@ -1,6 +1,5 @@
 import 'package:logger/logger.dart';
 
-import '../models/rule_set.dart';
 import '../storage/rule_database_store.dart';
 import '../storage/safe_sender_database_store.dart';
 

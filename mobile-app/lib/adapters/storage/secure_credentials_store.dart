@@ -95,9 +95,9 @@ class SecureCredentialsStore {
           key: '${_credentialsPrefix}${accountId}_platformId',
           value: platformId,
         );
-        _logger.i('✅ Stored platformId: $platformId for account: $accountId');
+        _logger.i('[OK] Stored platformId: $platformId for account: $accountId');
       } else {
-        _logger.w('⚠️ No platformId provided for account: $accountId');
+        _logger.w('[WARNING] No platformId provided for account: $accountId');
       }
 
       // Store password
@@ -118,7 +118,7 @@ class SecureCredentialsStore {
       await _addAccountToList(accountId);
 
       final savedAccounts = await getSavedAccounts();
-      _logger.i('✅ Saved credentials for account: $accountId. Total accounts now: ${savedAccounts.length}. All accounts: $savedAccounts');
+      _logger.i('[OK] Saved credentials for account: $accountId. Total accounts now: ${savedAccounts.length}. All accounts: $savedAccounts');
       return true;
     } catch (e) {
       throw CredentialStorageException('Failed to save credentials', e);
@@ -263,7 +263,7 @@ class SecureCredentialsStore {
       // Update accounts list
       await _addAccountToList(accountId);
 
-      _logger.i('✅ Saved Gmail tokens for account: $accountId');
+      _logger.i('[OK] Saved Gmail tokens for account: $accountId');
     } catch (e) {
       throw CredentialStorageException('Failed to save Gmail tokens', e);
     }
@@ -284,10 +284,10 @@ class SecureCredentialsStore {
       }
 
       final tokens = GmailTokens.fromJson(jsonDecode(json));
-      _logger.d('✅ Retrieved Gmail tokens for account: $accountId, expired: ${tokens.isExpired}');
+      _logger.d('[OK] Retrieved Gmail tokens for account: $accountId, expired: ${tokens.isExpired}');
       return tokens;
     } catch (e) {
-      _logger.e('❌ Failed to retrieve Gmail tokens for $accountId', error: e);
+      _logger.e('[FAIL] Failed to retrieve Gmail tokens for $accountId', error: e);
       return null;
     }
   }
@@ -299,7 +299,7 @@ class SecureCredentialsStore {
   Future<void> deleteGmailTokens(String accountId) async {
     try {
       await _storage.delete(key: '${_tokenPrefix}${accountId}_gmail_tokens');
-      _logger.i('✅ Deleted Gmail tokens for account: $accountId');
+      _logger.i('[OK] Deleted Gmail tokens for account: $accountId');
     } catch (e) {
       throw CredentialStorageException('Failed to delete Gmail tokens', e);
     }
@@ -330,7 +330,7 @@ class SecureCredentialsStore {
       // Ensure account is in the list (idempotent)
       await _addAccountToList(accountId);
 
-      _logger.i('✅ Saved platformId: $platformId for account: $accountId');
+      _logger.i('[OK] Saved platformId: $platformId for account: $accountId');
     } catch (e) {
       throw CredentialStorageException('Failed to save platformId', e);
     }
@@ -345,9 +345,9 @@ class SecureCredentialsStore {
       );
 
       if (platformId != null && platformId.isNotEmpty) {
-        _logger.d('✅ Retrieved platformId: $platformId for account: $accountId');
+        _logger.d('[OK] Retrieved platformId: $platformId for account: $accountId');
       } else {
-        _logger.w('⚠️ No platformId found for account: $accountId (will need to infer)');
+        _logger.w('[WARNING] No platformId found for account: $accountId (will need to infer)');
       }
 
       return platformId;
@@ -409,7 +409,7 @@ class SecureCredentialsStore {
       // Update accounts list
       await _removeAccountFromList(accountId);
 
-      _logger.i('✅ Successfully deleted credentials for account: $accountId');
+      _logger.i('[OK] Successfully deleted credentials for account: $accountId');
     } catch (e) {
       throw CredentialStorageException('Failed to delete credentials', e);
     }
@@ -419,27 +419,27 @@ class SecureCredentialsStore {
   Future<List<String>> getSavedAccounts() async {
     try {
       final accountsJson = await _storage.read(key: _accountsKey);
-      _logger.d('📋 Raw accounts JSON from storage: "$accountsJson" (length: ${accountsJson?.length}, isNull: ${accountsJson == null}, isEmpty: ${accountsJson?.isEmpty})');
+      _logger.d('[CHECKLIST] Raw accounts JSON from storage: "$accountsJson" (length: ${accountsJson?.length}, isNull: ${accountsJson == null}, isEmpty: ${accountsJson?.isEmpty})');
       
       if (accountsJson == null) {
-        _logger.w('⚠️  accounts JSON is NULL - no accounts saved yet');
+        _logger.w('[WARNING]  accounts JSON is NULL - no accounts saved yet');
         return [];
       }
       
       if (accountsJson.isEmpty) {
-        _logger.w('⚠️  accounts JSON is EMPTY string - something cleared the list!');
+        _logger.w('[WARNING]  accounts JSON is EMPTY string - something cleared the list!');
         return [];
       }
 
       // Parse comma-separated list (simple format)
       final split = accountsJson.split(',');
-      _logger.d('📋 After split: ${split.length} items: $split');
+      _logger.d('[CHECKLIST] After split: ${split.length} items: $split');
       
       final parsed = split.where((a) => a.isNotEmpty).toList();
-      _logger.i('✅ Loaded ${parsed.length} saved accounts: $parsed');
+      _logger.i('[OK] Loaded ${parsed.length} saved accounts: $parsed');
       return parsed;
     } catch (e) {
-      _logger.e('❌ Failed to get saved accounts', error: e);
+      _logger.e('[FAIL] Failed to get saved accounts', error: e);
       return [];
     }
   }
@@ -476,13 +476,13 @@ class SecureCredentialsStore {
         
         // Verify it was written correctly
         final verify = await _storage.read(key: _accountsKey);
-        _logger.i('✅ Written to storage. Verified read back: "$verify"');
-        _logger.i('✅ Successfully added $accountId. All accounts now: $accounts');
+        _logger.i('[OK] Written to storage. Verified read back: "$verify"');
+        _logger.i('[OK] Successfully added $accountId. All accounts now: $accounts');
       } else {
         _logger.d('ℹ️  Account $accountId already in list, skipping');
       }
     } catch (e) {
-      _logger.e('❌ Failed to add account to list', error: e);
+      _logger.e('[FAIL] Failed to add account to list', error: e);
     }
   }
 
@@ -504,9 +504,9 @@ class SecureCredentialsStore {
         value: joinedValue,
       );
       
-      _logger.i('✅ Successfully removed account $accountId from list. Remaining: $accountsAfter');
+      _logger.i('[OK] Successfully removed account $accountId from list. Remaining: $accountsAfter');
     } catch (e) {
-      _logger.e('❌ Failed to remove account from list', error: e);
+      _logger.e('[FAIL] Failed to remove account from list', error: e);
     }
   }
 
@@ -550,9 +550,9 @@ class SecureCredentialsStore {
           await savePlatformId(accountId, 'gmail');
 
           migratedCount++;
-          _logger.i('✅ Migrated account: $accountId');
+          _logger.i('[OK] Migrated account: $accountId');
         } catch (e) {
-          _logger.e('❌ Failed to migrate account $accountId', error: e);
+          _logger.e('[FAIL] Failed to migrate account $accountId', error: e);
         }
       }
 
@@ -562,12 +562,12 @@ class SecureCredentialsStore {
         for (final accountId in oldAccounts) {
           await _storage.delete(key: 'gmail_tokens_$accountId');
         }
-        _logger.i('✅ Migration complete! Migrated $migratedCount accounts and cleaned up legacy storage');
+        _logger.i('[OK] Migration complete! Migrated $migratedCount accounts and cleaned up legacy storage');
       } else {
-        _logger.w('⚠️  Partial migration: $migratedCount/${oldAccounts.length} accounts migrated. Keeping legacy storage for safety.');
+        _logger.w('[WARNING]  Partial migration: $migratedCount/${oldAccounts.length} accounts migrated. Keeping legacy storage for safety.');
       }
     } catch (e) {
-      _logger.e('❌ Migration failed', error: e);
+      _logger.e('[FAIL] Migration failed', error: e);
       // Don't throw - migration failure shouldn't block app startup
     }
   }

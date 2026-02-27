@@ -14,9 +14,9 @@
 |----------|---------|-------------|
 | **ALL_SPRINTS_MASTER_PLAN.md** | Master plan for all sprints | Before starting any sprint, after completing a sprint |
 | **SPRINT_PLANNING.md** | Sprint planning methodology | When planning a new sprint |
-| **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 0-4.5) |
+| **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 1-7) |
 | **SPRINT_STOPPING_CRITERIA.md** | When/why to stop working | When uncertain if blocked or should continue |
-| **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 4.5) |
+| **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 7) |
 | **TESTING_STRATEGY.md** | Testing approach and requirements | When writing or reviewing tests |
 | **QUALITY_STANDARDS.md** (this doc) | Quality standards for code and documentation | When writing code or documentation |
 | **TROUBLESHOOTING.md** | Common issues and solutions | When encountering errors or debugging |
@@ -151,7 +151,7 @@ AppLogger.debug('Debug message');
 **Internal Links**: Use relative paths
 ```markdown
 See `docs/ARCHITECTURE.md` for system design.
-See `SPRINT_EXECUTION_WORKFLOW.md` Phase 4.5 for retrospective.
+See `SPRINT_EXECUTION_WORKFLOW.md` Phase 7 for retrospective.
 ```
 
 **External Links**: Use full URLs with descriptive text
@@ -286,10 +286,10 @@ class EmailScanner {
 
 **Example**:
 ```dart
-// ❌ BAD: Using print() in production code
+// [FAIL] BAD: Using print() in production code
 print('Scanning 150 emails...');
 
-// ✅ GOOD: Using AppLogger with keyword
+// [OK] GOOD: Using AppLogger with keyword
 AppLogger.scan('Starting inbox scan: 150 emails to process');
 ```
 
@@ -332,14 +332,14 @@ Future<void> _fetchEmails() async { }
 
 **Example**:
 ```dart
-// ✅ GOOD
+// [OK] GOOD
 AppLogger.scan('Processing $count emails from $folder');
 final widget = Container(
   padding: EdgeInsets.all(16),
   child: Text('Hello'),
 );
 
-// ❌ BAD
+// [FAIL] BAD
 AppLogger.scan('Processing ${count} emails from ${folder}');  // Unnecessary braces
 final widget = Container(
   padding: EdgeInsets.all(16), child: Text('Hello'));  // No trailing comma
@@ -426,8 +426,8 @@ open coverage/html/index.html
 5. Follow coding style guide (Dart effective-dart)
 
 **Enforcement Points**:
-- **Phase 3.2**: Run analyzer and tests before proceeding
-- **Phase 4.5**: Verify quality standards met before PR approval
+- **Phase 5.2**: Run analyzer and tests before proceeding
+- **Phase 7**: Verify quality standards met before PR approval
 - **PR Approval**: User verifies standards before merge
 
 ---

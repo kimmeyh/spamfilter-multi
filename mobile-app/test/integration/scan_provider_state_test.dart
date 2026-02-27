@@ -7,6 +7,8 @@
 /// - Multi-account folder selection isolation
 /// - Progressive update throttling
 /// - Scan mode behavior (readonly, testLimit, testAll, fullScan)
+library;
+
 /// - Revert capability tracking
 
 import 'package:flutter_test/flutter_test.dart';
@@ -137,7 +139,7 @@ void main() {
       provider.setCurrentAccount('gmail-user2@gmail.com');
       expect(provider.selectedFolders, equals(['INBOX', 'SPAM']));
 
-      print('✅ Multi-account folder isolation verified');
+      print('[OK] Multi-account folder isolation verified');
     });
 
     test('Default folders should be INBOX when no selection exists', () {
@@ -178,7 +180,7 @@ void main() {
       expect(provider.hasActionsToRevert, isFalse);
       expect(provider.revertableActionCount, equals(0));
 
-      print('✅ Readonly mode verified - counts show proposed actions, no revertable actions');
+      print('[OK] Readonly mode verified - counts show proposed actions, no revertable actions');
     });
 
     test('TestLimit mode should track revertable actions up to limit', () {
@@ -198,7 +200,7 @@ void main() {
       expect(provider.hasActionsToRevert, isTrue);
       expect(provider.revertableActionCount, equals(testLimit));
 
-      print('✅ TestLimit mode verified - limit of $testLimit respected');
+      print('[OK] TestLimit mode verified - limit of $testLimit respected');
     });
 
     test('TestAll mode should track all actions as revertable', () {
@@ -214,7 +216,7 @@ void main() {
       expect(provider.hasActionsToRevert, isTrue);
       expect(provider.revertableActionCount, equals(10));
 
-      print('✅ TestAll mode verified - all 10 actions revertable');
+      print('[OK] TestAll mode verified - all 10 actions revertable');
     });
 
     test('FullScan mode should NOT track revertable actions', () {
@@ -232,7 +234,7 @@ void main() {
       expect(provider.hasActionsToRevert, isFalse);
       expect(provider.revertableActionCount, equals(0));
 
-      print('✅ FullScan mode verified - permanent actions, no revert tracking');
+      print('[OK] FullScan mode verified - permanent actions, no revert tracking');
     });
   });
 
@@ -261,7 +263,7 @@ void main() {
       expect(provider.safeSendersCount, equals(1));
       expect(provider.processedCount, equals(7));
 
-      print('✅ No rule count tracking verified: ${provider.noRuleCount} emails without rules');
+      print('[OK] No rule count tracking verified: ${provider.noRuleCount} emails without rules');
     });
 
     test('noRuleCount should reset on new scan', () {
@@ -280,7 +282,7 @@ void main() {
 
       expect(provider.noRuleCount, equals(0));
 
-      print('✅ noRuleCount reset on new scan verified');
+      print('[OK] noRuleCount reset on new scan verified');
     });
   });
 
@@ -304,7 +306,7 @@ void main() {
       provider.setCurrentFolder('Spam');
       expect(provider.currentFolder, equals('Spam'));
 
-      print('✅ Current folder tracking verified');
+      print('[OK] Current folder tracking verified');
     });
   });
 
@@ -356,7 +358,7 @@ void main() {
       expect(summary['errors'], equals(1));
       expect(summary['status'], equals('ScanStatus.completed'));
 
-      print('✅ Summary generation verified:');
+      print('[OK] Summary generation verified:');
       print('   $summary');
     });
   });
@@ -369,7 +371,7 @@ void main() {
       expect(aolFolders, contains('Bulk Mail'));
       expect(aolFolders, contains('Spam'));
 
-      print('✅ AOL junk folders: $aolFolders');
+      print('[OK] AOL junk folders: $aolFolders');
     });
 
     test('JUNK_FOLDERS_BY_PROVIDER should have correct folders for Gmail', () {
@@ -379,7 +381,7 @@ void main() {
       expect(gmailFolders, contains('Spam'));
       expect(gmailFolders, contains('Trash'));
 
-      print('✅ Gmail junk folders: $gmailFolders');
+      print('[OK] Gmail junk folders: $gmailFolders');
     });
 
     test('JUNK_FOLDERS_BY_PROVIDER should have correct folders for Yahoo', () {
@@ -389,7 +391,7 @@ void main() {
       expect(yahooFolders, contains('Bulk'));
       expect(yahooFolders, contains('Spam'));
 
-      print('✅ Yahoo junk folders: $yahooFolders');
+      print('[OK] Yahoo junk folders: $yahooFolders');
     });
 
     test('JUNK_FOLDERS_BY_PROVIDER should have correct folders for Outlook', () {
@@ -399,7 +401,7 @@ void main() {
       expect(outlookFolders, contains('Junk Email'));
       expect(outlookFolders, contains('Spam'));
 
-      print('✅ Outlook junk folders: $outlookFolders');
+      print('[OK] Outlook junk folders: $outlookFolders');
     });
 
     test('JUNK_FOLDERS_BY_PROVIDER should have correct folders for iCloud', () {
@@ -409,7 +411,7 @@ void main() {
       expect(icloudFolders, contains('Junk'));
       expect(icloudFolders, contains('Trash'));
 
-      print('✅ iCloud junk folders: $icloudFolders');
+      print('[OK] iCloud junk folders: $icloudFolders');
     });
   });
 }

@@ -40,9 +40,23 @@ void main() {
       });
 
       test('keeps valid email characters: dots and hyphens', () {
+        // Note: Plus-sign subaddressing (RFC 5233) strips everything before the last +
+        // 'user.name+tag@my-domain.com' → 'tag@my-domain.com'
+        expect(
+          PatternNormalization.normalizeFromHeader('user.name@my-domain.com'),
+          'user.name@my-domain.com',
+        );
+      });
+
+      test('handles plus-sign subaddressing (RFC 5233)', () {
+        // Plus-sign subaddressing strips everything before the last + in local part
         expect(
           PatternNormalization.normalizeFromHeader('user.name+tag@my-domain.com'),
-          'user.name+tag@my-domain.com',
+          'tag@my-domain.com',
+        );
+        expect(
+          PatternNormalization.normalizeFromHeader('invoice+statements+acct_123@stripe.com'),
+          'acct_123@stripe.com',
         );
       });
 
@@ -301,6 +315,124 @@ void main() {
         expect(
           PatternNormalization.extractDomain('https://example.co.uk/path'),
           'example.co.uk',
+        );
+      });
+    });
+
+    group('cleanSubjectForDisplay', () {
+      test('replaces tabs with single space', () {
+        expect(
+          PatternNormalization.cleanSubjectForDisplay('Subject\twith\ttabs'),
+          'Subject with tabs',
+        );
+      });
+
+      test('trims leading whitespace', () {
+        expect(
+          PatternNormalization.cleanSubjectForDisplay('   Leading spaces'),
+          'Leading spaces',
+        );
+      });
+
+      test('trims trailing whitespace', () {
+        expect(
+          PatternNormalization.cleanSubjectForDisplay('Trailing spaces   '),
+          'Trailing spaces',
+        );
+      });
+
+      test('collapses consecutive spaces to single space', () {
+        expect(
+          PatternNormalization.cleanSubjectForDisplay('Multiple    spaces    here'),
+          'Multiple spaces here',
+        );
+      });
+
+      test('reduces repeated periods to single period', () {
+        expect(
+          PatternNormalization.cleanSubjectForDisplay('Subject.......'),
+          'Subject.',
+        );
+      });
+
+      test('reduces repeated exclamation marks to single mark', () {
+        expect(
+          PatternNormalization.cleanSubjectForDisplay('Urgent!!!!'),
+          'Urgent!',
+        );
+      });
+
+      test('reduces repeated question marks to single mark', () {
+        expect(
+          PatternNormalization.cleanSubjectForDisplay('Really???'),
+          'Really?',
+        );
+      });
+
+      test('reduces repeated hyphens to single hyphen', () {
+        expect(
+          PatternNormalization.cleanSubjectForDisplay('Test-----subject'),
+          'Test-subject',
+        );
+      });
+
+      test('reduces all common punctuation marks', () {
+        expect(
+          PatternNormalization.cleanSubjectForDisplay('Test... urgent!!! check??? this---now+++'),
+          'Test. urgent! check? this-now+',
+        );
+      });
+
+      test('removes non-keyboard characters', () {
+        // Unicode characters that are not typically on keyboards
+        expect(
+          PatternNormalization.cleanSubjectForDisplay('Subject™ with® special© symbols'),
+          'Subject with special symbols',
+        );
+      });
+
+      test('keeps letters, numbers, and common punctuation', () {
+        expect(
+          PatternNormalization.cleanSubjectForDisplay('Re: Invoice #123 - Payment Due (30 days)'),
+          'Re: Invoice #123 - Payment Due (30 days)',
+        );
+      });
+
+      test('handles real-world spam examples', () {
+        // Example from buergeramt-innenstadt@datamta.com
+        expect(
+          PatternNormalization.cleanSubjectForDisplay('Check\tthis\tout!!!\t\tNow.........'),
+          'Check this out! Now.',
+        );
+      });
+
+      test('handles mixed tabs, spaces, and punctuation', () {
+        expect(
+          PatternNormalization.cleanSubjectForDisplay('\t  Subject\t\twith   mixed    spacing!!!...  '),
+          'Subject with mixed spacing!.',
+        );
+      });
+
+      test('returns empty string for null input', () {
+        expect(PatternNormalization.cleanSubjectForDisplay(null), '');
+      });
+
+      test('returns empty string for empty input', () {
+        expect(PatternNormalization.cleanSubjectForDisplay(''), '');
+      });
+
+      test('preserves single occurrences of punctuation', () {
+        expect(
+          PatternNormalization.cleanSubjectForDisplay('Hello! How are you? I am fine.'),
+          'Hello! How are you? I am fine.',
+        );
+      });
+
+      test('handles combination of all cleaning rules', () {
+        // Tabs + extra spaces + repeated punctuation + non-keyboard chars
+        expect(
+          PatternNormalization.cleanSubjectForDisplay('\t  Test™   Subject!!!...   \t©2024  '),
+          'Test Subject!. 2024',
         );
       });
     });

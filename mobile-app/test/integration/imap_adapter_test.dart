@@ -1,10 +1,11 @@
 // ignore_for_file: avoid_print
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/core/models/email_message.dart';
+
 import 'package:spam_filter_mobile/adapters/email_providers/generic_imap_adapter.dart';
 import 'package:spam_filter_mobile/adapters/email_providers/spam_filter_platform.dart';
 import 'package:spam_filter_mobile/adapters/email_providers/email_provider.dart';
+import 'package:spam_filter_mobile/core/models/email_message.dart';
 
 void main() {
   group('GenericIMAPAdapter - AOL Integration', () {
@@ -70,7 +71,7 @@ void main() {
       expect(status.isConnected, isTrue);
       expect(status.errorMessage, isNull);
       
-      print('✅ Connected to AOL IMAP successfully');
+      print('[OK] Connected to AOL IMAP successfully');
       print('   Server: ${status.serverInfo}');
     }, timeout: const Timeout(Duration(seconds: 30)), 
        skip: testEmail.isEmpty || testPassword.isEmpty);
@@ -92,7 +93,7 @@ void main() {
       expect(folders, isNotEmpty);
       expect(folders.any((f) => f.displayName.toLowerCase().contains('inbox')), isTrue);
       
-      print('✅ Found ${folders.length} folders:');
+      print('[OK] Found ${folders.length} folders:');
       for (final folder in folders.take(10)) {
         print('   - ${folder.displayName} (${folder.canonicalName.name})');
       }
@@ -118,7 +119,7 @@ void main() {
         folderNames: ['Inbox'],
       );
       
-      print('✅ Fetched ${messages.length} messages from Inbox (last 7 days)');
+      print('[OK] Fetched ${messages.length} messages from Inbox (last 7 days)');
       
       if (messages.isNotEmpty) {
         final first = messages.first;
@@ -157,7 +158,7 @@ void main() {
         folderNames: ['Bulk Mail', 'Spam'],
       );
       
-      print('✅ Fetched ${messages.length} messages from spam folders (last 30 days)');
+      print('[OK] Fetched ${messages.length} messages from spam folders (last 30 days)');
       
       if (messages.isNotEmpty) {
         print('   Sample spam message:');
@@ -196,7 +197,7 @@ void main() {
       expect(msg.headers, isNotEmpty);
       expect(msg.getSenderEmail(), isNotEmpty);
       
-      print('✅ Email headers parsed successfully');
+      print('[OK] Email headers parsed successfully');
       print('   Sender email: ${msg.getSenderEmail()}');
       print('   Headers count: ${msg.headers.length}');
       
@@ -238,14 +239,104 @@ void main() {
       expect(custom.displayName, equals('Custom IMAP'));
     });
 
-    test('credentials validation', () {      
+    test('credentials validation', () {
       final validCredentials = Credentials(
         email: 'test@aol.com',
         password: 'test-password',
       );
-      
+
       expect(validCredentials.email, isNotEmpty);
       expect(validCredentials.password, isNotEmpty);
     });
+
+    test('setDeletedRuleFolder stores folder name', () {
+      final adapter = GenericIMAPAdapter.aol();
+      // Should not throw
+      adapter.setDeletedRuleFolder('Trash');
+      adapter.setDeletedRuleFolder(null);
+    });
+
+    test('operations on disconnected adapter throw ConnectionException', () async {
+      final adapter = GenericIMAPAdapter.aol();
+      final message = EmailMessage(
+        id: '123',
+        from: 'test@example.com',
+        subject: 'Test',
+        body: '',
+        headers: {},
+        receivedDate: DateTime.now(),
+        folderName: 'INBOX',
+      );
+
+      // All operations should throw ConnectionException when not connected
+      expect(
+        () => adapter.takeAction(message: message, action: FilterAction.delete),
+        throwsA(isA<ConnectionException>()),
+      );
+      expect(
+        () => adapter.markAsRead(message: message),
+        throwsA(isA<ConnectionException>()),
+      );
+      expect(
+        () => adapter.moveToFolder(message: message, targetFolder: 'Trash'),
+        throwsA(isA<ConnectionException>()),
+      );
+      expect(
+        () => adapter.fetchMessages(daysBack: 7, folderNames: ['INBOX']),
+        throwsA(isA<ConnectionException>()),
+      );
+    });
+  });
+
+  // [ISSUE #145] Integration tests for UID-based operations
+  group('GenericIMAPAdapter - UID Fetch Verification', () {
+    final testEmail = const String.fromEnvironment('AOL_EMAIL', defaultValue: '');
+    final testPassword = const String.fromEnvironment('AOL_APP_PASSWORD', defaultValue: '');
+
+    test('fetched messages use UIDs (not sequence IDs)', () async {
+      if (testEmail.isEmpty || testPassword.isEmpty) {
+        print('Skipping: AOL credentials not provided');
+        return;
+      }
+
+      final adapter = GenericIMAPAdapter.aol();
+
+      try {
+        await adapter.loadCredentials(Credentials(
+          email: testEmail,
+          password: testPassword,
+        ));
+
+        final messages = await adapter.fetchMessages(
+          daysBack: 7,
+          folderNames: ['Inbox'],
+        );
+
+        if (messages.isEmpty) {
+          print('No messages to verify UIDs');
+          return;
+        }
+
+        // UIDs are typically larger numbers than sequence IDs
+        // Sequence IDs are sequential starting from 1
+        // UIDs can be any positive integer and do not reset
+        for (final msg in messages.take(5)) {
+          final id = int.tryParse(msg.id);
+          expect(id, isNotNull, reason: 'Message ID should be parseable as int');
+          expect(id, greaterThan(0), reason: 'Message UID should be positive');
+          print('  Message UID: ${msg.id}, Subject: ${msg.subject}');
+        }
+
+        // Verify UIDs are unique (they should always be)
+        final uids = messages.map((m) => m.id).toSet();
+        expect(uids.length, equals(messages.length),
+            reason: 'All message UIDs should be unique');
+
+        print('[OK] Verified ${messages.length} messages use UID-based IDs');
+      } finally {
+        await adapter.disconnect();
+      }
+    }, timeout: const Timeout(Duration(minutes: 2)),
+       skip: testEmail.isEmpty || testPassword.isEmpty);
   });
 }

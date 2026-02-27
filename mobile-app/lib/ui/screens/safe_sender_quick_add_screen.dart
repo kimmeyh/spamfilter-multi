@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 
 import '../../core/models/email_message.dart';
+import '../../core/storage/rule_database_store.dart';
 import '../../core/storage/safe_sender_database_store.dart';
 import '../../core/utils/pattern_normalization.dart';
 import '../../core/utils/pattern_generation.dart';
@@ -14,15 +15,17 @@ enum PatternType {
   custom,         // Type 4: User-provided regex
 }
 
-/// ✨ SPRINT 6 TASK B: Quick-add screen for safe sender patterns
+/// [NEW] SPRINT 6 TASK B: Quick-add screen for safe sender patterns
 class SafeSenderQuickAddScreen extends StatefulWidget {
   final EmailMessage email;
   final SafeSenderDatabaseStore safeSenderStore;
+  final RuleDatabaseStore? ruleStore;
 
   const SafeSenderQuickAddScreen({
     Key? key,
     required this.email,
     required this.safeSenderStore,
+    this.ruleStore,
   }) : super(key: key);
 
   @override
@@ -124,6 +127,54 @@ class _SafeSenderQuickAddScreenState extends State<SafeSenderQuickAddScreen> {
     });
   }
 
+  /// Remove rules that conflict with the new safe sender pattern
+  /// Returns the number of rules removed
+  Future<int> _removeConflictingRules() async {
+    if (widget.ruleStore == null) return 0;
+
+    try {
+      final ruleSet = await widget.ruleStore!.loadRules();
+      int removedCount = 0;
+
+      for (final rule in ruleSet.rules) {
+        // Check if the rule has from-header conditions matching this email
+        if (rule.conditions.from.isEmpty) continue;
+
+        bool ruleMatchesEmail = false;
+        for (final fromPattern in rule.conditions.from) {
+          try {
+            final regex = RegExp(fromPattern, caseSensitive: false);
+            if (regex.hasMatch(_normalizedEmail)) {
+              ruleMatchesEmail = true;
+              break;
+            }
+          } catch (e) {
+            // If pattern is not valid regex, check exact match
+            if (fromPattern.toLowerCase() == _normalizedEmail.toLowerCase()) {
+              ruleMatchesEmail = true;
+              break;
+            }
+          }
+        }
+
+        if (ruleMatchesEmail) {
+          _logger.i('Removing conflicting rule: ${rule.name} (pattern matches $_normalizedEmail)');
+          await widget.ruleStore!.deleteRule(rule.name);
+          removedCount++;
+        }
+      }
+
+      if (removedCount > 0) {
+        _logger.i('Removed $removedCount conflicting rule(s)');
+      }
+
+      return removedCount;
+    } catch (e) {
+      _logger.w('Failed to check/remove conflicting rules: $e');
+      return 0;
+    }
+  }
+
   /// Save safe sender pattern to database
   Future<void> _saveSafeSender() async {
     if (!_formKey.currentState!.validate()) {
@@ -158,10 +209,19 @@ class _SafeSenderQuickAddScreenState extends State<SafeSenderQuickAddScreen> {
 
       _logger.i('Added safe sender pattern: $_generatedPattern');
 
+      // Remove conflicting rules that would block this now-safe sender
+      int removedRules = 0;
+      if (widget.ruleStore != null) {
+        removedRules = await _removeConflictingRules();
+      }
+
       if (mounted) {
+        final message = removedRules > 0
+            ? 'Safe sender added. Removed $removedRules conflicting rule(s).'
+            : 'Safe sender added successfully';
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Safe sender added successfully'),
+          SnackBar(
+            content: Text(message),
             backgroundColor: Colors.green,
           ),
         );

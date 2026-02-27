@@ -2,7 +2,7 @@
 
 **Purpose**: Complete specification for rules.yaml and rules_safe_senders.yaml file formats
 
-**Last Updated**: January 30, 2026
+**Last Updated**: February 24, 2026
 
 ---
 
@@ -200,16 +200,96 @@ safe_senders:
 - `domain\.com` - Match literal domain
 - `$` - Anchor to end of string
 
-### Subject/Body Patterns
+### Subject Pattern Standards
 
-**Use Case**: Match text in subject or body
+**Use Case**: Match text in email subject lines
 
-| Pattern Type | Format | Example |
-|--------------|--------|---------|
-| **Contains Word** | `word` | `viagra` (matches "Buy Viagra Now") |
-| **Starts With** | `^text` | `^urgent` (matches "Urgent: Action Required") |
-| **Ends With** | `text$` | `click here$` (matches "... click here") |
-| **Exact Match** | `^exact text$` | `^you have won$` |
+**Normalization** (applied before matching by `PatternNormalization.normalizeSubject()`):
+1. Convert to lowercase
+2. Collapse multiple whitespace (spaces, tabs, newlines) to single space
+3. Trim leading/trailing whitespace
+
+**Matching**: All patterns are compiled with `caseSensitive: false` by `PatternCompiler`.
+
+**Pattern Types**:
+
+| Type | Format | Example | Use Case |
+|------|--------|---------|----------|
+| **S1: Contains Keyword** | `keyword` | `viagra` | Match subject containing word anywhere |
+| **S2: Starts With** | `^text` | `^urgent` | Match subject prefix (after normalization) |
+| **S3: Ends With** | `text$` | `click here$` | Match subject suffix |
+| **S4: Exact Match** | `^exact text$` | `^you have won$` | Match full subject exactly |
+| **S5: Keyword + Context** | `word1.*word2` | `free.*gift` | Match multiple keywords in order |
+| **S6: Alternation** | `(word1\|word2)` | `(viagra\|cialis)` | Match any of several keywords |
+
+**Guidelines**:
+- Write patterns in **lowercase** (text is normalized to lowercase before matching)
+- Use `.*` between keywords for flexible spacing: `urgent.*action.*required`
+- Use `\b` for word boundaries when avoiding partial matches: `\bfree\b` (will not match "freedom")
+- Avoid overly broad patterns that match legitimate email: `.*sale.*` is too broad
+- Prefer context-aware patterns: `(?:claim\|collect).*(?:prize\|reward\|winnings)` over just `prize`
+- **Forward slashes** in subjects are preserved, match literally
+- **Colons** are common in subjects (`Re:`, `Fwd:`), match with `:`
+
+**Examples**:
+```yaml
+# High-confidence subject patterns (low false positive risk)
+subject:
+  - '(?:claim|collect).*(?:prize|reward|winnings)'  # Prize scams
+  - '(?:verify|confirm).*(?:your|the) account'      # Phishing
+  - '(?:urgent|immediate).*action.*required'         # Urgency scams
+  - '^(?:re: )?(?:congratulations|you (?:have )?won)'  # Lottery scams
+```
+
+### Body Content Pattern Standards
+
+**Use Case**: Match text in email body
+
+**Normalization** (applied before matching by `PatternNormalization.normalizeBodyText()`):
+1. Convert to lowercase
+2. Collapse multiple whitespace to single space
+3. Remove 3+ repeated characters (e.g., "!!!!" becomes "!", "aaaaaa" becomes "a")
+4. Trim leading/trailing whitespace
+
+**Important**: The repeated-character removal means patterns should match the **normalized** form.
+For example, "Click!!!!! here" normalizes to "click! here", so use pattern `click! here` or `click.*here`.
+
+**Pattern Types**:
+
+| Type | Format | Example | Use Case |
+|------|--------|---------|----------|
+| **B1: Contains Phrase** | `phrase` | `verify your account` | Match body containing phrase |
+| **B2: Keyword Sequence** | `word1.*word2` | `verify.*account.*click` | Multiple keywords in order |
+| **B3: URL Domain** | `https?://[^/]*domain` | `https?://[^/]*bit\.ly` | Match URLs with specific domain |
+| **B4: Alternation** | `(word1\|word2)` | `(unsubscribe\|opt.out)` | Match any of several phrases |
+
+**Guidelines**:
+- Write patterns in **lowercase** (text is normalized to lowercase before matching)
+- Use non-greedy quantifiers (`.*?`) when matching between keywords in long text
+- URL shortener domains are high-confidence indicators: `bit\.ly`, `tinyurl\.com`, `goo\.gl`
+- Body text may contain HTML artifacts after parsing; match the text content, not HTML tags
+- **Avoid matching common legitimate phrases**: "click here" alone is too broad; combine with context
+- Body patterns have higher false positive risk than from/header patterns; prefer multi-keyword sequences
+- The `extractUrls()` and `extractDomain()` utilities in `PatternNormalization` can help when building URL-based patterns
+
+**Examples**:
+```yaml
+# High-confidence body patterns (low false positive risk)
+body:
+  - '(?:verify|confirm).*(?:your|the) (?:account|identity).*(?:click|link|immediately)'
+  - '(?:account|password).*(?:suspended|locked|disabled).*(?:verify|click|restore)'
+  - '(?:won|winner|selected).*(?:claim|collect).*(?:prize|reward|gift)'
+```
+
+### Subject vs Body Pattern Selection
+
+| Factor | Subject Pattern | Body Pattern |
+|--------|----------------|--------------|
+| **False positive risk** | Medium | High |
+| **Text length** | Short (< 200 chars) | Long (can be thousands) |
+| **Normalization** | Lowercase + collapse spaces | Lowercase + collapse spaces + deduplicate repeated chars |
+| **Best for** | Urgency scams, lottery, phishing subjects | Phishing body text, URL-based spam, credential harvesting |
+| **Avoid** | Single common words | Short phrases without context |
 
 ### Header Patterns
 
@@ -240,8 +320,12 @@ x-mailer:.*spambot.*       # Match X-Mailer containing "spambot"
 | **Block email** | `email@domain\.com` | `spammer@example\.com` |
 | **Allow exact email** | `^email@domain\.com$` | `^trusted@company\.com$` |
 | **Allow domain** | `^[^@\s]+@(?:[a-z0-9-]+\.)*domain\.com$` | `^[^@\s]+@(?:[a-z0-9-]+\.)*trusted\.com$` |
-| **Subject contains** | `word` | `viagra` |
-| **Subject starts** | `^text` | `^urgent` |
+| **Subject contains** | `keyword` | `viagra` |
+| **Subject keyword sequence** | `word1.*word2` | `urgent.*action.*required` |
+| **Subject alternation** | `(word1\|word2)` | `(viagra\|cialis)` |
+| **Body phrase** | `phrase` | `verify your account` |
+| **Body keyword sequence** | `word1.*word2.*word3` | `verify.*account.*click` |
+| **Body URL domain** | `https?://[^/]*domain` | `https?://[^/]*bit\.ly` |
 | **Header match** | `header:value` | `x-spam-status:yes` |
 
 ### Common Regex Patterns
@@ -392,11 +476,47 @@ When loading YAML files, the following validations are performed:
 - **Anchor patterns** when matching full strings (use ^ and $)
 - **Escape special chars** (. becomes \., * becomes \*, etc.)
 
+### Pattern Validation Warnings
+
+`PatternCompiler.validatePattern()` checks for common mistakes and returns warnings:
+
+| Warning | Example | Fix |
+|---------|---------|-----|
+| **Unescaped dot in domain** | `@spam.com$` | `@spam\.com$` |
+| **Suspicious leading wildcard** | `.*.*text` | `.*text` |
+| **Empty alternation branch** | `(foo\|)` | `(foo\|bar)` |
+
+These are warnings only (pattern still compiles) to help users write better patterns.
+
+### Subject/Body Pattern Anti-Patterns
+
+**Avoid these common mistakes**:
+
+```yaml
+# [FAIL] Too broad - matches legitimate emails about sales
+subject: ['sale']
+
+# [OK] Context-aware - matches scam urgency patterns
+subject: ['(?:limited|exclusive).*(?:sale|offer|deal).*(?:today|now|expires)']
+
+# [FAIL] Matches after normalization removes repeats, but pattern expects them
+body: ['click!!!! here']  # Body normalizes "!!!!" to "!"
+
+# [OK] Match the normalized form
+body: ['click.*here']
+
+# [FAIL] HTML tags may be stripped during parsing
+body: ['<a href=.*>click</a>']
+
+# [OK] Match the text content
+body: ['click here to (?:verify|confirm)']
+```
+
 ---
 
 ## Common Mistakes
 
-### ❌ Incorrect Patterns
+### [FAIL] Incorrect Patterns
 
 ```yaml
 # BAD: Forgot to escape dot
@@ -412,7 +532,7 @@ subject: ["*urgent*"]  # Literal asterisks, not wildcard
 from: ["User@Example.com"]  # Inconsistent with export format
 ```
 
-### ✅ Correct Patterns
+### [OK] Correct Patterns
 
 ```yaml
 # GOOD: Escaped dot
@@ -430,7 +550,7 @@ from: ["user@example\\.com"]
 
 ---
 
-**Document Version**: 1.0
+**Document Version**: 1.1
 **Created**: January 30, 2026
 **Related Documents**:
 - `docs/ARCHITECTURE.md` - Application architecture

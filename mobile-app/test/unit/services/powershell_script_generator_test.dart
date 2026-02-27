@@ -34,7 +34,7 @@ void main() {
         expect(content, contains(taskName));
         expect(content, contains(executablePath));
         expect(content, contains('--background-scan'));
-        expect(content, contains('RepetitionInterval'));
+        expect(content, contains('Repetition.Interval'));
         expect(content, contains('Minutes 15'));
       });
 

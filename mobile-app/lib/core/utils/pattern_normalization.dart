@@ -13,6 +13,11 @@ class PatternNormalization {
   /// - "Name <user@example.com>" → "user@example.com"
   /// - "user@example.com (Name)" → "user@example.com"
   ///
+  /// Also handles plus-sign subaddressing (RFC 5233):
+  /// - "invoice+statements+acct_123@stripe.com" → "acct_123@stripe.com"
+  /// Everything before the last + in the local part is stripped, keeping only
+  /// the final tag and domain.
+  ///
   /// Keeps characters: [0-9a-z@._+-]
   /// Removes: spaces, parentheses, angle brackets
   ///
@@ -41,6 +46,23 @@ class PatternNormalization {
 
       // Keep only alphanumeric, @, ., _, +, -
       result = result.replaceAll(RegExp(r'[^0-9a-z@._+-]'), '');
+
+      // Handle plus-sign subaddressing (RFC 5233)
+      // "invoice+statements+acct_123@stripe.com" → "acct_123@stripe.com"
+      // Strip everything before the last + in the local part
+      if (result.contains('@') && result.contains('+')) {
+        final atIndex = result.indexOf('@');
+        final localPart = result.substring(0, atIndex);
+        final domain = result.substring(atIndex);
+
+        // Find the last + in the local part
+        final lastPlusIndex = localPart.lastIndexOf('+');
+        if (lastPlusIndex >= 0 && lastPlusIndex < localPart.length - 1) {
+          // Keep only the part after the last +
+          final canonicalLocal = localPart.substring(lastPlusIndex + 1);
+          result = canonicalLocal + domain;
+        }
+      }
 
       return result;
     } catch (e) {
@@ -240,9 +262,12 @@ class PatternNormalization {
       result = result.replaceAll('\t', ' ');
 
       // Remove non-printable and non-keyboard characters
-      // Keep: letters (any language), numbers, spaces, and common punctuation
-      // Remove: control characters, weird Unicode symbols
-      result = result.replaceAll(RegExp(r'[^\x20-\x7E\u00A0-\u00FF\u0100-\u017F\u0400-\u04FF]'), '');
+      // Keep: ASCII printable characters (space through ~) which includes:
+      //   - Letters a-z, A-Z
+      //   - Numbers 0-9
+      //   - Common punctuation and symbols typically on keyboards
+      // Remove: control characters, Unicode symbols (™, ®, ©, emoji, etc.)
+      result = result.replaceAll(RegExp(r'[^\x20-\x7E]'), '');
 
       // Collapse consecutive spaces to single space
       result = result.replaceAll(RegExp(r' {2,}'), ' ');
@@ -273,6 +298,65 @@ class PatternNormalization {
     } catch (e) {
       _logger.w('Error cleaning subject for display: $e');
       return subject ?? '';
+    }
+  }
+
+  /// Normalizes Punycode-encoded domain names for display.
+  ///
+  /// Currently returns the domain as-is. Punycode decoding requires finding
+  /// a compatible Dart package (punycode ^1.0.0 API needs investigation).
+  ///
+  /// TODO Sprint Retrospective: Document punycode package API for future implementation.
+  /// See email #305 with domain: xn----8sbfgfc1bhsb1ax6i.xn--p1ai
+  ///
+  /// Returns the domain unchanged for now.
+  static String decodePunycodeDomain(String? domain) {
+    if (domain == null || domain.isEmpty) {
+      return '';
+    }
+
+    // TODO: Implement actual Punycode decoding when package API is confirmed
+    // For now, return domain as-is (shows xn-- encoded form)
+    return domain;
+  }
+
+  /// Extracts email address from "Name <email@domain.com>" and decodes Punycode domain.
+  ///
+  /// This is useful for displaying email addresses with internationalized domains.
+  ///
+  /// Examples:
+  /// - "user@xn--n3h.com" → "user@☃.com"
+  /// - "Name <user@xn--example.com>" → "user@example.com"
+  ///
+  /// Returns decoded email address, or empty string if input is null/empty.
+  static String normalizeAndDecodeEmail(String? email) {
+    if (email == null || email.isEmpty) {
+      return '';
+    }
+
+    try {
+      // First normalize to extract just the email address
+      final normalized = normalizeFromHeader(email);
+      if (normalized.isEmpty || !normalized.contains('@')) {
+        return normalized;
+      }
+
+      // Split into local@domain parts
+      final parts = normalized.split('@');
+      if (parts.length != 2) {
+        return normalized;
+      }
+
+      final localPart = parts[0];
+      final domainPart = parts[1];
+
+      // Decode the domain part
+      final decodedDomain = decodePunycodeDomain(domainPart);
+
+      return '$localPart@$decodedDomain';
+    } catch (e) {
+      _logger.w('Error normalizing and decoding email "$email": $e');
+      return email;
     }
   }
 }

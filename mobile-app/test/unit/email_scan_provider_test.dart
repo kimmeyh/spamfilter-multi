@@ -46,12 +46,20 @@ void main() {
         folderName: 'INBOX',
       );
 
-      // Act
+      // Act - updateProgress sets current email but does not increment processedCount
       scanProvider.updateProgress(email: email);
+      expect(scanProvider.currentEmail, equals(email));
+      expect(scanProvider.processedCount, equals(0)); // Not incremented until recordResult
+
+      // Act - recordResult increments processedCount alongside action counts
+      scanProvider.recordResult(EmailActionResult(
+        email: email,
+        action: EmailActionType.none,
+        success: true,
+      ));
 
       // Assert
       expect(scanProvider.processedCount, equals(1));
-      expect(scanProvider.currentEmail, equals(email));
       expect(scanProvider.progress, equals(0.01));
     });
 
@@ -278,7 +286,7 @@ void main() {
     });
   });
 
-  // ✨ ISSUE #41: Per-account folder selection tests
+  // [NEW] ISSUE #41: Per-account folder selection tests
   group('EmailScanProvider - Per-Account Folders (Issue #41)', () {
     test('stores folders per account', () {
       // Arrange

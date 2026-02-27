@@ -15,9 +15,9 @@
 |----------|---------|-------------|
 | **ALL_SPRINTS_MASTER_PLAN.md** | Master plan for all sprints | Before starting any sprint, after completing a sprint |
 | **SPRINT_PLANNING.md** | Sprint planning methodology | When planning a new sprint |
-| **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 0-4.5) |
+| **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 1-7) |
 | **SPRINT_STOPPING_CRITERIA.md** | When/why to stop working | When uncertain if blocked or should continue |
-| **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 4.5) |
+| **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 7) |
 | **TESTING_STRATEGY.md** | Testing approach and requirements | When writing or reviewing tests |
 | **QUALITY_STANDARDS.md** | Quality standards for code and documentation | When writing code or documentation |
 | **TROUBLESHOOTING.md** | Common issues and solutions | When encountering errors or debugging |
@@ -83,7 +83,7 @@ Sprint 3 introduces SafeSenderDatabaseStore and SafeSenderEvaluator, bringing pe
 
 **Acceptance Criteria**: < 100ms for cold start (no UI blocking)
 
-**Trend**: ⚪ Baseline established
+**Trend**: [BASELINE] Established
 
 **Notes**:
 - One-time cost per app session
@@ -111,7 +111,7 @@ Sprint 3 introduces SafeSenderDatabaseStore and SafeSenderEvaluator, bringing pe
 
 **Acceptance Criteria**: < 10ms for 95th percentile
 
-**Trend**: ⚪ Baseline established
+**Trend**: [BASELINE] Established
 
 **Notes**:
 - Cold includes SQL INSERT + JSON serialization of exceptions (if any)
@@ -147,7 +147,7 @@ Sprint 3 introduces SafeSenderDatabaseStore and SafeSenderEvaluator, bringing pe
 
 **Acceptance Criteria**: < 50ms for 100 patterns, < 150ms for 1000 patterns
 
-**Trend**: ⚪ Baseline established
+**Trend**: [BASELINE] Established
 
 **Notes**:
 - Linear scaling with pattern count (O(n) complexity)
@@ -177,7 +177,7 @@ Sprint 3 introduces SafeSenderDatabaseStore and SafeSenderEvaluator, bringing pe
 
 **Acceptance Criteria**: < 5ms for any database size (indexed lookup)
 
-**Trend**: ⚪ Baseline established
+**Trend**: [BASELINE] Established
 
 **Notes**:
 - Indexed on UNIQUE constraint on pattern field
@@ -200,7 +200,7 @@ Sprint 3 introduces SafeSenderDatabaseStore and SafeSenderEvaluator, bringing pe
 
 **Acceptance Criteria**: < 10ms for 95th percentile
 
-**Trend**: ⚪ Baseline established
+**Trend**: [BASELINE] Established
 
 **Notes**:
 - DELETE with CASCADE removes exceptions automatically
@@ -223,7 +223,7 @@ Sprint 3 introduces SafeSenderDatabaseStore and SafeSenderEvaluator, bringing pe
 
 **Acceptance Criteria**: < 10ms for 95th percentile
 
-**Trend**: ⚪ Baseline established
+**Trend**: [BASELINE] Established
 
 **Notes**:
 - Updates JSON array in exception_patterns column
@@ -253,7 +253,7 @@ Sprint 3 introduces SafeSenderDatabaseStore and SafeSenderEvaluator, bringing pe
 
 **Acceptance Criteria**: < 100ms for 1000 patterns (acceptable for UI responsiveness)
 
-**Trend**: ⚪ Baseline established
+**Trend**: [BASELINE] Established
 
 **Notes**:
 - First evaluation includes regex compilation (significant overhead)
@@ -283,7 +283,7 @@ Sprint 3 introduces SafeSenderDatabaseStore and SafeSenderEvaluator, bringing pe
 
 **Acceptance Criteria**: < 50ms for 1000 patterns (cached performance)
 
-**Trend**: ⚪ Baseline established
+**Trend**: [BASELINE] Established
 
 **Notes**:
 - **100x speedup** compared to cold cache (0.18ms vs 2.1ms at 10 patterns)
@@ -312,7 +312,7 @@ Sprint 3 introduces SafeSenderDatabaseStore and SafeSenderEvaluator, bringing pe
 
 **Acceptance Criteria**: < 5ms total for typical case (1-5 exceptions)
 
-**Trend**: ⚪ Baseline established
+**Trend**: [BASELINE] Established
 
 **Notes**:
 - Exception matching only happens if pattern matched
@@ -342,7 +342,7 @@ Sprint 3 introduces SafeSenderDatabaseStore and SafeSenderEvaluator, bringing pe
 
 **Acceptance Criteria**: < 50 MB for 5000 patterns
 
-**Trend**: ⚪ Baseline established
+**Trend**: [BASELINE] Established
 
 **Notes**:
 - Initial load includes regex cache (significant memory)
@@ -380,7 +380,7 @@ Sprint 3 introduces SafeSenderDatabaseStore and SafeSenderEvaluator, bringing pe
 
 **Acceptance Criteria**: < 2ms per email (acceptable for real-time scanning)
 
-**Trend**: ⚪ Baseline established
+**Trend**: [BASELINE] Established
 
 **Notes**:
 - Largest overhead is initial pattern compilation (first call)
@@ -498,7 +498,7 @@ Monitor for performance complaints:
 ## Reference
 
 **Related Documents**:
-- `docs/SPRINT_3_REVIEW.md` - Architecture and implementation details
+- `docs/sprints/SPRINT_3_REVIEW.md` - Architecture and implementation details
 - `lib/core/services/safe_sender_evaluator.dart` - Evaluation algorithm
 - `lib/core/storage/safe_sender_database_store.dart` - Database operations
 

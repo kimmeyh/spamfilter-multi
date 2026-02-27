@@ -90,7 +90,7 @@ class WindowsToastNotificationService {
     final escapedTitle = title.replaceAll("'", "''");
     final escapedBody = body.replaceAll("'", "''");
     final escapedAppId = appId.replaceAll("'", "''");
-    final escapedAppName = appName.replaceAll("'", "''");
+    // final escapedAppName = appName.replaceAll("'", "''"); // Reserved for future use
 
     return '''
 # Windows Toast Notification Script
