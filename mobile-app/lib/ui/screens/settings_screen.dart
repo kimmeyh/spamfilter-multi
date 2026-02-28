@@ -17,6 +17,7 @@ import 'folder_selection_screen.dart';
 import 'scan_history_screen.dart';
 import 'rules_management_screen.dart';
 import 'safe_senders_management_screen.dart';
+import 'yaml_import_export_screen.dart';
 
 /// Settings screen for app-wide configuration
 ///
@@ -305,6 +306,25 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                   context,
                   MaterialPageRoute(
                     builder: (_) => const RulesManagementScreen(),
+                  ),
+                );
+              },
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                alignment: Alignment.centerLeft,
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // Import/Export YAML button
+            OutlinedButton.icon(
+              icon: const Icon(Icons.swap_vert_outlined),
+              label: const Text('Import / Export YAML'),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const YamlImportExportScreen(),
                   ),
                 );
               },

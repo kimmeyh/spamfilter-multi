@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: February 27, 2026 (Sprint 18 completion)
+**Last Updated**: February 27, 2026 (Sprint 19 completion)
 
 ## How to Maintain This Document
 
@@ -83,6 +83,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 16 | docs/sprints/SPRINT_16_PLAN.md | [OK] Complete | ~6h (Feb 15-16, 2026) |
 | 17 | docs/sprints/SPRINT_17_SUMMARY.md | [OK] Complete | ~20h (Feb 17-21, 2026) |
 | 18 | docs/sprints/SPRINT_18_RETROSPECTIVE.md | [OK] Complete | Feb 24-27, 2026 |
+| 19 | docs/sprints/SPRINT_19_RETROSPECTIVE.md | [OK] Complete | Feb 27, 2026 |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -90,17 +91,17 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 18** (February 24-27, 2026)
-- **PR**: [#170](https://github.com/kimmeyh/spamfilter-multi/pull/170) (targeting develop)
-- **Features**: Safe sender/block rule conflict detection (#154), Subject/body content rule standards (#141), Common email provider domains F20 (#167), Inline rule assignment F21 (#168), Rule testing UI F8 (#169), Architecture v2.0 (#164), 5 bug fixes, F22-F26 backlog items
-- **Tests**: 1088 passed
-- **Retrospective**: docs/sprints/SPRINT_18_RETROSPECTIVE.md
+**Sprint 19** (February 27, 2026)
+- **PR**: [#183](https://github.com/kimmeyh/spamfilter-multi/pull/183) (targeting develop)
+- **Features**: Version tagging v0.5.0 (#181), Application branding MyEmailSpamFilter (#182), Folder save-on-selection (#172), Safe senders filter chips (#180), YAML import/export UI (#179), Gmail dual-auth OAuth + App Password (#178)
+- **Tests**: 1133 passed (+45 from Sprint 18)
+- **Retrospective**: docs/sprints/SPRINT_19_RETROSPECTIVE.md
 
 ---
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: February 27, 2026 (Sprint 18 completion)
+**Last Reviewed**: February 27, 2026 (Sprint 19 completion)
 
 All incomplete features, bugs, and spikes in relative priority order. HOLD items grouped at bottom. Each item links to its detail section (if one exists) or GitHub Issue.
 
@@ -108,56 +109,44 @@ All incomplete features, bugs, and spikes in relative priority order. HOLD items
 
 | # | Type | Title | Est. Effort | Issue | Detail |
 |---|------|-------|-------------|-------|--------|
-| 1 | Spike | Register myemailspamfilter.com domain | ~1h | [#166](https://github.com/kimmeyh/spamfilter-multi/issues/166) | User action (not sprint work) |
-| 2 | Bug | Android app not tested in several sprints | ~2-4h | [#163](https://github.com/kimmeyh/spamfilter-multi/issues/163) | Validation sprint needed |
-| 3 | Enhancement | Folder Selection Save-on-Selection UX (F27) | ~4-6h | [#172](https://github.com/kimmeyh/spamfilter-multi/issues/172) | [Detail](#f27-folder-selection-save-on-selection-ux) |
-| 4 | Enhancement | Manage Rules UI: split combined rules, search, filter | ~12-16h | [#149](https://github.com/kimmeyh/spamfilter-multi/issues/149) | [Detail](#f149-manage-rules-ui-overhaul) |
-| 5 | Enhancement | Gmail Dual-Auth UX and Account Tracking (F12B) | ~10-16h | -- | [Detail](#f12b-gmail-dual-auth-ux-and-account-tracking) |
-| 6 | Enhancement | Playwright UI Tests + Android UI Testing Strategy (F11) | ~12-16h | -- | [Detail](#f11-playwright-ui-tests-and-android-ui-testing) |
-| 7 | Enhancement | Background Scanning - Android / WorkManager (F4) | ~14-16h | -- | [Detail](#f4-background-scanning-android) |
-| 8 | Enhancement | Provider-Specific Optimizations (F6) | ~10-12h | -- | [Detail](#f6-provider-specific-optimizations) |
-| 9 | Enhancement | Multi-Account Scanning (F7) | ~8-10h | -- | [Detail](#f7-multi-account-scanning) |
-| 10 | Enhancement | YAML Rules Import/Export UI in Settings (F22) | ~8-12h | -- | [Detail](#f22-yaml-rules-importexport-ui) |
-| 11 | Enhancement | Rule Splitting Migration Script (F23) | ~6-8h | -- | [Detail](#f23-rule-splitting-migration-script) |
-| 12 | Enhancement | Manage Rules Category Filter Chips (F24) | ~4-6h | -- | [Detail](#f24-manage-rules-category-filter-chips) |
-| 13 | Enhancement | Rule Testing UI Enhancements (F25) | ~6-8h | -- | [Detail](#f25-rule-testing-ui-enhancements) |
-| 14 | Enhancement | Safe Senders Management Filter Chips (F26) | ~4-6h | -- | [Detail](#f26-safe-senders-management-filter-chips) |
+| 1 | Bug | Android app not tested in several sprints | ~2-4h | [#163](https://github.com/kimmeyh/spamfilter-multi/issues/163) | Validation sprint needed |
+| 2 | Enhancement | Manage Rules UI: split combined rules, search, filter | ~12-16h | [#149](https://github.com/kimmeyh/spamfilter-multi/issues/149) | [Detail](#f149-manage-rules-ui-overhaul) |
+| 3 | Enhancement | Playwright UI Tests + Android UI Testing Strategy (F11) | ~12-16h | -- | [Detail](#f11-playwright-ui-tests-and-android-ui-testing) |
+| 4 | Enhancement | Background Scanning - Android / WorkManager (F4) | ~14-16h | -- | [Detail](#f4-background-scanning-android) |
+| 5 | Enhancement | Provider-Specific Optimizations (F6) | ~10-12h | -- | [Detail](#f6-provider-specific-optimizations) |
+| 6 | Enhancement | Multi-Account Scanning (F7) | ~8-10h | -- | [Detail](#f7-multi-account-scanning) |
+| 7 | Enhancement | Rule Splitting Migration Script (F23) | ~6-8h | -- | [Detail](#f23-rule-splitting-migration-script) |
+| 8 | Enhancement | Manage Rules Category Filter Chips (F24) | ~4-6h | -- | [Detail](#f24-manage-rules-category-filter-chips) |
+| 9 | Enhancement | Rule Testing UI Enhancements (F25) | ~6-8h | -- | [Detail](#f25-rule-testing-ui-enhancements) |
 
 ### HOLD Items
 
 | # | Type | Title | Est. Effort | Issue | Reason |
 |---|------|-------|-------------|-------|--------|
+| H0 | Spike | Register myemailspamfilter.com domain | ~1h | [#166](https://github.com/kimmeyh/spamfilter-multi/issues/166) | User action, prerequisite for GP-1 |
 | H1 | Enhancement | GenAI Pattern Suggestions - Crowdsourced Spam Intelligence | TBD | [#142](https://github.com/kimmeyh/spamfilter-multi/issues/142) | Post-MVP, research needed |
 | H2 | Tech Debt | Rule Pattern Consistency - Domain Matching Standards | ~4-6h | [#140](https://github.com/kimmeyh/spamfilter-multi/issues/140) | Deferred to post-MVP |
 | H3 | Enhancement | Requirements Documentation System | TBD | [#137](https://github.com/kimmeyh/spamfilter-multi/issues/137) | Process improvement, not urgent |
 | H4 | Enhancement | Sent Messages Scan for Safe Senders | ~12-16h | [#49](https://github.com/kimmeyh/spamfilter-multi/issues/49) | Large feature, post-MVP |
 | H5 | Enhancement | Outlook.com OAuth Implementation | ~16-20h | [#44](https://github.com/kimmeyh/spamfilter-multi/issues/44) | New provider, MSAL integration, post-MVP |
-| H6 | Google Play | All GP-1 through GP-16 items | ~112-202h total | -- | [See Google Play Store Readiness](#google-play-store-readiness-hold) |
+| H6 | Google Play | Release Signing and Play App Signing (GP-2) | ~4-6h | -- | GP prerequisite, post-MVP |
+| H7 | Google Play | Android Manifest Permissions (GP-3) | ~4-6h | -- | GP prerequisite, post-MVP |
+| H8 | Google Play | Gmail API OAuth Verification / CASA (GP-4) | ~40-80h | -- | Trigger: 2,500+ users or $5K/yr revenue |
+| H9 | Google Play | Privacy Policy and Legal Documents (GP-5) | ~8-16h | -- | GP prerequisite, post-MVP |
+| H10 | Google Play | Play Store Listing and Assets (GP-6) | ~8-12h | -- | GP prerequisite, post-MVP |
+| H11 | Google Play | Adaptive Icons and App Branding (GP-7) | ~4-6h | -- | GP prerequisite, post-MVP |
+| H12 | Google Play | Android Target SDK + 16 KB Page Size (GP-8) | ~4-8h | -- | GP prerequisite, post-MVP |
+| H13 | Google Play | ProGuard/R8 Code Optimization (GP-9) | ~4-6h | -- | GP prerequisite, post-MVP |
+| H14 | Google Play | Data Safety Form Declarations (GP-10) | ~2-4h | -- | GP prerequisite, post-MVP |
+| H15 | Google Play | Account and Data Deletion Feature (GP-11) | ~8-12h | -- | GP prerequisite, post-MVP |
+| H16 | Google Play | Firebase Analytics Decision (GP-12) | ~2-4h | -- | GP prerequisite, post-MVP |
+| H17 | Google Play | Google Play Developer Account Setup (GP-16) | ~2-4h | -- | GP prerequisite, post-MVP |
 
 ---
 
 ## Feature and Bug Details
 
 This section contains detailed specifications for incomplete items only. Completed features have their details in sprint documents and CHANGELOG.md.
-
-### F27: Folder Selection Save-on-Selection UX
-
-**Status**: Planned
-**Issue**: [#172](https://github.com/kimmeyh/spamfilter-multi/issues/172)
-**Estimated Effort**: ~4-6h
-
-**Overview**: Change "Select Folders to Scan" dialog in Settings (Manual and Background) to instantly save on selection, removing Cancel and "Scan Selected Folder" buttons. Matches UX pattern used by other Settings controls.
-
-**Behavior**:
-- "Select All Folders" checked -> instantly check all folders and save
-- "Select All Folders" unchecked -> instantly uncheck all folders and save
-- Individual folder checked -> clicking unchecks and saves immediately
-- Individual folder unchecked -> clicking checks and saves immediately
-- Remove Cancel and "Scan Selected Folder" buttons
-
-**Scope**: Settings > Manual Scan and Settings > Background Scan folder selection
-
----
 
 ### F149: Manage Rules UI Overhaul
 
@@ -166,34 +155,6 @@ This section contains detailed specifications for incomplete items only. Complet
 **Estimated Effort**: ~12-16h
 
 **Overview**: Split combined rules into separate views, add search and filter capabilities to the Manage Rules UI.
-
----
-
-### F12B: Gmail Dual-Auth UX and Account Tracking
-
-**Status**: Planned
-**Estimated Effort**: ~10-16h
-
-**Overview**: Implements the dual-path Gmail authentication strategy (ADR-0029, ADR-0034). Adds auth method selection UI, in-app setup walkthroughs for OAuth and app passwords, per-account auth method persistence, and adapter routing. Also removes unused `AuthMethod.apiKey`.
-
-**Tasks**:
-- **Task A**: Gmail Auth Method Selection UI (~3-4h) -- choice between OAuth and App Password during Gmail setup
-- **Task B**: In-App Setup Walkthrough - Gmail OAuth (~2-3h) -- explains consent screen, 7-day tokens, re-auth
-- **Task C**: In-App Setup Walkthrough - Gmail App Password (~2-3h) -- step-by-step Google Account instructions
-- **Task D**: Per-Account Auth Method Tracking (~3-4h) -- store and route to correct adapter per account
-- **Task E**: Remove Unused Auth Methods (~1-2h) -- remove `AuthMethod.apiKey`, audit dead code
-
-**Dependencies**: ADR-0029 (Accepted), ADR-0034 (Accepted) -- decisions made, ready for implementation
-
-**Acceptance Criteria**:
-- [ ] Gmail platform selection offers choice: OAuth or App Password
-- [ ] In-app walkthroughs shown for each method
-- [ ] Selected auth method stored per Gmail account in database
-- [ ] On reconnect/scan, correct adapter used based on stored auth method
-- [ ] Gmail IMAP via app password works end-to-end
-- [ ] Gmail OAuth continues to work (no regression)
-- [ ] `AuthMethod.apiKey` removed from codebase
-- [ ] All existing tests pass, new tests added for dual-auth routing
 
 ---
 
@@ -273,29 +234,6 @@ This section contains detailed specifications for incomplete items only. Complet
 
 ---
 
-### F22: YAML Rules Import/Export UI
-
-**Status**: Planned
-**Estimated Effort**: ~8-12h
-
-**Overview**: Add user-facing YAML import and export functionality in Settings > Account tab, allowing users to export rules/safe senders to YAML files and import from YAML files.
-
-**Backend State**: `YamlService.exportRules()` and `YamlService.loadRules()` already exist. `YamlExportService` handles dual-write (database + YAML). Missing: UI triggers, file picker, conflict resolution, user feedback.
-
-**Features**:
-- Export rules to user-selected directory (with automatic backup)
-- Export safe senders to user-selected directory
-- Import rules from YAML file with preview and conflict resolution (merge/replace/skip)
-- Import safe senders from YAML file
-- Validation display before import (show errors/warnings)
-- Import status summary (success/failed counts)
-
-**Follow-up**: After import/export is stable, remove duplicate YAML storage (currently rules are stored in both SQLite and YAML asset files). SQLite becomes sole source of truth; YAML used only for import/export.
-
-**Dependencies**: None (backend methods exist)
-
----
-
 ### F23: Rule Splitting Migration Script
 
 **Status**: Planned
@@ -357,26 +295,6 @@ This section contains detailed specifications for incomplete items only. Complet
 
 ---
 
-### F26: Safe Senders Management Filter Chips
-
-**Status**: Planned
-**Estimated Effort**: ~4-6h
-
-**Overview**: Add filter chips to Settings > Account > Manage Safe Senders to categorize safe sender rules by their pattern type, making it easier to browse and manage large lists.
-
-**Filter Categories**:
-- "Exact Email" - patterns matching a specific email address (e.g., `^user@domain\.com$`)
-- "Exact Domain" - patterns matching an exact domain (e.g., `^[^@\s]+@domain\.com$`)
-- "Entire Domain" - patterns matching domain and all subdomains (e.g., `^[^@\s]+@(?:[a-z0-9-]+\.)*domain\.com$`)
-- "Top Level Domains" - patterns matching TLDs (e.g., `\.edu$`, `\.gov$`)
-- "Other" - all rules not matching the above categories
-
-**Note**: These categories should replace current "Domain" / "Domain + Subdomains" labels with the more user-friendly names above.
-
-**Dependencies**: None
-
----
-
 ## Google Play Store Readiness (HOLD)
 
 **Added**: February 15, 2026
@@ -409,26 +327,26 @@ The app is approximately 60-70% ready for Play Store publication. Core spam filt
 
 ### GP Feature List
 
-All GP items are HOLD. When taken off hold, they should be added to "Next Sprint Candidates" above.
+GP items on HOLD. When taken off hold, they are added to "Next Sprint Candidates" above.
 
-| ID | Title | Est. Effort | ADR | Priority |
-|----|-------|-------------|-----|----------|
-| GP-1 | Application Identity and Branding | ~4-6h | ADR-0026 (Accepted) | BLOCKING |
-| GP-2 | Release Signing and Play App Signing | ~4-6h | ADR-0027 (Proposed) | BLOCKING |
-| GP-3 | Android Manifest Permissions | ~4-6h | ADR-0028 (Proposed) | BLOCKING |
-| GP-4 | Gmail API OAuth Verification (CASA) | ~40-80h | ADR-0029 (Accepted) | BLOCKING (ON HOLD -- trigger: 2,500+ users or $5K/yr revenue) |
-| GP-5 | Privacy Policy and Legal Documents | ~8-16h | ADR-0030 (Accepted) | BLOCKING |
-| GP-6 | Play Store Listing and Assets | ~8-12h | -- | HIGH |
-| GP-7 | Adaptive Icons and App Branding | ~4-6h | ADR-0031 (Proposed) | HIGH |
-| GP-8 | Android Target SDK + 16 KB Page Size | ~4-8h | -- | MEDIUM |
-| GP-9 | ProGuard/R8 Code Optimization | ~4-6h | -- | HIGH |
-| GP-10 | Data Safety Form Declarations | ~2-4h | -- | BLOCKING |
-| GP-11 | Account and Data Deletion Feature | ~8-12h | ADR-0032 (Proposed) | HIGH |
-| GP-12 | Firebase Analytics Decision | ~2-4h | ADR-0033 (Proposed) | MEDIUM |
-| GP-13 | Persistent Gmail Auth for Production | 0h | -- | RESOLVED (merged with F12, see ADR-0029/0034) |
-| GP-14 | IMAP vs Gmail REST API Decision | 0h | ADR-0034 (Accepted) | RESOLVED (dual-path, no migration needed) |
-| GP-15 | Version Numbering and Release Strategy | ~2-4h | -- | HIGH |
-| GP-16 | Google Play Developer Account Setup | ~2-4h | -- | BLOCKING |
+| ID | Title | Est. Effort | ADR | Priority | Status |
+|----|-------|-------------|-----|----------|--------|
+| GP-1 | Application Identity and Branding | ~4-6h | ADR-0026 (Accepted) | BLOCKING | [OK] COMPLETE (Sprint 19) |
+| GP-2 | Release Signing and Play App Signing | ~4-6h | ADR-0027 (Proposed) | BLOCKING | HOLD |
+| GP-3 | Android Manifest Permissions | ~4-6h | ADR-0028 (Proposed) | BLOCKING | HOLD |
+| GP-4 | Gmail API OAuth Verification (CASA) | ~40-80h | ADR-0029 (Accepted) | BLOCKING | HOLD -- trigger: 2,500+ users or $5K/yr revenue |
+| GP-5 | Privacy Policy and Legal Documents | ~8-16h | ADR-0030 (Accepted) | BLOCKING | HOLD |
+| GP-6 | Play Store Listing and Assets | ~8-12h | -- | HIGH | HOLD |
+| GP-7 | Adaptive Icons and App Branding | ~4-6h | ADR-0031 (Proposed) | HIGH | HOLD |
+| GP-8 | Android Target SDK + 16 KB Page Size | ~4-8h | -- | MEDIUM | HOLD |
+| GP-9 | ProGuard/R8 Code Optimization | ~4-6h | -- | HIGH | HOLD |
+| GP-10 | Data Safety Form Declarations | ~2-4h | -- | BLOCKING | HOLD |
+| GP-11 | Account and Data Deletion Feature | ~8-12h | ADR-0032 (Proposed) | HIGH | HOLD |
+| GP-12 | Firebase Analytics Decision | ~2-4h | ADR-0033 (Proposed) | MEDIUM | HOLD |
+| GP-13 | Persistent Gmail Auth for Production | 0h | -- | -- | RESOLVED (merged with F12, see ADR-0029/0034) |
+| GP-14 | IMAP vs Gmail REST API Decision | 0h | ADR-0034 (Accepted) | -- | RESOLVED (dual-path, no migration needed) |
+| GP-15 | Version Numbering and Release Strategy | ~2-4h | -- | HIGH | [OK] COMPLETE (Sprint 19) |
+| GP-16 | Google Play Developer Account Setup | ~2-4h | -- | BLOCKING | HOLD |
 
 **Total Estimated Effort**: ~112-202 hours (plus 2-6 months for CASA verification if triggered)
 
@@ -438,21 +356,10 @@ Full detail for each GP item is preserved below for reference when these items a
 
 #### GP-1: Application Identity and Branding
 
+**Status**: [OK] Completed (Sprint 19, Issue #182)
 **ADR**: ADR-0026 (Accepted)
-**Estimated Effort**: ~4-6h
 
-Change the application from development defaults to production-ready identity.
-
-**Decision**: Domain `myemailspamfilter.com`, Application ID `com.myemailspamfilter`, App Name `MyEmailSpamFilter`.
-
-**Tasks**:
-- Task A: Update `applicationId` to `com.myemailspamfilter` in `android/app/build.gradle.kts`
-- Task B: Update `namespace` to `com.myemailspamfilter` in `android/app/build.gradle.kts`
-- Task C: Update `android:label` to `MyEmailSpamFilter` in `AndroidManifest.xml`
-- Task D: Update `msix_config` in `pubspec.yaml` to match new identity
-- Task E: Re-register with Firebase Console under new application ID and download new `google-services.json`
-
-**Prerequisite**: Domain `myemailspamfilter.com` must be registered first (Issue #166 -- spike).
+Application rebranded to MyEmailSpamFilter with `com.myemailspamfilter` package. Firebase re-registration deferred until domain is registered (Issue #166).
 
 ---
 
@@ -570,9 +477,9 @@ Decide whether to use Firebase Analytics/Crashlytics or remove Firebase dependen
 
 #### GP-15: Version Numbering and Release Strategy
 
-**Estimated Effort**: ~2-4h
+**Status**: [OK] Completed (Sprint 19, Issue #181)
 
-Set initial release version (1.0.0+), establish versionCode numbering, plan release track strategy.
+Tagged v0.5.0, updated pubspec.yaml to 0.5.0+1, established semver convention.
 
 ---
 

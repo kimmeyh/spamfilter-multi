@@ -270,6 +270,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       case 'aol':
         return Icons.email;
       case 'gmail':
+      case 'gmail-imap':
         return Icons.mail;
       case 'outlook':
         return Icons.email_outlined;
@@ -289,6 +290,8 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
         return 'AOL Mail';
       case 'gmail':
         return 'Gmail';
+      case 'gmail-imap':
+        return 'Gmail (IMAP)';
       case 'outlook':
         return 'Outlook.com';
       case 'yahoo':
@@ -306,6 +309,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       case 'aol':
         return Colors.blue;
       case 'gmail':
+      case 'gmail-imap':
         return Colors.red;
       case 'outlook':
         return Colors.lightBlue;
@@ -339,6 +343,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
     // Fallback based on platform type if registry lookup fails
     return switch (platformId.toLowerCase()) {
       'gmail' => 'OAuth 2.0',
+      'gmail-imap' => 'App Password',
       'outlook' => 'OAuth 2.0',
       'aol' => 'App Password',
       'yahoo' => 'App Password',
