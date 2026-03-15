@@ -275,10 +275,20 @@ class DatabaseHelper implements RuleDatabaseProvider {
 
     if (oldVersion < 2) {
       // v2: Add pattern classification columns to rules table (Sprint 20)
+      // Check if columns already exist (split script may have added them)
       _logger.i('Applying v2 migration: adding pattern classification columns');
-      await db.execute('ALTER TABLE rules ADD COLUMN pattern_category TEXT;');
-      await db.execute('ALTER TABLE rules ADD COLUMN pattern_sub_type TEXT;');
-      await db.execute('ALTER TABLE rules ADD COLUMN source_domain TEXT;');
+      final tableInfo = await db.rawQuery('PRAGMA table_info(rules)');
+      final existingColumns = tableInfo.map((r) => r['name'] as String).toSet();
+
+      if (!existingColumns.contains('pattern_category')) {
+        await db.execute('ALTER TABLE rules ADD COLUMN pattern_category TEXT;');
+      }
+      if (!existingColumns.contains('pattern_sub_type')) {
+        await db.execute('ALTER TABLE rules ADD COLUMN pattern_sub_type TEXT;');
+      }
+      if (!existingColumns.contains('source_domain')) {
+        await db.execute('ALTER TABLE rules ADD COLUMN source_domain TEXT;');
+      }
       await db.execute('CREATE INDEX IF NOT EXISTS idx_rules_category ON rules(pattern_category, pattern_sub_type);');
       _logger.i('v2 migration complete');
     }
