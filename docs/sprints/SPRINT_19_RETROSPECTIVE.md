@@ -79,7 +79,7 @@ Sprint 19 delivered 6 planned tasks spanning authentication, data management, br
 
 2. **Account-scoping in UI features**: 3 of the 13 testing feedback items were account-context bugs (scan history showing all accounts, folder display using wrong account). Acceptance criteria for multi-account UI features should explicitly specify account-scoping behavior.
 
-3. **Session context limits**: The 160K context window remains the primary constraint. Sprint 19 required session breaks, losing some research context. Tasks that involve web research are particularly context-hungry.
+3. **Session context limits**: The 160K context window was a constraint during Sprint 19 (since resolved -- 1M tokens now available). Sprint 19 required session breaks, losing some research context.
 
 4. **Pre-existing analyzer warnings**: 47 analyzer warnings persist in test files. While none are from Sprint 19 code, cleaning these up would improve overall code health.
 
