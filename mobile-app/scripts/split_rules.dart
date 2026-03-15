@@ -161,9 +161,6 @@ void main() async {
       continue;
     }
 
-    final enabled = rule['enabled'] as int;
-    final actionDelete = rule['action_delete'] as int;
-
     // Process header patterns -> header_from
     final headerPatterns = _decodeJsonArray(rule['condition_header']);
     for (final pattern in headerPatterns) {

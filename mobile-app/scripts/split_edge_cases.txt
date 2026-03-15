@@ -1,0 +1,318 @@
+Edge Cases from Rule Split - 2026-03-15T17:58:09.963278
+
+Could not classify header pattern (header): 105 patterns
+  source: SpamAutoDeleteHeader
+  pattern: abdwhab1997th@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: ajayrayterasiya@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: as5197827@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: beauty@pharmacy\.cvs\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: beckymarshall45261@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: borap7481@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: bwedabaed@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: calendar-notification@google.com
+
+  source: SpamAutoDeleteHeader
+  pattern: centralitys@skimccormicks\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: cg0403460@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: citizens\ gold\ trust
+
+  source: SpamAutoDeleteHeader
+  pattern: cloud@hotmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: compensation@hotmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: coupon10expresspharma@gmail.com
+
+  source: SpamAutoDeleteHeader
+  pattern: cristinawinbush@jeatkaruma\.info
+
+  source: SpamAutoDeleteHeader
+  pattern: cuongchaugaqcu@gmail.com
+
+  source: SpamAutoDeleteHeader
+  pattern: davidcarlee30@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: davidpersida5@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: drjhr@aol\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: drjtechservice@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: dybcsdbjh@yahoo\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: earlyreviewer@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: ezkrxchx@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: fahvmkhonucqn@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: ffefgsagasga5435@gmail.com
+
+  source: SpamAutoDeleteHeader
+  pattern: fgiving614@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: firebaseapp\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: giangminhle155680@gmail.com
+
+  source: SpamAutoDeleteHeader
+  pattern: googlecalendar\-notification@google\.com$
+
+  source: SpamAutoDeleteHeader
+  pattern: gorgjackson959\+hdg5@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: growth\ @hotmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: guls@skimccormicks\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: hbfkwnxisjsowdidbaoznia77@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: hoaongszn@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: hsynrhvmkh090@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: huanghuill227@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: huongtrinhiksif@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: iminathusiwela@gmail.com
+
+  source: SpamAutoDeleteHeader
+  pattern: jarbrooks9xm0@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: jitendrabprajapatipamana234@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: jyfara13@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: jyothivkr@yahoo\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: karim\.bfiss@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: kemo7766@yahoo\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: kenhu471@gmail.com
+
+  source: SpamAutoDeleteHeader
+  pattern: kusumbardask@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: mailer\-daemon@aol\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: minhphanzns@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: minkahrebecca124@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: mjan48991@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: mohamadi09052454088@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: mukeshkumarmahto828403@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: my\.ex\.pharmacy@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: nandkishoreyadava99@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: nasreen.bano.gauri101@gmail.com
+
+  source: SpamAutoDeleteHeader
+  pattern: nfnnfjfjlodjnbd@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: nguyenlinhvixbq1722@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: no\-reply@mail\.instagram\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: nurapenjweny@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: o32659635@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: offerdsnowse@hotmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: offersnowse@hotmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: owls@onmicrosoft\.work
+
+  source: SpamAutoDeleteHeader
+  pattern: pharmacy.express.coupon@gmail.com
+
+  source: SpamAutoDeleteHeader
+  pattern: pharmacy.online.coupon@gmail.com
+
+  source: SpamAutoDeleteHeader
+  pattern: piraji\.5327@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: ppdptn@yahoo\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: pprinshkumar526@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: prostate@hotmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: quickbooks@notification\.intuit\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: r18592237@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: rahulruhi123@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: rajputpintukumar397@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: rameshkorde1137@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: ratulsrgyjufj@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: ravikatkar2020@gmail\.
+
+  source: SpamAutoDeleteHeader
+  pattern: raz855291@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: realpeople4god@gmail.com
+
+  source: SpamAutoDeleteHeader
+  pattern: retseaqkom@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: sahabsingh123as@gmail.com
+
+  source: SpamAutoDeleteHeader
+  pattern: saidsiddiqui945196@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: samarthdete1@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: sandeeptiwarisks@
+
+  source: SpamAutoDeleteHeader
+  pattern: sarahperez4893\+mj81@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: scanvision@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: seidejeannette392@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: shanmugama385@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: shear872@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: siddhartha9389990265@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: somavhadgar@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: statefarm\ @hotmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: stevenswilliams201@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: subscription@hotmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: thanhhuong750@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: thkariedawood@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: tojockvip@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: tranpryson@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: tuughjchhfhhv@gmail.com
+
+  source: SpamAutoDeleteHeader
+  pattern: uoiizzsoi@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: vdanila45236@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: vudynha@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: wdfdbozzh536@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: williammiller852852\+23fdws7e@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: wxfgnjdnovese68@gmail\.com
+
+  source: SpamAutoDeleteHeader
+  pattern: yar.jmard3500@gmail.com
+

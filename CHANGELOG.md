@@ -26,6 +26,16 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-03-15 (Sprint 20)
+- **fix**: Gmail IMAP folder scan errors - use PlatformRegistry for correct adapter routing (Issue #184)
+- **feat**: Demo Scan expanded with 12 new sample emails across Safe Sender and Block Rule categories (Issue #185)
+- **feat**: Speed up Add Rule re-evaluation with shared PatternCompiler cache (Issue #186)
+- **chore**: Clean up all 46 analyzer warnings - zero issues remaining (Issue #187)
+- **feat**: Add pattern classification fields (patternCategory, patternSubType, sourceDomain) to Rule model (Issue #149)
+- **feat**: Remove YAML dual-write - database is sole source of truth for rules (Issue #149)
+- **feat**: Standalone rule split script - splits 5 monolithic rules into ~3,291 individual rules (Issue #149)
+- **feat**: Manage Rules UI overhaul - filter chips by category and sub-type, search, individual rule display (Issue #149)
+
 ### 2026-03-14 (Sprint 19 - Testing Feedback Round 2)
 - **fix**: Safe Senders YAML export error - AppPaths not initialized in Import/Export screen (Issue #179)
 - **fix**: Convert bare `@insightfinancialassociates.com` safe sender pattern to proper Entire Domain regex
