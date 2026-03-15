@@ -60,8 +60,10 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
       // Auto-purge old entries
       await _scanResultStore.purgeOldScanResults(_retentionDays);
 
-      // Load all scan history
-      final scans = await _scanResultStore.getAllScanHistory(limit: 200);
+      // Load scan history filtered by account when available
+      final scans = widget.accountId != null
+          ? await _scanResultStore.getScanResultsByAccount(widget.accountId!)
+          : await _scanResultStore.getAllScanHistory(limit: 200);
 
       if (mounted) {
         setState(() {
@@ -239,10 +241,11 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
   }
 
   Widget _buildScanCard(ScanResult scan) {
-    final dateFormat = DateFormat('MMM dd, yyyy HH:mm');
-    final startDate = DateTime.fromMillisecondsSinceEpoch(scan.startedAt);
+    final startDate = DateTime.fromMillisecondsSinceEpoch(scan.startedAt).toLocal();
+    final dateFormat = DateFormat('MMM dd, yyyy hh:mm a');
+    final tzName = _abbreviateTimeZone(startDate.timeZoneName);
     final completedDate = scan.completedAt != null
-        ? DateTime.fromMillisecondsSinceEpoch(scan.completedAt!)
+        ? DateTime.fromMillisecondsSinceEpoch(scan.completedAt!).toLocal()
         : null;
 
     // Calculate duration
@@ -298,7 +301,7 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      dateFormat.format(startDate),
+                      '${dateFormat.format(startDate)} $tzName',
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),
@@ -331,19 +334,18 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
                 maxLines: 2,
               ),
               const SizedBox(height: 4),
-              // Counts row
+              // Counts row - always show all metrics
               Wrap(
                 spacing: 12,
+                runSpacing: 2,
                 children: [
+                  _buildCountLabel('Found', scan.totalEmails, Colors.indigo),
                   _buildCountLabel('Processed', scan.processedCount, Colors.blue),
-                  if (scan.deletedCount > 0)
-                    _buildCountLabel('Deleted', scan.deletedCount, Colors.red),
-                  if (scan.movedCount > 0)
-                    _buildCountLabel('Moved', scan.movedCount, Colors.orange),
-                  if (scan.safeSenderCount > 0)
-                    _buildCountLabel('Safe', scan.safeSenderCount, Colors.green),
-                  if (scan.errorCount > 0)
-                    _buildCountLabel('Errors', scan.errorCount, Colors.red),
+                  _buildCountLabel('Deleted', scan.deletedCount, Colors.red),
+                  _buildCountLabel('Moved', scan.movedCount, Colors.orange),
+                  _buildCountLabel('Safe', scan.safeSenderCount, Colors.green),
+                  _buildCountLabel('No Rule', scan.noRuleCount, Colors.grey),
+                  _buildCountLabel('Errors', scan.errorCount, Colors.red),
                 ],
               ),
               // Error message
@@ -401,6 +403,20 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
         ),
       ),
     );
+  }
+
+  /// Convert full timezone name to abbreviation.
+  /// Windows returns full names like "Eastern Standard Time" instead of "EST".
+  String _abbreviateTimeZone(String tzName) {
+    // If already short (3-5 chars), it is likely an abbreviation
+    if (tzName.length <= 5) return tzName;
+
+    // Build abbreviation from first letter of each word
+    final words = tzName.split(' ');
+    if (words.length >= 2) {
+      return words.map((w) => w.isNotEmpty ? w[0] : '').join();
+    }
+    return tzName;
   }
 
   Color _darkenColor(Color color) {

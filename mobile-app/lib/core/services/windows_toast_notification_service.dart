@@ -9,8 +9,8 @@ class WindowsToastNotificationService {
   static final Logger _logger = Logger();
 
   /// Notification app ID for background scan results
-  static const String appId = 'SpamFilterMulti.BackgroundScan';
-  static const String appName = 'Spam Filter Multi';
+  static const String appId = 'MyEmailSpamFilter.BackgroundScan';
+  static const String appName = 'MyEmailSpamFilter';
 
   /// Initialize the notification service
   ///
@@ -39,7 +39,7 @@ class WindowsToastNotificationService {
         'Showing scan complete notification: $unmatchedCount unmatched, $accountsScanned accounts',
       );
 
-      final title = 'Spam Filter Background Scan Complete';
+      final title = 'MyEmailSpamFilter Background Scan Complete';
       final body = unmatchedCount == 1
           ? 'Found $unmatchedCount unmatched email in $accountsScanned ${accountsScanned == 1 ? "account" : "accounts"}'
           : 'Found $unmatchedCount unmatched emails in $accountsScanned ${accountsScanned == 1 ? "account" : "accounts"}';

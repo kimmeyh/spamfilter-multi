@@ -63,9 +63,9 @@ class WindowsSystemTrayService {
 
       // Initialize system tray
       await _systemTray.initSystemTray(
-        title: 'Spam Filter',
+        title: 'MyEmailSpamFilter',
         iconPath: finalIconPath,
-        toolTip: 'Spam Filter - Click to show',
+        toolTip: 'MyEmailSpamFilter - Click to show',
       );
 
       // Set up tray menu

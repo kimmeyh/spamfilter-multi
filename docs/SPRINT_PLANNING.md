@@ -212,6 +212,14 @@ Clear statement of what needs to be done and why.
 - [FAIL] BAD: "Code quality improvements"
 - [OK] GOOD: "Reduce all warnings in production code that can be accomplished in 1 hour"
 
+**Multi-Account UI Features**: For UI tasks that involve multi-account features, acceptance criteria MUST specify account-scoping behavior explicitly. (Learned Sprint 19 -- 3 bugs found during manual testing where scan history, folder display, and account context were not scoped to the current account.)
+
+**Examples**:
+- [FAIL] BAD: "Scan history displays past scans"
+- [OK] GOOD: "Scan history filters by current account -- shows only scans for the selected email account"
+- [FAIL] BAD: "Folder selection works correctly"
+- [OK] GOOD: "Folder display uses getSelectedFoldersForAccount() to show folders for the current account only"
+
 ## Model Assignment
 | Task | Assigned Model | Complexity | Effort Est. | Notes |
 |------|----------------|-----------|-------------|-------|

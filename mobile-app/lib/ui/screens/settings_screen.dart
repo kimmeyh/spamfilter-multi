@@ -17,6 +17,7 @@ import 'folder_selection_screen.dart';
 import 'scan_history_screen.dart';
 import 'rules_management_screen.dart';
 import 'safe_senders_management_screen.dart';
+import 'yaml_import_export_screen.dart';
 
 /// Settings screen for app-wide configuration
 ///
@@ -313,6 +314,25 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 alignment: Alignment.centerLeft,
               ),
             ),
+            const SizedBox(height: 8),
+
+            // Import/Export YAML button
+            OutlinedButton.icon(
+              icon: const Icon(Icons.swap_vert_outlined),
+              label: const Text('Import / Export YAML'),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const YamlImportExportScreen(),
+                  ),
+                );
+              },
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                alignment: Alignment.centerLeft,
+              ),
+            ),
 
             const SizedBox(height: 24),
 
@@ -337,6 +357,51 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               subtitle: const Text('View all past scan runs and results'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => _navigateToScanHistory(),
+            ),
+
+            const SizedBox(height: 24),
+
+            // About section
+            Text(
+              'About',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.blue.shade700),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'MyEmailSpamFilter',
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Version 0.5.0',
+                                style: TextStyle(color: Colors.grey.shade700),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         );

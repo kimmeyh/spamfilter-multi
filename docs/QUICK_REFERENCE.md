@@ -73,8 +73,8 @@
 
 | Platform | Path | Access Method |
 |----------|------|---------------|
-| **Windows** | `C:\Users\{username}\AppData\Roaming\com.example\spam_filter_mobile\spam_filter.db` | File explorer or code |
-| **Android** | `/data/data/com.example.spam_filter_mobile/files/spam_filter.db` | `adb shell` or device file explorer |
+| **Windows** | `C:\Users\{username}\AppData\Roaming\MyEmailSpamFilter\MyEmailSpamFilter\spam_filter.db` | File explorer or code |
+| **Android** | `/data/data/com.myemailspamfilter/files/spam_filter.db` | `adb shell` or device file explorer |
 
 **Runtime Path**: Use `AppPaths().databaseFilePath` in code to get platform-specific database path.
 
@@ -196,7 +196,7 @@ For common issues and fixes, see:
 | **View Android logs** | `adb logcat -s flutter,System.err,AndroidRuntime,DEBUG` |
 | **Find spam rules** | `rules.yaml` |
 | **Find safe senders** | `rules_safe_senders.yaml` |
-| **Check database path** | Windows: `C:\Users\{username}\AppData\Roaming\com.example\spam_filter_mobile\spam_filter.db` |
+| **Check database path** | Windows: `C:\Users\{username}\AppData\Roaming\MyEmailSpamFilter\MyEmailSpamFilter\spam_filter.db` |
 | **Start new sprint** | Read `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 0-1 |
 | **View sprint plan** | `docs/ALL_SPRINTS_MASTER_PLAN.md` |
 | **Check when to stop** | `docs/SPRINT_STOPPING_CRITERIA.md` |

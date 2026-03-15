@@ -22,11 +22,13 @@ Each of the 5 supported platforms (Windows, macOS, Linux, Android, iOS) has diff
 
 | Platform | Convention |
 |----------|-----------|
-| Windows | `%APPDATA%\com.example\spam_filter_mobile\` |
-| macOS | `~/Library/Application Support/spam_filter_mobile/` |
-| Linux | `~/.local/share/spam_filter_mobile/` |
-| Android | `/data/user/0/com.example.spam_filter_mobile/files/` |
-| iOS | `/Library/Application Support/spam_filter_mobile/` |
+| Windows | `%APPDATA%\MyEmailSpamFilter\MyEmailSpamFilter\` |
+| macOS | `~/Library/Application Support/MyEmailSpamFilter/` |
+| Linux | `~/.local/share/MyEmailSpamFilter/` |
+| Android | `/data/user/0/com.myemailspamfilter/files/` |
+| iOS | `/Library/Application Support/MyEmailSpamFilter/` |
+
+> **Note**: Paths changed in Sprint 19 (v0.5.0) from `com.example.spam_filter_mobile` identity. A one-time migration in `AppIdentityMigration` copies data from the old directory on first launch.
 
 Business logic (RuleSetProvider, DatabaseHelper, YamlExportService) must not contain platform-specific path logic. The same code that saves a rule on Windows must work identically on Android.
 

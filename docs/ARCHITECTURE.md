@@ -70,14 +70,16 @@ SQLite is the authoritative storage for rules and scan data. YAML files are expo
 ### 6. Platform-Agnostic Storage (ADR-0012)
 `AppPaths` provides unified file system access across all 5 platforms (Windows, macOS, Linux, Android, iOS).
 
-**Platform Paths**:
-- **Windows**: `C:\Users\{username}\AppData\Roaming\com.example\spam_filter_mobile\`
-- **Android**: `/data/user/0/com.example.spam_filter_mobile/files`
-- **macOS**: `~/Library/Application Support/spam_filter_mobile`
-- **Linux**: `~/.local/share/spam_filter_mobile`
-- **iOS**: `/Library/Application Support/spam_filter_mobile`
+**Platform Paths** (updated Sprint 19 - identity changed from `com.example` to `MyEmailSpamFilter`):
+- **Windows**: `C:\Users\{username}\AppData\Roaming\MyEmailSpamFilter\MyEmailSpamFilter\`
+- **Android**: `/data/user/0/com.myemailspamfilter/files`
+- **macOS**: `~/Library/Application Support/MyEmailSpamFilter`
+- **Linux**: `~/.local/share/MyEmailSpamFilter`
+- **iOS**: `/Library/Application Support/MyEmailSpamFilter`
 
 **Subdirectories**: `rules/`, `credentials/`, `backups/`, `logs/`; SQLite database at root.
+
+**Background Scan Log Convention**: Log files are versioned as `background_scan_v{VERSION}.log` (e.g., `background_scan_v0.5.0.log`) to distinguish logs from different app versions or branches running concurrently. When bumping app version, update the log filename in `background_scan_windows_worker.dart` and `main.dart`.
 
 ---
 

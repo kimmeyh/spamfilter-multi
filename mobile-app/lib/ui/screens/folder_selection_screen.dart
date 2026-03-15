@@ -214,6 +214,10 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
       _selectedFolders.updateAll((_, __) => value);
     });
     _logger.d('Toggle all folders: $value');
+    // [NEW] Sprint 19 F27: Save immediately on toggle in multi-select mode
+    if (!widget.singleSelect) {
+      _saveSelection();
+    }
   }
 
   /// Toggle individual folder
@@ -230,6 +234,26 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
       }
     });
     _logger.d('Toggle folder "$folderId": $value (singleSelect: ${widget.singleSelect})');
+    // [NEW] Sprint 19 F27: Save immediately on toggle in multi-select mode
+    if (!widget.singleSelect) {
+      _saveSelection();
+    }
+  }
+
+  /// [NEW] Sprint 19 F27: Save current selection immediately
+  void _saveSelection() {
+    final selectedFolderIds = _selectedFolders.entries
+        .where((e) => e.value)
+        .map((e) => e.key)
+        .toSet();
+
+    final selectedFolderNames = _allFolders
+        .where((f) => selectedFolderIds.contains(f.id))
+        .map((f) => f.displayName)
+        .toList();
+
+    _logger.i('[OK] Auto-saved folder selection: $selectedFolderNames');
+    widget.onFoldersSelected(selectedFolderNames);
   }
 
   /// [NEW] PHASE 3.3: Get filtered folder list based on search query
@@ -575,44 +599,75 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
               ),
             ],
 
-          // Action buttons
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                OutlinedButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancel'),
-                ),
-                const Spacer(),
-                ElevatedButton(
-                  onPressed: _selectedFolders.values.any((v) => v)
-                      ? () {
-                          // [NEW] PHASE 3.3: Get selected folder names (not IDs)
-                          final selectedFolderIds = _selectedFolders.entries
-                              .where((e) => e.value)
-                              .map((e) => e.key)
-                              .toSet();
+          // [UPDATED] Sprint 19 F27: Action buttons only in single-select mode
+          // Multi-select saves on each toggle, no confirm/cancel needed
+          if (widget.singleSelect)
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancel'),
+                  ),
+                  const Spacer(),
+                  ElevatedButton(
+                    onPressed: _selectedFolders.values.any((v) => v)
+                        ? () {
+                            final selectedFolderIds = _selectedFolders.entries
+                                .where((e) => e.value)
+                                .map((e) => e.key)
+                                .toSet();
 
-                          final selectedFolderNames = _allFolders
-                              .where((f) => selectedFolderIds.contains(f.id))
-                              .map((f) => f.displayName)
-                              .toList();
+                            final selectedFolderNames = _allFolders
+                                .where((f) => selectedFolderIds.contains(f.id))
+                                .map((f) => f.displayName)
+                                .toList();
 
-                          _logger.i(
-                            '[OK] Selected folders: $selectedFolderNames (singleSelect: ${widget.singleSelect})',
-                          );
+                            _logger.i(
+                              '[OK] Selected folders: $selectedFolderNames (singleSelect: ${widget.singleSelect})',
+                            );
 
-                          // Return selection to caller (using folder names for compatibility)
-                          widget.onFoldersSelected(selectedFolderNames);
-                          Navigator.pop(context, selectedFolderNames);
-                        }
-                      : null,
-                  child: Text(widget.buttonLabel ?? 'Scan Selected Folders'),
-                ),
-              ],
+                            widget.onFoldersSelected(selectedFolderNames);
+                            Navigator.pop(context, selectedFolderNames);
+                          }
+                        : null,
+                    child: Text(widget.buttonLabel ?? 'Select Folder'),
+                  ),
+                ],
+              ),
+            )
+          else if (!_isLoading && _errorMessage == null)
+            // [NEW] Sprint 19 F27: Selection count summary for multi-select
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                border: Border(top: BorderSide(color: Colors.grey.shade300)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.check_circle, size: 16, color: Colors.blue.shade700),
+                  const SizedBox(width: 8),
+                  Text(
+                    '${_selectedFolders.values.where((v) => v).length} of ${_allFolders.length} folders selected',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    'Changes saved automatically',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey.shade500,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );

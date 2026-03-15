@@ -75,6 +75,21 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     );
   }
 
+  /// Factory constructor for Gmail via IMAP (App Password auth)
+  ///
+  /// [ISSUE #178] Gmail Dual-Auth: Allows Gmail access via IMAP with
+  /// an app password instead of OAuth 2.0. Useful when Google Sign-In
+  /// is unavailable or the user prefers app password authentication.
+  factory GenericIMAPAdapter.gmail() {
+    return GenericIMAPAdapter(
+      imapHost: 'imap.gmail.com',
+      imapPort: 993,
+      isSecure: true,
+      displayName: 'Gmail (IMAP)',
+      platformId: 'gmail-imap',
+    );
+  }
+
   /// Factory constructor for Yahoo Mail
   factory GenericIMAPAdapter.yahoo() {
     return GenericIMAPAdapter(

@@ -524,7 +524,7 @@ After Phase 5.2 all tests pass, context can be compacted for efficiency:
     - Note any warnings that may affect functionality
   - [ ] **5.3.c Launch the application**
     - Windows: App auto-launches from build script
-    - Android: `adb shell am start -n com.example.spam_filter_mobile/.MainActivity`
+    - Android: `adb shell am start -n com.myemailspamfilter/.MainActivity`
     - Verify app opens to expected screen
   - [ ] **5.3.d Sanity check** - quick verification before handing to user
     - App does not crash on launch
@@ -805,6 +805,7 @@ Before conducting sprint review, build and test the Windows desktop app:
     - Create `docs/sprints/SPRINT_N_RETROSPECTIVE.md`
     - Use template from `docs/SPRINT_RETROSPECTIVE.md`
     - Record feedback, improvements, and action items
+    - **TIMING**: Do NOT create the retrospective document until AFTER manual testing (Phase 5) and all testing feedback rounds are complete. Creating it before testing produces stale metrics and incomplete scope. (Learned Sprint 19)
 
   - [ ] **Create Sprint Summary Document** (MANDATORY - can be deferred to Phase 3.2.1 of next sprint)
     - Create `docs/sprints/SPRINT_N_SUMMARY.md`

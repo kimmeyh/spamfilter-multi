@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.example" "\0"
-            VALUE "FileDescription", "spam_filter_mobile" "\0"
+            VALUE "CompanyName", "MyEmailSpamFilter" "\0"
+            VALUE "FileDescription", "MyEmailSpamFilter" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "spam_filter_mobile" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2025 com.example. All rights reserved." "\0"
+            VALUE "InternalName", "MyEmailSpamFilter" "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 MyEmailSpamFilter. All rights reserved." "\0"
             VALUE "OriginalFilename", "spam_filter_mobile.exe" "\0"
-            VALUE "ProductName", "spam_filter_mobile" "\0"
+            VALUE "ProductName", "MyEmailSpamFilter" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

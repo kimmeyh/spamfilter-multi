@@ -63,6 +63,14 @@ class JunkFolderConfigService {
       alternativeFolderNames: ['[Gmail]/Spam', '[Gmail]/Trash', 'SPAM', 'TRASH'],
       supportsCustomFolders: false, // Gmail uses labels, not custom folders
     ),
+    // [ISSUE #178] Gmail IMAP: Uses standard IMAP folder structure with [Gmail] prefix
+    'gmail-imap': JunkFolderConfig(
+      providerId: 'gmail-imap',
+      providerName: 'Gmail (IMAP)',
+      defaultJunkFolders: ['[Gmail]/Spam', '[Gmail]/Trash'],
+      alternativeFolderNames: ['Spam', 'Trash', 'SPAM', 'TRASH', '[Gmail]/All Mail'],
+      supportsCustomFolders: false,
+    ),
     'yahoo': JunkFolderConfig(
       providerId: 'yahoo',
       providerName: 'Yahoo Mail',

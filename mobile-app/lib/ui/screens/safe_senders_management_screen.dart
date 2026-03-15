@@ -2,10 +2,12 @@
 ///
 /// [ISSUE #147] Sprint 15: Allows users to manage safe sender patterns
 /// from Settings without direct database access.
+/// [ISSUE #180] Sprint 19: Added filter chips for pattern categories
 ///
 /// Features:
 /// - List all safe sender patterns with type and date
 /// - Search/filter patterns
+/// - Filter by pattern category (Exact Email, Exact Domain, Entire Domain, Other)
 /// - Delete individual patterns with confirmation
 /// - View pattern details and exceptions
 library;
@@ -15,6 +17,46 @@ import 'package:logger/logger.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/safe_sender_database_store.dart';
 import '../widgets/app_bar_with_exit.dart';
+
+/// Categories for filtering safe sender patterns by structure
+enum SafeSenderCategory {
+  /// Exact email match: anchored pattern with specific user@domain
+  /// Example: ^user@domain\.com$
+  exactEmail('Exact Email', Icons.person_outline),
+
+  /// Exact domain match: unanchored @domain pattern
+  /// Example: @domain.com
+  exactDomain('Exact Domain', Icons.domain),
+
+  /// Entire domain including subdomains
+  /// Example: ^[^@\s]+@(?:[a-z0-9-]+\.)*domain\.com$
+  entireDomain('Entire Domain', Icons.account_tree_outlined),
+
+  /// Patterns that do not fit other categories
+  other('Other', Icons.code);
+
+  final String label;
+  final IconData icon;
+  const SafeSenderCategory(this.label, this.icon);
+
+  /// Classify a safe sender pattern into its category based on regex structure
+  static SafeSenderCategory categorize(SafeSenderPattern sender) {
+    final pattern = sender.pattern;
+    final type = sender.patternType;
+
+    // Use stored patternType as primary signal, with pattern analysis as fallback
+    if (type == 'subdomain' || pattern.contains('@(?:[a-z0-9-]+\\.)*')) {
+      return SafeSenderCategory.entireDomain;
+    } else if (type == 'email' ||
+        (pattern.startsWith('^') && pattern.endsWith(r'$') && pattern.contains('@'))) {
+      return SafeSenderCategory.exactEmail;
+    } else if (type == 'domain' ||
+        (pattern.contains('@') && !pattern.startsWith('^'))) {
+      return SafeSenderCategory.exactDomain;
+    }
+    return SafeSenderCategory.other;
+  }
+}
 
 /// Screen for managing safe sender patterns
 class SafeSendersManagementScreen extends StatefulWidget {
@@ -34,6 +76,10 @@ class _SafeSendersManagementScreenState
   bool _isLoading = true;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
+  final Set<SafeSenderCategory> _selectedCategories = {};
+
+  bool get _hasActiveFilters =>
+      _searchQuery.isNotEmpty || _selectedCategories.isNotEmpty;
 
   @override
   void initState() {
@@ -67,16 +113,27 @@ class _SafeSendersManagementScreenState
   }
 
   void _applyFilter() {
-    if (_searchQuery.isEmpty) {
-      _filteredSenders = List.from(_safeSenders);
-    } else {
+    var results = List<SafeSenderPattern>.from(_safeSenders);
+
+    // Apply category filter (if any chips selected)
+    if (_selectedCategories.isNotEmpty) {
+      results = results.where((sender) {
+        final category = SafeSenderCategory.categorize(sender);
+        return _selectedCategories.contains(category);
+      }).toList();
+    }
+
+    // Apply text search filter
+    if (_searchQuery.isNotEmpty) {
       final query = _searchQuery.toLowerCase();
-      _filteredSenders = _safeSenders.where((sender) {
+      results = results.where((sender) {
         return sender.pattern.toLowerCase().contains(query) ||
             sender.patternType.toLowerCase().contains(query) ||
             sender.createdBy.toLowerCase().contains(query);
       }).toList();
     }
+
+    _filteredSenders = results;
   }
 
   Future<void> _deleteSafeSender(SafeSenderPattern sender) async {
@@ -160,7 +217,7 @@ class _SafeSendersManagementScreenState
           children: [
             _detailRow('Pattern', sender.pattern, monospace: true),
             const SizedBox(height: 8),
-            _detailRow('Type', _formatPatternType(sender.patternType)),
+            _detailRow('Type', _formatPatternType(sender)),
             const SizedBox(height: 8),
             _detailRow('Added', dateStr),
             const SizedBox(height: 8),
@@ -231,19 +288,8 @@ class _SafeSendersManagementScreenState
     );
   }
 
-  String _formatPatternType(String type) {
-    switch (type) {
-      case 'email':
-        return 'Exact Email';
-      case 'domain':
-        return 'Domain';
-      case 'subdomain':
-        return 'Domain + Subdomains';
-      case 'custom':
-        return 'Custom Pattern';
-      default:
-        return type;
-    }
+  String _formatPatternType(SafeSenderPattern sender) {
+    return SafeSenderCategory.categorize(sender).label;
   }
 
   String _formatCreatedBy(String createdBy) {
@@ -259,19 +305,8 @@ class _SafeSendersManagementScreenState
     }
   }
 
-  IconData _getPatternTypeIcon(String type) {
-    switch (type) {
-      case 'email':
-        return Icons.person_outline;
-      case 'domain':
-        return Icons.domain;
-      case 'subdomain':
-        return Icons.account_tree_outlined;
-      case 'custom':
-        return Icons.code;
-      default:
-        return Icons.help_outline;
-    }
+  IconData _getPatternTypeIcon(SafeSenderPattern sender) {
+    return SafeSenderCategory.categorize(sender).icon;
   }
 
   @override
@@ -322,13 +357,36 @@ class _SafeSendersManagementScreenState
             ),
           ),
 
-          // Summary bar
+          // Filter chips
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: [
+                    for (final category in SafeSenderCategory.values)
+                      _buildFilterChip(category),
+                    if (_selectedCategories.isNotEmpty)
+                      ActionChip(
+                        label: const Text('Clear'),
+                        avatar: const Icon(Icons.clear, size: 16),
+                        labelStyle: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () {
+                          setState(() {
+                            _selectedCategories.clear();
+                            _applyFilter();
+                          });
+                        },
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 6),
                 Text(
-                  _searchQuery.isEmpty
+                  _selectedCategories.isEmpty && _searchQuery.isEmpty
                       ? '${_safeSenders.length} safe sender${_safeSenders.length == 1 ? '' : 's'}'
                       : '${_filteredSenders.length} of ${_safeSenders.length} shown',
                   style: TextStyle(
@@ -336,13 +394,6 @@ class _SafeSendersManagementScreenState
                     fontSize: 13,
                   ),
                 ),
-                const Spacer(),
-                // Type legend
-                _typeBadge('email', Icons.person_outline),
-                const SizedBox(width: 8),
-                _typeBadge('domain', Icons.domain),
-                const SizedBox(width: 8),
-                _typeBadge('subdomain', Icons.account_tree_outlined),
               ],
             ),
           ),
@@ -358,23 +409,23 @@ class _SafeSendersManagementScreenState
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              _searchQuery.isEmpty
-                                  ? Icons.security
-                                  : Icons.search_off,
+                              _hasActiveFilters
+                                  ? Icons.filter_list_off
+                                  : Icons.security,
                               size: 64,
                               color: Colors.grey.shade400,
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              _searchQuery.isEmpty
-                                  ? 'No safe senders configured'
-                                  : 'No patterns match "$_searchQuery"',
+                              _hasActiveFilters
+                                  ? 'No patterns match current filters'
+                                  : 'No safe senders configured',
                               style: TextStyle(
                                 color: Colors.grey.shade600,
                                 fontSize: 16,
                               ),
                             ),
-                            if (_searchQuery.isEmpty) ...[
+                            if (!_hasActiveFilters) ...[
                               const SizedBox(height: 8),
                               Text(
                                 'Add safe senders from scan results using Quick Add',
@@ -404,17 +455,31 @@ class _SafeSendersManagementScreenState
     );
   }
 
-  Widget _typeBadge(String type, IconData icon) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 14, color: Colors.grey.shade500),
-        const SizedBox(width: 2),
-        Text(
-          type,
-          style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-        ),
-      ],
+  Widget _buildFilterChip(SafeSenderCategory category) {
+    final isSelected = _selectedCategories.contains(category);
+    // Count how many patterns belong to this category
+    final count = _safeSenders
+        .where((s) => SafeSenderCategory.categorize(s) == category)
+        .length;
+
+    return FilterChip(
+      label: Text('${category.label} ($count)'),
+      avatar: Icon(category.icon, size: 16),
+      selected: isSelected,
+      labelStyle: TextStyle(fontSize: 12, color: isSelected ? Colors.white : null),
+      selectedColor: Colors.green.shade600,
+      checkmarkColor: Colors.white,
+      visualDensity: VisualDensity.compact,
+      onSelected: (selected) {
+        setState(() {
+          if (selected) {
+            _selectedCategories.add(category);
+          } else {
+            _selectedCategories.remove(category);
+          }
+          _applyFilter();
+        });
+      },
     );
   }
 
@@ -426,7 +491,7 @@ class _SafeSendersManagementScreenState
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: ListTile(
         leading: Icon(
-          _getPatternTypeIcon(sender.patternType),
+          _getPatternTypeIcon(sender),
           color: Colors.green.shade700,
         ),
         title: Text(
@@ -438,7 +503,7 @@ class _SafeSendersManagementScreenState
         subtitle: Row(
           children: [
             Text(
-              _formatPatternType(sender.patternType),
+              _formatPatternType(sender),
               style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
             ),
             if (hasExceptions) ...[

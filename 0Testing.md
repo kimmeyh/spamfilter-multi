@@ -51,6 +51,23 @@ flutter test test/integration/yaml_loading_test.dart
 flutter test test/integration/end_to_end_workflow_test.dart
 
 #-------------------------------
+Background Scanning log files:
+
+  Current branch (feature/20260224_Sprint_18) - the path I just fixed:
+  - C:\Users\kimme\AppData\Roaming\MyEmailSpamFilter\MyEmailSpamFilter\logs\background_scan.log
+
+  Main branch - still has the old identity, so it uses:
+  - C:\Users\kimme\AppData\Roaming\com.example\spam_filter_mobile\logs\background_scan.log
+
+  They are different directories, so they will not conflict. The main branch app writes to the com.example path; the Sprint 19 build writes to the
+  MyEmailSpamFilter path.
+
+  Since your background scan on main is running every 15 minutes, it is still writing detailed logs to:
+  C:\Users\kimme\AppData\Roaming\com.example\spam_filter_mobile\logs\background_scan.log
+
+  And when you test the Sprint 19 build, its logs go to:
+  C:\Users\kimme\AppData\Roaming\MyEmailSpamFilter\MyEmailSpamFilter\logs\background_scan.log
+#-------------------------------
 12/28/25 updated testing checklist
 Checklist
 

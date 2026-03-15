@@ -22,6 +22,7 @@ class PlatformRegistry {
   static final Map<String, SpamFilterPlatform Function()> _factories = {
     'aol': () => GenericIMAPAdapter.aol(),
     'gmail': () => GmailApiAdapter(),
+    'gmail-imap': () => GenericIMAPAdapter.gmail(),
     'yahoo': () => GenericIMAPAdapter.yahoo(),
     'icloud': () => GenericIMAPAdapter.icloud(),
     'imap': () => GenericIMAPAdapter.custom(),
