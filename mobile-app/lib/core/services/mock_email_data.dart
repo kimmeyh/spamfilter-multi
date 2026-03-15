@@ -1,6 +1,6 @@
 /// Mock email data for demo mode
 ///
-/// Provides 50+ sample emails with variety for UI testing and demonstration
+/// Provides 67 sample emails with variety for UI testing and demonstration
 /// without requiring live email account access.
 library;
 
@@ -8,7 +8,7 @@ import '../models/email_message.dart';
 
 /// Generate sample emails for demo mode
 class MockEmailData {
-  /// Generate comprehensive set of 50+ sample emails
+  /// Generate comprehensive set of 67 sample emails
   static List<EmailMessage> generateSampleEmails() {
     final now = DateTime.now();
     final emails = <EmailMessage>[];
@@ -574,7 +574,147 @@ class MockEmailData {
     ));
 
     // ========================================
-    // CATEGORY 5: "No Rule" Examples (5 emails)
+    // CATEGORY 5: Safe Sender - Exact Email (3 emails)
+    // Uses Gmail, Yahoo, Outlook providers
+    // ========================================
+
+    emails.add(EmailMessage(
+      id: 'demo-ss-email-001',
+      from: 'jane.doe@gmail.com',
+      subject: 'Updated meeting agenda for tomorrow',
+      body: 'Hi, I have updated the agenda for our meeting tomorrow. Please review the attached document.',
+      headers: {'From': 'jane.doe@gmail.com'},
+      receivedDate: now.subtract(const Duration(days: 2, hours: 10)),
+      folderName: 'INBOX',
+    ));
+
+    emails.add(EmailMessage(
+      id: 'demo-ss-email-002',
+      from: 'robert.chen@yahoo.com',
+      subject: 'Photos from the weekend trip',
+      body: 'Hey! Here are the photos from our camping trip last weekend. Great times!',
+      headers: {'From': 'robert.chen@yahoo.com'},
+      receivedDate: now.subtract(const Duration(days: 2, hours: 11)),
+      folderName: 'INBOX',
+    ));
+
+    emails.add(EmailMessage(
+      id: 'demo-ss-email-003',
+      from: 'lisa.martinez@outlook.com',
+      subject: 'Book club pick for March',
+      body: 'The vote is in! Our March book club selection is "Project Hail Mary" by Andy Weir.',
+      headers: {'From': 'lisa.martinez@outlook.com'},
+      receivedDate: now.subtract(const Duration(days: 2, hours: 12)),
+      folderName: 'INBOX',
+    ));
+
+    // ========================================
+    // CATEGORY 6: Safe Sender - Exact Domain (3 emails)
+    // Uses irs.gov, allstate.com, venmo.com
+    // ========================================
+
+    emails.add(EmailMessage(
+      id: 'demo-ss-domain-001',
+      from: 'taxpayer.services@irs.gov',
+      subject: 'Your 2025 Tax Return Has Been Accepted',
+      body: 'Your electronically filed tax return has been received and accepted by the IRS.',
+      headers: {'From': 'taxpayer.services@irs.gov'},
+      receivedDate: now.subtract(const Duration(days: 2, hours: 13)),
+      folderName: 'INBOX',
+    ));
+
+    emails.add(EmailMessage(
+      id: 'demo-ss-domain-002',
+      from: 'claims@allstate.com',
+      subject: 'Your Auto Insurance Renewal Confirmation',
+      body: 'Your auto insurance policy has been renewed. Your new policy documents are enclosed.',
+      headers: {'From': 'claims@allstate.com'},
+      receivedDate: now.subtract(const Duration(days: 2, hours: 14)),
+      folderName: 'INBOX',
+    ));
+
+    emails.add(EmailMessage(
+      id: 'demo-ss-domain-003',
+      from: 'notifications@venmo.com',
+      subject: 'You paid Sarah J. \$35.00 for dinner',
+      body: 'Your payment of \$35.00 to Sarah J. has been completed successfully.',
+      headers: {'From': 'notifications@venmo.com'},
+      receivedDate: now.subtract(const Duration(days: 2, hours: 15)),
+      folderName: 'INBOX',
+    ));
+
+    // ========================================
+    // CATEGORY 7: Block Rule - Block Email (3 emails)
+    // Uses AOL, Hotmail, ProtonMail providers (different from safe sender)
+    // ========================================
+
+    emails.add(EmailMessage(
+      id: 'demo-block-email-001',
+      from: 'spammer.jones@aol.com',
+      subject: 'You have been selected for a special reward',
+      body: 'Click here to claim your exclusive reward. Limited time offer.',
+      headers: {'From': 'spammer.jones@aol.com'},
+      receivedDate: now.subtract(const Duration(days: 2, hours: 16)),
+      folderName: 'INBOX',
+    ));
+
+    emails.add(EmailMessage(
+      id: 'demo-block-email-002',
+      from: 'make.money.fast@hotmail.com',
+      subject: 'Secret investment strategy revealed',
+      body: 'I made \$10,000 in one week using this one weird trick. Find out how.',
+      headers: {'From': 'make.money.fast@hotmail.com'},
+      receivedDate: now.subtract(const Duration(days: 2, hours: 17)),
+      folderName: 'INBOX',
+    ));
+
+    emails.add(EmailMessage(
+      id: 'demo-block-email-003',
+      from: 'crypto.trader99@protonmail.com',
+      subject: 'Double your Bitcoin in 24 hours',
+      body: 'Send us 1 BTC and receive 2 BTC back within 24 hours. Guaranteed returns.',
+      headers: {'From': 'crypto.trader99@protonmail.com'},
+      receivedDate: now.subtract(const Duration(days: 2, hours: 18)),
+      folderName: 'INBOX',
+    ));
+
+    // ========================================
+    // CATEGORY 8: Block Rule - Block Entire Domain (3 emails)
+    // Uses domains from existing block rules in rules.yaml
+    // ========================================
+
+    emails.add(EmailMessage(
+      id: 'demo-block-domain-001',
+      from: 'survey@americasurveys.com',
+      subject: 'Complete this survey for a chance to win \$1,000',
+      body: 'Take our quick survey and be entered to win a \$1,000 cash prize.',
+      headers: {'From': 'survey@americasurveys.com'},
+      receivedDate: now.subtract(const Duration(days: 2, hours: 19)),
+      folderName: 'INBOX',
+    ));
+
+    emails.add(EmailMessage(
+      id: 'demo-block-domain-002',
+      from: 'marketing@activepipe.com',
+      subject: 'New property listings in your area',
+      body: 'We found 15 new properties that match your criteria. View them now.',
+      headers: {'From': 'marketing@activepipe.com'},
+      receivedDate: now.subtract(const Duration(days: 2, hours: 20)),
+      folderName: 'INBOX',
+    ));
+
+    emails.add(EmailMessage(
+      id: 'demo-block-domain-003',
+      from: 'deals@affmarketer.net',
+      subject: 'Exclusive affiliate deals just for you',
+      body: 'Check out these exclusive deals from our top affiliate partners.',
+      headers: {'From': 'deals@affmarketer.net'},
+      receivedDate: now.subtract(const Duration(days: 2, hours: 21)),
+      folderName: 'INBOX',
+    ));
+
+    // ========================================
+    // CATEGORY 9: "No Rule" Examples (5 emails)
     // ========================================
 
     // Legitimate senders that don't match any rule
