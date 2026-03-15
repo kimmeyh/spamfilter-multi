@@ -805,6 +805,7 @@ Before conducting sprint review, build and test the Windows desktop app:
     - Create `docs/sprints/SPRINT_N_RETROSPECTIVE.md`
     - Use template from `docs/SPRINT_RETROSPECTIVE.md`
     - Record feedback, improvements, and action items
+    - **TIMING**: Do NOT create the retrospective document until AFTER manual testing (Phase 5) and all testing feedback rounds are complete. Creating it before testing produces stale metrics and incomplete scope. (Learned Sprint 19)
 
   - [ ] **Create Sprint Summary Document** (MANDATORY - can be deferred to Phase 3.2.1 of next sprint)
     - Create `docs/sprints/SPRINT_N_SUMMARY.md`

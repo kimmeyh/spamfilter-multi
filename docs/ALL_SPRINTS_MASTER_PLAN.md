@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: February 27, 2026 (Sprint 19 completion)
+**Last Updated**: March 15, 2026 (Sprint 19 retrospective)
 
 ## How to Maintain This Document
 
@@ -91,17 +91,18 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 19** (February 27, 2026)
+**Sprint 19** (February 27 - March 15, 2026)
 - **PR**: [#183](https://github.com/kimmeyh/spamfilter-multi/pull/183) (targeting develop)
 - **Features**: Version tagging v0.5.0 (#181), Application branding MyEmailSpamFilter (#182), Folder save-on-selection (#172), Safe senders filter chips (#180), YAML import/export UI (#179), Gmail dual-auth OAuth + App Password (#178)
-- **Tests**: 1133 passed (+45 from Sprint 18)
+- **Testing Feedback**: 3 rounds, 13 fixes/enhancements (account-scoped scan history, folder display, YAML export crash fix, live re-evaluation, App Password UX improvements)
+- **Tests**: 1141 passed (+53 from Sprint 18)
 - **Retrospective**: docs/sprints/SPRINT_19_RETROSPECTIVE.md
 
 ---
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: February 27, 2026 (Sprint 19 completion)
+**Last Reviewed**: March 15, 2026 (Sprint 19 retrospective)
 
 All incomplete features, bugs, and spikes in relative priority order. HOLD items grouped at bottom. Each item links to its detail section (if one exists) or GitHub Issue.
 
@@ -119,6 +120,7 @@ All incomplete features, bugs, and spikes in relative priority order. HOLD items
 | 8 | Enhancement | Manage Rules Category Filter Chips (F24) | ~4-6h | -- | [Detail](#f24-manage-rules-category-filter-chips) |
 | 9 | Enhancement | Rule Testing UI Enhancements (F25) | ~6-8h | -- | [Detail](#f25-rule-testing-ui-enhancements) |
 | 10 | Enhancement | Scan Results: Speed up "Add Rule" performance | ~4-6h | -- | Profile and optimize rule addition from scan results screen |
+| 11 | Tech Debt | Clean up 47 pre-existing analyzer warnings in test files | ~2-4h | -- | Improve signal-to-noise ratio for flutter analyze |
 
 ### HOLD Items
 
