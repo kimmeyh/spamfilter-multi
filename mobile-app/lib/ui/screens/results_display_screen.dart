@@ -1522,17 +1522,22 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     return result.action;
   }
 
+  /// Shared PatternCompiler for re-evaluation.
+  /// Reused across all re-evaluations to preserve compiled pattern cache,
+  /// avoiding recompilation of the same patterns for each email.
+  final PatternCompiler _sharedCompiler = PatternCompiler();
+
   /// Re-evaluate an email against the current rules and safe senders.
   ///
-  /// Creates a fresh RuleEvaluator with the latest rules from RuleSetProvider
-  /// and evaluates the email. Stores the result in [_evaluationOverrides] so
-  /// subsequent displays (list tile, popup) reflect the current rule state.
+  /// Uses [_sharedCompiler] to benefit from pattern cache across evaluations.
+  /// Stores the result in [_evaluationOverrides] so subsequent displays
+  /// (list tile, popup) reflect the current rule state.
   Future<EvaluationResult> _reEvaluateEmail(EmailMessage email) async {
     final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
     final evaluator = RuleEvaluator(
       ruleSet: ruleProvider.rules,
       safeSenderList: ruleProvider.safeSenders,
-      compiler: PatternCompiler(),
+      compiler: _sharedCompiler,
     );
     final result = await evaluator.evaluate(email);
     final key = _getEmailKey(email);
@@ -1544,13 +1549,15 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   ///
   /// Called after adding a new block rule or safe sender so that
   /// remaining "No rule" items are updated if the new rule matches them.
+  /// Uses [_sharedCompiler] so patterns are compiled once and cached
+  /// for all subsequent email evaluations.
   Future<void> _reEvaluateNoRuleEmails() async {
     final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
     final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
     final evaluator = RuleEvaluator(
       ruleSet: ruleProvider.rules,
       safeSenderList: ruleProvider.safeSenders,
-      compiler: PatternCompiler(),
+      compiler: _sharedCompiler,
     );
 
     // Get current results (live or historical)
