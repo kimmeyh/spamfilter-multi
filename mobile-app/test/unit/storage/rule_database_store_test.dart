@@ -38,7 +38,10 @@ void main() {
         metadata TEXT,
         date_added INTEGER NOT NULL,
         date_modified INTEGER,
-        created_by TEXT DEFAULT 'manual'
+        created_by TEXT DEFAULT 'manual',
+        pattern_category TEXT,
+        pattern_sub_type TEXT,
+        source_domain TEXT
       )
     ''');
 

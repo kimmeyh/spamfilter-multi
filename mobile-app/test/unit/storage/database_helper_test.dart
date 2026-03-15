@@ -100,7 +100,10 @@ void main() {
               metadata TEXT,
               date_added INTEGER NOT NULL,
               date_modified INTEGER,
-              created_by TEXT DEFAULT 'manual'
+              created_by TEXT DEFAULT 'manual',
+              pattern_category TEXT,
+              pattern_sub_type TEXT,
+              source_domain TEXT
             );
           ''');
           await database.execute('CREATE INDEX IF NOT EXISTS idx_rules_enabled ON rules(enabled, execution_order);');
@@ -303,7 +306,10 @@ void main() {
             metadata TEXT,
             date_added INTEGER NOT NULL,
             date_modified INTEGER,
-            created_by TEXT DEFAULT 'manual'
+            created_by TEXT DEFAULT 'manual',
+            pattern_category TEXT,
+            pattern_sub_type TEXT,
+            source_domain TEXT
           );
         ''');
         await database.execute('''

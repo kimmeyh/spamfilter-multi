@@ -249,6 +249,9 @@ class RuleDatabaseStore {
         'exception_body': rule.exceptions?.body.isNotEmpty ?? false ? jsonEncode(rule.exceptions!.body) : null,
         'metadata': rule.metadata != null ? jsonEncode(rule.metadata) : null,
         'date_modified': DateTime.now().millisecondsSinceEpoch,
+        'pattern_category': rule.patternCategory,
+        'pattern_sub_type': rule.patternSubType,
+        'source_domain': rule.sourceDomain,
       };
 
       await db.update(
@@ -366,6 +369,9 @@ class RuleDatabaseStore {
             )
           : null,
       metadata: row['metadata'] != null ? jsonDecode(row['metadata'] as String) as Map<String, dynamic> : null,
+      patternCategory: row['pattern_category'] as String?,
+      patternSubType: row['pattern_sub_type'] as String?,
+      sourceDomain: row['source_domain'] as String?,
     );
   }
 
@@ -422,6 +428,9 @@ class RuleDatabaseStore {
       'metadata': rule.metadata != null ? jsonEncode(rule.metadata) : null,
       'date_added': timestamp,
       'created_by': 'manual',
+      'pattern_category': rule.patternCategory,
+      'pattern_sub_type': rule.patternSubType,
+      'source_domain': rule.sourceDomain,
     };
 
     await db.insert('rules', dbRule);
