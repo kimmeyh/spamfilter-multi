@@ -121,6 +121,8 @@ All incomplete features, bugs, and spikes in relative priority order. HOLD items
 | 9 | Enhancement | Rule Testing UI Enhancements (F25) | ~6-8h | -- | [Detail](#f25-rule-testing-ui-enhancements) |
 | 10 | Enhancement | Scan Results: Speed up "Add Rule" performance | ~4-6h | -- | Profile and optimize rule addition from scan results screen |
 | 11 | Tech Debt | Clean up 47 pre-existing analyzer warnings in test files | ~2-4h | -- | Improve signal-to-noise ratio for flutter analyze |
+| 12 | Bug | Gmail folder scan errors | ~2-4h | -- | [Detail](#bug-gmail-folder-scan-errors) |
+| 13 | Enhancement | Demo Scan: expand sample data with realistic examples | ~4-6h | -- | [Detail](#demo-scan-expanded-sample-data) |
 
 ### HOLD Items
 
@@ -150,6 +152,45 @@ All incomplete features, bugs, and spikes in relative priority order. HOLD items
 ## Feature and Bug Details
 
 This section contains detailed specifications for incomplete items only. Completed features have their details in sprint documents and CHANGELOG.md.
+
+### Bug: Gmail Folder Scan Errors
+
+**Status**: New (Sprint 19 testing)
+**Estimated Effort**: ~2-4h
+
+**Overview**: Gmail folder scanning produces errors. Investigate whether Gmail IMAP folder listing requires different handling (e.g., `[Gmail]/` prefix for special folders, different folder hierarchy conventions) compared to other providers.
+
+**Acceptance Criteria**:
+- [ ] Root cause identified for Gmail folder scan errors
+- [ ] Fix implemented and tested with Gmail IMAP account
+- [ ] Gmail OAuth and Gmail App Password (IMAP) paths both work
+- [ ] No regression on AOL or other provider folder scanning
+
+---
+
+### Demo Scan: Expanded Sample Data
+
+**Status**: New (Sprint 19 testing)
+**Estimated Effort**: ~4-6h
+
+**Overview**: Expand Demo Scan sample data with realistic examples across all rule categories to better demonstrate app capabilities to new users.
+
+**Required Examples** (at least 3 each):
+
+1. **Safe Sender - Exact Email**: 3 examples using different email providers (e.g., Gmail, Yahoo, Outlook)
+2. **Safe Sender - Exact Domain**: 3 examples using made-up email addresses from real domains: irs.gov, allstate.com, venmo.com
+3. **Block Rule - Block Email**: 3 examples using different email providers (different providers from safe sender examples)
+4. **Block Rule - Block Entire Domain**: 3 examples using domains from existing block rules in rules.yaml
+
+**Acceptance Criteria**:
+- [ ] Demo scan includes at least 3 examples per category above (12+ total new examples)
+- [ ] Examples use realistic sender names and subject lines
+- [ ] Block Entire Domain examples use domains already present in rules.yaml
+- [ ] Safe Sender and Block Rule provider examples do not overlap
+- [ ] Demo scan results demonstrate all filter categories in results screen
+- [ ] Existing demo scan tests updated for new sample data
+
+---
 
 ### F149: Manage Rules UI Overhaul
 
