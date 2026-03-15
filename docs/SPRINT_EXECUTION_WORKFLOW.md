@@ -524,7 +524,7 @@ After Phase 5.2 all tests pass, context can be compacted for efficiency:
     - Note any warnings that may affect functionality
   - [ ] **5.3.c Launch the application**
     - Windows: App auto-launches from build script
-    - Android: `adb shell am start -n com.example.spam_filter_mobile/.MainActivity`
+    - Android: `adb shell am start -n com.myemailspamfilter/.MainActivity`
     - Verify app opens to expected screen
   - [ ] **5.3.d Sanity check** - quick verification before handing to user
     - App does not crash on launch

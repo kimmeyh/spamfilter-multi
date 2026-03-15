@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../adapters/email_providers/email_provider.dart';
 import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
@@ -334,36 +335,36 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Option 1: Google Sign-In (OAuth) - Recommended
-            _buildAuthMethodCard(
-              icon: Icons.login,
-              iconColor: Colors.blue.shade700,
-              title: 'Google Sign-In (Recommended)',
-              subtitle: 'Sign in with your Google account using OAuth 2.0',
-              benefits: const [
-                'No app password needed',
-                'Secure OAuth 2.0 authentication',
-                'Full Gmail API access',
-              ],
-              borderColor: Colors.blue,
-              onTap: () => _selectGmailAuthMethod(GmailAuthMethod.oauth),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Option 2: App Password (IMAP)
+            // Option 1: App Password (IMAP) - Recommended
             _buildAuthMethodCard(
               icon: Icons.key,
               iconColor: Colors.orange.shade700,
-              title: 'App Password (IMAP)',
+              title: 'App Password (IMAP) (Recommended)',
               subtitle: 'Connect via IMAP using a Google App Password',
               benefits: const [
-                'Works when OAuth is unavailable',
+                'Reliable, persistent connection',
                 'Standard IMAP protocol',
                 'Requires 2-Step Verification enabled',
               ],
               borderColor: Colors.orange,
               onTap: () => _selectGmailAuthMethod(GmailAuthMethod.appPassword),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Option 2: Google Sign-In (OAuth)
+            _buildAuthMethodCard(
+              icon: Icons.login,
+              iconColor: Colors.blue.shade700,
+              title: 'Google Sign-In',
+              subtitle: 'Sign in with your Google account using OAuth 2.0',
+              benefits: const [
+                'No app password needed',
+                'Secure OAuth 2.0 authentication',
+                'Note: May require more frequent re-authentication',
+              ],
+              borderColor: Colors.blue,
+              onTap: () => _selectGmailAuthMethod(GmailAuthMethod.oauth),
             ),
 
             const SizedBox(height: 24),
@@ -382,9 +383,10 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Both methods are secure. Google Sign-In is recommended '
-                      'for most users. App Password is an alternative for users '
-                      'who prefer IMAP access or cannot use OAuth.',
+                      'Both methods are secure. App Password is recommended '
+                      'for most users. Google Sign-In is an alternative but '
+                      'may require more frequent re-authentication. This may '
+                      'be resolved in a future update.',
                       style: TextStyle(color: Colors.blue.shade900, fontSize: 13),
                     ),
                   ),
@@ -693,121 +695,165 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
             color: Colors.orange.shade50,
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Prerequisites',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  color: Colors.orange.shade900,
+          child: SelectionArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Prerequisites',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: Colors.orange.shade900,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              _buildInstructionItem(
-                '2-Step Verification must be enabled on your Google Account.',
-              ),
-              _buildInstructionItem(
-                'App Passwords do not work with accounts that use '
-                'Advanced Protection.',
-              ),
-              const Divider(height: 24),
-              Text(
-                'Steps to create an App Password',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  color: Colors.orange.shade900,
+                const SizedBox(height: 4),
+                _buildInstructionItem(
+                  '2-Step Verification must be enabled on your Google Account.',
                 ),
-              ),
-              const SizedBox(height: 8),
-              _buildNumberedStep(1,
-                'Go to your Google Account at myaccount.google.com',
-              ),
-              _buildNumberedStep(2,
-                'Select "Security" from the left navigation panel',
-              ),
-              _buildNumberedStep(3,
-                'Under "How you sign in to Google", verify that '
-                '"2-Step Verification" is ON',
-              ),
-              _buildNumberedStep(4,
-                'Go to myaccount.google.com/apppasswords '
-                '(or search "App passwords" in the Security page)',
-              ),
-              _buildNumberedStep(5,
-                'In the "App name" field, type a name '
-                '(e.g., "MyEmailSpamFilter")',
-              ),
-              _buildNumberedStep(6,
-                'Click "Create"',
-              ),
-              _buildNumberedStep(7,
-                'Google will display a 16-character app password. '
-                'Copy this password.',
-              ),
-              _buildNumberedStep(8,
-                'Paste the 16-character password into the '
-                '"App Password" field above. Spaces are optional.',
-              ),
-              const Divider(height: 24),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(4),
+                _buildInstructionItem(
+                  'App Passwords do not work with accounts that use '
+                  'Advanced Protection.',
                 ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.warning_amber,
-                      color: Colors.red.shade700, size: 16),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Important: The app password is shown only once. '
-                        'If you lose it, you must revoke and create a new one.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.red.shade900,
+                const Divider(height: 24),
+                Text(
+                  'Steps to create an App Password',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    color: Colors.orange.shade900,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _buildNumberedStepWithLink(
+                  1,
+                  'Go to your Google Account at ',
+                  'myaccount.google.com',
+                  'https://myaccount.google.com',
+                ),
+                _buildNumberedStep(2,
+                  'Select "Security & Sign-in" from the left navigation panel',
+                ),
+                _buildNumberedStep(3,
+                  'Under "How you sign in to Google", verify that '
+                  '"2-Step Verification" is ON',
+                ),
+                _buildNumberedStepWithLink(
+                  4,
+                  'Go to ',
+                  'myaccount.google.com/apppasswords',
+                  'https://myaccount.google.com/apppasswords',
+                  suffix: ' (or search "App passwords" in the Security page)',
+                ),
+                _buildNumberedStep(5,
+                  'In the "App name" field, type a name '
+                  '(e.g., "MyEmailSpamFilter")',
+                ),
+                _buildNumberedStep(6,
+                  'Click "Create"',
+                ),
+                _buildNumberedStep(7,
+                  'Google will display a 16-character app password. '
+                  'Copy this password.',
+                ),
+                _buildNumberedStep(8,
+                  'Paste the 16-character password into the '
+                  '"App Password" field above. Spaces are optional.',
+                ),
+                const Divider(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.warning_amber,
+                        color: Colors.red.shade700, size: 16),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Important: The app password is shown only once. '
+                          'If you lose it, you must revoke and create a new one.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.red.shade900,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(Icons.info_outline,
-                      color: Colors.blue.shade700, size: 16),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'IMAP must be enabled in Gmail settings: '
-                        'Gmail > Settings > Forwarding and POP/IMAP > '
-                        'Enable IMAP.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.blue.shade900,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ],
+    );
+  }
+
+  /// Build a numbered step with a tappable link embedded in the text
+  Widget _buildNumberedStepWithLink(
+    int number,
+    String prefix,
+    String linkText,
+    String url, {
+    String suffix = '',
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 22,
+            height: 22,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Colors.orange.shade700,
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              '$number',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Text.rich(
+                TextSpan(
+                  style: const TextStyle(fontSize: 12),
+                  children: [
+                    TextSpan(text: prefix),
+                    WidgetSpan(
+                      child: GestureDetector(
+                        onTap: () => launchUrl(Uri.parse(url)),
+                        child: Text(
+                          linkText,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.blue.shade700,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ),
+                    if (suffix.isNotEmpty) TextSpan(text: suffix),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

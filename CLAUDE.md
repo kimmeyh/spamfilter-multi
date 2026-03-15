@@ -473,13 +473,16 @@ For complete structure, pattern conventions, examples, and validation rules, see
 - Always use `build-windows.ps1` script (not `flutter build windows` directly)
 - Desktop OAuth requires browser-based flow with loopback redirect
 - Secrets injected at build time via `--dart-define-from-file=secrets.dev.json`
-- **App Data Directory**: `C:\Users\{username}\AppData\Roaming\com.example\spam_filter_mobile\`
-- **Database Location**: `C:\Users\{username}\AppData\Roaming\com.example\spam_filter_mobile\spam_filter.db`
+- **App Data Directory**: `C:\Users\{username}\AppData\Roaming\MyEmailSpamFilter\MyEmailSpamFilter\`
+  - Note: Changed from `com.example\spam_filter_mobile\` in Sprint 19 (v0.5.0). A one-time migration copies old data on first launch.
+- **Database Location**: `C:\Users\{username}\AppData\Roaming\MyEmailSpamFilter\MyEmailSpamFilter\spam_filter.db`
   - Rules database (imported from YAML, managed via UI)
   - Scan results history
   - App settings and configuration
-- **Rules Directory**: `C:\Users\{username}\AppData\Roaming\com.example\spam_filter_mobile\rules\`
-- **Credentials Directory**: `C:\Users\{username}\AppData\Roaming\com.example\spam_filter_mobile\credentials\`
+- **Rules Directory**: `C:\Users\{username}\AppData\Roaming\MyEmailSpamFilter\MyEmailSpamFilter\rules\`
+- **Credentials Directory**: `C:\Users\{username}\AppData\Roaming\MyEmailSpamFilter\MyEmailSpamFilter\credentials\`
+- **Background Scan Log**: `C:\Users\{username}\AppData\Roaming\MyEmailSpamFilter\MyEmailSpamFilter\logs\background_scan_v{VERSION}.log`
+  - Log filename includes app version (e.g., `background_scan_v0.5.0.log`) to distinguish logs from different builds/branches running concurrently
 
 ### iOS/macOS/Linux
 - Not yet validated but architecture supports all platforms

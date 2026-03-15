@@ -1,76 +1,113 @@
 # Sprint Context Save
 
-**Sprint**: Sprint 15
-**Date**: 2026-02-14 16:45:00
-**Branch**: feature/20260214_Sprint_15
-**Status**: In Progress
+**Sprint**: Sprint 19 (Hotfix Round)
+**Date**: 2026-03-03 (Session End)
+**Branch**: feature/20260227_Sprint_19
+**Status**: Testing Phase - Manual Verification
 
-## Current Tasks
+## Session Summary
 
-### Ongoing Investigations
-- [x] Create GitHub issues for F17 and F18 (Completed)
-- [x] Set up initial investigation for #145 (100-delete limit bug)
-- [ ] Continue implementing #145 bug fix
-- [ ] Implement batch processing (F19/#144)
+This session completed all 4 Sprint 19 testing feedback bug fixes plus additional improvements to Scan History screen. The app has been rebuilt with timezone abbreviation support and is currently running for user manual testing.
 
-### Pending Tasks
-- [ ] Implement Manage Safe Senders UI (F17/#147)
-- [ ] Implement Manage Rules UI (F18/#148)
-- [ ] Add Windows directory browser (#126)
-- [ ] Begin Windows background scanning (F5)
+## Completed Work This Session
 
-## Recent Work
+### Testing Feedback Bug Fixes (All Complete)
+- [x] Bug 1: No "About" section in Settings - Added About section showing "MyEmailSpamFilter" and "Version 0.5.0"
+- [x] Bug 2: Demo Mode switch broken - Changed to direct-launch tappable card in Platform Selection screen
+- [x] Bug 3: Background scan log path hardcoded to old directory - Fixed paths in both `main.dart` and `background_scan_windows_worker.dart`
+- [x] Bug 4: Background scan log missing output - Verified both log writers are now using correct directory
+- [x] Added versioned log filename: `background_scan_v0.5.0.log` (allows branch/version distinction)
 
-### Sprint 15 Planning
-- Created comprehensive Sprint 15 plan covering:
-  - #145 (100-delete limit bug fix)
-  - F19/#144 (Batch email processing)
-  - F17 (Manage Safe Senders UI)
-  - F18 (Manage Rules UI)
-  - #126 (Windows directory browser)
-  - F5 (Windows background scanning)
+### Scan History Screen Improvements (Per User Request)
+- [x] Date/Time format: Changed to 12-hour AM/PM with timezone abbreviation (e.g., "Feb 28, 2026 07:00 AM EST")
+  - Added `_abbreviateTimeZone()` helper to convert "Eastern Standard Time" → "EST"
+  - Handles Windows full names and macOS/Linux abbreviations automatically
+- [x] Count display: Always show all 7 metrics (Found, Processed, Deleted, Moved, Safe, No Rule, Errors)
+  - Uses `scan.totalEmails` for "Found" count
+  - Changed from conditional display to always-visible Wrap widget
 
-### Backlog Refinement
-- Reviewed and prioritized open issues
-- Created GitHub issues for F17 and F18
-- Approved sprint plan with user blanket authorization
+### Testing & Verification
+- [x] All 1139 Flutter tests passing
+- [x] Windows build successful without errors
+- [x] App launched and running for manual testing
+- [x] No code analysis errors introduced (10 pre-existing warnings remain)
 
-### Initial Investigations
-- Analyzed generic_imap_adapter.dart for potential connection issues
-- Started logging and connection tracking modifications
+### Documentation Updates
+- [x] CLAUDE.md: Updated Windows app data paths to new MyEmailSpamFilter directory
+- [x] ARCHITECTURE.md: Added background scan log versioning convention and migration note
+- [x] QUICK_REFERENCE.md: Updated database path references
+- [x] ADR-0012: Updated platform paths table and added migration note
+- [x] SPRINT_EXECUTION_WORKFLOW.md: Updated Android app launch command
+- [x] CHANGELOG.md: Added Sprint 19 testing feedback fixes section
 
-## Next Steps
+## Files Modified
+1. `mobile-app/lib/ui/screens/scan_history_screen.dart` - Timezone abbreviation, date format, count display (THIS SESSION)
+2. `mobile-app/lib/ui/screens/settings_screen.dart` - Added About section (Previous session)
+3. `mobile-app/lib/ui/screens/platform_selection_screen.dart` - Demo Mode card (Previous session)
+4. `mobile-app/lib/core/services/background_scan_windows_worker.dart` - Log paths & version (Previous session)
+5. `mobile-app/lib/main.dart` - Log paths, version, migration call (Previous session)
+6. `mobile-app/lib/core/services/app_identity_migration.dart` - New file (Previous session)
+7. 6 documentation files (all sessions)
 
-1. Complete investigation of #145 (100-delete limit bug)
-   - Add detailed logging in IMAP adapter
-   - Implement reconnect strategy
-   - Add operation count tracking
+## Current Status
+- **App**: Running and ready for manual testing
+- **Tests**: All 1139 passing
+- **Build**: Windows release build successful
+- **Blockers**: None
 
-2. Begin batch processing implementation (F19/#144)
-   - Modify email_scanner.dart to support batch operations
-   - Implement error handling for partial batch failures
+## Pending Tasks
 
-3. Prepare for UI management screens
-   - Create SafeSendersManagementScreen
-   - Create RulesManagementScreen
-   - Update database helper for management operations
+### User Manual Testing (AWAITING USER)
+- [ ] Verify Scan History timezone abbreviations are correct for user's location
+- [ ] Verify all 7 count metrics display properly in Scan History
+- [ ] Test remaining Sprint 19 tasks (Tasks D, E, F from testing feedback file)
+- [ ] Report any additional issues found
 
-## Blockers/Notes
+### After Testing Complete
+- [ ] Run full test suite one more time
+- [ ] Review all changes with `/review-changes`
+- [ ] Commit all hotfix changes with comprehensive message
+- [ ] Update PR #183 with all commits and re-request review
 
-- Ensure AOL IMAP connection reliability during extended scans
-- Verify batch processing doesn't negatively impact existing scan logic
-- Maintain existing test coverage during refactoring
+### Future Work (Backlog)
+- Sprint 18 enhancements: Conflict detection, re-evaluation, rule testing
+- Feature requests: YAML import/export, rule splitting, filter chips in Manage Rules
+- Timezone settings: Consider adding timezone configuration option (future enhancement)
 
-**Specific Focus Areas**:
-- Investigate why scan stops after 100 deletes
-- Implement graceful error recovery
-- Minimize disruption to existing scan workflow
+## Key Implementation Details
+
+### Timezone Abbreviation Helper
+```dart
+String _abbreviateTimeZone(String tzName) {
+  if (tzName.length <= 5) return tzName;  // Already short
+  final words = tzName.split(' ');
+  if (words.length >= 2) {
+    return words.map((w) => w.isNotEmpty ? w[0] : '').join();
+  }
+  return tzName;
+}
+```
+Converts "Eastern Standard Time" → "EST", "Pacific Daylight Time" → "PDT", etc.
+
+### Date Format
+Changed from 24-hour format to 12-hour AM/PM with timezone:
+- Old: `DateFormat('MMM dd, yyyy HH:mm')`
+- New: `DateFormat('MMM dd, yyyy hh:mm a')` + `startDate.timeZoneName`
+
+### Count Display (Always Visible)
+Shows all 7 metrics in a Wrap widget regardless of zero values:
+- Found, Processed, Deleted, Moved, Safe, No Rule, Errors
+
+## Branch & PR Info
+- **Branch**: feature/20260227_Sprint_19 (based on develop)
+- **PR #183**: Will be updated with all hotfix commits once testing complete
+- **Target**: develop branch (per CLAUDE.md pull request policy)
 
 ---
 
 **Instructions for Claude on Resume**:
-1. Read this context file on startup
-2. Verify git branch matches feature/20260214_Sprint_15
-3. Continue investigation of #145 bug
-4. If no immediate progress, run full test suite to establish baseline
-5. Consult SPRINT_STOPPING_CRITERIA.md for any stopping conditions
+1. Check if user has completed manual testing and reported results
+2. If testing passed: Proceed to commit and PR update
+3. If issues found: Apply fixes and rebuild for re-testing
+4. If no user message: Ask about testing results and next steps
+5. All 4 bugs are fixed and documented; work is in manual testing phase

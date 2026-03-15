@@ -68,11 +68,11 @@ class AppPaths {
   /// Root app support directory
   ///
   /// Platform-specific paths:
-  /// - Android: /data/user/0/com.example.spam_filter_mobile/files
-  /// - iOS: /Library/Application Support/spam_filter_mobile
-  /// - Windows: C:\Users\{username}\AppData\Roaming\com.example\spam_filter_mobile
-  /// - Linux: ~/.local/share/spam_filter_mobile
-  /// - macOS: ~/Library/Application Support/spam_filter_mobile
+  /// - Android: /data/user/0/com.myemailspamfilter/files
+  /// - iOS: /Library/Application Support/MyEmailSpamFilter
+  /// - Windows: C:\Users\{username}\AppData\Roaming\MyEmailSpamFilter\MyEmailSpamFilter
+  /// - Linux: ~/.local/share/MyEmailSpamFilter
+  /// - macOS: ~/Library/Application Support/MyEmailSpamFilter
   Directory get appSupportDirectory {
     _checkInitialized();
     return _appSupportDir;
@@ -105,11 +105,11 @@ class AppPaths {
   /// Stores scan results, rules, settings, and scan history.
   ///
   /// Platform-specific paths:
-  /// - Windows: C:\Users\{username}\AppData\Roaming\com.example\spam_filter_mobile\spam_filter.db
-  /// - Android: /data/user/0/com.example.spam_filter_mobile/files/spam_filter.db
-  /// - iOS: /Library/Application Support/spam_filter_mobile/spam_filter.db
-  /// - Linux: ~/.local/share/spam_filter_mobile/spam_filter.db
-  /// - macOS: ~/Library/Application Support/spam_filter_mobile/spam_filter.db
+  /// - Windows: C:\Users\{username}\AppData\Roaming\MyEmailSpamFilter\MyEmailSpamFilter\spam_filter.db
+  /// - Android: /data/user/0/com.myemailspamfilter/files/spam_filter.db
+  /// - iOS: /Library/Application Support/MyEmailSpamFilter/spam_filter.db
+  /// - Linux: ~/.local/share/MyEmailSpamFilter/spam_filter.db
+  /// - macOS: ~/Library/Application Support/MyEmailSpamFilter/spam_filter.db
   String get databaseFilePath {
     _checkInitialized();
     return path.join(_appSupportDir.path, 'spam_filter.db');

@@ -1,8 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/core/models/rule_set.dart';
-import 'package:spam_filter_mobile/core/models/safe_sender_list.dart';
 import 'package:spam_filter_mobile/core/services/yaml_service.dart';
 
 /// Integration test: YAML rules and safe senders export/import round-trip
@@ -249,7 +247,87 @@ void main() {
       expect(rules.rules.length, greaterThan(0),
           reason: 'Expected at least one rule in rules.yaml');
     });
+
+    test('every reimported rule has valid regex patterns', () async {
+      final rulesPath = '$repoRoot/rules.yaml';
+      final original = await yamlService.loadRules(rulesPath);
+
+      // Export and reimport
+      final exportPath = '${tempDir.path}/rules_validation.yaml';
+      await yamlService.exportRules(original, exportPath);
+      final reimported = await yamlService.loadRules(exportPath);
+
+      for (final rule in reimported.rules) {
+        // Verify rule has a name
+        expect(rule.name.isNotEmpty, isTrue,
+            reason: 'Every rule must have a non-empty name');
+
+        // Verify all condition patterns compile as valid regex
+        // Note: Patterns using (?i) inline flag are stripped and compiled
+        // with caseSensitive:false, matching how PatternCompiler handles them
+        for (final pattern in rule.conditions.from) {
+          expect(() => _compilePattern(pattern), returnsNormally,
+              reason: 'from pattern "$pattern" in rule "${rule.name}" must be valid regex');
+        }
+        for (final pattern in rule.conditions.header) {
+          expect(() => _compilePattern(pattern), returnsNormally,
+              reason: 'header pattern "$pattern" in rule "${rule.name}" must be valid regex');
+        }
+        for (final pattern in rule.conditions.subject) {
+          expect(() => _compilePattern(pattern), returnsNormally,
+              reason: 'subject pattern "$pattern" in rule "${rule.name}" must be valid regex');
+        }
+        for (final pattern in rule.conditions.body) {
+          expect(() => _compilePattern(pattern), returnsNormally,
+              reason: 'body pattern "$pattern" in rule "${rule.name}" must be valid regex');
+        }
+
+        // Verify exception patterns are valid regex too
+        if (rule.exceptions != null) {
+          for (final pattern in rule.exceptions!.from) {
+            expect(() => _compilePattern(pattern), returnsNormally,
+                reason: 'exception from pattern "$pattern" in rule "${rule.name}" must be valid regex');
+          }
+          for (final pattern in rule.exceptions!.header) {
+            expect(() => _compilePattern(pattern), returnsNormally,
+                reason: 'exception header pattern "$pattern" in rule "${rule.name}" must be valid regex');
+          }
+        }
+      }
+    });
+
+    test('every reimported safe sender pattern is a valid regex', () async {
+      final safeSendersPath = '$repoRoot/rules_safe_senders.yaml';
+      final original = await yamlService.loadSafeSenders(safeSendersPath);
+
+      // Export and reimport
+      final exportPath = '${tempDir.path}/safe_senders_validation.yaml';
+      await yamlService.exportSafeSenders(original, exportPath);
+      final reimported = await yamlService.loadSafeSenders(exportPath);
+
+      final invalidPatterns = <String>[];
+      for (final pattern in reimported.safeSenders) {
+        try {
+          _compilePattern(pattern);
+        } catch (e) {
+          invalidPatterns.add('$pattern -> $e');
+        }
+      }
+
+      expect(invalidPatterns, isEmpty,
+          reason: 'All safe sender patterns must be valid regex. '
+              'Invalid: ${invalidPatterns.join("; ")}');
+    });
   });
+}
+
+/// Compile a regex pattern, handling (?i) inline flag by stripping it
+/// and passing caseSensitive:false (matching PatternCompiler behavior)
+RegExp _compilePattern(String pattern) {
+  if (pattern.startsWith('(?i)')) {
+    return RegExp(pattern.substring(4), caseSensitive: false);
+  }
+  return RegExp(pattern);
 }
 
 /// Compare two lists after normalization (lowercase, deduplicate, sort)

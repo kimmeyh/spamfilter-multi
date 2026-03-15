@@ -40,6 +40,7 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
   late final RuleDatabaseStore _ruleDbStore;
   late final LocalRuleStore _localRuleStore;
   bool _isProcessing = false;
+  bool _isInitialized = false;
   String? _statusMessage;
   bool _statusIsError = false;
 
@@ -50,6 +51,14 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
     _ruleDbStore = RuleDatabaseStore(dbHelper);
     final appPaths = AppPaths();
     _localRuleStore = LocalRuleStore(appPaths);
+    _initializeAppPaths(appPaths);
+  }
+
+  Future<void> _initializeAppPaths(AppPaths appPaths) async {
+    await appPaths.initialize();
+    if (mounted) {
+      setState(() => _isInitialized = true);
+    }
   }
 
   void _showStatus(String message, {bool isError = false}) {
@@ -110,7 +119,7 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
             iconColor: Colors.green.shade700,
             title: 'Export Rules',
             subtitle: 'Save all block rules to a YAML file',
-            onPressed: _isProcessing ? null : _exportRules,
+            onPressed: _isProcessing || !_isInitialized ? null : _exportRules,
           ),
           const SizedBox(height: 8),
           _buildActionCard(
@@ -118,7 +127,7 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
             iconColor: Colors.green.shade700,
             title: 'Export Safe Senders',
             subtitle: 'Save all safe sender patterns to a YAML file',
-            onPressed: _isProcessing ? null : _exportSafeSenders,
+            onPressed: _isProcessing || !_isInitialized ? null : _exportSafeSenders,
           ),
 
           const SizedBox(height: 32),
@@ -143,7 +152,7 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
             iconColor: Colors.orange.shade700,
             title: 'Import Rules',
             subtitle: 'Replace all block rules from a YAML file',
-            onPressed: _isProcessing ? null : _importRules,
+            onPressed: _isProcessing || !_isInitialized ? null : _importRules,
           ),
           const SizedBox(height: 8),
           _buildActionCard(
@@ -151,7 +160,7 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
             iconColor: Colors.orange.shade700,
             title: 'Import Safe Senders',
             subtitle: 'Replace all safe sender patterns from a YAML file',
-            onPressed: _isProcessing ? null : _importSafeSenders,
+            onPressed: _isProcessing || !_isInitialized ? null : _importSafeSenders,
           ),
 
           // Status message

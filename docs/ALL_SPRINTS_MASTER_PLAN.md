@@ -118,6 +118,7 @@ All incomplete features, bugs, and spikes in relative priority order. HOLD items
 | 7 | Enhancement | Rule Splitting Migration Script (F23) | ~6-8h | -- | [Detail](#f23-rule-splitting-migration-script) |
 | 8 | Enhancement | Manage Rules Category Filter Chips (F24) | ~4-6h | -- | [Detail](#f24-manage-rules-category-filter-chips) |
 | 9 | Enhancement | Rule Testing UI Enhancements (F25) | ~6-8h | -- | [Detail](#f25-rule-testing-ui-enhancements) |
+| 10 | Enhancement | Scan Results: Speed up "Add Rule" performance | ~4-6h | -- | Profile and optimize rule addition from scan results screen |
 
 ### HOLD Items
 

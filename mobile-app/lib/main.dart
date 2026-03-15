@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'core/providers/rule_set_provider.dart';
 import 'core/providers/email_scan_provider.dart';
+import 'core/services/app_identity_migration.dart';
 import 'core/services/background_mode_service.dart';
 import 'core/services/background_scan_windows_worker.dart';
 import 'core/services/windows_system_tray_service.dart';
@@ -41,7 +42,7 @@ void main(List<String> args) async {
   // If running in background mode (launched by Task Scheduler), execute scan and exit
   if (BackgroundModeService.isBackgroundMode) {
     // Use file-based logging since headless mode has no console
-    final logFile = File('${Platform.environment['APPDATA']}\\com.example\\spam_filter_mobile\\logs\\background_scan.log');
+    final logFile = File('${Platform.environment['APPDATA']}\\MyEmailSpamFilter\\MyEmailSpamFilter\\logs\\background_scan_v0.5.0.log');
     Future<void> bgLog(String message) async {
       try {
         final timestamp = DateTime.now().toIso8601String();
@@ -70,6 +71,20 @@ void main(List<String> args) async {
       await bgLog('Background scan EXCEPTION: $e');
       await bgLog('Stack trace: $stackTrace');
       exit(1);
+    }
+  }
+
+  // APP IDENTITY MIGRATION: Migrate data from old com.example directory to new
+  // MyEmailSpamFilter directory after Sprint 19 identity change (Issue #182)
+  // Must run BEFORE credential migration and rule loading
+  if (Platform.isWindows) {
+    try {
+      final migrated = await AppIdentityMigration.migrateIfNeeded();
+      if (migrated) {
+        Logger().i('App identity migration completed successfully');
+      }
+    } catch (e) {
+      Logger().w('App identity migration failed: $e');
     }
   }
 

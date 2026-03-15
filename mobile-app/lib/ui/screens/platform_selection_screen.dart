@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/email_providers/spam_filter_platform.dart';
 import 'account_setup_screen.dart';
+import 'scan_progress_screen.dart';
 
 /// Platform selection screen - first step in account setup
 /// 
@@ -16,20 +17,24 @@ class PlatformSelectionScreen extends StatefulWidget {
 }
 
 class _PlatformSelectionScreenState extends State<PlatformSelectionScreen> {
-  // [NEW] ISSUE #125: Demo mode toggle state
-  bool _showDemoMode = false;
-
-  /// Get all supported platforms for display
+  /// Get all supported platforms for display (excludes demo - handled separately)
   List<PlatformInfo> _getSupportedPlatforms() {
     final allPlatforms = PlatformRegistry.getSupportedPlatforms();
-    
-    // [UPDATED] ISSUE #125: Include demo mode (phase 0) if toggle enabled
-    // Otherwise, filter to Phase 1 + Phase 2 platforms only (exclude Phase 3+ for now)
-    if (_showDemoMode) {
-      return allPlatforms.where((p) => p.phase <= 2 || p.phase == 0).toList();
-    } else {
-      return allPlatforms.where((p) => p.phase <= 2 && p.phase != 0).toList();
-    }
+    return allPlatforms.where((p) => p.phase <= 2 && p.phase != 0).toList();
+  }
+
+  /// Navigate directly to Demo Scan screen (no account setup needed)
+  void _startDemoMode() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const ScanProgressScreen(
+          platformId: 'demo',
+          platformDisplayName: 'Demo Mode',
+          accountId: 'demo@example.com',
+          accountEmail: 'demo@example.com',
+        ),
+      ),
+    );
   }
 
   /// Navigate to account setup screen for selected platform
@@ -96,18 +101,15 @@ class _PlatformSelectionScreenState extends State<PlatformSelectionScreen> {
                         ),
                   ),
                   const SizedBox(height: 16),
-                  // [NEW] ISSUE #125: Demo Mode toggle
+                  // [UPDATED] Sprint 19: Demo Mode as direct-launch card
                   Card(
-                    color: _showDemoMode 
-                      ? Theme.of(context).colorScheme.primaryContainer
-                      : Theme.of(context).colorScheme.surfaceContainerHighest,
-                    child: SwitchListTile(
-                      title: const Text('Show Demo Mode'),
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    child: ListTile(
+                      leading: Icon(Icons.science_outlined, color: Colors.purple.shade400),
+                      title: const Text('Try Demo Mode'),
                       subtitle: const Text('Test with 50+ sample emails (no email account needed)'),
-                      value: _showDemoMode,
-                      onChanged: (enabled) {
-                        setState(() => _showDemoMode = enabled);
-                      },
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: _startDemoMode,
                     ),
                   ),
                 ],

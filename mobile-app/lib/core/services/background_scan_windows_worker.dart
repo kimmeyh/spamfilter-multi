@@ -23,7 +23,7 @@ class BackgroundScanWindowsWorker {
   static Future<void> _bgLog(String message) async {
     try {
       final logFile = File(
-        '${Platform.environment['APPDATA']}\\com.example\\spam_filter_mobile\\logs\\background_scan.log',
+        '${Platform.environment['APPDATA']}\\MyEmailSpamFilter\\MyEmailSpamFilter\\logs\\background_scan_v0.5.0.log',
       );
       final timestamp = DateTime.now().toIso8601String();
       await logFile.parent.create(recursive: true);
@@ -280,7 +280,7 @@ class BackgroundScanWindowsWorker {
       } else {
         // Fall back to app data logs directory
         exportDir = '${Platform.environment['APPDATA']}'
-            '\\com.example\\spam_filter_mobile\\logs';
+            '\\MyEmailSpamFilter\\MyEmailSpamFilter\\logs';
       }
 
       // Ensure directory exists

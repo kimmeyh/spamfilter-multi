@@ -803,6 +803,39 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     );
   }
 
+  /// Build the Summary title including scan mode and folder names
+  String _buildSummaryTitle(
+    bool hasLiveResults,
+    bool showingHistorical,
+    EmailScanProvider scanProvider,
+    List<EmailActionResult> allResults,
+  ) {
+    String title;
+    if (hasLiveResults) {
+      title = 'Summary - ${scanProvider.getScanModeDisplayName()}';
+    } else if (showingHistorical) {
+      title = 'Scan Results';
+    } else {
+      title = 'Summary';
+    }
+
+    // Append folder names - use provider's selected folders (available before
+    // results arrive), historical scan's folders, or derive from results
+    List<String> folders;
+    if (hasLiveResults || scanProvider.status == ScanStatus.scanning) {
+      folders = List.from(scanProvider.getSelectedFoldersForAccount(widget.accountId))..sort();
+    } else if (showingHistorical && _lastCompletedScan != null && _lastCompletedScan!.foldersScanned.isNotEmpty) {
+      folders = List.from(_lastCompletedScan!.foldersScanned)..sort();
+    } else {
+      folders = allResults.map((r) => r.email.folderName).toSet().toList()..sort();
+    }
+    if (folders.isNotEmpty) {
+      title += ' - Folder(s): ${folders.join(', ')}';
+    }
+
+    return title;
+  }
+
   Widget _buildSummary(Map<String, dynamic> summary, EmailScanProvider scanProvider, List<EmailActionResult> allResults) {
     // [NEW] Testing feedback FB-4: Determine if showing live or historical results
     final hasLiveResults = scanProvider.results.isNotEmpty || scanProvider.status == ScanStatus.scanning;
@@ -845,11 +878,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              hasLiveResults
-                ? 'Summary - ${scanProvider.getScanModeDisplayName()}'
-                : showingHistorical
-                  ? 'Scan Results'
-                  : 'Summary',
+              _buildSummaryTitle(hasLiveResults, showingHistorical, scanProvider, allResults),
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             if (scanTypeLabel != null || scanTimeLabel != null) ...[
@@ -1636,6 +1665,40 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     return result;
   }
 
+  /// Re-evaluate all emails that currently have no matching rule.
+  ///
+  /// Called after adding a new block rule or safe sender so that
+  /// remaining "No rule" items are updated if the new rule matches them.
+  Future<void> _reEvaluateNoRuleEmails() async {
+    final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
+    final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
+    final evaluator = RuleEvaluator(
+      ruleSet: ruleProvider.rules,
+      safeSenderList: ruleProvider.safeSenders,
+      compiler: PatternCompiler(),
+    );
+
+    // Get current results (live or historical)
+    final liveResults = scanProvider.results;
+    final isLiveScanActive = scanProvider.status == ScanStatus.scanning ||
+        scanProvider.status == ScanStatus.paused;
+    final allResults = (liveResults.isNotEmpty || isLiveScanActive)
+        ? liveResults
+        : _historicalResults;
+
+    // Find all emails with effective action "none" (No rule)
+    for (final result in allResults) {
+      if (_getEffectiveAction(result) == EmailActionType.none) {
+        final evalResult = await evaluator.evaluate(result.email);
+        // Only store override if the new evaluation found a match
+        if (evalResult.matchedRule.isNotEmpty || evalResult.isSafeSender) {
+          final key = _getEmailKey(result.email);
+          _evaluationOverrides[key] = evalResult;
+        }
+      }
+    }
+  }
+
   /// Add sender to safe senders list
   /// Types: 'exact' (email), 'exactDomain' (@subdomain.domain.com), 'entireDomain' (@*.domain.com)
   Future<void> _addSafeSender(String value, String type, {EmailMessage? email}) async {
@@ -1697,6 +1760,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       if (email != null) {
         await _reEvaluateEmail(email);
       }
+
+      // Re-evaluate all remaining "No rule" emails against the new safe sender
+      await _reEvaluateNoRuleEmails();
 
       if (mounted) {
         setState(() {}); // Refresh list to show updated rule assignment
@@ -1817,6 +1883,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       if (email != null) {
         await _reEvaluateEmail(email);
       }
+
+      // Re-evaluate all remaining "No rule" emails against the new rule
+      await _reEvaluateNoRuleEmails();
 
       if (mounted) {
         setState(() {}); // Refresh list to show updated rule assignment
