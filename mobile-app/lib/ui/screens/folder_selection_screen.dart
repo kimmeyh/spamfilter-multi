@@ -15,6 +15,7 @@ import 'package:googleapis/gmail/v1.dart' as gmail;
 import 'package:http/http.dart' as http;
 import '../../adapters/email_providers/spam_filter_platform.dart';
 import '../../adapters/email_providers/generic_imap_adapter.dart';
+import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../adapters/auth/google_auth_service.dart';
 import 'settings_screen.dart';
@@ -140,17 +141,11 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
         
         folders = await _fetchGmailLabels(gmailApi);
       } else {
-        // IMAP providers (AOL, Yahoo, iCloud, ProtonMail, custom)
-        final SpamFilterPlatform provider;
-        
-        if (widget.platformId == 'aol') {
-          provider = GenericIMAPAdapter.aol();
-        } else if (widget.platformId == 'yahoo') {
-          provider = GenericIMAPAdapter.yahoo();
-        } else if (widget.platformId == 'icloud') {
-          provider = GenericIMAPAdapter.icloud();
-        } else {
-          provider = GenericIMAPAdapter.custom();
+        // IMAP providers (AOL, Gmail IMAP, Yahoo, iCloud, custom)
+        // Use PlatformRegistry to get the correct adapter for each platformId
+        final provider = PlatformRegistry.getPlatform(widget.platformId);
+        if (provider == null) {
+          throw Exception('Unsupported platform: ${widget.platformId}');
         }
         
         // Load credentials and fetch folders
