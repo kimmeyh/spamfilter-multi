@@ -83,7 +83,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 16 | docs/sprints/SPRINT_16_PLAN.md | [OK] Complete | ~6h (Feb 15-16, 2026) |
 | 17 | docs/sprints/SPRINT_17_SUMMARY.md | [OK] Complete | ~20h (Feb 17-21, 2026) |
 | 18 | docs/sprints/SPRINT_18_RETROSPECTIVE.md | [OK] Complete | Feb 24-27, 2026 |
-| 19 | docs/sprints/SPRINT_19_RETROSPECTIVE.md | [OK] Complete | Feb 27, 2026 |
+| 19 | docs/sprints/SPRINT_19_SUMMARY.md | [OK] Complete | Feb 27 - Mar 15, 2026 |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -121,8 +121,8 @@ All incomplete features, bugs, and spikes in relative priority order. HOLD items
 | 9 | Enhancement | Rule Testing UI Enhancements (F25) | ~6-8h | -- | [Detail](#f25-rule-testing-ui-enhancements) |
 | 10 | Enhancement | Scan Results: Speed up "Add Rule" performance | ~4-6h | -- | Profile and optimize rule addition from scan results screen |
 | 11 | Tech Debt | Clean up 47 pre-existing analyzer warnings in test files | ~2-4h | -- | Improve signal-to-noise ratio for flutter analyze |
-| 12 | Bug | Gmail folder scan errors | ~2-4h | -- | [Detail](#bug-gmail-folder-scan-errors) |
-| 13 | Enhancement | Demo Scan: expand sample data with realistic examples | ~4-6h | -- | [Detail](#demo-scan-expanded-sample-data) |
+| 12 | Bug | Gmail folder scan errors | ~2-4h | [#184](https://github.com/kimmeyh/spamfilter-multi/issues/184) | [Detail](#bug-gmail-folder-scan-errors) |
+| 13 | Enhancement | Demo Scan: expand sample data with realistic examples | ~4-6h | [#185](https://github.com/kimmeyh/spamfilter-multi/issues/185) | [Detail](#demo-scan-expanded-sample-data) |
 
 ### HOLD Items
 
