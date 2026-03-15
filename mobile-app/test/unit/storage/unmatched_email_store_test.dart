@@ -665,7 +665,7 @@ void main() {
       await databaseHelper.close();
 
       final now = DateTime.now();
-      final email = UnmatchedEmail(
+      UnmatchedEmail(
         scanResultId: testScanId,
         providerIdentifierType: 'gmail_message_id',
         providerIdentifierValue: 'msgId',

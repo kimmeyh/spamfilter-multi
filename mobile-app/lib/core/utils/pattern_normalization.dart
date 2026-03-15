@@ -297,7 +297,7 @@ class PatternNormalization {
       return result;
     } catch (e) {
       _logger.w('Error cleaning subject for display: $e');
-      return subject ?? '';
+      return subject;
     }
   }
 

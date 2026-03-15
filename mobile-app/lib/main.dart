@@ -211,7 +211,7 @@ class SpamFilterApp extends StatelessWidget {
 
 /// Widget to initialize rule provider before showing UI
 class _AppInitializer extends StatefulWidget {
-  const _AppInitializer({super.key});
+  const _AppInitializer();
 
   @override
   State<_AppInitializer> createState() => _AppInitializerState();

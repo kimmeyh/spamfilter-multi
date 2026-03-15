@@ -7,7 +7,7 @@ import 'package:spam_filter_mobile/ui/screens/safe_senders_management_screen.dar
 /// Verifies that the categorize() method correctly classifies safe sender
 /// patterns into Exact Email, Exact Domain, Entire Domain, and Other.
 void main() {
-  SafeSenderPattern _makePattern(String pattern, {String type = 'custom'}) {
+  SafeSenderPattern makePattern(String pattern, {String type = 'custom'}) {
     return SafeSenderPattern(
       pattern: pattern,
       patternType: type,
@@ -18,7 +18,7 @@ void main() {
   group('SafeSenderCategory.categorize', () {
     group('Exact Email patterns', () {
       test('classifies anchored email pattern with stored type "email"', () {
-        final sender = _makePattern(
+        final sender = makePattern(
           r'^user@domain\.com$',
           type: 'email',
         );
@@ -29,7 +29,7 @@ void main() {
       });
 
       test('classifies anchored email pattern by regex structure', () {
-        final sender = _makePattern(
+        final sender = makePattern(
           r'^user@domain\.com$',
           type: 'custom',
         );
@@ -48,7 +48,7 @@ void main() {
         ];
 
         for (final pattern in patterns) {
-          final sender = _makePattern(pattern, type: 'email');
+          final sender = makePattern(pattern, type: 'email');
           expect(
             SafeSenderCategory.categorize(sender),
             equals(SafeSenderCategory.exactEmail),
@@ -60,7 +60,7 @@ void main() {
 
     group('Exact Domain patterns', () {
       test('classifies unanchored domain pattern with stored type "domain"', () {
-        final sender = _makePattern(
+        final sender = makePattern(
           '@insightfinancialassociates.com',
           type: 'domain',
         );
@@ -71,7 +71,7 @@ void main() {
       });
 
       test('classifies unanchored domain pattern by regex structure', () {
-        final sender = _makePattern(
+        final sender = makePattern(
           '@insightfinancialassociates.com',
           type: 'custom',
         );
@@ -82,7 +82,7 @@ void main() {
       });
 
       test('classifies domain pattern without start anchor', () {
-        final sender = _makePattern(
+        final sender = makePattern(
           '@example.com',
           type: 'domain',
         );
@@ -95,7 +95,7 @@ void main() {
 
     group('Entire Domain patterns', () {
       test('classifies subdomain pattern with stored type "subdomain"', () {
-        final sender = _makePattern(
+        final sender = makePattern(
           r'^[^@\s]+@(?:[a-z0-9-]+\.)*amazon\.com$',
           type: 'subdomain',
         );
@@ -106,7 +106,7 @@ void main() {
       });
 
       test('classifies subdomain pattern by regex structure', () {
-        final sender = _makePattern(
+        final sender = makePattern(
           r'^[^@\s]+@(?:[a-z0-9-]+\.)*microsoft\.com$',
           type: 'custom',
         );
@@ -125,7 +125,7 @@ void main() {
         ];
 
         for (final pattern in patterns) {
-          final sender = _makePattern(pattern, type: 'subdomain');
+          final sender = makePattern(pattern, type: 'subdomain');
           expect(
             SafeSenderCategory.categorize(sender),
             equals(SafeSenderCategory.entireDomain),
@@ -137,7 +137,7 @@ void main() {
       test('subdomain type takes priority over anchored email structure', () {
         // This pattern has ^ and $ and @ (looks like exact email)
         // but contains subdomain wildcard, so should be Entire Domain
-        final sender = _makePattern(
+        final sender = makePattern(
           r'^[^@\s]+@(?:[a-z0-9-]+\.)*example\.com$',
           type: 'subdomain',
         );
@@ -150,7 +150,7 @@ void main() {
 
     group('Other patterns', () {
       test('classifies custom pattern without @ as Other', () {
-        final sender = _makePattern(
+        final sender = makePattern(
           r'.*newsletter.*',
           type: 'custom',
         );
@@ -161,7 +161,7 @@ void main() {
       });
 
       test('classifies pattern without @ as Other', () {
-        final sender = _makePattern(
+        final sender = makePattern(
           r'^some-pattern-without-at$',
           type: 'custom',
         );
@@ -172,7 +172,7 @@ void main() {
       });
 
       test('classifies empty-like pattern as Other', () {
-        final sender = _makePattern(
+        final sender = makePattern(
           'something',
           type: 'custom',
         );
@@ -186,7 +186,7 @@ void main() {
     group('stored patternType takes precedence', () {
       test('email type overrides ambiguous pattern', () {
         // Pattern might look like domain (has @ without ^) but type says email
-        final sender = _makePattern(
+        final sender = makePattern(
           r'^user@domain\.com$',
           type: 'email',
         );
@@ -197,7 +197,7 @@ void main() {
       });
 
       test('domain type overrides ambiguous pattern', () {
-        final sender = _makePattern(
+        final sender = makePattern(
           '@example.com',
           type: 'domain',
         );
@@ -209,7 +209,7 @@ void main() {
 
       test('subdomain type detected by pattern content', () {
         // Even with type "custom", the subdomain regex pattern is detected
-        final sender = _makePattern(
+        final sender = makePattern(
           r'^[^@\s]+@(?:[a-z0-9-]+\.)*google\.com$',
           type: 'custom',
         );

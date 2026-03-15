@@ -171,8 +171,7 @@ class _ProcessResultsScreenState extends State<ProcessResultsScreen> {
             return Center(child: Text('Scan not found'));
           }
 
-          final scanResult = scanSnapshot.data!;
-
+          // scanSnapshot.data verified non-null above
           return FutureBuilder<List<UnmatchedEmail>>(
             future: _unmatchedEmailsFuture,
             builder: (context, emailSnapshot) {

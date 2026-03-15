@@ -137,18 +137,6 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
     }
   }
 
-  /// Get account details from storage
-  /// 
-  /// accountId is the email address
-  /// platformId is retrieved separately from storage
-  Future<Map<String, String>> _getAccountDetails(String accountId) async {
-    final platformId = await _credStore.getPlatformId(accountId);
-    return {
-      'email': accountId, // accountId is the email
-      'platformId': platformId ?? 'unknown',
-    };
-  }
-
   /// Load account display data with caching to prevent flicker
   ///
   /// Returns cached data immediately if available, then refreshes in background.

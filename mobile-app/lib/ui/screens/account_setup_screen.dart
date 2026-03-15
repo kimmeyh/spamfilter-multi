@@ -279,29 +279,6 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     }
   }
 
-  /// Show scan mode selection dialog
-  /// Allows user to choose between:
-  /// - readonly (default): Safe testing, no email modifications
-  /// - testLimit: Limit modifications to N emails for safe testing
-  /// - testAll: Full scan with revert capability
-  void _showScanModeSelector(
-    BuildContext context,
-    String accountId,
-    String email,
-  ) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => _ScanModeSelector(
-        parentContext: context,
-        platformId: _effectivePlatformId,
-        platformDisplayName: _effectiveDisplayName,
-        accountId: accountId,
-        accountEmail: email,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     // [ISSUE #178] Gmail: Show auth method selector if not yet chosen

@@ -9,7 +9,6 @@ library;
 import 'package:logger/logger.dart';
 
 import '../models/rule_set.dart';
-import '../models/safe_sender_list.dart';
 import '../providers/rule_set_provider.dart';
 import 'pattern_compiler.dart';
 

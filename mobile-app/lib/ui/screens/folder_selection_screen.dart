@@ -14,7 +14,6 @@ import 'package:logger/logger.dart';
 import 'package:googleapis/gmail/v1.dart' as gmail;
 import 'package:http/http.dart' as http;
 import '../../adapters/email_providers/spam_filter_platform.dart';
-import '../../adapters/email_providers/generic_imap_adapter.dart';
 import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../adapters/auth/google_auth_service.dart';

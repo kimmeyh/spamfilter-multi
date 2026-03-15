@@ -4,7 +4,7 @@ import 'package:spam_filter_mobile/adapters/email_providers/spam_filter_platform
 import 'package:spam_filter_mobile/adapters/email_providers/generic_imap_adapter.dart';
 import 'package:spam_filter_mobile/adapters/email_providers/gmail_api_adapter.dart';
 import 'package:spam_filter_mobile/adapters/email_providers/email_provider.dart';
-import 'package:enough_mail/enough_mail.dart' hide Credentials;
+import 'package:enough_mail/enough_mail.dart';
 
 /// Integration test for delete-to-trash behavior (Sprint 11 Critical Fix)
 ///
@@ -127,9 +127,9 @@ void main() {
 
 /// Testable IMAP adapter that exposes internal client for mocking
 class TestableGenericIMAPAdapter extends GenericIMAPAdapter {
-  final MockImapClient _mockClient;
+  final MockImapClient mockClient;
 
-  TestableGenericIMAPAdapter(this._mockClient) : super(
+  TestableGenericIMAPAdapter(this.mockClient) : super(
     imapHost: 'test.example.com',
     imapPort: 993,
     isSecure: true,
@@ -145,9 +145,9 @@ class TestableGenericIMAPAdapter extends GenericIMAPAdapter {
 
 /// Testable Gmail adapter that exposes internal API for mocking
 class TestableGmailApiAdapter extends GmailApiAdapter {
-  final MockGmailApi _mockApi;
+  final MockGmailApi mockApi;
 
-  TestableGmailApiAdapter(this._mockApi);
+  TestableGmailApiAdapter(this.mockApi);
 
   // Override to inject mock API
   // In real implementation, this would require refactoring to inject GmailApi

@@ -82,7 +82,6 @@ class FakeRuleDatabaseStore implements RuleDatabaseStore {
     _rules.removeWhere((r) => r.name == ruleName);
   }
 
-  @override
   Future<void> deleteAllRules() async {
     _rules.clear();
   }
