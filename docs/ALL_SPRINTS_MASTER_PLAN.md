@@ -119,8 +119,8 @@ All incomplete features, bugs, and spikes in relative priority order. HOLD items
 | 7 | Enhancement | Rule Splitting Migration Script (F23) | ~6-8h | -- | [Detail](#f23-rule-splitting-migration-script) |
 | 8 | Enhancement | Manage Rules Category Filter Chips (F24) | ~4-6h | -- | [Detail](#f24-manage-rules-category-filter-chips) |
 | 9 | Enhancement | Rule Testing UI Enhancements (F25) | ~6-8h | -- | [Detail](#f25-rule-testing-ui-enhancements) |
-| 10 | Enhancement | Scan Results: Speed up "Add Rule" performance | ~4-6h | -- | Profile and optimize rule addition from scan results screen |
-| 11 | Tech Debt | Clean up 47 pre-existing analyzer warnings in test files | ~2-4h | -- | Improve signal-to-noise ratio for flutter analyze |
+| 10 | Enhancement | Scan Results: Speed up "Add Rule" performance | ~4-6h | [#186](https://github.com/kimmeyh/spamfilter-multi/issues/186) | Profile and optimize rule addition from scan results screen |
+| 11 | Tech Debt | Clean up 47 pre-existing analyzer warnings in test files | ~2-4h | [#187](https://github.com/kimmeyh/spamfilter-multi/issues/187) | Improve signal-to-noise ratio for flutter analyze |
 | 12 | Bug | Gmail folder scan errors | ~2-4h | [#184](https://github.com/kimmeyh/spamfilter-multi/issues/184) | [Detail](#bug-gmail-folder-scan-errors) |
 | 13 | Enhancement | Demo Scan: expand sample data with realistic examples | ~4-6h | [#185](https://github.com/kimmeyh/spamfilter-multi/issues/185) | [Detail](#demo-scan-expanded-sample-data) |
 
