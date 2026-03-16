@@ -391,6 +391,22 @@ void main() async {
 ///
 /// But may also include exact domain, exact email, or TLD patterns.
 PatternClassification? _classifyHeaderPattern(String pattern, Set<String> usedNames) {
+  // Pattern: @.*\.TLD$ -> top_level_domain (must check before entire_domain)
+  final tldMatch = RegExp(r'^@\.\*\\\.([a-z0-9._-]+)\$$').firstMatch(pattern);
+  if (tldMatch != null) {
+    final tld = tldMatch.group(1)!.replaceAll(r'\.', '.').replaceAll(r'\-', '-');
+    final name = _generateUniqueName('.$tld', usedNames);
+    return PatternClassification(
+      name: name,
+      pattern: pattern,
+      patternCategory: 'header_from',
+      patternSubType: 'top_level_domain',
+      sourceDomain: '.*.$tld',
+      executionOrder: executionOrders['header_from_top_level_domain']!,
+      conditionField: 'header',
+    );
+  }
+
   // Pattern: @(?:[a-z0-9-]+\.)*DOMAIN\.TLD$  -> entire_domain
   // This is the most common header pattern format
   final entireDomainMatch = RegExp(r'^@\(\?:\[a-z0-9\-\]\+\\\.\)\*(.+)\\\.([\w.-]+)\$$').firstMatch(pattern);
