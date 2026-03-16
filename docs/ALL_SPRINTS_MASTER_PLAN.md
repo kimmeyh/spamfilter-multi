@@ -123,6 +123,7 @@ All incomplete features, bugs, and spikes in relative priority order. HOLD items
 | 11 | Tech Debt | Clean up 47 pre-existing analyzer warnings in test files | ~2-4h | [#187](https://github.com/kimmeyh/spamfilter-multi/issues/187) | Improve signal-to-noise ratio for flutter analyze |
 | 12 | Bug | Gmail folder scan errors | ~2-4h | [#184](https://github.com/kimmeyh/spamfilter-multi/issues/184) | [Detail](#bug-gmail-folder-scan-errors) |
 | 13 | Enhancement | Demo Scan: expand sample data with realistic examples | ~4-6h | [#185](https://github.com/kimmeyh/spamfilter-multi/issues/185) | [Detail](#demo-scan-expanded-sample-data) |
+| 14 | Enhancement | Folder selectors: two-level listing with collapsible sub-folders | ~4-6h | -- | [Detail](#folder-selectors-two-level-listing) |
 
 ### HOLD Items
 
@@ -189,6 +190,48 @@ This section contains detailed specifications for incomplete items only. Complet
 - [ ] Safe Sender and Block Rule provider examples do not overlap
 - [ ] Demo scan results demonstrate all filter categories in results screen
 - [ ] Existing demo scan tests updated for new sample data
+
+---
+
+### Folder Selectors: Two-Level Listing
+
+**Status**: New (Sprint 20 testing feedback)
+**Estimated Effort**: ~4-6h
+
+**Overview**: Update folder selector UI (used by Safe Sender Folder, Deleted Rule Folder, and Default Folders settings) to show top-level folders flat and first-level sub-folders in collapsible groups.
+
+**Recommended UI**: Two-level collapsible folder tree
+
+```
+INBOX
+Bulk Mail
+Bulk Email
+[Gmail] >              (expandable group, collapsed by default)
+    [Gmail]/Trash
+    [Gmail]/Spam
+    [Gmail]/Sent Mail
+    [Gmail]/Drafts
+    [Gmail]/All Mail
+Notes >                (expandable group)
+    Notes/Work
+    Notes/Personal
+```
+
+- Top-level folders shown flat (INBOX, Bulk Mail, etc.)
+- Folders with children shown as expandable groups (chevron icon)
+- Only first level of children shown (not grandchildren)
+- Collapsed by default -- user expands to see children
+- Junk/Trash folders auto-highlighted regardless of nesting depth
+- Non-selectable parent containers (e.g., `[Gmail]`) shown as group headers only
+
+**Acceptance Criteria**:
+- [ ] FolderSelectionScreen groups child folders under their parent
+- [ ] Parent folders with children show expand/collapse toggle
+- [ ] Groups collapsed by default
+- [ ] Only first-level children shown
+- [ ] Non-selectable parent containers cannot be selected, only expanded
+- [ ] Works for Gmail IMAP ([Gmail]/ hierarchy), AOL (flat), and other providers
+- [ ] Existing folder selection behavior preserved for providers without sub-folders
 
 ---
 
