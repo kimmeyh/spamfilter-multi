@@ -5,6 +5,8 @@
 library;
 
 import '../models/email_message.dart';
+import '../models/rule_set.dart';
+import '../models/safe_sender_list.dart';
 
 /// Generate sample emails for demo mode
 class MockEmailData {
@@ -774,5 +776,160 @@ class MockEmailData {
   /// Get demo folder names
   static List<String> getDemoFolders() {
     return ['INBOX', 'Promotions', 'Spam', 'Junk', 'Trash'];
+  }
+
+  /// Demo-specific safe sender patterns for consistent demo results.
+  ///
+  /// These are used by the demo scan instead of the user's real safe senders,
+  /// so the demo always shows a predictable distribution of safe/deleted/no-rule.
+  /// Target: ~20 safe senders from INBOX emails.
+  static List<String> getDemoSafeSenderPatterns() {
+    return [
+      // Category 3: Legitimate Business (10 safe senders)
+      r'^[^@\s]+@(?:[a-z0-9-]+\.)*project-tool\.com$',
+      r'^noreply@github\.com$',
+      r'^[^@\s]+@(?:[a-z0-9-]+\.)*workspace\.com$',
+      r'^[^@\s]+@(?:[a-z0-9-]+\.)*company\.com$',
+      r'^[^@\s]+@(?:[a-z0-9-]+\.)*clientcompany\.com$',
+      r'^[^@\s]+@(?:[a-z0-9-]+\.)*vendor\.com$',
+
+      // Category 4: Personal (7 safe senders -- 3 personal are no-rule)
+      r'^mom@family\.com$',
+      r'^mike@gmail\.com$',
+      r'^orders@amazon\.com$',
+      r'^tracking@fedex\.com$',
+      r'^[^@\s]+@(?:[a-z0-9-]+\.)*electric-company\.com$',
+      r'^[^@\s]+@(?:[a-z0-9-]+\.)*healthclinic\.com$',
+      r'^[^@\s]+@(?:[a-z0-9-]+\.)*university\.edu$',
+
+      // Category 5: Safe Sender Exact Email (1 of 3)
+      r'^jane\.doe@gmail\.com$',
+
+      // Category 6: Safe Sender Exact Domain (1 of 3)
+      r'^[^@\s]+@(?:[a-z0-9-]+\.)*irs\.gov$',
+
+      // Category 7: Block Email (1 of 3 is safe -- the protonmail one)
+      r'^crypto\.trader99@protonmail\.com$',
+
+      // Category 8: Block Entire Domain (1 of 3 is safe -- activepipe)
+      r'^[^@\s]+@(?:[a-z0-9-]+\.)*activepipe\.com$',
+    ];
+  }
+
+  /// Demo-specific block rule header patterns for consistent demo results.
+  ///
+  /// Target: ~30 deleted from INBOX emails.
+  static List<String> getDemoBlockHeaderPatterns() {
+    return [
+      // Category 1: Obvious Spam (15 -- all blocked by domain)
+      r'@(?:[a-z0-9-]+\.)*lottery-scam\.com$',
+      r'@(?:[a-z0-9-]+\.)*mega-jackpot\.net$',
+      r'@(?:[a-z0-9-]+\.)*inheritance-claims\.org$',
+      r'@(?:[a-z0-9-]+\.)*cheap-meds-online\.biz$',
+      r'@(?:[a-z0-9-]+\.)*discount-pills\.info$',
+      r'@(?:[a-z0-9-]+\.)*online-casino-wins\.com$',
+      r'@(?:[a-z0-9-]+\.)*mega-slots\.co$',
+      r'@(?:[a-z0-9-]+\.)*paypa1-verification\.com$',
+      r'@(?:[a-z0-9-]+\.)*bank-of-america-secure\.net$',
+      r'@(?:[a-z0-9-]+\.)*hot-singles\.xxx$',
+      r'@(?:[a-z0-9-]+\.)*miracle-weight-loss\.com$',
+      r'@(?:[a-z0-9-]+\.)*easy-money-online\.biz$',
+      r'@(?:[a-z0-9-]+\.)*microsoft-security-alert\.com$',
+      r'@(?:[a-z0-9-]+\.)*free-amazon-giftcard\.org$',
+
+      // Category 2: Marketing (6 in INBOX -- blocked)
+      r'@(?:[a-z0-9-]+\.)*fitness-app\.com$',
+      r'@(?:[a-z0-9-]+\.)*job-board\.com$',
+      r'@(?:[a-z0-9-]+\.)*social-network\.com$',
+      r'@(?:[a-z0-9-]+\.)*cloud-provider\.com$',
+      r'@(?:[a-z0-9-]+\.)*news-digest\.com$',
+      r'@(?:[a-z0-9-]+\.)*tech-blog\.com$',
+
+      // Category 5: Safe Sender Exact Email (1 of 3 blocked -- outlook one)
+      r'^lisa\.martinez@outlook\.com$',
+
+      // Category 6: Safe Sender Exact Domain (1 of 3 blocked -- venmo)
+      r'@(?:[a-z0-9-]+\.)*venmo\.com$',
+
+      // Category 7: Block Email (1 of 3 blocked -- the AOL one)
+      r'^spammer\.jones@aol\.com$',
+
+      // Category 8: Block Entire Domain (1 of 3 blocked)
+      r'@(?:[a-z0-9-]+\.)*americasurveys\.com$',
+    ];
+  }
+
+  /// Demo-specific block rule body patterns.
+  static List<String> getDemoBlockBodyPatterns() {
+    return [
+      // prince.nigeria@yahoo.com is spam but from a legit provider,
+      // so block by body content instead
+      r'Prince Okonkwo',
+    ];
+  }
+
+  /// Demo-specific block rule subject patterns.
+  static List<String> getDemoBlockSubjectPatterns() {
+    return [
+      // Block make.money.fast@hotmail.com by subject
+      r'(?i).*secret investment strategy.*',
+    ];
+  }
+
+  /// Build a RuleSet from demo-specific block patterns.
+  ///
+  /// Creates a single rule per condition type (header, body, subject)
+  /// containing all demo block patterns.
+  static RuleSet getDemoRuleSet() {
+    return RuleSet(
+      version: '1.0',
+      settings: {},
+      rules: [
+        Rule(
+          name: 'DemoBlockHeader',
+          enabled: true,
+          isLocal: true,
+          executionOrder: 1,
+          conditions: RuleConditions(
+            type: 'OR',
+            header: getDemoBlockHeaderPatterns(),
+          ),
+          actions: RuleActions(delete: true),
+          patternCategory: 'header_from',
+          patternSubType: 'entire_domain',
+        ),
+        Rule(
+          name: 'DemoBlockBody',
+          enabled: true,
+          isLocal: true,
+          executionOrder: 2,
+          conditions: RuleConditions(
+            type: 'OR',
+            body: getDemoBlockBodyPatterns(),
+          ),
+          actions: RuleActions(delete: true),
+          patternCategory: 'body',
+          patternSubType: 'entire_domain',
+        ),
+        Rule(
+          name: 'DemoBlockSubject',
+          enabled: true,
+          isLocal: true,
+          executionOrder: 3,
+          conditions: RuleConditions(
+            type: 'OR',
+            subject: getDemoBlockSubjectPatterns(),
+          ),
+          actions: RuleActions(delete: true),
+          patternCategory: 'subject',
+          patternSubType: 'entire_domain',
+        ),
+      ],
+    );
+  }
+
+  /// Build a SafeSenderList from demo-specific safe sender patterns.
+  static SafeSenderList getDemoSafeSenderList() {
+    return SafeSenderList(safeSenders: getDemoSafeSenderPatterns());
   }
 }

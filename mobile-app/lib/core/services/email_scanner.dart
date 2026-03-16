@@ -2,6 +2,9 @@
 library;
 
 import '../models/email_message.dart';
+import '../models/rule_set.dart';
+import '../models/safe_sender_list.dart';
+import 'mock_email_data.dart';
 import '../models/evaluation_result.dart';
 import '../providers/email_scan_provider.dart';
 import '../providers/rule_set_provider.dart';
@@ -165,9 +168,21 @@ class EmailScanner {
       }
       AppLogger.scan('=======================');
 
+      // Use demo-specific rules for demo mode, user's rules for real scans
+      final RuleSet effectiveRules;
+      final SafeSenderList effectiveSafeSenders;
+      if (platformId == 'demo') {
+        effectiveRules = MockEmailData.getDemoRuleSet();
+        effectiveSafeSenders = MockEmailData.getDemoSafeSenderList();
+        AppLogger.scan('Using demo-specific rules: ${effectiveRules.rules.length} rules, ${effectiveSafeSenders.safeSenders.length} safe senders');
+      } else {
+        effectiveRules = ruleSetProvider.rules;
+        effectiveSafeSenders = ruleSetProvider.safeSenders;
+      }
+
       final evaluator = RuleEvaluator(
-        ruleSet: ruleSetProvider.rules,
-        safeSenderList: ruleSetProvider.safeSenders,
+        ruleSet: effectiveRules,
+        safeSenderList: effectiveSafeSenders,
         compiler: PatternCompiler(),
       );
 

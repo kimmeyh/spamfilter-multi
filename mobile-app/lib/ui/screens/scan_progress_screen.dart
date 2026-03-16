@@ -67,10 +67,14 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
     final folders = await settingsStore.getAccountManualScanFolders(widget.accountId);
     final mode = await settingsStore.getAccountManualScanMode(widget.accountId);
     if (mounted) {
+      final resolvedFolders = (folders != null && folders.isNotEmpty) ? folders : ['INBOX'];
       setState(() {
-        _configuredFolders = (folders != null && folders.isNotEmpty) ? folders : ['INBOX'];
+        _configuredFolders = resolvedFolders;
         _configuredMode = mode ?? ScanMode.readonly;
       });
+      // Store in provider so results_display_screen shows correct folders
+      final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
+      scanProvider.setSelectedFolders(resolvedFolders, accountId: widget.accountId);
     }
   }
 
@@ -498,6 +502,9 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
         foldersToScan = ['INBOX'];
         scanLogger.i('[FOLDERS] No folders configured in Settings, using default: $foldersToScan');
       }
+
+      // Store selected folders in provider so results_display_screen can show them
+      scanProvider.setSelectedFolders(foldersToScan, accountId: widget.accountId);
 
       scanLogger.i('[SCAN_SCREEN] Starting scan: folders=$foldersToScan, daysBack=$daysBack');
 
