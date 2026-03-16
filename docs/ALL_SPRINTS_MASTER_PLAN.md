@@ -124,6 +124,7 @@ All incomplete features, bugs, and spikes in relative priority order. HOLD items
 | 12 | Bug | Gmail folder scan errors | ~2-4h | [#184](https://github.com/kimmeyh/spamfilter-multi/issues/184) | [Detail](#bug-gmail-folder-scan-errors) |
 | 13 | Enhancement | Demo Scan: expand sample data with realistic examples | ~4-6h | [#185](https://github.com/kimmeyh/spamfilter-multi/issues/185) | [Detail](#demo-scan-expanded-sample-data) |
 | 14 | Enhancement | Folder selectors: two-level listing with collapsible sub-folders | ~4-6h | -- | [Detail](#folder-selectors-two-level-listing) |
+| 15 | Enhancement | Rule editing UI with regex generation and validation | ~8-12h | -- | [Detail](#rule-editing-ui) |
 
 ### HOLD Items
 
@@ -243,6 +244,31 @@ Notes >                (expandable group)
 - [ ] Path separator detected per-provider (not hardcoded)
 - [ ] Works for Gmail IMAP ([Gmail]/ hierarchy), AOL (flat), Yahoo (flat), and custom IMAP
 - [ ] Existing folder selection behavior preserved for providers without sub-folders
+
+---
+
+### Rule Editing UI
+
+**Status**: New (Sprint 20 testing feedback)
+**Estimated Effort**: ~8-12h
+
+**Overview**: Add the ability to edit existing rules from the Manage Rules screen. Since rules use regex patterns, the UI must help users who are not familiar with regex syntax.
+
+**Key Features**:
+1. **User-friendly input**: User enters a domain, email, or keyword in plain text, and the app generates the correct regex pattern
+2. **Regex validation**: If the user edits the regex directly, validate it in real-time and show errors with suggested corrections
+3. **Pattern preview**: Show what the pattern would match against sample text (reuse Rule Testing UI from Sprint 18)
+4. **Edit dialog**: Tap a rule in Manage Rules > Edit button in details dialog
+5. **Field editing**: Edit source_domain (regenerates regex), pattern_category, pattern_sub_type, enabled/disabled
+
+**Acceptance Criteria**:
+- [ ] Edit button in rule details dialog opens edit screen
+- [ ] Plain-text domain/email input generates correct regex pattern
+- [ ] Direct regex editing with real-time validation
+- [ ] Invalid regex shows error message with suggested fix
+- [ ] Pattern preview shows match results against sample data
+- [ ] Changes saved to database
+- [ ] Rule name updated if source_domain changes
 
 ---
 
