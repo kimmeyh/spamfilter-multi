@@ -214,7 +214,13 @@ class EmailScanner {
 
         if (result.matchedRule.isNotEmpty) {
           if (result.isSafeSender) {
-            action = EmailActionType.safeSender;
+            // Skip safe sender action if email is already in the safe sender folder
+            // (no action needed -- it is already where it would be moved to)
+            final emailFolder = message.folderName.toLowerCase();
+            final targetFolder = safeSenderTarget.toLowerCase();
+            if (emailFolder != targetFolder) {
+              action = EmailActionType.safeSender;
+            }
           } else if (result.shouldDelete) {
             action = EmailActionType.delete;
           } else if (result.shouldMove) {
