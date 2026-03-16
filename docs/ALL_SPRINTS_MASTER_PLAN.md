@@ -224,13 +224,24 @@ Notes >                (expandable group)
 - Junk/Trash folders auto-highlighted regardless of nesting depth
 - Non-selectable parent containers (e.g., `[Gmail]`) shown as group headers only
 
+**Provider-Specific Folder Hierarchies** (research before implementation):
+- **Gmail IMAP**: `[Gmail]/` prefix for system folders (Trash, Spam, Sent Mail, All Mail, Drafts). Custom labels may also use `/` hierarchy. Separator: `/`
+- **AOL**: Flat folder structure (INBOX, Bulk Mail, Bulk Email, Sent, Trash). No sub-folders typically. Separator: `/`
+- **Yahoo**: Flat structure similar to AOL (Inbox, Bulk, Sent, Trash, Draft). Separator: `/`
+- **iCloud**: May have nested folders. Separator: `/`
+- **Custom IMAP**: Unknown hierarchy -- must handle any structure. Separator: varies (usually `/` or `.`)
+
+**Implementation Note**: The path separator varies by provider and is returned by the IMAP server in `listMailboxes()` response. Use `mailbox.pathSeparator` to split paths into parent/child, do not hardcode `/`.
+
 **Acceptance Criteria**:
+- [ ] Research and document actual folder hierarchy for each supported provider before implementation
 - [ ] FolderSelectionScreen groups child folders under their parent
 - [ ] Parent folders with children show expand/collapse toggle
 - [ ] Groups collapsed by default
 - [ ] Only first-level children shown
 - [ ] Non-selectable parent containers cannot be selected, only expanded
-- [ ] Works for Gmail IMAP ([Gmail]/ hierarchy), AOL (flat), and other providers
+- [ ] Path separator detected per-provider (not hardcoded)
+- [ ] Works for Gmail IMAP ([Gmail]/ hierarchy), AOL (flat), Yahoo (flat), and custom IMAP
 - [ ] Existing folder selection behavior preserved for providers without sub-folders
 
 ---
