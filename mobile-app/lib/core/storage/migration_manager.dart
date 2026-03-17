@@ -226,6 +226,9 @@ class MigrationManager {
             'metadata': rule.metadata != null ? jsonEncode(rule.metadata) : null,
             'date_added': migrationDate,
             'created_by': 'manual',
+            'pattern_category': rule.patternCategory,
+            'pattern_sub_type': rule.patternSubType,
+            'source_domain': rule.sourceDomain,
           };
 
           // Use transaction's execute for database operations
