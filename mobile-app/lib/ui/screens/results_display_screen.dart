@@ -1734,7 +1734,45 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         );
       }
 
-      // Create the rule with proper types
+      // Determine pattern classification fields
+      String patternCategory;
+      String patternSubType;
+      String sourceDomain;
+      int executionOrder;
+
+      switch (type) {
+        case 'from':
+          patternCategory = 'header_from';
+          patternSubType = 'exact_email';
+          sourceDomain = value;
+          executionOrder = 40;
+          break;
+        case 'exactDomain':
+          patternCategory = 'header_from';
+          patternSubType = 'exact_domain';
+          sourceDomain = value.startsWith('@') ? value.substring(1) : value;
+          executionOrder = 30;
+          break;
+        case 'entireDomain':
+          patternCategory = 'header_from';
+          patternSubType = 'entire_domain';
+          sourceDomain = value;
+          executionOrder = 20;
+          break;
+        case 'subject':
+          patternCategory = 'subject';
+          patternSubType = 'exact_domain';
+          sourceDomain = value;
+          executionOrder = 60;
+          break;
+        default:
+          patternCategory = 'header_from';
+          patternSubType = 'exact_domain';
+          sourceDomain = value;
+          executionOrder = 30;
+      }
+
+      // Create the rule with proper types and classification
       final conditions = type == 'subject'
           ? RuleConditions(type: 'OR', subject: [pattern])
           : RuleConditions(type: 'OR', header: [pattern]);
@@ -1742,13 +1780,16 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       final rule = Rule(
         name: ruleName,
         enabled: true,
-        isLocal: true,  // Mark as local (created in app, not from YAML)
-        executionOrder: 100,  // Default execution order
+        isLocal: true,
+        executionOrder: executionOrder,
         conditions: conditions,
         actions: RuleActions(delete: true),
         metadata: {
           'comment': 'Created from Results screen on ${DateTime.now().toIso8601String().substring(0, 10)}',
         },
+        patternCategory: patternCategory,
+        patternSubType: patternSubType,
+        sourceDomain: sourceDomain,
       );
 
       // Add rule via provider (persists to database and YAML)

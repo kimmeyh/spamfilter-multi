@@ -173,6 +173,27 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
       moveToFolder: _selectedAction == RuleActionType.move ? _moveToFolderController.text.trim() : null,
     );
 
+    // Determine pattern classification based on active conditions
+    String? patternCategory;
+    String? patternSubType;
+    String? sourceDomain;
+
+    if (fromPatterns.isNotEmpty) {
+      patternCategory = 'header_from';
+      patternSubType = 'exact_email';
+      sourceDomain = widget.email.from;
+    } else if (subjectPatterns.isNotEmpty) {
+      patternCategory = 'subject';
+      patternSubType = 'exact_domain';
+      sourceDomain = _subjectPatternController.text.trim();
+    } else if (bodyPatterns.isNotEmpty) {
+      patternCategory = 'body';
+      patternSubType = 'entire_domain';
+      sourceDomain = _bodyPatternController.text.isNotEmpty
+          ? _bodyPatternController.text.trim()
+          : _bodyUrlPatternController.text.trim();
+    }
+
     return Rule(
       name: _ruleNameController.text.trim(),
       enabled: true,
@@ -185,6 +206,9 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
         'source_email_id': widget.email.id,
         'source_from': widget.email.from,
       },
+      patternCategory: patternCategory,
+      patternSubType: patternSubType,
+      sourceDomain: sourceDomain,
     );
   }
 
