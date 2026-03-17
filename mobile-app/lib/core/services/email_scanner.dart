@@ -214,16 +214,10 @@ class EmailScanner {
 
         if (result.matchedRule.isNotEmpty) {
           if (result.isSafeSender) {
-            // Skip safe sender action if email is already in the safe sender folder
-            // (no action needed -- it is already where it would be moved to).
-            // Only apply this skip when a safe sender folder is explicitly configured
-            // (not the default INBOX fallback).
-            final skipSafeSender = safeSenderFolder != null &&
-                safeSenderFolder.isNotEmpty &&
-                message.folderName.toLowerCase() == safeSenderTarget.toLowerCase();
-            if (!skipSafeSender) {
-              action = EmailActionType.safeSender;
-            }
+            // Always mark as safeSender for display in scan results.
+            // The actual move action is skipped later (Phase 6b, line ~285)
+            // if the email is already in the safe sender target folder.
+            action = EmailActionType.safeSender;
           } else if (result.shouldDelete) {
             action = EmailActionType.delete;
           } else if (result.shouldMove) {
