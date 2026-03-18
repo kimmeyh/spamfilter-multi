@@ -45,11 +45,48 @@ Implement **environment-aware app identity** using Flutter's `--dart-define` mec
 | Property | Production (main) | Development (feature/develop) |
 |----------|-------------------|-------------------------------|
 | App data directory | `MyEmailSpamFilter\MyEmailSpamFilter\` | `MyEmailSpamFilter\MyEmailSpamFilter_Dev\` |
-| Window title | MyEmailSpamFilter | MyEmailSpamFilter [DEV] |
+| Window title | MyEmailSpamFilter | MyEmailSpamFilter [DEV] v{VERSION} |
 | Task Scheduler task | `SpamFilterBackgroundScan` | `SpamFilterBackgroundScan_Dev` |
 | Background scan log | `background_scan_v{VERSION}.log` | `background_scan_dev_v{VERSION}.log` |
 | Mutex name | `Global\MyEmailSpamFilter_Production` | `Global\MyEmailSpamFilter_Development` |
 | Database | `spam_filter.db` | `spam_filter.db` (in separate directory) |
+| About screen | v0.5.0 | v0.5.0 [DEV] |
+
+### Version Number Strategy
+
+**Production version**: Follows semver from `pubspec.yaml` (e.g., `0.5.0+1`). Only updated on releases merged to main.
+
+**Development version**: Same `pubspec.yaml` version but with `[DEV]` suffix displayed in UI. The version number in pubspec.yaml is updated on the develop/feature branch when a new release is being prepared, but the `[DEV]` indicator makes it clear this is not a released build.
+
+**Why not separate version numbers**: Both environments share the same `pubspec.yaml`. Maintaining separate version files adds complexity. The environment indicator (`[DEV]`) is sufficient to distinguish builds visually. The separate data directories prevent version-related DB migration conflicts.
+
+**DB schema version isolation**: Each environment has its own database file in its own data directory. If the dev branch upgrades the DB schema (e.g., v2 -> v3), it only affects the dev database. The production database remains at the production schema version. This eliminates cross-environment schema conflicts.
+
+### Repository Directory Structure
+
+The production build should use a **separate checkout** (git worktree) so that switching branches for development does not overwrite the production executable:
+
+```
+D:\Data\Harold\github\
+├── spamfilter-multi\                    # Primary checkout (develop/feature branches)
+│   └── mobile-app\build\windows\...    # Development build output
+│
+└── spamfilter-multi-prod\              # Git worktree (main branch only)
+    └── mobile-app\build\windows\...    # Production build output
+```
+
+**Setup**:
+```powershell
+# One-time: Create production worktree from main branch
+cd D:\Data\Harold\github\spamfilter-multi
+git worktree add ../spamfilter-multi-prod main
+```
+
+**Benefits**:
+- Production executable path is stable (never overwritten by dev builds)
+- Task Scheduler always points to the production worktree path
+- `flutter clean` on dev branch does not delete production executable
+- `git pull` in production worktree updates main branch independently
 
 ### Implementation Approach
 
@@ -58,19 +95,22 @@ Implement **environment-aware app identity** using Flutter's `--dart-define` mec
 Pass `APP_ENV=dev` or `APP_ENV=prod` at build time:
 
 ```powershell
-# Production build (from main branch)
-flutter build windows --release --dart-define=APP_ENV=prod
+# Production build (from main branch worktree)
+cd D:\Data\Harold\github\spamfilter-multi-prod\mobile-app\scripts
+.\build-windows.ps1 -Environment prod
 
 # Development build (from feature/develop branch)
-flutter run -d windows --dart-define=APP_ENV=dev
+cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts
+.\build-windows.ps1    # defaults to dev
 ```
 
 The app reads `String.fromEnvironment('APP_ENV', defaultValue: 'dev')` and adjusts:
 - `AppPaths` data directory suffix
-- Window title
+- Window title (includes `[DEV]` and version)
 - Task Scheduler task name
 - Mutex name
 - Log file name
+- About screen display
 
 **Advantages**:
 - No code duplication (single main.dart)
@@ -116,25 +156,33 @@ Option A is simplest, requires minimal code changes, and integrates with existin
 
 ## Implementation Plan
 
+### Phase 0: Repository Setup (One-Time)
+0. Create production git worktree: `git worktree add ../spamfilter-multi-prod main`
+1. Build production release in worktree: `cd ../spamfilter-multi-prod/mobile-app/scripts && .\build-windows.ps1 -Environment prod`
+
 ### Phase 1: Core Infrastructure
-1. Add `AppEnvironment` class that reads `APP_ENV` from `--dart-define`
-2. Update `AppPaths` to use environment-aware data directory
-3. Update `WindowsTaskSchedulerService` to use environment-aware task name
-4. Update `BackgroundScanWindowsWorker` to use environment-aware log file name
-5. Add environment indicator to window title in `main.cpp` or `main.dart`
+2. Add `AppEnvironment` class that reads `APP_ENV` from `--dart-define`
+3. Update `AppPaths` to use environment-aware data directory suffix
+4. Update `WindowsTaskSchedulerService` to use environment-aware task name
+5. Update `BackgroundScanWindowsWorker` to use environment-aware log file name
+6. Add environment indicator to window title (`[DEV]` suffix)
+7. Update About screen to show environment indicator with version
 
 ### Phase 2: Build Script Updates
-6. Update `build-windows.ps1` to accept `-Environment` parameter (default: `dev`)
-7. Production build command: `.\build-windows.ps1 -Environment prod`
-8. Development build command: `.\build-windows.ps1` (defaults to dev)
+8. Update `build-windows.ps1` to accept `-Environment` parameter (default: `dev`)
+9. Production build command: `.\build-windows.ps1 -Environment prod`
+10. Development build command: `.\build-windows.ps1` (defaults to dev)
+11. Ensure `--dart-define=APP_ENV={env}` is passed to both `flutter build` and `flutter run`
 
 ### Phase 3: Single-Instance Mutex
-9. Add named mutex in Windows runner (`main.cpp`) using environment-specific name
-10. Show message and bring existing window to front if mutex already held
+12. Add named mutex in Windows runner (`main.cpp`) using environment-specific name
+13. Show message and bring existing window to front if mutex already held
+14. Mutex name includes environment: `Global\MyEmailSpamFilter_{Environment}`
 
 ### Phase 4: Documentation
-11. Update CLAUDE.md with production/development build instructions
-12. Update DEVELOPER_SETUP.md with side-by-side workflow
+15. Update CLAUDE.md with production/development build instructions and worktree setup
+16. Update DEVELOPER_SETUP.md with side-by-side workflow
+17. Document production worktree maintenance (git pull, rebuilding after main updates)
 
 ## References
 
