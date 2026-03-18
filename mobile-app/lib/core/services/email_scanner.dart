@@ -214,9 +214,15 @@ class EmailScanner {
 
         if (result.matchedRule.isNotEmpty) {
           if (result.isSafeSender) {
-            // Always mark as safeSender for display in scan results.
-            // The actual move action is skipped later (Phase 6b, line ~285)
-            // if the email is already in the safe sender target folder.
+            // If email is already in the safe sender folder, skip entirely --
+            // do not count, do not display, do not process. It is already
+            // where it belongs. Other rule types (delete, no rule) in the
+            // safe sender folder ARE still shown.
+            if (safeSenderFolder != null &&
+                safeSenderFolder.isNotEmpty &&
+                message.folderName.toLowerCase() == safeSenderTarget.toLowerCase()) {
+              continue; // Skip this email entirely
+            }
             action = EmailActionType.safeSender;
           } else if (result.shouldDelete) {
             action = EmailActionType.delete;
