@@ -1,14 +1,15 @@
-/// Rules management screen for viewing, toggling, and deleting block rules
+/// Rules management screen for viewing, toggling, filtering, and deleting block rules
 ///
-/// [ISSUE #148] Sprint 15: Allows users to manage spam filtering rules
-/// from Settings without direct database or YAML access.
+/// [ISSUE #149] Sprint 20: Overhaul with filter chips, search, and individual
+/// pattern display after monolithic rule split.
 ///
 /// Features:
-/// - List all rules with name, action, and enabled status
+/// - Filter chips by pattern category (header_from, subject, body)
+/// - Filter chips by pattern sub-type (entire_domain, exact_domain, exact_email, top_level_domain)
+/// - Search across rule names and source domains
 /// - Toggle rule enable/disable
 /// - Delete individual rules with confirmation
-/// - View rule details (conditions, exceptions, action)
-/// - Search/filter rules
+/// - View rule details (conditions, pattern, action)
 library;
 
 import 'package:flutter/material.dart';
@@ -36,6 +37,24 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
 
+  // Filter state
+  final Set<String> _selectedCategories = {};
+  final Set<String> _selectedSubTypes = {};
+
+  // Category display labels
+  static const Map<String, String> _categoryLabels = {
+    'header_from': 'Header / From',
+    'subject': 'Subject',
+    'body': 'Body',
+  };
+
+  static const Map<String, String> _subTypeLabels = {
+    'entire_domain': 'Entire Domain',
+    'exact_domain': 'Exact Domain',
+    'exact_email': 'Exact Email',
+    'top_level_domain': 'Top-Level Domain',
+  };
+
   @override
   void initState() {
     super.initState();
@@ -54,8 +73,14 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
     try {
       final ruleSet = await _store.loadRules();
       _rules = List.from(ruleSet.rules);
-      // Sort by execution order
-      _rules.sort((a, b) => a.executionOrder.compareTo(b.executionOrder));
+      _rules.sort((a, b) {
+        // Sort by execution order, then by sourceDomain/name
+        final orderCompare = a.executionOrder.compareTo(b.executionOrder);
+        if (orderCompare != 0) return orderCompare;
+        final aDisplay = a.sourceDomain ?? a.name;
+        final bDisplay = b.sourceDomain ?? b.name;
+        return aDisplay.compareTo(bDisplay);
+      });
       _applyFilter();
     } catch (e) {
       _logger.e('Failed to load rules', error: e);
@@ -71,16 +96,49 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
   }
 
   void _applyFilter() {
-    if (_searchQuery.isEmpty) {
-      _filteredRules = List.from(_rules);
-    } else {
-      final query = _searchQuery.toLowerCase();
-      _filteredRules = _rules.where((rule) {
-        return rule.name.toLowerCase().contains(query) ||
-            _getActionLabel(rule).toLowerCase().contains(query) ||
-            _getConditionSummary(rule).toLowerCase().contains(query);
-      }).toList();
+    _filteredRules = _rules.where((rule) {
+      // Category filter
+      if (_selectedCategories.isNotEmpty) {
+        final cat = rule.patternCategory ?? '';
+        if (!_selectedCategories.contains(cat)) return false;
+      }
+
+      // SubType filter
+      if (_selectedSubTypes.isNotEmpty) {
+        final sub = rule.patternSubType ?? '';
+        if (!_selectedSubTypes.contains(sub)) return false;
+      }
+
+      // Search filter
+      if (_searchQuery.isNotEmpty) {
+        final query = _searchQuery.toLowerCase();
+        final displayName = (rule.sourceDomain ?? rule.name).toLowerCase();
+        final ruleName = rule.name.toLowerCase();
+        if (!displayName.contains(query) && !ruleName.contains(query)) return false;
+      }
+
+      return true;
+    }).toList();
+  }
+
+  /// Count rules per category
+  Map<String, int> _getCategoryCounts() {
+    final counts = <String, int>{};
+    for (final rule in _rules) {
+      final cat = rule.patternCategory ?? 'uncategorized';
+      counts[cat] = (counts[cat] ?? 0) + 1;
     }
+    return counts;
+  }
+
+  /// Count rules per sub-type
+  Map<String, int> _getSubTypeCounts() {
+    final counts = <String, int>{};
+    for (final rule in _rules) {
+      final sub = rule.patternSubType ?? 'unknown';
+      counts[sub] = (counts[sub] ?? 0) + 1;
+    }
+    return counts;
   }
 
   Future<void> _toggleRule(Rule rule) async {
@@ -94,6 +152,9 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
         actions: rule.actions,
         exceptions: rule.exceptions,
         metadata: rule.metadata,
+        patternCategory: rule.patternCategory,
+        patternSubType: rule.patternSubType,
+        sourceDomain: rule.sourceDomain,
       );
       await _store.updateRule(updatedRule);
       _logger.i('${rule.enabled ? "Disabled" : "Enabled"} rule: ${rule.name}');
@@ -109,6 +170,7 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
   }
 
   Future<void> _deleteRule(Rule rule) async {
+    final displayName = rule.sourceDomain ?? rule.name;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -126,8 +188,8 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
-                rule.name,
-                style: const TextStyle(fontWeight: FontWeight.bold),
+                displayName,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontFamily: 'monospace'),
               ),
             ),
             const SizedBox(height: 12),
@@ -157,7 +219,7 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
         _logger.i('Deleted rule: ${rule.name}');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Rule deleted')),
+            SnackBar(content: Text('Deleted: $displayName')),
           );
         }
         await _loadRules();
@@ -173,6 +235,10 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
   }
 
   void _showRuleDetails(Rule rule) {
+    final displayName = rule.sourceDomain ?? rule.name;
+    final categoryLabel = _categoryLabels[rule.patternCategory] ?? rule.patternCategory ?? 'Unknown';
+    final subTypeLabel = _subTypeLabels[rule.patternSubType] ?? rule.patternSubType ?? 'Unknown';
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -186,8 +252,8 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                rule.name,
-                style: const TextStyle(fontSize: 16),
+                displayName,
+                style: const TextStyle(fontSize: 16, fontFamily: 'monospace'),
               ),
             ),
           ],
@@ -198,44 +264,26 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _detailSection('Status', rule.enabled ? 'Enabled' : 'Disabled'),
+              _detailSection('Category', categoryLabel),
+              _detailSection('Sub-Type', subTypeLabel),
               _detailSection('Action', _getActionLabel(rule)),
-              _detailSection('Execution Order', '${rule.executionOrder}'),
-              _detailSection('Condition Logic', rule.conditions.type),
-              if (rule.isLocal) _detailSection('Source', 'User-created'),
+              _detailSection('Exec Order', '${rule.executionOrder}'),
+              if (rule.name != displayName) _detailSection('Rule Name', rule.name),
 
-              // Conditions
               const SizedBox(height: 12),
               const Text(
-                'Conditions',
+                'Pattern',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
               ),
               const SizedBox(height: 4),
-              if (rule.conditions.from.isNotEmpty)
-                _patternList('From', rule.conditions.from),
               if (rule.conditions.header.isNotEmpty)
                 _patternList('Header', rule.conditions.header),
+              if (rule.conditions.from.isNotEmpty)
+                _patternList('From', rule.conditions.from),
               if (rule.conditions.subject.isNotEmpty)
                 _patternList('Subject', rule.conditions.subject),
               if (rule.conditions.body.isNotEmpty)
                 _patternList('Body', rule.conditions.body),
-
-              // Exceptions
-              if (rule.exceptions != null) ...[
-                const SizedBox(height: 12),
-                const Text(
-                  'Exceptions',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                ),
-                const SizedBox(height: 4),
-                if (rule.exceptions!.from.isNotEmpty)
-                  _patternList('From', rule.exceptions!.from),
-                if (rule.exceptions!.header.isNotEmpty)
-                  _patternList('Header', rule.exceptions!.header),
-                if (rule.exceptions!.subject.isNotEmpty)
-                  _patternList('Subject', rule.exceptions!.subject),
-                if (rule.exceptions!.body.isNotEmpty)
-                  _patternList('Body', rule.exceptions!.body),
-              ],
             ],
           ),
         ),
@@ -306,11 +354,9 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
           ...patterns.map(
             (p) => Padding(
               padding: const EdgeInsets.only(left: 8, top: 2),
-              child: Text(
+              child: SelectableText(
                 p,
                 style: const TextStyle(fontFamily: 'monospace', fontSize: 11),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
               ),
             ),
           ),
@@ -330,42 +376,39 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
     return 'No action';
   }
 
-  IconData _getActionIcon(Rule rule) {
-    if (rule.actions.delete) return Icons.delete_outline;
-    if (rule.actions.moveToFolder != null) return Icons.drive_file_move_outlined;
-    if (rule.actions.assignToCategory != null) return Icons.label_outline;
-    return Icons.help_outline;
+  IconData _getCategoryIcon(String? category) {
+    switch (category) {
+      case 'header_from':
+        return Icons.alternate_email;
+      case 'subject':
+        return Icons.subject;
+      case 'body':
+        return Icons.article_outlined;
+      default:
+        return Icons.rule;
+    }
   }
 
-  Color _getActionColor(Rule rule) {
-    if (rule.actions.delete) return Colors.red.shade700;
-    if (rule.actions.moveToFolder != null) return Colors.orange.shade700;
-    if (rule.actions.assignToCategory != null) return Colors.blue.shade700;
-    return Colors.grey;
-  }
-
-  String _getConditionSummary(Rule rule) {
-    final parts = <String>[];
-    if (rule.conditions.from.isNotEmpty) {
-      parts.add('from: ${rule.conditions.from.length}');
+  Color _getSubTypeColor(String? subType) {
+    switch (subType) {
+      case 'entire_domain':
+        return Colors.blue.shade700;
+      case 'exact_domain':
+        return Colors.teal.shade700;
+      case 'exact_email':
+        return Colors.purple.shade700;
+      case 'top_level_domain':
+        return Colors.orange.shade700;
+      default:
+        return Colors.grey.shade700;
     }
-    if (rule.conditions.header.isNotEmpty) {
-      parts.add('header: ${rule.conditions.header.length}');
-    }
-    if (rule.conditions.subject.isNotEmpty) {
-      parts.add('subject: ${rule.conditions.subject.length}');
-    }
-    if (rule.conditions.body.isNotEmpty) {
-      parts.add('body: ${rule.conditions.body.length}');
-    }
-    if (parts.isEmpty) return 'No conditions';
-    return parts.join(', ');
   }
 
   @override
   Widget build(BuildContext context) {
-    final enabledCount = _rules.where((r) => r.enabled).length;
-    final disabledCount = _rules.length - enabledCount;
+    final categoryCounts = _getCategoryCounts();
+    final subTypeCounts = _getSubTypeCounts();
+    final hasFilters = _selectedCategories.isNotEmpty || _selectedSubTypes.isNotEmpty;
 
     return Scaffold(
       appBar: AppBarWithExit(
@@ -377,9 +420,7 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (_) => const RuleTestScreen(),
-                ),
+                MaterialPageRoute(builder: (_) => const RuleTestScreen()),
               );
             },
           ),
@@ -394,11 +435,11 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
         children: [
           // Search bar
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Search rules...',
+                hintText: 'Search by domain, email, or keyword...',
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
@@ -413,8 +454,7 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
                       )
                     : null,
                 border: const OutlineInputBorder(),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
               onChanged: (value) {
                 setState(() {
@@ -425,46 +465,104 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
             ),
           ),
 
+          // Category filter chips
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: [
+                ..._categoryLabels.entries.map((entry) {
+                  final count = categoryCounts[entry.key] ?? 0;
+                  final isSelected = _selectedCategories.contains(entry.key);
+                  return FilterChip(
+                    label: Text('${entry.value} ($count)'),
+                    selected: isSelected,
+                    onSelected: (selected) {
+                      setState(() {
+                        if (selected) {
+                          _selectedCategories.add(entry.key);
+                        } else {
+                          _selectedCategories.remove(entry.key);
+                        }
+                        _applyFilter();
+                      });
+                    },
+                    selectedColor: Colors.blue.shade100,
+                    checkmarkColor: Colors.blue.shade800,
+                  );
+                }),
+                if (hasFilters)
+                  ActionChip(
+                    label: const Text('Clear'),
+                    avatar: const Icon(Icons.clear, size: 16),
+                    onPressed: () {
+                      setState(() {
+                        _selectedCategories.clear();
+                        _selectedSubTypes.clear();
+                        _applyFilter();
+                      });
+                    },
+                  ),
+              ],
+            ),
+          ),
+
+          // Sub-type filter chips
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: _subTypeLabels.entries.map((entry) {
+                final count = subTypeCounts[entry.key] ?? 0;
+                if (count == 0) return const SizedBox.shrink();
+                final isSelected = _selectedSubTypes.contains(entry.key);
+                return FilterChip(
+                  label: Text('${entry.value} ($count)'),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    setState(() {
+                      if (selected) {
+                        _selectedSubTypes.add(entry.key);
+                      } else {
+                        _selectedSubTypes.remove(entry.key);
+                      }
+                      _applyFilter();
+                    });
+                  },
+                  selectedColor: Colors.teal.shade100,
+                  checkmarkColor: Colors.teal.shade800,
+                );
+              }).toList(),
+            ),
+          ),
+
+          const SizedBox(height: 4),
+
           // Summary bar
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
                 Text(
-                  _searchQuery.isEmpty
-                      ? '${_rules.length} rule${_rules.length == 1 ? '' : 's'}'
-                      : '${_filteredRules.length} of ${_rules.length} shown',
+                  hasFilters || _searchQuery.isNotEmpty
+                      ? '${_filteredRules.length} of ${_rules.length} shown'
+                      : '${_rules.length} rules',
                   style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
                 ),
                 const Spacer(),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     color: Colors.green.shade50,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    '$enabledCount active',
-                    style:
-                        TextStyle(fontSize: 12, color: Colors.green.shade700),
+                    '${_rules.where((r) => r.enabled).length} active',
+                    style: TextStyle(fontSize: 12, color: Colors.green.shade700),
                   ),
                 ),
-                const SizedBox(width: 8),
-                if (disabledCount > 0)
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      '$disabledCount disabled',
-                      style:
-                          TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                    ),
-                  ),
               ],
             ),
           ),
@@ -480,7 +578,7 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              _searchQuery.isEmpty
+                              _searchQuery.isEmpty && !hasFilters
                                   ? Icons.rule
                                   : Icons.search_off,
                               size: 64,
@@ -488,24 +586,14 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
                             ),
                             const SizedBox(height: 16),
                             Text(
-                              _searchQuery.isEmpty
+                              _searchQuery.isEmpty && !hasFilters
                                   ? 'No rules configured'
-                                  : 'No rules match "$_searchQuery"',
+                                  : 'No rules match current filters',
                               style: TextStyle(
                                 color: Colors.grey.shade600,
                                 fontSize: 16,
                               ),
                             ),
-                            if (_searchQuery.isEmpty) ...[
-                              const SizedBox(height: 8),
-                              Text(
-                                'Import rules from YAML or add via Quick Add',
-                                style: TextStyle(
-                                  color: Colors.grey.shade500,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ],
                           ],
                         ),
                       )
@@ -526,25 +614,24 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
   }
 
   Widget _buildRuleTile(Rule rule) {
+    final displayName = rule.sourceDomain ?? rule.name;
+    final categoryLabel = _categoryLabels[rule.patternCategory] ?? rule.patternCategory ?? '';
+    final subTypeLabel = _subTypeLabels[rule.patternSubType] ?? rule.patternSubType ?? '';
+
     return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       child: ListTile(
-        leading: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              _getActionIcon(rule),
-              color: rule.enabled ? _getActionColor(rule) : Colors.grey.shade400,
-            ),
-            Text(
-              '#${rule.executionOrder}',
-              style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
-            ),
-          ],
+        dense: true,
+        leading: Icon(
+          _getCategoryIcon(rule.patternCategory),
+          color: rule.enabled ? _getSubTypeColor(rule.patternSubType) : Colors.grey.shade400,
+          size: 22,
         ),
         title: Text(
-          rule.name,
+          displayName,
           style: TextStyle(
+            fontFamily: 'monospace',
+            fontSize: 13,
             fontWeight: FontWeight.w500,
             color: rule.enabled ? null : Colors.grey.shade500,
             decoration: rule.enabled ? null : TextDecoration.lineThrough,
@@ -552,37 +639,17 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        subtitle: Row(
-          children: [
-            Text(
-              _getActionLabel(rule),
-              style: TextStyle(
-                fontSize: 12,
-                color: rule.enabled
-                    ? _getActionColor(rule)
-                    : Colors.grey.shade400,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              _getConditionSummary(rule),
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-            ),
-          ],
+        subtitle: Text(
+          '$categoryLabel - $subTypeLabel',
+          style: TextStyle(
+            fontSize: 11,
+            color: rule.enabled ? _getSubTypeColor(rule.patternSubType) : Colors.grey.shade400,
+          ),
         ),
-        trailing: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Switch(
-              value: rule.enabled,
-              onChanged: (_) => _toggleRule(rule),
-            ),
-            IconButton(
-              icon: Icon(Icons.delete_outline, color: Colors.red.shade400),
-              tooltip: 'Delete',
-              onPressed: () => _deleteRule(rule),
-            ),
-          ],
+        trailing: IconButton(
+          icon: Icon(Icons.delete_outline, color: Colors.red.shade400, size: 20),
+          tooltip: 'Delete',
+          onPressed: () => _deleteRule(rule),
         ),
         onTap: () => _showRuleDetails(rule),
       ),

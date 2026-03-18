@@ -1,7 +1,6 @@
 // ignore_for_file: avoid_print
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:logger/logger.dart';
 import 'package:spam_filter_mobile/adapters/storage/secure_credentials_store.dart';
 import 'package:spam_filter_mobile/adapters/email_providers/generic_imap_adapter.dart';
 import 'package:spam_filter_mobile/adapters/email_providers/gmail_api_adapter.dart';
@@ -99,8 +98,8 @@ void main() {
             } else {
               failureCount++;
             }
-          } else if (platformId == 'aol' || 
-                     credentials.email?.endsWith('@aol.com') == true ||
+          } else if (platformId == 'aol' ||
+                     credentials.email.endsWith('@aol.com') == true ||
                      platformId == null) {
             // IMAP-based credentials (AOL, Yahoo, iCloud, or unknown - default to IMAP)
             await _testIMAPCredentials(
@@ -120,7 +119,7 @@ void main() {
             results[accountId] = CredentialTestResult(
               accountId: accountId,
               email: credentials.email,
-              platform: platformId ?? 'unknown',
+              platform: platformId,
               authMethod: 'unknown',
               isValid: false,
               errorMessage: 'Platform not supported for verification',
@@ -192,7 +191,7 @@ void main() {
         if (credentials != null) {
           final platformId = credentials.additionalParams?['platformId'] ?? 
                             await credentialStore.getPlatformId(accountId);
-          if (platformId == 'aol' || credentials.email?.endsWith('@aol.com') == true) {
+          if (platformId == 'aol' || credentials.email.endsWith('@aol.com') == true) {
             aolAccounts.add(accountId);
           }
         }

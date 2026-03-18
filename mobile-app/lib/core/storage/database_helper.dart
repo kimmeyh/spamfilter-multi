@@ -21,7 +21,9 @@ abstract class RuleDatabaseProvider {
 }
 
 /// Database schema version (increment on schema changes)
-const int databaseVersion = 1;
+/// v1: Initial schema (Sprint 12)
+/// v2: Add pattern classification columns to rules table (Sprint 20)
+const int databaseVersion = 2;
 
 /// SQLite database helper - singleton pattern
 class DatabaseHelper implements RuleDatabaseProvider {
@@ -161,11 +163,15 @@ class DatabaseHelper implements RuleDatabaseProvider {
         metadata TEXT,
         date_added INTEGER NOT NULL,
         date_modified INTEGER,
-        created_by TEXT DEFAULT 'manual'
+        created_by TEXT DEFAULT 'manual',
+        pattern_category TEXT,
+        pattern_sub_type TEXT,
+        source_domain TEXT
       );
     ''');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_rules_enabled ON rules(enabled, execution_order);');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_rules_name ON rules(name);');
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_rules_category ON rules(pattern_category, pattern_sub_type);');
 
     // Safe senders table
     await db.execute('''
@@ -265,8 +271,27 @@ class DatabaseHelper implements RuleDatabaseProvider {
 
   /// Handle database schema upgrades
   Future<void> _upgradeTables(Database db, int oldVersion, int newVersion) async {
-    _logger.w('Database upgrade: $oldVersion → $newVersion (not implemented yet)');
-    // Future migrations will be implemented here
+    _logger.i('Database upgrade: $oldVersion -> $newVersion');
+
+    if (oldVersion < 2) {
+      // v2: Add pattern classification columns to rules table (Sprint 20)
+      // Check if columns already exist (split script may have added them)
+      _logger.i('Applying v2 migration: adding pattern classification columns');
+      final tableInfo = await db.rawQuery('PRAGMA table_info(rules)');
+      final existingColumns = tableInfo.map((r) => r['name'] as String).toSet();
+
+      if (!existingColumns.contains('pattern_category')) {
+        await db.execute('ALTER TABLE rules ADD COLUMN pattern_category TEXT;');
+      }
+      if (!existingColumns.contains('pattern_sub_type')) {
+        await db.execute('ALTER TABLE rules ADD COLUMN pattern_sub_type TEXT;');
+      }
+      if (!existingColumns.contains('source_domain')) {
+        await db.execute('ALTER TABLE rules ADD COLUMN source_domain TEXT;');
+      }
+      await db.execute('CREATE INDEX IF NOT EXISTS idx_rules_category ON rules(pattern_category, pattern_sub_type);');
+      _logger.i('v2 migration complete');
+    }
   }
 
   // ============================================================================

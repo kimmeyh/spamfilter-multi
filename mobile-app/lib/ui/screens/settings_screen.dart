@@ -851,19 +851,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     );
   }
 
-  /// [NEW] ISSUE #123: Get provider-specific default junk folders
-  List<String> _getProviderDefaultFolders(String platformId) {
-    // Based on EmailScanProvider.JUNK_FOLDERS_BY_PROVIDER
-    const providerFolders = {
-      'aol': ['Bulk Mail', 'Spam'],
-      'gmail': ['Spam', 'Trash'],
-      'outlook': ['Junk Email', 'Spam'],
-      'yahoo': ['Bulk', 'Spam'],
-      'icloud': ['Junk', 'Trash'],
-    };
-    return providerFolders[platformId] ?? ['Spam', 'Junk'];
-  }
-
   Widget _buildScanModeSelector({
     required ScanMode value,
     required Future<void> Function(ScanMode) onChanged,

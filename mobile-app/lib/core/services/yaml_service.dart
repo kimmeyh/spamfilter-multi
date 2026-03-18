@@ -109,6 +109,9 @@ class YamlService {
               )
             : null,
         metadata: rule.metadata,
+        patternCategory: rule.patternCategory,
+        patternSubType: rule.patternSubType,
+        sourceDomain: rule.sourceDomain,
       );
     }).toList();
 

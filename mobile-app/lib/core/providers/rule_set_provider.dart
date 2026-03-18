@@ -8,7 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 
 import '../../adapters/storage/app_paths.dart';
-import '../../adapters/storage/local_rule_store.dart';
+// LocalRuleStore import removed - YAML dual-write removed in Sprint 20
 import '../../core/models/rule_set.dart';
 import '../../core/models/safe_sender_list.dart';
 import '../../core/services/pattern_compiler.dart';
@@ -64,7 +64,8 @@ class RuleSetProvider extends ChangeNotifier {
   late AppPaths _appPaths;
   late RuleDatabaseStore _databaseStore;
   late SafeSenderDatabaseStore _safeSenderStore;
-  late LocalRuleStore _ruleStore; // Keep for YAML export (dual-write pattern)
+  // YAML dual-write removed in Sprint 20. DB is sole source of truth.
+  // YAML import/export available via Settings > Data Management.
   final PatternCompiler _patternCompiler = PatternCompiler();
   final Logger _logger = Logger();
 
@@ -85,7 +86,8 @@ class RuleSetProvider extends ChangeNotifier {
   /// Initialize the provider (must call before using)
   ///
   /// This initializes AppPaths and loads rules from database storage.
-  /// Uses dual-write pattern: database is primary, YAML export for version control.
+  /// Database is the sole source of truth (YAML dual-write removed Sprint 20).
+  /// YAML import/export available via Settings > Data Management.
   /// Automatically runs YAML to database migration on first run.
   Future<void> initialize() async {
     _setLoadingState(RuleLoadingState.loading);
@@ -132,8 +134,7 @@ class RuleSetProvider extends ChangeNotifier {
       _databaseStore = RuleDatabaseStore(databaseHelper);
       _safeSenderStore = SafeSenderDatabaseStore(databaseHelper);
 
-      // Create YAML store for export (secondary, for version control)
-      _ruleStore = LocalRuleStore(_appPaths);
+      // YAML dual-write removed in Sprint 20. DB is sole source of truth.
 
       // Load rules and safe senders from database
       await loadRules();
@@ -201,8 +202,7 @@ class RuleSetProvider extends ChangeNotifier {
         rules: updatedRules,
       );
 
-      // Export to YAML for version control
-      await _ruleStore.saveRules(_rules!);
+      // YAML dual-write removed in Sprint 20 (DB is sole source of truth)
 
       _logger.i('Added rule: ${rule.name}');
       notifyListeners();
@@ -231,8 +231,7 @@ class RuleSetProvider extends ChangeNotifier {
         rules: updatedRules,
       );
 
-      // Export to YAML for version control
-      await _ruleStore.saveRules(_rules!);
+      // YAML dual-write removed in Sprint 20 (DB is sole source of truth)
       _logger.i('Removed rule: $ruleName');
       notifyListeners();
     } catch (e) {
@@ -267,8 +266,7 @@ class RuleSetProvider extends ChangeNotifier {
         rules: updatedRules,
       );
 
-      // Export to YAML for version control
-      await _ruleStore.saveRules(_rules!);
+      // YAML dual-write removed in Sprint 20 (DB is sole source of truth)
       _logger.i('Updated rule: $ruleName');
       notifyListeners();
     } catch (e) {
@@ -299,8 +297,7 @@ class RuleSetProvider extends ChangeNotifier {
       // Update local cache
       _safeSenders!.add(pattern);
 
-      // Export to YAML for version control
-      await _ruleStore.saveSafeSenders(_safeSenders!);
+      // YAML dual-write removed in Sprint 20 (DB is sole source of truth)
       _logger.i('Added safe sender: $pattern (type: $patternType)');
       notifyListeners();
     } catch (e) {
@@ -323,8 +320,7 @@ class RuleSetProvider extends ChangeNotifier {
       // Update local cache
       _safeSenders!.remove(pattern);
 
-      // Export to YAML for version control
-      await _ruleStore.saveSafeSenders(_safeSenders!);
+      // YAML dual-write removed in Sprint 20 (DB is sole source of truth)
       _logger.i('Removed safe sender: $pattern');
       notifyListeners();
     } catch (e) {

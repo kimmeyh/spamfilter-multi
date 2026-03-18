@@ -365,17 +365,69 @@ class _EmailDetailViewState extends State<EmailDetailView>
         header: conditionType == 'header' ? [pattern] : [],
       );
 
+      // Determine pattern classification based on condition type
+      String patternCategory;
+      String patternSubType;
+      String sourceDomain;
+      int executionOrder;
+
+      switch (conditionType) {
+        case 'from':
+          patternCategory = 'header_from';
+          patternSubType = 'exact_email';
+          sourceDomain = pattern.replaceAll(r'\.', '.').replaceAll(r'\@', '@').replaceAll('^', '').replaceAll(r'$', '');
+          executionOrder = 40;
+          break;
+        case 'header':
+          // Determine sub-type from pattern format
+          if (pattern.contains(r'(?:[a-z0-9-]+\.)*')) {
+            patternCategory = 'header_from';
+            patternSubType = 'entire_domain';
+            executionOrder = 20;
+          } else if (pattern.startsWith('@')) {
+            patternCategory = 'header_from';
+            patternSubType = 'exact_domain';
+            executionOrder = 30;
+          } else {
+            patternCategory = 'header_from';
+            patternSubType = 'exact_email';
+            executionOrder = 40;
+          }
+          sourceDomain = pattern.replaceAll(r'\.', '.').replaceAll(r'\-', '-').replaceAll(r'$', '').replaceAll('^', '').replaceAll(r'@(?:[a-z0-9-]+.)*', '');
+          break;
+        case 'subject':
+          patternCategory = 'subject';
+          patternSubType = 'exact_domain';
+          sourceDomain = pattern;
+          executionOrder = 60;
+          break;
+        case 'body':
+          patternCategory = 'body';
+          patternSubType = 'entire_domain';
+          sourceDomain = pattern;
+          executionOrder = 50;
+          break;
+        default:
+          patternCategory = 'header_from';
+          patternSubType = 'exact_domain';
+          sourceDomain = pattern;
+          executionOrder = 30;
+      }
+
       final rule = Rule(
         name: description,
         enabled: true,
         isLocal: true,
-        executionOrder: 0,
+        executionOrder: executionOrder,
         conditions: conditions,
         actions: RuleActions(delete: true),
         metadata: {
           'created_by': 'email_detail_view',
           'created_at': DateTime.now().toIso8601String(),
         },
+        patternCategory: patternCategory,
+        patternSubType: patternSubType,
+        sourceDomain: sourceDomain,
       );
 
       // [NEW] ISSUE #139: Check for rule conflicts before saving

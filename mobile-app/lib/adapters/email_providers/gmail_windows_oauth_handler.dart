@@ -140,11 +140,6 @@ class GmailWindowsOAuthHandler {
         ),
       );
       
-      if (result == null) {
-        _logger.w('[MobileOAuth] OAuth flow cancelled by user');
-        return null;
-      }
-      
       _logger.i('[MobileOAuth] OAuth flow completed successfully');
       return {
         'access_token': result.accessToken ?? '',

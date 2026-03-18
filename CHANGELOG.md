@@ -26,6 +26,29 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-03-17 (Sprint 20 - Testing Feedback)
+- **fix**: DB v2 migration checks for existing columns before ALTER TABLE
+- **fix**: Scan Results folder display shows correct account folders after switching accounts
+- **feat**: Demo-specific rules DB for consistent demo scan results (~20 safe / ~30 deleted / ~9 no-rule)
+- **fix**: IMAP folder listing now recursive - shows [Gmail]/Trash, [Gmail]/Spam and other child folders
+- **fix**: Non-selectable parent folders (e.g., [Gmail]) filtered from folder selection
+- **fix**: Reclassify 266 TLD header patterns from exact_domain to top_level_domain
+- **fix**: Convert 1,370 wildcard TLD patterns to .com and reclassify as entire_domain
+- **fix**: Add Rule from scan results now sets patternCategory, patternSubType, sourceDomain
+- **fix**: Quick rule from email detail popup now sets classification fields
+- **fix**: YAML migration and export preserve classification fields
+- **fix**: Safe sender matches in safe sender folder skipped from scan results (already where they belong)
+
+### 2026-03-15 (Sprint 20)
+- **fix**: Gmail IMAP folder scan errors - use PlatformRegistry for correct adapter routing (Issue #184)
+- **feat**: Demo Scan expanded with 12 new sample emails across Safe Sender and Block Rule categories (Issue #185)
+- **feat**: Speed up Add Rule re-evaluation with shared PatternCompiler cache (Issue #186)
+- **chore**: Clean up all 46 analyzer warnings - zero issues remaining (Issue #187)
+- **feat**: Add pattern classification fields (patternCategory, patternSubType, sourceDomain) to Rule model (Issue #149)
+- **feat**: Remove YAML dual-write - database is sole source of truth for rules (Issue #149)
+- **feat**: Standalone rule split script - splits 5 monolithic rules into ~3,291 individual rules (Issue #149)
+- **feat**: Manage Rules UI overhaul - filter chips by category and sub-type, search, individual rule display (Issue #149)
+
 ### 2026-03-14 (Sprint 19 - Testing Feedback Round 2)
 - **fix**: Safe Senders YAML export error - AppPaths not initialized in Import/Export screen (Issue #179)
 - **fix**: Convert bare `@insightfinancialassociates.com` safe sender pattern to proper Entire Domain regex

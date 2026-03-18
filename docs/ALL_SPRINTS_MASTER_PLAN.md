@@ -83,7 +83,8 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 16 | docs/sprints/SPRINT_16_PLAN.md | [OK] Complete | ~6h (Feb 15-16, 2026) |
 | 17 | docs/sprints/SPRINT_17_SUMMARY.md | [OK] Complete | ~20h (Feb 17-21, 2026) |
 | 18 | docs/sprints/SPRINT_18_RETROSPECTIVE.md | [OK] Complete | Feb 24-27, 2026 |
-| 19 | docs/sprints/SPRINT_19_RETROSPECTIVE.md | [OK] Complete | Feb 27, 2026 |
+| 19 | docs/sprints/SPRINT_19_SUMMARY.md | [OK] Complete | Feb 27 - Mar 15, 2026 |
+| 20 | docs/sprints/SPRINT_20_RETROSPECTIVE.md | [OK] Complete | Mar 15-17, 2026 |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -91,18 +92,20 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 19** (February 27 - March 15, 2026)
-- **PR**: [#183](https://github.com/kimmeyh/spamfilter-multi/pull/183) (targeting develop)
-- **Features**: Version tagging v0.5.0 (#181), Application branding MyEmailSpamFilter (#182), Folder save-on-selection (#172), Safe senders filter chips (#180), YAML import/export UI (#179), Gmail dual-auth OAuth + App Password (#178)
-- **Testing Feedback**: 3 rounds, 13 fixes/enhancements (account-scoped scan history, folder display, YAML export crash fix, live re-evaluation, App Password UX improvements)
-- **Tests**: 1141 passed (+53 from Sprint 18)
-- **Retrospective**: docs/sprints/SPRINT_19_RETROSPECTIVE.md
+**Sprint 20** (March 15-17, 2026)
+- **PR**: [#188](https://github.com/kimmeyh/spamfilter-multi/pull/188) (targeting develop)
+- **Features**: Gmail IMAP folder fix (#184), Demo Scan expansion (#185), Manage Rules UI overhaul with rule split and classification (#149), Add Rule performance (#186), Analyzer cleanup (#187)
+- **Infrastructure**: DB schema v2, YAML dual-write removed, 5 monolithic rules split into 3,291 individual rules, 3 standalone fix scripts
+- **Testing Feedback**: 11 fixes (TLD reclassification, wildcard conversion, safe sender folder skip, IMAP child folders, classification fields in all rule creation paths)
+- **Tests**: 1141 passed, 0 analyzer issues
+- **Backlog Added**: #14 (folder selectors), #15 (rule editing UI), #16 (live scan reprocess), #17 (scan status indicator)
+- **Retrospective**: docs/sprints/SPRINT_20_RETROSPECTIVE.md
 
 ---
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: March 15, 2026 (Sprint 19 retrospective)
+**Last Reviewed**: March 17, 2026 (Sprint 20 retrospective)
 
 All incomplete features, bugs, and spikes in relative priority order. HOLD items grouped at bottom. Each item links to its detail section (if one exists) or GitHub Issue.
 
@@ -111,18 +114,18 @@ All incomplete features, bugs, and spikes in relative priority order. HOLD items
 | # | Type | Title | Est. Effort | Issue | Detail |
 |---|------|-------|-------------|-------|--------|
 | 1 | Bug | Android app not tested in several sprints | ~2-4h | [#163](https://github.com/kimmeyh/spamfilter-multi/issues/163) | Validation sprint needed |
-| 2 | Enhancement | Manage Rules UI: split combined rules, search, filter | ~12-16h | [#149](https://github.com/kimmeyh/spamfilter-multi/issues/149) | [Detail](#f149-manage-rules-ui-overhaul) |
-| 3 | Enhancement | Playwright UI Tests + Android UI Testing Strategy (F11) | ~12-16h | -- | [Detail](#f11-playwright-ui-tests-and-android-ui-testing) |
-| 4 | Enhancement | Background Scanning - Android / WorkManager (F4) | ~14-16h | -- | [Detail](#f4-background-scanning-android) |
-| 5 | Enhancement | Provider-Specific Optimizations (F6) | ~10-12h | -- | [Detail](#f6-provider-specific-optimizations) |
-| 6 | Enhancement | Multi-Account Scanning (F7) | ~8-10h | -- | [Detail](#f7-multi-account-scanning) |
-| 7 | Enhancement | Rule Splitting Migration Script (F23) | ~6-8h | -- | [Detail](#f23-rule-splitting-migration-script) |
-| 8 | Enhancement | Manage Rules Category Filter Chips (F24) | ~4-6h | -- | [Detail](#f24-manage-rules-category-filter-chips) |
-| 9 | Enhancement | Rule Testing UI Enhancements (F25) | ~6-8h | -- | [Detail](#f25-rule-testing-ui-enhancements) |
-| 10 | Enhancement | Scan Results: Speed up "Add Rule" performance | ~4-6h | -- | Profile and optimize rule addition from scan results screen |
-| 11 | Tech Debt | Clean up 47 pre-existing analyzer warnings in test files | ~2-4h | -- | Improve signal-to-noise ratio for flutter analyze |
-| 12 | Bug | Gmail folder scan errors | ~2-4h | -- | [Detail](#bug-gmail-folder-scan-errors) |
-| 13 | Enhancement | Demo Scan: expand sample data with realistic examples | ~4-6h | -- | [Detail](#demo-scan-expanded-sample-data) |
+| 2 | Enhancement | Playwright UI Tests + Android UI Testing Strategy (F11) | ~12-16h | -- | [Detail](#f11-playwright-ui-tests-and-android-ui-testing) |
+| 3 | Enhancement | Background Scanning - Android / WorkManager (F4) | ~14-16h | -- | [Detail](#f4-background-scanning-android) |
+| 4 | Enhancement | Provider-Specific Optimizations (F6) | ~10-12h | -- | [Detail](#f6-provider-specific-optimizations) |
+| 5 | Enhancement | Multi-Account Scanning (F7) | ~8-10h | -- | [Detail](#f7-multi-account-scanning) |
+| 6 | Enhancement | Rule Testing UI Enhancements (F25) | ~6-8h | -- | [Detail](#f25-rule-testing-ui-enhancements) |
+| 7 | Enhancement | Folder selectors: two-level listing, provider defaults first, context-aware | ~6-8h | -- | [Detail](#folder-selectors-two-level-listing) |
+| 8 | Enhancement | Rule editing UI with regex generation and validation | ~8-12h | -- | [Detail](#rule-editing-ui) |
+| 9 | Enhancement | Live Scan: re-process emails after rule changes | ~8-12h | -- | [Detail](#live-scan-reprocess-after-rule-changes) |
+| 10 | Enhancement | Live Scan: in-progress and completed status indicator | ~2-4h | -- | Visual indicator (icon or graphic) showing scan is in progress vs completed |
+| 11 | Tech Debt | Test coverage analysis and Sprint 20 feature tests | ~4-6h | -- | [Detail](#test-coverage-analysis-and-sprint-20-feature-tests) |
+| 12 | Enhancement | Settings: Add General tab for app-wide settings | ~4-6h | -- | [Detail](#settings-general-tab) |
+| 13 | Enhancement | Production/Development side-by-side builds | ~6-8h | -- | ADR-0035: Separate data dirs, task names, mutex per environment |
 
 ### HOLD Items
 
@@ -153,52 +156,132 @@ All incomplete features, bugs, and spikes in relative priority order. HOLD items
 
 This section contains detailed specifications for incomplete items only. Completed features have their details in sprint documents and CHANGELOG.md.
 
-### Bug: Gmail Folder Scan Errors
+### Folder Selectors: Two-Level Listing
 
-**Status**: New (Sprint 19 testing)
-**Estimated Effort**: ~2-4h
+**Status**: New (Sprint 20 testing feedback)
+**Estimated Effort**: ~6-8h
 
-**Overview**: Gmail folder scanning produces errors. Investigate whether Gmail IMAP folder listing requires different handling (e.g., `[Gmail]/` prefix for special folders, different folder hierarchy conventions) compared to other providers.
+**Overview**: Update folder selector UI (used by Safe Sender Folder, Deleted Rule Folder, and Default Folders settings) with context-aware behavior: two-level collapsible folders for Default Folders, and flat lists with provider defaults first for Safe Sender and Deleted Rule folder selectors.
+
+**Part A: Default Folders selector (multi-select for scan)**
+
+Two-level collapsible folder tree:
+
+```
+INBOX
+Bulk Mail
+Bulk Email
+[Gmail] >              (expandable group, collapsed by default)
+    [Gmail]/Trash
+    [Gmail]/Spam
+    [Gmail]/Sent Mail
+    [Gmail]/Drafts
+    [Gmail]/All Mail
+Notes >                (expandable group)
+    Notes/Work
+    Notes/Personal
+```
+
+- Top-level folders shown flat (INBOX, Bulk Mail, etc.)
+- Folders with children shown as expandable groups (chevron icon)
+- Only first level of children shown (not grandchildren)
+- Collapsed by default -- user expands to see children
+- Junk/Trash folders auto-highlighted regardless of nesting depth
+- Non-selectable parent containers (e.g., `[Gmail]`) shown as group headers only
+
+**Part B: Safe Sender Folder and Deleted Rule Folder selectors (single-select)**
+
+Flat list with provider default first:
+
+- **Safe Sender Folder**: Provider default safe sender folder listed first (e.g., INBOX), remaining folders alphabetical, no sub-folders
+- **Deleted Rule Folder**: Provider default deleted folder listed first (e.g., Trash or [Gmail]/Trash), remaining folders alphabetical, no sub-folders
+
+Provider defaults:
+- AOL: Deleted Rule = Trash, Safe Sender = INBOX
+- Gmail IMAP: Deleted Rule = [Gmail]/Trash, Safe Sender = INBOX
+- Gmail OAuth: Deleted Rule = TRASH, Safe Sender = INBOX
+- Yahoo: Deleted Rule = Trash, Safe Sender = INBOX
+
+**Provider-Specific Folder Hierarchies** (research before implementation):
+- **Gmail IMAP**: `[Gmail]/` prefix for system folders. Custom labels may also use `/` hierarchy. Separator: `/`
+- **AOL**: Flat folder structure (INBOX, Bulk Mail, Bulk Email, Sent, Trash). No sub-folders typically. Separator: `/`
+- **Yahoo**: Flat structure similar to AOL (Inbox, Bulk, Sent, Trash, Draft). Separator: `/`
+- **iCloud**: May have nested folders. Separator: `/`
+- **Custom IMAP**: Unknown hierarchy -- must handle any structure. Separator: varies (usually `/` or `.`)
+
+**Implementation Note**: The path separator varies by provider and is returned by the IMAP server in `listMailboxes()` response. Use `mailbox.pathSeparator` to split paths into parent/child, do not hardcode `/`.
 
 **Acceptance Criteria**:
-- [ ] Root cause identified for Gmail folder scan errors
-- [ ] Fix implemented and tested with Gmail IMAP account
-- [ ] Gmail OAuth and Gmail App Password (IMAP) paths both work
-- [ ] No regression on AOL or other provider folder scanning
+- [ ] Research and document actual folder hierarchy for each supported provider before implementation
+- [ ] Part A: FolderSelectionScreen groups child folders under their parent (Default Folders only)
+- [ ] Part A: Parent folders with children show expand/collapse toggle
+- [ ] Part A: Groups collapsed by default, only first-level children shown
+- [ ] Part A: Non-selectable parent containers cannot be selected, only expanded
+- [ ] Part B: Safe Sender Folder selector shows provider default first, flat list, no sub-folders
+- [ ] Part B: Deleted Rule Folder selector shows provider default first, flat list, no sub-folders
+- [ ] Part B: Provider defaults configured per provider
+- [ ] Path separator detected per-provider (not hardcoded)
+- [ ] Works for Gmail IMAP, Gmail OAuth, AOL, Yahoo, and custom IMAP
+- [ ] Existing folder selection behavior preserved for providers without sub-folders
 
 ---
 
-### Demo Scan: Expanded Sample Data
+### Rule Editing UI
 
-**Status**: New (Sprint 19 testing)
-**Estimated Effort**: ~4-6h
+**Status**: New (Sprint 20 testing feedback)
+**Estimated Effort**: ~8-12h
 
-**Overview**: Expand Demo Scan sample data with realistic examples across all rule categories to better demonstrate app capabilities to new users.
+**Overview**: Add the ability to edit existing rules from the Manage Rules screen. Since rules use regex patterns, the UI must help users who are not familiar with regex syntax.
 
-**Required Examples** (at least 3 each):
-
-1. **Safe Sender - Exact Email**: 3 examples using different email providers (e.g., Gmail, Yahoo, Outlook)
-2. **Safe Sender - Exact Domain**: 3 examples using made-up email addresses from real domains: irs.gov, allstate.com, venmo.com
-3. **Block Rule - Block Email**: 3 examples using different email providers (different providers from safe sender examples)
-4. **Block Rule - Block Entire Domain**: 3 examples using domains from existing block rules in rules.yaml
+**Key Features**:
+1. **User-friendly input**: User enters a domain, email, or keyword in plain text, and the app generates the correct regex pattern
+2. **Regex validation**: If the user edits the regex directly, validate it in real-time and show errors with suggested corrections
+3. **Pattern preview**: Show what the pattern would match against sample text (reuse Rule Testing UI from Sprint 18)
+4. **Edit dialog**: Tap a rule in Manage Rules > Edit button in details dialog
+5. **Field editing**: Edit source_domain (regenerates regex), pattern_category, pattern_sub_type, enabled/disabled
 
 **Acceptance Criteria**:
-- [ ] Demo scan includes at least 3 examples per category above (12+ total new examples)
-- [ ] Examples use realistic sender names and subject lines
-- [ ] Block Entire Domain examples use domains already present in rules.yaml
-- [ ] Safe Sender and Block Rule provider examples do not overlap
-- [ ] Demo scan results demonstrate all filter categories in results screen
-- [ ] Existing demo scan tests updated for new sample data
+- [ ] Edit button in rule details dialog opens edit screen
+- [ ] Plain-text domain/email input generates correct regex pattern
+- [ ] Direct regex editing with real-time validation
+- [ ] Invalid regex shows error message with suggested fix
+- [ ] Pattern preview shows match results against sample data
+- [ ] Changes saved to database
+- [ ] Rule name updated if source_domain changes
 
 ---
 
-### F149: Manage Rules UI Overhaul
+### Live Scan: Re-process Emails After Rule Changes
 
-**Status**: Planned
-**Issue**: [#149](https://github.com/kimmeyh/spamfilter-multi/issues/149)
-**Estimated Effort**: ~12-16h
+**Status**: New (Sprint 20 testing feedback)
+**Estimated Effort**: ~8-12h
 
-**Overview**: Split combined rules into separate views, add search and filter capabilities to the Manage Rules UI.
+**Overview**: During a live scan, when the user adds or changes a rule from the scan results screen, re-process affected emails asynchronously to apply the new rule action on the server.
+
+**Scenarios**:
+
+1. **New safe sender rule added**: If an email was previously "deleted" (moved to trash/junk) but now matches a safe sender rule, move it to the configured Safe Sender Folder (rescue the email).
+
+2. **New block rule added**: If an email was previously "no rule" or "safe sender" but now matches a block rule, move it to the configured Deleted Rule Folder.
+
+3. **Rule changed/disabled**: If a rule is modified or disabled, re-evaluate affected emails and apply corrective actions.
+
+**Key Design Considerations**:
+- Re-processing should be async to avoid blocking the UI
+- Show progress indicator during re-processing
+- Handle IMAP errors gracefully (email may already be moved/deleted by server)
+- Track re-processed emails to avoid duplicate actions
+- Consider batch operations for performance (similar to Phase 6b batch execution)
+- Only re-process emails from the current scan session (not historical)
+
+**Acceptance Criteria**:
+- [ ] After adding a safe sender from scan results, previously deleted emails matching the new pattern are moved to Safe Sender Folder
+- [ ] After adding a block rule from scan results, previously unmatched emails matching the new pattern are moved to Deleted Rule Folder
+- [ ] Re-processing happens asynchronously without blocking the UI
+- [ ] Progress indicator shown during re-processing
+- [ ] Scan results display updates to reflect re-processed emails
+- [ ] IMAP errors during re-processing are handled gracefully (logged, not fatal)
+- [ ] Works for both live scan and historical scan result review
 
 ---
 
@@ -278,48 +361,81 @@ This section contains detailed specifications for incomplete items only. Complet
 
 ---
 
-### F23: Rule Splitting Migration Script
+### Test Coverage Analysis and Sprint 20 Feature Tests
 
-**Status**: Planned
-**Estimated Effort**: ~6-8h
+**Status**: New (Sprint 20 retrospective)
+**Estimated Effort**: ~4-6h
 
-**Overview**: One-time Dart CLI script to break apart the 4 monolithic rules (`SpamAutoDeleteHeader`, `SpamAutoDeleteFrom`, `SpamAutoDeleteBody`, `SpamAutoDeleteSubject`) into individual, well-named rules based on what each pattern actually blocks.
+**Overview**: Run test coverage analysis to identify gaps across the codebase, then add targeted tests for Sprint 20 features that shipped without automated test coverage.
 
-**Splitting Logic**:
-- **SpamAutoDeleteHeader** patterns classified by regex structure:
-  - Entire domain (`@(?:[a-z0-9-]+\.)*domain\.com$`) -> `Block_EntireDomain_<domain>`
-  - Exact domain (`@domain\.com$`) -> `Block_ExactDomain_<domain>`
-  - Exact email (`^user@domain\.com$`) -> `Block_ExactEmail_<user_domain>`
-  - TLD (`\.<tld>$`) -> `Block_TopLevelDomain_<tld>`
-- **SpamAutoDeleteFrom** patterns: Convert from `from:` to `header:` matching, then same classification
-- **SpamAutoDeleteBody** patterns: `BlockBody_<cleaned_regex>` (use cleaned-up regex as name)
-- **SpamAutoDeleteSubject** patterns: `BlockSubject_<cleaned_regex>` (use cleaned-up regex as name)
-- Skip duplicates (if target rule name already exists)
-- Remove migrated patterns from original monolithic rules
+**Phase 1: Coverage Analysis**
+- Run `flutter test --coverage` and generate coverage report
+- Identify files/functions with low or no coverage
+- Prioritize gaps by risk (core business logic > UI > utilities)
 
-**Deliverable**: Dart CLI script in `scripts/` directory, run once, produces updated `rules.yaml`
+**Phase 2: Sprint 20 Feature Tests**
+- [ ] Classification fields set correctly when creating rules from results_display_screen
+- [ ] Classification fields set correctly from email_detail_view quick rule
+- [ ] Classification fields set correctly from rule_quick_add_screen
+- [ ] Demo rules DB produces expected safe/deleted/no-rule distribution
+- [ ] Safe sender folder skip logic (email in folder = skip, email not in folder = show, null config = show all)
+- [ ] DB v2 migration idempotent (handles existing columns)
+- [ ] YAML export/import preserves classification fields round-trip
+- [ ] PlatformRegistry routing for gmail-imap platformId
 
-**Dependencies**: F22 (YAML Import/Export UI) for reimporting the split rules into the app database
+**Phase 3: General Coverage Gaps**
+- Add tests for any high-risk, low-coverage areas identified in Phase 1
+- Target: meaningful coverage improvements, not 100% coverage
+
+**Acceptance Criteria**:
+- [ ] Coverage report generated and reviewed
+- [ ] All Sprint 20 feature tests from Phase 2 implemented
+- [ ] High-risk coverage gaps from Phase 3 addressed
+- [ ] All tests pass, 0 analyzer issues
 
 ---
 
-### F24: Manage Rules Category Filter Chips
+### Settings: General Tab
 
-**Status**: Planned
+**Status**: New (Sprint 20 retrospective)
 **Estimated Effort**: ~4-6h
 
-**Overview**: Replace current "Header"/"Body"/"Subject" filter chips in Settings > Manage Rules with more meaningful categories that match the new rule naming convention from F23.
+**Overview**: Add a "General" tab to Settings for app-wide settings that apply across all accounts. Move rules management and data management from the Account tab to the General tab.
 
-**New Filter Categories**:
-- "Block Email" - rules matching `Block_ExactEmail_*`
-- "Block Exact Domain" - rules matching `Block_ExactDomain_*`
-- "Block Entire Domain" - rules matching `Block_EntireDomain_*`
-- "Block Top Level Domains" - rules matching `Block_TopLevelDomain_*`
-- "Block Body" - rules matching `BlockBody_*`
-- "Block Subject" - rules matching `BlockSubject_*`
-- "Other" - all rules not in the above categories
+**Current Structure**:
+```
+Settings > Account (per-account)
+  - Manage Rules (actually app-wide)
+  - Manage Safe Senders (actually app-wide)
+  - Data Management / Import-Export (actually app-wide)
+  - Folder Settings (per-account)
+  - Scan Settings (per-account)
+  - About
+```
 
-**Dependencies**: F23 (Rule Splitting Migration) must run first so rules have the new naming convention
+**Proposed Structure**:
+```
+Settings > General (app-wide)
+  - Rules Management (renamed from "Manage Rules" + "Data Management")
+    - Manage Rules (filter, search, delete)
+    - Manage Safe Senders (filter, search, delete)
+    - Import/Export Rules (YAML import/export)
+  - About
+
+Settings > Account (per-account)
+  - Folder Settings
+  - Scan Settings
+  - Account credentials
+```
+
+**Acceptance Criteria**:
+- [ ] New "General" tab added to Settings screen
+- [ ] Rules Management section moved from Account to General
+- [ ] Safe Senders Management moved from Account to General
+- [ ] Data Management (YAML Import/Export) moved to General and renamed "Rules Management" or "Import/Export"
+- [ ] Account tab retains only per-account settings (folders, scan config, credentials)
+- [ ] Navigation from all existing entry points still works
+- [ ] Tab order: General first, then Account
 
 ---
 
