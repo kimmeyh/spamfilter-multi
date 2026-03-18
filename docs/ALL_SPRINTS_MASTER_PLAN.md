@@ -84,6 +84,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 17 | docs/sprints/SPRINT_17_SUMMARY.md | [OK] Complete | ~20h (Feb 17-21, 2026) |
 | 18 | docs/sprints/SPRINT_18_RETROSPECTIVE.md | [OK] Complete | Feb 24-27, 2026 |
 | 19 | docs/sprints/SPRINT_19_SUMMARY.md | [OK] Complete | Feb 27 - Mar 15, 2026 |
+| 20 | docs/sprints/SPRINT_20_RETROSPECTIVE.md | [OK] Complete | Mar 15-17, 2026 |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -91,18 +92,20 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 19** (February 27 - March 15, 2026)
-- **PR**: [#183](https://github.com/kimmeyh/spamfilter-multi/pull/183) (targeting develop)
-- **Features**: Version tagging v0.5.0 (#181), Application branding MyEmailSpamFilter (#182), Folder save-on-selection (#172), Safe senders filter chips (#180), YAML import/export UI (#179), Gmail dual-auth OAuth + App Password (#178)
-- **Testing Feedback**: 3 rounds, 13 fixes/enhancements (account-scoped scan history, folder display, YAML export crash fix, live re-evaluation, App Password UX improvements)
-- **Tests**: 1141 passed (+53 from Sprint 18)
-- **Retrospective**: docs/sprints/SPRINT_19_RETROSPECTIVE.md
+**Sprint 20** (March 15-17, 2026)
+- **PR**: [#188](https://github.com/kimmeyh/spamfilter-multi/pull/188) (targeting develop)
+- **Features**: Gmail IMAP folder fix (#184), Demo Scan expansion (#185), Manage Rules UI overhaul with rule split and classification (#149), Add Rule performance (#186), Analyzer cleanup (#187)
+- **Infrastructure**: DB schema v2, YAML dual-write removed, 5 monolithic rules split into 3,291 individual rules, 3 standalone fix scripts
+- **Testing Feedback**: 11 fixes (TLD reclassification, wildcard conversion, safe sender folder skip, IMAP child folders, classification fields in all rule creation paths)
+- **Tests**: 1141 passed, 0 analyzer issues
+- **Backlog Added**: #14 (folder selectors), #15 (rule editing UI), #16 (live scan reprocess), #17 (scan status indicator)
+- **Retrospective**: docs/sprints/SPRINT_20_RETROSPECTIVE.md
 
 ---
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: March 15, 2026 (Sprint 19 retrospective)
+**Last Reviewed**: March 17, 2026 (Sprint 20 retrospective)
 
 All incomplete features, bugs, and spikes in relative priority order. HOLD items grouped at bottom. Each item links to its detail section (if one exists) or GitHub Issue.
 
@@ -111,22 +114,15 @@ All incomplete features, bugs, and spikes in relative priority order. HOLD items
 | # | Type | Title | Est. Effort | Issue | Detail |
 |---|------|-------|-------------|-------|--------|
 | 1 | Bug | Android app not tested in several sprints | ~2-4h | [#163](https://github.com/kimmeyh/spamfilter-multi/issues/163) | Validation sprint needed |
-| 2 | Enhancement | Manage Rules UI: split combined rules, search, filter | ~12-16h | [#149](https://github.com/kimmeyh/spamfilter-multi/issues/149) | [Detail](#f149-manage-rules-ui-overhaul) |
-| 3 | Enhancement | Playwright UI Tests + Android UI Testing Strategy (F11) | ~12-16h | -- | [Detail](#f11-playwright-ui-tests-and-android-ui-testing) |
-| 4 | Enhancement | Background Scanning - Android / WorkManager (F4) | ~14-16h | -- | [Detail](#f4-background-scanning-android) |
-| 5 | Enhancement | Provider-Specific Optimizations (F6) | ~10-12h | -- | [Detail](#f6-provider-specific-optimizations) |
-| 6 | Enhancement | Multi-Account Scanning (F7) | ~8-10h | -- | [Detail](#f7-multi-account-scanning) |
-| 7 | Enhancement | Rule Splitting Migration Script (F23) | ~6-8h | -- | [Detail](#f23-rule-splitting-migration-script) |
-| 8 | Enhancement | Manage Rules Category Filter Chips (F24) | ~4-6h | -- | [Detail](#f24-manage-rules-category-filter-chips) |
-| 9 | Enhancement | Rule Testing UI Enhancements (F25) | ~6-8h | -- | [Detail](#f25-rule-testing-ui-enhancements) |
-| 10 | Enhancement | Scan Results: Speed up "Add Rule" performance | ~4-6h | [#186](https://github.com/kimmeyh/spamfilter-multi/issues/186) | Profile and optimize rule addition from scan results screen |
-| 11 | Tech Debt | Clean up 47 pre-existing analyzer warnings in test files | ~2-4h | [#187](https://github.com/kimmeyh/spamfilter-multi/issues/187) | Improve signal-to-noise ratio for flutter analyze |
-| 12 | Bug | Gmail folder scan errors | ~2-4h | [#184](https://github.com/kimmeyh/spamfilter-multi/issues/184) | [Detail](#bug-gmail-folder-scan-errors) |
-| 13 | Enhancement | Demo Scan: expand sample data with realistic examples | ~4-6h | [#185](https://github.com/kimmeyh/spamfilter-multi/issues/185) | [Detail](#demo-scan-expanded-sample-data) |
-| 14 | Enhancement | Folder selectors: two-level listing with collapsible sub-folders | ~4-6h | -- | [Detail](#folder-selectors-two-level-listing) |
-| 15 | Enhancement | Rule editing UI with regex generation and validation | ~8-12h | -- | [Detail](#rule-editing-ui) |
-| 16 | Enhancement | Live Scan: re-process emails after rule changes | ~8-12h | -- | [Detail](#live-scan-reprocess-after-rule-changes) |
-| 17 | Enhancement | Live Scan: in-progress and completed status indicator | ~2-4h | -- | Visual indicator (icon or graphic) showing scan is in progress vs completed |
+| 2 | Enhancement | Playwright UI Tests + Android UI Testing Strategy (F11) | ~12-16h | -- | [Detail](#f11-playwright-ui-tests-and-android-ui-testing) |
+| 3 | Enhancement | Background Scanning - Android / WorkManager (F4) | ~14-16h | -- | [Detail](#f4-background-scanning-android) |
+| 4 | Enhancement | Provider-Specific Optimizations (F6) | ~10-12h | -- | [Detail](#f6-provider-specific-optimizations) |
+| 5 | Enhancement | Multi-Account Scanning (F7) | ~8-10h | -- | [Detail](#f7-multi-account-scanning) |
+| 6 | Enhancement | Rule Testing UI Enhancements (F25) | ~6-8h | -- | [Detail](#f25-rule-testing-ui-enhancements) |
+| 7 | Enhancement | Folder selectors: two-level listing with collapsible sub-folders | ~4-6h | -- | [Detail](#folder-selectors-two-level-listing) |
+| 8 | Enhancement | Rule editing UI with regex generation and validation | ~8-12h | -- | [Detail](#rule-editing-ui) |
+| 9 | Enhancement | Live Scan: re-process emails after rule changes | ~8-12h | -- | [Detail](#live-scan-reprocess-after-rule-changes) |
+| 10 | Enhancement | Live Scan: in-progress and completed status indicator | ~2-4h | -- | Visual indicator (icon or graphic) showing scan is in progress vs completed |
 
 ### HOLD Items
 
@@ -156,45 +152,6 @@ All incomplete features, bugs, and spikes in relative priority order. HOLD items
 ## Feature and Bug Details
 
 This section contains detailed specifications for incomplete items only. Completed features have their details in sprint documents and CHANGELOG.md.
-
-### Bug: Gmail Folder Scan Errors
-
-**Status**: New (Sprint 19 testing)
-**Estimated Effort**: ~2-4h
-
-**Overview**: Gmail folder scanning produces errors. Investigate whether Gmail IMAP folder listing requires different handling (e.g., `[Gmail]/` prefix for special folders, different folder hierarchy conventions) compared to other providers.
-
-**Acceptance Criteria**:
-- [ ] Root cause identified for Gmail folder scan errors
-- [ ] Fix implemented and tested with Gmail IMAP account
-- [ ] Gmail OAuth and Gmail App Password (IMAP) paths both work
-- [ ] No regression on AOL or other provider folder scanning
-
----
-
-### Demo Scan: Expanded Sample Data
-
-**Status**: New (Sprint 19 testing)
-**Estimated Effort**: ~4-6h
-
-**Overview**: Expand Demo Scan sample data with realistic examples across all rule categories to better demonstrate app capabilities to new users.
-
-**Required Examples** (at least 3 each):
-
-1. **Safe Sender - Exact Email**: 3 examples using different email providers (e.g., Gmail, Yahoo, Outlook)
-2. **Safe Sender - Exact Domain**: 3 examples using made-up email addresses from real domains: irs.gov, allstate.com, venmo.com
-3. **Block Rule - Block Email**: 3 examples using different email providers (different providers from safe sender examples)
-4. **Block Rule - Block Entire Domain**: 3 examples using domains from existing block rules in rules.yaml
-
-**Acceptance Criteria**:
-- [ ] Demo scan includes at least 3 examples per category above (12+ total new examples)
-- [ ] Examples use realistic sender names and subject lines
-- [ ] Block Entire Domain examples use domains already present in rules.yaml
-- [ ] Safe Sender and Block Rule provider examples do not overlap
-- [ ] Demo scan results demonstrate all filter categories in results screen
-- [ ] Existing demo scan tests updated for new sample data
-
----
 
 ### Folder Selectors: Two-Level Listing
 
@@ -308,16 +265,6 @@ Notes >                (expandable group)
 
 ---
 
-### F149: Manage Rules UI Overhaul
-
-**Status**: Planned
-**Issue**: [#149](https://github.com/kimmeyh/spamfilter-multi/issues/149)
-**Estimated Effort**: ~12-16h
-
-**Overview**: Split combined rules into separate views, add search and filter capabilities to the Manage Rules UI.
-
----
-
 ### F11: Playwright UI Tests and Android UI Testing
 
 **Status**: Planned
@@ -391,51 +338,6 @@ Notes >                (expandable group)
 **Dependencies**: Scan Results (completed Sprint 12)
 
 **Notes**: Defer until MVP complete. Current sequential scanning may be sufficient.
-
----
-
-### F23: Rule Splitting Migration Script
-
-**Status**: Planned
-**Estimated Effort**: ~6-8h
-
-**Overview**: One-time Dart CLI script to break apart the 4 monolithic rules (`SpamAutoDeleteHeader`, `SpamAutoDeleteFrom`, `SpamAutoDeleteBody`, `SpamAutoDeleteSubject`) into individual, well-named rules based on what each pattern actually blocks.
-
-**Splitting Logic**:
-- **SpamAutoDeleteHeader** patterns classified by regex structure:
-  - Entire domain (`@(?:[a-z0-9-]+\.)*domain\.com$`) -> `Block_EntireDomain_<domain>`
-  - Exact domain (`@domain\.com$`) -> `Block_ExactDomain_<domain>`
-  - Exact email (`^user@domain\.com$`) -> `Block_ExactEmail_<user_domain>`
-  - TLD (`\.<tld>$`) -> `Block_TopLevelDomain_<tld>`
-- **SpamAutoDeleteFrom** patterns: Convert from `from:` to `header:` matching, then same classification
-- **SpamAutoDeleteBody** patterns: `BlockBody_<cleaned_regex>` (use cleaned-up regex as name)
-- **SpamAutoDeleteSubject** patterns: `BlockSubject_<cleaned_regex>` (use cleaned-up regex as name)
-- Skip duplicates (if target rule name already exists)
-- Remove migrated patterns from original monolithic rules
-
-**Deliverable**: Dart CLI script in `scripts/` directory, run once, produces updated `rules.yaml`
-
-**Dependencies**: F22 (YAML Import/Export UI) for reimporting the split rules into the app database
-
----
-
-### F24: Manage Rules Category Filter Chips
-
-**Status**: Planned
-**Estimated Effort**: ~4-6h
-
-**Overview**: Replace current "Header"/"Body"/"Subject" filter chips in Settings > Manage Rules with more meaningful categories that match the new rule naming convention from F23.
-
-**New Filter Categories**:
-- "Block Email" - rules matching `Block_ExactEmail_*`
-- "Block Exact Domain" - rules matching `Block_ExactDomain_*`
-- "Block Entire Domain" - rules matching `Block_EntireDomain_*`
-- "Block Top Level Domains" - rules matching `Block_TopLevelDomain_*`
-- "Block Body" - rules matching `BlockBody_*`
-- "Block Subject" - rules matching `BlockSubject_*`
-- "Other" - all rules not in the above categories
-
-**Dependencies**: F23 (Rule Splitting Migration) must run first so rules have the new naming convention
 
 ---
 
