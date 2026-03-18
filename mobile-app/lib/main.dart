@@ -13,6 +13,7 @@ import 'core/services/background_scan_windows_worker.dart';
 import 'core/services/windows_system_tray_service.dart';
 import 'core/services/windows_notification_service.dart';
 import 'core/services/windows_task_scheduler_service.dart';
+import 'core/services/app_environment.dart';
 import 'core/services/background_scan_manager.dart' show ScanFrequency;
 import 'core/storage/settings_store.dart';
 import 'adapters/storage/secure_credentials_store.dart';
@@ -42,7 +43,9 @@ void main(List<String> args) async {
   // If running in background mode (launched by Task Scheduler), execute scan and exit
   if (BackgroundModeService.isBackgroundMode) {
     // Use file-based logging since headless mode has no console
-    final logFile = File('${Platform.environment['APPDATA']}\\MyEmailSpamFilter\\MyEmailSpamFilter\\logs\\background_scan_v0.5.0.log');
+    final envSuffix = AppEnvironment.dataDirSuffix;
+    final logPrefix = AppEnvironment.logPrefix;
+    final logFile = File('${Platform.environment['APPDATA']}\\MyEmailSpamFilter\\MyEmailSpamFilter$envSuffix\\logs\\${logPrefix}background_scan_v0.5.1.log');
     Future<void> bgLog(String message) async {
       try {
         final timestamp = DateTime.now().toIso8601String();
@@ -194,7 +197,7 @@ class SpamFilterApp extends StatelessWidget {
           },
           child: MaterialApp(
             navigatorKey: navigatorKey,
-            title: 'MyEmailSpamFilter',
+            title: AppEnvironment.windowTitle,
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: ThemeMode.system, // Follow system theme preference

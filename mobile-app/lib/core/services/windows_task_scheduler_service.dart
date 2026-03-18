@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:logger/logger.dart';
 import 'package:path/path.dart' as path;
 
+import 'app_environment.dart';
 import 'background_scan_manager.dart';
 import 'powershell_script_generator.dart';
 
@@ -12,7 +13,8 @@ import 'powershell_script_generator.dart';
 /// tasks for background email scanning on Windows desktop.
 class WindowsTaskSchedulerService {
   static final Logger _logger = Logger();
-  static const String taskName = 'SpamFilterBackgroundScan';
+  /// Task name includes environment suffix per ADR-0035
+  static String get taskName => 'SpamFilterBackgroundScan${AppEnvironment.taskNameSuffix}';
 
   /// Create a scheduled task for background scanning
   ///

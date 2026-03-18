@@ -7,6 +7,7 @@ library;
 import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import '../../core/services/app_environment.dart';
 
 /// Centralized application paths manager
 /// 
@@ -37,11 +38,23 @@ class AppPaths {
   bool _initialized = false;
 
   /// Initialize application directories (must call before accessing paths)
+  ///
+  /// For development builds (APP_ENV=dev), the data directory is suffixed
+  /// with '_Dev' to isolate dev data from production (ADR-0035).
   Future<void> initialize() async {
     if (_initialized) return;
 
-    // Get app support directory (persistent, not cleared by app uninstall on most platforms)
-    _appSupportDir = await getApplicationSupportDirectory();
+    // Get base app support directory
+    final baseDir = await getApplicationSupportDirectory();
+
+    // Apply environment suffix for dev builds (ADR-0035)
+    final suffix = AppEnvironment.dataDirSuffix;
+    if (suffix.isNotEmpty) {
+      _appSupportDir = Directory('${baseDir.path}$suffix');
+      await _appSupportDir.create(recursive: true);
+    } else {
+      _appSupportDir = baseDir;
+    }
 
     // Create subdirectories if they don't exist
     _rulesDir = Directory(path.join(_appSupportDir.path, 'rules'));
@@ -67,10 +80,11 @@ class AppPaths {
 
   /// Root app support directory
   ///
-  /// Platform-specific paths:
+  /// Platform-specific paths (production / development per ADR-0035):
+  /// - Windows prod: C:\Users\{username}\AppData\Roaming\MyEmailSpamFilter\MyEmailSpamFilter
+  /// - Windows dev:  C:\Users\{username}\AppData\Roaming\MyEmailSpamFilter\MyEmailSpamFilter_Dev
   /// - Android: /data/user/0/com.myemailspamfilter/files
   /// - iOS: /Library/Application Support/MyEmailSpamFilter
-  /// - Windows: C:\Users\{username}\AppData\Roaming\MyEmailSpamFilter\MyEmailSpamFilter
   /// - Linux: ~/.local/share/MyEmailSpamFilter
   /// - macOS: ~/Library/Application Support/MyEmailSpamFilter
   Directory get appSupportDirectory {
