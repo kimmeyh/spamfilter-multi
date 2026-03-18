@@ -125,6 +125,7 @@ All incomplete features, bugs, and spikes in relative priority order. HOLD items
 | 13 | Enhancement | Demo Scan: expand sample data with realistic examples | ~4-6h | [#185](https://github.com/kimmeyh/spamfilter-multi/issues/185) | [Detail](#demo-scan-expanded-sample-data) |
 | 14 | Enhancement | Folder selectors: two-level listing with collapsible sub-folders | ~4-6h | -- | [Detail](#folder-selectors-two-level-listing) |
 | 15 | Enhancement | Rule editing UI with regex generation and validation | ~8-12h | -- | [Detail](#rule-editing-ui) |
+| 16 | Enhancement | Live Scan: re-process emails after rule changes | ~8-12h | -- | [Detail](#live-scan-reprocess-after-rule-changes) |
 
 ### HOLD Items
 
@@ -269,6 +270,40 @@ Notes >                (expandable group)
 - [ ] Pattern preview shows match results against sample data
 - [ ] Changes saved to database
 - [ ] Rule name updated if source_domain changes
+
+---
+
+### Live Scan: Re-process Emails After Rule Changes
+
+**Status**: New (Sprint 20 testing feedback)
+**Estimated Effort**: ~8-12h
+
+**Overview**: During a live scan, when the user adds or changes a rule from the scan results screen, re-process affected emails asynchronously to apply the new rule action on the server.
+
+**Scenarios**:
+
+1. **New safe sender rule added**: If an email was previously "deleted" (moved to trash/junk) but now matches a safe sender rule, move it to the configured Safe Sender Folder (rescue the email).
+
+2. **New block rule added**: If an email was previously "no rule" or "safe sender" but now matches a block rule, move it to the configured Deleted Rule Folder.
+
+3. **Rule changed/disabled**: If a rule is modified or disabled, re-evaluate affected emails and apply corrective actions.
+
+**Key Design Considerations**:
+- Re-processing should be async to avoid blocking the UI
+- Show progress indicator during re-processing
+- Handle IMAP errors gracefully (email may already be moved/deleted by server)
+- Track re-processed emails to avoid duplicate actions
+- Consider batch operations for performance (similar to Phase 6b batch execution)
+- Only re-process emails from the current scan session (not historical)
+
+**Acceptance Criteria**:
+- [ ] After adding a safe sender from scan results, previously deleted emails matching the new pattern are moved to Safe Sender Folder
+- [ ] After adding a block rule from scan results, previously unmatched emails matching the new pattern are moved to Deleted Rule Folder
+- [ ] Re-processing happens asynchronously without blocking the UI
+- [ ] Progress indicator shown during re-processing
+- [ ] Scan results display updates to reflect re-processed emails
+- [ ] IMAP errors during re-processing are handled gracefully (logged, not fatal)
+- [ ] Works for both live scan and historical scan result review
 
 ---
 
