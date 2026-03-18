@@ -123,6 +123,7 @@ All incomplete features, bugs, and spikes in relative priority order. HOLD items
 | 8 | Enhancement | Rule editing UI with regex generation and validation | ~8-12h | -- | [Detail](#rule-editing-ui) |
 | 9 | Enhancement | Live Scan: re-process emails after rule changes | ~8-12h | -- | [Detail](#live-scan-reprocess-after-rule-changes) |
 | 10 | Enhancement | Live Scan: in-progress and completed status indicator | ~2-4h | -- | Visual indicator (icon or graphic) showing scan is in progress vs completed |
+| 11 | Tech Debt | Test coverage analysis and Sprint 20 feature tests | ~4-6h | -- | [Detail](#test-coverage-analysis-and-sprint-20-feature-tests) |
 
 ### HOLD Items
 
@@ -338,6 +339,40 @@ Notes >                (expandable group)
 **Dependencies**: Scan Results (completed Sprint 12)
 
 **Notes**: Defer until MVP complete. Current sequential scanning may be sufficient.
+
+---
+
+### Test Coverage Analysis and Sprint 20 Feature Tests
+
+**Status**: New (Sprint 20 retrospective)
+**Estimated Effort**: ~4-6h
+
+**Overview**: Run test coverage analysis to identify gaps across the codebase, then add targeted tests for Sprint 20 features that shipped without automated test coverage.
+
+**Phase 1: Coverage Analysis**
+- Run `flutter test --coverage` and generate coverage report
+- Identify files/functions with low or no coverage
+- Prioritize gaps by risk (core business logic > UI > utilities)
+
+**Phase 2: Sprint 20 Feature Tests**
+- [ ] Classification fields set correctly when creating rules from results_display_screen
+- [ ] Classification fields set correctly from email_detail_view quick rule
+- [ ] Classification fields set correctly from rule_quick_add_screen
+- [ ] Demo rules DB produces expected safe/deleted/no-rule distribution
+- [ ] Safe sender folder skip logic (email in folder = skip, email not in folder = show, null config = show all)
+- [ ] DB v2 migration idempotent (handles existing columns)
+- [ ] YAML export/import preserves classification fields round-trip
+- [ ] PlatformRegistry routing for gmail-imap platformId
+
+**Phase 3: General Coverage Gaps**
+- Add tests for any high-risk, low-coverage areas identified in Phase 1
+- Target: meaningful coverage improvements, not 100% coverage
+
+**Acceptance Criteria**:
+- [ ] Coverage report generated and reviewed
+- [ ] All Sprint 20 feature tests from Phase 2 implemented
+- [ ] High-risk coverage gaps from Phase 3 addressed
+- [ ] All tests pass, 0 analyzer issues
 
 ---
 
