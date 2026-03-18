@@ -119,13 +119,12 @@ All incomplete features, bugs, and spikes in relative priority order. HOLD items
 | 4 | Enhancement | Provider-Specific Optimizations (F6) | ~10-12h | -- | [Detail](#f6-provider-specific-optimizations) |
 | 5 | Enhancement | Multi-Account Scanning (F7) | ~8-10h | -- | [Detail](#f7-multi-account-scanning) |
 | 6 | Enhancement | Rule Testing UI Enhancements (F25) | ~6-8h | -- | [Detail](#f25-rule-testing-ui-enhancements) |
-| 7 | Enhancement | Folder selectors: two-level listing with collapsible sub-folders | ~4-6h | -- | [Detail](#folder-selectors-two-level-listing) |
+| 7 | Enhancement | Folder selectors: two-level listing, provider defaults first, context-aware | ~6-8h | -- | [Detail](#folder-selectors-two-level-listing) |
 | 8 | Enhancement | Rule editing UI with regex generation and validation | ~8-12h | -- | [Detail](#rule-editing-ui) |
 | 9 | Enhancement | Live Scan: re-process emails after rule changes | ~8-12h | -- | [Detail](#live-scan-reprocess-after-rule-changes) |
 | 10 | Enhancement | Live Scan: in-progress and completed status indicator | ~2-4h | -- | Visual indicator (icon or graphic) showing scan is in progress vs completed |
 | 11 | Tech Debt | Test coverage analysis and Sprint 20 feature tests | ~4-6h | -- | [Detail](#test-coverage-analysis-and-sprint-20-feature-tests) |
 | 12 | Enhancement | Settings: Add General tab for app-wide settings | ~4-6h | -- | [Detail](#settings-general-tab) |
-| 13 | Enhancement | Folder selection: provider default folder first, no sub-folders | ~2-4h | -- | [Detail](#folder-selection-provider-defaults-first) |
 
 ### HOLD Items
 
@@ -159,11 +158,13 @@ This section contains detailed specifications for incomplete items only. Complet
 ### Folder Selectors: Two-Level Listing
 
 **Status**: New (Sprint 20 testing feedback)
-**Estimated Effort**: ~4-6h
+**Estimated Effort**: ~6-8h
 
-**Overview**: Update folder selector UI (used by Safe Sender Folder, Deleted Rule Folder, and Default Folders settings) to show top-level folders flat and first-level sub-folders in collapsible groups.
+**Overview**: Update folder selector UI (used by Safe Sender Folder, Deleted Rule Folder, and Default Folders settings) with context-aware behavior: two-level collapsible folders for Default Folders, and flat lists with provider defaults first for Safe Sender and Deleted Rule folder selectors.
 
-**Recommended UI**: Two-level collapsible folder tree
+**Part A: Default Folders selector (multi-select for scan)**
+
+Two-level collapsible folder tree:
 
 ```
 INBOX
@@ -187,8 +188,21 @@ Notes >                (expandable group)
 - Junk/Trash folders auto-highlighted regardless of nesting depth
 - Non-selectable parent containers (e.g., `[Gmail]`) shown as group headers only
 
+**Part B: Safe Sender Folder and Deleted Rule Folder selectors (single-select)**
+
+Flat list with provider default first:
+
+- **Safe Sender Folder**: Provider default safe sender folder listed first (e.g., INBOX), remaining folders alphabetical, no sub-folders
+- **Deleted Rule Folder**: Provider default deleted folder listed first (e.g., Trash or [Gmail]/Trash), remaining folders alphabetical, no sub-folders
+
+Provider defaults:
+- AOL: Deleted Rule = Trash, Safe Sender = INBOX
+- Gmail IMAP: Deleted Rule = [Gmail]/Trash, Safe Sender = INBOX
+- Gmail OAuth: Deleted Rule = TRASH, Safe Sender = INBOX
+- Yahoo: Deleted Rule = Trash, Safe Sender = INBOX
+
 **Provider-Specific Folder Hierarchies** (research before implementation):
-- **Gmail IMAP**: `[Gmail]/` prefix for system folders (Trash, Spam, Sent Mail, All Mail, Drafts). Custom labels may also use `/` hierarchy. Separator: `/`
+- **Gmail IMAP**: `[Gmail]/` prefix for system folders. Custom labels may also use `/` hierarchy. Separator: `/`
 - **AOL**: Flat folder structure (INBOX, Bulk Mail, Bulk Email, Sent, Trash). No sub-folders typically. Separator: `/`
 - **Yahoo**: Flat structure similar to AOL (Inbox, Bulk, Sent, Trash, Draft). Separator: `/`
 - **iCloud**: May have nested folders. Separator: `/`
@@ -198,13 +212,15 @@ Notes >                (expandable group)
 
 **Acceptance Criteria**:
 - [ ] Research and document actual folder hierarchy for each supported provider before implementation
-- [ ] FolderSelectionScreen groups child folders under their parent
-- [ ] Parent folders with children show expand/collapse toggle
-- [ ] Groups collapsed by default
-- [ ] Only first-level children shown
-- [ ] Non-selectable parent containers cannot be selected, only expanded
+- [ ] Part A: FolderSelectionScreen groups child folders under their parent (Default Folders only)
+- [ ] Part A: Parent folders with children show expand/collapse toggle
+- [ ] Part A: Groups collapsed by default, only first-level children shown
+- [ ] Part A: Non-selectable parent containers cannot be selected, only expanded
+- [ ] Part B: Safe Sender Folder selector shows provider default first, flat list, no sub-folders
+- [ ] Part B: Deleted Rule Folder selector shows provider default first, flat list, no sub-folders
+- [ ] Part B: Provider defaults configured per provider
 - [ ] Path separator detected per-provider (not hardcoded)
-- [ ] Works for Gmail IMAP ([Gmail]/ hierarchy), AOL (flat), Yahoo (flat), and custom IMAP
+- [ ] Works for Gmail IMAP, Gmail OAuth, AOL, Yahoo, and custom IMAP
 - [ ] Existing folder selection behavior preserved for providers without sub-folders
 
 ---
@@ -419,41 +435,6 @@ Settings > Account (per-account)
 - [ ] Account tab retains only per-account settings (folders, scan config, credentials)
 - [ ] Navigation from all existing entry points still works
 - [ ] Tab order: General first, then Account
-
----
-
-### Folder Selection: Provider Defaults First
-
-**Status**: New (Sprint 20 retrospective)
-**Estimated Effort**: ~2-4h
-
-**Overview**: Update the folder selection for Safe Sender Folder and Deleted Rule Folder to list the provider default folder first, followed by remaining folders in alphabetical order. These selectors do not need sub-folder listings.
-
-**Changes**:
-
-1. **Safe Sender Folder selector**:
-   - List provider default safe sender folder first (e.g., INBOX for most providers)
-   - Remaining folders in alphabetical order
-   - No sub-folders (flat list only, filter out child folders like [Gmail]/*)
-
-2. **Deleted Rule Folder selector**:
-   - List provider default deleted rule folder first (e.g., Trash, [Gmail]/Trash)
-   - Remaining folders in alphabetical order
-   - No sub-folders (flat list only)
-
-3. **Provider defaults** (from junk_folder_config.dart or new config):
-   - AOL: Deleted Rule = Trash, Safe Sender = INBOX
-   - Gmail IMAP: Deleted Rule = [Gmail]/Trash, Safe Sender = INBOX
-   - Gmail OAuth: Deleted Rule = TRASH, Safe Sender = INBOX
-   - Yahoo: Deleted Rule = Trash, Safe Sender = INBOX
-
-**Acceptance Criteria**:
-- [ ] Safe Sender Folder selector shows provider default first
-- [ ] Deleted Rule Folder selector shows provider default first
-- [ ] Both selectors show flat list (no sub-folders)
-- [ ] Remaining folders in alphabetical order after default
-- [ ] Provider defaults configured per provider
-- [ ] Works for all supported providers (AOL, Gmail IMAP, Gmail OAuth, Yahoo)
 
 ---
 
