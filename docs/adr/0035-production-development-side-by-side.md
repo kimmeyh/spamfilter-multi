@@ -54,13 +54,69 @@ Implement **environment-aware app identity** using Flutter's `--dart-define` mec
 
 ### Version Number Strategy
 
-**Production version**: Follows semver from `pubspec.yaml` (e.g., `0.5.0+1`). Only updated on releases merged to main.
+Uses 3-level semver (`MAJOR.MINOR.PATCH`) with patch-level differentiation:
 
-**Development version**: Same `pubspec.yaml` version but with `[DEV]` suffix displayed in UI. The version number in pubspec.yaml is updated on the develop/feature branch when a new release is being prepared, but the `[DEV]` indicator makes it clear this is not a released build.
+**Production version** (main branch): `0.5.0` -- the release version in `pubspec.yaml`. Only updated when a release is merged to main.
 
-**Why not separate version numbers**: Both environments share the same `pubspec.yaml`. Maintaining separate version files adds complexity. The environment indicator (`[DEV]`) is sufficient to distinguish builds visually. The separate data directories prevent version-related DB migration conflicts.
+**Development version** (develop/feature branches): `0.5.1` -- always `PATCH+1` ahead of production. This ensures development builds are always distinguishable from production by version number alone. When a release is prepared (develop merged to main), the version becomes the new production version and develop bumps to the next patch.
+
+**Version flow example**:
+```
+main:    0.5.0  ──────────────────────────>  0.6.0  ──────────>
+develop: 0.5.1  -> sprint work -> 0.6.0 PR -> 0.6.1  -> ...
+```
+
+**UI display**:
+- Production: `v0.5.0` (window title, About screen)
+- Development: `v0.5.1 [DEV]` (window title, About screen)
 
 **DB schema version isolation**: Each environment has its own database file in its own data directory. If the dev branch upgrades the DB schema (e.g., v2 -> v3), it only affects the dev database. The production database remains at the production schema version. This eliminates cross-environment schema conflicts.
+
+### Secrets File Strategy
+
+Each environment uses its own secrets file:
+
+- **Production**: `secrets.prod.json` -- production OAuth credentials, API keys
+- **Development**: `secrets.dev.json` -- development/testing OAuth credentials, API keys
+
+Both files are excluded by `.gitignore`. The build scripts pass the correct file:
+```powershell
+# Production
+flutter build windows --dart-define-from-file=secrets.prod.json --dart-define=APP_ENV=prod
+
+# Development
+flutter run -d windows --dart-define-from-file=secrets.dev.json --dart-define=APP_ENV=dev
+```
+
+Initially both files may contain the same credentials (same Google Cloud project). As the app scales, production credentials can be separated (different OAuth client IDs, different Firebase project, etc.).
+
+### First-Run Data Seeding for Development
+
+When the development environment is first created, its data directory is empty (no rules, no accounts, no safe senders). To avoid manual setup:
+
+**One-time seed process** (automated during ADR-0035 implementation):
+1. Check if dev data directory is empty (no `spam_filter.db`)
+2. If empty, copy production database as seed: `spam_filter.db` -> dev directory
+3. Copy production credentials (from Windows Credential Manager or credentials directory)
+4. Log: "Development environment seeded from production data"
+5. Mark as seeded (`.dev_seeded` marker file) to prevent re-seeding
+
+**Manual alternative**: Use Settings > Data Management > Export from production, then Import in development.
+
+**Important**: After seeding, the dev database is independent. Changes in dev do not affect production, and vice versa.
+
+### User and Account Isolation
+
+**Single OS user, two app environments**: The production and development apps share the same Windows user account but have separate data directories. Each environment maintains its own:
+- Email accounts and credentials
+- Rules and safe senders database
+- Scan history
+- App settings
+
+**Multi-user scenarios**: Handled by the operating system, not the app:
+- **Windows**: Each OS user has their own `%APPDATA%` directory, so separate Windows user accounts get completely isolated app data automatically
+- **Android/iOS**: Device-level isolation (one user per device)
+- **No in-app multi-user support needed**: The app manages email accounts (which may belong to different people), but the app itself runs as a single OS user
 
 ### Repository Directory Structure
 
@@ -143,10 +199,11 @@ Option A is simplest, requires minimal code changes, and integrates with existin
 
 ### Negative
 
-- Development builds start with empty database (no rules, no accounts) -- requires one-time setup or import from production export
-- Two sets of credentials to manage (production and development accounts)
-- Build scripts need updating to pass `APP_ENV` flag
-- Developers must remember to use correct flag for production builds
+- First-run data seeding copies production DB but credentials may need re-authentication in dev environment
+- Two secrets files to maintain (`secrets.dev.json`, `secrets.prod.json`)
+- Build scripts need updating to pass `-Environment` parameter
+- Developers must remember to bump patch version on develop after each release to main
+- Git worktree requires disk space for second checkout
 
 ### Neutral
 
@@ -156,33 +213,37 @@ Option A is simplest, requires minimal code changes, and integrates with existin
 
 ## Implementation Plan
 
-### Phase 0: Repository Setup (One-Time)
-0. Create production git worktree: `git worktree add ../spamfilter-multi-prod main`
-1. Build production release in worktree: `cd ../spamfilter-multi-prod/mobile-app/scripts && .\build-windows.ps1 -Environment prod`
+### Phase 0: Repository and Version Setup (One-Time)
+0. Bump develop branch version to `0.5.1` in `pubspec.yaml` (main stays at `0.5.0`)
+1. Create `secrets.prod.json` template (copy from `secrets.dev.json`)
+2. Add `secrets.prod.json` to `.gitignore`
+3. Create production git worktree: `git worktree add ../spamfilter-multi-prod main`
 
 ### Phase 1: Core Infrastructure
-2. Add `AppEnvironment` class that reads `APP_ENV` from `--dart-define`
-3. Update `AppPaths` to use environment-aware data directory suffix
-4. Update `WindowsTaskSchedulerService` to use environment-aware task name
-5. Update `BackgroundScanWindowsWorker` to use environment-aware log file name
-6. Add environment indicator to window title (`[DEV]` suffix)
-7. Update About screen to show environment indicator with version
+4. Add `AppEnvironment` class that reads `APP_ENV` from `--dart-define`
+5. Update `AppPaths` to use environment-aware data directory suffix
+6. Update `WindowsTaskSchedulerService` to use environment-aware task name
+7. Update `BackgroundScanWindowsWorker` to use environment-aware log file name
+8. Add environment indicator to window title (`[DEV] vX.Y.Z` suffix)
+9. Update About screen to show environment indicator with version
+10. Add first-run data seeding: copy production DB to dev data directory if empty
 
 ### Phase 2: Build Script Updates
-8. Update `build-windows.ps1` to accept `-Environment` parameter (default: `dev`)
-9. Production build command: `.\build-windows.ps1 -Environment prod`
-10. Development build command: `.\build-windows.ps1` (defaults to dev)
-11. Ensure `--dart-define=APP_ENV={env}` is passed to both `flutter build` and `flutter run`
+11. Update `build-windows.ps1` to accept `-Environment` parameter (default: `dev`)
+12. Production build uses `secrets.prod.json`, dev build uses `secrets.dev.json`
+13. Ensure `--dart-define=APP_ENV={env}` is passed to both `flutter build` and `flutter run`
 
 ### Phase 3: Single-Instance Mutex
-12. Add named mutex in Windows runner (`main.cpp`) using environment-specific name
-13. Show message and bring existing window to front if mutex already held
-14. Mutex name includes environment: `Global\MyEmailSpamFilter_{Environment}`
+14. Add named mutex in Windows runner (`main.cpp`) using environment-specific name
+15. Show message and bring existing window to front if mutex already held
+16. Mutex name includes environment: `Global\MyEmailSpamFilter_{Environment}`
 
-### Phase 4: Documentation
-15. Update CLAUDE.md with production/development build instructions and worktree setup
-16. Update DEVELOPER_SETUP.md with side-by-side workflow
-17. Document production worktree maintenance (git pull, rebuilding after main updates)
+### Phase 4: Documentation and First Production Build
+17. Update CLAUDE.md with production/development build instructions and worktree setup
+18. Update DEVELOPER_SETUP.md with side-by-side workflow
+19. Document production worktree maintenance (git pull, rebuilding after main updates)
+20. Document version bumping process (when to bump patch on develop)
+21. Build and verify production release in worktree
 
 ## References
 
