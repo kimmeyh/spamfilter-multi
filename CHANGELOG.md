@@ -26,6 +26,17 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-03-18 (Sprint 21 - ADR-0035)
+- **feat**: Production/Development side-by-side builds with environment-aware data directories (ADR-0035, Issue #189)
+- **feat**: AppEnvironment class reads APP_ENV from --dart-define (dev/prod)
+- **feat**: Dev builds use MyEmailSpamFilter_Dev data directory, window title shows [DEV]
+- **feat**: Separate Task Scheduler task names per environment
+- **feat**: First-run dev environment seeded from production database
+- **feat**: Single-instance mutex per executable path prevents duplicate instances
+- **feat**: build-windows.ps1 accepts -Environment parameter (dev/prod)
+- **feat**: secrets.prod.json template for production credentials
+- **chore**: Version bumped to 0.5.1 on develop (production stays 0.5.0)
+
 ### 2026-03-17 (Sprint 20 - Testing Feedback)
 - **fix**: DB v2 migration checks for existing columns before ALTER TABLE
 - **fix**: Scan Results folder display shows correct account folders after switching accounts
