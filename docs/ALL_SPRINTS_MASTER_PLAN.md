@@ -125,6 +125,7 @@ All incomplete features, bugs, and spikes in relative priority order. HOLD items
 | 10 | Enhancement | Live Scan: in-progress and completed status indicator | ~2-4h | -- | Visual indicator (icon or graphic) showing scan is in progress vs completed |
 | 11 | Tech Debt | Test coverage analysis and Sprint 20 feature tests | ~4-6h | -- | [Detail](#test-coverage-analysis-and-sprint-20-feature-tests) |
 | 12 | Enhancement | Settings: Add General tab for app-wide settings | ~4-6h | -- | [Detail](#settings-general-tab) |
+| 13 | Enhancement | Production/Development side-by-side builds | ~6-8h | -- | ADR-0035: Separate data dirs, task names, mutex per environment |
 
 ### HOLD Items
 
