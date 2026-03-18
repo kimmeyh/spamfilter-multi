@@ -126,6 +126,7 @@ All incomplete features, bugs, and spikes in relative priority order. HOLD items
 | 14 | Enhancement | Folder selectors: two-level listing with collapsible sub-folders | ~4-6h | -- | [Detail](#folder-selectors-two-level-listing) |
 | 15 | Enhancement | Rule editing UI with regex generation and validation | ~8-12h | -- | [Detail](#rule-editing-ui) |
 | 16 | Enhancement | Live Scan: re-process emails after rule changes | ~8-12h | -- | [Detail](#live-scan-reprocess-after-rule-changes) |
+| 17 | Enhancement | Live Scan: in-progress and completed status indicator | ~2-4h | -- | Visual indicator (icon or graphic) showing scan is in progress vs completed |
 
 ### HOLD Items
 
