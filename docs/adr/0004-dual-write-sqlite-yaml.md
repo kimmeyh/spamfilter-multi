@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted
+Superseded
+
+Superseded by Sprint 20 (March 2026). YAML dual-write removed; database is sole source of truth. YAML available for import/export only. See ADR-0035.
 
 ## Date
 
