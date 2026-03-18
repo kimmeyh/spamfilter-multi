@@ -14,6 +14,7 @@ import 'core/services/windows_system_tray_service.dart';
 import 'core/services/windows_notification_service.dart';
 import 'core/services/windows_task_scheduler_service.dart';
 import 'core/services/app_environment.dart';
+import 'core/services/dev_environment_seeder.dart';
 import 'core/services/background_scan_manager.dart' show ScanFrequency;
 import 'core/storage/settings_store.dart';
 import 'adapters/storage/secure_credentials_store.dart';
@@ -75,6 +76,12 @@ void main(List<String> args) async {
       await bgLog('Stack trace: $stackTrace');
       exit(1);
     }
+  }
+
+  // DEV ENVIRONMENT SEEDING: Copy production data to dev directory on first launch
+  // Must run BEFORE AppPaths initialization (ADR-0035)
+  if (Platform.isWindows && AppEnvironment.isDev) {
+    await DevEnvironmentSeeder.seedIfNeeded();
   }
 
   // APP IDENTITY MIGRATION: Migrate data from old com.example directory to new

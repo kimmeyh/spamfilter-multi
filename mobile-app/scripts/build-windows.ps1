@@ -1,8 +1,9 @@
 # Rebuilds the Flutter Windows desktop app from scratch.
 #
 # USAGE:
-#   .\build-windows.ps1                          # Clean build, run app after build (default)
-#   .\build-windows.ps1 -RunAfterBuild:$false    # Clean build, do not run app
+#   .\build-windows.ps1                          # Dev build, run app after build (default)
+#   .\build-windows.ps1 -Environment prod        # Production build
+#   .\build-windows.ps1 -RunAfterBuild:$false    # Build without running
 #   .\build-windows.ps1 -Release                 # Release build (default)
 #   .\build-windows.ps1 -Debug                   # Debug build (slower, larger executable)
 #
@@ -16,7 +17,9 @@ param(
     [switch]$Release = $true,
     [switch]$Debug = $false,
     [switch]$SkipClean = $false,
-    [switch]$AnalyzeSize = $false
+    [switch]$AnalyzeSize = $false,
+    [ValidateSet('dev', 'prod')]
+    [string]$Environment = 'dev'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -77,7 +80,10 @@ Write-Host ""
 # Step 4: Build Windows app
 Write-Host "[4/5] Building Windows app in $buildMode mode..." -ForegroundColor Cyan
 
-$secretsFile = Join-Path $projectRoot "secrets.dev.json"
+# Select secrets file based on environment (ADR-0035)
+$secretsFileName = if ($Environment -eq 'prod') { "secrets.prod.json" } else { "secrets.dev.json" }
+$secretsFile = Join-Path $projectRoot $secretsFileName
+
 $buildCommand = "flutter build windows"
 
 # Add build mode
@@ -87,12 +93,22 @@ if ($Debug) {
     $buildCommand += " --release"
 }
 
+# Add environment dart-define (ADR-0035)
+$buildCommand += " --dart-define=APP_ENV=$Environment"
+Write-Host "       Environment: $($Environment.ToUpper())" -ForegroundColor $(if ($Environment -eq 'prod') { 'Green' } else { 'Yellow' })
+
 # Add secrets if present
 if (Test-Path $secretsFile) {
-    Write-Host "       Using secrets from secrets.dev.json" -ForegroundColor Yellow
-    $buildCommand += " --dart-define-from-file=secrets.dev.json"
+    Write-Host "       Using secrets from $secretsFileName" -ForegroundColor Yellow
+    $buildCommand += " --dart-define-from-file=$secretsFileName"
 } else {
-    Write-Host "       [WARNING] secrets.dev.json not found (optional for development)" -ForegroundColor Yellow
+    Write-Host "       [WARNING] $secretsFileName not found" -ForegroundColor Yellow
+    # Fallback to secrets.dev.json if prod file missing
+    $fallbackSecrets = Join-Path $projectRoot "secrets.dev.json"
+    if (($Environment -eq 'prod') -and (Test-Path $fallbackSecrets)) {
+        Write-Host "       Falling back to secrets.dev.json" -ForegroundColor Yellow
+        $buildCommand += " --dart-define-from-file=secrets.dev.json"
+    }
 }
 
 # Add size analysis if requested
@@ -130,9 +146,9 @@ Write-Host ""
 if ($RunAfterBuild) {
     Write-Host "[6/6] Launching Windows app..." -ForegroundColor Cyan
 
-    $runCommand = "flutter run -d windows"
+    $runCommand = "flutter run -d windows --dart-define=APP_ENV=$Environment"
     if (Test-Path $secretsFile) {
-        $runCommand += " --dart-define-from-file=secrets.dev.json"
+        $runCommand += " --dart-define-from-file=$secretsFileName"
     }
     if ($Debug) {
         $runCommand += " --debug"
