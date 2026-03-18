@@ -171,6 +171,18 @@ Implement environment-aware app identity so production (main branch) and develop
 5. **Task E** (mutex - independent but test after B/D)
 6. **Task F** (documentation - last)
 
+## Phase 5 Note: Documentation Review
+
+**Before PR submission**, review ALL files in `docs/` directory for references that may need updating due to ADR-0035 changes. This is a major architectural change affecting data directories, build commands, version numbering, and app identity. Files to review include but are not limited to:
+- `CLAUDE.md` (build commands, data directories, version references)
+- `ARCHITECTURE.md` (data flow, storage paths)
+- `TROUBLESHOOTING.md` (file paths, debugging instructions)
+- `QUICK_REFERENCE.md` (command cheat sheet)
+- `SPRINT_EXECUTION_WORKFLOW.md` (build and test commands)
+- `docs/WINDOWS_DEVELOPMENT_GUIDE.md` (Windows-specific paths)
+- `docs/OAUTH_SETUP.md` (if paths referenced)
+- All ADRs that reference AppPaths, data directories, or build commands (ADR-0012, ADR-0014, ADR-0026)
+
 ---
 
 ## Sprint Scope Notes
