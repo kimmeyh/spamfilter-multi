@@ -124,6 +124,8 @@ All incomplete features, bugs, and spikes in relative priority order. HOLD items
 | 9 | Enhancement | Live Scan: re-process emails after rule changes | ~8-12h | -- | [Detail](#live-scan-reprocess-after-rule-changes) |
 | 10 | Enhancement | Live Scan: in-progress and completed status indicator | ~2-4h | -- | Visual indicator (icon or graphic) showing scan is in progress vs completed |
 | 11 | Tech Debt | Test coverage analysis and Sprint 20 feature tests | ~4-6h | -- | [Detail](#test-coverage-analysis-and-sprint-20-feature-tests) |
+| 12 | Enhancement | Settings: Add General tab for app-wide settings | ~4-6h | -- | [Detail](#settings-general-tab) |
+| 13 | Enhancement | Folder selection: provider default folder first, no sub-folders | ~2-4h | -- | [Detail](#folder-selection-provider-defaults-first) |
 
 ### HOLD Items
 
@@ -373,6 +375,85 @@ Notes >                (expandable group)
 - [ ] All Sprint 20 feature tests from Phase 2 implemented
 - [ ] High-risk coverage gaps from Phase 3 addressed
 - [ ] All tests pass, 0 analyzer issues
+
+---
+
+### Settings: General Tab
+
+**Status**: New (Sprint 20 retrospective)
+**Estimated Effort**: ~4-6h
+
+**Overview**: Add a "General" tab to Settings for app-wide settings that apply across all accounts. Move rules management and data management from the Account tab to the General tab.
+
+**Current Structure**:
+```
+Settings > Account (per-account)
+  - Manage Rules (actually app-wide)
+  - Manage Safe Senders (actually app-wide)
+  - Data Management / Import-Export (actually app-wide)
+  - Folder Settings (per-account)
+  - Scan Settings (per-account)
+  - About
+```
+
+**Proposed Structure**:
+```
+Settings > General (app-wide)
+  - Rules Management (renamed from "Manage Rules" + "Data Management")
+    - Manage Rules (filter, search, delete)
+    - Manage Safe Senders (filter, search, delete)
+    - Import/Export Rules (YAML import/export)
+  - About
+
+Settings > Account (per-account)
+  - Folder Settings
+  - Scan Settings
+  - Account credentials
+```
+
+**Acceptance Criteria**:
+- [ ] New "General" tab added to Settings screen
+- [ ] Rules Management section moved from Account to General
+- [ ] Safe Senders Management moved from Account to General
+- [ ] Data Management (YAML Import/Export) moved to General and renamed "Rules Management" or "Import/Export"
+- [ ] Account tab retains only per-account settings (folders, scan config, credentials)
+- [ ] Navigation from all existing entry points still works
+- [ ] Tab order: General first, then Account
+
+---
+
+### Folder Selection: Provider Defaults First
+
+**Status**: New (Sprint 20 retrospective)
+**Estimated Effort**: ~2-4h
+
+**Overview**: Update the folder selection for Safe Sender Folder and Deleted Rule Folder to list the provider default folder first, followed by remaining folders in alphabetical order. These selectors do not need sub-folder listings.
+
+**Changes**:
+
+1. **Safe Sender Folder selector**:
+   - List provider default safe sender folder first (e.g., INBOX for most providers)
+   - Remaining folders in alphabetical order
+   - No sub-folders (flat list only, filter out child folders like [Gmail]/*)
+
+2. **Deleted Rule Folder selector**:
+   - List provider default deleted rule folder first (e.g., Trash, [Gmail]/Trash)
+   - Remaining folders in alphabetical order
+   - No sub-folders (flat list only)
+
+3. **Provider defaults** (from junk_folder_config.dart or new config):
+   - AOL: Deleted Rule = Trash, Safe Sender = INBOX
+   - Gmail IMAP: Deleted Rule = [Gmail]/Trash, Safe Sender = INBOX
+   - Gmail OAuth: Deleted Rule = TRASH, Safe Sender = INBOX
+   - Yahoo: Deleted Rule = Trash, Safe Sender = INBOX
+
+**Acceptance Criteria**:
+- [ ] Safe Sender Folder selector shows provider default first
+- [ ] Deleted Rule Folder selector shows provider default first
+- [ ] Both selectors show flat list (no sub-folders)
+- [ ] Remaining folders in alphabetical order after default
+- [ ] Provider defaults configured per provider
+- [ ] Works for all supported providers (AOL, Gmail IMAP, Gmail OAuth, Yahoo)
 
 ---
 
