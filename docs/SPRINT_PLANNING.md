@@ -73,6 +73,14 @@ Each sprint is composed of **Cards** (GitHub issues) broken into **Tasks** assig
 - **Developers**: Claude Code models (Haiku, Sonnet, Opus) executing assigned tasks
 - **Sprint Master**: User (facilitates ceremonies, manages blockers, updates heuristics)
 
+### ADR-First Approach for Architectural Changes
+
+For sprints involving major architectural changes, use an **ADR-first approach**: design the ADR in one sprint (or during planning), get user review and approval, then implement in the next sprint. This produces better results because:
+- Design issues are caught before code is written (less rework)
+- User provides input on design decisions early (version strategy, data isolation, etc.)
+- Implementation sprint has a clear specification to follow
+- Learned from Sprint 21 (ADR-0035): thorough ADR design in Sprint 20 led to minimal rework during implementation
+
 ### Sprint Phases
 
 #### Phase 1: Planning (Kickoff)
@@ -211,6 +219,14 @@ Clear statement of what needs to be done and why.
 - [OK] GOOD: "All unit and integration tests are error free and produce expected results"
 - [FAIL] BAD: "Code quality improvements"
 - [OK] GOOD: "Reduce all warnings in production code that can be accomplished in 1 hour"
+
+**Multi-Account UI Features**: For UI tasks that involve multi-account features, acceptance criteria MUST specify account-scoping behavior explicitly. (Learned Sprint 19 -- 3 bugs found during manual testing where scan history, folder display, and account context were not scoped to the current account.)
+
+**Examples**:
+- [FAIL] BAD: "Scan history displays past scans"
+- [OK] GOOD: "Scan history filters by current account -- shows only scans for the selected email account"
+- [FAIL] BAD: "Folder selection works correctly"
+- [OK] GOOD: "Folder display uses getSelectedFoldersForAccount() to show folders for the current account only"
 
 ## Model Assignment
 | Task | Assigned Model | Complexity | Effort Est. | Notes |

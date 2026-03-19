@@ -1,4 +1,4 @@
-package com.example.spamfiltermobile
+package com.myemailspamfilter
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -356,9 +356,29 @@ flutter analyze
 
 ```powershell
 cd mobile-app/scripts
-.\build-windows.ps1               # Clean build, inject secrets, run app
-.\build-windows.ps1 -RunAfterBuild:$false  # Build without running
+.\build-windows.ps1                          # Dev build (default), run app
+.\build-windows.ps1 -Environment prod        # Production build
+.\build-windows.ps1 -RunAfterBuild:$false    # Build without running
 ```
+
+### Production/Development Side-by-Side (ADR-0035)
+
+Production (main branch) and development (feature/develop) builds coexist on the same machine:
+
+```powershell
+# Development (default) - uses MyEmailSpamFilter_Dev data directory
+.\build-windows.ps1
+
+# Production - uses MyEmailSpamFilter data directory
+# Run from production worktree: D:\Data\Harold\github\spamfilter-multi-prod\
+.\build-windows.ps1 -Environment prod
+```
+
+- **Dev builds**: data in `MyEmailSpamFilter_Dev\`, window title shows `[DEV]`
+- **Prod builds**: data in `MyEmailSpamFilter\`, no suffix
+- **Version**: dev = `0.5.1`, prod = `0.5.0` (dev always patch+1)
+- **Secrets**: dev uses `secrets.dev.json`, prod uses `secrets.prod.json`
+- **Single-instance**: mutex prevents duplicate same-environment instances
 
 ### Android Development
 
@@ -473,13 +493,20 @@ For complete structure, pattern conventions, examples, and validation rules, see
 - Always use `build-windows.ps1` script (not `flutter build windows` directly)
 - Desktop OAuth requires browser-based flow with loopback redirect
 - Secrets injected at build time via `--dart-define-from-file=secrets.dev.json`
-- **App Data Directory**: `C:\Users\{username}\AppData\Roaming\com.example\spam_filter_mobile\`
-- **Database Location**: `C:\Users\{username}\AppData\Roaming\com.example\spam_filter_mobile\spam_filter.db`
-  - Rules database (imported from YAML, managed via UI)
+- **App Data Directory** (ADR-0035: environment-aware):
+  - Production: `C:\Users\{username}\AppData\Roaming\MyEmailSpamFilter\MyEmailSpamFilter\`
+  - Development: `C:\Users\{username}\AppData\Roaming\MyEmailSpamFilter\MyEmailSpamFilter_Dev\`
+  - Note: Changed from `com.example\spam_filter_mobile\` in Sprint 19 (v0.5.0). A one-time migration copies old data on first launch.
+- **Database Location**: `{App Data Directory}\spam_filter.db`
+  - Rules database (DB is sole source of truth since Sprint 20)
   - Scan results history
   - App settings and configuration
-- **Rules Directory**: `C:\Users\{username}\AppData\Roaming\com.example\spam_filter_mobile\rules\`
-- **Credentials Directory**: `C:\Users\{username}\AppData\Roaming\com.example\spam_filter_mobile\credentials\`
+- **Rules Directory**: `{App Data Directory}\rules\`
+- **Credentials Directory**: `{App Data Directory}\credentials\`
+- **Background Scan Log**: `{App Data Directory}\logs\{prefix}background_scan_v{VERSION}.log`
+  - Production: `background_scan_v0.5.0.log`
+  - Development: `dev_background_scan_v0.5.1.log`
+  - Log filename includes app version (e.g., `background_scan_v0.5.0.log`) to distinguish logs from different builds/branches running concurrently
 
 ### iOS/macOS/Linux
 - Not yet validated but architecture supports all platforms

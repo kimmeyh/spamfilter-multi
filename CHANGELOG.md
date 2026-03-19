@@ -26,6 +26,73 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-03-18 (Sprint 21 - ADR-0035)
+- **feat**: Production/Development side-by-side builds with environment-aware data directories (ADR-0035, Issue #189)
+- **feat**: AppEnvironment class reads APP_ENV from --dart-define (dev/prod)
+- **feat**: Dev builds use MyEmailSpamFilter_Dev data directory, window title shows [DEV]
+- **feat**: Separate Task Scheduler task names per environment
+- **feat**: First-run dev environment seeded from production database
+- **feat**: Single-instance mutex per executable path prevents duplicate instances
+- **feat**: build-windows.ps1 accepts -Environment parameter (dev/prod)
+- **feat**: secrets.prod.json template for production credentials
+- **chore**: Version bumped to 0.5.1 on develop (production stays 0.5.0)
+
+### 2026-03-17 (Sprint 20 - Testing Feedback)
+- **fix**: DB v2 migration checks for existing columns before ALTER TABLE
+- **fix**: Scan Results folder display shows correct account folders after switching accounts
+- **feat**: Demo-specific rules DB for consistent demo scan results (~20 safe / ~30 deleted / ~9 no-rule)
+- **fix**: IMAP folder listing now recursive - shows [Gmail]/Trash, [Gmail]/Spam and other child folders
+- **fix**: Non-selectable parent folders (e.g., [Gmail]) filtered from folder selection
+- **fix**: Reclassify 266 TLD header patterns from exact_domain to top_level_domain
+- **fix**: Convert 1,370 wildcard TLD patterns to .com and reclassify as entire_domain
+- **fix**: Add Rule from scan results now sets patternCategory, patternSubType, sourceDomain
+- **fix**: Quick rule from email detail popup now sets classification fields
+- **fix**: YAML migration and export preserve classification fields
+- **fix**: Safe sender matches in safe sender folder skipped from scan results (already where they belong)
+
+### 2026-03-15 (Sprint 20)
+- **fix**: Gmail IMAP folder scan errors - use PlatformRegistry for correct adapter routing (Issue #184)
+- **feat**: Demo Scan expanded with 12 new sample emails across Safe Sender and Block Rule categories (Issue #185)
+- **feat**: Speed up Add Rule re-evaluation with shared PatternCompiler cache (Issue #186)
+- **chore**: Clean up all 46 analyzer warnings - zero issues remaining (Issue #187)
+- **feat**: Add pattern classification fields (patternCategory, patternSubType, sourceDomain) to Rule model (Issue #149)
+- **feat**: Remove YAML dual-write - database is sole source of truth for rules (Issue #149)
+- **feat**: Standalone rule split script - splits 5 monolithic rules into ~3,291 individual rules (Issue #149)
+- **feat**: Manage Rules UI overhaul - filter chips by category and sub-type, search, individual rule display (Issue #149)
+
+### 2026-03-14 (Sprint 19 - Testing Feedback Round 2)
+- **fix**: Safe Senders YAML export error - AppPaths not initialized in Import/Export screen (Issue #179)
+- **fix**: Convert bare `@insightfinancialassociates.com` safe sender pattern to proper Entire Domain regex
+- **feat**: Gmail auth method order - App Password (IMAP) listed first as Recommended, Google Sign-In second with re-auth note (Issue #178)
+- **feat**: App Password instructions - selectable/copyable text, tappable URL links, updated step text, removed obsolete IMAP info box (Issue #178)
+- **feat**: Scan Results Summary title now shows scanned folder names (e.g., "Summary - Read-Only - Folder(s): Bulk, Bulk Mail")
+- **feat**: Live re-evaluation of all "No rule" emails after adding a block rule or safe sender from scan results
+- **fix**: Scan History now filters by account - shows only scans for the current email account, not all accounts
+- **test**: Added regex pattern validation tests for round-trip YAML export/import (rules and safe senders)
+
+### 2026-02-28 (Sprint 19 - Testing Feedback Fixes)
+- **fix**: Add About section in Settings > Account showing app version 0.5.0 (Issue #181)
+- **fix**: Background scan worker log path updated from old com.example to MyEmailSpamFilter directory (Issue #182)
+- **fix**: Demo Mode changed from toggle switch to direct-launch card on Select Email Provider screen
+
+### 2026-02-27 (Sprint 19)
+- **chore**: Tag v0.5.0 release, update pubspec.yaml version to 0.5.0+1 (Issue #181, GP-15)
+- **feat**: Application identity rebranded to MyEmailSpamFilter with com.myemailspamfilter package (Issue #182, GP-1)
+- **fix**: Auto-migrate app data from old com.example directory after identity change - preserves accounts, rules, credentials (Issue #182)
+- **feat**: Folder selection now saves instantly on toggle - Cancel and Scan buttons removed in multi-select mode (Issue #172, F27)
+- **feat**: Safe senders screen filter chips for pattern categories - Exact Email, Exact Domain, Entire Domain, Other (Issue #180, F26)
+- **feat**: YAML import/export UI in Settings - export rules and safe senders to file, import from file with validation (Issue #179, F22)
+- **feat**: Gmail dual-auth - choose Google Sign-In (OAuth) or App Password (IMAP) when adding Gmail account (Issue #178, F12B)
+
+---
+
+## [0.5.0] - 2026-02-27
+
+First tagged release. Covers Sprints 1-18 plus hotfix #176.
+
+### 2026-02-27 (Hotfix)
+- **fix**: Windows Task Scheduler repetition trigger fails silently - changed from property-based Repetition setting to inline -RepetitionInterval/-RepetitionDuration parameters (Issue #176)
+
 ### 2026-02-25 (Sprint 18: Bug Fixes from Testing Feedback)
 - **fix**: Conflict detection for "Block Entire Domain" now passes full email address to resolver instead of bare domain (Issue #154)
 - **fix**: Scan History shows correct rule match info instead of "No rule" for all entries
@@ -265,3 +332,10 @@ See git history for detailed changes prior to Phase 3.1.
 - Phase 2.1: Adapter and provider implementations
 - Phase 2.0: AppPaths, SecureCredentialsStore, EmailScanProvider
 - Phase 1: Core models, services, and foundation (27 tests)
+
+---
+
+## Version Links
+
+[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/kimmeyh/spamfilter-multi/releases/tag/v0.5.0

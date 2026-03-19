@@ -41,11 +41,11 @@ void main() {
         expect(rule.executionOrder, greaterThan(0));
         
         // At least one condition should exist
-        final hasConditions = 
-          (rule.conditions.header?.isNotEmpty ?? false) ||
-          (rule.conditions.body?.isNotEmpty ?? false) ||
-          (rule.conditions.subject?.isNotEmpty ?? false) ||
-          (rule.conditions.from?.isNotEmpty ?? false);
+        final hasConditions =
+          rule.conditions.header.isNotEmpty ||
+          rule.conditions.body.isNotEmpty ||
+          rule.conditions.subject.isNotEmpty ||
+          rule.conditions.from.isNotEmpty;
         expect(hasConditions, isTrue, reason: 'Rule ${rule.name} has no conditions');
       }
     }, timeout: const Timeout(Duration(seconds: 10)));
@@ -72,10 +72,8 @@ void main() {
         expect(pattern, isNotEmpty);
         
         // Try to compile as regex
-        final compiled = compiler.compile(pattern);
-        if (compiled != null) {
-          validPatterns++;
-        }
+        compiler.compile(pattern);
+        validPatterns++;
       }
       
       expect(validPatterns, greaterThan(0), 
@@ -97,18 +95,10 @@ void main() {
       // Collect all patterns
       final allPatterns = <String>[];
       for (final rule in ruleSet.rules) {
-        if (rule.conditions.header != null) {
-          allPatterns.addAll(rule.conditions.header!);
-        }
-        if (rule.conditions.body != null) {
-          allPatterns.addAll(rule.conditions.body!);
-        }
-        if (rule.conditions.subject != null) {
-          allPatterns.addAll(rule.conditions.subject!);
-        }
-        if (rule.conditions.from != null) {
-          allPatterns.addAll(rule.conditions.from!);
-        }
+        allPatterns.addAll(rule.conditions.header);
+        allPatterns.addAll(rule.conditions.body);
+        allPatterns.addAll(rule.conditions.subject);
+        allPatterns.addAll(rule.conditions.from);
       }
       
       print('Total patterns to compile: ${allPatterns.length}');

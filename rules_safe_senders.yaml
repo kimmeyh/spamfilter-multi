@@ -1,5 +1,5 @@
 'safe_senders':
-- '@insightfinancialassociates.com'
+- '^[^@\s]+@(?:[a-z0-9-]+\.)*insightfinancialassociates\.com$'
 - '^19scottsharp@gmail\.com$'
 - '^2163579227@tmomail\.net$'
 - '^2163579229@tmomail\.net$'

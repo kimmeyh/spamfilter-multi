@@ -4,7 +4,6 @@ import 'package:sqflite/sqflite.dart' show DatabaseException;
 
 import 'package:spam_filter_mobile/core/storage/database_helper.dart';
 import 'package:spam_filter_mobile/core/storage/rule_database_store.dart';
-import 'package:spam_filter_mobile/core/storage/safe_sender_database_store.dart';
 import '../helpers/database_test_helper.dart';
 
 /// Integration tests for database lifecycle operations
@@ -28,17 +27,13 @@ void main() {
     late DatabaseTestHelper testHelper;
     late DatabaseHelper dbHelper;
     late RuleDatabaseStore ruleStore;
-    late SafeSenderDatabaseStore safeSenderStore;
-    late String testDbPath;
 
     setUp(() async {
       testHelper = DatabaseTestHelper();
       await testHelper.setUp();
       dbHelper = testHelper.dbHelper;
-      testDbPath = testHelper.testDbPath;
 
       ruleStore = RuleDatabaseStore(dbHelper);
-      safeSenderStore = SafeSenderDatabaseStore(dbHelper);
     });
 
     tearDown(() async {

@@ -27,17 +27,17 @@ void main() {
       // Verify rules were loaded from database after migration
       expect(ruleProvider.rules, isNotNull,
           reason: 'Rules should not be null after initialization');
-      expect(ruleProvider.rules!.rules.length, greaterThan(0),
+      expect(ruleProvider.rules.rules.length, greaterThan(0),
           reason: 'Should have loaded rules from YAML migration');
 
-      print('[OK] Loaded ${ruleProvider.rules!.rules.length} rules from database');
-      print('   Rules: ${ruleProvider.rules!.rules.map((r) => r.name).toList()}');
+      print('[OK] Loaded ${ruleProvider.rules.rules.length} rules from database');
+      print('   Rules: ${ruleProvider.rules.rules.map((r) => r.name).toList()}');
 
       // Verify safe senders loaded
       expect(ruleProvider.safeSenders, isNotNull,
           reason: 'Safe senders should not be null after initialization');
       print(
-          '[OK] Loaded ${ruleProvider.safeSenders!.safeSenders.length} safe senders from database');
+          '[OK] Loaded ${ruleProvider.safeSenders.safeSenders.length} safe senders from database');
     });
 
     test('Scan AOL Bulk Mail Testing folder - rules should match', skip: 'Requires real AOL credentials and network access',

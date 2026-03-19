@@ -52,8 +52,6 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
   bool _isSaving = false;
 
   String _normalizedEmail = '';
-  String _normalizedSubject = '';
-  String _normalizedBody = '';
   List<String> _extractedUrls = [];
 
   @override
@@ -75,8 +73,6 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
 
   void _initializeFromEmail() {
     _normalizedEmail = PatternNormalization.normalizeFromHeader(widget.email.from);
-    _normalizedSubject = PatternNormalization.normalizeSubject(widget.email.subject);
-    _normalizedBody = PatternNormalization.normalizeBodyText(widget.email.body);
     _extractedUrls = PatternNormalization.extractUrls(widget.email.body);
 
     _ruleNameController.text = _generateRuleName();
@@ -94,61 +90,6 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
         .map((part) => part.isNotEmpty ? '${part[0].toUpperCase()}${part.substring(1)}' : '')
         .join('');
     return 'AutoDelete$pascalCase';
-  }
-
-  bool _validatePattern(String pattern) {
-    if (pattern.isEmpty) return true;
-    try {
-      RegExp(pattern, caseSensitive: false);
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  TextEditingController _getControllerForBucket(ConditionBucket bucket) {
-    switch (bucket) {
-      case ConditionBucket.fromHeader:
-        return _fromPatternController;
-      case ConditionBucket.subject:
-        return _subjectPatternController;
-      case ConditionBucket.body:
-        return _bodyPatternController;
-      case ConditionBucket.bodyUrl:
-        return _bodyUrlPatternController;
-    }
-  }
-
-  String _getBucketLabel(ConditionBucket bucket) {
-    switch (bucket) {
-      case ConditionBucket.fromHeader:
-        return 'From Header';
-      case ConditionBucket.subject:
-        return 'Subject';
-      case ConditionBucket.body:
-        return 'Body';
-      case ConditionBucket.bodyUrl:
-        return 'Body URL';
-    }
-  }
-
-  String _getSuggestedPattern(ConditionBucket bucket) {
-    switch (bucket) {
-      case ConditionBucket.fromHeader:
-        return PatternGeneration.generateDomainPattern(_normalizedEmail);
-      case ConditionBucket.subject:
-        return _normalizedSubject.isNotEmpty ? RegExp.escape(_normalizedSubject) : '';
-      case ConditionBucket.body:
-        return _normalizedBody.isNotEmpty
-            ? RegExp.escape(_normalizedBody.substring(0, _normalizedBody.length > 50 ? 50 : _normalizedBody.length))
-            : '';
-      case ConditionBucket.bodyUrl:
-        if (_extractedUrls.isNotEmpty) {
-          final domain = PatternNormalization.extractDomain(_extractedUrls.first);
-          return domain.isNotEmpty ? RegExp.escape(domain) : '';
-        }
-        return '';
-    }
   }
 
   Future<int> _getNextExecutionOrder() async {
@@ -232,6 +173,27 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
       moveToFolder: _selectedAction == RuleActionType.move ? _moveToFolderController.text.trim() : null,
     );
 
+    // Determine pattern classification based on active conditions
+    String? patternCategory;
+    String? patternSubType;
+    String? sourceDomain;
+
+    if (fromPatterns.isNotEmpty) {
+      patternCategory = 'header_from';
+      patternSubType = 'exact_email';
+      sourceDomain = widget.email.from;
+    } else if (subjectPatterns.isNotEmpty) {
+      patternCategory = 'subject';
+      patternSubType = 'exact_domain';
+      sourceDomain = _subjectPatternController.text.trim();
+    } else if (bodyPatterns.isNotEmpty) {
+      patternCategory = 'body';
+      patternSubType = 'entire_domain';
+      sourceDomain = _bodyPatternController.text.isNotEmpty
+          ? _bodyPatternController.text.trim()
+          : _bodyUrlPatternController.text.trim();
+    }
+
     return Rule(
       name: _ruleNameController.text.trim(),
       enabled: true,
@@ -244,6 +206,9 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
         'source_email_id': widget.email.id,
         'source_from': widget.email.from,
       },
+      patternCategory: patternCategory,
+      patternSubType: patternSubType,
+      sourceDomain: sourceDomain,
     );
   }
 

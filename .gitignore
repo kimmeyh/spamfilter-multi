@@ -52,7 +52,9 @@ client_secret_*.json
 
 # Build-time secrets (contains API keys and OAuth credentials)
 mobile-app/secrets.dev.json
+mobile-app/secrets.prod.json
 secrets.dev.json
+secrets.prod.json
 
 # Backup and temporary files
 

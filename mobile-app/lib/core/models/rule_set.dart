@@ -41,6 +41,16 @@ class Rule {
   final RuleExceptions? exceptions;
   final Map<String, dynamic>? metadata;
 
+  /// Classification fields for individual pattern rules (added Sprint 20).
+  /// These enable filtering and grouping in the Manage Rules UI.
+  ///
+  /// [patternCategory]: 'header_from', 'subject', 'body'
+  /// [patternSubType]: 'entire_domain', 'exact_domain', 'exact_email', 'top_level_domain'
+  /// [sourceDomain]: extracted domain or identifier for display (e.g., 'americasurveys.com')
+  final String? patternCategory;
+  final String? patternSubType;
+  final String? sourceDomain;
+
   Rule({
     required this.name,
     required this.enabled,
@@ -50,6 +60,9 @@ class Rule {
     required this.actions,
     this.exceptions,
     this.metadata,
+    this.patternCategory,
+    this.patternSubType,
+    this.sourceDomain,
   });
 
   factory Rule.fromMap(Map<String, dynamic> map) {
@@ -64,6 +77,9 @@ class Rule {
           ? RuleExceptions.fromMap(map['exceptions'] as Map<String, dynamic>)
           : null,
       metadata: map['metadata'] as Map<String, dynamic>?,
+      patternCategory: map['patternCategory'] as String?,
+      patternSubType: map['patternSubType'] as String?,
+      sourceDomain: map['sourceDomain'] as String?,
     );
   }
 
@@ -77,6 +93,9 @@ class Rule {
       'actions': actions.toMap(),
       if (exceptions != null) 'exceptions': exceptions!.toMap(),
       if (metadata != null) 'metadata': metadata,
+      if (patternCategory != null) 'patternCategory': patternCategory,
+      if (patternSubType != null) 'patternSubType': patternSubType,
+      if (sourceDomain != null) 'sourceDomain': sourceDomain,
     };
   }
 

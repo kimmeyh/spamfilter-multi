@@ -64,6 +64,7 @@ These documents MUST be created/updated during each sprint:
 - [ ] Code analysis clean (`flutter analyze` - target <50 warnings)
 - [ ] Risk mitigations validated
 - [ ] **App built for user testing** (Windows: `build-windows.ps1`)
+- [ ] **Platform-specific UI verified** at native level (Win32 window title, system tray, notifications) -- Flutter UI layer may not control platform-level behavior (learned Sprint 21)
 - [ ] Manual testing complete (user)
 - [ ] Issues from testing fixed
 

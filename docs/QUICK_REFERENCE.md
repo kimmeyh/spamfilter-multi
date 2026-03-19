@@ -27,6 +27,7 @@
 | **Rules (Active)** | `rules.yaml` | Production spam filtering rules |
 | **Safe Senders** | `rules_safe_senders.yaml` | Whitelist of trusted senders |
 | **Secrets (Dev)** | `mobile-app\secrets.dev.json` | OAuth credentials (gitignored) |
+| **Secrets (Prod)** | `mobile-app\secrets.prod.json` | Production OAuth credentials (gitignored) |
 | **Package Config** | `mobile-app\pubspec.yaml` | Flutter dependencies |
 | **Claude Guide** | `CLAUDE.md` | Primary Claude Code documentation |
 | **Changelog** | `CHANGELOG.md` | Version history and changes |
@@ -38,7 +39,7 @@
 
 | Task | Script Path | Command | Notes |
 |------|-------------|---------|-------|
-| **Build Windows** | `scripts\build-windows.ps1` | `cd mobile-app/scripts && .\build-windows.ps1` | Clean build + secrets injection |
+| **Build Windows** | `scripts\build-windows.ps1` | `cd mobile-app/scripts && .\build-windows.ps1` (use `-Environment prod` for production build) | Clean build + secrets injection |
 | **Run Windows** | `scripts\run-windows.ps1` | `cd mobile-app/scripts && .\run-windows.ps1` | Launch Windows app |
 | **Build Android Debug** | `scripts\build-with-secrets.ps1` | `cd mobile-app/scripts && .\build-with-secrets.ps1 -BuildType debug -InstallToEmulator` | Build APK with secrets |
 | **Build APK Release** | `scripts\build-apk.ps1` | `cd mobile-app/scripts && .\build-apk.ps1` | Release APK |
@@ -73,8 +74,8 @@
 
 | Platform | Path | Access Method |
 |----------|------|---------------|
-| **Windows** | `C:\Users\{username}\AppData\Roaming\com.example\spam_filter_mobile\spam_filter.db` | File explorer or code |
-| **Android** | `/data/data/com.example.spam_filter_mobile/files/spam_filter.db` | `adb shell` or device file explorer |
+| **Windows** | `C:\Users\{username}\AppData\Roaming\MyEmailSpamFilter\MyEmailSpamFilter\spam_filter.db` (dev builds: `MyEmailSpamFilter_Dev\`) | File explorer or code |
+| **Android** | `/data/data/com.myemailspamfilter/files/spam_filter.db` | `adb shell` or device file explorer |
 
 **Runtime Path**: Use `AppPaths().databaseFilePath` in code to get platform-specific database path.
 
@@ -196,7 +197,7 @@ For common issues and fixes, see:
 | **View Android logs** | `adb logcat -s flutter,System.err,AndroidRuntime,DEBUG` |
 | **Find spam rules** | `rules.yaml` |
 | **Find safe senders** | `rules_safe_senders.yaml` |
-| **Check database path** | Windows: `C:\Users\{username}\AppData\Roaming\com.example\spam_filter_mobile\spam_filter.db` |
+| **Check database path** | Windows: `C:\Users\{username}\AppData\Roaming\MyEmailSpamFilter\MyEmailSpamFilter\spam_filter.db` (dev builds: `MyEmailSpamFilter_Dev\`) |
 | **Start new sprint** | Read `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 0-1 |
 | **View sprint plan** | `docs/ALL_SPRINTS_MASTER_PLAN.md` |
 | **Check when to stop** | `docs/SPRINT_STOPPING_CRITERIA.md` |

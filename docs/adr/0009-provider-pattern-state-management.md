@@ -12,7 +12,7 @@ Accepted
 
 The Flutter spam filter application needs state management for two primary concerns:
 
-1. **Rule state** (`RuleSetProvider`): Loading, caching, and modifying spam filtering rules and safe sender lists. Changes must propagate to the UI and persist to both the database and YAML files (dual-write pattern, see ADR-0004).
+1. **Rule state** (`RuleSetProvider`): Loading, caching, and modifying spam filtering rules and safe sender lists. Changes must propagate to the UI and persist to the database (sole source of truth since Sprint 20).
 
 2. **Scan state** (`EmailScanProvider`): Tracking real-time scan progress (processed count, deleted count, moved count, safe sender count, errors, current email, current folder) and scan configuration (mode, folder selections, email limits).
 
@@ -30,7 +30,7 @@ Use the `provider` package (v6.1.0) with `ChangeNotifier`-based providers, set u
 
 **Two providers**:
 
-1. **`RuleSetProvider extends ChangeNotifier`**: Manages rule set and safe sender list. State includes: `RuleSet`, `SafeSenderList`, `RuleLoadingState` (idle/loading/success/error), and error messages. Calls `notifyListeners()` after rule loads, adds, updates, and deletes. Orchestrates the dual-write pattern (database write, then YAML export, then notify UI).
+1. **`RuleSetProvider extends ChangeNotifier`**: Manages rule set and safe sender list. State includes: `RuleSet`, `SafeSenderList`, `RuleLoadingState` (idle/loading/success/error), and error messages. Calls `notifyListeners()` after rule loads, adds, updates, and deletes. Orchestrates database persistence and UI notification.
 
 2. **`EmailScanProvider extends ChangeNotifier`**: Manages scan lifecycle and progress. State includes: `ScanStatus` (idle/scanning/paused/completed/error), `ScanMode`, processed/deleted/moved/safe/noRule/error counts, current email, current folder, and results list. Implements throttled notifications to avoid excessive UI rebuilds during rapid email processing.
 
@@ -82,7 +82,7 @@ MultiProvider(
 - **Low boilerplate**: Each provider is a single class extending `ChangeNotifier`. No separate event, state, or action files
 - **Flutter-native**: Provider is recommended in Flutter's official documentation and uses standard Flutter concepts (InheritedWidget, BuildContext)
 - **Throttled notifications**: `EmailScanProvider` implements custom throttling (10 emails or 2 seconds) within the standard `notifyListeners()` pattern, which would be equally possible but more complex with event-driven approaches
-- **Dual-write integration**: `RuleSetProvider` naturally orchestrates the database-write-then-YAML-export sequence within its mutation methods, keeping the dual-write pattern encapsulated
+- **Database integration**: `RuleSetProvider` naturally orchestrates database persistence within its mutation methods, keeping the storage pattern encapsulated
 
 ### Negative
 - **Runtime exceptions**: Accessing a provider that is not in the widget tree throws a runtime `ProviderNotFoundException` (Riverpod catches this at compile time)

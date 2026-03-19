@@ -186,127 +186,6 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     super.dispose();
   }
 
-  /// Show revert confirmation dialog and execute revert
-  Future<void> _confirmAndRevert(
-    BuildContext context,
-    EmailScanProvider scanProvider,
-  ) async {
-    final logger = Logger();
-
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Revert Last Run?'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'This will undo all ${scanProvider.revertableActionCount} actions from the last scan:',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            _buildRevertStats(scanProvider),
-            const SizedBox(height: 16),
-            const Text(
-              'Deleted emails will be restored to your inbox.\n'
-              'Moved emails will be returned to their original folders.',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange,
-            ),
-            child: const Text('Revert All Changes'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true && context.mounted) {
-      // Show progress dialog
-      if (context.mounted) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (ctx) => const AlertDialog(
-            title: Text('Reverting Changes'),
-            content: SizedBox(
-              height: 80,
-              child: Center(
-                child: CircularProgressIndicator(),
-              ),
-            ),
-          ),
-        );
-      }
-
-      try {
-        // Execute revert
-        await scanProvider.revertLastRun();
-        logger.i('[OK] Successfully reverted ${scanProvider.revertableActionCount} actions');
-
-        if (context.mounted) {
-          // Close progress dialog
-          Navigator.pop(context);
-
-          // Show success message
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('[OK] All changes have been reverted successfully'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      } catch (e) {
-        logger.e('[FAIL] Revert failed: $e');
-
-        if (context.mounted) {
-          // Close progress dialog
-          Navigator.pop(context);
-
-          // Show error message
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Revert failed: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    }
-  }
-
-  /// Build stats for revert confirmation
-  Widget _buildRevertStats(EmailScanProvider scanProvider) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
-        if (scanProvider.deletedCount > 0)
-          Chip(
-            label: Text('${scanProvider.deletedCount} will be restored'),
-            backgroundColor: Colors.red.shade100,
-            labelStyle: TextStyle(color: Colors.red.shade900, fontSize: 12),
-          ),
-        if (scanProvider.movedCount > 0)
-          Chip(
-            label: Text('${scanProvider.movedCount} will be returned'),
-            backgroundColor: Colors.orange.shade100,
-            labelStyle: TextStyle(color: Colors.orange.shade900, fontSize: 12),
-          ),
-      ],
-    );
-  }
-
   /// Export scan results to CSV file
   Future<void> _exportResults(
     BuildContext context,
@@ -544,10 +423,6 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       onKeyEvent: (node, event) {
         // Detect Ctrl+F (or Cmd+F on macOS)
         if (event is KeyDownEvent) {
-          final isCtrlPressed = event.logicalKey == LogicalKeyboardKey.controlLeft ||
-                                  event.logicalKey == LogicalKeyboardKey.controlRight ||
-                                  event.logicalKey == LogicalKeyboardKey.metaLeft ||
-                                  event.logicalKey == LogicalKeyboardKey.metaRight;
           final isFPressed = event.logicalKey == LogicalKeyboardKey.keyF;
 
           // Check if Ctrl/Cmd + F is pressed
@@ -803,6 +678,39 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     );
   }
 
+  /// Build the Summary title including scan mode and folder names
+  String _buildSummaryTitle(
+    bool hasLiveResults,
+    bool showingHistorical,
+    EmailScanProvider scanProvider,
+    List<EmailActionResult> allResults,
+  ) {
+    String title;
+    if (hasLiveResults) {
+      title = 'Summary - ${scanProvider.getScanModeDisplayName()}';
+    } else if (showingHistorical) {
+      title = 'Scan Results';
+    } else {
+      title = 'Summary';
+    }
+
+    // Append folder names - use provider's selected folders (available before
+    // results arrive), historical scan's folders, or derive from results
+    List<String> folders;
+    if (hasLiveResults || scanProvider.status == ScanStatus.scanning) {
+      folders = List.from(scanProvider.getSelectedFoldersForAccount(widget.accountId))..sort();
+    } else if (showingHistorical && _lastCompletedScan != null && _lastCompletedScan!.foldersScanned.isNotEmpty) {
+      folders = List.from(_lastCompletedScan!.foldersScanned)..sort();
+    } else {
+      folders = allResults.map((r) => r.email.folderName).toSet().toList()..sort();
+    }
+    if (folders.isNotEmpty) {
+      title += ' - Folder(s): ${folders.join(', ')}';
+    }
+
+    return title;
+  }
+
   Widget _buildSummary(Map<String, dynamic> summary, EmailScanProvider scanProvider, List<EmailActionResult> allResults) {
     // [NEW] Testing feedback FB-4: Determine if showing live or historical results
     final hasLiveResults = scanProvider.results.isNotEmpty || scanProvider.status == ScanStatus.scanning;
@@ -845,11 +753,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              hasLiveResults
-                ? 'Summary - ${scanProvider.getScanModeDisplayName()}'
-                : showingHistorical
-                  ? 'Scan Results'
-                  : 'Summary',
+              _buildSummaryTitle(hasLiveResults, showingHistorical, scanProvider, allResults),
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             if (scanTypeLabel != null || scanTimeLabel != null) ...[
@@ -969,7 +873,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     );
   }
 
-  Widget _buildStatChip(String label, int value, Color bg, Color fg, EmailActionType? filterType, {bool showErrors = false}) {
+  Widget _buildStatChip(String label, int value, Color bg, Color fg, EmailActionType? filterType) {
     // Determine if this chip is currently the active filter
     final isActive = _filter == filterType;
 
@@ -1618,22 +1522,63 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     return result.action;
   }
 
+  /// Shared PatternCompiler for re-evaluation.
+  /// Reused across all re-evaluations to preserve compiled pattern cache,
+  /// avoiding recompilation of the same patterns for each email.
+  final PatternCompiler _sharedCompiler = PatternCompiler();
+
   /// Re-evaluate an email against the current rules and safe senders.
   ///
-  /// Creates a fresh RuleEvaluator with the latest rules from RuleSetProvider
-  /// and evaluates the email. Stores the result in [_evaluationOverrides] so
-  /// subsequent displays (list tile, popup) reflect the current rule state.
+  /// Uses [_sharedCompiler] to benefit from pattern cache across evaluations.
+  /// Stores the result in [_evaluationOverrides] so subsequent displays
+  /// (list tile, popup) reflect the current rule state.
   Future<EvaluationResult> _reEvaluateEmail(EmailMessage email) async {
     final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
     final evaluator = RuleEvaluator(
       ruleSet: ruleProvider.rules,
       safeSenderList: ruleProvider.safeSenders,
-      compiler: PatternCompiler(),
+      compiler: _sharedCompiler,
     );
     final result = await evaluator.evaluate(email);
     final key = _getEmailKey(email);
     _evaluationOverrides[key] = result;
     return result;
+  }
+
+  /// Re-evaluate all emails that currently have no matching rule.
+  ///
+  /// Called after adding a new block rule or safe sender so that
+  /// remaining "No rule" items are updated if the new rule matches them.
+  /// Uses [_sharedCompiler] so patterns are compiled once and cached
+  /// for all subsequent email evaluations.
+  Future<void> _reEvaluateNoRuleEmails() async {
+    final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
+    final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
+    final evaluator = RuleEvaluator(
+      ruleSet: ruleProvider.rules,
+      safeSenderList: ruleProvider.safeSenders,
+      compiler: _sharedCompiler,
+    );
+
+    // Get current results (live or historical)
+    final liveResults = scanProvider.results;
+    final isLiveScanActive = scanProvider.status == ScanStatus.scanning ||
+        scanProvider.status == ScanStatus.paused;
+    final allResults = (liveResults.isNotEmpty || isLiveScanActive)
+        ? liveResults
+        : _historicalResults;
+
+    // Find all emails with effective action "none" (No rule)
+    for (final result in allResults) {
+      if (_getEffectiveAction(result) == EmailActionType.none) {
+        final evalResult = await evaluator.evaluate(result.email);
+        // Only store override if the new evaluation found a match
+        if (evalResult.matchedRule.isNotEmpty || evalResult.isSafeSender) {
+          final key = _getEmailKey(result.email);
+          _evaluationOverrides[key] = evalResult;
+        }
+      }
+    }
   }
 
   /// Add sender to safe senders list
@@ -1697,6 +1642,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       if (email != null) {
         await _reEvaluateEmail(email);
       }
+
+      // Re-evaluate all remaining "No rule" emails against the new safe sender
+      await _reEvaluateNoRuleEmails();
 
       if (mounted) {
         setState(() {}); // Refresh list to show updated rule assignment
@@ -1786,7 +1734,45 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         );
       }
 
-      // Create the rule with proper types
+      // Determine pattern classification fields
+      String patternCategory;
+      String patternSubType;
+      String sourceDomain;
+      int executionOrder;
+
+      switch (type) {
+        case 'from':
+          patternCategory = 'header_from';
+          patternSubType = 'exact_email';
+          sourceDomain = value;
+          executionOrder = 40;
+          break;
+        case 'exactDomain':
+          patternCategory = 'header_from';
+          patternSubType = 'exact_domain';
+          sourceDomain = value.startsWith('@') ? value.substring(1) : value;
+          executionOrder = 30;
+          break;
+        case 'entireDomain':
+          patternCategory = 'header_from';
+          patternSubType = 'entire_domain';
+          sourceDomain = value;
+          executionOrder = 20;
+          break;
+        case 'subject':
+          patternCategory = 'subject';
+          patternSubType = 'exact_domain';
+          sourceDomain = value;
+          executionOrder = 60;
+          break;
+        default:
+          patternCategory = 'header_from';
+          patternSubType = 'exact_domain';
+          sourceDomain = value;
+          executionOrder = 30;
+      }
+
+      // Create the rule with proper types and classification
       final conditions = type == 'subject'
           ? RuleConditions(type: 'OR', subject: [pattern])
           : RuleConditions(type: 'OR', header: [pattern]);
@@ -1794,13 +1780,16 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       final rule = Rule(
         name: ruleName,
         enabled: true,
-        isLocal: true,  // Mark as local (created in app, not from YAML)
-        executionOrder: 100,  // Default execution order
+        isLocal: true,
+        executionOrder: executionOrder,
         conditions: conditions,
         actions: RuleActions(delete: true),
         metadata: {
           'comment': 'Created from Results screen on ${DateTime.now().toIso8601String().substring(0, 10)}',
         },
+        patternCategory: patternCategory,
+        patternSubType: patternSubType,
+        sourceDomain: sourceDomain,
       );
 
       // Add rule via provider (persists to database and YAML)
@@ -1817,6 +1806,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       if (email != null) {
         await _reEvaluateEmail(email);
       }
+
+      // Re-evaluate all remaining "No rule" emails against the new rule
+      await _reEvaluateNoRuleEmails();
 
       if (mounted) {
         setState(() {}); // Refresh list to show updated rule assignment

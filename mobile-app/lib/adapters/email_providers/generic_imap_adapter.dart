@@ -75,6 +75,21 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     );
   }
 
+  /// Factory constructor for Gmail via IMAP (App Password auth)
+  ///
+  /// [ISSUE #178] Gmail Dual-Auth: Allows Gmail access via IMAP with
+  /// an app password instead of OAuth 2.0. Useful when Google Sign-In
+  /// is unavailable or the user prefers app password authentication.
+  factory GenericIMAPAdapter.gmail() {
+    return GenericIMAPAdapter(
+      imapHost: 'imap.gmail.com',
+      imapPort: 993,
+      isSecure: true,
+      displayName: 'Gmail (IMAP)',
+      platformId: 'gmail-imap',
+    );
+  }
+
   /// Factory constructor for Yahoo Mail
   factory GenericIMAPAdapter.yahoo() {
     return GenericIMAPAdapter(
@@ -731,12 +746,19 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
 
     try {
       _logger.i('Listing mailboxes');
-      final mailboxes = await _imapClient!.listMailboxes();
+      // Use recursive: true to include child mailboxes like [Gmail]/Trash
+      final allMailboxes = await _imapClient!.listMailboxes(recursive: true);
+
+      // Filter out non-selectable parent folders (e.g., [Gmail] virtual container)
+      final mailboxes = allMailboxes.where((m) => !m.isNotSelectable).toList();
 
       return mailboxes.map((mailbox) {
+        // Use path as display name for clarity (e.g., [Gmail]/Trash instead of Trash)
+        // but use leaf name for canonical folder detection
+        final displayName = mailbox.path.isNotEmpty ? mailbox.path : mailbox.name;
         return FolderInfo(
           id: mailbox.path,
-          displayName: mailbox.name,
+          displayName: displayName,
           canonicalName: _getCanonicalFolder(mailbox.name),
           messageCount: mailbox.messagesExists,
           isWritable: true,

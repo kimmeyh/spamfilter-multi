@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
+import '../../core/services/app_environment.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
@@ -17,6 +18,7 @@ import 'folder_selection_screen.dart';
 import 'scan_history_screen.dart';
 import 'rules_management_screen.dart';
 import 'safe_senders_management_screen.dart';
+import 'yaml_import_export_screen.dart';
 
 /// Settings screen for app-wide configuration
 ///
@@ -313,6 +315,25 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 alignment: Alignment.centerLeft,
               ),
             ),
+            const SizedBox(height: 8),
+
+            // Import/Export YAML button
+            OutlinedButton.icon(
+              icon: const Icon(Icons.swap_vert_outlined),
+              label: const Text('Import / Export YAML'),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const YamlImportExportScreen(),
+                  ),
+                );
+              },
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                alignment: Alignment.centerLeft,
+              ),
+            ),
 
             const SizedBox(height: 24),
 
@@ -337,6 +358,51 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               subtitle: const Text('View all past scan runs and results'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => _navigateToScanHistory(),
+            ),
+
+            const SizedBox(height: 24),
+
+            // About section
+            Text(
+              'About',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.blue.shade700),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'MyEmailSpamFilter',
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Version 0.5.1${AppEnvironment.displaySuffix}',
+                                style: TextStyle(color: Colors.grey.shade700),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         );
@@ -784,19 +850,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         ),
       ),
     );
-  }
-
-  /// [NEW] ISSUE #123: Get provider-specific default junk folders
-  List<String> _getProviderDefaultFolders(String platformId) {
-    // Based on EmailScanProvider.JUNK_FOLDERS_BY_PROVIDER
-    const providerFolders = {
-      'aol': ['Bulk Mail', 'Spam'],
-      'gmail': ['Spam', 'Trash'],
-      'outlook': ['Junk Email', 'Spam'],
-      'yahoo': ['Bulk', 'Spam'],
-      'icloud': ['Junk', 'Trash'],
-    };
-    return providerFolders[platformId] ?? ['Spam', 'Junk'];
   }
 
   Widget _buildScanModeSelector({

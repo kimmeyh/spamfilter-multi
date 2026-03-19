@@ -61,23 +61,25 @@ Progressive scan modes with boolean enforcement flags to prevent accidental data
 Uses Provider pattern (`ChangeNotifier`) for reactive state management with automatic UI updates.
 
 **Key Providers**:
-- `RuleSetProvider`: Manages rule sets and safe senders with dual-write persistence (database + YAML)
+- `RuleSetProvider`: Manages rule sets and safe senders with database persistence (YAML dual-write removed Sprint 20)
 - `EmailScanProvider`: Tracks real-time scan progress with throttled UI updates and scan history persistence
 
-### 5. Dual-Write Storage (ADR-0004)
-SQLite is the authoritative storage for rules and scan data. YAML files are exported as a secondary write for version control and portability. On app start, a one-time YAML-to-database migration runs if the database is empty.
+### 5. Database Storage (ADR-0004)
+SQLite is the sole source of truth for rules and scan data. YAML files are available for import/export via Settings > Data Management.
 
 ### 6. Platform-Agnostic Storage (ADR-0012)
 `AppPaths` provides unified file system access across all 5 platforms (Windows, macOS, Linux, Android, iOS).
 
-**Platform Paths**:
-- **Windows**: `C:\Users\{username}\AppData\Roaming\com.example\spam_filter_mobile\`
-- **Android**: `/data/user/0/com.example.spam_filter_mobile/files`
-- **macOS**: `~/Library/Application Support/spam_filter_mobile`
-- **Linux**: `~/.local/share/spam_filter_mobile`
-- **iOS**: `/Library/Application Support/spam_filter_mobile`
+**Platform Paths** (updated Sprint 19 - identity changed from `com.example` to `MyEmailSpamFilter`):
+- **Windows**: `C:\Users\{username}\AppData\Roaming\MyEmailSpamFilter\MyEmailSpamFilter\` (development builds use `MyEmailSpamFilter_Dev\`, see ADR-0035)
+- **Android**: `/data/user/0/com.myemailspamfilter/files`
+- **macOS**: `~/Library/Application Support/MyEmailSpamFilter`
+- **Linux**: `~/.local/share/MyEmailSpamFilter`
+- **iOS**: `/Library/Application Support/MyEmailSpamFilter`
 
 **Subdirectories**: `rules/`, `credentials/`, `backups/`, `logs/`; SQLite database at root.
+
+**Background Scan Log Convention**: Log files are versioned as `background_scan_v{VERSION}.log` (e.g., `background_scan_v0.5.0.log`) to distinguish logs from different app versions or branches running concurrently. When bumping app version, update the log filename in `background_scan_windows_worker.dart` and `main.dart`.
 
 ---
 

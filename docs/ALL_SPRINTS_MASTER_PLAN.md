@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: February 27, 2026 (Sprint 18 completion)
+**Last Updated**: March 15, 2026 (Sprint 19 retrospective)
 
 ## How to Maintain This Document
 
@@ -83,6 +83,9 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 16 | docs/sprints/SPRINT_16_PLAN.md | [OK] Complete | ~6h (Feb 15-16, 2026) |
 | 17 | docs/sprints/SPRINT_17_SUMMARY.md | [OK] Complete | ~20h (Feb 17-21, 2026) |
 | 18 | docs/sprints/SPRINT_18_RETROSPECTIVE.md | [OK] Complete | Feb 24-27, 2026 |
+| 19 | docs/sprints/SPRINT_19_SUMMARY.md | [OK] Complete | Feb 27 - Mar 15, 2026 |
+| 20 | docs/sprints/SPRINT_20_RETROSPECTIVE.md | [OK] Complete | Mar 15-17, 2026 |
+| 21 | docs/sprints/SPRINT_21_RETROSPECTIVE.md | [OK] Complete | Mar 18, 2026 |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -90,17 +93,20 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 18** (February 24-27, 2026)
-- **PR**: [#170](https://github.com/kimmeyh/spamfilter-multi/pull/170) (targeting develop)
-- **Features**: Safe sender/block rule conflict detection (#154), Subject/body content rule standards (#141), Common email provider domains F20 (#167), Inline rule assignment F21 (#168), Rule testing UI F8 (#169), Architecture v2.0 (#164), 5 bug fixes, F22-F26 backlog items
-- **Tests**: 1088 passed
-- **Retrospective**: docs/sprints/SPRINT_18_RETROSPECTIVE.md
+**Sprint 21** (March 18, 2026)
+- **PR**: [#190](https://github.com/kimmeyh/spamfilter-multi/pull/190) (targeting develop)
+- **Features**: Production/Development side-by-side builds (ADR-0035, Issue #189)
+- **Infrastructure**: AppEnvironment class, environment-aware AppPaths (_Dev suffix), single-instance mutex, dev seeding from production, build script -Environment parameter
+- **Testing Feedback**: 1 fix (Win32 window title [DEV])
+- **Tests**: 1141 passed, 0 analyzer issues
+- **Backlog Added**: #14 (body rules cleanup), #15 (safe senders exact domain investigation)
+- **Retrospective**: docs/sprints/SPRINT_21_RETROSPECTIVE.md
 
 ---
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: February 27, 2026 (Sprint 18 completion)
+**Last Reviewed**: March 18, 2026 (Sprint 21 retrospective)
 
 All incomplete features, bugs, and spikes in relative priority order. HOLD items grouped at bottom. Each item links to its detail section (if one exists) or GitHub Issue.
 
@@ -108,31 +114,51 @@ All incomplete features, bugs, and spikes in relative priority order. HOLD items
 
 | # | Type | Title | Est. Effort | Issue | Detail |
 |---|------|-------|-------------|-------|--------|
-| 1 | Spike | Register myemailspamfilter.com domain | ~1h | [#166](https://github.com/kimmeyh/spamfilter-multi/issues/166) | User action (not sprint work) |
-| 2 | Bug | Android app not tested in several sprints | ~2-4h | [#163](https://github.com/kimmeyh/spamfilter-multi/issues/163) | Validation sprint needed |
-| 3 | Enhancement | Folder Selection Save-on-Selection UX (F27) | ~4-6h | [#172](https://github.com/kimmeyh/spamfilter-multi/issues/172) | [Detail](#f27-folder-selection-save-on-selection-ux) |
-| 4 | Enhancement | Manage Rules UI: split combined rules, search, filter | ~12-16h | [#149](https://github.com/kimmeyh/spamfilter-multi/issues/149) | [Detail](#f149-manage-rules-ui-overhaul) |
-| 5 | Enhancement | Gmail Dual-Auth UX and Account Tracking (F12B) | ~10-16h | -- | [Detail](#f12b-gmail-dual-auth-ux-and-account-tracking) |
-| 6 | Enhancement | Playwright UI Tests + Android UI Testing Strategy (F11) | ~12-16h | -- | [Detail](#f11-playwright-ui-tests-and-android-ui-testing) |
-| 7 | Enhancement | Background Scanning - Android / WorkManager (F4) | ~14-16h | -- | [Detail](#f4-background-scanning-android) |
-| 8 | Enhancement | Provider-Specific Optimizations (F6) | ~10-12h | -- | [Detail](#f6-provider-specific-optimizations) |
-| 9 | Enhancement | Multi-Account Scanning (F7) | ~8-10h | -- | [Detail](#f7-multi-account-scanning) |
-| 10 | Enhancement | YAML Rules Import/Export UI in Settings (F22) | ~8-12h | -- | [Detail](#f22-yaml-rules-importexport-ui) |
-| 11 | Enhancement | Rule Splitting Migration Script (F23) | ~6-8h | -- | [Detail](#f23-rule-splitting-migration-script) |
-| 12 | Enhancement | Manage Rules Category Filter Chips (F24) | ~4-6h | -- | [Detail](#f24-manage-rules-category-filter-chips) |
-| 13 | Enhancement | Rule Testing UI Enhancements (F25) | ~6-8h | -- | [Detail](#f25-rule-testing-ui-enhancements) |
-| 14 | Enhancement | Safe Senders Management Filter Chips (F26) | ~4-6h | -- | [Detail](#f26-safe-senders-management-filter-chips) |
+| 1 | Bug | Android app not tested in several sprints | ~2-4h | [#163](https://github.com/kimmeyh/spamfilter-multi/issues/163) | Validation sprint needed |
+| 2 | Enhancement | Playwright UI Tests + Android UI Testing Strategy (F11) | ~12-16h | -- | [Detail](#f11-playwright-ui-tests-and-android-ui-testing) |
+| 3 | Enhancement | Background Scanning - Android / WorkManager (F4) | ~14-16h | -- | [Detail](#f4-background-scanning-android) |
+| 4 | Enhancement | Provider-Specific Optimizations (F6) | ~10-12h | -- | [Detail](#f6-provider-specific-optimizations) |
+| 5 | Enhancement | Multi-Account Scanning (F7) | ~8-10h | -- | [Detail](#f7-multi-account-scanning) |
+| 6 | Enhancement | Rule Testing UI Enhancements (F25) | ~6-8h | -- | [Detail](#f25-rule-testing-ui-enhancements) |
+| 7 | Enhancement | Folder selectors: two-level listing, provider defaults first, context-aware | ~6-8h | -- | [Detail](#folder-selectors-two-level-listing) |
+| 8 | Enhancement | Rule editing UI with regex generation and validation | ~8-12h | -- | [Detail](#rule-editing-ui) |
+| 9 | Enhancement | Live Scan: re-process emails after rule changes | ~8-12h | -- | [Detail](#live-scan-reprocess-after-rule-changes) |
+| 10 | Enhancement | Live Scan: in-progress and completed status indicator | ~2-4h | -- | Visual indicator (icon or graphic) showing scan is in progress vs completed |
+| 11 | Tech Debt | Test coverage analysis and Sprint 20 feature tests | ~4-6h | -- | [Detail](#test-coverage-analysis-and-sprint-20-feature-tests) |
+| 12 | Enhancement | Settings: Add General tab for app-wide settings | ~4-6h | -- | [Detail](#settings-general-tab) |
+| 13 | Tech Debt | Body rules cleanup script - URL regex and deduplication | ~4-6h | -- | [Detail](#body-rules-cleanup-script) |
+| 14 | Bug | Safe Senders "Exact Domain" filter shows 0 results | ~1-2h | -- | Investigate SafeSenderCategory classification for exact domain patterns |
+| 15 | Bug | Background scan task deleted on rebuild and not re-created | ~4-6h | -- | [Detail](#background-scan-task-rebuild-persistence) |
+| 16 | Spike | Windows Store readiness - requirements research and gap analysis | ~8-12h | [#191](https://github.com/kimmeyh/spamfilter-multi/issues/191) | [Detail](#windows-store-readiness) |
+| 17 | Enhancement | WS-B1: MSIX config fixes (store flag, logo path, version sync) | ~1h | -- | Enable store: true, fix logo path, sync msix_version |
+| 18 | Enhancement | WS-B3: MSIX signing strategy ADR | ~2h | -- | ADR for code signing: MS Store auto-signing vs developer cert |
+| 19 | Enhancement | WS-B4: Privacy policy - write, host, and publish | ~4-8h | -- | [Detail](#ws-b4-privacy-policy) |
+| 20 | Enhancement | WS-I1: Store listing assets (screenshots, logo, descriptions) | ~3-4h | -- | 4-5 screenshots, 300x300+ logo, app description, short description |
+| 21 | Enhancement | WS-I2: App icon and branding finalization (ADR-0031) | ~2-4h | -- | Finalize ADR-0031, create Store-ready icon assets (300x300+ PNG) |
+| 22 | Enhancement | WS: Microsoft Partner Center account setup and first submission | ~2-4h | -- | Register account, reserve name, submit MSIX, complete certification |
 
 ### HOLD Items
 
 | # | Type | Title | Est. Effort | Issue | Reason |
 |---|------|-------|-------------|-------|--------|
+| H0 | Spike | Register myemailspamfilter.com domain | ~1h | [#166](https://github.com/kimmeyh/spamfilter-multi/issues/166) | User action, prerequisite for GP-1 |
 | H1 | Enhancement | GenAI Pattern Suggestions - Crowdsourced Spam Intelligence | TBD | [#142](https://github.com/kimmeyh/spamfilter-multi/issues/142) | Post-MVP, research needed |
 | H2 | Tech Debt | Rule Pattern Consistency - Domain Matching Standards | ~4-6h | [#140](https://github.com/kimmeyh/spamfilter-multi/issues/140) | Deferred to post-MVP |
 | H3 | Enhancement | Requirements Documentation System | TBD | [#137](https://github.com/kimmeyh/spamfilter-multi/issues/137) | Process improvement, not urgent |
 | H4 | Enhancement | Sent Messages Scan for Safe Senders | ~12-16h | [#49](https://github.com/kimmeyh/spamfilter-multi/issues/49) | Large feature, post-MVP |
 | H5 | Enhancement | Outlook.com OAuth Implementation | ~16-20h | [#44](https://github.com/kimmeyh/spamfilter-multi/issues/44) | New provider, MSAL integration, post-MVP |
-| H6 | Google Play | All GP-1 through GP-16 items | ~112-202h total | -- | [See Google Play Store Readiness](#google-play-store-readiness-hold) |
+| H6 | Google Play | Release Signing and Play App Signing (GP-2) | ~4-6h | -- | GP prerequisite, post-MVP |
+| H7 | Google Play | Android Manifest Permissions (GP-3) | ~4-6h | -- | GP prerequisite, post-MVP |
+| H8 | Google Play | Gmail API OAuth Verification / CASA (GP-4) | ~40-80h | -- | Trigger: 2,500+ users or $5K/yr revenue |
+| H9 | Google Play | Privacy Policy and Legal Documents (GP-5) | ~8-16h | -- | GP prerequisite, post-MVP |
+| H10 | Google Play | Play Store Listing and Assets (GP-6) | ~8-12h | -- | GP prerequisite, post-MVP |
+| H11 | Google Play | Adaptive Icons and App Branding (GP-7) | ~4-6h | -- | GP prerequisite, post-MVP |
+| H12 | Google Play | Android Target SDK + 16 KB Page Size (GP-8) | ~4-8h | -- | GP prerequisite, post-MVP |
+| H13 | Google Play | ProGuard/R8 Code Optimization (GP-9) | ~4-6h | -- | GP prerequisite, post-MVP |
+| H14 | Google Play | Data Safety Form Declarations (GP-10) | ~2-4h | -- | GP prerequisite, post-MVP |
+| H15 | Google Play | Account and Data Deletion Feature (GP-11) | ~8-12h | -- | GP prerequisite, post-MVP |
+| H16 | Google Play | Firebase Analytics Decision (GP-12) | ~2-4h | -- | GP prerequisite, post-MVP |
+| H17 | Google Play | Google Play Developer Account Setup (GP-16) | ~2-4h | -- | GP prerequisite, post-MVP |
 
 ---
 
@@ -140,60 +166,132 @@ All incomplete features, bugs, and spikes in relative priority order. HOLD items
 
 This section contains detailed specifications for incomplete items only. Completed features have their details in sprint documents and CHANGELOG.md.
 
-### F27: Folder Selection Save-on-Selection UX
+### Folder Selectors: Two-Level Listing
 
-**Status**: Planned
-**Issue**: [#172](https://github.com/kimmeyh/spamfilter-multi/issues/172)
-**Estimated Effort**: ~4-6h
+**Status**: New (Sprint 20 testing feedback)
+**Estimated Effort**: ~6-8h
 
-**Overview**: Change "Select Folders to Scan" dialog in Settings (Manual and Background) to instantly save on selection, removing Cancel and "Scan Selected Folder" buttons. Matches UX pattern used by other Settings controls.
+**Overview**: Update folder selector UI (used by Safe Sender Folder, Deleted Rule Folder, and Default Folders settings) with context-aware behavior: two-level collapsible folders for Default Folders, and flat lists with provider defaults first for Safe Sender and Deleted Rule folder selectors.
 
-**Behavior**:
-- "Select All Folders" checked -> instantly check all folders and save
-- "Select All Folders" unchecked -> instantly uncheck all folders and save
-- Individual folder checked -> clicking unchecks and saves immediately
-- Individual folder unchecked -> clicking checks and saves immediately
-- Remove Cancel and "Scan Selected Folder" buttons
+**Part A: Default Folders selector (multi-select for scan)**
 
-**Scope**: Settings > Manual Scan and Settings > Background Scan folder selection
+Two-level collapsible folder tree:
 
----
+```
+INBOX
+Bulk Mail
+Bulk Email
+[Gmail] >              (expandable group, collapsed by default)
+    [Gmail]/Trash
+    [Gmail]/Spam
+    [Gmail]/Sent Mail
+    [Gmail]/Drafts
+    [Gmail]/All Mail
+Notes >                (expandable group)
+    Notes/Work
+    Notes/Personal
+```
 
-### F149: Manage Rules UI Overhaul
+- Top-level folders shown flat (INBOX, Bulk Mail, etc.)
+- Folders with children shown as expandable groups (chevron icon)
+- Only first level of children shown (not grandchildren)
+- Collapsed by default -- user expands to see children
+- Junk/Trash folders auto-highlighted regardless of nesting depth
+- Non-selectable parent containers (e.g., `[Gmail]`) shown as group headers only
 
-**Status**: Planned
-**Issue**: [#149](https://github.com/kimmeyh/spamfilter-multi/issues/149)
-**Estimated Effort**: ~12-16h
+**Part B: Safe Sender Folder and Deleted Rule Folder selectors (single-select)**
 
-**Overview**: Split combined rules into separate views, add search and filter capabilities to the Manage Rules UI.
+Flat list with provider default first:
 
----
+- **Safe Sender Folder**: Provider default safe sender folder listed first (e.g., INBOX), remaining folders alphabetical, no sub-folders
+- **Deleted Rule Folder**: Provider default deleted folder listed first (e.g., Trash or [Gmail]/Trash), remaining folders alphabetical, no sub-folders
 
-### F12B: Gmail Dual-Auth UX and Account Tracking
+Provider defaults:
+- AOL: Deleted Rule = Trash, Safe Sender = INBOX
+- Gmail IMAP: Deleted Rule = [Gmail]/Trash, Safe Sender = INBOX
+- Gmail OAuth: Deleted Rule = TRASH, Safe Sender = INBOX
+- Yahoo: Deleted Rule = Trash, Safe Sender = INBOX
 
-**Status**: Planned
-**Estimated Effort**: ~10-16h
+**Provider-Specific Folder Hierarchies** (research before implementation):
+- **Gmail IMAP**: `[Gmail]/` prefix for system folders. Custom labels may also use `/` hierarchy. Separator: `/`
+- **AOL**: Flat folder structure (INBOX, Bulk Mail, Bulk Email, Sent, Trash). No sub-folders typically. Separator: `/`
+- **Yahoo**: Flat structure similar to AOL (Inbox, Bulk, Sent, Trash, Draft). Separator: `/`
+- **iCloud**: May have nested folders. Separator: `/`
+- **Custom IMAP**: Unknown hierarchy -- must handle any structure. Separator: varies (usually `/` or `.`)
 
-**Overview**: Implements the dual-path Gmail authentication strategy (ADR-0029, ADR-0034). Adds auth method selection UI, in-app setup walkthroughs for OAuth and app passwords, per-account auth method persistence, and adapter routing. Also removes unused `AuthMethod.apiKey`.
-
-**Tasks**:
-- **Task A**: Gmail Auth Method Selection UI (~3-4h) -- choice between OAuth and App Password during Gmail setup
-- **Task B**: In-App Setup Walkthrough - Gmail OAuth (~2-3h) -- explains consent screen, 7-day tokens, re-auth
-- **Task C**: In-App Setup Walkthrough - Gmail App Password (~2-3h) -- step-by-step Google Account instructions
-- **Task D**: Per-Account Auth Method Tracking (~3-4h) -- store and route to correct adapter per account
-- **Task E**: Remove Unused Auth Methods (~1-2h) -- remove `AuthMethod.apiKey`, audit dead code
-
-**Dependencies**: ADR-0029 (Accepted), ADR-0034 (Accepted) -- decisions made, ready for implementation
+**Implementation Note**: The path separator varies by provider and is returned by the IMAP server in `listMailboxes()` response. Use `mailbox.pathSeparator` to split paths into parent/child, do not hardcode `/`.
 
 **Acceptance Criteria**:
-- [ ] Gmail platform selection offers choice: OAuth or App Password
-- [ ] In-app walkthroughs shown for each method
-- [ ] Selected auth method stored per Gmail account in database
-- [ ] On reconnect/scan, correct adapter used based on stored auth method
-- [ ] Gmail IMAP via app password works end-to-end
-- [ ] Gmail OAuth continues to work (no regression)
-- [ ] `AuthMethod.apiKey` removed from codebase
-- [ ] All existing tests pass, new tests added for dual-auth routing
+- [ ] Research and document actual folder hierarchy for each supported provider before implementation
+- [ ] Part A: FolderSelectionScreen groups child folders under their parent (Default Folders only)
+- [ ] Part A: Parent folders with children show expand/collapse toggle
+- [ ] Part A: Groups collapsed by default, only first-level children shown
+- [ ] Part A: Non-selectable parent containers cannot be selected, only expanded
+- [ ] Part B: Safe Sender Folder selector shows provider default first, flat list, no sub-folders
+- [ ] Part B: Deleted Rule Folder selector shows provider default first, flat list, no sub-folders
+- [ ] Part B: Provider defaults configured per provider
+- [ ] Path separator detected per-provider (not hardcoded)
+- [ ] Works for Gmail IMAP, Gmail OAuth, AOL, Yahoo, and custom IMAP
+- [ ] Existing folder selection behavior preserved for providers without sub-folders
+
+---
+
+### Rule Editing UI
+
+**Status**: New (Sprint 20 testing feedback)
+**Estimated Effort**: ~8-12h
+
+**Overview**: Add the ability to edit existing rules from the Manage Rules screen. Since rules use regex patterns, the UI must help users who are not familiar with regex syntax.
+
+**Key Features**:
+1. **User-friendly input**: User enters a domain, email, or keyword in plain text, and the app generates the correct regex pattern
+2. **Regex validation**: If the user edits the regex directly, validate it in real-time and show errors with suggested corrections
+3. **Pattern preview**: Show what the pattern would match against sample text (reuse Rule Testing UI from Sprint 18)
+4. **Edit dialog**: Tap a rule in Manage Rules > Edit button in details dialog
+5. **Field editing**: Edit source_domain (regenerates regex), pattern_category, pattern_sub_type, enabled/disabled
+
+**Acceptance Criteria**:
+- [ ] Edit button in rule details dialog opens edit screen
+- [ ] Plain-text domain/email input generates correct regex pattern
+- [ ] Direct regex editing with real-time validation
+- [ ] Invalid regex shows error message with suggested fix
+- [ ] Pattern preview shows match results against sample data
+- [ ] Changes saved to database
+- [ ] Rule name updated if source_domain changes
+
+---
+
+### Live Scan: Re-process Emails After Rule Changes
+
+**Status**: New (Sprint 20 testing feedback)
+**Estimated Effort**: ~8-12h
+
+**Overview**: During a live scan, when the user adds or changes a rule from the scan results screen, re-process affected emails asynchronously to apply the new rule action on the server.
+
+**Scenarios**:
+
+1. **New safe sender rule added**: If an email was previously "deleted" (moved to trash/junk) but now matches a safe sender rule, move it to the configured Safe Sender Folder (rescue the email).
+
+2. **New block rule added**: If an email was previously "no rule" or "safe sender" but now matches a block rule, move it to the configured Deleted Rule Folder.
+
+3. **Rule changed/disabled**: If a rule is modified or disabled, re-evaluate affected emails and apply corrective actions.
+
+**Key Design Considerations**:
+- Re-processing should be async to avoid blocking the UI
+- Show progress indicator during re-processing
+- Handle IMAP errors gracefully (email may already be moved/deleted by server)
+- Track re-processed emails to avoid duplicate actions
+- Consider batch operations for performance (similar to Phase 6b batch execution)
+- Only re-process emails from the current scan session (not historical)
+
+**Acceptance Criteria**:
+- [ ] After adding a safe sender from scan results, previously deleted emails matching the new pattern are moved to Safe Sender Folder
+- [ ] After adding a block rule from scan results, previously unmatched emails matching the new pattern are moved to Deleted Rule Folder
+- [ ] Re-processing happens asynchronously without blocking the UI
+- [ ] Progress indicator shown during re-processing
+- [ ] Scan results display updates to reflect re-processed emails
+- [ ] IMAP errors during re-processing are handled gracefully (logged, not fatal)
+- [ ] Works for both live scan and historical scan result review
 
 ---
 
@@ -273,71 +371,235 @@ This section contains detailed specifications for incomplete items only. Complet
 
 ---
 
-### F22: YAML Rules Import/Export UI
+### Test Coverage Analysis and Sprint 20 Feature Tests
 
-**Status**: Planned
-**Estimated Effort**: ~8-12h
-
-**Overview**: Add user-facing YAML import and export functionality in Settings > Account tab, allowing users to export rules/safe senders to YAML files and import from YAML files.
-
-**Backend State**: `YamlService.exportRules()` and `YamlService.loadRules()` already exist. `YamlExportService` handles dual-write (database + YAML). Missing: UI triggers, file picker, conflict resolution, user feedback.
-
-**Features**:
-- Export rules to user-selected directory (with automatic backup)
-- Export safe senders to user-selected directory
-- Import rules from YAML file with preview and conflict resolution (merge/replace/skip)
-- Import safe senders from YAML file
-- Validation display before import (show errors/warnings)
-- Import status summary (success/failed counts)
-
-**Follow-up**: After import/export is stable, remove duplicate YAML storage (currently rules are stored in both SQLite and YAML asset files). SQLite becomes sole source of truth; YAML used only for import/export.
-
-**Dependencies**: None (backend methods exist)
-
----
-
-### F23: Rule Splitting Migration Script
-
-**Status**: Planned
-**Estimated Effort**: ~6-8h
-
-**Overview**: One-time Dart CLI script to break apart the 4 monolithic rules (`SpamAutoDeleteHeader`, `SpamAutoDeleteFrom`, `SpamAutoDeleteBody`, `SpamAutoDeleteSubject`) into individual, well-named rules based on what each pattern actually blocks.
-
-**Splitting Logic**:
-- **SpamAutoDeleteHeader** patterns classified by regex structure:
-  - Entire domain (`@(?:[a-z0-9-]+\.)*domain\.com$`) -> `Block_EntireDomain_<domain>`
-  - Exact domain (`@domain\.com$`) -> `Block_ExactDomain_<domain>`
-  - Exact email (`^user@domain\.com$`) -> `Block_ExactEmail_<user_domain>`
-  - TLD (`\.<tld>$`) -> `Block_TopLevelDomain_<tld>`
-- **SpamAutoDeleteFrom** patterns: Convert from `from:` to `header:` matching, then same classification
-- **SpamAutoDeleteBody** patterns: `BlockBody_<cleaned_regex>` (use cleaned-up regex as name)
-- **SpamAutoDeleteSubject** patterns: `BlockSubject_<cleaned_regex>` (use cleaned-up regex as name)
-- Skip duplicates (if target rule name already exists)
-- Remove migrated patterns from original monolithic rules
-
-**Deliverable**: Dart CLI script in `scripts/` directory, run once, produces updated `rules.yaml`
-
-**Dependencies**: F22 (YAML Import/Export UI) for reimporting the split rules into the app database
-
----
-
-### F24: Manage Rules Category Filter Chips
-
-**Status**: Planned
+**Status**: New (Sprint 20 retrospective)
 **Estimated Effort**: ~4-6h
 
-**Overview**: Replace current "Header"/"Body"/"Subject" filter chips in Settings > Manage Rules with more meaningful categories that match the new rule naming convention from F23.
+**Overview**: Run test coverage analysis to identify gaps across the codebase, then add targeted tests for Sprint 20 features that shipped without automated test coverage.
 
-**New Filter Categories**:
-- "Block Email" - rules matching `Block_ExactEmail_*`
-- "Block Exact Domain" - rules matching `Block_ExactDomain_*`
-- "Block Entire Domain" - rules matching `Block_EntireDomain_*`
-- "Block Top Level Domains" - rules matching `Block_TopLevelDomain_*`
-- "Block Body" - rules matching `BlockBody_*`
-- "Block Subject" - rules matching `BlockSubject_*`
-- "Other" - all rules not in the above categories
+**Phase 1: Coverage Analysis**
+- Run `flutter test --coverage` and generate coverage report
+- Identify files/functions with low or no coverage
+- Prioritize gaps by risk (core business logic > UI > utilities)
 
-**Dependencies**: F23 (Rule Splitting Migration) must run first so rules have the new naming convention
+**Phase 2: Sprint 20 Feature Tests**
+- [ ] Classification fields set correctly when creating rules from results_display_screen
+- [ ] Classification fields set correctly from email_detail_view quick rule
+- [ ] Classification fields set correctly from rule_quick_add_screen
+- [ ] Demo rules DB produces expected safe/deleted/no-rule distribution
+- [ ] Safe sender folder skip logic (email in folder = skip, email not in folder = show, null config = show all)
+- [ ] DB v2 migration idempotent (handles existing columns)
+- [ ] YAML export/import preserves classification fields round-trip
+- [ ] PlatformRegistry routing for gmail-imap platformId
+
+**Phase 3: General Coverage Gaps**
+- Add tests for any high-risk, low-coverage areas identified in Phase 1
+- Target: meaningful coverage improvements, not 100% coverage
+
+**Acceptance Criteria**:
+- [ ] Coverage report generated and reviewed
+- [ ] All Sprint 20 feature tests from Phase 2 implemented
+- [ ] High-risk coverage gaps from Phase 3 addressed
+- [ ] All tests pass, 0 analyzer issues
+
+---
+
+### Settings: General Tab
+
+**Status**: New (Sprint 20 retrospective)
+**Estimated Effort**: ~4-6h
+
+**Overview**: Add a "General" tab to Settings for app-wide settings that apply across all accounts. Move rules management and data management from the Account tab to the General tab.
+
+**Current Structure**:
+```
+Settings > Account (per-account)
+  - Manage Rules (actually app-wide)
+  - Manage Safe Senders (actually app-wide)
+  - Data Management / Import-Export (actually app-wide)
+  - Folder Settings (per-account)
+  - Scan Settings (per-account)
+  - About
+```
+
+**Proposed Structure**:
+```
+Settings > General (app-wide)
+  - Rules Management (renamed from "Manage Rules" + "Data Management")
+    - Manage Rules (filter, search, delete)
+    - Manage Safe Senders (filter, search, delete)
+    - Import/Export Rules (YAML import/export)
+  - About
+
+Settings > Account (per-account)
+  - Folder Settings
+  - Scan Settings
+  - Account credentials
+```
+
+**Acceptance Criteria**:
+- [ ] New "General" tab added to Settings screen
+- [ ] Rules Management section moved from Account to General
+- [ ] Safe Senders Management moved from Account to General
+- [ ] Data Management (YAML Import/Export) moved to General and renamed "Rules Management" or "Import/Export"
+- [ ] Account tab retains only per-account settings (folders, scan config, credentials)
+- [ ] Navigation from all existing entry points still works
+- [ ] Tab order: General first, then Account
+
+---
+
+### Body Rules Cleanup Script
+
+**Status**: New (Sprint 21 testing feedback)
+**Estimated Effort**: ~4-6h
+
+**Overview**: One-time Dart CLI script to clean up body rules. Many body rules are URL-targeting patterns that need better regex (similar to header Exact Domain / Entire Domain patterns but appropriate for URLs in email body content). Other body rules target non-URL body content and should not be affected.
+
+**Issues to Address**:
+
+1. **URL-targeting regex improvement**: Body rules that target URLs should use regex that specifically matches URLs, not arbitrary body text. Non-URL body rules (e.g., keyword matching) should remain unchanged.
+
+2. **Duplicate consolidation**: Patterns like `.adamshetzner.com` and `adamshetzner.com` are duplicates and should be consolidated into a single rule.
+
+**Acceptance Criteria**:
+- [ ] Script identifies body rules that are URL-targeting vs non-URL patterns
+- [ ] URL-targeting patterns converted to proper URL-matching regex
+- [ ] Non-URL body rules left unchanged
+- [ ] Duplicate patterns consolidated (e.g., `.domain.com` and `domain.com`)
+- [ ] Backup DB before changes
+- [ ] Report: patterns converted, duplicates removed, unchanged patterns
+- [ ] All tests pass after cleanup
+
+---
+
+### Background Scan Task Rebuild Persistence
+
+**Status**: New (Sprint 21 post-merge feedback)
+**Estimated Effort**: ~4-6h
+
+**Overview**: The Windows Task Scheduler background scan task is deleted during `flutter clean` (which removes the executable) and not reliably re-created after rebuild. The task should be resilient to rebuilds.
+
+**Current Problem**:
+1. `flutter clean` removes `build/` directory including `spam_filter_mobile.exe`
+2. Task Scheduler task still points to the deleted executable path
+3. On rebuild, the executable is at a new path (or same path but Task Scheduler does not know)
+4. The task is not automatically re-registered after rebuild
+5. `verifyAndRepairTaskPath()` runs on app launch but may delete the task if the path mismatches
+
+**Proposed Solution**:
+- Add a post-build step to `build-windows.ps1` that:
+  1. Removes the prior Task Scheduler task (for dev/prod as appropriate based on `-Environment`)
+  2. Re-creates the task with the new executable path
+  3. Uses background scan frequency from the DB settings (if configured)
+  4. Leaves the task unregistered if background scanning is turned off in settings
+- Environment-aware task names per ADR-0035: `SpamFilterBackgroundScan` (prod) vs `SpamFilterBackgroundScan_Dev` (dev)
+
+**Alternative Approaches to Consider**:
+- PowerShell script that reads scan settings from SQLite and re-registers task
+- App startup always verifies and re-registers (current approach but unreliable)
+- Separate maintenance script: `scripts/register-background-scan.ps1`
+
+**Acceptance Criteria**:
+- [ ] After `flutter clean` + rebuild, background scan task is re-registered
+- [ ] Task uses correct executable path for the current build
+- [ ] Task uses scan frequency from DB settings
+- [ ] Task not registered if background scanning is disabled
+- [ ] Works for both dev and prod environments (correct task name per ADR-0035)
+- [ ] Existing background scan functionality not broken
+
+---
+
+### Windows Store Readiness
+
+**Status**: New (Sprint 22 backlog refinement)
+**Estimated Effort**: ~8-12h (research + gap analysis; implementation in separate backlog items)
+
+**Overview**: Research all requirements for publishing on the Microsoft Store (Windows Store), perform a deep analysis of the current codebase to identify gaps, and create actionable backlog items to bridge each gap. This includes creating or updating ADRs for architectural decisions required for store compliance.
+
+**Phase 1: Requirements Research (~3-4h)**
+- Microsoft Store app submission requirements (2026)
+- MSIX packaging requirements and signing
+- Store listing requirements (screenshots, descriptions, privacy policy)
+- Content policy and app certification requirements
+- Age ratings and content declarations
+- Accessibility requirements
+- Privacy and data handling declarations
+- Update and versioning requirements
+- Testing and certification process
+
+**Phase 2: Codebase Gap Analysis (~3-4h)**
+- Deep analysis of current app against each store requirement
+- Review existing MSIX config in pubspec.yaml
+- Review app identity, signing, and packaging
+- Review privacy policy status (ADR-0030)
+- Review data handling declarations
+- Review accessibility compliance
+- Review app capabilities and permissions
+- Identify all gaps with severity (blocking vs nice-to-have)
+
+**Phase 3: Gap Summary and Review (~1-2h)**
+- Present findings to user with categorized gaps
+- Discuss prioritization and approach for each gap
+- Create/update ADRs for architectural decisions needed
+
+**Phase 4: Backlog Item Creation (~1-2h)**
+- Create individual backlog items for each gap
+- Estimate effort per item
+- Identify dependencies between items
+- Propose implementation order
+
+**Acceptance Criteria**:
+- [ ] All Microsoft Store requirements documented
+- [ ] Codebase gap analysis complete with severity ratings
+- [ ] Findings reviewed with user
+- [ ] ADRs created or updated for store-related architectural decisions
+- [ ] Individual backlog items created for each gap
+- [ ] Implementation order and dependencies documented
+
+**Note**: This is similar to the existing Google Play Store Readiness section (HOLD items H6-H17) but for the Microsoft Store. Some requirements overlap (privacy policy, data deletion, icons/branding).
+
+---
+
+### WS-B4: Privacy Policy
+
+**Status**: New (Sprint 22 gap analysis)
+**Estimated Effort**: ~4-8h
+**Prerequisite**: Domain myemailspamfilter.com must be registered (H0)
+
+**Overview**: Write, host, and publish the privacy policy per ADR-0030 design. Required for both Microsoft Store and Google Play Store submissions.
+
+**Deliverables**:
+- Privacy policy content written (based on ADR-0030 zero-telemetry design)
+- Hosted at myemailspamfilter.com/privacy (GitHub Pages)
+- URL entered in Partner Center and pubspec.yaml
+- Covers: email access (transient), credential storage (encrypted), no analytics, no data sharing, data deletion process
+
+**Dependencies**: H0 (domain registration) must be completed first
+
+---
+
+### WS: Implementation Order and Dependencies
+
+**Recommended order for Windows Store publication**:
+
+```
+H0: Register domain (USER ACTION - prerequisite)
+  |
+  v
+#17: MSIX config fixes (no dependencies)
+#18: Signing strategy ADR (no dependencies)
+#21: App icon/branding ADR-0031 (no dependencies)
+  |
+  v
+#19: Privacy policy (depends on H0)
+#20: Store listing assets (depends on #21 for icon)
+  |
+  v
+#22: Partner Center account + first submission (depends on all above)
+```
+
+**Parallel tracks**: #17, #18, #21 can be done in parallel. #19 and #20 can be done in parallel after their dependencies.
 
 ---
 
@@ -354,26 +616,6 @@ This section contains detailed specifications for incomplete items only. Complet
 3. **Edit Rules with Test Tool**: Add a way to open an existing rule in the test tool from the Manage Rules screen, allowing users to modify and test patterns before saving
 
 **Dependencies**: None (builds on existing Rule Testing UI from Sprint 18)
-
----
-
-### F26: Safe Senders Management Filter Chips
-
-**Status**: Planned
-**Estimated Effort**: ~4-6h
-
-**Overview**: Add filter chips to Settings > Account > Manage Safe Senders to categorize safe sender rules by their pattern type, making it easier to browse and manage large lists.
-
-**Filter Categories**:
-- "Exact Email" - patterns matching a specific email address (e.g., `^user@domain\.com$`)
-- "Exact Domain" - patterns matching an exact domain (e.g., `^[^@\s]+@domain\.com$`)
-- "Entire Domain" - patterns matching domain and all subdomains (e.g., `^[^@\s]+@(?:[a-z0-9-]+\.)*domain\.com$`)
-- "Top Level Domains" - patterns matching TLDs (e.g., `\.edu$`, `\.gov$`)
-- "Other" - all rules not matching the above categories
-
-**Note**: These categories should replace current "Domain" / "Domain + Subdomains" labels with the more user-friendly names above.
-
-**Dependencies**: None
 
 ---
 
@@ -409,26 +651,26 @@ The app is approximately 60-70% ready for Play Store publication. Core spam filt
 
 ### GP Feature List
 
-All GP items are HOLD. When taken off hold, they should be added to "Next Sprint Candidates" above.
+GP items on HOLD. When taken off hold, they are added to "Next Sprint Candidates" above.
 
-| ID | Title | Est. Effort | ADR | Priority |
-|----|-------|-------------|-----|----------|
-| GP-1 | Application Identity and Branding | ~4-6h | ADR-0026 (Accepted) | BLOCKING |
-| GP-2 | Release Signing and Play App Signing | ~4-6h | ADR-0027 (Proposed) | BLOCKING |
-| GP-3 | Android Manifest Permissions | ~4-6h | ADR-0028 (Proposed) | BLOCKING |
-| GP-4 | Gmail API OAuth Verification (CASA) | ~40-80h | ADR-0029 (Accepted) | BLOCKING (ON HOLD -- trigger: 2,500+ users or $5K/yr revenue) |
-| GP-5 | Privacy Policy and Legal Documents | ~8-16h | ADR-0030 (Accepted) | BLOCKING |
-| GP-6 | Play Store Listing and Assets | ~8-12h | -- | HIGH |
-| GP-7 | Adaptive Icons and App Branding | ~4-6h | ADR-0031 (Proposed) | HIGH |
-| GP-8 | Android Target SDK + 16 KB Page Size | ~4-8h | -- | MEDIUM |
-| GP-9 | ProGuard/R8 Code Optimization | ~4-6h | -- | HIGH |
-| GP-10 | Data Safety Form Declarations | ~2-4h | -- | BLOCKING |
-| GP-11 | Account and Data Deletion Feature | ~8-12h | ADR-0032 (Proposed) | HIGH |
-| GP-12 | Firebase Analytics Decision | ~2-4h | ADR-0033 (Proposed) | MEDIUM |
-| GP-13 | Persistent Gmail Auth for Production | 0h | -- | RESOLVED (merged with F12, see ADR-0029/0034) |
-| GP-14 | IMAP vs Gmail REST API Decision | 0h | ADR-0034 (Accepted) | RESOLVED (dual-path, no migration needed) |
-| GP-15 | Version Numbering and Release Strategy | ~2-4h | -- | HIGH |
-| GP-16 | Google Play Developer Account Setup | ~2-4h | -- | BLOCKING |
+| ID | Title | Est. Effort | ADR | Priority | Status |
+|----|-------|-------------|-----|----------|--------|
+| GP-1 | Application Identity and Branding | ~4-6h | ADR-0026 (Accepted) | BLOCKING | [OK] COMPLETE (Sprint 19) |
+| GP-2 | Release Signing and Play App Signing | ~4-6h | ADR-0027 (Proposed) | BLOCKING | HOLD |
+| GP-3 | Android Manifest Permissions | ~4-6h | ADR-0028 (Proposed) | BLOCKING | HOLD |
+| GP-4 | Gmail API OAuth Verification (CASA) | ~40-80h | ADR-0029 (Accepted) | BLOCKING | HOLD -- trigger: 2,500+ users or $5K/yr revenue |
+| GP-5 | Privacy Policy and Legal Documents | ~8-16h | ADR-0030 (Accepted) | BLOCKING | HOLD |
+| GP-6 | Play Store Listing and Assets | ~8-12h | -- | HIGH | HOLD |
+| GP-7 | Adaptive Icons and App Branding | ~4-6h | ADR-0031 (Proposed) | HIGH | HOLD |
+| GP-8 | Android Target SDK + 16 KB Page Size | ~4-8h | -- | MEDIUM | HOLD |
+| GP-9 | ProGuard/R8 Code Optimization | ~4-6h | -- | HIGH | HOLD |
+| GP-10 | Data Safety Form Declarations | ~2-4h | -- | BLOCKING | HOLD |
+| GP-11 | Account and Data Deletion Feature | ~8-12h | ADR-0032 (Proposed) | HIGH | HOLD |
+| GP-12 | Firebase Analytics Decision | ~2-4h | ADR-0033 (Proposed) | MEDIUM | HOLD |
+| GP-13 | Persistent Gmail Auth for Production | 0h | -- | -- | RESOLVED (merged with F12, see ADR-0029/0034) |
+| GP-14 | IMAP vs Gmail REST API Decision | 0h | ADR-0034 (Accepted) | -- | RESOLVED (dual-path, no migration needed) |
+| GP-15 | Version Numbering and Release Strategy | ~2-4h | -- | HIGH | [OK] COMPLETE (Sprint 19) |
+| GP-16 | Google Play Developer Account Setup | ~2-4h | -- | BLOCKING | HOLD |
 
 **Total Estimated Effort**: ~112-202 hours (plus 2-6 months for CASA verification if triggered)
 
@@ -438,21 +680,10 @@ Full detail for each GP item is preserved below for reference when these items a
 
 #### GP-1: Application Identity and Branding
 
+**Status**: [OK] Completed (Sprint 19, Issue #182)
 **ADR**: ADR-0026 (Accepted)
-**Estimated Effort**: ~4-6h
 
-Change the application from development defaults to production-ready identity.
-
-**Decision**: Domain `myemailspamfilter.com`, Application ID `com.myemailspamfilter`, App Name `MyEmailSpamFilter`.
-
-**Tasks**:
-- Task A: Update `applicationId` to `com.myemailspamfilter` in `android/app/build.gradle.kts`
-- Task B: Update `namespace` to `com.myemailspamfilter` in `android/app/build.gradle.kts`
-- Task C: Update `android:label` to `MyEmailSpamFilter` in `AndroidManifest.xml`
-- Task D: Update `msix_config` in `pubspec.yaml` to match new identity
-- Task E: Re-register with Firebase Console under new application ID and download new `google-services.json`
-
-**Prerequisite**: Domain `myemailspamfilter.com` must be registered first (Issue #166 -- spike).
+Application rebranded to MyEmailSpamFilter with `com.myemailspamfilter` package. Firebase re-registration deferred until domain is registered (Issue #166).
 
 ---
 
@@ -570,9 +801,9 @@ Decide whether to use Firebase Analytics/Crashlytics or remove Firebase dependen
 
 #### GP-15: Version Numbering and Release Strategy
 
-**Estimated Effort**: ~2-4h
+**Status**: [OK] Completed (Sprint 19, Issue #181)
 
-Set initial release version (1.0.0+), establish versionCode numbering, plan release track strategy.
+Tagged v0.5.0, updated pubspec.yaml to 0.5.0+1, established semver convention.
 
 ---
 
