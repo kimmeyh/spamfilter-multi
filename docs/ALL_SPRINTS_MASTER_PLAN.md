@@ -129,6 +129,7 @@ All incomplete features, bugs, and spikes in relative priority order. HOLD items
 | 13 | Tech Debt | Body rules cleanup script - URL regex and deduplication | ~4-6h | -- | [Detail](#body-rules-cleanup-script) |
 | 14 | Bug | Safe Senders "Exact Domain" filter shows 0 results | ~1-2h | -- | Investigate SafeSenderCategory classification for exact domain patterns |
 | 15 | Bug | Background scan task deleted on rebuild and not re-created | ~4-6h | -- | [Detail](#background-scan-task-rebuild-persistence) |
+| 16 | Spike | Windows Store readiness - requirements research and gap analysis | ~8-12h | -- | [Detail](#windows-store-readiness) |
 
 ### HOLD Items
 
@@ -500,6 +501,57 @@ Settings > Account (per-account)
 - [ ] Task not registered if background scanning is disabled
 - [ ] Works for both dev and prod environments (correct task name per ADR-0035)
 - [ ] Existing background scan functionality not broken
+
+---
+
+### Windows Store Readiness
+
+**Status**: New (Sprint 22 backlog refinement)
+**Estimated Effort**: ~8-12h (research + gap analysis; implementation in separate backlog items)
+
+**Overview**: Research all requirements for publishing on the Microsoft Store (Windows Store), perform a deep analysis of the current codebase to identify gaps, and create actionable backlog items to bridge each gap. This includes creating or updating ADRs for architectural decisions required for store compliance.
+
+**Phase 1: Requirements Research (~3-4h)**
+- Microsoft Store app submission requirements (2026)
+- MSIX packaging requirements and signing
+- Store listing requirements (screenshots, descriptions, privacy policy)
+- Content policy and app certification requirements
+- Age ratings and content declarations
+- Accessibility requirements
+- Privacy and data handling declarations
+- Update and versioning requirements
+- Testing and certification process
+
+**Phase 2: Codebase Gap Analysis (~3-4h)**
+- Deep analysis of current app against each store requirement
+- Review existing MSIX config in pubspec.yaml
+- Review app identity, signing, and packaging
+- Review privacy policy status (ADR-0030)
+- Review data handling declarations
+- Review accessibility compliance
+- Review app capabilities and permissions
+- Identify all gaps with severity (blocking vs nice-to-have)
+
+**Phase 3: Gap Summary and Review (~1-2h)**
+- Present findings to user with categorized gaps
+- Discuss prioritization and approach for each gap
+- Create/update ADRs for architectural decisions needed
+
+**Phase 4: Backlog Item Creation (~1-2h)**
+- Create individual backlog items for each gap
+- Estimate effort per item
+- Identify dependencies between items
+- Propose implementation order
+
+**Acceptance Criteria**:
+- [ ] All Microsoft Store requirements documented
+- [ ] Codebase gap analysis complete with severity ratings
+- [ ] Findings reviewed with user
+- [ ] ADRs created or updated for store-related architectural decisions
+- [ ] Individual backlog items created for each gap
+- [ ] Implementation order and dependencies documented
+
+**Note**: This is similar to the existing Google Play Store Readiness section (HOLD items H6-H17) but for the Microsoft Store. Some requirements overlap (privacy policy, data deletion, icons/branding).
 
 ---
 
