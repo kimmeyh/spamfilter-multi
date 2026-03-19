@@ -128,6 +128,7 @@ All incomplete features, bugs, and spikes in relative priority order. HOLD items
 | 12 | Enhancement | Settings: Add General tab for app-wide settings | ~4-6h | -- | [Detail](#settings-general-tab) |
 | 13 | Tech Debt | Body rules cleanup script - URL regex and deduplication | ~4-6h | -- | [Detail](#body-rules-cleanup-script) |
 | 14 | Bug | Safe Senders "Exact Domain" filter shows 0 results | ~1-2h | -- | Investigate SafeSenderCategory classification for exact domain patterns |
+| 15 | Bug | Background scan task deleted on rebuild and not re-created | ~4-6h | -- | [Detail](#background-scan-task-rebuild-persistence) |
 
 ### HOLD Items
 
@@ -462,6 +463,43 @@ Settings > Account (per-account)
 - [ ] Backup DB before changes
 - [ ] Report: patterns converted, duplicates removed, unchanged patterns
 - [ ] All tests pass after cleanup
+
+---
+
+### Background Scan Task Rebuild Persistence
+
+**Status**: New (Sprint 21 post-merge feedback)
+**Estimated Effort**: ~4-6h
+
+**Overview**: The Windows Task Scheduler background scan task is deleted during `flutter clean` (which removes the executable) and not reliably re-created after rebuild. The task should be resilient to rebuilds.
+
+**Current Problem**:
+1. `flutter clean` removes `build/` directory including `spam_filter_mobile.exe`
+2. Task Scheduler task still points to the deleted executable path
+3. On rebuild, the executable is at a new path (or same path but Task Scheduler does not know)
+4. The task is not automatically re-registered after rebuild
+5. `verifyAndRepairTaskPath()` runs on app launch but may delete the task if the path mismatches
+
+**Proposed Solution**:
+- Add a post-build step to `build-windows.ps1` that:
+  1. Removes the prior Task Scheduler task (for dev/prod as appropriate based on `-Environment`)
+  2. Re-creates the task with the new executable path
+  3. Uses background scan frequency from the DB settings (if configured)
+  4. Leaves the task unregistered if background scanning is turned off in settings
+- Environment-aware task names per ADR-0035: `SpamFilterBackgroundScan` (prod) vs `SpamFilterBackgroundScan_Dev` (dev)
+
+**Alternative Approaches to Consider**:
+- PowerShell script that reads scan settings from SQLite and re-registers task
+- App startup always verifies and re-registers (current approach but unreliable)
+- Separate maintenance script: `scripts/register-background-scan.ps1`
+
+**Acceptance Criteria**:
+- [ ] After `flutter clean` + rebuild, background scan task is re-registered
+- [ ] Task uses correct executable path for the current build
+- [ ] Task uses scan frequency from DB settings
+- [ ] Task not registered if background scanning is disabled
+- [ ] Works for both dev and prod environments (correct task name per ADR-0035)
+- [ ] Existing background scan functionality not broken
 
 ---
 
