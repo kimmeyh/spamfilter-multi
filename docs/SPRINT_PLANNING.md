@@ -73,6 +73,14 @@ Each sprint is composed of **Cards** (GitHub issues) broken into **Tasks** assig
 - **Developers**: Claude Code models (Haiku, Sonnet, Opus) executing assigned tasks
 - **Sprint Master**: User (facilitates ceremonies, manages blockers, updates heuristics)
 
+### ADR-First Approach for Architectural Changes
+
+For sprints involving major architectural changes, use an **ADR-first approach**: design the ADR in one sprint (or during planning), get user review and approval, then implement in the next sprint. This produces better results because:
+- Design issues are caught before code is written (less rework)
+- User provides input on design decisions early (version strategy, data isolation, etc.)
+- Implementation sprint has a clear specification to follow
+- Learned from Sprint 21 (ADR-0035): thorough ADR design in Sprint 20 led to minimal rework during implementation
+
 ### Sprint Phases
 
 #### Phase 1: Planning (Kickoff)

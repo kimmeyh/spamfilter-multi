@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
+import '../../core/services/app_environment.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
@@ -391,7 +392,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Version 0.5.0',
+                                'Version 0.5.1${AppEnvironment.displaySuffix}',
                                 style: TextStyle(color: Colors.grey.shade700),
                               ),
                             ],

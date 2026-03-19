@@ -61,17 +61,17 @@ Progressive scan modes with boolean enforcement flags to prevent accidental data
 Uses Provider pattern (`ChangeNotifier`) for reactive state management with automatic UI updates.
 
 **Key Providers**:
-- `RuleSetProvider`: Manages rule sets and safe senders with dual-write persistence (database + YAML)
+- `RuleSetProvider`: Manages rule sets and safe senders with database persistence (YAML dual-write removed Sprint 20)
 - `EmailScanProvider`: Tracks real-time scan progress with throttled UI updates and scan history persistence
 
-### 5. Dual-Write Storage (ADR-0004)
-SQLite is the authoritative storage for rules and scan data. YAML files are exported as a secondary write for version control and portability. On app start, a one-time YAML-to-database migration runs if the database is empty.
+### 5. Database Storage (ADR-0004)
+SQLite is the sole source of truth for rules and scan data. YAML files are available for import/export via Settings > Data Management.
 
 ### 6. Platform-Agnostic Storage (ADR-0012)
 `AppPaths` provides unified file system access across all 5 platforms (Windows, macOS, Linux, Android, iOS).
 
 **Platform Paths** (updated Sprint 19 - identity changed from `com.example` to `MyEmailSpamFilter`):
-- **Windows**: `C:\Users\{username}\AppData\Roaming\MyEmailSpamFilter\MyEmailSpamFilter\`
+- **Windows**: `C:\Users\{username}\AppData\Roaming\MyEmailSpamFilter\MyEmailSpamFilter\` (development builds use `MyEmailSpamFilter_Dev\`, see ADR-0035)
 - **Android**: `/data/user/0/com.myemailspamfilter/files`
 - **macOS**: `~/Library/Application Support/MyEmailSpamFilter`
 - **Linux**: `~/.local/share/MyEmailSpamFilter`

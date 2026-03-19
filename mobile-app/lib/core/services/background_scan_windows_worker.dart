@@ -7,6 +7,7 @@ import '../storage/background_scan_log_store.dart';
 import '../storage/settings_store.dart';
 import '../providers/email_scan_provider.dart';
 import '../providers/rule_set_provider.dart';
+import '../services/app_environment.dart';
 import '../services/email_scanner.dart';
 import '../../adapters/storage/app_paths.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
@@ -22,8 +23,10 @@ class BackgroundScanWindowsWorker {
   /// File-based logger for headless background mode diagnostics
   static Future<void> _bgLog(String message) async {
     try {
+      final envSuffix = AppEnvironment.dataDirSuffix;
+      final logPrefix = AppEnvironment.logPrefix;
       final logFile = File(
-        '${Platform.environment['APPDATA']}\\MyEmailSpamFilter\\MyEmailSpamFilter\\logs\\background_scan_v0.5.0.log',
+        '${Platform.environment['APPDATA']}\\MyEmailSpamFilter\\MyEmailSpamFilter$envSuffix\\logs\\${logPrefix}background_scan_v0.5.1.log',
       );
       final timestamp = DateTime.now().toIso8601String();
       await logFile.parent.create(recursive: true);
