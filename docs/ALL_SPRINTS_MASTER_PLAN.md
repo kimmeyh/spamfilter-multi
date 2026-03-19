@@ -129,7 +129,13 @@ All incomplete features, bugs, and spikes in relative priority order. HOLD items
 | 13 | Tech Debt | Body rules cleanup script - URL regex and deduplication | ~4-6h | -- | [Detail](#body-rules-cleanup-script) |
 | 14 | Bug | Safe Senders "Exact Domain" filter shows 0 results | ~1-2h | -- | Investigate SafeSenderCategory classification for exact domain patterns |
 | 15 | Bug | Background scan task deleted on rebuild and not re-created | ~4-6h | -- | [Detail](#background-scan-task-rebuild-persistence) |
-| 16 | Spike | Windows Store readiness - requirements research and gap analysis | ~8-12h | -- | [Detail](#windows-store-readiness) |
+| 16 | Spike | Windows Store readiness - requirements research and gap analysis | ~8-12h | [#191](https://github.com/kimmeyh/spamfilter-multi/issues/191) | [Detail](#windows-store-readiness) |
+| 17 | Enhancement | WS-B1: MSIX config fixes (store flag, logo path, version sync) | ~1h | -- | Enable store: true, fix logo path, sync msix_version |
+| 18 | Enhancement | WS-B3: MSIX signing strategy ADR | ~2h | -- | ADR for code signing: MS Store auto-signing vs developer cert |
+| 19 | Enhancement | WS-B4: Privacy policy - write, host, and publish | ~4-8h | -- | [Detail](#ws-b4-privacy-policy) |
+| 20 | Enhancement | WS-I1: Store listing assets (screenshots, logo, descriptions) | ~3-4h | -- | 4-5 screenshots, 300x300+ logo, app description, short description |
+| 21 | Enhancement | WS-I2: App icon and branding finalization (ADR-0031) | ~2-4h | -- | Finalize ADR-0031, create Store-ready icon assets (300x300+ PNG) |
+| 22 | Enhancement | WS: Microsoft Partner Center account setup and first submission | ~2-4h | -- | Register account, reserve name, submit MSIX, complete certification |
 
 ### HOLD Items
 
@@ -552,6 +558,48 @@ Settings > Account (per-account)
 - [ ] Implementation order and dependencies documented
 
 **Note**: This is similar to the existing Google Play Store Readiness section (HOLD items H6-H17) but for the Microsoft Store. Some requirements overlap (privacy policy, data deletion, icons/branding).
+
+---
+
+### WS-B4: Privacy Policy
+
+**Status**: New (Sprint 22 gap analysis)
+**Estimated Effort**: ~4-8h
+**Prerequisite**: Domain myemailspamfilter.com must be registered (H0)
+
+**Overview**: Write, host, and publish the privacy policy per ADR-0030 design. Required for both Microsoft Store and Google Play Store submissions.
+
+**Deliverables**:
+- Privacy policy content written (based on ADR-0030 zero-telemetry design)
+- Hosted at myemailspamfilter.com/privacy (GitHub Pages)
+- URL entered in Partner Center and pubspec.yaml
+- Covers: email access (transient), credential storage (encrypted), no analytics, no data sharing, data deletion process
+
+**Dependencies**: H0 (domain registration) must be completed first
+
+---
+
+### WS: Implementation Order and Dependencies
+
+**Recommended order for Windows Store publication**:
+
+```
+H0: Register domain (USER ACTION - prerequisite)
+  |
+  v
+#17: MSIX config fixes (no dependencies)
+#18: Signing strategy ADR (no dependencies)
+#21: App icon/branding ADR-0031 (no dependencies)
+  |
+  v
+#19: Privacy policy (depends on H0)
+#20: Store listing assets (depends on #21 for icon)
+  |
+  v
+#22: Partner Center account + first submission (depends on all above)
+```
+
+**Parallel tracks**: #17, #18, #21 can be done in parallel. #19 and #20 can be done in parallel after their dependencies.
 
 ---
 
