@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: March 15, 2026 (Sprint 19 retrospective)
+**Last Updated**: March 19, 2026 (Sprint 22 retrospective)
 
 ## How to Maintain This Document
 
@@ -86,6 +86,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 19 | docs/sprints/SPRINT_19_SUMMARY.md | [OK] Complete | Feb 27 - Mar 15, 2026 |
 | 20 | docs/sprints/SPRINT_20_RETROSPECTIVE.md | [OK] Complete | Mar 15-17, 2026 |
 | 21 | docs/sprints/SPRINT_21_RETROSPECTIVE.md | [OK] Complete | Mar 18, 2026 |
+| 22 | docs/sprints/SPRINT_22_RETROSPECTIVE.md | [OK] Complete | Mar 19, 2026 |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -93,20 +94,18 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 21** (March 18, 2026)
-- **PR**: [#190](https://github.com/kimmeyh/spamfilter-multi/pull/190) (targeting develop)
-- **Features**: Production/Development side-by-side builds (ADR-0035, Issue #189)
-- **Infrastructure**: AppEnvironment class, environment-aware AppPaths (_Dev suffix), single-instance mutex, dev seeding from production, build script -Environment parameter
-- **Testing Feedback**: 1 fix (Win32 window title [DEV])
-- **Tests**: 1141 passed, 0 analyzer issues
-- **Backlog Added**: #14 (body rules cleanup), #15 (safe senders exact domain investigation)
-- **Retrospective**: docs/sprints/SPRINT_21_RETROSPECTIVE.md
+**Sprint 22** (March 19, 2026)
+- **Type**: Research sprint (no code changes)
+- **Features**: Windows Store requirements research, codebase gap analysis, backlog items #17-#22 (Issue #191)
+- **Backlog Added**: #17 (MSIX config fixes), #18 (MSIX signing ADR), #19 (privacy policy), #20 (store listing assets), #21 (app icon/branding), #22 (Partner Center submission)
+- **Tooling Fix**: memory-save/restore/startup-check skills - absolute paths and bash compatibility
+- **Retrospective**: docs/sprints/SPRINT_22_RETROSPECTIVE.md
 
 ---
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: March 18, 2026 (Sprint 21 retrospective)
+**Last Reviewed**: March 19, 2026 (Sprint 22 retrospective)
 
 All incomplete features, bugs, and spikes in relative priority order. HOLD items grouped at bottom. Each item links to its detail section (if one exists) or GitHub Issue.
 
@@ -129,7 +128,7 @@ All incomplete features, bugs, and spikes in relative priority order. HOLD items
 | 13 | Tech Debt | Body rules cleanup script - URL regex and deduplication | ~4-6h | -- | [Detail](#body-rules-cleanup-script) |
 | 14 | Bug | Safe Senders "Exact Domain" filter shows 0 results | ~1-2h | -- | Investigate SafeSenderCategory classification for exact domain patterns |
 | 15 | Bug | Background scan task deleted on rebuild and not re-created | ~4-6h | -- | [Detail](#background-scan-task-rebuild-persistence) |
-| 16 | Spike | Windows Store readiness - requirements research and gap analysis | ~8-12h | [#191](https://github.com/kimmeyh/spamfilter-multi/issues/191) | [Detail](#windows-store-readiness) |
+| ~~16~~ | ~~Spike~~ | ~~Windows Store readiness - requirements research and gap analysis~~ | ~~~8-12h~~ | ~~[#191](https://github.com/kimmeyh/spamfilter-multi/issues/191)~~ | [OK] Complete (Sprint 22) |
 | 17 | Enhancement | WS-B1: MSIX config fixes (store flag, logo path, version sync) | ~1h | -- | Enable store: true, fix logo path, sync msix_version |
 | 18 | Enhancement | WS-B3: MSIX signing strategy ADR | ~2h | -- | ADR for code signing: MS Store auto-signing vs developer cert |
 | 19 | Enhancement | WS-B4: Privacy policy - write, host, and publish | ~4-8h | -- | [Detail](#ws-b4-privacy-policy) |
