@@ -85,6 +85,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 18 | docs/sprints/SPRINT_18_RETROSPECTIVE.md | [OK] Complete | Feb 24-27, 2026 |
 | 19 | docs/sprints/SPRINT_19_SUMMARY.md | [OK] Complete | Feb 27 - Mar 15, 2026 |
 | 20 | docs/sprints/SPRINT_20_RETROSPECTIVE.md | [OK] Complete | Mar 15-17, 2026 |
+| 21 | docs/sprints/SPRINT_21_RETROSPECTIVE.md | [OK] Complete | Mar 18, 2026 |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -92,20 +93,20 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 20** (March 15-17, 2026)
-- **PR**: [#188](https://github.com/kimmeyh/spamfilter-multi/pull/188) (targeting develop)
-- **Features**: Gmail IMAP folder fix (#184), Demo Scan expansion (#185), Manage Rules UI overhaul with rule split and classification (#149), Add Rule performance (#186), Analyzer cleanup (#187)
-- **Infrastructure**: DB schema v2, YAML dual-write removed, 5 monolithic rules split into 3,291 individual rules, 3 standalone fix scripts
-- **Testing Feedback**: 11 fixes (TLD reclassification, wildcard conversion, safe sender folder skip, IMAP child folders, classification fields in all rule creation paths)
+**Sprint 21** (March 18, 2026)
+- **PR**: [#190](https://github.com/kimmeyh/spamfilter-multi/pull/190) (targeting develop)
+- **Features**: Production/Development side-by-side builds (ADR-0035, Issue #189)
+- **Infrastructure**: AppEnvironment class, environment-aware AppPaths (_Dev suffix), single-instance mutex, dev seeding from production, build script -Environment parameter
+- **Testing Feedback**: 1 fix (Win32 window title [DEV])
 - **Tests**: 1141 passed, 0 analyzer issues
-- **Backlog Added**: #14 (folder selectors), #15 (rule editing UI), #16 (live scan reprocess), #17 (scan status indicator)
-- **Retrospective**: docs/sprints/SPRINT_20_RETROSPECTIVE.md
+- **Backlog Added**: #14 (body rules cleanup), #15 (safe senders exact domain investigation)
+- **Retrospective**: docs/sprints/SPRINT_21_RETROSPECTIVE.md
 
 ---
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: March 17, 2026 (Sprint 20 retrospective)
+**Last Reviewed**: March 18, 2026 (Sprint 21 retrospective)
 
 All incomplete features, bugs, and spikes in relative priority order. HOLD items grouped at bottom. Each item links to its detail section (if one exists) or GitHub Issue.
 
@@ -125,9 +126,8 @@ All incomplete features, bugs, and spikes in relative priority order. HOLD items
 | 10 | Enhancement | Live Scan: in-progress and completed status indicator | ~2-4h | -- | Visual indicator (icon or graphic) showing scan is in progress vs completed |
 | 11 | Tech Debt | Test coverage analysis and Sprint 20 feature tests | ~4-6h | -- | [Detail](#test-coverage-analysis-and-sprint-20-feature-tests) |
 | 12 | Enhancement | Settings: Add General tab for app-wide settings | ~4-6h | -- | [Detail](#settings-general-tab) |
-| 13 | Enhancement | Production/Development side-by-side builds | ~6-8h | -- | ADR-0035: Separate data dirs, task names, mutex per environment |
-| 14 | Tech Debt | Body rules cleanup script - URL regex and deduplication | ~4-6h | -- | [Detail](#body-rules-cleanup-script) |
-| 15 | Bug | Safe Senders "Exact Domain" filter shows 0 results | ~1-2h | -- | Investigate SafeSenderCategory classification for exact domain patterns |
+| 13 | Tech Debt | Body rules cleanup script - URL regex and deduplication | ~4-6h | -- | [Detail](#body-rules-cleanup-script) |
+| 14 | Bug | Safe Senders "Exact Domain" filter shows 0 results | ~1-2h | -- | Investigate SafeSenderCategory classification for exact domain patterns |
 
 ### HOLD Items
 
