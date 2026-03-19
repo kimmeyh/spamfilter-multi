@@ -126,6 +126,8 @@ All incomplete features, bugs, and spikes in relative priority order. HOLD items
 | 11 | Tech Debt | Test coverage analysis and Sprint 20 feature tests | ~4-6h | -- | [Detail](#test-coverage-analysis-and-sprint-20-feature-tests) |
 | 12 | Enhancement | Settings: Add General tab for app-wide settings | ~4-6h | -- | [Detail](#settings-general-tab) |
 | 13 | Enhancement | Production/Development side-by-side builds | ~6-8h | -- | ADR-0035: Separate data dirs, task names, mutex per environment |
+| 14 | Tech Debt | Body rules cleanup script - URL regex and deduplication | ~4-6h | -- | [Detail](#body-rules-cleanup-script) |
+| 15 | Bug | Safe Senders "Exact Domain" filter shows 0 results | ~1-2h | -- | Investigate SafeSenderCategory classification for exact domain patterns |
 
 ### HOLD Items
 
@@ -436,6 +438,30 @@ Settings > Account (per-account)
 - [ ] Account tab retains only per-account settings (folders, scan config, credentials)
 - [ ] Navigation from all existing entry points still works
 - [ ] Tab order: General first, then Account
+
+---
+
+### Body Rules Cleanup Script
+
+**Status**: New (Sprint 21 testing feedback)
+**Estimated Effort**: ~4-6h
+
+**Overview**: One-time Dart CLI script to clean up body rules. Many body rules are URL-targeting patterns that need better regex (similar to header Exact Domain / Entire Domain patterns but appropriate for URLs in email body content). Other body rules target non-URL body content and should not be affected.
+
+**Issues to Address**:
+
+1. **URL-targeting regex improvement**: Body rules that target URLs should use regex that specifically matches URLs, not arbitrary body text. Non-URL body rules (e.g., keyword matching) should remain unchanged.
+
+2. **Duplicate consolidation**: Patterns like `.adamshetzner.com` and `adamshetzner.com` are duplicates and should be consolidated into a single rule.
+
+**Acceptance Criteria**:
+- [ ] Script identifies body rules that are URL-targeting vs non-URL patterns
+- [ ] URL-targeting patterns converted to proper URL-matching regex
+- [ ] Non-URL body rules left unchanged
+- [ ] Duplicate patterns consolidated (e.g., `.domain.com` and `domain.com`)
+- [ ] Backup DB before changes
+- [ ] Report: patterns converted, duplicates removed, unchanged patterns
+- [ ] All tests pass after cleanup
 
 ---
 

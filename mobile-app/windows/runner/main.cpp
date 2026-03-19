@@ -60,10 +60,21 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
 
   project.set_dart_entrypoint_arguments(std::move(command_line_arguments));
 
+  // Determine window title based on APP_ENV (ADR-0035)
+  // Check command line for --dart-define=APP_ENV=dev
+  bool isDevEnvironment = true; // Default to dev
+  std::wstring fullCmdLine(GetCommandLineW());
+  if (fullCmdLine.find(L"APP_ENV=prod") != std::wstring::npos) {
+    isDevEnvironment = false;
+  }
+  const wchar_t* windowTitle = isDevEnvironment
+      ? L"MyEmailSpamFilter [DEV]"
+      : L"MyEmailSpamFilter";
+
   FlutterWindow window(project);
   Win32Window::Point origin(10, 10);
   Win32Window::Size size(1280, 720);
-  if (!window.Create(L"MyEmailSpamFilter", origin, size)) {
+  if (!window.Create(windowTitle, origin, size)) {
     return EXIT_FAILURE;
   }
   window.SetQuitOnClose(true);
