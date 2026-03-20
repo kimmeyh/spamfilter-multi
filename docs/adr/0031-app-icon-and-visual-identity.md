@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Accepted
 
 ## Date
 
@@ -54,29 +54,36 @@ The icon must work at all sizes (from 16px notification icon to 512px store list
 
 ## Decision
 
-**TO BE DETERMINED** - This ADR captures the decision criteria. The decision will be made by the Product Owner.
+### Icon Design
+- **Concept**: Email envelope with green checkmark passing through a blue funnel/filter
+- **Color scheme**: Blue (#4196F3) matching the app's Material Design seed color
+- **Style**: Flat design, clean minimalist vector style
+- **Source**: Generated using Raphael AI (free, no copyright restrictions, commercial use permitted)
+- **Source file**: `mobile-app/assets/icon/icon.png` (500x499 RGBA PNG)
 
-### Options Under Consideration
+### Icon Generation Approach: Option A (flutter_launcher_icons)
+- `flutter_launcher_icons` v0.14.4 added as dev dependency
+- Configured in `pubspec.yaml` under `flutter_launcher_icons:` section
+- Generates all platform variants from single source PNG
+- Run `dart run flutter_launcher_icons` to regenerate after source changes
+- Android: adaptive icons with blue background (#4196F3), legacy mipmap variants
+- Windows: app_icon.ico generated in `windows/runner/resources/`
+- iOS: Disabled (no iOS project directory currently)
 
-#### Icon Generation Approach
+### Splash Screen: Option C (Default Flutter)
+- Keep current default Flutter splash screen
+- Revisit when closer to store submission if needed
 
-##### Option A: flutter_launcher_icons Package
-- Add `flutter_launcher_icons` dev dependency
-- Configure in `pubspec.yaml` or `flutter_launcher_icons.yaml`
-- Generates all density variants, adaptive icons, and round icons from a single source image
-- Also generates iOS icons and web favicons
+### Options Considered But Not Chosen
 
-##### Option B: Manual Asset Creation
-- Create all icon variants manually or with external design tool
-- Place in appropriate Android resource directories
-- More control over each variant
-- More maintenance overhead
+#### Option B: Manual Asset Creation
+- More control but higher maintenance overhead
+- Not justified given flutter_launcher_icons handles all variants automatically
 
-##### Option C: Professional Icon Design Service
-- Commission professional icon design
-- Receive all required variants and assets
-- Highest quality, most expensive
-- Includes feature graphic and splash screen design
+#### Option C: Professional Icon Design Service
+- Highest quality but unnecessary cost for current stage
+- AI-generated icon meets quality bar for Store submission
+- Can revisit if Store reviewers request changes
 
 #### Splash Screen Approach
 
@@ -114,13 +121,19 @@ The icon must work at all sizes (from 16px notification icon to 512px store list
 - Screenshots must show real app UI (not mockups) per Play Store policy
 - The current MSIX config references `assets\icons\app_icon.png` which should be the same or similar to the Android icon
 
-## Alternatives Considered
-
-Analysis deferred until decision criteria are evaluated by Product Owner.
-
 ## Consequences
 
-To be documented after decision is made.
+### Positive
+- Professional branded icon across all platforms from a single source image
+- Adaptive icons on Android 8+ (no more white square background)
+- Windows Store icon generated automatically
+- Easy to regenerate if source icon changes (`dart run flutter_launcher_icons`)
+- No ongoing cost (free AI-generated, free tooling)
+
+### Negative
+- Source image is 500x499 (slightly under ideal 1024x1024) - may appear soft at very large display sizes
+- AI-generated icon may need iteration if Store reviewers have concerns
+- No custom splash screen (default Flutter white)
 
 ## References
 
