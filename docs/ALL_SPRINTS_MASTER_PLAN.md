@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: March 19, 2026 (Sprint 22 retrospective)
+**Last Updated**: March 20, 2026 (Sprint 23 retrospective)
 
 ## How to Maintain This Document
 
@@ -87,6 +87,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 20 | docs/sprints/SPRINT_20_RETROSPECTIVE.md | [OK] Complete | Mar 15-17, 2026 |
 | 21 | docs/sprints/SPRINT_21_RETROSPECTIVE.md | [OK] Complete | Mar 18, 2026 |
 | 22 | docs/sprints/SPRINT_22_RETROSPECTIVE.md | [OK] Complete | Mar 19, 2026 |
+| 23 | docs/sprints/SPRINT_23_RETROSPECTIVE.md | [OK] Complete | Mar 20, 2026 |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -94,55 +95,38 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 22** (March 19, 2026)
-- **Type**: Research sprint (no code changes)
-- **Features**: Windows Store requirements research, codebase gap analysis, backlog items #17-#22 (Issue #191)
-- **Backlog Added**: #17 (MSIX config fixes), #18 (MSIX signing ADR), #19 (privacy policy), #20 (store listing assets), #21 (app icon/branding), #22 (Partner Center submission)
-- **Tooling Fix**: memory-save/restore/startup-check skills - absolute paths and bash compatibility
-- **Retrospective**: docs/sprints/SPRINT_22_RETROSPECTIVE.md
+**Sprint 23** (March 20, 2026)
+- **Features**: MSIX config fixes (WS-B1), MSIX signing strategy ADR-0036 (WS-B3), domain registration (F29), app icon/branding (F28, ADR-0031)
+- **Infrastructure**: myemailspamfilter.com + .net registered, DNS configured for GitHub Pages, flutter_launcher_icons generates all platform icon variants
+- **Tests**: 1145 passing (+4 DNS verification tests)
+- **Backlog Added**: F39 (Scan Results multi-select, HOLD)
+- **Retrospective**: docs/sprints/SPRINT_23_RETROSPECTIVE.md
 
 ---
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: March 19, 2026 (Sprint 22 retrospective)
+**Last Reviewed**: March 20, 2026 (Sprint 23 retrospective)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
 ### Windows Store Readiness
 
-**WS-B1. MSIX config fixes (~1h) Priority 20**
-- Phase: Windows Store Readiness
-- Platform: Windows Desktop
-- Enable `store: true` in pubspec.yaml MSIX config
-- Fix logo path reference
-- Sync msix_version with pubspec version
+**~~WS-B1. MSIX config fixes (~1h)~~** [OK] Complete (Sprint 23)
 
-**WS-B3. MSIX signing strategy ADR (~2h) Priority 22**
-- Phase: Windows Store Readiness
-- Platform: Windows Desktop
-- ADR for code signing approach: MS Store auto-signing vs developer certificate
-- Decision impacts CI/CD pipeline and local build workflow
+**~~WS-B3. MSIX signing strategy ADR (~2h)~~** [OK] Complete (Sprint 23, ADR-0036)
 
-**F28. App icon and branding finalization - ADR-0031 (~2-4h) Priority 24**
-- Phase: Windows Store Readiness (also Google Play)
-- Platform: All
-- Finalize ADR-0031 app icon and visual identity
-- Create Store-ready icon assets (300x300+ PNG)
+**~~F28. App icon and branding finalization (~2-4h)~~** [OK] Complete (Sprint 23, ADR-0031)
 
-**F29. Register myemailspamfilter.com domain (~1h) Priority 26**
-- Phase: Windows Store Readiness (prerequisite)
-- Platform: N/A (user action)
-- Required for privacy policy hosting (GP-5, WS-B4)
-- Issue [#166](https://github.com/kimmeyh/spamfilter-multi/issues/166)
+**~~F29. Register myemailspamfilter.com domain (~1h)~~** [OK] Complete (Sprint 23, Issue #166)
 
-**WS-B4. Privacy policy - write, host, and publish (~4-8h) Priority 30**
+**WS-B4. Privacy policy - write, host, and publish (~4-8h) Priority 20**
 - Phase: Windows Store Readiness (also Google Play)
 - Platform: All
 - [Detail](#ws-b4-privacy-policy)
 - Depends on: F29 (domain registration)
 
-**WS-I1. Store listing assets (~3-4h) Priority 32**
+**WS-I1. Store listing assets (~3-4h) Priority 22**
 - Phase: Windows Store Readiness
 - Platform: Windows Desktop
 - 4-5 screenshots of key app screens
@@ -150,7 +134,7 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - App description and short description
 - Depends on: F28 (icon/branding finalized)
 
-**WS. Microsoft Partner Center account setup and first submission (~2-4h) Priority 40**
+**WS. Microsoft Partner Center account setup and first submission (~2-4h) Priority 30**
 - Phase: Windows Store Readiness
 - Platform: Windows Desktop
 - Register Microsoft Partner Center account, reserve app name, submit MSIX, complete certification
