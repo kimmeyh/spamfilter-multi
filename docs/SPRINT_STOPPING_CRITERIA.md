@@ -315,24 +315,48 @@ constraints (performance, maintainability, test coverage).
 
 ---
 
-### 8. [WARNING] CONTEXT LIMIT APPROACHING - Efficiency Break
+### 8. [WARNING] CONTEXT LIMIT APPROACHING - Compact or Efficiency Break
 
-**When**: Context usage approaches limit and continued work becomes inefficient.
+**When**: Context usage approaches 85% of available window.
+
+**Context Checkpoint Protocol**:
+
+Models MUST check context usage at these points:
+- Before starting each new sprint phase (Phase 2, 3, 4, 5, 6, 7)
+- Before starting each new sprint task (Task A, B, C, etc.)
+- After any large file reads or verbose tool output
+
+**How to check**: The status line displays real-time context percentage. If status line is not visible, note context pressure indicators (tool outputs being truncated, earlier conversation details becoming hazy).
+
+**Threshold Actions**:
+
+| Context % | Action |
+|-----------|--------|
+| < 70% | Continue normally |
+| 70-84% | Estimate remaining work; if next task may exceed 95%, run `/compact` first |
+| 85-94% | Run `/compact` immediately before continuing; if `/compact` is not sufficient, prompt user to run `/compact` |
+| 95%+ | STOP - commit all work, prompt user to run `/compact` |
+
+**Estimation guidance**: Before starting a task, estimate its context cost:
+- Small task (docs, single-file edit): ~5-10% context
+- Medium task (multi-file, tests): ~15-25% context
+- Large task (research, architecture): ~25-40% context
+
+If `current_usage% + estimated_task_cost% > 95%`, run `/compact` before starting the task.
 
 **Indicators**:
-- [ ] Context usage > 80% of available budget
-- [ ] Models report context pressure affecting quality
-- [ ] Token usage rising faster than work completion
-- [ ] No major milestones achievable in remaining context
+- [ ] Context usage > 85% of available window
+- [ ] Next task estimated to push past 95%
+- [ ] Tool outputs being truncated or summarized
+- [ ] Earlier conversation details becoming unavailable
 
 **Action**:
-1. Summarize current state of sprint
-2. Commit all current work
-3. Notify user: "Context usage at X%, stopping for efficiency"
-4. Suggest user compacts/continues in fresh conversation
-5. (OPTIONAL) User can `/compact` and continue with fresh context
+1. Run `/compact` to reclaim context (preferred - keeps session alive)
+2. If `/compact` is insufficient or unavailable, prompt user: "Context at X%, please run `/compact` to continue"
+3. If context remains critical after compaction: commit all work, run `/memory-save`, notify user to start fresh session
+4. NEVER let context exhaust without saving state first
 
-**Timing**: Proactive stopping to maintain quality. Better to stop at 80% than continue at reduced effectiveness.
+**Timing**: Proactive compaction at 85% is far better than losing context at 100%. The goal is to never reach a state where `/memory-save` cannot run.
 
 ---
 
@@ -536,9 +560,10 @@ START: Am I working on sprint tasks?
 │  ├─ YES → Stop (Criterion 7: Failure - Redesign Needed)
 │  └─ NO → Continue
 │
-├─ Is context limit approaching (>80%)?
-│  ├─ YES → Stop (Criterion 8: Context Limit)
-│  └─ NO → Continue
+├─ Is context limit approaching (>85%)?
+│  ├─ 85-94% → Run /compact, then continue (Criterion 8)
+│  ├─ 95%+ → STOP, commit work, prompt user to /compact (Criterion 8)
+│  └─ <85% → Continue
 │
 ├─ Has scheduled sprint time limit been reached?
 │  ├─ YES → Stop (Criterion 9: Time Limit)
@@ -619,16 +644,16 @@ When stopping for ANY reason, complete this checklist:
 
 ---
 
-### Example 5: Context Usage at 80%
+### Example 5: Context Usage at 87%
 
-**Situation**: Completed Task A and B, working on Task C when context usage reaches 80%.
+**Situation**: Completed Task A and B, about to start Task C (estimated ~15% context cost). Context is at 87%.
 
-**Decision**: STOP for efficiency
-- Continuing risks degraded quality
-- Task C is not critical (Tasks A, B complete)
-- Fresh context will be more efficient
+**Decision**: Run `/compact` before starting Task C
+- 87% + 15% = 102% estimated - would exceed 95% threshold
+- `/compact` reclaims context, allowing Task C to proceed
+- If `/compact` is insufficient, prompt user to run `/compact`
 
-**Action**: Commit current work, notify user, suggest `/compact` for fresh start.
+**Action**: Run `/compact`, verify context dropped below 70%, then start Task C. If still above 85% after compaction, commit work and prompt user.
 
 ---
 
