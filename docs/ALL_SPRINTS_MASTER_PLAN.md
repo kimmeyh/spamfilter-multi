@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: March 15, 2026 (Sprint 19 retrospective)
+**Last Updated**: March 19, 2026 (Sprint 22 retrospective)
 
 ## How to Maintain This Document
 
@@ -86,6 +86,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 19 | docs/sprints/SPRINT_19_SUMMARY.md | [OK] Complete | Feb 27 - Mar 15, 2026 |
 | 20 | docs/sprints/SPRINT_20_RETROSPECTIVE.md | [OK] Complete | Mar 15-17, 2026 |
 | 21 | docs/sprints/SPRINT_21_RETROSPECTIVE.md | [OK] Complete | Mar 18, 2026 |
+| 22 | docs/sprints/SPRINT_22_RETROSPECTIVE.md | [OK] Complete | Mar 19, 2026 |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -93,66 +94,223 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 21** (March 18, 2026)
-- **PR**: [#190](https://github.com/kimmeyh/spamfilter-multi/pull/190) (targeting develop)
-- **Features**: Production/Development side-by-side builds (ADR-0035, Issue #189)
-- **Infrastructure**: AppEnvironment class, environment-aware AppPaths (_Dev suffix), single-instance mutex, dev seeding from production, build script -Environment parameter
-- **Testing Feedback**: 1 fix (Win32 window title [DEV])
-- **Tests**: 1141 passed, 0 analyzer issues
-- **Backlog Added**: #14 (body rules cleanup), #15 (safe senders exact domain investigation)
-- **Retrospective**: docs/sprints/SPRINT_21_RETROSPECTIVE.md
+**Sprint 22** (March 19, 2026)
+- **Type**: Research sprint (no code changes)
+- **Features**: Windows Store requirements research, codebase gap analysis, backlog items #17-#22 (Issue #191)
+- **Backlog Added**: #17 (MSIX config fixes), #18 (MSIX signing ADR), #19 (privacy policy), #20 (store listing assets), #21 (app icon/branding), #22 (Partner Center submission)
+- **Tooling Fix**: memory-save/restore/startup-check skills - absolute paths and bash compatibility
+- **Retrospective**: docs/sprints/SPRINT_22_RETROSPECTIVE.md
 
 ---
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: March 18, 2026 (Sprint 21 retrospective)
+**Last Reviewed**: March 19, 2026 (Sprint 22 retrospective)
 
-All incomplete features, bugs, and spikes in relative priority order. HOLD items grouped at bottom. Each item links to its detail section (if one exists) or GitHub Issue.
+All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
-### Active Items
+### Windows Store Readiness
 
-| # | Type | Title | Est. Effort | Issue | Detail |
-|---|------|-------|-------------|-------|--------|
-| 1 | Bug | Android app not tested in several sprints | ~2-4h | [#163](https://github.com/kimmeyh/spamfilter-multi/issues/163) | Validation sprint needed |
-| 2 | Enhancement | Playwright UI Tests + Android UI Testing Strategy (F11) | ~12-16h | -- | [Detail](#f11-playwright-ui-tests-and-android-ui-testing) |
-| 3 | Enhancement | Background Scanning - Android / WorkManager (F4) | ~14-16h | -- | [Detail](#f4-background-scanning-android) |
-| 4 | Enhancement | Provider-Specific Optimizations (F6) | ~10-12h | -- | [Detail](#f6-provider-specific-optimizations) |
-| 5 | Enhancement | Multi-Account Scanning (F7) | ~8-10h | -- | [Detail](#f7-multi-account-scanning) |
-| 6 | Enhancement | Rule Testing UI Enhancements (F25) | ~6-8h | -- | [Detail](#f25-rule-testing-ui-enhancements) |
-| 7 | Enhancement | Folder selectors: two-level listing, provider defaults first, context-aware | ~6-8h | -- | [Detail](#folder-selectors-two-level-listing) |
-| 8 | Enhancement | Rule editing UI with regex generation and validation | ~8-12h | -- | [Detail](#rule-editing-ui) |
-| 9 | Enhancement | Live Scan: re-process emails after rule changes | ~8-12h | -- | [Detail](#live-scan-reprocess-after-rule-changes) |
-| 10 | Enhancement | Live Scan: in-progress and completed status indicator | ~2-4h | -- | Visual indicator (icon or graphic) showing scan is in progress vs completed |
-| 11 | Tech Debt | Test coverage analysis and Sprint 20 feature tests | ~4-6h | -- | [Detail](#test-coverage-analysis-and-sprint-20-feature-tests) |
-| 12 | Enhancement | Settings: Add General tab for app-wide settings | ~4-6h | -- | [Detail](#settings-general-tab) |
-| 13 | Tech Debt | Body rules cleanup script - URL regex and deduplication | ~4-6h | -- | [Detail](#body-rules-cleanup-script) |
-| 14 | Bug | Safe Senders "Exact Domain" filter shows 0 results | ~1-2h | -- | Investigate SafeSenderCategory classification for exact domain patterns |
-| 15 | Bug | Background scan task deleted on rebuild and not re-created | ~4-6h | -- | [Detail](#background-scan-task-rebuild-persistence) |
-| 16 | Spike | Windows Store readiness - requirements research and gap analysis | ~8-12h | -- | [Detail](#windows-store-readiness) |
+**WS-B1. MSIX config fixes (~1h) Priority 20**
+- Phase: Windows Store Readiness
+- Platform: Windows Desktop
+- Enable `store: true` in pubspec.yaml MSIX config
+- Fix logo path reference
+- Sync msix_version with pubspec version
 
-### HOLD Items
+**WS-B3. MSIX signing strategy ADR (~2h) Priority 22**
+- Phase: Windows Store Readiness
+- Platform: Windows Desktop
+- ADR for code signing approach: MS Store auto-signing vs developer certificate
+- Decision impacts CI/CD pipeline and local build workflow
 
-| # | Type | Title | Est. Effort | Issue | Reason |
-|---|------|-------|-------------|-------|--------|
-| H0 | Spike | Register myemailspamfilter.com domain | ~1h | [#166](https://github.com/kimmeyh/spamfilter-multi/issues/166) | User action, prerequisite for GP-1 |
-| H1 | Enhancement | GenAI Pattern Suggestions - Crowdsourced Spam Intelligence | TBD | [#142](https://github.com/kimmeyh/spamfilter-multi/issues/142) | Post-MVP, research needed |
-| H2 | Tech Debt | Rule Pattern Consistency - Domain Matching Standards | ~4-6h | [#140](https://github.com/kimmeyh/spamfilter-multi/issues/140) | Deferred to post-MVP |
-| H3 | Enhancement | Requirements Documentation System | TBD | [#137](https://github.com/kimmeyh/spamfilter-multi/issues/137) | Process improvement, not urgent |
-| H4 | Enhancement | Sent Messages Scan for Safe Senders | ~12-16h | [#49](https://github.com/kimmeyh/spamfilter-multi/issues/49) | Large feature, post-MVP |
-| H5 | Enhancement | Outlook.com OAuth Implementation | ~16-20h | [#44](https://github.com/kimmeyh/spamfilter-multi/issues/44) | New provider, MSAL integration, post-MVP |
-| H6 | Google Play | Release Signing and Play App Signing (GP-2) | ~4-6h | -- | GP prerequisite, post-MVP |
-| H7 | Google Play | Android Manifest Permissions (GP-3) | ~4-6h | -- | GP prerequisite, post-MVP |
-| H8 | Google Play | Gmail API OAuth Verification / CASA (GP-4) | ~40-80h | -- | Trigger: 2,500+ users or $5K/yr revenue |
-| H9 | Google Play | Privacy Policy and Legal Documents (GP-5) | ~8-16h | -- | GP prerequisite, post-MVP |
-| H10 | Google Play | Play Store Listing and Assets (GP-6) | ~8-12h | -- | GP prerequisite, post-MVP |
-| H11 | Google Play | Adaptive Icons and App Branding (GP-7) | ~4-6h | -- | GP prerequisite, post-MVP |
-| H12 | Google Play | Android Target SDK + 16 KB Page Size (GP-8) | ~4-8h | -- | GP prerequisite, post-MVP |
-| H13 | Google Play | ProGuard/R8 Code Optimization (GP-9) | ~4-6h | -- | GP prerequisite, post-MVP |
-| H14 | Google Play | Data Safety Form Declarations (GP-10) | ~2-4h | -- | GP prerequisite, post-MVP |
-| H15 | Google Play | Account and Data Deletion Feature (GP-11) | ~8-12h | -- | GP prerequisite, post-MVP |
-| H16 | Google Play | Firebase Analytics Decision (GP-12) | ~2-4h | -- | GP prerequisite, post-MVP |
-| H17 | Google Play | Google Play Developer Account Setup (GP-16) | ~2-4h | -- | GP prerequisite, post-MVP |
+**F28. App icon and branding finalization - ADR-0031 (~2-4h) Priority 24**
+- Phase: Windows Store Readiness (also Google Play)
+- Platform: All
+- Finalize ADR-0031 app icon and visual identity
+- Create Store-ready icon assets (300x300+ PNG)
+
+**F29. Register myemailspamfilter.com domain (~1h) Priority 26**
+- Phase: Windows Store Readiness (prerequisite)
+- Platform: N/A (user action)
+- Required for privacy policy hosting (GP-5, WS-B4)
+- Issue [#166](https://github.com/kimmeyh/spamfilter-multi/issues/166)
+
+**WS-B4. Privacy policy - write, host, and publish (~4-8h) Priority 30**
+- Phase: Windows Store Readiness (also Google Play)
+- Platform: All
+- [Detail](#ws-b4-privacy-policy)
+- Depends on: F29 (domain registration)
+
+**WS-I1. Store listing assets (~3-4h) Priority 32**
+- Phase: Windows Store Readiness
+- Platform: Windows Desktop
+- 4-5 screenshots of key app screens
+- 300x300+ logo for Store listing
+- App description and short description
+- Depends on: F28 (icon/branding finalized)
+
+**WS. Microsoft Partner Center account setup and first submission (~2-4h) Priority 40**
+- Phase: Windows Store Readiness
+- Platform: Windows Desktop
+- Register Microsoft Partner Center account, reserve app name, submit MSIX, complete certification
+- Depends on: all other WS items
+
+### Core App
+
+**F30. Safe Senders "Exact Domain" filter shows 0 results (~1-2h) Priority 50**
+- Phase: Core App Quality
+- Platform: All
+- Investigate SafeSenderCategory classification for exact domain patterns
+- Filter chip returns no results despite matching data in DB
+
+**F31. Background scan task deleted on rebuild and not re-created (~4-6h) Priority 52**
+- Phase: Core App Quality
+- Platform: Windows Desktop
+- [Detail](#background-scan-task-rebuild-persistence)
+
+**F32. Test coverage analysis and Sprint 20 feature tests (~4-6h) Priority 54**
+- Phase: Quality and Testing
+- Platform: All
+- [Detail](#test-coverage-analysis-and-sprint-20-feature-tests)
+
+**F33. Body rules cleanup script (~4-6h) Priority 56**
+- Phase: Core App Quality
+- Platform: All
+- [Detail](#body-rules-cleanup-script)
+
+**F34. Live Scan: in-progress and completed status indicator (~2-4h) Priority 60**
+- Phase: Core Feature
+- Platform: All
+- Visual indicator (icon or graphic) showing scan is in progress vs completed
+
+**F25. Rule Testing UI Enhancements (~6-8h) Priority 62**
+- Phase: Core Feature
+- Platform: All
+- [Detail](#f25-rule-testing-ui-enhancements)
+
+**F35. Rule editing UI with regex generation (~8-12h) Priority 64**
+- Phase: Core Feature
+- Platform: All
+- [Detail](#rule-editing-ui)
+
+**F36. Settings: Add General tab for app-wide settings (~4-6h) Priority 70**
+- Phase: Core Feature
+- Platform: All
+- [Detail](#settings-general-tab)
+
+**F37. Folder selectors: two-level listing (~6-8h) Priority 72**
+- Phase: Core Feature
+- Platform: All
+- [Detail](#folder-selectors-two-level-listing)
+
+**F38. Live Scan: re-process emails after rule changes (~8-12h) Priority 80**
+- Phase: Core Feature
+- Platform: All
+- [Detail](#live-scan-reprocess-after-rule-changes)
+
+**F7. Multi-Account Scanning (~8-10h) Priority 90**
+- Phase: Core Feature
+- Platform: All
+- [Detail](#f7-multi-account-scanning)
+
+**F6. Provider-Specific Optimizations (~10-12h) Priority 100**
+- Phase: Performance
+- Platform: All
+- [Detail](#f6-provider-specific-optimizations)
+
+### HOLD Items (Android / Google Play Store)
+
+**Issue #163. Android app not tested in several sprints (~2-4h) Priority HOLD**
+- Phase: Android Google Play Store Readiness
+- Platform: Android
+- Validation sprint needed to verify Android app still works
+
+**F11. Playwright UI Tests + Android UI Testing Strategy (~12-16h) Priority HOLD**
+- Phase: Android Google Play Store Readiness
+- Platform: Windows Desktop + Android
+- [Detail](#f11-playwright-ui-tests-and-android-ui-testing)
+
+**F4. Background Scanning - Android (~14-16h) Priority HOLD**
+- Phase: Android Google Play Store Readiness
+- Platform: Android
+- [Detail](#f4-background-scanning-android)
+
+**GP-2. Release Signing and Play App Signing (~4-6h) Priority HOLD**
+- Phase: Android Google Play Store Readiness
+- Platform: Android
+
+**GP-3. Android Manifest Permissions (~4-6h) Priority HOLD**
+- Phase: Android Google Play Store Readiness
+- Platform: Android
+
+**GP-4. Gmail API OAuth Verification / CASA (~40-80h) Priority HOLD**
+- Phase: Android Google Play Store Readiness
+- Platform: Android
+- Trigger: 2,500+ users or $5K/yr revenue
+
+**GP-5. Privacy Policy and Legal Documents (~8-16h) Priority HOLD**
+- Phase: Android Google Play Store Readiness
+- Platform: All
+
+**GP-6. Play Store Listing and Assets (~8-12h) Priority HOLD**
+- Phase: Android Google Play Store Readiness
+- Platform: Android
+
+**GP-7. Adaptive Icons and App Branding (~4-6h) Priority HOLD**
+- Phase: Android Google Play Store Readiness
+- Platform: Android
+
+**GP-8. Android Target SDK + 16 KB Page Size (~4-8h) Priority HOLD**
+- Phase: Android Google Play Store Readiness
+- Platform: Android
+
+**GP-9. ProGuard/R8 Code Optimization (~4-6h) Priority HOLD**
+- Phase: Android Google Play Store Readiness
+- Platform: Android
+
+**GP-10. Data Safety Form Declarations (~2-4h) Priority HOLD**
+- Phase: Android Google Play Store Readiness
+- Platform: Android
+
+**GP-11. Account and Data Deletion Feature (~8-12h) Priority HOLD**
+- Phase: Android Google Play Store Readiness
+- Platform: All
+
+**GP-12. Firebase Analytics Decision (~2-4h) Priority HOLD**
+- Phase: Android Google Play Store Readiness
+- Platform: All
+
+**GP-16. Google Play Developer Account Setup (~2-4h) Priority HOLD**
+- Phase: Android Google Play Store Readiness
+- Platform: Android
+
+### HOLD Items (Post-MVP)
+
+**H1. GenAI Pattern Suggestions - Crowdsourced Spam Intelligence (TBD) Priority HOLD**
+- Phase: Post-MVP
+- Platform: All
+- Issue [#142](https://github.com/kimmeyh/spamfilter-multi/issues/142)
+
+**H2. Rule Pattern Consistency - Domain Matching Standards (~4-6h) Priority HOLD**
+- Phase: Post-MVP
+- Platform: All
+- Issue [#140](https://github.com/kimmeyh/spamfilter-multi/issues/140)
+
+**H3. Requirements Documentation System (TBD) Priority HOLD**
+- Phase: Post-MVP
+- Platform: N/A
+- Issue [#137](https://github.com/kimmeyh/spamfilter-multi/issues/137)
+
+**H4. Sent Messages Scan for Safe Senders (~12-16h) Priority HOLD**
+- Phase: Post-MVP
+- Platform: All
+- Issue [#49](https://github.com/kimmeyh/spamfilter-multi/issues/49)
+
+**H5. Outlook.com OAuth Implementation (~16-20h) Priority HOLD**
+- Phase: Post-MVP
+- Platform: All
+- Issue [#44](https://github.com/kimmeyh/spamfilter-multi/issues/44)
 
 ---
 
@@ -160,10 +318,12 @@ All incomplete features, bugs, and spikes in relative priority order. HOLD items
 
 This section contains detailed specifications for incomplete items only. Completed features have their details in sprint documents and CHANGELOG.md.
 
-### Folder Selectors: Two-Level Listing
+### Folder Selectors: Two-Level Listing (F37)
 
 **Status**: New (Sprint 20 testing feedback)
 **Estimated Effort**: ~6-8h
+**Phase**: Core Feature
+**Platform**: All
 
 **Overview**: Update folder selector UI (used by Safe Sender Folder, Deleted Rule Folder, and Default Folders settings) with context-aware behavior: two-level collapsible folders for Default Folders, and flat lists with provider defaults first for Safe Sender and Deleted Rule folder selectors.
 
@@ -230,10 +390,12 @@ Provider defaults:
 
 ---
 
-### Rule Editing UI
+### Rule Editing UI (F35)
 
 **Status**: New (Sprint 20 testing feedback)
 **Estimated Effort**: ~8-12h
+**Phase**: Core Feature
+**Platform**: All
 
 **Overview**: Add the ability to edit existing rules from the Manage Rules screen. Since rules use regex patterns, the UI must help users who are not familiar with regex syntax.
 
@@ -255,10 +417,12 @@ Provider defaults:
 
 ---
 
-### Live Scan: Re-process Emails After Rule Changes
+### Live Scan: Re-process Emails After Rule Changes (F38)
 
 **Status**: New (Sprint 20 testing feedback)
 **Estimated Effort**: ~8-12h
+**Phase**: Core Feature
+**Platform**: All
 
 **Overview**: During a live scan, when the user adds or changes a rule from the scan results screen, re-process affected emails asynchronously to apply the new rule action on the server.
 
@@ -291,8 +455,10 @@ Provider defaults:
 
 ### F11: Playwright UI Tests and Android UI Testing
 
-**Status**: Planned
+**Status**: HOLD (Android Google Play Store Readiness)
 **Estimated Effort**: ~12-16h
+**Phase**: Android Google Play Store Readiness
+**Platform**: Windows Desktop + Android
 
 **Overview**: Build comprehensive Playwright tests for Windows Desktop UI and determine recommended approach for Android UI testing.
 
@@ -312,8 +478,9 @@ Provider defaults:
 
 ### F4: Background Scanning - Android
 
-**Status**: Planned
+**Status**: HOLD (Android Google Play Store Readiness)
 **Estimated Effort**: ~14-16h
+**Phase**: Android Google Play Store Readiness
 **Platform**: Android
 
 **Overview**: Automatic periodic background scanning on Android with user-configured frequency using WorkManager.
@@ -332,6 +499,8 @@ Provider defaults:
 
 **Status**: Idea
 **Estimated Effort**: ~10-12h
+**Phase**: Performance
+**Platform**: All
 
 **Overview**: Provider-specific optimizations leveraging unique API capabilities.
 
@@ -351,6 +520,8 @@ Provider defaults:
 
 **Status**: Idea
 **Estimated Effort**: ~8-10h
+**Phase**: Core Feature
+**Platform**: All
 
 **Overview**: Scan multiple email accounts simultaneously (parallel execution).
 
@@ -365,10 +536,12 @@ Provider defaults:
 
 ---
 
-### Test Coverage Analysis and Sprint 20 Feature Tests
+### Test Coverage Analysis and Sprint 20 Feature Tests (F32)
 
 **Status**: New (Sprint 20 retrospective)
 **Estimated Effort**: ~4-6h
+**Phase**: Quality and Testing
+**Platform**: All
 
 **Overview**: Run test coverage analysis to identify gaps across the codebase, then add targeted tests for Sprint 20 features that shipped without automated test coverage.
 
@@ -399,10 +572,12 @@ Provider defaults:
 
 ---
 
-### Settings: General Tab
+### Settings: General Tab (F36)
 
 **Status**: New (Sprint 20 retrospective)
 **Estimated Effort**: ~4-6h
+**Phase**: Core Feature
+**Platform**: All
 
 **Overview**: Add a "General" tab to Settings for app-wide settings that apply across all accounts. Move rules management and data management from the Account tab to the General tab.
 
@@ -443,10 +618,12 @@ Settings > Account (per-account)
 
 ---
 
-### Body Rules Cleanup Script
+### Body Rules Cleanup Script (F33)
 
 **Status**: New (Sprint 21 testing feedback)
 **Estimated Effort**: ~4-6h
+**Phase**: Core App Quality
+**Platform**: All
 
 **Overview**: One-time Dart CLI script to clean up body rules. Many body rules are URL-targeting patterns that need better regex (similar to header Exact Domain / Entire Domain patterns but appropriate for URLs in email body content). Other body rules target non-URL body content and should not be affected.
 
@@ -467,10 +644,12 @@ Settings > Account (per-account)
 
 ---
 
-### Background Scan Task Rebuild Persistence
+### Background Scan Task Rebuild Persistence (F31)
 
 **Status**: New (Sprint 21 post-merge feedback)
 **Estimated Effort**: ~4-6h
+**Phase**: Core App Quality
+**Platform**: Windows Desktop
 
 **Overview**: The Windows Task Scheduler background scan task is deleted during `flutter clean` (which removes the executable) and not reliably re-created after rebuild. The task should be resilient to rebuilds.
 
@@ -504,10 +683,12 @@ Settings > Account (per-account)
 
 ---
 
-### Windows Store Readiness
+### Windows Store Readiness (Complete - Sprint 22)
 
-**Status**: New (Sprint 22 backlog refinement)
+**Status**: [OK] Complete (Sprint 22)
 **Estimated Effort**: ~8-12h (research + gap analysis; implementation in separate backlog items)
+**Phase**: Windows Store Readiness
+**Platform**: Windows Desktop
 
 **Overview**: Research all requirements for publishing on the Microsoft Store (Windows Store), perform a deep analysis of the current codebase to identify gaps, and create actionable backlog items to bridge each gap. This includes creating or updating ADRs for architectural decisions required for store compliance.
 
@@ -555,10 +736,56 @@ Settings > Account (per-account)
 
 ---
 
+### WS-B4: Privacy Policy
+
+**Status**: New (Sprint 22 gap analysis)
+**Estimated Effort**: ~4-8h
+**Phase**: Windows Store Readiness (also Google Play)
+**Platform**: All
+**Prerequisite**: Domain myemailspamfilter.com must be registered (F29)
+
+**Overview**: Write, host, and publish the privacy policy per ADR-0030 design. Required for both Microsoft Store and Google Play Store submissions.
+
+**Deliverables**:
+- Privacy policy content written (based on ADR-0030 zero-telemetry design)
+- Hosted at myemailspamfilter.com/privacy (GitHub Pages)
+- URL entered in Partner Center and pubspec.yaml
+- Covers: email access (transient), credential storage (encrypted), no analytics, no data sharing, data deletion process
+
+**Dependencies**: H0 (domain registration) must be completed first
+
+---
+
+### WS: Implementation Order and Dependencies
+
+**Recommended order for Windows Store publication**:
+
+```
+H0: Register domain (USER ACTION - prerequisite)
+  |
+  v
+#17: MSIX config fixes (no dependencies)
+#18: Signing strategy ADR (no dependencies)
+#21: App icon/branding ADR-0031 (no dependencies)
+  |
+  v
+#19: Privacy policy (depends on H0)
+#20: Store listing assets (depends on #21 for icon)
+  |
+  v
+#22: Partner Center account + first submission (depends on all above)
+```
+
+**Parallel tracks**: #17, #18, #21 can be done in parallel. #19 and #20 can be done in parallel after their dependencies.
+
+---
+
 ### F25: Rule Testing UI Enhancements
 
 **Status**: Planned
 **Estimated Effort**: ~6-8h
+**Phase**: Core Feature
+**Platform**: All
 
 **Overview**: Enhance the Rule Testing screen (Settings > Tools > Test Rule Pattern) with additional capabilities to make it a more complete rule authoring tool.
 
@@ -807,6 +1034,7 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 5.0 | 2026-03-19 | Sprint 22: New backlog presentation format (priority-ordered, phase/platform fields, F# identifiers). Assigned F28-F38 to unnamed items. Moved Android/GP items to HOLD. Unholded H0 as F29. Removed old table format. |
 | 4.1 | 2026-02-27 | Sprint 18 completion: removed completed items (#154, #141, #167, #168, #169), added F27 (Folder Selection UX), updated Last Completed Sprint and Past Sprint Summary |
 | 4.0 | 2026-02-24 | Major restructure: added Maintenance Guide, unified Next Sprint Candidates list, removed completed feature details (F1/F2/F3/F5/F9/F10/F12/F17/F18), removed stale sections (Next Sprint TBD, Issue Backlog, Sprint 11/12 actions), integrated GP items into single priority view, condensed GP details |
 | 3.3 | 2026-02-15 | Added Google Play Store Readiness section (GP-1 through GP-16, ADR-0026 through ADR-0034) |

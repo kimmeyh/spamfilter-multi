@@ -26,6 +26,11 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-03-19 (Sprint 22 - Windows Store Readiness Research)
+- **docs**: Microsoft Store requirements research and codebase gap analysis (Issue #191)
+- **docs**: Windows Store readiness backlog items #17-#22 added to ALL_SPRINTS_MASTER_PLAN.md (Issue #191)
+- **chore**: Fix memory-save, memory-restore, startup-check skills - use absolute paths and bash-compatible commands
+
 ### 2026-03-18 (Sprint 21 - ADR-0035)
 - **feat**: Production/Development side-by-side builds with environment-aware data directories (ADR-0035, Issue #189)
 - **feat**: AppEnvironment class reads APP_ENV from --dart-define (dev/prod)

@@ -212,6 +212,16 @@ For items more than 3 sprints away:
 - Mark as "Needs Refinement" for future session
 - Do not invest in detailed task breakdown yet
 
+#### 5.3 Item Identification
+
+Every backlog item MUST have a unique identifier. Use the appropriate prefix:
+- **F#**: Feature or enhancement (F28, F29, etc.) -- also used for bugs and tech debt
+- **WS-***: Windows Store readiness items (WS-B1, WS-I1, etc.)
+- **GP-#**: Google Play Store readiness items (GP-2, GP-3, etc.)
+- **Issue #N**: GitHub issue number (when no F#/WS/GP identifier exists)
+
+When adding a new item that has no identifier, assign the next available F# number. Check existing F# numbers in ALL_SPRINTS_MASTER_PLAN.md to avoid conflicts.
+
 ### Step 6: Cleanup and Documentation (5-10 minutes)
 
 #### 6.1 Remove Obsolete Items
@@ -396,6 +406,64 @@ gh issue close #N --reason "not planned" --comment "Removed during backlog refin
 
 ## Quick Reference
 
+### Backlog Presentation Format
+
+All backlog items in ALL_SPRINTS_MASTER_PLAN.md MUST use this format. This is the **authoritative format** for sprint refinement output.
+
+**Item format**:
+```markdown
+**<ID>. <Title> (~<effort>) Priority <N>**
+- Phase: <phase name>
+- Platform: <platform(s)>
+- <bullet point description>
+- <bullet point description>
+- Depends on: <dependencies if any>
+```
+
+**Rules**:
+- **ID**: Use F#, WS-*, GP-#, or Issue #N (see Step 5.3 for prefixes)
+- **Priority**: Numeric, generally in increments of 10; items that can sprint together use increments of 2
+- **Phase**: Group items under section headers by phase (e.g., "Windows Store Readiness", "Core App")
+- **Platform**: Windows Desktop, Android, All, or N/A
+- **HOLD items**: Use `Priority HOLD` instead of a number; grouped in a separate HOLD section
+- **No separate sections** for bugs or tech debt -- they are interleaved by priority within their phase group
+- **Completed items**: Remove from the backlog (history lives in sprint docs and CHANGELOG.md)
+
+**Section structure**:
+```markdown
+### <Phase Name>
+
+**<ID>. <Title> (~effort) Priority <N>**
+- Phase: <phase>
+- Platform: <platform>
+- <details>
+
+### HOLD Items (<reason>)
+
+**<ID>. <Title> (~effort) Priority HOLD**
+- Phase: <phase>
+- Platform: <platform>
+- <details>
+```
+
+**Example**:
+```markdown
+### Windows Store Readiness
+
+**WS-B1. MSIX config fixes (~1h) Priority 20**
+- Phase: Windows Store Readiness
+- Platform: Windows Desktop
+- Enable store: true in pubspec.yaml MSIX config
+- Fix logo path reference
+- Sync msix_version with pubspec version
+
+**WS-B3. MSIX signing strategy ADR (~2h) Priority 22**
+- Phase: Windows Store Readiness
+- Platform: Windows Desktop
+- ADR for code signing approach: MS Store auto-signing vs developer certificate
+- Decision impacts CI/CD pipeline and local build workflow
+```
+
 ### Refinement Checklist
 
 ```
@@ -435,4 +503,5 @@ Request refinement if:
 **Status**: Active
 
 **Updates**:
+- 1.1 (2026-03-19): Added Backlog Presentation Format spec, item identification rules (F#/WS/GP prefixes)
 - 1.0 (2026-02-01): Initial backlog refinement process document

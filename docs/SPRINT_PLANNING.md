@@ -68,10 +68,28 @@ Each sprint is composed of **Cards** (GitHub issues) broken into **Tasks** assig
 - **Sprint phases**: Planning → Execution → Review → Retrospective
 - **Naming convention**: `Sprint N` where N is sequential (Sprint 1, Sprint 2, etc.)
 
-### Roles
-- **Product Managers**: Claude Code and user (define sprint goals, accept completed work)
-- **Developers**: Claude Code models (Haiku, Sonnet, Opus) executing assigned tasks
-- **Sprint Master**: User (facilitates ceremonies, manages blockers, updates heuristics)
+### Team Roles
+
+| Role | Assigned To | Description |
+|------|------------|-------------|
+| **Customer Representative** | Harold Kimmey | Represents end-user needs; validates features meet real-world requirements; provides acceptance criteria from the user perspective |
+| **Product Owner** | Harold Kimmey | Owns the product backlog; prioritizes work items; approves sprint scope; makes trade-off decisions between features, quality, and timeline |
+| **Agile Coach** | Harold Kimmey | Guides process improvement; ensures agile principles are followed; identifies and removes organizational impediments |
+| **Agile Coach Assistants** | Claude Code Team | Supports process adherence; flags deviations from sprint workflow; suggests process improvements in retrospectives |
+| **Scrum Master** | Harold Kimmey | Facilitates sprint ceremonies; enforces sprint discipline and timeboxes; manages sprint timeline and scope |
+| **Assistant Scrum Master** | Claude Code Team | Executes sprint checklist steps; tracks task completion; manages sprint documentation and status updates |
+| **Chief Architect** | Harold Kimmey | Makes final architectural decisions; approves ADRs; ensures system coherence and design integrity across sprints |
+| **Architecture Development Team** | Claude Code Team | Researches architectural options; drafts ADRs; performs gap analysis; implements approved architectural designs |
+| **Chief Developer** | Harold Kimmey | Approves PRs; performs manual testing; makes final implementation decisions; owns merge-to-main authority |
+| **Lead Developer** | Claude Code Opus (latest) | Complex debugging, performance optimization, critical path features; cross-cutting architectural implementation |
+| **Senior Developers** | Claude Code Sonnet (latest, N instances) | Architectural decisions, complex refactoring, multi-file changes, research spikes |
+| **Developers** | Claude Code Haiku (latest, N instances) | Straightforward implementation, bug fixes, tests, documentation, single-file changes |
+| **Lead Test Engineer** | Harold Kimmey | Defines test strategy; performs manual and exploratory testing; approves test coverage and quality |
+| **Senior Test Engineers** | Claude Code Team | Writes unit and integration tests; runs test suites; analyzes test failures and regressions |
+| **Production Readiness Team** | Harold Kimmey + Claude Code Team | Build verification, store submission prep, deployment checklists, release validation |
+| **User Research** | Harold Kimmey + Claude Code Team | User surveys, testing feedback analysis, competitive research, usability assessment |
+
+**Note**: "Claude Code Team" refers to whichever model (Haiku, Sonnet, Opus) is executing the current task. Multiple instances may run in parallel via subagents.
 
 ### ADR-First Approach for Architectural Changes
 

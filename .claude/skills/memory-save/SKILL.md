@@ -10,11 +10,26 @@ model: haiku
 
 Save current sprint context before ending a session, so work can be resumed later.
 
+## CRITICAL: File Paths
+
+All memory files MUST use these exact absolute paths:
+- **Memory file**: `D:/Data/Harold/github/spamfilter-multi/.claude/memory/current.md`
+- **Metadata file**: `D:/Data/Harold/github/spamfilter-multi/.claude/memory/memory_metadata.json`
+
+DO NOT use relative paths like `.claude/memory/current.md` — this can resolve to different directories depending on context.
+
+## CRITICAL: Bash Commands on Windows
+
+This runs in bash on Windows. Use these patterns:
+- Use `git -C "D:/Data/Harold/github/spamfilter-multi" <command>` instead of `cd` then `git`
+- DO NOT use `cd /d` (that is CMD syntax, not bash)
+- Use forward slashes in paths
+
 ## Instructions
 
 1. **Get current context**:
-   - Run `git branch --show-current` to get branch name
-   - Extract sprint number from branch (e.g., "Sprint_12" → "Sprint 12")
+   - Run `git -C "D:/Data/Harold/github/spamfilter-multi" branch --show-current` to get branch name
+   - Extract sprint number from branch (e.g., "Sprint_12" -> "Sprint 12")
    - Get current date/time
 
 2. **Gather session context** from the conversation:
@@ -23,7 +38,7 @@ Save current sprint context before ending a session, so work can be resumed late
    - Next steps to continue
    - Any blockers or important notes
 
-3. **Write the memory file** to `.claude/memory/current.md` with this structure:
+3. **Write the memory file** to `D:/Data/Harold/github/spamfilter-multi/.claude/memory/current.md` with this structure:
    ```markdown
    # Sprint Context Save
 
@@ -57,7 +72,7 @@ Save current sprint context before ending a session, so work can be resumed late
    3. Continue from "Next Steps" section above
    ```
 
-4. **Update metadata** at `.claude/memory/memory_metadata.json`:
+4. **Update metadata** at `D:/Data/Harold/github/spamfilter-multi/.claude/memory/memory_metadata.json`:
    ```json
    {
      "current_save": ".claude/memory/current.md",
@@ -80,7 +95,7 @@ Memory Saved:
 - Branch: [branch name]
 - Tasks: [N] tasks recorded
 - Next Steps: [brief summary]
-- File: .claude/memory/current.md
+- File: D:/Data/Harold/github/spamfilter-multi/.claude/memory/current.md
 
 Ready to resume with /memory-restore in a new session.
 ```
