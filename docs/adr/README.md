@@ -40,6 +40,8 @@ This directory contains Architectural Decision Records for the spamfilter-multi 
 | [0032](0032-user-data-deletion-strategy.md) | User Data Deletion Strategy | Proposed | 2026-02-15 |
 | [0033](0033-analytics-and-crash-reporting-strategy.md) | Analytics and Crash Reporting Strategy | Proposed | 2026-02-15 |
 | [0034](0034-gmail-access-method-for-production.md) | Gmail Access Method for Production | Proposed | 2026-02-15 |
+| [0035](0035-production-development-side-by-side.md) | Production and Development Builds Side-by-Side on Windows | Accepted | 2026-03-18 |
+| [0036](0036-msix-signing-strategy.md) | MSIX Signing Strategy for Windows Store Submission | Accepted | 2026-03-19 |
 
 ## Creating a New ADR
 

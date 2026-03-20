@@ -63,6 +63,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
@@ -79,8 +80,21 @@ msix_config:
   publisher_display_name: MyEmailSpamFilter
   identity_name: MyEmailSpamFilter
   publisher: CN=MyEmailSpamFilter
-  msix_version: 0.5.0.0
-  logo_path: assets\icons\app_icon.png
+  msix_version: 0.5.1.0
+  logo_path: assets/icon/icon.png
   capabilities: internetClient, internetClientServer, privateNetworkClientServer, runFullTrust
-  store: false
+  store: true
   install_certificate: false
+
+# Icon Generation Configuration
+# Run: dart run flutter_launcher_icons
+flutter_launcher_icons:
+  android: true
+  ios: false
+  windows:
+    generate: true
+    icon_size: 48
+    image_path: "assets/icon/icon.png"
+  image_path: "assets/icon/icon.png"
+  adaptive_icon_background: "#4196F3"
+  adaptive_icon_foreground: "assets/icon/icon.png"
