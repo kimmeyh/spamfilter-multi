@@ -10,19 +10,34 @@ model: haiku
 
 Restore sprint context from a previous session to continue work.
 
+## CRITICAL: File Paths
+
+All memory files MUST use these exact absolute paths:
+- **Memory file**: `D:/Data/Harold/github/spamfilter-multi/.claude/memory/current.md`
+- **Metadata file**: `D:/Data/Harold/github/spamfilter-multi/.claude/memory/memory_metadata.json`
+
+DO NOT use relative paths like `.claude/memory/current.md` — this can resolve to different directories depending on context.
+
+## CRITICAL: Bash Commands on Windows
+
+This runs in bash on Windows. Use these patterns:
+- Use `git -C "D:/Data/Harold/github/spamfilter-multi" <command>` instead of `cd` then `git`
+- DO NOT use `cd /d` (that is CMD syntax, not bash)
+- Use forward slashes in paths
+
 ## Instructions
 
 1. **Check for saved memory**:
-   - Read `.claude/memory/memory_metadata.json` for metadata
+   - Read `D:/Data/Harold/github/spamfilter-multi/.claude/memory/memory_metadata.json` for metadata
    - Check `pending_restore` flag:
      - If `false` or missing: Report "No pending memory to restore" and stop
      - If `true`: Continue with restore
 
 2. **Read saved context**:
-   - Read `.claude/memory/current.md` for saved context
+   - Read `D:/Data/Harold/github/spamfilter-multi/.claude/memory/current.md` for saved context
 
 3. **Verify branch alignment**:
-   - Run `git branch --show-current`
+   - Run `git -C "D:/Data/Harold/github/spamfilter-multi" branch --show-current`
    - Compare with branch recorded in memory file
    - Warn if branches do not match
 
@@ -33,7 +48,7 @@ Restore sprint context from a previous session to continue work.
    - Highlight next steps to continue
 
 5. **Clear pending flag**:
-   - Update `.claude/memory/memory_metadata.json` setting `pending_restore: false`
+   - Update `D:/Data/Harold/github/spamfilter-multi/.claude/memory/memory_metadata.json` setting `pending_restore: false`
    - This prevents duplicate restores in subsequent sessions
 
 6. **Offer to continue** from where the previous session left off
@@ -44,7 +59,7 @@ Restore sprint context from a previous session to continue work.
 Memory Restored:
 - Sprint: [sprint name]
 - Saved: [date/time]
-- Branch: [branch name] [✓ matches / ⚠ mismatch - current is X]
+- Branch: [branch name] [OK matches / WARNING mismatch - current is X]
 
 ## Current Tasks
 [List tasks from memory file]
@@ -71,6 +86,6 @@ No pending memory to restore.
 
 If no memory file exists:
 ```
-No saved memory found at .claude/memory/current.md
+No saved memory found at D:/Data/Harold/github/spamfilter-multi/.claude/memory/current.md
 Use /memory-save to create a save point before ending a session.
 ```

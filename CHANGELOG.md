@@ -26,6 +26,18 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-03-20 (Sprint 23 - Windows Store MSIX, Signing, Domain, Branding)
+- **feat**: MSIX config fixes - enable store mode, fix logo path, sync version (Issue #194)
+- **docs**: ADR-0036 MSIX signing strategy - Microsoft Store auto-signing for Store builds (Issue #194)
+- **feat**: App icon and branding - email envelope + checkmark + funnel design (ADR-0031, Issue #194)
+- **chore**: Add flutter_launcher_icons v0.14.4, generate Android adaptive icons and Windows .ico
+- **chore**: Register myemailspamfilter.com domain + .net forwarding, DNS configured for GitHub Pages (Issue #166)
+
+### 2026-03-19 (Sprint 22 - Windows Store Readiness Research)
+- **docs**: Microsoft Store requirements research and codebase gap analysis (Issue #191)
+- **docs**: Windows Store readiness backlog items #17-#22 added to ALL_SPRINTS_MASTER_PLAN.md (Issue #191)
+- **chore**: Fix memory-save, memory-restore, startup-check skills - use absolute paths and bash-compatible commands
+
 ### 2026-03-18 (Sprint 21 - ADR-0035)
 - **feat**: Production/Development side-by-side builds with environment-aware data directories (ADR-0035, Issue #189)
 - **feat**: AppEnvironment class reads APP_ENV from --dart-define (dev/prod)

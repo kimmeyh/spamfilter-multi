@@ -44,18 +44,19 @@ These documents MUST be created/updated during each sprint:
 - [ ] Sprint plan reviewed and approved by user
 - [ ] **Draft PR created immediately** (optional but recommended)
 
-**[CHECKPOINT]** Review Phase 4 checklist before proceeding.
+**[CHECKPOINT]** Review Phase 4 checklist before proceeding. **[CONTEXT CHECK]** Verify context < 85% before starting Phase 4.
 
 ## Phase 4: Execution
 
+- [ ] **[CONTEXT CHECK]** Verify context < 85% (estimate task cost; `/compact` if next task would exceed 95%)
 - [ ] Tasks assigned to appropriate models (Haiku/Sonnet/Opus)
-- [ ] Each task: Code -> Build -> Test -> Analyze -> Commit
+- [ ] Each task: **[CONTEXT CHECK]** -> Code -> Build -> Test -> Analyze -> Commit
 - [ ] Commits reference GitHub issues (`feat: ... (Issue #N)`)
 - [ ] CHANGELOG.md updated with each user-facing change
 - [ ] Progress tracked in GitHub issue comments
 - [ ] Pushed to remote at least once during session
 
-**[CHECKPOINT]** Review Phase 5 checklist before proceeding.
+**[CHECKPOINT]** Review Phase 5 checklist before proceeding. **[CONTEXT CHECK]** Verify context < 85% before starting Phase 5.
 
 ## Phase 5: Review & Testing
 
@@ -68,7 +69,7 @@ These documents MUST be created/updated during each sprint:
 - [ ] Manual testing complete (user)
 - [ ] Issues from testing fixed
 
-**[CHECKPOINT]** Review Phase 6 checklist before proceeding.
+**[CHECKPOINT]** Review Phase 6 checklist before proceeding. **[CONTEXT CHECK]** Verify context < 85% before starting Phase 6.
 
 ## Phase 6: Push & PR
 
@@ -80,7 +81,7 @@ These documents MUST be created/updated during each sprint:
 - [ ] PR references issues: `Closes #XX, #YY, #ZZ`
 - [ ] User notified PR is ready
 
-**[CHECKPOINT]** Review Phase 7 checklist before proceeding. Phase 7 is MANDATORY.
+**[CHECKPOINT]** Review Phase 7 checklist before proceeding. Phase 7 is MANDATORY. **[CONTEXT CHECK]** Verify context < 85% before starting Phase 7.
 
 ## Phase 7: Sprint Review (MANDATORY - DO NOT SKIP)
 
@@ -145,7 +146,7 @@ gh issue close #N --reason "completed"
 5. User requests early review
 6. Sprint review complete
 7. Fundamental design failure
-8. Context limit approaching
+8. Context > 85%: `/compact` first; > 95%: STOP and prompt user
 9. Time limit reached
 
 **NOT valid**: Implementation choices, approach uncertainty, code style, single test failure
