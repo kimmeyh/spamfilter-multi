@@ -312,6 +312,11 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Platform: All
 - Issue [#44](https://github.com/kimmeyh/spamfilter-multi/issues/44)
 
+**F39. Scan Results: Multi-Select and Bulk Rule Application (~12-16h) Priority HOLD**
+- Phase: Post-MVP, Post-Windows Store
+- Platform: All (may need platform-specific UI)
+- [Detail](#f39-scan-results-multi-select-and-bulk-rule-application)
+
 ---
 
 ## Feature and Bug Details
@@ -795,6 +800,52 @@ H0: Register domain (USER ACTION - prerequisite)
 3. **Edit Rules with Test Tool**: Add a way to open an existing rule in the test tool from the Manage Rules screen, allowing users to modify and test patterns before saving
 
 **Dependencies**: None (builds on existing Rule Testing UI from Sprint 18)
+
+---
+
+### F39: Scan Results Multi-Select and Bulk Rule Application
+
+**Status**: HOLD (Post-MVP, Post-Windows Store)
+**Estimated Effort**: ~12-16h
+**Phase**: Post-MVP, Post-Windows Store
+**Platform**: All (may need platform-specific UI patterns)
+
+**Overview**: Allow users to select multiple emails in Scan Results (live and history) and apply a rule action to all selected items at once, rather than one at a time.
+
+**Selection Mechanics**:
+- Radial button (checkbox) to the left of each item for select/unselect
+- Ctrl+click to add individual items to selection (Windows/desktop)
+- Shift+click to select a range of items between two clicked items (Windows/desktop)
+- Selection applies only to the currently filtered list (respects active filter chips)
+- Touch-friendly selection for mobile (long-press to enter selection mode, tap to toggle)
+
+**Bulk Actions (right-click context menu / action bar)**:
+7 options:
+1. Add Safe Sender - Exact Email
+2. Add Safe Sender - Exact Domain
+3. Add Safe Sender - Entire Domain
+4. Add Block Rule - Exact Email
+5. Add Block Rule - Exact Domain
+6. Add Block Rule - Entire Domain
+7. Remove Current Rule
+
+**Platform-Specific UI Considerations**:
+- **Windows Desktop**: Right-click context menu, Ctrl+click and Shift+click selection, radial buttons
+- **Android/iOS**: Long-press to enter selection mode, floating action bar for bulk actions, tap to toggle selection
+- **Display size**: Compact layouts may need bottom sheet instead of context menu
+- UI investigation needed before implementation to determine best pattern per platform
+
+**Dependencies**: Scan Results screen (completed Sprint 12), Rule management (completed Sprint 20)
+
+**Acceptance Criteria**:
+- [ ] UI investigation completed: document recommended selection and action patterns per platform
+- [ ] Multi-select works with Ctrl+click and Shift+click on desktop
+- [ ] Radial button per item for direct select/unselect
+- [ ] Selection scoped to current filter results only
+- [ ] Right-click (desktop) or action bar (mobile) shows 7 bulk action options
+- [ ] Bulk action applies chosen rule to all selected emails
+- [ ] Works in both live scan results and scan history views
+- [ ] Platform-appropriate UI for Windows, Android, and iOS
 
 ---
 
