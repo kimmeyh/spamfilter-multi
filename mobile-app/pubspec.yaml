@@ -79,8 +79,8 @@ msix_config:
   publisher_display_name: MyEmailSpamFilter
   identity_name: MyEmailSpamFilter
   publisher: CN=MyEmailSpamFilter
-  msix_version: 0.5.0.0
-  logo_path: assets\icons\app_icon.png
+  msix_version: 0.5.1.0
+  logo_path: windows/runner/resources/app_icon.ico
   capabilities: internetClient, internetClientServer, privateNetworkClientServer, runFullTrust
-  store: false
+  store: true
   install_certificate: false
