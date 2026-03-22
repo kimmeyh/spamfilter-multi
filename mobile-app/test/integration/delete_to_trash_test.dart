@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/core/models/email_message.dart';
-import 'package:spam_filter_mobile/adapters/email_providers/spam_filter_platform.dart';
-import 'package:spam_filter_mobile/adapters/email_providers/generic_imap_adapter.dart';
-import 'package:spam_filter_mobile/adapters/email_providers/gmail_api_adapter.dart';
-import 'package:spam_filter_mobile/adapters/email_providers/email_provider.dart';
+import 'package:my_email_spam_filter/core/models/email_message.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/spam_filter_platform.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/generic_imap_adapter.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/gmail_api_adapter.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/email_provider.dart';
 import 'package:enough_mail/enough_mail.dart';
 
 /// Integration test for delete-to-trash behavior (Sprint 11 Critical Fix)

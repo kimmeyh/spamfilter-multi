@@ -26,7 +26,7 @@ All logging in the spamfilter-multi mobile app uses `AppLogger` utility with sta
 **Usage**: Import and call specific logging methods instead of using `print()` or direct `Logger()` calls.
 
 ```dart
-import 'package:spam_filter_mobile/core/utils/app_logger.dart';
+import 'package:my_email_spam_filter/core/utils/app_logger.dart';
 
 // Example usage
 AppLogger.email('Fetched 50 messages from INBOX for user@example.com');
@@ -133,7 +133,7 @@ adb logcat -s flutter | grep -E '\[EMAIL\]|\[RULES\]|\[ERROR\]' > test_logs_$(da
 
 ### Migration Steps Per File
 
-1. Add import: `import 'package:spam_filter_mobile/core/utils/app_logger.dart';`
+1. Add import: `import 'package:my_email_spam_filter/core/utils/app_logger.dart';`
 2. Replace `print()` with appropriate `AppLogger` method
 3. Replace `_logger.i()` with `AppLogger.<category>()`
 4. Replace `_logger.d()` with `AppLogger.debug()` or specific category
@@ -157,7 +157,7 @@ void evaluate(EmailMessage message) {
 
 **After**:
 ```dart
-import 'package:spam_filter_mobile/core/utils/app_logger.dart';
+import 'package:my_email_spam_filter/core/utils/app_logger.dart';
 
 void evaluate(EmailMessage message) {
   AppLogger.eval('Evaluating email: ${message.subject} (from: ${message.from})');

@@ -21,8 +21,8 @@ library;
 import 'dart:convert';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:spam_filter_mobile/adapters/auth/token_store.dart';
-import 'package:spam_filter_mobile/util/redact.dart';
+import 'package:my_email_spam_filter/adapters/auth/token_store.dart';
+import 'package:my_email_spam_filter/util/redact.dart';
 
 /// Secure implementation of [TokenStore] using flutter_secure_storage.
 class SecureTokenStore implements TokenStore {

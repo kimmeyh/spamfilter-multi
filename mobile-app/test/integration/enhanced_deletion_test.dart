@@ -10,13 +10,13 @@ library;
 /// Sprint 14
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/adapters/email_providers/mock_email_provider.dart';
-import 'package:spam_filter_mobile/adapters/email_providers/spam_filter_platform.dart';
-import 'package:spam_filter_mobile/core/models/email_message.dart';
-import 'package:spam_filter_mobile/core/models/rule_set.dart';
-import 'package:spam_filter_mobile/core/models/safe_sender_list.dart';
-import 'package:spam_filter_mobile/core/services/pattern_compiler.dart';
-import 'package:spam_filter_mobile/core/services/rule_evaluator.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/mock_email_provider.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/spam_filter_platform.dart';
+import 'package:my_email_spam_filter/core/models/email_message.dart';
+import 'package:my_email_spam_filter/core/models/rule_set.dart';
+import 'package:my_email_spam_filter/core/models/safe_sender_list.dart';
+import 'package:my_email_spam_filter/core/services/pattern_compiler.dart';
+import 'package:my_email_spam_filter/core/services/rule_evaluator.dart';
 
 void main() {
   group('Enhanced Deleted Email Processing (Issue #138)', () {

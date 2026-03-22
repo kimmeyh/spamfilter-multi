@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/core/models/provider_email_identifier.dart';
-import 'package:spam_filter_mobile/core/services/email_availability_checker.dart';
+import 'package:my_email_spam_filter/core/models/provider_email_identifier.dart';
+import 'package:my_email_spam_filter/core/services/email_availability_checker.dart';
 
 void main() {
   group('EmailAvailabilityResult', () {

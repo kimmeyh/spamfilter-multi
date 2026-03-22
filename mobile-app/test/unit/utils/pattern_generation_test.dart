@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/core/utils/pattern_generation.dart';
+import 'package:my_email_spam_filter/core/utils/pattern_generation.dart';
 
 void main() {
   group('PatternGeneration', () {

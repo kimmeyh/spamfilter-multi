@@ -1,11 +1,11 @@
 // ignore_for_file: avoid_print
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/adapters/storage/secure_credentials_store.dart';
-import 'package:spam_filter_mobile/adapters/email_providers/generic_imap_adapter.dart';
-import 'package:spam_filter_mobile/adapters/email_providers/gmail_api_adapter.dart';
+import 'package:my_email_spam_filter/adapters/storage/secure_credentials_store.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/generic_imap_adapter.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/gmail_api_adapter.dart';
 
-import 'package:spam_filter_mobile/adapters/email_providers/email_provider.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/email_provider.dart';
 
 void main() {
   group('Credential Verification - All Platforms', () {

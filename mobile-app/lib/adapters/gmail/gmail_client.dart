@@ -18,8 +18,8 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
-import 'package:spam_filter_mobile/adapters/auth/google_auth_service.dart';
-import 'package:spam_filter_mobile/util/redact.dart';
+import 'package:my_email_spam_filter/adapters/auth/google_auth_service.dart';
+import 'package:my_email_spam_filter/util/redact.dart';
 
 /// Gmail API base URL.
 const String _gmailApiBase = 'https://gmail.googleapis.com/gmail/v1';

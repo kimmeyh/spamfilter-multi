@@ -94,7 +94,7 @@ BEGIN
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "MyEmailSpamFilter" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 MyEmailSpamFilter. All rights reserved." "\0"
-            VALUE "OriginalFilename", "spam_filter_mobile.exe" "\0"
+            VALUE "OriginalFilename", "MyEmailSpamFilter.exe" "\0"
             VALUE "ProductName", "MyEmailSpamFilter" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/core/services/windows_toast_notification_service.dart';
+import 'package:my_email_spam_filter/core/services/windows_toast_notification_service.dart';
 
 void main() {
   group('WindowsToastNotificationService', () {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/ui/screens/email_detail_view.dart';
-import 'package:spam_filter_mobile/core/storage/unmatched_email_store.dart';
+import 'package:my_email_spam_filter/ui/screens/email_detail_view.dart';
+import 'package:my_email_spam_filter/core/storage/unmatched_email_store.dart';
 
 // Test double for UnmatchedEmailStore
 class FakeUnmatchedEmailStore implements UnmatchedEmailStore {

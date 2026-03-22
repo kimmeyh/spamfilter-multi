@@ -20,7 +20,7 @@ The developer runs the production app (built from `main` branch) with background
 
 3. **No single-instance mutex**: Nothing prevents both production and development executables from running simultaneously, risking SQLite database corruption from concurrent writes.
 
-4. **Same executable name**: Both builds produce `spam_filter_mobile.exe`, making it impossible to distinguish in Task Manager or Task Scheduler.
+4. **Same executable name**: Both builds produce `MyEmailSpamFilter.exe`, making it impossible to distinguish in Task Manager or Task Scheduler.
 
 ### Industry Best Practices
 

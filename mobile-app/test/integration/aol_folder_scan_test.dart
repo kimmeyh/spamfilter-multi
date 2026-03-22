@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/core/providers/rule_set_provider.dart';
-import 'package:spam_filter_mobile/core/services/email_scanner.dart';
-import 'package:spam_filter_mobile/core/providers/email_scan_provider.dart';
-import 'package:spam_filter_mobile/adapters/storage/secure_credentials_store.dart';
+import 'package:my_email_spam_filter/core/providers/rule_set_provider.dart';
+import 'package:my_email_spam_filter/core/services/email_scanner.dart';
+import 'package:my_email_spam_filter/core/providers/email_scan_provider.dart';
+import 'package:my_email_spam_filter/adapters/storage/secure_credentials_store.dart';
 
 /// AOL Folder Scanning Integration Tests
 ///
