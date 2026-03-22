@@ -62,6 +62,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   List<String> _backgroundScanFolders = List.from(SettingsStore.defaultBackgroundScanFolders);
   bool _backgroundScanDebugCsv = SettingsStore.defaultBackgroundScanDebugCsv;
   String? _csvExportDirectory;
+  // F43: Track current folder selections for display
+  String? _safeSenderFolder;
+  String? _deletedRuleFolder;
   int _manualDaysBack = SettingsStore.defaultManualScanDaysBack;
   int _backgroundDaysBack = SettingsStore.defaultBackgroundScanDaysBack;
   int _scanHistoryRetentionDays = SettingsStore.defaultScanHistoryRetentionDays;
@@ -113,6 +116,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
       _backgroundScanDebugCsv = await _settingsStore.getBackgroundScanDebugCsv();
       _csvExportDirectory = await _settingsStore.getCsvExportDirectory();
+
+      // F43: Load current folder selections for display
+      _safeSenderFolder = await _settingsStore.getAccountSafeSenderFolder(widget.accountId);
+      _deletedRuleFolder = await _settingsStore.getAccountDeletedRuleFolder(widget.accountId);
 
       // [NEW] ISSUE #153: Load days-back settings (per-account with app-wide fallback)
       final accountManualDays = await _settingsStore.getAccountManualDaysBack(widget.accountId);
@@ -240,27 +247,30 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             ),
             const SizedBox(height: 16),
 
-            // Safe Sender Folder button
-            OutlinedButton.icon(
-              icon: const Icon(Icons.folder_special_outlined),
-              label: const Text('Safe Sender Folder'),
-              onPressed: () => _configureSafeSenderFolder(platform, email),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                alignment: Alignment.centerLeft,
+            // F43: Safe Sender Folder - show current selection
+            ListTile(
+              leading: const Icon(Icons.folder_special_outlined),
+              title: const Text('Safe Sender Folder'),
+              subtitle: Text(
+                _safeSenderFolder ?? 'INBOX (default)',
+                style: TextStyle(color: Colors.green.shade700),
               ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _configureSafeSenderFolder(platform, email),
+              contentPadding: EdgeInsets.zero,
             ),
-            const SizedBox(height: 8),
 
-            // Deleted Rule Folder button
-            OutlinedButton.icon(
-              icon: const Icon(Icons.folder_delete_outlined),
-              label: const Text('Deleted Rule Folder'),
-              onPressed: () => _configureDeletedRuleFolder(platform, email),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                alignment: Alignment.centerLeft,
+            // F43: Deleted Rule Folder - show current selection
+            ListTile(
+              leading: const Icon(Icons.folder_delete_outlined),
+              title: const Text('Deleted Rule Folder'),
+              subtitle: Text(
+                _deletedRuleFolder ?? 'Trash (default)',
+                style: TextStyle(color: Colors.red.shade700),
               ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _configureDeletedRuleFolder(platform, email),
+              contentPadding: EdgeInsets.zero,
             ),
 
             const SizedBox(height: 24),
@@ -1276,7 +1286,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 }
 
                 _logger.i('Set safe sender folder for $email to: $folderName');
-                setState(() {}); // Refresh UI
+                setState(() {
+                  _safeSenderFolder = folderName;
+                });
               } catch (e) {
                 _logger.e('Failed to set safe sender folder: $e');
                 if (mounted) {
@@ -1345,7 +1357,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 }
 
                 _logger.i('Set deleted rule folder for $email to: $folderName');
-                setState(() {}); // Refresh UI
+                setState(() {
+                  _deletedRuleFolder = folderName;
+                });
               } catch (e) {
                 _logger.e('Failed to set deleted rule folder: $e');
                 if (mounted) {
