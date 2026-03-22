@@ -775,7 +775,8 @@ class EmailScanProvider extends ChangeNotifier {
     return value.replaceAll('"', '""');
   }
 
-  /// Helper to get action name for CSV export
+  /// Helper to get action name for CSV/Excel export
+  /// F45: "No rule" instead of "None" for emails with no matching rule
   String _getActionName(EmailActionType action) {
     switch (action) {
       case EmailActionType.delete:
@@ -787,8 +788,54 @@ class EmailScanProvider extends ChangeNotifier {
       case EmailActionType.markAsRead:
         return 'Mark as Read';
       case EmailActionType.none:
-        return 'None';
+        return 'No rule';
     }
+  }
+
+  /// F45: Export scan results to Excel (.xlsx) format
+  ///
+  /// Field order (per Sprint 25 retrospective):
+  /// Scan Date/Time, Received Date/Time, Status, Folder, Action, Rule,
+  /// From, Subject, Match Condition, Email ID
+  ///
+  /// Returns list of row data (each row is a list of cell values).
+  /// The caller is responsible for writing to the Excel file.
+  /// Returns empty list if no results.
+  List<List<String>> getExcelRows() {
+    if (_results.isEmpty) return [];
+
+    final scanDate = _scanStartTime != null
+        ? _scanStartTime!.toIso8601String()
+        : 'Unknown';
+
+    final rows = <List<String>>[];
+
+    for (final result in _results) {
+      final receivedDate = result.email.receivedDate.toIso8601String();
+      final status = result.success ? 'Success' : 'Failed';
+      final folder = result.email.folderName;
+      final action = _getActionName(result.action);
+      final rule = result.evaluationResult?.matchedRule ?? 'No rule';
+      final from = result.email.from;
+      final subject = PatternNormalization.cleanSubjectForDisplay(result.email.subject);
+      final matchCondition = result.evaluationResult?.matchedPattern ?? 'N/A';
+      final emailId = result.email.id;
+
+      rows.add([
+        scanDate,
+        receivedDate,
+        status,
+        folder,
+        action,
+        rule,
+        from,
+        subject,
+        matchCondition,
+        emailId,
+      ]);
+    }
+
+    return rows;
   }
 }
 

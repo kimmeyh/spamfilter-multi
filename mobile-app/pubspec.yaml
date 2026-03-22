@@ -55,6 +55,7 @@ dependencies:
   window_manager: ^0.3.7  # Window management (minimize to tray, etc.)
   file_picker: ^8.1.4  # File and folder picker (Sprint 13 - folder selection)
   punycode: ^1.0.0
+  syncfusion_flutter_xlsio: ^33.1.44
 
   # Phase 2+ - UI Enhancement
   # flutter_svg: ^2.0.9
