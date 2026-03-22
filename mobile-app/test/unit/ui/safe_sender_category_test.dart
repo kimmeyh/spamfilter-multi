@@ -91,6 +91,34 @@ void main() {
           equals(SafeSenderCategory.exactDomain),
         );
       });
+
+      test('classifies anchored exact domain regex pattern (Issue F30)', () {
+        // This is the pattern created by _addSafeSender('exactDomain')
+        // e.g., ^[^@\s]+@domain\.com$
+        final sender = makePattern(
+          r'^[^@\s]+@domain\.com$',
+          type: 'domain',
+        );
+        expect(
+          SafeSenderCategory.categorize(sender),
+          equals(SafeSenderCategory.exactDomain),
+          reason: 'Anchored exact domain regex should be Exact Domain, not Entire Domain',
+        );
+      });
+
+      test('classifies anchored exact domain regex with auto-detected type', () {
+        // Verify determinePatternType returns 'domain' for exact domain regex
+        final pattern = r'^[^@\s]+@example\.com$';
+        final detectedType = SafeSenderDatabaseStore.determinePatternType(pattern);
+        expect(detectedType, equals('domain'),
+          reason: 'determinePatternType should detect exact domain regex as "domain"');
+
+        final sender = makePattern(pattern, type: detectedType);
+        expect(
+          SafeSenderCategory.categorize(sender),
+          equals(SafeSenderCategory.exactDomain),
+        );
+      });
     });
 
     group('Entire Domain patterns', () {

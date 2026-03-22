@@ -39,19 +39,27 @@ enum SafeSenderCategory {
   final IconData icon;
   const SafeSenderCategory(this.label, this.icon);
 
-  /// Classify a safe sender pattern into its category based on regex structure
+  /// Classify a safe sender pattern into its category based on regex structure.
+  /// Priority: stored patternType first, then pattern analysis as fallback.
   static SafeSenderCategory categorize(SafeSenderPattern sender) {
     final pattern = sender.pattern;
     final type = sender.patternType;
 
-    // Use stored patternType as primary signal, with pattern analysis as fallback
-    if (type == 'subdomain' || pattern.contains('@(?:[a-z0-9-]+\\.)*')) {
+    // 1. Stored patternType is authoritative when present
+    if (type == 'subdomain') return SafeSenderCategory.entireDomain;
+    if (type == 'domain') return SafeSenderCategory.exactDomain;
+    if (type == 'email') return SafeSenderCategory.exactEmail;
+
+    // 2. Pattern analysis fallback (for type == 'custom' or 'unknown')
+    if (pattern.contains(r'@(?:[a-z0-9-]+\.)*')) {
       return SafeSenderCategory.entireDomain;
-    } else if (type == 'email' ||
-        (pattern.startsWith('^') && pattern.endsWith(r'$') && pattern.contains('@'))) {
+    } else if (pattern.startsWith('^') && pattern.endsWith(r'$') && pattern.contains('@')) {
+      // Anchored pattern with @ - check if exact domain or exact email
+      if (pattern.contains(r'[^@\s]+@') || pattern.contains(r'[^@\\s]+@')) {
+        return SafeSenderCategory.exactDomain;
+      }
       return SafeSenderCategory.exactEmail;
-    } else if (type == 'domain' ||
-        (pattern.contains('@') && !pattern.startsWith('^'))) {
+    } else if (pattern.contains('@') && !pattern.startsWith('^')) {
       return SafeSenderCategory.exactDomain;
     }
     return SafeSenderCategory.other;

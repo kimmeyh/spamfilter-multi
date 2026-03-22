@@ -357,8 +357,23 @@ class SafeSenderDatabaseStore {
       return 'email';
     }
 
-    // Subdomain/advanced pattern: contains regex constructs
+    // For regex patterns, distinguish between subdomain and exact domain/email
     if (hasRegex) {
+      // Subdomain pattern: contains the subdomain wildcard (?:[a-z0-9-]+\.)*
+      if (pattern.contains(r'(?:[a-z0-9-]+\.)*')) {
+        return 'subdomain';
+      }
+      // Exact domain regex: anchored pattern with @ but no subdomain wildcard
+      // e.g., ^[^@\s]+@domain\.com$
+      if (pattern.contains('@') && !pattern.contains(r'(?:[a-z0-9-]+\.)*')) {
+        // Check if it looks like an exact email (has literal user part before @)
+        // vs exact domain (has character class [^@\s]+ before @)
+        if (pattern.contains(r'[^@\s]+@') || pattern.contains(r'[^@\\s]+@')) {
+          return 'domain';
+        }
+        return 'email';
+      }
+      // Other regex patterns
       return 'subdomain';
     }
 
