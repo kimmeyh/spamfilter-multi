@@ -25,40 +25,40 @@ void main() {
   group('Scan Mode Tests', () {
     /// Test readonly mode by default
     test('readonly mode is default (safe)', () {
-      expect(provider.scanMode, ScanMode.readonly);
+      expect(provider.scanMode, ScanMode.readOnly);
       expect(provider.emailTestLimit, isNull);
     });
 
     /// Test scan mode initialization
     group('initializeScanMode', () {
       test('initializes readonly mode', () {
-        provider.initializeScanMode(mode: ScanMode.readonly);
+        provider.initializeScanMode(mode: ScanMode.readOnly);
 
-        expect(provider.scanMode, ScanMode.readonly);
+        expect(provider.scanMode, ScanMode.readOnly);
         expect(provider.emailTestLimit, isNull);
         expect(provider.hasActionsToRevert, isFalse);
         expect(provider.revertableActionCount, 0);
       });
 
       test('initializes testLimit mode with limit', () {
-        provider.initializeScanMode(mode: ScanMode.testLimit, testLimit: 50);
+        provider.initializeScanMode(mode: ScanMode.rulesOnly, testLimit: 50);
 
-        expect(provider.scanMode, ScanMode.testLimit);
+        expect(provider.scanMode, ScanMode.rulesOnly);
         expect(provider.emailTestLimit, 50);
         expect(provider.hasActionsToRevert, isFalse);
       });
 
       test('initializes testAll mode', () {
-        provider.initializeScanMode(mode: ScanMode.testAll);
+        provider.initializeScanMode(mode: ScanMode.safeSendersOnly);
 
-        expect(provider.scanMode, ScanMode.testAll);
+        expect(provider.scanMode, ScanMode.safeSendersOnly);
         expect(provider.emailTestLimit, isNull);
         expect(provider.hasActionsToRevert, isFalse);
       });
 
       test('clears previous revert tracking', () {
         // Set up first scan
-        provider.initializeScanMode(mode: ScanMode.testAll);
+        provider.initializeScanMode(mode: ScanMode.safeSendersOnly);
 
         // Create and record dummy action
         final email = EmailMessage(
@@ -84,7 +84,7 @@ void main() {
         expect(provider.revertableActionCount, 1);
 
         // Reinitialize scan mode
-        provider.initializeScanMode(mode: ScanMode.readonly);
+        provider.initializeScanMode(mode: ScanMode.readOnly);
 
         // Revert tracking should be cleared
         expect(provider.hasActionsToRevert, isFalse);
@@ -95,7 +95,7 @@ void main() {
     /// Test readonly mode behavior
     group('readonly mode', () {
       setUp(() {
-        provider.initializeScanMode(mode: ScanMode.readonly);
+        provider.initializeScanMode(mode: ScanMode.readOnly);
       });
 
       test('prevents email deletion (logs only)', () {
@@ -211,7 +211,7 @@ void main() {
     /// Test testLimit mode behavior
     group('testLimit mode', () {
       test('limits email modifications to N actions', () {
-        provider.initializeScanMode(mode: ScanMode.testLimit, testLimit: 3);
+        provider.initializeScanMode(mode: ScanMode.rulesOnly, testLimit: 3);
 
         for (int i = 0; i < 5; i++) {
           final email = EmailMessage(
@@ -241,7 +241,7 @@ void main() {
       });
 
       test('respects zero test limit', () {
-        provider.initializeScanMode(mode: ScanMode.testLimit, testLimit: 0);
+        provider.initializeScanMode(mode: ScanMode.rulesOnly, testLimit: 0);
 
         final email = EmailMessage(
           id: 'test-1',
@@ -268,7 +268,7 @@ void main() {
       });
 
       test('tracks different action types within limit', () {
-        provider.initializeScanMode(mode: ScanMode.testLimit, testLimit: 5);
+        provider.initializeScanMode(mode: ScanMode.rulesOnly, testLimit: 5);
 
         final baseDate = DateTime.now();
 
@@ -340,7 +340,7 @@ void main() {
     /// Test testAll mode behavior
     group('testAll mode', () {
       setUp(() {
-        provider.initializeScanMode(mode: ScanMode.testAll);
+        provider.initializeScanMode(mode: ScanMode.safeSendersOnly);
       });
 
       test('executes all email actions', () {
@@ -439,7 +439,7 @@ void main() {
 
   group('Revert Functionality', () {
     test('revertLastRun clears revert tracking', () async {
-      provider.initializeScanMode(mode: ScanMode.testAll);
+      provider.initializeScanMode(mode: ScanMode.safeSendersOnly);
 
       final email = EmailMessage(
         id: 'test-1',
@@ -469,7 +469,7 @@ void main() {
     });
 
     test('confirmLastRun prevents further reverts', () {
-      provider.initializeScanMode(mode: ScanMode.testAll);
+      provider.initializeScanMode(mode: ScanMode.safeSendersOnly);
 
       final email = EmailMessage(
         id: 'test-1',
@@ -503,22 +503,22 @@ void main() {
   group('Scan Mode Transition', () {
     test('switching modes clears previous state', () {
       // Start with readonly
-      provider.initializeScanMode(mode: ScanMode.readonly);
-      expect(provider.scanMode, ScanMode.readonly);
+      provider.initializeScanMode(mode: ScanMode.readOnly);
+      expect(provider.scanMode, ScanMode.readOnly);
 
       // Switch to testLimit
-      provider.initializeScanMode(mode: ScanMode.testLimit, testLimit: 50);
-      expect(provider.scanMode, ScanMode.testLimit);
+      provider.initializeScanMode(mode: ScanMode.rulesOnly, testLimit: 50);
+      expect(provider.scanMode, ScanMode.rulesOnly);
       expect(provider.emailTestLimit, 50);
 
       // Switch to testAll
-      provider.initializeScanMode(mode: ScanMode.testAll);
-      expect(provider.scanMode, ScanMode.testAll);
+      provider.initializeScanMode(mode: ScanMode.safeSendersOnly);
+      expect(provider.scanMode, ScanMode.safeSendersOnly);
       expect(provider.emailTestLimit, isNull);
 
       // Switch back to readonly
-      provider.initializeScanMode(mode: ScanMode.readonly);
-      expect(provider.scanMode, ScanMode.readonly);
+      provider.initializeScanMode(mode: ScanMode.readOnly);
+      expect(provider.scanMode, ScanMode.readOnly);
     });
   });
 }

@@ -33,7 +33,7 @@ void main() {
     });
 
     test('startScan should transition to scanning state', () {
-      provider.initializeScanMode(mode: ScanMode.readonly);
+      provider.initializeScanMode(mode: ScanMode.readOnly);
       provider.startScan(totalEmails: 100);
 
       expect(provider.status, equals(ScanStatus.scanning));
@@ -47,7 +47,7 @@ void main() {
     });
 
     test('recordResult should update progress', () {
-      provider.initializeScanMode(mode: ScanMode.readonly);
+      provider.initializeScanMode(mode: ScanMode.readOnly);
       provider.startScan(totalEmails: 10);
 
       // Record 5 results
@@ -61,7 +61,7 @@ void main() {
     });
 
     test('completeScan should transition to completed state', () {
-      provider.initializeScanMode(mode: ScanMode.readonly);
+      provider.initializeScanMode(mode: ScanMode.readOnly);
       provider.startScan(totalEmails: 5);
 
       for (int i = 0; i < 5; i++) {
@@ -75,7 +75,7 @@ void main() {
     });
 
     test('pauseScan and resumeScan should work correctly', () {
-      provider.initializeScanMode(mode: ScanMode.readonly);
+      provider.initializeScanMode(mode: ScanMode.readOnly);
       provider.startScan(totalEmails: 10);
 
       _recordSimpleResult(provider, EmailActionType.delete, 'test@example.com');
@@ -88,7 +88,7 @@ void main() {
     });
 
     test('setError should transition to error state with message', () {
-      provider.initializeScanMode(mode: ScanMode.readonly);
+      provider.initializeScanMode(mode: ScanMode.readOnly);
       provider.startScan(totalEmails: 10);
 
       provider.errorScan('Connection timeout');
@@ -98,7 +98,7 @@ void main() {
     });
 
     test('reset should clear all state', () {
-      provider.initializeScanMode(mode: ScanMode.testAll);
+      provider.initializeScanMode(mode: ScanMode.safeSendersOnly);
       provider.startScan(totalEmails: 10);
 
       for (int i = 0; i < 5; i++) {
@@ -165,7 +165,7 @@ void main() {
     });
 
     test('Readonly mode should log actions without executing', () {
-      provider.initializeScanMode(mode: ScanMode.readonly);
+      provider.initializeScanMode(mode: ScanMode.readOnly);
       provider.startScan(totalEmails: 5);
 
       // Record results in readonly mode
@@ -185,7 +185,7 @@ void main() {
 
     test('TestLimit mode should track revertable actions up to limit', () {
       const testLimit = 3;
-      provider.initializeScanMode(mode: ScanMode.testLimit, testLimit: testLimit);
+      provider.initializeScanMode(mode: ScanMode.rulesOnly, testLimit: testLimit);
       provider.startScan(totalEmails: 10);
 
       // Record 5 delete actions (but only 3 should be revertable)
@@ -204,7 +204,7 @@ void main() {
     });
 
     test('TestAll mode should track all actions as revertable', () {
-      provider.initializeScanMode(mode: ScanMode.testAll);
+      provider.initializeScanMode(mode: ScanMode.safeSendersOnly);
       provider.startScan(totalEmails: 10);
 
       // Record 10 delete actions
@@ -220,7 +220,7 @@ void main() {
     });
 
     test('FullScan mode should NOT track revertable actions', () {
-      provider.initializeScanMode(mode: ScanMode.fullScan);
+      provider.initializeScanMode(mode: ScanMode.safeSendersAndRules);
       provider.startScan(totalEmails: 5);
 
       // Record 5 delete actions
@@ -246,7 +246,7 @@ void main() {
     });
 
     test('Emails with no rule match should be counted', () {
-      provider.initializeScanMode(mode: ScanMode.readonly);
+      provider.initializeScanMode(mode: ScanMode.readOnly);
       provider.startScan(totalEmails: 10);
 
       // Record some matched results
@@ -267,7 +267,7 @@ void main() {
     });
 
     test('noRuleCount should reset on new scan', () {
-      provider.initializeScanMode(mode: ScanMode.readonly);
+      provider.initializeScanMode(mode: ScanMode.readOnly);
       provider.startScan(totalEmails: 5);
 
       // Record some no-rule results
@@ -294,7 +294,7 @@ void main() {
     });
 
     test('updateCurrentFolder should update currentFolder', () {
-      provider.initializeScanMode(mode: ScanMode.readonly);
+      provider.initializeScanMode(mode: ScanMode.readOnly);
       provider.startScan(totalEmails: 100);
 
       provider.setCurrentFolder('Inbox');
@@ -318,7 +318,7 @@ void main() {
     });
 
     test('getSummary should return correct summary map', () {
-      provider.initializeScanMode(mode: ScanMode.testAll);
+      provider.initializeScanMode(mode: ScanMode.safeSendersOnly);
       provider.startScan(totalEmails: 20);
 
       // Add various results

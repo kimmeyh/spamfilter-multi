@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: March 21, 2026 (Sprint 24 retrospective)
+**Last Updated**: March 22, 2026 (Sprint 25 retrospective)
 
 ## How to Maintain This Document
 
@@ -89,6 +89,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 22 | docs/sprints/SPRINT_22_RETROSPECTIVE.md | [OK] Complete | Mar 19, 2026 |
 | 23 | docs/sprints/SPRINT_23_RETROSPECTIVE.md | [OK] Complete | Mar 20, 2026 |
 | 24 | docs/sprints/SPRINT_24_RETROSPECTIVE.md | [OK] Complete | Mar 20-21, 2026 |
+| 25 | docs/sprints/SPRINT_25_RETROSPECTIVE.md | [OK] Complete | Mar 22, 2026 |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -96,19 +97,19 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 24** (March 20-21, 2026)
-- **Features**: Privacy policy website (WS-B4), Store listing assets (WS-I1), Microsoft Store submission (WS)
-- **Infrastructure**: Microsoft Store developer account (kimmeyh@outlook.com), app submitted for certification (Store ID: 9N5QK9G904C0)
-- **Rename**: Executable spam_filter_mobile -> MyEmailSpamFilter, Dart package spam_filter_mobile -> my_email_spam_filter
-- **Tests**: 1145 passing (no regressions from rename)
-- **Bugs Found**: Issue #198 (safe sender matches in Gmail IMAP results)
-- **Retrospective**: docs/sprints/SPRINT_24_RETROSPECTIVE.md
+**Sprint 25** (March 22, 2026)
+- **Bug Fixes**: F40 safe sender INBOX skip (#198), F41 diagnostic logging (#201), F30 exact domain filter (#202)
+- **Features**: F34 scan status indicator, F38 re-process after rule changes (async), F31 post-build Task Scheduler
+- **Refactoring**: ScanMode enum rename with backwards compatibility
+- **Testing**: Coverage analysis (28.9% baseline), 31 new tests (1147 -> 1178), Issue #203 for remaining gaps
+- **Infrastructure**: Prod worktree for side-by-side dev/prod execution (ADR-0035)
+- **Retrospective**: docs/sprints/SPRINT_25_RETROSPECTIVE.md
 
 ---
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: March 21, 2026 (Sprint 24 retrospective)
+**Last Reviewed**: March 22, 2026 (Sprint 25 retrospective)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
@@ -130,44 +131,27 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 
 ### Core App
 
-**F40. Safe sender matches showing in results for Gmail IMAP (Issue #198) (~2-4h) Priority 48**
-- Phase: Core App Quality
-- Platform: Windows Desktop (Gmail IMAP)
-- Safe sender matches appear in scan results when emails are already in the safe sender folder (INBOX)
-- Also includes scan mode enum rename (testLimit->rulesOnly, testAll->safeSendersOnly) for clarity
+**~~F40. Safe sender matches showing in results for Gmail IMAP (Issue #198)~~** [OK] Complete (Sprint 25)
 
-**F30. Safe Senders "Exact Domain" filter shows 0 results (~1-2h) Priority 50**
-- Phase: Core App Quality
-- Platform: All
-- Investigate SafeSenderCategory classification for exact domain patterns
-- Filter chip returns no results despite matching data in DB
+**~~F30. Safe Senders "Exact Domain" filter shows 0 results~~** [OK] Complete (Sprint 25)
 
-**F41. Safe sender emails in Bulk Mail not moved to safe sender folder (Issue #201) (~2-4h) Priority 49**
-- Phase: Core App Quality
-- Platform: Windows Desktop (AOL IMAP)
-- Safe sender matches in Bulk Mail folder are identified but not moved to Inbox (safe sender folder)
-- Likely scan mode or batch move execution issue
-- Related to Issue #198 (different root cause)
+**~~F41. Safe sender emails in Bulk Mail not moved to safe sender folder (Issue #201)~~** [OK] Complete (Sprint 25, diagnostic logging added)
 
-**F31. Background scan task deleted on rebuild and not re-created (~4-6h) Priority 52**
-- Phase: Core App Quality
-- Platform: Windows Desktop
-- [Detail](#background-scan-task-rebuild-persistence)
+**~~F31. Background scan task deleted on rebuild~~** [OK] Complete (Sprint 25)
 
-**F32. Test coverage analysis and Sprint 20 feature tests (~4-6h) Priority 54**
+**~~F32. Test coverage analysis~~** [OK] Complete (Sprint 25, 28.9% baseline, Issue #203 for remaining gaps)
+
+**F42. Test coverage gaps - medium+ priority uncovered files (Issue #203) Priority 54**
 - Phase: Quality and Testing
 - Platform: All
-- [Detail](#test-coverage-analysis-and-sprint-20-feature-tests)
+- On Hold - remaining test gaps from F32 analysis
 
 **F33. Body rules cleanup script (~4-6h) Priority 56**
 - Phase: Core App Quality
 - Platform: All
 - [Detail](#body-rules-cleanup-script)
 
-**F34. Live Scan: in-progress and completed status indicator (~2-4h) Priority 60**
-- Phase: Core Feature
-- Platform: All
-- Visual indicator (icon or graphic) showing scan is in progress vs completed
+**~~F34. Live Scan: in-progress and completed status indicator~~** [OK] Complete (Sprint 25)
 
 **F25. Rule Testing UI Enhancements (~6-8h) Priority 62**
 - Phase: Core Feature
@@ -189,10 +173,32 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Platform: All
 - [Detail](#folder-selectors-two-level-listing)
 
-**F38. Live Scan: re-process emails after rule changes (~8-12h) Priority 80**
+**~~F38. Live Scan: re-process emails after rule changes~~** [OK] Complete (Sprint 25)
+
+**F43. Folder settings selection UX - radio button style (~2-3h) Priority 58**
+- Phase: Core UX
+- Platform: All
+- Settings > Account > Folder Settings: Safe Sender Folder and Deleted Rule Folder should change selection on clicking the radio button (like Default Folders > Select Folders), not require a separate "Select Folder" action
+
+**F44. Add "Go to View Scan History" to Manual Scan settings (~1-2h) Priority 59**
+- Phase: Core UX
+- Platform: All
+- Add "Go to View Scan History" link to Manual Scan settings page after Default Folders section, matching the style used on Background settings page
+
+**F45. Background scan CSV to Excel export with updated format (~4-6h) Priority 66**
+- Phase: Core Feature
+- Platform: Windows Desktop
+- [Detail](#background-scan-excel-export)
+
+**F46. Default rule set creation (~6-8h) Priority 74**
 - Phase: Core Feature
 - Platform: All
-- [Detail](#live-scan-reprocess-after-rule-changes)
+- Create a default set of rules including all top-level domain rules and all Entire Domain rules
+
+**F47. Email provider domain warning on rule creation (~3-4h) Priority 76**
+- Phase: Core UX
+- Platform: All
+- [Detail](#email-provider-domain-warning)
 
 **F7. Multi-Account Scanning (~8-10h) Priority 90**
 - Phase: Core Feature
@@ -407,39 +413,72 @@ Provider defaults:
 
 ---
 
-### Live Scan: Re-process Emails After Rule Changes (F38)
+### Background Scan Excel Export (F45)
 
-**Status**: New (Sprint 20 testing feedback)
-**Estimated Effort**: ~8-12h
+**Status**: New (Sprint 25 retrospective)
+**Estimated Effort**: ~4-6h
 **Phase**: Core Feature
-**Platform**: All
+**Platform**: Windows Desktop
 
-**Overview**: During a live scan, when the user adds or changes a rule from the scan results screen, re-process affected emails asynchronously to apply the new rule action on the server.
+**Overview**: Convert background scan debug output from CSV to Excel format using a template file. Change file naming and grouping to daily files.
 
-**Scenarios**:
+**File Naming**:
+- Remove time from filename: `background_scan_kimmeyharold_at_aol_com_2026-03-22` (no time suffix)
+- Daily grouping: if no file exists for today, create new from template; if one exists, append records
 
-1. **New safe sender rule added**: If an email was previously "deleted" (moved to trash/junk) but now matches a safe sender rule, move it to the configured Safe Sender Folder (rescue the email).
+**Field Order** (updated to match template):
+1. Scan Date and Time
+2. Received Date and Time
+3. Status
+4. Folder
+5. Action
+6. Rule
+7. From
+8. Subject
+9. Match Condition
+10. Email ID
 
-2. **New block rule added**: If an email was previously "no rule" or "safe sender" but now matches a block rule, move it to the configured Deleted Rule Folder.
+**Template**: `D:\Data\Harold\spamfilter-multi\background_scan_template.xlsx`
 
-3. **Rule changed/disabled**: If a rule is modified or disabled, re-evaluate affected emails and apply corrective actions.
-
-**Key Design Considerations**:
-- Re-processing should be async to avoid blocking the UI
-- Show progress indicator during re-processing
-- Handle IMAP errors gracefully (email may already be moved/deleted by server)
-- Track re-processed emails to avoid duplicate actions
-- Consider batch operations for performance (similar to Phase 6b batch execution)
-- Only re-process emails from the current scan session (not historical)
+**Behavior Changes**:
+- If a scan run produces no records, add a single record with Scan Date and Time, Received Date and Time, and From containing `<no records to process>`
+- Action field: "No rule" instead of "None" for emails with no matching rule
 
 **Acceptance Criteria**:
-- [ ] After adding a safe sender from scan results, previously deleted emails matching the new pattern are moved to Safe Sender Folder
-- [ ] After adding a block rule from scan results, previously unmatched emails matching the new pattern are moved to Deleted Rule Folder
-- [ ] Re-processing happens asynchronously without blocking the UI
-- [ ] Progress indicator shown during re-processing
-- [ ] Scan results display updates to reflect re-processed emails
-- [ ] IMAP errors during re-processing are handled gracefully (logged, not fatal)
-- [ ] Works for both live scan and historical scan result review
+- [ ] Output format changed from CSV to Excel (.xlsx)
+- [ ] Template file used for formatting
+- [ ] Field order matches specification above
+- [ ] Daily file grouping (create or append)
+- [ ] Empty scan runs produce placeholder record
+- [ ] "No rule" label used instead of "None"
+- [ ] Existing CSV export setting still works for manual scan CSV
+
+---
+
+### Email Provider Domain Warning (F47)
+
+**Status**: New (Sprint 25 retrospective)
+**Estimated Effort**: ~3-4h
+**Phase**: Core UX
+**Platform**: All
+
+**Overview**: When a user adds a Safe Sender or Block Rule for an email provider domain (outlook.com, gmail.com, aol.com, yahoo.com, etc.), show a warning popup explaining the impact and suggesting alternatives.
+
+**Trigger**: User clicks "Exact Domain", "Entire Domain" for Safe Sender or Block Rule from scan results for an email whose domain is a known email provider.
+
+**Warning Content**:
+- **For Block Rules**: Explain that blocking an email provider domain could impact thousands of individual user or business email addresses. Suggest "Exact Email" as best practice. Mention that safe sender rules can override domain blocks, but only after the email has already been deleted.
+- **For Safe Sender Rules**: Explain that allowing an entire email provider domain means all emails from that domain bypass spam rules. Since safe sender rules override delete rules, there would be no way to set up delete rules for specific senders from that domain.
+- **Both**: Suggest "Exact Email" is generally the best practice for provider domains.
+
+**Provider List**: Use existing `common_email_providers.dart` data.
+
+**Acceptance Criteria**:
+- [ ] Warning shown when adding domain-level rule for known email provider
+- [ ] Warning explains impact clearly
+- [ ] "Exact Email" suggested as alternative
+- [ ] User can proceed with domain rule if they choose (warning, not block)
+- [ ] Works for both Safe Sender and Block Rule creation flows
 
 ---
 
@@ -526,42 +565,6 @@ Provider defaults:
 
 ---
 
-### Test Coverage Analysis and Sprint 20 Feature Tests (F32)
-
-**Status**: New (Sprint 20 retrospective)
-**Estimated Effort**: ~4-6h
-**Phase**: Quality and Testing
-**Platform**: All
-
-**Overview**: Run test coverage analysis to identify gaps across the codebase, then add targeted tests for Sprint 20 features that shipped without automated test coverage.
-
-**Phase 1: Coverage Analysis**
-- Run `flutter test --coverage` and generate coverage report
-- Identify files/functions with low or no coverage
-- Prioritize gaps by risk (core business logic > UI > utilities)
-
-**Phase 2: Sprint 20 Feature Tests**
-- [ ] Classification fields set correctly when creating rules from results_display_screen
-- [ ] Classification fields set correctly from email_detail_view quick rule
-- [ ] Classification fields set correctly from rule_quick_add_screen
-- [ ] Demo rules DB produces expected safe/deleted/no-rule distribution
-- [ ] Safe sender folder skip logic (email in folder = skip, email not in folder = show, null config = show all)
-- [ ] DB v2 migration idempotent (handles existing columns)
-- [ ] YAML export/import preserves classification fields round-trip
-- [ ] PlatformRegistry routing for gmail-imap platformId
-
-**Phase 3: General Coverage Gaps**
-- Add tests for any high-risk, low-coverage areas identified in Phase 1
-- Target: meaningful coverage improvements, not 100% coverage
-
-**Acceptance Criteria**:
-- [ ] Coverage report generated and reviewed
-- [ ] All Sprint 20 feature tests from Phase 2 implemented
-- [ ] High-risk coverage gaps from Phase 3 addressed
-- [ ] All tests pass, 0 analyzer issues
-
----
-
 ### Settings: General Tab (F36)
 
 **Status**: New (Sprint 20 retrospective)
@@ -631,45 +634,6 @@ Settings > Account (per-account)
 - [ ] Backup DB before changes
 - [ ] Report: patterns converted, duplicates removed, unchanged patterns
 - [ ] All tests pass after cleanup
-
----
-
-### Background Scan Task Rebuild Persistence (F31)
-
-**Status**: New (Sprint 21 post-merge feedback)
-**Estimated Effort**: ~4-6h
-**Phase**: Core App Quality
-**Platform**: Windows Desktop
-
-**Overview**: The Windows Task Scheduler background scan task is deleted during `flutter clean` (which removes the executable) and not reliably re-created after rebuild. The task should be resilient to rebuilds.
-
-**Current Problem**:
-1. `flutter clean` removes `build/` directory including `MyEmailSpamFilter.exe`
-2. Task Scheduler task still points to the deleted executable path
-3. On rebuild, the executable is at a new path (or same path but Task Scheduler does not know)
-4. The task is not automatically re-registered after rebuild
-5. `verifyAndRepairTaskPath()` runs on app launch but may delete the task if the path mismatches
-
-**Proposed Solution**:
-- Add a post-build step to `build-windows.ps1` that:
-  1. Removes the prior Task Scheduler task (for dev/prod as appropriate based on `-Environment`)
-  2. Re-creates the task with the new executable path
-  3. Uses background scan frequency from the DB settings (if configured)
-  4. Leaves the task unregistered if background scanning is turned off in settings
-- Environment-aware task names per ADR-0035: `SpamFilterBackgroundScan` (prod) vs `SpamFilterBackgroundScan_Dev` (dev)
-
-**Alternative Approaches to Consider**:
-- PowerShell script that reads scan settings from SQLite and re-registers task
-- App startup always verifies and re-registers (current approach but unreliable)
-- Separate maintenance script: `scripts/register-background-scan.ps1`
-
-**Acceptance Criteria**:
-- [ ] After `flutter clean` + rebuild, background scan task is re-registered
-- [ ] Task uses correct executable path for the current build
-- [ ] Task uses scan frequency from DB settings
-- [ ] Task not registered if background scanning is disabled
-- [ ] Works for both dev and prod environments (correct task name per ADR-0035)
-- [ ] Existing background scan functionality not broken
 
 ---
 
@@ -1037,6 +1001,8 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 5.2 | 2026-03-22 | Sprint 25: Marked F30, F31, F34, F38, F40, F41 complete. Removed F31/F32/F38 detail sections. Added F42 (coverage gaps, on hold). Updated Last Completed Sprint. |
+| 5.1 | 2026-03-21 | Sprint 24: Marked WS items complete. Added F40, F41. Updated Last Completed Sprint. |
 | 5.0 | 2026-03-19 | Sprint 22: New backlog presentation format (priority-ordered, phase/platform fields, F# identifiers). Assigned F28-F38 to unnamed items. Moved Android/GP items to HOLD. Unholded H0 as F29. Removed old table format. |
 | 4.1 | 2026-02-27 | Sprint 18 completion: removed completed items (#154, #141, #167, #168, #169), added F27 (Folder Selection UX), updated Last Completed Sprint and Past Sprint Summary |
 | 4.0 | 2026-02-24 | Major restructure: added Maintenance Guide, unified Next Sprint Candidates list, removed completed feature details (F1/F2/F3/F5/F9/F10/F12/F17/F18), removed stale sections (Next Sprint TBD, Issue Backlog, Sprint 11/12 actions), integrated GP items into single priority view, condensed GP details |

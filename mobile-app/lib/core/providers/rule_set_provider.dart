@@ -330,6 +330,18 @@ class RuleSetProvider extends ChangeNotifier {
     }
   }
 
+  /// Initialize for testing with pre-configured stores
+  ///
+  /// Bypasses the full initialize() flow (AppPaths, MigrationManager)
+  /// and directly sets the database stores. Only for use in tests.
+  void initializeForTesting({
+    required RuleDatabaseStore databaseStore,
+    required SafeSenderDatabaseStore safeSenderStore,
+  }) {
+    _databaseStore = databaseStore;
+    _safeSenderStore = safeSenderStore;
+  }
+
   /// Get compilation stats (for debugging/profiling)
   Map<String, dynamic> getCompilerStats() {
     return _patternCompiler.getStats();
