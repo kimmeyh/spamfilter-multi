@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/core/storage/database_helper.dart';
-import 'package:spam_filter_mobile/adapters/storage/app_paths.dart';
+import 'package:my_email_spam_filter/core/storage/database_helper.dart';
+import 'package:my_email_spam_filter/adapters/storage/app_paths.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'dart:io';
 

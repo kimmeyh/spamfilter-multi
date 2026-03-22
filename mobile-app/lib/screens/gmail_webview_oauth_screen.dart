@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:logger/logger.dart';
-import 'package:spam_filter_mobile/adapters/auth/google_auth_service.dart';
-import 'package:spam_filter_mobile/adapters/auth/token_store.dart';
-import 'package:spam_filter_mobile/adapters/auth/secure_token_store.dart';
-import 'package:spam_filter_mobile/adapters/email_providers/gmail_windows_oauth_handler.dart';
-import 'package:spam_filter_mobile/adapters/storage/secure_credentials_store.dart';
-import 'package:spam_filter_mobile/adapters/email_providers/email_provider.dart';
-import 'package:spam_filter_mobile/ui/screens/folder_selection_screen.dart';
-import 'package:spam_filter_mobile/util/redact.dart';
+import 'package:my_email_spam_filter/adapters/auth/google_auth_service.dart';
+import 'package:my_email_spam_filter/adapters/auth/token_store.dart';
+import 'package:my_email_spam_filter/adapters/auth/secure_token_store.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/gmail_windows_oauth_handler.dart';
+import 'package:my_email_spam_filter/adapters/storage/secure_credentials_store.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/email_provider.dart';
+import 'package:my_email_spam_filter/ui/screens/folder_selection_screen.dart';
+import 'package:my_email_spam_filter/util/redact.dart';
 
 /// WebView-based Gmail OAuth for Windows (backup approach)
 /// 

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/core/storage/settings_store.dart';
-import 'package:spam_filter_mobile/core/providers/email_scan_provider.dart';
+import 'package:my_email_spam_filter/core/storage/settings_store.dart';
+import 'package:my_email_spam_filter/core/providers/email_scan_provider.dart';
 import '../../helpers/database_test_helper.dart';
 
 /// Unit tests for SettingsStore

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/ui/screens/rule_test_screen.dart';
+import 'package:my_email_spam_filter/ui/screens/rule_test_screen.dart';
 
 void main() {
   group('RuleTestScreen', () {

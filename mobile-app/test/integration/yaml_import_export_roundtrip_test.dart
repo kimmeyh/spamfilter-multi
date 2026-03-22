@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/core/services/yaml_service.dart';
+import 'package:my_email_spam_filter/core/services/yaml_service.dart';
 
 /// Integration test: YAML rules and safe senders export/import round-trip
 ///

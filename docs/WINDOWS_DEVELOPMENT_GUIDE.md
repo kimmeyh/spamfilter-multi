@@ -232,7 +232,7 @@ cd "D:\path" && flutter test  # && is bash syntax
 
 ```powershell
 # Kill process by name
-Stop-Process -Name "spam_filter_mobile" -Force -ErrorAction SilentlyContinue
+Stop-Process -Name "MyEmailSpamFilter" -Force -ErrorAction SilentlyContinue
 
 # Find process
 Get-Process | Where-Object {$_.ProcessName -like "*spam_filter*"}
@@ -366,14 +366,14 @@ ps aux | grep 'spam'
 
 **Error**:
 ```
-LINK : fatal error LNK1104: cannot open file '...\spam_filter_mobile.exe'
+LINK : fatal error LNK1104: cannot open file '...\MyEmailSpamFilter.exe'
 ```
 
 **Cause**: App is still running from previous build
 
 **Fix**: Stop process first
 ```powershell
-Stop-Process -Name "spam_filter_mobile" -Force -ErrorAction SilentlyContinue
+Stop-Process -Name "MyEmailSpamFilter" -Force -ErrorAction SilentlyContinue
 Start-Sleep -Seconds 2
 .\build-windows.ps1
 ```

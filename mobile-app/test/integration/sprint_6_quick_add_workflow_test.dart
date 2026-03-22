@@ -5,14 +5,14 @@ library;
 // ignore_for_file: avoid_print
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/core/models/email_message.dart';
-import 'package:spam_filter_mobile/core/models/rule_set.dart';
-import 'package:spam_filter_mobile/core/storage/rule_database_store.dart';
-import 'package:spam_filter_mobile/core/storage/safe_sender_database_store.dart'
+import 'package:my_email_spam_filter/core/models/email_message.dart';
+import 'package:my_email_spam_filter/core/models/rule_set.dart';
+import 'package:my_email_spam_filter/core/storage/rule_database_store.dart';
+import 'package:my_email_spam_filter/core/storage/safe_sender_database_store.dart'
     show SafeSenderDatabaseStore, SafeSenderPattern;
-import 'package:spam_filter_mobile/core/storage/database_helper.dart';
-import 'package:spam_filter_mobile/core/utils/pattern_generation.dart';
-import 'package:spam_filter_mobile/core/utils/pattern_normalization.dart';
+import 'package:my_email_spam_filter/core/storage/database_helper.dart';
+import 'package:my_email_spam_filter/core/utils/pattern_generation.dart';
+import 'package:my_email_spam_filter/core/utils/pattern_normalization.dart';
 
 import '../helpers/database_test_helper.dart';
 

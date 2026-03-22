@@ -2,8 +2,8 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite/sqflite.dart' show DatabaseException;
 
-import 'package:spam_filter_mobile/core/storage/database_helper.dart';
-import 'package:spam_filter_mobile/core/storage/rule_database_store.dart';
+import 'package:my_email_spam_filter/core/storage/database_helper.dart';
+import 'package:my_email_spam_filter/core/storage/rule_database_store.dart';
 import '../helpers/database_test_helper.dart';
 
 /// Integration tests for database lifecycle operations

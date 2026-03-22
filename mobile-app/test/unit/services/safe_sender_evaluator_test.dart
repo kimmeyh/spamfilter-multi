@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:spam_filter_mobile/core/storage/database_helper.dart';
-import 'package:spam_filter_mobile/core/storage/safe_sender_database_store.dart';
-import 'package:spam_filter_mobile/core/services/pattern_compiler.dart';
-import 'package:spam_filter_mobile/core/services/safe_sender_evaluator.dart';
+import 'package:my_email_spam_filter/core/storage/database_helper.dart';
+import 'package:my_email_spam_filter/core/storage/safe_sender_database_store.dart';
+import 'package:my_email_spam_filter/core/services/pattern_compiler.dart';
+import 'package:my_email_spam_filter/core/services/safe_sender_evaluator.dart';
 
 /// Mock database provider for testing
 class MockRuleDatabaseProvider implements RuleDatabaseProvider {

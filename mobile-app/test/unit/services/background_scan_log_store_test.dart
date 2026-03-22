@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/core/storage/database_helper.dart';
-import 'package:spam_filter_mobile/core/storage/background_scan_log_store.dart';
+import 'package:my_email_spam_filter/core/storage/database_helper.dart';
+import 'package:my_email_spam_filter/core/storage/background_scan_log_store.dart';
 import '../../helpers/database_test_helper.dart';
 
 void main() {

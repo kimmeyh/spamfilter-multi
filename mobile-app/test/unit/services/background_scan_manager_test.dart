@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/core/services/background_scan_manager.dart';
+import 'package:my_email_spam_filter/core/services/background_scan_manager.dart';
 
 void main() {
   group('ScanFrequency', () {

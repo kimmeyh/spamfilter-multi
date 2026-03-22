@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:spam_filter_mobile/core/storage/migration_manager.dart';
+import 'package:my_email_spam_filter/core/storage/migration_manager.dart';
 
 void main() {
   group('MigrationManager - Rollback Mechanism Tests', () {

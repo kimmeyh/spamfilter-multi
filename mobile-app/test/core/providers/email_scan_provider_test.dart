@@ -11,9 +11,9 @@
 library;
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/core/providers/email_scan_provider.dart';
-import 'package:spam_filter_mobile/core/models/email_message.dart';
-import 'package:spam_filter_mobile/core/models/evaluation_result.dart';
+import 'package:my_email_spam_filter/core/providers/email_scan_provider.dart';
+import 'package:my_email_spam_filter/core/models/email_message.dart';
+import 'package:my_email_spam_filter/core/models/evaluation_result.dart';
 
 void main() {
   late EmailScanProvider provider;

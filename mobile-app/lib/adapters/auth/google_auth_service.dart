@@ -29,10 +29,10 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:spam_filter_mobile/adapters/auth/token_store.dart';
-import 'package:spam_filter_mobile/adapters/storage/secure_credentials_store.dart';
-import 'package:spam_filter_mobile/adapters/email_providers/gmail_windows_oauth_handler.dart';
-import 'package:spam_filter_mobile/util/redact.dart';
+import 'package:my_email_spam_filter/adapters/auth/token_store.dart';
+import 'package:my_email_spam_filter/adapters/storage/secure_credentials_store.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/gmail_windows_oauth_handler.dart';
+import 'package:my_email_spam_filter/util/redact.dart';
 
 /// Gmail API scopes.
 class GmailScopes {

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/core/services/email_body_parser.dart';
+import 'package:my_email_spam_filter/core/services/email_body_parser.dart';
 
 /// Unit tests for EmailBodyParser
 ///

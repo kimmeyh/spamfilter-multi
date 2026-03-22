@@ -1,8 +1,8 @@
 // ignore_for_file: avoid_print
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/core/models/batch_action_result.dart';
-import 'package:spam_filter_mobile/core/models/email_message.dart';
+import 'package:my_email_spam_filter/core/models/batch_action_result.dart';
+import 'package:my_email_spam_filter/core/models/email_message.dart';
 
 void main() {
   group('BatchActionResult', () {

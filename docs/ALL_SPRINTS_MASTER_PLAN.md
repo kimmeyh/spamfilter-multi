@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: March 19, 2026 (Sprint 22 retrospective)
+**Last Updated**: March 21, 2026 (Sprint 24 retrospective)
 
 ## How to Maintain This Document
 
@@ -87,6 +87,8 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 20 | docs/sprints/SPRINT_20_RETROSPECTIVE.md | [OK] Complete | Mar 15-17, 2026 |
 | 21 | docs/sprints/SPRINT_21_RETROSPECTIVE.md | [OK] Complete | Mar 18, 2026 |
 | 22 | docs/sprints/SPRINT_22_RETROSPECTIVE.md | [OK] Complete | Mar 19, 2026 |
+| 23 | docs/sprints/SPRINT_23_RETROSPECTIVE.md | [OK] Complete | Mar 20, 2026 |
+| 24 | docs/sprints/SPRINT_24_RETROSPECTIVE.md | [OK] Complete | Mar 20-21, 2026 |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -94,69 +96,45 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 22** (March 19, 2026)
-- **Type**: Research sprint (no code changes)
-- **Features**: Windows Store requirements research, codebase gap analysis, backlog items #17-#22 (Issue #191)
-- **Backlog Added**: #17 (MSIX config fixes), #18 (MSIX signing ADR), #19 (privacy policy), #20 (store listing assets), #21 (app icon/branding), #22 (Partner Center submission)
-- **Tooling Fix**: memory-save/restore/startup-check skills - absolute paths and bash compatibility
-- **Retrospective**: docs/sprints/SPRINT_22_RETROSPECTIVE.md
+**Sprint 24** (March 20-21, 2026)
+- **Features**: Privacy policy website (WS-B4), Store listing assets (WS-I1), Microsoft Store submission (WS)
+- **Infrastructure**: Microsoft Store developer account (kimmeyh@outlook.com), app submitted for certification (Store ID: 9N5QK9G904C0)
+- **Rename**: Executable spam_filter_mobile -> MyEmailSpamFilter, Dart package spam_filter_mobile -> my_email_spam_filter
+- **Tests**: 1145 passing (no regressions from rename)
+- **Bugs Found**: Issue #198 (safe sender matches in Gmail IMAP results)
+- **Retrospective**: docs/sprints/SPRINT_24_RETROSPECTIVE.md
 
 ---
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: March 19, 2026 (Sprint 22 retrospective)
+**Last Reviewed**: March 21, 2026 (Sprint 24 retrospective)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
 ### Windows Store Readiness
 
-**WS-B1. MSIX config fixes (~1h) Priority 20**
-- Phase: Windows Store Readiness
-- Platform: Windows Desktop
-- Enable `store: true` in pubspec.yaml MSIX config
-- Fix logo path reference
-- Sync msix_version with pubspec version
+**~~WS-B1. MSIX config fixes (~1h)~~** [OK] Complete (Sprint 23)
 
-**WS-B3. MSIX signing strategy ADR (~2h) Priority 22**
-- Phase: Windows Store Readiness
-- Platform: Windows Desktop
-- ADR for code signing approach: MS Store auto-signing vs developer certificate
-- Decision impacts CI/CD pipeline and local build workflow
+**~~WS-B3. MSIX signing strategy ADR (~2h)~~** [OK] Complete (Sprint 23, ADR-0036)
 
-**F28. App icon and branding finalization - ADR-0031 (~2-4h) Priority 24**
-- Phase: Windows Store Readiness (also Google Play)
-- Platform: All
-- Finalize ADR-0031 app icon and visual identity
-- Create Store-ready icon assets (300x300+ PNG)
+**~~F28. App icon and branding finalization (~2-4h)~~** [OK] Complete (Sprint 23, ADR-0031)
 
-**F29. Register myemailspamfilter.com domain (~1h) Priority 26**
-- Phase: Windows Store Readiness (prerequisite)
-- Platform: N/A (user action)
-- Required for privacy policy hosting (GP-5, WS-B4)
-- Issue [#166](https://github.com/kimmeyh/spamfilter-multi/issues/166)
+**~~F29. Register myemailspamfilter.com domain (~1h)~~** [OK] Complete (Sprint 23, Issue #166)
 
-**WS-B4. Privacy policy - write, host, and publish (~4-8h) Priority 30**
-- Phase: Windows Store Readiness (also Google Play)
-- Platform: All
-- [Detail](#ws-b4-privacy-policy)
-- Depends on: F29 (domain registration)
+**~~WS-B4. Privacy policy - write, host, and publish (~4-8h)~~** [OK] Complete (Sprint 24, Issue #197)
 
-**WS-I1. Store listing assets (~3-4h) Priority 32**
-- Phase: Windows Store Readiness
-- Platform: Windows Desktop
-- 4-5 screenshots of key app screens
-- 300x300+ logo for Store listing
-- App description and short description
-- Depends on: F28 (icon/branding finalized)
+**~~WS-I1. Store listing assets (~3-4h)~~** [OK] Complete (Sprint 24, Issue #197)
 
-**WS. Microsoft Partner Center account setup and first submission (~2-4h) Priority 40**
-- Phase: Windows Store Readiness
-- Platform: Windows Desktop
-- Register Microsoft Partner Center account, reserve app name, submit MSIX, complete certification
-- Depends on: all other WS items
+**~~WS. Microsoft Partner Center account setup and first submission (~2-4h)~~** [OK] Complete (Sprint 24, Issue #197)
 
 ### Core App
+
+**F40. Safe sender matches showing in results for Gmail IMAP (Issue #198) (~2-4h) Priority 48**
+- Phase: Core App Quality
+- Platform: Windows Desktop (Gmail IMAP)
+- Safe sender matches appear in scan results when emails are already in the safe sender folder (INBOX)
+- Also includes scan mode enum rename (testLimit->rulesOnly, testAll->safeSendersOnly) for clarity
 
 **F30. Safe Senders "Exact Domain" filter shows 0 results (~1-2h) Priority 50**
 - Phase: Core App Quality
@@ -311,6 +289,11 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Phase: Post-MVP
 - Platform: All
 - Issue [#44](https://github.com/kimmeyh/spamfilter-multi/issues/44)
+
+**F39. Scan Results: Multi-Select and Bulk Rule Application (~12-16h) Priority HOLD**
+- Phase: Post-MVP, Post-Windows Store
+- Platform: All (may need platform-specific UI)
+- [Detail](#f39-scan-results-multi-select-and-bulk-rule-application)
 
 ---
 
@@ -654,7 +637,7 @@ Settings > Account (per-account)
 **Overview**: The Windows Task Scheduler background scan task is deleted during `flutter clean` (which removes the executable) and not reliably re-created after rebuild. The task should be resilient to rebuilds.
 
 **Current Problem**:
-1. `flutter clean` removes `build/` directory including `spam_filter_mobile.exe`
+1. `flutter clean` removes `build/` directory including `MyEmailSpamFilter.exe`
 2. Task Scheduler task still points to the deleted executable path
 3. On rebuild, the executable is at a new path (or same path but Task Scheduler does not know)
 4. The task is not automatically re-registered after rebuild
@@ -736,44 +719,11 @@ Settings > Account (per-account)
 
 ---
 
-### WS-B4: Privacy Policy
+### ~~WS-B4: Privacy Policy~~ [OK] Complete (Sprint 24)
 
-**Status**: New (Sprint 22 gap analysis)
-**Estimated Effort**: ~4-8h
-**Phase**: Windows Store Readiness (also Google Play)
-**Platform**: All
-**Prerequisite**: Domain myemailspamfilter.com must be registered (F29)
+### ~~WS: Implementation Order and Dependencies~~ [OK] Complete (Sprint 24)
 
-**Overview**: Write, host, and publish the privacy policy per ADR-0030 design. Required for both Microsoft Store and Google Play Store submissions.
-
-**Deliverables**:
-- Privacy policy content written (based on ADR-0030 zero-telemetry design)
-- Hosted at myemailspamfilter.com/privacy (GitHub Pages)
-- URL entered in Partner Center and pubspec.yaml
-- Covers: email access (transient), credential storage (encrypted), no analytics, no data sharing, data deletion process
-
-**Dependencies**: H0 (domain registration) must be completed first
-
----
-
-### WS: Implementation Order and Dependencies
-
-**Recommended order for Windows Store publication**:
-
-```
-H0: Register domain (USER ACTION - prerequisite)
-  |
-  v
-#17: MSIX config fixes (no dependencies)
-#18: Signing strategy ADR (no dependencies)
-#21: App icon/branding ADR-0031 (no dependencies)
-  |
-  v
-#19: Privacy policy (depends on H0)
-#20: Store listing assets (depends on #21 for icon)
-  |
-  v
-#22: Partner Center account + first submission (depends on all above)
+All Windows Store readiness items completed. App submitted to Microsoft Store for certification (Sprint 24, 2026-03-21).
 ```
 
 **Parallel tracks**: #17, #18, #21 can be done in parallel. #19 and #20 can be done in parallel after their dependencies.
@@ -795,6 +745,52 @@ H0: Register domain (USER ACTION - prerequisite)
 3. **Edit Rules with Test Tool**: Add a way to open an existing rule in the test tool from the Manage Rules screen, allowing users to modify and test patterns before saving
 
 **Dependencies**: None (builds on existing Rule Testing UI from Sprint 18)
+
+---
+
+### F39: Scan Results Multi-Select and Bulk Rule Application
+
+**Status**: HOLD (Post-MVP, Post-Windows Store)
+**Estimated Effort**: ~12-16h
+**Phase**: Post-MVP, Post-Windows Store
+**Platform**: All (may need platform-specific UI patterns)
+
+**Overview**: Allow users to select multiple emails in Scan Results (live and history) and apply a rule action to all selected items at once, rather than one at a time.
+
+**Selection Mechanics**:
+- Radial button (checkbox) to the left of each item for select/unselect
+- Ctrl+click to add individual items to selection (Windows/desktop)
+- Shift+click to select a range of items between two clicked items (Windows/desktop)
+- Selection applies only to the currently filtered list (respects active filter chips)
+- Touch-friendly selection for mobile (long-press to enter selection mode, tap to toggle)
+
+**Bulk Actions (right-click context menu / action bar)**:
+7 options:
+1. Add Safe Sender - Exact Email
+2. Add Safe Sender - Exact Domain
+3. Add Safe Sender - Entire Domain
+4. Add Block Rule - Exact Email
+5. Add Block Rule - Exact Domain
+6. Add Block Rule - Entire Domain
+7. Remove Current Rule
+
+**Platform-Specific UI Considerations**:
+- **Windows Desktop**: Right-click context menu, Ctrl+click and Shift+click selection, radial buttons
+- **Android/iOS**: Long-press to enter selection mode, floating action bar for bulk actions, tap to toggle selection
+- **Display size**: Compact layouts may need bottom sheet instead of context menu
+- UI investigation needed before implementation to determine best pattern per platform
+
+**Dependencies**: Scan Results screen (completed Sprint 12), Rule management (completed Sprint 20)
+
+**Acceptance Criteria**:
+- [ ] UI investigation completed: document recommended selection and action patterns per platform
+- [ ] Multi-select works with Ctrl+click and Shift+click on desktop
+- [ ] Radial button per item for direct select/unselect
+- [ ] Selection scoped to current filter results only
+- [ ] Right-click (desktop) or action bar (mobile) shows 7 bulk action options
+- [ ] Bulk action applies chosen rule to all selected emails
+- [ ] Works in both live scan results and scan history views
+- [ ] Platform-appropriate UI for Windows, Android, and iOS
 
 ---
 

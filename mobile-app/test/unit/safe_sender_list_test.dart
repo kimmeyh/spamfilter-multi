@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/core/models/safe_sender_list.dart';
+import 'package:my_email_spam_filter/core/models/safe_sender_list.dart';
 
 void main() {
   group('SafeSenderList', () {

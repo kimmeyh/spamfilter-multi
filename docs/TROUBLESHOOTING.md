@@ -35,7 +35,7 @@ For comprehensive Windows development guidance, see **`docs/WINDOWS_DEVELOPMENT_
 - **Unicode errors**: Set `$env:PYTHONIOENCODING = 'utf-8'` before running Python
 - **Path errors in bash**: Use PowerShell for Windows paths, or forward slashes in bash
 - **PowerShell cmdlets in bash**: Use PowerShell, not bash, for `Get-Process`, `Stop-Process`, etc.
-- **Build executable locked**: Run `Stop-Process -Name "spam_filter_mobile" -Force`
+- **Build executable locked**: Run `Stop-Process -Name "MyEmailSpamFilter" -Force`
 
 ---
 

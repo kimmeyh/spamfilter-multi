@@ -26,6 +26,18 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-03-21 (Sprint 24 - Windows Store Readiness: Privacy Policy, Store Assets, Submission)
+- **feat**: Privacy policy website deployed to docs/website/ (index.html, privacy/index.html, delete/index.html) with CNAME for myemailspamfilter.com (Issue #197)
+- **feat**: Microsoft Store listing created - app name reserved, store assets uploaded, MSIX package submitted for certification (Issue #197)
+- **feat**: Store listing assets document with descriptions, screenshots, keywords, age ratings (Issue #197)
+- **chore**: Rename Windows executable from spam_filter_mobile to MyEmailSpamFilter (CMakeLists.txt, Runner.rc, Package.appxmanifest, build-windows.ps1)
+- **chore**: Rename Dart package from spam_filter_mobile to my_email_spam_filter (pubspec.yaml, 224 imports across 73 files)
+- **chore**: Add msix v3.16.8 dev dependency for MSIX package building
+- **chore**: Update pubspec.yaml msix_config with Partner Center identity (publisher, identity_name, publisher_display_name)
+- **docs**: Add contact email (kimmeyh@outlook.com) to privacy policy website contact section
+- **docs**: Update all docs referencing old executable name (WINDOWS_DEVELOPMENT_GUIDE, TROUBLESHOOTING, ALL_SPRINTS_MASTER_PLAN, ADR-0035)
+- **docs**: Update LOGGING_CONVENTIONS.md with new package import name
+
 ### 2026-03-20 (Sprint 23 - Windows Store MSIX, Signing, Domain, Branding)
 - **feat**: MSIX config fixes - enable store mode, fix logo path, sync version (Issue #194)
 - **docs**: ADR-0036 MSIX signing strategy - Microsoft Store auto-signing for Store builds (Issue #194)

@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:spam_filter_mobile/core/models/provider_email_identifier.dart';
-import 'package:spam_filter_mobile/core/storage/database_helper.dart';
-import 'package:spam_filter_mobile/core/storage/scan_result_store.dart';
-import 'package:spam_filter_mobile/core/storage/unmatched_email_store.dart';
+import 'package:my_email_spam_filter/core/models/provider_email_identifier.dart';
+import 'package:my_email_spam_filter/core/storage/database_helper.dart';
+import 'package:my_email_spam_filter/core/storage/scan_result_store.dart';
+import 'package:my_email_spam_filter/core/storage/unmatched_email_store.dart';
 import '../../helpers/database_test_helper.dart';
 
 void main() {

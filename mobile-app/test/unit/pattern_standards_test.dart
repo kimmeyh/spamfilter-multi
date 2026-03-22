@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/core/services/pattern_compiler.dart';
-import 'package:spam_filter_mobile/core/utils/pattern_normalization.dart';
+import 'package:my_email_spam_filter/core/services/pattern_compiler.dart';
+import 'package:my_email_spam_filter/core/utils/pattern_normalization.dart';
 
 /// Tests for subject and body content pattern standards (Issue #141).
 ///

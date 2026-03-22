@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:spam_filter_mobile/core/storage/database_helper.dart';
-import 'package:spam_filter_mobile/adapters/storage/app_paths.dart';
+import 'package:my_email_spam_filter/core/storage/database_helper.dart';
+import 'package:my_email_spam_filter/adapters/storage/app_paths.dart';
 
 /// Test implementation of AppPaths for database and migration testing.
 /// Provides isolated paths for each test run using a temp directory.
