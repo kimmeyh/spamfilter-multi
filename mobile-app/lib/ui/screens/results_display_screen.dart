@@ -781,6 +781,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                 ],
               ),
             ],
+            // [NEW] F34: Scan status indicator (in-progress or completed)
+            if (hasLiveResults) ...[
+              const SizedBox(height: 8),
+              _buildScanStatusIndicator(scanProvider),
+            ],
             const SizedBox(height: 8),
             // [UPDATED] FB-2a: Use same interactive filter chips for both live and historical
             Builder(builder: (_) {
@@ -845,6 +850,136 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         ),
       ),
     );
+  }
+
+  /// [NEW] F34: Build scan status indicator showing in-progress or completed state
+  Widget _buildScanStatusIndicator(EmailScanProvider scanProvider) {
+    final isScanning = scanProvider.status == ScanStatus.scanning;
+    final isPaused = scanProvider.status == ScanStatus.paused;
+    final isCompleted = scanProvider.status == ScanStatus.completed;
+    final hasError = scanProvider.status == ScanStatus.error;
+
+    if (isScanning || isPaused) {
+      // In-progress: show linear progress bar with processed/total count
+      final processed = scanProvider.processedCount;
+      final total = scanProvider.totalEmails;
+      final folder = scanProvider.currentFolder;
+      final progressText = total > 0
+          ? '$processed of $total emails'
+          : '$processed emails';
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              SizedBox(
+                width: 14,
+                height: 14,
+                child: isPaused
+                    ? Icon(Icons.pause_circle_outline, size: 14, color: Colors.orange[700])
+                    : const CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                isPaused ? 'Paused' : 'Scanning...',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: isPaused ? Colors.orange[700] : Colors.blue[700],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                progressText,
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+              ),
+              if (folder != null) ...[
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    folder,
+                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 4),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(2),
+            child: LinearProgressIndicator(
+              value: total > 0 ? scanProvider.progress : null,
+              minHeight: 3,
+              backgroundColor: Colors.grey[200],
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (isCompleted) {
+      // Completed: show checkmark with summary
+      final duration = scanProvider.scanStartTime != null
+          ? DateTime.now().difference(scanProvider.scanStartTime!)
+          : null;
+      final durationText = duration != null
+          ? _formatDuration(duration)
+          : null;
+
+      return Row(
+        children: [
+          Icon(Icons.check_circle, size: 16, color: Colors.green[700]),
+          const SizedBox(width: 6),
+          Text(
+            'Scan complete',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: Colors.green[700],
+            ),
+          ),
+          if (durationText != null) ...[
+            const SizedBox(width: 8),
+            Text(
+              durationText,
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            ),
+          ],
+        ],
+      );
+    }
+
+    if (hasError) {
+      return Row(
+        children: [
+          Icon(Icons.error_outline, size: 16, color: Colors.red[700]),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              scanProvider.statusMessage ?? 'Scan error',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: Colors.red[700],
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return const SizedBox.shrink();
+  }
+
+  /// Format a Duration into a human-readable string (e.g., "1m 23s")
+  String _formatDuration(Duration duration) {
+    if (duration.inMinutes > 0) {
+      return '${duration.inMinutes}m ${duration.inSeconds % 60}s';
+    }
+    return '${duration.inSeconds}s';
   }
 
   /// Build stat chip with mode-aware styling
