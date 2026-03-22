@@ -378,6 +378,16 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
 
   String _scanModeLabel(String scanMode) {
     switch (scanMode) {
+      // Current names
+      case 'readOnly':
+        return 'Read-Only';
+      case 'rulesOnly':
+        return 'Process Rules Only';
+      case 'safeSendersOnly':
+        return 'Process Safe Senders Only';
+      case 'safeSendersAndRules':
+        return 'Process Safe Senders + Rules';
+      // Legacy names (backwards compatibility with existing scan records)
       case 'readonly':
         return 'Read-Only';
       case 'testLimit':

@@ -922,7 +922,7 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
   void initState() {
     super.initState();
     // readonly is default (safe)
-    _selectedMode = ScanMode.readonly;
+    _selectedMode = ScanMode.readOnly;
   }
 
   @override
@@ -934,7 +934,7 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
   /// Proceed with selected scan mode
   Future<void> _proceedWithScanMode() async {
     // [NEW] PHASE 3.1: Show warning dialog for Full Scan mode
-    if (_selectedMode == ScanMode.fullScan) {
+    if (_selectedMode == ScanMode.safeSendersAndRules) {
       final confirmed = await showDialog<bool>(
         context: context,
         barrierDismissible: false,
@@ -975,7 +975,7 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
 
     // Initialize scan mode before proceeding
     int? testLimit;
-    if (_selectedMode == ScanMode.testLimit) {
+    if (_selectedMode == ScanMode.rulesOnly) {
       testLimit = _testLimit;
     }
 
@@ -1036,13 +1036,13 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
             // Read-only mode (default)
             GestureDetector(
               onTap: () {
-                setState(() => _selectedMode = ScanMode.readonly);
+                setState(() => _selectedMode = ScanMode.readOnly);
               },
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: _selectedMode == ScanMode.readonly
+                    color: _selectedMode == ScanMode.readOnly
                         ? Colors.blue
                         : Colors.grey.shade300,
                     width: 2,
@@ -1055,10 +1055,10 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
                     Row(
                       children: [
                         Radio<ScanMode>(
-                          value: ScanMode.readonly,
+                          value: ScanMode.readOnly,
                           groupValue: _selectedMode,
                           onChanged: (value) {
-                            setState(() => _selectedMode = ScanMode.readonly);
+                            setState(() => _selectedMode = ScanMode.readOnly);
                           },
                         ),
                         Expanded(
@@ -1091,13 +1091,13 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
             // Test limit mode
             GestureDetector(
               onTap: () {
-                setState(() => _selectedMode = ScanMode.testLimit);
+                setState(() => _selectedMode = ScanMode.rulesOnly);
               },
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: _selectedMode == ScanMode.testLimit
+                    color: _selectedMode == ScanMode.rulesOnly
                         ? Colors.blue
                         : Colors.grey.shade300,
                     width: 2,
@@ -1110,10 +1110,10 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
                     Row(
                       children: [
                         Radio<ScanMode>(
-                          value: ScanMode.testLimit,
+                          value: ScanMode.rulesOnly,
                           groupValue: _selectedMode,
                           onChanged: (value) {
-                            setState(() => _selectedMode = ScanMode.testLimit);
+                            setState(() => _selectedMode = ScanMode.rulesOnly);
                           },
                         ),
                         Expanded(
@@ -1137,7 +1137,7 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
                         ),
                       ],
                     ),
-                    if (_selectedMode == ScanMode.testLimit) ...[
+                    if (_selectedMode == ScanMode.rulesOnly) ...[
                       const SizedBox(height: 12),
                       Row(
                         children: [
@@ -1170,13 +1170,13 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
             // Full test mode
             GestureDetector(
               onTap: () {
-                setState(() => _selectedMode = ScanMode.testAll);
+                setState(() => _selectedMode = ScanMode.safeSendersOnly);
               },
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: _selectedMode == ScanMode.testAll
+                    color: _selectedMode == ScanMode.safeSendersOnly
                         ? Colors.blue
                         : Colors.grey.shade300,
                     width: 2,
@@ -1189,10 +1189,10 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
                     Row(
                       children: [
                         Radio<ScanMode>(
-                          value: ScanMode.testAll,
+                          value: ScanMode.safeSendersOnly,
                           groupValue: _selectedMode,
                           onChanged: (value) {
-                            setState(() => _selectedMode = ScanMode.testAll);
+                            setState(() => _selectedMode = ScanMode.safeSendersOnly);
                           },
                         ),
                         Expanded(
@@ -1225,13 +1225,13 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
             // [NEW] PHASE 3.1: Full Scan mode (permanent)
             GestureDetector(
               onTap: () {
-                setState(() => _selectedMode = ScanMode.fullScan);
+                setState(() => _selectedMode = ScanMode.safeSendersAndRules);
               },
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: _selectedMode == ScanMode.fullScan
+                    color: _selectedMode == ScanMode.safeSendersAndRules
                         ? Colors.blue
                         : Colors.grey.shade300,
                     width: 2,
@@ -1244,10 +1244,10 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
                     Row(
                       children: [
                         Radio<ScanMode>(
-                          value: ScanMode.fullScan,
+                          value: ScanMode.safeSendersAndRules,
                           groupValue: _selectedMode,
                           onChanged: (value) {
-                            setState(() => _selectedMode = ScanMode.fullScan);
+                            setState(() => _selectedMode = ScanMode.safeSendersAndRules);
                           },
                         ),
                         Expanded(
@@ -1291,11 +1291,11 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      _selectedMode == ScanMode.readonly
+                      _selectedMode == ScanMode.readOnly
                           ? 'No emails will be modified. Safe for testing.'
-                          : _selectedMode == ScanMode.testLimit
+                          : _selectedMode == ScanMode.rulesOnly
                               ? 'Only first $_testLimit emails will be modified.'
-                              : _selectedMode == ScanMode.testAll
+                              : _selectedMode == ScanMode.safeSendersOnly
                                   ? 'All actions can be reverted using "Revert Last Run" option.'
                                   : '[WARNING] PERMANENT changes - emails will be DELETED or MOVED. This action CANNOT be undone!',
                       style: TextStyle(

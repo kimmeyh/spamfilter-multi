@@ -177,7 +177,7 @@ void main() {
 
     test('Summary should display correct counts for each action type', () {
       // Initialize scan
-      provider.initializeScanMode(mode: ScanMode.readonly);
+      provider.initializeScanMode(mode: ScanMode.readOnly);
       provider.startScan(totalEmails: 10);
 
       // Add various results
@@ -212,10 +212,10 @@ void main() {
       // Test all scan modes
       // [UPDATED] Sprint 14 Issue #123+#124: Scan mode names repurposed
       final modeDisplayNames = {
-        ScanMode.readonly: 'Read-Only',
-        ScanMode.testLimit: 'Process Rules Only',
-        ScanMode.testAll: 'Process Safe Senders Only',
-        ScanMode.fullScan: 'Process Safe Senders + Rules',
+        ScanMode.readOnly: 'Read-Only',
+        ScanMode.rulesOnly: 'Process Rules Only',
+        ScanMode.safeSendersOnly: 'Process Safe Senders Only',
+        ScanMode.safeSendersAndRules: 'Process Safe Senders + Rules',
       };
 
       for (var entry in modeDisplayNames.entries) {
@@ -228,7 +228,7 @@ void main() {
     });
 
     test('getSummary should return correct summary map', () {
-      provider.initializeScanMode(mode: ScanMode.testAll);
+      provider.initializeScanMode(mode: ScanMode.safeSendersOnly);
       provider.startScan(totalEmails: 5);
 
       _recordResult(provider, EmailActionType.delete, 'spam@test.com', 'Spam');
@@ -258,7 +258,7 @@ void main() {
     });
 
     test('Results with matched rule should display rule name, not "no rule"', () {
-      provider.initializeScanMode(mode: ScanMode.readonly);
+      provider.initializeScanMode(mode: ScanMode.readOnly);
       provider.startScan(totalEmails: 3);
 
       // Add result with matched rule for delete
@@ -338,7 +338,7 @@ void main() {
     });
 
     test('Result display should show: folder • subject • matched_rule', () {
-      provider.initializeScanMode(mode: ScanMode.readonly);
+      provider.initializeScanMode(mode: ScanMode.readOnly);
       provider.startScan(totalEmails: 1);
 
       provider.recordResult(EmailActionResult(
@@ -375,7 +375,7 @@ void main() {
     });
 
     test('Results with no matching rule should have empty string, not "no rule"', () {
-      provider.initializeScanMode(mode: ScanMode.readonly);
+      provider.initializeScanMode(mode: ScanMode.readOnly);
       provider.startScan(totalEmails: 1);
 
       provider.recordResult(EmailActionResult(
@@ -409,7 +409,7 @@ void main() {
     });
 
     test('Multiple emails with different rules should display correctly', () {
-      provider.initializeScanMode(mode: ScanMode.readonly);
+      provider.initializeScanMode(mode: ScanMode.readOnly);
       provider.startScan(totalEmails: 4);
 
       final testCases = [
@@ -470,7 +470,7 @@ void main() {
     });
 
     test('Error results should be tracked correctly', () {
-      provider.initializeScanMode(mode: ScanMode.readonly);
+      provider.initializeScanMode(mode: ScanMode.readOnly);
       provider.startScan(totalEmails: 3);
 
       // Record a successful result
@@ -519,7 +519,7 @@ void main() {
     });
 
     test('Results should preserve folder name from scanned email', () {
-      provider.initializeScanMode(mode: ScanMode.readonly);
+      provider.initializeScanMode(mode: ScanMode.readOnly);
       provider.startScan(totalEmails: 3);
 
       // Record results from different folders
@@ -577,7 +577,7 @@ void main() {
     });
 
     test('Phase 3.4 result tile format should include folder • subject • rule', () {
-      provider.initializeScanMode(mode: ScanMode.readonly);
+      provider.initializeScanMode(mode: ScanMode.readOnly);
       provider.startScan(totalEmails: 1);
 
       final evalResult = EvaluationResult(

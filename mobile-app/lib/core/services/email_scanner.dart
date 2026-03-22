@@ -261,11 +261,11 @@ class EmailScanner {
 
       // --- Phase 6b: Batch execute actions ---
       final bool canExecuteRules =
-          scanProvider.scanMode != ScanMode.readonly &&
-          scanProvider.scanMode != ScanMode.testAll;
+          scanProvider.scanMode != ScanMode.readOnly &&
+          scanProvider.scanMode != ScanMode.safeSendersOnly;
       final bool canExecuteSafeSenders =
-          scanProvider.scanMode != ScanMode.readonly &&
-          scanProvider.scanMode != ScanMode.testLimit;
+          scanProvider.scanMode != ScanMode.readOnly &&
+          scanProvider.scanMode != ScanMode.rulesOnly;
 
       // Collect emails by action type for batch processing
       final deleteEmails = <_EvaluatedEmail>[];
@@ -434,7 +434,7 @@ class EmailScanner {
             .where((e) => e.action == EmailActionType.delete)
             .toList();
         if (readonlyDeletes.isNotEmpty) {
-          final modeDesc = scanProvider.scanMode == ScanMode.testAll
+          final modeDesc = scanProvider.scanMode == ScanMode.safeSendersOnly
               ? 'SAFE_SENDERS_ONLY'
               : 'READONLY';
           AppLogger.scan('[$modeDesc] Would delete ${readonlyDeletes.length} emails');
@@ -501,7 +501,7 @@ class EmailScanner {
       if (!canExecuteRules) {
         final readonlyJunkEmails = evaluatedEmails.where((e) => e.action == EmailActionType.moveToJunk).toList();
         if (readonlyJunkEmails.isNotEmpty) {
-          final modeDesc = scanProvider.scanMode == ScanMode.testAll
+          final modeDesc = scanProvider.scanMode == ScanMode.safeSendersOnly
               ? 'SAFE_SENDERS_ONLY'
               : 'READONLY';
           AppLogger.scan('[$modeDesc] Would move to junk ${readonlyJunkEmails.length} emails');

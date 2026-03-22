@@ -23,7 +23,7 @@ import '../providers/email_scan_provider.dart';
 ///
 /// // Get/set app-wide settings
 /// final scanMode = await store.getManualScanMode();
-/// await store.setManualScanMode(ScanMode.readonly);
+/// await store.setManualScanMode(ScanMode.readOnly);
 ///
 /// // Get/set per-account overrides
 /// final accountFolders = await store.getAccountFolders('gmail-user@gmail.com');
@@ -54,12 +54,12 @@ class SettingsStore {
   // ============================================================
   // Default Values
   // ============================================================
-  static const ScanMode defaultManualScanMode = ScanMode.readonly;
+  static const ScanMode defaultManualScanMode = ScanMode.readOnly;
   static const List<String> defaultManualScanFolders = ['INBOX'];
   static const bool defaultConfirmDialogsEnabled = true;
   static const bool defaultBackgroundScanEnabled = false;
   static const int defaultBackgroundScanFrequency = 15; // minutes
-  static const ScanMode defaultBackgroundScanMode = ScanMode.readonly;
+  static const ScanMode defaultBackgroundScanMode = ScanMode.readOnly;
   static const List<String> defaultBackgroundScanFolders = ['INBOX'];
   static const String? defaultCsvExportDirectory = null; // null means use Downloads folder
   static const bool defaultBackgroundScanDebugCsv = false;
@@ -648,17 +648,27 @@ class SettingsStore {
 
   ScanMode _parseScanMode(String value) {
     switch (value) {
+      // Current names
+      case 'readOnly':
+        return ScanMode.readOnly;
+      case 'rulesOnly':
+        return ScanMode.rulesOnly;
+      case 'safeSendersOnly':
+        return ScanMode.safeSendersOnly;
+      case 'safeSendersAndRules':
+        return ScanMode.safeSendersAndRules;
+      // Legacy names (backwards compatibility with existing DB records)
       case 'readonly':
-        return ScanMode.readonly;
+        return ScanMode.readOnly;
       case 'testLimit':
-        return ScanMode.testLimit;
+        return ScanMode.rulesOnly;
       case 'testAll':
-        return ScanMode.testAll;
+        return ScanMode.safeSendersOnly;
       case 'fullScan':
-        return ScanMode.fullScan;
+        return ScanMode.safeSendersAndRules;
       default:
-        _logger.w('Unknown scan mode: $value, defaulting to readonly');
-        return ScanMode.readonly;
+        _logger.w('Unknown scan mode: $value, defaulting to readOnly');
+        return ScanMode.readOnly;
     }
   }
 

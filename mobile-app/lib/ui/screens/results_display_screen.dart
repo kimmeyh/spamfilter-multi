@@ -723,14 +723,14 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     final bool isRulesOnly;
     if (showingHistorical && _lastCompletedScan != null) {
       final historicalMode = _lastCompletedScan!.scanMode;
-      isReadOnly = historicalMode == 'readonly';
-      isSafeSendersOnly = historicalMode == 'testAll';
-      isRulesOnly = historicalMode == 'testLimit';
+      isReadOnly = historicalMode == 'readOnly' || historicalMode == 'readonly';
+      isSafeSendersOnly = historicalMode == 'safeSendersOnly' || historicalMode == 'testAll';
+      isRulesOnly = historicalMode == 'rulesOnly' || historicalMode == 'testLimit';
     } else {
       final scanMode = scanProvider.scanMode;
-      isReadOnly = scanMode == ScanMode.readonly;
-      isSafeSendersOnly = scanMode == ScanMode.testAll;
-      isRulesOnly = scanMode == ScanMode.testLimit;
+      isReadOnly = scanMode == ScanMode.readOnly;
+      isSafeSendersOnly = scanMode == ScanMode.safeSendersOnly;
+      isRulesOnly = scanMode == ScanMode.rulesOnly;
     }
 
     // Build scan type and time info

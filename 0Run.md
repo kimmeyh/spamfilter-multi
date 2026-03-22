@@ -2,10 +2,21 @@
 ***BELOW IS NOT FOR Github Copilot USE***
 
 # Run the Development Executable (feature/<branch>):
-Start-Process "D:\Data\Harold\github\spamfilter-multi\mobile-app\build\windows\x64\runner\Release\spam_filter_mobile.exe"
+Start-Process "D:\Data\Harold\github\spamfilter-multi\mobile-app\build\windows\x64\runner\Release\MyEmailSpamFilter.exe"
 
 # Run the Production (main)
-Start-Process "D:\Data\Harold\github\spamfilter-multi-prod\mobile-app\build\windows\x64\runner\Release\spam_filter_mobile.exe"
+Start-Process "D:\Data\Harold\github\spamfilter-multi\mobile-app\build\windows\x64\runner\Release\MyEmailSpamFilter.exe"
+# if it does not exist, then build first:
+
+# Build and run Production from Main branch
+  # 1. Switch to main branch and pull latest
+  cd D:\Data\Harold\github\spamfilter-multi
+  git checkout main
+  git pull origin main
+
+  # 2. Build and launch production app
+  cd mobile-app\scripts
+  .\build-windows.ps1 -Environment prod -RunAfterBuild:$false
 
 # Run Windows Emulator
 cd D:\Data\Harold\github\spamfilter-multi\mobile-app; flutter run -d windows

@@ -35,9 +35,9 @@ void main() {
     });
 
     test('setManualScanMode persists and retrieves correctly', () async {
-      await settingsStore.setManualScanMode(ScanMode.fullScan);
+      await settingsStore.setManualScanMode(ScanMode.safeSendersAndRules);
       final mode = await settingsStore.getManualScanMode();
-      expect(mode, ScanMode.fullScan);
+      expect(mode, ScanMode.safeSendersAndRules);
     });
 
     test('getManualScanFolders returns default when not set', () async {
@@ -93,9 +93,9 @@ void main() {
     });
 
     test('setBackgroundScanMode persists and retrieves correctly', () async {
-      await settingsStore.setBackgroundScanMode(ScanMode.testAll);
+      await settingsStore.setBackgroundScanMode(ScanMode.safeSendersOnly);
       final mode = await settingsStore.getBackgroundScanMode();
-      expect(mode, ScanMode.testAll);
+      expect(mode, ScanMode.safeSendersOnly);
     });
   });
 
@@ -127,9 +127,9 @@ void main() {
     });
 
     test('setAccountScanMode persists and retrieves correctly', () async {
-      await settingsStore.setAccountScanMode(accountId, ScanMode.fullScan);
+      await settingsStore.setAccountScanMode(accountId, ScanMode.safeSendersAndRules);
       final mode = await settingsStore.getAccountScanMode(accountId);
-      expect(mode, ScanMode.fullScan);
+      expect(mode, ScanMode.safeSendersAndRules);
     });
 
     test('hasAccountOverrides returns false when no overrides', () async {
@@ -138,13 +138,13 @@ void main() {
     });
 
     test('hasAccountOverrides returns true when overrides exist', () async {
-      await settingsStore.setAccountScanMode(accountId, ScanMode.fullScan);
+      await settingsStore.setAccountScanMode(accountId, ScanMode.safeSendersAndRules);
       final hasOverrides = await settingsStore.hasAccountOverrides(accountId);
       expect(hasOverrides, true);
     });
 
     test('clearAccountOverrides removes all account settings', () async {
-      await settingsStore.setAccountScanMode(accountId, ScanMode.fullScan);
+      await settingsStore.setAccountScanMode(accountId, ScanMode.safeSendersAndRules);
       await settingsStore.setAccountFolders(accountId, ['Custom']);
       await settingsStore.clearAccountOverrides(accountId);
 
@@ -162,23 +162,23 @@ void main() {
     const accountId = 'test-account-123';
 
     test('getEffectiveScanMode uses global when no account override', () async {
-      await settingsStore.setManualScanMode(ScanMode.fullScan);
+      await settingsStore.setManualScanMode(ScanMode.safeSendersAndRules);
       final effective = await settingsStore.getEffectiveScanMode(accountId);
-      expect(effective, ScanMode.fullScan);
+      expect(effective, ScanMode.safeSendersAndRules);
     });
 
     test('getEffectiveScanMode uses account override when set', () async {
-      await settingsStore.setManualScanMode(ScanMode.readonly);
-      await settingsStore.setAccountScanMode(accountId, ScanMode.fullScan);
+      await settingsStore.setManualScanMode(ScanMode.readOnly);
+      await settingsStore.setAccountScanMode(accountId, ScanMode.safeSendersAndRules);
       final effective = await settingsStore.getEffectiveScanMode(accountId);
-      expect(effective, ScanMode.fullScan);
+      expect(effective, ScanMode.safeSendersAndRules);
     });
 
     test('getEffectiveScanMode uses background mode when isBackground true', () async {
-      await settingsStore.setManualScanMode(ScanMode.readonly);
-      await settingsStore.setBackgroundScanMode(ScanMode.fullScan);
+      await settingsStore.setManualScanMode(ScanMode.readOnly);
+      await settingsStore.setBackgroundScanMode(ScanMode.safeSendersAndRules);
       final effective = await settingsStore.getEffectiveScanMode(null, isBackground: true);
-      expect(effective, ScanMode.fullScan);
+      expect(effective, ScanMode.safeSendersAndRules);
     });
 
     test('getEffectiveFolders uses global when no account override', () async {

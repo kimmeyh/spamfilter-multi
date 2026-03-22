@@ -14,9 +14,9 @@ import 'package:my_email_spam_filter/adapters/email_providers/email_provider.dar
 /// causing 526 emails to be deleted during testing.
 ///
 /// Test coverage:
-/// - ScanMode.readonly prevents platform.takeAction() calls
-/// - ScanMode.fullScan allows platform.takeAction() calls
-/// - ScanMode.testLimit respects email limit
+/// - ScanMode.readOnly prevents platform.takeAction() calls
+/// - ScanMode.safeSendersAndRules allows platform.takeAction() calls
+/// - ScanMode.rulesOnly respects email limit
 /// - Actions are logged but not executed in readonly mode
 ///
 /// TODO: Issue #117 - Complete this test once RuleSetProvider supports loadRulesFromString
@@ -52,9 +52,9 @@ void main() {
       );
     });
 
-    test('ScanMode.readonly prevents platform.takeAction() calls', () async {
+    test('ScanMode.readOnly prevents platform.takeAction() calls', () async {
       // Arrange: Set readonly mode
-      scanProvider.initializeScanMode(mode: ScanMode.readonly);
+      scanProvider.initializeScanMode(mode: ScanMode.readOnly);
 
       // Create test email matching delete rule
       final testEmail = EmailMessage(
@@ -88,9 +88,9 @@ void main() {
         reason: 'Deleted count should increment (proposed action tracked)');
     });
 
-    test('ScanMode.fullScan allows platform.takeAction() calls', () async {
+    test('ScanMode.safeSendersAndRules allows platform.takeAction() calls', () async {
       // Arrange: Set full scan mode
-      scanProvider.initializeScanMode(mode: ScanMode.fullScan);
+      scanProvider.initializeScanMode(mode: ScanMode.safeSendersAndRules);
 
       // Create test email matching delete rule
       final testEmail = EmailMessage(
@@ -123,9 +123,9 @@ void main() {
       expect(scanProvider.deletedCount, 1);
     });
 
-    test('ScanMode.testLimit respects email limit', () async {
+    test('ScanMode.rulesOnly respects email limit', () async {
       // Arrange: Set test limit mode (max 2 emails)
-      scanProvider.initializeScanMode(mode: ScanMode.testLimit, testLimit: 2);
+      scanProvider.initializeScanMode(mode: ScanMode.rulesOnly, testLimit: 2);
 
       // Create 5 test emails matching delete rule
       final testEmails = List.generate(5, (i) => EmailMessage(
@@ -160,7 +160,7 @@ void main() {
 
     test('Readonly mode logs proposed actions without executing', () async {
       // Arrange: Set readonly mode
-      scanProvider.initializeScanMode(mode: ScanMode.readonly);
+      scanProvider.initializeScanMode(mode: ScanMode.readOnly);
 
       // Create test emails with different rule matches
       final testEmails = [

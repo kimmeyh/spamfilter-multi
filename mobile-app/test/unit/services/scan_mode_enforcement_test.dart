@@ -17,15 +17,15 @@ import 'package:my_email_spam_filter/core/providers/email_scan_provider.dart';
 void main() {
   group('ScanMode Enum Tests', () {
     test('ScanMode has all expected values', () {
-      expect(ScanMode.values, contains(ScanMode.readonly));
-      expect(ScanMode.values, contains(ScanMode.testLimit));
-      expect(ScanMode.values, contains(ScanMode.testAll));
-      expect(ScanMode.values, contains(ScanMode.fullScan));
+      expect(ScanMode.values, contains(ScanMode.readOnly));
+      expect(ScanMode.values, contains(ScanMode.rulesOnly));
+      expect(ScanMode.values, contains(ScanMode.safeSendersOnly));
+      expect(ScanMode.values, contains(ScanMode.safeSendersAndRules));
       expect(ScanMode.values.length, 4);
     });
 
-    test('ScanMode.readonly is first in enum (safest default)', () {
-      expect(ScanMode.values.first, ScanMode.readonly);
+    test('ScanMode.readOnly is first in enum (safest default)', () {
+      expect(ScanMode.values.first, ScanMode.readOnly);
     });
   });
 
@@ -37,30 +37,30 @@ void main() {
     });
 
     test('Default scan mode is readonly', () {
-      expect(provider.scanMode, ScanMode.readonly);
+      expect(provider.scanMode, ScanMode.readOnly);
     });
 
     test('initializeScanMode sets mode correctly', () {
-      provider.initializeScanMode(mode: ScanMode.fullScan);
-      expect(provider.scanMode, ScanMode.fullScan);
+      provider.initializeScanMode(mode: ScanMode.safeSendersAndRules);
+      expect(provider.scanMode, ScanMode.safeSendersAndRules);
 
-      provider.initializeScanMode(mode: ScanMode.testLimit, testLimit: 5);
-      expect(provider.scanMode, ScanMode.testLimit);
+      provider.initializeScanMode(mode: ScanMode.rulesOnly, testLimit: 5);
+      expect(provider.scanMode, ScanMode.rulesOnly);
 
-      provider.initializeScanMode(mode: ScanMode.testAll);
-      expect(provider.scanMode, ScanMode.testAll);
+      provider.initializeScanMode(mode: ScanMode.safeSendersOnly);
+      expect(provider.scanMode, ScanMode.safeSendersOnly);
 
-      provider.initializeScanMode(mode: ScanMode.readonly);
-      expect(provider.scanMode, ScanMode.readonly);
+      provider.initializeScanMode(mode: ScanMode.readOnly);
+      expect(provider.scanMode, ScanMode.readOnly);
     });
 
     test('Test limit is stored when mode is testLimit', () {
-      provider.initializeScanMode(mode: ScanMode.testLimit, testLimit: 10);
+      provider.initializeScanMode(mode: ScanMode.rulesOnly, testLimit: 10);
       expect(provider.emailTestLimit, 10);
     });
 
     test('Scan mode persists during scan lifecycle', () async {
-      provider.initializeScanMode(mode: ScanMode.readonly);
+      provider.initializeScanMode(mode: ScanMode.readOnly);
 
       // Simulate scan lifecycle
       await provider.startScan(
@@ -68,18 +68,18 @@ void main() {
         scanType: 'manual',
         foldersScanned: ['INBOX'],
       );
-      expect(provider.scanMode, ScanMode.readonly);
+      expect(provider.scanMode, ScanMode.readOnly);
 
       // Mode should still be readonly after completion
       await provider.completeScan();
-      expect(provider.scanMode, ScanMode.readonly);
+      expect(provider.scanMode, ScanMode.readOnly);
     });
 
     test('Scan mode change notifies listeners', () {
       int notifyCount = 0;
       provider.addListener(() => notifyCount++);
 
-      provider.initializeScanMode(mode: ScanMode.fullScan);
+      provider.initializeScanMode(mode: ScanMode.safeSendersAndRules);
       expect(notifyCount, greaterThan(0));
     });
   });
@@ -92,22 +92,22 @@ void main() {
     });
 
     test('readonly mode should be non-destructive', () {
-      provider.initializeScanMode(mode: ScanMode.readonly);
+      provider.initializeScanMode(mode: ScanMode.readOnly);
       // In readonly mode, no actions should be taken
       // This is verified by the fact that scanMode == readonly
-      expect(provider.scanMode, ScanMode.readonly);
+      expect(provider.scanMode, ScanMode.readOnly);
     });
 
     test('fullScan mode is the only fully destructive mode', () {
       // fullScan is the only mode that permanently deletes
       // Other modes either do nothing (readonly) or have limits
-      provider.initializeScanMode(mode: ScanMode.fullScan);
-      expect(provider.scanMode, ScanMode.fullScan);
+      provider.initializeScanMode(mode: ScanMode.safeSendersAndRules);
+      expect(provider.scanMode, ScanMode.safeSendersAndRules);
     });
 
     test('testLimit mode respects email limit', () {
-      provider.initializeScanMode(mode: ScanMode.testLimit, testLimit: 3);
-      expect(provider.scanMode, ScanMode.testLimit);
+      provider.initializeScanMode(mode: ScanMode.rulesOnly, testLimit: 3);
+      expect(provider.scanMode, ScanMode.rulesOnly);
       expect(provider.emailTestLimit, 3);
     });
   });
@@ -120,7 +120,7 @@ void main() {
     });
 
     test('Readonly mode still records proposed actions', () async {
-      provider.initializeScanMode(mode: ScanMode.readonly);
+      provider.initializeScanMode(mode: ScanMode.readOnly);
       await provider.startScan(
         totalEmails: 1,
         scanType: 'manual',
@@ -141,7 +141,7 @@ void main() {
     });
 
     test('Action counts reflect proposed actions in readonly mode', () async {
-      provider.initializeScanMode(mode: ScanMode.readonly);
+      provider.initializeScanMode(mode: ScanMode.readOnly);
       await provider.startScan(
         totalEmails: 5,
         scanType: 'manual',
@@ -183,20 +183,20 @@ void main() {
   });
 
   group('Regression Prevention - Issue #9', () {
-    test('ScanMode.readonly comparison works correctly', () {
+    test('ScanMode.readOnly comparison works correctly', () {
       // This is the exact check used in EmailScanner.scanInbox()
-      final scanMode = ScanMode.readonly;
+      final scanMode = ScanMode.readOnly;
 
-      // The check: if (scanProvider.scanMode != ScanMode.readonly)
-      final shouldTakeAction = scanMode != ScanMode.readonly;
+      // The check: if (scanProvider.scanMode != ScanMode.readOnly)
+      final shouldTakeAction = scanMode != ScanMode.readOnly;
       expect(shouldTakeAction, false,
           reason: 'Readonly mode must NOT allow actions');
     });
 
     test('Non-readonly modes allow actions', () {
-      expect(ScanMode.fullScan != ScanMode.readonly, true);
-      expect(ScanMode.testLimit != ScanMode.readonly, true);
-      expect(ScanMode.testAll != ScanMode.readonly, true);
+      expect(ScanMode.safeSendersAndRules != ScanMode.readOnly, true);
+      expect(ScanMode.rulesOnly != ScanMode.readOnly, true);
+      expect(ScanMode.safeSendersOnly != ScanMode.readOnly, true);
     });
 
     test('Mode state cannot be null', () {

@@ -22,10 +22,10 @@ enum EmailActionType { none, safeSender, delete, moveToJunk, markAsRead }
 
 /// [NEW] PHASE 3.1: Scan mode - read-only, test modes, or full production scan
 enum ScanMode {
-  readonly,   // Default: scan only, no modifications
-  testLimit,  // Test mode: modify up to N emails, then stop
-  testAll,    // Test mode: modify all emails (can revert)
-  fullScan,   // [NEW] PHASE 3.1: Production mode - PERMANENT delete/move (cannot revert)
+  readOnly,              // Default: scan only, no modifications
+  rulesOnly,             // Process spam rules only, skip safe sender actions
+  safeSendersOnly,       // Process safe sender actions only, skip spam rules
+  safeSendersAndRules,   // Process both safe sender and spam rule actions
 }
 
 /// [NEW] Multi-account & Multi-folder support: Junk folder configuration per provider
@@ -129,7 +129,7 @@ class EmailScanProvider extends ChangeNotifier {
   int _errorCount = 0;
 
   // [NEW] PHASE 2 SPRINT 3: Read-only mode & revert capability
-  ScanMode _scanMode = ScanMode.readonly;  // Default: read-only
+  ScanMode _scanMode = ScanMode.readOnly;  // Default: read-only
   int? _emailTestLimit;  // How many emails to actually modify (for testLimit mode)
   final List<String> _lastRunActionIds = [];  // Track email IDs of actions for revert
   final List<EmailActionResult> _lastRunActions = [];  // Track actual actions for revert
@@ -185,14 +185,14 @@ class EmailScanProvider extends ChangeNotifier {
   /// Get human-readable scan mode name for UI display
   String getScanModeDisplayName() {
     switch (_scanMode) {
-      case ScanMode.readonly:
+      case ScanMode.readOnly:
         return 'Read-Only';
-      case ScanMode.testLimit:
+      case ScanMode.rulesOnly:
         // [UPDATED] ISSUE #123+#124: Repurposed testLimit for "rules only" mode
         return 'Process Rules Only';
-      case ScanMode.testAll:
+      case ScanMode.safeSendersOnly:
         return 'Process Safe Senders Only';
-      case ScanMode.fullScan:
+      case ScanMode.safeSendersAndRules:
         return 'Process Safe Senders + Rules';
     }
   }
@@ -496,20 +496,15 @@ class EmailScanProvider extends ChangeNotifier {
     return 'Scanning $_currentFolder: $_processedCount / $_totalEmails';
   }
 
-  /// [NEW] PHASE 2 SPRINT 3: Initialize scan mode and test limits
-  /// 
-  /// Set the scan mode before starting a scan:
-  /// - readonly: scan only, no modifications (default, safe for testing)
-  /// - testLimit: modify up to N emails, then stop
-  /// - testAll: modify all emails (be careful! can revert)
-  /// 
-  /// Example:
-  /// ```dart
-  /// provider.initializeScanMode(mode: ScanMode.testLimit, testLimit: 50);
-  /// // Now scan will delete/move up to 50 emails, then stop
-  /// ```
+  /// Initialize scan mode before starting a scan.
+  ///
+  /// Scan modes:
+  /// - readOnly: scan only, no modifications (default)
+  /// - rulesOnly: execute spam rules only, skip safe sender actions
+  /// - safeSendersOnly: execute safe sender actions only, skip spam rules
+  /// - safeSendersAndRules: execute both safe sender and spam rule actions
   void initializeScanMode({
-    ScanMode mode = ScanMode.readonly,
+    ScanMode mode = ScanMode.readOnly,
     int? testLimit,
   }) {
     _scanMode = mode;
@@ -560,21 +555,21 @@ class EmailScanProvider extends ChangeNotifier {
     _logger.i('🗑️ Cleared folder selection for $accountId');
   }
 
-  /// [NEW] PHASE 3.1: Mode-aware recordResult with read-only, test modes, and full scan
-  /// 
-  /// - readonly: actions logged but NOT executed
-  /// - testLimit: only first N actions executed (can revert)
-  /// - testAll: all actions executed (can revert)
-  /// - fullScan: all actions executed PERMANENTLY (cannot revert)
+  /// Mode-aware recordResult.
+  ///
+  /// - readOnly: actions logged but NOT executed
+  /// - rulesOnly: spam rule actions executed (can revert)
+  /// - safeSendersOnly: safe sender actions executed (can revert)
+  /// - safeSendersAndRules: all actions executed PERMANENTLY (cannot revert)
   void recordResult(EmailActionResult result) {
     _logger.d('[RECORD] recordResult called: action=${result.action}, email=${result.email.from}, success=${result.success}');
 
     // Determine if this action should actually be executed
     bool shouldExecuteAction;
-    if (_scanMode == ScanMode.fullScan) {
+    if (_scanMode == ScanMode.safeSendersAndRules) {
       // In fullScan mode, all actions are executed permanently (no test limit, no revert tracking)
       shouldExecuteAction = true;
-    } else if (_scanMode == ScanMode.readonly) {
+    } else if (_scanMode == ScanMode.readOnly) {
       // In readonly mode, actions are never executed
       shouldExecuteAction = false;
     } else {
@@ -585,16 +580,16 @@ class EmailScanProvider extends ChangeNotifier {
 
     if (shouldExecuteAction) {
       // Track action for potential revert (only for testLimit and testAll, NOT fullScan)
-      if (_scanMode == ScanMode.testLimit || _scanMode == ScanMode.testAll) {
+      if (_scanMode == ScanMode.rulesOnly || _scanMode == ScanMode.safeSendersOnly) {
         _lastRunActionIds.add(result.email.id);
         _lastRunActions.add(result);
         _logger.i('[NOTES] Action recorded (revertable): ${result.action} - ${result.email.from}');
-      } else if (_scanMode == ScanMode.fullScan) {
+      } else if (_scanMode == ScanMode.safeSendersAndRules) {
         _logger.i('🔥 Action executed (PERMANENT): ${result.action} - ${result.email.from}');
       }
     } else {
       // Read-only or limit reached: log what would happen
-      if (_scanMode == ScanMode.readonly) {
+      if (_scanMode == ScanMode.readOnly) {
         _logger.i('[CHECKLIST] [READONLY] Would ${result.action} email: ${result.email.from}');
       } else {
         _logger.i('[CHECKLIST] [LIMIT REACHED] Would ${result.action} email: ${result.email.from}');
