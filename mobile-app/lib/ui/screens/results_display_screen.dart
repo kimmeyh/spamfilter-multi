@@ -1455,8 +1455,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                           subtitle: '@$displaySenderDomain',
                           color: Colors.green,
                           isMatched: isSafeSender && effectiveEval?.matchedPatternType == 'exact_domain',
-                          onTap: () {
+                          onTap: () async {
                             Navigator.pop(dialogContext);
+                            // F47: Check for email provider domain
+                            if (!await _checkProviderDomainWarning(domain: rawSenderDomain, isBlockRule: false)) return;
                             _addSafeSender('@$rawSenderDomain', 'exactDomain', email: email);
                           },
                         ),
@@ -1468,8 +1470,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                           subtitle: '@*.${displayRootDomain ?? displaySenderDomain}',
                           color: Colors.green,
                           isMatched: isSafeSender && effectiveEval?.matchedPatternType == 'entire_domain',
-                          onTap: () {
+                          onTap: () async {
                             Navigator.pop(dialogContext);
+                            // F47: Check for email provider domain
+                            if (!await _checkProviderDomainWarning(domain: rawRootDomain ?? rawSenderDomain, isBlockRule: false)) return;
                             _addSafeSender(rawRootDomain ?? rawSenderDomain, 'entireDomain', email: email);
                           },
                         ),
@@ -1506,8 +1510,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                           subtitle: '@$displaySenderDomain',
                           color: Colors.red,
                           isMatched: isDeleted && effectiveEval?.matchedPatternType == 'exact_domain',
-                          onTap: () {
+                          onTap: () async {
                             Navigator.pop(dialogContext);
+                            // F47: Check for email provider domain
+                            if (!await _checkProviderDomainWarning(domain: rawSenderDomain, isBlockRule: true)) return;
                             _createBlockRule('exactDomain', '@$rawSenderDomain', email: email);
                           },
                         ),
@@ -1519,8 +1525,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                           subtitle: '@*.${displayRootDomain ?? displaySenderDomain}',
                           color: Colors.red,
                           isMatched: isDeleted && effectiveEval?.matchedPatternType == 'entire_domain',
-                          onTap: () {
+                          onTap: () async {
                             Navigator.pop(dialogContext);
+                            // F47: Check for email provider domain
+                            if (!await _checkProviderDomainWarning(domain: rawRootDomain ?? rawSenderDomain, isBlockRule: true)) return;
                             _createBlockRule('entireDomain', rawRootDomain ?? rawSenderDomain, email: email);
                           },
                         ),
@@ -1550,6 +1558,74 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         );
       },
     );
+  }
+
+  /// F47: Show warning when adding domain-level rule for a known email provider.
+  ///
+  /// Returns true if the user confirms they want to proceed, false to cancel.
+  /// Returns true immediately (no warning) if the domain is not a known provider.
+  Future<bool> _checkProviderDomainWarning({
+    required String domain,
+    required bool isBlockRule,
+  }) async {
+    // Extract bare domain (remove leading @ and subdomain wildcard patterns)
+    final bareDomain = domain
+        .replaceAll('@', '')
+        .replaceAll('*.', '')
+        .toLowerCase()
+        .trim();
+
+    final providerName = CommonEmailProviders.getProviderName(bareDomain);
+    if (providerName == null) return true; // Not a provider domain, proceed
+
+    final ruleType = isBlockRule ? 'Block Rule' : 'Safe Sender';
+
+    final content = isBlockRule
+        ? 'The domain "$bareDomain" belongs to $providerName, a major email '
+          'provider used by millions of individual and business accounts.\n\n'
+          'Blocking this entire domain would prevent all emails from '
+          '$providerName users from reaching your inbox.\n\n'
+          'Recommendation: Use "Exact Email" to block a specific sender '
+          'instead. If you do block the domain, you can add individual Safe '
+          'Sender exceptions, but those emails would need to be rescued after '
+          'being deleted.'
+        : 'The domain "$bareDomain" belongs to $providerName, a major email '
+          'provider used by millions of individual and business accounts.\n\n'
+          'Adding this domain as a Safe Sender means all emails from any '
+          '$providerName user will bypass your spam rules. Since Safe Sender '
+          'rules override Block Rules, you would not be able to block specific '
+          'senders from this domain.\n\n'
+          'Recommendation: Use "Exact Email" to add specific trusted senders '
+          'instead.';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700),
+            const SizedBox(width: 8),
+            Flexible(child: Text('$ruleType for Email Provider')),
+          ],
+        ),
+        content: Text(content),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: isBlockRule ? Colors.red : Colors.green,
+            ),
+            child: const Text('Proceed Anyway'),
+          ),
+        ],
+      ),
+    );
+
+    return confirmed == true;
   }
 
   Widget _buildInlineActionButton({
