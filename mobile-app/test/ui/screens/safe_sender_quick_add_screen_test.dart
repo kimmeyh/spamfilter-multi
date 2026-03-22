@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/core/models/email_message.dart';
-import 'package:spam_filter_mobile/core/storage/safe_sender_database_store.dart';
-import 'package:spam_filter_mobile/core/storage/database_helper.dart';
+import 'package:my_email_spam_filter/core/models/email_message.dart';
+import 'package:my_email_spam_filter/core/storage/safe_sender_database_store.dart';
+import 'package:my_email_spam_filter/core/storage/database_helper.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:spam_filter_mobile/ui/screens/safe_sender_quick_add_screen.dart';
+import 'package:my_email_spam_filter/ui/screens/safe_sender_quick_add_screen.dart';
 
 class FakeDatabaseProvider implements RuleDatabaseProvider {
   @override

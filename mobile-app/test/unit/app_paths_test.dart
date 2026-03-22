@@ -1,6 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/adapters/storage/app_paths.dart';
+import 'package:my_email_spam_filter/adapters/storage/app_paths.dart';
 import 'dart:io';
 
 void main() {

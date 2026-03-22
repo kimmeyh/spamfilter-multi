@@ -28,10 +28,10 @@ $ErrorActionPreference = 'Stop'
 if ($Debug) {
     $Release = $false
     $buildMode = "debug"
-    $buildTarget = "build\windows\x64\runner\Debug\spam_filter_mobile.exe"
+    $buildTarget = "build\windows\x64\runner\Debug\MyEmailSpamFilter.exe"
 } else {
     $buildMode = "release"
-    $buildTarget = "build\windows\x64\runner\Release\spam_filter_mobile.exe"
+    $buildTarget = "build\windows\x64\runner\Release\MyEmailSpamFilter.exe"
 }
 
 # Set working directory to the Flutter app root

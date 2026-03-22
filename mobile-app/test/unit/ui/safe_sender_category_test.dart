@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/core/storage/safe_sender_database_store.dart';
-import 'package:spam_filter_mobile/ui/screens/safe_senders_management_screen.dart';
+import 'package:my_email_spam_filter/core/storage/safe_sender_database_store.dart';
+import 'package:my_email_spam_filter/ui/screens/safe_senders_management_screen.dart';
 
 /// Tests for SafeSenderCategory pattern categorization logic
 ///

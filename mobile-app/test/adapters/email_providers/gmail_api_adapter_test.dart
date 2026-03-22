@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/adapters/email_providers/gmail_api_adapter.dart';
-import 'package:spam_filter_mobile/adapters/email_providers/email_provider.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/gmail_api_adapter.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/email_provider.dart';
 
 
 void main() {

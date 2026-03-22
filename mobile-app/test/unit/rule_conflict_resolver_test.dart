@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/core/services/rule_conflict_resolver.dart';
-import 'package:spam_filter_mobile/core/models/rule_set.dart';
-import 'package:spam_filter_mobile/core/models/safe_sender_list.dart';
-import 'package:spam_filter_mobile/core/providers/rule_set_provider.dart';
+import 'package:my_email_spam_filter/core/services/rule_conflict_resolver.dart';
+import 'package:my_email_spam_filter/core/models/rule_set.dart';
+import 'package:my_email_spam_filter/core/models/safe_sender_list.dart';
+import 'package:my_email_spam_filter/core/providers/rule_set_provider.dart';
 
 /// Minimal in-memory RuleSetProvider for testing conflict resolution.
 ///

@@ -1,4 +1,4 @@
-name: spam_filter_mobile
+name: my_email_spam_filter
 description: Cross-platform email spam filter app
 version: 0.5.1+1
 publish_to: 'none'
@@ -64,6 +64,7 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
+  msix: ^3.16.8
 
 flutter:
   uses-material-design: true
@@ -77,12 +78,12 @@ flutter:
 # MSIX Configuration for Windows Desktop
 msix_config:
   display_name: MyEmailSpamFilter
-  publisher_display_name: MyEmailSpamFilter
-  identity_name: MyEmailSpamFilter
-  publisher: CN=MyEmailSpamFilter
+  publisher_display_name: Kimmey Consulting - Ohio
+  identity_name: KimmeyConsulting-Ohio.MyEmailSpamFilter
+  publisher: CN=84EA8722-0CA5-4EC0-9B10-07EE79B66062
   msix_version: 0.5.1.0
   logo_path: assets/icon/icon.png
-  capabilities: internetClient, internetClientServer, privateNetworkClientServer, runFullTrust
+  capabilities: internetClient, internetClientServer, privateNetworkClientServer
   store: true
   install_certificate: false
 

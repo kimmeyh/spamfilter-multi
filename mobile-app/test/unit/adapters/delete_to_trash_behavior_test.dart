@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/adapters/email_providers/spam_filter_platform.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/spam_filter_platform.dart';
 
 /// Unit tests verifying delete-to-trash behavior in adapter code (Sprint 11 Critical Fix)
 ///

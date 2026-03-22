@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/core/data/common_email_providers.dart';
+import 'package:my_email_spam_filter/core/data/common_email_providers.dart';
 
 void main() {
   group('CommonEmailProviders', () {

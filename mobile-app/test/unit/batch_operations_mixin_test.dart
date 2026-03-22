@@ -1,10 +1,10 @@
 // ignore_for_file: avoid_print
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/core/models/email_message.dart';
-import 'package:spam_filter_mobile/core/models/evaluation_result.dart';
-import 'package:spam_filter_mobile/adapters/email_providers/spam_filter_platform.dart';
-import 'package:spam_filter_mobile/adapters/email_providers/email_provider.dart';
+import 'package:my_email_spam_filter/core/models/email_message.dart';
+import 'package:my_email_spam_filter/core/models/evaluation_result.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/spam_filter_platform.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/email_provider.dart';
 
 /// Test implementation of SpamFilterPlatform using BatchOperationsMixin
 /// to verify the default single-message fallback behavior.

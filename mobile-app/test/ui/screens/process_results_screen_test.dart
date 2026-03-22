@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/ui/screens/process_results_screen.dart';
-import 'package:spam_filter_mobile/core/storage/scan_result_store.dart';
-import 'package:spam_filter_mobile/core/storage/unmatched_email_store.dart';
+import 'package:my_email_spam_filter/ui/screens/process_results_screen.dart';
+import 'package:my_email_spam_filter/core/storage/scan_result_store.dart';
+import 'package:my_email_spam_filter/core/storage/unmatched_email_store.dart';
 
 // Test doubles for store interfaces
 class FakeScanResultStore implements ScanResultStore {

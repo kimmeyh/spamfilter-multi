@@ -1,12 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/core/models/email_message.dart';
+import 'package:my_email_spam_filter/core/models/email_message.dart';
 
-import 'package:spam_filter_mobile/core/models/evaluation_result.dart';
-import 'package:spam_filter_mobile/core/providers/email_scan_provider.dart';
-import 'package:spam_filter_mobile/core/providers/rule_set_provider.dart';
-import 'package:spam_filter_mobile/core/services/email_scanner.dart';
-import 'package:spam_filter_mobile/adapters/email_providers/spam_filter_platform.dart';
-import 'package:spam_filter_mobile/adapters/email_providers/email_provider.dart';
+import 'package:my_email_spam_filter/core/models/evaluation_result.dart';
+import 'package:my_email_spam_filter/core/providers/email_scan_provider.dart';
+import 'package:my_email_spam_filter/core/providers/rule_set_provider.dart';
+import 'package:my_email_spam_filter/core/services/email_scanner.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/spam_filter_platform.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/email_provider.dart';
 
 /// Integration test for readonly mode enforcement (Sprint 11 - Issue #9 regression prevention)
 ///

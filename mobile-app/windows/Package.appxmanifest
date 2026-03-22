@@ -22,7 +22,7 @@
   </Resources>
 
   <Applications>
-    <Application Id="SpamFilterMulti" Executable="spam_filter_mobile.exe" EntryPoint="Windows.FullTrustApplication">
+    <Application Id="SpamFilterMulti" Executable="MyEmailSpamFilter.exe" EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
         DisplayName="Spam Filter Multi"
         Description="Cross-platform email spam filtering application"

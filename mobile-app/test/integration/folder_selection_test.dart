@@ -11,8 +11,8 @@ library;
 
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/adapters/email_providers/spam_filter_platform.dart';
-import 'package:spam_filter_mobile/adapters/email_providers/generic_imap_adapter.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/spam_filter_platform.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/generic_imap_adapter.dart';
 
 void main() {
   group('Folder Selection - Canonical Folder Recognition', () {

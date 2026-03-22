@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:spam_filter_mobile/adapters/email_providers/generic_imap_adapter.dart';
-import 'package:spam_filter_mobile/adapters/email_providers/gmail_api_adapter.dart';
-import 'package:spam_filter_mobile/adapters/email_providers/junk_folder_config.dart';
-import 'package:spam_filter_mobile/adapters/email_providers/platform_registry.dart';
-import 'package:spam_filter_mobile/adapters/email_providers/spam_filter_platform.dart';
-import 'package:spam_filter_mobile/ui/screens/account_setup_screen.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/generic_imap_adapter.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/gmail_api_adapter.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/junk_folder_config.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/platform_registry.dart';
+import 'package:my_email_spam_filter/adapters/email_providers/spam_filter_platform.dart';
+import 'package:my_email_spam_filter/ui/screens/account_setup_screen.dart';
 
 /// Integration test: Gmail Dual-Auth routing
 ///
