@@ -26,6 +26,15 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-03-22 (Sprint 26 - Settings UX, Excel Export, Provider Warnings, Multi-Account)
+- **feat**: Folder settings selection UX - radio button auto-save, show current folder (F43, Issue #211)
+- **feat**: "Go to View Scan History" link on Manual Scan settings page (F44, Issue #211)
+- **feat**: Background scan Excel export with daily file grouping and updated field order (F45, Issue #211)
+- **feat**: Email provider domain warning when creating domain-level rules (F47, Issue #211)
+- **feat**: Settings General tab for app-wide settings (rules, scan history, about) (F36, Issue #211)
+- **feat**: Multi-Account Scanning - "Scan All Accounts" button for sequential scanning (F7, Issue #211)
+- **chore**: Action label "No rule" replaces "None" in CSV/Excel exports
+
 ### 2026-03-22 (Sprint 25 - Safe Sender Fixes, Scan Mode Rename, Background Scan Rebuild)
 - **fix**: Safe sender INBOX skip bug - emails already in safe sender target folder were not being skipped (Issue #198)
 - **fix**: Exact domain filter chip misclassification - determinePatternType and categorize priority reordered (F30, Issue #202)

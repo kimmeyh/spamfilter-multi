@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import 'package:provider/provider.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/email_providers/spam_filter_platform.dart';
+import '../../core/providers/email_scan_provider.dart';
+import '../../core/providers/rule_set_provider.dart';
+import '../../core/services/email_scanner.dart';
+import '../../core/storage/settings_store.dart';
 import '../../main.dart' show routeObserver;
 import '../widgets/skeleton_loader.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/error_display.dart';
 import '../widgets/app_bar_with_exit.dart';
 import 'platform_selection_screen.dart';
+import 'results_display_screen.dart';
 import 'scan_progress_screen.dart';
 import 'settings_screen.dart';
 
@@ -385,6 +391,100 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
     ).then((_) => _loadSavedAccounts()); // Refresh accounts on return
   }
 
+  /// F7: Scan all saved accounts sequentially
+  Future<void> _scanAllAccounts() async {
+    if (_savedAccounts.length < 2) {
+      // Only one account - just scan it directly
+      if (_savedAccounts.isNotEmpty) {
+        _selectAccount(_savedAccounts.first);
+      }
+      return;
+    }
+
+    final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
+    final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
+    final settingsStore = SettingsStore();
+
+    // Reset provider for fresh multi-account scan
+    scanProvider.reset();
+
+    // Resolve all account data first
+    final accounts = <({String accountId, String platformId, String email})>[];
+    for (final accountId in _savedAccounts) {
+      final platformId = await _credStore.getPlatformId(accountId) ?? '';
+      if (platformId.isNotEmpty) {
+        accounts.add((accountId: accountId, platformId: platformId, email: accountId));
+      }
+    }
+
+    if (accounts.isEmpty) return;
+
+    // Use first account's platform info for results screen (display only)
+    final firstAccount = accounts.first;
+    final firstPlatformName = _getPlatformName(firstAccount.platformId);
+
+    // Start scan and navigate to results immediately
+    scanProvider.startScan(totalEmails: 0, persist: false);
+    final scanMode = await settingsStore.getAccountManualScanMode(firstAccount.accountId) ?? ScanMode.readOnly;
+    scanProvider.initializeScanMode(mode: scanMode);
+
+    if (!mounted) return;
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ResultsDisplayScreen(
+          platformId: firstAccount.platformId,
+          platformDisplayName: 'All Accounts ($firstPlatformName + ${accounts.length - 1} more)',
+          accountId: firstAccount.accountId,
+          accountEmail: '${accounts.length} accounts',
+        ),
+      ),
+    ).then((_) => _loadSavedAccounts());
+
+    // Scan each account sequentially
+    var totalErrors = 0;
+    for (var i = 0; i < accounts.length; i++) {
+      final account = accounts[i];
+      _logger.i('[F7] Scanning account ${i + 1}/${accounts.length}: ${account.email}');
+
+      try {
+        // Load per-account settings
+        final daysBack = await settingsStore.getEffectiveDaysBack(account.accountId, isBackground: false);
+        final savedFolders = await settingsStore.getAccountManualScanFolders(account.accountId);
+        final foldersToScan = (savedFolders != null && savedFolders.isNotEmpty)
+            ? savedFolders
+            : ['INBOX'];
+
+        scanProvider.setSelectedFolders(foldersToScan, accountId: account.accountId);
+        scanProvider.setCurrentAccountId(account.accountId);
+
+        final scanner = EmailScanner(
+          platformId: account.platformId,
+          accountId: account.accountId,
+          ruleSetProvider: ruleProvider,
+          scanProvider: scanProvider,
+        );
+
+        await scanner.scanInbox(daysBack: daysBack, folderNames: foldersToScan);
+        _logger.i('[F7] Account ${account.email} scan completed');
+      } catch (e) {
+        _logger.e('[F7] Account ${account.email} scan failed: $e');
+        totalErrors++;
+        // Continue with next account - do not block
+      }
+    }
+
+    // Mark scan as complete
+    try {
+      await scanProvider.completeScan();
+    } catch (e) {
+      _logger.w('[F7] completeScan failed: $e');
+    }
+
+    _logger.i('[F7] Multi-account scan complete: ${accounts.length} accounts, $totalErrors errors');
+  }
+
   /// Navigate to platform selection to add new account
   void _addNewAccount() {
     Navigator.push<bool>(
@@ -607,11 +707,23 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Select an account to scan for spam',
+                  'Select an account to scan, or scan all accounts at once',
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: Colors.grey[600],
                       ),
                 ),
+                // F7: Scan All button (only show if 2+ accounts)
+                if (_savedAccounts.length >= 2) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      icon: const Icon(Icons.play_circle_outline),
+                      label: Text('Scan All ${_savedAccounts.length} Accounts'),
+                      onPressed: _scanAllAccounts,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
