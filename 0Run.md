@@ -1,7 +1,7 @@
 ***BELOW IS NOT FOR CLAUDE CODE USE***
 ***BELOW IS NOT FOR Github Copilot USE***
 
-# Run the Development Executable (feature/<branch>):
+# *** needs to be updated *** Run the Development Executable (feature/<branch>):
 Start-Process "D:\Data\Harold\github\spamfilter-multi\mobile-app\build\windows\x64\runner\Release\MyEmailSpamFilter.exe"
 
 # Run the Production (main)
