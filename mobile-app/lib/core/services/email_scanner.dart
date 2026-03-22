@@ -218,9 +218,12 @@ class EmailScanner {
             // do not count, do not display, do not process. It is already
             // where it belongs. Other rule types (delete, no rule) in the
             // safe sender folder ARE still shown.
-            if (safeSenderFolder != null &&
-                safeSenderFolder.isNotEmpty &&
-                message.folderName.toLowerCase() == safeSenderTarget.toLowerCase()) {
+            // Note: safeSenderTarget defaults to INBOX when not explicitly set,
+            // so this comparison works whether the folder is configured or not.
+            if (message.folderName.toLowerCase() == safeSenderTarget.toLowerCase()) {
+              AppLogger.scan('Skipping safe sender in target folder: '
+                  'from="${message.from}", folder="${message.folderName}", '
+                  'target="$safeSenderTarget"');
               continue; // Skip this email entirely
             }
             action = EmailActionType.safeSender;
