@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sqflite_common/sqlite_api.dart' show ConflictAlgorithm;
+import 'package:sqflite/sqflite.dart' show ConflictAlgorithm;
 import 'package:my_email_spam_filter/core/storage/settings_store.dart';
 import 'package:my_email_spam_filter/core/providers/email_scan_provider.dart';
 import '../../helpers/database_test_helper.dart';
