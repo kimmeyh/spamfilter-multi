@@ -362,12 +362,11 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             const SizedBox(height: 16),
             _buildRetentionDaysSelector(),
             const SizedBox(height: 8),
-            ListTile(
-              leading: const Icon(Icons.history),
-              title: const Text('View Scan History'),
-              subtitle: const Text('View all past scan runs and results'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => _navigateToScanHistory(),
+            // F44: Updated to match Background settings page style
+            TextButton.icon(
+              icon: const Icon(Icons.history, size: 16),
+              label: const Text('Go to View Scan History'),
+              onPressed: () => _navigateToScanHistory(),
             ),
 
             const SizedBox(height: 24),
@@ -472,6 +471,13 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             // [UPDATED] ISSUE #123: Save per-account manual scan folders
             await _settingsStore.setAccountManualScanFolders(widget.accountId, folders);
           },
+        ),
+        // F44: Go to View Scan History link (matching Background settings style)
+        const SizedBox(height: 8),
+        TextButton.icon(
+          icon: const Icon(Icons.history, size: 16),
+          label: const Text('Go to View Scan History'),
+          onPressed: () => _navigateToScanHistory(),
         ),
         const SizedBox(height: 24),
         _buildSectionHeader('Confirmation'),
