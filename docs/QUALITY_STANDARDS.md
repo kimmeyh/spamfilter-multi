@@ -463,12 +463,34 @@ open coverage/html/index.html
 
 ---
 
+## Terminal Output Presentation (Sprint 25)
+
+When presenting information to the user in terminal/chat output:
+
+**Task summaries**: Use bullet lists with Feature number and description. No grid tables, no headers, no "Task" column.
+```
+Completed Tasks
+- F40 Safe sender INBOX skip fix
+- F34 Scan status indicator
+- F38 Re-process emails via IMAP after rule changes
+```
+
+**Manual testing checklists**: Use bullet lists with Feature number, description, and what to verify.
+```
+What to test manually
+- Scan status indicator (F34) - Run a scan and watch for the progress bar in the summary card
+- Background scan task (F31) - Check Task Scheduler shows SpamFilterBackgroundScan_Dev with correct exe path
+```
+
+**Rationale**: Grid/ASCII tables with box-drawing characters are harder to read in the terminal. Simple bullet lists are cleaner and faster to scan.
+
 ## Version History
 
-**Version**: 1.0
-**Date**: January 31, 2026
-**Author**: Claude Sonnet 4.5
+**Version**: 1.1
+**Date**: March 22, 2026
+**Author**: Claude Opus 4.6
 **Status**: Active
 
 **Updates**:
+- 1.1 (2026-03-22): Added Terminal Output Presentation section (Sprint 25 retrospective feedback)
 - 1.0 (2026-01-31): Initial version created from Sprint 9 retrospective approved recommendations

@@ -87,7 +87,8 @@ These documents MUST be created/updated during each sprint:
 
 - [ ] Windows desktop build verified
 - [ ] Sprint review offered to user
-- [ ] User feedback gathered
+- [ ] **Ask Product Owner/Scrum Master/Lead Developer for retrospective feedback** (MANDATORY - do not create retrospective without this)
+- [ ] User feedback gathered and incorporated
 - [ ] Claude feedback provided
 - [ ] Improvement suggestions created
 - [ ] Improvements decided (which to implement)

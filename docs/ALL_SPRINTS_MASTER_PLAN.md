@@ -175,6 +175,31 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 
 **~~F38. Live Scan: re-process emails after rule changes~~** [OK] Complete (Sprint 25)
 
+**F43. Folder settings selection UX - radio button style (~2-3h) Priority 58**
+- Phase: Core UX
+- Platform: All
+- Settings > Account > Folder Settings: Safe Sender Folder and Deleted Rule Folder should change selection on clicking the radio button (like Default Folders > Select Folders), not require a separate "Select Folder" action
+
+**F44. Add "Go to View Scan History" to Manual Scan settings (~1-2h) Priority 59**
+- Phase: Core UX
+- Platform: All
+- Add "Go to View Scan History" link to Manual Scan settings page after Default Folders section, matching the style used on Background settings page
+
+**F45. Background scan CSV to Excel export with updated format (~4-6h) Priority 66**
+- Phase: Core Feature
+- Platform: Windows Desktop
+- [Detail](#background-scan-excel-export)
+
+**F46. Default rule set creation (~6-8h) Priority 74**
+- Phase: Core Feature
+- Platform: All
+- Create a default set of rules including all top-level domain rules and all Entire Domain rules
+
+**F47. Email provider domain warning on rule creation (~3-4h) Priority 76**
+- Phase: Core UX
+- Platform: All
+- [Detail](#email-provider-domain-warning)
+
 **F7. Multi-Account Scanning (~8-10h) Priority 90**
 - Phase: Core Feature
 - Platform: All
@@ -385,6 +410,75 @@ Provider defaults:
 - [ ] Pattern preview shows match results against sample data
 - [ ] Changes saved to database
 - [ ] Rule name updated if source_domain changes
+
+---
+
+### Background Scan Excel Export (F45)
+
+**Status**: New (Sprint 25 retrospective)
+**Estimated Effort**: ~4-6h
+**Phase**: Core Feature
+**Platform**: Windows Desktop
+
+**Overview**: Convert background scan debug output from CSV to Excel format using a template file. Change file naming and grouping to daily files.
+
+**File Naming**:
+- Remove time from filename: `background_scan_kimmeyharold_at_aol_com_2026-03-22` (no time suffix)
+- Daily grouping: if no file exists for today, create new from template; if one exists, append records
+
+**Field Order** (updated to match template):
+1. Scan Date and Time
+2. Received Date and Time
+3. Status
+4. Folder
+5. Action
+6. Rule
+7. From
+8. Subject
+9. Match Condition
+10. Email ID
+
+**Template**: `D:\Data\Harold\spamfilter-multi\background_scan_template.xlsx`
+
+**Behavior Changes**:
+- If a scan run produces no records, add a single record with Scan Date and Time, Received Date and Time, and From containing `<no records to process>`
+- Action field: "No rule" instead of "None" for emails with no matching rule
+
+**Acceptance Criteria**:
+- [ ] Output format changed from CSV to Excel (.xlsx)
+- [ ] Template file used for formatting
+- [ ] Field order matches specification above
+- [ ] Daily file grouping (create or append)
+- [ ] Empty scan runs produce placeholder record
+- [ ] "No rule" label used instead of "None"
+- [ ] Existing CSV export setting still works for manual scan CSV
+
+---
+
+### Email Provider Domain Warning (F47)
+
+**Status**: New (Sprint 25 retrospective)
+**Estimated Effort**: ~3-4h
+**Phase**: Core UX
+**Platform**: All
+
+**Overview**: When a user adds a Safe Sender or Block Rule for an email provider domain (outlook.com, gmail.com, aol.com, yahoo.com, etc.), show a warning popup explaining the impact and suggesting alternatives.
+
+**Trigger**: User clicks "Exact Domain", "Entire Domain" for Safe Sender or Block Rule from scan results for an email whose domain is a known email provider.
+
+**Warning Content**:
+- **For Block Rules**: Explain that blocking an email provider domain could impact thousands of individual user or business email addresses. Suggest "Exact Email" as best practice. Mention that safe sender rules can override domain blocks, but only after the email has already been deleted.
+- **For Safe Sender Rules**: Explain that allowing an entire email provider domain means all emails from that domain bypass spam rules. Since safe sender rules override delete rules, there would be no way to set up delete rules for specific senders from that domain.
+- **Both**: Suggest "Exact Email" is generally the best practice for provider domains.
+
+**Provider List**: Use existing `common_email_providers.dart` data.
+
+**Acceptance Criteria**:
+- [ ] Warning shown when adding domain-level rule for known email provider
+- [ ] Warning explains impact clearly
+- [ ] "Exact Email" suggested as alternative
+- [ ] User can proceed with domain rule if they choose (warning, not block)
+- [ ] Works for both Safe Sender and Block Rule creation flows
 
 ---
 
