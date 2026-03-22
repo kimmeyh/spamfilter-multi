@@ -142,6 +142,13 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Investigate SafeSenderCategory classification for exact domain patterns
 - Filter chip returns no results despite matching data in DB
 
+**F41. Safe sender emails in Bulk Mail not moved to safe sender folder (Issue #201) (~2-4h) Priority 49**
+- Phase: Core App Quality
+- Platform: Windows Desktop (AOL IMAP)
+- Safe sender matches in Bulk Mail folder are identified but not moved to Inbox (safe sender folder)
+- Likely scan mode or batch move execution issue
+- Related to Issue #198 (different root cause)
+
 **F31. Background scan task deleted on rebuild and not re-created (~4-6h) Priority 52**
 - Phase: Core App Quality
 - Platform: Windows Desktop
