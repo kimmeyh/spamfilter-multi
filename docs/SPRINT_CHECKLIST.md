@@ -36,6 +36,7 @@ These documents MUST be created/updated during each sprint:
 
 - [ ] Sprint number determined (N = previous + 1)
 - [ ] Read ALL_SPRINTS_MASTER_PLAN.md "Next Sprint Candidates" table
+- [ ] **Present candidates in sprint refinement format** (BACKLOG_REFINEMENT.md format, not grid tables)
 - [ ] Created `docs/sprints/SPRINT_(N-1)_SUMMARY.md` for previous sprint (3.2.1)
 - [ ] **Created `docs/sprints/SPRINT_N_PLAN.md`** for current sprint (3.2.2 - MANDATORY)
 - [ ] Created feature branch: `feature/YYYYMMDD_Sprint_N`

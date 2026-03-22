@@ -142,6 +142,7 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
 - [ ] **3.2 Review Sprint Plan**
   - Read ALL_SPRINTS_MASTER_PLAN.md (if not cached in Phase 2.1)
   - Review "Next Sprint Candidates" table for prioritized work items
+  - **Present candidates to user in sprint refinement format** (see BACKLOG_REFINEMENT.md "Backlog Presentation Format" section). Use the item format: `**<ID>. <Title> (~<effort>) Priority <N>**` with bullet point details. Do NOT use grid tables.
   - Select items for Sprint N based on priority, dependencies, and capacity
   - Review "Feature and Bug Details" section for selected items
   - Verify scope, tasks, and acceptance criteria

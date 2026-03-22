@@ -146,32 +146,7 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Platform: All
 - On Hold - remaining test gaps from F32 analysis
 
-**F33. Body rules cleanup script (~4-6h) Priority 56**
-- Phase: Core App Quality
-- Platform: All
-- [Detail](#body-rules-cleanup-script)
-
 **~~F34. Live Scan: in-progress and completed status indicator~~** [OK] Complete (Sprint 25)
-
-**F25. Rule Testing UI Enhancements (~6-8h) Priority 62**
-- Phase: Core Feature
-- Platform: All
-- [Detail](#f25-rule-testing-ui-enhancements)
-
-**F35. Rule editing UI with regex generation (~8-12h) Priority 64**
-- Phase: Core Feature
-- Platform: All
-- [Detail](#rule-editing-ui)
-
-**F36. Settings: Add General tab for app-wide settings (~4-6h) Priority 70**
-- Phase: Core Feature
-- Platform: All
-- [Detail](#settings-general-tab)
-
-**F37. Folder selectors: two-level listing (~6-8h) Priority 72**
-- Phase: Core Feature
-- Platform: All
-- [Detail](#folder-selectors-two-level-listing)
 
 **~~F38. Live Scan: re-process emails after rule changes~~** [OK] Complete (Sprint 25)
 
@@ -189,6 +164,11 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Phase: Core Feature
 - Platform: Windows Desktop
 - [Detail](#background-scan-excel-export)
+
+**F36. Settings: Add General tab for app-wide settings (~4-6h) Priority 70**
+- Phase: Core Feature
+- Platform: All
+- [Detail](#settings-general-tab)
 
 **F46. Default rule set creation (~6-8h) Priority 74**
 - Phase: Core Feature
@@ -209,6 +189,32 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Phase: Performance
 - Platform: All
 - [Detail](#f6-provider-specific-optimizations)
+
+### HOLD Items (Post-Windows Store)
+
+**F33. Body rules cleanup script (~4-6h) Priority HOLD**
+- Phase: Core App Quality
+- Platform: All
+- Post-Windows Store release
+- [Detail](#body-rules-cleanup-script)
+
+**F25. Rule Testing UI Enhancements (~6-8h) Priority HOLD**
+- Phase: Core Feature
+- Platform: All
+- Post-Windows Store release
+- [Detail](#f25-rule-testing-ui-enhancements)
+
+**F35. Rule editing UI with regex generation (~8-12h) Priority HOLD**
+- Phase: Core Feature
+- Platform: All
+- Post-Windows Store release
+- [Detail](#rule-editing-ui)
+
+**F37. Folder selectors: two-level listing (~6-8h) Priority HOLD**
+- Phase: Core Feature
+- Platform: All
+- Post-Windows Store release
+- [Detail](#folder-selectors-two-level-listing)
 
 ### HOLD Items (Android / Google Play Store)
 
