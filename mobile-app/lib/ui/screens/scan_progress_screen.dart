@@ -38,7 +38,7 @@ class ScanProgressScreen extends StatefulWidget {
 class _ScanProgressScreenState extends State<ScanProgressScreen> {
   ScanStatus? _previousStatus;
   List<String> _configuredFolders = ['INBOX'];
-  ScanMode _configuredMode = ScanMode.readonly;
+  ScanMode _configuredMode = ScanMode.readOnly;
 
   @override
   void initState() {
@@ -70,7 +70,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
       final resolvedFolders = (folders != null && folders.isNotEmpty) ? folders : ['INBOX'];
       setState(() {
         _configuredFolders = resolvedFolders;
-        _configuredMode = mode ?? ScanMode.readonly;
+        _configuredMode = mode ?? ScanMode.readOnly;
       });
       // Store in provider so results_display_screen shows correct folders
       final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
@@ -452,7 +452,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
     );
 
     // Load scan mode from account settings
-    final scanMode = await settingsStore.getAccountManualScanMode(widget.accountId) ?? ScanMode.readonly;
+    final scanMode = await settingsStore.getAccountManualScanMode(widget.accountId) ?? ScanMode.readOnly;
     scanProvider.initializeScanMode(mode: scanMode);
 
     final logger = Logger();
@@ -557,13 +557,13 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
 
   String _scanModeDisplayName(ScanMode mode) {
     switch (mode) {
-      case ScanMode.readonly:
+      case ScanMode.readOnly:
         return 'Read-Only';
-      case ScanMode.testLimit:
+      case ScanMode.rulesOnly:
         return 'Process Rules Only';
-      case ScanMode.testAll:
+      case ScanMode.safeSendersOnly:
         return 'Process Safe Senders Only';
-      case ScanMode.fullScan:
+      case ScanMode.safeSendersAndRules:
         return 'Process Safe Senders + Rules';
     }
   }

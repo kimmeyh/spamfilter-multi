@@ -862,9 +862,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     // - testAll: safe senders only
     // - testLimit: rules only (repurposed)
     // - fullScan: both safe senders and rules
-    final bool isReadOnly = value == ScanMode.readonly;
-    final bool processSafeSenders = value == ScanMode.testAll || value == ScanMode.fullScan;
-    final bool processRules = value == ScanMode.testLimit || value == ScanMode.fullScan;
+    final bool isReadOnly = value == ScanMode.readOnly;
+    final bool processSafeSenders = value == ScanMode.safeSendersOnly || value == ScanMode.safeSendersAndRules;
+    final bool processRules = value == ScanMode.rulesOnly || value == ScanMode.safeSendersAndRules;
 
     return Card(
       child: Padding(
@@ -890,10 +890,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               onChanged: (enabled) async {
                 if (enabled) {
                   // Switch to read-only mode
-                  await onChanged(ScanMode.readonly);
+                  await onChanged(ScanMode.readOnly);
                 } else {
                   // Switch to testAll (safe senders only) as default when disabling read-only
-                  await onChanged(ScanMode.testAll);
+                  await onChanged(ScanMode.safeSendersOnly);
                 }
               },
             ),
@@ -911,16 +911,16 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 if (enabled == true) {
                   // [UPDATED] ISSUE #123+#124: Enable safe senders
                   if (processRules) {
-                    await onChanged(ScanMode.fullScan); // Both enabled
+                    await onChanged(ScanMode.safeSendersAndRules); // Both enabled
                   } else {
-                    await onChanged(ScanMode.testAll); // Safe senders only
+                    await onChanged(ScanMode.safeSendersOnly); // Safe senders only
                   }
                 } else {
                   // [FIXED] ISSUE #123+#124: Disable safe senders - use testLimit for rules only
                   if (processRules) {
-                    await onChanged(ScanMode.testLimit); // Rules only, no safe senders
+                    await onChanged(ScanMode.rulesOnly); // Rules only, no safe senders
                   } else {
-                    await onChanged(ScanMode.readonly); // Neither
+                    await onChanged(ScanMode.readOnly); // Neither
                   }
                 }
               },
@@ -937,16 +937,16 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 if (enabled == true) {
                   // [UPDATED] ISSUE #123+#124: Enable rules
                   if (processSafeSenders) {
-                    await onChanged(ScanMode.fullScan); // Both enabled
+                    await onChanged(ScanMode.safeSendersAndRules); // Both enabled
                   } else {
-                    await onChanged(ScanMode.testLimit); // Rules only
+                    await onChanged(ScanMode.rulesOnly); // Rules only
                   }
                 } else {
                   // [UPDATED] ISSUE #123+#124: Disable rules
                   if (processSafeSenders) {
-                    await onChanged(ScanMode.testAll); // Safe senders only
+                    await onChanged(ScanMode.safeSendersOnly); // Safe senders only
                   } else {
-                    await onChanged(ScanMode.readonly); // Neither
+                    await onChanged(ScanMode.readOnly); // Neither
                   }
                 }
               },

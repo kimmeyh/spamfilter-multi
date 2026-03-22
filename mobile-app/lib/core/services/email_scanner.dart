@@ -218,9 +218,12 @@ class EmailScanner {
             // do not count, do not display, do not process. It is already
             // where it belongs. Other rule types (delete, no rule) in the
             // safe sender folder ARE still shown.
-            if (safeSenderFolder != null &&
-                safeSenderFolder.isNotEmpty &&
-                message.folderName.toLowerCase() == safeSenderTarget.toLowerCase()) {
+            // Note: safeSenderTarget defaults to INBOX when not explicitly set,
+            // so this comparison works whether the folder is configured or not.
+            if (message.folderName.toLowerCase() == safeSenderTarget.toLowerCase()) {
+              AppLogger.scan('Skipping safe sender in target folder: '
+                  'from="${message.from}", folder="${message.folderName}", '
+                  'target="$safeSenderTarget"');
               continue; // Skip this email entirely
             }
             action = EmailActionType.safeSender;
@@ -261,11 +264,11 @@ class EmailScanner {
 
       // --- Phase 6b: Batch execute actions ---
       final bool canExecuteRules =
-          scanProvider.scanMode != ScanMode.readonly &&
-          scanProvider.scanMode != ScanMode.testAll;
+          scanProvider.scanMode != ScanMode.readOnly &&
+          scanProvider.scanMode != ScanMode.safeSendersOnly;
       final bool canExecuteSafeSenders =
-          scanProvider.scanMode != ScanMode.readonly &&
-          scanProvider.scanMode != ScanMode.testLimit;
+          scanProvider.scanMode != ScanMode.readOnly &&
+          scanProvider.scanMode != ScanMode.rulesOnly;
 
       // Collect emails by action type for batch processing
       final deleteEmails = <_EvaluatedEmail>[];
@@ -282,8 +285,14 @@ class EmailScanner {
             break;
           case EmailActionType.safeSender:
             // Only add if not already in target folder
-            if (canExecuteSafeSenders &&
-                evaluated.message.folderName != safeSenderTarget) {
+            if (!canExecuteSafeSenders) {
+              AppLogger.scan('Safe sender move skipped (scan mode does not allow): '
+                  'from="${evaluated.message.from}", folder="${evaluated.message.folderName}", '
+                  'scanMode=${scanProvider.scanMode}');
+            } else if (evaluated.message.folderName.toLowerCase() == safeSenderTarget.toLowerCase()) {
+              AppLogger.scan('Safe sender already in target folder: '
+                  'from="${evaluated.message.from}", folder="${evaluated.message.folderName}"');
+            } else {
               safeSenderMoveEmails.add(evaluated);
             }
             break;
@@ -356,7 +365,7 @@ class EmailScanner {
         if (safeSenderEvaluated.isNotEmpty) {
           AppLogger.scan('Safe sender emails found but not added to batch:');
           for (final e in safeSenderEvaluated) {
-            final inTarget = e.message.folderName == safeSenderTarget;
+            final inTarget = e.message.folderName.toLowerCase() == safeSenderTarget.toLowerCase();
             AppLogger.scan('  id=${e.message.id}, folder="${e.message.folderName}", alreadyInTarget=$inTarget, canExecute=$canExecuteSafeSenders');
           }
           // Record safe sender results (already in target or cannot execute)
@@ -434,7 +443,7 @@ class EmailScanner {
             .where((e) => e.action == EmailActionType.delete)
             .toList();
         if (readonlyDeletes.isNotEmpty) {
-          final modeDesc = scanProvider.scanMode == ScanMode.testAll
+          final modeDesc = scanProvider.scanMode == ScanMode.safeSendersOnly
               ? 'SAFE_SENDERS_ONLY'
               : 'READONLY';
           AppLogger.scan('[$modeDesc] Would delete ${readonlyDeletes.length} emails');
@@ -501,7 +510,7 @@ class EmailScanner {
       if (!canExecuteRules) {
         final readonlyJunkEmails = evaluatedEmails.where((e) => e.action == EmailActionType.moveToJunk).toList();
         if (readonlyJunkEmails.isNotEmpty) {
-          final modeDesc = scanProvider.scanMode == ScanMode.testAll
+          final modeDesc = scanProvider.scanMode == ScanMode.safeSendersOnly
               ? 'SAFE_SENDERS_ONLY'
               : 'READONLY';
           AppLogger.scan('[$modeDesc] Would move to junk ${readonlyJunkEmails.length} emails');

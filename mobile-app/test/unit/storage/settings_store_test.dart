@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sqflite/sqflite.dart' show ConflictAlgorithm;
 import 'package:my_email_spam_filter/core/storage/settings_store.dart';
 import 'package:my_email_spam_filter/core/providers/email_scan_provider.dart';
 import '../../helpers/database_test_helper.dart';
@@ -35,9 +36,9 @@ void main() {
     });
 
     test('setManualScanMode persists and retrieves correctly', () async {
-      await settingsStore.setManualScanMode(ScanMode.fullScan);
+      await settingsStore.setManualScanMode(ScanMode.safeSendersAndRules);
       final mode = await settingsStore.getManualScanMode();
-      expect(mode, ScanMode.fullScan);
+      expect(mode, ScanMode.safeSendersAndRules);
     });
 
     test('getManualScanFolders returns default when not set', () async {
@@ -93,9 +94,9 @@ void main() {
     });
 
     test('setBackgroundScanMode persists and retrieves correctly', () async {
-      await settingsStore.setBackgroundScanMode(ScanMode.testAll);
+      await settingsStore.setBackgroundScanMode(ScanMode.safeSendersOnly);
       final mode = await settingsStore.getBackgroundScanMode();
-      expect(mode, ScanMode.testAll);
+      expect(mode, ScanMode.safeSendersOnly);
     });
   });
 
@@ -127,9 +128,9 @@ void main() {
     });
 
     test('setAccountScanMode persists and retrieves correctly', () async {
-      await settingsStore.setAccountScanMode(accountId, ScanMode.fullScan);
+      await settingsStore.setAccountScanMode(accountId, ScanMode.safeSendersAndRules);
       final mode = await settingsStore.getAccountScanMode(accountId);
-      expect(mode, ScanMode.fullScan);
+      expect(mode, ScanMode.safeSendersAndRules);
     });
 
     test('hasAccountOverrides returns false when no overrides', () async {
@@ -138,13 +139,13 @@ void main() {
     });
 
     test('hasAccountOverrides returns true when overrides exist', () async {
-      await settingsStore.setAccountScanMode(accountId, ScanMode.fullScan);
+      await settingsStore.setAccountScanMode(accountId, ScanMode.safeSendersAndRules);
       final hasOverrides = await settingsStore.hasAccountOverrides(accountId);
       expect(hasOverrides, true);
     });
 
     test('clearAccountOverrides removes all account settings', () async {
-      await settingsStore.setAccountScanMode(accountId, ScanMode.fullScan);
+      await settingsStore.setAccountScanMode(accountId, ScanMode.safeSendersAndRules);
       await settingsStore.setAccountFolders(accountId, ['Custom']);
       await settingsStore.clearAccountOverrides(accountId);
 
@@ -162,23 +163,23 @@ void main() {
     const accountId = 'test-account-123';
 
     test('getEffectiveScanMode uses global when no account override', () async {
-      await settingsStore.setManualScanMode(ScanMode.fullScan);
+      await settingsStore.setManualScanMode(ScanMode.safeSendersAndRules);
       final effective = await settingsStore.getEffectiveScanMode(accountId);
-      expect(effective, ScanMode.fullScan);
+      expect(effective, ScanMode.safeSendersAndRules);
     });
 
     test('getEffectiveScanMode uses account override when set', () async {
-      await settingsStore.setManualScanMode(ScanMode.readonly);
-      await settingsStore.setAccountScanMode(accountId, ScanMode.fullScan);
+      await settingsStore.setManualScanMode(ScanMode.readOnly);
+      await settingsStore.setAccountScanMode(accountId, ScanMode.safeSendersAndRules);
       final effective = await settingsStore.getEffectiveScanMode(accountId);
-      expect(effective, ScanMode.fullScan);
+      expect(effective, ScanMode.safeSendersAndRules);
     });
 
     test('getEffectiveScanMode uses background mode when isBackground true', () async {
-      await settingsStore.setManualScanMode(ScanMode.readonly);
-      await settingsStore.setBackgroundScanMode(ScanMode.fullScan);
+      await settingsStore.setManualScanMode(ScanMode.readOnly);
+      await settingsStore.setBackgroundScanMode(ScanMode.safeSendersAndRules);
       final effective = await settingsStore.getEffectiveScanMode(null, isBackground: true);
-      expect(effective, ScanMode.fullScan);
+      expect(effective, ScanMode.safeSendersAndRules);
     });
 
     test('getEffectiveFolders uses global when no account override', () async {
@@ -208,6 +209,66 @@ void main() {
         final retrieved = await settingsStore.getManualScanMode();
         expect(retrieved, mode, reason: 'Failed for mode: ${mode.name}');
       }
+    });
+
+    test('Legacy "readonly" parses to ScanMode.readOnly', () async {
+      final db = await testHelper.dbHelper.database;
+      await db.insert('app_settings', {
+        'key': SettingsStore.keyManualScanMode,
+        'value': 'readonly',
+        'value_type': 'string',
+        'date_modified': DateTime.now().millisecondsSinceEpoch,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      final mode = await settingsStore.getManualScanMode();
+      expect(mode, ScanMode.readOnly);
+    });
+
+    test('Legacy "testLimit" parses to ScanMode.rulesOnly', () async {
+      final db = await testHelper.dbHelper.database;
+      await db.insert('app_settings', {
+        'key': SettingsStore.keyManualScanMode,
+        'value': 'testLimit',
+        'value_type': 'string',
+        'date_modified': DateTime.now().millisecondsSinceEpoch,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      final mode = await settingsStore.getManualScanMode();
+      expect(mode, ScanMode.rulesOnly);
+    });
+
+    test('Legacy "testAll" parses to ScanMode.safeSendersOnly', () async {
+      final db = await testHelper.dbHelper.database;
+      await db.insert('app_settings', {
+        'key': SettingsStore.keyManualScanMode,
+        'value': 'testAll',
+        'value_type': 'string',
+        'date_modified': DateTime.now().millisecondsSinceEpoch,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      final mode = await settingsStore.getManualScanMode();
+      expect(mode, ScanMode.safeSendersOnly);
+    });
+
+    test('Legacy "fullScan" parses to ScanMode.safeSendersAndRules', () async {
+      final db = await testHelper.dbHelper.database;
+      await db.insert('app_settings', {
+        'key': SettingsStore.keyManualScanMode,
+        'value': 'fullScan',
+        'value_type': 'string',
+        'date_modified': DateTime.now().millisecondsSinceEpoch,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      final mode = await settingsStore.getManualScanMode();
+      expect(mode, ScanMode.safeSendersAndRules);
+    });
+
+    test('Unknown scan mode string falls back to readOnly', () async {
+      final db = await testHelper.dbHelper.database;
+      await db.insert('app_settings', {
+        'key': SettingsStore.keyManualScanMode,
+        'value': 'nonexistent_mode',
+        'value_type': 'string',
+        'date_modified': DateTime.now().millisecondsSinceEpoch,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      final mode = await settingsStore.getManualScanMode();
+      expect(mode, ScanMode.readOnly);
     });
   });
 
