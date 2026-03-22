@@ -37,6 +37,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **test**: Add exact domain regex classification tests for SafeSenderCategory (Issue #202)
 - **test**: Add ScanMode backwards compatibility tests for legacy DB enum names (F32, Issue #202)
 - **test**: Add determinePatternType edge case and round-trip tests (F32, Issue #202)
+- **test**: Add RuleSetProvider state management tests - load, add, remove, update rules and safe senders (F32, Issue #202)
+- **chore**: F38 re-process changed from blocking dialog to non-blocking inline banner (Issue #202)
+- **chore**: Set up prod worktree at spamfilter-multi-prod for side-by-side dev/prod execution (ADR-0035)
 
 ### 2026-03-21 (Sprint 24 - Windows Store Readiness: Privacy Policy, Store Assets, Submission)
 - **feat**: Privacy policy website deployed to docs/website/ (index.html, privacy/index.html, delete/index.html) with CNAME for myemailspamfilter.com (Issue #197)
