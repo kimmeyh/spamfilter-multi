@@ -285,8 +285,14 @@ class EmailScanner {
             break;
           case EmailActionType.safeSender:
             // Only add if not already in target folder
-            if (canExecuteSafeSenders &&
-                evaluated.message.folderName != safeSenderTarget) {
+            if (!canExecuteSafeSenders) {
+              AppLogger.scan('Safe sender move skipped (scan mode does not allow): '
+                  'from="${evaluated.message.from}", folder="${evaluated.message.folderName}", '
+                  'scanMode=${scanProvider.scanMode}');
+            } else if (evaluated.message.folderName.toLowerCase() == safeSenderTarget.toLowerCase()) {
+              AppLogger.scan('Safe sender already in target folder: '
+                  'from="${evaluated.message.from}", folder="${evaluated.message.folderName}"');
+            } else {
               safeSenderMoveEmails.add(evaluated);
             }
             break;
@@ -359,7 +365,7 @@ class EmailScanner {
         if (safeSenderEvaluated.isNotEmpty) {
           AppLogger.scan('Safe sender emails found but not added to batch:');
           for (final e in safeSenderEvaluated) {
-            final inTarget = e.message.folderName == safeSenderTarget;
+            final inTarget = e.message.folderName.toLowerCase() == safeSenderTarget.toLowerCase();
             AppLogger.scan('  id=${e.message.id}, folder="${e.message.folderName}", alreadyInTarget=$inTarget, canExecute=$canExecuteSafeSenders');
           }
           // Record safe sender results (already in target or cannot execute)
