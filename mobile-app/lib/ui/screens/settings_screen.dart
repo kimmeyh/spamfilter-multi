@@ -77,7 +77,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 3,  // Account, Manual Scan, Background
+      length: 4,  // F36: General, Account, Manual Scan, Background
       vsync: this,
     );
     _retentionDaysController = TextEditingController(
@@ -151,6 +151,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
+            Tab(text: 'General'),
             Tab(text: 'Account'),
             Tab(text: 'Manual Scan'),
             Tab(text: 'Background'),
@@ -162,11 +163,155 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           : TabBarView(
               controller: _tabController,
               children: [
+                _buildGeneralTab(),
                 _buildAccountTab(),
                 _buildManualScanTab(),
                 _buildBackgroundScanTab(),
               ],
             ),
+    );
+  }
+
+  /// F36: General tab for app-wide settings
+  Widget _buildGeneralTab() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // Rules Management section (moved from Account tab)
+        Text(
+          'Rules Management',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'View and manage safe sender patterns and block rules',
+          style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+        ),
+        const SizedBox(height: 16),
+
+        OutlinedButton.icon(
+          icon: const Icon(Icons.security_outlined),
+          label: const Text('Manage Safe Senders'),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const SafeSendersManagementScreen(),
+              ),
+            );
+          },
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            alignment: Alignment.centerLeft,
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        OutlinedButton.icon(
+          icon: const Icon(Icons.rule_outlined),
+          label: const Text('Manage Rules'),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const RulesManagementScreen(),
+              ),
+            );
+          },
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            alignment: Alignment.centerLeft,
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        OutlinedButton.icon(
+          icon: const Icon(Icons.swap_vert_outlined),
+          label: const Text('Import / Export YAML'),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const YamlImportExportScreen(),
+              ),
+            );
+          },
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            alignment: Alignment.centerLeft,
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Scan History section (moved from Account tab)
+        Text(
+          'Scan History',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Manage scan history retention and view past scan results',
+          style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+        ),
+        const SizedBox(height: 16),
+        _buildRetentionDaysSelector(),
+        const SizedBox(height: 8),
+        TextButton.icon(
+          icon: const Icon(Icons.history, size: 16),
+          label: const Text('Go to View Scan History'),
+          onPressed: () => _navigateToScanHistory(),
+        ),
+
+        const SizedBox(height: 24),
+
+        // About section (moved from Account tab)
+        Text(
+          'About',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.blue.shade700),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'MyEmailSpamFilter',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Version 0.5.1${AppEnvironment.displaySuffix}',
+                            style: TextStyle(color: Colors.grey.shade700),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -273,146 +418,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               contentPadding: EdgeInsets.zero,
             ),
 
-            const SizedBox(height: 24),
-
-            // Data management section
-            Text(
-              'Data Management',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'View and manage safe sender patterns and block rules',
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-            ),
-            const SizedBox(height: 16),
-
-            // Manage Safe Senders button
-            OutlinedButton.icon(
-              icon: const Icon(Icons.security_outlined),
-              label: const Text('Manage Safe Senders'),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const SafeSendersManagementScreen(),
-                  ),
-                );
-              },
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                alignment: Alignment.centerLeft,
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            // Manage Rules button
-            OutlinedButton.icon(
-              icon: const Icon(Icons.rule_outlined),
-              label: const Text('Manage Rules'),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const RulesManagementScreen(),
-                  ),
-                );
-              },
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                alignment: Alignment.centerLeft,
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            // Import/Export YAML button
-            OutlinedButton.icon(
-              icon: const Icon(Icons.swap_vert_outlined),
-              label: const Text('Import / Export YAML'),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const YamlImportExportScreen(),
-                  ),
-                );
-              },
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                alignment: Alignment.centerLeft,
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // [MOVED] FB-3: Scan History section moved from Background tab to Account tab
-            Text(
-              'Scan History',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Manage scan history retention and view past scan results',
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-            ),
-            const SizedBox(height: 16),
-            _buildRetentionDaysSelector(),
-            const SizedBox(height: 8),
-            // F44: Updated to match Background settings page style
-            TextButton.icon(
-              icon: const Icon(Icons.history, size: 16),
-              label: const Text('Go to View Scan History'),
-              onPressed: () => _navigateToScanHistory(),
-            ),
-
-            const SizedBox(height: 24),
-
-            // About section
-            Text(
-              'About',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.info_outline, color: Colors.blue.shade700),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'MyEmailSpamFilter',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Version 0.5.1${AppEnvironment.displaySuffix}',
-                                style: TextStyle(color: Colors.grey.shade700),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ],
         );
       },
