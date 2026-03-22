@@ -32,6 +32,8 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **fix**: Background scan task deleted on rebuild - add post-build Task Scheduler re-registration to build-windows.ps1 (F31, Issue #202)
 - **feat**: Safe sender move diagnostic logging for debugging move execution (Issue #201)
 - **chore**: Rename ScanMode enum values for clarity (readonly->readOnly, testLimit->rulesOnly, testAll->safeSendersOnly, fullScan->safeSendersAndRules) with backwards compatibility (Issue #202)
+- **feat**: Live scan status indicator showing progress bar, completion, and error states in results summary card (F34, Issue #202)
+- **feat**: Re-process emails via IMAP after inline rule changes - adds safe sender or block rule, then executes server-side actions on affected emails (F38, Issue #202)
 - **test**: Add exact domain regex classification tests for SafeSenderCategory (Issue #202)
 
 ### 2026-03-21 (Sprint 24 - Windows Store Readiness: Privacy Policy, Store Assets, Submission)

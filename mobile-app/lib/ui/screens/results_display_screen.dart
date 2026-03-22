@@ -22,6 +22,9 @@ import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/utils/pattern_normalization.dart';
 import '../../core/data/common_email_providers.dart';
+import '../../adapters/email_providers/platform_registry.dart';
+import '../../adapters/email_providers/spam_filter_platform.dart' show SpamFilterPlatform, FilterAction;
+import '../../adapters/storage/secure_credentials_store.dart';
 import '../widgets/empty_state.dart';
 
 /// Displays summary of scan results bound to EmailScanProvider.
@@ -83,6 +86,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   // rules and the new EvaluationResult is stored here. This persists during
   // the review session so the user can see which items they have assigned rules to.
   final Map<String, EvaluationResult> _evaluationOverrides = {};
+
+  // F38: Track emails that have been re-processed via IMAP to avoid duplicate actions.
+  // Key is the same email key used by _evaluationOverrides.
+  final Set<String> _reProcessedEmailKeys = {};
 
   @override
   void initState() {
@@ -1716,6 +1723,193 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     }
   }
 
+  /// F38: Re-process affected emails via IMAP after rule changes.
+  ///
+  /// After re-evaluation updates [_evaluationOverrides], this method collects
+  /// emails whose action changed and executes the corresponding IMAP actions
+  /// (delete, move to safe sender folder) on the server.
+  ///
+  /// Only executes if scan mode allows actions (not readOnly).
+  /// Emails already re-processed (tracked in [_reProcessedEmailKeys]) are skipped.
+  Future<void> _reProcessAffectedEmails() async {
+    final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
+    final logger = Logger();
+
+    // Only re-process in modes that allow actions
+    final scanMode = scanProvider.scanMode;
+    if (scanMode == ScanMode.readOnly) {
+      logger.i('[F38] Skipping re-process: scan mode is readOnly');
+      return;
+    }
+
+    // Collect emails whose effective action changed and have not been re-processed yet
+    final liveResults = scanProvider.results;
+    final isLiveScanActive = scanProvider.status == ScanStatus.scanning ||
+        scanProvider.status == ScanStatus.paused;
+    final allResults = (liveResults.isNotEmpty || isLiveScanActive)
+        ? liveResults
+        : _historicalResults;
+
+    final toDelete = <EmailMessage>[];
+    final toMoveSafe = <EmailMessage>[];
+
+    for (final result in allResults) {
+      final key = _getEmailKey(result.email);
+      if (!_evaluationOverrides.containsKey(key)) continue;
+      if (_reProcessedEmailKeys.contains(key)) continue;
+
+      final newAction = _getEffectiveAction(result);
+      final originalAction = result.action;
+
+      // Only act if the action changed
+      if (newAction == originalAction) continue;
+
+      // Determine which IMAP action to execute based on new evaluation and scan mode
+      final canExecuteRules = scanMode == ScanMode.rulesOnly || scanMode == ScanMode.safeSendersAndRules;
+      final canExecuteSafeSenders = scanMode == ScanMode.safeSendersOnly || scanMode == ScanMode.safeSendersAndRules;
+
+      if (newAction == EmailActionType.delete && canExecuteRules) {
+        toDelete.add(result.email);
+      } else if (newAction == EmailActionType.safeSender && canExecuteSafeSenders) {
+        toMoveSafe.add(result.email);
+      }
+    }
+
+    if (toDelete.isEmpty && toMoveSafe.isEmpty) {
+      logger.i('[F38] No emails need IMAP re-processing');
+      return;
+    }
+
+    logger.i('[F38] Re-processing ${toDelete.length} deletes, ${toMoveSafe.length} safe sender moves');
+
+    // Show progress dialog
+    if (mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          content: Row(
+            children: [
+              const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+              const SizedBox(width: 16),
+              Flexible(
+                child: Text(
+                  'Re-processing ${toDelete.length + toMoveSafe.length} email${toDelete.length + toMoveSafe.length == 1 ? '' : 's'}...',
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    SpamFilterPlatform? platform;
+    var successCount = 0;
+    var failCount = 0;
+
+    try {
+      // Create platform connection
+      platform = PlatformRegistry.getPlatform(widget.platformId);
+      if (platform == null) {
+        throw Exception('Platform ${widget.platformId} not supported');
+      }
+
+      // Load credentials and connect
+      if (widget.platformId != 'demo') {
+        final credStore = SecureCredentialsStore();
+        final credentials = await credStore.getCredentials(widget.accountId);
+        if (credentials == null) {
+          throw Exception('No credentials found for account ${widget.accountId}');
+        }
+        await platform.loadCredentials(credentials);
+      }
+
+      final settingsStore = SettingsStore();
+
+      // Execute delete actions
+      if (toDelete.isNotEmpty) {
+        final deletedRuleFolder = await settingsStore.getAccountDeletedRuleFolder(widget.accountId);
+        if (deletedRuleFolder != null) {
+          platform.setDeletedRuleFolder(deletedRuleFolder);
+        }
+
+        try {
+          final result = await platform.takeActionBatch(toDelete, FilterAction.delete);
+          successCount += result.successCount;
+          failCount += result.failureCount;
+          logger.i('[F38] Delete batch: ${result.successCount} succeeded, ${result.failureCount} failed');
+        } catch (e) {
+          logger.e('[F38] Delete batch failed: $e');
+          failCount += toDelete.length;
+        }
+
+        // Mark as re-processed regardless of success
+        for (final email in toDelete) {
+          _reProcessedEmailKeys.add(_getEmailKey(email));
+        }
+      }
+
+      // Execute safe sender move actions
+      if (toMoveSafe.isNotEmpty) {
+        final safeSenderFolder = await settingsStore.getAccountSafeSenderFolder(widget.accountId);
+        final targetFolder = safeSenderFolder ?? 'INBOX';
+
+        try {
+          final result = await platform.moveToFolderBatch(toMoveSafe, targetFolder);
+          successCount += result.successCount;
+          failCount += result.failureCount;
+          logger.i('[F38] Safe sender move batch: ${result.successCount} succeeded, ${result.failureCount} failed');
+        } catch (e) {
+          logger.e('[F38] Safe sender move batch failed: $e');
+          failCount += toMoveSafe.length;
+        }
+
+        // Mark as re-processed regardless of success
+        for (final email in toMoveSafe) {
+          _reProcessedEmailKeys.add(_getEmailKey(email));
+        }
+      }
+    } catch (e) {
+      logger.e('[F38] Re-processing failed: $e');
+      failCount = toDelete.length + toMoveSafe.length;
+    } finally {
+      // Close platform connection
+      if (platform != null) {
+        try {
+          await platform.disconnect();
+        } catch (e) {
+          logger.w('[F38] Failed to disconnect platform: $e');
+        }
+      }
+    }
+
+    // Dismiss progress dialog
+    if (mounted && Navigator.canPop(context)) {
+      Navigator.pop(context);
+    }
+
+    // Show result snackbar
+    if (mounted) {
+      final total = successCount + failCount;
+      final message = failCount == 0
+          ? 'Re-processed $successCount email${successCount == 1 ? '' : 's'}'
+          : 'Re-processed $successCount of $total (${failCount} failed)';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: failCount == 0 ? Colors.green : Colors.orange,
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
+        ),
+      );
+    }
+  }
+
   /// Add sender to safe senders list
   /// Types: 'exact' (email), 'exactDomain' (@subdomain.domain.com), 'entireDomain' (@*.domain.com)
   Future<void> _addSafeSender(String value, String type, {EmailMessage? email}) async {
@@ -1780,6 +1974,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
 
       // Re-evaluate all remaining "No rule" emails against the new safe sender
       await _reEvaluateNoRuleEmails();
+
+      // F38: Execute IMAP actions for affected emails
+      await _reProcessAffectedEmails();
 
       if (mounted) {
         setState(() {}); // Refresh list to show updated rule assignment
@@ -1944,6 +2141,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
 
       // Re-evaluate all remaining "No rule" emails against the new rule
       await _reEvaluateNoRuleEmails();
+
+      // F38: Execute IMAP actions for affected emails
+      await _reProcessAffectedEmails();
 
       if (mounted) {
         setState(() {}); // Refresh list to show updated rule assignment
