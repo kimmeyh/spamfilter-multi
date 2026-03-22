@@ -26,6 +26,14 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-03-22 (Sprint 25 - Safe Sender Fixes, Scan Mode Rename, Background Scan Rebuild)
+- **fix**: Safe sender INBOX skip bug - emails already in safe sender target folder were not being skipped (Issue #198)
+- **fix**: Exact domain filter chip misclassification - determinePatternType and categorize priority reordered (F30, Issue #202)
+- **fix**: Background scan task deleted on rebuild - add post-build Task Scheduler re-registration to build-windows.ps1 (F31, Issue #202)
+- **feat**: Safe sender move diagnostic logging for debugging move execution (Issue #201)
+- **chore**: Rename ScanMode enum values for clarity (readonly->readOnly, testLimit->rulesOnly, testAll->safeSendersOnly, fullScan->safeSendersAndRules) with backwards compatibility (Issue #202)
+- **test**: Add exact domain regex classification tests for SafeSenderCategory (Issue #202)
+
 ### 2026-03-21 (Sprint 24 - Windows Store Readiness: Privacy Policy, Store Assets, Submission)
 - **feat**: Privacy policy website deployed to docs/website/ (index.html, privacy/index.html, delete/index.html) with CNAME for myemailspamfilter.com (Issue #197)
 - **feat**: Microsoft Store listing created - app name reserved, store assets uploaded, MSIX package submitted for certification (Issue #197)
