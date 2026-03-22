@@ -91,6 +91,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   // Key is the same email key used by _evaluationOverrides.
   final Set<String> _reProcessedEmailKeys = {};
 
+  // F38: Non-blocking re-processing state
+  bool _isReProcessing = false;
+  int _reProcessTotal = 0;
+  int _reProcessCompleted = 0;
+
   @override
   void initState() {
     super.initState();
@@ -543,6 +548,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildSummary(summary, scanProvider, allResults),
+            // F38: Non-blocking re-processing banner
+            if (_isReProcessing) ...[
+              const SizedBox(height: 8),
+              _buildReProcessingBanner(),
+            ],
             const SizedBox(height: 16),
             // Show filter status if active
             if (_filter != null || _specialFilter != null || _selectedFolders.isNotEmpty) ...[
@@ -1723,13 +1733,45 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     }
   }
 
+  /// F38: Non-blocking re-processing banner widget
+  Widget _buildReProcessingBanner() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.blue.shade200),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              value: _reProcessTotal > 0
+                  ? _reProcessCompleted / _reProcessTotal
+                  : null,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            'Re-processing $_reProcessCompleted of $_reProcessTotal...',
+            style: TextStyle(fontSize: 13, color: Colors.blue.shade700),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// F38: Re-process affected emails via IMAP after rule changes.
   ///
   /// After re-evaluation updates [_evaluationOverrides], this method collects
   /// emails whose action changed and executes the corresponding IMAP actions
   /// (delete, move to safe sender folder) on the server.
   ///
-  /// Only executes if scan mode allows actions (not readOnly).
+  /// Runs in the background without blocking the UI. Shows a non-blocking
+  /// banner during processing and updates the results list in real-time.
   /// Emails already re-processed (tracked in [_reProcessedEmailKeys]) are skipped.
   Future<void> _reProcessAffectedEmails() async {
     final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
@@ -1780,31 +1822,16 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       return;
     }
 
+    final total = toDelete.length + toMoveSafe.length;
     logger.i('[F38] Re-processing ${toDelete.length} deletes, ${toMoveSafe.length} safe sender moves');
 
-    // Show progress dialog
+    // Show non-blocking banner
     if (mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => AlertDialog(
-          content: Row(
-            children: [
-              const SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-              const SizedBox(width: 16),
-              Flexible(
-                child: Text(
-                  'Re-processing ${toDelete.length + toMoveSafe.length} email${toDelete.length + toMoveSafe.length == 1 ? '' : 's'}...',
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+      setState(() {
+        _isReProcessing = true;
+        _reProcessTotal = total;
+        _reProcessCompleted = 0;
+      });
     }
 
     SpamFilterPlatform? platform;
@@ -1847,9 +1874,14 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           failCount += toDelete.length;
         }
 
-        // Mark as re-processed regardless of success
+        // Mark as re-processed and update banner
         for (final email in toDelete) {
           _reProcessedEmailKeys.add(_getEmailKey(email));
+        }
+        if (mounted) {
+          setState(() {
+            _reProcessCompleted += toDelete.length;
+          });
         }
       }
 
@@ -1868,9 +1900,14 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           failCount += toMoveSafe.length;
         }
 
-        // Mark as re-processed regardless of success
+        // Mark as re-processed and update banner
         for (final email in toMoveSafe) {
           _reProcessedEmailKeys.add(_getEmailKey(email));
+        }
+        if (mounted) {
+          setState(() {
+            _reProcessCompleted += toMoveSafe.length;
+          });
         }
       }
     } catch (e) {
@@ -1887,17 +1924,15 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       }
     }
 
-    // Dismiss progress dialog
-    if (mounted && Navigator.canPop(context)) {
-      Navigator.pop(context);
-    }
-
-    // Show result snackbar
+    // Hide banner and show result snackbar
     if (mounted) {
-      final total = successCount + failCount;
+      setState(() {
+        _isReProcessing = false;
+      });
+
       final message = failCount == 0
           ? 'Re-processed $successCount email${successCount == 1 ? '' : 's'}'
-          : 'Re-processed $successCount of $total (${failCount} failed)';
+          : 'Re-processed $successCount of $total ($failCount failed)';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
