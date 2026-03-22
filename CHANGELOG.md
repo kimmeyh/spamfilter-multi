@@ -35,6 +35,8 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **feat**: Live scan status indicator showing progress bar, completion, and error states in results summary card (F34, Issue #202)
 - **feat**: Re-process emails via IMAP after inline rule changes - adds safe sender or block rule, then executes server-side actions on affected emails (F38, Issue #202)
 - **test**: Add exact domain regex classification tests for SafeSenderCategory (Issue #202)
+- **test**: Add ScanMode backwards compatibility tests for legacy DB enum names (F32, Issue #202)
+- **test**: Add determinePatternType edge case and round-trip tests (F32, Issue #202)
 
 ### 2026-03-21 (Sprint 24 - Windows Store Readiness: Privacy Policy, Store Assets, Submission)
 - **feat**: Privacy policy website deployed to docs/website/ (index.html, privacy/index.html, delete/index.html) with CNAME for myemailspamfilter.com (Issue #197)

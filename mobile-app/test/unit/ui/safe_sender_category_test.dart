@@ -272,4 +272,70 @@ void main() {
       expect(SafeSenderCategory.other.label, equals('Other'));
     });
   });
+
+  group('SafeSenderDatabaseStore.determinePatternType', () {
+    test('returns "unknown" for empty string', () {
+      expect(SafeSenderDatabaseStore.determinePatternType(''), equals('unknown'));
+    });
+
+    test('returns "domain" for plain @domain pattern', () {
+      expect(SafeSenderDatabaseStore.determinePatternType('@example.com'), equals('domain'));
+    });
+
+    test('returns "email" for plain email address', () {
+      expect(SafeSenderDatabaseStore.determinePatternType('user@example.com'), equals('email'));
+    });
+
+    test('returns "subdomain" for subdomain wildcard regex', () {
+      expect(
+        SafeSenderDatabaseStore.determinePatternType(r'^[^@\s]+@(?:[a-z0-9-]+\.)*example\.com$'),
+        equals('subdomain'),
+      );
+    });
+
+    test('returns "domain" for anchored exact domain regex', () {
+      expect(
+        SafeSenderDatabaseStore.determinePatternType(r'^[^@\s]+@example\.com$'),
+        equals('domain'),
+      );
+    });
+
+    test('returns "email" for anchored exact email regex', () {
+      expect(
+        SafeSenderDatabaseStore.determinePatternType(r'^user@example\.com$'),
+        equals('email'),
+      );
+    });
+
+    test('returns "subdomain" for regex without @', () {
+      expect(
+        SafeSenderDatabaseStore.determinePatternType(r'^.*newsletter.*$'),
+        equals('subdomain'),
+      );
+    });
+
+    test('returns "unknown" for plain text without @', () {
+      expect(SafeSenderDatabaseStore.determinePatternType('something'), equals('unknown'));
+    });
+
+    test('categorize and determinePatternType agree for common patterns', () {
+      // Exact email
+      final emailPattern = r'^user@domain\.com$';
+      final emailType = SafeSenderDatabaseStore.determinePatternType(emailPattern);
+      final emailSender = makePattern(emailPattern, type: emailType);
+      expect(SafeSenderCategory.categorize(emailSender), equals(SafeSenderCategory.exactEmail));
+
+      // Exact domain
+      final domainPattern = r'^[^@\s]+@domain\.com$';
+      final domainType = SafeSenderDatabaseStore.determinePatternType(domainPattern);
+      final domainSender = makePattern(domainPattern, type: domainType);
+      expect(SafeSenderCategory.categorize(domainSender), equals(SafeSenderCategory.exactDomain));
+
+      // Entire domain (subdomain)
+      final subdomainPattern = r'^[^@\s]+@(?:[a-z0-9-]+\.)*domain\.com$';
+      final subdomainType = SafeSenderDatabaseStore.determinePatternType(subdomainPattern);
+      final subdomainSender = makePattern(subdomainPattern, type: subdomainType);
+      expect(SafeSenderCategory.categorize(subdomainSender), equals(SafeSenderCategory.entireDomain));
+    });
+  });
 }

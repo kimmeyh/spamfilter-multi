@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sqflite_common/sqlite_api.dart' show ConflictAlgorithm;
 import 'package:my_email_spam_filter/core/storage/settings_store.dart';
 import 'package:my_email_spam_filter/core/providers/email_scan_provider.dart';
 import '../../helpers/database_test_helper.dart';
@@ -208,6 +209,66 @@ void main() {
         final retrieved = await settingsStore.getManualScanMode();
         expect(retrieved, mode, reason: 'Failed for mode: ${mode.name}');
       }
+    });
+
+    test('Legacy "readonly" parses to ScanMode.readOnly', () async {
+      final db = await testHelper.dbHelper.database;
+      await db.insert('app_settings', {
+        'key': SettingsStore.keyManualScanMode,
+        'value': 'readonly',
+        'value_type': 'string',
+        'date_modified': DateTime.now().millisecondsSinceEpoch,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      final mode = await settingsStore.getManualScanMode();
+      expect(mode, ScanMode.readOnly);
+    });
+
+    test('Legacy "testLimit" parses to ScanMode.rulesOnly', () async {
+      final db = await testHelper.dbHelper.database;
+      await db.insert('app_settings', {
+        'key': SettingsStore.keyManualScanMode,
+        'value': 'testLimit',
+        'value_type': 'string',
+        'date_modified': DateTime.now().millisecondsSinceEpoch,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      final mode = await settingsStore.getManualScanMode();
+      expect(mode, ScanMode.rulesOnly);
+    });
+
+    test('Legacy "testAll" parses to ScanMode.safeSendersOnly', () async {
+      final db = await testHelper.dbHelper.database;
+      await db.insert('app_settings', {
+        'key': SettingsStore.keyManualScanMode,
+        'value': 'testAll',
+        'value_type': 'string',
+        'date_modified': DateTime.now().millisecondsSinceEpoch,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      final mode = await settingsStore.getManualScanMode();
+      expect(mode, ScanMode.safeSendersOnly);
+    });
+
+    test('Legacy "fullScan" parses to ScanMode.safeSendersAndRules', () async {
+      final db = await testHelper.dbHelper.database;
+      await db.insert('app_settings', {
+        'key': SettingsStore.keyManualScanMode,
+        'value': 'fullScan',
+        'value_type': 'string',
+        'date_modified': DateTime.now().millisecondsSinceEpoch,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      final mode = await settingsStore.getManualScanMode();
+      expect(mode, ScanMode.safeSendersAndRules);
+    });
+
+    test('Unknown scan mode string falls back to readOnly', () async {
+      final db = await testHelper.dbHelper.database;
+      await db.insert('app_settings', {
+        'key': SettingsStore.keyManualScanMode,
+        'value': 'nonexistent_mode',
+        'value_type': 'string',
+        'date_modified': DateTime.now().millisecondsSinceEpoch,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+      final mode = await settingsStore.getManualScanMode();
+      expect(mode, ScanMode.readOnly);
     });
   });
 
