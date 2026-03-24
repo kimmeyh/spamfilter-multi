@@ -61,7 +61,7 @@ class BackgroundScanWindowsWorker {
 
       final logStore = BackgroundScanLogStore(dbHelper);
       final credStore = SecureCredentialsStore();
-      final settingsStore = SettingsStore();
+      final settingsStore = SettingsStore(dbHelper);
       await _bgLog('Stores initialized');
 
       // Initialize rule set provider
