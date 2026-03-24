@@ -340,7 +340,7 @@ class SettingsStore {
   Future<ScanMode?> getAccountManualScanMode(String accountId) async {
     final value = await _getAccountSetting(accountId, 'manual_scan_mode');
     if (value == null) return null;
-    return ScanMode.values.firstWhere((e) => e.name == value);
+    return _parseScanMode(value);
   }
 
   /// Set account-specific manual scan mode
@@ -380,7 +380,7 @@ class SettingsStore {
   Future<ScanMode?> getAccountBackgroundScanMode(String accountId) async {
     final value = await _getAccountSetting(accountId, 'background_scan_mode');
     if (value == null) return null;
-    return ScanMode.values.firstWhere((e) => e.name == value);
+    return _parseScanMode(value);
   }
 
   /// Set account-specific background scan mode

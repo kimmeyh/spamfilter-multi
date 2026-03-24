@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:logger/logger.dart';
 import 'package:path/path.dart' as path;
+import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
 
 import '../storage/database_helper.dart';
 import '../storage/background_scan_log_store.dart';
@@ -60,7 +61,7 @@ class BackgroundScanWindowsWorker {
 
       final logStore = BackgroundScanLogStore(dbHelper);
       final credStore = SecureCredentialsStore();
-      final settingsStore = SettingsStore();
+      final settingsStore = SettingsStore(dbHelper);
       await _bgLog('Stores initialized');
 
       // Initialize rule set provider
@@ -255,11 +256,15 @@ class BackgroundScanWindowsWorker {
     }
   }
 
-  /// Export debug CSV if the setting is enabled
+  /// F45: Export debug Excel file if the setting is enabled
   ///
-  /// Writes scan results to a timestamped CSV file in the configured export
-  /// directory (or the app logs directory as fallback). Useful for debugging
-  /// background scan behavior without a UI.
+  /// Writes scan results to a daily Excel (.xlsx) file in the configured export
+  /// directory (or the app logs directory as fallback). Uses a companion CSV
+  /// file (.data.csv) to accumulate rows across multiple runs in a day, then
+  /// regenerates the Excel file from the accumulated data.
+  ///
+  /// Field order: Scan Date/Time, Received Date/Time, Status, Folder, Action,
+  /// Rule, From, Subject, Match Condition, Email ID
   static Future<void> _exportDebugCsvIfEnabled({
     required EmailScanProvider scanProvider,
     required String accountId,
@@ -269,22 +274,10 @@ class BackgroundScanWindowsWorker {
       final debugCsvEnabled = await settingsStore.getBackgroundScanDebugCsv();
       if (!debugCsvEnabled) return;
 
-      final csvContent = scanProvider.exportResultsToCSV();
-      if (csvContent.trim().isEmpty) {
-        await _bgLog('Debug CSV: no results to export');
-        return;
-      }
-
-      // Determine export directory: configured CSV dir > app logs dir
-      String exportDir;
-      final configuredDir = await settingsStore.getCsvExportDirectory();
-      if (configuredDir != null && configuredDir.isNotEmpty) {
-        exportDir = configuredDir;
-      } else {
-        // Fall back to app data logs directory
-        exportDir = '${Platform.environment['APPDATA']}'
-            '\\MyEmailSpamFilter\\MyEmailSpamFilter\\logs';
-      }
+      // Export to environment-aware AppData directory (ADR-0035)
+      final envSuffix = AppEnvironment.dataDirSuffix;
+      final exportDir = '${Platform.environment['APPDATA']}'
+          '\\MyEmailSpamFilter\\MyEmailSpamFilter$envSuffix\\logs';
 
       // Ensure directory exists
       final dir = Directory(exportDir);
@@ -292,21 +285,93 @@ class BackgroundScanWindowsWorker {
         await dir.create(recursive: true);
       }
 
-      // Sanitize account ID for filename (replace @ and . with _)
+      // F45: Daily filename (no time component), with _dev suffix per ADR-0035
       final safeAccountId = accountId
           .replaceAll('@', '_at_')
           .replaceAll('.', '_');
-      final timestamp = DateTime.now()
-          .toIso8601String()
-          .replaceAll(':', '-')
-          .split('.')[0];
-      final filename = 'background_scan_${safeAccountId}_$timestamp.csv';
-      final filePath = path.join(exportDir, filename);
+      final dateStr = DateTime.now().toIso8601String().split('T')[0];
+      final devSuffix = AppEnvironment.isDev ? '_dev' : '';
+      final xlsxFilename = 'background_scan_${safeAccountId}_$dateStr$devSuffix.xlsx';
+      final dataFilename = 'background_scan_${safeAccountId}_$dateStr$devSuffix.data.csv';
+      final xlsxPath = path.join(exportDir, xlsxFilename);
+      final dataPath = path.join(exportDir, dataFilename);
 
-      await File(filePath).writeAsString(csvContent);
-      await _bgLog('Debug CSV exported: $filePath (${csvContent.split('\n').length - 1} rows)');
+      // Get new rows from this scan run
+      final newRows = scanProvider.getExcelRows();
+
+      // F45: Append new rows to the daily data file (CSV accumulator)
+      final dataFile = File(dataPath);
+      final buffer = StringBuffer();
+
+      if (newRows.isEmpty) {
+        // Placeholder row for empty scan runs
+        final scanDate = DateTime.now().toIso8601String();
+        buffer.writeln('$scanDate\t$scanDate\t\t\t\t\t<no records to process>\t\t\t');
+      } else {
+        for (final row in newRows) {
+          buffer.writeln(row.join('\t'));
+        }
+      }
+
+      // Append to existing data file or create new
+      await dataFile.writeAsString(
+        buffer.toString(),
+        mode: FileMode.append,
+      );
+
+      // Read all accumulated rows and generate Excel
+      final allDataLines = (await dataFile.readAsString())
+          .split('\n')
+          .where((line) => line.trim().isNotEmpty)
+          .toList();
+
+      const headers = [
+        'Scan Date and Time',
+        'Received Date and Time',
+        'Status',
+        'Folder',
+        'Action',
+        'Rule',
+        'From',
+        'Subject',
+        'Match Condition',
+        'Email ID',
+      ];
+
+      final workbook = xlsio.Workbook();
+      final sheet = workbook.worksheets[0];
+      sheet.name = 'Background Scan';
+
+      // Write header row with formatting
+      for (var col = 0; col < headers.length; col++) {
+        final cell = sheet.getRangeByIndex(1, col + 1);
+        cell.setText(headers[col]);
+        cell.cellStyle.bold = true;
+        cell.cellStyle.backColor = '#D9E2F3';
+      }
+
+      // Write all accumulated data rows
+      for (var row = 0; row < allDataLines.length; row++) {
+        final cells = allDataLines[row].split('\t');
+        for (var col = 0; col < cells.length && col < headers.length; col++) {
+          sheet.getRangeByIndex(row + 2, col + 1).setText(cells[col]);
+        }
+      }
+
+      // Auto-fit column widths
+      for (var col = 1; col <= headers.length; col++) {
+        sheet.autoFitColumn(col);
+      }
+
+      // Save Excel file
+      final bytes = workbook.saveAsStream();
+      await File(xlsxPath).writeAsBytes(bytes);
+      workbook.dispose();
+
+      final addedRows = newRows.isEmpty ? 1 : newRows.length;
+      await _bgLog('Debug Excel exported: $xlsxPath ($addedRows new rows, ${allDataLines.length} total)');
     } catch (e) {
-      await _bgLog('Debug CSV export failed: $e');
+      await _bgLog('Debug Excel export failed: $e');
       // Not critical - do not rethrow
     }
   }

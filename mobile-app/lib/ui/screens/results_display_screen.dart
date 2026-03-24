@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
 import '../widgets/app_bar_with_exit.dart';
+import 'scan_history_screen.dart';
 import 'scan_progress_screen.dart';
 import 'settings_screen.dart';
 
@@ -90,6 +91,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   // F38: Track emails that have been re-processed via IMAP to avoid duplicate actions.
   // Key is the same email key used by _evaluationOverrides.
   final Set<String> _reProcessedEmailKeys = {};
+
+  // Track emails to hide from the list after rule change (removed immediately
+  // before IMAP action completes for instant visual feedback).
+  final Set<String> _hiddenEmailKeys = {};
 
   // F38: Non-blocking re-processing state
   bool _isReProcessing = false;
@@ -313,7 +318,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   /// Filter results based on current filter state, search query, and folder filter
   List<EmailActionResult> _getFilteredResults(List<EmailActionResult> allResults) {
     var results = allResults;
-    
+
+    // Remove emails hidden after rule change (instant visual removal)
+    if (_hiddenEmailKeys.isNotEmpty) {
+      results = results.where((r) => !_hiddenEmailKeys.contains(_getEmailKey(r.email))).toList();
+    }
+
     // Apply special filter first (Found, Processed, Error)
     if (_specialFilter != null) {
       switch (_specialFilter!) {
@@ -527,7 +537,22 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               icon: const Icon(Icons.file_download),
               onPressed: () => _exportResults(context, scanProvider),
             ),
-            // [REMOVED] ISSUE #123+#124: Revert button removed - no longer needed
+            IconButton(
+              tooltip: 'View Scan History',
+              icon: const Icon(Icons.history),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => ScanHistoryScreen(
+                      accountId: widget.accountId,
+                      accountEmail: widget.accountEmail,
+                      platformId: widget.platformId,
+                      platformDisplayName: widget.platformDisplayName,
+                    ),
+                  ),
+                );
+              },
+            ),
             IconButton(
               tooltip: 'Settings',
               icon: const Icon(Icons.settings),
@@ -1455,8 +1480,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                           subtitle: '@$displaySenderDomain',
                           color: Colors.green,
                           isMatched: isSafeSender && effectiveEval?.matchedPatternType == 'exact_domain',
-                          onTap: () {
+                          onTap: () async {
                             Navigator.pop(dialogContext);
+                            // F47: Check for email provider domain
+                            if (!await _checkProviderDomainWarning(domain: rawSenderDomain, isBlockRule: false)) return;
                             _addSafeSender('@$rawSenderDomain', 'exactDomain', email: email);
                           },
                         ),
@@ -1468,8 +1495,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                           subtitle: '@*.${displayRootDomain ?? displaySenderDomain}',
                           color: Colors.green,
                           isMatched: isSafeSender && effectiveEval?.matchedPatternType == 'entire_domain',
-                          onTap: () {
+                          onTap: () async {
                             Navigator.pop(dialogContext);
+                            // F47: Check for email provider domain
+                            if (!await _checkProviderDomainWarning(domain: rawRootDomain ?? rawSenderDomain, isBlockRule: false)) return;
                             _addSafeSender(rawRootDomain ?? rawSenderDomain, 'entireDomain', email: email);
                           },
                         ),
@@ -1506,8 +1535,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                           subtitle: '@$displaySenderDomain',
                           color: Colors.red,
                           isMatched: isDeleted && effectiveEval?.matchedPatternType == 'exact_domain',
-                          onTap: () {
+                          onTap: () async {
                             Navigator.pop(dialogContext);
+                            // F47: Check for email provider domain
+                            if (!await _checkProviderDomainWarning(domain: rawSenderDomain, isBlockRule: true)) return;
                             _createBlockRule('exactDomain', '@$rawSenderDomain', email: email);
                           },
                         ),
@@ -1519,8 +1550,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                           subtitle: '@*.${displayRootDomain ?? displaySenderDomain}',
                           color: Colors.red,
                           isMatched: isDeleted && effectiveEval?.matchedPatternType == 'entire_domain',
-                          onTap: () {
+                          onTap: () async {
                             Navigator.pop(dialogContext);
+                            // F47: Check for email provider domain
+                            if (!await _checkProviderDomainWarning(domain: rawRootDomain ?? rawSenderDomain, isBlockRule: true)) return;
                             _createBlockRule('entireDomain', rawRootDomain ?? rawSenderDomain, email: email);
                           },
                         ),
@@ -1550,6 +1583,74 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         );
       },
     );
+  }
+
+  /// F47: Show warning when adding domain-level rule for a known email provider.
+  ///
+  /// Returns true if the user confirms they want to proceed, false to cancel.
+  /// Returns true immediately (no warning) if the domain is not a known provider.
+  Future<bool> _checkProviderDomainWarning({
+    required String domain,
+    required bool isBlockRule,
+  }) async {
+    // Extract bare domain (remove leading @ and subdomain wildcard patterns)
+    final bareDomain = domain
+        .replaceAll('@', '')
+        .replaceAll('*.', '')
+        .toLowerCase()
+        .trim();
+
+    final providerName = CommonEmailProviders.getProviderName(bareDomain);
+    if (providerName == null) return true; // Not a provider domain, proceed
+
+    final ruleType = isBlockRule ? 'Block Rule' : 'Safe Sender';
+
+    final content = isBlockRule
+        ? 'The domain "$bareDomain" belongs to $providerName, a major email '
+          'provider used by millions of individual and business accounts.\n\n'
+          'Blocking this entire domain would prevent all emails from '
+          '$providerName users from reaching your inbox.\n\n'
+          'Recommendation: Use "Exact Email" to block a specific sender '
+          'instead. If you do block the domain, you can add individual Safe '
+          'Sender exceptions, but those emails would need to be rescued after '
+          'being deleted.'
+        : 'The domain "$bareDomain" belongs to $providerName, a major email '
+          'provider used by millions of individual and business accounts.\n\n'
+          'Adding this domain as a Safe Sender means all emails from any '
+          '$providerName user will bypass your spam rules. Since Safe Sender '
+          'rules override Block Rules, you would not be able to block specific '
+          'senders from this domain.\n\n'
+          'Recommendation: Use "Exact Email" to add specific trusted senders '
+          'instead.';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700),
+            const SizedBox(width: 8),
+            Flexible(child: Text('$ruleType for Email Provider')),
+          ],
+        ),
+        content: Text(content),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: isBlockRule ? Colors.red : Colors.green,
+            ),
+            child: const Text('Proceed Anyway'),
+          ),
+        ],
+      ),
+    );
+
+    return confirmed == true;
   }
 
   Widget _buildInlineActionButton({
@@ -1820,6 +1921,20 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     if (toDelete.isEmpty && toMoveSafe.isEmpty) {
       logger.i('[F38] No emails need IMAP re-processing');
       return;
+    }
+
+    // Immediately hide affected emails from the list (instant visual feedback)
+    // This lets the user see only remaining unaddressed emails while IMAP
+    // actions execute in the background.
+    if (mounted) {
+      setState(() {
+        for (final email in toDelete) {
+          _hiddenEmailKeys.add(_getEmailKey(email));
+        }
+        for (final email in toMoveSafe) {
+          _hiddenEmailKeys.add(_getEmailKey(email));
+        }
+      });
     }
 
     final total = toDelete.length + toMoveSafe.length;

@@ -142,6 +142,7 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
 - [ ] **3.2 Review Sprint Plan**
   - Read ALL_SPRINTS_MASTER_PLAN.md (if not cached in Phase 2.1)
   - Review "Next Sprint Candidates" table for prioritized work items
+  - **Present candidates to user in sprint refinement format** (see BACKLOG_REFINEMENT.md "Backlog Presentation Format" section). Use the item format: `**<ID>. <Title> (~<effort>) Priority <N>**` with bullet point details. Do NOT use grid tables.
   - Select items for Sprint N based on priority, dependencies, and capacity
   - Review "Feature and Bug Details" section for selected items
   - Verify scope, tasks, and acceptance criteria
@@ -1036,6 +1037,7 @@ Once user approves PR:
    - Close each issue: `gh issue close #N --reason "completed"`
    - Verify all sprint cards show "Closed" status on GitHub
    - **Note**: GitHub auto-closes issues when PR is merged if PR mentions "Closes #N", but verify all are closed
+   - **Review ALL open issues**: Run `gh issue list --state open` and close any that were resolved by this sprint or prior work but not yet closed
 
 3. **Update Sprint Completion Documentation** (MANDATORY)
 
