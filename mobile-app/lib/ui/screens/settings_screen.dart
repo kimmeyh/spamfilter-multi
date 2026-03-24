@@ -148,6 +148,13 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     return Scaffold(
       appBar: AppBarWithExit(
         title: const Text('Settings'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history),
+            tooltip: 'View Scan History',
+            onPressed: () => _navigateToScanHistory(),
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
