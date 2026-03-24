@@ -228,9 +228,11 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
       }
     });
     _logger.d('Toggle folder "$folderId": $value (singleSelect: ${widget.singleSelect})');
-    // [NEW] Sprint 19 F27: Save immediately on toggle in multi-select mode
-    if (!widget.singleSelect) {
-      _saveSelection();
+    // [UPDATED] F43: Save immediately on toggle for both single and multi-select modes
+    _saveSelection();
+    // F43: In single-select mode, auto-navigate back after selection
+    if (widget.singleSelect && value) {
+      Navigator.pop(context);
     }
   }
 
@@ -593,45 +595,8 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
               ),
             ],
 
-          // [UPDATED] Sprint 19 F27: Action buttons only in single-select mode
-          // Multi-select saves on each toggle, no confirm/cancel needed
-          if (widget.singleSelect)
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  OutlinedButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancel'),
-                  ),
-                  const Spacer(),
-                  ElevatedButton(
-                    onPressed: _selectedFolders.values.any((v) => v)
-                        ? () {
-                            final selectedFolderIds = _selectedFolders.entries
-                                .where((e) => e.value)
-                                .map((e) => e.key)
-                                .toSet();
-
-                            final selectedFolderNames = _allFolders
-                                .where((f) => selectedFolderIds.contains(f.id))
-                                .map((f) => f.displayName)
-                                .toList();
-
-                            _logger.i(
-                              '[OK] Selected folders: $selectedFolderNames (singleSelect: ${widget.singleSelect})',
-                            );
-
-                            widget.onFoldersSelected(selectedFolderNames);
-                            Navigator.pop(context, selectedFolderNames);
-                          }
-                        : null,
-                    child: Text(widget.buttonLabel ?? 'Select Folder'),
-                  ),
-                ],
-              ),
-            )
-          else if (!_isLoading && _errorMessage == null)
+          // [UPDATED] F43: Both single and multi-select save on each toggle
+          if (!_isLoading && _errorMessage == null)
             // [NEW] Sprint 19 F27: Selection count summary for multi-select
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

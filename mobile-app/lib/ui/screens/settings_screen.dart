@@ -62,6 +62,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   List<String> _backgroundScanFolders = List.from(SettingsStore.defaultBackgroundScanFolders);
   bool _backgroundScanDebugCsv = SettingsStore.defaultBackgroundScanDebugCsv;
   String? _csvExportDirectory;
+  // F43: Track current folder selections for display
+  String? _safeSenderFolder;
+  String? _deletedRuleFolder;
   int _manualDaysBack = SettingsStore.defaultManualScanDaysBack;
   int _backgroundDaysBack = SettingsStore.defaultBackgroundScanDaysBack;
   int _scanHistoryRetentionDays = SettingsStore.defaultScanHistoryRetentionDays;
@@ -74,7 +77,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 3,  // Account, Manual Scan, Background
+      length: 4,  // F36: General, Account, Manual Scan, Background
       vsync: this,
     );
     _retentionDaysController = TextEditingController(
@@ -114,6 +117,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       _backgroundScanDebugCsv = await _settingsStore.getBackgroundScanDebugCsv();
       _csvExportDirectory = await _settingsStore.getCsvExportDirectory();
 
+      // F43: Load current folder selections for display
+      _safeSenderFolder = await _settingsStore.getAccountSafeSenderFolder(widget.accountId);
+      _deletedRuleFolder = await _settingsStore.getAccountDeletedRuleFolder(widget.accountId);
+
       // [NEW] ISSUE #153: Load days-back settings (per-account with app-wide fallback)
       final accountManualDays = await _settingsStore.getAccountManualDaysBack(widget.accountId);
       _manualDaysBack = accountManualDays ?? await _settingsStore.getManualScanDaysBack();
@@ -141,9 +148,17 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     return Scaffold(
       appBar: AppBarWithExit(
         title: const Text('Settings'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.history),
+            tooltip: 'View Scan History',
+            onPressed: () => _navigateToScanHistory(),
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
+            Tab(text: 'General'),
             Tab(text: 'Account'),
             Tab(text: 'Manual Scan'),
             Tab(text: 'Background'),
@@ -155,11 +170,155 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           : TabBarView(
               controller: _tabController,
               children: [
+                _buildGeneralTab(),
                 _buildAccountTab(),
                 _buildManualScanTab(),
                 _buildBackgroundScanTab(),
               ],
             ),
+    );
+  }
+
+  /// F36: General tab for app-wide settings
+  Widget _buildGeneralTab() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // Rules Management section (moved from Account tab)
+        Text(
+          'Rules Management',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'View and manage safe sender patterns and block rules',
+          style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+        ),
+        const SizedBox(height: 16),
+
+        OutlinedButton.icon(
+          icon: const Icon(Icons.security_outlined),
+          label: const Text('Manage Safe Senders'),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const SafeSendersManagementScreen(),
+              ),
+            );
+          },
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            alignment: Alignment.centerLeft,
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        OutlinedButton.icon(
+          icon: const Icon(Icons.rule_outlined),
+          label: const Text('Manage Rules'),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const RulesManagementScreen(),
+              ),
+            );
+          },
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            alignment: Alignment.centerLeft,
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        OutlinedButton.icon(
+          icon: const Icon(Icons.swap_vert_outlined),
+          label: const Text('Import / Export YAML'),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const YamlImportExportScreen(),
+              ),
+            );
+          },
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            alignment: Alignment.centerLeft,
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Scan History section (moved from Account tab)
+        Text(
+          'Scan History',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Manage scan history retention and view past scan results',
+          style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+        ),
+        const SizedBox(height: 16),
+        _buildRetentionDaysSelector(),
+        const SizedBox(height: 8),
+        TextButton.icon(
+          icon: const Icon(Icons.history, size: 16),
+          label: const Text('Go to View Scan History'),
+          onPressed: () => _navigateToScanHistory(),
+        ),
+
+        const SizedBox(height: 24),
+
+        // About section (moved from Account tab)
+        Text(
+          'About',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(Icons.info_outline, color: Colors.blue.shade700),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'MyEmailSpamFilter',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Version 0.5.1${AppEnvironment.displaySuffix}',
+                            style: TextStyle(color: Colors.grey.shade700),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -240,170 +399,32 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             ),
             const SizedBox(height: 16),
 
-            // Safe Sender Folder button
-            OutlinedButton.icon(
-              icon: const Icon(Icons.folder_special_outlined),
-              label: const Text('Safe Sender Folder'),
-              onPressed: () => _configureSafeSenderFolder(platform, email),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                alignment: Alignment.centerLeft,
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            // Deleted Rule Folder button
-            OutlinedButton.icon(
-              icon: const Icon(Icons.folder_delete_outlined),
-              label: const Text('Deleted Rule Folder'),
-              onPressed: () => _configureDeletedRuleFolder(platform, email),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                alignment: Alignment.centerLeft,
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // Data management section
-            Text(
-              'Data Management',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'View and manage safe sender patterns and block rules',
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-            ),
-            const SizedBox(height: 16),
-
-            // Manage Safe Senders button
-            OutlinedButton.icon(
-              icon: const Icon(Icons.security_outlined),
-              label: const Text('Manage Safe Senders'),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const SafeSendersManagementScreen(),
-                  ),
-                );
-              },
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                alignment: Alignment.centerLeft,
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            // Manage Rules button
-            OutlinedButton.icon(
-              icon: const Icon(Icons.rule_outlined),
-              label: const Text('Manage Rules'),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const RulesManagementScreen(),
-                  ),
-                );
-              },
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                alignment: Alignment.centerLeft,
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            // Import/Export YAML button
-            OutlinedButton.icon(
-              icon: const Icon(Icons.swap_vert_outlined),
-              label: const Text('Import / Export YAML'),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const YamlImportExportScreen(),
-                  ),
-                );
-              },
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                alignment: Alignment.centerLeft,
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // [MOVED] FB-3: Scan History section moved from Background tab to Account tab
-            Text(
-              'Scan History',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Manage scan history retention and view past scan results',
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-            ),
-            const SizedBox(height: 16),
-            _buildRetentionDaysSelector(),
-            const SizedBox(height: 8),
+            // F43: Safe Sender Folder - show current selection
             ListTile(
-              leading: const Icon(Icons.history),
-              title: const Text('View Scan History'),
-              subtitle: const Text('View all past scan runs and results'),
+              leading: const Icon(Icons.folder_special_outlined),
+              title: const Text('Safe Sender Folder'),
+              subtitle: Text(
+                _safeSenderFolder ?? 'INBOX (default)',
+                style: TextStyle(color: Colors.green.shade700),
+              ),
               trailing: const Icon(Icons.chevron_right),
-              onTap: () => _navigateToScanHistory(),
+              onTap: () => _configureSafeSenderFolder(platform, email),
+              contentPadding: EdgeInsets.zero,
             ),
 
-            const SizedBox(height: 24),
+            // F43: Deleted Rule Folder - show current selection
+            ListTile(
+              leading: const Icon(Icons.folder_delete_outlined),
+              title: const Text('Deleted Rule Folder'),
+              subtitle: Text(
+                _deletedRuleFolder ?? 'Trash (default)',
+                style: TextStyle(color: Colors.red.shade700),
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _configureDeletedRuleFolder(platform, email),
+              contentPadding: EdgeInsets.zero,
+            ),
 
-            // About section
-            Text(
-              'About',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.info_outline, color: Colors.blue.shade700),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'MyEmailSpamFilter',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Version 0.5.1${AppEnvironment.displaySuffix}',
-                                style: TextStyle(color: Colors.grey.shade700),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ],
         );
       },
@@ -462,6 +483,13 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             // [UPDATED] ISSUE #123: Save per-account manual scan folders
             await _settingsStore.setAccountManualScanFolders(widget.accountId, folders);
           },
+        ),
+        // F44: Go to View Scan History link (matching Background settings style)
+        const SizedBox(height: 8),
+        TextButton.icon(
+          icon: const Icon(Icons.history, size: 16),
+          label: const Text('Go to View Scan History'),
+          onPressed: () => _navigateToScanHistory(),
         ),
         const SizedBox(height: 24),
         _buildSectionHeader('Confirmation'),
@@ -1276,7 +1304,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 }
 
                 _logger.i('Set safe sender folder for $email to: $folderName');
-                setState(() {}); // Refresh UI
+                setState(() {
+                  _safeSenderFolder = folderName;
+                });
               } catch (e) {
                 _logger.e('Failed to set safe sender folder: $e');
                 if (mounted) {
@@ -1345,7 +1375,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 }
 
                 _logger.i('Set deleted rule folder for $email to: $folderName');
-                setState(() {}); // Refresh UI
+                setState(() {
+                  _deletedRuleFolder = folderName;
+                });
               } catch (e) {
                 _logger.e('Failed to set deleted rule folder: $e');
                 if (mounted) {
