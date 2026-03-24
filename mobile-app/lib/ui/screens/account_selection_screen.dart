@@ -15,6 +15,7 @@ import '../widgets/error_display.dart';
 import '../widgets/app_bar_with_exit.dart';
 import 'platform_selection_screen.dart';
 import 'results_display_screen.dart';
+import 'scan_history_screen.dart';
 import 'scan_progress_screen.dart';
 import 'settings_screen.dart';
 
@@ -566,6 +567,22 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
     );
   }
 
+  /// Build scan history icon button for AppBar
+  Widget _buildHistoryButton() {
+    return IconButton(
+      icon: const Icon(Icons.history),
+      tooltip: 'View Scan History',
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const ScanHistoryScreen(),
+          ),
+        );
+      },
+    );
+  }
+
   /// Delete account with confirmation dialog
   Future<void> _deleteAccount(String accountId) async {
     final email = accountId; // accountId is the email
@@ -641,7 +658,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       return Scaffold(
         appBar: AppBarWithExit(
           title: const Text('Select Account'),
-          actions: [_buildSettingsButton()],
+          actions: [_buildHistoryButton(), _buildSettingsButton()],
         ),
         body: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -676,7 +693,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
         appBar: AppBarWithExit(
           title: const Text('Select Account'),
           elevation: 2,
-          actions: [_buildSettingsButton()],
+          actions: [_buildHistoryButton(), _buildSettingsButton()],
         ),
         body: NoAccountsEmptyState(onAddAccount: _addNewAccount),
       );
@@ -687,7 +704,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       appBar: AppBarWithExit(
         title: const Text('Select Account'),
         elevation: 2,
-        actions: [_buildSettingsButton()],
+        actions: [_buildHistoryButton(), _buildSettingsButton()],
       ),
       body: Column(
         children: [

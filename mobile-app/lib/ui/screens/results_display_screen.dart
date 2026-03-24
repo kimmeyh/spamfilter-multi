@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
 import '../widgets/app_bar_with_exit.dart';
+import 'scan_history_screen.dart';
 import 'scan_progress_screen.dart';
 import 'settings_screen.dart';
 
@@ -536,7 +537,22 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               icon: const Icon(Icons.file_download),
               onPressed: () => _exportResults(context, scanProvider),
             ),
-            // [REMOVED] ISSUE #123+#124: Revert button removed - no longer needed
+            IconButton(
+              tooltip: 'View Scan History',
+              icon: const Icon(Icons.history),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => ScanHistoryScreen(
+                      accountId: widget.accountId,
+                      accountEmail: widget.accountEmail,
+                      platformId: widget.platformId,
+                      platformDisplayName: widget.platformDisplayName,
+                    ),
+                  ),
+                );
+              },
+            ),
             IconButton(
               tooltip: 'Settings',
               icon: const Icon(Icons.settings),
