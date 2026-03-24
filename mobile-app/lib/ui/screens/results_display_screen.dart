@@ -91,6 +91,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   // Key is the same email key used by _evaluationOverrides.
   final Set<String> _reProcessedEmailKeys = {};
 
+  // Track emails to hide from the list after rule change (removed immediately
+  // before IMAP action completes for instant visual feedback).
+  final Set<String> _hiddenEmailKeys = {};
+
   // F38: Non-blocking re-processing state
   bool _isReProcessing = false;
   int _reProcessTotal = 0;
@@ -313,7 +317,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   /// Filter results based on current filter state, search query, and folder filter
   List<EmailActionResult> _getFilteredResults(List<EmailActionResult> allResults) {
     var results = allResults;
-    
+
+    // Remove emails hidden after rule change (instant visual removal)
+    if (_hiddenEmailKeys.isNotEmpty) {
+      results = results.where((r) => !_hiddenEmailKeys.contains(_getEmailKey(r.email))).toList();
+    }
+
     // Apply special filter first (Found, Processed, Error)
     if (_specialFilter != null) {
       switch (_specialFilter!) {
@@ -1896,6 +1905,20 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     if (toDelete.isEmpty && toMoveSafe.isEmpty) {
       logger.i('[F38] No emails need IMAP re-processing');
       return;
+    }
+
+    // Immediately hide affected emails from the list (instant visual feedback)
+    // This lets the user see only remaining unaddressed emails while IMAP
+    // actions execute in the background.
+    if (mounted) {
+      setState(() {
+        for (final email in toDelete) {
+          _hiddenEmailKeys.add(_getEmailKey(email));
+        }
+        for (final email in toMoveSafe) {
+          _hiddenEmailKeys.add(_getEmailKey(email));
+        }
+      });
     }
 
     final total = toDelete.length + toMoveSafe.length;
