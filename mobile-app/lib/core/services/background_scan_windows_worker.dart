@@ -274,15 +274,10 @@ class BackgroundScanWindowsWorker {
       final debugCsvEnabled = await settingsStore.getBackgroundScanDebugCsv();
       if (!debugCsvEnabled) return;
 
-      // Determine export directory: configured CSV dir > app logs dir
-      String exportDir;
-      final configuredDir = await settingsStore.getCsvExportDirectory();
-      if (configuredDir != null && configuredDir.isNotEmpty) {
-        exportDir = configuredDir;
-      } else {
-        exportDir = '${Platform.environment['APPDATA']}'
-            '\\MyEmailSpamFilter\\MyEmailSpamFilter\\logs';
-      }
+      // Export to environment-aware AppData directory (ADR-0035)
+      final envSuffix = AppEnvironment.dataDirSuffix;
+      final exportDir = '${Platform.environment['APPDATA']}'
+          '\\MyEmailSpamFilter\\MyEmailSpamFilter$envSuffix\\logs';
 
       // Ensure directory exists
       final dir = Directory(exportDir);
@@ -290,13 +285,14 @@ class BackgroundScanWindowsWorker {
         await dir.create(recursive: true);
       }
 
-      // F45: Daily filename (no time component)
+      // F45: Daily filename (no time component), with _dev suffix per ADR-0035
       final safeAccountId = accountId
           .replaceAll('@', '_at_')
           .replaceAll('.', '_');
       final dateStr = DateTime.now().toIso8601String().split('T')[0];
-      final xlsxFilename = 'background_scan_${safeAccountId}_$dateStr.xlsx';
-      final dataFilename = 'background_scan_${safeAccountId}_$dateStr.data.csv';
+      final devSuffix = AppEnvironment.isDev ? '_dev' : '';
+      final xlsxFilename = 'background_scan_${safeAccountId}_$dateStr$devSuffix.xlsx';
+      final dataFilename = 'background_scan_${safeAccountId}_$dateStr$devSuffix.data.csv';
       final xlsxPath = path.join(exportDir, xlsxFilename);
       final dataPath = path.join(exportDir, dataFilename);
 
