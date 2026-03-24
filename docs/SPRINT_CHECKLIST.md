@@ -106,7 +106,8 @@ These documents MUST be created/updated during each sprint:
 ## Post-Merge Cleanup
 
 - [ ] PR merged to develop
-- [ ] GitHub issues auto-closed (verify)
+- [ ] **Review and close all resolved GitHub issues** (`gh issue list --state open` - close any resolved by this sprint)
+- [ ] GitHub issues auto-closed (verify Closes #N references worked)
 - [ ] Feature branch deleted (optional, user-managed)
 - [ ] Ready for next sprint
 

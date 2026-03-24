@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: March 22, 2026 (Sprint 25 retrospective)
+**Last Updated**: March 24, 2026 (Sprint 26 retrospective)
 
 ## How to Maintain This Document
 
@@ -90,6 +90,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 23 | docs/sprints/SPRINT_23_RETROSPECTIVE.md | [OK] Complete | Mar 20, 2026 |
 | 24 | docs/sprints/SPRINT_24_RETROSPECTIVE.md | [OK] Complete | Mar 20-21, 2026 |
 | 25 | docs/sprints/SPRINT_25_RETROSPECTIVE.md | [OK] Complete | Mar 22, 2026 |
+| 26 | docs/sprints/SPRINT_26_RETROSPECTIVE.md | [OK] Complete | Mar 22-24, 2026 |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -97,13 +98,11 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 25** (March 22, 2026)
-- **Bug Fixes**: F40 safe sender INBOX skip (#198), F41 diagnostic logging (#201), F30 exact domain filter (#202)
-- **Features**: F34 scan status indicator, F38 re-process after rule changes (async), F31 post-build Task Scheduler
-- **Refactoring**: ScanMode enum rename with backwards compatibility
-- **Testing**: Coverage analysis (28.9% baseline), 31 new tests (1147 -> 1178), Issue #203 for remaining gaps
-- **Infrastructure**: Prod worktree for side-by-side dev/prod execution (ADR-0035)
-- **Retrospective**: docs/sprints/SPRINT_25_RETROSPECTIVE.md
+**Sprint 26** (March 22-24, 2026)
+- **Features**: F43 folder settings UX, F44 scan history links, F45 Excel export, F47 provider domain warning, F36 Settings General tab, F7 multi-account scanning
+- **Bug Fixes**: Background scan SettingsStore wrong DB path, ScanMode firstWhere backwards compat, live scan delete visibility
+- **UX**: View Scan History icon on all screens, immediate email removal on block rule
+- **Retrospective**: docs/sprints/SPRINT_26_RETROSPECTIVE.md
 
 ---
 
@@ -150,35 +149,20 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 
 **~~F38. Live Scan: re-process emails after rule changes~~** [OK] Complete (Sprint 25)
 
-**F43. Folder settings selection UX - radio button style (~2-3h) Priority 58**
-- Phase: Core UX
-- Platform: All
-- Settings > Account > Folder Settings: Safe Sender Folder and Deleted Rule Folder should change selection on clicking the radio button (like Default Folders > Select Folders), not require a separate "Select Folder" action
+**~~F43. Folder settings selection UX~~** [OK] Complete (Sprint 26)
 
-**F44. Add "Go to View Scan History" to Manual Scan settings (~1-2h) Priority 59**
-- Phase: Core UX
-- Platform: All
-- Add "Go to View Scan History" link to Manual Scan settings page after Default Folders section, matching the style used on Background settings page
+**~~F44. Add "Go to View Scan History" to Manual Scan settings~~** [OK] Complete (Sprint 26)
 
-**F45. Background scan CSV to Excel export with updated format (~4-6h) Priority 66**
-- Phase: Core Feature
-- Platform: Windows Desktop
-- [Detail](#background-scan-excel-export)
+**~~F45. Background scan CSV to Excel export~~** [OK] Complete (Sprint 26)
 
-**F36. Settings: Add General tab for app-wide settings (~4-6h) Priority 70**
-- Phase: Core Feature
-- Platform: All
-- [Detail](#settings-general-tab)
+**~~F36. Settings: Add General tab for app-wide settings~~** [OK] Complete (Sprint 26)
 
 **F46. Default rule set creation (~6-8h) Priority 74**
 - Phase: Core Feature
 - Platform: All
 - Create a default set of rules including all top-level domain rules and all Entire Domain rules
 
-**F47. Email provider domain warning on rule creation (~3-4h) Priority 76**
-- Phase: Core UX
-- Platform: All
-- [Detail](#email-provider-domain-warning)
+**~~F47. Email provider domain warning on rule creation~~** [OK] Complete (Sprint 26)
 
 **F48. Scan History enhancements - multi-account, filters, totals (Issue #212) (~6-8h) Priority 78**
 - Phase: Core Feature
@@ -186,10 +170,7 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Combine all accounts, account filters, totals with tooltips, retention days in title
 - Follow-up to F7 Multi-Account Scanning
 
-**F7. Multi-Account Scanning (~8-10h) Priority 90**
-- Phase: Core Feature
-- Platform: All
-- [Detail](#f7-multi-account-scanning)
+**~~F7. Multi-Account Scanning~~** [OK] Complete (Sprint 26)
 
 **F6. Provider-Specific Optimizations (~10-12h) Priority 100**
 - Phase: Performance
@@ -425,75 +406,6 @@ Provider defaults:
 
 ---
 
-### Background Scan Excel Export (F45)
-
-**Status**: New (Sprint 25 retrospective)
-**Estimated Effort**: ~4-6h
-**Phase**: Core Feature
-**Platform**: Windows Desktop
-
-**Overview**: Convert background scan debug output from CSV to Excel format using a template file. Change file naming and grouping to daily files.
-
-**File Naming**:
-- Remove time from filename: `background_scan_kimmeyharold_at_aol_com_2026-03-22` (no time suffix)
-- Daily grouping: if no file exists for today, create new from template; if one exists, append records
-
-**Field Order** (updated to match template):
-1. Scan Date and Time
-2. Received Date and Time
-3. Status
-4. Folder
-5. Action
-6. Rule
-7. From
-8. Subject
-9. Match Condition
-10. Email ID
-
-**Template**: `D:\Data\Harold\spamfilter-multi\background_scan_template.xlsx`
-
-**Behavior Changes**:
-- If a scan run produces no records, add a single record with Scan Date and Time, Received Date and Time, and From containing `<no records to process>`
-- Action field: "No rule" instead of "None" for emails with no matching rule
-
-**Acceptance Criteria**:
-- [ ] Output format changed from CSV to Excel (.xlsx)
-- [ ] Template file used for formatting
-- [ ] Field order matches specification above
-- [ ] Daily file grouping (create or append)
-- [ ] Empty scan runs produce placeholder record
-- [ ] "No rule" label used instead of "None"
-- [ ] Existing CSV export setting still works for manual scan CSV
-
----
-
-### Email Provider Domain Warning (F47)
-
-**Status**: New (Sprint 25 retrospective)
-**Estimated Effort**: ~3-4h
-**Phase**: Core UX
-**Platform**: All
-
-**Overview**: When a user adds a Safe Sender or Block Rule for an email provider domain (outlook.com, gmail.com, aol.com, yahoo.com, etc.), show a warning popup explaining the impact and suggesting alternatives.
-
-**Trigger**: User clicks "Exact Domain", "Entire Domain" for Safe Sender or Block Rule from scan results for an email whose domain is a known email provider.
-
-**Warning Content**:
-- **For Block Rules**: Explain that blocking an email provider domain could impact thousands of individual user or business email addresses. Suggest "Exact Email" as best practice. Mention that safe sender rules can override domain blocks, but only after the email has already been deleted.
-- **For Safe Sender Rules**: Explain that allowing an entire email provider domain means all emails from that domain bypass spam rules. Since safe sender rules override delete rules, there would be no way to set up delete rules for specific senders from that domain.
-- **Both**: Suggest "Exact Email" is generally the best practice for provider domains.
-
-**Provider List**: Use existing `common_email_providers.dart` data.
-
-**Acceptance Criteria**:
-- [ ] Warning shown when adding domain-level rule for known email provider
-- [ ] Warning explains impact clearly
-- [ ] "Exact Email" suggested as alternative
-- [ ] User can proceed with domain rule if they choose (warning, not block)
-- [ ] Works for both Safe Sender and Block Rule creation flows
-
----
-
 ### F11: Playwright UI Tests and Android UI Testing
 
 **Status**: HOLD (Android Google Play Store Readiness)
@@ -554,72 +466,6 @@ Provider defaults:
 **Dependencies**: Core functionality complete
 
 **Notes**: Defer until MVP complete. May not be needed if current performance acceptable.
-
----
-
-### F7: Multi-Account Scanning
-
-**Status**: Idea
-**Estimated Effort**: ~8-10h
-**Phase**: Core Feature
-**Platform**: All
-
-**Overview**: Scan multiple email accounts simultaneously (parallel execution).
-
-**Potential Features**:
-- Parallel scanning with progress tracking
-- Per-account result aggregation
-- Unified unmatched email list (with account filtering)
-
-**Dependencies**: Scan Results (completed Sprint 12)
-
-**Notes**: Defer until MVP complete. Current sequential scanning may be sufficient.
-
----
-
-### Settings: General Tab (F36)
-
-**Status**: New (Sprint 20 retrospective)
-**Estimated Effort**: ~4-6h
-**Phase**: Core Feature
-**Platform**: All
-
-**Overview**: Add a "General" tab to Settings for app-wide settings that apply across all accounts. Move rules management and data management from the Account tab to the General tab.
-
-**Current Structure**:
-```
-Settings > Account (per-account)
-  - Manage Rules (actually app-wide)
-  - Manage Safe Senders (actually app-wide)
-  - Data Management / Import-Export (actually app-wide)
-  - Folder Settings (per-account)
-  - Scan Settings (per-account)
-  - About
-```
-
-**Proposed Structure**:
-```
-Settings > General (app-wide)
-  - Rules Management (renamed from "Manage Rules" + "Data Management")
-    - Manage Rules (filter, search, delete)
-    - Manage Safe Senders (filter, search, delete)
-    - Import/Export Rules (YAML import/export)
-  - About
-
-Settings > Account (per-account)
-  - Folder Settings
-  - Scan Settings
-  - Account credentials
-```
-
-**Acceptance Criteria**:
-- [ ] New "General" tab added to Settings screen
-- [ ] Rules Management section moved from Account to General
-- [ ] Safe Senders Management moved from Account to General
-- [ ] Data Management (YAML Import/Export) moved to General and renamed "Rules Management" or "Import/Export"
-- [ ] Account tab retains only per-account settings (folders, scan config, credentials)
-- [ ] Navigation from all existing entry points still works
-- [ ] Tab order: General first, then Account
 
 ---
 
@@ -1013,6 +859,7 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 5.3 | 2026-03-24 | Sprint 26: Marked F7, F36, F43, F44, F45, F47 complete. Removed F7/F36/F45/F47 detail sections. Added F48 (scan history enhancements). Updated Last Completed Sprint. |
 | 5.2 | 2026-03-22 | Sprint 25: Marked F30, F31, F34, F38, F40, F41 complete. Removed F31/F32/F38 detail sections. Added F42 (coverage gaps, on hold). Updated Last Completed Sprint. |
 | 5.1 | 2026-03-21 | Sprint 24: Marked WS items complete. Added F40, F41. Updated Last Completed Sprint. |
 | 5.0 | 2026-03-19 | Sprint 22: New backlog presentation format (priority-ordered, phase/platform fields, F# identifiers). Assigned F28-F38 to unnamed items. Moved Android/GP items to HOLD. Unholded H0 as F29. Removed old table format. |

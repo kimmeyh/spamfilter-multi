@@ -1037,6 +1037,7 @@ Once user approves PR:
    - Close each issue: `gh issue close #N --reason "completed"`
    - Verify all sprint cards show "Closed" status on GitHub
    - **Note**: GitHub auto-closes issues when PR is merged if PR mentions "Closes #N", but verify all are closed
+   - **Review ALL open issues**: Run `gh issue list --state open` and close any that were resolved by this sprint or prior work but not yet closed
 
 3. **Update Sprint Completion Documentation** (MANDATORY)
 
