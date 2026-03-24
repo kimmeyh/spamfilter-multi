@@ -34,6 +34,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **feat**: Settings General tab for app-wide settings (rules, scan history, about) (F36, Issue #211)
 - **feat**: Multi-Account Scanning - "Scan All Accounts" button for sequential scanning (F7, Issue #211)
 - **chore**: Action label "No rule" replaces "None" in CSV/Excel exports
+- **fix**: Excel filename uses _dev suffix for dev environment, files stored in AppData dir (ADR-0035, Issue #211)
+- **fix**: Live Scan Results - deleted emails removed from list immediately after block rule applied (Issue #211)
+- **feat**: View Scan History icon added to Results Display and Account Selection AppBars (Issue #211)
 
 ### 2026-03-22 (Sprint 25 - Safe Sender Fixes, Scan Mode Rename, Background Scan Rebuild)
 - **fix**: Safe sender INBOX skip bug - emails already in safe sender target folder were not being skipped (Issue #198)

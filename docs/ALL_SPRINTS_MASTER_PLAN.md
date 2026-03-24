@@ -180,6 +180,12 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Platform: All
 - [Detail](#email-provider-domain-warning)
 
+**F48. Scan History enhancements - multi-account, filters, totals (Issue #212) (~6-8h) Priority 78**
+- Phase: Core Feature
+- Platform: All
+- Combine all accounts, account filters, totals with tooltips, retention days in title
+- Follow-up to F7 Multi-Account Scanning
+
 **F7. Multi-Account Scanning (~8-10h) Priority 90**
 - Phase: Core Feature
 - Platform: All
