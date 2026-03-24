@@ -1,12 +1,13 @@
 # GenAI Happy Hour Presentation: Building a Real App with Claude Code
 
-**Audience**: Developers (Python, Go, TypeScript, C#/.NET)
-**Format**: ~20-30 min talk + Q&A
+**Audience**: Developers (Python, Go, TypeScript, C#/.NET) at GenAI Happy Hour
+**Format**: ~25-30 min talk + Q&A
 **Tone**: Honest, practical, developer-to-developer
+**Total Slides**: ~27 slides
 
 ---
 
-## Slide-by-Slide Outline
+## SECTION 1: Introduction (2 slides)
 
 ### Slide 1: Title
 
@@ -14,273 +15,482 @@
 
 - Harold Kimmey
 - GenAI Happy Hour - [Date]
-- Subtitle: "25 sprints, 1,178 tests, 0 regressions — what I learned using AI as a co-developer"
+- Subtitle: "25 sprints, 1,178 tests, 0 regressions"
 
 ---
 
-### Slide 2: The Problem
+### Slide 2: The Problem and Starting Point
 
-**I was drowning in spam.**
+**I was drowning in spam across multiple email accounts.**
 
-- Multiple email accounts (Gmail, AOL, Yahoo)
-- Each provider has different spam filtering quality
-- Had a working Python/Outlook desktop script — but it only worked on one machine, one provider
+- Had a working Python/Outlook desktop script (win32com, hardcoded rules, Windows-only)
+- Each email provider has different spam filtering quality
 - Wanted: one app, all providers, all platforms, portable rules
+- "I am not a Flutter developer. I had never written Dart. This is relevant."
 
-> **Talking point**: "I had a working solution. But it was duct tape. I wanted a real app — and I wanted to see if Claude Code could help me build one."
-
----
-
-### Slide 3: The Starting Point
-
-**Legacy Python App (Outlook-only)**
-
-- win32com automation talking to Outlook COM objects
-- Hardcoded rules in Python dicts
-- Windows-only, single account
-- It worked... barely
-
-**The Goal**: Cross-platform Flutter/Dart app with OAuth, IMAP, regex rules, background scanning
-
-> **Talking point**: "I am not a Flutter developer. I had never written Dart. This is relevant."
+> **Talking point**: "I had a working solution. But it was duct tape and baling wire. I wanted a real app — and I wanted to see if Claude Code could help me build one."
 
 ---
 
-### Slide 4: What Got Built (Demo or Screenshots)
+## SECTION 2: App Functionality (2 slides, ~10 bullet points)
 
-**MyEmailSpamFilter — shipped to Windows Store**
+### Slide 3: What MyEmailSpamFilter Does — Core Features
 
-- 5-platform Flutter app (Windows, Android, macOS, Linux, iOS)
-- 4 email providers (Gmail OAuth, AOL, Yahoo, generic IMAP)
-- 3,291 regex-based spam rules
-- Background scanning with Windows Task Scheduler
-- System tray, toast notifications, MSIX packaging
-- Safe sender whitelist with pattern matching
+**Email Scanning and Filtering**
+- Connects to Gmail (OAuth), AOL, Yahoo, and any generic IMAP provider
+- Evaluates emails against 3,291 regex-based spam rules with first-match-wins logic
+- Safe sender whitelist — trusted senders bypass all rules automatically
+- Four progressive scan modes: read-only (default), test limit, safe-senders-only, full production
+- Move-to-trash safety — never permanently deletes; recoverable from trash
 
-> **Talking point**: Show 2-3 screenshots — the scan results screen, the rule manager, the settings screen. Keep it brief.
-
----
-
-### Slide 5: By the Numbers
-
-| Metric | Value |
-|--------|-------|
-| Timeline | ~2 months (Jan 19 - Mar 22, 2026) |
-| Sprints | 25 completed |
-| Tests | 1,178 passing |
-| Production regressions | 0 |
-| Analyzer warnings | 0 |
-| Lines of test code | 12,037 |
-| Individual rules | 3,291 |
-| Windows Store | Submitted for certification |
-
-> **Talking point**: "These numbers are real. Not cherry-picked. The zero regressions across 25 sprints is the one I am most proud of — and most surprised by."
+**Multi-Account Management**
+- Add and manage multiple email accounts across different providers
+- Per-account folder selection and scan configuration
 
 ---
 
-### Slide 6: How I Used Claude Code — The Sprint Model
+### Slide 4: What MyEmailSpamFilter Does — Advanced Features
 
-**Not "write me an app." Structured sprints.**
+**Background and Automation**
+- Scheduled background scanning via Windows Task Scheduler (headless, no UI)
+- System tray icon with context menu; toast notifications on scan completion
+- Scan history with retention settings — review what was caught and when
+
+**Rules Management**
+- Search, browse, and manage 3,291+ individual rules organized by pattern type
+- Add block rules or safe senders inline during scan results review
+- Rule conflict detection — warns when rules prevent other rules from firing
+- Import/export rules via YAML for version control and portability
+
+---
+
+## SECTION 3: Application Screenshots (12 slides)
+
+> **Note**: Capture these screenshots from the running Windows app before the talk. Each slide should be a full-screen or near-full-screen screenshot with a short title and 1-2 bullet annotations.
+
+### Slide 5: Account Selection Screen
+
+**Screenshot**: `AccountSelectionScreen` — the landing page
+
+- List of configured email accounts (Gmail, AOL, etc.)
+- Add Account button, account status indicators
+- Bottom navigation bar on Android; traditional nav on Windows
+
+> **Source file**: `lib/ui/screens/account_selection_screen.dart`
+
+---
+
+### Slide 6: Platform Selection Screen
+
+**Screenshot**: `PlatformSelectionScreen` — choosing an email provider
+
+- Provider cards: Gmail, AOL, Yahoo, Generic IMAP, Demo Mode
+- Each card shows supported auth method (OAuth, App Password, IMAP)
+
+> **Source file**: `lib/ui/screens/platform_selection_screen.dart`
+
+---
+
+### Slide 7: Account Setup / Gmail OAuth Screen
+
+**Screenshot**: `AccountSetupScreen` or `GmailOAuthScreen` — configuring an account
+
+- Credential entry (IMAP) or OAuth browser flow (Gmail)
+- Folder selection for which folders to scan
+- Scan mode configuration
+
+> **Source files**: `lib/ui/screens/account_setup_screen.dart`, `lib/ui/screens/gmail_oauth_screen.dart`
+
+---
+
+### Slide 8: Folder Selection Screen
+
+**Screenshot**: `FolderSelectionScreen` — picking email folders to scan
+
+- Tree view of IMAP folders
+- Checkbox selection for folders to include
+- Junk folder auto-detection per provider (AOL: Bulk Mail, Gmail: Spam, etc.)
+
+> **Source file**: `lib/ui/screens/folder_selection_screen.dart`
+
+---
+
+### Slide 9: Scan Progress Screen
+
+**Screenshot**: `ScanProgressScreen` — live scan in progress
+
+- Real-time progress bar with email count
+- Throttled UI updates (every 10 emails or every 2 seconds)
+- Current folder, emails processed, matches found
+
+> **Source file**: `lib/ui/screens/scan_progress_screen.dart`
+
+---
+
+### Slide 10: Scan Results Screen
+
+**Screenshot**: `ResultsDisplayScreen` — scan results with filtering
+
+- Email list showing: folder, subject, matched rule
+- Filter chips by category (spam type, safe sender, no match)
+- Search bar for finding specific results
+- Inline actions: add as safe sender, add block rule
+
+> **Source file**: `lib/ui/screens/results_display_screen.dart`
+
+---
+
+### Slide 11: Email Detail View
+
+**Screenshot**: `EmailDetailView` — drilling into a specific email
+
+- Full email headers (From, Subject, Date)
+- Matched rule name and pattern that triggered
+- Action taken (moved to trash, no action, safe sender)
+
+> **Source file**: `lib/ui/screens/email_detail_view.dart`
+
+---
+
+### Slide 12: Rules Management Screen
+
+**Screenshot**: `RulesManagementScreen` — browsing 3,291 rules
+
+- Searchable rule list with pattern type classification
+- Rule details: name, conditions (from/subject/body/header patterns), actions
+- Enabled/disabled toggle
+
+> **Source file**: `lib/ui/screens/rules_management_screen.dart`
+
+---
+
+### Slide 13: Safe Senders Management Screen
+
+**Screenshot**: `SafeSendersManagementScreen` — whitelist management
+
+- Three pattern types: exact email, exact domain, entire domain (with subdomains)
+- Category filter chips to view by type
+- Add/remove safe sender entries
+
+> **Source file**: `lib/ui/screens/safe_senders_management_screen.dart`
+
+---
+
+### Slide 14: Rule Test Screen
+
+**Screenshot**: `RuleTestScreen` — testing patterns against sample emails
+
+- Enter a regex pattern, test against sample emails
+- Match highlighting showing which emails would be caught
+- Useful for refining rules before deploying
+
+> **Source file**: `lib/ui/screens/rule_test_screen.dart`
+
+---
+
+### Slide 15: Settings Screen
+
+**Screenshot**: `SettingsScreen` — tabbed configuration
+
+- Tabs: Manual Scan, Background Scan, Account, Import/Export
+- Scan mode selection, folder configuration, frequency settings
+- YAML import/export for rule portability
+
+> **Source file**: `lib/ui/screens/settings_screen.dart`
+
+---
+
+### Slide 16: Scan History Screen
+
+**Screenshot**: `ScanHistoryScreen` — historical scan results
+
+- Unified view of manual and background scans
+- Per-scan stats: emails processed, deleted, moved, safe, errors
+- Retention settings for history cleanup
+
+> **Source file**: `lib/ui/screens/scan_history_screen.dart`
+
+---
+
+## SECTION 4: Architecture (4 slides)
+
+### Slide 17: Architecture Decision — Why Flutter/Dart?
+
+**Key Requirement**: One codebase, 5 platforms, multiple display sizes
+
+| Considered | Rejected Because |
+|------------|-----------------|
+| Keep Python + build separate mobile apps | Rule engine reimplemented 3x; maintenance unsustainable for solo dev |
+| React Native | Desktop support (Electron) was less mature at decision time |
+| Kotlin Multiplatform (KMP) | Still requires separate UI per platform |
+| .NET MAUI | No Linux support; too coupled to Microsoft ecosystem |
+| **Flutter/Dart** | **Chosen**: single UI framework, all 5 platforms, strong desktop story |
+
+> **Talking point**: "This was ADR-0001. We documented the decision with alternatives considered, pros/cons, and consequences. This is how every major decision was made."
+
+---
+
+### Slide 18: Layered Architecture
 
 ```
-Phase 1: Pre-Sprint    → Review backlog, pick work items
-Phase 2: Planning      → Define cards, acceptance criteria, model assignments
-Phase 3: Plan Approval → I review, approve, then Claude executes autonomously
-Phase 4: Execution     → Claude works continuously (no per-task approval)
-Phase 5: Testing       → Run full suite, fix failures
-Phase 6: PR + Review   → Create PR to develop branch
-Phase 7: Retrospective → What worked, what did not
++-----------------------------------------------+
+|              UI Layer (Flutter)                |
+|  Material Design - responsive to device size  |
++-----------------------------------------------+
+|        State Management (Provider)            |
+|  RuleSetProvider | EmailScanProvider          |
++-----------------------------------------------+
+|            Core Services                      |
+|  RuleEvaluator | EmailScanner | PatternCompiler|
+|  RuleConflictDetector | YamlService           |
++-----------------------------------------------+
+|            Adapter Layer                      |
+|  GmailApiAdapter | GenericIMAPAdapter         |
+|  MockEmailProvider (Demo)                     |
++-----------------------------------------------+
+|          Platform Services                    |
+|  AppPaths | SecureCredentials | SQLite DB     |
+|  TaskScheduler | SystemTray | Notifications   |
++-----------------------------------------------+
 ```
 
-> **Talking point**: "The key insight was Phase 3. Once I approve the sprint plan, Claude has blanket authorization to make all implementation decisions. This eliminated the biggest bottleneck — me."
+**Key design pattern**: Provider-agnostic core. Add a new email provider by implementing one interface (`SpamFilterPlatform`). Business logic never changes.
 
 ---
 
-### Slide 7: Model Tiering — Right Tool for the Job
+### Slide 19: The ADR Process — Architecture Decision Records
+
+**36 ADRs documented across 25 sprints** ([docs/adr/](docs/adr/))
+
+**Format** (every ADR follows this template):
+- **Context**: What problem motivated this decision?
+- **Decision**: What was decided?
+- **Alternatives Considered**: What else was evaluated, with pros/cons?
+- **Consequences**: Positive, negative, and neutral trade-offs
+
+**Example ADRs that shaped the app**:
+
+| ADR | Decision | Impact |
+|-----|----------|--------|
+| 0001 | Flutter/Dart single codebase | 5 platforms from 1 codebase |
+| 0002 | Adapter pattern for email providers | Add providers without touching core |
+| 0006 | Four progressive scan modes | Safety: never accidentally delete in dev |
+| 0007 | Move-to-trash, not permanent delete | User trust and recoverability |
+| 0023 | In-memory pattern caching | 100x performance improvement (2.1ms to 0.18ms) |
+| 0035 | Dev/prod side-by-side builds | Run dev and production on same machine |
+
+> **Talking point**: "The ADR-first approach was a lesson from Sprint 21. Design the ADR in one sprint, get review, implement in the next. Less rework, better results."
+
+---
+
+### Slide 20: Platform-Specific Adaptations
+
+**One codebase, different behaviors per platform**:
+
+| Capability | Windows | Android | macOS/Linux/iOS |
+|-----------|---------|---------|-----------------|
+| OAuth | Browser loopback redirect + PKCE | Native Google Sign-In | Browser-based (planned) |
+| Background scan | Windows Task Scheduler | WorkManager (infra ready) | Planned |
+| Notifications | PowerShell toast via WinRT | System notifications | Planned |
+| System tray | Native tray icon + context menu | N/A | Planned |
+| Storage | `AppData\Roaming\MyEmailSpamFilter\` | App-private `/data/` | Platform-specific paths |
+| Navigation | Traditional nav (no bottom bar) | Bottom navigation bar | TBD |
+| Packaging | MSIX (Windows Store) | APK/AAB | TBD |
+
+**Handled via**:
+- `AppPaths` abstraction (ADR-0012) for storage
+- `Platform.isAndroid` / `Platform.isWindows` for UI behavior
+- Platform-specific adapter implementations behind common interfaces
+
+---
+
+## SECTION 5: Agile/Scrum Process (3 slides)
+
+### Slide 21: Sprint Methodology — Not "Write Me an App"
+
+**7-Phase Sprint Execution Workflow**:
+
+```
+Phase 1: Pre-Sprint     -> Verify environment, restore context
+Phase 2: Planning        -> Review backlog, select cards, define acceptance criteria
+Phase 3: Plan Approval   -> I review and approve -> AUTONOMOUS EXECUTION AUTHORIZED
+Phase 4: Execution       -> Claude works continuously, no per-task approval needed
+Phase 5: Testing         -> Full test suite, lint, analyze
+Phase 6: PR + Review     -> Create PR to develop (never main), I review
+Phase 7: Retrospective   -> What worked, what did not, process improvements
+```
+
+**Key insight**: Phase 3 approval pre-authorizes ALL implementation decisions. This eliminated the biggest bottleneck: me approving every task. Sprint velocity doubled after Sprint 6 when this was formalized.
+
+**Sprint cadence**: 25 sprints in ~2 months. Sprints ranged from 3 hours (focused research) to 20 hours (major refactoring).
+
+---
+
+### Slide 22: Model Tiering — Right Tool for the Job
 
 **Not every task needs the biggest model.**
 
-| Model | Used For | Example |
-|-------|----------|---------|
-| Haiku | Bug fixes, tests, docs, single-file changes | "Add 15 unit tests for PatternCompiler" |
-| Sonnet | Multi-file refactoring, architecture | "Restructure Settings screen into tabbed layout" |
-| Opus | Deep debugging, performance, critical path | "Split 5 monolithic rules into 3,291 individual rules" |
+| Model | Complexity | Used For | Example Task |
+|-------|-----------|----------|--------------|
+| **Haiku** | Low | Bug fixes, tests, docs, single-file changes | "Add 15 unit tests for PatternCompiler" |
+| **Sonnet** | Medium | Multi-file refactoring, architecture research | "Restructure Settings screen into tabbed layout" |
+| **Opus** | High | Deep debugging, performance, critical path | "Split 5 monolithic rules into 3,291 individual rules" |
 
-> **Talking point**: "Model assignment was 100% accurate across all sprints. The heuristics are simple: if it touches one file, Haiku. Multiple files with design decisions, Sonnet. If I would lose sleep over a bug in it, Opus."
+**Escalation path**: Haiku encounters blocker -> escalate to Sonnet -> escalate to Opus -> report to user
+
+**Result**: Model assignment was 100% accurate across all sprints. Heuristic is simple:
+- Touches 1 file? Haiku.
+- Multiple files with design decisions? Sonnet.
+- Would I lose sleep over a bug in it? Opus.
 
 ---
 
-### Slide 8: What "Co-Lead Developer" Actually Means
+### Slide 23: Process Artifacts That Made It Work
 
-**Division of labor, not delegation.**
+**11 documents govern sprint execution** ([docs/](docs/)):
 
-| I Own | Claude Owns |
+| Document | Purpose |
+|----------|---------|
+| `CLAUDE.md` | Project constitution — read first every session |
+| `ALL_SPRINTS_MASTER_PLAN.md` | Backlog, priorities, feature details |
+| `SPRINT_EXECUTION_WORKFLOW.md` | 7-phase checklist |
+| `SPRINT_STOPPING_CRITERIA.md` | Exactly when to stop (9 criteria) |
+| `TESTING_STRATEGY.md` | What to test, how, coverage expectations |
+| `ARCHITECTURE.md` | System design reference |
+| 36 ADRs | Every major decision documented |
+| Per-sprint docs | Plan, retrospective, summary for each sprint |
+
+**Why this matters**: Claude Code sessions are **stateless** — context resets between conversations. Documentation IS the memory. Each new session reads CLAUDE.md and picks up where the last one left off.
+
+> **Talking point**: "This is the unsexy part. But it is the difference between 'Claude wrote some code' and 'Claude delivered 25 consecutive sprints.'"
+
+---
+
+### Slide 24: The Claude Code Instruction Stack
+
+**CLAUDE.md — the project constitution (691 lines)**
+
+Everything Claude needs to know, read automatically at session start:
+- Project overview, repo structure, common commands
+- Coding style (no contractions, no emojis, Logger not print)
+- Development workflow (sprints, not phases)
+- Branch policy (PRs to develop, never main)
+- Co-lead developer philosophy
+- Sprint autonomy rules (do not stop for per-task approval)
+- Platform constraints (Windows primary, PowerShell, no jq/sed/awk)
+
+**Custom Skills** (`.claude/skills/` — 9 skills):
+
+| Skill | What It Does |
 |-------|-------------|
-| Product vision | Implementation details |
-| Acceptance criteria | Test strategy and writing |
-| Sprint approval | Architecture within constraints |
-| "What" and "Why" | "How" |
-| Final review | Documentation |
+| `/startup-check` | Verify environment, restore saved context — run FIRST every session |
+| `/plan-sprint` | Analyze issues, generate task breakdown with model assignments |
+| `/phase-check` | Sprint phase transition checkpoint |
+| `/full-test` | Run all Flutter tests + analyze code quality |
+| `/memory-save` | Save sprint context to file for next session |
+| `/memory-restore` | Restore sprint context from saved memory |
+| `/validate-rules` | Validate YAML rule files for syntax and regex errors |
+| `/deploy-debug` | Build, install, and launch debug APK on emulator |
+| `/first-principles` | Deconstruct problems to fundamentals when stuck |
 
-**Example**: Sprint 20 — I said "rules are too monolithic, we need individual rules." Claude designed the migration, split 5 rules into 3,291, removed the YAML dual-write layer, updated all tests. I reviewed and approved.
-
-> **Talking point**: "Think of it like pair programming where your partner never gets tired, never forgets the test, and writes the docs without being asked."
-
----
-
-### Slide 9: The Process Documentation Rabbit Hole
-
-**11 documents govern sprint execution.**
-
-- Master plan, planning methodology, execution workflow, stopping criteria, retrospective guide, testing strategy, quality standards, troubleshooting, performance benchmarks, architecture, changelog
-
-**Why this matters**:
-- Claude Code sessions are stateless — context resets between conversations
-- Documentation IS the memory
-- Each new session reads CLAUDE.md + sprint docs and picks up where the last one left off
-
-> **Talking point**: "This is the unsexy part. But it is the difference between 'Claude wrote some code' and 'Claude delivered 25 consecutive sprints.' The docs are the institutional knowledge."
+> **Talking point**: "Skills are reusable prompts. `/startup-check` runs every session — it verifies git, GitHub CLI, and restores memory. Without it, every session starts from scratch."
 
 ---
 
-### Slide 10: What Worked Surprisingly Well
+### Slide 25: Memory, Commands, and Agents
 
-1. **Test-first development** — Claude writes tests alongside code, not after. 1,178 tests emerged naturally.
+**The Stateless Problem**: Claude Code has no memory between sessions. Every conversation starts fresh.
 
-2. **Estimation accuracy** — Sprint 1 estimated 9-13 hours, delivered in ~4. Once I learned to calibrate, estimates were 30-40% of conservative.
+**Memory System** (`.claude/memory/`):
+- `/memory-save` serializes current sprint context (active sprint, completed tasks, blockers, decisions made) to `current.md`
+- `/memory-restore` loads it back at session start via `/startup-check`
+- PowerShell scripts (`save-memory.ps1`, `check-memory-on-startup.ps1`) automate the process
+- "Document for amnesia" — if it is not written down, it does not exist
 
-3. **Zero regressions** — Not a single production bug across 25 sprints. The test suite catches everything.
+**Slash Commands** (`.claude/commands/` — 5 commands):
+- `/quick-commit` — Stage all changes, generate descriptive commit message
+- `/commit-push-pr` — Full commit, push, and open PR workflow
+- `/review-changes` — Review uncommitted changes and suggest improvements
+- `/test-and-fix` — Run tests and automatically fix failures
+- `/first-principles` — Break down problems when conventional approaches fail
 
-4. **Learning a new framework** — I do not know Flutter/Dart. Claude does. I reviewed, asked questions, learned. The code is production quality.
+**Agents** (`.claude/agents/` — 5 agents):
+- `build-validator` — Verify builds pass on target platforms
+- `code-architect` — Architectural analysis and recommendations
+- `code-simplifier` — Review for reuse, quality, efficiency
+- `oncall-guide` — Troubleshooting guidance
+- `verify-app` — Application verification checks
 
-5. **Autonomous execution** — After plan approval, Claude works continuously. No "should I use method A or B?" interruptions.
+**Cumulative investment**: These artifacts were built over 25 sprints. Each sprint added or refined instructions. By Sprint 25, a new Claude session can pick up any task with full context in under 2 minutes.
 
----
-
-### Slide 11: What Did NOT Work (Honest Assessment)
-
-1. **Early sprints had too much hand-holding** — I was approving every task. Sprint 6 fixed this with explicit autonomy rules.
-
-2. **Context window limits are real** — Long sprints hit context limits. Had to build memory-save/restore skills.
-
-3. **UI testing gap** — 28.9% coverage sounds low because UI screens have 0% coverage. Claude is great at logic tests, weak at widget tests.
-
-4. **Not a replacement for domain expertise** — Claude does not know your email provider quirks. I had to debug OAuth flows, IMAP edge cases, Norton antivirus intercepting TLS. Domain knowledge is still yours.
-
-5. **Process overhead is front-loaded** — Writing CLAUDE.md, sprint docs, and quality standards took real time. Pays off by sprint 3-4.
-
----
-
-### Slide 12: Code Examples — Before and After
-
-**Before (Python, Outlook COM)**:
-```python
-# Legacy: hardcoded, fragile, Windows-only
-outlook = win32com.client.Dispatch("Outlook.Application")
-inbox = outlook.GetNamespace("MAPI").GetDefaultFolder(6)
-for msg in inbox.Items:
-    if "viagra" in msg.Subject.lower():
-        msg.Delete()
-```
-
-**After (Dart, cross-platform)**:
-```dart
-// Provider-agnostic, pattern-based, testable
-final result = ruleEvaluator.evaluate(
-  email: message,
-  rules: ruleSet.rules,
-  safeSenders: safeSenderList,
-);
-if (result.action == RuleAction.delete) {
-  await emailProvider.moveToTrash(message.uid);
-}
-```
-
-> **Talking point**: "Same problem. Completely different engineering quality. And I did not write the Dart — I reviewed it."
+> **Talking point**: "This is the compounding return. Sprint 1 had just a CLAUDE.md. By Sprint 25, there is a full instruction stack — skills, memory, commands, agents, 11 process docs, 36 ADRs. Each session starts smarter than the last."
 
 ---
 
-### Slide 13: Architecture That Emerged
+## SECTION 6: Team Roles (1 slide)
 
-```
-UI Layer (Flutter widgets)
-    |
-State Management (Provider/ChangeNotifier)
-    |
-Core Services (RuleEvaluator, EmailScanner, PatternCompiler)
-    |
-Adapter Layer (GmailApiAdapter, GenericImapAdapter)
-    |
-Providers (Gmail OAuth, IMAP, generic)
-```
+### Slide 26: Application and Team Roles
 
-- **Adapter pattern** — add a new email provider by implementing one interface
-- **Database-first** — SQLite is source of truth, YAML is import/export
-- **Scan modes** — readonly, testLimit, testAll, fullScan (progressive safety)
+**Human Roles (Harold Kimmey)**:
 
-> **Talking point**: "This architecture was not designed upfront. It emerged through sprints. But because Claude follows patterns consistently, it is surprisingly clean."
+| Role | Responsibility |
+|------|---------------|
+| Customer Representative | Real-world requirements, acceptance criteria from user perspective |
+| Product Owner | Backlog priority, sprint scope approval, trade-off decisions |
+| Chief Architect | Final architectural decisions, ADR approval |
+| Chief Developer | PR approval, manual testing, merge-to-main authority |
+| Scrum Master | Sprint ceremonies, timeline, scope discipline |
+| Lead Test Engineer | Test strategy, exploratory testing, quality approval |
+
+**Claude Code Team Roles**:
+
+| Role | Model | Responsibility |
+|------|-------|---------------|
+| Lead Developer | Opus | Critical path features, deep debugging, performance |
+| Senior Developers | Sonnet | Architecture, complex refactoring, multi-file changes |
+| Developers | Haiku | Implementation, bug fixes, tests, documentation |
+| Assistant Scrum Master | All | Sprint checklist execution, status tracking, docs |
+| Architecture Dev Team | All | ADR research, gap analysis, design implementation |
+| Senior Test Engineers | All | Unit/integration tests, test suite, failure analysis |
+
+> **Talking point**: "I own the 'what' and 'why.' Claude owns the 'how.' Every role maps to a real Scrum role — this is not a novelty, it is a working team structure."
 
 ---
 
-### Slide 14: Practical Tips for Your Projects
+## SECTION 7: Closing (1 slide)
 
-1. **Write a good CLAUDE.md** — This is the single highest-leverage thing you can do. It is your project's constitution.
+### Slide 27: Key Takeaways and Q&A
 
+**What I learned in 25 sprints**:
+
+1. **Write a good CLAUDE.md** — Single highest-leverage investment. It is the project constitution.
 2. **Use sprints, not prompts** — "Build me X" produces demos. Sprints produce software.
-
-3. **Trust but verify** — Approve the plan, let Claude execute, review the PR. Do not micromanage the implementation.
-
-4. **Tests are non-negotiable** — Make it part of the acceptance criteria. Claude will write them if you require them.
-
-5. **Document for amnesia** — Every session starts fresh. If it is not written down, it does not exist.
-
-6. **Right-size the model** — Haiku for grunt work, Sonnet for architecture, Opus for the hard stuff. Your wallet will thank you.
-
-7. **Own the domain** — Claude does not know your business. You bring the "what" and "why." Claude brings the "how."
-
----
-
-### Slide 15: Q&A / Discussion Prompts
+3. **Document for amnesia** — Every session starts fresh. If it is not written down, it does not exist.
+4. **Tests are non-negotiable** — Make it acceptance criteria. Claude will write them if required.
+5. **The human is the bottleneck** — Autonomous execution post-approval doubled velocity.
 
 **Questions I expect**:
-- "How much of the code did YOU write vs Claude?" → ~5% me, 95% Claude. But 100% of the decisions were collaborative.
-- "Would this work for a team project?" → Yes, with good CLAUDE.md and branch strategy. PRs to develop, never main.
-- "What about languages other than Dart?" → Claude Code is language-agnostic. The sprint methodology works for any stack.
-- "Cost?" → Varies by sprint. Model tiering keeps it reasonable. Haiku is cheap for grunt work.
-- "Is the code actually good?" → 0 analyzer warnings, adapter pattern, 1,178 tests. You tell me.
+- "How much code did YOU write?" -> ~5% me, 95% Claude. 100% of decisions were collaborative.
+- "Would this work for a team?" -> Yes, with good CLAUDE.md and branch strategy.
+- "What about other languages?" -> Claude Code is language-agnostic. Sprint methodology works for any stack.
+- "Is the code good?" -> 0 analyzer warnings, adapter pattern, 1,178 tests, 36 ADRs. You tell me.
 
----
-
-## Appendix: Supporting Materials
-
-### Sprint Velocity Chart (for optional slide)
-
-```
-Sprint  1: ~4h   (database foundation)
-Sprint 14: ~8h   (settings restructure + demo scan)
-Sprint 15: ~16h  (batch operations, performance)
-Sprint 18: ~6h   (13 bug fixes from user testing)
-Sprint 20: ~20h  (major rule overhaul)
-Sprint 22: ~3h   (Windows Store research)
-Sprint 24: ~4h   (store assets + submission)
-```
-
-### Performance Wins (for optional slide)
-
-- Pattern compiler cache: 2.1ms to 0.18ms (~100x speedup)
-- Batch IMAP operations: 3N round-trips to ~3 total
-- Progressive UI throttling: refresh every 10 emails OR 2 seconds
-
-### The "Aha" Moment
-
-Sprint 6 retrospective identified that per-task approval was the bottleneck. After implementing autonomous execution post-plan-approval, sprint velocity approximately doubled. The lesson: **the human was the slowest part of the system.**
+**GitHub**: github.com/kimmeyh/spamfilter-multi
 
 ---
 
 ## Presentation Notes
 
-- **Length**: Aim for 20 slides max. Cut appendix slides unless Q&A needs them.
-- **Screenshots**: Capture from the running Windows app before the talk.
-- **Live demo**: Consider a 2-minute live demo of a scan if the app is installed.
-- **Repo link**: Offer to share the repo (public GitHub) for people who want to see the CLAUDE.md and sprint docs.
-- **Handout**: Consider sharing just the "Practical Tips" slide as a one-pager.
+- **Total slides**: 27 (Title + 1 Intro + 2 Functionality + 12 Screenshots + 4 Architecture + 3 Agile + 2 Instruction Stack + 1 Roles + 1 Closing/Q&A)
+- **Screenshots**: Capture from the running Windows app before the talk. Use the Demo Mode (55 synthetic emails) to populate realistic scan results without exposing real email data.
+- **Live demo option**: Consider a 2-minute live demo scan using Demo Mode if time permits.
+- **Timing guide**:
+  - Intro + Functionality: 3-4 min
+  - Screenshots walkthrough: 8-10 min (move quickly, ~45 sec per screen)
+  - Architecture: 5-6 min
+  - Agile/Scrum: 4-5 min
+  - Instruction Stack (CLAUDE.md, Skills, Memory): 3-4 min
+  - Roles + Closing: 2-3 min
+  - Q&A: remaining time
+- **For the developer audience**: They will care most about the ADR process, the architecture decisions, and the sprint methodology. Do not rush the architecture section.
+- **Handout**: Consider sharing the "Key Takeaways" slide as a one-pager, plus a link to the repo.
