@@ -21,6 +21,8 @@ flutter_run_verbose.log
 
 # Claude Code local settings (machine-specific paths)
 .claude/settings.local.json
+# Claude Code worktrees (local-only, break GitHub Actions if committed)
+.claude/worktrees/
 
 #------------------------------------------------------------
 # HK 20251204 These are items specific to this repository
