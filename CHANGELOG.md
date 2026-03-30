@@ -38,6 +38,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **docs**: Create SPRINT_27_ACCESSIBILITY_EVALUATION.md with full findings report (F11)
 - **chore**: Fix /memory-save, /memory-restore, /startup-check skills - use Bash for .claude/ writes, add staleness validation
 - **chore**: Add mandatory metadata update enforcement to /startup-check and /memory-restore skills
+- **fix**: Patch Flutter SDK sqlite3 native assets PathExistsException on Windows (MSB8066 build failure)
 
 ### 2026-03-22 (Sprint 26 - Settings UX, Excel Export, Provider Warnings, Multi-Account)
 - **feat**: Folder settings selection UX - radio button auto-save, show current folder (F43, Issue #211)
