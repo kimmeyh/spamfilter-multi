@@ -210,10 +210,10 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Platform: Android
 - Validation sprint needed to verify Android app still works
 
-**F11. Playwright UI Tests + Android UI Testing Strategy (~12-16h) Priority HOLD**
-- Phase: Android Google Play Store Readiness
-- Platform: Windows Desktop + Android
-- [Detail](#f11-playwright-ui-tests-and-android-ui-testing)
+**~~F11. Desktop App E2E Testing with civyk-winwright (~8-10h)~~** In Progress (Sprint 27)
+- Phase: Quality and Testing
+- Platform: Windows Desktop
+- [Detail](#f11-desktop-app-e2e-testing-with-civyk-winwright)
 
 **F4. Background Scanning - Android (~14-16h) Priority HOLD**
 - Phase: Android Google Play Store Readiness
@@ -406,26 +406,34 @@ Provider defaults:
 
 ---
 
-### F11: Playwright UI Tests and Android UI Testing
+### F11: Desktop App E2E Testing with civyk-winwright
 
-**Status**: HOLD (Android Google Play Store Readiness)
-**Estimated Effort**: ~12-16h
-**Phase**: Android Google Play Store Readiness
-**Platform**: Windows Desktop + Android
+**Status**: In Progress (Sprint 27)
+**Estimated Effort**: ~8-10h
+**Phase**: Quality and Testing
+**Platform**: Windows Desktop
 
-**Overview**: Build comprehensive Playwright tests for Windows Desktop UI and determine recommended approach for Android UI testing.
+**Overview**: Set up automated desktop app E2E testing using civyk-winwright MCP server, which provides Windows UI Automation (UIA3/MSAA) tools for native desktop app interaction. Playwright cannot directly test Flutter Desktop apps (Skia rendering, not browser-based), so civyk-winwright bridges this gap.
+
+**Approach**:
+- **civyk-winwright**: MCP server with ~59 tools for desktop automation (UIA3), browser CDP, system tools, and script recording/replay
+- **Accessibility tree**: Flutter Windows exposes MSAA accessibility; civyk-winwright uses UIA3 which can bridge to MSAA
+- **Investigation first**: Evaluate accessibility tree richness before committing to full test scripting
 
 **Key Features**:
-- **Windows Desktop (Playwright)**: End-to-end UI tests for all screens (accounts, scanning, results, settings)
-- **Android UI Testing Strategy**: Research Flutter integration testing options (Patrol, integration_test, Appium), document recommended approach, implement initial suite
+- Install and configure civyk-winwright MCP server
+- Evaluate Flutter app accessibility tree for automation feasibility
+- Exploratory testing of all Windows Desktop screens via MCP tools
+- Document bugs found, script repeatable tests via record/replay
 
-**Dependencies**: Core UI features complete (Sprints 12-17)
+**Dependencies**: Core UI features complete (Sprints 12-17), civyk-winwright v2.0.0
 
 **Acceptance Criteria**:
-- [ ] Playwright tests cover all Windows Desktop screens
-- [ ] Tests run in CI/CD pipeline
-- [ ] Android testing approach documented
-- [ ] Initial Android UI tests implemented
+- [ ] civyk-winwright installed and accessible as MCP server in Claude Code
+- [ ] Accessibility tree evaluated and findings documented
+- [ ] Exploratory testing covers all major screens
+- [ ] Bugs found filed as GitHub issues
+- [ ] TESTING_STRATEGY.md and ARCHITECTURE.md updated with E2E testing approach
 
 ---
 

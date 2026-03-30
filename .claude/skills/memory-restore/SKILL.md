@@ -36,10 +36,15 @@ This runs in bash on Windows. Use these patterns:
 2. **Read saved context**:
    - Read `D:/Data/Harold/github/spamfilter-multi/.claude/memory/current.md` for saved context
 
-3. **Verify branch alignment**:
+3. **Verify branch alignment and staleness**:
    - Run `git -C "D:/Data/Harold/github/spamfilter-multi" branch --show-current`
    - Compare with branch recorded in memory file
    - Warn if branches do not match
+   - **STALENESS CHECK**: Before acting on the saved context, validate it against current repo state:
+     1. Compare the memory `last_updated` date against recent git log (`git -C "D:/Data/Harold/github/spamfilter-multi" log --oneline -10`)
+     2. Check if the saved sprint's work already appears in CHANGELOG.md (grep for the sprint name/number)
+     3. Check if the saved sprint's retrospective already exists in `docs/sprints/`
+     4. If the memory is stale (subsequent sprints completed since save), report it as **STALE** and DO NOT follow the saved "Next Steps" — just present the info for awareness
 
 4. **Present restored context** to the user:
    - Show sprint name and status
@@ -47,9 +52,19 @@ This runs in bash on Windows. Use these patterns:
    - Show recent work summary
    - Highlight next steps to continue
 
-5. **Clear pending flag**:
-   - Update `D:/Data/Harold/github/spamfilter-multi/.claude/memory/memory_metadata.json` setting `pending_restore: false`
-   - This prevents duplicate restores in subsequent sessions
+5. **Clear pending flag — MANDATORY, NEVER SKIP**:
+   This step MUST complete successfully. If all attempts fail, report "Ready: No" and ask the user for help.
+
+   - **Attempt 1** — Bash echo (preferred, works in Git Bash on Windows):
+     ```bash
+     echo '{"current_save":".claude/memory/current.md","last_updated":"[original timestamp]","sprint":"[sprint name]","status":"restored","pending_restore":false}' > "D:/Data/Harold/github/spamfilter-multi/.claude/memory/memory_metadata.json"
+     ```
+   - **Attempt 2** — PowerShell fallback (if Bash is denied or fails):
+     ```bash
+     powershell -NoProfile -Command "Set-Content -Path 'D:/Data/Harold/github/spamfilter-multi/.claude/memory/memory_metadata.json' -Value '{\"current_save\":\".claude/memory/current.md\",\"last_updated\":\"[original timestamp]\",\"sprint\":\"[sprint name]\",\"status\":\"restored\",\"pending_restore\":false}'"
+     ```
+   - **Attempt 3** — If both are denied, ASK THE USER for permission. Do not silently skip.
+   - **NEVER silently skip this step.** A stale `pending_restore:true` flag causes incorrect restores in future sessions.
 
 6. **Offer to continue** from where the previous session left off
 
