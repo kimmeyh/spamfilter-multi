@@ -26,6 +26,17 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-04-02 (Sprint 28 - MSIX Sandbox Fix + UX Improvements)
+- **fix**: Replace all hardcoded Platform.environment['APPDATA'] paths with path_provider for MSIX sandbox compatibility (B1, Issue #218)
+- **fix**: Add MSIX detection (AppEnvironment.isMsixInstall) and skip Task Scheduler in MSIX context (B1, Issue #218)
+- **fix**: app_identity_migration.dart uses path_provider instead of raw APPDATA (Issue #218)
+- **fix**: dev_environment_seeder.dart uses path_provider instead of raw APPDATA (Issue #218)
+- **fix**: background_scan_windows_worker.dart uses cached path_provider log directory (Issue #218)
+- **feat**: Remove "Scan All N Accounts" button from account selection screen (F49, Issue #219)
+- **feat**: View Scan History on account selection shows account selection dialog (F49, Issue #219)
+- **feat**: Scan History title shows account email when filtered by account (F49, Issue #219)
+- **feat**: Background settings: Scan Mode moved above Default Folders to match Manual Scan layout (F51, Issue #221)
+
 ### 2026-03-30 (Sprint 27 - Desktop App E2E Testing with civyk-winwright)
 - **feat**: Install civyk-winwright MCP server for automated Windows Desktop UI testing (F11)
 - **feat**: Discover Flutter Desktop requires SPI_SETSCREENREADER flag for accessibility tree activation (F11)
