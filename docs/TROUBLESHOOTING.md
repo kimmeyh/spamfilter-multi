@@ -261,6 +261,46 @@ At line:1 char:108
 
 **Solution**: Install Visual Studio 2022 with "Desktop development with C++" workload.
 
+### Windows build: MSB8066 / PathExistsException for sqlite3.x64.windows.dll
+
+**Cause**: Flutter SDK bug (as of 3.38.5) — the `install_code_assets` build step runs twice during a single build. The second run fails because `sqlite3.x64.windows.dll` was already copied by the first run, and on Windows `File.copy()` throws `PathExistsException` (errno 183) when the destination exists.
+
+**Symptoms**:
+```
+error MSB8066: Custom build for '...flutter_assemble.rule' exited with code 1.
+Target install_code_assets failed: PathExistsException: Cannot copy file to
+'...\build\native_assets\windows\sqlite3.x64.windows.dll'
+```
+
+**Fix**: Patch the Flutter SDK to skip the copy when the target file already exists.
+
+**File**: `D:\dev\flutter\packages\flutter_tools\lib\src\isolated\native_assets\native_assets.dart`
+
+Find the `_copyNativeCodeAssetsToBundleOnWindowsLinux` function (around line 644-650) and replace:
+```dart
+// BEFORE (broken):
+await fileSystem.file(source).copy(targetFullPath);
+```
+With:
+```dart
+// AFTER (fixed):
+if (fileSystem.file(targetFullPath).existsSync()) {
+  // File already exists (build system ran this step twice).
+  // Skip the copy since the file is already in place.
+  continue;
+}
+await fileSystem.file(source).copy(targetFullPath);
+```
+
+After patching, delete the tools snapshot to force recompilation:
+```bash
+rm D:/dev/flutter/bin/cache/flutter_tools.snapshot
+```
+
+**Important**: This patch will be lost when Flutter is upgraded. Re-apply after any `flutter upgrade`.
+
+**Upstream**: This should be reported to [flutter/flutter](https://github.com/flutter/flutter/issues) as a Windows native assets build bug.
+
 ---
 
 ## Authentication Issues

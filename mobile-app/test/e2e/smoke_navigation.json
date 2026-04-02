@@ -1,0 +1,41 @@
+{
+  "attachTitle": "MyEmailSpamFilter [DEV]",
+  "steps": [
+    {
+      "action": "click",
+      "selector": "type=Button[name='Settings']",
+      "useInvokePattern": false
+    },
+    {
+      "action": "wait",
+      "duration": 1500
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name='KIMMEYHAROLD@AOL.COM']",
+      "useInvokePattern": false
+    },
+    {
+      "action": "wait",
+      "duration": 1500
+    },
+    {
+      "action": "click",
+      "selector": "type=Text[name^='Background']",
+      "useInvokePattern": false
+    },
+    {
+      "action": "wait",
+      "duration": 1500
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name='Back']",
+      "useInvokePattern": false
+    },
+    {
+      "action": "wait",
+      "duration": 1000
+    }
+  ]
+}

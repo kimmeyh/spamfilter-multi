@@ -302,7 +302,7 @@ As of January 24, 2026, **sprints replace the previous phase-based development m
 
 Cross-platform email spam filtering application built with 100% Flutter/Dart for all platforms (Windows, macOS, Linux, Android, iOS). The app uses IMAP/OAuth protocols to support multiple email providers (AOL, Gmail, Yahoo, Outlook.com, ProtonMail) with a single codebase and portable YAML rule sets.
 
-**Current Status**: Sprint 17 complete (Feb 2026) - 977 tests passing, sprint-based development model.
+**Current Status**: Sprint 27 in progress (Mar 2026) - 977+ tests passing, sprint-based development model.
 
 **For detailed status**: See `CHANGELOG.md` for feature history and `docs/ALL_SPRINTS_MASTER_PLAN.md` for planned work and sprint history.
 
@@ -409,6 +409,21 @@ flutter test test/unit/rule_evaluator_test.dart
 # Run with coverage
 flutter test --coverage
 ```
+
+### Desktop E2E Testing (civyk-winwright)
+
+```powershell
+# Verify winwright environment
+C:\Tools\WinWright\Civyk.WinWright.Mcp.exe doctor
+
+# Inspect accessibility tree of running app
+C:\Tools\WinWright\Civyk.WinWright.Mcp.exe inspect
+
+# Replay a recorded test script
+C:\Tools\WinWright\Civyk.WinWright.Mcp.exe run <script.json>
+```
+
+civyk-winwright is also available as an MCP server in Claude Code for interactive desktop app testing. See `docs/TESTING_STRATEGY.md` for full details.
 
 ## Architecture
 

@@ -26,6 +26,24 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-03-30 (Sprint 27 - Desktop App E2E Testing with civyk-winwright)
+- **feat**: Install civyk-winwright MCP server for automated Windows Desktop UI testing (F11)
+- **feat**: Discover Flutter Desktop requires SPI_SETSCREENREADER flag for accessibility tree activation (F11)
+- **feat**: Create enable-screen-reader-flag.ps1 utility for toggling Windows screen reader flag (F11)
+- **feat**: Evaluate accessibility tree across 5 screens - GO decision for full E2E testing (F11)
+- **feat**: Exploratory testing of all 11 screens - buttons, tabs, text input, dialogs, assertions all work (F11)
+- **feat**: MCP HTTP server workflow for interactive desktop testing via JSON-RPC (F11)
+- **docs**: Add automated E2E desktop testing section to TESTING_STRATEGY.md and ARCHITECTURE.md (F11)
+- **docs**: Move F11 from HOLD to active in ALL_SPRINTS_MASTER_PLAN.md (F11)
+- **docs**: Create SPRINT_27_ACCESSIBILITY_EVALUATION.md with full findings report (F11)
+- **chore**: Fix /memory-save, /memory-restore, /startup-check skills - use Bash for .claude/ writes, add staleness validation
+- **chore**: Add mandatory metadata update enforcement to /startup-check and /memory-restore skills
+- **fix**: Patch Flutter SDK sqlite3 native assets PathExistsException on Windows (MSB8066 build failure)
+- **fix**: Add pre-build native_assets cleanup to build-windows.ps1 (defense-in-depth for sqlite3 bug)
+- **docs**: Create WINWRIGHT_SELECTORS.md quick reference for winwright selector patterns (F11)
+- **docs**: Add B1 MSIX sandbox crash (Issue #218) to backlog as Priority 1 for Sprint 28
+- **docs**: Add F49, F50, F51 retrospective feedback items to backlog (Issues #219-#221)
+
 ### 2026-03-22 (Sprint 26 - Settings UX, Excel Export, Provider Warnings, Multi-Account)
 - **feat**: Folder settings selection UX - radio button auto-save, show current folder (F43, Issue #211)
 - **feat**: "Go to View Scan History" link on Manual Scan settings page (F44, Issue #211)

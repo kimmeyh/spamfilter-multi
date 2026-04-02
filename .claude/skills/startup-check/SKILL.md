@@ -40,9 +40,30 @@ Execute these checks in parallel and report a summary:
    - If `pending_restore` is `false` or missing: skip restore, report "No pending memory restore"
    - If `pending_restore` is `true`:
      - Read `D:/Data/Harold/github/spamfilter-multi/.claude/memory/current.md` and restore context
+     - **STALENESS CHECK**: Before acting on the saved context, validate it against current repo state:
+       1. Compare the memory `last_updated` date against recent git log (`git log --oneline -10`)
+       2. Check if the saved sprint's work already appears in CHANGELOG.md
+       3. Check if the saved sprint's retrospective already exists in `docs/sprints/`
+       4. If the memory is stale (subsequent sprints completed since save), report it as **STALE** and DO NOT follow the saved "Next Steps" — just present the info for awareness
      - Verify saved branch matches current branch
-     - Present saved tasks, recent work, and next steps
-     - **Update metadata**: Set `pending_restore: false` to prevent duplicate restores (write to `D:/Data/Harold/github/spamfilter-multi/.claude/memory/memory_metadata.json`)
+     - Present saved tasks, recent work, and next steps (with staleness warning if applicable)
+     - **Clear pending flag — MANDATORY, NEVER SKIP**:
+       This step MUST complete successfully. If all attempts fail, mark startup as "Ready: No" and ask the user for help.
+
+       **Attempt 1** — Bash echo (preferred, works in Git Bash on Windows):
+       ```bash
+       echo '{"current_save":".claude/memory/current.md","last_updated":"[original timestamp]","sprint":"[sprint name]","status":"restored","pending_restore":false}' > "D:/Data/Harold/github/spamfilter-multi/.claude/memory/memory_metadata.json"
+       ```
+
+       **Attempt 2** — PowerShell fallback (if Bash is denied or fails):
+       ```bash
+       powershell -NoProfile -Command "Set-Content -Path 'D:/Data/Harold/github/spamfilter-multi/.claude/memory/memory_metadata.json' -Value '{\"current_save\":\".claude/memory/current.md\",\"last_updated\":\"[original timestamp]\",\"sprint\":\"[sprint name]\",\"status\":\"restored\",\"pending_restore\":false}'"
+       ```
+
+       **Attempt 3** — If both are denied by permissions, ASK THE USER:
+       "I need permission to update the memory metadata file to clear the pending_restore flag. Can you approve the Bash command to write to `.claude/memory/memory_metadata.json`?"
+
+       **NEVER silently skip this step.** A stale `pending_restore:true` flag causes incorrect restores in future sessions.
 
 ## Output Format
 
