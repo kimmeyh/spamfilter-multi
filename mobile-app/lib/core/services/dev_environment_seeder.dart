@@ -9,6 +9,7 @@ library;
 
 import 'dart:io';
 import 'package:logger/logger.dart';
+import 'package:path_provider/path_provider.dart';
 import 'app_environment.dart';
 
 /// Seeds the development data directory from production data
@@ -22,14 +23,19 @@ class DevEnvironmentSeeder {
   /// 2. Dev data directory has no database
   /// 3. Production database exists
   /// 4. .dev_seeded marker does not exist
+  ///
+  /// [UPDATED] Issue #218: Uses path_provider instead of Platform.environment
+  /// for MSIX sandbox compatibility.
   static Future<void> seedIfNeeded() async {
     if (!AppEnvironment.isDev) return;
 
-    final appData = Platform.environment['APPDATA'];
-    if (appData == null) return;
-
-    final prodDir = '$appData\\MyEmailSpamFilter\\MyEmailSpamFilter';
-    final devDir = '$appData\\MyEmailSpamFilter\\MyEmailSpamFilter_Dev';
+    // Use path_provider to resolve paths (MSIX-safe)
+    final appSupport = await getApplicationSupportDirectory();
+    // appSupport is already the dev path (with _Dev suffix applied by AppPaths later)
+    // but we need the base path without suffix to find prod data
+    final basePath = appSupport.parent.path; // MyEmailSpamFilter parent
+    final prodDir = '$basePath\\MyEmailSpamFilter';
+    final devDir = '$basePath\\MyEmailSpamFilter_Dev';
     final markerFile = File('$devDir\\.dev_seeded');
     final devDb = File('$devDir\\spam_filter.db');
     final prodDb = File('$prodDir\\spam_filter.db');
