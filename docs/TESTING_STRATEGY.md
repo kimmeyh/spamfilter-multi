@@ -4,7 +4,7 @@
 
 **Audience**: All contributors (Claude Code models, developers, testers)
 
-**Last Updated**: January 31, 2026
+**Last Updated**: March 29, 2026
 
 ## SPRINT EXECUTION Documentation
 
@@ -34,7 +34,8 @@
 4. [Test Execution](#test-execution)
 5. [Test Quality Standards](#test-quality-standards)
 6. [Integration Testing](#integration-testing)
-7. [Testing Tools and Scripts](#testing-tools-and-scripts)
+7. [Desktop E2E Testing (civyk-winwright)](#end-to-end-tests-automated-desktop---civyk-winwright)
+8. [Testing Tools and Scripts](#testing-tools-and-scripts)
 
 ---
 
@@ -70,20 +71,22 @@
 ```
         /\
        /  \      E2E Tests (Manual)
-      /    \     - Full app workflows
+      /    \     - Full app workflows on real devices
      /------\    - Platform-specific (Android, Windows)
-    /        \
-   /  Widget  \  Widget Tests
-  /   Tests    \ - UI components
- /              \- Screen interactions
-/--------------\
-/   Integration \ Integration Tests
-/     Tests      \- Multi-component workflows
-/                \- Adapter + Provider interactions
-/------------------\
-/    Unit Tests     \ Unit Tests
-/                    \- Models, Services, Utilities
-/______________________\- Pure business logic
+    / Auto  \
+   /  E2E    \   E2E Tests (Automated Desktop)
+  / (Desktop) \  - civyk-winwright MCP (UIA3/MSAA)
+ /              \- Windows Desktop screen automation
+/----------------\
+/   Widget Tests  \ Widget Tests
+/                  \- UI components, screen interactions
+/--------------------\
+/   Integration Tests \ Integration Tests
+/                      \- Multi-component workflows
+/------------------------\
+/      Unit Tests         \ Unit Tests
+/                          \- Models, Services, Utilities
+/____________________________\- Pure business logic
 ```
 
 ### Unit Tests
@@ -229,11 +232,11 @@ void main() {
 }
 ```
 
-### End-to-End Tests
+### End-to-End Tests (Manual)
 
 **Purpose**: Test complete user workflows on real devices/emulators
 
-**Location**: Manual testing (not automated)
+**Location**: Manual testing
 
 **Coverage**: All critical user paths
 
@@ -243,6 +246,46 @@ void main() {
 - Add Gmail account → Scan inbox → View results → Delete account
 - Add AOL account → Select Bulk Mail folder → Full Scan → Verify deletions
 - Windows build → OAuth flow → Folder discovery → Scan 100+ emails
+
+### End-to-End Tests (Automated Desktop - civyk-winwright)
+
+**Purpose**: Automated UI testing of the Windows Desktop app via Windows UI Automation
+
+**Tool**: civyk-winwright MCP server (v2.0.0) — Playwright-inspired desktop automation
+**Location**: `C:\Tools\WinWright\Civyk.WinWright.Mcp.exe`
+**Configuration**: MCP server in `~/.claude/config.json`
+
+**How it works**: civyk-winwright uses Windows UI Automation (UIA3/MSAA) to interact with the running Flutter Desktop app. It reads the accessibility tree to identify UI elements (buttons, text fields, lists, tabs) and performs clicks, typing, and navigation. It can also record interaction sessions as JSON scripts for deterministic replay.
+
+**Capabilities**:
+- Launch the app and take accessibility tree snapshots
+- Click, type, hover, drag on identified elements
+- Take screenshots for visual verification
+- Record and replay test scripts (no LLM cost on replay)
+- System-level tools (processes, file system, scheduled tasks)
+
+**Limitations**:
+- Flutter Windows exposes MSAA accessibility (not full UIA) by default
+- Element discoverability depends on Flutter Semantics widget usage
+- Custom-rendered Flutter widgets may not appear in the accessibility tree
+- Best for testing navigation flow, form inputs, and button interactions
+- Not suitable for pixel-perfect visual regression testing
+
+**When to Run**: During sprint development via Claude Code MCP tools, or via `winwright run` for scripted replays
+
+**Commands**:
+```powershell
+# Verify environment
+C:\Tools\WinWright\Civyk.WinWright.Mcp.exe doctor
+
+# Inspect accessibility tree of running app
+C:\Tools\WinWright\Civyk.WinWright.Mcp.exe inspect
+
+# Replay a recorded test script
+C:\Tools\WinWright\Civyk.WinWright.Mcp.exe run <script.json>
+```
+
+**Added**: Sprint 27 (March 2026)
 
 ---
 

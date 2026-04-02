@@ -1,54 +1,78 @@
 # Sprint Context Save
 
-**Sprint**: Sprint 22 - Windows Store Readiness Research and Gap Analysis
-**Date**: 2026-03-19 19:40:42
-**Branch**: feature/20260319_Sprint_22
-**Status**: In Progress (Phase 6/7 remaining)
+**Sprint**: Sprint 27 - Desktop App E2E Testing with civyk-winwright
+**Date**: 2026-03-30 12:09:04
+**Branch**: develop (plan created, docs updated, awaiting sprint branch creation)
+**Status**: In Progress (Phase 4 - Implementation Preparation)
 
 ## Current Tasks
 
-- [x] Task A: Microsoft Store Requirements Research
-- [x] Task B: Codebase Gap Analysis
-- [x] Task C: Findings Review and ADRs
-- [x] Task D: Backlog Item Creation (Issue #191 created, 6 backlog items #17-#22)
-- [ ] Phase 6: Update CHANGELOG.md with Sprint 22 entries
-- [ ] Phase 6: Create PR targeting develop
-- [ ] Phase 7: Create SPRINT_22_RETROSPECTIVE.md
-- [ ] Phase 7: Update ALL_SPRINTS_MASTER_PLAN.md with Sprint 22 completion
+- [x] Task A: Install civyk-winwright via Claude Code plugin
+  - Binary downloaded from GitHub (v2.0.0, 49.7 MB)
+  - Extracted to `C:\Tools\WinWright\`
+  - MCP config added to `~/.claude/config.json`
+  - `winwright doctor` passes (OS, .NET 9, UIA3 all OK)
+  - **Note**: Requires Claude Code restart for MCP tools to be available
+
+- [x] Task D: Documentation updates
+  - ALL_SPRINTS_MASTER_PLAN.md: F11 moved from HOLD, detail section updated
+  - TESTING_STRATEGY.md: Added automated E2E desktop section, updated pyramid
+  - ARCHITECTURE.md: Added civyk-winwright testing layer documentation
+  - CHANGELOG.md: Added Sprint 27 entries
+  - CLAUDE.md: Added desktop E2E testing commands
+  - docs/sprints/SPRINT_27_PLAN.md: Created
+
+- [ ] Task B: Evaluate Flutter app accessibility tree
+  - Awaiting Claude Code restart (winwright MCP tools not yet available)
+  - Plan: Build Windows app, take snapshot, evaluate element discoverability
+
+- [ ] Task C: Desktop app exploratory testing
+  - Awaiting Task B completion
+  - Plan: Systematically test all screens, file bugs, script tests
 
 ## Recent Work
 
-- Completed all 4 Sprint 22 tasks (research sprint, no code changes)
-- Created Issue #191 with full Windows Store gap analysis and sources
-- Added 6 new backlog items to ALL_SPRINTS_MASTER_PLAN.md (#17-#22):
-  - #17: MSIX Packaging Pipeline
-  - #18: Store Listing Assets
-  - #19: Privacy Policy and Data Declarations
-  - #20: Accessibility Compliance
-  - #21: App Certification Testing
-  - #22: Microsoft Store Submission
-- Created SPRINT_22_PLAN.md
-- 2 commits on branch so far
+**Sprint 27 Setup (March 29-30)**:
+- Researched Playwright for desktop apps: discovered it cannot test Flutter Desktop (Skia rendering)
+- Found civyk-winwright MCP server as bridge (UIA3/MSAA for Windows automation)
+- Evaluated FlaUI-MCP and civyk-winwright; chose civyk-winwright (more comprehensive, self-contained)
+- Downloaded and installed winwright binary
+- Fixed /memory-save, /memory-restore, /startup-check skills to use Bash (not Write) for .claude/ files and added staleness validation
+- Updated all project documentation to reflect new testing approach
+- Created SPRINT_27_PLAN.md with detailed task breakdown
 
 ## Next Steps
 
-- Re-read and update CHANGELOG.md with Sprint 22 entries (previous edit failed due to stale read)
-- Create SPRINT_22_RETROSPECTIVE.md
-- Update ALL_SPRINTS_MASTER_PLAN.md with Sprint 22 completion metadata
-- Create PR: feature/20260319_Sprint_22 -> develop
-- Sprint review/retrospective with user
+1. **Restart Claude Code** — This is essential. winwright MCP tools will not appear until the new MCP server config is loaded.
+2. **Task B: Evaluate accessibility tree** (awaits restart)
+   - Build Windows app via `build-windows.ps1`
+   - Launch the app
+   - Use winwright MCP tools to snapshot accessibility tree
+   - Document findings on element discoverability and MSAA limitations
+   - Make go/no-go decision on full test scripting
+3. **Task C: Exploratory testing** (after B)
+   - Test all major screens: account selection, setup, scan, results, settings, rules, safe senders, scan history
+   - File GitHub issues for any bugs found
+   - Create repeatable test scripts via winwright record/replay
+4. **Create sprint branch** (when ready to commit)
+   - `feature/20260329_Sprint_27` branching from develop
+5. **Phase 7: Sprint review** (at end)
+   - Create SPRINT_27_RETROSPECTIVE.md
+   - Update ALL_SPRINTS_MASTER_PLAN.md with completion metadata
+   - User feedback on approach and findings
 
 ## Blockers/Notes
 
-- CHANGELOG.md edit failed in previous session due to file modification since last read - must re-read before editing
-- This is a research sprint - no code changes, only documentation and backlog items
-- Sprint 21 (ADR-0035 prod/dev side-by-side) was completed and merged in previous session
+- **No blockers**: All setup complete, ready for investigation phase
+- **Important**: winwright uses UIA3 which bridges to MSAA. Flutter Windows exposes MSAA by default (not full UIA). The accessibility tree richness is unknown and is the critical evaluation point for Task B.
+- **MCP tools available after restart**: The following winwright tools will be available: ww_launch, ww_snapshot, ww_click, ww_type, ww_fill, ww_get_text, ww_screenshot, ww_list_windows, ww_focus, ww_close, and ~49 others.
+- **Plan file**: Full sprint plan saved at `C:\Users\kimme\.claude\plans\graceful-tickling-donut.md` for reference during execution.
 
 ---
 
 **Instructions for Claude on Resume**:
 1. Read this context file on startup
-2. Verify git branch matches sprint (feature/20260319_Sprint_22)
-3. Continue from "Next Steps" section above
-4. Re-read CHANGELOG.md before editing (stale read issue)
-5. Complete Phase 6 (PR) and Phase 7 (Retrospective)
+2. Verify you are on `develop` branch or `feature/20260329_Sprint_27` sprint branch
+3. Restart Claude Code to load winwright MCP config if Tasks B/C needed
+4. Continue from "Next Steps" section above
+5. Reference SPRINT_27_PLAN.md in `.claude/plans/` for detailed task specs

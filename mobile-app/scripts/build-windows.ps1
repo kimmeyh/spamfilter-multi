@@ -87,6 +87,13 @@ Write-Host "[DONE] Code analysis complete" -ForegroundColor Green
 Write-Host ""
 
 # Step 4: Build Windows app
+# Pre-build cleanup: Remove native_assets to prevent PathExistsException (sqlite3.dll)
+# Flutter SDK bug: install_code_assets runs twice, second copy fails if file exists.
+# See docs/TROUBLESHOOTING.md "Windows build: MSB8066 / PathExistsException"
+$nativeAssetsDir = Join-Path $projectRoot "build\native_assets"
+if (Test-Path $nativeAssetsDir) {
+    Remove-Item -Path $nativeAssetsDir -Recurse -Force -ErrorAction SilentlyContinue
+}
 Write-Host "[4/6] Building Windows app in $buildMode mode..." -ForegroundColor Cyan
 
 # Select secrets file based on environment (ADR-0035)

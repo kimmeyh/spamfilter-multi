@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: March 24, 2026 (Sprint 26 retrospective)
+**Last Updated**: April 2, 2026 (Sprint 27 retrospective)
 
 ## How to Maintain This Document
 
@@ -91,6 +91,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 24 | docs/sprints/SPRINT_24_RETROSPECTIVE.md | [OK] Complete | Mar 20-21, 2026 |
 | 25 | docs/sprints/SPRINT_25_RETROSPECTIVE.md | [OK] Complete | Mar 22, 2026 |
 | 26 | docs/sprints/SPRINT_26_RETROSPECTIVE.md | [OK] Complete | Mar 22-24, 2026 |
+| 27 | docs/sprints/SPRINT_27_RETROSPECTIVE.md | [OK] Complete | Mar 29 - Apr 2, 2026 |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -98,21 +99,31 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 26** (March 22-24, 2026)
-- **Features**: F43 folder settings UX, F44 scan history links, F45 Excel export, F47 provider domain warning, F36 Settings General tab, F7 multi-account scanning
-- **Bug Fixes**: Background scan SettingsStore wrong DB path, ScanMode firstWhere backwards compat, live scan delete visibility
-- **UX**: View Scan History icon on all screens, immediate email removal on block rule
-- **Retrospective**: docs/sprints/SPRINT_26_RETROSPECTIVE.md
+**Sprint 27** (March 29 - April 2, 2026)
+- **Features**: F11 Desktop App E2E Testing with civyk-winwright
+- **Key Findings**: Flutter requires SPI_SETSCREENREADER flag for accessibility tree; all 11 screens automatable; tabs need useInvokePattern:false
+- **Tools**: civyk-winwright v2.0.0, enable-screen-reader-flag.ps1, ww-test-helper.sh
+- **Bug Fix**: Flutter SDK sqlite3 native assets PathExistsException (build-windows.ps1 workaround)
+- **Process**: Mandatory metadata update enforcement in /startup-check, /memory-restore skills
+- **Retrospective**: docs/sprints/SPRINT_27_RETROSPECTIVE.md
 
 ---
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: March 22, 2026 (Sprint 25 retrospective)
+**Last Reviewed**: April 2, 2026 (Sprint 27 retrospective)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
 ### Windows Store Readiness
+
+**B1. MSIX sandbox crash at launch - File system error (Issue #218) (~10h) Priority 1**
+- Phase: Windows Store Readiness (BLOCKER)
+- Platform: Windows Desktop
+- Target: Sprint 28
+- Microsoft Store certification fails: app crashes at launch inside MSIX sandbox
+- Error: `File system error (-2015295536)` / 0x87E107D0
+- [Detail](#b1-msix-sandbox-crash-at-launch)
 
 **~~WS-B1. MSIX config fixes (~1h)~~** [OK] Complete (Sprint 23)
 
@@ -172,6 +183,21 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 
 **~~F7. Multi-Account Scanning~~** [OK] Complete (Sprint 26)
 
+**F49. Remove "Scan All Accounts" button, add account selection to Scan History (Issue #219) (~2-3h) Priority 80**
+- Phase: UX Improvement
+- Platform: All
+- Sprint 27 retrospective feedback: multi-account simultaneous scanning not needed
+
+**F50. Make all page text selectable and copyable to clipboard (Issue #220) (~4-6h) Priority 82**
+- Phase: UX Improvement
+- Platform: All
+- Sprint 27 retrospective feedback: extend existing selectable text pattern to all screens
+
+**F51. Background settings - move Scan Mode above Default Folders (Issue #221) (~0.5h) Priority 84**
+- Phase: UX Improvement
+- Platform: All
+- Sprint 27 retrospective feedback: match Manual Scan settings page layout order
+
 **F6. Provider-Specific Optimizations (~10-12h) Priority 100**
 - Phase: Performance
 - Platform: All
@@ -210,10 +236,10 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Platform: Android
 - Validation sprint needed to verify Android app still works
 
-**F11. Playwright UI Tests + Android UI Testing Strategy (~12-16h) Priority HOLD**
-- Phase: Android Google Play Store Readiness
-- Platform: Windows Desktop + Android
-- [Detail](#f11-playwright-ui-tests-and-android-ui-testing)
+**~~F11. Desktop App E2E Testing with civyk-winwright (~8-10h)~~** [OK] Complete (Sprint 27)
+- Phase: Quality and Testing
+- Platform: Windows Desktop
+- [Detail](#f11-desktop-app-e2e-testing-with-civyk-winwright)
 
 **F4. Background Scanning - Android (~14-16h) Priority HOLD**
 - Phase: Android Google Play Store Readiness
@@ -306,6 +332,50 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 ## Feature and Bug Details
 
 This section contains detailed specifications for incomplete items only. Completed features have their details in sprint documents and CHANGELOG.md.
+
+### B1: MSIX Sandbox Crash at Launch
+
+**Status**: New (Microsoft Store certification failure, March 30 2026)
+**Estimated Effort**: ~10h
+**Phase**: Windows Store Readiness (BLOCKER)
+**Platform**: Windows Desktop
+**Issue**: #218
+**Target**: Sprint 28
+
+**Problem**: App crashes at launch when installed from MSIX package (Microsoft Store). Error: `File system error (-2015295536)` / 0x87E107D0. Certification testing on Surface Laptop 5 and Dell Inspiron 13-5379, OS build 26200.8037.
+
+**Root Causes (3 issues)**:
+
+1. **sqflite_common_ffi FFI initialization** (PRIMARY, ~4h)
+   - `sqfliteFfiInit()` in `main.dart:36` loads sqlite3.dll via Dart FFI
+   - Inside MSIX sandbox, DLL resolution fails or tries to write `.dart_tool/` to read-only install dir
+   - Known issue: tekartik/sqflite#945, YehudaKremer/msix#189, YehudaKremer/msix#76
+   - Fix options:
+     - **Option A** (Preferred): Replace `sqflite_common_ffi` with `sqlite3` v3.x direct usage (already transitive dep, uses build hooks for DLL bundling)
+     - **Option B**: Configure explicit DLL path in `sqfliteFfiInit()`
+     - **Option C**: Add `sqlite3_flutter_libs` dependency
+
+2. **Hardcoded `Platform.environment['APPDATA']` paths** (SECONDARY, ~2h)
+   - MSIX virtualizes `%APPDATA%` to `...\Packages\{PackageFamilyName}\LocalCache\Roaming\`
+   - Raw `Platform.environment['APPDATA']` may not match `path_provider` resolved paths
+   - Affected files (6 occurrences):
+     - `lib/main.dart:49` (background scan log)
+     - `lib/core/services/background_scan_windows_worker.dart:30,279` (log + Excel export)
+     - `lib/core/services/app_identity_migration.dart:29,35` (legacy migration)
+     - `lib/core/services/dev_environment_seeder.dart:28` (dev seeding)
+   - Fix: Replace all with `AppPaths` methods using `path_provider`
+
+3. **Platform.resolvedExecutable in MSIX** (TERTIARY, ~1h)
+   - Returns MSIX package path (read-only, changes on updates)
+   - Task Scheduler registration at `windows_task_scheduler_service.dart:259,369` may fail
+   - Fix: Detect MSIX context, skip/adapt Task Scheduler registration
+
+**Testing** (~2h):
+- Build MSIX locally: `dart run msix:create`
+- Install as non-admin user
+- Verify launch, database, rules, scanning, export
+
+**Current deps**: `sqflite: ^2.3.0`, `sqflite_common_ffi: ^2.3.0`, `sqlite3: 3.1.4` (transitive), `msix: ^3.16.8`
 
 ### Folder Selectors: Two-Level Listing (F37)
 
@@ -406,26 +476,34 @@ Provider defaults:
 
 ---
 
-### F11: Playwright UI Tests and Android UI Testing
+### F11: Desktop App E2E Testing with civyk-winwright
 
-**Status**: HOLD (Android Google Play Store Readiness)
-**Estimated Effort**: ~12-16h
-**Phase**: Android Google Play Store Readiness
-**Platform**: Windows Desktop + Android
+**Status**: In Progress (Sprint 27)
+**Estimated Effort**: ~8-10h
+**Phase**: Quality and Testing
+**Platform**: Windows Desktop
 
-**Overview**: Build comprehensive Playwright tests for Windows Desktop UI and determine recommended approach for Android UI testing.
+**Overview**: Set up automated desktop app E2E testing using civyk-winwright MCP server, which provides Windows UI Automation (UIA3/MSAA) tools for native desktop app interaction. Playwright cannot directly test Flutter Desktop apps (Skia rendering, not browser-based), so civyk-winwright bridges this gap.
+
+**Approach**:
+- **civyk-winwright**: MCP server with ~59 tools for desktop automation (UIA3), browser CDP, system tools, and script recording/replay
+- **Accessibility tree**: Flutter Windows exposes MSAA accessibility; civyk-winwright uses UIA3 which can bridge to MSAA
+- **Investigation first**: Evaluate accessibility tree richness before committing to full test scripting
 
 **Key Features**:
-- **Windows Desktop (Playwright)**: End-to-end UI tests for all screens (accounts, scanning, results, settings)
-- **Android UI Testing Strategy**: Research Flutter integration testing options (Patrol, integration_test, Appium), document recommended approach, implement initial suite
+- Install and configure civyk-winwright MCP server
+- Evaluate Flutter app accessibility tree for automation feasibility
+- Exploratory testing of all Windows Desktop screens via MCP tools
+- Document bugs found, script repeatable tests via record/replay
 
-**Dependencies**: Core UI features complete (Sprints 12-17)
+**Dependencies**: Core UI features complete (Sprints 12-17), civyk-winwright v2.0.0
 
 **Acceptance Criteria**:
-- [ ] Playwright tests cover all Windows Desktop screens
-- [ ] Tests run in CI/CD pipeline
-- [ ] Android testing approach documented
-- [ ] Initial Android UI tests implemented
+- [ ] civyk-winwright installed and accessible as MCP server in Claude Code
+- [ ] Accessibility tree evaluated and findings documented
+- [ ] Exploratory testing covers all major screens
+- [ ] Bugs found filed as GitHub issues
+- [ ] TESTING_STRATEGY.md and ARCHITECTURE.md updated with E2E testing approach
 
 ---
 

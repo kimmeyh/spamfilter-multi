@@ -654,6 +654,14 @@ mobile-app/
 - Email operations on real accounts (AOL, Gmail)
 - UI workflows on target devices (Windows desktop, Android emulator)
 
+### Automated Desktop E2E Tests (Sprint 27+)
+- **Tool**: civyk-winwright MCP server (v2.0.0) at `C:\Tools\WinWright\`
+- **Method**: Windows UI Automation (UIA3/MSAA) — reads accessibility tree to interact with running Flutter Desktop app
+- **Scope**: Screen navigation, button clicks, form inputs, visual verification via screenshots
+- **Limitation**: Flutter Windows exposes MSAA (not full UIA); element discoverability depends on Semantics widget usage
+- **Script replay**: Recorded interaction sessions replayed deterministically via `winwright run`
+- **Reference**: See TESTING_STRATEGY.md for detailed usage and commands
+
 **Target Coverage**: 95%+ for core business logic
 
 ---
