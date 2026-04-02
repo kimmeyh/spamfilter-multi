@@ -114,6 +114,14 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 
 ### Windows Store Readiness
 
+**B1. MSIX sandbox crash at launch - File system error (Issue #218) (~10h) Priority 1**
+- Phase: Windows Store Readiness (BLOCKER)
+- Platform: Windows Desktop
+- Target: Sprint 28
+- Microsoft Store certification fails: app crashes at launch inside MSIX sandbox
+- Error: `File system error (-2015295536)` / 0x87E107D0
+- [Detail](#b1-msix-sandbox-crash-at-launch)
+
 **~~WS-B1. MSIX config fixes (~1h)~~** [OK] Complete (Sprint 23)
 
 **~~WS-B3. MSIX signing strategy ADR (~2h)~~** [OK] Complete (Sprint 23, ADR-0036)
@@ -306,6 +314,50 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 ## Feature and Bug Details
 
 This section contains detailed specifications for incomplete items only. Completed features have their details in sprint documents and CHANGELOG.md.
+
+### B1: MSIX Sandbox Crash at Launch
+
+**Status**: New (Microsoft Store certification failure, March 30 2026)
+**Estimated Effort**: ~10h
+**Phase**: Windows Store Readiness (BLOCKER)
+**Platform**: Windows Desktop
+**Issue**: #218
+**Target**: Sprint 28
+
+**Problem**: App crashes at launch when installed from MSIX package (Microsoft Store). Error: `File system error (-2015295536)` / 0x87E107D0. Certification testing on Surface Laptop 5 and Dell Inspiron 13-5379, OS build 26200.8037.
+
+**Root Causes (3 issues)**:
+
+1. **sqflite_common_ffi FFI initialization** (PRIMARY, ~4h)
+   - `sqfliteFfiInit()` in `main.dart:36` loads sqlite3.dll via Dart FFI
+   - Inside MSIX sandbox, DLL resolution fails or tries to write `.dart_tool/` to read-only install dir
+   - Known issue: tekartik/sqflite#945, YehudaKremer/msix#189, YehudaKremer/msix#76
+   - Fix options:
+     - **Option A** (Preferred): Replace `sqflite_common_ffi` with `sqlite3` v3.x direct usage (already transitive dep, uses build hooks for DLL bundling)
+     - **Option B**: Configure explicit DLL path in `sqfliteFfiInit()`
+     - **Option C**: Add `sqlite3_flutter_libs` dependency
+
+2. **Hardcoded `Platform.environment['APPDATA']` paths** (SECONDARY, ~2h)
+   - MSIX virtualizes `%APPDATA%` to `...\Packages\{PackageFamilyName}\LocalCache\Roaming\`
+   - Raw `Platform.environment['APPDATA']` may not match `path_provider` resolved paths
+   - Affected files (6 occurrences):
+     - `lib/main.dart:49` (background scan log)
+     - `lib/core/services/background_scan_windows_worker.dart:30,279` (log + Excel export)
+     - `lib/core/services/app_identity_migration.dart:29,35` (legacy migration)
+     - `lib/core/services/dev_environment_seeder.dart:28` (dev seeding)
+   - Fix: Replace all with `AppPaths` methods using `path_provider`
+
+3. **Platform.resolvedExecutable in MSIX** (TERTIARY, ~1h)
+   - Returns MSIX package path (read-only, changes on updates)
+   - Task Scheduler registration at `windows_task_scheduler_service.dart:259,369` may fail
+   - Fix: Detect MSIX context, skip/adapt Task Scheduler registration
+
+**Testing** (~2h):
+- Build MSIX locally: `dart run msix:create`
+- Install as non-admin user
+- Verify launch, database, rules, scanning, export
+
+**Current deps**: `sqflite: ^2.3.0`, `sqflite_common_ffi: ^2.3.0`, `sqlite3: 3.1.4` (transitive), `msix: ^3.16.8`
 
 ### Folder Selectors: Two-Level Listing (F37)
 
