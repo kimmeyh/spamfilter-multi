@@ -39,6 +39,10 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **chore**: Fix /memory-save, /memory-restore, /startup-check skills - use Bash for .claude/ writes, add staleness validation
 - **chore**: Add mandatory metadata update enforcement to /startup-check and /memory-restore skills
 - **fix**: Patch Flutter SDK sqlite3 native assets PathExistsException on Windows (MSB8066 build failure)
+- **fix**: Add pre-build native_assets cleanup to build-windows.ps1 (defense-in-depth for sqlite3 bug)
+- **docs**: Create WINWRIGHT_SELECTORS.md quick reference for winwright selector patterns (F11)
+- **docs**: Add B1 MSIX sandbox crash (Issue #218) to backlog as Priority 1 for Sprint 28
+- **docs**: Add F49, F50, F51 retrospective feedback items to backlog (Issues #219-#221)
 
 ### 2026-03-22 (Sprint 26 - Settings UX, Excel Export, Provider Warnings, Multi-Account)
 - **feat**: Folder settings selection UX - radio button auto-save, show current folder (F43, Issue #211)

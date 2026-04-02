@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: March 24, 2026 (Sprint 26 retrospective)
+**Last Updated**: April 2, 2026 (Sprint 27 retrospective)
 
 ## How to Maintain This Document
 
@@ -91,6 +91,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 24 | docs/sprints/SPRINT_24_RETROSPECTIVE.md | [OK] Complete | Mar 20-21, 2026 |
 | 25 | docs/sprints/SPRINT_25_RETROSPECTIVE.md | [OK] Complete | Mar 22, 2026 |
 | 26 | docs/sprints/SPRINT_26_RETROSPECTIVE.md | [OK] Complete | Mar 22-24, 2026 |
+| 27 | docs/sprints/SPRINT_27_RETROSPECTIVE.md | [OK] Complete | Mar 29 - Apr 2, 2026 |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -98,17 +99,19 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 26** (March 22-24, 2026)
-- **Features**: F43 folder settings UX, F44 scan history links, F45 Excel export, F47 provider domain warning, F36 Settings General tab, F7 multi-account scanning
-- **Bug Fixes**: Background scan SettingsStore wrong DB path, ScanMode firstWhere backwards compat, live scan delete visibility
-- **UX**: View Scan History icon on all screens, immediate email removal on block rule
-- **Retrospective**: docs/sprints/SPRINT_26_RETROSPECTIVE.md
+**Sprint 27** (March 29 - April 2, 2026)
+- **Features**: F11 Desktop App E2E Testing with civyk-winwright
+- **Key Findings**: Flutter requires SPI_SETSCREENREADER flag for accessibility tree; all 11 screens automatable; tabs need useInvokePattern:false
+- **Tools**: civyk-winwright v2.0.0, enable-screen-reader-flag.ps1, ww-test-helper.sh
+- **Bug Fix**: Flutter SDK sqlite3 native assets PathExistsException (build-windows.ps1 workaround)
+- **Process**: Mandatory metadata update enforcement in /startup-check, /memory-restore skills
+- **Retrospective**: docs/sprints/SPRINT_27_RETROSPECTIVE.md
 
 ---
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: March 22, 2026 (Sprint 25 retrospective)
+**Last Reviewed**: April 2, 2026 (Sprint 27 retrospective)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
@@ -180,6 +183,21 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 
 **~~F7. Multi-Account Scanning~~** [OK] Complete (Sprint 26)
 
+**F49. Remove "Scan All Accounts" button, add account selection to Scan History (Issue #219) (~2-3h) Priority 80**
+- Phase: UX Improvement
+- Platform: All
+- Sprint 27 retrospective feedback: multi-account simultaneous scanning not needed
+
+**F50. Make all page text selectable and copyable to clipboard (Issue #220) (~4-6h) Priority 82**
+- Phase: UX Improvement
+- Platform: All
+- Sprint 27 retrospective feedback: extend existing selectable text pattern to all screens
+
+**F51. Background settings - move Scan Mode above Default Folders (Issue #221) (~0.5h) Priority 84**
+- Phase: UX Improvement
+- Platform: All
+- Sprint 27 retrospective feedback: match Manual Scan settings page layout order
+
 **F6. Provider-Specific Optimizations (~10-12h) Priority 100**
 - Phase: Performance
 - Platform: All
@@ -218,7 +236,7 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Platform: Android
 - Validation sprint needed to verify Android app still works
 
-**~~F11. Desktop App E2E Testing with civyk-winwright (~8-10h)~~** In Progress (Sprint 27)
+**~~F11. Desktop App E2E Testing with civyk-winwright (~8-10h)~~** [OK] Complete (Sprint 27)
 - Phase: Quality and Testing
 - Platform: Windows Desktop
 - [Detail](#f11-desktop-app-e2e-testing-with-civyk-winwright)
