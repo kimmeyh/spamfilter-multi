@@ -12,7 +12,6 @@ import '../../core/storage/settings_store.dart';
 import '../../core/providers/email_scan_provider.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../adapters/email_providers/email_provider.dart' show Credentials;
-import '../../adapters/email_providers/platform_registry.dart';
 import '../widgets/app_bar_with_exit.dart';
 import 'folder_selection_screen.dart';
 import 'scan_history_screen.dart';
@@ -1074,20 +1073,12 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   /// Looks up platformId from credentials store so ScanHistoryScreen
   /// can display email details when tapping scan entries.
   Future<void> _navigateToScanHistory() async {
-    final platformId = await _credStore.getPlatformId(widget.accountId);
-    final platformDisplayName = platformId != null
-        ? (PlatformRegistry.getPlatform(platformId)?.displayName ?? platformId)
-        : null;
-
     if (!mounted) return;
 
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ScanHistoryScreen(
-          accountId: widget.accountId,
-          accountEmail: widget.accountId,
-          platformId: platformId,
-          platformDisplayName: platformDisplayName,
+          preSelectedAccountId: widget.accountId,
         ),
       ),
     );
