@@ -36,6 +36,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **feat**: View Scan History on account selection shows account selection dialog (F49, Issue #219)
 - **feat**: Scan History title shows account email when filtered by account (F49, Issue #219)
 - **feat**: Background settings: Scan Mode moved above Default Folders to match Manual Scan layout (F51, Issue #221)
+- **fix**: Account selection dialog displays correct email and platform from cached data (Issue #219)
+- **fix**: Test Background Scan runs all accounts regardless of Enable Background Scanning toggle
+- **chore**: Add local MSIX testing support (create-test-cert.ps1, store/test toggle docs)
 
 ### 2026-03-30 (Sprint 27 - Desktop App E2E Testing with civyk-winwright)
 - **feat**: Install civyk-winwright MCP server for automated Windows Desktop UI testing (F11)
