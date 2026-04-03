@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: April 2, 2026 (Sprint 28 retrospective)
+**Last Updated**: April 3, 2026 (Backlog refinement)
 
 ## How to Maintain This Document
 
@@ -112,64 +112,25 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: April 2, 2026 (Sprint 28 retrospective)
+**Last Reviewed**: April 3, 2026 (Backlog refinement)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
 ### Windows Store Readiness
 
-**~~B1. MSIX sandbox crash at launch - File system error (Issue #218) (~10h)~~** [OK] Complete (Sprint 28)
-- Awaiting Microsoft Store resubmission and certification verification
-
-**~~WS-B1. MSIX config fixes (~1h)~~** [OK] Complete (Sprint 23)
-
-**~~WS-B3. MSIX signing strategy ADR (~2h)~~** [OK] Complete (Sprint 23, ADR-0036)
-
-**~~F28. App icon and branding finalization (~2-4h)~~** [OK] Complete (Sprint 23, ADR-0031)
-
-**~~F29. Register myemailspamfilter.com domain (~1h)~~** [OK] Complete (Sprint 23, Issue #166)
-
-**~~WS-B4. Privacy policy - write, host, and publish (~4-8h)~~** [OK] Complete (Sprint 24, Issue #197)
-
-**~~WS-I1. Store listing assets (~3-4h)~~** [OK] Complete (Sprint 24, Issue #197)
-
-**~~WS. Microsoft Partner Center account setup and first submission (~2-4h)~~** [OK] Complete (Sprint 24, Issue #197)
+**B1. MSIX sandbox crash at launch (Issue #218) -- [OK] Fixed (Sprint 28), awaiting Store certification**
 
 ### Core App
-
-**~~F40. Safe sender matches showing in results for Gmail IMAP (Issue #198)~~** [OK] Complete (Sprint 25)
-
-**~~F30. Safe Senders "Exact Domain" filter shows 0 results~~** [OK] Complete (Sprint 25)
-
-**~~F41. Safe sender emails in Bulk Mail not moved to safe sender folder (Issue #201)~~** [OK] Complete (Sprint 25, diagnostic logging added)
-
-**~~F31. Background scan task deleted on rebuild~~** [OK] Complete (Sprint 25)
-
-**~~F32. Test coverage analysis~~** [OK] Complete (Sprint 25, 28.9% baseline, Issue #203 for remaining gaps)
 
 **F42. Test coverage gaps - medium+ priority uncovered files (Issue #203) Priority 54**
 - Phase: Quality and Testing
 - Platform: All
 - On Hold - remaining test gaps from F32 analysis
 
-**~~F34. Live Scan: in-progress and completed status indicator~~** [OK] Complete (Sprint 25)
-
-**~~F38. Live Scan: re-process emails after rule changes~~** [OK] Complete (Sprint 25)
-
-**~~F43. Folder settings selection UX~~** [OK] Complete (Sprint 26)
-
-**~~F44. Add "Go to View Scan History" to Manual Scan settings~~** [OK] Complete (Sprint 26)
-
-**~~F45. Background scan CSV to Excel export~~** [OK] Complete (Sprint 26)
-
-**~~F36. Settings: Add General tab for app-wide settings~~** [OK] Complete (Sprint 26)
-
 **F46. Default rule set creation (~6-8h) Priority 74**
 - Phase: Core Feature
 - Platform: All
 - Create a default set of rules including all top-level domain rules and all Entire Domain rules
-
-**~~F47. Email provider domain warning on rule creation~~** [OK] Complete (Sprint 26)
 
 **F48. Scan History enhancements - multi-account, filters, totals (Issue #212) (~6-8h) Priority 78**
 - Phase: Core Feature
@@ -177,16 +138,10 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Combine all accounts, account filters, totals with tooltips, retention days in title
 - Follow-up to F7 Multi-Account Scanning
 
-**~~F7. Multi-Account Scanning~~** [OK] Complete (Sprint 26)
-
-**~~F49. Remove "Scan All Accounts" button, add account selection to Scan History (Issue #219) (~2-3h)~~** [OK] Complete (Sprint 28)
-
 **F50. Make all page text selectable and copyable to clipboard (Issue #220) (~4-6h) Priority 82**
 - Phase: UX Improvement
 - Platform: All
 - Sprint 27 retrospective feedback: extend existing selectable text pattern to all screens
-
-**~~F51. Background settings - move Scan Mode above Default Folders (Issue #221) (~0.5h)~~** [OK] Complete (Sprint 28)
 
 **F6. Provider-Specific Optimizations (~10-12h) Priority 100**
 - Phase: Performance
@@ -225,11 +180,6 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Phase: Android Google Play Store Readiness
 - Platform: Android
 - Validation sprint needed to verify Android app still works
-
-**~~F11. Desktop App E2E Testing with civyk-winwright (~8-10h)~~** [OK] Complete (Sprint 27)
-- Phase: Quality and Testing
-- Platform: Windows Desktop
-- [Detail](#f11-desktop-app-e2e-testing-with-civyk-winwright)
 
 **F4. Background Scanning - Android (~14-16h) Priority HOLD**
 - Phase: Android Google Play Store Readiness
@@ -322,50 +272,6 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 ## Feature and Bug Details
 
 This section contains detailed specifications for incomplete items only. Completed features have their details in sprint documents and CHANGELOG.md.
-
-### B1: MSIX Sandbox Crash at Launch
-
-**Status**: New (Microsoft Store certification failure, March 30 2026)
-**Estimated Effort**: ~10h
-**Phase**: Windows Store Readiness (BLOCKER)
-**Platform**: Windows Desktop
-**Issue**: #218
-**Target**: Sprint 28
-
-**Problem**: App crashes at launch when installed from MSIX package (Microsoft Store). Error: `File system error (-2015295536)` / 0x87E107D0. Certification testing on Surface Laptop 5 and Dell Inspiron 13-5379, OS build 26200.8037.
-
-**Root Causes (3 issues)**:
-
-1. **sqflite_common_ffi FFI initialization** (PRIMARY, ~4h)
-   - `sqfliteFfiInit()` in `main.dart:36` loads sqlite3.dll via Dart FFI
-   - Inside MSIX sandbox, DLL resolution fails or tries to write `.dart_tool/` to read-only install dir
-   - Known issue: tekartik/sqflite#945, YehudaKremer/msix#189, YehudaKremer/msix#76
-   - Fix options:
-     - **Option A** (Preferred): Replace `sqflite_common_ffi` with `sqlite3` v3.x direct usage (already transitive dep, uses build hooks for DLL bundling)
-     - **Option B**: Configure explicit DLL path in `sqfliteFfiInit()`
-     - **Option C**: Add `sqlite3_flutter_libs` dependency
-
-2. **Hardcoded `Platform.environment['APPDATA']` paths** (SECONDARY, ~2h)
-   - MSIX virtualizes `%APPDATA%` to `...\Packages\{PackageFamilyName}\LocalCache\Roaming\`
-   - Raw `Platform.environment['APPDATA']` may not match `path_provider` resolved paths
-   - Affected files (6 occurrences):
-     - `lib/main.dart:49` (background scan log)
-     - `lib/core/services/background_scan_windows_worker.dart:30,279` (log + Excel export)
-     - `lib/core/services/app_identity_migration.dart:29,35` (legacy migration)
-     - `lib/core/services/dev_environment_seeder.dart:28` (dev seeding)
-   - Fix: Replace all with `AppPaths` methods using `path_provider`
-
-3. **Platform.resolvedExecutable in MSIX** (TERTIARY, ~1h)
-   - Returns MSIX package path (read-only, changes on updates)
-   - Task Scheduler registration at `windows_task_scheduler_service.dart:259,369` may fail
-   - Fix: Detect MSIX context, skip/adapt Task Scheduler registration
-
-**Testing** (~2h):
-- Build MSIX locally: `dart run msix:create`
-- Install as non-admin user
-- Verify launch, database, rules, scanning, export
-
-**Current deps**: `sqflite: ^2.3.0`, `sqflite_common_ffi: ^2.3.0`, `sqlite3: 3.1.4` (transitive), `msix: ^3.16.8`
 
 ### Folder Selectors: Two-Level Listing (F37)
 
@@ -466,37 +372,6 @@ Provider defaults:
 
 ---
 
-### F11: Desktop App E2E Testing with civyk-winwright
-
-**Status**: In Progress (Sprint 27)
-**Estimated Effort**: ~8-10h
-**Phase**: Quality and Testing
-**Platform**: Windows Desktop
-
-**Overview**: Set up automated desktop app E2E testing using civyk-winwright MCP server, which provides Windows UI Automation (UIA3/MSAA) tools for native desktop app interaction. Playwright cannot directly test Flutter Desktop apps (Skia rendering, not browser-based), so civyk-winwright bridges this gap.
-
-**Approach**:
-- **civyk-winwright**: MCP server with ~59 tools for desktop automation (UIA3), browser CDP, system tools, and script recording/replay
-- **Accessibility tree**: Flutter Windows exposes MSAA accessibility; civyk-winwright uses UIA3 which can bridge to MSAA
-- **Investigation first**: Evaluate accessibility tree richness before committing to full test scripting
-
-**Key Features**:
-- Install and configure civyk-winwright MCP server
-- Evaluate Flutter app accessibility tree for automation feasibility
-- Exploratory testing of all Windows Desktop screens via MCP tools
-- Document bugs found, script repeatable tests via record/replay
-
-**Dependencies**: Core UI features complete (Sprints 12-17), civyk-winwright v2.0.0
-
-**Acceptance Criteria**:
-- [ ] civyk-winwright installed and accessible as MCP server in Claude Code
-- [ ] Accessibility tree evaluated and findings documented
-- [ ] Exploratory testing covers all major screens
-- [ ] Bugs found filed as GitHub issues
-- [ ] TESTING_STRATEGY.md and ARCHITECTURE.md updated with E2E testing approach
-
----
-
 ### F4: Background Scanning - Android
 
 **Status**: HOLD (Android Google Play Store Readiness)
@@ -560,70 +435,6 @@ Provider defaults:
 - [ ] Backup DB before changes
 - [ ] Report: patterns converted, duplicates removed, unchanged patterns
 - [ ] All tests pass after cleanup
-
----
-
-### Windows Store Readiness (Complete - Sprint 22)
-
-**Status**: [OK] Complete (Sprint 22)
-**Estimated Effort**: ~8-12h (research + gap analysis; implementation in separate backlog items)
-**Phase**: Windows Store Readiness
-**Platform**: Windows Desktop
-
-**Overview**: Research all requirements for publishing on the Microsoft Store (Windows Store), perform a deep analysis of the current codebase to identify gaps, and create actionable backlog items to bridge each gap. This includes creating or updating ADRs for architectural decisions required for store compliance.
-
-**Phase 1: Requirements Research (~3-4h)**
-- Microsoft Store app submission requirements (2026)
-- MSIX packaging requirements and signing
-- Store listing requirements (screenshots, descriptions, privacy policy)
-- Content policy and app certification requirements
-- Age ratings and content declarations
-- Accessibility requirements
-- Privacy and data handling declarations
-- Update and versioning requirements
-- Testing and certification process
-
-**Phase 2: Codebase Gap Analysis (~3-4h)**
-- Deep analysis of current app against each store requirement
-- Review existing MSIX config in pubspec.yaml
-- Review app identity, signing, and packaging
-- Review privacy policy status (ADR-0030)
-- Review data handling declarations
-- Review accessibility compliance
-- Review app capabilities and permissions
-- Identify all gaps with severity (blocking vs nice-to-have)
-
-**Phase 3: Gap Summary and Review (~1-2h)**
-- Present findings to user with categorized gaps
-- Discuss prioritization and approach for each gap
-- Create/update ADRs for architectural decisions needed
-
-**Phase 4: Backlog Item Creation (~1-2h)**
-- Create individual backlog items for each gap
-- Estimate effort per item
-- Identify dependencies between items
-- Propose implementation order
-
-**Acceptance Criteria**:
-- [ ] All Microsoft Store requirements documented
-- [ ] Codebase gap analysis complete with severity ratings
-- [ ] Findings reviewed with user
-- [ ] ADRs created or updated for store-related architectural decisions
-- [ ] Individual backlog items created for each gap
-- [ ] Implementation order and dependencies documented
-
-**Note**: This is similar to the existing Google Play Store Readiness section (HOLD items H6-H17) but for the Microsoft Store. Some requirements overlap (privacy policy, data deletion, icons/branding).
-
----
-
-### ~~WS-B4: Privacy Policy~~ [OK] Complete (Sprint 24)
-
-### ~~WS: Implementation Order and Dependencies~~ [OK] Complete (Sprint 24)
-
-All Windows Store readiness items completed. App submitted to Microsoft Store for certification (Sprint 24, 2026-03-21).
-```
-
-**Parallel tracks**: #17, #18, #21 can be done in parallel. #19 and #20 can be done in parallel after their dependencies.
 
 ---
 
