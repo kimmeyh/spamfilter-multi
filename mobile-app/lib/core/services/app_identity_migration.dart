@@ -14,7 +14,8 @@ library;
 import 'dart:io';
 
 import 'package:logger/logger.dart';
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 /// Migrates app data from the old identity directory to the new one.
 ///
@@ -25,20 +26,29 @@ class AppIdentityMigration {
   static final _log = Logger();
 
   /// Old app data directory (com.example identity)
-  static String get _oldDirPath {
-    final appData = Platform.environment['APPDATA'] ?? '';
-    return path.join(appData, 'com.example', 'spam_filter_mobile');
+  /// Uses path_provider to resolve the correct base path (MSIX-safe).
+  static Future<String> _getOldDirPath() async {
+    final appSupport = await getApplicationSupportDirectory();
+    // getApplicationSupportDirectory on Windows returns:
+    //   C:\Users\{user}\AppData\Roaming\{org}\{app}
+    // We need the Roaming root to find the old com.example path.
+    // Go up 2 levels from the app support dir to get AppData\Roaming.
+    final roamingDir = appSupport.parent.parent;
+    return p.join(roamingDir.path, 'com.example', 'spam_filter_mobile');
   }
 
   /// New app data directory (MyEmailSpamFilter identity)
-  static String get _newDirPath {
-    final appData = Platform.environment['APPDATA'] ?? '';
-    return path.join(appData, 'MyEmailSpamFilter', 'MyEmailSpamFilter');
+  /// Uses path_provider to resolve the correct base path (MSIX-safe).
+  static Future<String> _getNewDirPath() async {
+    final appSupport = await getApplicationSupportDirectory();
+    // path_provider already returns the correct new identity path
+    return appSupport.path;
   }
 
   /// Marker file to indicate migration has been completed
-  static String get _migrationMarkerPath {
-    return path.join(_newDirPath, '.migration_complete');
+  static Future<String> _getMigrationMarkerPath() async {
+    final newDir = await _getNewDirPath();
+    return p.join(newDir, '.migration_complete');
   }
 
   /// Run the migration if needed.
@@ -47,8 +57,12 @@ class AppIdentityMigration {
   static Future<bool> migrateIfNeeded() async {
     if (!Platform.isWindows) return false;
 
-    final oldDir = Directory(_oldDirPath);
-    final markerFile = File(_migrationMarkerPath);
+    final oldDirPath = await _getOldDirPath();
+    final newDirPath = await _getNewDirPath();
+    final markerPath = await _getMigrationMarkerPath();
+
+    final oldDir = Directory(oldDirPath);
+    final markerFile = File(markerPath);
 
     // Skip if migration already completed
     if (await markerFile.exists()) {
@@ -60,13 +74,13 @@ class AppIdentityMigration {
     if (!await oldDir.exists()) {
       _log.d('Old app data directory not found, no migration needed');
       // Write marker so we do not check again
-      await _writeMarker(markerFile);
+      await _writeMarker(markerFile, oldDirPath: oldDirPath, newDirPath: newDirPath);
       return false;
     }
 
     _log.i('Starting app identity migration from ${oldDir.path}');
 
-    final newDir = Directory(_newDirPath);
+    final newDir = Directory(newDirPath);
     await newDir.create(recursive: true);
 
     int filesCopied = 0;
@@ -74,22 +88,22 @@ class AppIdentityMigration {
 
     try {
       // 1. Migrate database (most critical - contains accounts, settings, scan history)
-      filesCopied += await _migrateFile('spam_filter.db');
+      filesCopied += await _migrateFile('spam_filter.db', oldDirPath, newDirPath);
 
       // 2. Migrate flutter_secure_storage.dat (contains encrypted credentials)
-      filesCopied += await _migrateFile('flutter_secure_storage.dat');
+      filesCopied += await _migrateFile('flutter_secure_storage.dat', oldDirPath, newDirPath);
 
       // 3. Migrate rules directory (YAML rule files and archives)
-      filesCopied += await _migrateDirectory('rules');
+      filesCopied += await _migrateDirectory('rules', oldDirPath, newDirPath);
 
       // 4. Migrate backups directory
-      filesCopied += await _migrateDirectory('backups');
+      filesCopied += await _migrateDirectory('backups', oldDirPath, newDirPath);
 
       // 5. Migrate logs directory
-      filesCopied += await _migrateDirectory('logs');
+      filesCopied += await _migrateDirectory('logs', oldDirPath, newDirPath);
 
       // 6. Migrate credentials directory (metadata files)
-      filesCopied += await _migrateDirectory('credentials');
+      filesCopied += await _migrateDirectory('credentials', oldDirPath, newDirPath);
 
       _log.i('App identity migration complete: $filesCopied files copied');
     } catch (e) {
@@ -99,7 +113,8 @@ class AppIdentityMigration {
 
     // Write marker even if there were some errors, to avoid re-running
     // partial migrations. The old data is preserved as a fallback.
-    await _writeMarker(markerFile, filesCopied: filesCopied, errors: errors);
+    await _writeMarker(markerFile, filesCopied: filesCopied, errors: errors,
+        oldDirPath: oldDirPath, newDirPath: newDirPath);
 
     return filesCopied > 0;
   }
@@ -108,9 +123,9 @@ class AppIdentityMigration {
   /// and does NOT exist in new (do not overwrite).
   ///
   /// Returns 1 if copied, 0 if skipped.
-  static Future<int> _migrateFile(String filename) async {
-    final oldFile = File(path.join(_oldDirPath, filename));
-    final newFile = File(path.join(_newDirPath, filename));
+  static Future<int> _migrateFile(String filename, String oldDirPath, String newDirPath) async {
+    final oldFile = File(p.join(oldDirPath, filename));
+    final newFile = File(p.join(newDirPath, filename));
 
     if (!await oldFile.exists()) {
       _log.d('Migration: $filename not found in old directory, skipping');
@@ -146,9 +161,9 @@ class AppIdentityMigration {
   /// Copy all files from an old subdirectory to the new subdirectory.
   ///
   /// Returns the number of files copied.
-  static Future<int> _migrateDirectory(String dirName) async {
-    final oldSubDir = Directory(path.join(_oldDirPath, dirName));
-    final newSubDir = Directory(path.join(_newDirPath, dirName));
+  static Future<int> _migrateDirectory(String dirName, String oldDirPath, String newDirPath) async {
+    final oldSubDir = Directory(p.join(oldDirPath, dirName));
+    final newSubDir = Directory(p.join(newDirPath, dirName));
 
     if (!await oldSubDir.exists()) {
       _log.d('Migration: $dirName/ not found in old directory, skipping');
@@ -161,8 +176,8 @@ class AppIdentityMigration {
     try {
       await for (final entity in oldSubDir.list(recursive: true)) {
         if (entity is File) {
-          final relativePath = path.relative(entity.path, from: oldSubDir.path);
-          final newFile = File(path.join(newSubDir.path, relativePath));
+          final relativePath = p.relative(entity.path, from: oldSubDir.path);
+          final newFile = File(p.join(newSubDir.path, relativePath));
 
           if (await newFile.exists()) {
             // Do not overwrite existing files
@@ -190,6 +205,8 @@ class AppIdentityMigration {
     File markerFile, {
     int filesCopied = 0,
     int errors = 0,
+    String oldDirPath = '',
+    String newDirPath = '',
   }) async {
     try {
       await markerFile.parent.create(recursive: true);
@@ -197,8 +214,8 @@ class AppIdentityMigration {
         'Migration completed: ${DateTime.now().toIso8601String()}\n'
         'Files copied: $filesCopied\n'
         'Errors: $errors\n'
-        'Old path: $_oldDirPath\n'
-        'New path: $_newDirPath\n',
+        'Old path: $oldDirPath\n'
+        'New path: $newDirPath\n',
       );
     } catch (e) {
       _log.w('Failed to write migration marker: $e');

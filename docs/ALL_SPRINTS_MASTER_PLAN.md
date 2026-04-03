@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: April 2, 2026 (Sprint 27 retrospective)
+**Last Updated**: April 2, 2026 (Sprint 28 retrospective)
 
 ## How to Maintain This Document
 
@@ -92,6 +92,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 25 | docs/sprints/SPRINT_25_RETROSPECTIVE.md | [OK] Complete | Mar 22, 2026 |
 | 26 | docs/sprints/SPRINT_26_RETROSPECTIVE.md | [OK] Complete | Mar 22-24, 2026 |
 | 27 | docs/sprints/SPRINT_27_RETROSPECTIVE.md | [OK] Complete | Mar 29 - Apr 2, 2026 |
+| 28 | docs/sprints/SPRINT_28_RETROSPECTIVE.md | [OK] Complete | Apr 2, 2026 |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -99,31 +100,26 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 27** (March 29 - April 2, 2026)
-- **Features**: F11 Desktop App E2E Testing with civyk-winwright
-- **Key Findings**: Flutter requires SPI_SETSCREENREADER flag for accessibility tree; all 11 screens automatable; tabs need useInvokePattern:false
-- **Tools**: civyk-winwright v2.0.0, enable-screen-reader-flag.ps1, ww-test-helper.sh
-- **Bug Fix**: Flutter SDK sqlite3 native assets PathExistsException (build-windows.ps1 workaround)
-- **Process**: Mandatory metadata update enforcement in /startup-check, /memory-restore skills
-- **Retrospective**: docs/sprints/SPRINT_27_RETROSPECTIVE.md
+**Sprint 28** (April 2, 2026)
+- **Bug Fix**: B1 MSIX sandbox crash at launch - replaced hardcoded APPDATA paths with path_provider (Issue #218)
+- **Features**: F49 Remove Scan All Accounts + account-specific Scan History (Issue #219), F51 Background settings reorder (Issue #221)
+- **Bug Fixes**: Account selection dialog display, Test Background Scan runs all accounts
+- **MSIX**: Built, installed, launched successfully in local testing
+- **Process**: Sprint summary made mandatory in Phase 7, winwright E2E added to Phase 5, python3 hook fix
+- **Retrospective**: docs/sprints/SPRINT_28_RETROSPECTIVE.md
 
 ---
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: April 2, 2026 (Sprint 27 retrospective)
+**Last Reviewed**: April 2, 2026 (Sprint 28 retrospective)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
 ### Windows Store Readiness
 
-**B1. MSIX sandbox crash at launch - File system error (Issue #218) (~10h) Priority 1**
-- Phase: Windows Store Readiness (BLOCKER)
-- Platform: Windows Desktop
-- Target: Sprint 28
-- Microsoft Store certification fails: app crashes at launch inside MSIX sandbox
-- Error: `File system error (-2015295536)` / 0x87E107D0
-- [Detail](#b1-msix-sandbox-crash-at-launch)
+**~~B1. MSIX sandbox crash at launch - File system error (Issue #218) (~10h)~~** [OK] Complete (Sprint 28)
+- Awaiting Microsoft Store resubmission and certification verification
 
 **~~WS-B1. MSIX config fixes (~1h)~~** [OK] Complete (Sprint 23)
 
@@ -183,20 +179,14 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 
 **~~F7. Multi-Account Scanning~~** [OK] Complete (Sprint 26)
 
-**F49. Remove "Scan All Accounts" button, add account selection to Scan History (Issue #219) (~2-3h) Priority 80**
-- Phase: UX Improvement
-- Platform: All
-- Sprint 27 retrospective feedback: multi-account simultaneous scanning not needed
+**~~F49. Remove "Scan All Accounts" button, add account selection to Scan History (Issue #219) (~2-3h)~~** [OK] Complete (Sprint 28)
 
 **F50. Make all page text selectable and copyable to clipboard (Issue #220) (~4-6h) Priority 82**
 - Phase: UX Improvement
 - Platform: All
 - Sprint 27 retrospective feedback: extend existing selectable text pattern to all screens
 
-**F51. Background settings - move Scan Mode above Default Folders (Issue #221) (~0.5h) Priority 84**
-- Phase: UX Improvement
-- Platform: All
-- Sprint 27 retrospective feedback: match Manual Scan settings page layout order
+**~~F51. Background settings - move Scan Mode above Default Folders (Issue #221) (~0.5h)~~** [OK] Complete (Sprint 28)
 
 **F6. Provider-Specific Optimizations (~10-12h) Priority 100**
 - Phase: Performance

@@ -12,6 +12,8 @@
 /// Default: dev (development mode)
 library;
 
+import 'dart:io' show Platform;
+
 /// Application environment singleton
 class AppEnvironment {
   static const String _envKey = 'APP_ENV';
@@ -54,4 +56,17 @@ class AppEnvironment {
 
   /// Environment description for logging
   static String get description => isProd ? 'Production' : 'Development';
+
+  /// Whether the app is running from an MSIX package (Microsoft Store install).
+  ///
+  /// MSIX-installed apps run from C:\Program Files\WindowsApps\... which is
+  /// read-only and has sandbox restrictions. Task Scheduler registration and
+  /// other OS-level integrations may not work in this context.
+  ///
+  /// [NEW] Issue #218: Used to skip Task Scheduler operations in MSIX builds.
+  static bool get isMsixInstall {
+    if (!Platform.isWindows) return false;
+    final exe = Platform.resolvedExecutable.toLowerCase();
+    return exe.contains('windowsapps') || exe.contains('program files\\windowsapps');
+  }
 }

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:logger/logger.dart';
 import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
 
 import '../storage/database_helper.dart';
@@ -21,13 +22,26 @@ import '../../adapters/storage/secure_credentials_store.dart';
 class BackgroundScanWindowsWorker {
   static final Logger _logger = Logger();
 
+  /// Cached log directory path (resolved once via path_provider)
+  static String? _cachedLogDir;
+
+  /// Get log directory path using path_provider (MSIX-safe).
+  /// [UPDATED] Issue #218: Replaces Platform.environment['APPDATA'] usage.
+  static Future<String> _getLogDir() async {
+    if (_cachedLogDir != null) return _cachedLogDir!;
+    final appSupport = await getApplicationSupportDirectory();
+    final envSuffix = AppEnvironment.dataDirSuffix;
+    _cachedLogDir = '${appSupport.path}$envSuffix\\logs';
+    return _cachedLogDir!;
+  }
+
   /// File-based logger for headless background mode diagnostics
   static Future<void> _bgLog(String message) async {
     try {
-      final envSuffix = AppEnvironment.dataDirSuffix;
+      final logDir = await _getLogDir();
       final logPrefix = AppEnvironment.logPrefix;
       final logFile = File(
-        '${Platform.environment['APPDATA']}\\MyEmailSpamFilter\\MyEmailSpamFilter$envSuffix\\logs\\${logPrefix}background_scan_v0.5.1.log',
+        '$logDir\\${logPrefix}background_scan_v0.5.1.log',
       );
       final timestamp = DateTime.now().toIso8601String();
       await logFile.parent.create(recursive: true);
@@ -38,11 +52,14 @@ class BackgroundScanWindowsWorker {
     } catch (_) {}
   }
 
-  /// Execute background scan for all enabled accounts
+  /// Execute background scan for accounts.
   ///
-  /// This method is called when the app is launched with --background-scan flag
-  /// by Windows Task Scheduler. It scans all enabled accounts and logs results.
-  static Future<bool> executeBackgroundScan() async {
+  /// When [isTest] is false (default): Only scans accounts with background
+  /// scanning enabled. Called by Task Scheduler with --background-scan flag.
+  ///
+  /// When [isTest] is true: Scans ALL accounts regardless of the enable flag.
+  /// Called by the "Test Background Scan" button in Settings.
+  static Future<bool> executeBackgroundScan({bool isTest = false}) async {
     _logger.i('Starting Windows background scan worker execution');
     await _bgLog('executeBackgroundScan() started');
 
@@ -81,18 +98,20 @@ class BackgroundScanWindowsWorker {
       int successCount = 0;
       int failureCount = 0;
 
-      // Scan each enabled account
+      // Scan accounts (all if test mode, only enabled if scheduled)
       for (final accountId in accountIds) {
         await _bgLog('Processing account: $accountId');
         try {
-          // Check if background scans enabled for this account
-          final isBackgroundEnabled =
-              await settingsStore.getEffectiveBackgroundEnabled(accountId);
+          // Skip disabled accounts unless this is a test run
+          if (!isTest) {
+            final isBackgroundEnabled =
+                await settingsStore.getEffectiveBackgroundEnabled(accountId);
 
-          if (!isBackgroundEnabled) {
-            _logger.d('Background scans disabled for account $accountId');
-            await _bgLog('Background scans disabled for $accountId, skipping');
-            continue;
+            if (!isBackgroundEnabled) {
+              _logger.d('Background scans disabled for account $accountId');
+              await _bgLog('Background scans disabled for $accountId, skipping');
+              continue;
+            }
           }
 
           // Resolve platform ID from credential store or infer from account ID
@@ -275,9 +294,8 @@ class BackgroundScanWindowsWorker {
       if (!debugCsvEnabled) return;
 
       // Export to environment-aware AppData directory (ADR-0035)
-      final envSuffix = AppEnvironment.dataDirSuffix;
-      final exportDir = '${Platform.environment['APPDATA']}'
-          '\\MyEmailSpamFilter\\MyEmailSpamFilter$envSuffix\\logs';
+      // [UPDATED] Issue #218: Use path_provider for MSIX sandbox compatibility
+      final exportDir = await _getLogDir();
 
       // Ensure directory exists
       final dir = Directory(exportDir);
