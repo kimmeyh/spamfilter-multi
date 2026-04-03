@@ -408,29 +408,21 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
     });
   }
 
-  /// Navigate to settings screen
-  /// [UPDATED] ISSUE #123: Settings requires accountId, show account selector dialog
-  void _openSettings() async {
-    if (_savedAccounts.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please add an email account first')),
-      );
-      return;
-    }
-
-    // Show account selection dialog
-    final selected = await showDialog<String>(
+  /// Show account selection dialog and return the selected accountId.
+  /// Reused by Settings and Scan History navigation.
+  /// [UPDATED] Issue #219: Uses cached AccountDisplayData for correct display.
+  Future<String?> _showAccountSelectionDialog() async {
+    return showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Select Account'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: _savedAccounts.map((accountId) {
-            // Extract platform and email from accountId (format: "platform-email")
-            final parts = accountId.split('-');
-            final platformId = parts[0];
-            final email = parts.sublist(1).join('-');
-            
+            final displayData = _accountDataCache[accountId];
+            final email = displayData?.email ?? accountId;
+            final platformId = displayData?.platformId ?? '';
+
             return ListTile(
               leading: Icon(_getPlatformIcon(platformId)),
               title: Text(email),
@@ -447,6 +439,19 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
         ],
       ),
     );
+  }
+
+  /// Navigate to settings screen
+  /// [UPDATED] ISSUE #123: Settings requires accountId, show account selector dialog
+  void _openSettings() async {
+    if (_savedAccounts.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please add an email account first')),
+      );
+      return;
+    }
+
+    final selected = await _showAccountSelectionDialog();
 
     if (selected != null && mounted) {
       Navigator.push(
@@ -478,7 +483,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
   }
 
   /// Navigate to scan history with account selection
-  /// [NEW] ISSUE #219: Reuses same dialog pattern as _openSettings()
+  /// [NEW] ISSUE #219: Reuses shared account selection dialog
   void _openScanHistory() async {
     if (_savedAccounts.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -487,39 +492,12 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       return;
     }
 
-    // Show account selection dialog
-    final selected = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Select Account'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: _savedAccounts.map((accountId) {
-            final parts = accountId.split('-');
-            final platformId = parts[0];
-            final email = parts.sublist(1).join('-');
-
-            return ListTile(
-              leading: Icon(_getPlatformIcon(platformId)),
-              title: Text(email),
-              subtitle: Text(_getPlatformDisplayName(platformId)),
-              onTap: () => Navigator.pop(ctx, accountId),
-            );
-          }).toList(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-        ],
-      ),
-    );
+    final selected = await _showAccountSelectionDialog();
 
     if (selected != null && mounted) {
-      final parts = selected.split('-');
-      final platformId = parts[0];
-      final email = parts.sublist(1).join('-');
+      final displayData = _accountDataCache[selected];
+      final email = displayData?.email ?? selected;
+      final platformId = displayData?.platformId ?? '';
 
       Navigator.push(
         context,
