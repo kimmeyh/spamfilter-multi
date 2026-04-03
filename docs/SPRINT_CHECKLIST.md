@@ -110,6 +110,20 @@ These documents MUST be created/updated during each sprint:
 - [ ] **Review and close all resolved GitHub issues** (`gh issue list --state open` - close any resolved by this sprint)
 - [ ] GitHub issues auto-closed (verify Closes #N references worked)
 - [ ] Feature branch deleted (optional, user-managed)
+
+## Post-Merge: Store Submission (if applicable)
+
+If the sprint included changes that affect the Microsoft Store build (UI changes, bug fixes, MSIX fixes):
+
+- [ ] Merge develop to main (user)
+- [ ] Build Store MSIX: set `store: true` in pubspec.yaml, run `dart run msix:create`
+- [ ] Upload MSIX to Microsoft Partner Center
+- [ ] Submit for certification
+- [ ] **Notify user** when build is ready for upload or when submission is complete
+
+## Ready for Next Sprint
+
+- [ ] All post-merge steps complete
 - [ ] Ready for next sprint
 
 ---
