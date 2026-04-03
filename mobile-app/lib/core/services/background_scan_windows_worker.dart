@@ -52,11 +52,14 @@ class BackgroundScanWindowsWorker {
     } catch (_) {}
   }
 
-  /// Execute background scan for all enabled accounts
+  /// Execute background scan for accounts.
   ///
-  /// This method is called when the app is launched with --background-scan flag
-  /// by Windows Task Scheduler. It scans all enabled accounts and logs results.
-  static Future<bool> executeBackgroundScan() async {
+  /// When [isTest] is false (default): Only scans accounts with background
+  /// scanning enabled. Called by Task Scheduler with --background-scan flag.
+  ///
+  /// When [isTest] is true: Scans ALL accounts regardless of the enable flag.
+  /// Called by the "Test Background Scan" button in Settings.
+  static Future<bool> executeBackgroundScan({bool isTest = false}) async {
     _logger.i('Starting Windows background scan worker execution');
     await _bgLog('executeBackgroundScan() started');
 
@@ -95,18 +98,20 @@ class BackgroundScanWindowsWorker {
       int successCount = 0;
       int failureCount = 0;
 
-      // Scan each enabled account
+      // Scan accounts (all if test mode, only enabled if scheduled)
       for (final accountId in accountIds) {
         await _bgLog('Processing account: $accountId');
         try {
-          // Check if background scans enabled for this account
-          final isBackgroundEnabled =
-              await settingsStore.getEffectiveBackgroundEnabled(accountId);
+          // Skip disabled accounts unless this is a test run
+          if (!isTest) {
+            final isBackgroundEnabled =
+                await settingsStore.getEffectiveBackgroundEnabled(accountId);
 
-          if (!isBackgroundEnabled) {
-            _logger.d('Background scans disabled for account $accountId');
-            await _bgLog('Background scans disabled for $accountId, skipping');
-            continue;
+            if (!isBackgroundEnabled) {
+              _logger.d('Background scans disabled for account $accountId');
+              await _bgLog('Background scans disabled for $accountId, skipping');
+              continue;
+            }
           }
 
           // Resolve platform ID from credential store or infer from account ID

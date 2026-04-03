@@ -751,7 +751,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
     try {
       if (Platform.isWindows) {
-        final success = await BackgroundScanWindowsWorker.executeBackgroundScan();
+        final success = await BackgroundScanWindowsWorker.executeBackgroundScan(isTest: true);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
