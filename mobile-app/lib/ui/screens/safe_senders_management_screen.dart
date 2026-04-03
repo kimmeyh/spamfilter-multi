@@ -330,7 +330,8 @@ class _SafeSendersManagementScreenState
           ),
         ],
       ),
-      body: Column(
+      body: SelectionArea(
+        child: Column(
         children: [
           // Search bar
           Padding(
@@ -459,6 +460,7 @@ class _SafeSendersManagementScreenState
                       ),
           ),
         ],
+      ),
       ),
     );
   }

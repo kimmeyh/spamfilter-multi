@@ -636,10 +636,11 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
         elevation: 2,
         actions: [_buildHistoryButton(), _buildSettingsButton()],
       ),
-      body: Column(
-        children: [
-          // Header section
-          Container(
+      body: SelectionArea(
+        child: Column(
+          children: [
+            // Header section
+            Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             color: Theme.of(context).colorScheme.surface,
@@ -771,7 +772,8 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
               },
             ),
           ),
-        ],
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _addNewAccount,

@@ -437,10 +437,11 @@ class _GmailOAuthScreenState extends State<GmailOAuthScreen> {
         title: const Text('Gmail Sign-In'),
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
+      body: SelectionArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -579,6 +580,7 @@ class _GmailOAuthScreenState extends State<GmailOAuthScreen> {
               // Privacy notice
               _buildPrivacyNotice(context),
             ],
+          ),
           ),
         ),
       ),

@@ -78,73 +78,75 @@ class _PlatformSelectionScreenState extends State<PlatformSelectionScreen> {
         title: const Text('Select Email Provider'),
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Header section with introduction
-            Container(
-              color: Theme.of(context).colorScheme.surface,
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Choose Your Email Provider',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Select your email provider to get started with spam filtering',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey[600],
-                        ),
-                  ),
-                  const SizedBox(height: 16),
-                  // [UPDATED] Sprint 19: Demo Mode as direct-launch card
-                  Card(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                    child: ListTile(
-                      leading: Icon(Icons.science_outlined, color: Colors.purple.shade400),
-                      title: const Text('Try Demo Mode'),
-                      subtitle: const Text('Test with 50+ sample emails (no email account needed)'),
-                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                      onTap: _startDemoMode,
+      body: SelectionArea(
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Header section with introduction
+              Container(
+                color: Theme.of(context).colorScheme.surface,
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Choose Your Email Provider',
+                      style: Theme.of(context).textTheme.headlineSmall,
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    Text(
+                      'Select your email provider to get started with spam filtering',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.grey[600],
+                          ),
+                    ),
+                    const SizedBox(height: 16),
+                    // [UPDATED] Sprint 19: Demo Mode as direct-launch card
+                    Card(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      child: ListTile(
+                        leading: Icon(Icons.science_outlined, color: Colors.purple.shade400),
+                        title: const Text('Try Demo Mode'),
+                        subtitle: const Text('Test with 50+ sample emails (no email account needed)'),
+                        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                        onTap: _startDemoMode,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
 
-            // Platform cards section
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  // Phase 1 - MVP platforms
-                  _buildPhaseHeader('Available Now', 1),
-                  const SizedBox(height: 12),
-                  ...platforms
-                      .where((p) => p.phase == 1)
-                      .map((p) => _buildPlatformCard(p))
-                      .toList(),
+              // Platform cards section
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    // Phase 1 - MVP platforms
+                    _buildPhaseHeader('Available Now', 1),
+                    const SizedBox(height: 12),
+                    ...platforms
+                        .where((p) => p.phase == 1)
+                        .map((p) => _buildPlatformCard(p))
+                        .toList(),
 
-                  // Phase 2 platforms
-                  const SizedBox(height: 24),
-                  _buildPhaseHeader('Coming Soon', 2),
-                  const SizedBox(height: 12),
-                  ...platforms
-                      .where((p) => p.phase == 2)
-                      .map((p) => _buildPlatformCard(p))
-                      .toList(),
+                    // Phase 2 platforms
+                    const SizedBox(height: 24),
+                    _buildPhaseHeader('Coming Soon', 2),
+                    const SizedBox(height: 12),
+                    ...platforms
+                        .where((p) => p.phase == 2)
+                        .map((p) => _buildPlatformCard(p))
+                        .toList(),
 
-                  // Info section
-                  const SizedBox(height: 32),
-                  _buildInfoCard(),
-                ],
+                    // Info section
+                    const SizedBox(height: 32),
+                    _buildInfoCard(),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

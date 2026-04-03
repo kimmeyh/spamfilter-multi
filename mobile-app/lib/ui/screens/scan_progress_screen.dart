@@ -209,7 +209,8 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
         ),
         body: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Column(
+          child: SelectionArea(
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _buildHeader(scanProvider),
@@ -220,6 +221,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
               const SizedBox(height: 16),
               Expanded(child: _buildRecentActivity(scanProvider)),
             ],
+          ),
           ),
         ),
       ),

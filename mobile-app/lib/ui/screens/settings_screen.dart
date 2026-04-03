@@ -181,7 +181,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
   /// F36: General tab for app-wide settings
   Widget _buildGeneralTab() {
-    return ListView(
+    return SelectionArea(child: ListView(
       padding: const EdgeInsets.all(16),
       children: [
         // Rules Management section (moved from Account tab)
@@ -319,12 +319,12 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           ),
         ),
       ],
-    );
+    ));
   }
 
   Widget _buildAccountTab() {
     // [UPDATED] ISSUE #123: accountId now required, no null check needed
-    return FutureBuilder<Credentials?>(
+    return SelectionArea(child: FutureBuilder<Credentials?>(
       future: _credStore.getCredentials(widget.accountId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -428,11 +428,11 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           ],
         );
       },
-    );
+    ));
   }
 
   Widget _buildManualScanTab() {
-    return ListView(
+    return SelectionArea(child: ListView(
       padding: const EdgeInsets.all(16),
       children: [
         Card(
@@ -506,7 +506,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         _buildSectionHeader('Export Settings'),
         _buildCsvExportDirectorySelector(),
       ],
-    );
+    ));
   }
 
   Widget _buildCsvExportDirectorySelector() {
@@ -631,7 +631,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   }
 
   Widget _buildBackgroundScanTab() {
-    return ListView(
+    return SelectionArea(child: ListView(
       padding: const EdgeInsets.all(16),
       children: [
         SwitchListTile(
@@ -709,7 +709,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           },
         ),
       ],
-    );
+    ));
   }
 
   /// [NEW] ISSUE #159: Test Background Scan button

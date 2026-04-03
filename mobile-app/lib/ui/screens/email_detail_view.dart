@@ -707,7 +707,7 @@ class _EmailDetailViewState extends State<EmailDetailView>
                     style: Theme.of(context).textTheme.labelSmall,
                   ),
                   const SizedBox(height: 4),
-                  Text(
+                  SelectableText(
                     (widget.email.subject?.isNotEmpty ?? false)
                         ? widget.email.subject!
                         : '(No subject)',
@@ -722,19 +722,19 @@ class _EmailDetailViewState extends State<EmailDetailView>
                     style: Theme.of(context).textTheme.labelSmall,
                   ),
                   const SizedBox(height: 4),
-                  Text(
+                  SelectableText(
                     widget.email.fromEmail,
                     style: Theme.of(context).textTheme.bodyMedium,
                   ),
                   if (widget.email.fromName != null &&
                       widget.email.fromName!.isNotEmpty)
-                    Text(
+                    SelectableText(
                       widget.email.fromName!,
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   if (_senderDomain != null) ...[
                     const SizedBox(height: 4),
-                    Text(
+                    SelectableText(
                       'Domain: $_senderDomain',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: Colors.grey[600],
@@ -755,7 +755,7 @@ class _EmailDetailViewState extends State<EmailDetailView>
                               'Folder',
                               style: Theme.of(context).textTheme.labelSmall,
                             ),
-                            Text(
+                            SelectableText(
                               widget.email.folderName,
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
@@ -770,7 +770,7 @@ class _EmailDetailViewState extends State<EmailDetailView>
                               'Date',
                               style: Theme.of(context).textTheme.labelSmall,
                             ),
-                            Text(
+                            SelectableText(
                               widget.email.emailDate != null
                                   ? widget.email.emailDate!
                                       .toString()
