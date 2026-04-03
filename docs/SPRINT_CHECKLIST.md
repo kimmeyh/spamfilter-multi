@@ -37,7 +37,7 @@ These documents MUST be created/updated during each sprint:
 - [ ] Sprint number determined (N = previous + 1)
 - [ ] Read ALL_SPRINTS_MASTER_PLAN.md "Next Sprint Candidates" table
 - [ ] **Present candidates in sprint refinement format** (BACKLOG_REFINEMENT.md format, not grid tables)
-- [ ] Created `docs/sprints/SPRINT_(N-1)_SUMMARY.md` for previous sprint (3.2.1)
+- [ ] **Verify** `docs/sprints/SPRINT_(N-1)_SUMMARY.md` exists for previous sprint (created in Phase 7)
 - [ ] **Created `docs/sprints/SPRINT_N_PLAN.md`** for current sprint (3.2.2 - MANDATORY)
 - [ ] Created feature branch: `feature/YYYYMMDD_Sprint_N`
 - [ ] Created GitHub issues for all tasks
@@ -65,6 +65,7 @@ These documents MUST be created/updated during each sprint:
 - [ ] Full test suite passing (`flutter test`)
 - [ ] Code analysis clean (`flutter analyze` - target <50 warnings)
 - [ ] Risk mitigations validated
+- [ ] **Desktop E2E tests** (if UI changes): Run winwright accessibility tests on affected screens (see `docs/WINWRIGHT_SELECTORS.md`)
 - [ ] **App built for user testing** (Windows: `build-windows.ps1`)
 - [ ] **Platform-specific UI verified** at native level (Win32 window title, system tray, notifications) -- Flutter UI layer may not control platform-level behavior (learned Sprint 21)
 - [ ] Manual testing complete (user)
@@ -97,7 +98,7 @@ These documents MUST be created/updated during each sprint:
   - [ ] CHANGELOG.md updated (all sprint entries present)
   - [ ] ALL_SPRINTS_MASTER_PLAN.md updated (per Maintenance Guide rules)
   - [ ] `docs/sprints/SPRINT_N_RETROSPECTIVE.md` created (MANDATORY)
-  - [ ] `docs/sprints/SPRINT_N_SUMMARY.md` created (or deferred to next sprint Phase 3.2.1)
+  - [ ] `docs/sprints/SPRINT_N_SUMMARY.md` created (MANDATORY - do not defer)
   - [ ] ARCHITECTURE.md updated (if architecture changed)
   - [ ] .claude/sprint_status.json updated
 - [ ] Review results summarized
