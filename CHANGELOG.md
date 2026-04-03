@@ -26,6 +26,13 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-04-03 (Sprint 29 - UX + Quality + Features)
+- **feat**: Make all page text selectable and copyable across 21 screens (F50, Issue #220)
+- **feat**: Scan History enhancements - multi-account combined view, account/type filters, totals with tooltips, retention days in title (F48, Issue #212)
+- **feat**: Default rule set creation - seed from bundled YAML on fresh install, Reset to Defaults button in Settings (F46, Issue #208)
+- **test**: Add tests for email_scanner, default_rule_set_service, yaml_service parse methods (F42, Issue #203)
+- **docs**: Backlog refinement - removed completed items from ALL_SPRINTS_MASTER_PLAN.md
+
 ### 2026-04-02 (Sprint 28 - MSIX Sandbox Fix + UX Improvements)
 - **fix**: Replace all hardcoded Platform.environment['APPDATA'] paths with path_provider for MSIX sandbox compatibility (B1, Issue #218)
 - **fix**: Add MSIX detection (AppEnvironment.isMsixInstall) and skip Task Scheduler in MSIX context (B1, Issue #218)

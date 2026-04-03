@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:logger/logger.dart';
+import 'package:sqflite/sqflite.dart';
 
 import '../storage/database_helper.dart';
 import 'yaml_service.dart';
@@ -62,14 +63,14 @@ class DefaultRuleSetService {
   }
 
   /// Load and seed rules and safe senders from bundled YAML assets.
-  Future<({int rules, int safeSenders})> _seedFromAssets(dynamic db) async {
-    return db.transaction((txn) async {
-      return _seedFromAssetsInTransaction(txn);
+  Future<({int rules, int safeSenders})> _seedFromAssets(Database db) async {
+    return await db.transaction((txn) async {
+      return await _seedFromAssetsInTransaction(txn);
     });
   }
 
   Future<({int rules, int safeSenders})> _seedFromAssetsInTransaction(
-      dynamic txn) async {
+      Transaction txn) async {
     int rulesSeeded = 0;
     int safeSendersSeeded = 0;
     final now = DateTime.now().millisecondsSinceEpoch;
@@ -141,6 +142,7 @@ class DefaultRuleSetService {
       for (final pattern in safeSenderList.safeSenders) {
         final dbSafeSender = {
           'pattern': pattern,
+          'pattern_type': _classifyPatternType(pattern),
           'date_added': now,
           'created_by': 'default',
         };
@@ -155,5 +157,26 @@ class DefaultRuleSetService {
     }
 
     return (rules: rulesSeeded, safeSenders: safeSendersSeeded);
+  }
+
+  /// Classify a safe sender pattern into its type.
+  ///
+  /// Mirrors SafeSenderList._determinePatternType logic.
+  static String _classifyPatternType(String pattern) {
+    if (pattern.contains(r'(?:') || pattern.contains(r'[a-z0-9-]+\.)*')) {
+      return 'entire_domain';
+    }
+    if (pattern.startsWith('^') && pattern.contains('@')) {
+      final beforeAt = pattern.substring(1).split('@')[0];
+      if (!beforeAt.startsWith('[') &&
+          !beforeAt.startsWith('(') &&
+          beforeAt.isNotEmpty) {
+        return 'exact_email';
+      }
+    }
+    if (pattern.contains('@') && !pattern.contains(r'[^@')) {
+      return 'exact_domain';
+    }
+    return 'exact_domain';
   }
 }
