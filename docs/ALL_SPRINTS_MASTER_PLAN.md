@@ -143,6 +143,13 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Platform: All
 - Sprint 27 retrospective feedback: extend existing selectable text pattern to all screens
 
+**F52. Multi-variant side-by-side install across all stores (~16-24h) Priority 90**
+- Phase: Build and Release Infrastructure
+- Platform: All (Windows, Android, iOS)
+- Extend ADR-0035 dev/prod separation to all 9 build variants (3 stores × 3 channels: dev, production, store)
+- All variants must run simultaneously without rebuild on same machine/device
+- [Detail](#f52-multi-variant-side-by-side-install)
+
 **F6. Provider-Specific Optimizations (~10-12h) Priority 100**
 - Phase: Performance
 - Platform: All
@@ -369,6 +376,121 @@ Provider defaults:
 - [ ] Pattern preview shows match results against sample data
 - [ ] Changes saved to database
 - [ ] Rule name updated if source_domain changes
+
+---
+
+### F52: Multi-Variant Side-by-Side Install
+
+**Status**: New (April 8, 2026)
+**Estimated Effort**: ~16-24h (phased per platform)
+**Phase**: Build and Release Infrastructure
+**Platform**: All (Windows, Android, iOS)
+
+**Overview**: Extend the existing dev/prod separation (ADR-0035, Windows only) to support all 9 build variants -- 3 channels (dev, production, store) across 3 platforms (Windows, Android, iOS) -- running simultaneously on the same machine/device without rebuilds.
+
+**The 9 Variants**:
+
+| Platform | Dev (feature/develop) | Production (main) | Store (downloaded) |
+|----------|----------------------|-------------------|--------------------|
+| Windows | [OK] Built today | [OK] Built today | Microsoft Store install |
+| Android | TBD | TBD | Google Play install |
+| iOS | TBD | TBD | App Store install |
+
+**Current State**:
+- **Windows dev/prod**: ADR-0035 implemented in Sprint 19. Same .exe path, but different `secrets.*.json` builds use different data dirs (`MyEmailSpamFilter` vs `MyEmailSpamFilter_Dev`), task names, and mutexes. Whichever was built last is what runs.
+- **Windows store**: MSIX submitted to Microsoft Store (Sprint 28). Installs to `Packages\{PackageFamilyName}\` -- separate from dev/prod data dirs.
+- **Android**: Single applicationId (`com.example.my_email_spam_filter`). No flavors configured.
+- **iOS**: Not yet built.
+
+**Problem**: A user/developer needs to be able to run any combination of these 9 variants simultaneously to:
+- Compare dev vs prod behavior on same data
+- Test store version against local builds without uninstalling
+- Reproduce store-only bugs while a fix is in dev
+- Demonstrate prod features while continuing dev work
+
+The Windows dev/prod current implementation requires a rebuild to switch -- only one is "current" at a time.
+
+**Industry Best Practices**:
+
+**Android (Build Flavors)** -- See [Android docs](https://developer.android.com/build/build-variants):
+- Use `productFlavors` in `build.gradle.kts` with distinct `applicationIdSuffix` per flavor
+- Example: `com.example.app` (store), `com.example.app.prod` (sideloaded prod), `com.example.app.dev` (dev)
+- Each variant gets its own data directory, app icon, and Launcher entry
+- Side-by-side install works automatically on the same device
+- Use Manifest Placeholders for distinct app names (e.g., "SpamFilter", "SpamFilter PROD", "SpamFilter DEV")
+
+**iOS (Bundle ID + Targets/Configurations)** -- See [Xcode multi-config](https://medium.com/@danielgalasko/run-multiple-versions-of-your-app-on-the-same-device-using-xcode-configurations-1fd3a220c608):
+- iOS identifies apps by bundle identifier; cannot have two apps with the same ID
+- Create distinct bundle IDs per variant: `com.example.spamfilter`, `com.example.spamfilter.prod`, `com.example.spamfilter.dev`
+- Use Xcode build configurations or separate targets to switch bundle ID at build time
+- Each variant becomes a distinct app on the device with its own data, icon, and TestFlight stream
+- TestFlight typically uses a `.test` or `.beta` suffix to avoid colliding with App Store releases
+
+**Windows (MSIX Package Family + Distinct .exe Names)**:
+- MSIX uses `PackageFamilyName` for identity. Different `Identity Name` values produce distinct sandboxed installs.
+- For non-MSIX (sideloaded) builds, distinct .exe filenames + distinct install directories enable coexistence
+- Currently: `MyEmailSpamFilter.exe` is the same filename for dev and prod (only data dirs differ)
+- Recommendation: build to environment-specific subdirs (`Release-dev/`, `Release-prod/`) and use environment-specific .exe names (`MyEmailSpamFilter.exe`, `MyEmailSpamFilter-Dev.exe`)
+
+**Cross-Platform Pattern**:
+1. **Single source tree, build-time variants**: Use Flutter's `--dart-define` + `flutter run --flavor` for entry points
+2. **Distinct identifiers per variant**: applicationId/bundle ID/package family
+3. **Distinct visual markers**: app name, icon overlay (e.g., yellow stripe for dev, red for staging)
+4. **Distinct data isolation**: separate data dirs (already done for Windows; automatic for Android/iOS via OS)
+5. **Build matrix in CI**: each push to `main` builds prod variants, each push to `develop` builds dev variants
+
+**Key Decisions Needed (during sprint planning)**:
+1. **Naming convention**: `SpamFilter` (store) / `SpamFilter Pro` (sideloaded prod) / `SpamFilter Dev` (dev)? Or use suffixes?
+2. **Build artifact location**: Should dev and prod Windows builds output to separate dirs to enable coexistence without rebuild?
+3. **Icon variants**: Acceptable to ship 3 icon designs (or icon overlays generated at build time)?
+4. **Store identifier strategy**: Reserve all bundle IDs in advance (App Store Connect, Google Play Console, Microsoft Partner Center)?
+
+**Implementation Phases**:
+
+**Phase 1: Windows distinct .exe + distinct dirs (~4-6h)**
+- Update `build-windows.ps1` to output to `build/windows/x64/runner/Release-{env}/`
+- Rename .exe to `MyEmailSpamFilter.exe` (prod) and `MyEmailSpamFilter-Dev.exe` (dev) at build time
+- Verify Microsoft Store MSIX is unaffected (it installs separately)
+- Update launch scripts and docs to reference env-specific paths
+- Test: prod and dev builds present simultaneously, both runnable
+
+**Phase 2: Android flavors (~6-8h)**
+- Configure `productFlavors` in `mobile-app/android/app/build.gradle.kts`
+- Define `dev`, `prod`, `store` flavors with distinct `applicationIdSuffix`
+- Add Manifest Placeholder for app name
+- Generate distinct icons per flavor (or use icon overlay)
+- Update build scripts (`build-with-secrets.ps1`) to take a flavor parameter
+- Test: install all 3 variants on emulator side-by-side
+- Note: Cannot fully test "store" flavor until app is in Google Play (use `prod` flavor as proxy with different applicationId)
+
+**Phase 3: iOS bundle IDs (~6-10h, requires macOS)**
+- Configure Xcode build configurations or targets for `dev`, `prod`, `store`
+- Set distinct bundle IDs per configuration
+- Configure provisioning profiles for each variant
+- Update CI to build correct variant per branch
+- Note: Requires Apple Developer Program account and reserved bundle IDs
+- HOLD until iOS development begins
+
+**Acceptance Criteria**:
+- [ ] Windows: dev, prod, and store builds all installable and runnable simultaneously
+- [ ] Android: dev, prod, and store flavors all installable and runnable simultaneously on emulator
+- [ ] iOS: dev, prod, and store configurations defined (full validation deferred to iOS dev)
+- [ ] All 9 variants have distinct data directories (no cross-contamination)
+- [ ] All 9 variants have visual markers (different name and/or icon)
+- [ ] Build scripts updated to support variant selection
+- [ ] Documentation updated: ADR (extend ADR-0035 or create new ADR), CLAUDE.md, build script READMEs
+- [ ] No regression in existing dev/prod Windows separation
+- [ ] CI builds correct variant per branch (main = prod+store, develop = dev)
+
+**Dependencies**:
+- iOS phase blocked until iOS development begins
+- Android store flavor blocked until app is published to Google Play
+- Windows store flavor already in place (MSIX from Sprint 28)
+
+**Notes**:
+- Phase 1 (Windows) is the only phase that can be done now without external dependencies
+- Phases 2 and 3 should be combined with broader Android/iOS work
+- Consider whether "store" flavor is really needed as a separate build, or if the actual store-downloaded app suffices
 
 ---
 
