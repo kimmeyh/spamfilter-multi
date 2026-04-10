@@ -144,7 +144,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
       },
       child: Scaffold(
         appBar: AppBarWithExit(
-          title: Text('Manual Scan - ${widget.platformDisplayName}'),
+          title: Text('Manual Scan - ${widget.accountEmail}'),
           // Add explicit back button that returns to account selection
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),

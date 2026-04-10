@@ -52,13 +52,14 @@ class _GmailOAuthScreenState extends State<GmailOAuthScreen> {
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text('Choose Authentication Method'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Gmail OAuth on Windows requires one of these methods:',
+        content: SelectionArea(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Gmail OAuth on Windows requires one of these methods:',
                 style: TextStyle(fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 16),
@@ -94,7 +95,8 @@ class _GmailOAuthScreenState extends State<GmailOAuthScreen> {
                   _handleManualTokenEntry();
                 },
               ),
-            ],
+              ],
+            ),
           ),
         ),
         actions: [
@@ -124,13 +126,14 @@ class _GmailOAuthScreenState extends State<GmailOAuthScreen> {
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text('Alternate Sign-In Methods'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'If Google Sign-In is unresponsive in this emulator, try one of these:',
+        content: SelectionArea(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'If Google Sign-In is unresponsive in this emulator, try one of these:',
                 style: TextStyle(fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 16),
@@ -155,7 +158,8 @@ class _GmailOAuthScreenState extends State<GmailOAuthScreen> {
                   _handleManualTokenEntry();
                 },
               ),
-            ],
+              ],
+            ),
           ),
         ),
         actions: [

@@ -296,13 +296,14 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
       appBar: AppBar(
         title: const Text('Gmail - Sign In Method'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              'How would you like to sign in to Gmail?',
+      body: SelectionArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'How would you like to sign in to Gmail?',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
@@ -370,7 +371,8 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
                 ],
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -482,13 +484,14 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
               )
             : null,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              '${_effectiveDisplayName} Email Setup',
+      body: SelectionArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                '${_effectiveDisplayName} Email Setup',
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
 
@@ -646,7 +649,8 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
               style: const TextStyle(color: Colors.grey, fontSize: 12),
               textAlign: TextAlign.center,
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -946,11 +950,13 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
               Text('Warning: Full Scan Mode'),
             ],
           ),
-          content: const Text(
-            'Full Scan mode will PERMANENTLY delete or move emails based on your rules.\n\n'
-            'This action CANNOT be undone.\n\n'
-            'Are you sure you want to enable Full Scan mode?',
-            style: TextStyle(fontSize: 14),
+          content: SelectionArea(
+            child: const Text(
+              'Full Scan mode will PERMANENTLY delete or move emails based on your rules.\n\n'
+              'This action CANNOT be undone.\n\n'
+              'Are you sure you want to enable Full Scan mode?',
+              style: TextStyle(fontSize: 14),
+            ),
           ),
           actions: [
             TextButton(
@@ -1022,11 +1028,12 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Scan Mode'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      content: SelectionArea(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             const Text(
               'How would you like to scan emails?',
               style: TextStyle(fontWeight: FontWeight.bold),
@@ -1307,7 +1314,8 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
                 ],
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
       actions: [

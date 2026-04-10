@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 
+import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/settings_store.dart';
@@ -68,15 +69,15 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
       // Auto-purge old entries
       await _scanResultStore.purgeOldScanResults(_retentionDays);
 
+      // Load configured accounts from credentials store
+      final credStore = SecureCredentialsStore();
+      final configuredAccounts = await credStore.getSavedAccounts();
+
       // Always load all scans across all accounts
       final scans = await _scanResultStore.getAllScanHistory(limit: 500);
 
-      // Extract distinct accounts from scan data
-      final accountIds = <String>{};
-      for (final scan in scans) {
-        accountIds.add(scan.accountId);
-      }
-      final sortedAccounts = accountIds.toList()..sort();
+      // Use configured accounts as the canonical list (not scan data)
+      final sortedAccounts = List<String>.from(configuredAccounts)..sort();
 
       // Build email display map from accountId
       // accountId format is "{platform}-{email}"
@@ -148,7 +149,7 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
   Widget _buildBody() {
     return Column(
       children: [
-        // Account filter chips (only show if multiple accounts)
+        // Account filter chips (show when multiple configured accounts)
         if (_distinctAccounts.length > 1) _buildAccountFilter(),
         // Type filter chips
         _buildTypeFilter(),

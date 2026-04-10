@@ -567,7 +567,8 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           ],
         ],
       ),
-      body: Padding(
+      body: SelectionArea(
+        child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -684,6 +685,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           ],
         ),
       ),
+      ), // Close SelectionArea
     ),
     ); // Close Focus widget for Issue 2: Ctrl+F shortcut
   }
@@ -1333,7 +1335,8 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               child: Material(
                 elevation: 8,
                 borderRadius: BorderRadius.circular(12),
-                child: SingleChildScrollView(
+                child: SelectionArea(
+                  child: SingleChildScrollView(
                   child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -1577,6 +1580,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
             ),
           ),
                 ),
+              ), // Close SelectionArea
               ),
             ),
           ],

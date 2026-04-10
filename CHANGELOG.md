@@ -31,6 +31,10 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **feat**: Scan History enhancements - multi-account combined view, account/type filters, totals with tooltips, retention days in title (F48, Issue #212)
 - **feat**: Default rule set creation - seed from bundled YAML on fresh install, Reset to Defaults button in Settings (F46, Issue #208)
 - **test**: Add tests for email_scanner, default_rule_set_service, yaml_service parse methods (F42, Issue #203)
+- **fix**: Results screen and email detail popup now support text selection (F50 testing feedback)
+- **fix**: Account setup dialogs (AOL, Gmail, platform selection) now support text selection (F50 testing feedback)
+- **fix**: Scan History account filter uses configured accounts, shows when multiple accounts exist (F48 testing feedback)
+- **fix**: Manual Scan title shows account email instead of platform name
 - **fix**: YAML round-trip test path after rules moved to assets/rules/ - fixes pre-existing test failure
 - **docs**: Backlog refinement - removed completed items from ALL_SPRINTS_MASTER_PLAN.md
 

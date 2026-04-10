@@ -325,9 +325,11 @@ class _PlatformSelectionScreenState extends State<PlatformSelectionScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Coming Soon'),
-        content: Text(
-          '${platformInfo.displayName} support is planned for Phase 2.\n\n'
-          'For now, you can use ${platformInfo.displayName} via our generic IMAP support if you have an app password available.',
+        content: SelectionArea(
+          child: Text(
+            '${platformInfo.displayName} support is planned for Phase 2.\n\n'
+            'For now, you can use ${platformInfo.displayName} via our generic IMAP support if you have an app password available.',
+          ),
         ),
         actions: [
           TextButton(
@@ -417,13 +419,14 @@ class _SetupInstructionsDialogState extends State<_SetupInstructionsDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text('${widget.platformInfo.displayName} Setup'),
-      content: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Before connecting, you\'ll need to generate an app password:',
+      content: SelectionArea(
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Before connecting, you\'ll need to generate an app password:',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),
@@ -458,7 +461,8 @@ class _SetupInstructionsDialogState extends State<_SetupInstructionsDialog> {
                   ],
                 ),
               ),
-          ],
+            ],
+          ),
         ),
       ),
       actions: [
