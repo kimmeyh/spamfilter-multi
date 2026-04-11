@@ -153,7 +153,7 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 **F53. Add block rules for top-level domains .cc and .ne (~0.5h) Priority 60**
 - Phase: Core Feature
 - Platform: All
-- Add `@.*\.cc$` and `@.*\.ne$` block rule patterns to bundled rules.yaml (mirrors existing `@.*\.ru$` pattern)
+- Add `@.*\.cc$` (.cc = Cocos (Keeling) Islands) and `@.*\.ne$` (.ne = Nigeria) block rule patterns to bundled rules.yaml (mirrors existing `@.*\.ru$` pattern)
 - Target: Sprint 30
 - Quick win, similar to other TLD blocks
 
