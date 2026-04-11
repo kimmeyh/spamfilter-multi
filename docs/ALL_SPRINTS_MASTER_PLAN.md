@@ -150,10 +150,10 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - All variants must run simultaneously without rebuild on same machine/device
 - [Detail](#f52-multi-variant-side-by-side-install)
 
-**F53. Add block rule for top-level domain .cc (~0.5h) Priority 60**
+**F53. Add block rules for top-level domains .cc and .ne (~0.5h) Priority 60**
 - Phase: Core Feature
 - Platform: All
-- Add `@.*\.cc$` block rule pattern to bundled rules.yaml (mirrors existing `@.*\.ru$` pattern at line 1568)
+- Add `@.*\.cc$` and `@.*\.ne$` block rule patterns to bundled rules.yaml (mirrors existing `@.*\.ru$` pattern)
 - Target: Sprint 30
 - Quick win, similar to other TLD blocks
 
