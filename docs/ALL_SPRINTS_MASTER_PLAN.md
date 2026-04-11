@@ -150,12 +150,14 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - All variants must run simultaneously without rebuild on same machine/device
 - [Detail](#f52-multi-variant-side-by-side-install)
 
-**F53. Add block rules for top-level domains .cc and .ne (~0.5h) Priority 60**
+**F53. Add block rules for top-level domains .cc and .ne (~1h) Priority 60**
 - Phase: Core Feature
 - Platform: All
-- Add `@.*\.cc$` (.cc = Cocos (Keeling) Islands) and `@.*\.ne$` (.ne = Nigeria) block rule patterns to bundled rules.yaml (mirrors existing `@.*\.ru$` pattern)
+- Add `@.*\.cc$` (.cc = Cocos (Keeling) Islands) and `@.*\.ne$` (.ne = Nigeria) block rule patterns
+- Update bundled rules.yaml asset (new user default bundle)
+- Add to current user's rules database (migration or runtime insert for existing installs)
+- Mirrors existing `@.*\.ru$` pattern
 - Target: Sprint 30
-- Quick win, similar to other TLD blocks
 
 **F54. Add icon to Select Account screen icon row (~1-2h) Priority 64**
 - Phase: UX Improvement
