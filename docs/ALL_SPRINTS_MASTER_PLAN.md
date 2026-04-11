@@ -157,6 +157,14 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Target: Sprint 30
 - Quick win, similar to other TLD blocks
 
+**F54. Add icon to Select Account screen icon row (~1-2h) Priority 64**
+- Phase: UX Improvement
+- Platform: All
+- Current icon row: View Scan History (history), Settings (gear), Exit Application
+- Add a new icon+tooltip to the AppBar actions row
+- Needs: icon choice, tooltip/label, navigation target
+- Design decision: what action should this trigger? (account management, add account, etc.)
+
 **F6. Provider-Specific Optimizations (~10-12h) Priority 100**
 - Phase: Performance
 - Platform: All

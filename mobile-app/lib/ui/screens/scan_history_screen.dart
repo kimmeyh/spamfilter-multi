@@ -169,10 +169,12 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
   Widget _buildAccountFilter() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
             _buildAccountChip('All Accounts', 'all'),
             const SizedBox(width: 8),
             ..._distinctAccounts.map((accountId) {
@@ -184,6 +186,7 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
             }),
           ],
         ),
+      ),
       ),
     );
   }
@@ -205,14 +208,18 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
   Widget _buildTypeFilter() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          _buildFilterChip('All', 'all'),
-          const SizedBox(width: 8),
-          _buildFilterChip('Manual', 'manual'),
-          const SizedBox(width: 8),
-          _buildFilterChip('Background', 'background'),
-        ],
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildFilterChip('All', 'all'),
+            const SizedBox(width: 8),
+            _buildFilterChip('Manual', 'manual'),
+            const SizedBox(width: 8),
+            _buildFilterChip('Background', 'background'),
+          ],
+        ),
       ),
     );
   }
@@ -257,6 +264,7 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: Wrap(
+        alignment: WrapAlignment.start,
         spacing: 8,
         runSpacing: 8,
         children: [
