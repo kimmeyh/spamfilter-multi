@@ -263,10 +263,12 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: Wrap(
-        alignment: WrapAlignment.start,
-        spacing: 8,
-        runSpacing: 8,
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Wrap(
+          alignment: WrapAlignment.start,
+          spacing: 8,
+          runSpacing: 8,
         children: [
           _buildTotalChip('Total', totalEmails, Colors.blue,
               'Total unique emails found'),
@@ -283,6 +285,7 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
           _buildTotalChip('Errors', totalErrors, Colors.red.shade300,
               'Total unique emails not processed due to errors'),
         ],
+      ),
       ),
     );
   }

@@ -482,35 +482,14 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
     );
   }
 
-  /// Navigate to scan history with account selection
-  /// [NEW] ISSUE #219: Reuses shared account selection dialog
-  void _openScanHistory() async {
-    if (_savedAccounts.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please add an email account first')),
-      );
-      return;
-    }
-
-    final selected = await _showAccountSelectionDialog();
-
-    if (selected != null && mounted) {
-      final displayData = _accountDataCache[selected];
-      final email = displayData?.email ?? selected;
-      final platformId = displayData?.platformId ?? '';
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ScanHistoryScreen(
-            accountId: selected,
-            accountEmail: email,
-            platformId: platformId,
-            platformDisplayName: _getPlatformDisplayName(platformId),
-          ),
-        ),
-      );
-    }
+  /// Navigate to scan history (shows all accounts with filter chips)
+  void _openScanHistory() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const ScanHistoryScreen(),
+      ),
+    );
   }
 
   /// Delete account with confirmation dialog
