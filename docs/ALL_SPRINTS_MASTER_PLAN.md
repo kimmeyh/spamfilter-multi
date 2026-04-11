@@ -165,6 +165,21 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Needs: icon choice, tooltip/label, navigation target
 - Design decision: what action should this trigger? (account management, add account, etc.)
 
+**F55. Screen navigation consistency - linear flow + push/pop icons (~4-6h) Priority 66**
+- Phase: UX Improvement
+- Platform: All
+- Two navigation models: linear scan flow (back returns up chain) and icon navigation (push/pop returns to origin)
+- Linear flow: Select Account -> Manual Scan -> Live Scan Results; back buttons return one step up
+- Icon navigation: Settings, Scan History, Select Account icons push onto stack; back pops to origin
+- Current issues:
+  - Results back button uses pushReplacement instead of pop (breaks stack)
+  - "Back to Accounts" button on Results skips Manual Scan via popUntil
+  - Results -> Manual Scan auto-navigation on scan complete should be push (not pushReplacement)
+- Consider: keep "Back to Accounts" as convenience shortcut or remove for consistency?
+- Consider: "Scan Again" pushReplacement is correct (avoids stack bloat on repeated scans)
+- Consider: does the user need a Select Account icon on Manual Scan and Results screens?
+- Related: F54 (add icon to Select Account screen)
+
 **F6. Provider-Specific Optimizations (~10-12h) Priority 100**
 - Phase: Performance
 - Platform: All
