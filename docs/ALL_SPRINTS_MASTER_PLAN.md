@@ -165,6 +165,25 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Needs: icon choice, tooltip/label, navigation target
 - Design decision: what action should this trigger? (account management, add account, etc.)
 
+**F56. Manual rule creation UI - block and safe sender rules from user input (~10-14h) Priority 68**
+- Phase: Core Feature
+- Platform: All
+- Add UI for creating rules directly from user input (not just from scan results)
+- Block rules (4 types):
+  - Top-level domain: user enters TLD (e.g., .cc, .ru) and app creates `@.*\.cc$` pattern
+  - Exact domain: user pastes email address or domain string, app extracts domain and creates `@domain\.com$` pattern with confirmation
+  - Entire domain: user pastes email address, domain, or URL, app extracts domain and creates `@(?:[a-z0-9-]+\.)*domain\.com$` subdomain-matching pattern with confirmation
+  - Exact email: user enters email address, app validates format, creates `^user@domain\.com$` pattern with confirmation
+- Safe sender rules (3 types, no TLD):
+  - Exact domain: same as block but adds to safe senders
+  - Entire domain: same as block but adds to safe senders
+  - Exact email: same as block but adds to safe senders
+- App should parse and extract domain from various input formats: email address, bare domain, URL with protocol, URL with path
+- Validation: email format check, domain format check, warn if TLD-only for safe senders
+- Confirmation dialog showing generated pattern before saving
+- Accessible from Manage Rules and Manage Safe Senders screens
+- Related: F35 (rule editing UI), F25 (rule testing UI enhancements)
+
 **F55. Screen navigation consistency - linear flow + push/pop icons (~4-6h) Priority 66**
 - Phase: UX Improvement
 - Platform: All
