@@ -666,6 +666,18 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           },
         ),
         const SizedBox(height: 24),
+        // [UPDATED] ISSUE #221: Scan Mode moved above Scan Range and Default Folders
+        // to match Manual Scan tab section order
+        _buildSectionHeader('Scan Mode'),
+        _buildScanModeSelector(
+          value: _backgroundScanMode,
+          onChanged: (mode) async {
+            setState(() => _backgroundScanMode = mode);
+            // [UPDATED] ISSUE #123: Save per-account background scan mode
+            await _settingsStore.setAccountBackgroundScanMode(widget.accountId, mode);
+          },
+        ),
+        const SizedBox(height: 24),
         // [NEW] ISSUE #153: Scan range (days back / all emails)
         _buildSectionHeader('Scan Range'),
         _buildScanRangeSelector(
@@ -683,16 +695,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             setState(() => _backgroundScanFolders = folders);
             // [UPDATED] ISSUE #123: Save per-account background scan folders
             await _settingsStore.setAccountBackgroundScanFolders(widget.accountId, folders);
-          },
-        ),
-        const SizedBox(height: 24),
-        _buildSectionHeader('Scan Mode'),
-        _buildScanModeSelector(
-          value: _backgroundScanMode,
-          onChanged: (mode) async {
-            setState(() => _backgroundScanMode = mode);
-            // [UPDATED] ISSUE #123: Save per-account background scan mode
-            await _settingsStore.setAccountBackgroundScanMode(widget.accountId, mode);
           },
         ),
         const SizedBox(height: 24),
@@ -749,7 +751,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
     try {
       if (Platform.isWindows) {
-        final success = await BackgroundScanWindowsWorker.executeBackgroundScan();
+        final success = await BackgroundScanWindowsWorker.executeBackgroundScan(isTest: true);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

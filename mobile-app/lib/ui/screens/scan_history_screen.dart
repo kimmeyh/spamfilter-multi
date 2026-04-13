@@ -97,7 +97,10 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBarWithExit(
-        title: const Text('Scan History'),
+        // [UPDATED] ISSUE #219: Show account email in title when filtered
+        title: Text(widget.accountEmail != null
+            ? 'Scan History - ${widget.accountEmail}'
+            : 'Scan History'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),

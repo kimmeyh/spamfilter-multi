@@ -1,9 +1,10 @@
-import 'dart:io' show File, FileMode, Platform, exit;
+import 'dart:io' show Directory, File, FileMode, Platform, exit;
 import 'package:flutter/foundation.dart' show kReleaseMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'core/providers/rule_set_provider.dart';
 import 'core/providers/email_scan_provider.dart';
@@ -44,9 +45,13 @@ void main(List<String> args) async {
   // If running in background mode (launched by Task Scheduler), execute scan and exit
   if (BackgroundModeService.isBackgroundMode) {
     // Use file-based logging since headless mode has no console
+    // [UPDATED] Issue #218: Use path_provider for MSIX sandbox compatibility
+    final appSupport = await getApplicationSupportDirectory();
     final envSuffix = AppEnvironment.dataDirSuffix;
     final logPrefix = AppEnvironment.logPrefix;
-    final logFile = File('${Platform.environment['APPDATA']}\\MyEmailSpamFilter\\MyEmailSpamFilter$envSuffix\\logs\\${logPrefix}background_scan_v0.5.1.log');
+    final logDir = Directory('${appSupport.path}$envSuffix\\logs');
+    await logDir.create(recursive: true);
+    final logFile = File('${logDir.path}\\${logPrefix}background_scan_v0.5.1.log');
     Future<void> bgLog(String message) async {
       try {
         final timestamp = DateTime.now().toIso8601String();
@@ -118,10 +123,11 @@ void main(List<String> args) async {
     await notificationService.initialize();
     Logger().i('Windows notifications initialized');
 
-    // Only manage Task Scheduler in release mode - in debug/flutter run mode,
-    // Platform.resolvedExecutable points to a temporary runner path that will
-    // not exist after the debug session ends, creating a broken scheduled task.
-    if (kReleaseMode) {
+    // Only manage Task Scheduler in release mode and non-MSIX installs.
+    // In debug mode: Platform.resolvedExecutable points to a temporary runner path.
+    // In MSIX: The exe is in read-only WindowsApps dir; Task Scheduler cannot work.
+    // [UPDATED] Issue #218: Skip Task Scheduler in MSIX context.
+    if (kReleaseMode && !AppEnvironment.isMsixInstall) {
       // Verify and repair task scheduler executable path after rebuild
       try {
         final repaired = await WindowsTaskSchedulerService.verifyAndRepairTaskPath();
@@ -154,7 +160,11 @@ void main(List<String> args) async {
         Logger().w('Background scan task verification failed: $e');
       }
     } else {
-      Logger().i('Skipping Task Scheduler management in debug mode');
+      if (AppEnvironment.isMsixInstall) {
+        Logger().i('Skipping Task Scheduler management in MSIX install');
+      } else {
+        Logger().i('Skipping Task Scheduler management in debug mode');
+      }
     }
   }
 

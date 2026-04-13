@@ -85,6 +85,8 @@ msix_config:
   msix_version: 0.5.1.0
   logo_path: assets/icon/icon.png
   capabilities: internetClient, internetClientServer, privateNetworkClientServer
+  # For Store submission: store: true, install_certificate: false
+  # For local MSIX testing: store: false, install_certificate: true
   store: true
   install_certificate: false
 
