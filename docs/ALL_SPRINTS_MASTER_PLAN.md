@@ -130,7 +130,7 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 
 **~~F50. Make all page text selectable and copyable (Issue #220)~~** [OK] Complete (Sprint 29)
 
-**~~F60. Architecture gap analysis - codebase vs documented architecture (Issue #226)~~** In Progress (Sprint 30)
+**~~F60. Architecture gap analysis - codebase vs documented architecture (Issue #226)~~** [OK] Complete (Sprint 30)
 - Phase: Architecture Spike
 - Platform: All
 - Deep dive on docs/adr/, docs/ARCHITECTURE.md, docs/ARSD.md vs current codebase
