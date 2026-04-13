@@ -246,6 +246,18 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Was GP-11, taken off HOLD -- applies to Windows Store too
 - Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gaps G12, G15)
 
+### Testing
+
+**F69. E2E WinWright desktop tests - scan flows, history, settings (~6-8h) Priority 58**
+- Phase: Testing / Quality
+- Platform: Windows
+- E2E tests using WinWright (desktop accessibility automation):
+  - Manual scan: run scan, navigate to Scan History, tap the scan entry, verify displayed counts match
+  - Background scan: trigger background scan, navigate to Scan History, tap the background scan entry, verify displayed counts match (validates Sprint 31 fix for stale results bug)
+  - Select email address: verify account selection flow
+  - Settings: test all settings on all tabs (General, Scan, Background, Account overrides)
+- Source: Sprint 31 manual testing feedback (scan history showed wrong results for background scan)
+
 ### Security Hardening (Sprint 31 Audit)
 
 **~~SEC-2. Android: Add allowBackup="false"~~** [OK] Fixed (Sprint 31)
