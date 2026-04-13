@@ -26,6 +26,14 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-04-13 (Sprint 30 - Architecture Gap Analysis)
+- **docs**: Architecture gap analysis - compared 36 ADRs, ARCHITECTURE.md, ARSD.md against codebase (F60, Issue #226)
+- **docs**: Identified 26 gaps across 5 categories: documentation drift, dead code, partial ADRs, missing docs, unimplemented architecture
+- **docs**: Added 7 new backlog items from gap analysis: F61 (doc refresh), F62 (dead code cleanup), F63 (responsive design), F64 (CI/CD, HOLD), F65 (Gmail onboarding update), F66 (user data deletion, off HOLD), F67 (iOS/Linux/macOS validation, HOLD)
+- **docs**: User review of all 26 gaps -- corrected G11 (Gmail IMAP already implemented), took GP-11 off HOLD as F66, updated #163 scope
+- **chore**: Fix startup-check skill to use PowerShell first for metadata updates (don't-ask mode compatible)
+- **chore**: Close Sprint 29 issues #219, #220
+
 ### 2026-04-03 (Sprint 29 - UX + Quality + Features)
 - **feat**: Make all page text selectable and copyable across 21 screens (F50, Issue #220)
 - **feat**: Scan History enhancements - multi-account combined view, account/type filters, totals with tooltips, retention days in title (F48, Issue #212)

@@ -42,26 +42,27 @@ Execute these checks in parallel and report a summary:
      - Read `D:/Data/Harold/github/spamfilter-multi/.claude/memory/current.md` and restore context
      - **STALENESS CHECK**: Before acting on the saved context, validate it against current repo state:
        1. Compare the memory `last_updated` date against recent git log (`git log --oneline -10`)
-       2. Check if the saved sprint's work already appears in CHANGELOG.md
-       3. Check if the saved sprint's retrospective already exists in `docs/sprints/`
+       2. Check if the saved sprint work already appears in CHANGELOG.md
+       3. Check if the saved sprint retrospective already exists in `docs/sprints/`
        4. If the memory is stale (subsequent sprints completed since save), report it as **STALE** and DO NOT follow the saved "Next Steps" — just present the info for awareness
      - Verify saved branch matches current branch
      - Present saved tasks, recent work, and next steps (with staleness warning if applicable)
      - **Clear pending flag — MANDATORY, NEVER SKIP**:
        This step MUST complete successfully. If all attempts fail, mark startup as "Ready: No" and ask the user for help.
 
-       **Attempt 1** — Bash echo (preferred, works in Git Bash on Windows):
-       ```bash
-       echo '{"current_save":".claude/memory/current.md","last_updated":"[original timestamp]","sprint":"[sprint name]","status":"restored","pending_restore":false}' > "D:/Data/Harold/github/spamfilter-multi/.claude/memory/memory_metadata.json"
-       ```
-
-       **Attempt 2** — PowerShell fallback (if Bash is denied or fails):
+       **Attempt 1** — PowerShell via Bash (preferred, works reliably in don't-ask mode):
        ```bash
        powershell -NoProfile -Command "Set-Content -Path 'D:/Data/Harold/github/spamfilter-multi/.claude/memory/memory_metadata.json' -Value '{\"current_save\":\".claude/memory/current.md\",\"last_updated\":\"[original timestamp]\",\"sprint\":\"[sprint name]\",\"status\":\"restored\",\"pending_restore\":false}'"
        ```
 
+       **Attempt 2** — Write tool fallback (if PowerShell fails for any reason):
+       Use the Write tool to write the updated JSON to `D:/Data/Harold/github/spamfilter-multi/.claude/memory/memory_metadata.json`:
+       ```json
+       {"current_save":".claude/memory/current.md","last_updated":"[original timestamp]","sprint":"[sprint name]","status":"restored","pending_restore":false}
+       ```
+
        **Attempt 3** — If both are denied by permissions, ASK THE USER:
-       "I need permission to update the memory metadata file to clear the pending_restore flag. Can you approve the Bash command to write to `.claude/memory/memory_metadata.json`?"
+       "I need permission to update the memory metadata file to clear the pending_restore flag. Can you approve writing to `.claude/memory/memory_metadata.json`?"
 
        **NEVER silently skip this step.** A stale `pending_restore:true` flag causes incorrect restores in future sessions.
 

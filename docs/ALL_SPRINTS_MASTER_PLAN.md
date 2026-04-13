@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: April 3, 2026 (Backlog refinement)
+**Last Updated**: April 13, 2026 (Sprint 30 gap analysis review)
 
 ## How to Maintain This Document
 
@@ -94,6 +94,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 27 | docs/sprints/SPRINT_27_RETROSPECTIVE.md | [OK] Complete | Mar 29 - Apr 2, 2026 |
 | 28 | docs/sprints/SPRINT_28_RETROSPECTIVE.md | [OK] Complete | Apr 2, 2026 |
 | 29 | docs/sprints/SPRINT_29_RETROSPECTIVE.md | [OK] Complete | Apr 3-13, 2026 |
+| 30 | docs/sprints/SPRINT_30_RETROSPECTIVE.md | [OK] Complete | Apr 13, 2026 |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -101,24 +102,25 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 29** (April 3-13, 2026)
-- **Features**: F50 selectable text on all 21 screens (Issue #220), F48 Scan History multi-account with filters/totals (Issue #212), F46 default rule set creation with reset option (Issue #208)
-- **Testing**: F42 +53 new tests (Issue #203), fixed pre-existing test failure, 1223 passing with 0 failures
-- **Testing Feedback**: 6 fixes (results/dialog text selection, account filter, totals alignment, nav cleanup, scan title)
-- **Backlog**: Added F52-F56, backlog refinement cleanup
-- **Retrospective**: docs/sprints/SPRINT_29_RETROSPECTIVE.md
+**Sprint 30** (April 13, 2026)
+- **Type**: Architecture Spike (documentation and analysis only, no code changes)
+- **Feature**: F60 Architecture gap analysis - compared 36 ADRs, ARCHITECTURE.md, ARSD.md against codebase (Issue #226)
+- **Findings**: 26 gaps across 5 categories (doc drift, dead code, partial ADRs, missing docs, unimplemented architecture)
+- **Backlog**: Added F61-F67, promoted GP-11 to F66 (off HOLD), expanded #163 scope, corrected G11 (Gmail IMAP already implemented)
+- **Process**: Added architecture drift prevention checks to Phase 3 (planning) and Phase 7 (retrospective)
+- **Retrospective**: docs/sprints/SPRINT_30_RETROSPECTIVE.md
 
 ---
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: April 13, 2026 (Sprint 29 retrospective)
+**Last Reviewed**: April 13, 2026 (Sprint 30 planning)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
 ### Windows Store Readiness
 
-**B1. MSIX sandbox crash at launch (Issue #218) -- [OK] Fixed (Sprint 28), awaiting Store certification**
+**B1. MSIX sandbox crash at launch (Issue #218) -- [OK] Fixed (Sprint 28), Store certification passed (April 4, 2026). App live in Microsoft Store.**
 
 ### Core App
 
@@ -129,6 +131,13 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 **~~F48. Scan History enhancements (Issue #212)~~** [OK] Complete (Sprint 29)
 
 **~~F50. Make all page text selectable and copyable (Issue #220)~~** [OK] Complete (Sprint 29)
+
+**~~F60. Architecture gap analysis - codebase vs documented architecture (Issue #226)~~** [OK] Complete (Sprint 30)
+- Phase: Architecture Spike
+- Platform: All
+- Deep dive on docs/adr/, docs/ARCHITECTURE.md, docs/ARSD.md vs current codebase
+- Gap analysis report with backlog item suggestions
+- Target: Sprint 30
 
 **F52. Multi-variant side-by-side install across all stores (~16-24h) Priority 90**
 - Phase: Build and Release Infrastructure
@@ -188,10 +197,59 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Consider: does the user need a Select Account icon on Manual Scan and Results screens?
 - Related: F54 (add icon to Select Account screen)
 
+**F61. Architecture documentation refresh (~3-4h) Priority 50**
+- Phase: Documentation
+- Platform: All
+- Update ARCHITECTURE.md: remove Dual-Write pattern (superseded Sprint 20), add missing services (DefaultRuleSetService, RuleConflictDetector, EmailAvailabilityChecker, EmailBodyParser, DevEnvironmentSeeder), add missing screens (yaml_import_export, rule_test), add missing DB tables (unmatched_emails, background_scan_log)
+- Update ARSD.md: remove Dual-Write from design patterns table, update Store certification status to "Passed", update Glossary
+- Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gaps G1-G6, G16-G22)
+
+**F62. Dead code cleanup - remove deprecated classes (~2h) Priority 55**
+- Phase: Tech Debt
+- Platform: All
+- Remove deprecated config/app_paths.dart (duplicate of adapters/storage/app_paths.dart)
+- Remove or consolidate duplicate LocalRuleStore classes (core/storage/ and adapters/storage/)
+- Move legacy OAuth screens from lib/screens/ to lib/ui/screens/ or remove if unused
+- Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gaps G7-G9)
+
+**F63. Responsive design framework (~8-12h) Priority 70**
+- Phase: UX Improvement
+- Platform: All
+- Implement adaptive breakpoints per ARSD AR-7: phone (<600dp), tablet (600-900dp), desktop (>900dp)
+- LayoutBuilder + breakpoints approach (ARSD A6 recommendation)
+- Priority screens: scan progress, results display, settings
+- Related: F55 (navigation consistency) should be done before or with this
+- Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gap G23)
+
+**F65. Update Gmail onboarding to recommend app passwords as primary (~1-2h) Priority 45**
+- Phase: UX Improvement
+- Platform: All
+- Gmail IMAP with app passwords already fully implemented (Sprint 19, Issue #178)
+- Update account setup screen: app passwords as "Recommended", OAuth as "Advanced"
+- Update in-app help text and ADR-0034 status
+- Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gap G11)
+
+**F66. User data deletion feature (~4-6h) Priority 50**
+- Phase: Core Feature / Compliance
+- Platform: All (Windows Store, Google Play, all platforms)
+- Per-account deletion: remove all data for a specific email account
+- Full data wipe: delete all app data as a complete reset
+- External deletion form: GitHub Pages hosted (no-op since all data is local-only, implement only if store requires)
+- Was GP-11, taken off HOLD -- applies to Windows Store too
+- Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gaps G12, G15)
+
 **F6. Provider-Specific Optimizations (~10-12h) Priority 100**
 - Phase: Performance
 - Platform: All
 - [Detail](#f6-provider-specific-optimizations)
+
+**F64. CI/CD pipeline with GitHub Actions (~4-6h) Priority HOLD**
+- Phase: DevOps
+- Platform: All
+- GitHub Actions workflow for: flutter analyze, flutter test, build verification
+- Trigger on PR to develop
+- HOLD rationale: Current CI/CD equivalent is handled by Claude Code sprint execution workflow (flutter analyze, flutter test, Windows build in Phase 5). Could be implemented later if beneficial to dev team, maintenance team, or instructed by Product Owner.
+- Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gap G24)
 
 ### HOLD Items (Post-Windows Store)
 
@@ -225,6 +283,8 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Phase: Android Google Play Store Readiness
 - Platform: Android
 - Validation sprint needed to verify Android app still works
+- Expanded scope (Sprint 30 review): ADR-0028 permission validation (POST_NOTIFICATIONS not needed initially, add when background scanning implemented)
+- Expanded scope (Sprint 30 review): Include unique UI tests via Playwright/WinWright as needed/appropriate
 
 **F4. Background Scanning - Android (~14-16h) Priority HOLD**
 - Phase: Android Google Play Store Readiness
@@ -268,9 +328,7 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Phase: Android Google Play Store Readiness
 - Platform: Android
 
-**GP-11. Account and Data Deletion Feature (~8-12h) Priority HOLD**
-- Phase: Android Google Play Store Readiness
-- Platform: All
+**GP-11. Account and Data Deletion Feature** -- Moved to F66 (off HOLD, all platforms including Windows Store). See F66 in Core App section above.
 
 **GP-12. Firebase Analytics Decision (~2-4h) Priority HOLD**
 - Phase: Android Google Play Store Readiness
@@ -279,6 +337,18 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 **GP-16. Google Play Developer Account Setup (~2-4h) Priority HOLD**
 - Phase: Android Google Play Store Readiness
 - Platform: Android
+
+### HOLD Items (Multi-Platform)
+
+**F67. Platform validation - iOS, Linux, macOS (~4-6h per platform) Priority HOLD**
+- Phase: Multi-Platform Readiness
+- Platform: iOS, Linux, macOS
+- Shared tasks (all 3): validation build, smoke test, IMAP scan test, storage path verification, auth flow testing
+- iOS-specific: Xcode config, signing, keychain access for credentials
+- macOS-specific: entitlements, sandbox config, notarization requirements
+- Linux-specific: desktop entry, packaging (snap/flatpak/AppImage), dependency verification (GTK, libsecret)
+- HOLD rationale: No current business need. Activate when distribution is prioritized by Product Owner.
+- Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gap G25)
 
 ### HOLD Items (Post-MVP)
 

@@ -42,6 +42,7 @@ These documents MUST be created/updated during each sprint:
 - [ ] Created feature branch: `feature/YYYYMMDD_Sprint_N`
 - [ ] Created GitHub issues for all tasks
 - [ ] Verified all issues are OPEN
+- [ ] **Architecture Impact Check** (3.6.1): Review planned changes against ARCHITECTURE.md, ARSD.md, and ADRs. Include doc updates in sprint scope if needed.
 - [ ] Sprint plan reviewed and approved by user
 - [ ] **Draft PR created immediately** (optional but recommended)
 
@@ -92,6 +93,7 @@ These documents MUST be created/updated during each sprint:
 - [ ] **Ask Product Owner/Scrum Master/Lead Developer for retrospective feedback** (MANDATORY - do not create retrospective without this)
 - [ ] User feedback gathered and incorporated
 - [ ] Claude feedback provided
+- [ ] **Architecture Compliance Check** (7.4.1): Verify code changes match documented architecture. Flag gaps for doc update or code revert.
 - [ ] Improvement suggestions created
 - [ ] Improvements decided (which to implement)
 - [ ] **Sprint Documents updated**:
@@ -171,6 +173,6 @@ gh issue close #N --reason "completed"
 
 ---
 
-**Version**: 2.0
-**Updated**: February 21, 2026 (Sprint 17 retrospective improvements)
+**Version**: 2.1
+**Updated**: April 13, 2026 (Sprint 30 - added architecture impact check and compliance check)
 **Reference**: SPRINT_EXECUTION_WORKFLOW.md for detailed explanations
