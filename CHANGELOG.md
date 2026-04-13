@@ -26,6 +26,12 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-04-13 (Sprint 31 - Security Deep Dive)
+- **docs**: Security audit - comprehensive review of dependencies, SQL injection, regex/ReDoS, credentials, OWASP Mobile Top 10, platform security (F68)
+- **docs**: Identified 31 security findings: 3 Critical, 7 High, 13 Medium, 8 Low
+- **docs**: Added 23 security backlog items (SEC-1 through SEC-23) to ALL_SPRINTS_MASTER_PLAN.md with severity ratings
+- **docs**: Key findings: SQL injection [OK] secure (92+ ops), ReDoS vulnerability in regex eval, missing Android security config
+
 ### 2026-04-13 (Sprint 30 - Architecture Gap Analysis)
 - **docs**: Architecture gap analysis - compared 36 ADRs, ARCHITECTURE.md, ARSD.md against codebase (F60, Issue #226)
 - **docs**: Identified 26 gaps across 5 categories: documentation drift, dead code, partial ADRs, missing docs, unimplemented architecture

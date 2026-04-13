@@ -114,7 +114,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: April 13, 2026 (Sprint 30 planning)
+**Last Reviewed**: April 13, 2026 (Sprint 31 security audit)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
@@ -138,6 +138,13 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Deep dive on docs/adr/, docs/ARCHITECTURE.md, docs/ARSD.md vs current codebase
 - Gap analysis report with backlog item suggestions
 - Target: Sprint 30
+
+**~~F68. Security deep dive - vulnerability assessment and backlog generation (Issue #228)~~** [OK] Complete (Sprint 31)
+- Phase: Security Spike
+- Platform: All
+- Comprehensive security review: dependencies, SQL, regex, credentials, OWASP, platform security
+- Security audit report with 25 prioritized backlog items
+- Target: Sprint 31
 
 **F52. Multi-variant side-by-side install across all stores (~16-24h) Priority 90**
 - Phase: Build and Release Infrastructure
@@ -237,6 +244,155 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - External deletion form: GitHub Pages hosted (no-op since all data is local-only, implement only if store requires)
 - Was GP-11, taken off HOLD -- applies to Windows Store too
 - Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gaps G12, G15)
+
+### Security Hardening (Sprint 31 Audit)
+
+**SEC-1. ReDoS protection: timeout + pattern validation (~4-6h) Priority 35 -- CRITICAL**
+- Phase: Security
+- Platform: All
+- Add timeout-protected regex matching (isolate or timer)
+- Add ReDoS pattern detection (nested quantifiers) to PatternCompiler.validatePattern()
+- Blocks: F56 (manual rule creation) and F35 (rule editing) which allow user regex input
+- Source: Sprint 31 security audit (S1, S2)
+
+**SEC-2. Android: Add allowBackup="false" (~15min) Priority 35 -- CRITICAL**
+- Phase: Security
+- Platform: Android
+- Add `android:allowBackup="false"` to AndroidManifest.xml `<application>` tag
+- Prevents adb backup data extraction
+- Source: Sprint 31 security audit (S10)
+
+**SEC-3. Firebase API key: restrict in Google Cloud Console (~30min) Priority 35 -- CRITICAL**
+- Phase: Security
+- Platform: Android
+- Restrict API key to Android package name + cert hash in Google Cloud Console
+- Source: Sprint 31 security audit (S4)
+
+**SEC-4. Android: Create network_security_config.xml (~1h) Priority 40 -- HIGH**
+- Phase: Security
+- Platform: Android
+- Block cleartext traffic, pin domains for OAuth and IMAP
+- Reference in AndroidManifest.xml
+- Source: Sprint 31 security audit (S11)
+
+**SEC-5. Remove password logging from IMAP adapter (~30min) Priority 40 -- HIGH**
+- Phase: Security
+- Platform: All
+- Remove password masking/logging in generic_imap_adapter.dart
+- Use Redact.logSafe() for auth-related logging
+- Source: Sprint 31 security audit (S6, S27)
+
+**SEC-6. Android: Configure release signing (~2h) Priority 40 -- HIGH**
+- Phase: Security
+- Platform: Android
+- Create release keystore, configure in build.gradle.kts
+- Overlaps with GP-2 (release signing)
+- Source: Sprint 31 security audit (S12)
+
+**SEC-7. Android: Enable R8 obfuscation + Dart obfuscation (~2h) Priority 40 -- HIGH**
+- Phase: Security
+- Platform: Android
+- Enable minifyEnabled, create proguard-rules.pro
+- Use --obfuscate --split-debug-info for Dart
+- Overlaps with GP-9 (ProGuard/R8)
+- Source: Sprint 31 security audit (S13)
+
+**SEC-8. Certificate pinning for OAuth and IMAP endpoints (~4-6h) Priority 42 -- HIGH**
+- Phase: Security
+- Platform: All
+- Pin certs for accounts.google.com, oauth2.googleapis.com, imap.gmail.com, imap.aol.com
+- Source: Sprint 31 security audit (S14)
+
+**SEC-9. Move hardcoded Android client ID to build-time injection (~1h) Priority 42 -- HIGH**
+- Phase: Security
+- Platform: Android
+- Move _androidClientId to --dart-define or google-services.json
+- Source: Sprint 31 security audit (S5)
+
+**SEC-10. YAML import: add file size limit (~30min) Priority 55 -- MEDIUM**
+- Phase: Security
+- Platform: All
+- Add 10 MB file size check before YAML parsing
+- Source: Sprint 31 security audit (S18)
+
+**SEC-11. SQLite database encryption (~4-8h) Priority 60 -- MEDIUM**
+- Phase: Security
+- Platform: All
+- Implement SQLCipher or encrypt sensitive fields before storage
+- Source: Sprint 31 security audit (S7)
+
+**SEC-12. OAuth token revocation on logout (~1h) Priority 60 -- MEDIUM**
+- Phase: Security
+- Platform: All
+- Call Google revoke endpoint during signOut
+- Source: Sprint 31 security audit (S15)
+
+**SEC-13. Placeholder OAuth client ID: fail-fast on empty (~30min) Priority 60 -- MEDIUM**
+- Phase: Security
+- Platform: Windows
+- Use empty string as default, block OAuth if empty
+- Source: Sprint 31 security audit (S16)
+
+**SEC-14. Unmatched emails: retention limit + body preview truncation (~2h) Priority 62 -- MEDIUM**
+- Phase: Security / Privacy
+- Platform: All
+- Auto-cleanup old unmatched_emails, limit body_preview to 100 chars
+- Source: Sprint 31 security audit (S8)
+
+**SEC-15. IMAP host validation for custom servers (~1h) Priority 62 -- MEDIUM**
+- Phase: Security
+- Platform: All
+- Reject internal/private IP ranges when custom IMAP is implemented
+- Dependency: F37 (folder selectors / custom IMAP)
+- Source: Sprint 31 security audit (S19)
+
+**SEC-16. Enable dependency vulnerability scanning (~1h) Priority 62 -- MEDIUM**
+- Phase: Security / DevOps
+- Platform: All
+- Add `dart pub outdated` to sprint pre-kickoff checklist, consider GitHub Dependabot
+- Source: Sprint 31 security audit (S25)
+
+**SEC-17. Auth logging: use Redact.logSafe() consistently (~1-2h) Priority 62 -- MEDIUM**
+- Phase: Security
+- Platform: All
+- Review all auth-related logging, ensure Redact.logSafe() used for emails/tokens
+- Source: Sprint 31 security audit (S27)
+
+**SEC-18. Silent regex fallback: log warnings (~1h) Priority 65 -- MEDIUM**
+- Phase: Security
+- Platform: All
+- Replace silent catch-and-fallback with logged warnings in safe_sender_list.dart, rule_quick_add_screen.dart
+- Source: Sprint 31 security audit (S3)
+
+**SEC-19. Log level control: runtime disable for auth logging (~1-2h) Priority 65 -- MEDIUM**
+- Phase: Security
+- Platform: All
+- Add configuration to disable auth logging in production
+- Source: Sprint 31 security audit (S28)
+
+**SEC-20. Email format validation on account setup (~30min) Priority 80 -- LOW**
+- Phase: Security / UX
+- Platform: All
+- Basic email regex validation before IMAP connection attempt
+- Source: Sprint 31 security audit (S20)
+
+**SEC-21. Password minimum length check (~15min) Priority 80 -- LOW**
+- Phase: Security / UX
+- Platform: All
+- App passwords are typically 16 characters
+- Source: Sprint 31 security audit (S21)
+
+**SEC-22. Rate limiting on failed auth attempts (~2h) Priority 80 -- LOW**
+- Phase: Security
+- Platform: All
+- Exponential backoff after 3+ failed logins per account
+- Source: Sprint 31 security audit (S22)
+
+**SEC-23. Windows binary hardening flags (~30min) Priority 85 -- LOW**
+- Phase: Security
+- Platform: Windows
+- Add /GS /DYNAMICBASE /NXCOMPAT to CMakeLists.txt
+- Source: Sprint 31 security audit (S23)
 
 **F6. Provider-Specific Optimizations (~10-12h) Priority 100**
 - Phase: Performance
