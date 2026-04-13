@@ -112,13 +112,13 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: April 13, 2026 (Sprint 29 retrospective)
+**Last Reviewed**: April 13, 2026 (Sprint 30 planning)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
 ### Windows Store Readiness
 
-**B1. MSIX sandbox crash at launch (Issue #218) -- [OK] Fixed (Sprint 28), awaiting Store certification**
+**B1. MSIX sandbox crash at launch (Issue #218) -- [OK] Fixed (Sprint 28), Store certification passed (April 4, 2026). App live in Microsoft Store.**
 
 ### Core App
 
@@ -129,6 +129,13 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 **~~F48. Scan History enhancements (Issue #212)~~** [OK] Complete (Sprint 29)
 
 **~~F50. Make all page text selectable and copyable (Issue #220)~~** [OK] Complete (Sprint 29)
+
+**~~F60. Architecture gap analysis - codebase vs documented architecture (Issue #226)~~** In Progress (Sprint 30)
+- Phase: Architecture Spike
+- Platform: All
+- Deep dive on docs/adr/, docs/ARCHITECTURE.md, docs/ARSD.md vs current codebase
+- Gap analysis report with backlog item suggestions
+- Target: Sprint 30
 
 **F52. Multi-variant side-by-side install across all stores (~16-24h) Priority 90**
 - Phase: Build and Release Infrastructure
