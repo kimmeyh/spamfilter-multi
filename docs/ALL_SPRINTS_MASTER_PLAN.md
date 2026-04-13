@@ -137,6 +137,16 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - All variants must run simultaneously without rebuild on same machine/device
 - [Detail](#f52-multi-variant-side-by-side-install)
 
+**F57. Add ARM64 (AArch64) Windows build for Store (~2-4h) Priority HOLD**
+- Phase: Windows Store Readiness
+- Platform: Windows Desktop (ARM64)
+- Microsoft Partner Center warning: "Future Windows on Arm devices will no longer support AArch32"
+- Current package: x64 only (v0.5.1.0)
+- Add ARM64 build target to build-windows.ps1 and MSIX packaging
+- Submit ARM64 MSIX alongside x64 to Store (multi-architecture package)
+- Supports Surface Pro X, Snapdragon laptops, Windows on ARM devices
+- Depends on: Flutter ARM64 Windows support (verify current SDK status)
+
 **F53. Add block rules for top-level domains .cc and .ne (~1h) Priority 60**
 - Phase: Core Feature
 - Platform: All
