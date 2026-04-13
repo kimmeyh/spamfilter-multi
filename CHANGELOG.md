@@ -31,6 +31,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **docs**: Identified 31 security findings: 3 Critical, 7 High, 13 Medium, 8 Low
 - **docs**: Added 23 security backlog items (SEC-1 through SEC-23) to ALL_SPRINTS_MASTER_PLAN.md with severity ratings
 - **docs**: Key findings: SQL injection [OK] secure (92+ ops), ReDoS vulnerability in regex eval, missing Android security config
+- **fix**: SEC-2: Add android:allowBackup="false" to AndroidManifest.xml (prevents adb backup data extraction)
+- **fix**: SEC-3: Firebase API keys restricted in Google Cloud Console (Android key: package+SHA-1, 4 APIs only; Browser key: domain restricted)
+- **fix**: SEC-5: Remove password logging from IMAP adapter (no credential info in logs)
 
 ### 2026-04-13 (Sprint 30 - Architecture Gap Analysis)
 - **docs**: Architecture gap analysis - compared 36 ADRs, ARCHITECTURE.md, ARSD.md against codebase (F60, Issue #226)

@@ -90,7 +90,7 @@ Multiple places catch regex compilation exceptions and silently fall back to lit
 
 ## Category 3: Credential and Data Storage
 
-### S4. Firebase API key committed to git history (CRITICAL)
+### S4. Firebase API key committed to git history (CRITICAL) -- [OK] FIXED Sprint 31
 
 **Severity**: Critical
 **File**: mobile-app/android/app/google-services.json
@@ -98,10 +98,10 @@ Multiple places catch regex compilation exceptions and silently fall back to lit
 
 The Firebase API key `AIzaSyB3x...` and Android certificate hash are in the git history. While .gitignore now excludes the file, the key remains in previous commits.
 
-**Recommended fix**:
-- Restrict API key in Google Cloud Console (Android package name + cert hash only)
-- Regenerate key if repository is public
-- Consider using BFG Repo-Cleaner if needed (note: repo rewrite is disruptive)
+**Fix applied**:
+- Android key restricted in Google Cloud Console: Android apps only (package name + SHA-1 fingerprint), 4 APIs only (Firebase Installations, Identity Toolkit, Token Service, Gmail API)
+- Browser key restricted: same 4 APIs, website domain restrictions
+- 20 unused Firebase APIs removed from key access (Cloud Datastore, Firestore, ML, etc.)
 
 ### S5. Hardcoded Android OAuth client ID in source (HIGH)
 

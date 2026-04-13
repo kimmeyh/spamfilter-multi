@@ -95,6 +95,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 28 | docs/sprints/SPRINT_28_RETROSPECTIVE.md | [OK] Complete | Apr 2, 2026 |
 | 29 | docs/sprints/SPRINT_29_RETROSPECTIVE.md | [OK] Complete | Apr 3-13, 2026 |
 | 30 | docs/sprints/SPRINT_30_RETROSPECTIVE.md | [OK] Complete | Apr 13, 2026 |
+| 31 | docs/sprints/SPRINT_31_RETROSPECTIVE.md | [OK] Complete | Apr 13, 2026 |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -102,13 +103,13 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 30** (April 13, 2026)
-- **Type**: Architecture Spike (documentation and analysis only, no code changes)
-- **Feature**: F60 Architecture gap analysis - compared 36 ADRs, ARCHITECTURE.md, ARSD.md against codebase (Issue #226)
-- **Findings**: 26 gaps across 5 categories (doc drift, dead code, partial ADRs, missing docs, unimplemented architecture)
-- **Backlog**: Added F61-F67, promoted GP-11 to F66 (off HOLD), expanded #163 scope, corrected G11 (Gmail IMAP already implemented)
-- **Process**: Added architecture drift prevention checks to Phase 3 (planning) and Phase 7 (retrospective)
-- **Retrospective**: docs/sprints/SPRINT_30_RETROSPECTIVE.md
+**Sprint 31** (April 13, 2026)
+- **Type**: Security Spike (analysis, backlog generation, critical fixes)
+- **Feature**: F68 Security deep dive - comprehensive security audit (Issue #228)
+- **Findings**: 31 security findings: 3 Critical, 7 High, 13 Medium, 8 Low
+- **Backlog**: Added SEC-1 through SEC-23 security items with severity ratings
+- **Critical fixes**: SEC-2 (Android allowBackup), SEC-3 (Firebase API key restriction), SEC-5 (password logging removal)
+- **Retrospective**: docs/sprints/SPRINT_31_RETROSPECTIVE.md
 
 ---
 
@@ -247,6 +248,12 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 
 ### Security Hardening (Sprint 31 Audit)
 
+**~~SEC-2. Android: Add allowBackup="false"~~** [OK] Fixed (Sprint 31)
+
+**~~SEC-3. Firebase API key: restrict in Google Cloud Console~~** [OK] Fixed (Sprint 31) -- Android key restricted to package+SHA-1, Browser key restricted to domains, both limited to 4 APIs
+
+**~~SEC-5. Remove password logging from IMAP adapter~~** [OK] Fixed (Sprint 31)
+
 **SEC-1. ReDoS protection: timeout + pattern validation (~4-6h) Priority 35 -- CRITICAL**
 - Phase: Security
 - Platform: All
@@ -255,18 +262,6 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Blocks: F56 (manual rule creation) and F35 (rule editing) which allow user regex input
 - Source: Sprint 31 security audit (S1, S2)
 
-**SEC-2. Android: Add allowBackup="false" (~15min) Priority 35 -- CRITICAL**
-- Phase: Security
-- Platform: Android
-- Add `android:allowBackup="false"` to AndroidManifest.xml `<application>` tag
-- Prevents adb backup data extraction
-- Source: Sprint 31 security audit (S10)
-
-**SEC-3. Firebase API key: restrict in Google Cloud Console (~30min) Priority 35 -- CRITICAL**
-- Phase: Security
-- Platform: Android
-- Restrict API key to Android package name + cert hash in Google Cloud Console
-- Source: Sprint 31 security audit (S4)
 
 **SEC-4. Android: Create network_security_config.xml (~1h) Priority 40 -- HIGH**
 - Phase: Security
@@ -275,12 +270,6 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Reference in AndroidManifest.xml
 - Source: Sprint 31 security audit (S11)
 
-**SEC-5. Remove password logging from IMAP adapter (~30min) Priority 40 -- HIGH**
-- Phase: Security
-- Platform: All
-- Remove password masking/logging in generic_imap_adapter.dart
-- Use Redact.logSafe() for auth-related logging
-- Source: Sprint 31 security audit (S6, S27)
 
 **SEC-6. Android: Configure release signing (~2h) Priority 40 -- HIGH**
 - Phase: Security
