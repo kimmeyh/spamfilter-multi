@@ -195,6 +195,37 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Consider: does the user need a Select Account icon on Manual Scan and Results screens?
 - Related: F54 (add icon to Select Account screen)
 
+**F61. Architecture documentation refresh (~3-4h) Priority 50**
+- Phase: Documentation
+- Platform: All
+- Update ARCHITECTURE.md: remove Dual-Write pattern (superseded Sprint 20), add missing services (DefaultRuleSetService, RuleConflictDetector, EmailAvailabilityChecker, EmailBodyParser, DevEnvironmentSeeder), add missing screens (yaml_import_export, rule_test), add missing DB tables (unmatched_emails, background_scan_log)
+- Update ARSD.md: remove Dual-Write from design patterns table, update Store certification status to "Passed", update Glossary
+- Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gaps G1-G6, G16-G22)
+
+**F62. Dead code cleanup - remove deprecated classes (~2h) Priority 55**
+- Phase: Tech Debt
+- Platform: All
+- Remove deprecated config/app_paths.dart (duplicate of adapters/storage/app_paths.dart)
+- Remove or consolidate duplicate LocalRuleStore classes (core/storage/ and adapters/storage/)
+- Move legacy OAuth screens from lib/screens/ to lib/ui/screens/ or remove if unused
+- Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gaps G7-G9)
+
+**F63. Responsive design framework (~8-12h) Priority 70**
+- Phase: UX Improvement
+- Platform: All
+- Implement adaptive breakpoints per ARSD AR-7: phone (<600dp), tablet (600-900dp), desktop (>900dp)
+- LayoutBuilder + breakpoints approach (ARSD A6 recommendation)
+- Priority screens: scan progress, results display, settings
+- Related: F55 (navigation consistency) should be done before or with this
+- Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gap G23)
+
+**F64. CI/CD pipeline with GitHub Actions (~4-6h) Priority 80**
+- Phase: DevOps
+- Platform: All
+- GitHub Actions workflow for: flutter analyze, flutter test, build verification
+- Trigger on PR to develop
+- Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gap G24)
+
 **F6. Provider-Specific Optimizations (~10-12h) Priority 100**
 - Phase: Performance
 - Platform: All
