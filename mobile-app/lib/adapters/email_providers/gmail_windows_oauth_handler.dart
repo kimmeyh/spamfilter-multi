@@ -58,8 +58,9 @@ class GmailWindowsOAuthHandler {
     if (!_configLogged) {
       _configLogged = true;
       // Use warning level to ensure visibility in release builds
+      // SEC-17: Redact sensitive configuration values in logs
       _logger.w('OAuth Configuration:');
-      _logger.w('  Client ID: ${_clientId}');
+      _logger.w('  Client ID: ${_clientId.isEmpty ? "(not set)" : "${_clientId.substring(0, _clientId.length > 8 ? 8 : _clientId.length)}... (${_clientId.length} chars)"}');
       _logger.w('  Client Secret: ${_clientSecret.isEmpty ? "(not set)" : "(set, ${_clientSecret.length} chars)"}');
       _logger.w('  Redirect URI: $_redirectUri');
       // Explicitly log which client ID is being used and why
@@ -271,20 +272,9 @@ class GmailWindowsOAuthHandler {
         _logger.i('Including client_secret in token exchange');
       }
       
-      _logger.i('Token exchange request body:');
-      requestBody.forEach((key, value) {
-        if (key == 'code_verifier' || key == 'client_secret') {
-          _logger.i('  $key: ${value.substring(0, 20)}... (truncated)');
-        } else {
-          _logger.i('  $key: $value');
-        }
-      });
-
-      // Manually construct and log the form body for debugging
-      final formBody = requestBody.entries
-          .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
-          .join('&');
-      _logger.d('Form-encoded body (first 100 chars): ${formBody.substring(0, 100)}');
+      // SEC-17: Log token exchange parameters without sensitive values
+      _logger.d('Token exchange: client_id=${_clientId.length > 8 ? '${_clientId.substring(0, 8)}...' : '[short]'}, '
+          'redirect_uri=$redirectUri, grant_type=authorization_code');
 
       final response = await http.post(
         Uri.parse(_tokenEndpoint),
@@ -293,8 +283,8 @@ class GmailWindowsOAuthHandler {
       );
 
       if (response.statusCode != 200) {
-        _logger.e('Token exchange failed: ${response.statusCode} - ${response.body}');
-        throw Exception('Token exchange failed: ${response.body}');
+        _logger.e('Token exchange failed: ${response.statusCode}');
+        throw Exception('Token exchange failed (HTTP ${response.statusCode})');
       }
 
       final data = json.decode(response.body) as Map<String, dynamic>;
@@ -336,8 +326,8 @@ class GmailWindowsOAuthHandler {
       );
 
       if (response.statusCode != 200) {
-        _logger.e('Token refresh failed: ${response.statusCode} - ${response.body}');
-        throw Exception('Token refresh failed: ${response.body}');
+        _logger.e('Token refresh failed: ${response.statusCode}');
+        throw Exception('Token refresh failed (HTTP ${response.statusCode})');
       }
 
       final data = json.decode(response.body) as Map<String, dynamic>;
