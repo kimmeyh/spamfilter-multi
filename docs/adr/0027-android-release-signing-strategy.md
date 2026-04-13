@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Accepted
 
 ## Date
 
@@ -47,52 +47,59 @@ The signing configuration must integrate with this PowerShell build infrastructu
 
 ## Decision
 
-**TO BE DETERMINED** - This ADR captures the decision criteria. The decision will be made by the Product Owner.
+**Option B: Build-time keystore injection via PowerShell script**, extending the existing `build-with-secrets.ps1` pattern. Enroll in Google Play App Signing. Build AAB format for Play Store, APK for local testing.
 
-### Options Under Consideration
+### Implementation Details
 
-#### Option A: Keystore in Local File with Environment Variables
-- Store keystore `.jks` file on local disk (outside repository)
-- Reference via environment variables in `build.gradle.kts`
-- `key.properties` file (gitignored) points to keystore location
-- Similar to Flutter's recommended approach
+- Keystore `.jks` file stored in a secure location outside the repository (e.g., encrypted vault, cloud storage backup)
+- PowerShell build script injects keystore path, alias, and passwords at build time
+- `key.properties` file is NOT used (avoids persistent credential file on disk in repo tree)
+- Signing config in `build.gradle.kts` reads from environment variables or `--dart-define` parameters
+- Play App Signing enrollment required (Google manages the app signing key; developer manages the upload key)
+- Upload key can be reset via Play Console if lost
 
-#### Option B: Keystore Injected at Build Time (Like Secrets)
-- Store keystore in a secure location (e.g., encrypted vault, cloud storage)
-- Inject at build time via PowerShell script (similar to `build-with-secrets.ps1`)
-- Keystore never persists on disk in the repository tree
+### Build Outputs
 
-#### Option C: GitHub Actions / CI-Based Signing
-- Keystore stored as GitHub Actions secret (base64-encoded)
-- Signing happens in CI/CD pipeline
-- Local development uses debug keys; only CI produces release builds
-
-### Decision Criteria
-
-1. **Security**: Keystore and passwords must never be committed to version control
-2. **Backup**: Keystore must be recoverable if the development machine is lost
-3. **Integration**: Must work with existing PowerShell build scripts
-4. **Play App Signing**: Whether to enroll (recommended by Google, adds safety net)
-5. **CI/CD compatibility**: Should support future CI/CD pipeline integration
-6. **Simplicity**: Developer should be able to produce release builds easily
-7. **AAB vs APK**: Build scripts must produce AAB format for Play Store upload
+- **APK**: For local testing and emulator deployment (`build-with-secrets.ps1 -BuildType debug`)
+- **AAB**: For Google Play Store upload (release builds only)
 
 ### Key Points
 
 - Play App Signing is mandatory for AAB uploads and strongly recommended
 - With Play App Signing, Google manages the actual signing key; developer only needs upload key
-- Upload key can be reset through Play Console if lost (unlike the app signing key)
-- The existing `build-with-secrets.ps1` pattern (injecting from a JSON file) could be extended for signing
+- The existing `build-with-secrets.ps1` pattern (injecting from a JSON file) is extended for signing
 - AAB format results in smaller downloads (Google generates optimized APKs per device)
-- Both APK (for testing) and AAB (for Play Store) builds may be needed
+- Both APK (for testing) and AAB (for Play Store) builds are needed
 
 ## Alternatives Considered
 
-Analysis deferred until decision criteria are evaluated by Product Owner.
+### Option A: Keystore in Local File with Environment Variables
+- **Description**: Store `.jks` on local disk, reference via `key.properties` (gitignored) and environment variables in `build.gradle.kts`. Follows Flutter's recommended approach.
+- **Pros**: Simple setup, well-documented by Flutter team
+- **Cons**: Keystore file persists on disk, `key.properties` could accidentally be committed despite gitignore
+- **Why Rejected**: Less secure than build-time injection; the project already uses a secrets injection pattern that avoids persistent credential files
+
+### Option C: GitHub Actions / CI-Based Signing
+- **Description**: Keystore stored as GitHub Actions secret (base64-encoded). Only CI produces release builds; local development uses debug keys.
+- **Pros**: Most secure (keystore never on developer machine), scalable for teams
+- **Cons**: No CI/CD pipeline exists yet, adds infrastructure dependency, cannot produce release builds locally
+- **Why Rejected**: Premature given current single-developer workflow and no CI/CD pipeline
 
 ## Consequences
 
-To be documented after decision is made.
+### Positive
+- Consistent with the existing secrets injection pattern (`build-with-secrets.ps1`), reducing cognitive overhead
+- Keystore never persists in the repository tree, eliminating accidental commit risk
+- Play App Signing enrollment adds a safety net (upload key can be reset if lost)
+- Supports future CI/CD integration (environment variables work in both local and CI contexts)
+
+### Negative
+- Build script complexity increases (must handle signing parameters in addition to secrets)
+- Keystore must be accessible to the build machine (secure backup strategy required)
+- Developer must remember to provide signing parameters for release builds
+
+### Neutral
+- Both APK and AAB build targets are needed (testing vs Play Store), adding two output formats to maintain
 
 ## References
 

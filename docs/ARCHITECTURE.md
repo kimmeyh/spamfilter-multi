@@ -28,7 +28,7 @@
 
 Cross-platform email spam filtering application built with 100% Flutter/Dart for all platforms (Windows, macOS, Linux, Android, iOS). The app uses IMAP/OAuth protocols to support multiple email providers (AOL, Gmail, Yahoo, iCloud) with a single codebase, SQLite database for rules and scan history, and portable YAML rule export for version control.
 
-**Current Status**: Sprint 17 complete (Feb 2026) - 977 tests passing, 28 skipped, 0 failures.
+**Current Status**: See [CHANGELOG.md](../CHANGELOG.md) for current version, sprint, and test count.
 
 ---
 
@@ -136,7 +136,7 @@ Business logic and domain services.
 **Purpose**: Compiles and caches regex patterns for efficient matching
 
 **Features**:
-- `HashMap<String, RegExp>` cache with ~100x speedup (2.1ms -> 0.18ms)
+- `HashMap<String, RegExp>` cache (see [PERFORMANCE_BENCHMARKS.md](PERFORMANCE_BENCHMARKS.md) for speedup metrics)
 - Case-insensitive matching
 - Python-style inline flag stripping (`(?i)`, `(?m)`, `(?s)`, `(?x)`)
 - Error tracking for invalid patterns (graceful fallback to never-matching regex)
@@ -159,7 +159,7 @@ Business logic and domain services.
 4. Initialize scan result persistence (database)
 5. For each folder: fetch messages, evaluate against rules, take actions (batch operations)
 6. Persist individual email actions to database
-7. Update UI progress (throttled: every 10 emails OR every 2 seconds)
+7. Update UI progress (throttled per [ADR-0022](adr/0022-throttled-ui-progress-updates.md))
 8. Finalize scan results
 
 #### RuleConflictDetector
@@ -221,7 +221,7 @@ Note: The legacy `EmailProvider` abstract class still exists but is only used fo
 |---------|----------|------|---------|-------------|
 | **GmailApiAdapter** | Gmail REST API | OAuth 2.0 | `PlatformRegistry.getPlatform('gmail')` | Uses `googleapis` package, batch operations via `BatchOperationsMixin`, Gmail labels |
 | **GenericIMAPAdapter** | IMAP | Username/password | `.aol()`, `.yahoo()`, `.icloud()`, `.custom()` | Uses `enough_mail` package, UID-based operations (not sequence IDs), reconnects every 50 ops |
-| **MockEmailProvider** | None (in-memory) | None | `PlatformRegistry.getPlatform('demo')` | 55 synthetic emails across 5 categories (ADR-0020) |
+| **MockEmailProvider** | None (in-memory) | None | `PlatformRegistry.getPlatform('demo')` | Synthetic test emails (see [ADR-0020](adr/0020-demo-mode-synthetic-emails.md) for details) |
 
 **PlatformRegistry** (Factory Pattern):
 ```dart
@@ -282,7 +282,7 @@ Uses IMAP UID sequence sets to reduce round-trips from 3N to ~3 batch operations
 
 #### Schema (ADR-0010)
 
-SQLite database with the following tables:
+SQLite database schema. See [ADR-0010](adr/0010-normalized-database-schema.md) for the authoritative table count and schema definition. Key tables:
 
 | Table | Purpose | Key Fields |
 |-------|---------|------------|
@@ -369,7 +369,7 @@ Reactive state using Provider pattern (ADR-0009).
 
 **Methods**:
 - `startScan(totalEmails, scanType, foldersScanned)`: Initialize scan with persistence
-- `updateProgress(email, message)`: Report progress (throttled: every 10 emails OR 2 seconds, ADR-0022)
+- `updateProgress(email, message)`: Report progress (throttled per [ADR-0022](adr/0022-throttled-ui-progress-updates.md))
 - `completeScan()`: Finalize results and persist
 - `setCurrentFolder(folderName)`: Track folder being scanned
 - `initializePersistence()`: Setup database stores for scan history
@@ -474,7 +474,7 @@ RuleEvaluator.evaluate(EmailMessage)
 
 ## UI Layer (`lib/ui/`)
 
-### Screens (19 screens)
+### Screens
 
 | Screen | Purpose |
 |--------|---------|
@@ -526,11 +526,11 @@ mobile-app/
 |   |   |- auth/               # Auth adapters (GoogleAuthService, SecureTokenStore)
 |   |   |- gmail/              # Gmail API client wrapper
 |   |- ui/                      # Flutter screens and widgets
-|       |- screens/            # 19 full-screen pages
+|       |- screens/            # Full-screen pages
 |       |- widgets/            # Reusable components
 |       |- theme/              # AppTheme (Material Design)
 |       |- utils/              # Accessibility helpers
-|- test/                        # Tests (977 passing, 28 skipped)
+|- test/                        # Tests (run `flutter test` for current count)
 |   |- unit/                   # Unit tests (models, services)
 |   |- integration/            # Integration tests (adapters, workflows)
 |   |- adapters/               # Adapter-specific tests
@@ -547,16 +547,17 @@ mobile-app/
 
 | Layer | Technology | Purpose |
 |-------|------------|---------|
-| **UI Framework** | Flutter 3.x | Cross-platform UI (5 platforms) |
-| **Language** | Dart 3.x | Application logic |
-| **State Management** | Provider (v6.1.0) | Reactive state via ChangeNotifier |
-| **Local Storage** | SQLite (sqflite/sqflite_ffi) | Persistent data (8 tables, 10+ indexes) |
+| **UI Framework** | Flutter / Dart | Cross-platform UI and application logic |
+| **State Management** | Provider | Reactive state via ChangeNotifier ([ADR-0009](adr/0009-provider-pattern-state-management.md)) |
+| **Local Storage** | SQLite (sqflite/sqflite_ffi) | Persistent data ([ADR-0010](adr/0010-normalized-database-schema.md)) |
 | **Secure Storage** | flutter_secure_storage | Credentials, tokens (OS-native keystores) |
 | **Networking** | http, googleapis | REST APIs (Gmail) |
 | **Email** | enough_mail | IMAP protocol (AOL, Yahoo, iCloud) |
 | **OAuth** | google_sign_in (mobile), flutter_appauth (desktop) | Gmail authentication |
-| **System Tray** | system_tray (v2.0.3), window_manager (v0.3.7) | Windows desktop integration |
-| **Logging** | logger (v2.0.0) | Keyword-based logging via AppLogger |
+| **System Tray** | system_tray, window_manager | Windows desktop integration |
+| **Logging** | logger | Keyword-based logging via AppLogger |
+
+**Package versions**: See `mobile-app/pubspec.yaml` for current dependency versions.
 
 ---
 
@@ -637,7 +638,7 @@ mobile-app/
 
 ## Testing Strategy
 
-**Current State**: 977 tests passing, 28 skipped, 0 failures (Sprint 17)
+**Current State**: Run `flutter test` for current count. See [CHANGELOG.md](../CHANGELOG.md) for test history.
 
 ### Unit Tests
 - Models: Immutability, copyWith, serialization
@@ -670,25 +671,29 @@ mobile-app/
 
 ### Pattern Caching (ADR-0023)
 - `PatternCompiler` uses `HashMap<String, RegExp>` cache
-- ~100x speedup (2.1ms -> 0.18ms per pattern)
+- See [PERFORMANCE_BENCHMARKS.md](PERFORMANCE_BENCHMARKS.md) for detailed speedup metrics
 - Cache hit/miss statistics for monitoring
 
 ### Throttled UI Updates (ADR-0022)
-- Dual-threshold: notify every 10 emails OR every 2 seconds
+- Dual-threshold notify (see [ADR-0022](adr/0022-throttled-ui-progress-updates.md) for thresholds)
 - Separate throttle for result recording
 - Reset counters on scan start to prevent accumulation
 
 ### Batch Operations
-- `BatchOperationsMixin` reduces IMAP round-trips from 3N to ~3 batch operations
+- `BatchOperationsMixin` reduces IMAP round-trips via batch operations
 - Uses IMAP UID sequence sets for bulk delete/move/mark-as-read
 
 ### Asynchronous Operations
 - All I/O operations are async (file, network, database)
-- Folder-by-folder progressive scanning with 2-second UI refresh interval
+- Folder-by-folder progressive scanning with throttled UI refresh
 
 ---
 
 ## Future Architecture Enhancements
+
+### Browser / Flutter Web (Excluded)
+
+A browser target has been evaluated and excluded. The app's IMAP-based email providers (AOL, Yahoo, iCloud, custom IMAP) require raw TCP socket connections, which browsers block via the Same-Origin Policy. The only viable workaround -- a server-side IMAP proxy (the approach used by browser-based email clients such as Outlook Web) -- would route user credentials and email content through a backend server, directly contradicting the local-only, zero-telemetry privacy architecture ([ADR-0030](adr/0030-privacy-and-data-governance-strategy.md)). Chromebook users are served by the existing Android (Play Store) and Linux (Crostini) targets. See [ARSD.md](ARSD.md) Section A1 for full rationale.
 
 ### Rule Sync (Future)
 - Cloud sync for rules across devices
@@ -698,70 +703,19 @@ mobile-app/
 - Extensible rule actions (custom scripts)
 - Third-party email provider plugins
 
-### Google Play Store Readiness (ADRs 0026-0034)
+### Google Play Store Readiness
 
-Product readiness decisions documented as ADRs. See `docs/adr/` for details.
+Product readiness decisions documented as ADRs (0026-0034). See [ADR Index](adr/README.md) for current status of each.
 
-**Accepted**:
-- ADR-0026: Application Identity -- Domain `myemailspamfilter.com`, App ID `com.myemailspamfilter`, App Name `MyEmailSpamFilter`
-- ADR-0029: Gmail API Scope Strategy -- Phased approach: unverified OAuth for alpha/beta, app passwords for general users, CASA deferred until 2,500+ users or $5K/yr revenue
-- ADR-0030: Privacy and Data Governance -- Zero telemetry, host privacy policy on `myemailspamfilter.com` via GitHub Pages, indefinite local storage, in-app + web account deletion
-- ADR-0034: Gmail Access Method -- Dual path: Gmail REST API (OAuth) for alpha/beta, Gmail IMAP (app passwords) for general users
+### Gmail Authentication Strategy
 
-**Proposed** (decisions pending):
-- ADR-0027: Android Release Signing Strategy
-- ADR-0028: Android Permission Strategy
-- ADR-0031: App Icon and Visual Identity
-- ADR-0032: User Data Deletion Strategy
-- ADR-0033: Analytics and Crash Reporting Strategy
-
-### Gmail Authentication Strategy (ADR-0029, ADR-0034)
-
-The app supports two Gmail access paths, matching investment to viability:
-
-| Phase | Method | Users | Scope | Verification |
-|-------|--------|-------|-------|--------------|
-| 1 (Alpha/Beta) | Gmail REST API + OAuth | Up to 100 testers | `gmail.modify` | None (Testing mode) |
-| 2 (General) | Gmail IMAP + App Passwords | Unlimited | N/A (no OAuth) | None |
-| 3 (Future) | Gmail REST API + Verified OAuth | Unlimited | `gmail.modify` | CASA audit required |
-
-**CASA trigger**: Pursue verification when app has 2,500+ active Gmail IMAP users at $3/yr or yearly revenue exceeds $5,000.
+The app supports dual Gmail access paths. See [ADR-0029](adr/0029-gmail-api-scope-and-verification-strategy.md) and [ADR-0034](adr/0034-gmail-access-method-for-production.md) for the phased strategy and CASA trigger thresholds.
 
 ---
 
 ## Architecture Decision Records
 
-All architectural decisions are documented as ADRs in `docs/adr/`. Currently 29 accepted and 5 proposed.
-
-**Accepted ADRs** (0001-0025):
-
-| ADR | Title | Key Decision |
-|-----|-------|--------------|
-| 0001 | Flutter/Dart Single Codebase | 100% Flutter for all 5 platforms |
-| 0002 | Adapter Pattern for Email Providers | SpamFilterPlatform interface + PlatformRegistry factory |
-| 0003 | Regex-Only Pattern Matching | All patterns compiled as Dart RegExp, case-insensitive |
-| 0004 | Dual-Write Storage (SQLite + YAML) | SQLite authoritative, YAML exported for version control |
-| 0005 | Safe Senders Evaluated Before Rules | Whitelist checked first, then rules in execution order |
-| 0006 | Four Progressive Scan Modes | readonly/testLimit/testAll/fullScan with enforcement flags |
-| 0007 | Move-to-Trash, Not Permanent Delete | Delete = trash (recoverable) |
-| 0008 | Platform-Native Secure Storage | flutter_secure_storage wraps OS keystores |
-| 0009 | Provider Pattern for State Management | ChangeNotifier-based providers |
-| 0010 | Normalized Database Schema | 8 tables, JSON arrays, text enums, 10+ indexes |
-| 0011 | Desktop OAuth via Loopback + PKCE | Desktop: loopback server; Mobile: native SDKs |
-| 0012 | AppPaths Platform Storage Abstraction | Platform-agnostic path resolution |
-| 0013 | Per-Account Settings with Inheritance | Account -> App -> Hardcoded three-tier fallback |
-| 0014 | Windows Background Scanning | Task Scheduler with PowerShell scripts |
-| 0015 | GitFlow Branching Strategy | main <- develop <- feature branches |
-| 0016 | Sprint-Based Development with Model Tiering | Haiku/Sonnet/Opus complexity scoring |
-| 0017 | PowerShell as Primary Build Automation | All build scripts are .ps1 |
-| 0018 | Windows Toast Notifications | PowerShell-generated WinRT notifications |
-| 0019 | Windows System Tray Integration | system_tray + window_manager |
-| 0020 | Demo Mode with Synthetic Emails | MockEmailProvider with 55 test emails |
-| 0021 | YAML-to-Database One-Time Migration | Transaction-wrapped idempotent import |
-| 0022 | Throttled UI Progress Updates | Every 10 emails OR every 2 seconds |
-| 0023 | In-Memory Pattern Caching | HashMap cache, ~100x speedup |
-| 0024 | Canonical Folder Mapping | Provider-specific junk folder names |
-| 0025 | CHANGELOG Updated Per Commit | Update in same commit as code changes |
+All architectural decisions are documented as ADRs in `docs/adr/`. See [ADR Index](adr/README.md) for the complete list with current status.
 
 ---
 
@@ -771,7 +725,7 @@ All architectural decisions are documented as ADRs in `docs/adr/`. Currently 29 
 **Update**: February 24, 2026 (ADR-0026/0029/0030/0034 accepted, Gmail auth strategy documented)
 **Related Documents**:
 - `docs/RULE_FORMAT.md` - YAML rule specification
-- `docs/adr/` - Architecture Decision Records (ADR-0001 through ADR-0034)
+- `docs/adr/README.md` - Architecture Decision Records index
 - `CLAUDE.md` - Primary development guide
 - `docs/SPRINT_PLANNING.md` - Development methodology
 - `CHANGELOG.md` - Project change history

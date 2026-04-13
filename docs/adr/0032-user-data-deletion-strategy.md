@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Accepted
 
 ## Date
 
@@ -65,82 +65,101 @@ For Gmail OAuth connections specifically:
 
 ## Decision
 
-**TO BE DETERMINED** - This ADR captures the decision criteria. The decision will be made by the Product Owner.
+**Scope B + External A**: Per-account deletion plus full data wipe option. External deletion via GitHub Pages form on myemailspamfilter.com.
 
-### Options Under Consideration
+### In-App Deletion
 
-#### Deletion Scope
-
-##### Option A: Per-Account Deletion Only
-- Delete individual email provider connections and their data
-- Shared data (rules, safe senders) remains
+**Per-account deletion** (Settings > Account > "Remove Account"):
+- Deletes credentials, account settings, and scan results for the selected account
+- Shared data (rules, safe senders, app settings) is preserved
 - App continues to work for remaining accounts
-- Closest to what users expect ("remove this email account")
 
-##### Option B: Per-Account + Full Wipe Option
-- Per-account deletion (Option A) for individual accounts
-- Plus "Delete All Data" option that removes everything
+**Full data wipe** (Settings > Data Management > "Delete All Data"):
+- Removes all accounts, credentials, settings, rules, safe senders, and scan history
 - Resets app to fresh install state
-- Satisfies both per-account and full deletion use cases
+- Requires confirmation dialog (irreversible)
 
-##### Option C: Full App Data Wipe Only
-- Single "Delete All Data" button
-- Removes all accounts, settings, rules, safe senders
-- Simplest implementation
-- May frustrate users who only want to remove one account
+### Per-Account Deletion Steps
 
-#### External Deletion Mechanism
+1. Revoke OAuth tokens (Gmail: `https://oauth2.googleapis.com/revoke?token={token}`, IMAP: no API needed)
+2. Delete all credentials from flutter_secure_storage for the account (keys prefixed with account identifier)
+3. Delete `account_settings` rows matching `accountId` from SQLite
+4. Delete `scan_results` and `email_actions` rows matching `account_id` from SQLite
+5. Cancel background scan schedule for the account
+6. Remove platform-specific scheduled tasks (Windows Task Scheduler, Android WorkManager)
 
-##### Option A: GitHub Pages Form
-- Simple form on GitHub Pages site
-- User provides email address
-- Instructions to self-delete via app, or contact developer
-- Low cost, easy to maintain
+### Full Wipe Steps
 
-##### Option B: Dedicated Website with Deletion Form
-- Web form that accepts email and verification
-- Developer receives request and processes manually
-- More professional but requires manual processing
+1. Execute per-account deletion for all accounts
+2. Delete all rows from `rules`, `safe_senders`, `app_settings` tables
+3. Delete SQLite database file
+4. Clear all flutter_secure_storage entries
+5. Remove all platform-specific scheduled tasks
 
-##### Option C: Email-Based Request
-- Provide support email address
-- User emails to request deletion
-- Manual processing by developer
-- Simplest external mechanism but slowest response
+### External Deletion Mechanism
 
-##### Option D: In-App Self-Service Only (with Documentation)
-- Provide in-app deletion as primary mechanism
-- Website explains how to delete data via the app
-- Argue that since all data is local, uninstalling the app also deletes data
-- May not fully satisfy Google's requirement for external accessibility
-
-### Decision Criteria
-
-1. **Policy compliance**: Must satisfy Google Play account deletion requirement
-2. **User expectation**: Users expect "remove account" not "wipe everything"
-3. **Data safety**: Must not leave orphaned tokens or credentials
-4. **Implementation complexity**: Per-account deletion requires careful data isolation
-5. **External mechanism effort**: Website vs email vs GitHub Pages
-6. **Shared data handling**: Rules and safe senders are shared, not per-account
-7. **Reversibility**: Should deletion be confirmed and irreversible?
+- GitHub Pages form on myemailspamfilter.com
+- Explains that all data is stored locally on the user's device (no server-side data exists)
+- Instructs user to delete data via in-app mechanism or by uninstalling the app
+- Provides contact email for support requests
 
 ### Key Points
 
 - The app stores ALL data locally; there is no server-side data to delete
 - Uninstalling the app effectively deletes all data (but Google still requires in-app mechanism)
-- OAuth token revocation is important but may fail (token already expired, network issue)
-- Rules and safe senders are shared across accounts and should not be deleted when removing one account
+- OAuth token revocation may fail (network issues, token already expired) -- handle gracefully, do not block deletion
+- Rules and safe senders are shared across accounts and are NOT deleted during per-account deletion
 - Background scan tasks must be cleaned up when an account is deleted
-- The "external deletion" requirement can potentially be satisfied by documentation explaining that all data is local and can be deleted by removing the account in-app or uninstalling
 - flutter_secure_storage data persists across app reinstalls on some Android versions (linked to device encryption)
 
 ## Alternatives Considered
 
-Analysis deferred until decision criteria are evaluated by Product Owner.
+### Scope A: Per-Account Deletion Only
+- **Description**: Delete individual email provider connections and their data. No full wipe option.
+- **Pros**: Simpler implementation, closest to user expectation ("remove this email account")
+- **Cons**: No way to reset app to fresh install state without uninstalling
+- **Why Rejected**: Less complete; full wipe option adds minimal complexity and satisfies the "delete all data" use case
+
+### Scope C: Full App Data Wipe Only
+- **Description**: Single "Delete All Data" button that removes everything.
+- **Pros**: Simplest implementation
+- **Cons**: Frustrates users who only want to remove one email account; forces loss of rules and safe senders
+- **Why Rejected**: Users expect per-account removal, not all-or-nothing
+
+### External B: Dedicated Website with Deletion Form
+- **Description**: Web form that accepts email and verification, developer processes manually.
+- **Pros**: More professional appearance
+- **Cons**: Requires manual processing by developer, ongoing effort
+- **Why Rejected**: Overkill for a local-only app; all data is on the user's device
+
+### External C: Email-Based Request
+- **Description**: Provide support email, user emails to request deletion.
+- **Pros**: Simplest external mechanism
+- **Cons**: Slowest response time, manual processing
+- **Why Rejected**: Same as External B; manual processing not needed when all data is local
+
+### External D: In-App Self-Service Only
+- **Description**: In-app deletion as primary mechanism, website documents how to use it.
+- **Pros**: No external form needed
+- **Cons**: May not satisfy Google's requirement for external accessibility of deletion
+- **Why Rejected**: Risk of policy non-compliance; GitHub Pages form is low effort and removes ambiguity
 
 ## Consequences
 
-To be documented after decision is made.
+### Positive
+- Satisfies Google Play account deletion policy (both in-app and external mechanisms)
+- Per-account deletion preserves shared data (rules, safe senders), matching user expectations
+- Full wipe option available for users who want to reset completely
+- GitHub Pages form is low-cost and easy to maintain
+
+### Negative
+- Per-account deletion requires careful data isolation to avoid orphaned credentials or background tasks
+- GitHub Pages form needs maintenance (must stay accessible and accurate)
+- OAuth token revocation is best-effort (network failures handled gracefully, not blocking)
+
+### Neutral
+- Uninstalling the app also deletes all data, but the policy requires an explicit in-app mechanism regardless
+- flutter_secure_storage persistence across reinstalls on some Android versions means uninstall may not fully clear credentials on all devices
 
 ## References
 

@@ -159,6 +159,7 @@ Use an open-source privacy policy generator as the starting template, then custo
 - No crash reporting means production issues are harder to diagnose (users must report bugs manually)
 - Template-based privacy policy may not cover all edge cases (mitigated: can add legal review later)
 - Must maintain privacy policy page when app features change
+- **Browser target excluded**: The local-only processing model is incompatible with a browser (Flutter Web) target. IMAP protocol requires raw TCP sockets, which browsers block via the Same-Origin Policy. The only viable workaround -- a server-side IMAP proxy (the approach used by browser-based email clients such as Outlook Web) -- would route user credentials and email content through a backend server, violating this ADR's core principle. This constrains the app to native platforms only (desktop and mobile). Chromebook users are served by Android (Play Store) and Linux (Crostini) targets. See [ADR-0001](0001-flutter-dart-single-codebase.md) for platform scope.
 
 ### Neutral
 - Firebase Analytics dependency removal is a code task (GP-12 / ADR-0033)
