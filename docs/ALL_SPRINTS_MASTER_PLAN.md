@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: April 13, 2026 (Sprint 30 gap analysis review)
+**Last Updated**: April 13, 2026 (Sprint 31 retrospective -- added F70, F71 periodic review templates)
 
 ## How to Maintain This Document
 
@@ -407,6 +407,41 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Trigger on PR to develop
 - HOLD rationale: Current CI/CD equivalent is handled by Claude Code sprint execution workflow (flutter analyze, flutter test, Windows build in Phase 5). Could be implemented later if beneficial to dev team, maintenance team, or instructed by Product Owner.
 - Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gap G24)
+
+### HOLD Items (Periodic Reviews)
+
+**F70. Periodic Security Deep Dive (~4-8h per review) Priority HOLD**
+- Phase: Security Spike (reusable template)
+- Platform: All
+- **Generic scope**: Security review based on Application Development Best Practices and OWASP Mobile Top 10 (use current year edition)
+- **Application-specific scope**:
+  - Dependency CVEs (flutter pub outdated, known vulnerability databases)
+  - SQL injection and parameterization audit
+  - Regex injection and ReDoS pattern review
+  - Credential storage and logging audit
+  - Platform-specific security: Windows 11 Store (MSIX sandbox, AppContainer), Android (APK/AAB signing, manifest permissions, ProGuard), iOS (App Transport Security, keychain, sandbox), Linux (file permissions, desktop integration)
+  - App store compliance: Microsoft Store certification requirements, Google Play data safety policies, Apple App Store review guidelines
+  - Device-specific concerns: biometric auth, secure enclave, clipboard access, screenshot protection
+- **How to use**: Duplicate this item, assign a sprint, and remove HOLD. After completion, keep this template for next review.
+- HOLD rationale: Template item. Duplicate when periodic security review is needed.
+- Source: Sprint 31 retrospective feedback
+
+**F71. Periodic Architecture Deep Dive (~4-8h per review) Priority HOLD**
+- Phase: Architecture Spike (reusable template)
+- Platform: All
+- **Generic scope**: Architecture review based on Application Development Best Practices
+- **Application-specific scope**:
+  - ADR drift detection: compare all ADRs against current codebase implementation
+  - ARCHITECTURE.md alignment: verify documented components, services, and patterns match code
+  - ARSD.md alignment: verify architectural requirements and standards document is current
+  - Platform-specific architecture: Windows 11 Store (MSIX packaging, single-instance mutex, app data paths), Android (activity lifecycle, WorkManager, flavors), iOS (SwiftUI/UIKit bridge, entitlements, provisioning), Linux (GTK integration, libsecret, packaging)
+  - App store constraints: store-specific sandboxing, capability declarations, update mechanisms
+  - Device constraints: screen size breakpoints, input methods (touch, mouse, keyboard), offline capability
+  - Dead code and deprecated class detection
+  - Test coverage gaps relative to architecture
+- **How to use**: Duplicate this item, assign a sprint, and remove HOLD. After completion, keep this template for next review.
+- HOLD rationale: Template item. Duplicate when periodic architecture review is needed.
+- Source: Sprint 31 retrospective feedback (based on Sprint 30 architecture deep dive experience)
 
 ### HOLD Items (Post-Windows Store)
 
@@ -1125,6 +1160,7 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 5.4 | 2026-04-13 | Sprint 31 retrospective: Added F70 (Periodic Security Deep Dive template) and F71 (Periodic Architecture Deep Dive template) as HOLD items. |
 | 5.3 | 2026-03-24 | Sprint 26: Marked F7, F36, F43, F44, F45, F47 complete. Removed F7/F36/F45/F47 detail sections. Added F48 (scan history enhancements). Updated Last Completed Sprint. |
 | 5.2 | 2026-03-22 | Sprint 25: Marked F30, F31, F34, F38, F40, F41 complete. Removed F31/F32/F38 detail sections. Added F42 (coverage gaps, on hold). Updated Last Completed Sprint. |
 | 5.1 | 2026-03-21 | Sprint 24: Marked WS items complete. Added F40, F41. Updated Last Completed Sprint. |
