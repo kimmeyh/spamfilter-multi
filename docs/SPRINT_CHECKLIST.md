@@ -29,6 +29,7 @@ These documents MUST be created/updated during each sprint:
 - [ ] Previous sprint cards closed
 - [ ] Working directory clean (`git status`)
 - [ ] Local develop branch current (`git pull origin develop`)
+- [ ] Dependency vulnerability check (`cd mobile-app && dart pub outdated`) -- flag discontinued or vulnerable packages
 
 **[CHECKPOINT]** Review Phase 3 checklist before proceeding.
 

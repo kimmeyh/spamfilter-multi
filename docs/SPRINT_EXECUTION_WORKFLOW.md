@@ -123,7 +123,17 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
   - Local develop branch matches remote
   - Ready to create new sprint feature branch
 
-- [ ] **2.6 Now Proceed to Phase 3: Sprint Kickoff & Planning**
+- [ ] **2.6 Dependency Vulnerability Check** (SEC-16)
+  - Command: `cd mobile-app && dart pub outdated`
+  - Review output for:
+    - Discontinued packages (replace or plan migration)
+    - Major version bumps with known security fixes
+    - Any packages flagged with security advisories
+  - If critical vulnerabilities found: add to sprint scope or create backlog item
+  - If only minor/major version drift: document in sprint plan, no action needed
+  - Consider running `dart pub audit` if available in current Dart SDK
+
+- [ ] **2.7 Now Proceed to Phase 3: Sprint Kickoff & Planning**
   - Create new feature branch for next sprint
   - Create sprint cards
   - Begin execution
