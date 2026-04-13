@@ -378,7 +378,7 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
           ),
         ],
       ),
-      body: Column(
+      body: SelectionArea(child: Column(
         children: [
           // Account info
           Container(
@@ -628,7 +628,7 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
               ),
             ),
         ],
-      ),
+      )),
     );
   }
 }

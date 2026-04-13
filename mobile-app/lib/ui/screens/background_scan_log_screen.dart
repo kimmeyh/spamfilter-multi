@@ -85,7 +85,7 @@ class _BackgroundScanLogScreenState extends State<BackgroundScanLogScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _buildBody(),
+          : SelectionArea(child: _buildBody()),
     );
   }
 

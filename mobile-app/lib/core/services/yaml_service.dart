@@ -32,6 +32,19 @@ class YamlService {
     }
   }
 
+  /// Parse rules from a YAML string (no file I/O)
+  RuleSet parseRulesFromString(String yamlContent) {
+    final yaml = loadYaml(yamlContent);
+    final converted = _convertYamlToMap(yaml);
+    return RuleSet.fromMap(converted as Map<String, dynamic>);
+  }
+
+  /// Parse safe senders from a YAML string (no file I/O)
+  SafeSenderList parseSafeSendersFromString(String yamlContent) {
+    final yaml = loadYaml(yamlContent) as Map;
+    return SafeSenderList.fromMap(Map<String, dynamic>.from(yaml));
+  }
+
   /// Load safe senders from YAML file
   Future<SafeSenderList> loadSafeSenders(String filePath) async {
     final file = File(filePath);

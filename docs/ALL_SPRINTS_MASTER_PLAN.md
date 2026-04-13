@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: April 2, 2026 (Sprint 28 retrospective)
+**Last Updated**: April 3, 2026 (Backlog refinement)
 
 ## How to Maintain This Document
 
@@ -93,6 +93,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 26 | docs/sprints/SPRINT_26_RETROSPECTIVE.md | [OK] Complete | Mar 22-24, 2026 |
 | 27 | docs/sprints/SPRINT_27_RETROSPECTIVE.md | [OK] Complete | Mar 29 - Apr 2, 2026 |
 | 28 | docs/sprints/SPRINT_28_RETROSPECTIVE.md | [OK] Complete | Apr 2, 2026 |
+| 29 | docs/sprints/SPRINT_29_RETROSPECTIVE.md | [OK] Complete | Apr 3-13, 2026 |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -100,93 +101,92 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 28** (April 2, 2026)
-- **Bug Fix**: B1 MSIX sandbox crash at launch - replaced hardcoded APPDATA paths with path_provider (Issue #218)
-- **Features**: F49 Remove Scan All Accounts + account-specific Scan History (Issue #219), F51 Background settings reorder (Issue #221)
-- **Bug Fixes**: Account selection dialog display, Test Background Scan runs all accounts
-- **MSIX**: Built, installed, launched successfully in local testing
-- **Process**: Sprint summary made mandatory in Phase 7, winwright E2E added to Phase 5, python3 hook fix
-- **Retrospective**: docs/sprints/SPRINT_28_RETROSPECTIVE.md
+**Sprint 29** (April 3-13, 2026)
+- **Features**: F50 selectable text on all 21 screens (Issue #220), F48 Scan History multi-account with filters/totals (Issue #212), F46 default rule set creation with reset option (Issue #208)
+- **Testing**: F42 +53 new tests (Issue #203), fixed pre-existing test failure, 1223 passing with 0 failures
+- **Testing Feedback**: 6 fixes (results/dialog text selection, account filter, totals alignment, nav cleanup, scan title)
+- **Backlog**: Added F52-F56, backlog refinement cleanup
+- **Retrospective**: docs/sprints/SPRINT_29_RETROSPECTIVE.md
 
 ---
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: April 2, 2026 (Sprint 28 retrospective)
+**Last Reviewed**: April 13, 2026 (Sprint 29 retrospective)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
 ### Windows Store Readiness
 
-**~~B1. MSIX sandbox crash at launch - File system error (Issue #218) (~10h)~~** [OK] Complete (Sprint 28)
-- Awaiting Microsoft Store resubmission and certification verification
-
-**~~WS-B1. MSIX config fixes (~1h)~~** [OK] Complete (Sprint 23)
-
-**~~WS-B3. MSIX signing strategy ADR (~2h)~~** [OK] Complete (Sprint 23, ADR-0036)
-
-**~~F28. App icon and branding finalization (~2-4h)~~** [OK] Complete (Sprint 23, ADR-0031)
-
-**~~F29. Register myemailspamfilter.com domain (~1h)~~** [OK] Complete (Sprint 23, Issue #166)
-
-**~~WS-B4. Privacy policy - write, host, and publish (~4-8h)~~** [OK] Complete (Sprint 24, Issue #197)
-
-**~~WS-I1. Store listing assets (~3-4h)~~** [OK] Complete (Sprint 24, Issue #197)
-
-**~~WS. Microsoft Partner Center account setup and first submission (~2-4h)~~** [OK] Complete (Sprint 24, Issue #197)
+**B1. MSIX sandbox crash at launch (Issue #218) -- [OK] Fixed (Sprint 28), awaiting Store certification**
 
 ### Core App
 
-**~~F40. Safe sender matches showing in results for Gmail IMAP (Issue #198)~~** [OK] Complete (Sprint 25)
+**~~F42. Test coverage gaps (Issue #203)~~** [OK] Complete (Sprint 29, +53 tests)
 
-**~~F30. Safe Senders "Exact Domain" filter shows 0 results~~** [OK] Complete (Sprint 25)
+**~~F46. Default rule set creation (Issue #208)~~** [OK] Complete (Sprint 29)
 
-**~~F41. Safe sender emails in Bulk Mail not moved to safe sender folder (Issue #201)~~** [OK] Complete (Sprint 25, diagnostic logging added)
+**~~F48. Scan History enhancements (Issue #212)~~** [OK] Complete (Sprint 29)
 
-**~~F31. Background scan task deleted on rebuild~~** [OK] Complete (Sprint 25)
+**~~F50. Make all page text selectable and copyable (Issue #220)~~** [OK] Complete (Sprint 29)
 
-**~~F32. Test coverage analysis~~** [OK] Complete (Sprint 25, 28.9% baseline, Issue #203 for remaining gaps)
+**F52. Multi-variant side-by-side install across all stores (~16-24h) Priority 90**
+- Phase: Build and Release Infrastructure
+- Platform: All (Windows, Android, iOS)
+- Extend ADR-0035 dev/prod separation to all 9 build variants (3 stores × 3 channels: dev, production, store)
+- All variants must run simultaneously without rebuild on same machine/device
+- [Detail](#f52-multi-variant-side-by-side-install)
 
-**F42. Test coverage gaps - medium+ priority uncovered files (Issue #203) Priority 54**
-- Phase: Quality and Testing
-- Platform: All
-- On Hold - remaining test gaps from F32 analysis
-
-**~~F34. Live Scan: in-progress and completed status indicator~~** [OK] Complete (Sprint 25)
-
-**~~F38. Live Scan: re-process emails after rule changes~~** [OK] Complete (Sprint 25)
-
-**~~F43. Folder settings selection UX~~** [OK] Complete (Sprint 26)
-
-**~~F44. Add "Go to View Scan History" to Manual Scan settings~~** [OK] Complete (Sprint 26)
-
-**~~F45. Background scan CSV to Excel export~~** [OK] Complete (Sprint 26)
-
-**~~F36. Settings: Add General tab for app-wide settings~~** [OK] Complete (Sprint 26)
-
-**F46. Default rule set creation (~6-8h) Priority 74**
+**F53. Add block rules for top-level domains .cc and .ne (~1h) Priority 60**
 - Phase: Core Feature
 - Platform: All
-- Create a default set of rules including all top-level domain rules and all Entire Domain rules
+- Add `@.*\.cc$` (.cc = Cocos (Keeling) Islands) and `@.*\.ne$` (.ne = Nigeria) block rule patterns
+- Update bundled rules.yaml asset (new user default bundle)
+- Add to current user's rules database (migration or runtime insert for existing installs)
+- Mirrors existing `@.*\.ru$` pattern
+- Target: Sprint 30
 
-**~~F47. Email provider domain warning on rule creation~~** [OK] Complete (Sprint 26)
-
-**F48. Scan History enhancements - multi-account, filters, totals (Issue #212) (~6-8h) Priority 78**
-- Phase: Core Feature
-- Platform: All
-- Combine all accounts, account filters, totals with tooltips, retention days in title
-- Follow-up to F7 Multi-Account Scanning
-
-**~~F7. Multi-Account Scanning~~** [OK] Complete (Sprint 26)
-
-**~~F49. Remove "Scan All Accounts" button, add account selection to Scan History (Issue #219) (~2-3h)~~** [OK] Complete (Sprint 28)
-
-**F50. Make all page text selectable and copyable to clipboard (Issue #220) (~4-6h) Priority 82**
+**F54. Add icon to Select Account screen icon row (~1-2h) Priority 64**
 - Phase: UX Improvement
 - Platform: All
-- Sprint 27 retrospective feedback: extend existing selectable text pattern to all screens
+- Current icon row: View Scan History (history), Settings (gear), Exit Application
+- Add a new icon+tooltip to the AppBar actions row
+- Needs: icon choice, tooltip/label, navigation target
+- Design decision: what action should this trigger? (account management, add account, etc.)
 
-**~~F51. Background settings - move Scan Mode above Default Folders (Issue #221) (~0.5h)~~** [OK] Complete (Sprint 28)
+**F56. Manual rule creation UI - block and safe sender rules from user input (~10-14h) Priority 68**
+- Phase: Core Feature
+- Platform: All
+- Add UI for creating rules directly from user input (not just from scan results)
+- Block rules (4 types):
+  - Top-level domain: user enters TLD (e.g., .cc, .ru) and app creates `@.*\.cc$` pattern
+  - Exact domain: user pastes email address or domain string, app extracts domain and creates `@domain\.com$` pattern with confirmation
+  - Entire domain: user pastes email address, domain, or URL, app extracts domain and creates `@(?:[a-z0-9-]+\.)*domain\.com$` subdomain-matching pattern with confirmation
+  - Exact email: user enters email address, app validates format, creates `^user@domain\.com$` pattern with confirmation
+- Safe sender rules (3 types, no TLD):
+  - Exact domain: same as block but adds to safe senders
+  - Entire domain: same as block but adds to safe senders
+  - Exact email: same as block but adds to safe senders
+- App should parse and extract domain from various input formats: email address, bare domain, URL with protocol, URL with path
+- Validation: email format check, domain format check, warn if TLD-only for safe senders
+- Confirmation dialog showing generated pattern before saving
+- Accessible from Manage Rules and Manage Safe Senders screens
+- Related: F35 (rule editing UI), F25 (rule testing UI enhancements)
+
+**F55. Screen navigation consistency - linear flow + push/pop icons (~4-6h) Priority 66**
+- Phase: UX Improvement
+- Platform: All
+- Two navigation models: linear scan flow (back returns up chain) and icon navigation (push/pop returns to origin)
+- Linear flow: Select Account -> Manual Scan -> Live Scan Results; back buttons return one step up
+- Icon navigation: Settings, Scan History, Select Account icons push onto stack; back pops to origin
+- Current issues:
+  - Results back button uses pushReplacement instead of pop (breaks stack)
+  - "Back to Accounts" button on Results skips Manual Scan via popUntil
+  - Results -> Manual Scan auto-navigation on scan complete should be push (not pushReplacement)
+- Consider: keep "Back to Accounts" as convenience shortcut or remove for consistency?
+- Consider: "Scan Again" pushReplacement is correct (avoids stack bloat on repeated scans)
+- Consider: does the user need a Select Account icon on Manual Scan and Results screens?
+- Related: F54 (add icon to Select Account screen)
 
 **F6. Provider-Specific Optimizations (~10-12h) Priority 100**
 - Phase: Performance
@@ -225,11 +225,6 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Phase: Android Google Play Store Readiness
 - Platform: Android
 - Validation sprint needed to verify Android app still works
-
-**~~F11. Desktop App E2E Testing with civyk-winwright (~8-10h)~~** [OK] Complete (Sprint 27)
-- Phase: Quality and Testing
-- Platform: Windows Desktop
-- [Detail](#f11-desktop-app-e2e-testing-with-civyk-winwright)
 
 **F4. Background Scanning - Android (~14-16h) Priority HOLD**
 - Phase: Android Google Play Store Readiness
@@ -322,50 +317,6 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 ## Feature and Bug Details
 
 This section contains detailed specifications for incomplete items only. Completed features have their details in sprint documents and CHANGELOG.md.
-
-### B1: MSIX Sandbox Crash at Launch
-
-**Status**: New (Microsoft Store certification failure, March 30 2026)
-**Estimated Effort**: ~10h
-**Phase**: Windows Store Readiness (BLOCKER)
-**Platform**: Windows Desktop
-**Issue**: #218
-**Target**: Sprint 28
-
-**Problem**: App crashes at launch when installed from MSIX package (Microsoft Store). Error: `File system error (-2015295536)` / 0x87E107D0. Certification testing on Surface Laptop 5 and Dell Inspiron 13-5379, OS build 26200.8037.
-
-**Root Causes (3 issues)**:
-
-1. **sqflite_common_ffi FFI initialization** (PRIMARY, ~4h)
-   - `sqfliteFfiInit()` in `main.dart:36` loads sqlite3.dll via Dart FFI
-   - Inside MSIX sandbox, DLL resolution fails or tries to write `.dart_tool/` to read-only install dir
-   - Known issue: tekartik/sqflite#945, YehudaKremer/msix#189, YehudaKremer/msix#76
-   - Fix options:
-     - **Option A** (Preferred): Replace `sqflite_common_ffi` with `sqlite3` v3.x direct usage (already transitive dep, uses build hooks for DLL bundling)
-     - **Option B**: Configure explicit DLL path in `sqfliteFfiInit()`
-     - **Option C**: Add `sqlite3_flutter_libs` dependency
-
-2. **Hardcoded `Platform.environment['APPDATA']` paths** (SECONDARY, ~2h)
-   - MSIX virtualizes `%APPDATA%` to `...\Packages\{PackageFamilyName}\LocalCache\Roaming\`
-   - Raw `Platform.environment['APPDATA']` may not match `path_provider` resolved paths
-   - Affected files (6 occurrences):
-     - `lib/main.dart:49` (background scan log)
-     - `lib/core/services/background_scan_windows_worker.dart:30,279` (log + Excel export)
-     - `lib/core/services/app_identity_migration.dart:29,35` (legacy migration)
-     - `lib/core/services/dev_environment_seeder.dart:28` (dev seeding)
-   - Fix: Replace all with `AppPaths` methods using `path_provider`
-
-3. **Platform.resolvedExecutable in MSIX** (TERTIARY, ~1h)
-   - Returns MSIX package path (read-only, changes on updates)
-   - Task Scheduler registration at `windows_task_scheduler_service.dart:259,369` may fail
-   - Fix: Detect MSIX context, skip/adapt Task Scheduler registration
-
-**Testing** (~2h):
-- Build MSIX locally: `dart run msix:create`
-- Install as non-admin user
-- Verify launch, database, rules, scanning, export
-
-**Current deps**: `sqflite: ^2.3.0`, `sqflite_common_ffi: ^2.3.0`, `sqlite3: 3.1.4` (transitive), `msix: ^3.16.8`
 
 ### Folder Selectors: Two-Level Listing (F37)
 
@@ -466,34 +417,118 @@ Provider defaults:
 
 ---
 
-### F11: Desktop App E2E Testing with civyk-winwright
+### F52: Multi-Variant Side-by-Side Install
 
-**Status**: In Progress (Sprint 27)
-**Estimated Effort**: ~8-10h
-**Phase**: Quality and Testing
-**Platform**: Windows Desktop
+**Status**: New (April 8, 2026)
+**Estimated Effort**: ~16-24h (phased per platform)
+**Phase**: Build and Release Infrastructure
+**Platform**: All (Windows, Android, iOS)
 
-**Overview**: Set up automated desktop app E2E testing using civyk-winwright MCP server, which provides Windows UI Automation (UIA3/MSAA) tools for native desktop app interaction. Playwright cannot directly test Flutter Desktop apps (Skia rendering, not browser-based), so civyk-winwright bridges this gap.
+**Overview**: Extend the existing dev/prod separation (ADR-0035, Windows only) to support all 9 build variants -- 3 channels (dev, production, store) across 3 platforms (Windows, Android, iOS) -- running simultaneously on the same machine/device without rebuilds.
 
-**Approach**:
-- **civyk-winwright**: MCP server with ~59 tools for desktop automation (UIA3), browser CDP, system tools, and script recording/replay
-- **Accessibility tree**: Flutter Windows exposes MSAA accessibility; civyk-winwright uses UIA3 which can bridge to MSAA
-- **Investigation first**: Evaluate accessibility tree richness before committing to full test scripting
+**The 9 Variants**:
 
-**Key Features**:
-- Install and configure civyk-winwright MCP server
-- Evaluate Flutter app accessibility tree for automation feasibility
-- Exploratory testing of all Windows Desktop screens via MCP tools
-- Document bugs found, script repeatable tests via record/replay
+| Platform | Dev (feature/develop) | Production (main) | Store (downloaded) |
+|----------|----------------------|-------------------|--------------------|
+| Windows | [OK] Built today | [OK] Built today | Microsoft Store install |
+| Android | TBD | TBD | Google Play install |
+| iOS | TBD | TBD | App Store install |
 
-**Dependencies**: Core UI features complete (Sprints 12-17), civyk-winwright v2.0.0
+**Current State**:
+- **Windows dev/prod**: ADR-0035 implemented in Sprint 19. Same .exe path, but different `secrets.*.json` builds use different data dirs (`MyEmailSpamFilter` vs `MyEmailSpamFilter_Dev`), task names, and mutexes. Whichever was built last is what runs.
+- **Windows store**: MSIX submitted to Microsoft Store (Sprint 28). Installs to `Packages\{PackageFamilyName}\` -- separate from dev/prod data dirs.
+- **Android**: Single applicationId (`com.example.my_email_spam_filter`). No flavors configured.
+- **iOS**: Not yet built.
+
+**Problem**: A user/developer needs to be able to run any combination of these 9 variants simultaneously to:
+- Compare dev vs prod behavior on same data
+- Test store version against local builds without uninstalling
+- Reproduce store-only bugs while a fix is in dev
+- Demonstrate prod features while continuing dev work
+
+The Windows dev/prod current implementation requires a rebuild to switch -- only one is "current" at a time.
+
+**Industry Best Practices**:
+
+**Android (Build Flavors)** -- See [Android docs](https://developer.android.com/build/build-variants):
+- Use `productFlavors` in `build.gradle.kts` with distinct `applicationIdSuffix` per flavor
+- Example: `com.example.app` (store), `com.example.app.prod` (sideloaded prod), `com.example.app.dev` (dev)
+- Each variant gets its own data directory, app icon, and Launcher entry
+- Side-by-side install works automatically on the same device
+- Use Manifest Placeholders for distinct app names (e.g., "SpamFilter", "SpamFilter PROD", "SpamFilter DEV")
+
+**iOS (Bundle ID + Targets/Configurations)** -- See [Xcode multi-config](https://medium.com/@danielgalasko/run-multiple-versions-of-your-app-on-the-same-device-using-xcode-configurations-1fd3a220c608):
+- iOS identifies apps by bundle identifier; cannot have two apps with the same ID
+- Create distinct bundle IDs per variant: `com.example.spamfilter`, `com.example.spamfilter.prod`, `com.example.spamfilter.dev`
+- Use Xcode build configurations or separate targets to switch bundle ID at build time
+- Each variant becomes a distinct app on the device with its own data, icon, and TestFlight stream
+- TestFlight typically uses a `.test` or `.beta` suffix to avoid colliding with App Store releases
+
+**Windows (MSIX Package Family + Distinct .exe Names)**:
+- MSIX uses `PackageFamilyName` for identity. Different `Identity Name` values produce distinct sandboxed installs.
+- For non-MSIX (sideloaded) builds, distinct .exe filenames + distinct install directories enable coexistence
+- Currently: `MyEmailSpamFilter.exe` is the same filename for dev and prod (only data dirs differ)
+- Recommendation: build to environment-specific subdirs (`Release-dev/`, `Release-prod/`) and use environment-specific .exe names (`MyEmailSpamFilter.exe`, `MyEmailSpamFilter-Dev.exe`)
+
+**Cross-Platform Pattern**:
+1. **Single source tree, build-time variants**: Use Flutter's `--dart-define` + `flutter run --flavor` for entry points
+2. **Distinct identifiers per variant**: applicationId/bundle ID/package family
+3. **Distinct visual markers**: app name, icon overlay (e.g., yellow stripe for dev, red for staging)
+4. **Distinct data isolation**: separate data dirs (already done for Windows; automatic for Android/iOS via OS)
+5. **Build matrix in CI**: each push to `main` builds prod variants, each push to `develop` builds dev variants
+
+**Key Decisions Needed (during sprint planning)**:
+1. **Naming convention**: `SpamFilter` (store) / `SpamFilter Pro` (sideloaded prod) / `SpamFilter Dev` (dev)? Or use suffixes?
+2. **Build artifact location**: Should dev and prod Windows builds output to separate dirs to enable coexistence without rebuild?
+3. **Icon variants**: Acceptable to ship 3 icon designs (or icon overlays generated at build time)?
+4. **Store identifier strategy**: Reserve all bundle IDs in advance (App Store Connect, Google Play Console, Microsoft Partner Center)?
+
+**Implementation Phases**:
+
+**Phase 1: Windows distinct .exe + distinct dirs (~4-6h)**
+- Update `build-windows.ps1` to output to `build/windows/x64/runner/Release-{env}/`
+- Rename .exe to `MyEmailSpamFilter.exe` (prod) and `MyEmailSpamFilter-Dev.exe` (dev) at build time
+- Verify Microsoft Store MSIX is unaffected (it installs separately)
+- Update launch scripts and docs to reference env-specific paths
+- Test: prod and dev builds present simultaneously, both runnable
+
+**Phase 2: Android flavors (~6-8h)**
+- Configure `productFlavors` in `mobile-app/android/app/build.gradle.kts`
+- Define `dev`, `prod`, `store` flavors with distinct `applicationIdSuffix`
+- Add Manifest Placeholder for app name
+- Generate distinct icons per flavor (or use icon overlay)
+- Update build scripts (`build-with-secrets.ps1`) to take a flavor parameter
+- Test: install all 3 variants on emulator side-by-side
+- Note: Cannot fully test "store" flavor until app is in Google Play (use `prod` flavor as proxy with different applicationId)
+
+**Phase 3: iOS bundle IDs (~6-10h, requires macOS)**
+- Configure Xcode build configurations or targets for `dev`, `prod`, `store`
+- Set distinct bundle IDs per configuration
+- Configure provisioning profiles for each variant
+- Update CI to build correct variant per branch
+- Note: Requires Apple Developer Program account and reserved bundle IDs
+- HOLD until iOS development begins
 
 **Acceptance Criteria**:
-- [ ] civyk-winwright installed and accessible as MCP server in Claude Code
-- [ ] Accessibility tree evaluated and findings documented
-- [ ] Exploratory testing covers all major screens
-- [ ] Bugs found filed as GitHub issues
-- [ ] TESTING_STRATEGY.md and ARCHITECTURE.md updated with E2E testing approach
+- [ ] Windows: dev, prod, and store builds all installable and runnable simultaneously
+- [ ] Android: dev, prod, and store flavors all installable and runnable simultaneously on emulator
+- [ ] iOS: dev, prod, and store configurations defined (full validation deferred to iOS dev)
+- [ ] All 9 variants have distinct data directories (no cross-contamination)
+- [ ] All 9 variants have visual markers (different name and/or icon)
+- [ ] Build scripts updated to support variant selection
+- [ ] Documentation updated: ADR (extend ADR-0035 or create new ADR), CLAUDE.md, build script READMEs
+- [ ] No regression in existing dev/prod Windows separation
+- [ ] CI builds correct variant per branch (main = prod+store, develop = dev)
+
+**Dependencies**:
+- iOS phase blocked until iOS development begins
+- Android store flavor blocked until app is published to Google Play
+- Windows store flavor already in place (MSIX from Sprint 28)
+
+**Notes**:
+- Phase 1 (Windows) is the only phase that can be done now without external dependencies
+- Phases 2 and 3 should be combined with broader Android/iOS work
+- Consider whether "store" flavor is really needed as a separate build, or if the actual store-downloaded app suffices
 
 ---
 
@@ -560,70 +595,6 @@ Provider defaults:
 - [ ] Backup DB before changes
 - [ ] Report: patterns converted, duplicates removed, unchanged patterns
 - [ ] All tests pass after cleanup
-
----
-
-### Windows Store Readiness (Complete - Sprint 22)
-
-**Status**: [OK] Complete (Sprint 22)
-**Estimated Effort**: ~8-12h (research + gap analysis; implementation in separate backlog items)
-**Phase**: Windows Store Readiness
-**Platform**: Windows Desktop
-
-**Overview**: Research all requirements for publishing on the Microsoft Store (Windows Store), perform a deep analysis of the current codebase to identify gaps, and create actionable backlog items to bridge each gap. This includes creating or updating ADRs for architectural decisions required for store compliance.
-
-**Phase 1: Requirements Research (~3-4h)**
-- Microsoft Store app submission requirements (2026)
-- MSIX packaging requirements and signing
-- Store listing requirements (screenshots, descriptions, privacy policy)
-- Content policy and app certification requirements
-- Age ratings and content declarations
-- Accessibility requirements
-- Privacy and data handling declarations
-- Update and versioning requirements
-- Testing and certification process
-
-**Phase 2: Codebase Gap Analysis (~3-4h)**
-- Deep analysis of current app against each store requirement
-- Review existing MSIX config in pubspec.yaml
-- Review app identity, signing, and packaging
-- Review privacy policy status (ADR-0030)
-- Review data handling declarations
-- Review accessibility compliance
-- Review app capabilities and permissions
-- Identify all gaps with severity (blocking vs nice-to-have)
-
-**Phase 3: Gap Summary and Review (~1-2h)**
-- Present findings to user with categorized gaps
-- Discuss prioritization and approach for each gap
-- Create/update ADRs for architectural decisions needed
-
-**Phase 4: Backlog Item Creation (~1-2h)**
-- Create individual backlog items for each gap
-- Estimate effort per item
-- Identify dependencies between items
-- Propose implementation order
-
-**Acceptance Criteria**:
-- [ ] All Microsoft Store requirements documented
-- [ ] Codebase gap analysis complete with severity ratings
-- [ ] Findings reviewed with user
-- [ ] ADRs created or updated for store-related architectural decisions
-- [ ] Individual backlog items created for each gap
-- [ ] Implementation order and dependencies documented
-
-**Note**: This is similar to the existing Google Play Store Readiness section (HOLD items H6-H17) but for the Microsoft Store. Some requirements overlap (privacy policy, data deletion, icons/branding).
-
----
-
-### ~~WS-B4: Privacy Policy~~ [OK] Complete (Sprint 24)
-
-### ~~WS: Implementation Order and Dependencies~~ [OK] Complete (Sprint 24)
-
-All Windows Store readiness items completed. App submitted to Microsoft Store for certification (Sprint 24, 2026-03-21).
-```
-
-**Parallel tracks**: #17, #18, #21 can be done in parallel. #19 and #20 can be done in parallel after their dependencies.
 
 ---
 

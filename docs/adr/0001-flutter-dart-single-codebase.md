@@ -24,11 +24,16 @@ Key forces driving this decision:
 
 Use 100% Flutter/Dart for all platforms with a single codebase. The original Python desktop application is archived (retained as reference in `archive/desktop-python/`) and all new development uses Flutter.
 
-The application targets all five platforms from a single `mobile-app/` directory:
+The application targets all five native platforms from a single `mobile-app/` directory:
 - Android and iOS (mobile)
 - Windows, macOS, and Linux (desktop)
+- Chromebook users are served by the Android (Play Store) and Linux (Crostini) targets
 
 All business logic (rule evaluation, pattern compilation, email scanning) lives in `lib/core/` and is completely platform-agnostic. Platform-specific code is isolated in `lib/adapters/` behind abstract interfaces.
+
+### Browser / Flutter Web (Excluded)
+
+A browser target (Flutter Web) has been evaluated and excluded. The app's IMAP-based email providers (AOL, Yahoo, iCloud, custom IMAP) require raw TCP socket connections via the `enough_mail` package, which browsers block via the Same-Origin Policy. The only viable workaround is a server-side IMAP proxy (the approach used by browser-based email clients such as Outlook Web), which would route user credentials and email content through a backend server. This directly contradicts the local-only, zero-telemetry privacy architecture ([ADR-0030](0030-privacy-and-data-governance-strategy.md)). A Gmail-only browser version (Gmail REST API works over HTTPS) was considered but rejected as it would exclude all IMAP providers, offering a degraded product that does not justify the engineering and maintenance cost.
 
 ## Alternatives Considered
 

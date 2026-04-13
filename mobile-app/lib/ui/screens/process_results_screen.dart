@@ -160,7 +160,8 @@ class _ProcessResultsScreenState extends State<ProcessResultsScreen> {
         title: Text('Unmatched Emails - ${widget.accountEmail}'),
         elevation: 0,
       ),
-      body: FutureBuilder<ScanResult?>(
+      body: SelectionArea(
+        child: FutureBuilder<ScanResult?>(
         future: _scanResultFuture,
         builder: (context, scanSnapshot) {
           if (scanSnapshot.connectionState == ConnectionState.waiting) {
@@ -290,6 +291,7 @@ class _ProcessResultsScreenState extends State<ProcessResultsScreen> {
             },
           );
         },
+      ),
       ),
     );
   }

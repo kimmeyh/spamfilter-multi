@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Accepted
 
 ## Date
 
@@ -67,66 +67,67 @@ All Firebase data is sent to Google servers, which must be disclosed in privacy 
 
 ## Decision
 
-**TO BE DETERMINED** - This ADR captures the decision criteria. The decision will be made by the Product Owner.
+**Option A: Zero telemetry.** Remove all Firebase Analytics dependencies. No crash reporting, no analytics, no remote data collection of any kind. Keep `google-services.json` for Google Sign-In only.
 
-### Options Under Consideration
+### Implementation
 
-#### Option A: Remove All Firebase (Zero Telemetry)
-- Remove `firebase-bom` and `firebase-analytics` from `build.gradle.kts`
-- Keep `google-services.json` (still needed for Google Sign-In)
-- Simplest privacy disclosures
-- No production crash visibility
-- Align with app's privacy-focused positioning
+- Remove `firebase-analytics` from `build.gradle.kts` dependencies
+- Remove `firebase-bom` if no other Firebase services depend on it (verify before removing)
+- Keep `google-services.json` (required for Google Sign-In on Android)
+- Keep `apply plugin: 'com.google.gms.google-services'` (needed for `google-services.json` processing)
+- No Crashlytics, no analytics, no remote logging of any kind
 
-#### Option B: Firebase Crashlytics Only (Crash Reports)
-- Replace `firebase-analytics` with `firebase-crashlytics`
-- Add Crashlytics Dart SDK (`firebase_crashlytics`)
-- Initialize in `main.dart` with `FlutterError.onError` handler
-- Crash reports sent to Firebase Console
-- Must disclose in privacy policy and Data Safety form
-- Enables production issue detection
+### Debugging Strategy Without Remote Telemetry
 
-#### Option C: Firebase Crashlytics + Minimal Analytics
-- Crashlytics for crash reporting
-- Analytics for basic metrics (daily active users, screen views)
-- No custom event tracking
-- More useful for product decisions
-- More privacy disclosures required
-
-#### Option D: Opt-In Crash Reporting
-- Crashlytics included but disabled by default
-- User enables in Settings ("Help improve this app")
-- Most privacy-respectful approach
-- Fewer crash reports (most users leave defaults)
-- More complex implementation
-
-### Decision Criteria
-
-1. **Privacy alignment**: The app positions itself as privacy-focused (no backend, local processing)
-2. **Production visibility**: Can production issues be detected and fixed without crash reporting?
-3. **Privacy disclosure complexity**: Each data type collected adds privacy policy and Data Safety form complexity
-4. **CASA audit impact**: Auditors evaluate all data collection and transmission
-5. **User trust**: Privacy-conscious users may avoid apps with analytics
-6. **Development value**: How often are crash reports actually useful?
-7. **Google Sign-In dependency**: google-services.json is needed regardless of analytics decision
+- **Local logging**: AppLogger with keyword-based filtering (EMAIL, RULES, EVAL, DB, AUTH, SCAN, ERROR, PERF, UI, DEBUG)
+- **Background scan logs**: CSV-based debug logging to local file (Sprint 15)
+- **User-reported issues**: GitHub Issues and support email
+- **Development testing**: Debug builds with verbose console logging
 
 ### Key Points
 
 - The `google-services.json` file is needed for Google Sign-In on Android, independent of Firebase Analytics
 - Firebase Analytics can be removed without affecting Google Sign-In
-- If Firebase Analytics is kept in dependencies but never initialized, it should still be removed to avoid confusion during CASA audit
-- The current CSV-based background scan logging provides local debugging capability
-- User-reported issues (via email/GitHub) can partially substitute for crash reporting
-- The app's privacy-focused nature (no backend, no data sharing) is a competitive differentiator
-- Adding analytics could undermine the app's privacy messaging
+- Removing unused `firebase-analytics` dependency eliminates a code smell that would raise questions during CASA audit
+- The app's privacy-focused nature (no backend, no data sharing) is a competitive differentiator that would be undermined by analytics
 
 ## Alternatives Considered
 
-Analysis deferred until decision criteria are evaluated by Product Owner.
+### Option B: Firebase Crashlytics Only
+- **Description**: Replace `firebase-analytics` with `firebase-crashlytics`. Initialize in `main.dart` with `FlutterError.onError` handler. Crash reports sent to Firebase Console.
+- **Pros**: Enables production issue detection, low implementation effort
+- **Cons**: Requires privacy disclosures in privacy policy and Data Safety form, sends data to Google servers
+- **Why Rejected**: Undermines the app's privacy-focused positioning; privacy disclosures add complexity for minimal benefit at current scale
+
+### Option C: Firebase Crashlytics + Minimal Analytics
+- **Description**: Crashlytics for crash reporting plus basic analytics (daily active users, screen views, no custom events).
+- **Pros**: Most useful for product decisions (user counts, feature usage)
+- **Cons**: Most privacy disclosures required, sends the most data to Google servers
+- **Why Rejected**: Directly contradicts the app's local-only, no-telemetry messaging
+
+### Option D: Opt-In Crash Reporting
+- **Description**: Include Crashlytics but disabled by default. User enables in Settings ("Help improve this app").
+- **Pros**: Most privacy-respectful approach to crash reporting, user has control
+- **Cons**: Implementation complexity (Settings UI, consent management, conditional initialization), most users leave defaults so few crash reports received
+- **Why Rejected**: Implementation complexity not justified for minimal benefit; can be added later if user base grows and crash visibility becomes essential
 
 ## Consequences
 
-To be documented after decision is made.
+### Positive
+- Simplest possible privacy disclosures (no data collection to disclose)
+- Fully aligns with the app's privacy-focused competitive positioning
+- No CASA audit complications from analytics or crash reporting data
+- Smaller APK/AAB size without Firebase Analytics dependency
+- No dependency on Firebase Console for production monitoring
+
+### Negative
+- No remote visibility into production crashes (rely entirely on user reports via GitHub Issues and email)
+- Cannot proactively detect issues that users do not report
+- No usage metrics for product decisions (feature adoption, user counts)
+
+### Neutral
+- Can revisit this decision if user base grows and crash reporting becomes essential (Option D is a natural evolution path)
+- Current local logging infrastructure (AppLogger, CSV background scan logs) provides adequate debugging for development and local testing
 
 ## References
 

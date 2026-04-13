@@ -144,7 +144,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
       },
       child: Scaffold(
         appBar: AppBarWithExit(
-          title: Text('Manual Scan - ${widget.platformDisplayName}'),
+          title: Text('Manual Scan - ${widget.accountEmail}'),
           // Add explicit back button that returns to account selection
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
@@ -209,7 +209,8 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
         ),
         body: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Column(
+          child: SelectionArea(
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _buildHeader(scanProvider),
@@ -220,6 +221,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
               const SizedBox(height: 16),
               Expanded(child: _buildRecentActivity(scanProvider)),
             ],
+          ),
           ),
         ),
       ),

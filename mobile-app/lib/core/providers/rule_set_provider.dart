@@ -11,6 +11,7 @@ import '../../adapters/storage/app_paths.dart';
 // LocalRuleStore import removed - YAML dual-write removed in Sprint 20
 import '../../core/models/rule_set.dart';
 import '../../core/models/safe_sender_list.dart';
+import '../../core/services/default_rule_set_service.dart';
 import '../../core/services/pattern_compiler.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/migration_manager.dart';
@@ -134,7 +135,13 @@ class RuleSetProvider extends ChangeNotifier {
       _databaseStore = RuleDatabaseStore(databaseHelper);
       _safeSenderStore = SafeSenderDatabaseStore(databaseHelper);
 
-      // YAML dual-write removed in Sprint 20. DB is sole source of truth.
+      // Seed with default rules if database is empty (new install)
+      final defaultRuleSetService = DefaultRuleSetService(databaseHelper);
+      final seedResult = await defaultRuleSetService.seedIfEmpty();
+      if (seedResult.rules > 0 || seedResult.safeSenders > 0) {
+        _logger.i(
+            'Seeded ${seedResult.rules} default rules and ${seedResult.safeSenders} default safe senders');
+      }
 
       // Load rules and safe senders from database
       await loadRules();

@@ -17,13 +17,14 @@ import 'package:my_email_spam_filter/core/services/yaml_service.dart';
 void main() {
   final yamlService = YamlService();
 
-  /// Find the repo root rules files (two directories up from mobile-app/test/)
-  String getRepoRoot() {
-    // Test runs from mobile-app/ directory
-    // Repo root contains rules.yaml and rules_safe_senders.yaml
+  /// Find the directory containing the YAML rule files.
+  ///
+  /// Rules moved from repo root to mobile-app/assets/rules/ in Sprint 20.
+  /// Tests run from mobile-app/ directory.
+  String getRulesDir() {
     final candidates = [
-      '${Directory.current.path}/../rules.yaml', // from mobile-app/
-      '${Directory.current.path}/rules.yaml',     // from repo root
+      '${Directory.current.path}/assets/rules/rules.yaml',    // from mobile-app/
+      '${Directory.current.path}/../mobile-app/assets/rules/rules.yaml', // from repo root
     ];
 
     for (final candidate in candidates) {
@@ -35,21 +36,26 @@ void main() {
     // Fallback: search up from current directory
     var dir = Directory.current;
     while (dir.path.length > 3) {
-      if (File('${dir.path}/rules.yaml').existsSync()) {
-        return dir.path;
+      final candidate = '${dir.path}/mobile-app/assets/rules/rules.yaml';
+      if (File(candidate).existsSync()) {
+        return File(candidate).parent.path;
+      }
+      final candidate2 = '${dir.path}/assets/rules/rules.yaml';
+      if (File(candidate2).existsSync()) {
+        return File(candidate2).parent.path;
       }
       dir = dir.parent;
     }
 
-    throw StateError('Could not find repo root with rules.yaml');
+    throw StateError('Could not find rules directory with rules.yaml');
   }
 
   group('YAML Rules Round-Trip', () {
-    late String repoRoot;
+    late String rulesDir;
     late Directory tempDir;
 
     setUpAll(() {
-      repoRoot = getRepoRoot();
+      rulesDir = getRulesDir();
     });
 
     setUp(() {
@@ -63,7 +69,7 @@ void main() {
     });
 
     test('export then import rules produces identical rule set', () async {
-      final rulesPath = '$repoRoot/rules.yaml';
+      final rulesPath = '$rulesDir/rules.yaml';
       expect(File(rulesPath).existsSync(), isTrue,
           reason: 'rules.yaml must exist at repo root');
 
@@ -132,7 +138,7 @@ void main() {
     });
 
     test('export then import safe senders produces identical list', () async {
-      final safeSendersPath = '$repoRoot/rules_safe_senders.yaml';
+      final safeSendersPath = '$rulesDir/rules_safe_senders.yaml';
       expect(File(safeSendersPath).existsSync(), isTrue,
           reason: 'rules_safe_senders.yaml must exist at repo root');
 
@@ -177,7 +183,7 @@ void main() {
     });
 
     test('double export produces identical YAML content', () async {
-      final safeSendersPath = '$repoRoot/rules_safe_senders.yaml';
+      final safeSendersPath = '$rulesDir/rules_safe_senders.yaml';
       final original = await yamlService.loadSafeSenders(safeSendersPath);
 
       // Export twice to different files
@@ -197,7 +203,7 @@ void main() {
     });
 
     test('double export produces identical rules YAML content', () async {
-      final rulesPath = '$repoRoot/rules.yaml';
+      final rulesPath = '$rulesDir/rules.yaml';
       final original = await yamlService.loadRules(rulesPath);
 
       // Export twice
@@ -231,7 +237,7 @@ void main() {
     });
 
     test('safe senders count matches expected range', () async {
-      final safeSendersPath = '$repoRoot/rules_safe_senders.yaml';
+      final safeSendersPath = '$rulesDir/rules_safe_senders.yaml';
       final safeSenders = await yamlService.loadSafeSenders(safeSendersPath);
 
       // The repo has hundreds of safe sender patterns
@@ -240,7 +246,7 @@ void main() {
     });
 
     test('rules count matches expected range', () async {
-      final rulesPath = '$repoRoot/rules.yaml';
+      final rulesPath = '$rulesDir/rules.yaml';
       final rules = await yamlService.loadRules(rulesPath);
 
       // The repo has multiple rules
@@ -249,7 +255,7 @@ void main() {
     });
 
     test('every reimported rule has valid regex patterns', () async {
-      final rulesPath = '$repoRoot/rules.yaml';
+      final rulesPath = '$rulesDir/rules.yaml';
       final original = await yamlService.loadRules(rulesPath);
 
       // Export and reimport
@@ -297,7 +303,7 @@ void main() {
     });
 
     test('every reimported safe sender pattern is a valid regex', () async {
-      final safeSendersPath = '$repoRoot/rules_safe_senders.yaml';
+      final safeSendersPath = '$rulesDir/rules_safe_senders.yaml';
       final original = await yamlService.loadSafeSenders(safeSendersPath);
 
       // Export and reimport

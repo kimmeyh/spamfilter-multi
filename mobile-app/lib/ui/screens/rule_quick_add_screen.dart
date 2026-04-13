@@ -432,7 +432,8 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
       ),
       body: Form(
         key: _formKey,
-        child: SingleChildScrollView(
+        child: SelectionArea(
+          child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -452,6 +453,7 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
               _buildActionButtons(),
             ],
           ),
+        ),
         ),
       ),
     );

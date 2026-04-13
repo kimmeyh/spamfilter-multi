@@ -2,17 +2,18 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import '../../core/services/app_environment.dart';
+import '../../core/services/default_rule_set_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
 import '../../core/services/background_scan_manager.dart' show ScanFrequency;
 import '../../core/services/background_scan_windows_worker.dart';
 import '../../core/services/windows_task_scheduler_service.dart';
+import '../../core/storage/database_helper.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/providers/email_scan_provider.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../adapters/email_providers/email_provider.dart' show Credentials;
-import '../../adapters/email_providers/platform_registry.dart';
 import '../widgets/app_bar_with_exit.dart';
 import 'folder_selection_screen.dart';
 import 'scan_history_screen.dart';
@@ -181,7 +182,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
   /// F36: General tab for app-wide settings
   Widget _buildGeneralTab() {
-    return ListView(
+    return SelectionArea(child: ListView(
       padding: const EdgeInsets.all(16),
       children: [
         // Rules Management section (moved from Account tab)
@@ -248,6 +249,18 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           style: OutlinedButton.styleFrom(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             alignment: Alignment.centerLeft,
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        OutlinedButton.icon(
+          icon: const Icon(Icons.restore),
+          label: const Text('Reset Rules to Defaults'),
+          onPressed: _resetRulesToDefaults,
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            alignment: Alignment.centerLeft,
+            foregroundColor: Colors.orange.shade700,
           ),
         ),
 
@@ -319,12 +332,12 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           ),
         ),
       ],
-    );
+    ));
   }
 
   Widget _buildAccountTab() {
     // [UPDATED] ISSUE #123: accountId now required, no null check needed
-    return FutureBuilder<Credentials?>(
+    return SelectionArea(child: FutureBuilder<Credentials?>(
       future: _credStore.getCredentials(widget.accountId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -428,11 +441,11 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           ],
         );
       },
-    );
+    ));
   }
 
   Widget _buildManualScanTab() {
-    return ListView(
+    return SelectionArea(child: ListView(
       padding: const EdgeInsets.all(16),
       children: [
         Card(
@@ -506,7 +519,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         _buildSectionHeader('Export Settings'),
         _buildCsvExportDirectorySelector(),
       ],
-    );
+    ));
   }
 
   Widget _buildCsvExportDirectorySelector() {
@@ -631,7 +644,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   }
 
   Widget _buildBackgroundScanTab() {
-    return ListView(
+    return SelectionArea(child: ListView(
       padding: const EdgeInsets.all(16),
       children: [
         SwitchListTile(
@@ -709,7 +722,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           },
         ),
       ],
-    );
+    ));
   }
 
   /// [NEW] ISSUE #159: Test Background Scan button
@@ -1069,25 +1082,67 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     );
   }
 
+  /// Reset rules and safe senders to bundled defaults
+  Future<void> _resetRulesToDefaults() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Reset to Defaults'),
+        content: const Text(
+          'This will replace all current rules and safe senders '
+          'with the bundled defaults. This cannot be undone.\n\n'
+          'Continue?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.orange.shade700),
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final dbHelper = DatabaseHelper();
+      final service = DefaultRuleSetService(dbHelper);
+      final result = await service.resetToDefaults();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Reset complete: ${result.rules} rules, ${result.safeSenders} safe senders restored',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Reset failed: $e')),
+        );
+      }
+    }
+  }
+
   /// Navigate to Scan History with account context
   ///
   /// Looks up platformId from credentials store so ScanHistoryScreen
   /// can display email details when tapping scan entries.
   Future<void> _navigateToScanHistory() async {
-    final platformId = await _credStore.getPlatformId(widget.accountId);
-    final platformDisplayName = platformId != null
-        ? (PlatformRegistry.getPlatform(platformId)?.displayName ?? platformId)
-        : null;
-
     if (!mounted) return;
 
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ScanHistoryScreen(
-          accountId: widget.accountId,
-          accountEmail: widget.accountId,
-          platformId: platformId,
-          platformDisplayName: platformDisplayName,
+          preSelectedAccountId: widget.accountId,
         ),
       ),
     );

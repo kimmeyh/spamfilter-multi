@@ -74,7 +74,8 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
       appBar: AppBarWithExit(
         title: const Text('Import / Export YAML'),
       ),
-      body: ListView(
+      body: SelectionArea(
+        child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           // Info card
@@ -198,6 +199,7 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
             const Center(child: CircularProgressIndicator()),
           ],
         ],
+      ),
       ),
     );
   }

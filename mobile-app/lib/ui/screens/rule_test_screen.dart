@@ -192,7 +192,7 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
       appBar: AppBar(
         title: const Text('Test Rule Pattern'),
       ),
-      body: Column(
+      body: SelectionArea(child: Column(
         children: [
           // Pattern input area
           _buildPatternInput(),
@@ -204,7 +204,7 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
                 : _buildResults(),
           ),
         ],
-      ),
+      )),
     );
   }
 

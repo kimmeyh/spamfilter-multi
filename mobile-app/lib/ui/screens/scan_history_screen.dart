@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 
+import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/settings_store.dart';
@@ -10,15 +11,15 @@ import 'results_display_screen.dart';
 
 /// Unified scan history screen showing both manual and background scans
 ///
-/// Replaces the separate BackgroundScanLogScreen with a consolidated view
-/// that shows all scan types in a single chronological list. Users can
-/// filter by scan type (manual/background/all) and tap entries to view
-/// detailed results.
+/// Shows all accounts in a single chronological list with account and type
+/// filters. Users can filter by account and scan type, view totals with
+/// tooltips, and tap entries to view detailed results.
 class ScanHistoryScreen extends StatefulWidget {
   final String? accountId;
   final String? accountEmail;
   final String? platformId;
   final String? platformDisplayName;
+  final String? preSelectedAccountId;
 
   const ScanHistoryScreen({
     super.key,
@@ -26,6 +27,7 @@ class ScanHistoryScreen extends StatefulWidget {
     this.accountEmail,
     this.platformId,
     this.platformDisplayName,
+    this.preSelectedAccountId,
   });
 
   @override
@@ -42,12 +44,19 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
   List<ScanResult> _filteredScans = [];
   bool _isLoading = true;
   String _typeFilter = 'all'; // 'all', 'manual', 'background'
+  String _accountFilter = 'all'; // 'all' or specific accountId
   int _retentionDays = SettingsStore.defaultScanHistoryRetentionDays;
+  List<String> _distinctAccounts = []; // unique accountIds from scan data
+  Map<String, String> _accountEmails = {}; // accountId -> email display
 
   @override
   void initState() {
     super.initState();
     _scanResultStore = ScanResultStore(_dbHelper);
+    // Pre-select account filter if navigating from Settings
+    if (widget.preSelectedAccountId != null) {
+      _accountFilter = widget.preSelectedAccountId!;
+    }
     _loadHistory();
   }
 
@@ -60,14 +69,33 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
       // Auto-purge old entries
       await _scanResultStore.purgeOldScanResults(_retentionDays);
 
-      // Load scan history filtered by account when available
-      final scans = widget.accountId != null
-          ? await _scanResultStore.getScanResultsByAccount(widget.accountId!)
-          : await _scanResultStore.getAllScanHistory(limit: 200);
+      // Load configured accounts from credentials store
+      final credStore = SecureCredentialsStore();
+      final configuredAccounts = await credStore.getSavedAccounts();
+
+      // Always load all scans across all accounts
+      final scans = await _scanResultStore.getAllScanHistory(limit: 500);
+
+      // Use configured accounts as the canonical list (not scan data)
+      final sortedAccounts = List<String>.from(configuredAccounts)..sort();
+
+      // Build email display map from accountId
+      // accountId format is "{platform}-{email}"
+      final emailMap = <String, String>{};
+      for (final accountId in sortedAccounts) {
+        final dashIndex = accountId.indexOf('-');
+        if (dashIndex > 0 && dashIndex < accountId.length - 1) {
+          emailMap[accountId] = accountId.substring(dashIndex + 1);
+        } else {
+          emailMap[accountId] = accountId;
+        }
+      }
 
       if (mounted) {
         setState(() {
           _allScans = scans;
+          _distinctAccounts = sortedAccounts;
+          _accountEmails = emailMap;
           _applyFilter();
           _isLoading = false;
         });
@@ -84,23 +112,26 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
   }
 
   void _applyFilter() {
-    if (_typeFilter == 'all') {
-      _filteredScans = List.from(_allScans);
-    } else {
-      _filteredScans = _allScans
-          .where((s) => s.scanType == _typeFilter)
-          .toList();
+    var scans = List<ScanResult>.from(_allScans);
+
+    // Apply account filter
+    if (_accountFilter != 'all') {
+      scans = scans.where((s) => s.accountId == _accountFilter).toList();
     }
+
+    // Apply type filter
+    if (_typeFilter != 'all') {
+      scans = scans.where((s) => s.scanType == _typeFilter).toList();
+    }
+
+    _filteredScans = scans;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBarWithExit(
-        // [UPDATED] ISSUE #219: Show account email in title when filtered
-        title: Text(widget.accountEmail != null
-            ? 'Scan History - ${widget.accountEmail}'
-            : 'Scan History'),
+        title: Text('Scan History ($_retentionDays days)'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -111,20 +142,20 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _buildBody(),
+          : SelectionArea(child: _buildBody()),
     );
   }
 
   Widget _buildBody() {
     return Column(
       children: [
+        // Account filter chips (show when multiple configured accounts)
+        if (_distinctAccounts.length > 1) _buildAccountFilter(),
         // Type filter chips
         _buildTypeFilter(),
-        // Summary stats
-        _buildSummaryStats(),
+        // Summary totals
+        _buildTotals(),
         const Divider(),
-        // Retention info
-        _buildRetentionInfo(),
         // Scan list
         Expanded(
           child: _filteredScans.isEmpty
@@ -135,17 +166,60 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
     );
   }
 
+  Widget _buildAccountFilter() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+            _buildAccountChip('All Accounts', 'all'),
+            const SizedBox(width: 8),
+            ..._distinctAccounts.map((accountId) {
+              final email = _accountEmails[accountId] ?? accountId;
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: _buildAccountChip(email, accountId),
+              );
+            }),
+          ],
+        ),
+      ),
+      ),
+    );
+  }
+
+  Widget _buildAccountChip(String label, String value) {
+    final isSelected = _accountFilter == value;
+    return FilterChip(
+      label: Text(label, overflow: TextOverflow.ellipsis),
+      selected: isSelected,
+      onSelected: (selected) {
+        setState(() {
+          _accountFilter = value;
+          _applyFilter();
+        });
+      },
+    );
+  }
+
   Widget _buildTypeFilter() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: [
-          _buildFilterChip('All', 'all'),
-          const SizedBox(width: 8),
-          _buildFilterChip('Manual', 'manual'),
-          const SizedBox(width: 8),
-          _buildFilterChip('Background', 'background'),
-        ],
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildFilterChip('All', 'all'),
+            const SizedBox(width: 8),
+            _buildFilterChip('Manual', 'manual'),
+            const SizedBox(width: 8),
+            _buildFilterChip('Background', 'background'),
+          ],
+        ),
       ),
     );
   }
@@ -164,48 +238,70 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
     );
   }
 
-  Widget _buildSummaryStats() {
-    final total = _filteredScans.length;
-    final completed = _filteredScans.where((s) => s.status == 'completed').length;
-    final errors = _filteredScans.where((s) => s.status == 'error').length;
+  Widget _buildTotals() {
+    final totalEmails = _filteredScans.fold<int>(
+      0, (sum, s) => sum + s.totalEmails,
+    );
     final totalProcessed = _filteredScans.fold<int>(
       0, (sum, s) => sum + s.processedCount,
     );
+    final totalDeleted = _filteredScans.fold<int>(
+      0, (sum, s) => sum + s.deletedCount,
+    );
+    final totalMoved = _filteredScans.fold<int>(
+      0, (sum, s) => sum + s.movedCount,
+    );
+    final totalSafe = _filteredScans.fold<int>(
+      0, (sum, s) => sum + s.safeSenderCount,
+    );
+    final totalNoRule = _filteredScans.fold<int>(
+      0, (sum, s) => sum + s.noRuleCount,
+    );
+    final totalErrors = _filteredScans.fold<int>(
+      0, (sum, s) => sum + s.errorCount,
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Wrap(
+          alignment: WrapAlignment.start,
+          spacing: 8,
+          runSpacing: 8,
         children: [
-          _buildStatChip('Total', total, Colors.blue),
-          _buildStatChip('Completed', completed, Colors.green),
-          if (errors > 0) _buildStatChip('Errors', errors, Colors.red),
-          _buildStatChip('Emails Processed', totalProcessed, Colors.purple),
+          _buildTotalChip('Total', totalEmails, Colors.blue,
+              'Total unique emails found'),
+          _buildTotalChip('Processed', totalProcessed, Colors.purple,
+              'Total emails processed'),
+          _buildTotalChip('Deleted', totalDeleted, Colors.red,
+              'Total unique emails deleted'),
+          _buildTotalChip('Moved', totalMoved, Colors.orange,
+              'Total unique emails moved'),
+          _buildTotalChip('Safe', totalSafe, Colors.green,
+              'Total unique emails marked safe (not including Safe Folder)'),
+          _buildTotalChip('No Rule', totalNoRule, Colors.grey,
+              'Total unique emails currently with no rules assigned'),
+          _buildTotalChip('Errors', totalErrors, Colors.red.shade300,
+              'Total unique emails not processed due to errors'),
         ],
       ),
-    );
-  }
-
-  Widget _buildStatChip(String label, int value, Color color) {
-    return Chip(
-      label: Text('$label: $value'),
-      backgroundColor: color.withOpacity(0.15),
-      labelStyle: TextStyle(
-        color: _darkenColor(color),
-        fontWeight: FontWeight.w600,
-        fontSize: 12,
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
     );
   }
 
-  Widget _buildRetentionInfo() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: Text(
-        'Showing history for the last $_retentionDays days',
-        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+  Widget _buildTotalChip(String label, int value, Color color, String tooltip) {
+    return Tooltip(
+      message: tooltip,
+      child: Chip(
+        label: Text('$label: $value'),
+        backgroundColor: color.withOpacity(0.15),
+        labelStyle: TextStyle(
+          color: _darkenColor(color),
+          fontWeight: FontWeight.w600,
+          fontSize: 12,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       ),
     );
   }
@@ -269,10 +365,12 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
     // Build subtitle with scan type badge and mode
     final modeLabel = _scanModeLabel(scan.scanMode);
 
+    final accountEmail = _accountEmails[scan.accountId] ?? scan.accountId;
+
     return Card(
       elevation: 1,
       child: InkWell(
-        onTap: (isCompleted && scan.id != null && widget.platformId != null)
+        onTap: (isCompleted && scan.id != null)
             ? () => _navigateToResults(scan)
             : null,
         child: Padding(
@@ -280,6 +378,18 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Account row (when showing all accounts)
+              if (_distinctAccounts.length > 1) ...[
+                Text(
+                  accountEmail,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+              ],
               // Top row: date, type badge, status icon
               Row(
                 children: [
@@ -405,17 +515,43 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
   }
 
   void _navigateToResults(ScanResult scan) {
+    // Extract platform and email from accountId format: "{platform}-{email}"
+    final dashIndex = scan.accountId.indexOf('-');
+    final platformId = dashIndex > 0
+        ? scan.accountId.substring(0, dashIndex)
+        : '';
+    final email = _accountEmails[scan.accountId] ?? scan.accountId;
+
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ResultsDisplayScreen(
-          platformId: widget.platformId ?? '',
-          platformDisplayName: widget.platformDisplayName ?? '',
+          platformId: platformId,
+          platformDisplayName: _platformDisplayName(platformId),
           accountId: scan.accountId,
-          accountEmail: widget.accountEmail ?? scan.accountId,
+          accountEmail: email,
           historicalScanId: scan.id,
         ),
       ),
     );
+  }
+
+  String _platformDisplayName(String platformId) {
+    switch (platformId) {
+      case 'aol':
+        return 'AOL';
+      case 'gmail':
+        return 'Gmail';
+      case 'gmail_oauth':
+        return 'Gmail (OAuth)';
+      case 'yahoo':
+        return 'Yahoo';
+      case 'outlook':
+        return 'Outlook.com';
+      case 'protonmail':
+        return 'ProtonMail';
+      default:
+        return platformId;
+    }
   }
 
   /// Convert full timezone name to abbreviation.
