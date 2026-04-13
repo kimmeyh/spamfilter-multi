@@ -34,6 +34,8 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **fix**: SEC-2: Add android:allowBackup="false" to AndroidManifest.xml (prevents adb backup data extraction)
 - **fix**: SEC-3: Firebase API keys restricted in Google Cloud Console (Android key: package+SHA-1, 4 APIs only; Browser key: domain restricted)
 - **fix**: SEC-5: Remove password logging from IMAP adapter (no credential info in logs)
+- **fix**: Scan History: tapping a background scan entry now shows correct results instead of stale live scan results for same account
+- **test**: Add 3 integration tests for historical scan result loading (scan ID isolation, latest vs specific, email action partitioning)
 
 ### 2026-04-13 (Sprint 30 - Architecture Gap Analysis)
 - **docs**: Architecture gap analysis - compared 36 ADRs, ARCHITECTURE.md, ARSD.md against codebase (F60, Issue #226)

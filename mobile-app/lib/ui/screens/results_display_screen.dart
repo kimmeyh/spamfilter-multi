@@ -424,14 +424,16 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     final summary = scanProvider.getSummary();
     final liveResults = scanProvider.results;
 
-    // [NEW] ISSUE #157: When a live scan is active (scanning/paused), always use
-    // live results even if empty (scan just started). Only show historical results
-    // when truly idle with no live results.
+    // When viewing from Scan History (historicalScanId provided), always use
+    // the historically-loaded results, not stale provider results from a
+    // previous live scan. Only use live provider results for active scans.
     final isLiveScanActive = scanProvider.status == ScanStatus.scanning ||
         scanProvider.status == ScanStatus.paused;
-    final allResults = (liveResults.isNotEmpty || isLiveScanActive)
-        ? liveResults
-        : _historicalResults;
+    final allResults = (widget.historicalScanId != null)
+        ? _historicalResults
+        : ((liveResults.isNotEmpty || isLiveScanActive)
+            ? liveResults
+            : _historicalResults);
     final filteredResults = _getFilteredResults(allResults);
 
     // Issue 3: Cache folders list for performance (only extract once per results set)
@@ -756,8 +758,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   }
 
   Widget _buildSummary(Map<String, dynamic> summary, EmailScanProvider scanProvider, List<EmailActionResult> allResults) {
-    // [NEW] Testing feedback FB-4: Determine if showing live or historical results
-    final hasLiveResults = scanProvider.results.isNotEmpty || scanProvider.status == ScanStatus.scanning;
+    // Determine if showing live or historical results.
+    // When historicalScanId is set (viewing from Scan History), always treat as historical
+    // regardless of stale provider state.
+    final isViewingHistory = widget.historicalScanId != null;
+    final hasLiveResults = !isViewingHistory &&
+        (scanProvider.results.isNotEmpty || scanProvider.status == ScanStatus.scanning);
     final showingHistorical = !hasLiveResults && _lastCompletedScan != null;
 
     // [UPDATED] FB-2a: Use historical scan's mode when showing historical results,
