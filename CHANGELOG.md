@@ -26,6 +26,19 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-04-13 (Sprint 32 - Security Hardening)
+- **fix**: SEC-1: ReDoS protection -- nested quantifier detection in PatternCompiler.validatePattern() and timeout-protected regex matching via safeHasMatch() (Issue #230)
+- **fix**: SEC-10: YAML import file size limit -- reject files over 10 MB before parsing (Issue #230)
+- **fix**: SEC-12: OAuth token revocation -- desktop signOut now calls Google revoke endpoint (Issue #230)
+- **fix**: SEC-13: Fail-fast on empty OAuth client ID with setup instructions (Issue #230)
+- **fix**: SEC-17: Auth logging -- replace unredacted email addresses with Redact.email() in secure_credentials_store.dart (26 log statements), redact OAuth config and token exchange logs (Issue #230)
+- **fix**: SEC-18: Silent regex fallback logging -- add Logger.w() to catch blocks in safe_sender_list.dart and rule_quick_add_screen.dart (Issue #230)
+- **fix**: SEC-20: Email format validation on account setup -- validate @ symbol, domain structure before IMAP connection (Issue #230)
+- **fix**: SEC-21: Password minimum length warning -- informational message for entries shorter than 8 characters (Issue #230)
+- **fix**: SEC-23: Windows binary hardening flags -- /GS, /DYNAMICBASE, /NXCOMPAT, /guard:cf in CMakeLists.txt (Issue #230)
+- **docs**: SEC-16: Add dependency vulnerability check (dart pub outdated) to sprint pre-kickoff workflow and checklist (Issue #230)
+- **test**: Add 13 new tests for ReDoS detection and timeout-protected matching (Issue #230)
+
 ### 2026-04-13 (Sprint 31 - Security Deep Dive)
 - **docs**: Security audit - comprehensive review of dependencies, SQL injection, regex/ReDoS, credentials, OWASP Mobile Top 10, platform security (F68)
 - **docs**: Identified 31 security findings: 3 Critical, 7 High, 13 Medium, 8 Low
