@@ -145,20 +145,22 @@ These are imported by `gmail_oauth_screen.dart` as fallbacks. They should either
 
 ADR-0028 prescribes `POST_NOTIFICATIONS` (dangerous, runtime on Android 13+) and foreground service types for background scanning. Currently `INTERNET` is declared but notification permissions and background service declarations are incomplete.
 
+**Review note**: `POST_NOTIFICATIONS` is not needed initially for Android. Add only when Android background scanning is implemented.
+
 **Backlog coverage**: Partially covered by #163 (Android app testing). Would be fully addressed when Android background scanning is implemented.
 
-#### G11. ADR-0029/0034: Gmail IMAP app password path not implemented
+#### G11. ADR-0029/0034: Gmail IMAP app password path -- onboarding update needed
 
-**Severity**: Medium (blocks Google Play general availability)
+**Severity**: Low (code implemented, documentation/UX update needed)
 
 ADR-0029 and ADR-0034 prescribe a phased Gmail access strategy:
 - Path 1: Gmail REST API + OAuth (IMPLEMENTED)
-- Path 2: Gmail via IMAP with app passwords for general users (NOT IMPLEMENTED)
+- Path 2: Gmail via IMAP with app passwords for general users (IMPLEMENTED -- Sprint 19, Issue #178)
 - Path 3: Full OAuth post-CASA verification (DEFERRED)
 
-Path 2 is needed before Google Play general availability since unverified OAuth is limited.
+**Review correction**: Path 2 is already fully implemented. `GenericIMAPAdapter.gmail()` factory exists, platform registry routes `gmail-imap`, and the account setup screen offers dual-auth choice. What remains is updating onboarding/documentation to recommend app passwords as the **primary** approach for all platforms (Windows, Android, iOS), with OAuth as secondary/advanced.
 
-**Backlog coverage**: Not currently in backlog as a standalone item. Google Play items are on HOLD.
+**Backlog coverage**: New item F65 (Gmail onboarding update, P45).
 
 #### G12. ADR-0030: Privacy policy hosting and data deletion
 
@@ -186,11 +188,13 @@ ADR-0035 prescribes full environment separation. `AppEnvironment` class exists a
 
 #### G15. ADR-0032: User data deletion not implemented
 
-**Severity**: Medium (required for Google Play, GDPR/CCPA)
+**Severity**: Medium (required for Google Play, GDPR/CCPA, and Windows Store)
 
 ADR-0032 prescribes per-account deletion and full data wipe features, plus an external GitHub Pages deletion form. None of these are implemented yet.
 
-**Backlog coverage**: Covered by GP-11 (Google Play roadmap, HOLD).
+**Review note**: External deletion form is a no-op since no user data is stored server-side, but implement if required by store policies.
+
+**Backlog coverage**: Covered by F66 (was GP-11, taken off HOLD -- applies to all platforms including Windows Store).
 
 ---
 
@@ -290,11 +294,11 @@ ARSD.md Gap Analysis table lists macOS, Linux, and iOS as "Architecture supports
 | G8 | Dead Code | Medium | Duplicate LocalRuleStore classes | Part of G7 |
 | G9 | Dead Code | Low | Legacy screens in wrong directory | Part of G7 |
 | G10 | Partial ADR | Low | ADR-0028: Android permissions incomplete | #163 (partial) |
-| G11 | Partial ADR | Medium | ADR-0029/0034: Gmail IMAP path not built | GP roadmap (HOLD) |
+| G11 | Partial ADR | Low | ADR-0029/0034: Gmail IMAP implemented; onboarding update needed | F65 (P45) |
 | G12 | Partial ADR | Medium | ADR-0030: Data deletion not built | GP-11 (HOLD) |
 | G13 | Partial ADR | Low | ADR-0033: Firebase Analytics not fully removed | GP-12 (HOLD) |
 | G14 | Partial ADR | Low | ADR-0035: Full multi-variant not done | F52 (Priority 90) |
-| G15 | Partial ADR | Medium | ADR-0032: User data deletion missing | GP-11 (HOLD) |
+| G15 | Partial ADR | Medium | ADR-0032: User data deletion missing | F66 (was GP-11, off HOLD) |
 | G16 | Missing Doc | Low | RuleConflictDetector/Resolver undocumented | Part of G1 |
 | G17 | Missing Doc | Low | EmailAvailabilityChecker undocumented | Part of G1 |
 | G18 | Missing Doc | Low | EmailBodyParser undocumented | Part of G1 |
@@ -311,9 +315,11 @@ ARSD.md Gap Analysis table lists macOS, Linux, and iOS as "Architecture supports
 
 ## Recommended Backlog Actions
 
+*Updated after user review on April 13, 2026.*
+
 ### New Backlog Items
 
-**F61. Architecture documentation refresh (~3-4h) Priority 50**
+**F61. Architecture documentation refresh (~3-4h) Priority 50** [APPROVED]
 - Update ARCHITECTURE.md:
   - Remove Dual-Write pattern documentation (superseded Sprint 20)
   - Remove LocalRuleStore references from storage adapters section
@@ -330,32 +336,55 @@ ARSD.md Gap Analysis table lists macOS, Linux, and iOS as "Architecture supports
   - Update ADR-0004 references to note superseded status
 - Covers gaps: G1, G2, G3, G4, G5, G6, G16, G17, G18, G19, G20, G21, G22
 
-**F62. Dead code cleanup - remove deprecated classes (~2h) Priority 55**
+**F62. Dead code cleanup - remove deprecated classes (~2h) Priority 55** [APPROVED]
 - Remove deprecated `config/app_paths.dart` (verify no imports first)
 - Remove or consolidate duplicate `LocalRuleStore` classes (both locations)
-- Move legacy OAuth screens from `lib/screens/` to `lib/ui/screens/` or remove if unused
+- Move legacy OAuth screens from `lib/screens/` to `lib/ui/screens/` and update imports
 - Verify ADR-0004 is clearly marked as superseded in the ADR file itself
 - Covers gaps: G7, G8, G9
 
-**F63. Responsive design framework (~8-12h) Priority 70**
+**F63. Responsive design framework (~8-12h) Priority 70** [APPROVED]
 - Implement adaptive breakpoints per ARSD AR-7: phone (<600dp), tablet (600-900dp), desktop (>900dp)
 - Start with LayoutBuilder + breakpoints approach (ARSD A6 recommendation)
 - At minimum: scan progress, results display, and settings screens
 - Covers gap: G23
 - Note: F55 (navigation consistency, Priority 66) should be done before or with this
 
-**F64. CI/CD pipeline with GitHub Actions (~4-6h) Priority 80**
+**F64. CI/CD pipeline with GitHub Actions (~4-6h) Priority 80** [APPROVED - HOLD]
 - Set up GitHub Actions for: flutter analyze, flutter test, build verification
 - Run on PR to develop
 - Covers gap: G24
+- HOLD rationale: Current CI/CD equivalent is handled by Claude Code sprint execution workflow (flutter analyze, flutter test, Windows build in Phase 5). Could be implemented later if beneficial to dev team, maintenance team, or instructed by Product Owner.
+
+**F65. Update Gmail onboarding to recommend app passwords as primary (~1-2h) Priority 45** [APPROVED]
+- Gmail IMAP with app passwords is already fully implemented (Sprint 19, Issue #178)
+- Update account setup screen labels: app passwords as "Recommended", OAuth as "Advanced"
+- Update any in-app help text referencing Gmail setup
+- Update ADR-0034 status to reflect Path 2 is the primary production path
+- Covers gap: G11
+
+**F66. User data deletion feature (~4-6h) Priority 50** [APPROVED - was GP-11, OFF HOLD]
+- Per-account deletion: remove all data for a specific email account
+- Full data wipe: delete all app data as a complete reset
+- External deletion form: GitHub Pages hosted (no-op since all data is local-only, implement only if store requires)
+- Applies to all platforms including Windows Store (not just Google Play)
+- Covers gaps: G12, G15
+
+**F67. Platform validation - iOS, Linux, macOS (~4-6h per platform) Priority 85** [APPROVED - HOLD]
+- Shared tasks (all 3): validation build, smoke test, IMAP scan test, storage path verification, auth flow testing
+- iOS-specific: Xcode config, signing, keychain access
+- macOS-specific: entitlements, sandbox, notarization
+- Linux-specific: desktop entry, packaging (snap/flatpak/AppImage), dependency verification (GTK, libsecret)
+- HOLD rationale: No current business need. Activate when distribution is prioritized by Product Owner.
+- Covers gap: G25
 
 ### Updates to Existing Backlog Items
 
 **F52 (Multi-variant side-by-side)**: No change needed. Already covers G14 (ADR-0035 full implementation).
 
-**Issue #163 (Android app testing)**: Consider expanding scope to include ADR-0028 permission validation (G10). Add subtask: "Verify POST_NOTIFICATIONS permission and foreground service declarations".
+**Issue #163 (Android app testing)**: Expanded scope to include ADR-0028 permission validation (G10) -- note `POST_NOTIFICATIONS` not needed initially, add when background scanning is implemented. Also include unique UI tests via Playwright/WinWright as needed/appropriate.
 
-**Google Play HOLD items**: G11, G12, G13, G15 are all correctly tracked in the GP roadmap. No new items needed -- they will activate when Google Play work resumes.
+**Google Play HOLD items**: G12/G15 moved to F66 (off HOLD, all platforms). G13 remains tracked in GP-12 (HOLD). G11 corrected -- already implemented, onboarding update is F65.
 
 **Issue #44 (Outlook.com adapter)**: G26 is correctly tracked. No change needed.
 

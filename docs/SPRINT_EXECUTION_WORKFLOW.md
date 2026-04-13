@@ -262,6 +262,21 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
   - Risk assessments documented for all tasks (even if "Low - maintenance work")
   - Effort estimates included for all tasks (with 20% buffer for manual testing tasks)
 
+- [ ] **3.6.1 Architecture Impact Check** (MANDATORY - Added Sprint 30)
+  - **Purpose**: Prevent architecture drift by catching documentation gaps BEFORE sprint approval
+  - **Check**: Review planned sprint tasks against documented architecture:
+    - `docs/ARCHITECTURE.md` -- Do planned changes affect documented components, patterns, or data flows?
+    - `docs/ARSD.md` -- Do planned changes affect architecture requirements or design specifications?
+    - `docs/adr/*.md` -- Do planned changes conflict with or extend any ADR decisions?
+  - **Determine if sprint scope needs**:
+    - New ADR (for new architectural decisions)
+    - ADR update (for changes to existing decisions)
+    - ARCHITECTURE.md update (for new services, screens, patterns, database tables)
+    - ARSD.md update (for requirements or design spec changes)
+  - **If updates needed**: Include architecture documentation tasks in the sprint plan
+  - **If no impact**: Note "No architecture impact" in sprint plan and proceed
+  - **Rationale**: Architecture drift accumulated over Sprints 20-29 because docs were not checked during planning. This step prevents recurrence. (Learned Sprint 30)
+
 - [ ] **3.7 CRITICAL: Plan Approval = Task Execution Pre-Approval**
   - **SUGGESTION**: User may optionally run `/compact` before approving plan to refresh context for execution
     - **When Helpful**: After long planning discussions (>30K tokens used)
@@ -765,6 +780,18 @@ Before conducting sprint review, build and test the Windows desktop app:
   - Share what could be improved (edge cases, documentation gaps)
   - Provide specific, actionable observations
   - Format: "What Went Well" + "What Could Be Improved"
+
+- [ ] **7.4.1 Architecture Compliance Check** (MANDATORY - Added Sprint 30)
+  - **Purpose**: Verify sprint code changes are consistent with documented architecture. Second safety net after Phase 3.6.1.
+  - **Check**: Review all code changes in this sprint against:
+    - `docs/ARCHITECTURE.md` -- Are new/changed components, services, screens, database tables reflected?
+    - `docs/ARSD.md` -- Are design specifications still accurate after sprint changes?
+    - `docs/adr/*.md` -- Were any ADR decisions violated or extended without documentation?
+  - **Determine**:
+    - (a) Do architecture docs need updating to reflect sprint changes? If yes, add to Phase 7.7 updates.
+    - (b) Did code changes diverge from approved architecture without prior approval? If yes, flag for Scrum Master review -- code may need reverting or architecture may need formal update.
+  - **If no code changes** (documentation/analysis sprint): Note "No code changes -- architecture compliance N/A" and proceed
+  - **Rationale**: Catches architecture drift that slips through planning. Ensures docs stay current with every sprint. (Learned Sprint 30)
 
 - [ ] **7.5 Create Improvement Suggestions**
   - Identify common improvements from both feedbacks

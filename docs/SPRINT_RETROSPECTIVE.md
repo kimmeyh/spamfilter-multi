@@ -347,6 +347,25 @@ Sprint retrospectives are integrated into Phase 7 of the sprint execution workfl
 **Example Feedback**:
 > "ALL_SPRINTS_MASTER_PLAN.md not updated with Sprint 9 actuals. Must update before planning Sprint 10 to ensure lessons learned are captured."
 
+### 13. Architecture Maintenance (Added Sprint 30)
+
+**Questions**:
+- Did this sprint introduce changes that affect documented architecture (ARCHITECTURE.md, ARSD.md, ADRs)?
+- Are all architecture documents current after this sprint's changes?
+- Do any ADRs need creation, updates, or superseding?
+- Were any architectural decisions made during execution that were not in the sprint plan?
+
+**What to Look For**:
+- New services, screens, database tables, or patterns not reflected in ARCHITECTURE.md
+- Changes that conflict with existing ADR decisions
+- Design pattern changes not reflected in ARSD.md
+- Implicit architectural decisions made during coding that should be documented
+
+**Example Feedback**:
+> "Sprint added DefaultRuleSetService but ARCHITECTURE.md Core Services section was not updated. Need to add it before merging."
+
+> "Sprint removed Dual-Write pattern but ARCHITECTURE.md still documents it as active. Flag for F61 documentation refresh."
+
 ---
 
 ## Gathering Feedback
@@ -397,6 +416,9 @@ Claude should ask user for feedback on the following topics. User can provide:
 [User feedback]
 
 ### 12. Next Sprint Readiness
+[User feedback]
+
+### 13. Architecture Maintenance
 [User feedback]
 ```
 
@@ -798,11 +820,12 @@ Use these standard categories when presenting recommendations:
 
 ## Version History
 
-**Version**: 1.1
-**Date**: January 31, 2026
-**Author**: Claude Sonnet 4.5
+**Version**: 1.2
+**Date**: April 13, 2026
+**Author**: Claude Opus 4.6
 **Status**: Active
 
 **Updates**:
+- 1.2 (2026-04-13): Added Category 13 "Architecture Maintenance" to retrospective categories and feedback template (Sprint 30 improvement)
 - 1.1 (2026-01-31): Added "Recommendation Presentation Format" section with grouping strategy, numbering system, and template
 - 1.0 (2026-01-31): Initial version extracted from Sprint 8 retrospective and SPRINT_EXECUTION_WORKFLOW.md Phase 7

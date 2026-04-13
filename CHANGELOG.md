@@ -29,7 +29,8 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ### 2026-04-13 (Sprint 30 - Architecture Gap Analysis)
 - **docs**: Architecture gap analysis - compared 36 ADRs, ARCHITECTURE.md, ARSD.md against codebase (F60, Issue #226)
 - **docs**: Identified 26 gaps across 5 categories: documentation drift, dead code, partial ADRs, missing docs, unimplemented architecture
-- **docs**: Added 4 new backlog items from gap analysis: F61 (doc refresh), F62 (dead code cleanup), F63 (responsive design), F64 (CI/CD pipeline)
+- **docs**: Added 7 new backlog items from gap analysis: F61 (doc refresh), F62 (dead code cleanup), F63 (responsive design), F64 (CI/CD, HOLD), F65 (Gmail onboarding update), F66 (user data deletion, off HOLD), F67 (iOS/Linux/macOS validation, HOLD)
+- **docs**: User review of all 26 gaps -- corrected G11 (Gmail IMAP already implemented), took GP-11 off HOLD as F66, updated #163 scope
 - **chore**: Fix startup-check skill to use PowerShell first for metadata updates (don't-ask mode compatible)
 - **chore**: Close Sprint 29 issues #219, #220
 
