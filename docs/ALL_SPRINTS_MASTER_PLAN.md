@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: April 13, 2026 (Sprint 30 gap analysis review)
+**Last Updated**: April 13, 2026 (Sprint 31 retrospective -- added F70, F71 periodic review templates)
 
 ## How to Maintain This Document
 
@@ -95,6 +95,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 28 | docs/sprints/SPRINT_28_RETROSPECTIVE.md | [OK] Complete | Apr 2, 2026 |
 | 29 | docs/sprints/SPRINT_29_RETROSPECTIVE.md | [OK] Complete | Apr 3-13, 2026 |
 | 30 | docs/sprints/SPRINT_30_RETROSPECTIVE.md | [OK] Complete | Apr 13, 2026 |
+| 31 | docs/sprints/SPRINT_31_RETROSPECTIVE.md | [OK] Complete | Apr 13, 2026 |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -102,19 +103,19 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 30** (April 13, 2026)
-- **Type**: Architecture Spike (documentation and analysis only, no code changes)
-- **Feature**: F60 Architecture gap analysis - compared 36 ADRs, ARCHITECTURE.md, ARSD.md against codebase (Issue #226)
-- **Findings**: 26 gaps across 5 categories (doc drift, dead code, partial ADRs, missing docs, unimplemented architecture)
-- **Backlog**: Added F61-F67, promoted GP-11 to F66 (off HOLD), expanded #163 scope, corrected G11 (Gmail IMAP already implemented)
-- **Process**: Added architecture drift prevention checks to Phase 3 (planning) and Phase 7 (retrospective)
-- **Retrospective**: docs/sprints/SPRINT_30_RETROSPECTIVE.md
+**Sprint 31** (April 13, 2026)
+- **Type**: Security Spike (analysis, backlog generation, critical fixes)
+- **Feature**: F68 Security deep dive - comprehensive security audit (Issue #228)
+- **Findings**: 31 security findings: 3 Critical, 7 High, 13 Medium, 8 Low
+- **Backlog**: Added SEC-1 through SEC-23 security items with severity ratings
+- **Critical fixes**: SEC-2 (Android allowBackup), SEC-3 (Firebase API key restriction), SEC-5 (password logging removal)
+- **Retrospective**: docs/sprints/SPRINT_31_RETROSPECTIVE.md
 
 ---
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: April 13, 2026 (Sprint 30 planning)
+**Last Reviewed**: April 13, 2026 (Sprint 31 security audit)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
@@ -138,6 +139,13 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Deep dive on docs/adr/, docs/ARCHITECTURE.md, docs/ARSD.md vs current codebase
 - Gap analysis report with backlog item suggestions
 - Target: Sprint 30
+
+**~~F68. Security deep dive - vulnerability assessment and backlog generation (Issue #228)~~** [OK] Complete (Sprint 31)
+- Phase: Security Spike
+- Platform: All
+- Comprehensive security review: dependencies, SQL, regex, credentials, OWASP, platform security
+- Security audit report with 25 prioritized backlog items
+- Target: Sprint 31
 
 **F52. Multi-variant side-by-side install across all stores (~16-24h) Priority 90**
 - Phase: Build and Release Infrastructure
@@ -238,6 +246,155 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Was GP-11, taken off HOLD -- applies to Windows Store too
 - Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gaps G12, G15)
 
+### Testing
+
+**F69. E2E WinWright desktop tests - scan flows, history, settings (~6-8h) Priority 58**
+- Phase: Testing / Quality
+- Platform: Windows
+- E2E tests using WinWright (desktop accessibility automation):
+  - Manual scan: run scan, navigate to Scan History, tap the scan entry, verify displayed counts match
+  - Background scan: trigger background scan, navigate to Scan History, tap the background scan entry, verify displayed counts match (validates Sprint 31 fix for stale results bug)
+  - Select email address: verify account selection flow
+  - Settings: test all settings on all tabs (General, Scan, Background, Account overrides)
+- Source: Sprint 31 manual testing feedback (scan history showed wrong results for background scan)
+
+### Security Hardening (Sprint 31 Audit)
+
+**~~SEC-2. Android: Add allowBackup="false"~~** [OK] Fixed (Sprint 31)
+
+**~~SEC-3. Firebase API key: restrict in Google Cloud Console~~** [OK] Fixed (Sprint 31) -- Android key restricted to package+SHA-1, Browser key restricted to domains, both limited to 4 APIs
+
+**~~SEC-5. Remove password logging from IMAP adapter~~** [OK] Fixed (Sprint 31)
+
+**SEC-1. ReDoS protection: timeout + pattern validation (~4-6h) Priority 35 -- CRITICAL**
+- Phase: Security
+- Platform: All
+- Add timeout-protected regex matching (isolate or timer)
+- Add ReDoS pattern detection (nested quantifiers) to PatternCompiler.validatePattern()
+- Blocks: F56 (manual rule creation) and F35 (rule editing) which allow user regex input
+- Source: Sprint 31 security audit (S1, S2)
+
+
+**SEC-4. Android: Create network_security_config.xml (~1h) Priority 40 -- HIGH**
+- Phase: Security
+- Platform: Android
+- Block cleartext traffic, pin domains for OAuth and IMAP
+- Reference in AndroidManifest.xml
+- Source: Sprint 31 security audit (S11)
+
+
+**SEC-6. Android: Configure release signing (~2h) Priority 40 -- HIGH**
+- Phase: Security
+- Platform: Android
+- Create release keystore, configure in build.gradle.kts
+- Overlaps with GP-2 (release signing)
+- Source: Sprint 31 security audit (S12)
+
+**SEC-7. Android: Enable R8 obfuscation + Dart obfuscation (~2h) Priority 40 -- HIGH**
+- Phase: Security
+- Platform: Android
+- Enable minifyEnabled, create proguard-rules.pro
+- Use --obfuscate --split-debug-info for Dart
+- Overlaps with GP-9 (ProGuard/R8)
+- Source: Sprint 31 security audit (S13)
+
+**SEC-8. Certificate pinning for OAuth and IMAP endpoints (~4-6h) Priority 42 -- HIGH**
+- Phase: Security
+- Platform: All
+- Pin certs for accounts.google.com, oauth2.googleapis.com, imap.gmail.com, imap.aol.com
+- Source: Sprint 31 security audit (S14)
+
+**SEC-9. Move hardcoded Android client ID to build-time injection (~1h) Priority 42 -- HIGH**
+- Phase: Security
+- Platform: Android
+- Move _androidClientId to --dart-define or google-services.json
+- Source: Sprint 31 security audit (S5)
+
+**SEC-10. YAML import: add file size limit (~30min) Priority 55 -- MEDIUM**
+- Phase: Security
+- Platform: All
+- Add 10 MB file size check before YAML parsing
+- Source: Sprint 31 security audit (S18)
+
+**SEC-11. SQLite database encryption (~4-8h) Priority 60 -- MEDIUM**
+- Phase: Security
+- Platform: All
+- Implement SQLCipher or encrypt sensitive fields before storage
+- Source: Sprint 31 security audit (S7)
+
+**SEC-12. OAuth token revocation on logout (~1h) Priority 60 -- MEDIUM**
+- Phase: Security
+- Platform: All
+- Call Google revoke endpoint during signOut
+- Source: Sprint 31 security audit (S15)
+
+**SEC-13. Placeholder OAuth client ID: fail-fast on empty (~30min) Priority 60 -- MEDIUM**
+- Phase: Security
+- Platform: Windows
+- Use empty string as default, block OAuth if empty
+- Source: Sprint 31 security audit (S16)
+
+**SEC-14. Unmatched emails: retention limit + body preview truncation (~2h) Priority 62 -- MEDIUM**
+- Phase: Security / Privacy
+- Platform: All
+- Auto-cleanup old unmatched_emails, limit body_preview to 100 chars
+- Source: Sprint 31 security audit (S8)
+
+**SEC-15. IMAP host validation for custom servers (~1h) Priority 62 -- MEDIUM**
+- Phase: Security
+- Platform: All
+- Reject internal/private IP ranges when custom IMAP is implemented
+- Dependency: F37 (folder selectors / custom IMAP)
+- Source: Sprint 31 security audit (S19)
+
+**SEC-16. Enable dependency vulnerability scanning (~1h) Priority 62 -- MEDIUM**
+- Phase: Security / DevOps
+- Platform: All
+- Add `dart pub outdated` to sprint pre-kickoff checklist, consider GitHub Dependabot
+- Source: Sprint 31 security audit (S25)
+
+**SEC-17. Auth logging: use Redact.logSafe() consistently (~1-2h) Priority 62 -- MEDIUM**
+- Phase: Security
+- Platform: All
+- Review all auth-related logging, ensure Redact.logSafe() used for emails/tokens
+- Source: Sprint 31 security audit (S27)
+
+**SEC-18. Silent regex fallback: log warnings (~1h) Priority 65 -- MEDIUM**
+- Phase: Security
+- Platform: All
+- Replace silent catch-and-fallback with logged warnings in safe_sender_list.dart, rule_quick_add_screen.dart
+- Source: Sprint 31 security audit (S3)
+
+**SEC-19. Log level control: runtime disable for auth logging (~1-2h) Priority 65 -- MEDIUM**
+- Phase: Security
+- Platform: All
+- Add configuration to disable auth logging in production
+- Source: Sprint 31 security audit (S28)
+
+**SEC-20. Email format validation on account setup (~30min) Priority 80 -- LOW**
+- Phase: Security / UX
+- Platform: All
+- Basic email regex validation before IMAP connection attempt
+- Source: Sprint 31 security audit (S20)
+
+**SEC-21. Password minimum length check (~15min) Priority 80 -- LOW**
+- Phase: Security / UX
+- Platform: All
+- App passwords are typically 16 characters
+- Source: Sprint 31 security audit (S21)
+
+**SEC-22. Rate limiting on failed auth attempts (~2h) Priority 80 -- LOW**
+- Phase: Security
+- Platform: All
+- Exponential backoff after 3+ failed logins per account
+- Source: Sprint 31 security audit (S22)
+
+**SEC-23. Windows binary hardening flags (~30min) Priority 85 -- LOW**
+- Phase: Security
+- Platform: Windows
+- Add /GS /DYNAMICBASE /NXCOMPAT to CMakeLists.txt
+- Source: Sprint 31 security audit (S23)
+
 **F6. Provider-Specific Optimizations (~10-12h) Priority 100**
 - Phase: Performance
 - Platform: All
@@ -250,6 +407,41 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Trigger on PR to develop
 - HOLD rationale: Current CI/CD equivalent is handled by Claude Code sprint execution workflow (flutter analyze, flutter test, Windows build in Phase 5). Could be implemented later if beneficial to dev team, maintenance team, or instructed by Product Owner.
 - Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gap G24)
+
+### HOLD Items (Periodic Reviews)
+
+**F70. Periodic Security Deep Dive (~4-8h per review) Priority HOLD**
+- Phase: Security Spike (reusable template)
+- Platform: All
+- **Generic scope**: Security review based on Application Development Best Practices and OWASP Mobile Top 10 (use current year edition)
+- **Application-specific scope**:
+  - Dependency CVEs (flutter pub outdated, known vulnerability databases)
+  - SQL injection and parameterization audit
+  - Regex injection and ReDoS pattern review
+  - Credential storage and logging audit
+  - Platform-specific security: Windows 11 Store (MSIX sandbox, AppContainer), Android (APK/AAB signing, manifest permissions, ProGuard), iOS (App Transport Security, keychain, sandbox), Linux (file permissions, desktop integration)
+  - App store compliance: Microsoft Store certification requirements, Google Play data safety policies, Apple App Store review guidelines
+  - Device-specific concerns: biometric auth, secure enclave, clipboard access, screenshot protection
+- **How to use**: Duplicate this item, assign a sprint, and remove HOLD. After completion, keep this template for next review.
+- HOLD rationale: Template item. Duplicate when periodic security review is needed.
+- Source: Sprint 31 retrospective feedback
+
+**F71. Periodic Architecture Deep Dive (~4-8h per review) Priority HOLD**
+- Phase: Architecture Spike (reusable template)
+- Platform: All
+- **Generic scope**: Architecture review based on Application Development Best Practices
+- **Application-specific scope**:
+  - ADR drift detection: compare all ADRs against current codebase implementation
+  - ARCHITECTURE.md alignment: verify documented components, services, and patterns match code
+  - ARSD.md alignment: verify architectural requirements and standards document is current
+  - Platform-specific architecture: Windows 11 Store (MSIX packaging, single-instance mutex, app data paths), Android (activity lifecycle, WorkManager, flavors), iOS (SwiftUI/UIKit bridge, entitlements, provisioning), Linux (GTK integration, libsecret, packaging)
+  - App store constraints: store-specific sandboxing, capability declarations, update mechanisms
+  - Device constraints: screen size breakpoints, input methods (touch, mouse, keyboard), offline capability
+  - Dead code and deprecated class detection
+  - Test coverage gaps relative to architecture
+- **How to use**: Duplicate this item, assign a sprint, and remove HOLD. After completion, keep this template for next review.
+- HOLD rationale: Template item. Duplicate when periodic architecture review is needed.
+- Source: Sprint 31 retrospective feedback (based on Sprint 30 architecture deep dive experience)
 
 ### HOLD Items (Post-Windows Store)
 
@@ -968,6 +1160,7 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 5.4 | 2026-04-13 | Sprint 31 retrospective: Added F70 (Periodic Security Deep Dive template) and F71 (Periodic Architecture Deep Dive template) as HOLD items. |
 | 5.3 | 2026-03-24 | Sprint 26: Marked F7, F36, F43, F44, F45, F47 complete. Removed F7/F36/F45/F47 detail sections. Added F48 (scan history enhancements). Updated Last Completed Sprint. |
 | 5.2 | 2026-03-22 | Sprint 25: Marked F30, F31, F34, F38, F40, F41 complete. Removed F31/F32/F38 detail sections. Added F42 (coverage gaps, on hold). Updated Last Completed Sprint. |
 | 5.1 | 2026-03-21 | Sprint 24: Marked WS items complete. Added F40, F41. Updated Last Completed Sprint. |
