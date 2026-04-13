@@ -115,37 +115,11 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: April 13, 2026 (Sprint 31 security audit)
+**Last Reviewed**: April 13, 2026 (Sprint 32 backlog refinement -- removed completed items, grouped Android SEC items)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
-### Windows Store Readiness
-
-**B1. MSIX sandbox crash at launch (Issue #218) -- [OK] Fixed (Sprint 28), Store certification passed (April 4, 2026). App live in Microsoft Store.**
-
 ### Core App
-
-**~~F42. Test coverage gaps (Issue #203)~~** [OK] Complete (Sprint 29, +53 tests)
-
-**~~F46. Default rule set creation (Issue #208)~~** [OK] Complete (Sprint 29)
-
-**~~F48. Scan History enhancements (Issue #212)~~** [OK] Complete (Sprint 29)
-
-**~~F50. Make all page text selectable and copyable (Issue #220)~~** [OK] Complete (Sprint 29)
-
-**~~F60. Architecture gap analysis - codebase vs documented architecture (Issue #226)~~** [OK] Complete (Sprint 30)
-- Phase: Architecture Spike
-- Platform: All
-- Deep dive on docs/adr/, docs/ARCHITECTURE.md, docs/ARSD.md vs current codebase
-- Gap analysis report with backlog item suggestions
-- Target: Sprint 30
-
-**~~F68. Security deep dive - vulnerability assessment and backlog generation (Issue #228)~~** [OK] Complete (Sprint 31)
-- Phase: Security Spike
-- Platform: All
-- Comprehensive security review: dependencies, SQL, regex, credentials, OWASP, platform security
-- Security audit report with 25 prioritized backlog items
-- Target: Sprint 31
 
 **F52. Multi-variant side-by-side install across all stores (~16-24h) Priority 90**
 - Phase: Build and Release Infrastructure
@@ -259,12 +233,6 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Source: Sprint 31 manual testing feedback (scan history showed wrong results for background scan)
 
 ### Security Hardening (Sprint 31 Audit)
-
-**~~SEC-2. Android: Add allowBackup="false"~~** [OK] Fixed (Sprint 31)
-
-**~~SEC-3. Firebase API key: restrict in Google Cloud Console~~** [OK] Fixed (Sprint 31) -- Android key restricted to package+SHA-1, Browser key restricted to domains, both limited to 4 APIs
-
-**~~SEC-5. Remove password logging from IMAP adapter~~** [OK] Fixed (Sprint 31)
 
 **SEC-1. ReDoS protection: timeout + pattern validation (~4-6h) Priority 35 -- CRITICAL**
 - Phase: Security
