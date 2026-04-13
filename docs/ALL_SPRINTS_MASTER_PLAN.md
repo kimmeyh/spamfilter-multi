@@ -118,7 +118,7 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 
 ### Windows Store Readiness
 
-**B1. MSIX sandbox crash at launch (Issue #218) -- [OK] Fixed (Sprint 28), awaiting Store certification**
+**B1. MSIX sandbox crash at launch (Issue #218) -- [OK] Fixed (Sprint 28), Store certification passed (April 4, 2026). App live in Microsoft Store.**
 
 ### Core App
 
