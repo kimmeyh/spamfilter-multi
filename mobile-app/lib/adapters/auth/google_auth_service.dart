@@ -28,6 +28,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:my_email_spam_filter/adapters/auth/token_store.dart';
 import 'package:my_email_spam_filter/adapters/storage/secure_credentials_store.dart';
@@ -491,6 +492,7 @@ class GoogleAuthService {
   /// Sign out and optionally revoke tokens.
   ///
   /// Removes stored tokens and optionally revokes server-side.
+  /// SEC-12: Desktop platforms revoke tokens via Google's revoke endpoint.
   Future<void> signOut({bool revokeServerTokens = false}) async {
     try {
       if (_hasNativeSignIn && _isInitialized) {
@@ -499,6 +501,9 @@ class GoogleAuthService {
         } else {
           await _googleSignIn.signOut();
         }
+      } else if (revokeServerTokens && _currentAccountId != null) {
+        // SEC-12: Desktop platforms - revoke token at Google endpoint
+        await _revokeTokenAtGoogle(_currentAccountId!);
       }
 
       // Clear stored tokens for current account
@@ -518,6 +523,39 @@ class GoogleAuthService {
         await _credStore.deleteGmailTokens(_currentAccountId!);
       }
       _state = AuthState.unauthenticated;
+    }
+  }
+
+  /// Revoke OAuth token at Google's revocation endpoint (SEC-12).
+  ///
+  /// Attempts to revoke the refresh token first (invalidates all associated
+  /// access tokens), falling back to access token if no refresh token exists.
+  /// Failures are logged but do not block the sign-out flow.
+  Future<void> _revokeTokenAtGoogle(String accountId) async {
+    try {
+      final tokens = await _credStore.getGmailTokens(accountId);
+      if (tokens == null) return;
+
+      // Prefer revoking refresh token (invalidates all associated access tokens)
+      final tokenToRevoke = tokens.refreshToken?.isNotEmpty == true
+          ? tokens.refreshToken!
+          : tokens.accessToken;
+
+      if (tokenToRevoke.isEmpty) return;
+
+      final response = await http.post(
+        Uri.parse('https://oauth2.googleapis.com/revoke?token=$tokenToRevoke'),
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      );
+
+      if (response.statusCode == 200) {
+        Redact.logSafe('Token revoked at Google endpoint');
+      } else {
+        Redact.logWarning('Token revocation returned HTTP ${response.statusCode}');
+      }
+    } catch (e) {
+      // Do not block sign-out on revocation failure
+      Redact.logWarning('Token revocation failed: ${e.runtimeType}');
     }
   }
 
