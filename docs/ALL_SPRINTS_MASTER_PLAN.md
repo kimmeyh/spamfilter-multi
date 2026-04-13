@@ -93,6 +93,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 26 | docs/sprints/SPRINT_26_RETROSPECTIVE.md | [OK] Complete | Mar 22-24, 2026 |
 | 27 | docs/sprints/SPRINT_27_RETROSPECTIVE.md | [OK] Complete | Mar 29 - Apr 2, 2026 |
 | 28 | docs/sprints/SPRINT_28_RETROSPECTIVE.md | [OK] Complete | Apr 2, 2026 |
+| 29 | docs/sprints/SPRINT_29_RETROSPECTIVE.md | [OK] Complete | Apr 3-13, 2026 |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -100,19 +101,18 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 28** (April 2, 2026)
-- **Bug Fix**: B1 MSIX sandbox crash at launch - replaced hardcoded APPDATA paths with path_provider (Issue #218)
-- **Features**: F49 Remove Scan All Accounts + account-specific Scan History (Issue #219), F51 Background settings reorder (Issue #221)
-- **Bug Fixes**: Account selection dialog display, Test Background Scan runs all accounts
-- **MSIX**: Built, installed, launched successfully in local testing
-- **Process**: Sprint summary made mandatory in Phase 7, winwright E2E added to Phase 5, python3 hook fix
-- **Retrospective**: docs/sprints/SPRINT_28_RETROSPECTIVE.md
+**Sprint 29** (April 3-13, 2026)
+- **Features**: F50 selectable text on all 21 screens (Issue #220), F48 Scan History multi-account with filters/totals (Issue #212), F46 default rule set creation with reset option (Issue #208)
+- **Testing**: F42 +53 new tests (Issue #203), fixed pre-existing test failure, 1223 passing with 0 failures
+- **Testing Feedback**: 6 fixes (results/dialog text selection, account filter, totals alignment, nav cleanup, scan title)
+- **Backlog**: Added F52-F56, backlog refinement cleanup
+- **Retrospective**: docs/sprints/SPRINT_29_RETROSPECTIVE.md
 
 ---
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: April 3, 2026 (Backlog refinement)
+**Last Reviewed**: April 13, 2026 (Sprint 29 retrospective)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
@@ -122,26 +122,13 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 
 ### Core App
 
-**F42. Test coverage gaps - medium+ priority uncovered files (Issue #203) Priority 54**
-- Phase: Quality and Testing
-- Platform: All
-- On Hold - remaining test gaps from F32 analysis
+**~~F42. Test coverage gaps (Issue #203)~~** [OK] Complete (Sprint 29, +53 tests)
 
-**F46. Default rule set creation (~6-8h) Priority 74**
-- Phase: Core Feature
-- Platform: All
-- Create a default set of rules including all top-level domain rules and all Entire Domain rules
+**~~F46. Default rule set creation (Issue #208)~~** [OK] Complete (Sprint 29)
 
-**F48. Scan History enhancements - multi-account, filters, totals (Issue #212) (~6-8h) Priority 78**
-- Phase: Core Feature
-- Platform: All
-- Combine all accounts, account filters, totals with tooltips, retention days in title
-- Follow-up to F7 Multi-Account Scanning
+**~~F48. Scan History enhancements (Issue #212)~~** [OK] Complete (Sprint 29)
 
-**F50. Make all page text selectable and copyable to clipboard (Issue #220) (~4-6h) Priority 82**
-- Phase: UX Improvement
-- Platform: All
-- Sprint 27 retrospective feedback: extend existing selectable text pattern to all screens
+**~~F50. Make all page text selectable and copyable (Issue #220)~~** [OK] Complete (Sprint 29)
 
 **F52. Multi-variant side-by-side install across all stores (~16-24h) Priority 90**
 - Phase: Build and Release Infrastructure
