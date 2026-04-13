@@ -161,11 +161,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
         isSecure: _isSecure,
       );
 
-      // Debug: Log email and masked password before login
-        final maskedPassword = credentials.password != null
-          ? credentials.password!.replaceAll(RegExp('.'), '*').substring(0, credentials.password!.length > 4 ? 4 : credentials.password!.length) + '...'
-          : '(none)';
-      _logger.i('[IMAP] IMAP login attempt: email="${credentials.email}", password="$maskedPassword"');
+      _logger.i('[IMAP] IMAP login attempt for $displayName');
 
       await _imapClient!.login(
         credentials.email,
