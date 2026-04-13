@@ -123,7 +123,9 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
             removedCount++;
           }
         } catch (e) {
-          // If pattern is not valid regex, check exact match
+          // SEC-18: Log warning for invalid regex pattern instead of silent fallback
+          _logger.w('Invalid regex in safe sender pattern "${safeSender.pattern}", '
+              'falling back to exact match: $e');
           if (safeSender.pattern.toLowerCase() == _normalizedEmail.toLowerCase()) {
             _logger.i('Removing conflicting safe sender (exact match): ${safeSender.pattern}');
             await widget.safeSenderStore!.removeSafeSender(safeSender.pattern);

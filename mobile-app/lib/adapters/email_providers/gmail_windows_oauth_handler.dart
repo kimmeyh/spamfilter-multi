@@ -18,9 +18,10 @@ class GmailWindowsOAuthHandler {
 
   // OAuth 2.0 Configuration - injected at build time via --dart-define
   // Read from compile-time environment (works on Android where Platform.environment is empty)
+  // SEC-13: Empty default triggers fail-fast instead of silently using a placeholder
   static const String _clientId = String.fromEnvironment(
     'WINDOWS_GMAIL_DESKTOP_CLIENT_ID',
-    defaultValue: String.fromEnvironment('GMAIL_DESKTOP_CLIENT_ID', defaultValue: 'YOUR_CLIENT_ID.apps.googleusercontent.com'),
+    defaultValue: String.fromEnvironment('GMAIL_DESKTOP_CLIENT_ID', defaultValue: ''),
   );
   static const String _clientSecret = String.fromEnvironment(
     'WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET',
@@ -63,14 +64,15 @@ class GmailWindowsOAuthHandler {
       _logger.w('  Redirect URI: $_redirectUri');
       // Explicitly log which client ID is being used and why
       if (Platform.isWindows) {
-        if (_clientId == '' || _clientId.startsWith('YOUR_CLIENT_ID')) {
-          _logger.e('  ERROR: WINDOWS_GMAIL_DESKTOP_CLIENT_ID is missing or placeholder! Gmail OAuth will fail.');
+        if (_clientId.isEmpty) {
+          _logger.e('  ERROR: WINDOWS_GMAIL_DESKTOP_CLIENT_ID is not set! Gmail OAuth will fail. '
+              'Build with --dart-define-from-file=secrets.dev.json to inject credentials.');
         } else {
           _logger.i('  Using WINDOWS_GMAIL_DESKTOP_CLIENT_ID for Windows Gmail OAuth.');
         }
       }
-      if (_clientId == '' || _clientId.startsWith('YOUR_CLIENT_ID')) {
-        _logger.w('  WARNING: Using placeholder client ID! Build with --dart-define or --dart-define-from-file to inject real credentials.');
+      if (_clientId.isEmpty) {
+        _logger.w('  WARNING: OAuth client ID is empty! Build with --dart-define or --dart-define-from-file to inject real credentials.');
       }
     }
   }
@@ -78,10 +80,21 @@ class GmailWindowsOAuthHandler {
   /// Start browser-based OAuth flow (loopback + PKCE)
   /// On desktop, uses localhost redirect with local HTTP server.
   /// On mobile, uses custom scheme redirect with app_links.
+  ///
+  /// Throws [StateError] if OAuth client ID is not configured.
   static Future<Map<String, String>?> authenticateWithBrowser() async {
+    // SEC-13: Fail fast if client ID is not configured
+    if (_clientId.isEmpty) {
+      throw StateError(
+        'Gmail OAuth client ID is not configured. '
+        'Build with --dart-define-from-file=secrets.dev.json to inject credentials. '
+        'See CLAUDE.md "OAuth and Secrets Management" section for setup instructions.',
+      );
+    }
+
     // Check if we're on mobile (Android/iOS)
     final isMobile = Platform.isAndroid || Platform.isIOS;
-    
+
     if (isMobile) {
       return await _authenticateWithBrowserMobile();
     } else {

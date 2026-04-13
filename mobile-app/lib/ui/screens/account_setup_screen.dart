@@ -100,6 +100,64 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     }
   }
 
+  /// Basic email format validation (SEC-20)
+  /// Returns null if valid, or an error message if invalid.
+  String? _validateEmailFormat(String email) {
+    if (email.isEmpty) return 'Email is required.';
+    // Must contain exactly one @
+    final atCount = '@'.allMatches(email).length;
+    if (atCount != 1) return 'Email must contain exactly one @ symbol.';
+    final parts = email.split('@');
+    if (parts[0].isEmpty) return 'Email must have a username before @.';
+    if (parts[1].isEmpty) return 'Email must have a domain after @.';
+    if (!parts[1].contains('.')) return 'Email domain must contain at least one dot.';
+    if (parts[1].startsWith('.') || parts[1].endsWith('.')) {
+      return 'Email domain cannot start or end with a dot.';
+    }
+    return null;
+  }
+
+  /// Password length warning (SEC-21)
+  /// Returns a warning message for short passwords, or null if OK.
+  String? _passwordLengthWarning(String password) {
+    if (password.isNotEmpty && password.length < 8) {
+      return 'App passwords are typically 16 characters. '
+          'Short passwords may indicate an incorrect entry.';
+    }
+    return null;
+  }
+
+  /// Validate email and password inputs before connection attempt.
+  /// Returns true if validation passes, false if blocked.
+  bool _validateInputs(String email, String password) {
+    if (email.isEmpty || password.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Email and app password are required.')),
+        );
+      }
+      return false;
+    }
+
+    final emailError = _validateEmailFormat(email);
+    if (emailError != null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(emailError)),
+        );
+      }
+      return false;
+    }
+
+    // Password length warning (informational, does not block)
+    final passwordWarning = _passwordLengthWarning(password);
+    if (passwordWarning != null) {
+      _logger.w('[Account Setup] $passwordWarning (length: ${password.length})');
+    }
+
+    return true;
+  }
+
   /// Test IMAP connection with provided credentials
   Future<void> _testConnection() async {
     if (_isGmailOAuth) {
@@ -110,14 +168,7 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
-    if (email.isEmpty || password.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Email and app password are required.')),
-        );
-      }
-      return;
-    }
+    if (!_validateInputs(email, password)) return;
 
     setState(() {
       _isTesting = true;
@@ -191,13 +242,8 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
-    if (email.isEmpty || password.isEmpty) {
+    if (!_validateInputs(email, password)) {
       setState(() => _isLoading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Email and app password are required.')),
-        );
-      }
       return;
     }
 
