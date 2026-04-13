@@ -137,6 +137,21 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - All variants must run simultaneously without rebuild on same machine/device
 - [Detail](#f52-multi-variant-side-by-side-install)
 
+**F58. New user onboarding experience (~4-6h) Priority 72**
+- Phase: UX Improvement
+- Platform: All
+- First-run experience for users installing from Store (or any fresh install)
+- Current behavior: empty account list, default rules seeded (F46), no guidance
+- Needed:
+  - Welcome screen or guided first-run flow explaining what the app does
+  - Prompt to add first email account with provider selection
+  - Brief explanation of demo mode for exploring without an account
+  - Explanation of default rules and how to customize
+  - Consider: "Getting Started" checklist or wizard vs simple welcome dialog
+- Must distinguish between fresh install (show onboarding) and upgrade (skip onboarding, data already exists)
+- Detection: if DB has no accounts and no scan history, show onboarding
+- Related: F46 (default rules, complete), F52 (data isolation between Store and dev builds)
+
 **F57. Add ARM64 (AArch64) Windows build for Store (~2-4h) Priority HOLD**
 - Phase: Windows Store Readiness
 - Platform: Windows Desktop (ARM64)
@@ -446,7 +461,7 @@ Provider defaults:
 
 **Current State**:
 - **Windows dev/prod**: ADR-0035 implemented in Sprint 19. Same .exe path, but different `secrets.*.json` builds use different data dirs (`MyEmailSpamFilter` vs `MyEmailSpamFilter_Dev`), task names, and mutexes. Whichever was built last is what runs.
-- **Windows store**: MSIX submitted to Microsoft Store (Sprint 28). Installs to `Packages\{PackageFamilyName}\` -- separate from dev/prod data dirs.
+- **Windows store**: Live in Microsoft Store (April 4, 2026). MSIX sandbox virtualizes APPDATA but path_provider resolves to the SAME data directory as sideloaded prod builds. Store and sideloaded prod currently share data (accounts, scan history, rules, credentials). This is good for upgrades (data persists) but bad for developer isolation (cannot run Store and sideloaded prod with independent data).
 - **Android**: Single applicationId (`com.example.my_email_spam_filter`). No flavors configured.
 - **iOS**: Not yet built.
 
