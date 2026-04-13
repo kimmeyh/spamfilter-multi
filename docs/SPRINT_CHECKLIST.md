@@ -115,11 +115,34 @@ These documents MUST be created/updated during each sprint:
 
 If the sprint included changes that affect the Microsoft Store build (UI changes, bug fixes, MSIX fixes):
 
+### Version Bump
+
+- [ ] Bump version in `pubspec.yaml` before building MSIX
+  - **Patch** (0.5.1 -> 0.5.2): Bug fixes only, no new features
+  - **Minor** (0.5.x -> 0.6.0): New features or enhancements
+  - **Major** (0.x.x -> 1.0.0): Breaking changes or major milestones
+- [ ] Version must be higher than last Store submission (currently v0.5.1.0)
+
+### Build and Test MSIX
+
 - [ ] Merge develop to main (user)
-- [ ] Build Store MSIX: set `store: true` in pubspec.yaml, run `dart run msix:create`
-- [ ] Upload MSIX to Microsoft Partner Center
+- [ ] Build Store MSIX: verify `store: true` in pubspec.yaml, run `dart run msix:create`
+- [ ] **Local MSIX install test** (do not skip):
+  - Install the MSIX on local machine
+  - Launch and verify no crash at startup
+  - Verify accounts load (if upgrading existing install)
+  - Verify default rules seed (if fresh install)
+  - Basic navigation smoke test (Settings, Scan History, Add Account)
+
+### Submit to Partner Center
+
+- [ ] Upload MSIX to Microsoft Partner Center > Start update > Packages
+- [ ] Update "What is new in this version" release notes
+- [ ] Review Store listing for accuracy (screenshots, description, features)
 - [ ] Submit for certification
-- [ ] **Notify user** when build is ready for upload or when submission is complete
+- [ ] **Note**: Certification takes ~1-3 hours (automated) + up to 3 business days (manual review)
+- [ ] **Note**: If rejected, current live version stays published. Fix and resubmit.
+- [ ] **Notify user** when submission is complete or certification passes/fails
 
 ## Ready for Next Sprint
 

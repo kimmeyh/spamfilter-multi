@@ -137,6 +137,24 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - All variants must run simultaneously without rebuild on same machine/device
 - [Detail](#f52-multi-variant-side-by-side-install)
 
+**F59. Store readiness guard rails - automated tests and process (~3-4h) Priority 58**
+- Phase: Quality and Testing
+- Platform: Windows (extensible to Android/iOS later)
+- Add automated tests to catch Store rejection risks before PR and production build:
+  - **Launch smoke test**: Integration test that fully initializes app (DB, providers, UI) and verifies no crash -- stronger than current smoke_test.dart
+  - **Hardcoded path regression test**: Grep-based test that `Platform.environment['APPDATA']` does not appear in lib/ (prevents B1 regression)
+  - **MSIX capability guard**: Test that pubspec.yaml msix/capabilities list has not changed from a known baseline (catches accidental restricted capability additions)
+  - **Version bump validation**: Test that pubspec.yaml version is higher than a tracked "last released" version (prevents submitting same or lower version)
+- Update SPRINT_CHECKLIST.md post-merge section with:
+  - Store update submission checklist (build MSIX, local install test, upload, "What is new" notes)
+  - Version bump rules: patch (x.y.Z) for bug fixes, minor (x.Y.0) for features, major (X.0.0) for breaking changes
+  - Pre-submission smoke test on MSIX install (not just dev build)
+- Not automatable (document as manual review steps):
+  - Privacy policy consistency with app behavior
+  - Content policy and age rating compliance
+  - "What is new in this version" release notes
+- Target: Sprint 30
+
 **F58. New user onboarding experience (~4-6h) Priority 72**
 - Phase: UX Improvement
 - Platform: All
