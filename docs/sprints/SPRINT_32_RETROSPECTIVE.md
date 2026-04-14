@@ -206,10 +206,29 @@ All 3 suggestions approved and implemented:
 - Added model verification checkpoints to SPRINT_CHECKLIST.md Phase 3 and Phase 7
 - Implementation tasks may still use Haiku/Sonnet per existing tiering
 
+### 4. Mechanical Related-Patterns Grep in Phase 5.1.1 [IMPLEMENTED]
+- Updated Phase 5.1.1 in SPRINT_EXECUTION_WORKFLOW.md: step 2 is now mandatory (not conditional on "cross-cutting" judgment)
+- Reviewer agent must grep codebase for patterns adjacent to sprint changes regardless of whether sprint seems cross-cutting
+- Findings tagged `POTENTIAL_MISS: similar pattern at <file:line>`
+- Purpose: catches cross-cutting gaps that look file-scoped during implementation
+
+### 5. Two-Phase Code Review for Cross-Cutting Policies [IMPLEMENTED]
+- Updated Phase 5.1.1 in SPRINT_EXECUTION_WORKFLOW.md: step 3 adds conditional second-pass review
+- Applies when sprint delivers a codebase-wide policy (logging, redaction, validation, error handling pattern, accessibility attribute)
+- Does NOT apply to single-screen UI changes, single-service implementations, or bug fixes
+- Second pass: reviewer searches all of `lib/` for places where the policy should apply but does not
+
+### 6. Criterion 4a: User-Found Gap in Sprint Theme [IMPLEMENTED]
+- Added Criterion 4a to SPRINT_STOPPING_CRITERIA.md (version 1.1)
+- Codifies that user-found gaps directly related to sprint theme can be added to scope without formal scope change when: same category, <2h total fix, no new design, user-reported
+- Added to SPRINT_CHECKLIST.md stopping criteria list
+- Captures the pattern that emerged in Sprint 32 with the SEC-17 extension
+
 ### Files Modified
 - `docs/SPRINT_PLANNING.md` -- Added Activities Requiring Opus section
-- `docs/SPRINT_EXECUTION_WORKFLOW.md` -- Added Phase 5.1.1 (Automated Code Review) and expanded Phase 6.4.1 (Copilot response)
-- `docs/SPRINT_CHECKLIST.md` -- Opus verification in Phase 3 and 7; automated code review in Phase 5; Copilot response in Phase 6; dependency check in Phase 2; version bumped to 2.2
+- `docs/SPRINT_EXECUTION_WORKFLOW.md` -- Added Phase 5.1.1 (Automated Code Review with mechanical grep + two-phase review) and expanded Phase 6.4.1 (Copilot response)
+- `docs/SPRINT_STOPPING_CRITERIA.md` -- Added Criterion 4a: User-Found Gap in Sprint Theme; version 1.1
+- `docs/SPRINT_CHECKLIST.md` -- Opus verification in Phase 3 and 7; automated code review with expanded steps in Phase 5; Copilot response in Phase 6; dependency check in Phase 2; Criterion 4a added to stopping list; version bumped to 2.3
 
 ---
 

@@ -437,12 +437,22 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
     - `pr-review-toolkit:pr-test-analyzer` - when sprint adds new functionality (test coverage analysis)
   - **Process**:
     1. Run `pr-review-toolkit:code-reviewer` agent with git diff as input
-    2. **For codebase-wide features** (e.g., logging conventions, redaction, input validation, error handling patterns): Explicitly instruct the reviewer to grep the full `lib/` tree for similar patterns that may have been missed in the sprint diff. The sprint may have only changed one file, but the pattern should apply everywhere.
-    3. Address HIGH / CRITICAL findings before PR creation (fix or document why not)
-    4. MEDIUM / LOW findings: fix if quick (<15 min), otherwise add to backlog
-    5. Record findings and disposition in sprint retrospective
+    2. **Related-patterns grep (MECHANICAL - always run)**: Instruct the reviewer to grep the codebase for patterns adjacent to the sprint changes. This is not optional -- it catches cross-cutting gaps that look file-scoped during implementation. Examples:
+       - If sprint changes logging in file X, grep for similar `_logger.` sites in other files
+       - If sprint adds validation in method Y, grep for other call sites that lack the same validation
+       - If sprint changes error handling in class Z, grep for other catch blocks that might need the same treatment
+       - If sprint redacts sensitive data in file A, grep for other places the same sensitive variable is logged
+       - Include findings in the review output tagged as `POTENTIAL_MISS: similar pattern at <file:line>`
+    3. **Two-phase review for cross-cutting policies (CONDITIONAL)**: When the sprint delivers a codebase-wide policy (not just a file-scoped change), run the code reviewer a second time with a feature-sweep prompt:
+       - Applies when: feature is a cross-cutting policy (logging redaction, error handling pattern, input validation rule, accessibility attribute, etc.)
+       - Does not apply when: feature is a single-screen UI change, a single-service implementation, or a bug fix
+       - Prompt the reviewer: "The sprint applied <policy> in <files>. Search all of `lib/` for places where the same policy should apply but does not. Produce a list of gaps to fix or backlog."
+       - Fix gaps that are <15 min each; backlog larger ones
+    4. Address HIGH / CRITICAL findings before PR creation (fix or document why not)
+    5. MEDIUM / LOW findings: fix if quick (<15 min), otherwise add to backlog
+    6. Record findings and disposition in sprint retrospective
   - **Model**: Requires Opus (review analysis -- see SPRINT_PLANNING.md "Activities Requiring Opus")
-  - **Learning (Sprint 32)**: Code reviewer focused on sprint diff missed SEC-17 gaps in adjacent files (background scan worker, UI screens). User manual testing of logs surfaced the gap. Always instruct reviewer to check codebase-wide for related patterns when the feature is a cross-cutting concern.
+  - **Learning (Sprint 32)**: Code reviewer focused on sprint diff missed SEC-17 gaps in adjacent files (background scan worker, UI screens). User manual testing of logs surfaced the gap. Step 2 (mechanical grep) and step 3 (two-phase review) were added to prevent recurrence.
 
 - [ ] **5.2 Run Complete Test Suite**
   - Execute full test suite: `flutter test`

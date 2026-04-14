@@ -65,7 +65,7 @@ These documents MUST be created/updated during each sprint:
 ## Phase 5: Review & Testing
 
 - [ ] Local code review complete
-- [ ] **Automated code review**: Run `pr-review-toolkit:code-reviewer` agent on sprint diff; address HIGH/CRITICAL findings (see SPRINT_EXECUTION_WORKFLOW.md § 5.1.1)
+- [ ] **Automated code review**: Run `pr-review-toolkit:code-reviewer` agent on sprint diff (always include related-patterns grep step); for cross-cutting policy sprints, run a second feature-sweep pass; address HIGH/CRITICAL findings (see SPRINT_EXECUTION_WORKFLOW.md § 5.1.1)
 - [ ] Full test suite passing (`flutter test`)
 - [ ] Code analysis clean (`flutter analyze` - target <50 warnings)
 - [ ] Risk mitigations validated
@@ -168,6 +168,7 @@ gh issue close #N --reason "completed"
 2. Blocked on external dependency
 3. User requests scope change
 4. Critical bug found
+4a. User-found gap in sprint theme (same category, <2h, no new design, user-reported) -- extend scope without stopping
 5. User requests early review
 6. Sprint review complete
 7. Fundamental design failure
@@ -178,6 +179,6 @@ gh issue close #N --reason "completed"
 
 ---
 
-**Version**: 2.2
-**Updated**: April 13, 2026 (Sprint 32 - added automated code review, Copilot review response, Opus verification for planning/retrospective, dependency vulnerability check)
+**Version**: 2.3
+**Updated**: April 14, 2026 (Sprint 32 retrospective - expanded Phase 5.1.1 with mechanical related-patterns grep and two-phase review for cross-cutting policies; added Criterion 4a for user-found gaps in sprint theme)
 **Reference**: SPRINT_EXECUTION_WORKFLOW.md for detailed explanations
