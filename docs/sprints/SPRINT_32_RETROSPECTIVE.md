@@ -221,8 +221,24 @@ None. All three improvement suggestions approved and implemented.
 
 ## First Sprint Using New Processes
 
-Sprint 32 was used as the first trial of two improvements:
+Sprint 32 was used as the first trial of three of the four improvements:
 - **SEC-16 dependency check**: Executed during planning, found no critical vulnerabilities. Process works.
+- **Phase 5.1.1 Automated Code Review**: Ran `pr-review-toolkit:code-reviewer` agent on Sprint 32 diff (retroactive trial). **Highly effective** -- caught 2 CRITICAL and 3 HIGH issues that the implementation pass missed.
 - **Opus verification**: Will be applied from Sprint 33 onwards.
 
-The automated code review (Phase 5.1.1) and Copilot review response (Phase 6.4.1) will first apply in Sprint 33.
+Phase 6.4.1 Copilot review response will first apply in Sprint 33 when Copilot review is available on PRs.
+
+### Code Review Findings and Resolution (First Trial)
+
+| ID | Severity | Finding | Resolution |
+|----|----------|---------|------------|
+| C1 | CRITICAL | SEC-1 `safeHasMatch` defined but not called in production (hot path still uses direct `regex.hasMatch()`). Structural-only protection. | Added to backlog as **SEC-1b** (design work needed: isolate pool or batch-level timeout). Authoring-time ReDoS detection via `detectReDoS` still works. |
+| C2 | CRITICAL | SEC-12 OAuth revocation token in URL query string (RFC 7009 violation, leaks via HTTP logs/proxies). | **Fixed** in commit 9a3f673 -- token now in form-encoded body. |
+| H1 | HIGH | SEC-17 used `Redact.email()` for accountId values; should use `Redact.accountId()`. | **Fixed** in commit 9a3f673 -- extended `Redact.accountId()` to handle plain email shape + prefixed format, then replaced all ~20 sites. |
+| H2 | HIGH | SEC-21 password warning was log-only (user never saw it); password length logged (search-space oracle). | **Fixed** in commit 9a3f673 -- SnackBar (5s, orange) + dropped length from log. |
+| H3 | HIGH | SEC-20 email validation error messages are prescriptive about RFC 5321 edge cases. | Added to **F72** (code hygiene backlog) -- not urgent, all target providers work. |
+| Minor | LOW | Emoji `📦` in secure_credentials_store.dart violates CLAUDE.md. | Added to **F72**. |
+| Minor | LOW | CMakeLists.txt hardening flags are MSVC-only without `if(MSVC)` guard. | Added to **F72**. |
+| Minor | LOW | SEC-18 still swallows invalid patterns silently after logging. | Covered by F35 (rule editing UI) scope -- no separate action. |
+
+**Process validation**: The first trial of Phase 5.1.1 found 5 issues (2 CRITICAL, 3 HIGH) that would otherwise have shipped. This strongly validates the need for the new process. **Recommendation**: keep Phase 5.1.1 mandatory for all sprints.

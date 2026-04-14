@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: April 13, 2026 (Sprint 32 retrospective -- completed 10 security items, process improvements)
+**Last Updated**: April 14, 2026 (Sprint 32 code review findings -- added SEC-1b, F72)
 
 ## How to Maintain This Document
 
@@ -195,6 +195,15 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Move legacy OAuth screens from lib/screens/ to lib/ui/screens/ or remove if unused
 - Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gaps G7-G9)
 
+**F72. Code hygiene cleanup (~1-2h) Priority 72**
+- Phase: Tech Debt
+- Platform: All
+- Minor cleanup items identified in Sprint 32 Phase 5.1.1 automated code review:
+  - Remove emoji `📦` in secure_credentials_store.dart:527 (violates CLAUDE.md "No emojis" rule)
+  - Add `if(MSVC) ... endif()` guard around security flags in windows/runner/CMakeLists.txt for MinGW future-proofing
+  - SEC-20: Soften email validation error messages in account_setup_screen.dart -- current messages are prescriptive about email format in ways that are technically incorrect for RFC 5321 edge cases; use generic "Please enter a valid email address" or stricter regex
+- Source: Sprint 32 Phase 5.1.1 automated code review (H3 + Minor Notes)
+
 **F63. Responsive design framework (~8-12h) Priority 70**
 - Phase: UX Improvement
 - Platform: All
@@ -234,6 +243,18 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Source: Sprint 31 manual testing feedback (scan history showed wrong results for background scan)
 
 ### Security Hardening (Sprint 31 Audit)
+
+**SEC-1b. ReDoS runtime protection - integrate safeHasMatch into evaluator (~6-10h) Priority 35 -- CRITICAL**
+- Phase: Security
+- Platform: All
+- Sprint 32 added `PatternCompiler.safeHasMatch()` (timeout via Isolate.run) + `detectReDoS()` authoring-time validation
+- **Gap**: `safeHasMatch` is defined but not used in production. Hot path (`RuleEvaluator`, `RuleConflictDetector`, `SafeSenderEvaluator`) still calls `regex.hasMatch()` directly
+- **Design work needed**: Isolate-per-match is too slow for the evaluator iterating rules x messages. Options:
+  - Shared isolate/worker pool for pattern matching
+  - Batch-level timeout (abort entire batch if any match exceeds threshold)
+  - Opt-in per-pattern timeout for user-supplied patterns only (trusted bundled patterns use direct hasMatch for speed)
+- **Blocks**: F56 (manual rule creation), F35 (rule editing) -- currently have authoring-time protection but no runtime protection if a dangerous pattern slips through
+- Source: Sprint 32 Phase 5.1.1 automated code review (finding C1)
 
 **SEC-4. Android: Create network_security_config.xml (~1h) Priority 40 -- HIGH**
 - Phase: Security
@@ -1066,6 +1087,7 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 5.6 | 2026-04-14 | Sprint 32 code review findings: Added SEC-1b (ReDoS runtime protection -- design work needed) and F72 (code hygiene cleanup -- emoji, MSVC guard, email message softening) from Phase 5.1.1 automated code review. |
 | 5.5 | 2026-04-13 | Sprint 32 completion: Removed 10 completed security items (SEC-1/10/12/13/16/17/18/20/21/23). Added Sprint 32 to Past Sprint Summary. Updated Last Completed Sprint. |
 | 5.4 | 2026-04-13 | Sprint 31 retrospective: Added F70 (Periodic Security Deep Dive template) and F71 (Periodic Architecture Deep Dive template) as HOLD items. |
 | 5.3 | 2026-03-24 | Sprint 26: Marked F7, F36, F43, F44, F45, F47 complete. Removed F7/F36/F45/F47 detail sections. Added F48 (scan history enhancements). Updated Last Completed Sprint. |
