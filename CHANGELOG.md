@@ -30,6 +30,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **fix**: C2: SEC-12 OAuth revocation token now sent in form-encoded body instead of URL query string (RFC 7009 compliant, prevents token leakage via HTTP logs) (Issue #230)
 - **fix**: H1: SEC-17 auth logging uses Redact.accountId() instead of Redact.email() for accountId values; extended Redact.accountId() to handle both plain email and prefixed formats (Issue #230)
 - **fix**: H2: SEC-21 password length warning now shown as SnackBar (5s, orange) instead of log-only; removed password length from log to eliminate search-space oracle (Issue #230)
+- **fix**: SEC-17 extended: background scan worker and UI files also redact account IDs (user-reported gap from background scan log review) -- 9 files, ~40 log sites across background_scan_windows_worker, background_scan_worker, account_selection_screen, account_setup_screen, account_store, scan_result_store, settings_store, settings_screen, email_scan_provider (Issue #230)
 - **docs**: Added SEC-1b (ReDoS runtime protection, design work needed) and F72 (code hygiene cleanup) to backlog from Sprint 32 Phase 5.1.1 automated code review
 
 ### 2026-04-13 (Sprint 32 - Security Hardening)

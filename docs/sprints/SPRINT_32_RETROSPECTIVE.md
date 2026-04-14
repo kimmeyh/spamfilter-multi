@@ -242,3 +242,19 @@ Phase 6.4.1 Copilot review response will first apply in Sprint 33 when Copilot r
 | Minor | LOW | SEC-18 still swallows invalid patterns silently after logging. | Covered by F35 (rule editing UI) scope -- no separate action. |
 
 **Process validation**: The first trial of Phase 5.1.1 found 5 issues (2 CRITICAL, 3 HIGH) that would otherwise have shipped. This strongly validates the need for the new process. **Recommendation**: keep Phase 5.1.1 mandatory for all sprints.
+
+### Additional SEC-17 Gap Found During User Manual Testing
+
+After the code review fixes were merged, user manual testing of the background scan log revealed a further SEC-17 gap: the background scan worker (`background_scan_windows_worker.dart`), background scan worker mobile (`background_scan_worker.dart`), and several UI files (`account_selection_screen`, `account_setup_screen`, `settings_screen`) logged full email addresses.
+
+Example log line that prompted the finding:
+```
+[WORKER] Processing account: kimmeyharold@aol.com
+[WORKER] Debug Excel exported: ...\background_scan_kimmeyharold_at_aol_com_2026-04-14_dev.xlsx
+```
+
+**Root cause**: The Phase 5.1.1 code reviewer focused on files present in the Sprint 32 git diff. It didn't audit adjacent files that logged accountId values but weren't changed in this sprint. The sprint's original SEC-17 scope (`secure_credentials_store.dart` only) matched the audit report but missed several other log surfaces.
+
+**Fix**: Extended `Redact.accountId()` usage to 9 additional files with ~40 log sites. Also redacted the Excel export path which contained email in filename (user_at_domain_com.xlsx format).
+
+**Learning for future code reviews**: When reviewing a feature (e.g., auth logging redaction), ask the reviewer agent to search across the whole codebase for related patterns, not just the sprint diff. Add to Phase 5.1.1: "For features that should apply codebase-wide (logging conventions, input validation, redaction), instruct the reviewer to grep the full `lib/` tree for similar patterns that may have been missed."
