@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: April 14, 2026 (Sprint 32 code review findings -- added SEC-1b, F72)
+**Last Updated**: April 14, 2026 (Sprint 33 planning -- moved F61 to HOLD per user direction)
 
 ## How to Maintain This Document
 
@@ -180,13 +180,6 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Consider: does the user need a Select Account icon on Manual Scan and Results screens?
 - Related: F54 (add icon to Select Account screen)
 
-**F61. Architecture documentation refresh (~3-4h) Priority 50**
-- Phase: Documentation
-- Platform: All
-- Update ARCHITECTURE.md: remove Dual-Write pattern (superseded Sprint 20), add missing services (DefaultRuleSetService, RuleConflictDetector, EmailAvailabilityChecker, EmailBodyParser, DevEnvironmentSeeder), add missing screens (yaml_import_export, rule_test), add missing DB tables (unmatched_emails, background_scan_log)
-- Update ARSD.md: remove Dual-Write from design patterns table, update Store certification status to "Passed", update Glossary
-- Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gaps G1-G6, G16-G22)
-
 **F62. Dead code cleanup - remove deprecated classes (~2h) Priority 55**
 - Phase: Tech Debt
 - Platform: All
@@ -326,6 +319,14 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Phase: Performance
 - Platform: All
 - [Detail](#f6-provider-specific-optimizations)
+
+**F61. Architecture documentation refresh (~3-4h) Priority HOLD**
+- Phase: Documentation
+- Platform: All
+- Update ARCHITECTURE.md: remove Dual-Write pattern (superseded Sprint 20), add missing services (DefaultRuleSetService, RuleConflictDetector, EmailAvailabilityChecker, EmailBodyParser, DevEnvironmentSeeder), add missing screens (yaml_import_export, rule_test), add missing DB tables (unmatched_emails, background_scan_log)
+- Update ARSD.md: remove Dual-Write from design patterns table, update Store certification status to "Passed", update Glossary
+- HOLD rationale: Moved to HOLD during Sprint 33 planning (April 14, 2026) per user direction. Sprint 33 includes ARCHITECTURE.md updates for new components (SQLCipher, HelpScreen, DataDeletionService, PatternCompiler revisions) so partial doc refresh happens organically. Full F61 work can be reactivated when next periodic architecture review is scheduled.
+- Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gaps G1-G6, G16-G22)
 
 **F64. CI/CD pipeline with GitHub Actions (~4-6h) Priority HOLD**
 - Phase: DevOps
@@ -1087,6 +1088,7 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 5.7 | 2026-04-14 | Sprint 33 planning: Moved F61 to HOLD per user direction (partial doc refresh happens organically in Sprint 33 via ARCHITECTURE.md updates for SQLCipher/HelpScreen/DataDeletionService/PatternCompiler). |
 | 5.6 | 2026-04-14 | Sprint 32 code review findings: Added SEC-1b (ReDoS runtime protection -- design work needed) and F72 (code hygiene cleanup -- emoji, MSVC guard, email message softening) from Phase 5.1.1 automated code review. |
 | 5.5 | 2026-04-13 | Sprint 32 completion: Removed 10 completed security items (SEC-1/10/12/13/16/17/18/20/21/23). Added Sprint 32 to Past Sprint Summary. Updated Last Completed Sprint. |
 | 5.4 | 2026-04-13 | Sprint 31 retrospective: Added F70 (Periodic Security Deep Dive template) and F71 (Periodic Architecture Deep Dive template) as HOLD items. |
