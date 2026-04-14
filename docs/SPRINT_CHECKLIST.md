@@ -35,6 +35,7 @@ These documents MUST be created/updated during each sprint:
 
 ## Phase 3: Kickoff & Planning
 
+- [ ] **Verify active model is Opus** (sprint planning requires Opus per SPRINT_PLANNING.md "Activities Requiring Opus")
 - [ ] Sprint number determined (N = previous + 1)
 - [ ] Read ALL_SPRINTS_MASTER_PLAN.md "Next Sprint Candidates" table
 - [ ] **Present candidates in sprint refinement format** (BACKLOG_REFINEMENT.md format, not grid tables)
@@ -64,6 +65,7 @@ These documents MUST be created/updated during each sprint:
 ## Phase 5: Review & Testing
 
 - [ ] Local code review complete
+- [ ] **Automated code review**: Run `pr-review-toolkit:code-reviewer` agent on sprint diff; address HIGH/CRITICAL findings (see SPRINT_EXECUTION_WORKFLOW.md § 5.1.1)
 - [ ] Full test suite passing (`flutter test`)
 - [ ] Code analysis clean (`flutter analyze` - target <50 warnings)
 - [ ] Risk mitigations validated
@@ -83,12 +85,14 @@ These documents MUST be created/updated during each sprint:
 - [ ] PR created: `feature/...` -> `develop` (NOT main)
 - [ ] PR description complete with task summary
 - [ ] PR references issues: `Closes #XX, #YY, #ZZ`
+- [ ] **GitHub Copilot review responded to** (if Copilot enabled): draft Fix/Backlog/NA recommendations per comment, get user approval, implement approved items (see SPRINT_EXECUTION_WORKFLOW.md § 6.4.1)
 - [ ] User notified PR is ready
 
 **[CHECKPOINT]** Review Phase 7 checklist before proceeding. Phase 7 is MANDATORY. **[CONTEXT CHECK]** Verify context < 85% before starting Phase 7.
 
 ## Phase 7: Sprint Review (MANDATORY - DO NOT SKIP)
 
+- [ ] **Verify active model is Opus** (retrospective analysis requires Opus per SPRINT_PLANNING.md "Activities Requiring Opus")
 - [ ] Windows desktop build verified
 - [ ] Sprint review offered to user
 - [ ] **Ask Product Owner/Scrum Master/Lead Developer for retrospective feedback** (MANDATORY - do not create retrospective without this)
@@ -174,6 +178,6 @@ gh issue close #N --reason "completed"
 
 ---
 
-**Version**: 2.1
-**Updated**: April 13, 2026 (Sprint 30 - added architecture impact check and compliance check)
+**Version**: 2.2
+**Updated**: April 13, 2026 (Sprint 32 - added automated code review, Copilot review response, Opus verification for planning/retrospective, dependency vulnerability check)
 **Reference**: SPRINT_EXECUTION_WORKFLOW.md for detailed explanations
