@@ -29,11 +29,13 @@ These documents MUST be created/updated during each sprint:
 - [ ] Previous sprint cards closed
 - [ ] Working directory clean (`git status`)
 - [ ] Local develop branch current (`git pull origin develop`)
+- [ ] Dependency vulnerability check (`cd mobile-app && dart pub outdated`) -- flag discontinued or vulnerable packages
 
 **[CHECKPOINT]** Review Phase 3 checklist before proceeding.
 
 ## Phase 3: Kickoff & Planning
 
+- [ ] **Verify active model is Opus** (sprint planning requires Opus per SPRINT_PLANNING.md "Activities Requiring Opus")
 - [ ] Sprint number determined (N = previous + 1)
 - [ ] Read ALL_SPRINTS_MASTER_PLAN.md "Next Sprint Candidates" table
 - [ ] **Present candidates in sprint refinement format** (BACKLOG_REFINEMENT.md format, not grid tables)
@@ -63,6 +65,7 @@ These documents MUST be created/updated during each sprint:
 ## Phase 5: Review & Testing
 
 - [ ] Local code review complete
+- [ ] **Automated code review**: Run `pr-review-toolkit:code-reviewer` agent on sprint diff (always include related-patterns grep step); for cross-cutting policy sprints, run a second feature-sweep pass; address HIGH/CRITICAL findings (see SPRINT_EXECUTION_WORKFLOW.md § 5.1.1)
 - [ ] Full test suite passing (`flutter test`)
 - [ ] Code analysis clean (`flutter analyze` - target <50 warnings)
 - [ ] Risk mitigations validated
@@ -82,12 +85,14 @@ These documents MUST be created/updated during each sprint:
 - [ ] PR created: `feature/...` -> `develop` (NOT main)
 - [ ] PR description complete with task summary
 - [ ] PR references issues: `Closes #XX, #YY, #ZZ`
+- [ ] **GitHub Copilot review responded to** (if Copilot enabled): draft Fix/Backlog/NA recommendations per comment, get user approval, implement approved items (see SPRINT_EXECUTION_WORKFLOW.md § 6.4.1)
 - [ ] User notified PR is ready
 
 **[CHECKPOINT]** Review Phase 7 checklist before proceeding. Phase 7 is MANDATORY. **[CONTEXT CHECK]** Verify context < 85% before starting Phase 7.
 
 ## Phase 7: Sprint Review (MANDATORY - DO NOT SKIP)
 
+- [ ] **Verify active model is Opus** (retrospective analysis requires Opus per SPRINT_PLANNING.md "Activities Requiring Opus")
 - [ ] Windows desktop build verified
 - [ ] Sprint review offered to user
 - [ ] **Ask Product Owner/Scrum Master/Lead Developer for retrospective feedback** (MANDATORY - do not create retrospective without this)
@@ -163,6 +168,7 @@ gh issue close #N --reason "completed"
 2. Blocked on external dependency
 3. User requests scope change
 4. Critical bug found
+4a. User-found gap in sprint theme (same category, <2h, no new design, user-reported) -- extend scope without stopping
 5. User requests early review
 6. Sprint review complete
 7. Fundamental design failure
@@ -173,6 +179,6 @@ gh issue close #N --reason "completed"
 
 ---
 
-**Version**: 2.1
-**Updated**: April 13, 2026 (Sprint 30 - added architecture impact check and compliance check)
+**Version**: 2.3
+**Updated**: April 14, 2026 (Sprint 32 retrospective - expanded Phase 5.1.1 with mechanical related-patterns grep and two-phase review for cross-cutting policies; added Criterion 4a for user-found gaps in sprint theme)
 **Reference**: SPRINT_EXECUTION_WORKFLOW.md for detailed explanations

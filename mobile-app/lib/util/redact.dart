@@ -58,15 +58,27 @@ class Redact {
 
   /// Redact an account ID.
   ///
-  /// Example: "gmail-user@example.com" → "gmail-u***@example.com"
+  /// Handles both account ID formats used in this project:
+  /// - Plain email: "user@example.com" -> "u***@example.com"
+  /// - Prefixed:    "gmail-user@example.com" -> "gmail-u***@example.com"
+  ///
+  /// Falls back to `[redacted]` for any other shape (e.g., opaque IDs).
   static String accountId(String? accountId) {
     if (accountId == null || accountId.isEmpty) return '[empty]';
-    if (accountId.contains('-')) {
-      final parts = accountId.split('-');
-      if (parts.length >= 2) {
-        return '${parts[0]}-${email(parts.sublist(1).join('-'))}';
+    // Prefixed form: "{platform}-{email}" -- keep prefix, redact email part
+    if (accountId.contains('-') && accountId.contains('@')) {
+      final dashIdx = accountId.indexOf('-');
+      final prefix = accountId.substring(0, dashIdx);
+      final rest = accountId.substring(dashIdx + 1);
+      if (rest.contains('@')) {
+        return '$prefix-${email(rest)}';
       }
     }
+    // Plain email form (the most common case in this project)
+    if (accountId.contains('@')) {
+      return email(accountId);
+    }
+    // Opaque identifier
     return '[redacted]';
   }
 

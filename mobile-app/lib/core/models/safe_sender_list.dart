@@ -1,7 +1,9 @@
+import 'package:logger/logger.dart';
 import '../utils/pattern_normalization.dart';
 
 /// Represents the safe senders whitelist
 class SafeSenderList {
+  static final Logger _logger = Logger();
   final List<String> safeSenders;
 
   SafeSenderList({required this.safeSenders});
@@ -90,7 +92,9 @@ class SafeSenderList {
       final regex = RegExp(pattern, caseSensitive: false);
       return regex.hasMatch(email);
     } catch (e) {
-      // If pattern is not valid regex, treat as literal match
+      // SEC-18: Log warning instead of silently falling back to literal match
+      _logger.w('[SafeSenderList] Invalid regex pattern "$pattern", '
+          'falling back to literal match: $e');
       return email == pattern;
     }
   }

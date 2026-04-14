@@ -91,6 +91,26 @@ Each sprint is composed of **Cards** (GitHub issues) broken into **Tasks** assig
 
 **Note**: "Claude Code Team" refers to whichever model (Haiku, Sonnet, Opus) is executing the current task. Multiple instances may run in parallel via subagents.
 
+### Activities Requiring Opus (MANDATORY)
+
+The following activities require **Claude Code Opus** (not Sonnet or Haiku). These activities involve broad reasoning, judgment, and synthesis that benefit from Opus-level capability:
+
+| Activity | Why Opus |
+|----------|----------|
+| **Sprint Planning** (Phase 3.1-3.6) | Weighing priorities, scoping, model assignment, risk assessment across the backlog |
+| **Sprint Retrospectives** (Phase 7) | Synthesizing feedback, drafting improvement suggestions, combining multi-perspective ratings |
+| **Architecture Deep Dives** (e.g., F60 gap analysis) | Cross-cutting analysis of ADRs, code, and documentation |
+| **Security Audits / Deep Dives** (e.g., F68) | OWASP Top 10 reasoning, threat modeling, severity calibration |
+| **Research Spikes** (any spike-type sprint) | Exploratory investigation with open-ended scope |
+| **Best Practices Research** (any domain) | Synthesizing industry guidance against project constraints |
+| **Code Review Analysis** (Phase 5.1.1) | Pattern recognition across diff, judgment on convention adherence |
+| **ADR Authoring** | Trade-off analysis, architectural judgment |
+| **Backlog Refinement** | Prioritization across competing concerns, estimation calibration |
+
+**Verification**: Before starting any of the above activities, confirm the active model is Opus. If on a lower-tier model, escalate to Opus before proceeding.
+
+**Implementation tasks may use Haiku/Sonnet** as documented in the Model Tiering Strategy section below -- Opus requirement applies only to the planning/analysis activities listed above.
+
 ### ADR-First Approach for Architectural Changes
 
 For sprints involving major architectural changes, use an **ADR-first approach**: design the ADR in one sprint (or during planning), get user review and approval, then implement in the next sprint. This produces better results because:

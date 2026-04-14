@@ -13,6 +13,7 @@ import '../../core/storage/database_helper.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/providers/email_scan_provider.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
+import '../../util/redact.dart';
 import '../../adapters/email_providers/email_provider.dart' show Credentials;
 import '../widgets/app_bar_with_exit.dart';
 import 'folder_selection_screen.dart';
@@ -1360,7 +1361,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                   );
                 }
 
-                _logger.i('Set safe sender folder for $email to: $folderName');
+                _logger.i('Set safe sender folder for ${Redact.email(email)} to: $folderName');
                 setState(() {
                   _safeSenderFolder = folderName;
                 });
@@ -1431,7 +1432,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                   );
                 }
 
-                _logger.i('Set deleted rule folder for $email to: $folderName');
+                _logger.i('Set deleted rule folder for ${Redact.email(email)} to: $folderName');
                 setState(() {
                   _deletedRuleFolder = folderName;
                 });
