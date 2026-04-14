@@ -726,33 +726,35 @@ After Phase 5.2 all tests pass, context can be compacted for efficiency:
   - Reference all sprint cards: `Closes #XX, #YY, #ZZ`
 
 - [ ] **6.4 Assign Code Review**
-  - Assign GitHub Copilot for automated review (if enabled in repo settings)
-  - Add user as reviewer if manual review needed
-  - Request specific review focus if applicable
+  - **@kimmeyh** is auto-assigned via `.github/CODEOWNERS`.
+  - **Copilot** is auto-assigned via Repository Ruleset (Settings -> Rules -> Rulesets -> enable "Automatically request Copilot code review"). Note: CODEOWNERS does NOT support the Copilot bot; the Ruleset is the only supported mechanism.
+  - Fallback if Ruleset is not configured and Copilot review is desired: `gh pr edit <PR#> --add-reviewer "@copilot"` (requires gh CLI v2.88.0+).
+  - Copilot instructions come from `.github/copilot-instructions.md` on the PR base branch (develop).
 
 - [ ] **6.4.1 GitHub Copilot Review Response** (Sprint 32 improvement - if Copilot enabled)
   - **Purpose**: External review layer independent of Claude Code. Catches language-specific issues, convention violations, best-practice gaps.
-  - **Trigger**: Wait for Copilot review to complete after PR creation (typically 1-3 minutes)
+  - **Trigger**: Wait for Copilot review to complete after PR creation (typically 1-3 minutes).
+  - **Known gotcha**: The auto-assignment Ruleset fires on push to an existing PR, not reliably at PR creation. If a PR opens with a single initial commit and Copilot review does not appear within 3-5 minutes, push a follow-up commit or manually request via `gh pr edit <PR#> --add-reviewer "@copilot"`.
   - **Process**:
-    1. Fetch Copilot review comments: `gh pr view <PR#> --json reviews,reviewThreads` or review on GitHub UI
-    2. For each Copilot comment, draft a response with **three fields**:
-       - **What**: Copilot's feedback quoted or summarized
-       - **Why**: Context of the code being reviewed
-       - **Impact**: What would change if addressed (similar to mini-ADR)
+    1. Fetch Copilot review comments: `gh pr view <PR#> --json reviews,reviewThreads` or review on GitHub UI.
+    2. For each Copilot comment, draft a response with these fields:
+       - **What**: Copilot's feedback quoted or summarized.
+       - **Why**: Context of the code being reviewed.
+       - **Impact**: What would change if addressed (similar to mini-ADR).
        - **Recommendation**: One of:
-         - `Fix now` (with proposed diff)
-         - `Add to backlog` (with backlog item title + rationale)
-         - `Not applicable` (with reasoning)
+         - `Fix now` (with proposed diff).
+         - `Add to backlog` (with backlog item title + rationale).
+         - `Not applicable` (with reasoning).
     3. Present all responses to user sequentially (or as a batch table) for decision:
-       - **y** = approve recommendation
-       - **n** = decline recommendation (ask for alternative)
-       - **comment** = user feedback; revise recommendation
-    4. Accumulate approved responses
-    5. Implement approved "Fix now" items as part of retrospective (Phase 7)
-    6. Add approved "Add to backlog" items to ALL_SPRINTS_MASTER_PLAN.md
-    7. Post reply comments to Copilot threads explaining resolution
-  - **Model**: Requires Opus (review analysis -- see SPRINT_PLANNING.md "Activities Requiring Opus")
-  - **Skip condition**: If Copilot review is not enabled in repo, skip this step (document in retrospective that Copilot review was unavailable)
+       - **y** = approve recommendation.
+       - **n** = decline recommendation (ask for alternative).
+       - **comment** = user feedback; revise recommendation.
+    4. Accumulate approved responses.
+    5. Implement approved "Fix now" items as part of retrospective (Phase 7).
+    6. Add approved "Add to backlog" items to ALL_SPRINTS_MASTER_PLAN.md.
+    7. Post reply comments to Copilot threads explaining resolution.
+  - **Model**: Requires Opus (review analysis -- see SPRINT_PLANNING.md "Activities Requiring Opus").
+  - **Skip condition**: If Copilot review is not enabled in repo, skip this step (document in retrospective that Copilot review was unavailable).
 
 - [ ] **6.5 Notify User**
   - Inform user PR is ready for review
