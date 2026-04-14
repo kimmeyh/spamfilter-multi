@@ -5,9 +5,13 @@
 #
 # Syntax: pattern<space>@user1 @user2 ...
 # Later rules override earlier ones. Most-specific rule wins.
+#
+# Note on Copilot: CODEOWNERS does NOT support the Copilot bot
+# (copilot-pull-request-reviewer is a Bot account, not resolvable here).
+# To auto-request Copilot review, use a Repository Ruleset instead:
+# Settings -> Rules -> Rulesets -> New branch ruleset ->
+# enable "Automatically request Copilot code review"
 
 # Default owners for everything in the repo
 # - @kimmeyh: Project owner / Chief Architect / Chief Developer
-# - @copilot-pull-request-reviewer: GitHub Copilot automated code review
-#   (see Phase 6.4.1 for how Claude Code drafts responses to Copilot feedback)
-*       @kimmeyh @copilot-pull-request-reviewer
+*       @kimmeyh
