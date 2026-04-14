@@ -3,6 +3,7 @@ import 'package:logger/logger.dart';
 import 'package:sqflite/sqflite.dart';
 import 'database_helper.dart';
 import '../providers/email_scan_provider.dart';
+import '../../util/redact.dart';
 
 /// Settings storage for app-wide and per-account configuration
 ///
@@ -489,7 +490,7 @@ class SettingsStore {
       where: 'account_id = ?',
       whereArgs: [accountId],
     );
-    _logger.i('Cleared all setting overrides for account: $accountId');
+    _logger.i('Cleared all setting overrides for account: ${Redact.accountId(accountId)}');
   }
 
   // ============================================================
@@ -633,7 +634,7 @@ class SettingsStore {
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    _logger.d('Set account setting: $accountId.$key = $value');
+    _logger.d('Set account setting: ${Redact.accountId(accountId)}.$key = $value');
   }
 
   Future<void> _deleteAccountSetting(String accountId, String key) async {
@@ -643,7 +644,7 @@ class SettingsStore {
       where: 'account_id = ? AND setting_key = ?',
       whereArgs: [accountId, key],
     );
-    _logger.d('Deleted account setting: $accountId.$key');
+    _logger.d('Deleted account setting: ${Redact.accountId(accountId)}.$key');
   }
 
   ScanMode _parseScanMode(String value) {

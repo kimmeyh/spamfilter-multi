@@ -1,4 +1,5 @@
 import 'package:logger/logger.dart';
+import '../../util/redact.dart';
 import 'database_helper.dart';
 
 /// Store for account operations
@@ -62,7 +63,7 @@ class AccountStore {
           'date_added': DateTime.now().millisecondsSinceEpoch,
         },
       );
-      _logger.d('Inserted account: $accountId');
+      _logger.d('Inserted account: ${Redact.accountId(accountId)}');
     } catch (e) {
       _logger.e('Failed to insert account', error: e);
       rethrow;
@@ -78,7 +79,7 @@ class AccountStore {
         where: 'account_id = ?',
         whereArgs: [accountId],
       );
-      _logger.d('Deleted account: $accountId');
+      _logger.d('Deleted account: ${Redact.accountId(accountId)}');
     } catch (e) {
       _logger.e('Failed to delete account', error: e);
       rethrow;

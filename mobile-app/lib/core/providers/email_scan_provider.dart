@@ -13,6 +13,7 @@ import '../../core/storage/database_helper.dart';
 import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/unmatched_email_store.dart';
 import '../../core/utils/pattern_normalization.dart';
+import '../../util/redact.dart';
 
 /// Scan status states
 enum ScanStatus { idle, scanning, paused, completed, error }
@@ -215,7 +216,7 @@ class EmailScanProvider extends ChangeNotifier {
   /// [NEW] SPRINT 4: Set the current account ID for scan result tracking
   void setCurrentAccountId(String accountId) {
     _currentAccountId = accountId;
-    _logger.d('Set current account ID: $accountId');
+    _logger.d('Set current account ID: ${Redact.accountId(accountId)}');
   }
 
   /// Start a new scan session
@@ -540,7 +541,7 @@ class EmailScanProvider extends ChangeNotifier {
   /// [NEW] ISSUE #41: Set current account ID for folder lookup
   void setCurrentAccount(String accountId) {
     _currentAccountId = accountId;
-    _logger.i('📧 Current account set to: $accountId');
+    _logger.i('[EMAIL] Current account set to: ${Redact.accountId(accountId)}');
     // Don't notify - this is just for internal state tracking
   }
   
@@ -552,7 +553,7 @@ class EmailScanProvider extends ChangeNotifier {
   /// [NEW] ISSUE #41: Clear folders for a specific account
   void clearSelectedFoldersForAccount(String accountId) {
     _selectedFoldersByAccount.remove(accountId);
-    _logger.i('🗑️ Cleared folder selection for $accountId');
+    _logger.i('[CLEARED] Folder selection for ${Redact.accountId(accountId)}');
   }
 
   /// Mode-aware recordResult.

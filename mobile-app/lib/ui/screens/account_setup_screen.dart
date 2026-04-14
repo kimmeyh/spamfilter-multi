@@ -7,6 +7,7 @@ import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/providers/email_scan_provider.dart';
 import '../../core/storage/settings_store.dart';
+import '../../util/redact.dart';
 import 'scan_progress_screen.dart';
 import 'gmail_oauth_screen.dart';
 
@@ -272,7 +273,7 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
         platformId: _effectivePlatformId,
       );
 
-      _logger.i('[OK] Saved credentials for account: $accountId (platform: $_effectivePlatformId)');
+      _logger.i('[OK] Saved credentials for account: ${Redact.accountId(accountId)} (platform: $_effectivePlatformId)');
     } catch (e) {
       setState(() => _isLoading = false);
       _logger.e('Failed to save credentials: $e');

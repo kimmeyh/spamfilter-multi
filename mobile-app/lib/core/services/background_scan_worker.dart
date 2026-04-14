@@ -5,6 +5,7 @@ import '../storage/database_helper.dart';
 import '../storage/background_scan_log_store.dart';
 import '../storage/account_store.dart';
 import '../storage/settings_store.dart';  // [NEW] ISSUE #123+#124
+import '../../util/redact.dart';
 
 /// Background scan worker task identifier
 const String backgroundScanTaskId = 'background_scan_task';
@@ -145,7 +146,7 @@ class BackgroundScanWorker {
     required int logId,
     required BackgroundScanLogStore logStore,
   }) async {
-    _logger.d('Starting background scan for account: $accountId');
+    _logger.d('Starting background scan for account: ${Redact.accountId(accountId)}');
 
     // Get selected folders from account settings
     final folderNames = await _getSelectedFolders(
@@ -153,7 +154,7 @@ class BackgroundScanWorker {
       dbHelper: dbHelper,
     );
 
-    _logger.d('Scanning folders: $folderNames for account $accountId');
+    _logger.d('Scanning folders: $folderNames for account ${Redact.accountId(accountId)}');
 
     // Note: Background scan does not have access to full context
     // (RuleSetProvider, EmailScanProvider) so we load rules directly
@@ -183,7 +184,7 @@ class BackgroundScanWorker {
     );
 
     await logStore.updateLog(completedLog);
-    _logger.d('Completed background scan for account: $accountId');
+    _logger.d('Completed background scan for account: ${Redact.accountId(accountId)}');
   }
 
   /// [UPDATED] ISSUE #123+#124: Get selected folders for background scanning from SettingsStore
@@ -198,7 +199,7 @@ class BackgroundScanWorker {
       final folders = await settingsStore.getAccountBackgroundScanFolders(accountId);
 
       if (folders != null && folders.isNotEmpty) {
-        _logger.d('[FOLDERS] Background scan using saved folders for $accountId: $folders');
+        _logger.d('[FOLDERS] Background scan using saved folders for ${Redact.accountId(accountId)}: $folders');
         return folders;
       }
 

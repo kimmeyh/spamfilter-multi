@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
+import '../../util/redact.dart';
 import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/email_providers/spam_filter_platform.dart';
 import '../../main.dart' show routeObserver;
@@ -181,7 +182,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       final creds = await _credStore.getCredentials(accountId);
 
       if (creds == null) {
-        _logger.w('[WARNING] No credentials found for account: $accountId');
+        _logger.w('[WARNING] No credentials found for account: ${Redact.accountId(accountId)}');
         return null;
       }
 
@@ -193,7 +194,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
         // This is likely an old account where accountId was just the platformId
         // Try to infer email from accountId or use a placeholder
         email = accountId.contains('@') ? accountId : 'Account (email not set)';
-        _logger.w('[WARNING] Email not properly stored for account: $accountId, using fallback: $email');
+        _logger.w('[WARNING] Email not properly stored for account: ${Redact.accountId(accountId)}, using fallback: ${Redact.email(email)}');
       }
 
       // Get platformId from storage or infer from email domain
@@ -220,14 +221,14 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
         platformId = accountId;
       }
 
-      _logger.d('[OK] Loaded account data: email=$email, platformId=$platformId for accountId=$accountId');
+      _logger.d('[OK] Loaded account data: email=${Redact.email(email)}, platformId=$platformId for accountId=${Redact.accountId(accountId)}');
 
       return AccountDisplayData(
         email: email,
         platformId: platformId,
       );
     } catch (e) {
-      _logger.e('[FAIL] Error loading account display data for $accountId: $e');
+      _logger.e('[FAIL] Error loading account display data for ${Redact.accountId(accountId)}: $e');
       // Return null instead of throwing to prevent FutureBuilder from crashing
       return null;
     }
@@ -348,7 +349,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
     
     // If platformId is not found, try to infer from email domain
     if (platformId.isEmpty) {
-      _logger.w('Platform ID not found for $accountId, attempting to infer from email');
+      _logger.w('Platform ID not found for ${Redact.accountId(accountId)}, attempting to infer from email');
       
       if (email.contains('@gmail.com')) {
         platformId = 'gmail';
@@ -364,10 +365,10 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
         platformId = 'unknown';
       }
       
-      _logger.i('Inferred platform: $platformId from email: $email');
+      _logger.i('Inferred platform: $platformId from email: ${Redact.email(email)}');
     }
 
-    _logger.i('Selected account: $accountId (platform: $platformId)');
+    _logger.i('Selected account: ${Redact.accountId(accountId)} (platform: $platformId)');
 
     if (!mounted) return;
 
@@ -527,7 +528,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
           // Remove from cache
           _accountDataCache.remove(accountId);
         });
-        _logger.i('Deleted account: $accountId');
+        _logger.i('Deleted account: ${Redact.accountId(accountId)}');
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -657,7 +658,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                   builder: (context, snapshot) {
                     // Handle errors
                     if (snapshot.hasError) {
-                      _logger.e('Error loading account $accountId: ${snapshot.error}');
+                      _logger.e('Error loading account ${Redact.accountId(accountId)}: ${snapshot.error}');
                     }
 
                     final displayData = snapshot.data;
