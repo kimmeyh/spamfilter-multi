@@ -82,7 +82,7 @@ class SecureCredentialsStore {
     String? platformId,
   }) async {
     try {
-      _logger.i('Saving credentials for accountId: ${Redact.email(accountId)}, platformId: $platformId');
+      _logger.i('Saving credentials for accountId: ${Redact.accountId(accountId)}, platformId: $platformId');
       
       // Store email
       await _storage.write(
@@ -96,9 +96,9 @@ class SecureCredentialsStore {
           key: '${_credentialsPrefix}${accountId}_platformId',
           value: platformId,
         );
-        _logger.i('[OK] Stored platformId: $platformId for account: ${Redact.email(accountId)}');
+        _logger.i('[OK] Stored platformId: $platformId for account: ${Redact.accountId(accountId)}');
       } else {
-        _logger.w('[WARNING] No platformId provided for account: ${Redact.email(accountId)}');
+        _logger.w('[WARNING] No platformId provided for account: ${Redact.accountId(accountId)}');
       }
 
       // Store password
@@ -119,7 +119,7 @@ class SecureCredentialsStore {
       await _addAccountToList(accountId);
 
       final savedAccounts = await getSavedAccounts();
-      _logger.i('[OK] Saved credentials for account: ${Redact.email(accountId)}. Total accounts now: ${savedAccounts.length}');
+      _logger.i('[OK] Saved credentials for account: ${Redact.accountId(accountId)}. Total accounts now: ${savedAccounts.length}');
       return true;
     } catch (e) {
       throw CredentialStorageException('Failed to save credentials', e);
@@ -139,7 +139,7 @@ class SecureCredentialsStore {
       if (email == null) {
         final gmailTokens = await getGmailTokens(accountId);
         if (gmailTokens != null) {
-          _logger.d('Using Gmail tokens for credentials: ${Redact.email(accountId)}');
+          _logger.d('Using Gmail tokens for credentials: ${Redact.accountId(accountId)}');
 
           // Get platformId if stored
           final platformId = await _storage.read(
@@ -177,10 +177,10 @@ class SecureCredentialsStore {
           final oauthToken = await getOAuthToken(accountId, 'access');
           if (oauthToken != null && oauthToken.isNotEmpty) {
             accessToken = oauthToken;
-            _logger.i('Using stored OAuth access token for account: ${Redact.email(accountId)}');
+            _logger.i('Using stored OAuth access token for account: ${Redact.accountId(accountId)}');
           }
         } catch (e) {
-          _logger.w('Failed to load OAuth access token for account: ${Redact.email(accountId)}', error: e);
+          _logger.w('Failed to load OAuth access token for account: ${Redact.accountId(accountId)}', error: e);
         }
       }
 
@@ -189,7 +189,7 @@ class SecureCredentialsStore {
         key: '${_credentialsPrefix}${accountId}_platformId',
       );
 
-      _logger.d('Retrieved credentials for account: ${Redact.email(accountId)}');
+      _logger.d('Retrieved credentials for account: ${Redact.accountId(accountId)}');
       return Credentials(
         email: email,
         password: password,
@@ -222,7 +222,7 @@ class SecureCredentialsStore {
       // Update accounts list
       await _addAccountToList(accountId);
 
-      _logger.i('Saved $tokenType token for account: ${Redact.email(accountId)}');
+      _logger.i('Saved $tokenType token for account: ${Redact.accountId(accountId)}');
     } catch (e) {
       throw CredentialStorageException('Failed to save OAuth token', e);
     }
@@ -238,7 +238,7 @@ class SecureCredentialsStore {
       );
 
       if (token != null) {
-        _logger.d('Retrieved $tokenType token for account: ${Redact.email(accountId)}');
+        _logger.d('Retrieved $tokenType token for account: ${Redact.accountId(accountId)}');
       }
 
       return token;
@@ -264,7 +264,7 @@ class SecureCredentialsStore {
       // Update accounts list
       await _addAccountToList(accountId);
 
-      _logger.i('[OK] Saved Gmail tokens for account: ${Redact.email(accountId)}');
+      _logger.i('[OK] Saved Gmail tokens for account: ${Redact.accountId(accountId)}');
     } catch (e) {
       throw CredentialStorageException('Failed to save Gmail tokens', e);
     }
@@ -280,15 +280,15 @@ class SecureCredentialsStore {
       );
 
       if (json == null) {
-        _logger.d('No Gmail tokens found for account: ${Redact.email(accountId)}');
+        _logger.d('No Gmail tokens found for account: ${Redact.accountId(accountId)}');
         return null;
       }
 
       final tokens = GmailTokens.fromJson(jsonDecode(json));
-      _logger.d('[OK] Retrieved Gmail tokens for account: ${Redact.email(accountId)}, expired: ${tokens.isExpired}');
+      _logger.d('[OK] Retrieved Gmail tokens for account: ${Redact.accountId(accountId)}, expired: ${tokens.isExpired}');
       return tokens;
     } catch (e) {
-      _logger.e('[FAIL] Failed to retrieve Gmail tokens for ${Redact.email(accountId)}', error: e);
+      _logger.e('[FAIL] Failed to retrieve Gmail tokens for ${Redact.accountId(accountId)}', error: e);
       return null;
     }
   }
@@ -300,7 +300,7 @@ class SecureCredentialsStore {
   Future<void> deleteGmailTokens(String accountId) async {
     try {
       await _storage.delete(key: '${_tokenPrefix}${accountId}_gmail_tokens');
-      _logger.i('[OK] Deleted Gmail tokens for account: ${Redact.email(accountId)}');
+      _logger.i('[OK] Deleted Gmail tokens for account: ${Redact.accountId(accountId)}');
     } catch (e) {
       throw CredentialStorageException('Failed to delete Gmail tokens', e);
     }
@@ -331,7 +331,7 @@ class SecureCredentialsStore {
       // Ensure account is in the list (idempotent)
       await _addAccountToList(accountId);
 
-      _logger.i('[OK] Saved platformId: $platformId for account: ${Redact.email(accountId)}');
+      _logger.i('[OK] Saved platformId: $platformId for account: ${Redact.accountId(accountId)}');
     } catch (e) {
       throw CredentialStorageException('Failed to save platformId', e);
     }
@@ -346,14 +346,14 @@ class SecureCredentialsStore {
       );
 
       if (platformId != null && platformId.isNotEmpty) {
-        _logger.d('[OK] Retrieved platformId: $platformId for account: ${Redact.email(accountId)}');
+        _logger.d('[OK] Retrieved platformId: $platformId for account: ${Redact.accountId(accountId)}');
       } else {
-        _logger.w('[WARNING] No platformId found for account: ${Redact.email(accountId)} (will need to infer)');
+        _logger.w('[WARNING] No platformId found for account: ${Redact.accountId(accountId)} (will need to infer)');
       }
 
       return platformId;
     } catch (e) {
-      _logger.e('Failed to get platformId for ${Redact.email(accountId)}: $e');
+      _logger.e('Failed to get platformId for ${Redact.accountId(accountId)}: $e');
       return null;
     }
   }
@@ -374,7 +374,7 @@ class SecureCredentialsStore {
   /// Delete credentials for an account (logout)
   Future<void> deleteCredentials(String accountId) async {
     try {
-      _logger.w('[WARNING] DELETING credentials for account: ${Redact.email(accountId)}');
+      _logger.w('[WARNING] DELETING credentials for account: ${Redact.accountId(accountId)}');
       
       // Delete email
       await _storage.delete(
@@ -410,7 +410,7 @@ class SecureCredentialsStore {
       // Update accounts list
       await _removeAccountFromList(accountId);
 
-      _logger.i('[OK] Successfully deleted credentials for account: ${Redact.email(accountId)}');
+      _logger.i('[OK] Successfully deleted credentials for account: ${Redact.accountId(accountId)}');
     } catch (e) {
       throw CredentialStorageException('Failed to delete credentials', e);
     }
@@ -462,7 +462,7 @@ class SecureCredentialsStore {
   Future<void> _addAccountToList(String accountId) async {
     try {
       final accounts = await getSavedAccounts();
-      _logger.i('Adding account ${Redact.email(accountId)} to list. Current count: ${accounts.length}');
+      _logger.i('Adding account ${Redact.accountId(accountId)} to list. Current count: ${accounts.length}');
 
       if (!accounts.contains(accountId)) {
         accounts.add(accountId);
@@ -473,9 +473,9 @@ class SecureCredentialsStore {
           value: joinedValue,
         );
 
-        _logger.i('[OK] Successfully added ${Redact.email(accountId)}. Total accounts now: ${accounts.length}');
+        _logger.i('[OK] Successfully added ${Redact.accountId(accountId)}. Total accounts now: ${accounts.length}');
       } else {
-        _logger.d('Account ${Redact.email(accountId)} already in list, skipping');
+        _logger.d('Account ${Redact.accountId(accountId)} already in list, skipping');
       }
     } catch (e) {
       _logger.e('[FAIL] Failed to add account to list', error: e);
@@ -486,7 +486,7 @@ class SecureCredentialsStore {
   Future<void> _removeAccountFromList(String accountId) async {
     try {
       final accountsBefore = await getSavedAccounts();
-      _logger.i('Removing account ${Redact.email(accountId)}. Count before: ${accountsBefore.length}');
+      _logger.i('Removing account ${Redact.accountId(accountId)}. Count before: ${accountsBefore.length}');
 
       accountsBefore.remove(accountId);
       final accountsAfter = accountsBefore;
@@ -498,7 +498,7 @@ class SecureCredentialsStore {
         value: joinedValue,
       );
 
-      _logger.i('[OK] Successfully removed account ${Redact.email(accountId)}. Remaining: ${accountsAfter.length}');
+      _logger.i('[OK] Successfully removed account ${Redact.accountId(accountId)}. Remaining: ${accountsAfter.length}');
     } catch (e) {
       _logger.e('[FAIL] Failed to remove account from list', error: e);
     }
@@ -532,7 +532,7 @@ class SecureCredentialsStore {
           // Read old token format
           final oldTokenJson = await _storage.read(key: 'gmail_tokens_$accountId');
           if (oldTokenJson == null) {
-            _logger.w('No tokens found for legacy account: ${Redact.email(accountId)}');
+            _logger.w('No tokens found for legacy account: ${Redact.accountId(accountId)}');
             continue;
           }
 
@@ -544,9 +544,9 @@ class SecureCredentialsStore {
           await savePlatformId(accountId, 'gmail');
 
           migratedCount++;
-          _logger.i('[OK] Migrated account: ${Redact.email(accountId)}');
+          _logger.i('[OK] Migrated account: ${Redact.accountId(accountId)}');
         } catch (e) {
-          _logger.e('[FAIL] Failed to migrate account ${Redact.email(accountId)}', error: e);
+          _logger.e('[FAIL] Failed to migrate account ${Redact.accountId(accountId)}', error: e);
         }
       }
 

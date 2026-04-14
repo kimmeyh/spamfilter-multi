@@ -149,10 +149,21 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
       return false;
     }
 
-    // Password length warning (informational, does not block)
+    // SEC-21 / H2 fix: Password length warning is now surfaced in the UI
+    // (SnackBar, 5s duration) instead of log-only. Length is intentionally
+    // NOT logged to avoid creating a password-search-space oracle.
     final passwordWarning = _passwordLengthWarning(password);
     if (passwordWarning != null) {
-      _logger.w('[Account Setup] $passwordWarning (length: ${password.length})');
+      _logger.w('[Account Setup] Short password entered (warning shown to user)');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(passwordWarning),
+            duration: const Duration(seconds: 5),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
     }
 
     return true;

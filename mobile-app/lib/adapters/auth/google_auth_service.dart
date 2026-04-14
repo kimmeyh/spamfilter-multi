@@ -543,9 +543,13 @@ class GoogleAuthService {
 
       if (tokenToRevoke.isEmpty) return;
 
+      // SEC-12 / C2 fix: token in form-encoded body, not URL query string.
+      // URLs are routinely logged by HTTP clients, proxies, and crash reporters.
+      // Per RFC 7009 Section 2.1, token must be in request body.
       final response = await http.post(
-        Uri.parse('https://oauth2.googleapis.com/revoke?token=$tokenToRevoke'),
+        Uri.parse('https://oauth2.googleapis.com/revoke'),
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: {'token': tokenToRevoke},
       );
 
       if (response.statusCode == 200) {
