@@ -1,0 +1,13 @@
+# CODEOWNERS - Automatic review assignment for pull requests
+#
+# See https://docs.github.com/en/repositories/managing-your-repositories-settings-and-features/customizing-your-repository/about-code-owners
+# Referenced by docs/SPRINT_EXECUTION_WORKFLOW.md Phase 6.4 and Phase 6.4.1
+#
+# Syntax: pattern<space>@user1 @user2 ...
+# Later rules override earlier ones. Most-specific rule wins.
+
+# Default owners for everything in the repo
+# - @kimmeyh: Project owner / Chief Architect / Chief Developer
+# - @copilot-pull-request-reviewer: GitHub Copilot automated code review
+#   (see Phase 6.4.1 for how Claude Code drafts responses to Copilot feedback)
+*       @kimmeyh @copilot-pull-request-reviewer
