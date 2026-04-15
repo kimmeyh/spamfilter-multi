@@ -26,6 +26,13 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-04-14 (Sprint 33 - Security Hardening + UX Polish)
+- **feat**: F53: Add `@.*\.cc$` (Cocos Islands) and `@.*\.ne$` (Niger) TLD block patterns to the bundled SpamAutoDeleteHeader rule; includes idempotent post-seed migration (DefaultRuleSetService.ensureTldBlockRules) that adds the patterns to existing installations on startup (Issue #233)
+- **docs**: F65: Verified Gmail onboarding already presents App Password (IMAP) as the recommended primary method with Google Sign-In (OAuth) as the alternative -- no code changes needed. Implementation from Issue #178 (Sprint 19) already aligns with ADR-0034 Option D (Dual Path) (Issue #233)
+- **feat**: SEC-19: Add "Disable detailed auth logging" toggle in Settings > General > Privacy & Logging. When on, Redact.logSafe() becomes a no-op even in debug builds, suppressing sensitive auth traces. Setting is cached process-locally (Redact.setAuthLoggingDisabled) and loaded from DB at app startup to avoid per-call DB hits across 100+ log sites (Issue #233)
+- **feat**: SEC-14: Unmatched-email retention + body-preview truncation. New `UnmatchedEmailStore.deleteOlderThan(days)` purges rows older than the retention window (default 30 days; configurable in Settings > General > Privacy & Logging via Forever / 7 / 30 / 90 / 365 day options). Cleanup runs at app startup and after every scan completion. Body previews are truncated to 100 characters at insert time via a new `truncateBodyPreview` helper + enforcement inside `UnmatchedEmail.toMap()` (Issue #233)
+- **feat**: SEC-22: Per-account rate limit on failed IMAP authentication. New `AuthRateLimiter` tracks up to 10 failures in a rolling 1-hour window per `{platform}-{email}` identifier; once the threshold is hit the account is blocked for 1 hour. State persists in a new `auth_rate_limit` table (DB schema v3) so blocks survive app restart. Successful sign-in resets the counter. `GenericIMAPAdapter.loadCredentials` calls `assertNotBlocked` before network I/O and records failures on `AuthenticationException`. The account setup Test Connection flow surfaces a "Too many failed sign-in attempts. Try again at HH:MM." message instead of the generic auth error. Gmail OAuth is intentionally excluded (different threat model) (Issue #233)
+
 ### 2026-04-14 (Sprint 32 - Code Review Fixes)
 - **fix**: C2: SEC-12 OAuth revocation token now sent in form-encoded body instead of URL query string (RFC 7009 compliant, prevents token leakage via HTTP logs) (Issue #230)
 - **fix**: H1: SEC-17 auth logging uses Redact.accountId() instead of Redact.email() for accountId values; extended Redact.accountId() to handle both plain email and prefixed formats (Issue #230)

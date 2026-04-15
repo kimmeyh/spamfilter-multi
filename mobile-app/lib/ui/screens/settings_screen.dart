@@ -11,6 +11,8 @@ import '../../core/services/background_scan_windows_worker.dart';
 import '../../core/services/windows_task_scheduler_service.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/settings_store.dart';
+import '../../core/storage/unmatched_email_store.dart'
+    show kBodyPreviewMaxLength;
 import '../../core/providers/email_scan_provider.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../util/redact.dart';
@@ -70,6 +72,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   int _manualDaysBack = SettingsStore.defaultManualScanDaysBack;
   int _backgroundDaysBack = SettingsStore.defaultBackgroundScanDaysBack;
   int _scanHistoryRetentionDays = SettingsStore.defaultScanHistoryRetentionDays;
+  // SEC-19 (Sprint 33): disable detailed auth logging at runtime
+  bool _disableAuthLogging = SettingsStore.defaultDisableAuthLogging;
+  // SEC-14 (Sprint 33): unmatched email retention (days)
+  int _unmatchedRetentionDays = SettingsStore.defaultUnmatchedRetentionDays;
 
   bool _isLoading = true;
   bool _isTestingScan = false;
@@ -132,6 +138,12 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
       _scanHistoryRetentionDays = await _settingsStore.getScanHistoryRetentionDays();
       _retentionDaysController.text = _scanHistoryRetentionDays.toString();
+
+      // SEC-19 (Sprint 33): load persisted auth-logging-disabled preference
+      _disableAuthLogging = await _settingsStore.getDisableAuthLogging();
+
+      // SEC-14 (Sprint 33): load unmatched email retention days
+      _unmatchedRetentionDays = await _settingsStore.getUnmatchedRetentionDays();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -287,6 +299,41 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           label: const Text('Go to View Scan History'),
           onPressed: () => _navigateToScanHistory(),
         ),
+
+        const SizedBox(height: 24),
+
+        // Privacy & Logging section (SEC-19, Sprint 33)
+        Text(
+          'Privacy & Logging',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Control sensitive information in log output',
+          style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+        ),
+        const SizedBox(height: 8),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Disable detailed auth logging'),
+          subtitle: const Text(
+            'When on, the app suppresses debug-only authentication log lines '
+            '(redacted tokens, account IDs). Errors and warnings are still '
+            'logged. Turn off to help diagnose sign-in problems.',
+          ),
+          value: _disableAuthLogging,
+          onChanged: (value) async {
+            await _settingsStore.setDisableAuthLogging(value);
+            Redact.setAuthLoggingDisabled(value);
+            if (mounted) {
+              setState(() => _disableAuthLogging = value);
+            }
+          },
+        ),
+        const SizedBox(height: 12),
+        _buildUnmatchedRetentionSelector(),
 
         const SizedBox(height: 24),
 
@@ -803,6 +850,52 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   }
 
   /// [NEW] FB-2: Retention days selector with text field and quick-select chips
+  /// SEC-14 (Sprint 33): selector for unmatched-email retention.
+  ///
+  /// Keeps the list of quick options narrow (0 = Forever, 7, 30, 90, 365 days)
+  /// since this setting is rarely tuned. Body-preview truncation is applied
+  /// at insert time regardless of this setting.
+  Widget _buildUnmatchedRetentionSelector() {
+    const options = <int>[0, 7, 30, 90, 365];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Unmatched Emails Retention',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'How long to keep emails that did not match any rule. Older entries '
+          'are deleted automatically on app startup and after each scan. '
+          'Body previews are always stored truncated to $kBodyPreviewMaxLength characters.',
+          style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          children: options.map((days) {
+            final label = days == 0
+                ? 'Forever'
+                : (days >= 365 ? '1 year' : '$days days');
+            return ChoiceChip(
+              label: Text(label, style: const TextStyle(fontSize: 12)),
+              selected: _unmatchedRetentionDays == days,
+              onSelected: (selected) async {
+                if (!selected) return;
+                await _settingsStore.setUnmatchedRetentionDays(days);
+                if (mounted) {
+                  setState(() => _unmatchedRetentionDays = days);
+                }
+              },
+              visualDensity: VisualDensity.compact,
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
   Widget _buildRetentionDaysSelector() {
     const quickOptions = [7, 14, 30, 90, 365];
 

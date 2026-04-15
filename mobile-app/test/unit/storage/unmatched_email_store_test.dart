@@ -741,4 +741,91 @@ void main() {
       expect(stopwatch.elapsedMilliseconds, lessThan(1000)); // Should be < 1 second
     });
   });
+
+  group('SEC-14 (Sprint 33) body preview truncation', () {
+    test('truncateBodyPreview returns null for null input', () {
+      expect(truncateBodyPreview(null), isNull);
+    });
+
+    test('truncateBodyPreview keeps short input unchanged', () {
+      expect(truncateBodyPreview('short'), 'short');
+    });
+
+    test('truncateBodyPreview caps at kBodyPreviewMaxLength', () {
+      final long = 'a' * (kBodyPreviewMaxLength + 50);
+      final result = truncateBodyPreview(long);
+      expect(result, isNotNull);
+      expect(result!.length, kBodyPreviewMaxLength);
+      expect(result, 'a' * kBodyPreviewMaxLength);
+    });
+
+    test('addUnmatchedEmail truncates long body_preview on insert', () async {
+      final longPreview = 'x' * (kBodyPreviewMaxLength + 250);
+      final email = UnmatchedEmail(
+        scanResultId: testScanId,
+        providerIdentifierType: 'gmail_message_id',
+        providerIdentifierValue: 'abc123',
+        fromEmail: 'spammer@example.com',
+        bodyPreview: longPreview,
+        folderName: 'INBOX',
+        createdAt: DateTime.now(),
+      );
+      final id = await emailStore.addUnmatchedEmail(email);
+      final stored = await emailStore.getUnmatchedEmailById(id);
+      expect(stored, isNotNull);
+      expect(stored!.bodyPreview, isNotNull);
+      expect(stored.bodyPreview!.length, kBodyPreviewMaxLength);
+    });
+  });
+
+  group('SEC-14 (Sprint 33) deleteOlderThan retention', () {
+    Future<int> insertEmailWithCreatedAt(DateTime createdAt) async {
+      return emailStore.addUnmatchedEmail(UnmatchedEmail(
+        scanResultId: testScanId,
+        providerIdentifierType: 'gmail_message_id',
+        providerIdentifierValue: 'id-${createdAt.millisecondsSinceEpoch}',
+        fromEmail: 'sender@example.com',
+        folderName: 'INBOX',
+        createdAt: createdAt,
+      ));
+    }
+
+    test('returns 0 when retentionDays is zero (retain forever)', () async {
+      await insertEmailWithCreatedAt(
+          DateTime.now().subtract(const Duration(days: 400)));
+      final deleted = await emailStore.deleteOlderThan(0);
+      expect(deleted, 0);
+      final remaining = await emailStore.getUnmatchedEmailsByScan(testScanId);
+      expect(remaining, hasLength(1));
+    });
+
+    test('returns 0 when retentionDays is negative', () async {
+      await insertEmailWithCreatedAt(
+          DateTime.now().subtract(const Duration(days: 100)));
+      final deleted = await emailStore.deleteOlderThan(-1);
+      expect(deleted, 0);
+    });
+
+    test('deletes rows older than cutoff and keeps younger rows', () async {
+      final now = DateTime.now();
+      final oldId = await insertEmailWithCreatedAt(
+          now.subtract(const Duration(days: 45)));
+      final youngId = await insertEmailWithCreatedAt(
+          now.subtract(const Duration(days: 5)));
+
+      final deleted = await emailStore.deleteOlderThan(30);
+      expect(deleted, 1);
+
+      expect(await emailStore.getUnmatchedEmailById(oldId), isNull);
+      expect(await emailStore.getUnmatchedEmailById(youngId), isNotNull);
+    });
+
+    test('deletes nothing when all rows are within retention window',
+        () async {
+      await insertEmailWithCreatedAt(
+          DateTime.now().subtract(const Duration(days: 5)));
+      final deleted = await emailStore.deleteOlderThan(30);
+      expect(deleted, 0);
+    });
+  });
 }

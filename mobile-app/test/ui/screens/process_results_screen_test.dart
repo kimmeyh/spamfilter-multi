@@ -156,6 +156,9 @@ class FakeUnmatchedEmailStore implements UnmatchedEmailStore {
 
   @override
   Future<int> deleteUnmatchedEmailsByScan(int scanResultId) async => 0;
+
+  @override
+  Future<int> deleteOlderThan(int retentionDays) async => 0;
 }
 
 void main() {

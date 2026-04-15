@@ -6,6 +6,7 @@ import '../../adapters/email_providers/email_provider.dart';
 import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/providers/email_scan_provider.dart';
+import '../../core/security/auth_rate_limiter.dart';
 import '../../core/storage/settings_store.dart';
 import '../../util/redact.dart';
 import 'scan_progress_screen.dart';
@@ -220,14 +221,28 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
       // Disconnect after test
       await platform.disconnect();
     } catch (e) {
+      // SEC-22 (Sprint 33): surface rate-limit blocks with a clear unlock
+      // time instead of a raw toString() that exposes the redacted account
+      // and exception name.
+      String userMessage;
+      if (e is AuthRateLimitedException) {
+        final unlock = e.blockedUntil.toLocal();
+        final hh = unlock.hour.toString().padLeft(2, '0');
+        final mm = unlock.minute.toString().padLeft(2, '0');
+        userMessage =
+            'Too many failed sign-in attempts. Try again at $hh:$mm.';
+      } else {
+        userMessage = 'Connection failed: $e';
+      }
+
       setState(() {
         _isTesting = false;
-        _connectionStatus = '[FAIL] Connection failed: $e';
+        _connectionStatus = '[FAIL] $userMessage';
       });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Connection test failed: $e')),
+          SnackBar(content: Text(userMessage)),
         );
       }
     }

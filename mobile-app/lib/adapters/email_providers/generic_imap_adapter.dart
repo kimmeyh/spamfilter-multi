@@ -23,6 +23,8 @@ import 'package:logger/logger.dart';
 import '../../core/models/batch_action_result.dart';
 import '../../core/models/email_message.dart';
 import '../../core/models/evaluation_result.dart';
+import '../../core/security/auth_rate_limiter.dart';
+import '../../core/storage/database_helper.dart';
 import 'spam_filter_platform.dart';
 import 'email_provider.dart';
 
@@ -135,6 +137,12 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
 
   @override
   Future<void> loadCredentials(Credentials credentials) async {
+    // SEC-22 (Sprint 33): check rate limiter before attempting sign-in so a
+    // blocked account never touches the network.
+    final rateLimiter = AuthRateLimiter(DatabaseHelper());
+    final rateLimitAccountId = '$platformId-${credentials.email}';
+    await rateLimiter.assertNotBlocked(rateLimitAccountId);
+
     try {
       _credentials = credentials;
       _operationCount = 0;
@@ -170,12 +178,23 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
 
       _logger.i('[IMAP] Successfully authenticated to $displayName');
 
+      // SEC-22: successful auth clears any accrued failure count.
+      await rateLimiter.recordSuccess(rateLimitAccountId);
+
       // Log server capabilities for diagnostics (custom keyword support, etc.)
       final capabilities = _imapClient?.serverInfo.capabilities ?? [];
       _logger.i('[IMAP] Server capabilities: ${capabilities.map((c) => c.name).toList()}');
     } catch (e) {
       _logger.e('[IMAP] Failed to load credentials: $e');
       if (e is AuthenticationException) {
+        // SEC-22: server rejected credentials -> count as a failed attempt.
+        // Swallow any DB error inside the limiter so it never hides the
+        // original auth failure from the caller.
+        try {
+          await rateLimiter.recordFailure(rateLimitAccountId);
+        } catch (limiterError) {
+          _logger.w('Auth rate limiter write failed: $limiterError');
+        }
         // Propagate explicit authentication failures
         rethrow;
       }

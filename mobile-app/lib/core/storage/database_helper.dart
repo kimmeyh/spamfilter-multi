@@ -23,7 +23,8 @@ abstract class RuleDatabaseProvider {
 /// Database schema version (increment on schema changes)
 /// v1: Initial schema (Sprint 12)
 /// v2: Add pattern classification columns to rules table (Sprint 20)
-const int databaseVersion = 2;
+/// v3: Add auth_rate_limit table for failed-auth throttling (SEC-22, Sprint 33)
+const int databaseVersion = 3;
 
 /// SQLite database helper - singleton pattern
 class DatabaseHelper implements RuleDatabaseProvider {
@@ -266,6 +267,17 @@ class DatabaseHelper implements RuleDatabaseProvider {
     await db.execute('CREATE INDEX IF NOT EXISTS idx_background_scan_log_account ON background_scan_log(account_id);');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_background_scan_log_scheduled ON background_scan_log(scheduled_time DESC);');
 
+    // Auth rate limit table (SEC-22, Sprint 33): track failed auth attempts
+    // per account so we can throttle sign-in after too many failures.
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS auth_rate_limit (
+        account_id TEXT PRIMARY KEY,
+        window_start INTEGER NOT NULL,
+        attempts INTEGER NOT NULL DEFAULT 0,
+        block_until INTEGER
+      );
+    ''');
+
     _logger.i('Database tables created successfully');
   }
 
@@ -291,6 +303,20 @@ class DatabaseHelper implements RuleDatabaseProvider {
       }
       await db.execute('CREATE INDEX IF NOT EXISTS idx_rules_category ON rules(pattern_category, pattern_sub_type);');
       _logger.i('v2 migration complete');
+    }
+
+    if (oldVersion < 3) {
+      // v3: Auth rate limit table for failed-auth throttling (SEC-22, Sprint 33)
+      _logger.i('Applying v3 migration: creating auth_rate_limit table');
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS auth_rate_limit (
+          account_id TEXT PRIMARY KEY,
+          window_start INTEGER NOT NULL,
+          attempts INTEGER NOT NULL DEFAULT 0,
+          block_until INTEGER
+        );
+      ''');
+      _logger.i('v3 migration complete');
     }
   }
 

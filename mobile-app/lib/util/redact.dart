@@ -34,6 +34,28 @@ class Redact {
     level: kDebugMode ? Level.debug : Level.warning,
   );
 
+  /// Runtime override that suppresses [logSafe] output even in debug builds.
+  ///
+  /// SEC-19 (Sprint 33): When the user enables "Disable detailed auth logging"
+  /// in Settings > General, the SettingsScreen (or a startup initializer)
+  /// flips this flag to `true` and [logSafe] becomes a no-op. Default is
+  /// `false` so existing debug behavior is preserved.
+  ///
+  /// This is a process-local cache to avoid hitting the DB on every log call.
+  /// Source of truth is [SettingsStore] key `disable_auth_logging`.
+  static bool _authLoggingDisabled = false;
+
+  /// Update the auth-logging-disabled flag. Call this from SettingsScreen
+  /// after the user toggles the setting, and from main.dart on app startup
+  /// after reading the persisted value.
+  static void setAuthLoggingDisabled(bool disabled) {
+    _authLoggingDisabled = disabled;
+  }
+
+  /// Current state of the auth-logging-disabled flag. Exposed for tests.
+  @visibleForTesting
+  static bool get authLoggingDisabled => _authLoggingDisabled;
+
   /// Redact a token, showing only first/last 4 characters.
   ///
   /// Example: "ya29.abc...xyz123" → "ya29...3123"
@@ -93,8 +115,12 @@ class Redact {
 
   /// Log a message safely (redaction already applied to content).
   ///
-  /// Only logs in debug mode to prevent production log leaks.
+  /// Only logs in debug mode to prevent production log leaks. Additionally,
+  /// when the user has enabled "Disable detailed auth logging"
+  /// ([_authLoggingDisabled] is true), this becomes a no-op even in debug
+  /// builds (SEC-19, Sprint 33).
   static void logSafe(String message) {
+    if (_authLoggingDisabled) return;
     if (kDebugMode) {
       _logger.d('[Auth] $message');
     }

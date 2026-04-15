@@ -12,6 +12,24 @@ import 'package:logger/logger.dart';
 
 import 'database_helper.dart';
 
+/// Maximum length stored in the `body_preview` column.
+///
+/// SEC-14 (Sprint 33): Email bodies can contain secrets, PII, or tracking
+/// beacons. Capping at 100 chars keeps enough context for triage without
+/// persisting full message content to disk.
+const int kBodyPreviewMaxLength = 100;
+
+/// Truncate a body preview to at most [kBodyPreviewMaxLength] characters.
+///
+/// Returns null if input is null, the original string if it is shorter
+/// than the cap, or a substring otherwise. Does not append an ellipsis;
+/// the UI layer decides how to present truncation if needed.
+String? truncateBodyPreview(String? preview) {
+  if (preview == null) return null;
+  if (preview.length <= kBodyPreviewMaxLength) return preview;
+  return preview.substring(0, kBodyPreviewMaxLength);
+}
+
 /// Model class for unmatched emails
 class UnmatchedEmail {
   final int? id;
@@ -55,7 +73,9 @@ class UnmatchedEmail {
         'from_email': fromEmail.toLowerCase(),
         'from_name': fromName,
         'subject': subject,
-        'body_preview': bodyPreview,
+        // SEC-14 (Sprint 33): enforce body preview cap at insert boundary so
+        // any caller that bypassed constructor-level truncation is still safe.
+        'body_preview': truncateBodyPreview(bodyPreview),
         'folder_name': folderName,
         'email_date': emailDate?.millisecondsSinceEpoch,
         'availability_status': availabilityStatus,
@@ -366,6 +386,49 @@ class UnmatchedEmailStore {
       return UnmatchedEmail.fromMap(maps.first);
     } catch (e) {
       _logger.e('Failed to get unmatched email $emailId: $e');
+      rethrow;
+    }
+  }
+
+  /// Delete unmatched emails older than [retentionDays] days (SEC-14, Sprint 33).
+  ///
+  /// Removes rows whose `created_at` is older than `now - retentionDays * 1d`.
+  /// Returns the number of rows deleted. Intended to be called on app startup
+  /// and after each scan completes so retention enforcement is continuous and
+  /// independent of UI navigation.
+  ///
+  /// Passing a non-positive [retentionDays] is treated as "retain forever"
+  /// (no-op) to make it easy to expose a user-facing "keep all" option.
+  Future<int> deleteOlderThan(int retentionDays) async {
+    if (retentionDays <= 0) {
+      _logger.d('Retention cleanup skipped: retentionDays=$retentionDays '
+          '(retain forever)');
+      return 0;
+    }
+
+    try {
+      final cutoff = DateTime.now()
+          .subtract(Duration(days: retentionDays))
+          .millisecondsSinceEpoch;
+
+      final db = await _databaseHelper.database;
+      final count = await db.delete(
+        'unmatched_emails',
+        where: 'created_at < ?',
+        whereArgs: [cutoff],
+      );
+
+      if (count > 0) {
+        _logger.i('Deleted $count unmatched emails older than '
+            '$retentionDays days (retention cleanup)');
+      } else {
+        _logger.d('No unmatched emails older than $retentionDays days to '
+            'delete');
+      }
+      return count;
+    } catch (e) {
+      _logger.e('Failed to delete unmatched emails older than '
+          '$retentionDays days: $e');
       rethrow;
     }
   }

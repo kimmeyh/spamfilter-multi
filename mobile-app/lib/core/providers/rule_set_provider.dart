@@ -143,6 +143,13 @@ class RuleSetProvider extends ChangeNotifier {
             'Seeded ${seedResult.rules} default rules and ${seedResult.safeSenders} default safe senders');
       }
 
+      // Apply post-seed rule migrations for existing installs (F53 TLD blocks).
+      // Idempotent: only adds missing patterns; no-op on fresh installs.
+      final tldAdded = await defaultRuleSetService.ensureTldBlockRules();
+      if (tldAdded > 0) {
+        _logger.i('Added $tldAdded TLD block pattern(s) to existing rule set');
+      }
+
       // Load rules and safe senders from database
       await loadRules();
       await loadSafeSenders();

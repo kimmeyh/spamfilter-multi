@@ -51,6 +51,8 @@ class SettingsStore {
   static const String keyManualScanDaysBack = 'manual_scan_days_back';
   static const String keyBackgroundScanDaysBack = 'background_scan_days_back';
   static const String keyScanHistoryRetentionDays = 'scan_history_retention_days';
+  static const String keyDisableAuthLogging = 'disable_auth_logging';
+  static const String keyUnmatchedRetentionDays = 'unmatched_retention_days';
 
   // ============================================================
   // Default Values
@@ -67,6 +69,8 @@ class SettingsStore {
   static const int defaultManualScanDaysBack = 0; // 0 = all emails
   static const int defaultBackgroundScanDaysBack = 0; // 0 = all emails
   static const int defaultScanHistoryRetentionDays = 7; // days to keep scan history
+  static const bool defaultDisableAuthLogging = false; // SEC-19: default OFF preserves debug behavior
+  static const int defaultUnmatchedRetentionDays = 30; // SEC-14: keep unmatched emails 30 days
 
   // ============================================================
   // Manual Scan Settings
@@ -218,6 +222,40 @@ class SettingsStore {
   /// Set how many days to keep scan history
   Future<void> setScanHistoryRetentionDays(int days) async {
     await _setAppSetting(keyScanHistoryRetentionDays, days.toString(), 'int');
+  }
+
+  // ============================================================
+  // Privacy & Logging Settings (SEC-19, Sprint 33)
+  // ============================================================
+
+  /// Get whether detailed auth logging is disabled.
+  ///
+  /// When true, [Redact.logSafe] becomes a no-op even in debug builds. This
+  /// allows users to suppress sensitive auth traces from log output without
+  /// rebuilding the app.
+  Future<bool> getDisableAuthLogging() async {
+    final value = await _getAppSetting(keyDisableAuthLogging);
+    if (value == null) return defaultDisableAuthLogging;
+    return value == 'true';
+  }
+
+  /// Set whether detailed auth logging is disabled.
+  Future<void> setDisableAuthLogging(bool disabled) async {
+    await _setAppSetting(keyDisableAuthLogging, disabled.toString(), 'bool');
+  }
+
+  /// Get how many days unmatched emails are retained before auto-deletion
+  /// (SEC-14, Sprint 33). A non-positive value means "retain forever".
+  Future<int> getUnmatchedRetentionDays() async {
+    final value = await _getAppSetting(keyUnmatchedRetentionDays);
+    if (value == null) return defaultUnmatchedRetentionDays;
+    return int.tryParse(value) ?? defaultUnmatchedRetentionDays;
+  }
+
+  /// Set how many days unmatched emails are retained before auto-deletion.
+  /// Pass 0 (or negative) to retain forever.
+  Future<void> setUnmatchedRetentionDays(int days) async {
+    await _setAppSetting(keyUnmatchedRetentionDays, days.toString(), 'int');
   }
 
   // ============================================================
