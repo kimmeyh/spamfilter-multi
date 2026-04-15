@@ -9,6 +9,7 @@ import '../../core/providers/email_scan_provider.dart';
 import '../../core/security/auth_rate_limiter.dart';
 import '../../core/storage/settings_store.dart';
 import '../../util/redact.dart';
+import 'help_screen.dart';
 import 'scan_progress_screen.dart';
 import 'gmail_oauth_screen.dart';
 
@@ -368,6 +369,13 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Gmail - Sign In Method'),
+        actions: [
+          IconButton(
+            tooltip: 'Help',
+            icon: const Icon(Icons.help_outline),
+            onPressed: () => openHelp(context, HelpSection.accountSetup),
+          ),
+        ],
       ),
       body: SelectionArea(
         child: SingleChildScrollView(
@@ -556,6 +564,14 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
                 },
               )
             : null,
+        actions: [
+          // F54 (Sprint 33): Help icon -> Account Setup section.
+          IconButton(
+            tooltip: 'Help',
+            icon: const Icon(Icons.help_outline),
+            onPressed: () => openHelp(context, HelpSection.accountSetup),
+          ),
+        ],
       ),
       body: SelectionArea(
         child: SingleChildScrollView(

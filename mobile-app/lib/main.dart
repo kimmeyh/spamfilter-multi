@@ -22,6 +22,7 @@ import 'core/storage/unmatched_email_store.dart';
 import 'core/storage/database_helper.dart';
 import 'adapters/storage/app_paths.dart';
 import 'adapters/storage/secure_credentials_store.dart';
+import 'core/security/certificate_pinner.dart';
 import 'util/redact.dart';
 // import 'ui/screens/platform_selection_screen.dart'; // OLD: Direct to platform selection.
 import 'ui/screens/main_navigation_screen.dart'; // NEW: Main navigation with bottom nav (Android)
@@ -147,6 +148,15 @@ void main(List<String> args) async {
       }
     } catch (e) {
       Logger().w('Unmatched email retention cleanup failed: $e');
+    }
+
+    // SEC-8 (Sprint 33): apply persisted certificate-pinning preference.
+    try {
+      final pinningEnabled =
+          await settingsStore.getCertificatePinningEnabled();
+      CertificatePinner.setEnabled(pinningEnabled);
+    } catch (e) {
+      Logger().w('Failed to load certificate pinning preference: $e');
     }
   } catch (e) {
     Logger().w('Early DatabaseHelper bootstrap failed: $e');

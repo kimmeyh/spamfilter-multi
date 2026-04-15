@@ -53,6 +53,8 @@ class SettingsStore {
   static const String keyScanHistoryRetentionDays = 'scan_history_retention_days';
   static const String keyDisableAuthLogging = 'disable_auth_logging';
   static const String keyUnmatchedRetentionDays = 'unmatched_retention_days';
+  static const String keyCertificatePinningEnabled = 'certificate_pinning_enabled';
+  static const String keyEncryptDatabase = 'encrypt_database';
 
   // ============================================================
   // Default Values
@@ -71,6 +73,8 @@ class SettingsStore {
   static const int defaultScanHistoryRetentionDays = 7; // days to keep scan history
   static const bool defaultDisableAuthLogging = false; // SEC-19: default OFF preserves debug behavior
   static const int defaultUnmatchedRetentionDays = 30; // SEC-14: keep unmatched emails 30 days
+  static const bool defaultCertificatePinningEnabled = true; // SEC-8: pinning on by default
+  static const bool defaultEncryptDatabase = false; // SEC-11: opt-in until QA gates
 
   // ============================================================
   // Manual Scan Settings
@@ -256,6 +260,35 @@ class SettingsStore {
   /// Pass 0 (or negative) to retain forever.
   Future<void> setUnmatchedRetentionDays(int days) async {
     await _setAppSetting(keyUnmatchedRetentionDays, days.toString(), 'int');
+  }
+
+  /// Get whether certificate pinning is enforced for Google OAuth endpoints
+  /// (SEC-8, Sprint 33). Default is `true`. Users can disable this if
+  /// Google rotates a key before the app ships with the updated hash.
+  Future<bool> getCertificatePinningEnabled() async {
+    final value = await _getAppSetting(keyCertificatePinningEnabled);
+    if (value == null) return defaultCertificatePinningEnabled;
+    return value == 'true';
+  }
+
+  /// Set whether certificate pinning is enforced.
+  Future<void> setCertificatePinningEnabled(bool enabled) async {
+    await _setAppSetting(
+        keyCertificatePinningEnabled, enabled.toString(), 'bool');
+  }
+
+  /// SEC-11 (Sprint 33): opt-in flag for SQLCipher at-rest encryption.
+  /// Default is `false`; infrastructure (key + migration) ships disabled
+  /// until dedicated platform QA validates the swap.
+  Future<bool> getEncryptDatabase() async {
+    final value = await _getAppSetting(keyEncryptDatabase);
+    if (value == null) return defaultEncryptDatabase;
+    return value == 'true';
+  }
+
+  /// Set the database encryption flag.
+  Future<void> setEncryptDatabase(bool enabled) async {
+    await _setAppSetting(keyEncryptDatabase, enabled.toString(), 'bool');
   }
 
   // ============================================================

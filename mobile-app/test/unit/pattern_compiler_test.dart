@@ -353,4 +353,59 @@ void main() {
       expect(stopwatch.elapsedMilliseconds, lessThan(2000));
     });
   });
+
+  group('SEC-1b (Sprint 33) provenance tracking', () {
+    late PatternCompiler compiler;
+    setUp(() {
+      compiler = PatternCompiler();
+    });
+
+    test('compile() defaults to bundled provenance', () {
+      compiler.compile(r'^bundled@example\.com$');
+      expect(compiler.provenanceOf(r'^bundled@example\.com$'),
+          PatternProvenance.bundled);
+    });
+
+    test('compileWithProvenance records user provenance for safe patterns',
+        () {
+      compiler.compileWithProvenance(
+          r'^user@example\.com$', PatternProvenance.user);
+      expect(compiler.provenanceOf(r'^user@example\.com$'),
+          PatternProvenance.user);
+      expect(compiler.rejectedUserPatterns, isEmpty);
+    });
+
+    test(
+        'compileWithProvenance rejects ReDoS user pattern with never-match fallback',
+        () {
+      // Classic nested-quantifier ReDoS: (a+)+
+      const dangerous = r'(a+)+';
+      final regex = compiler.compileWithProvenance(
+          dangerous, PatternProvenance.user);
+      expect(compiler.rejectedUserPatterns.containsKey(dangerous), isTrue);
+      // The fallback regex does not match any input.
+      expect(regex.hasMatch(''), isFalse);
+      expect(regex.hasMatch('aaa'), isFalse);
+      expect(regex.hasMatch('ab'), isFalse);
+    });
+
+    test('compileWithProvenance does NOT reject ReDoS pattern if bundled',
+        () {
+      // Same dangerous pattern, but shipped with the app -- trusted.
+      const dangerous = r'(a+)+';
+      final regex = compiler.compileWithProvenance(
+          dangerous, PatternProvenance.bundled);
+      expect(compiler.rejectedUserPatterns, isEmpty);
+      // Real regex is cached (will match "aaa"), no fallback.
+      expect(regex.hasMatch('aaa'), isTrue);
+    });
+
+    test('clear() wipes provenance and rejection tracking', () {
+      compiler.compileWithProvenance(r'(a+)+', PatternProvenance.user);
+      expect(compiler.rejectedUserPatterns, isNotEmpty);
+      compiler.clear();
+      expect(compiler.rejectedUserPatterns, isEmpty);
+      expect(compiler.provenanceOf(r'(a+)+'), isNull);
+    });
+  });
 }

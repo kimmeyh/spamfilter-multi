@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import '../../core/services/app_environment.dart';
+import '../../core/services/data_deletion_service.dart';
 import '../../core/services/default_rule_set_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -15,10 +16,12 @@ import '../../core/storage/unmatched_email_store.dart'
     show kBodyPreviewMaxLength;
 import '../../core/providers/email_scan_provider.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
+import '../../core/security/certificate_pinner.dart';
 import '../../util/redact.dart';
 import '../../adapters/email_providers/email_provider.dart' show Credentials;
 import '../widgets/app_bar_with_exit.dart';
 import 'folder_selection_screen.dart';
+import 'help_screen.dart';
 import 'scan_history_screen.dart';
 import 'rules_management_screen.dart';
 import 'safe_senders_management_screen.dart';
@@ -76,6 +79,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   bool _disableAuthLogging = SettingsStore.defaultDisableAuthLogging;
   // SEC-14 (Sprint 33): unmatched email retention (days)
   int _unmatchedRetentionDays = SettingsStore.defaultUnmatchedRetentionDays;
+  // SEC-8 (Sprint 33): certificate pinning for Google OAuth
+  bool _certificatePinningEnabled =
+      SettingsStore.defaultCertificatePinningEnabled;
 
   bool _isLoading = true;
   bool _isTestingScan = false;
@@ -144,6 +150,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
       // SEC-14 (Sprint 33): load unmatched email retention days
       _unmatchedRetentionDays = await _settingsStore.getUnmatchedRetentionDays();
+
+      // SEC-8 (Sprint 33): load certificate pinning preference
+      _certificatePinningEnabled =
+          await _settingsStore.getCertificatePinningEnabled();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -163,6 +173,11 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       appBar: AppBarWithExit(
         title: const Text('Settings'),
         actions: [
+          IconButton(
+            tooltip: 'Help',
+            icon: const Icon(Icons.help_outline),
+            onPressed: () => openHelp(context, HelpSection.settings),
+          ),
           IconButton(
             icon: const Icon(Icons.history),
             tooltip: 'View Scan History',
@@ -276,6 +291,19 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             foregroundColor: Colors.orange.shade700,
           ),
         ),
+        const SizedBox(height: 8),
+
+        // F66 (Sprint 33): full-app data wipe
+        OutlinedButton.icon(
+          icon: const Icon(Icons.delete_forever),
+          label: const Text('Delete All App Data...'),
+          onPressed: _confirmDeleteAllData,
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            alignment: Alignment.centerLeft,
+            foregroundColor: Colors.red.shade700,
+          ),
+        ),
 
         const SizedBox(height: 24),
 
@@ -334,6 +362,24 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         ),
         const SizedBox(height: 12),
         _buildUnmatchedRetentionSelector(),
+        const SizedBox(height: 12),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Pin Google OAuth certificates'),
+          subtitle: const Text(
+            'Rejects TLS connections to Google sign-in endpoints whose '
+            'certificate does not match the pinned hashes. Turn off if you '
+            'start seeing sign-in failures after a Google CA rotation.',
+          ),
+          value: _certificatePinningEnabled,
+          onChanged: (value) async {
+            await _settingsStore.setCertificatePinningEnabled(value);
+            CertificatePinner.setEnabled(value);
+            if (mounted) {
+              setState(() => _certificatePinningEnabled = value);
+            }
+          },
+        ),
 
         const SizedBox(height: 24),
 
@@ -1221,6 +1267,83 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Reset failed: $e')),
+        );
+      }
+    }
+  }
+
+  /// F66 (Sprint 33): two-step confirmation for full-app data wipe.
+  Future<void> _confirmDeleteAllData() async {
+    // First confirmation: explain what will be deleted.
+    final proceed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete All App Data'),
+        content: const Text(
+          'This will permanently delete:\n\n'
+          '- All accounts and credentials\n'
+          '- All scan history and unmatched emails\n'
+          '- All rules and safe senders (including your customizations)\n'
+          '- All app and per-account settings\n\n'
+          'The app will return to a fresh-install state. This cannot be '
+          'undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red.shade700),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+    if (proceed != true || !mounted) return;
+
+    // Second confirmation: require an explicit Yes to the final action.
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Are you absolutely sure?'),
+        content: const Text(
+          'This is your last chance to cancel. All app data will be erased.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red.shade700),
+            child: const Text('Delete Everything'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final service = DataDeletionService();
+      await service.wipeAllData();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'All app data deleted. Please restart the app to complete '
+              'the reset.',
+            ),
+            duration: Duration(seconds: 8),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Delete failed: $e')),
         );
       }
     }

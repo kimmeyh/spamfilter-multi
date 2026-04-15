@@ -154,10 +154,14 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       // Use default SSL/TLS certificate validation provided by Dart's dart:io.
       // For standard email providers (AOL, Gmail, Yahoo, Outlook), this is secure and reliable.
       //
-      // If custom certificate pinning is needed in future, can be implemented via:
-      // 1. Post-connection socket inspection
-      // 2. Custom IMAP wrapper with certificate validation
-      // 3. Upgrade to dedicated secure IMAP library (Phase 3+)
+      // SEC-8 (Sprint 33): Certificate pinning is NOT applied to IMAP because
+      // enough_mail's ImapClient does not expose a SecurityContext or
+      // bad-certificate callback. Pinning HTTPS OAuth endpoints is handled by
+      // PinnedHttpClient (see lib/core/security/certificate_pinner.dart).
+      // IMAP pinning is tracked as a future enhancement; options:
+      // 1. Post-connection socket inspection (not exposed by enough_mail API)
+      // 2. Fork enough_mail to accept a SecurityContext parameter
+      // 3. Replace enough_mail with a secure IMAP library that supports pinning
       //
       // REMOVED: SecurityContext creation and custom certificate handling (not supported by enough_mail)
       // REMOVED: Custom certificate file loading from assets

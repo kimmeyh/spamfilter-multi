@@ -18,6 +18,7 @@ import '../../core/models/rule_set.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/rule_database_store.dart';
 import '../widgets/app_bar_with_exit.dart';
+import 'help_screen.dart';
 import 'rule_test_screen.dart';
 
 /// Screen for managing spam filtering rules
@@ -414,6 +415,11 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
       appBar: AppBarWithExit(
         title: const Text('Manage Rules'),
         actions: [
+          IconButton(
+            tooltip: 'Help',
+            icon: const Icon(Icons.help_outline),
+            onPressed: () => openHelp(context, HelpSection.manageRules),
+          ),
           IconButton(
             icon: const Icon(Icons.science),
             tooltip: 'Test a pattern against sample emails',

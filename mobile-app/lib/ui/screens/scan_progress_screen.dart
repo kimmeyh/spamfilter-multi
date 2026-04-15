@@ -9,6 +9,7 @@ import '../../core/storage/settings_store.dart'; // [NEW] ISSUE #138: Load scan 
 import '../widgets/app_bar_with_exit.dart';
 import 'results_display_screen.dart';
 import 'scan_history_screen.dart';
+import 'help_screen.dart';
 import 'settings_screen.dart';
 
 /// Displays live scan progress bound to EmailScanProvider.
@@ -178,6 +179,21 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
             },
           ),
           actions: [
+            // F55 (Sprint 33): quick "Select Account" shortcut. Pops
+            // everything back to Account Selection (the root route).
+            IconButton(
+              tooltip: 'Select Account',
+              icon: const Icon(Icons.people),
+              onPressed: () {
+                Navigator.popUntil(context, (route) => route.isFirst);
+              },
+            ),
+            // F54 (Sprint 33): Help icon -> deep link to Manual Scan section.
+            IconButton(
+              tooltip: 'Help',
+              icon: const Icon(Icons.help_outline),
+              onPressed: () => openHelp(context, HelpSection.manualScan),
+            ),
             IconButton(
               tooltip: 'View Scan History',
               icon: const Icon(Icons.history),

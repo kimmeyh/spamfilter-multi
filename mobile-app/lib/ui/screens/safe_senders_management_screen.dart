@@ -17,6 +17,7 @@ import 'package:logger/logger.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/safe_sender_database_store.dart';
 import '../widgets/app_bar_with_exit.dart';
+import 'help_screen.dart';
 
 /// Categories for filtering safe sender patterns by structure
 enum SafeSenderCategory {
@@ -323,6 +324,11 @@ class _SafeSendersManagementScreenState
       appBar: AppBarWithExit(
         title: const Text('Manage Safe Senders'),
         actions: [
+          IconButton(
+            tooltip: 'Help',
+            icon: const Icon(Icons.help_outline),
+            onPressed: () => openHelp(context, HelpSection.safeSenders),
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Refresh',
