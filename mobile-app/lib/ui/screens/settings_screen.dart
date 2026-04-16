@@ -214,7 +214,11 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           IconButton(
             tooltip: 'Help',
             icon: const Icon(Icons.help_outline),
-            onPressed: () => openHelp(context, _helpSectionForActiveTab()),
+            onPressed: () => openHelp(
+              context,
+              _helpSectionForActiveTab(),
+              accountId: widget.accountId,
+            ),
           ),
         ],
         bottom: TabBar(

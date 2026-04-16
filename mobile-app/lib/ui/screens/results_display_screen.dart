@@ -563,6 +563,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                 widget.platformId == 'demo'
                     ? HelpSection.demoScan
                     : HelpSection.resultsDisplay,
+                accountId: widget.accountId,
+                accountEmail: widget.accountEmail,
+                platformId: widget.platformId,
+                platformDisplayName: widget.platformDisplayName,
               ),
             ),
             IconButton(

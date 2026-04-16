@@ -369,7 +369,12 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
           IconButton(
             tooltip: 'Help',
             icon: const Icon(Icons.help_outline),
-            onPressed: () => openHelp(context, HelpSection.folderSelection),
+            onPressed: () => openHelp(
+              context,
+              HelpSection.folderSelection,
+              accountId: widget.accountId,
+              platformId: widget.platformId,
+            ),
           ),
           IconButton(
             tooltip: 'Settings',

@@ -40,8 +40,11 @@ void main() {
       'Results',
       'Scan History',
       'Settings',
-      'Folder Settings (Settings > Account)',
-      'Manual Scan Settings (Settings > Manual Scan)',
+      'General > Rules Management',
+      'General > Scan History',
+      'General > Privacy & Logging',
+      'Account > Folder Settings',
+      'Manual Scan Settings',
       'Background Scanning',
       'Manage Rules',
       'Rule Quick Add',
@@ -80,6 +83,6 @@ void main() {
     // If anyone removes a HelpSection we want the test suite to shout:
     // the enum is a contract between every AppBar that passes into
     // openHelp() and the HelpScreen that renders the target.
-    expect(HelpSection.values, hasLength(16));
+    expect(HelpSection.values, hasLength(19));
   });
 }

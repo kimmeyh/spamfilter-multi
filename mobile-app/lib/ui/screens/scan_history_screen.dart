@@ -151,7 +151,14 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
           IconButton(
             tooltip: 'Help',
             icon: const Icon(Icons.help_outline),
-            onPressed: () => openHelp(context, HelpSection.scanHistory),
+            onPressed: () => openHelp(
+              context,
+              HelpSection.scanHistory,
+              accountId: widget.accountId,
+              accountEmail: widget.accountEmail,
+              platformId: widget.platformId,
+              platformDisplayName: widget.platformDisplayName,
+            ),
           ),
         ],
       ),

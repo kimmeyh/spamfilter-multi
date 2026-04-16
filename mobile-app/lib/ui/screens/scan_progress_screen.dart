@@ -88,9 +88,12 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware
   void didPopNext() {
     final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
     scanProvider.reset();
-    // Reset the local tracker so the auto-nav logic in build() does not
-    // mistakenly fire on the next status change.
-    _previousStatus = ScanStatus.idle;
+    // Do NOT clear _previousStatus here. It must stay at ScanStatus.completed
+    // so the auto-push logic in build() does not re-fire when the rebuild
+    // triggered by reset() runs (Round 3 fix: the previous code set this to
+    // idle, which made the next build see idle->completed and re-push Results
+    // if the rebuild observed status=completed briefly before reset() was
+    // visible to watchers).
   }
 
   Future<void> _loadConfiguredSettings() async {
@@ -247,6 +250,10 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware
                 widget.platformId == 'demo'
                     ? HelpSection.demoScan
                     : HelpSection.manualScan,
+                accountId: widget.accountId,
+                accountEmail: widget.accountEmail,
+                platformId: widget.platformId,
+                platformDisplayName: widget.platformDisplayName,
               ),
             ),
             IconButton(
