@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: April 14, 2026 (Sprint 33 planning -- moved F61 to HOLD per user direction)
+**Last Updated**: April 16, 2026 (Sprint 33 completion)
 
 ## How to Maintain This Document
 
@@ -97,6 +97,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 30 | docs/sprints/SPRINT_30_RETROSPECTIVE.md | [OK] Complete | Apr 13, 2026 |
 | 31 | docs/sprints/SPRINT_31_RETROSPECTIVE.md | [OK] Complete | Apr 13, 2026 |
 | 32 | docs/sprints/SPRINT_32_RETROSPECTIVE.md | [OK] Complete | Apr 13, 2026 |
+| 33 | docs/sprints/SPRINT_33_RETROSPECTIVE.md | [OK] Complete | Apr 14-16, 2026 |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -104,19 +105,22 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 32** (April 13, 2026)
-- **Type**: Security Hardening (code + process)
-- **Feature**: 10 security items from Sprint 31 audit (Issue #230)
-- **Delivered**: SEC-1 (ReDoS), SEC-10 (YAML file size), SEC-12 (token revocation), SEC-13 (fail-fast OAuth), SEC-16 (dependency scanning), SEC-17 (auth logging), SEC-18 (silent regex logging), SEC-20 (email validation), SEC-21 (password length), SEC-23 (Windows hardening)
-- **Tests**: +13 (1239 total passing)
-- **Process improvements**: Added automated code review (Phase 5.1.1), Copilot review response (Phase 6.4.1), Opus-required activities documentation
-- **Retrospective**: docs/sprints/SPRINT_32_RETROSPECTIVE.md
+**Sprint 33** (April 14-16, 2026)
+- **Type**: Mixed (security hardening + features + architecture refresh)
+- **Feature**: 12 tasks from the Sprint 33 plan, 4 rounds of UX iteration (Issue #233)
+- **Delivered**:
+  - Security (6): SEC-1b (ReDoS runtime protection), SEC-8 (cert pinning), SEC-11 partial (encryption infra + opt-in flag), SEC-14 (unmatched retention + body truncation), SEC-19 (auth logging toggle), SEC-22 (IMAP auth rate limiting)
+  - Features (4): F53 (.cc/.ne TLD rules + migration), F54 (in-app Help system, 19 sections), F55 (navigation consistency), F66 (user data deletion)
+  - Verified (1): F65 (Gmail onboarding already aligns with ADR-0034)
+  - Architecture (1): ARCHITECTURE.md updated for Sprint 33 components
+- **Tests**: +74 (1313 total passing, 0 analyzer issues)
+- **Retrospective**: docs/sprints/SPRINT_33_RETROSPECTIVE.md
 
 ---
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: April 13, 2026 (Sprint 32 completion -- removed 10 completed security items)
+**Last Reviewed**: April 16, 2026 (Sprint 33 completion -- removed F53, F54, F55, F65, F66, SEC-1b, SEC-8, SEC-14, SEC-19, SEC-22 and partial SEC-11)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
@@ -128,23 +132,6 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Extend ADR-0035 dev/prod separation to all 9 build variants (3 stores × 3 channels: dev, production, store)
 - All variants must run simultaneously without rebuild on same machine/device
 - [Detail](#f52-multi-variant-side-by-side-install)
-
-**F53. Add block rules for top-level domains .cc and .ne (~1h) Priority 60**
-- Phase: Core Feature
-- Platform: All
-- Add `@.*\.cc$` (.cc = Cocos (Keeling) Islands) and `@.*\.ne$` (.ne = Nigeria) block rule patterns
-- Update bundled rules.yaml asset (new user default bundle)
-- Add to current user's rules database (migration or runtime insert for existing installs)
-- Mirrors existing `@.*\.ru$` pattern
-- Target: Sprint 30
-
-**F54. Add icon to Select Account screen icon row (~1-2h) Priority 64**
-- Phase: UX Improvement
-- Platform: All
-- Current icon row: View Scan History (history), Settings (gear), Exit Application
-- Add a new icon+tooltip to the AppBar actions row
-- Needs: icon choice, tooltip/label, navigation target
-- Design decision: what action should this trigger? (account management, add account, etc.)
 
 **F56. Manual rule creation UI - block and safe sender rules from user input (~10-14h) Priority 68**
 - Phase: Core Feature
@@ -165,21 +152,6 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Accessible from Manage Rules and Manage Safe Senders screens
 - Related: F35 (rule editing UI), F25 (rule testing UI enhancements)
 - Testing note: SEC-1b (ReDoS compile-time rejection, Sprint 33) can only be manually tested once this UI exists. Include manual test: user enters catastrophic-backtracking regex (e.g. `(a+)+$`), app should reject on save with a clear error message.
-
-**F55. Screen navigation consistency - linear flow + push/pop icons (~4-6h) Priority 66**
-- Phase: UX Improvement
-- Platform: All
-- Two navigation models: linear scan flow (back returns up chain) and icon navigation (push/pop returns to origin)
-- Linear flow: Select Account -> Manual Scan -> Live Scan Results; back buttons return one step up
-- Icon navigation: Settings, Scan History, Select Account icons push onto stack; back pops to origin
-- Current issues:
-  - Results back button uses pushReplacement instead of pop (breaks stack)
-  - "Back to Accounts" button on Results skips Manual Scan via popUntil
-  - Results -> Manual Scan auto-navigation on scan complete should be push (not pushReplacement)
-- Consider: keep "Back to Accounts" as convenience shortcut or remove for consistency?
-- Consider: "Scan Again" pushReplacement is correct (avoids stack bloat on repeated scans)
-- Consider: does the user need a Select Account icon on Manual Scan and Results screens?
-- Related: F54 (add icon to Select Account screen)
 
 **F62. Dead code cleanup - remove deprecated classes (~2h) Priority 55**
 - Phase: Tech Debt
@@ -207,23 +179,6 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Related: F55 (navigation consistency) should be done before or with this
 - Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gap G23)
 
-**F65. Update Gmail onboarding to recommend app passwords as primary (~1-2h) Priority 45**
-- Phase: UX Improvement
-- Platform: All
-- Gmail IMAP with app passwords already fully implemented (Sprint 19, Issue #178)
-- Update account setup screen: app passwords as "Recommended", OAuth as "Advanced"
-- Update in-app help text and ADR-0034 status
-- Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gap G11)
-
-**F66. User data deletion feature (~4-6h) Priority 50**
-- Phase: Core Feature / Compliance
-- Platform: All (Windows Store, Google Play, all platforms)
-- Per-account deletion: remove all data for a specific email account
-- Full data wipe: delete all app data as a complete reset
-- External deletion form: GitHub Pages hosted (no-op since all data is local-only, implement only if store requires)
-- Was GP-11, taken off HOLD -- applies to Windows Store too
-- Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gaps G12, G15)
-
 ### Testing
 
 **F69. E2E WinWright desktop tests - scan flows, history, settings (~6-8h) Priority 58**
@@ -237,18 +192,6 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Source: Sprint 31 manual testing feedback (scan history showed wrong results for background scan)
 
 ### Security Hardening (Sprint 31 Audit)
-
-**SEC-1b. ReDoS runtime protection - integrate safeHasMatch into evaluator (~6-10h) Priority 35 -- CRITICAL**
-- Phase: Security
-- Platform: All
-- Sprint 32 added `PatternCompiler.safeHasMatch()` (timeout via Isolate.run) + `detectReDoS()` authoring-time validation
-- **Gap**: `safeHasMatch` is defined but not used in production. Hot path (`RuleEvaluator`, `RuleConflictDetector`, `SafeSenderEvaluator`) still calls `regex.hasMatch()` directly
-- **Design work needed**: Isolate-per-match is too slow for the evaluator iterating rules x messages. Options:
-  - Shared isolate/worker pool for pattern matching
-  - Batch-level timeout (abort entire batch if any match exceeds threshold)
-  - Opt-in per-pattern timeout for user-supplied patterns only (trusted bundled patterns use direct hasMatch for speed)
-- **Blocks**: F56 (manual rule creation), F35 (rule editing) -- currently have authoring-time protection but no runtime protection if a dangerous pattern slips through
-- Source: Sprint 32 Phase 5.1.1 automated code review (finding C1)
 
 **SEC-4. Android: Create network_security_config.xml (~1h) Priority 40 -- HIGH**
 - Phase: Security
@@ -273,11 +216,13 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Overlaps with GP-9 (ProGuard/R8)
 - Source: Sprint 31 security audit (S13)
 
-**SEC-8. Certificate pinning for OAuth and IMAP endpoints (~4-6h) Priority 42 -- HIGH**
+**SEC-8b. Certificate pinning for IMAP endpoints (~4-6h) Priority 42 -- HIGH**
 - Phase: Security
 - Platform: All
-- Pin certs for accounts.google.com, oauth2.googleapis.com, imap.gmail.com, imap.aol.com
-- Source: Sprint 31 security audit (S14)
+- OAuth HTTPS pinning shipped Sprint 33 (CertificatePinner + PinnedHttpClient for accounts.google.com, oauth2.googleapis.com, gmail.googleapis.com, www.googleapis.com)
+- Gap: `enough_mail.ImapClient.connectToServer` does not expose a `SecurityContext` or bad-cert callback, so IMAP pinning (imap.gmail.com, imap.aol.com, etc.) was deferred
+- Options: (1) fork `enough_mail` to expose the callback; (2) wrap the socket manually via `SecureSocket.connect` with a custom `SecurityContext` before handing it to the IMAP client; (3) file upstream issue on `enough_mail`
+- Source: Sprint 33 SEC-8 implementation notes (CertificatePinner dartdoc)
 
 **SEC-9. Move hardcoded Android client ID to build-time injection (~1h) Priority 42 -- HIGH**
 - Phase: Security
@@ -285,17 +230,17 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Move _androidClientId to --dart-define or google-services.json
 - Source: Sprint 31 security audit (S5)
 
-**SEC-11. SQLite database encryption (~4-8h) Priority 60 -- MEDIUM**
+**SEC-11b. SQLCipher driver swap + plaintext-to-encrypted migration (~6-10h) Priority 60 -- MEDIUM**
 - Phase: Security
 - Platform: All
-- Implement SQLCipher or encrypt sensitive fields before storage
-- Source: Sprint 31 security audit (S7)
-
-**SEC-14. Unmatched emails: retention limit + body preview truncation (~2h) Priority 62 -- MEDIUM**
-- Phase: Security / Privacy
-- Platform: All
-- Auto-cleanup old unmatched_emails, limit body_preview to 100 chars
-- Source: Sprint 31 security audit (S8)
+- Sprint 33 shipped the infrastructure: DatabaseEncryptionKeyService (256-bit key in flutter_secure_storage), opt-in `encrypt_database` settings toggle (default off)
+- Gap: DatabaseHelper still uses the plaintext sqflite driver. Flipping requires:
+  - Add deps: `sqflite_sqlcipher` + `sqlcipher_flutter_libs`
+  - Platform plugin registration for Windows + Android
+  - Atomic plaintext-to-encrypted migration on first opt-in (backup, re-open with key, copy, swap, verify, delete backup)
+  - QA on real installs (Windows desktop + Android emulator + physical device)
+  - Flip `encrypt_database` default to true after QA
+- Source: Sprint 33 SEC-11 scoping decision (partial completion)
 
 **SEC-15. IMAP host validation for custom servers (~1h) Priority 62 -- MEDIUM**
 - Phase: Security
@@ -303,18 +248,6 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Reject internal/private IP ranges when custom IMAP is implemented
 - Dependency: F37 (folder selectors / custom IMAP)
 - Source: Sprint 31 security audit (S19)
-
-**SEC-19. Log level control: runtime disable for auth logging (~1-2h) Priority 65 -- MEDIUM**
-- Phase: Security
-- Platform: All
-- Add configuration to disable auth logging in production
-- Source: Sprint 31 security audit (S28)
-
-**SEC-22. Rate limiting on failed auth attempts (~2h) Priority 80 -- LOW**
-- Phase: Security
-- Platform: All
-- Exponential backoff after 3+ failed logins per account
-- Source: Sprint 31 security audit (S22)
 
 **F6. Provider-Specific Optimizations (~10-12h) Priority 100**
 - Phase: Performance
@@ -1089,6 +1022,7 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 5.8 | 2026-04-16 | Sprint 33 completion: Removed F53, F54, F55, F65, F66 (features) and SEC-1b, SEC-14, SEC-19, SEC-22 (security). SEC-8 split -- HTTPS pinning done; SEC-8b tracks remaining IMAP pinning. SEC-11 split -- infrastructure done; SEC-11b tracks SQLCipher driver swap + migration. Added Sprint 33 to Past Sprint Summary. Updated Last Completed Sprint. |
 | 5.7 | 2026-04-14 | Sprint 33 planning: Moved F61 to HOLD per user direction (partial doc refresh happens organically in Sprint 33 via ARCHITECTURE.md updates for SQLCipher/HelpScreen/DataDeletionService/PatternCompiler). |
 | 5.6 | 2026-04-14 | Sprint 32 code review findings: Added SEC-1b (ReDoS runtime protection -- design work needed) and F72 (code hygiene cleanup -- emoji, MSVC guard, email message softening) from Phase 5.1.1 automated code review. |
 | 5.5 | 2026-04-13 | Sprint 32 completion: Removed 10 completed security items (SEC-1/10/12/13/16/17/18/20/21/23). Added Sprint 32 to Past Sprint Summary. Updated Last Completed Sprint. |
