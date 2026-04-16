@@ -164,6 +164,7 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Confirmation dialog showing generated pattern before saving
 - Accessible from Manage Rules and Manage Safe Senders screens
 - Related: F35 (rule editing UI), F25 (rule testing UI enhancements)
+- Testing note: SEC-1b (ReDoS compile-time rejection, Sprint 33) can only be manually tested once this UI exists. Include manual test: user enters catastrophic-backtracking regex (e.g. `(a+)+$`), app should reject on save with a clear error message.
 
 **F55. Screen navigation consistency - linear flow + push/pop icons (~4-6h) Priority 66**
 - Phase: UX Improvement

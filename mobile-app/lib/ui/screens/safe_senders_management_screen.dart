@@ -220,37 +220,40 @@ class _SafeSendersManagementScreenState
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Safe Sender Details'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _detailRow('Pattern', sender.pattern, monospace: true),
-            const SizedBox(height: 8),
-            _detailRow('Type', _formatPatternType(sender)),
-            const SizedBox(height: 8),
-            _detailRow('Added', dateStr),
-            const SizedBox(height: 8),
-            _detailRow('Source', _formatCreatedBy(sender.createdBy)),
-            if (sender.exceptionPatterns != null &&
-                sender.exceptionPatterns!.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Text(
-                'Exceptions (${sender.exceptionPatterns!.length})',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 4),
-              ...sender.exceptionPatterns!.map(
-                (ex) => Padding(
-                  padding: const EdgeInsets.only(left: 8, top: 4),
-                  child: Text(
-                    ex,
-                    style:
-                        const TextStyle(fontFamily: 'monospace', fontSize: 12),
+        // Sprint 33 fix: wrap in SelectionArea so users can copy pattern text.
+        content: SelectionArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _detailRow('Pattern', sender.pattern, monospace: true),
+              const SizedBox(height: 8),
+              _detailRow('Type', _formatPatternType(sender)),
+              const SizedBox(height: 8),
+              _detailRow('Added', dateStr),
+              const SizedBox(height: 8),
+              _detailRow('Source', _formatCreatedBy(sender.createdBy)),
+              if (sender.exceptionPatterns != null &&
+                  sender.exceptionPatterns!.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Text(
+                  'Exceptions (${sender.exceptionPatterns!.length})',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                ...sender.exceptionPatterns!.map(
+                  (ex) => Padding(
+                    padding: const EdgeInsets.only(left: 8, top: 4),
+                    child: Text(
+                      ex,
+                      style:
+                          const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
-          ],
+          ),
         ),
         actions: [
           TextButton(

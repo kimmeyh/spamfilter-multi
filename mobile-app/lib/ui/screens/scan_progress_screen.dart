@@ -86,12 +86,16 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
     // [NEW] PHASE 3.1: Auto-navigate to Results when scan completes (Issue #33)
     // [NEW] ISSUE #39 FIX: Update _previousStatus INSIDE the if block to prevent
     // multiple navigation callbacks if build() is called multiple times
-    if (_previousStatus != ScanStatus.completed && 
+    if (_previousStatus != ScanStatus.completed &&
         scanProvider.status == ScanStatus.completed) {
       _previousStatus = scanProvider.status;  // Update immediately to prevent re-scheduling
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          Navigator.of(context).push(
+          // F55 (Sprint 33, v2): pushReplacement so this screen leaves the
+          // nav stack. When the user pops Results, they land on Account
+          // Selection (not on a stale Scan Progress still showing completed
+          // state, which would double-tap back to actually leave).
+          Navigator.of(context).pushReplacement(
             MaterialPageRoute(
               builder: (_) => ResultsDisplayScreen(
                 platformId: widget.platformId,
@@ -483,8 +487,11 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
 
     // [NEW] SPRINT 12: Navigate to Results immediately after starting scan
     // User feedback: "Start Scan should immediately go to View Results page"
+    // F55 (Sprint 33, v2): pushReplacement so this screen leaves the stack.
+    // The Results screen observes scanProvider.status and renders live
+    // progress -- we don't need to keep Scan Progress underneath it.
     if (context.mounted) {
-      Navigator.of(context).push(
+      Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => ResultsDisplayScreen(
             platformId: widget.platformId,

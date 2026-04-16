@@ -37,6 +37,7 @@ void main() {
       'Results',
       'Scan History',
       'Settings',
+      'Background Scanning',
       'Manage Rules',
       'Rule Quick Add',
       'Rule Test',
@@ -74,6 +75,6 @@ void main() {
     // If anyone removes a HelpSection we want the test suite to shout:
     // the enum is a contract between every AppBar that passes into
     // openHelp() and the HelpScreen that renders the target.
-    expect(HelpSection.values, hasLength(12));
+    expect(HelpSection.values, hasLength(13));
   });
 }

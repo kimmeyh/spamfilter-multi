@@ -369,7 +369,15 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Gmail - Sign In Method'),
+        // F55 (Sprint 33): standardized icon order -- Accounts, Help.
         actions: [
+          IconButton(
+            tooltip: 'Select Account',
+            icon: const Icon(Icons.people),
+            onPressed: () {
+              Navigator.popUntil(context, (route) => route.isFirst);
+            },
+          ),
           IconButton(
             tooltip: 'Help',
             icon: const Icon(Icons.help_outline),
@@ -564,7 +572,15 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
                 },
               )
             : null,
+        // F55 (Sprint 33): standardized icon order -- Accounts, Help.
         actions: [
+          IconButton(
+            tooltip: 'Select Account',
+            icon: const Icon(Icons.people),
+            onPressed: () {
+              Navigator.popUntil(context, (route) => route.isFirst);
+            },
+          ),
           // F54 (Sprint 33): Help icon -> Account Setup section.
           IconButton(
             tooltip: 'Help',

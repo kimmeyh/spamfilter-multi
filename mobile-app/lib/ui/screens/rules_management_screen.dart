@@ -252,40 +252,45 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(
+              child: SelectableText(
                 displayName,
                 style: const TextStyle(fontSize: 16, fontFamily: 'monospace'),
               ),
             ),
           ],
         ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _detailSection('Status', rule.enabled ? 'Enabled' : 'Disabled'),
-              _detailSection('Category', categoryLabel),
-              _detailSection('Sub-Type', subTypeLabel),
-              _detailSection('Action', _getActionLabel(rule)),
-              _detailSection('Exec Order', '${rule.executionOrder}'),
-              if (rule.name != displayName) _detailSection('Rule Name', rule.name),
+        // Sprint 33 fix: dialogs in Flutter sit in a separate overlay and
+        // are not covered by the screen-level SelectionArea. Wrap the dialog
+        // body in its own SelectionArea so users can copy rule/pattern text.
+        content: SelectionArea(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _detailSection('Status', rule.enabled ? 'Enabled' : 'Disabled'),
+                _detailSection('Category', categoryLabel),
+                _detailSection('Sub-Type', subTypeLabel),
+                _detailSection('Action', _getActionLabel(rule)),
+                _detailSection('Exec Order', '${rule.executionOrder}'),
+                if (rule.name != displayName) _detailSection('Rule Name', rule.name),
 
-              const SizedBox(height: 12),
-              const Text(
-                'Pattern',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-              ),
-              const SizedBox(height: 4),
-              if (rule.conditions.header.isNotEmpty)
-                _patternList('Header', rule.conditions.header),
-              if (rule.conditions.from.isNotEmpty)
-                _patternList('From', rule.conditions.from),
-              if (rule.conditions.subject.isNotEmpty)
-                _patternList('Subject', rule.conditions.subject),
-              if (rule.conditions.body.isNotEmpty)
-                _patternList('Body', rule.conditions.body),
-            ],
+                const SizedBox(height: 12),
+                const Text(
+                  'Pattern',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                const SizedBox(height: 4),
+                if (rule.conditions.header.isNotEmpty)
+                  _patternList('Header', rule.conditions.header),
+                if (rule.conditions.from.isNotEmpty)
+                  _patternList('From', rule.conditions.from),
+                if (rule.conditions.subject.isNotEmpty)
+                  _patternList('Subject', rule.conditions.subject),
+                if (rule.conditions.body.isNotEmpty)
+                  _patternList('Body', rule.conditions.body),
+              ],
+            ),
           ),
         ),
         actions: [

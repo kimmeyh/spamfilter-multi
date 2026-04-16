@@ -501,36 +501,23 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                 icon: const Icon(Icons.arrow_back),
                 tooltip: widget.historicalScanId != null
                     ? 'Back to Scan History'
-                    : 'Back to Scan Progress',
+                    : 'Back to Accounts',
                 onPressed: () {
                   // Dismiss any showing snackbar before navigating
                   ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                  // F55 (Sprint 33): always Navigator.pop so the nav stack
-                  // stays consistent. Previously the non-historical branch
-                  // used pushReplacement, which rebuilt Scan Progress and
-                  // broke "back" from the rebuilt screen. Popping returns
-                  // the user to wherever they came from (Scan Progress when
-                  // scanning, Scan History when viewing a historical scan).
+                  // F55 (Sprint 33, v2): Scan Progress uses pushReplacement
+                  // on scan-start and scan-completed, so Results sits
+                  // directly on top of Account Selection (live scan flow)
+                  // or Scan History (historical view). A single pop always
+                  // lands on the right screen -- no more stale Scan Progress
+                  // underneath showing partial results.
                   Navigator.pop(context);
                 },
               ),
+        // F55 (Sprint 33): standardized icon order --
+        // Search, Download, Accounts, Help, History, Settings, [X auto].
         actions: [
           if (!_showSearch) ...[
-            // F55 (Sprint 33): quick "Select Account" shortcut. Pops back
-            // to Account Selection (the root route).
-            IconButton(
-              tooltip: 'Select Account',
-              icon: const Icon(Icons.people),
-              onPressed: () {
-                Navigator.popUntil(context, (route) => route.isFirst);
-              },
-            ),
-            // F54 (Sprint 33): Help icon -> deep link to Results section.
-            IconButton(
-              tooltip: 'Help',
-              icon: const Icon(Icons.help_outline),
-              onPressed: () => openHelp(context, HelpSection.resultsDisplay),
-            ),
             IconButton(
               tooltip: 'Search (Ctrl+F)',
               icon: const Icon(Icons.search),
@@ -544,6 +531,18 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               tooltip: 'Export Results to CSV',
               icon: const Icon(Icons.file_download),
               onPressed: () => _exportResults(context, scanProvider),
+            ),
+            IconButton(
+              tooltip: 'Select Account',
+              icon: const Icon(Icons.people),
+              onPressed: () {
+                Navigator.popUntil(context, (route) => route.isFirst);
+              },
+            ),
+            IconButton(
+              tooltip: 'Help',
+              icon: const Icon(Icons.help_outline),
+              onPressed: () => openHelp(context, HelpSection.resultsDisplay),
             ),
             IconButton(
               tooltip: 'View Scan History',

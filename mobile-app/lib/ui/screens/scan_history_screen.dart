@@ -133,7 +133,16 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
     return Scaffold(
       appBar: AppBarWithExit(
         title: Text('Scan History ($_retentionDays days)'),
+        // F55 (Sprint 33): standardized icon order -- Accounts, Help,
+        // <screen-specific>, (Settings if applicable) -- X auto-appended.
         actions: [
+          IconButton(
+            tooltip: 'Select Account',
+            icon: const Icon(Icons.people),
+            onPressed: () {
+              Navigator.popUntil(context, (route) => route.isFirst);
+            },
+          ),
           IconButton(
             tooltip: 'Help',
             icon: const Icon(Icons.help_outline),

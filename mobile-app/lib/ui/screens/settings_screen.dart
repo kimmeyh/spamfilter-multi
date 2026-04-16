@@ -82,6 +82,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   // SEC-8 (Sprint 33): certificate pinning for Google OAuth
   bool _certificatePinningEnabled =
       SettingsStore.defaultCertificatePinningEnabled;
+  // SEC-11 (Sprint 33): encrypted database feature flag (infrastructure only)
+  bool _encryptDatabase = SettingsStore.defaultEncryptDatabase;
 
   bool _isLoading = true;
   bool _isTestingScan = false;
@@ -154,6 +156,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       // SEC-8 (Sprint 33): load certificate pinning preference
       _certificatePinningEnabled =
           await _settingsStore.getCertificatePinningEnabled();
+
+      // SEC-11 (Sprint 33): load database encryption feature flag
+      _encryptDatabase = await _settingsStore.getEncryptDatabase();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -172,7 +177,16 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     return Scaffold(
       appBar: AppBarWithExit(
         title: const Text('Settings'),
+        // F55 (Sprint 33): standardized icon order -- Accounts, Help,
+        // <screen-specific>, Settings -- with X auto-appended on Windows.
         actions: [
+          IconButton(
+            tooltip: 'Select Account',
+            icon: const Icon(Icons.people),
+            onPressed: () {
+              Navigator.popUntil(context, (route) => route.isFirst);
+            },
+          ),
           IconButton(
             tooltip: 'Help',
             icon: const Icon(Icons.help_outline),
@@ -377,6 +391,26 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             CertificatePinner.setEnabled(value);
             if (mounted) {
               setState(() => _certificatePinningEnabled = value);
+            }
+          },
+        ),
+        const SizedBox(height: 12),
+        // SEC-11 (Sprint 33): opt-in database encryption (infrastructure only)
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Encrypt database (experimental)'),
+          subtitle: const Text(
+            'When on, a 256-bit encryption key is generated and stored '
+            'in your system keychain for future use. The database driver '
+            'is not yet swapped to SQLCipher, so existing data stays '
+            'unencrypted until a future release completes the migration. '
+            'Turn on early to provision the key.',
+          ),
+          value: _encryptDatabase,
+          onChanged: (value) async {
+            await _settingsStore.setEncryptDatabase(value);
+            if (mounted) {
+              setState(() => _encryptDatabase = value);
             }
           },
         ),

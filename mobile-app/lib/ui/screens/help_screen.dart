@@ -21,6 +21,7 @@ enum HelpSection {
   resultsDisplay,
   scanHistory,
   settings,
+  backgroundScanning,
   manageRules,
   ruleQuickAdd,
   ruleTest,
@@ -157,6 +158,29 @@ class _HelpScreenState extends State<HelpScreen> {
                   'options.\n\n'
                   'Most app-wide options live on General; per-account '
                   'overrides shadow the app-wide defaults when set.',
+            ),
+            _section(
+              HelpSection.backgroundScanning,
+              title: 'Background Scanning',
+              body:
+                  'Background Scanning runs the same rules engine as Manual '
+                  'Scan, but on a schedule -- the app wakes up the Windows '
+                  'Task Scheduler (or Android WorkManager) without an open '
+                  'window. Configure it on Settings > Background.\n\n'
+                  '- Testing background scans: turn on briefly after a fresh '
+                  'install or upgrade to confirm the scheduler fires. For '
+                  'normal use, leave it on. If you leave it on continuously, '
+                  'set the scan range to 1 day -- that is the fastest '
+                  'configuration while still catching everything new since '
+                  'the previous day\'s run.\n'
+                  '- After an upgrade: a one-off background run is a cheap '
+                  'way to confirm the new version still reaches your inbox '
+                  'and applies the rules you expect. Useful for curiosity, '
+                  'not required.\n'
+                  '- Export after each scan: typically off. Turn it on only '
+                  'when you want a per-run CSV of what the scanner did -- '
+                  'useful when diagnosing a rule that seems to misfire, or '
+                  'when you want an audit trail of a long-running test.',
             ),
             _section(
               HelpSection.manageRules,
