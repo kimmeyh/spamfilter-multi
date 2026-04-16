@@ -6,6 +6,7 @@ import '../../core/providers/email_scan_provider.dart';
 import '../../core/providers/rule_set_provider.dart';
 import '../../core/services/email_scanner.dart';
 import '../../core/storage/settings_store.dart'; // [NEW] ISSUE #138: Load scan mode from settings
+import '../../main.dart' show routeObserver;
 import '../widgets/app_bar_with_exit.dart';
 import 'results_display_screen.dart';
 import 'scan_history_screen.dart';
@@ -36,7 +37,7 @@ class ScanProgressScreen extends StatefulWidget {
   State<ScanProgressScreen> createState() => _ScanProgressScreenState();
 }
 
-class _ScanProgressScreenState extends State<ScanProgressScreen> {
+class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware {
   ScanStatus? _previousStatus;
   List<String> _configuredFolders = ['INBOX'];
   ScanMode _configuredMode = ScanMode.readOnly;
@@ -44,16 +45,16 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
   @override
   void initState() {
     super.initState();
-    
+
     // [NEW] PHASE 3.2: Initialize _previousStatus to prevent auto-navigation on first build
     // This ensures we only auto-navigate when a scan ACTUALLY completes, not when
     // returning to a screen that already has completed status from a previous scan
     final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
     _previousStatus = scanProvider.status;
-    
+
     // [NEW] ISSUE #41 FIX: Set current account for per-account folder storage
     scanProvider.setCurrentAccount(widget.accountId);
-    
+
     // Auto-reset scan state when navigating to this screen
     WidgetsBinding.instance.addPostFrameCallback((_) {
       scanProvider.reset();
@@ -61,6 +62,35 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
 
     // Load configured scan settings for display in header
     _loadConfiguredSettings();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // F55 (Sprint 33, v3): subscribe to route events so we can reset the
+    // scan provider when Results is popped back to us. Without this, the
+    // "Ready to Scan" screen would still show the completed scan state.
+    final route = ModalRoute.of(context);
+    if (route != null) {
+      routeObserver.subscribe(this, route as ModalRoute);
+    }
+  }
+
+  @override
+  void dispose() {
+    routeObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  /// Called when Results is popped and this screen becomes visible again.
+  /// Resets scan state so the screen returns to its "Ready to Scan" view.
+  @override
+  void didPopNext() {
+    final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
+    scanProvider.reset();
+    // Reset the local tracker so the auto-nav logic in build() does not
+    // mistakenly fire on the next status change.
+    _previousStatus = ScanStatus.idle;
   }
 
   Future<void> _loadConfiguredSettings() async {
@@ -91,11 +121,11 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
       _previousStatus = scanProvider.status;  // Update immediately to prevent re-scheduling
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          // F55 (Sprint 33, v2): pushReplacement so this screen leaves the
-          // nav stack. When the user pops Results, they land on Account
-          // Selection (not on a stale Scan Progress still showing completed
-          // state, which would double-tap back to actually leave).
-          Navigator.of(context).pushReplacement(
+          // F55 (Sprint 33, v3): push (not pushReplacement) -- user wants
+          // Results back button to always return to Manual Scan screen.
+          // Partial-results staleness is handled by didPopNext below, which
+          // resets the scan provider when this screen becomes visible again.
+          Navigator.of(context).push(
             MaterialPageRoute(
               builder: (_) => ResultsDisplayScreen(
                 platformId: widget.platformId,
@@ -182,22 +212,9 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
               }
             },
           ),
+          // F55 (Sprint 33, v3): standardized icon order --
+          // History, Accounts, Help, Settings, [X auto].
           actions: [
-            // F55 (Sprint 33): quick "Select Account" shortcut. Pops
-            // everything back to Account Selection (the root route).
-            IconButton(
-              tooltip: 'Select Account',
-              icon: const Icon(Icons.people),
-              onPressed: () {
-                Navigator.popUntil(context, (route) => route.isFirst);
-              },
-            ),
-            // F54 (Sprint 33): Help icon -> deep link to Manual Scan section.
-            IconButton(
-              tooltip: 'Help',
-              icon: const Icon(Icons.help_outline),
-              onPressed: () => openHelp(context, HelpSection.manualScan),
-            ),
             IconButton(
               tooltip: 'View Scan History',
               icon: const Icon(Icons.history),
@@ -213,6 +230,24 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
                   ),
                 );
               },
+            ),
+            IconButton(
+              tooltip: 'Select Account',
+              icon: const Icon(Icons.people),
+              onPressed: () {
+                Navigator.popUntil(context, (route) => route.isFirst);
+              },
+            ),
+            IconButton(
+              tooltip: 'Help',
+              icon: const Icon(Icons.help_outline),
+              onPressed: () => openHelp(
+                context,
+                // Demo mode deep-links to a different help section.
+                widget.platformId == 'demo'
+                    ? HelpSection.demoScan
+                    : HelpSection.manualScan,
+              ),
             ),
             IconButton(
               tooltip: 'Settings',
@@ -487,11 +522,10 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> {
 
     // [NEW] SPRINT 12: Navigate to Results immediately after starting scan
     // User feedback: "Start Scan should immediately go to View Results page"
-    // F55 (Sprint 33, v2): pushReplacement so this screen leaves the stack.
-    // The Results screen observes scanProvider.status and renders live
-    // progress -- we don't need to keep Scan Progress underneath it.
+    // F55 (Sprint 33, v3): push (not pushReplacement) -- back from Results
+    // must return to Manual Scan. Staleness fixed by didPopNext reset below.
     if (context.mounted) {
-      Navigator.of(context).pushReplacement(
+      Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => ResultsDisplayScreen(
             platformId: widget.platformId,

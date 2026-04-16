@@ -109,6 +109,24 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     super.dispose();
   }
 
+  /// Returns the help section matching the currently visible tab.
+  /// F54 (Sprint 33, round 2): Help icon deep-links to the right sub-section
+  /// of the Help screen based on which Settings tab the user is on.
+  HelpSection _helpSectionForActiveTab() {
+    switch (_tabController.index) {
+      case 0:
+        return HelpSection.settings; // General
+      case 1:
+        return HelpSection.folderSettings; // Account -> Folder Settings
+      case 2:
+        return HelpSection.manualScanSettings; // Manual Scan tab
+      case 3:
+        return HelpSection.backgroundScanning; // Background tab
+      default:
+        return HelpSection.settings;
+    }
+  }
+
   Future<void> _loadSettings() async {
     setState(() => _isLoading = true);
 
@@ -177,9 +195,15 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     return Scaffold(
       appBar: AppBarWithExit(
         title: const Text('Settings'),
-        // F55 (Sprint 33): standardized icon order -- Accounts, Help,
-        // <screen-specific>, Settings -- with X auto-appended on Windows.
+        // F55 (Sprint 33, v3): icon order --
+        // History, Accounts, Help, [X auto]. Help deep-links to the section
+        // matching the currently visible tab.
         actions: [
+          IconButton(
+            icon: const Icon(Icons.history),
+            tooltip: 'View Scan History',
+            onPressed: () => _navigateToScanHistory(),
+          ),
           IconButton(
             tooltip: 'Select Account',
             icon: const Icon(Icons.people),
@@ -190,12 +214,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           IconButton(
             tooltip: 'Help',
             icon: const Icon(Icons.help_outline),
-            onPressed: () => openHelp(context, HelpSection.settings),
-          ),
-          IconButton(
-            icon: const Icon(Icons.history),
-            tooltip: 'View Scan History',
-            onPressed: () => _navigateToScanHistory(),
+            onPressed: () => openHelp(context, _helpSectionForActiveTab()),
           ),
         ],
         bottom: TabBar(

@@ -22,7 +22,9 @@ void main() {
       (tester) async {
     // Use a large viewport so all sections are rendered (ListView still
     // lazy-builds but a tall enough screen forces more children to build).
-    await tester.binding.setSurfaceSize(const Size(800, 4000));
+    // Sprint 33 round 2: 16 sections + 80% viewport-height trailing filler
+    // means we need a taller canvas than the original 4000px.
+    await tester.binding.setSurfaceSize(const Size(800, 6000));
     addTearDown(() => tester.binding.setSurfaceSize(null));
 
     await tester.pumpWidget(
@@ -33,10 +35,13 @@ void main() {
     const expected = <String>[
       'Select Account',
       'Account Setup',
+      'Demo Scan',
       'Manual Scan',
       'Results',
       'Scan History',
       'Settings',
+      'Folder Settings (Settings > Account)',
+      'Manual Scan Settings (Settings > Manual Scan)',
       'Background Scanning',
       'Manage Rules',
       'Rule Quick Add',
@@ -75,6 +80,6 @@ void main() {
     // If anyone removes a HelpSection we want the test suite to shout:
     // the enum is a contract between every AppBar that passes into
     // openHelp() and the HelpScreen that renders the target.
-    expect(HelpSection.values, hasLength(13));
+    expect(HelpSection.values, hasLength(16));
   });
 }

@@ -501,23 +501,26 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                 icon: const Icon(Icons.arrow_back),
                 tooltip: widget.historicalScanId != null
                     ? 'Back to Scan History'
-                    : 'Back to Accounts',
+                    : 'Back to Manual Scan',
                 onPressed: () {
                   // Dismiss any showing snackbar before navigating
                   ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                  // F55 (Sprint 33, v2): Scan Progress uses pushReplacement
-                  // on scan-start and scan-completed, so Results sits
-                  // directly on top of Account Selection (live scan flow)
-                  // or Scan History (historical view). A single pop always
-                  // lands on the right screen -- no more stale Scan Progress
-                  // underneath showing partial results.
+                  // F55 (Sprint 33, v3): pop to Manual Scan (ScanProgress).
+                  // ScanProgress subscribes to routeObserver and resets its
+                  // scan provider on didPopNext, so the user lands on a
+                  // clean "Ready to Scan" screen -- no partial results.
                   Navigator.pop(context);
                 },
               ),
-        // F55 (Sprint 33): standardized icon order --
-        // Search, Download, Accounts, Help, History, Settings, [X auto].
+        // F55 (Sprint 33, v3): standardized icon order --
+        // Download, Search, History, Accounts, Help, Settings, [X auto].
         actions: [
           if (!_showSearch) ...[
+            IconButton(
+              tooltip: 'Export Results to CSV',
+              icon: const Icon(Icons.file_download),
+              onPressed: () => _exportResults(context, scanProvider),
+            ),
             IconButton(
               tooltip: 'Search (Ctrl+F)',
               icon: const Icon(Icons.search),
@@ -526,23 +529,6 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                   _showSearch = true;
                 });
               },
-            ),
-            IconButton(
-              tooltip: 'Export Results to CSV',
-              icon: const Icon(Icons.file_download),
-              onPressed: () => _exportResults(context, scanProvider),
-            ),
-            IconButton(
-              tooltip: 'Select Account',
-              icon: const Icon(Icons.people),
-              onPressed: () {
-                Navigator.popUntil(context, (route) => route.isFirst);
-              },
-            ),
-            IconButton(
-              tooltip: 'Help',
-              icon: const Icon(Icons.help_outline),
-              onPressed: () => openHelp(context, HelpSection.resultsDisplay),
             ),
             IconButton(
               tooltip: 'View Scan History',
@@ -559,6 +545,25 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                   ),
                 );
               },
+            ),
+            IconButton(
+              tooltip: 'Select Account',
+              icon: const Icon(Icons.people),
+              onPressed: () {
+                Navigator.popUntil(context, (route) => route.isFirst);
+              },
+            ),
+            IconButton(
+              tooltip: 'Help',
+              icon: const Icon(Icons.help_outline),
+              onPressed: () => openHelp(
+                context,
+                // Use demo-scan section when this screen is showing a demo
+                // scan, otherwise the default live-scan Results section.
+                widget.platformId == 'demo'
+                    ? HelpSection.demoScan
+                    : HelpSection.resultsDisplay,
+              ),
             ),
             IconButton(
               tooltip: 'Settings',

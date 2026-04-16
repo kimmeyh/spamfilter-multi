@@ -133,9 +133,14 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
     return Scaffold(
       appBar: AppBarWithExit(
         title: Text('Scan History ($_retentionDays days)'),
-        // F55 (Sprint 33): standardized icon order -- Accounts, Help,
-        // <screen-specific>, (Settings if applicable) -- X auto-appended.
+        // F55 (Sprint 33, v3): icon order --
+        // <screen-specific> (Refresh), Accounts, Help, [X auto].
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+            onPressed: _loadHistory,
+          ),
           IconButton(
             tooltip: 'Select Account',
             icon: const Icon(Icons.people),
@@ -147,11 +152,6 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
             tooltip: 'Help',
             icon: const Icon(Icons.help_outline),
             onPressed: () => openHelp(context, HelpSection.scanHistory),
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
-            onPressed: _loadHistory,
           ),
         ],
       ),
