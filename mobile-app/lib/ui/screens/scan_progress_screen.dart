@@ -38,7 +38,6 @@ class ScanProgressScreen extends StatefulWidget {
 }
 
 class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware {
-  ScanStatus? _previousStatus;
   List<String> _configuredFolders = ['INBOX'];
   ScanMode _configuredMode = ScanMode.readOnly;
 
@@ -46,11 +45,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware
   void initState() {
     super.initState();
 
-    // [NEW] PHASE 3.2: Initialize _previousStatus to prevent auto-navigation on first build
-    // This ensures we only auto-navigate when a scan ACTUALLY completes, not when
-    // returning to a screen that already has completed status from a previous scan
     final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
-    _previousStatus = scanProvider.status;
 
     // [NEW] ISSUE #41 FIX: Set current account for per-account folder storage
     scanProvider.setCurrentAccount(widget.accountId);
@@ -83,17 +78,12 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware
   }
 
   /// Called when Results is popped and this screen becomes visible again.
-  /// Resets scan state so the screen returns to its "Ready to Scan" view.
+  /// Resets scan state so the screen returns to its "Ready to Scan" view
+  /// and the user can kick off another scan.
   @override
   void didPopNext() {
     final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
     scanProvider.reset();
-    // Do NOT clear _previousStatus here. It must stay at ScanStatus.completed
-    // so the auto-push logic in build() does not re-fire when the rebuild
-    // triggered by reset() runs (Round 3 fix: the previous code set this to
-    // idle, which made the next build see idle->completed and re-push Results
-    // if the rebuild observed status=completed briefly before reset() was
-    // visible to watchers).
   }
 
   Future<void> _loadConfiguredSettings() async {
@@ -116,33 +106,17 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware
   Widget build(BuildContext context) {
     final scanProvider = context.watch<EmailScanProvider>();
 
-    // [NEW] PHASE 3.1: Auto-navigate to Results when scan completes (Issue #33)
-    // [NEW] ISSUE #39 FIX: Update _previousStatus INSIDE the if block to prevent
-    // multiple navigation callbacks if build() is called multiple times
-    if (_previousStatus != ScanStatus.completed &&
-        scanProvider.status == ScanStatus.completed) {
-      _previousStatus = scanProvider.status;  // Update immediately to prevent re-scheduling
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          // F55 (Sprint 33, v3): push (not pushReplacement) -- user wants
-          // Results back button to always return to Manual Scan screen.
-          // Partial-results staleness is handled by didPopNext below, which
-          // resets the scan provider when this screen becomes visible again.
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => ResultsDisplayScreen(
-                platformId: widget.platformId,
-                platformDisplayName: widget.platformDisplayName,
-                accountId: widget.accountId,
-                accountEmail: widget.accountEmail,
-              ),
-            ),
-          );
-        }
-      });
-    } else {
-      _previousStatus = scanProvider.status;
-    }
+    // F55 (Sprint 33, round 4): Removed the auto-push-on-completion that
+    // used to live here. It was causing a DOUBLE push of Results on every
+    // live scan: _startRealScan pushes Results once on scan-start, then
+    // this build() would push a SECOND Results when status hit completed.
+    // User would tap back, pop the top Results, and land on the older
+    // Results underneath -- looking like a "refresh".
+    //
+    // Results now observes scanProvider status directly and renders its
+    // own live progress UI during scanning -> completed, so no second
+    // push is needed. Scan Progress stays alive underneath Results so
+    // back from Results returns here (didPopNext resets to clean state).
 
     return PopScope(
       // Handle back button to return to account selection with confirmation during scan
