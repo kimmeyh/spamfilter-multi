@@ -826,19 +826,52 @@ Before conducting sprint review, build and test the Windows desktop app:
   - Timing: Conduct while user reviews PR, before merge
   - **DO NOT PROCEED TO MERGE WITHOUT COMPLETING PHASE 7**
 
-- [ ] **7.3 Gather User Feedback (if review desired)**
-  - Ask user for feedback on optional topics:
-    - **Effort Accuracy**: Did actual effort match estimate?
-    - **Planning Quality**: Was the sprint plan clear and complete?
-    - **Model Assignments**: Were Haiku/Sonnet task assignments correct?
-    - **Communication**: Was progress clear? Any unanswered questions?
-    - **Requirements Clarity**: Was the specification clear?
-    - **Testing Approach**: Did the test-first approach work well?
-    - **Documentation**: Was code/PR documentation sufficient?
-    - **Process Issues**: Any friction in the sprint workflow?
-    - **Risk Management**: Were identified risks handled well?
-    - **Next Sprint Readiness**: How prepared are we for next sprint?
-  - Document user feedback verbatim
+- [ ] **7.3 Gather Sprint Retrospective Feedback (MANDATORY -- 4 ROLES x 14 CATEGORIES)**
+
+  [CRITICAL] **A Sprint Retrospective is NEVER considered complete unless all 14 categories are addressed by all 4 roles. Missing roles or categories = retrospective is INCOMPLETE = sprint is NOT complete.**
+
+  **The 4 mandatory roles** (in this single-developer project, Harold wears 3 of the 4 hats; Claude Code provides the 4th):
+  1. **Product Owner** -- business value, user-facing impact, scope/priority, backlog implications
+  2. **Scrum Master** -- process adherence, ceremony quality, blockers, team health, workflow friction
+  3. **Lead Developer** -- technical quality, code/architecture, engineering decisions, technical debt
+  4. **Claude Code Development Team** -- execution-side observations: where prompts/instructions were ambiguous, where tooling helped or hurt, where automation could improve
+
+  Even when one human person provides 3 of the 4 perspectives, each role MUST be addressed separately because each looks through a different lens. Empty/silent rows are NOT acceptable. If a role has nothing to say, that role must explicitly write `No issues -- expectations met.` -- but the role MUST be addressed.
+
+  **The 14 mandatory categories** (gather feedback from all 4 roles for EACH):
+  1. **Effective while as Efficient as Reasonably Possible** -- Did we deliver the right outcome with the least reasonable effort? (Combines former Effectiveness/Efficiency + Sprint Execution.)
+  2. **Testing Approach**
+  3. **Effort Accuracy**
+  4. **Planning Quality**
+  5. **Model Assignments**
+  6. **Communication**
+  7. **Requirements Clarity**
+  8. **Documentation**
+  9. **Process Issues**
+  10. **Risk Management**
+  11. **Next Sprint Readiness**
+  12. **Architecture Maintenance**
+  13. **Minor Function Updates for the Next Sprint Plan** -- Small enhancements/fixes uncovered this sprint that should be folded into the NEXT sprint's plan as inline scope additions.
+  14. **Function Updates for the Future Backlog** -- Larger or non-urgent items that should be added to `ALL_SPRINTS_MASTER_PLAN.md` "Next Sprint Candidates".
+
+  **Reference**: See `docs/SPRINT_RETROSPECTIVE.md` for full category definitions, per-role example feedback, and the verbatim feedback template to copy into `docs/sprints/SPRINT_N_RETROSPECTIVE.md`.
+
+  **Process**:
+  1. Claude opens `docs/sprints/SPRINT_N_RETROSPECTIVE.md` and pastes the 4-role x 14-category template from SPRINT_RETROSPECTIVE.md
+  2. Claude presents categories to the user, one at a time or in groups, asking for Product Owner / Scrum Master / Lead Developer feedback
+  3. Claude fills in the Claude Code Development Team perspective for each category itself
+  4. Document all feedback verbatim in the retrospective document
+  5. Categories 13 and 14 entries become follow-up actions for Phase 7.7 (next sprint plan stub + master plan backlog)
+
+  **Phase 7.3 EXIT GATE -- Completeness Validation (MANDATORY)**:
+  Before exiting Phase 7.3 and proceeding to 7.4, verify ALL of the following:
+  - [ ] All 14 categories are present in the retrospective document
+  - [ ] Each category contains explicit feedback from ALL 4 roles
+  - [ ] No feedback line is empty or contains only `[feedback]` placeholder text
+  - [ ] Category 13 entries (if any) are listed for carry-in to Sprint N+1 plan
+  - [ ] Category 14 entries (if any) are listed for `ALL_SPRINTS_MASTER_PLAN.md` update in Phase 7.7
+
+  **If ANY box is unchecked, Phase 7 is INCOMPLETE. Do NOT proceed to 7.4. Do NOT declare the sprint complete. Stop and request the missing feedback from the user (or fill in the missing Claude Code Development Team perspective yourself).**
 
 - [ ] **7.4 Provide Claude Feedback**
   - Share my assessment of what went well (quality, architecture, patterns)
