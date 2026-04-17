@@ -153,6 +153,21 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Related: F35 (rule editing UI), F25 (rule testing UI enhancements)
 - Testing note: SEC-1b (ReDoS compile-time rejection, Sprint 33) can only be manually tested once this UI exists. Include manual test: user enters catastrophic-backtracking regex (e.g. `(a+)+$`), app should reject on save with a clear error message.
 
+**F73. Monolithic rule split completion + bundled YAML rebuild (~6-10h) Priority 65 -- BUG FIX**
+- Phase: Core Feature / Data Integrity
+- Platform: All
+- **Problem**: The bundled YAML (`mobile-app/assets/rules/rules.yaml`) still stores rules in 5 monolithic entries (SpamAutoDeleteHeader, SpamAutoDeleteBody, SpamAutoDeleteFrom, SpamAutoDeleteSubject, SpamAutoDeleteBody-imgur.com) with hundreds of patterns per entry in JSON arrays. The Sprint 20 `split_rules.dart` script splits these into individual per-pattern DB rows (~3500 rows) for the Manage Rules UI. But:
+  1. New user seeding inserts the monolithic rows first, then requires a separate split step -- fragile
+  2. Post-seed migrations (like F53 TLD `.cc`/`.ne` addition) look for the monolithic `SpamAutoDeleteHeader` row by name; on existing installs where the split already ran, that row no longer exists, so the migration silently skips and the TLD patterns never get added
+  3. The bundled YAML format does not match the DB format, making it hard to reason about what users actually have
+- **Fix** (3 parts):
+  1. **One-off migration for existing installs (Harold's DB)**: Run the split script equivalent in-app at startup to split any remaining monolithic rules AND insert missing individual TLD patterns (`.cc`, `.ne`) as properly classified per-pattern rows (pattern_category=header_from, pattern_sub_type=top_level_domain)
+  2. **Rebuild bundled YAML from Harold's split DB**: Export the ~3500 individual per-pattern rules back to YAML so the bundled asset matches the DB format. New user seeding then inserts individual rows directly -- no split step needed
+  3. **Fix F53 migration (`ensureTldBlockRules`)**: Rewrite to insert individual per-pattern rows instead of patching a monolithic JSON array. Make it idempotent against the split DB format
+- **Dependency**: None (can be done independently)
+- **Impact**: Until this is fixed, `.cc` and `.ne` TLD block rules are missing from existing installs (Harold's DB confirmed 2026-04-17). New installs get them in the monolithic blob but they are not individually manageable until split
+- **Source**: Sprint 33 Phase 7 testing feedback (Harold reported `.cc`/`.ne` missing in Manage Rules search, 2026-04-17)
+
 **F62. Dead code cleanup - remove deprecated classes (~2h) Priority 55**
 - Phase: Tech Debt
 - Platform: All
