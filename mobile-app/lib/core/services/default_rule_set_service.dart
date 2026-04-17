@@ -162,8 +162,8 @@ class DefaultRuleSetService {
   /// TLD block patterns added post-initial-seed (F53, Sprint 33).
   ///
   /// These patterns block emails from specific top-level domains that are
-  /// frequently used for spam. They are added to the SpamAutoDeleteHeader
-  /// rule's condition_header list if not already present. This migration is
+  /// frequently used for spam. Each pattern is ensured to exist as an
+  /// individual per-pattern row in the rules table. This migration is
   /// idempotent: running it multiple times has no effect beyond the first run.
   ///
   /// If new TLD patterns are added in future sprints, append them here --
@@ -173,68 +173,382 @@ class DefaultRuleSetService {
     r'@.*\.ne$', // Niger (F53, Sprint 33)
   ];
 
-  /// Name of the bundled rule that holds TLD block patterns in its
-  /// condition_header array. Keep in sync with assets/rules/rules.yaml.
+  /// Name of the legacy monolithic rule that previously held TLD block
+  /// patterns in its condition_header array. Retained for backwards-compat
+  /// lookup during migration (F73).
   static const String _tldBlockRuleName = 'SpamAutoDeleteHeader';
 
-  /// Ensure post-seed TLD block patterns are present in existing databases.
+  /// Ensure post-seed TLD block patterns exist as individual per-pattern rows.
   ///
-  /// Called during app initialization after seedIfEmpty. On existing
-  /// installs (where seedIfEmpty is a no-op), this adds any TLD block
-  /// patterns listed in _postSeedTldBlockPatterns that are missing from
-  /// the SpamAutoDeleteHeader rule's condition_header JSON array.
+  /// Called during app initialization after seedIfEmpty. On existing installs
+  /// (where seedIfEmpty is a no-op), this ensures each pattern in
+  /// [_postSeedTldBlockPatterns] exists as its own row in the rules table.
+  ///
+  /// For each pattern, checks two locations:
+  /// 1. Individual row: condition_header matches the single-pattern JSON array
+  ///    AND pattern_category = 'header_from' AND pattern_sub_type =
+  ///    'top_level_domain'.
+  /// 2. Legacy monolithic row: the old SpamAutoDeleteHeader rule (if it still
+  ///    exists) contains the pattern in its condition_header JSON array.
+  ///
+  /// If found in either location, the pattern is skipped. If not found, a new
+  /// individual rule row is inserted.
   ///
   /// Returns the number of patterns added. Returns 0 if all patterns are
   /// already present (idempotent).
-  ///
-  /// If the rule does not exist (fresh install will have been seeded from
-  /// YAML which already contains the patterns), this is a no-op.
   Future<int> ensureTldBlockRules() async {
     final db = await _dbHelper.database;
-    final rows = await db.query(
+    int added = 0;
+
+    // Pre-fetch the legacy monolithic rule (if it still exists) for
+    // backwards-compat checking.
+    final legacyRows = await db.query(
       'rules',
-      columns: ['id', 'condition_header'],
+      columns: ['condition_header'],
       where: 'name = ?',
       whereArgs: [_tldBlockRuleName],
       limit: 1,
     );
-
-    if (rows.isEmpty) {
-      _logger.d('$_tldBlockRuleName rule not found; skipping TLD migration');
-      return 0;
+    final Set<String> legacyPatterns = <String>{};
+    if (legacyRows.isNotEmpty) {
+      final legacyJson = legacyRows.first['condition_header'] as String?;
+      if (legacyJson != null) {
+        legacyPatterns.addAll(
+          List<String>.from(jsonDecode(legacyJson) as List),
+        );
+      }
     }
 
-    final row = rows.first;
-    final ruleId = row['id'] as int;
-    final conditionHeaderJson = row['condition_header'] as String?;
+    for (final pattern in _postSeedTldBlockPatterns) {
+      // Extract the TLD from the pattern (e.g., 'cc' from r'@.*\.cc$').
+      final tldMatch = RegExp(r'\\\.([\w]+)\$$').firstMatch(pattern);
+      final tld = tldMatch?.group(1) ?? 'unknown';
 
-    final List<String> headers = conditionHeaderJson == null
-        ? <String>[]
-        : List<String>.from(jsonDecode(conditionHeaderJson) as List);
+      // Check 1: individual row already exists.
+      final individualRows = await db.query(
+        'rules',
+        columns: ['id'],
+        where: 'condition_header = ? '
+            "AND pattern_category = 'header_from' "
+            "AND pattern_sub_type = 'top_level_domain'",
+        whereArgs: [jsonEncode([pattern])],
+        limit: 1,
+      );
+      if (individualRows.isNotEmpty) {
+        _logger.d('TLD pattern already exists as individual row: $pattern');
+        continue;
+      }
 
-    final existing = headers.toSet();
-    final toAdd = _postSeedTldBlockPatterns
-        .where((p) => !existing.contains(p))
-        .toList(growable: false);
+      // Check 2: pattern exists in the legacy monolithic rule.
+      if (legacyPatterns.contains(pattern)) {
+        _logger.d('TLD pattern found in legacy $_tldBlockRuleName: $pattern');
+        continue;
+      }
 
-    if (toAdd.isEmpty) {
+      // Insert a new individual rule row for this TLD pattern.
+      final now = DateTime.now().millisecondsSinceEpoch;
+      await db.insert('rules', {
+        'name': '.*.$tld',
+        'enabled': 1,
+        'is_local': 1,
+        'execution_order': 10,
+        'condition_type': 'OR',
+        'condition_header': jsonEncode([pattern]),
+        'action_delete': 1,
+        'date_added': now,
+        'created_by': 'migration_f53',
+        'pattern_category': 'header_from',
+        'pattern_sub_type': 'top_level_domain',
+        'source_domain': '.*.$tld',
+      });
+      added++;
+      _logger.i('Added TLD block rule for .$tld: $pattern');
+    }
+
+    if (added > 0) {
+      _logger.i('ensureTldBlockRules: added $added new TLD block rule(s)');
+    } else {
       _logger.d('All post-seed TLD block patterns already present');
-      return 0;
     }
+    return added;
+  }
 
-    headers.addAll(toAdd);
-    headers.sort();
+  // ---------------------------------------------------------------------------
+  // F73: Split monolithic rules into individual per-pattern rows
+  // ---------------------------------------------------------------------------
 
-    await db.update(
+  /// Regular expressions used to classify header/from patterns into sub-types.
+  static final RegExp _tldPatternRe = RegExp(r'^@\.\*\\\.([a-z]+)\$$');
+  static final RegExp _entireDomainRe =
+      RegExp(r'\(\?:\[a-z0-9-\]\+\\\.\)\*');
+  static final RegExp _exactEmailRe = RegExp(r'^\^[^@]+@.+\$$');
+
+  /// Extract a human-readable domain/identifier from a pattern for use as
+  /// the rule name and source_domain.
+  static String _extractSourceDomain(
+    String pattern,
+    String subType,
+  ) {
+    switch (subType) {
+      case 'top_level_domain':
+        // e.g., r'@.*\.cc$' -> '*.cc'
+        final m = RegExp(r'\\\.([\w]+)\$$').firstMatch(pattern);
+        return m != null ? '.*..${m.group(1)!}' : pattern;
+
+      case 'entire_domain':
+        // e.g., r'@(?:[a-z0-9-]+\.)*americasurveys\.com$' -> 'americasurveys.com'
+        final m = RegExp(
+          r'\(\?:\[a-z0-9-\]\+\\\.\)\*([a-z0-9.-]+)\\\.',
+        ).firstMatch(pattern);
+        if (m != null) {
+          // Reconstruct domain: captured group + remaining TLD after last \.
+          final domainPart = m.group(1)!;
+          // Get the rest after the match to find the TLD
+          final afterMatch = pattern.substring(m.end);
+          final tldMatch = RegExp(r'^([a-z0-9.-]+)\$$').firstMatch(afterMatch);
+          if (tldMatch != null) {
+            return '$domainPart.${tldMatch.group(1)!}';
+          }
+          return domainPart;
+        }
+        return _truncate(pattern, 50);
+
+      case 'exact_email':
+        // e.g., r'^user@domain.com$' -> 'user@domain.com'
+        final cleaned =
+            pattern.replaceAll('^', '').replaceAll(r'$', '').replaceAll(r'\.', '.');
+        return _truncate(cleaned, 50);
+
+      case 'exact_domain':
+        // e.g., r'@domain\.com$' -> 'domain.com'
+        final m = RegExp(r'@(.+)\$$').firstMatch(pattern);
+        if (m != null) {
+          return m.group(1)!.replaceAll(r'\.', '.').replaceAll(r'\', '');
+        }
+        return _truncate(pattern, 50);
+
+      default:
+        return _truncate(pattern, 50);
+    }
+  }
+
+  /// Truncate a string to the given maximum length.
+  static String _truncate(String s, int maxLength) {
+    return s.length <= maxLength ? s : s.substring(0, maxLength);
+  }
+
+  /// Classify a header/from pattern into (patternCategory, patternSubType,
+  /// executionOrder).
+  static ({String category, String subType, int order}) _classifyHeaderPattern(
+    String pattern,
+  ) {
+    if (_tldPatternRe.hasMatch(pattern)) {
+      return (
+        category: 'header_from',
+        subType: 'top_level_domain',
+        order: 10,
+      );
+    }
+    if (_entireDomainRe.hasMatch(pattern)) {
+      return (
+        category: 'header_from',
+        subType: 'entire_domain',
+        order: 20,
+      );
+    }
+    if (_exactEmailRe.hasMatch(pattern)) {
+      return (
+        category: 'header_from',
+        subType: 'exact_email',
+        order: 40,
+      );
+    }
+    if (pattern.startsWith('@')) {
+      return (
+        category: 'header_from',
+        subType: 'exact_domain',
+        order: 30,
+      );
+    }
+    // Fallback: treat as exact_domain
+    return (
+      category: 'header_from',
+      subType: 'exact_domain',
+      order: 30,
+    );
+  }
+
+  /// Split any remaining monolithic rules into individual per-pattern rows.
+  ///
+  /// A "monolithic" rule is one with pattern_category IS NULL and at least one
+  /// condition field containing a JSON array with more than one pattern. This
+  /// migration splits each such rule into individual rows, one per pattern,
+  /// with proper classification metadata.
+  ///
+  /// Idempotent: rules that already have pattern_category set are skipped.
+  /// Runs inside a DB transaction for atomicity.
+  ///
+  /// Returns the total number of individual rules created.
+  Future<int> splitMonolithicRules() async {
+    final db = await _dbHelper.database;
+
+    // Find all rules without pattern_category (monolithic candidates).
+    final monolithicRows = await db.query(
       'rules',
-      {'condition_header': jsonEncode(headers)},
-      where: 'id = ?',
-      whereArgs: [ruleId],
+      where: 'pattern_category IS NULL',
     );
 
-    _logger.i('Added ${toAdd.length} TLD block pattern(s) to '
-        '$_tldBlockRuleName: ${toAdd.join(", ")}');
-    return toAdd.length;
+    if (monolithicRows.isEmpty) {
+      _logger.d('No monolithic rules found to split');
+      return 0;
+    }
+
+    int totalCreated = 0;
+
+    await db.transaction((txn) async {
+      for (final row in monolithicRows) {
+        final ruleId = row['id'] as int;
+        final ruleName = row['name'] as String? ?? 'unknown';
+        final enabled = row['enabled'] as int? ?? 1;
+        final isLocal = row['is_local'] as int? ?? 1;
+        final actionDelete = row['action_delete'] as int? ?? 1;
+
+        // Collect all patterns from all condition fields.
+        final conditionFields = <String, String>{
+          'condition_header': 'header',
+          'condition_from': 'from',
+          'condition_subject': 'subject',
+          'condition_body': 'body',
+        };
+
+        bool hasMultiPattern = false;
+        final List<_PendingIndividualRule> pendingRules = [];
+
+        for (final entry in conditionFields.entries) {
+          final fieldName = entry.key;
+          final fieldType = entry.value;
+          final jsonStr = row[fieldName] as String?;
+          if (jsonStr == null) continue;
+
+          final List<dynamic> patterns;
+          try {
+            patterns = jsonDecode(jsonStr) as List<dynamic>;
+          } catch (_) {
+            continue;
+          }
+
+          if (patterns.length <= 1) continue;
+          hasMultiPattern = true;
+
+          for (final p in patterns) {
+            final pattern = p as String;
+            late String category;
+            late String subType;
+            late int order;
+
+            if (fieldType == 'header' || fieldType == 'from') {
+              final classification = _classifyHeaderPattern(pattern);
+              category = classification.category;
+              subType = classification.subType;
+              order = classification.order;
+            } else if (fieldType == 'subject') {
+              category = 'subject';
+              subType = 'exact_domain';
+              order = 60;
+            } else {
+              // body
+              category = 'body';
+              subType = 'entire_domain';
+              order = 50;
+            }
+
+            final sourceDomain = _extractSourceDomain(pattern, subType);
+
+            pendingRules.add(_PendingIndividualRule(
+              conditionField: fieldName,
+              pattern: pattern,
+              category: category,
+              subType: subType,
+              order: order,
+              sourceDomain: sourceDomain,
+            ));
+          }
+        }
+
+        if (!hasMultiPattern) {
+          // Rule has no multi-pattern condition fields; skip it.
+          continue;
+        }
+
+        // Insert individual rows for each pattern.
+        for (final pending in pendingRules) {
+          final candidateName =
+              await _generateUniqueName(txn, pending.sourceDomain);
+
+          await txn.insert('rules', {
+            'name': candidateName,
+            'enabled': enabled,
+            'is_local': isLocal,
+            'execution_order': pending.order,
+            'condition_type': 'OR',
+            pending.conditionField: jsonEncode([pending.pattern]),
+            'action_delete': actionDelete,
+            'date_added': DateTime.now().millisecondsSinceEpoch,
+            'created_by': 'migration_f73',
+            'pattern_category': pending.category,
+            'pattern_sub_type': pending.subType,
+            'source_domain': pending.sourceDomain,
+          });
+          totalCreated++;
+        }
+
+        // Delete the original monolithic rule.
+        await txn.delete('rules', where: 'id = ?', whereArgs: [ruleId]);
+        _logger.i(
+          'F73: Split monolithic rule "$ruleName" (id=$ruleId) into '
+          '${pendingRules.length} individual rows',
+        );
+      }
+    });
+
+    if (totalCreated > 0) {
+      _logger.i('F73: splitMonolithicRules created $totalCreated individual '
+          'rule(s)');
+    }
+    return totalCreated;
+  }
+
+  /// Generate a unique rule name by appending _2, _3, etc. if needed.
+  Future<String> _generateUniqueName(
+    Transaction txn,
+    String baseName,
+  ) async {
+    // Try the base name first.
+    var candidate = baseName;
+    var existing = await txn.query(
+      'rules',
+      columns: ['id'],
+      where: 'name = ?',
+      whereArgs: [candidate],
+      limit: 1,
+    );
+    if (existing.isEmpty) return candidate;
+
+    // Append numeric suffix until unique.
+    for (var i = 2; i < 100000; i++) {
+      candidate = '${baseName}_$i';
+      existing = await txn.query(
+        'rules',
+        columns: ['id'],
+        where: 'name = ?',
+        whereArgs: [candidate],
+        limit: 1,
+      );
+      if (existing.isEmpty) return candidate;
+    }
+
+    // Extremely unlikely fallback.
+    return '${baseName}_${DateTime.now().millisecondsSinceEpoch}';
   }
 
   /// Classify a safe sender pattern into its type.
@@ -257,4 +571,24 @@ class DefaultRuleSetService {
     }
     return 'exact_domain';
   }
+}
+
+/// Internal helper for collecting pending individual rule data during
+/// monolithic rule splitting.
+class _PendingIndividualRule {
+  final String conditionField;
+  final String pattern;
+  final String category;
+  final String subType;
+  final int order;
+  final String sourceDomain;
+
+  const _PendingIndividualRule({
+    required this.conditionField,
+    required this.pattern,
+    required this.category,
+    required this.subType,
+    required this.order,
+    required this.sourceDomain,
+  });
 }
