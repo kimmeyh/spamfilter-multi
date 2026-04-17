@@ -101,12 +101,13 @@ void main() {
       test('seeds rules and safe senders on empty database', () async {
         final result = await service.seedIfEmpty();
 
-        expect(result.rules, 5);
+        // After F73 rebuild, bundled YAML has individual rules (1638 header_from rules)
+        expect(result.rules, greaterThan(0));
         expect(result.safeSenders, greaterThan(0));
 
         final db = await testHelper.dbHelper.database;
         final rules = await db.query('rules');
-        expect(rules, hasLength(5));
+        expect(rules.isNotEmpty, isTrue);
 
         final safeSenders = await db.query('safe_senders');
         expect(safeSenders, isNotEmpty);
@@ -117,13 +118,14 @@ void main() {
       test('seeds rules and safe senders from bundled YAML assets', () async {
         final result = await service.resetToDefaults();
 
-        expect(result.rules, 5);
+        // After F73 rebuild, bundled YAML has individual rules (1638 header_from rules)
+        expect(result.rules, greaterThan(100));
         expect(result.safeSenders, greaterThan(0));
 
         // Verify rules were inserted into the database
         final db = await testHelper.dbHelper.database;
         final rules = await db.query('rules', orderBy: 'execution_order');
-        expect(rules, hasLength(5));
+        expect(rules.length, greaterThan(100));
 
         // Verify safe senders were inserted
         final safeSenders = await db.query('safe_senders');
@@ -200,58 +202,60 @@ void main() {
         final db = await testHelper.dbHelper.database;
         final rules = await db.query('rules', orderBy: 'execution_order');
 
-        // Verify first rule has expected structure from the bundled YAML
-        // The first rule is SpamAutoDeleteHeader with header conditions
-        final rule1 = rules[0];
-        expect(rule1['name'], 'SpamAutoDeleteHeader');
-        expect(rule1['enabled'], 1); // True -> 1
-        expect(rule1['is_local'], 1); // True -> 1
-        expect(rule1['execution_order'], 1);
-        expect(rule1['condition_type'], 'OR');
+        // After F73 rebuild, verify individual rules have correct structure
+        expect(rules.isNotEmpty, isTrue);
+
+        // Find a sample header_from rule
+        final headerRule = rules.firstWhere(
+          (r) => r['pattern_category'] == 'header_from',
+          orElse: () => rules[0],
+        );
+
+        expect(headerRule['enabled'], 1); // True -> 1
+        expect(headerRule['is_local'], 1); // True -> 1
+        expect(headerRule['execution_order'], isNotNull);
+        expect(headerRule['condition_type'], 'OR');
 
         // Should have header conditions (JSON array)
-        expect(rule1['condition_header'], isNotNull);
-        final headerPatterns = jsonDecode(rule1['condition_header'] as String);
+        expect(headerRule['condition_header'], isNotNull);
+        final headerPatterns = jsonDecode(headerRule['condition_header'] as String);
         expect(headerPatterns, isList);
         expect(headerPatterns, isNotEmpty);
 
         // Should have delete action set
-        expect(rule1['action_delete'], 1);
+        expect(headerRule['action_delete'], 1);
 
-        // Optional exception fields should be null for this rule
-        expect(rule1['exception_from'], isNull);
-
-        // Metadata may be present if the bundled YAML includes it
-        if (rule1['metadata'] != null) {
-          final metadata = jsonDecode(rule1['metadata'] as String);
-          expect(metadata, isA<Map>());
-        }
+        // Classification fields should be present
+        expect(headerRule['pattern_category'], 'header_from');
+        expect(headerRule['pattern_sub_type'], isNotNull);
+        expect(headerRule['source_domain'], isNotNull);
       });
 
       test('can be called multiple times without duplicate rules', () async {
         // First reset
         var result = await service.resetToDefaults();
-        expect(result.rules, 5);
+        final firstCount = result.rules;
+        expect(firstCount, greaterThan(100));
 
         // Second reset should clear and re-seed (no duplicates)
         result = await service.resetToDefaults();
-        expect(result.rules, 5);
+        expect(result.rules, firstCount);
 
         // Verify no duplicates
         final db = await testHelper.dbHelper.database;
         final rules = await db.query('rules');
-        expect(rules, hasLength(5));
+        expect(rules, hasLength(firstCount));
       });
 
       test('works on already empty database', () async {
         final result = await service.resetToDefaults();
 
-        expect(result.rules, 5);
+        expect(result.rules, greaterThan(100));
         expect(result.safeSenders, greaterThan(0));
 
         final db = await testHelper.dbHelper.database;
         final rules = await db.query('rules');
-        expect(rules, hasLength(5));
+        expect(rules.length, greaterThan(100));
         final safeSenders = await db.query('safe_senders');
         expect(safeSenders, isNotEmpty);
       });
