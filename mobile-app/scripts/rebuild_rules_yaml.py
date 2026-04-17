@@ -127,10 +127,10 @@ def main():
             else:  # exact_domain
                 order = 30
 
-            # Generate rule name from source domain
-            rule_name = re.sub(r'[^\\w.-]', '', source_domain)
-            if not rule_name:
-                rule_name = f'rule_{i}'
+            # Generate unique rule name
+            # Use pattern type prefix + index to guarantee uniqueness
+            type_prefix = 'tld' if pattern_type == 'top_level_domain' else 'entire' if pattern_type == 'entire_domain' else 'exact'
+            rule_name = f'{type_prefix}_{i}'
 
             new_rules.append({
                 'name': rule_name,

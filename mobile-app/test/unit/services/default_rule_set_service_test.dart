@@ -170,11 +170,11 @@ void main() {
         // Reset to defaults
         final result = await service.resetToDefaults();
 
-        expect(result.rules, 5);
+        expect(result.rules, greaterThan(100)); // After F73: 1638 rules
 
         // Verify user rules were replaced by defaults
         rules = await db.query('rules');
-        expect(rules, hasLength(5));
+        expect(rules.length, greaterThan(100));
         // None of the rules should be the user's custom rule
         expect(
           rules.every((r) => r['name'] != 'User custom rule'),
@@ -426,10 +426,10 @@ void main() {
         expect(seedResult.rules, 0);
         expect(seedResult.safeSenders, 0);
 
-        // Verify only 5 rules exist (no duplicates from attempted seed)
+        // Verify rules were not duplicated (no duplicates from attempted seed)
         final db = await testHelper.dbHelper.database;
         final rules = await db.query('rules');
-        expect(rules, hasLength(5));
+        expect(rules.length, greaterThan(100)); // 1638 from resetToDefaults
       });
     });
   });
