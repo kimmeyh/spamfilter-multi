@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:logger/logger.dart';
 
+import '../services/pattern_compiler.dart';
 import 'database_helper.dart';
 
 /// Exception thrown when safe sender database operations fail
@@ -158,12 +159,26 @@ class SafeSenderDatabaseStore {
   /// Pattern type is auto-detected if not provided.
   Future<void> addSafeSender(SafeSenderPattern safeSender) async {
     try {
+      // SEC-1b (Sprint 33): reject ReDoS-vulnerable safe sender patterns at
+      // the persistence boundary. Safe senders bypass all rules, so a
+      // catastrophic-backtracking pattern here would pin the scanner on
+      // every email.
+      final redosWarnings =
+          PatternCompiler.detectReDoS(safeSender.pattern);
+      if (redosWarnings.isNotEmpty) {
+        throw SafeSenderDatabaseException(
+          'Pattern "${safeSender.pattern}" was rejected: '
+          '${redosWarnings.first}',
+        );
+      }
+
       _logger.i('Adding safe sender "${safeSender.pattern}" to database');
 
       await databaseProvider.insertSafeSender(safeSender.toDatabase());
 
       _logger.i('Added safe sender "${safeSender.pattern}" to database');
     } catch (e) {
+      if (e is SafeSenderDatabaseException) rethrow;
       throw SafeSenderDatabaseException(
         'Failed to add safe sender "${safeSender.pattern}"',
         e,
@@ -178,6 +193,17 @@ class SafeSenderDatabaseStore {
   /// Throws exception if pattern does not exist.
   Future<void> updateSafeSender(String pattern, SafeSenderPattern updatedSender) async {
     try {
+      // SEC-1b (Sprint 33): block updates that introduce ReDoS-vulnerable
+      // patterns even if the key stays the same. See [addSafeSender].
+      final redosWarnings =
+          PatternCompiler.detectReDoS(updatedSender.pattern);
+      if (redosWarnings.isNotEmpty) {
+        throw SafeSenderDatabaseException(
+          'Pattern "${updatedSender.pattern}" was rejected: '
+          '${redosWarnings.first}',
+        );
+      }
+
       _logger.i('Updating safe sender "$pattern" in database');
 
       // Check if pattern exists

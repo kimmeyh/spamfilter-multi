@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/email_providers/spam_filter_platform.dart';
+import '../widgets/app_bar_with_exit.dart';
 import 'account_setup_screen.dart';
+import 'help_screen.dart';
 import 'scan_progress_screen.dart';
 
 /// Platform selection screen - first step in account setup
@@ -74,9 +76,27 @@ class _PlatformSelectionScreenState extends State<PlatformSelectionScreen> {
     final platforms = _getSupportedPlatforms();
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBarWithExit(
         title: const Text('Select Email Provider'),
         elevation: 0,
+        // F55 (Sprint 33): standardized icon order -- Accounts, Help.
+        // Settings omitted here: the settings UI needs an accountId context
+        // which does not exist on the pre-account-creation screen. X auto-
+        // appended on Windows by AppBarWithExit.
+        actions: [
+          IconButton(
+            tooltip: 'Select Account',
+            icon: const Icon(Icons.people),
+            onPressed: () {
+              Navigator.popUntil(context, (route) => route.isFirst);
+            },
+          ),
+          IconButton(
+            tooltip: 'Help',
+            icon: const Icon(Icons.help_outline),
+            onPressed: () => openHelp(context, HelpSection.accountSetup),
+          ),
+        ],
       ),
       body: SelectionArea(
         child: SingleChildScrollView(

@@ -3,29 +3,96 @@ import 'dart:collection';
 import 'dart:isolate';
 import 'package:logger/logger.dart';
 
+/// Where a compiled pattern came from.
+///
+/// SEC-1b (Sprint 33): the evaluator needs to know whether a regex was
+/// shipped with the app (trusted) or supplied by the user (untrusted) so it
+/// can apply ReDoS protection only where it is needed -- bundled patterns
+/// stay on the fast path, user patterns get rejected at compile time if
+/// they match the ReDoS heuristics in [PatternCompiler.detectReDoS].
+enum PatternProvenance {
+  /// Pattern originated from bundled assets (rules.yaml / safe senders).
+  /// Trusted: direct [RegExp.hasMatch] with no timeout.
+  bundled,
+
+  /// Pattern came from a user action (manual rule entry, YAML import,
+  /// clipboard paste). Untrusted: rejected at compile time if dangerous.
+  user,
+}
+
 /// Precompiles and caches regex patterns for performance
 ///
 /// Includes ReDoS (Regular Expression Denial of Service) protection:
 /// - Pattern validation detects nested quantifiers and dangerous constructs
-/// - Timeout-protected matching via [safeHasMatch] prevents hangs
+/// - [compileWithProvenance] rejects ReDoS-vulnerable user patterns at the
+///   compile boundary so the hot path never sees them (SEC-1b)
+/// - Timeout-protected matching via [safeHasMatch] remains available for
+///   code that wants defense-in-depth even for bundled patterns
+///
+/// ## SEC-1b design note (Sprint 33)
+///
+/// The evaluator hot path iterates thousands of patterns per email. Wrapping
+/// every match in an isolate timeout adds per-match overhead (~ms) that
+/// multiplies with the pattern count and user inbox size. Instead, SEC-1b
+/// rejects dangerous user patterns at the compile boundary. Bundled
+/// patterns in `assets/rules/rules.yaml` are curated and tested, so they
+/// continue to run with a direct `regex.hasMatch()` (Option C in the sprint
+/// plan). See `docs/sprints/SPRINT_33_PLAN.md` for the full trade-off
+/// discussion.
 class PatternCompiler {
   final Logger _logger = Logger();
   final Map<String, RegExp> _cache = HashMap();
   final Map<String, String> _failures = HashMap();
+  // SEC-1b: track which patterns came from user input so callers can decide
+  // whether to warn / reject / sandbox.
+  final Map<String, PatternProvenance> _provenance = HashMap();
+  // SEC-1b: patterns rejected at compile time because they matched the
+  // ReDoS heuristics. Stored so the UI can surface the reason to the user.
+  final Map<String, String> _rejectedUserPatterns = HashMap();
   int _hits = 0;
   int _misses = 0;
 
   /// Default timeout for regex matching operations (SEC-1)
   static const Duration defaultMatchTimeout = Duration(seconds: 2);
 
-  /// Compile a pattern and cache it
-  RegExp compile(String pattern) {
+  /// Compile a pattern and cache it.
+  ///
+  /// Backwards-compatible entry point; treats the pattern as
+  /// [PatternProvenance.bundled] (the fast path). Call sites that load
+  /// user-supplied patterns should use [compileWithProvenance] so the
+  /// ReDoS guard can kick in.
+  RegExp compile(String pattern) =>
+      compileWithProvenance(pattern, PatternProvenance.bundled);
+
+  /// Compile a pattern and cache it, tracking where it came from.
+  ///
+  /// For [PatternProvenance.user] inputs this runs [detectReDoS] first
+  /// and, if any warnings fire, caches a never-matches regex and records
+  /// the rejection in [rejectedUserPatterns]. Bundled patterns skip the
+  /// ReDoS check since they are reviewed and tested before ship.
+  RegExp compileWithProvenance(String pattern, PatternProvenance provenance) {
     if (_cache.containsKey(pattern)) {
       _hits++;
       return _cache[pattern]!;
     }
 
     _misses++;
+
+    // SEC-1b: reject dangerous user patterns before they enter the hot path.
+    if (provenance == PatternProvenance.user) {
+      final redosWarnings = detectReDoS(pattern);
+      if (redosWarnings.isNotEmpty) {
+        final reason = redosWarnings.first;
+        _logger.w('Rejecting ReDoS-vulnerable user pattern: "$pattern" '
+            '($reason)');
+        _rejectedUserPatterns[pattern] = reason;
+        _provenance[pattern] = provenance;
+        final fallback = RegExp(r'(?!)'); // Never matches
+        _cache[pattern] = fallback;
+        return fallback;
+      }
+    }
+
     try {
       // Strip Python-style inline flags (?i), (?m), (?s), (?x) or combinations like (?im)
       // Dart RegExp doesn't support inline flags but we already use caseSensitive: false
@@ -42,12 +109,14 @@ class PatternCompiler {
 
       final regex = RegExp(cleanPattern, caseSensitive: false);
       _cache[pattern] = regex;
+      _provenance[pattern] = provenance;
       return regex;
     } catch (e) {
       // Invalid regex - log error, track failure, cache a pattern that never matches
       final errorMsg = e.toString();
       _logger.e('Invalid regex pattern: "$pattern" - Error: $errorMsg');
       _failures[pattern] = errorMsg;
+      _provenance[pattern] = provenance;
 
       final fallback = RegExp(r'(?!)'); // Never matches
       _cache[pattern] = fallback;
@@ -86,6 +155,8 @@ class PatternCompiler {
   void clear() {
     _cache.clear();
     _failures.clear();
+    _provenance.clear();
+    _rejectedUserPatterns.clear();
     _hits = 0;
     _misses = 0;
   }
@@ -102,6 +173,16 @@ class PatternCompiler {
 
   /// Get all compilation failures (pattern -> error message)
   Map<String, String> get compilationFailures => Map.unmodifiable(_failures);
+
+  /// SEC-1b: user patterns rejected at compile time because they matched
+  /// the ReDoS heuristics. Key = original pattern, value = warning message
+  /// suitable for surfacing in rule-management UI.
+  Map<String, String> get rejectedUserPatterns =>
+      Map.unmodifiable(_rejectedUserPatterns);
+
+  /// SEC-1b: lookup the recorded provenance of a pattern, or `null` if the
+  /// pattern has not been compiled through this instance.
+  PatternProvenance? provenanceOf(String pattern) => _provenance[pattern];
 
   /// Check if a pattern is valid (compiled successfully)
   bool isPatternValid(String pattern) => !_failures.containsKey(pattern);

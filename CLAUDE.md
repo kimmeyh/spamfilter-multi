@@ -253,6 +253,22 @@ All sprint work references the **SPRINT EXECUTION docs** - the authoritative set
 
 **Quick Reference**: These 11 documents form the complete sprint execution knowledge base. Reference them frequently during sprint work.
 
+### [CRITICAL] Phase 7 Retrospective Completeness Rule
+
+**A Sprint Retrospective is NEVER complete unless ALL 14 categories are addressed by ALL 4 roles. Missing roles or categories = retrospective is INCOMPLETE = sprint is NOT complete. DO NOT declare a sprint complete until this rule is satisfied.**
+
+The 4 mandatory roles (Harold wears 3 of the 4 hats; Claude provides the 4th):
+1. **Product Owner** -- business value, scope, backlog implications
+2. **Scrum Master** -- process adherence, ceremony quality, blockers
+3. **Lead Developer** -- technical quality, architecture, engineering decisions
+4. **Claude Code Development Team** -- execution-side observations, prompt/tooling friction
+
+The 14 mandatory categories: (1) Effective while as Efficient as Reasonably Possible, (2) Testing Approach, (3) Effort Accuracy, (4) Planning Quality, (5) Model Assignments, (6) Communication, (7) Requirements Clarity, (8) Documentation, (9) Process Issues, (10) Risk Management, (11) Next Sprint Readiness, (12) Architecture Maintenance, (13) Minor Function Updates for the Next Sprint Plan, (14) Function Updates for the Future Backlog.
+
+Empty/silent role-feedback lines are NOT acceptable. If a role has nothing to say, that role must explicitly write `No issues -- expectations met.` -- but the role MUST be addressed.
+
+**See**: `docs/SPRINT_RETROSPECTIVE.md` for the verbatim feedback template, full category definitions, and per-role example feedback.
+
 ### Sprint Structure
 - **Sprints**: Time-boxed iterations focusing on one key enhancement
 - **Cards**: GitHub issues representing sprint work items

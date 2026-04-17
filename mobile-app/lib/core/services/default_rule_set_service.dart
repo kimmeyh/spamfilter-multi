@@ -159,6 +159,84 @@ class DefaultRuleSetService {
     return (rules: rulesSeeded, safeSenders: safeSendersSeeded);
   }
 
+  /// TLD block patterns added post-initial-seed (F53, Sprint 33).
+  ///
+  /// These patterns block emails from specific top-level domains that are
+  /// frequently used for spam. They are added to the SpamAutoDeleteHeader
+  /// rule's condition_header list if not already present. This migration is
+  /// idempotent: running it multiple times has no effect beyond the first run.
+  ///
+  /// If new TLD patterns are added in future sprints, append them here --
+  /// the migration will add only the missing ones.
+  static const List<String> _postSeedTldBlockPatterns = <String>[
+    r'@.*\.cc$', // Cocos Islands (F53, Sprint 33)
+    r'@.*\.ne$', // Niger (F53, Sprint 33)
+  ];
+
+  /// Name of the bundled rule that holds TLD block patterns in its
+  /// condition_header array. Keep in sync with assets/rules/rules.yaml.
+  static const String _tldBlockRuleName = 'SpamAutoDeleteHeader';
+
+  /// Ensure post-seed TLD block patterns are present in existing databases.
+  ///
+  /// Called during app initialization after seedIfEmpty. On existing
+  /// installs (where seedIfEmpty is a no-op), this adds any TLD block
+  /// patterns listed in _postSeedTldBlockPatterns that are missing from
+  /// the SpamAutoDeleteHeader rule's condition_header JSON array.
+  ///
+  /// Returns the number of patterns added. Returns 0 if all patterns are
+  /// already present (idempotent).
+  ///
+  /// If the rule does not exist (fresh install will have been seeded from
+  /// YAML which already contains the patterns), this is a no-op.
+  Future<int> ensureTldBlockRules() async {
+    final db = await _dbHelper.database;
+    final rows = await db.query(
+      'rules',
+      columns: ['id', 'condition_header'],
+      where: 'name = ?',
+      whereArgs: [_tldBlockRuleName],
+      limit: 1,
+    );
+
+    if (rows.isEmpty) {
+      _logger.d('$_tldBlockRuleName rule not found; skipping TLD migration');
+      return 0;
+    }
+
+    final row = rows.first;
+    final ruleId = row['id'] as int;
+    final conditionHeaderJson = row['condition_header'] as String?;
+
+    final List<String> headers = conditionHeaderJson == null
+        ? <String>[]
+        : List<String>.from(jsonDecode(conditionHeaderJson) as List);
+
+    final existing = headers.toSet();
+    final toAdd = _postSeedTldBlockPatterns
+        .where((p) => !existing.contains(p))
+        .toList(growable: false);
+
+    if (toAdd.isEmpty) {
+      _logger.d('All post-seed TLD block patterns already present');
+      return 0;
+    }
+
+    headers.addAll(toAdd);
+    headers.sort();
+
+    await db.update(
+      'rules',
+      {'condition_header': jsonEncode(headers)},
+      where: 'id = ?',
+      whereArgs: [ruleId],
+    );
+
+    _logger.i('Added ${toAdd.length} TLD block pattern(s) to '
+        '$_tldBlockRuleName: ${toAdd.join(", ")}');
+    return toAdd.length;
+  }
+
   /// Classify a safe sender pattern into its type.
   ///
   /// Mirrors SafeSenderList._determinePatternType logic.

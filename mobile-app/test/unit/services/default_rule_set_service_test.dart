@@ -274,6 +274,148 @@ void main() {
       });
     });
 
+    group('ensureTldBlockRules (F53 Sprint 33 migration)', () {
+      test('adds .cc and .ne patterns to existing SpamAutoDeleteHeader rule',
+          () async {
+        // Simulate an existing install that has the rule but is missing the
+        // post-seed TLD patterns. We seed the real rule, then strip the
+        // two patterns to mimic a pre-Sprint-33 database.
+        await service.resetToDefaults();
+        final db = await testHelper.dbHelper.database;
+
+        // Strip .cc and .ne from the seeded rule to simulate pre-migration state
+        final row = (await db.query('rules',
+                columns: ['id', 'condition_header'],
+                where: 'name = ?',
+                whereArgs: ['SpamAutoDeleteHeader']))
+            .single;
+        final ruleId = row['id'] as int;
+        final headers =
+            List<String>.from(jsonDecode(row['condition_header'] as String));
+        headers.removeWhere((p) => p == r'@.*\.cc$' || p == r'@.*\.ne$');
+        await db.update(
+          'rules',
+          {'condition_header': jsonEncode(headers)},
+          where: 'id = ?',
+          whereArgs: [ruleId],
+        );
+
+        // Verify preconditions: patterns are missing
+        final pre = jsonDecode((await db.query('rules',
+                columns: ['condition_header'],
+                where: 'name = ?',
+                whereArgs: ['SpamAutoDeleteHeader']))
+            .single['condition_header'] as String) as List;
+        expect(pre.contains(r'@.*\.cc$'), isFalse);
+        expect(pre.contains(r'@.*\.ne$'), isFalse);
+
+        // Run migration
+        final added = await service.ensureTldBlockRules();
+        expect(added, 2);
+
+        // Verify patterns are now present
+        final post = jsonDecode((await db.query('rules',
+                columns: ['condition_header'],
+                where: 'name = ?',
+                whereArgs: ['SpamAutoDeleteHeader']))
+            .single['condition_header'] as String) as List;
+        expect(post.contains(r'@.*\.cc$'), isTrue);
+        expect(post.contains(r'@.*\.ne$'), isTrue);
+      });
+
+      test('is idempotent when patterns already present', () async {
+        await service.resetToDefaults();
+
+        // Fresh seed already contains the patterns (rules.yaml has them)
+        final first = await service.ensureTldBlockRules();
+        expect(first, 0, reason: 'fresh seed already has the patterns');
+
+        // Second call is also a no-op
+        final second = await service.ensureTldBlockRules();
+        expect(second, 0);
+      });
+
+      test('adds only the missing pattern when one is already present',
+          () async {
+        await service.resetToDefaults();
+        final db = await testHelper.dbHelper.database;
+
+        // Strip only .cc, leaving .ne in place
+        final row = (await db.query('rules',
+                columns: ['id', 'condition_header'],
+                where: 'name = ?',
+                whereArgs: ['SpamAutoDeleteHeader']))
+            .single;
+        final ruleId = row['id'] as int;
+        final headers =
+            List<String>.from(jsonDecode(row['condition_header'] as String))
+              ..remove(r'@.*\.cc$');
+        await db.update(
+          'rules',
+          {'condition_header': jsonEncode(headers)},
+          where: 'id = ?',
+          whereArgs: [ruleId],
+        );
+
+        final added = await service.ensureTldBlockRules();
+        expect(added, 1);
+
+        final post = jsonDecode((await db.query('rules',
+                columns: ['condition_header'],
+                where: 'name = ?',
+                whereArgs: ['SpamAutoDeleteHeader']))
+            .single['condition_header'] as String) as List;
+        expect(post.contains(r'@.*\.cc$'), isTrue);
+        expect(post.contains(r'@.*\.ne$'), isTrue);
+      });
+
+      test('returns 0 when target rule does not exist', () async {
+        // Empty database; rule is missing entirely
+        final added = await service.ensureTldBlockRules();
+        expect(added, 0);
+      });
+
+      test('TLD pattern @.*\\.cc\$ matches target domains but not near-misses',
+          () {
+        final cc = RegExp(r'@.*\.cc$', caseSensitive: false);
+        expect(cc.hasMatch('spam@example.cc'), isTrue);
+        expect(cc.hasMatch('spam@sub.example.cc'), isTrue);
+        expect(cc.hasMatch('spam@example.cca'), isFalse,
+            reason: 'anchored \$ should reject .cca');
+        expect(cc.hasMatch('spam@cc.com'), isFalse,
+            reason: '.cc must be the TLD, not a label before .com');
+        expect(cc.hasMatch('user@example.com'), isFalse);
+      });
+
+      test('TLD pattern @.*\\.ne\$ matches target domains but not near-misses',
+          () {
+        final ne = RegExp(r'@.*\.ne$', caseSensitive: false);
+        expect(ne.hasMatch('spam@example.ne'), isTrue);
+        expect(ne.hasMatch('spam@sub.example.ne'), isTrue);
+        expect(ne.hasMatch('spam@example.net'), isFalse,
+            reason: 'anchored \$ should reject .net');
+        expect(ne.hasMatch('spam@ne.com'), isFalse,
+            reason: '.ne must be the TLD, not a label before .com');
+        expect(ne.hasMatch('user@example.com'), isFalse);
+      });
+
+      test('bundled rules.yaml already contains both .cc and .ne', () async {
+        await service.resetToDefaults();
+        final db = await testHelper.dbHelper.database;
+
+        final headers = jsonDecode((await db.query('rules',
+                columns: ['condition_header'],
+                where: 'name = ?',
+                whereArgs: ['SpamAutoDeleteHeader']))
+            .single['condition_header'] as String) as List;
+
+        expect(headers.contains(r'@.*\.cc$'), isTrue,
+            reason: 'assets/rules/rules.yaml should include .cc');
+        expect(headers.contains(r'@.*\.ne$'), isTrue,
+            reason: 'assets/rules/rules.yaml should include .ne');
+      });
+    });
+
     group('seedIfEmpty and resetToDefaults interaction', () {
       test('seedIfEmpty skips after resetToDefaults has populated data', () async {
         // Reset seeds the database with rules

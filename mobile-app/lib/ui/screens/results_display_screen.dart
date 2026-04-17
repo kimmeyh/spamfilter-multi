@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
 import '../widgets/app_bar_with_exit.dart';
+import 'help_screen.dart';
 import 'scan_history_screen.dart';
 import 'scan_progress_screen.dart';
 import 'settings_screen.dart';
@@ -500,31 +501,26 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                 icon: const Icon(Icons.arrow_back),
                 tooltip: widget.historicalScanId != null
                     ? 'Back to Scan History'
-                    : 'Back to Scan Progress',
+                    : 'Back to Manual Scan',
                 onPressed: () {
                   // Dismiss any showing snackbar before navigating
                   ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                  if (widget.historicalScanId != null) {
-                    // [FIX] FB-1: When viewing from Scan History, pop back to history screen
-                    Navigator.pop(context);
-                  } else {
-                    // Push replacement to Scan Progress screen (same as Scan Again button)
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ScanProgressScreen(
-                          platformId: widget.platformId,
-                          platformDisplayName: widget.platformDisplayName,
-                          accountId: widget.accountId,
-                          accountEmail: widget.accountEmail,
-                        ),
-                      ),
-                    );
-                  }
+                  // F55 (Sprint 33, v3): pop to Manual Scan (ScanProgress).
+                  // ScanProgress subscribes to routeObserver and resets its
+                  // scan provider on didPopNext, so the user lands on a
+                  // clean "Ready to Scan" screen -- no partial results.
+                  Navigator.pop(context);
                 },
               ),
+        // F55 (Sprint 33, v3): standardized icon order --
+        // Download, Search, History, Accounts, Help, Settings, [X auto].
         actions: [
           if (!_showSearch) ...[
+            IconButton(
+              tooltip: 'Export Results to CSV',
+              icon: const Icon(Icons.file_download),
+              onPressed: () => _exportResults(context, scanProvider),
+            ),
             IconButton(
               tooltip: 'Search (Ctrl+F)',
               icon: const Icon(Icons.search),
@@ -533,11 +529,6 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                   _showSearch = true;
                 });
               },
-            ),
-            IconButton(
-              tooltip: 'Export Results to CSV',
-              icon: const Icon(Icons.file_download),
-              onPressed: () => _exportResults(context, scanProvider),
             ),
             IconButton(
               tooltip: 'View Scan History',
@@ -554,6 +545,29 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                   ),
                 );
               },
+            ),
+            IconButton(
+              tooltip: 'Select Account',
+              icon: const Icon(Icons.people),
+              onPressed: () {
+                Navigator.popUntil(context, (route) => route.isFirst);
+              },
+            ),
+            IconButton(
+              tooltip: 'Help',
+              icon: const Icon(Icons.help_outline),
+              onPressed: () => openHelp(
+                context,
+                // Use demo-scan section when this screen is showing a demo
+                // scan, otherwise the default live-scan Results section.
+                widget.platformId == 'demo'
+                    ? HelpSection.demoScan
+                    : HelpSection.resultsDisplay,
+                accountId: widget.accountId,
+                accountEmail: widget.accountEmail,
+                platformId: widget.platformId,
+                platformDisplayName: widget.platformDisplayName,
+              ),
             ),
             IconButton(
               tooltip: 'Settings',

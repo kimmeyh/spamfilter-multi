@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import '../../core/services/app_environment.dart';
+import '../../core/services/data_deletion_service.dart';
 import '../../core/services/default_rule_set_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,12 +12,16 @@ import '../../core/services/background_scan_windows_worker.dart';
 import '../../core/services/windows_task_scheduler_service.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/settings_store.dart';
+import '../../core/storage/unmatched_email_store.dart'
+    show kBodyPreviewMaxLength;
 import '../../core/providers/email_scan_provider.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
+import '../../core/security/certificate_pinner.dart';
 import '../../util/redact.dart';
 import '../../adapters/email_providers/email_provider.dart' show Credentials;
 import '../widgets/app_bar_with_exit.dart';
 import 'folder_selection_screen.dart';
+import 'help_screen.dart';
 import 'scan_history_screen.dart';
 import 'rules_management_screen.dart';
 import 'safe_senders_management_screen.dart';
@@ -70,6 +75,15 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   int _manualDaysBack = SettingsStore.defaultManualScanDaysBack;
   int _backgroundDaysBack = SettingsStore.defaultBackgroundScanDaysBack;
   int _scanHistoryRetentionDays = SettingsStore.defaultScanHistoryRetentionDays;
+  // SEC-19 (Sprint 33): disable detailed auth logging at runtime
+  bool _disableAuthLogging = SettingsStore.defaultDisableAuthLogging;
+  // SEC-14 (Sprint 33): unmatched email retention (days)
+  int _unmatchedRetentionDays = SettingsStore.defaultUnmatchedRetentionDays;
+  // SEC-8 (Sprint 33): certificate pinning for Google OAuth
+  bool _certificatePinningEnabled =
+      SettingsStore.defaultCertificatePinningEnabled;
+  // SEC-11 (Sprint 33): encrypted database feature flag (infrastructure only)
+  bool _encryptDatabase = SettingsStore.defaultEncryptDatabase;
 
   bool _isLoading = true;
   bool _isTestingScan = false;
@@ -93,6 +107,24 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     _tabController.dispose();
     _retentionDaysController.dispose();
     super.dispose();
+  }
+
+  /// Returns the help section matching the currently visible tab.
+  /// F54 (Sprint 33, round 2): Help icon deep-links to the right sub-section
+  /// of the Help screen based on which Settings tab the user is on.
+  HelpSection _helpSectionForActiveTab() {
+    switch (_tabController.index) {
+      case 0:
+        return HelpSection.settings; // General
+      case 1:
+        return HelpSection.folderSettings; // Account -> Folder Settings
+      case 2:
+        return HelpSection.manualScanSettings; // Manual Scan tab
+      case 3:
+        return HelpSection.backgroundScanning; // Background tab
+      default:
+        return HelpSection.settings;
+    }
   }
 
   Future<void> _loadSettings() async {
@@ -132,6 +164,19 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
       _scanHistoryRetentionDays = await _settingsStore.getScanHistoryRetentionDays();
       _retentionDaysController.text = _scanHistoryRetentionDays.toString();
+
+      // SEC-19 (Sprint 33): load persisted auth-logging-disabled preference
+      _disableAuthLogging = await _settingsStore.getDisableAuthLogging();
+
+      // SEC-14 (Sprint 33): load unmatched email retention days
+      _unmatchedRetentionDays = await _settingsStore.getUnmatchedRetentionDays();
+
+      // SEC-8 (Sprint 33): load certificate pinning preference
+      _certificatePinningEnabled =
+          await _settingsStore.getCertificatePinningEnabled();
+
+      // SEC-11 (Sprint 33): load database encryption feature flag
+      _encryptDatabase = await _settingsStore.getEncryptDatabase();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -150,11 +195,30 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     return Scaffold(
       appBar: AppBarWithExit(
         title: const Text('Settings'),
+        // F55 (Sprint 33, v3): icon order --
+        // History, Accounts, Help, [X auto]. Help deep-links to the section
+        // matching the currently visible tab.
         actions: [
           IconButton(
             icon: const Icon(Icons.history),
             tooltip: 'View Scan History',
             onPressed: () => _navigateToScanHistory(),
+          ),
+          IconButton(
+            tooltip: 'Select Account',
+            icon: const Icon(Icons.people),
+            onPressed: () {
+              Navigator.popUntil(context, (route) => route.isFirst);
+            },
+          ),
+          IconButton(
+            tooltip: 'Help',
+            icon: const Icon(Icons.help_outline),
+            onPressed: () => openHelp(
+              context,
+              _helpSectionForActiveTab(),
+              accountId: widget.accountId,
+            ),
           ),
         ],
         bottom: TabBar(
@@ -264,6 +328,19 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             foregroundColor: Colors.orange.shade700,
           ),
         ),
+        const SizedBox(height: 8),
+
+        // F66 (Sprint 33): full-app data wipe
+        OutlinedButton.icon(
+          icon: const Icon(Icons.delete_forever),
+          label: const Text('Delete All App Data...'),
+          onPressed: _confirmDeleteAllData,
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            alignment: Alignment.centerLeft,
+            foregroundColor: Colors.red.shade700,
+          ),
+        ),
 
         const SizedBox(height: 24),
 
@@ -286,6 +363,79 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           icon: const Icon(Icons.history, size: 16),
           label: const Text('Go to View Scan History'),
           onPressed: () => _navigateToScanHistory(),
+        ),
+
+        const SizedBox(height: 24),
+
+        // Privacy & Logging section (SEC-19, Sprint 33)
+        Text(
+          'Privacy & Logging',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Control sensitive information in log output',
+          style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+        ),
+        const SizedBox(height: 8),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Disable detailed auth logging'),
+          subtitle: const Text(
+            'When on, the app suppresses debug-only authentication log lines '
+            '(redacted tokens, account IDs). Errors and warnings are still '
+            'logged. Turn off to help diagnose sign-in problems.',
+          ),
+          value: _disableAuthLogging,
+          onChanged: (value) async {
+            await _settingsStore.setDisableAuthLogging(value);
+            Redact.setAuthLoggingDisabled(value);
+            if (mounted) {
+              setState(() => _disableAuthLogging = value);
+            }
+          },
+        ),
+        const SizedBox(height: 12),
+        _buildUnmatchedRetentionSelector(),
+        const SizedBox(height: 12),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Pin Google OAuth certificates'),
+          subtitle: const Text(
+            'Rejects TLS connections to Google sign-in endpoints whose '
+            'certificate does not match the pinned hashes. Turn off if you '
+            'start seeing sign-in failures after a Google CA rotation.',
+          ),
+          value: _certificatePinningEnabled,
+          onChanged: (value) async {
+            await _settingsStore.setCertificatePinningEnabled(value);
+            CertificatePinner.setEnabled(value);
+            if (mounted) {
+              setState(() => _certificatePinningEnabled = value);
+            }
+          },
+        ),
+        const SizedBox(height: 12),
+        // SEC-11 (Sprint 33): opt-in database encryption (infrastructure only)
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: const Text('Encrypt database (experimental)'),
+          subtitle: const Text(
+            'When on, a 256-bit encryption key is generated and stored '
+            'in your system keychain for future use. The database driver '
+            'is not yet swapped to SQLCipher, so existing data stays '
+            'unencrypted until a future release completes the migration. '
+            'Turn on early to provision the key.',
+          ),
+          value: _encryptDatabase,
+          onChanged: (value) async {
+            await _settingsStore.setEncryptDatabase(value);
+            if (mounted) {
+              setState(() => _encryptDatabase = value);
+            }
+          },
         ),
 
         const SizedBox(height: 24),
@@ -803,6 +953,52 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   }
 
   /// [NEW] FB-2: Retention days selector with text field and quick-select chips
+  /// SEC-14 (Sprint 33): selector for unmatched-email retention.
+  ///
+  /// Keeps the list of quick options narrow (0 = Forever, 7, 30, 90, 365 days)
+  /// since this setting is rarely tuned. Body-preview truncation is applied
+  /// at insert time regardless of this setting.
+  Widget _buildUnmatchedRetentionSelector() {
+    const options = <int>[0, 7, 30, 90, 365];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Unmatched Emails Retention',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'How long to keep emails that did not match any rule. Older entries '
+          'are deleted automatically on app startup and after each scan. '
+          'Body previews are always stored truncated to $kBodyPreviewMaxLength characters.',
+          style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          children: options.map((days) {
+            final label = days == 0
+                ? 'Forever'
+                : (days >= 365 ? '1 year' : '$days days');
+            return ChoiceChip(
+              label: Text(label, style: const TextStyle(fontSize: 12)),
+              selected: _unmatchedRetentionDays == days,
+              onSelected: (selected) async {
+                if (!selected) return;
+                await _settingsStore.setUnmatchedRetentionDays(days);
+                if (mounted) {
+                  setState(() => _unmatchedRetentionDays = days);
+                }
+              },
+              visualDensity: VisualDensity.compact,
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+
   Widget _buildRetentionDaysSelector() {
     const quickOptions = [7, 14, 30, 90, 365];
 
@@ -1128,6 +1324,83 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Reset failed: $e')),
+        );
+      }
+    }
+  }
+
+  /// F66 (Sprint 33): two-step confirmation for full-app data wipe.
+  Future<void> _confirmDeleteAllData() async {
+    // First confirmation: explain what will be deleted.
+    final proceed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete All App Data'),
+        content: const Text(
+          'This will permanently delete:\n\n'
+          '- All accounts and credentials\n'
+          '- All scan history and unmatched emails\n'
+          '- All rules and safe senders (including your customizations)\n'
+          '- All app and per-account settings\n\n'
+          'The app will return to a fresh-install state. This cannot be '
+          'undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red.shade700),
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
+    if (proceed != true || !mounted) return;
+
+    // Second confirmation: require an explicit Yes to the final action.
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Are you absolutely sure?'),
+        content: const Text(
+          'This is your last chance to cancel. All app data will be erased.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red.shade700),
+            child: const Text('Delete Everything'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final service = DataDeletionService();
+      await service.wipeAllData();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'All app data deleted. Please restart the app to complete '
+              'the reset.',
+            ),
+            duration: Duration(seconds: 8),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Delete failed: $e')),
         );
       }
     }

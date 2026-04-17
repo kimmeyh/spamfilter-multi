@@ -92,19 +92,29 @@ These documents MUST be created/updated during each sprint:
 
 ## Phase 7: Sprint Review (MANDATORY - DO NOT SKIP)
 
+[CRITICAL] **A Sprint Retrospective is NEVER considered complete unless all 14 categories are addressed by all 4 roles (Product Owner, Scrum Master, Lead Developer, Claude Code Development Team). Missing roles or categories = retrospective is INCOMPLETE = sprint is NOT complete. See `docs/SPRINT_RETROSPECTIVE.md` for full template.**
+
 - [ ] **Verify active model is Opus** (retrospective analysis requires Opus per SPRINT_PLANNING.md "Activities Requiring Opus")
 - [ ] Windows desktop build verified
 - [ ] Sprint review offered to user
-- [ ] **Ask Product Owner/Scrum Master/Lead Developer for retrospective feedback** (MANDATORY - do not create retrospective without this)
-- [ ] User feedback gathered and incorporated
-- [ ] Claude feedback provided
+- [ ] **MANDATORY: Gather feedback from ALL 4 ROLES x ALL 14 CATEGORIES**:
+  - **Roles**: Product Owner, Scrum Master, Lead Developer, Claude Code Development Team
+  - **Categories**: (1) Effective while as Efficient as Reasonably Possible, (2) Testing Approach, (3) Effort Accuracy, (4) Planning Quality, (5) Model Assignments, (6) Communication, (7) Requirements Clarity, (8) Documentation, (9) Process Issues, (10) Risk Management, (11) Next Sprint Readiness, (12) Architecture Maintenance, (13) Minor Function Updates for the Next Sprint Plan, (14) Function Updates for the Future Backlog
+  - Empty/silent role-feedback lines are NOT acceptable. If a role has nothing to say, write "No issues -- expectations met." -- but the role MUST be explicitly addressed.
+- [ ] **Phase 7.3 EXIT GATE -- Completeness Validation passed**:
+  - [ ] All 14 categories present in retrospective doc
+  - [ ] All 4 roles have explicit feedback for EACH of the 14 categories (no `[feedback]` placeholders left)
+  - [ ] Category 13 entries documented as carry-ins for Sprint N+1 plan
+  - [ ] Category 14 entries documented for `ALL_SPRINTS_MASTER_PLAN.md` update
+- [ ] Claude feedback provided (Categories 1-12 from Claude Code Development Team perspective)
 - [ ] **Architecture Compliance Check** (7.4.1): Verify code changes match documented architecture. Flag gaps for doc update or code revert.
 - [ ] Improvement suggestions created
 - [ ] Improvements decided (which to implement)
 - [ ] **Sprint Documents updated**:
   - [ ] CHANGELOG.md updated (all sprint entries present)
-  - [ ] ALL_SPRINTS_MASTER_PLAN.md updated (per Maintenance Guide rules)
-  - [ ] `docs/sprints/SPRINT_N_RETROSPECTIVE.md` created (MANDATORY)
+  - [ ] ALL_SPRINTS_MASTER_PLAN.md updated (per Maintenance Guide rules) -- includes Category 14 backlog additions
+  - [ ] Next Sprint Plan stub created/updated with Category 13 carry-ins
+  - [ ] `docs/sprints/SPRINT_N_RETROSPECTIVE.md` created (MANDATORY -- with all 14 categories x 4 roles filled)
   - [ ] `docs/sprints/SPRINT_N_SUMMARY.md` created (MANDATORY - do not defer)
   - [ ] ARCHITECTURE.md updated (if architecture changed)
   - [ ] .claude/sprint_status.json updated
@@ -179,6 +189,6 @@ gh issue close #N --reason "completed"
 
 ---
 
-**Version**: 2.3
-**Updated**: April 14, 2026 (Sprint 32 retrospective - expanded Phase 5.1.1 with mechanical related-patterns grep and two-phase review for cross-cutting policies; added Criterion 4a for user-found gaps in sprint theme)
+**Version**: 2.4
+**Updated**: April 16, 2026 (Sprint 33 follow-up: Phase 7 now requires 14 categories x 4 roles -- Product Owner, Scrum Master, Lead Developer, Claude Code Development Team -- with hard exit gate; Categories 13 and 14 added for next-sprint carry-ins and future-backlog additions)
 **Reference**: SPRINT_EXECUTION_WORKFLOW.md for detailed explanations

@@ -11,6 +11,7 @@ import '../../core/models/email_message.dart';
 import '../../core/models/evaluation_result.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/scan_result_store.dart';
+import '../../core/storage/settings_store.dart';
 import '../../core/storage/unmatched_email_store.dart';
 import '../../core/utils/pattern_normalization.dart';
 import '../../util/redact.dart';
@@ -366,6 +367,24 @@ class EmailScanProvider extends ChangeNotifier {
     }
 
     notifyListeners();  // Final update always sent (bypasses throttling)
+
+    // SEC-14 (Sprint 33): enforce unmatched-email retention after every scan.
+    // Runs independently of UI navigation so stale data is purged even if the
+    // user never opens the app after an automated background scan.
+    if (_unmatchedEmailStore != null) {
+      try {
+        final retentionDays = await SettingsStore(_databaseHelper)
+            .getUnmatchedRetentionDays();
+        final deleted =
+            await _unmatchedEmailStore!.deleteOlderThan(retentionDays);
+        if (deleted > 0) {
+          _logger.i('Post-scan retention cleanup removed $deleted unmatched '
+              'emails older than $retentionDays days');
+        }
+      } catch (e) {
+        _logger.w('Post-scan retention cleanup failed: $e');
+      }
+    }
   }
 
   /// Persist individual email actions to database for historical "View Results"

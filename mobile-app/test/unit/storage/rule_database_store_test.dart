@@ -374,6 +374,118 @@ void main() {
       );
     });
   });
+
+  group('SEC-1b (Sprint 33) ReDoS rejection', () {
+    late Database db;
+    late RuleDatabaseStore store;
+
+    setUp(() async {
+      db = await createTestDatabase();
+      final provider = MockRuleDatabaseProvider(db);
+      store = RuleDatabaseStore(provider);
+    });
+
+    tearDown(() async {
+      await db.close();
+    });
+
+    Rule redosRule() {
+      return Rule(
+        name: 'ReDoSRule',
+        enabled: true,
+        isLocal: false,
+        executionOrder: 10,
+        conditions: RuleConditions(
+          type: 'OR',
+          from: [r'(a+)+'], // catastrophic backtracking
+          header: [],
+          subject: [],
+          body: [],
+        ),
+        actions: RuleActions(
+            delete: true, moveToFolder: null, assignToCategory: null),
+      );
+    }
+
+    test('addRule rejects ReDoS-vulnerable from pattern', () async {
+      await expectLater(
+        store.addRule(redosRule()),
+        throwsA(isA<RuleDatabaseStorageException>()),
+      );
+
+      // Rule was not persisted.
+      final loaded = await store.loadRules();
+      expect(loaded.rules, isEmpty);
+    });
+
+    test('addRule rejects ReDoS pattern in exception bucket', () async {
+      final rule = Rule(
+        name: 'ExceptionRedosRule',
+        enabled: true,
+        isLocal: false,
+        executionOrder: 10,
+        conditions: RuleConditions(
+          type: 'OR',
+          from: ['user@example.com'],
+          header: [],
+          subject: [],
+          body: [],
+        ),
+        actions: RuleActions(
+            delete: true, moveToFolder: null, assignToCategory: null),
+        exceptions: RuleExceptions(
+          from: [r'(ab+)+'],
+        ),
+      );
+      await expectLater(
+        store.addRule(rule),
+        throwsA(isA<RuleDatabaseStorageException>()),
+      );
+    });
+
+    test('addRule allows a safe user pattern', () async {
+      final rule = Rule(
+        name: 'SafeRule',
+        enabled: true,
+        isLocal: false,
+        executionOrder: 10,
+        conditions: RuleConditions(
+          type: 'OR',
+          from: [r'^[^@]+@example\.com$'],
+          header: [],
+          subject: [],
+          body: [],
+        ),
+        actions: RuleActions(
+            delete: true, moveToFolder: null, assignToCategory: null),
+      );
+      await expectLater(store.addRule(rule), completes);
+    });
+
+    test('updateRule rejects ReDoS-vulnerable update', () async {
+      await store.addRule(_createTestRule('UpdateMe', 10));
+
+      final bad = Rule(
+        name: 'UpdateMe',
+        enabled: true,
+        isLocal: false,
+        executionOrder: 10,
+        conditions: RuleConditions(
+          type: 'OR',
+          from: [r'(a+)+'],
+          header: [],
+          subject: [],
+          body: [],
+        ),
+        actions: RuleActions(
+            delete: true, moveToFolder: null, assignToCategory: null),
+      );
+      await expectLater(
+        store.updateRule(bad),
+        throwsA(isA<RuleDatabaseStorageException>()),
+      );
+    });
+  });
 }
 
 /// Test helper: Create a simple test rule

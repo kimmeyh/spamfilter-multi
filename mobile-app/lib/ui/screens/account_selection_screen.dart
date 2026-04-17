@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
+import '../../core/services/data_deletion_service.dart';
 import '../../util/redact.dart';
 import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/email_providers/spam_filter_platform.dart';
@@ -12,6 +13,7 @@ import '../widgets/app_bar_with_exit.dart';
 import 'platform_selection_screen.dart';
 import 'scan_history_screen.dart';
 import 'scan_progress_screen.dart';
+import 'help_screen.dart';
 import 'settings_screen.dart';
 
 /// Display data for an account in the account selection list.
@@ -483,6 +485,15 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
     );
   }
 
+  /// F54 (Sprint 33): Help icon button for AppBar -> Select Account section.
+  Widget _buildHelpButton() {
+    return IconButton(
+      icon: const Icon(Icons.help_outline),
+      tooltip: 'Help',
+      onPressed: () => openHelp(context, HelpSection.selectAccount),
+    );
+  }
+
   /// Navigate to scan history (shows all accounts with filter chips)
   void _openScanHistory() {
     Navigator.push(
@@ -493,18 +504,28 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
     );
   }
 
-  /// Delete account with confirmation dialog
+  /// Delete account with confirmation dialog.
+  ///
+  /// F66 (Sprint 33): expanded from credential-only delete to a full
+  /// per-account wipe -- credentials + scan history + unmatched emails +
+  /// per-account settings + rate-limit state. Global rules, safe senders,
+  /// and other accounts are preserved.
   Future<void> _deleteAccount(String accountId) async {
     final email = accountId; // accountId is the email
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Account'),
+        title: const Text('Delete Account Data'),
         content: Text(
-          'Are you sure you want to delete this account?\n\n'
+          'Delete all data for this account?\n\n'
           '$email\n\n'
-          'This will remove saved credentials. You can re-add the account later.',
+          'This removes:\n'
+          '- Saved credentials / OAuth tokens\n'
+          '- Scan history for this account\n'
+          '- Unmatched emails captured in past scans\n'
+          '- Per-account settings and overrides\n\n'
+          'App-wide rules and other accounts are preserved.',
         ),
         actions: [
           TextButton(
@@ -522,22 +543,22 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
 
     if (confirmed == true) {
       try {
-        await _credStore.deleteCredentials(accountId);
+        final service = DataDeletionService(credStore: _credStore);
+        final report = await service.deleteAccountData(accountId);
         setState(() {
           _savedAccounts.remove(accountId);
-          // Remove from cache
           _accountDataCache.remove(accountId);
         });
-        _logger.i('Deleted account: ${Redact.accountId(accountId)}');
+        _logger.i('Deleted account: ${Redact.accountId(accountId)} '
+            '(scans=${report.scanResultsDeleted}, '
+            'emails=${report.emailActionsDeleted}, '
+            'unmatched=${report.unmatchedEmailsDeleted})');
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Deleted $email')),
           );
         }
-
-        // No need to navigate anywhere - the build method will show
-        // the "Add Account" UI when _savedAccounts.isEmpty (lines 505-547)
       } catch (e) {
         _logger.e('Failed to delete account: $e');
         if (mounted) {
@@ -568,7 +589,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       return Scaffold(
         appBar: AppBarWithExit(
           title: const Text('Select Account'),
-          actions: [_buildHistoryButton(), _buildSettingsButton()],
+          actions: [_buildHelpButton(), _buildHistoryButton(), _buildSettingsButton()],
         ),
         body: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -603,7 +624,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
         appBar: AppBarWithExit(
           title: const Text('Select Account'),
           elevation: 2,
-          actions: [_buildHistoryButton(), _buildSettingsButton()],
+          actions: [_buildHelpButton(), _buildHistoryButton(), _buildSettingsButton()],
         ),
         body: NoAccountsEmptyState(onAddAccount: _addNewAccount),
       );
@@ -614,7 +635,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       appBar: AppBarWithExit(
         title: const Text('Select Account'),
         elevation: 2,
-        actions: [_buildHistoryButton(), _buildSettingsButton()],
+        actions: [_buildHelpButton(), _buildHistoryButton(), _buildSettingsButton()],
       ),
       body: SelectionArea(
         child: Column(

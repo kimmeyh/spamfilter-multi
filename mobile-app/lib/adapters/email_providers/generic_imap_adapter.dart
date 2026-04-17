@@ -23,6 +23,8 @@ import 'package:logger/logger.dart';
 import '../../core/models/batch_action_result.dart';
 import '../../core/models/email_message.dart';
 import '../../core/models/evaluation_result.dart';
+import '../../core/security/auth_rate_limiter.dart';
+import '../../core/storage/database_helper.dart';
 import 'spam_filter_platform.dart';
 import 'email_provider.dart';
 
@@ -135,6 +137,12 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
 
   @override
   Future<void> loadCredentials(Credentials credentials) async {
+    // SEC-22 (Sprint 33): check rate limiter before attempting sign-in so a
+    // blocked account never touches the network.
+    final rateLimiter = AuthRateLimiter(DatabaseHelper());
+    final rateLimitAccountId = '$platformId-${credentials.email}';
+    await rateLimiter.assertNotBlocked(rateLimitAccountId);
+
     try {
       _credentials = credentials;
       _operationCount = 0;
@@ -146,10 +154,14 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       // Use default SSL/TLS certificate validation provided by Dart's dart:io.
       // For standard email providers (AOL, Gmail, Yahoo, Outlook), this is secure and reliable.
       //
-      // If custom certificate pinning is needed in future, can be implemented via:
-      // 1. Post-connection socket inspection
-      // 2. Custom IMAP wrapper with certificate validation
-      // 3. Upgrade to dedicated secure IMAP library (Phase 3+)
+      // SEC-8 (Sprint 33): Certificate pinning is NOT applied to IMAP because
+      // enough_mail's ImapClient does not expose a SecurityContext or
+      // bad-certificate callback. Pinning HTTPS OAuth endpoints is handled by
+      // PinnedHttpClient (see lib/core/security/certificate_pinner.dart).
+      // IMAP pinning is tracked as a future enhancement; options:
+      // 1. Post-connection socket inspection (not exposed by enough_mail API)
+      // 2. Fork enough_mail to accept a SecurityContext parameter
+      // 3. Replace enough_mail with a secure IMAP library that supports pinning
       //
       // REMOVED: SecurityContext creation and custom certificate handling (not supported by enough_mail)
       // REMOVED: Custom certificate file loading from assets
@@ -170,12 +182,23 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
 
       _logger.i('[IMAP] Successfully authenticated to $displayName');
 
+      // SEC-22: successful auth clears any accrued failure count.
+      await rateLimiter.recordSuccess(rateLimitAccountId);
+
       // Log server capabilities for diagnostics (custom keyword support, etc.)
       final capabilities = _imapClient?.serverInfo.capabilities ?? [];
       _logger.i('[IMAP] Server capabilities: ${capabilities.map((c) => c.name).toList()}');
     } catch (e) {
       _logger.e('[IMAP] Failed to load credentials: $e');
       if (e is AuthenticationException) {
+        // SEC-22: server rejected credentials -> count as a failed attempt.
+        // Swallow any DB error inside the limiter so it never hides the
+        // original auth failure from the caller.
+        try {
+          await rateLimiter.recordFailure(rateLimitAccountId);
+        } catch (limiterError) {
+          _logger.w('Auth rate limiter write failed: $limiterError');
+        }
         // Propagate explicit authentication failures
         rethrow;
       }

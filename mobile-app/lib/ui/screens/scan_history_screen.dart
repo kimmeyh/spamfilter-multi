@@ -7,6 +7,7 @@ import '../../core/storage/database_helper.dart';
 import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/settings_store.dart';
 import '../widgets/app_bar_with_exit.dart';
+import 'help_screen.dart';
 import 'results_display_screen.dart';
 
 /// Unified scan history screen showing both manual and background scans
@@ -132,11 +133,32 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
     return Scaffold(
       appBar: AppBarWithExit(
         title: Text('Scan History ($_retentionDays days)'),
+        // F55 (Sprint 33, v3): icon order --
+        // <screen-specific> (Refresh), Accounts, Help, [X auto].
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Refresh',
             onPressed: _loadHistory,
+          ),
+          IconButton(
+            tooltip: 'Select Account',
+            icon: const Icon(Icons.people),
+            onPressed: () {
+              Navigator.popUntil(context, (route) => route.isFirst);
+            },
+          ),
+          IconButton(
+            tooltip: 'Help',
+            icon: const Icon(Icons.help_outline),
+            onPressed: () => openHelp(
+              context,
+              HelpSection.scanHistory,
+              accountId: widget.accountId,
+              accountEmail: widget.accountEmail,
+              platformId: widget.platformId,
+              platformDisplayName: widget.platformDisplayName,
+            ),
           ),
         ],
       ),

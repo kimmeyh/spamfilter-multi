@@ -18,7 +18,12 @@ import 'core/services/app_environment.dart';
 import 'core/services/dev_environment_seeder.dart';
 import 'core/services/background_scan_manager.dart' show ScanFrequency;
 import 'core/storage/settings_store.dart';
+import 'core/storage/unmatched_email_store.dart';
+import 'core/storage/database_helper.dart';
+import 'adapters/storage/app_paths.dart';
 import 'adapters/storage/secure_credentials_store.dart';
+import 'core/security/certificate_pinner.dart';
+import 'util/redact.dart';
 // import 'ui/screens/platform_selection_screen.dart'; // OLD: Direct to platform selection.
 import 'ui/screens/main_navigation_screen.dart'; // NEW: Main navigation with bottom nav (Android)
 import 'ui/theme/app_theme.dart';
@@ -111,6 +116,50 @@ void main(List<String> args) async {
   } catch (e) {
     // Migration failure should not block app startup
     Logger().w('Legacy token migration failed: $e');
+  }
+
+  // SEC-14/SEC-19 (Sprint 33): Bootstrap DatabaseHelper early so the app can
+  // read the persisted auth-logging preference and enforce unmatched email
+  // retention before the UI is built. RuleSetProvider.initialize() also
+  // calls setAppPaths on the same singleton; that call is idempotent.
+  try {
+    final appPaths = AppPaths();
+    await appPaths.initialize();
+    DatabaseHelper().setAppPaths(appPaths);
+
+    final settingsStore = SettingsStore();
+
+    // SEC-19: apply persisted auth-logging-disabled preference.
+    try {
+      final disabled = await settingsStore.getDisableAuthLogging();
+      Redact.setAuthLoggingDisabled(disabled);
+    } catch (e) {
+      Logger().w('Failed to load auth logging preference: $e');
+    }
+
+    // SEC-14: run unmatched-email retention cleanup on startup.
+    try {
+      final retentionDays = await settingsStore.getUnmatchedRetentionDays();
+      final deleted = await UnmatchedEmailStore(DatabaseHelper())
+          .deleteOlderThan(retentionDays);
+      if (deleted > 0) {
+        Logger().i('Startup retention cleanup removed $deleted unmatched '
+            'emails older than $retentionDays days');
+      }
+    } catch (e) {
+      Logger().w('Unmatched email retention cleanup failed: $e');
+    }
+
+    // SEC-8 (Sprint 33): apply persisted certificate-pinning preference.
+    try {
+      final pinningEnabled =
+          await settingsStore.getCertificatePinningEnabled();
+      CertificatePinner.setEnabled(pinningEnabled);
+    } catch (e) {
+      Logger().w('Failed to load certificate pinning preference: $e');
+    }
+  } catch (e) {
+    Logger().w('Early DatabaseHelper bootstrap failed: $e');
   }
 
   // Initialize Windows system tray and notifications (Windows only)

@@ -9,6 +9,7 @@ import '../../core/storage/rule_database_store.dart';
 import '../../core/storage/safe_sender_database_store.dart';
 import '../../core/utils/pattern_normalization.dart';
 import '../../core/utils/pattern_generation.dart';
+import 'help_screen.dart';
 import 'rule_test_screen.dart';
 
 enum RuleActionType { delete, move }
@@ -399,6 +400,11 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
         title: const Text('Create Auto-Delete Rule'),
         elevation: 0,
         actions: [
+          IconButton(
+            tooltip: 'Help',
+            icon: const Icon(Icons.help_outline),
+            onPressed: () => openHelp(context, HelpSection.ruleQuickAdd),
+          ),
           IconButton(
             icon: const Icon(Icons.science),
             tooltip: 'Test pattern against sample emails',

@@ -8,6 +8,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:logger/logger.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 
+import '../../core/security/certificate_pinner.dart';
+
 /// Handles Gmail OAuth for Windows platform using browser-based flow
 ///
 /// Uses OAuth 2.0 Authorization Code with PKCE and a loopback
@@ -276,11 +278,18 @@ class GmailWindowsOAuthHandler {
       _logger.d('Token exchange: client_id=${_clientId.length > 8 ? '${_clientId.substring(0, 8)}...' : '[short]'}, '
           'redirect_uri=$redirectUri, grant_type=authorization_code');
 
-      final response = await http.post(
-        Uri.parse(_tokenEndpoint),
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: requestBody,
-      );
+      // SEC-8 (Sprint 33): pin the Google OAuth token endpoint.
+      final client = PinnedHttpClient();
+      final http.Response response;
+      try {
+        response = await client.post(
+          Uri.parse(_tokenEndpoint),
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          body: requestBody,
+        );
+      } finally {
+        client.close();
+      }
 
       if (response.statusCode != 200) {
         _logger.e('Token exchange failed: ${response.statusCode}');
@@ -319,11 +328,18 @@ class GmailWindowsOAuthHandler {
         _logger.i('Including client_secret in token refresh');
       }
 
-      final response = await http.post(
-        Uri.parse(_tokenEndpoint),
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: body,
-      );
+      // SEC-8 (Sprint 33): pin the Google OAuth token endpoint.
+      final client = PinnedHttpClient();
+      final http.Response response;
+      try {
+        response = await client.post(
+          Uri.parse(_tokenEndpoint),
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          body: body,
+        );
+      } finally {
+        client.close();
+      }
 
       if (response.statusCode != 200) {
         _logger.e('Token refresh failed: ${response.statusCode}');
@@ -341,10 +357,17 @@ class GmailWindowsOAuthHandler {
   /// Validate access token and get user email
   static Future<String> getUserEmail(String accessToken) async {
     try {
-      final response = await http.get(
-        Uri.parse('https://www.googleapis.com/oauth2/v1/userinfo?alt=json'),
-        headers: {'Authorization': 'Bearer $accessToken'},
-      );
+      // SEC-8 (Sprint 33): pin the Google userinfo endpoint.
+      final client = PinnedHttpClient();
+      final http.Response response;
+      try {
+        response = await client.get(
+          Uri.parse('https://www.googleapis.com/oauth2/v1/userinfo?alt=json'),
+          headers: {'Authorization': 'Bearer $accessToken'},
+        );
+      } finally {
+        client.close();
+      }
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;

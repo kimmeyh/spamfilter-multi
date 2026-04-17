@@ -4,6 +4,7 @@ import 'package:logger/logger.dart';
 
 import '../../core/models/rule_set.dart';
 import '../../core/models/safe_sender_list.dart';
+import '../../core/services/pattern_compiler.dart';
 import 'database_helper.dart';
 
 /// Exception thrown when rule database storage operations fail
@@ -198,8 +199,13 @@ class RuleDatabaseStore {
   /// Add new rule to database
   ///
   /// Throws exception if rule with same name already exists (UNIQUE constraint).
+  /// SEC-1b (Sprint 33): rejects rules whose patterns match the ReDoS
+  /// heuristics in [PatternCompiler.detectReDoS] so dangerous user patterns
+  /// never enter the scanner hot path.
   Future<void> addRule(Rule rule) async {
     try {
+      _rejectIfReDoS(rule);
+
       _logger.i('Adding rule "${rule.name}" to database');
 
       final now = DateTime.now().millisecondsSinceEpoch;
@@ -211,11 +217,44 @@ class RuleDatabaseStore {
     }
   }
 
+  /// SEC-1b (Sprint 33): scan every pattern attached to [rule] and throw
+  /// [RuleDatabaseStorageException] if any match the ReDoS heuristics.
+  ///
+  /// This is the primary defense for user-entered rules: catch dangerous
+  /// regexes before they persist, so the scanner hot path can stay on the
+  /// fast direct-hasMatch path for all stored patterns. Bundled patterns
+  /// in assets/rules/rules.yaml are seeded via [DefaultRuleSetService],
+  /// which bypasses this chokepoint on purpose (they are curated).
+  void _rejectIfReDoS(Rule rule) {
+    final patterns = <String>[
+      ...rule.conditions.from,
+      ...rule.conditions.header,
+      ...rule.conditions.subject,
+      ...rule.conditions.body,
+      ...?rule.exceptions?.from,
+      ...?rule.exceptions?.header,
+      ...?rule.exceptions?.subject,
+      ...?rule.exceptions?.body,
+    ];
+    for (final pattern in patterns) {
+      final warnings = PatternCompiler.detectReDoS(pattern);
+      if (warnings.isNotEmpty) {
+        throw RuleDatabaseStorageException(
+          'Pattern "$pattern" was rejected: ${warnings.first}',
+        );
+      }
+    }
+  }
+
   /// Update existing rule in database
   ///
   /// Throws exception if rule does not exist.
+  /// SEC-1b (Sprint 33): rejects updates that introduce ReDoS-vulnerable
+  /// patterns; see [addRule] docstring.
   Future<void> updateRule(Rule rule) async {
     try {
+      _rejectIfReDoS(rule);
+
       _logger.i('Updating rule "${rule.name}" in database');
 
       final db = await databaseProvider.database;
