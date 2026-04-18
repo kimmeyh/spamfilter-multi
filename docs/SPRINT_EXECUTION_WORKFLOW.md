@@ -856,8 +856,32 @@ Before conducting sprint review, build and test the Windows desktop app:
 
   **Reference**: See `docs/SPRINT_RETROSPECTIVE.md` for full category definitions, per-role example feedback, and the verbatim feedback template to copy into `docs/sprints/SPRINT_N_RETROSPECTIVE.md`.
 
-  **Process**:
-  1. Claude opens `docs/sprints/SPRINT_N_RETROSPECTIVE.md` and pastes the 4-role x 14-category template from SPRINT_RETROSPECTIVE.md
+  **[CRITICAL] Phase 7.3 Prompt Protocol -- AVOID CLAUDE-AUTHORED PO/SM/LEAD FEEDBACK** (Added Sprint 34, in response to a process violation):
+
+  Claude has historically violated this gate by drafting Product Owner / Scrum Master / Lead Developer feedback on Harold's behalf. The 3 human-role lines must come from Harold, not from Claude. Claude only authors the Claude Code Development Team line.
+
+  **MANDATORY sequence** -- do NOT write any content into `docs/sprints/SPRINT_N_RETROSPECTIVE.md` until Step 3 below has produced Harold's actual feedback:
+
+  1. **Send the prompt** -- Claude sends EXACTLY this message to Harold (substituting N) and then STOPS until Harold replies. No retrospective file edits, no draft observations, no "here is what I think you would say":
+
+     > Sprint N is ready for the Phase 7 retrospective. Per `docs/SPRINT_RETROSPECTIVE.md` Completeness Validation Gate, the Product Owner / Scrum Master / Lead Developer feedback for all 14 categories must come from you. I will provide the Claude Code Development Team feedback after yours so I do not bias your input.
+     >
+     > Please provide your feedback for the 14 categories below. You can answer one role at a time, one category at a time, in a single message, or however suits you. If a role has nothing to say for a category, write `No issues -- expectations met.` -- but every (role, category) pair must be addressed.
+     >
+     > The 14 categories: (1) Effective while as Efficient as Reasonably Possible; (2) Testing Approach; (3) Effort Accuracy; (4) Planning Quality; (5) Model Assignments; (6) Communication; (7) Requirements Clarity; (8) Documentation; (9) Process Issues; (10) Risk Management; (11) Next Sprint Readiness; (12) Architecture Maintenance; (13) Minor Function Updates for the Next Sprint Plan (carry-ins); (14) Function Updates for the Future Backlog.
+     >
+     > I will record your feedback verbatim in `docs/sprints/SPRINT_N_RETROSPECTIVE.md` after you respond.
+
+  2. **Wait for Harold's reply** -- Do not proceed. Do not draft content. Do not "save time" by writing what you predict Harold would say. If Harold replies asking Claude to draft observations he can edit, that is fine -- but the draft must be saved to `docs/sprints/drafts/SPRINT_N_RETROSPECTIVE_claude_draft.md` with a header marking it as Claude-authored, NOT to the official retrospective file.
+
+  3. **Record verbatim** -- Once Harold provides feedback, write his exact words into the retrospective file under the appropriate (role, category) cells. Add the Claude Code Development Team line per category in your own voice. Do NOT paraphrase Harold's words; do NOT "improve" them.
+
+  4. **Categories 13 and 14** are not optional silence -- if Harold does not list any items, the line should explicitly say "None" in his voice (or per his guidance), not be filled in by Claude with predicted items.
+
+  **Violation handling**: If you discover you have written PO/SM/Lead feedback yourself before receiving Harold's input, STOP immediately, move the file to `docs/sprints/drafts/`, mark the sprint Phase 7 as INCOMPLETE in `docs/ALL_SPRINTS_MASTER_PLAN.md`, and send the prompt above. Do not attempt to retroactively justify the drafted content.
+
+  **Process** (legacy reference -- superseded by Prompt Protocol above for Steps 1-3):
+  1. Claude opens `docs/sprints/SPRINT_N_RETROSPECTIVE.md` and pastes the 4-role x 14-category template from SPRINT_RETROSPECTIVE.md (ONLY after Step 3 of Prompt Protocol)
   2. Claude presents categories to the user, one at a time or in groups, asking for Product Owner / Scrum Master / Lead Developer feedback
   3. Claude fills in the Claude Code Development Team perspective for each category itself
   4. Document all feedback verbatim in the retrospective document

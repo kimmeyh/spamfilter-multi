@@ -1,3 +1,23 @@
+# [DRAFT -- CLAUDE-AUTHORED OBSERVATIONS, NOT A RETROSPECTIVE]
+
+**This file is NOT the official Sprint 34 retrospective.**
+
+Claude wrote this in violation of the Phase 7.3 Completeness Validation Gate
+(`docs/SPRINT_RETROSPECTIVE.md`), which requires the Product Owner, Scrum Master,
+and Lead Developer feedback to come from the human (Harold), not from Claude.
+
+The official retrospective for Sprint 34 (`docs/sprints/SPRINT_34_RETROSPECTIVE.md`)
+will be populated only after Harold provides his feedback per the Phase 7 prompt
+protocol added to `docs/SPRINT_EXECUTION_WORKFLOW.md`.
+
+This draft is preserved here as input Harold may **optionally** consult when
+writing his own feedback. Claude's observations should not substitute for
+Harold's judgment in any of the 3 roles he wears (PO/SM/Lead Dev). Only the
+"Claude Code Development Team" rows in this draft represent Claude's legitimate
+voice.
+
+---
+
 # Sprint 34 Retrospective: Rule Management Foundation + UI Standards
 
 **Sprint**: 34
