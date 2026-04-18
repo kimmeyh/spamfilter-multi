@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: April 18, 2026 (Sprint 34 -- F74, F75 added to HOLD backlog)
+**Last Updated**: April 18, 2026 (Sprint 34 completion -- F76/F77/F78 added from retro)
 
 ## How to Maintain This Document
 
@@ -98,6 +98,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 31 | docs/sprints/SPRINT_31_RETROSPECTIVE.md | [OK] Complete | Apr 13, 2026 |
 | 32 | docs/sprints/SPRINT_32_RETROSPECTIVE.md | [OK] Complete | Apr 13, 2026 |
 | 33 | docs/sprints/SPRINT_33_RETROSPECTIVE.md | [OK] Complete | Apr 14-16, 2026 |
+| 34 | docs/sprints/SPRINT_34_RETROSPECTIVE.md | [OK] Complete | Apr 17-18, 2026 |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -105,16 +106,18 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 33** (April 14-16, 2026)
-- **Type**: Mixed (security hardening + features + architecture refresh)
-- **Feature**: 12 tasks from the Sprint 33 plan, 4 rounds of UX iteration (Issue #233)
+**Sprint 34** (April 17-18, 2026)
+- **Type**: Mixed (bug fix + core feature + documentation + testing + tech debt)
+- **Feature**: 6 tasks + 2 rounds of testing feedback (Issue #235)
 - **Delivered**:
-  - Security (6): SEC-1b (ReDoS runtime protection), SEC-8 (cert pinning), SEC-11 partial (encryption infra + opt-in flag), SEC-14 (unmatched retention + body truncation), SEC-19 (auth logging toggle), SEC-22 (IMAP auth rate limiting)
-  - Features (4): F53 (.cc/.ne TLD rules + migration), F54 (in-app Help system, 19 sections), F55 (navigation consistency), F66 (user data deletion)
-  - Verified (1): F65 (Gmail onboarding already aligns with ADR-0034)
-  - Architecture (1): ARCHITECTURE.md updated for Sprint 33 components
-- **Tests**: +74 (1313 total passing, 0 analyzer issues)
-- **Retrospective**: docs/sprints/SPRINT_33_RETROSPECTIVE.md
+  - Bug fix (1): F73 (rule data layer fix -- 3-part: startup split, bundled YAML rebuild to 1638 individual rules, ensureTldBlockRules rewrite)
+  - Core feature (1): F56 (manual rule creation UI -- 4 block types, 3 safe sender types, IANA TLD validation)
+  - Documentation (1): ADR-0037 (UI/Accessibility standards) + ARSD AR-8/AR-9 + ARCHITECTURE.md UI Standards table + QUALITY_STANDARDS.md accessibility quality gate
+  - Testing (1): F69 (WinWright E2E test scripts -- 7 JSON scripts + PowerShell runner)
+  - Tech debt (2): F62 (dead code cleanup), F72 (emojis, MSVC guard, SEC-20)
+- **Backlog additions**: F74 (FAQ in Help), F75 (Help walkthrough) -- both HOLD post-Windows-Store
+- **Tests**: +49 (1362 total passing, 0 analyzer issues)
+- **Retrospective**: docs/sprints/SPRINT_34_RETROSPECTIVE.md
 
 ---
 
@@ -357,6 +360,21 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Platform: All
 - Post-Windows Store release
 - [Detail](#f75-help-walkthrough-end-to-end-first-use-guide)
+
+**F76. Visual regression testing for WinWright (~6-10h) Priority HOLD**
+- Phase: Testing infrastructure
+- Platform: Windows desktop (initially)
+- From Sprint 34 retro Category 14: WinWright tests verify presence/clickability via accessibility tree but cannot detect alignment, centering, or visual layout issues. Add screenshot diffing or layout-bounds-check assertions to F69 test suite.
+
+**F77. Hookify rule: block "want me to proceed?" patterns (~1h) Priority HOLD**
+- Phase: Process automation
+- Platform: N/A (Claude Code harness)
+- From Sprint 34 retro Category 14: Sprint plan approval covers all tasks; Claude paused twice for "should I continue?" mid-sprint. Hookify rule should reject phrases like "want me to proceed?", "should I continue?", "ready to proceed with X?" with the sprint-plan-approval reminder.
+
+**F78. Widget tests for ManualRuleCreateScreen rendering (~3-4h) Priority HOLD**
+- Phase: Testing
+- Platform: All
+- From Sprint 34 retro Category 14: Only logic-level tests for F56 exist. Add widget tests covering radio button selection, input field validation feedback, pattern preview rendering, and confirmation dialog.
 
 ### HOLD Items (Android / Google Play Store)
 
