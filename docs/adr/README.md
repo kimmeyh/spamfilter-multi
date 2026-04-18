@@ -42,6 +42,7 @@ This directory contains Architectural Decision Records for the spamfilter-multi 
 | [0034](0034-gmail-access-method-for-production.md) | Gmail Access Method for Production | Accepted | 2026-02-15 |
 | [0035](0035-production-development-side-by-side.md) | Production and Development Builds Side-by-Side on Windows | Accepted | 2026-03-18 |
 | [0036](0036-msix-signing-strategy.md) | MSIX Signing Strategy for Windows Store Submission | Accepted | 2026-03-19 |
+| [0037](0037-ui-accessibility-standards.md) | UI/Accessibility Standards and Cross-Platform Compatibility | Proposed | 2026-04-18 |
 
 ## Creating a New ADR
 
