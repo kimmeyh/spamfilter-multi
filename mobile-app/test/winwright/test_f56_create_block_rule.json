@@ -1,0 +1,107 @@
+{
+  "name": "F56 - Create TLD block rule via manual rule UI",
+  "description": "Open Manage Rules screen, tap Add FAB, select Top-Level Domain type, enter TLD, save, and verify the new rule appears in the list with correct classification metadata.",
+  "sprint": 34,
+  "feature": "F56 + F69",
+  "prerequisites": [
+    "Windows desktop dev build running",
+    "SPI_SETSCREENREADER flag enabled",
+    "F73 bundled YAML loaded (1638 individual rules expected)"
+  ],
+  "steps": [
+    {
+      "action": "wait",
+      "ms": 2000
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name*='Settings']",
+      "comment": "Open Settings"
+    },
+    {
+      "action": "wait",
+      "ms": 800
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name*='Manage Rules']",
+      "comment": "Open Manage Rules"
+    },
+    {
+      "action": "wait",
+      "ms": 1000
+    },
+    {
+      "action": "verify",
+      "selector": "type=Button[name='Add block rule']",
+      "comment": "Verify FAB present"
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name='Add block rule']",
+      "comment": "Tap FAB to open manual rule creation screen"
+    },
+    {
+      "action": "wait",
+      "ms": 1000
+    },
+    {
+      "action": "verify",
+      "selector": "type=Text[name='Add Block Rule']",
+      "comment": "Verify ManualRuleCreateScreen loaded"
+    },
+    {
+      "action": "click",
+      "selector": "type=RadioButton[name*='Top-Level Domain']",
+      "comment": "Select TLD rule type"
+    },
+    {
+      "action": "wait",
+      "ms": 300
+    },
+    {
+      "action": "click",
+      "selector": "type=Edit[name*='Enter TLD']",
+      "comment": "Focus the input field"
+    },
+    {
+      "action": "type",
+      "text": "test-tld-e2e",
+      "comment": "Enter a unique test TLD value"
+    },
+    {
+      "action": "wait",
+      "ms": 500,
+      "comment": "Wait for pattern preview to generate"
+    },
+    {
+      "action": "verify",
+      "selector": "type=Text[name*='@.*\\\\.test-tld-e2e']",
+      "comment": "Verify generated pattern appears in preview"
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name*='Save Rule']",
+      "comment": "Save the rule"
+    },
+    {
+      "action": "wait",
+      "ms": 800
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name='Save']",
+      "comment": "Confirm in dialog"
+    },
+    {
+      "action": "wait",
+      "ms": 1500,
+      "comment": "Wait for save and return to Manage Rules"
+    },
+    {
+      "action": "verify",
+      "selector": "type=Text[name*='Manage Rules']",
+      "comment": "Verify back at Manage Rules screen"
+    }
+  ]
+}

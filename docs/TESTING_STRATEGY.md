@@ -287,6 +287,29 @@ C:\Tools\WinWright\Civyk.WinWright.Mcp.exe run <script.json>
 
 **Added**: Sprint 27 (March 2026)
 
+**Sprint 34 (F69) Test Scripts**: Reusable WinWright JSON scripts in `mobile-app/test/winwright/`:
+
+| Script | Purpose |
+|--------|---------|
+| `test_navigation.json` | Click through Account Selection -> Settings -> Manage Rules -> back |
+| `test_settings_tabs.json` | Cycle through all 4 Settings tabs |
+| `test_manual_scan_flow.json` | Run a manual scan, verify Scan Progress -> Results screens |
+| `test_scan_history.json` | Open Scan History, tap entry, verify counts |
+| `test_text_selection.json` | Verify SelectionArea on Manage Rules / Help screens (ADR-0037) |
+| `test_f56_create_block_rule.json` | F56: Create TLD block rule via manual rule UI |
+| `test_f56_create_safe_sender.json` | F56: Create entire-domain safe sender via manual rule UI |
+
+**Run all tests**:
+```powershell
+cd mobile-app/scripts
+.\run-winwright-tests.ps1                       # All tests
+.\run-winwright-tests.ps1 -TestName f56         # Only F56 tests
+```
+
+The runner automatically enables `SPI_SETSCREENREADER` (required for Flutter Semantics tree) and runs `winwright doctor` before executing tests.
+
+See `mobile-app/test/winwright/README.md` for details and selector patterns.
+
 ---
 
 ## Test Organization

@@ -1,0 +1,99 @@
+{
+  "name": "F56 - Create entire-domain safe sender via manual rule UI",
+  "description": "Open Manage Safe Senders screen, tap Add FAB, select Entire Domain type, enter a domain, save, and verify the new safe sender appears.",
+  "sprint": 34,
+  "feature": "F56 + F69",
+  "prerequisites": [
+    "Windows desktop dev build running",
+    "SPI_SETSCREENREADER flag enabled"
+  ],
+  "steps": [
+    {
+      "action": "wait",
+      "ms": 2000
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name*='Settings']",
+      "comment": "Open Settings"
+    },
+    {
+      "action": "wait",
+      "ms": 800
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name*='Manage Safe Senders']",
+      "comment": "Open Manage Safe Senders"
+    },
+    {
+      "action": "wait",
+      "ms": 1000
+    },
+    {
+      "action": "verify",
+      "selector": "type=Button[name='Add safe sender']",
+      "comment": "Verify FAB present"
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name='Add safe sender']",
+      "comment": "Tap FAB"
+    },
+    {
+      "action": "wait",
+      "ms": 1000
+    },
+    {
+      "action": "verify",
+      "selector": "type=Text[name='Add Safe Sender']",
+      "comment": "Verify ManualRuleCreateScreen in safeSender mode"
+    },
+    {
+      "action": "verify_absent",
+      "selector": "type=RadioButton[name*='Top-Level Domain']",
+      "comment": "Verify TLD type is NOT shown for safe senders"
+    },
+    {
+      "action": "click",
+      "selector": "type=RadioButton[name*='Entire Domain']",
+      "comment": "Select Entire Domain type"
+    },
+    {
+      "action": "click",
+      "selector": "type=Edit[name*='Enter email']",
+      "comment": "Focus input"
+    },
+    {
+      "action": "type",
+      "text": "test-trusted-domain.example",
+      "comment": "Enter a domain"
+    },
+    {
+      "action": "wait",
+      "ms": 500
+    },
+    {
+      "action": "verify",
+      "selector": "type=Text[name*='(?:[a-z0-9-]+']",
+      "comment": "Verify entire-domain pattern preview shows subdomain matcher"
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name*='Save Rule']"
+    },
+    {
+      "action": "wait",
+      "ms": 800
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name='Save']",
+      "comment": "Confirm"
+    },
+    {
+      "action": "wait",
+      "ms": 1500
+    }
+  ]
+}
