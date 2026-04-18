@@ -32,6 +32,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **docs**: ADR-0037: UI/Accessibility Standards -- WCAG 2.1 AA target, Semantics labeling strategy, SelectionArea/SelectableText standard, YAML round-trip invariant documentation (Issue #235)
 - **chore**: F62: Dead code cleanup -- remove deprecated config/app_paths.dart, consolidate duplicate LocalRuleStore, move legacy OAuth screens to lib/ui/screens/ (Issue #235)
 - **fix**: F72: Code hygiene -- remove 9 emojis from production code, add if(MSVC) guard in CMakeLists.txt, SEC-20 generic email validation messages (Issue #235)
+- **test**: F69: WinWright E2E test scripts for Windows desktop -- 7 JSON test scripts (navigation, settings tabs, manual scan, scan history, text selection per ADR-0037, F56 block rule creation, F56 safe sender creation), PowerShell runner with auto screen-reader-flag setup (Issue #235)
 
 ### 2026-04-14 (Sprint 33 - Security Hardening + UX Polish)
 - **feat**: F53: Add `@.*\.cc$` (Cocos Islands) and `@.*\.ne$` (Niger) TLD block patterns to the bundled SpamAutoDeleteHeader rule; includes idempotent post-seed migration (DefaultRuleSetService.ensureTldBlockRules) that adds the patterns to existing installations on startup (Issue #233)
