@@ -104,18 +104,19 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
   }
 
   /// Basic email format validation (SEC-20)
-  /// Returns null if valid, or an error message if invalid.
+  /// Returns null if valid, or a generic error message if invalid.
+  /// Messages are intentionally generic to avoid leaking validation details.
   String? _validateEmailFormat(String email) {
     if (email.isEmpty) return 'Email is required.';
-    // Must contain exactly one @
+    // All format checks return the same generic message (SEC-20)
     final atCount = '@'.allMatches(email).length;
-    if (atCount != 1) return 'Email must contain exactly one @ symbol.';
+    if (atCount != 1) return 'Please enter a valid email address.';
     final parts = email.split('@');
-    if (parts[0].isEmpty) return 'Email must have a username before @.';
-    if (parts[1].isEmpty) return 'Email must have a domain after @.';
-    if (!parts[1].contains('.')) return 'Email domain must contain at least one dot.';
+    if (parts[0].isEmpty) return 'Please enter a valid email address.';
+    if (parts[1].isEmpty) return 'Please enter a valid email address.';
+    if (!parts[1].contains('.')) return 'Please enter a valid email address.';
     if (parts[1].startsWith('.') || parts[1].endsWith('.')) {
-      return 'Email domain cannot start or end with a dot.';
+      return 'Please enter a valid email address.';
     }
     return null;
   }
@@ -1317,7 +1318,7 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
                               ),
                               const SizedBox(height: 4),
                               const Text(
-                                '⚡ Apply all changes (can be reverted)',
+                                'Apply all changes (can be reverted)',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.red,
@@ -1372,7 +1373,7 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
                               ),
                               const SizedBox(height: 4),
                               const Text(
-                                '🔥 PERMANENT delete/move (cannot revert)',
+                                'PERMANENT delete/move (cannot revert)',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.red,

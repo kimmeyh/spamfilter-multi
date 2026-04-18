@@ -305,7 +305,7 @@ class EmailScanProvider extends ChangeNotifier {
     if (shouldNotify) {
       _emailsSinceLastNotification = 0;
       _lastProgressNotification = now;
-      _logger.d('📊 UI update triggered: $_processedCount / $_totalEmails');
+      _logger.d('[PROGRESS] UI update triggered: $_processedCount / $_totalEmails');
       notifyListeners();
     }
   }
@@ -552,7 +552,7 @@ class EmailScanProvider extends ChangeNotifier {
       _selectedFoldersByAccount[targetAccountId] = ['INBOX'];
     } else {
       _selectedFoldersByAccount[targetAccountId] = List.from(folders);  // Create copy to avoid mutation
-      _logger.i('📁 Selected folders for $targetAccountId: ${_selectedFoldersByAccount[targetAccountId]}');
+      _logger.i('[FOLDERS] Selected folders for $targetAccountId: ${_selectedFoldersByAccount[targetAccountId]}');
     }
     notifyListeners();
   }
@@ -605,7 +605,7 @@ class EmailScanProvider extends ChangeNotifier {
         _lastRunActions.add(result);
         _logger.i('[NOTES] Action recorded (revertable): ${result.action} - ${result.email.from}');
       } else if (_scanMode == ScanMode.safeSendersAndRules) {
-        _logger.i('🔥 Action executed (PERMANENT): ${result.action} - ${result.email.from}');
+        _logger.i('[WARNING] Action executed (PERMANENT): ${result.action} - ${result.email.from}');
       }
     } else {
       // Read-only or limit reached: log what would happen
@@ -663,7 +663,7 @@ class EmailScanProvider extends ChangeNotifier {
 
     if (shouldNotify) {
       _lastProgressNotification = now;
-      _logger.d('📊 Results UI update triggered: $resultCount results');
+      _logger.d('[PROGRESS] Results UI update triggered: $resultCount results');
       notifyListeners();
     }
   }

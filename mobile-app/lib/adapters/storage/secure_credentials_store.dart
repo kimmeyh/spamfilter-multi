@@ -524,7 +524,7 @@ class SecureCredentialsStore {
         return;
       }
 
-      _logger.i('📦 Migrating ${oldAccounts.length} accounts from legacy token store...');
+      _logger.i('[MIGRATE] Migrating ${oldAccounts.length} accounts from legacy token store...');
 
       int migratedCount = 0;
       for (final accountId in oldAccounts) {
