@@ -19,6 +19,7 @@ import '../../core/storage/database_helper.dart';
 import '../../core/storage/rule_database_store.dart';
 import '../widgets/app_bar_with_exit.dart';
 import 'help_screen.dart';
+import 'manual_rule_create_screen.dart';
 import 'rule_test_screen.dart';
 
 /// Screen for managing spam filtering rules
@@ -620,6 +621,23 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
                       ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        tooltip: 'Add block rule',
+        onPressed: () async {
+          final result = await Navigator.push<bool>(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const ManualRuleCreateScreen(
+                mode: ManualRuleMode.blockRule,
+              ),
+            ),
+          );
+          if (result == true) {
+            await _loadRules();
+          }
+        },
+        child: const Icon(Icons.add),
       ),
     );
   }
