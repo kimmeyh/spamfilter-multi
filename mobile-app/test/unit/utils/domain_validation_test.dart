@@ -85,6 +85,36 @@ void main() {
       expect(err, isNotNull);
       expect(err, contains('letter'));
     });
+
+    test('rejects TLD with trailing digits (e.g., com444)', () {
+      // User feedback: "example.com444" was being accepted -- now rejected
+      // because "com444" is not on the IANA TLD list.
+      final err = DomainValidation.validateDomain('example.com444');
+      expect(err, isNotNull);
+      expect(err, contains('IANA'));
+    });
+
+    test('rejects fictional TLD (whatevericanthinkof)', () {
+      // User feedback: random invented TLDs must be rejected.
+      final err = DomainValidation.validateDomain('example.whatevericanthinkof');
+      expect(err, isNotNull);
+      expect(err, contains('IANA'));
+    });
+
+    test('rejects gibberish TLDs', () {
+      expect(DomainValidation.validateDomain('example.zzz'), isNotNull);
+      expect(DomainValidation.validateDomain('example.notreal'), isNotNull);
+      expect(DomainValidation.validateDomain('foo.bar.baz'), isNotNull);
+    });
+
+    test('accepts real IANA TLDs', () {
+      expect(DomainValidation.validateDomain('example.com'), isNull);
+      expect(DomainValidation.validateDomain('example.uk'), isNull);
+      expect(DomainValidation.validateDomain('example.xyz'), isNull);
+      expect(DomainValidation.validateDomain('example.cc'), isNull);
+      expect(DomainValidation.validateDomain('example.store'), isNull);
+      expect(DomainValidation.validateDomain('sub.example.io'), isNull);
+    });
   });
 
   group('DomainValidation.validateTld', () {

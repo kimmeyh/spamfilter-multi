@@ -480,7 +480,9 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
           // Category filter chips
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Wrap(
+            child: SizedBox(
+              width: double.infinity,
+              child: Wrap(
               spacing: 8,
               runSpacing: 4,
               alignment: WrapAlignment.start,
@@ -520,6 +522,7 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
                   ),
               ],
             ),
+            ),
           ),
 
           // Sub-type filter chips (header_from scope only -- subject/body
@@ -540,7 +543,9 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Wrap(
+            child: SizedBox(
+              width: double.infinity,
+              child: Wrap(
               spacing: 8,
               runSpacing: 4,
               alignment: WrapAlignment.start,
@@ -566,6 +571,7 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
                   checkmarkColor: Colors.teal.shade800,
                 );
               }).toList(),
+            ),
             ),
           ),
 

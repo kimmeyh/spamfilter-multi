@@ -5,14 +5,16 @@
 ///
 /// - Domain: per RFC 1035 / 1123 -- labels of [a-z0-9-] separated by dots,
 ///   no leading/trailing dots, no consecutive dots, no leading/trailing hyphens
-///   in any label, must have a TLD label.
-/// - TLD: a single label without dots, [a-z][a-z0-9-]*, 2-63 chars.
+///   in any label, must have a TLD label, AND TLD must be on the IANA list.
+/// - TLD: a single label without dots, on the IANA TLD list (kIanaTlds).
 /// - Email: local@domain where local is [a-z0-9._%+-]+ and domain is valid.
 ///
 /// All validators return null if input is valid, or a human-readable error
 /// message if invalid. Inputs are expected to already be lowercased and
 /// trimmed.
 library;
+
+import 'iana_tlds.dart';
 
 class DomainValidation {
   /// Validate that a domain is well-formed per RFC 1035 / RFC 1123.
@@ -51,6 +53,11 @@ class DomainValidation {
     if (!RegExp(r'[a-z]').hasMatch(tld)) {
       return 'TLD "$tld" must contain at least one letter';
     }
+    // TLD must be on the IANA registered list (rejects e.g. ".com444" or
+    // ".whateverIcanthinkof"). Lookup is O(1) via the kIanaTlds Set.
+    if (!kIanaTlds.contains(tld)) {
+      return 'TLD ".$tld" is not a registered IANA TLD';
+    }
 
     return null;
   }
@@ -69,6 +76,10 @@ class DomainValidation {
     }
     if (tld.startsWith('-') || tld.endsWith('-')) {
       return 'TLD cannot start or end with a hyphen';
+    }
+    // Must be a real IANA TLD
+    if (!kIanaTlds.contains(tld)) {
+      return 'TLD ".$tld" is not a registered IANA TLD';
     }
     return null;
   }
