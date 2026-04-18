@@ -404,14 +404,38 @@ class _SafeSendersManagementScreenState
                   ],
                 ),
                 const SizedBox(height: 6),
-                Text(
-                  _selectedCategories.isEmpty && _searchQuery.isEmpty
-                      ? '${_safeSenders.length} safe sender${_safeSenders.length == 1 ? '' : 's'}'
-                      : '${_filteredSenders.length} of ${_safeSenders.length} shown',
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 13,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      _selectedCategories.isEmpty && _searchQuery.isEmpty
+                          ? '${_safeSenders.length} safe sender${_safeSenders.length == 1 ? '' : 's'}'
+                          : '${_filteredSenders.length} of ${_safeSenders.length} shown',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.add_circle, color: Colors.green),
+                      iconSize: 24,
+                      tooltip: 'Add safe sender',
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () async {
+                        final result = await Navigator.push<bool>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ManualRuleCreateScreen(
+                              mode: ManualRuleMode.safeSender,
+                            ),
+                          ),
+                        );
+                        if (result == true) {
+                          await _loadSafeSenders();
+                        }
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -471,23 +495,6 @@ class _SafeSendersManagementScreenState
           ),
         ],
       ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        tooltip: 'Add safe sender',
-        onPressed: () async {
-          final result = await Navigator.push<bool>(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const ManualRuleCreateScreen(
-                mode: ManualRuleMode.safeSender,
-              ),
-            ),
-          );
-          if (result == true) {
-            await _loadSafeSenders();
-          }
-        },
-        child: const Icon(Icons.add),
       ),
     );
   }

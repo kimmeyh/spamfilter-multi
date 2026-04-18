@@ -21,6 +21,7 @@ import 'package:logger/logger.dart';
 
 import '../../core/services/pattern_compiler.dart';
 import '../../core/storage/database_helper.dart';
+import '../../core/utils/domain_validation.dart';
 import '../utils/accessibility_helper.dart';
 
 /// Whether we are creating a block rule or a safe sender
@@ -140,6 +141,7 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
     return input;
   }
 
+
   /// Generate the regex pattern from user input
   void _generatePattern() {
     final input = _inputController.text.trim();
@@ -161,8 +163,9 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
         // Strip leading dot if present
         var tld = input.toLowerCase().trim();
         if (tld.startsWith('.')) tld = tld.substring(1);
-        if (tld.isEmpty || tld.contains('.') || tld.contains('@')) {
-          error = 'Enter a single TLD without dots (e.g., cc, xyz)';
+        final tldError = DomainValidation.validateTld(tld);
+        if (tldError != null) {
+          error = tldError;
           break;
         }
         pattern = '@.*\\.$tld\$';
@@ -178,8 +181,9 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
         } else {
           domain = cleaned;
         }
-        if (domain.isEmpty || !domain.contains('.')) {
-          error = 'Enter a valid domain (e.g., example.com)';
+        final domainError = DomainValidation.validateDomain(domain);
+        if (domainError != null) {
+          error = domainError;
           break;
         }
         final escapedDomain = RegExp.escape(domain);
@@ -195,8 +199,9 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
         } else {
           domain = cleaned;
         }
-        if (domain.isEmpty || !domain.contains('.')) {
-          error = 'Enter a valid domain (e.g., example.com)';
+        final domainError = DomainValidation.validateDomain(domain);
+        if (domainError != null) {
+          error = domainError;
           break;
         }
         final escapedDomain = RegExp.escape(domain);
@@ -206,8 +211,9 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
 
       case ManualRuleType.exactEmail:
         final cleaned = _extractDomainFromInput(input);
-        if (!cleaned.contains('@') || !cleaned.contains('.')) {
-          error = 'Enter a valid email address (e.g., user@example.com)';
+        final emailError = DomainValidation.validateEmail(cleaned);
+        if (emailError != null) {
+          error = emailError;
           break;
         }
         final escaped = RegExp.escape(cleaned);
