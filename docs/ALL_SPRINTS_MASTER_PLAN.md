@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: April 16, 2026 (Sprint 33 completion)
+**Last Updated**: April 18, 2026 (Sprint 34 -- F74, F75 added to HOLD backlog)
 
 ## How to Maintain This Document
 
@@ -345,6 +345,18 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Platform: All
 - Post-Windows Store release
 - [Detail](#folder-selectors-two-level-listing)
+
+**F74. FAQ section in Help (~2-4h) Priority HOLD**
+- Phase: Documentation / UX
+- Platform: All
+- Post-Windows Store release
+- [Detail](#f74-faq-section-in-help)
+
+**F75. Help walkthrough: end-to-end first-use guide (~4-6h) Priority HOLD**
+- Phase: Documentation / UX
+- Platform: All
+- Post-Windows Store release
+- [Detail](#f75-help-walkthrough-end-to-end-first-use-guide)
 
 ### HOLD Items (Android / Google Play Store)
 
@@ -798,6 +810,86 @@ The Windows dev/prod current implementation requires a rebuild to switch -- only
 - [ ] Bulk action applies chosen rule to all selected emails
 - [ ] Works in both live scan results and scan history views
 - [ ] Platform-appropriate UI for Windows, Android, and iOS
+
+### F74: FAQ Section in Help
+
+**Status**: HOLD (Post-Windows Store)
+**Estimated Effort**: ~2-4h
+**Phase**: Documentation / UX
+**Platform**: All
+**Added**: April 18, 2026 (Sprint 34 testing feedback)
+
+**Overview**: Add a Frequently Asked Questions section to the in-app Help screen (F54 from Sprint 33 added the Help infrastructure). Users have asked about technical concepts during F56 testing that warrant FAQ-style answers rather than burying them in walkthrough text.
+
+**Required FAQ topics**:
+- **What is a TLD (Top-Level Domain)?** -- explain TLD concept (.com, .uk, .xyz), how the app's TLD block rules work, why blocking a TLD is heavy-handed (blocks everything from that TLD), and when to use entire-domain rules instead.
+- **What is the IANA TLD list and why does the app use it?** -- explain IANA's role as the authority for valid TLDs, why the app rejects fake TLDs (`.com444`, `.whatevericanthinkof`), how the list is updated (`scripts/update_iana_tlds.sh`), and what to do if a real new TLD is rejected (file an issue).
+- **What is the difference between Entire Domain, Exact Domain, Exact Email, and Top-Level Domain?** -- with concrete examples and matched/unmatched email lists for each.
+- **What is a Safe Sender?** -- explain whitelist precedence over block rules.
+- **Why does the scanner skip some emails?** -- explain Read-Only mode, default folders setting, retention.
+- **What does "ReDoS" mean and why was my pattern rejected?** -- explain catastrophic backtracking in plain language with the rejected pattern shown.
+- **Where is my data stored?** -- per ADR-0030 (privacy/zero telemetry), point to `MyEmailSpamFilter` AppData directory.
+- **How do I export and re-import my rules?** -- point to Settings > Data Management.
+
+**Implementation**:
+- New `HelpSection.faq` enum value
+- New `_buildFaqSection()` method in `help_screen.dart`
+- ExpansionTile per question for collapsible Q&A
+- Add `Help` icon entry on the Help screen jumping to FAQ
+- Cross-reference from manual rule creation screen ("Learn more about TLDs" link)
+
+**Acceptance Criteria**:
+- [ ] FAQ section accessible from Help screen
+- [ ] At least 8 questions answered (the topics above)
+- [ ] Each answer fits on one screen (no scrolling within an answer)
+- [ ] TLD/IANA answers explain the F56 validation behavior users encountered
+- [ ] Cross-references from rule creation screens to relevant FAQ entries
+
+### F75: Help Walkthrough -- End-to-End First-Use Guide
+
+**Status**: HOLD (Post-Windows Store)
+**Estimated Effort**: ~4-6h
+**Phase**: Documentation / UX
+**Platform**: All
+**Added**: April 18, 2026 (Sprint 34 testing feedback)
+
+**Overview**: Add a step-by-step walkthrough to the in-app Help screen that guides a first-time user through the recommended workflow from install to confident production use. Builds on the F54 Help infrastructure (Sprint 33).
+
+**Walkthrough steps to document**:
+
+1. **Install + first launch** -- account setup, choose provider, OAuth or app-password flow, first-run rule seeding (1638 default block rules from F73).
+
+2. **Run a Demo scan first** -- explain the Demo Mode (ADR-0020) with synthetic emails. Lets users see how rule matching, results display, and the Process Results flow work without touching real email.
+
+3. **Read-only manual scan with "move matched" target folder**:
+   - Set Manual Scan to **Read-Only Mode** (Settings > Scan)
+   - Set the **Default Folders > Spam folder** target to a safe destination (e.g., a user-created `Review-Spam` folder) so matched emails get **moved** rather than deleted
+   - Run a manual scan
+   - Walk through Results: which emails matched which rules
+   - **For false positives** (legitimate emails matched as spam): use F56 to add a Safe Sender (recommend Entire Domain as the general best path; recommend Exact Email for transactional senders like banks/airlines/utilities where only one specific address is trusted)
+   - **For real spam** that matched correctly: confirm the rule, no action needed
+   - **For real spam not matched**: use F56 Add Block Rule -- recommend Entire Domain as default best practice; recommend Exact Email only for one-off senders that share a domain with legitimate mail (e.g., a single bad sender at gmail.com)
+
+4. **Switch to "move all" mode and re-scan**:
+   - After tuning rules and safe senders, change Manual Scan back to delete/move based on rule actions (not Read-Only)
+   - Run another manual scan
+   - Verify behavior matches expectations from the dry-run pass
+   - If unexpected results: revert via Scan History -> per-email undo (where supported), then refine rules
+
+**Implementation**:
+- New `HelpSection.walkthrough` enum value
+- Numbered step list with screenshots (or text-only initially) per step
+- Each step links to the relevant in-app screen (e.g., "Open Settings > Scan" deep-link)
+- Add a "First time? Start here" callout on the main Help screen entry pointing to the walkthrough
+- Could be presented as a one-time onboarding overlay on first launch (out of scope for v1; flag for future consideration)
+
+**Acceptance Criteria**:
+- [ ] Walkthrough section accessible from Help screen
+- [ ] All 4 numbered steps documented with concrete UI references
+- [ ] Recommendation hierarchy stated clearly: Entire Domain (general best), Exact Email (provider/transactional senders), TLD (heavy-handed, last resort)
+- [ ] Read-Only -> review -> tune -> move-all loop documented as the recommended adoption pattern
+- [ ] Scan History referenced as the recovery path for unexpected actions
+- [ ] Cross-references from Manual Rule Creation screen ("Need help choosing a rule type? See walkthrough")
 
 ---
 
