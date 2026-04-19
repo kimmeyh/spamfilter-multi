@@ -18,6 +18,7 @@ import '../../core/storage/database_helper.dart';
 import '../../core/storage/safe_sender_database_store.dart';
 import '../widgets/app_bar_with_exit.dart';
 import 'help_screen.dart';
+import 'manual_rule_create_screen.dart';
 
 /// Categories for filtering safe sender patterns by structure
 enum SafeSenderCategory {
@@ -403,14 +404,43 @@ class _SafeSendersManagementScreenState
                   ],
                 ),
                 const SizedBox(height: 6),
-                Text(
-                  _selectedCategories.isEmpty && _searchQuery.isEmpty
-                      ? '${_safeSenders.length} safe sender${_safeSenders.length == 1 ? '' : 's'}'
-                      : '${_filteredSenders.length} of ${_safeSenders.length} shown',
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 13,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      _selectedCategories.isEmpty && _searchQuery.isEmpty
+                          ? '${_safeSenders.length} safe sender${_safeSenders.length == 1 ? '' : 's'}'
+                          : '${_filteredSenders.length} of ${_safeSenders.length} shown',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: Icon(
+                        Icons.add_circle,
+                        // ADR-0037: use theme color (secondary for safe sender
+                        // affordance to differentiate from block-rule add).
+                        color: Theme.of(context).colorScheme.secondary,
+                      ),
+                      iconSize: 24,
+                      tooltip: 'Add safe sender',
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () async {
+                        final result = await Navigator.push<bool>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ManualRuleCreateScreen(
+                              mode: ManualRuleMode.safeSender,
+                            ),
+                          ),
+                        );
+                        if (result == true) {
+                          await _loadSafeSenders();
+                        }
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),

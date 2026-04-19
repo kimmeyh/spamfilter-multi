@@ -143,6 +143,13 @@ class RuleSetProvider extends ChangeNotifier {
             'Seeded ${seedResult.rules} default rules and ${seedResult.safeSenders} default safe senders');
       }
 
+      // F73: Split any remaining monolithic rules into individual rows.
+      // Idempotent: skips rules that already have pattern_category set.
+      final splitCount = await defaultRuleSetService.splitMonolithicRules();
+      if (splitCount > 0) {
+        _logger.i('F73: Split monolithic rules into $splitCount individual rows');
+      }
+
       // Apply post-seed rule migrations for existing installs (F53 TLD blocks).
       // Idempotent: only adds missing patterns; no-op on fresh installs.
       final tldAdded = await defaultRuleSetService.ensureTldBlockRules();

@@ -539,6 +539,19 @@ RuleEvaluator.evaluate(EmailMessage)
 | **error_display.dart** | Error display component |
 | **skeleton_loader.dart** | Loading skeleton UI |
 
+### UI Standards (ADR-0037)
+
+| Standard | Requirement |
+|----------|-------------|
+| **Accessibility target** | WCAG 2.1 AA |
+| **Semantics labels** | Required on all interactive elements (buttons, text fields, tappable list items) |
+| **Touch target minimum** | 48dp (`AccessibilityHelper.minTouchTargetSize`) |
+| **Text selectability** | `SelectionArea` at Scaffold body level for copyable content |
+| **Typography** | Material 3 type scale via `Theme.of(context).textTheme` |
+| **Colors** | Theme colors only (no hardcoded values) for dark mode support |
+| **Responsive breakpoints** | Phone < 600dp, Tablet 600-900dp, Desktop > 900dp |
+| **Helper utilities** | `lib/ui/utils/accessibility_helper.dart` |
+
 ---
 
 ## Directory Structure

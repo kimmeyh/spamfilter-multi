@@ -25,8 +25,10 @@ apply_standard_settings(${BINARY_NAME})
 # /DYNAMICBASE: Address Space Layout Randomization (ASLR)
 # /NXCOMPAT: Data Execution Prevention (DEP)
 # /guard:cf: Control Flow Guard (CFG)
-target_compile_options(${BINARY_NAME} PRIVATE /GS /guard:cf)
-target_link_options(${BINARY_NAME} PRIVATE /DYNAMICBASE /NXCOMPAT /guard:cf)
+if(MSVC)
+  target_compile_options(${BINARY_NAME} PRIVATE /GS /guard:cf)
+  target_link_options(${BINARY_NAME} PRIVATE /DYNAMICBASE /NXCOMPAT /guard:cf)
+endif()
 
 # Add preprocessor definitions for the build version.
 target_compile_definitions(${BINARY_NAME} PRIVATE "FLUTTER_VERSION=\"${FLUTTER_VERSION}\"")

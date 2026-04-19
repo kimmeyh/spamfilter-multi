@@ -1,0 +1,46 @@
+{
+  "name": "Manual scan flow",
+  "description": "Run a manual scan on the first configured account, verify Scan Progress -> Results screens.",
+  "sprint": 34,
+  "feature": "F69",
+  "prerequisites": [
+    "Windows desktop dev build running",
+    "SPI_SETSCREENREADER flag enabled",
+    "At least one account configured with valid credentials",
+    "Read-only scan mode recommended (Settings > Scan)"
+  ],
+  "steps": [
+    {
+      "action": "wait",
+      "ms": 2000
+    },
+    {
+      "action": "verify",
+      "selector": "type=Button[name*='Start Scan']",
+      "comment": "Verify Start Scan button on Account Selection"
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name*='Start Scan']",
+      "comment": "Start manual scan"
+    },
+    {
+      "action": "wait",
+      "ms": 3000,
+      "comment": "Wait for scan to start (folder selection or progress)"
+    },
+    {
+      "action": "dump_tree",
+      "comment": "Capture screen state -- may be folder selection or progress"
+    },
+    {
+      "action": "wait",
+      "ms": 10000,
+      "comment": "Wait for scan to complete (depends on account size; adjust as needed)"
+    },
+    {
+      "action": "dump_tree",
+      "comment": "Capture final state -- should show Results screen with counts"
+    }
+  ]
+}

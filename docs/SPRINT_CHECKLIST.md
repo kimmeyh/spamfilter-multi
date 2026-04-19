@@ -92,34 +92,38 @@ These documents MUST be created/updated during each sprint:
 
 ## Phase 7: Sprint Review (MANDATORY - DO NOT SKIP)
 
-[CRITICAL] **A Sprint Retrospective is NEVER considered complete unless all 14 categories are addressed by all 4 roles (Product Owner, Scrum Master, Lead Developer, Claude Code Development Team). Missing roles or categories = retrospective is INCOMPLETE = sprint is NOT complete. See `docs/SPRINT_RETROSPECTIVE.md` for full template.**
+[CRITICAL] **A Sprint Retrospective follows the 7-Step Retrospective Protocol in `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 7.3-7.7. All 14 categories must be addressed by all 4 roles. Steps must run in order; do NOT collapse, reorder, or skip steps. Missing roles, missing categories, skipped steps = retrospective is INCOMPLETE = sprint is NOT complete.**
 
 - [ ] **Verify active model is Opus** (retrospective analysis requires Opus per SPRINT_PLANNING.md "Activities Requiring Opus")
-- [ ] Windows desktop build verified
-- [ ] Sprint review offered to user
-- [ ] **MANDATORY: Gather feedback from ALL 4 ROLES x ALL 14 CATEGORIES**:
-  - **Roles**: Product Owner, Scrum Master, Lead Developer, Claude Code Development Team
-  - **Categories**: (1) Effective while as Efficient as Reasonably Possible, (2) Testing Approach, (3) Effort Accuracy, (4) Planning Quality, (5) Model Assignments, (6) Communication, (7) Requirements Clarity, (8) Documentation, (9) Process Issues, (10) Risk Management, (11) Next Sprint Readiness, (12) Architecture Maintenance, (13) Minor Function Updates for the Next Sprint Plan, (14) Function Updates for the Future Backlog
-  - Empty/silent role-feedback lines are NOT acceptable. If a role has nothing to say, write "No issues -- expectations met." -- but the role MUST be explicitly addressed.
-- [ ] **Phase 7.3 EXIT GATE -- Completeness Validation passed**:
+- [ ] **7.1** Windows desktop build verified
+- [ ] **7.2** Sprint review offered to user
+
+**7-Step Retrospective Protocol (Steps 1-7)**:
+
+- [ ] **Step 1 (7.3)**: Send the verbatim Phase 7.3 prompt to Harold asking for his Product Owner / Scrum Master / Lead Developer feedback across all 14 categories
+- [ ] **Step 2 (7.3)**: While waiting for Harold, draft Claude Code Development Team feedback for all 14 categories into `docs/sprints/drafts/SPRINT_N_RETROSPECTIVE_claude_draft.md` (header marks it Claude-authored)
+- [ ] **Step 3 (7.4)**: Once Harold replies, paste 14-category template into `docs/sprints/SPRINT_N_RETROSPECTIVE.md`, record his words verbatim per category, copy Claude's lines from Step 2 draft
+- [ ] **Phase 7.3/7.4 EXIT GATE -- Completeness Validation passed**:
   - [ ] All 14 categories present in retrospective doc
-  - [ ] All 4 roles have explicit feedback for EACH of the 14 categories (no `[feedback]` placeholders left)
-  - [ ] Category 13 entries documented as carry-ins for Sprint N+1 plan
-  - [ ] Category 14 entries documented for `ALL_SPRINTS_MASTER_PLAN.md` update
-- [ ] Claude feedback provided (Categories 1-12 from Claude Code Development Team perspective)
-- [ ] **Architecture Compliance Check** (7.4.1): Verify code changes match documented architecture. Flag gaps for doc update or code revert.
-- [ ] Improvement suggestions created
-- [ ] Improvements decided (which to implement)
-- [ ] **Sprint Documents updated**:
-  - [ ] CHANGELOG.md updated (all sprint entries present)
-  - [ ] ALL_SPRINTS_MASTER_PLAN.md updated (per Maintenance Guide rules) -- includes Category 14 backlog additions
+  - [ ] All 4 roles addressed in each category (Harold's combined PO/SM/Lead line counts as 3 roles)
+  - [ ] No `[feedback]` placeholder text remaining
+  - [ ] Harold's feedback recorded verbatim, not paraphrased
+- [ ] **7.4.1 Architecture Compliance Check**: Verify code changes match documented architecture. Flag gaps for doc update or code revert.
+- [ ] **Step 4 (7.4.5)**: Combine and display the retrospective in chat using the no-borders format (header line OK, fields OK, wrapping within fields OK, spacing between fields OK)
+- [ ] **Step 5 (7.5)**: Propose improvements from combined feedback. Any type (process, code, tests, architecture, docs, tooling). Format: Title / Source / Type / Effort / Recommendation. Display in chat -- do NOT auto-apply.
+- [ ] **Step 6 (7.6)**: Ask Harold for explicit decision per proposal: (a) apply now, (b) add to backlog, (c) skip. Default expectation: most improvements faster to do now before next sprint. Record decisions in retrospective "Improvement Decisions" section.
+- [ ] **Step 7 (7.7)**: Apply "apply now" improvements as additional commits on the existing sprint branch. Add "backlog" items to `ALL_SPRINTS_MASTER_PLAN.md`. Note "skip" items in retrospective.
+
+**Mandatory sprint completion updates (Phase 7.7 continued)**:
+  - [ ] CHANGELOG.md updated (all sprint entries present, including any Step 7 improvements)
+  - [ ] ALL_SPRINTS_MASTER_PLAN.md updated (per Maintenance Guide rules) -- includes Category 14 backlog additions and Step 6 backlog dispositions
   - [ ] Next Sprint Plan stub created/updated with Category 13 carry-ins
-  - [ ] `docs/sprints/SPRINT_N_RETROSPECTIVE.md` created (MANDATORY -- with all 14 categories x 4 roles filled)
+  - [ ] `docs/sprints/SPRINT_N_RETROSPECTIVE.md` created/finalized (MANDATORY -- with all 14 categories x 4 roles filled + "Improvement Decisions" section from Step 6)
   - [ ] `docs/sprints/SPRINT_N_SUMMARY.md` created (MANDATORY - do not defer)
   - [ ] ARCHITECTURE.md updated (if architecture changed)
   - [ ] .claude/sprint_status.json updated
-- [ ] Review results summarized
-- [ ] Next steps offered to user
+- [ ] **7.8** Review results summarized
+- [ ] **7.9** Next steps offered to user
 
 ## Post-Merge Cleanup
 
@@ -190,5 +194,5 @@ gh issue close #N --reason "completed"
 ---
 
 **Version**: 2.4
-**Updated**: April 16, 2026 (Sprint 33 follow-up: Phase 7 now requires 14 categories x 4 roles -- Product Owner, Scrum Master, Lead Developer, Claude Code Development Team -- with hard exit gate; Categories 13 and 14 added for next-sprint carry-ins and future-backlog additions)
+**Updated**: April 18, 2026 (Sprint 34 retrospective improvement: Phase 7.3-7.7 now follows the 7-Step Retrospective Protocol -- Step 1 send prompt, Step 2 draft Claude feedback in parallel, Step 3 record Harold verbatim, Step 4 combine and display, Step 5 propose improvements from combined feedback, Step 6 Harold decides now-vs-backlog, Step 7 apply approved improvements + sprint completion docs. See SPRINT_EXECUTION_WORKFLOW.md Phase 7.3 for the authoritative protocol.)
 **Reference**: SPRINT_EXECUTION_WORKFLOW.md for detailed explanations

@@ -26,6 +26,15 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-04-18 (Sprint 34 - Rule Management Foundation + UI Standards)
+- **fix**: F73: Fix broken monolithic rule split + bundled YAML rebuild. Part A: new `splitMonolithicRules()` detects remaining monolithic rules at startup and splits into individual per-pattern rows with classification metadata. Part B: rebuild bundled rules.yaml from 5 monolithic blobs to 1,638 individual per-pattern entries (header_from only). Part C: rewrite `ensureTldBlockRules()` for individual-row insertion with backwards-compat detection (Issue #235)
+- **feat**: F56: Manual rule creation UI. New `ManualRuleCreateScreen` with guided form for creating block rules (4 types: TLD, entire domain, exact domain, exact email) and safe sender rules (3 types: entire domain, exact domain, exact email). Input parsing handles bare email, bare domain, URL with protocol, URL with path. Pattern preview with ReDoS validation (SEC-1b). FAB added to Manage Rules and Manage Safe Senders screens (Issue #235)
+- **docs**: ADR-0037: UI/Accessibility Standards -- WCAG 2.1 AA target, Semantics labeling strategy, SelectionArea/SelectableText standard, YAML round-trip invariant documentation (Issue #235)
+- **chore**: F62: Dead code cleanup -- remove deprecated config/app_paths.dart, consolidate duplicate LocalRuleStore, move legacy OAuth screens to lib/ui/screens/ (Issue #235)
+- **fix**: F72: Code hygiene -- remove 9 emojis from production code, add if(MSVC) guard in CMakeLists.txt, SEC-20 generic email validation messages (Issue #235)
+- **test**: F69: WinWright E2E test scripts for Windows desktop -- 7 JSON test scripts (navigation, settings tabs, manual scan, scan history, text selection per ADR-0037, F56 block rule creation, F56 safe sender creation), PowerShell runner with auto screen-reader-flag setup (Issue #235)
+- **docs**: Sprint 34 retro improvement: Phase 7 retrospective now follows the explicit 7-Step Retrospective Protocol (send prompt -> draft Claude in parallel -> record Harold verbatim -> combine+display -> propose improvements -> Harold decides now-vs-backlog -> apply approved). Updates SPRINT_EXECUTION_WORKFLOW.md, SPRINT_RETROSPECTIVE.md, SPRINT_CHECKLIST.md, and memory entry. Documents the protocol that 33 prior sprints implicitly followed (Issue #235)
+
 ### 2026-04-14 (Sprint 33 - Security Hardening + UX Polish)
 - **feat**: F53: Add `@.*\.cc$` (Cocos Islands) and `@.*\.ne$` (Niger) TLD block patterns to the bundled SpamAutoDeleteHeader rule; includes idempotent post-seed migration (DefaultRuleSetService.ensureTldBlockRules) that adds the patterns to existing installations on startup (Issue #233)
 - **docs**: F65: Verified Gmail onboarding already presents App Password (IMAP) as the recommended primary method with Google Sign-In (OAuth) as the alternative -- no code changes needed. Implementation from Issue #178 (Sprint 19) already aligns with ADR-0034 Option D (Dual Path) (Issue #233)

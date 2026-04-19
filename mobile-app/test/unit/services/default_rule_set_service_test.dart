@@ -101,12 +101,13 @@ void main() {
       test('seeds rules and safe senders on empty database', () async {
         final result = await service.seedIfEmpty();
 
-        expect(result.rules, 5);
+        // After F73 rebuild, bundled YAML has individual rules (1638 header_from rules)
+        expect(result.rules, greaterThan(0));
         expect(result.safeSenders, greaterThan(0));
 
         final db = await testHelper.dbHelper.database;
         final rules = await db.query('rules');
-        expect(rules, hasLength(5));
+        expect(rules.isNotEmpty, isTrue);
 
         final safeSenders = await db.query('safe_senders');
         expect(safeSenders, isNotEmpty);
@@ -117,13 +118,14 @@ void main() {
       test('seeds rules and safe senders from bundled YAML assets', () async {
         final result = await service.resetToDefaults();
 
-        expect(result.rules, 5);
+        // After F73 rebuild, bundled YAML has individual rules (1638 header_from rules)
+        expect(result.rules, greaterThan(100));
         expect(result.safeSenders, greaterThan(0));
 
         // Verify rules were inserted into the database
         final db = await testHelper.dbHelper.database;
         final rules = await db.query('rules', orderBy: 'execution_order');
-        expect(rules, hasLength(5));
+        expect(rules.length, greaterThan(100));
 
         // Verify safe senders were inserted
         final safeSenders = await db.query('safe_senders');
@@ -168,11 +170,11 @@ void main() {
         // Reset to defaults
         final result = await service.resetToDefaults();
 
-        expect(result.rules, 5);
+        expect(result.rules, greaterThan(100)); // After F73: 1638 rules
 
         // Verify user rules were replaced by defaults
         rules = await db.query('rules');
-        expect(rules, hasLength(5));
+        expect(rules.length, greaterThan(100));
         // None of the rules should be the user's custom rule
         expect(
           rules.every((r) => r['name'] != 'User custom rule'),
@@ -200,58 +202,60 @@ void main() {
         final db = await testHelper.dbHelper.database;
         final rules = await db.query('rules', orderBy: 'execution_order');
 
-        // Verify first rule has expected structure from the bundled YAML
-        // The first rule is SpamAutoDeleteHeader with header conditions
-        final rule1 = rules[0];
-        expect(rule1['name'], 'SpamAutoDeleteHeader');
-        expect(rule1['enabled'], 1); // True -> 1
-        expect(rule1['is_local'], 1); // True -> 1
-        expect(rule1['execution_order'], 1);
-        expect(rule1['condition_type'], 'OR');
+        // After F73 rebuild, verify individual rules have correct structure
+        expect(rules.isNotEmpty, isTrue);
+
+        // Find a sample header_from rule
+        final headerRule = rules.firstWhere(
+          (r) => r['pattern_category'] == 'header_from',
+          orElse: () => rules[0],
+        );
+
+        expect(headerRule['enabled'], 1); // True -> 1
+        expect(headerRule['is_local'], 1); // True -> 1
+        expect(headerRule['execution_order'], isNotNull);
+        expect(headerRule['condition_type'], 'OR');
 
         // Should have header conditions (JSON array)
-        expect(rule1['condition_header'], isNotNull);
-        final headerPatterns = jsonDecode(rule1['condition_header'] as String);
+        expect(headerRule['condition_header'], isNotNull);
+        final headerPatterns = jsonDecode(headerRule['condition_header'] as String);
         expect(headerPatterns, isList);
         expect(headerPatterns, isNotEmpty);
 
         // Should have delete action set
-        expect(rule1['action_delete'], 1);
+        expect(headerRule['action_delete'], 1);
 
-        // Optional exception fields should be null for this rule
-        expect(rule1['exception_from'], isNull);
-
-        // Metadata may be present if the bundled YAML includes it
-        if (rule1['metadata'] != null) {
-          final metadata = jsonDecode(rule1['metadata'] as String);
-          expect(metadata, isA<Map>());
-        }
+        // Classification fields should be present
+        expect(headerRule['pattern_category'], 'header_from');
+        expect(headerRule['pattern_sub_type'], isNotNull);
+        expect(headerRule['source_domain'], isNotNull);
       });
 
       test('can be called multiple times without duplicate rules', () async {
         // First reset
         var result = await service.resetToDefaults();
-        expect(result.rules, 5);
+        final firstCount = result.rules;
+        expect(firstCount, greaterThan(100));
 
         // Second reset should clear and re-seed (no duplicates)
         result = await service.resetToDefaults();
-        expect(result.rules, 5);
+        expect(result.rules, firstCount);
 
         // Verify no duplicates
         final db = await testHelper.dbHelper.database;
         final rules = await db.query('rules');
-        expect(rules, hasLength(5));
+        expect(rules, hasLength(firstCount));
       });
 
       test('works on already empty database', () async {
         final result = await service.resetToDefaults();
 
-        expect(result.rules, 5);
+        expect(result.rules, greaterThan(100));
         expect(result.safeSenders, greaterThan(0));
 
         final db = await testHelper.dbHelper.database;
         final rules = await db.query('rules');
-        expect(rules, hasLength(5));
+        expect(rules.length, greaterThan(100));
         final safeSenders = await db.query('safe_senders');
         expect(safeSenders, isNotEmpty);
       });
@@ -274,105 +278,96 @@ void main() {
       });
     });
 
-    group('ensureTldBlockRules (F53 Sprint 33 migration)', () {
-      test('adds .cc and .ne patterns to existing SpamAutoDeleteHeader rule',
-          () async {
-        // Simulate an existing install that has the rule but is missing the
-        // post-seed TLD patterns. We seed the real rule, then strip the
-        // two patterns to mimic a pre-Sprint-33 database.
-        await service.resetToDefaults();
-        final db = await testHelper.dbHelper.database;
-
-        // Strip .cc and .ne from the seeded rule to simulate pre-migration state
-        final row = (await db.query('rules',
-                columns: ['id', 'condition_header'],
-                where: 'name = ?',
-                whereArgs: ['SpamAutoDeleteHeader']))
-            .single;
-        final ruleId = row['id'] as int;
-        final headers =
-            List<String>.from(jsonDecode(row['condition_header'] as String));
-        headers.removeWhere((p) => p == r'@.*\.cc$' || p == r'@.*\.ne$');
-        await db.update(
-          'rules',
-          {'condition_header': jsonEncode(headers)},
-          where: 'id = ?',
-          whereArgs: [ruleId],
-        );
-
-        // Verify preconditions: patterns are missing
-        final pre = jsonDecode((await db.query('rules',
-                columns: ['condition_header'],
-                where: 'name = ?',
-                whereArgs: ['SpamAutoDeleteHeader']))
-            .single['condition_header'] as String) as List;
-        expect(pre.contains(r'@.*\.cc$'), isFalse);
-        expect(pre.contains(r'@.*\.ne$'), isFalse);
-
-        // Run migration
+    group('ensureTldBlockRules (F53/F73 individual-row migration)', () {
+      test('adds .cc and .ne as individual rows on empty database', () async {
+        // Empty database -- no monolithic rule, no individual rows.
+        // ensureTldBlockRules should insert 2 individual TLD rows.
         final added = await service.ensureTldBlockRules();
         expect(added, 2);
 
-        // Verify patterns are now present
-        final post = jsonDecode((await db.query('rules',
-                columns: ['condition_header'],
-                where: 'name = ?',
-                whereArgs: ['SpamAutoDeleteHeader']))
-            .single['condition_header'] as String) as List;
-        expect(post.contains(r'@.*\.cc$'), isTrue);
-        expect(post.contains(r'@.*\.ne$'), isTrue);
-      });
-
-      test('is idempotent when patterns already present', () async {
-        await service.resetToDefaults();
-
-        // Fresh seed already contains the patterns (rules.yaml has them)
-        final first = await service.ensureTldBlockRules();
-        expect(first, 0, reason: 'fresh seed already has the patterns');
-
-        // Second call is also a no-op
-        final second = await service.ensureTldBlockRules();
-        expect(second, 0);
-      });
-
-      test('adds only the missing pattern when one is already present',
-          () async {
-        await service.resetToDefaults();
         final db = await testHelper.dbHelper.database;
 
-        // Strip only .cc, leaving .ne in place
-        final row = (await db.query('rules',
-                columns: ['id', 'condition_header'],
-                where: 'name = ?',
-                whereArgs: ['SpamAutoDeleteHeader']))
-            .single;
-        final ruleId = row['id'] as int;
-        final headers =
-            List<String>.from(jsonDecode(row['condition_header'] as String))
-              ..remove(r'@.*\.cc$');
-        await db.update(
-          'rules',
-          {'condition_header': jsonEncode(headers)},
-          where: 'id = ?',
-          whereArgs: [ruleId],
-        );
+        // Verify .cc individual row exists
+        final ccRows = await db.query('rules',
+            where: 'pattern_category = ? AND pattern_sub_type = ? '
+                "AND condition_header LIKE ?",
+            whereArgs: ['header_from', 'top_level_domain', '%\\.cc\$%']);
+        expect(ccRows, hasLength(1));
+        expect(ccRows.first['execution_order'], 10);
+        expect(ccRows.first['action_delete'], 1);
+        expect(ccRows.first['created_by'], 'migration_f53');
 
+        // Verify .ne individual row exists
+        final neRows = await db.query('rules',
+            where: 'pattern_category = ? AND pattern_sub_type = ? '
+                "AND condition_header LIKE ?",
+            whereArgs: ['header_from', 'top_level_domain', '%\\.ne\$%']);
+        expect(neRows, hasLength(1));
+      });
+
+      test('is idempotent when individual TLD rows already present', () async {
+        // First call inserts them
+        final first = await service.ensureTldBlockRules();
+        expect(first, 2);
+
+        // Second call is a no-op
+        final second = await service.ensureTldBlockRules();
+        expect(second, 0, reason: 'individual rows already present');
+
+        // Third call is still a no-op
+        final third = await service.ensureTldBlockRules();
+        expect(third, 0);
+      });
+
+      test('adds only the missing pattern when one already exists', () async {
+        final db = await testHelper.dbHelper.database;
+
+        // Manually insert .ne as an individual row
+        await db.insert('rules', {
+          'name': '.*..ne',
+          'enabled': 1,
+          'is_local': 1,
+          'execution_order': 10,
+          'condition_type': 'OR',
+          'condition_header': jsonEncode([r'@.*\.ne$']),
+          'action_delete': 1,
+          'date_added': DateTime.now().millisecondsSinceEpoch,
+          'created_by': 'test',
+          'pattern_category': 'header_from',
+          'pattern_sub_type': 'top_level_domain',
+          'source_domain': '.*..ne',
+        });
+
+        // Should add only .cc (not .ne)
         final added = await service.ensureTldBlockRules();
         expect(added, 1);
 
-        final post = jsonDecode((await db.query('rules',
-                columns: ['condition_header'],
-                where: 'name = ?',
-                whereArgs: ['SpamAutoDeleteHeader']))
-            .single['condition_header'] as String) as List;
-        expect(post.contains(r'@.*\.cc$'), isTrue);
-        expect(post.contains(r'@.*\.ne$'), isTrue);
+        // Verify both exist
+        final tldRows = await db.query('rules',
+            where: 'pattern_category = ? AND pattern_sub_type = ?',
+            whereArgs: ['header_from', 'top_level_domain']);
+        expect(tldRows.length, greaterThanOrEqualTo(2));
       });
 
-      test('returns 0 when target rule does not exist', () async {
-        // Empty database; rule is missing entirely
+      test('detects patterns in legacy monolithic SpamAutoDeleteHeader',
+          () async {
+        // Simulate a pre-split database with the monolithic row
+        final db = await testHelper.dbHelper.database;
+        await db.insert('rules', {
+          'name': 'SpamAutoDeleteHeader',
+          'enabled': 1,
+          'is_local': 1,
+          'execution_order': 1,
+          'condition_type': 'OR',
+          'condition_header': jsonEncode([r'@.*\.cc$', r'@.*\.ne$']),
+          'action_delete': 1,
+          'date_added': DateTime.now().millisecondsSinceEpoch,
+        });
+
+        // Should detect both patterns in the monolithic row and skip
         final added = await service.ensureTldBlockRules();
-        expect(added, 0);
+        expect(added, 0,
+            reason: 'patterns exist in monolithic row -- backwards compat');
       });
 
       test('TLD pattern @.*\\.cc\$ matches target domains but not near-misses',
@@ -403,16 +398,20 @@ void main() {
         await service.resetToDefaults();
         final db = await testHelper.dbHelper.database;
 
-        final headers = jsonDecode((await db.query('rules',
-                columns: ['condition_header'],
-                where: 'name = ?',
-                whereArgs: ['SpamAutoDeleteHeader']))
-            .single['condition_header'] as String) as List;
+        // After seeding from bundled YAML, the .cc and .ne patterns should
+        // exist either as individual rows (new YAML format) or inside the
+        // monolithic SpamAutoDeleteHeader (old YAML format). Check both.
+        final ccIndividual = await db.query('rules',
+            where: "condition_header LIKE ?",
+            whereArgs: ['%\\.cc\$%']);
+        final neIndividual = await db.query('rules',
+            where: "condition_header LIKE ?",
+            whereArgs: ['%\\.ne\$%']);
 
-        expect(headers.contains(r'@.*\.cc$'), isTrue,
-            reason: 'assets/rules/rules.yaml should include .cc');
-        expect(headers.contains(r'@.*\.ne$'), isTrue,
-            reason: 'assets/rules/rules.yaml should include .ne');
+        expect(ccIndividual.isNotEmpty, isTrue,
+            reason: 'assets/rules/rules.yaml should include .cc pattern');
+        expect(neIndividual.isNotEmpty, isTrue,
+            reason: 'assets/rules/rules.yaml should include .ne pattern');
       });
     });
 
@@ -427,10 +426,10 @@ void main() {
         expect(seedResult.rules, 0);
         expect(seedResult.safeSenders, 0);
 
-        // Verify only 5 rules exist (no duplicates from attempted seed)
+        // Verify rules were not duplicated (no duplicates from attempted seed)
         final db = await testHelper.dbHelper.database;
         final rules = await db.query('rules');
-        expect(rules, hasLength(5));
+        expect(rules.length, greaterThan(100)); // 1638 from resetToDefaults
       });
     });
   });

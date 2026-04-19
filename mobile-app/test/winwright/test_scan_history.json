@@ -1,0 +1,43 @@
+{
+  "name": "Scan History view",
+  "description": "Open Scan History from Settings > General > 'View Scan History', tap most recent entry, verify counts displayed.",
+  "sprint": 34,
+  "feature": "F69",
+  "prerequisites": [
+    "Windows desktop dev build running",
+    "SPI_SETSCREENREADER flag enabled",
+    "At least one prior scan in history"
+  ],
+  "steps": [
+    {
+      "action": "wait",
+      "ms": 2000
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name*='Settings']"
+    },
+    {
+      "action": "wait",
+      "ms": 800
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name*='Scan History']",
+      "comment": "Open Scan History screen"
+    },
+    {
+      "action": "wait",
+      "ms": 1000
+    },
+    {
+      "action": "verify",
+      "selector": "type=Text[name*='Scan History']",
+      "comment": "Verify screen loaded"
+    },
+    {
+      "action": "dump_tree",
+      "comment": "Capture tree to find first history entry"
+    }
+  ]
+}

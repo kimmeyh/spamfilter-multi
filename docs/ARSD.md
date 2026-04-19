@@ -614,6 +614,8 @@ graph LR
 | AR-5 | Pattern compilation caching | HashMap cache for repeated patterns (see [ADR-0023](adr/0023-in-memory-pattern-caching.md) for benchmarks) | [ADR-0023](adr/0023-in-memory-pattern-caching.md) |
 | AR-6 | Trash safety enforcement | All delete actions use move-to-trash, never permanent delete | [ADR-0007](adr/0007-move-to-trash-not-permanent-delete.md) |
 | AR-7 | Responsive design | Adaptive layouts for phone (<600dp), tablet (600-900dp), desktop (>900dp) | -- (new requirement) |
+| AR-8 | Accessibility (WCAG 2.1 AA) | Semantics labels on interactive elements, 48dp touch targets, SelectionArea for copyable text, theme colors for dark mode | [ADR-0037](adr/0037-ui-accessibility-standards.md) |
+| AR-9 | YAML round-trip invariant | Rule export -> user edit -> re-import preserves patternCategory, patternSubType, sourceDomain | [ADR-0037](adr/0037-ui-accessibility-standards.md) |
 
 ---
 

@@ -1,0 +1,62 @@
+{
+  "name": "Text selection (ADR-0037)",
+  "description": "Verify SelectionArea wrappers allow text copying on Manage Rules, Manage Safe Senders, and Help screens. Per ADR-0037 (Sprint 34), all user-visible text content (rule patterns, error messages, help text) must be selectable.",
+  "sprint": 34,
+  "feature": "F69 + ADR-0037",
+  "prerequisites": [
+    "Windows desktop dev build running",
+    "SPI_SETSCREENREADER flag enabled"
+  ],
+  "steps": [
+    {
+      "action": "wait",
+      "ms": 2000
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name*='Settings']"
+    },
+    {
+      "action": "wait",
+      "ms": 800
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name*='Help']",
+      "comment": "Open Help screen (F54 from Sprint 33)"
+    },
+    {
+      "action": "wait",
+      "ms": 800
+    },
+    {
+      "action": "verify",
+      "selector": "type=Text[name*='Help']",
+      "comment": "Verify Help screen loaded"
+    },
+    {
+      "action": "dump_tree",
+      "comment": "Capture Help tree -- text elements should be selectable per ADR-0037"
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name*='Back']"
+    },
+    {
+      "action": "wait",
+      "ms": 500
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name*='Manage Rules']"
+    },
+    {
+      "action": "wait",
+      "ms": 1000
+    },
+    {
+      "action": "dump_tree",
+      "comment": "Capture Manage Rules tree -- pattern text in rule tiles should be selectable"
+    }
+  ]
+}

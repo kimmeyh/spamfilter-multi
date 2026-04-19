@@ -71,44 +71,29 @@ Conduct the sprint retrospective:
 
 ### Phase 7 Integration
 
-Sprint retrospectives are integrated into Phase 7 of the sprint execution workflow. See `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 7 for the complete checklist.
+Sprint retrospectives are integrated into Phase 7 of the sprint execution workflow as a 7-step protocol. See `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 7.3-7.7 for the complete authoritative checklist. This summary mirrors that protocol.
 
-**Summary of Steps**:
+**The 7-Step Retrospective Protocol** (Updated Sprint 34):
 
-1. **Pre-Review: Windows Build Verification** (7.1)
-   - Build and test Windows desktop app
-   - Verify build succeeds before proceeding
-   - Identify any platform-specific issues
+1. **Pre-Review** (7.1, 7.2): Windows build verification + offer sprint review.
 
-2. **Offer Sprint Review** (7.2)
-   - Ask user if they want to conduct review
-   - Review is mandatory but can be quick
-   - Timing: While user reviews PR, before merge
+2. **Step 1 -- Send the prompt to Harold** (7.3 Step 1): Claude sends the verbatim Phase 7.3 prompt asking Harold for his Product Owner / Scrum Master / Lead Developer feedback across all 14 categories. The prompt also tells Harold that Claude will draft Claude Code Development Team feedback in parallel, then combine and display, then propose improvements, then ask now-vs-backlog.
 
-3. **Gather User Feedback** (7.3)
-   - Collect feedback on key topics (see below)
-   - User can provide brief feedback or detailed analysis
-   - Focus on actionable improvements
+3. **Step 2 -- Generate Claude's draft in parallel** (7.3 Step 2): While Harold writes his feedback, Claude immediately drafts Claude Code Development Team feedback for all 14 categories into `docs/sprints/drafts/SPRINT_N_RETROSPECTIVE_claude_draft.md`. Header marks it as Claude-authored. Draft is for Step 3 use only -- never substituted for Harold's input.
 
-4. **Identify Improvements** (7.4)
-   - Claude analyzes feedback
-   - Proposes specific improvements
-   - Categorizes by priority (High/Medium/Low)
+4. **Step 3 -- Record Harold's feedback verbatim** (7.4): Once Harold replies, paste the 14-category template into `docs/sprints/SPRINT_N_RETROSPECTIVE.md`, record Harold's exact words per category (combined PO/SM/Lead line acceptable), copy Claude's lines from the Step 2 draft. Phase 7.3/7.4 EXIT GATE: all 14 categories present, all 4 roles addressed, no placeholder text, Harold's words verbatim.
 
-5. **Select Improvements** (7.5)
-   - User reviews proposed improvements
-   - Selects which to implement now vs later
-   - Documents decisions
+5. **Step 4 -- Combine and display** (7.4.5): Display the combined retrospective in chat using the no-borders format documented in `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 7.3 Step 4. Both feedback sets shown together per category.
 
-6. **Update Documentation** (7.7)
-   - Apply agreed-upon improvements to relevant documents
-   - Update version/date on modified documents
-   - Create new documents if needed
+6. **Step 5 -- Propose improvements from combined feedback** (7.5): Claude reviews combined retrospective and proposes improvements of any type (process, code, tests, architecture, docs, tooling). Sources include all 14 categories from both feedback sets, plus Harold's explicit suggestions. Format per proposal: Title / Source / Type / Effort / Recommendation. Display in chat -- do NOT auto-apply.
 
-7. **Summarize Review** (7.8)
-   - Provide summary of review findings
-   - List which improvements were selected
-   - Confirm PR is ready for user approval
+7. **Step 6 -- Harold decides: apply now or add to backlog** (7.6): Claude asks Harold for explicit decision per proposal: (a) apply now, (b) add to backlog, (c) skip. Default expectation: most improvements faster to do now before next sprint. Blanket disposition acceptable. Record decisions in retrospective "Improvement Decisions" section.
+
+8. **Step 7 -- Apply approved improvements + sprint completion docs** (7.7): For each "apply now" proposal, implement as additional commits on the existing sprint branch. For each "add to backlog" proposal, add to `ALL_SPRINTS_MASTER_PLAN.md`. For each "skip" proposal, note in retrospective. Then perform mandatory sprint completion updates (CHANGELOG, master plan Last Completed Sprint, summary doc, ARCHITECTURE.md if changed).
+
+9. **Summarize and proactive next steps** (7.8, 7.9): Summarize review findings and present next-steps options.
+
+**Critical**: Steps 1-7 must run in order. Do NOT collapse, reorder, or skip steps. The velocity bias is the trap that caused the Sprint 34 process violation -- the documented protocol exists to prevent it.
 
 ---
 
