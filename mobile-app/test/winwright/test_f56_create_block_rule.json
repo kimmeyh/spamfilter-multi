@@ -66,8 +66,8 @@
     },
     {
       "action": "type",
-      "text": "test-tld-e2e",
-      "comment": "Enter a unique test TLD value"
+      "text": "xyz",
+      "comment": "Enter a real IANA TLD (validation rejects non-IANA TLDs per F56 round 2)"
     },
     {
       "action": "wait",
@@ -76,7 +76,7 @@
     },
     {
       "action": "verify",
-      "selector": "type=Text[name*='@.*\\\\.test-tld-e2e']",
+      "selector": "type=Text[name*='@.*\\\\.xyz']",
       "comment": "Verify generated pattern appears in preview"
     },
     {

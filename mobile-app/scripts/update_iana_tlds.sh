@@ -5,6 +5,13 @@
 # script when adding domain validation features or when users report a real
 # TLD being rejected as unknown.
 #
+# WINDOWS DEVELOPERS: prefer scripts/update_iana_tlds.ps1 -- this bash version
+# requires Linux/macOS coreutils (head, tail, wc, tr, sort, awk, mktemp) which
+# are not standard on the project's documented Windows-first dev environment
+# (see CLAUDE.md "Windows Tool Restrictions"). The PowerShell version is the
+# canonical updater on Windows; this bash version is retained for Linux/macOS
+# CI use only.
+#
 # Usage: bash mobile-app/scripts/update_iana_tlds.sh
 
 set -e

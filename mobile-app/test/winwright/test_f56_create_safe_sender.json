@@ -66,8 +66,8 @@
     },
     {
       "action": "type",
-      "text": "test-trusted-domain.example",
-      "comment": "Enter a domain"
+      "text": "test-trusted-domain.com",
+      "comment": "Enter a domain (use real IANA TLD .com so validation passes)"
     },
     {
       "action": "wait",
@@ -75,8 +75,8 @@
     },
     {
       "action": "verify",
-      "selector": "type=Text[name*='(?:[a-z0-9-]+']",
-      "comment": "Verify entire-domain pattern preview shows subdomain matcher"
+      "selector": "type=Text[name*='test-trusted-domain']",
+      "comment": "Verify pattern preview contains the source domain (avoid matching unbalanced regex chars in the selector)"
     },
     {
       "action": "click",

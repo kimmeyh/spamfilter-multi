@@ -3,7 +3,8 @@
 /// Source: https://data.iana.org/TLD/tlds-alpha-by-domain.txt
 /// Version: 2026041701 (Last Updated Fri Apr 17 07:07:01 2026 UTC)
 ///
-/// Update procedure: re-run scripts/update_iana_tlds.sh and commit.
+/// Update procedure: re-run scripts/update_iana_tlds.ps1 (Windows / canonical)
+/// or scripts/update_iana_tlds.sh (Linux/macOS) and commit.
 /// All TLDs stored lowercase. Lookup is O(1) via Set.
 library;
 
