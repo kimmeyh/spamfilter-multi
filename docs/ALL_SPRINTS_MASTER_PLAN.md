@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: April 18, 2026 (Sprint 34 -- Phases 1-6 complete; Phase 7 retrospective INCOMPLETE pending Harold's feedback)
+**Last Updated**: April 18, 2026 (Sprint 34 complete -- Phase 7 retrospective recorded with Harold's verbatim feedback)
 
 ## How to Maintain This Document
 
@@ -98,7 +98,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 31 | docs/sprints/SPRINT_31_RETROSPECTIVE.md | [OK] Complete | Apr 13, 2026 |
 | 32 | docs/sprints/SPRINT_32_RETROSPECTIVE.md | [OK] Complete | Apr 13, 2026 |
 | 33 | docs/sprints/SPRINT_33_RETROSPECTIVE.md | [OK] Complete | Apr 14-16, 2026 |
-| 34 | docs/sprints/SPRINT_34_SUMMARY.md | [PHASE 7 INCOMPLETE -- awaiting Harold's retrospective feedback] | Apr 17-18, 2026 |
+| 34 | docs/sprints/SPRINT_34_RETROSPECTIVE.md | [OK] Complete | Apr 17-18, 2026 |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -106,21 +106,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 33** (April 14-16, 2026) -- last sprint with COMPLETE Phase 7 retrospective
-- **Type**: Mixed (security hardening + features + architecture refresh)
-- **Feature**: 12 tasks from the Sprint 33 plan, 4 rounds of UX iteration (Issue #233)
-- **Delivered**:
-  - Security (6): SEC-1b (ReDoS runtime protection), SEC-8 (cert pinning), SEC-11 partial (encryption infra + opt-in flag), SEC-14 (unmatched retention + body truncation), SEC-19 (auth logging toggle), SEC-22 (IMAP auth rate limiting)
-  - Features (4): F53 (.cc/.ne TLD rules + migration), F54 (in-app Help system, 19 sections), F55 (navigation consistency), F66 (user data deletion)
-  - Verified (1): F65 (Gmail onboarding already aligns with ADR-0034)
-  - Architecture (1): ARCHITECTURE.md updated for Sprint 33 components
-- **Tests**: +74 (1313 total passing, 0 analyzer issues)
-- **Retrospective**: docs/sprints/SPRINT_33_RETROSPECTIVE.md
-
-## Sprint 34 -- Phase 7 INCOMPLETE
-
 **Sprint 34** (April 17-18, 2026)
-- **Status**: Phases 1-6 complete; PR #236 open against `develop`. Phase 7 retrospective NOT YET COMPLETE -- requires Harold's feedback for Product Owner / Scrum Master / Lead Developer roles per `docs/SPRINT_RETROSPECTIVE.md` Completeness Validation Gate. See `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 7.3 prompt protocol.
 - **Type**: Mixed (bug fix + core feature + documentation + testing + tech debt)
 - **Feature**: 6 tasks + 2 rounds of testing feedback (Issue #235)
 - **Delivered**:
@@ -129,11 +115,11 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
   - Documentation (1): ADR-0037 (UI/Accessibility standards) + ARSD AR-8/AR-9 + ARCHITECTURE.md UI Standards table + QUALITY_STANDARDS.md accessibility quality gate
   - Testing (1): F69 (WinWright E2E test scripts -- 7 JSON scripts + PowerShell runner)
   - Tech debt (2): F62 (dead code cleanup), F72 (emojis, MSVC guard, SEC-20)
-- **Backlog additions**: F74 (FAQ in Help), F75 (Help walkthrough), F76 (visual regression testing), F77 (hookify proceed-prompt rule), F78 (widget tests for ManualRuleCreateScreen) -- all HOLD post-Windows-Store. F76/F77/F78 came from Claude's draft Category 14 observations and may be revised once Harold's actual retrospective feedback is captured.
+- **Backlog additions**: F74 (FAQ in Help), F75 (Help walkthrough), F76 (visual regression testing), F77 (hookify proceed-prompt rule), F78 (widget tests for ManualRuleCreateScreen) -- all HOLD post-Windows-Store
 - **Tests**: +49 (1362 total passing, 0 analyzer issues)
+- **Process improvement**: Phase 7.3 Prompt Protocol added to `docs/SPRINT_EXECUTION_WORKFLOW.md` to prevent Claude-authored PO/SM/Lead retrospective feedback (Sprint 34 violation corrected)
+- **Retrospective**: docs/sprints/SPRINT_34_RETROSPECTIVE.md
 - **Summary**: docs/sprints/SPRINT_34_SUMMARY.md
-- **Claude's draft observations** (NOT a retrospective; for optional reference): docs/sprints/drafts/SPRINT_34_RETROSPECTIVE_claude_draft.md
-- **Phase 7 blocking item**: Awaiting Harold's feedback for the 14 categories x 3 roles (PO, SM, Lead Dev). Claude will provide the 4th role (Claude Code Development Team) after Harold's input to avoid biasing it.
 
 ---
 
