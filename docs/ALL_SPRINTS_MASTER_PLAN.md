@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: April 19, 2026 (Sprint 34 post-merge: added BUG-S34-1 carry-in for stale test assertion that escaped F73 review)
+**Last Updated**: April 19, 2026 (Sprint 34 post-merge cleanup: removed completed F56/F73/F62/F72 candidates; added BUG-S34-1 carry-in for stale test assertion that escaped F73 review)
 
 ## How to Maintain This Document
 
@@ -137,58 +137,6 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Extend ADR-0035 dev/prod separation to all 9 build variants (3 stores × 3 channels: dev, production, store)
 - All variants must run simultaneously without rebuild on same machine/device
 - [Detail](#f52-multi-variant-side-by-side-install)
-
-**F56. Manual rule creation UI - block and safe sender rules from user input (~10-14h) Priority 68**
-- Phase: Core Feature
-- Platform: All
-- Add UI for creating rules directly from user input (not just from scan results)
-- Block rules (4 types):
-  - Top-level domain: user enters TLD (e.g., .cc, .ru) and app creates `@.*\.cc$` pattern
-  - Exact domain: user pastes email address or domain string, app extracts domain and creates `@domain\.com$` pattern with confirmation
-  - Entire domain: user pastes email address, domain, or URL, app extracts domain and creates `@(?:[a-z0-9-]+\.)*domain\.com$` subdomain-matching pattern with confirmation
-  - Exact email: user enters email address, app validates format, creates `^user@domain\.com$` pattern with confirmation
-- Safe sender rules (3 types, no TLD):
-  - Exact domain: same as block but adds to safe senders
-  - Entire domain: same as block but adds to safe senders
-  - Exact email: same as block but adds to safe senders
-- App should parse and extract domain from various input formats: email address, bare domain, URL with protocol, URL with path
-- Validation: email format check, domain format check, warn if TLD-only for safe senders
-- Confirmation dialog showing generated pattern before saving
-- Accessible from Manage Rules and Manage Safe Senders screens
-- Related: F35 (rule editing UI), F25 (rule testing UI enhancements)
-- Testing note: SEC-1b (ReDoS compile-time rejection, Sprint 33) can only be manually tested once this UI exists. Include manual test: user enters catastrophic-backtracking regex (e.g. `(a+)+$`), app should reject on save with a clear error message.
-
-**F73. Monolithic rule split completion + bundled YAML rebuild (~6-10h) Priority 65 -- BUG FIX**
-- Phase: Core Feature / Data Integrity
-- Platform: All
-- **Problem**: The bundled YAML (`mobile-app/assets/rules/rules.yaml`) still stores rules in 5 monolithic entries (SpamAutoDeleteHeader, SpamAutoDeleteBody, SpamAutoDeleteFrom, SpamAutoDeleteSubject, SpamAutoDeleteBody-imgur.com) with hundreds of patterns per entry in JSON arrays. The Sprint 20 `split_rules.dart` script splits these into individual per-pattern DB rows (~3500 rows) for the Manage Rules UI. But:
-  1. New user seeding inserts the monolithic rows first, then requires a separate split step -- fragile
-  2. Post-seed migrations (like F53 TLD `.cc`/`.ne` addition) look for the monolithic `SpamAutoDeleteHeader` row by name; on existing installs where the split already ran, that row no longer exists, so the migration silently skips and the TLD patterns never get added
-  3. The bundled YAML format does not match the DB format, making it hard to reason about what users actually have
-- **Fix** (3 parts):
-  1. **One-off migration for existing installs (Harold's DB)**: Run the split script equivalent in-app at startup to split any remaining monolithic rules AND insert missing individual TLD patterns (`.cc`, `.ne`) as properly classified per-pattern rows (pattern_category=header_from, pattern_sub_type=top_level_domain)
-  2. **Rebuild bundled YAML from Harold's split DB**: Export the ~3500 individual per-pattern rules back to YAML so the bundled asset matches the DB format. New user seeding then inserts individual rows directly -- no split step needed
-  3. **Fix F53 migration (`ensureTldBlockRules`)**: Rewrite to insert individual per-pattern rows instead of patching a monolithic JSON array. Make it idempotent against the split DB format
-- **Dependency**: None (can be done independently)
-- **Impact**: Until this is fixed, `.cc` and `.ne` TLD block rules are missing from existing installs (Harold's DB confirmed 2026-04-17). New installs get them in the monolithic blob but they are not individually manageable until split
-- **Source**: Sprint 33 Phase 7 testing feedback (Harold reported `.cc`/`.ne` missing in Manage Rules search, 2026-04-17)
-
-**F62. Dead code cleanup - remove deprecated classes (~2h) Priority 55**
-- Phase: Tech Debt
-- Platform: All
-- Remove deprecated config/app_paths.dart (duplicate of adapters/storage/app_paths.dart)
-- Remove or consolidate duplicate LocalRuleStore classes (core/storage/ and adapters/storage/)
-- Move legacy OAuth screens from lib/screens/ to lib/ui/screens/ or remove if unused
-- Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gaps G7-G9)
-
-**F72. Code hygiene cleanup (~1-2h) Priority 72**
-- Phase: Tech Debt
-- Platform: All
-- Minor cleanup items identified in Sprint 32 Phase 5.1.1 automated code review:
-  - Remove emoji `📦` in secure_credentials_store.dart:527 (violates CLAUDE.md "No emojis" rule)
-  - Add `if(MSVC) ... endif()` guard around security flags in windows/runner/CMakeLists.txt for MinGW future-proofing
-  - SEC-20: Soften email validation error messages in account_setup_screen.dart -- current messages are prescriptive about email format in ways that are technically incorrect for RFC 5321 edge cases; use generic "Please enter a valid email address" or stricter regex
-- Source: Sprint 32 Phase 5.1.1 automated code review (H3 + Minor Notes)
 
 **F63. Responsive design framework (~8-12h) Priority 70**
 - Phase: UX Improvement
@@ -1158,7 +1106,8 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | Version | Date | Summary |
 |---------|------|---------|
-| 5.9 | 2026-04-19 | Sprint 34 post-merge: Added BUG-S34-1 (stale `expect(resetResult.rules, 5)` assertion in default_rule_set_service_test.dart that escaped F73 review and broke develop after PR #236 merge). Carry-in for Sprint 35 per Harold (option 3). Sprint 34 candidate cleanup (F56/F73/F62/F72 removal) deferred. |
+| 5.10 | 2026-04-19 | Sprint 34 post-merge cleanup (pre-Sprint-35 backlog refinement): Removed F56, F73, F62, F72 from Next Sprint Candidates -- all four shipped in Sprint 34 (PR #236, see CHANGELOG 2026-04-18). Master plan now reflects only incomplete work for Sprint 35 planning. F69 (WinWright E2E) kept on list -- Sprint 34 shipped only the JSON test scripts (line 35 of CHANGELOG); execution work remains. |
+| 5.9 | 2026-04-19 | Sprint 34 post-merge: Added BUG-S34-1 (stale `expect(resetResult.rules, 5)` assertion in default_rule_set_service_test.dart that escaped F73 review and broke develop after PR #236 merge). Carry-in for Sprint 35 per Harold (option 3). |
 | 5.8 | 2026-04-16 | Sprint 33 completion: Removed F53, F54, F55, F65, F66 (features) and SEC-1b, SEC-14, SEC-19, SEC-22 (security). SEC-8 split -- HTTPS pinning done; SEC-8b tracks remaining IMAP pinning. SEC-11 split -- infrastructure done; SEC-11b tracks SQLCipher driver swap + migration. Added Sprint 33 to Past Sprint Summary. Updated Last Completed Sprint. |
 | 5.7 | 2026-04-14 | Sprint 33 planning: Moved F61 to HOLD per user direction (partial doc refresh happens organically in Sprint 33 via ARCHITECTURE.md updates for SQLCipher/HelpScreen/DataDeletionService/PatternCompiler). |
 | 5.6 | 2026-04-14 | Sprint 32 code review findings: Added SEC-1b (ReDoS runtime protection -- design work needed) and F72 (code hygiene cleanup -- emoji, MSVC guard, email message softening) from Phase 5.1.1 automated code review. |
