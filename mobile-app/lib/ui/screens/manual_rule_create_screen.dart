@@ -18,6 +18,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import 'package:sqflite/sqflite.dart';
 
 import '../../core/services/pattern_compiler.dart';
 import '../../core/storage/database_helper.dart';
@@ -272,10 +273,14 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
         Navigator.of(context).pop(true); // Return true to indicate success
       }
     } catch (e) {
+      // Log full exception details for debugging; show user-friendly message
+      // in the SnackBar to avoid leaking internal details (Copilot review
+      // PR #236 finding -- April 2026).
       _logger.e('Failed to save rule', error: e);
       if (mounted) {
+        final userMessage = _userFriendlyErrorMessage(e);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save: $e')),
+          SnackBar(content: Text(userMessage)),
         );
       }
     } finally {
@@ -283,6 +288,20 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
         setState(() => _isSaving = false);
       }
     }
+  }
+
+  /// Map an exception to a user-facing message that does not leak internal
+  /// detail. Logs already capture the full exception via _logger.e.
+  String _userFriendlyErrorMessage(Object error) {
+    if (error is DatabaseException) {
+      if (error.isUniqueConstraintError()) {
+        return widget.mode == ManualRuleMode.blockRule
+            ? 'A block rule with this pattern already exists.'
+            : 'A safe sender with this pattern already exists.';
+      }
+      return 'Could not save -- a database error occurred. See logs for details.';
+    }
+    return 'Could not save. See logs for details.';
   }
 
   Future<void> _saveBlockRule(DatabaseHelper dbHelper) async {

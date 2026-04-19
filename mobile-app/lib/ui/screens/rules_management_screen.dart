@@ -590,7 +590,12 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
                 ),
                 const SizedBox(width: 8),
                 IconButton(
-                  icon: const Icon(Icons.add_circle, color: Colors.blue),
+                  icon: Icon(
+                    Icons.add_circle,
+                    // ADR-0037: use theme color so dark mode + high-contrast
+                    // mode get appropriate adjustments automatically.
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
                   iconSize: 24,
                   tooltip: 'Add block rule',
                   visualDensity: VisualDensity.compact,

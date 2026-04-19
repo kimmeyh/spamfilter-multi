@@ -417,7 +417,12 @@ class _SafeSendersManagementScreenState
                     ),
                     const SizedBox(width: 8),
                     IconButton(
-                      icon: const Icon(Icons.add_circle, color: Colors.green),
+                      icon: Icon(
+                        Icons.add_circle,
+                        // ADR-0037: use theme color (secondary for safe sender
+                        // affordance to differentiate from block-rule add).
+                        color: Theme.of(context).colorScheme.secondary,
+                      ),
                       iconSize: 24,
                       tooltip: 'Add safe sender',
                       visualDensity: VisualDensity.compact,
