@@ -856,52 +856,129 @@ Before conducting sprint review, build and test the Windows desktop app:
 
   **Reference**: See `docs/SPRINT_RETROSPECTIVE.md` for full category definitions, per-role example feedback, and the verbatim feedback template to copy into `docs/sprints/SPRINT_N_RETROSPECTIVE.md`.
 
-  **[CRITICAL] Phase 7.3 Prompt Protocol -- AVOID CLAUDE-AUTHORED PO/SM/LEAD FEEDBACK** (Added Sprint 34, in response to a process violation):
+  **[CRITICAL] Phase 7.3 -- 7.6 Retrospective Protocol** (Updated Sprint 34, in response to a process violation):
 
-  Claude has historically violated this gate by drafting Product Owner / Scrum Master / Lead Developer feedback on Harold's behalf. The 3 human-role lines must come from Harold, not from Claude. Claude only authors the Claude Code Development Team line.
+  The retrospective is a 7-step protocol mapped onto Phases 7.3 through 7.7. Steps must run in order. Do NOT collapse, reorder, or skip steps to "save time" -- the velocity bias is exactly the trap that caused the Sprint 34 violation.
 
-  **MANDATORY sequence** -- do NOT write any content into `docs/sprints/SPRINT_N_RETROSPECTIVE.md` until Step 3 below has produced Harold's actual feedback:
+  **Roles**: Harold wears Product Owner / Scrum Master / Lead Developer (3 of 4). Claude is the Claude Code Development Team (4th). Harold's 3 roles produce one set of feedback (combined or separate, his choice). Claude produces the 4th separately.
 
-  1. **Send the prompt** -- Claude sends EXACTLY this message to Harold (substituting N) and then STOPS until Harold replies. No retrospective file edits, no draft observations, no "here is what I think you would say":
+  **Categories**: All 14, addressed by both feedback sets. Empty/silent rows NOT acceptable -- write `No issues -- expectations met.` if a role has nothing to say for a category. See `docs/SPRINT_RETROSPECTIVE.md` for category definitions.
 
-     > Sprint N is ready for the Phase 7 retrospective. Per `docs/SPRINT_RETROSPECTIVE.md` Completeness Validation Gate, the Product Owner / Scrum Master / Lead Developer feedback for all 14 categories must come from you. I will provide the Claude Code Development Team feedback after yours so I do not bias your input.
-     >
-     > Please provide your feedback for the 14 categories below. You can answer one role at a time, one category at a time, in a single message, or however suits you. If a role has nothing to say for a category, write `No issues -- expectations met.` -- but every (role, category) pair must be addressed.
-     >
-     > The 14 categories: (1) Effective while as Efficient as Reasonably Possible; (2) Testing Approach; (3) Effort Accuracy; (4) Planning Quality; (5) Model Assignments; (6) Communication; (7) Requirements Clarity; (8) Documentation; (9) Process Issues; (10) Risk Management; (11) Next Sprint Readiness; (12) Architecture Maintenance; (13) Minor Function Updates for the Next Sprint Plan (carry-ins); (14) Function Updates for the Future Backlog.
-     >
-     > I will record your feedback verbatim in `docs/sprints/SPRINT_N_RETROSPECTIVE.md` after you respond.
+  ---
 
-  2. **Wait for Harold's reply** -- Do not proceed. Do not draft content. Do not "save time" by writing what you predict Harold would say. If Harold replies asking Claude to draft observations he can edit, that is fine -- but the draft must be saved to `docs/sprints/drafts/SPRINT_N_RETROSPECTIVE_claude_draft.md` with a header marking it as Claude-authored, NOT to the official retrospective file.
+  **STEP 1 (Phase 7.3) -- Send the prompt to Harold**
 
-  3. **Record verbatim** -- Once Harold provides feedback, write his exact words into the retrospective file under the appropriate (role, category) cells. Add the Claude Code Development Team line per category in your own voice. Do NOT paraphrase Harold's words; do NOT "improve" them.
+  Claude sends EXACTLY this message to Harold (substituting N) and then proceeds to Step 2. Do NOT write content into `docs/sprints/SPRINT_N_RETROSPECTIVE.md` yet.
 
-  4. **Categories 13 and 14** are not optional silence -- if Harold does not list any items, the line should explicitly say "None" in his voice (or per his guidance), not be filled in by Claude with predicted items.
+  > Sprint N is ready for the Phase 7 retrospective. Per `docs/SPRINT_RETROSPECTIVE.md` Completeness Validation Gate, the Product Owner / Scrum Master / Lead Developer feedback for all 14 categories must come from you. While you write yours, I will draft my Claude Code Development Team feedback to `docs/sprints/drafts/SPRINT_N_RETROSPECTIVE_claude_draft.md`. After you reply I will combine both sets, display the combined retrospective for your review, propose improvements, and ask you for now-vs-backlog decisions per the Phase 7 protocol in `docs/SPRINT_EXECUTION_WORKFLOW.md`.
+  >
+  > Please provide your feedback for the 14 categories. You may answer one role at a time, one category at a time, in a single message, or however suits you. Combined PO/SM/Lead lines per category are acceptable. If a role has nothing to say for a category, write `No issues -- expectations met.` -- but every (role, category) pair must be addressed. Include any improvement suggestions you want considered for "apply now" or "add to backlog".
+  >
+  > The 14 categories: (1) Effective while as Efficient as Reasonably Possible; (2) Testing Approach; (3) Effort Accuracy; (4) Planning Quality; (5) Model Assignments; (6) Communication; (7) Requirements Clarity; (8) Documentation; (9) Process Issues; (10) Risk Management; (11) Next Sprint Readiness; (12) Architecture Maintenance; (13) Minor Function Updates for the Next Sprint Plan (carry-ins); (14) Function Updates for the Future Backlog.
 
-  **Violation handling**: If you discover you have written PO/SM/Lead feedback yourself before receiving Harold's input, STOP immediately, move the file to `docs/sprints/drafts/`, mark the sprint Phase 7 as INCOMPLETE in `docs/ALL_SPRINTS_MASTER_PLAN.md`, and send the prompt above. Do not attempt to retroactively justify the drafted content.
+  **STEP 2 (Phase 7.3 continued) -- Generate Claude's draft in parallel while Harold writes his**
 
-  **Process** (legacy reference -- superseded by Prompt Protocol above for Steps 1-3):
-  1. Claude opens `docs/sprints/SPRINT_N_RETROSPECTIVE.md` and pastes the 4-role x 14-category template from SPRINT_RETROSPECTIVE.md (ONLY after Step 3 of Prompt Protocol)
-  2. Claude presents categories to the user, one at a time or in groups, asking for Product Owner / Scrum Master / Lead Developer feedback
-  3. Claude fills in the Claude Code Development Team perspective for each category itself
-  4. Document all feedback verbatim in the retrospective document
-  5. Categories 13 and 14 entries become follow-up actions for Phase 7.7 (next sprint plan stub + master plan backlog)
+  After sending the Step 1 prompt, Claude immediately drafts its Claude Code Development Team feedback for all 14 categories into `docs/sprints/drafts/SPRINT_N_RETROSPECTIVE_claude_draft.md`. The draft file has a header marking it as Claude-authored. The draft is for Step 3 use only -- it is never substituted for Harold's input and never written into the official retrospective file.
 
-  **Phase 7.3 EXIT GATE -- Completeness Validation (MANDATORY)**:
-  Before exiting Phase 7.3 and proceeding to 7.4, verify ALL of the following:
-  - [ ] All 14 categories are present in the retrospective document
-  - [ ] Each category contains explicit feedback from ALL 4 roles
-  - [ ] No feedback line is empty or contains only `[feedback]` placeholder text
-  - [ ] Category 13 entries (if any) are listed for carry-in to Sprint N+1 plan
-  - [ ] Category 14 entries (if any) are listed for `ALL_SPRINTS_MASTER_PLAN.md` update in Phase 7.7
+  This step runs in parallel with Harold's writing time. It does NOT proceed to Step 3 until Harold replies in Step 1.
 
-  **If ANY box is unchecked, Phase 7 is INCOMPLETE. Do NOT proceed to 7.4. Do NOT declare the sprint complete. Stop and request the missing feedback from the user (or fill in the missing Claude Code Development Team perspective yourself).**
+  **STEP 3 (Phase 7.4) -- Record Harold's feedback verbatim**
 
-- [ ] **7.4 Provide Claude Feedback**
-  - Share my assessment of what went well (quality, architecture, patterns)
-  - Share what could be improved (edge cases, documentation gaps)
-  - Provide specific, actionable observations
-  - Format: "What Went Well" + "What Could Be Improved"
+  Once Harold replies:
+  1. Open `docs/sprints/SPRINT_N_RETROSPECTIVE.md` and paste the 4-role x 14-category template from `docs/SPRINT_RETROSPECTIVE.md`.
+  2. Write Harold's exact words into each (role, category) cell. Do NOT paraphrase. Do NOT "improve" wording. Combined PO/SM/Lead lines are acceptable if that is how Harold provided them -- record them as he wrote them.
+  3. Copy the Claude Code Development Team lines for each category from the Step 2 draft into the official retrospective file.
+  4. For Categories 13 and 14: if Harold answered "none", record that verbatim. Do NOT auto-add Claude's predicted items; if Claude has Category 14 candidates, surface them in Step 5 (improvement proposals) for Harold to decide on.
+
+  **Phase 7.3/7.4 EXIT GATE -- Completeness Validation (MANDATORY)**:
+  - [ ] All 14 categories present
+  - [ ] All 4 roles addressed in each category (Harold's combined PO/SM/Lead line counts as 3 roles if he chose combined format)
+  - [ ] No `[feedback]` placeholder text remaining
+  - [ ] Harold's feedback recorded verbatim, not paraphrased
+
+  If ANY box unchecked, Phase 7 is INCOMPLETE. Do NOT proceed to Step 4.
+
+  **STEP 4 (Phase 7.4.5) -- Combine and display the retrospective**
+
+  Display the combined retrospective in chat using this format (no border lines, header line OK, fields OK, wrapping within fields OK, spacing between fields OK):
+
+  ```
+  ## Sprint N Retrospective -- Combined Feedback
+
+  ### 1. Effective while as Efficient as Reasonably Possible
+  Product Owner / Scrum Master / Lead Developer (Harold): <verbatim>
+  Claude Code Development Team: <verbatim>
+
+  ### 2. Testing Approach
+  Product Owner / Scrum Master / Lead Developer (Harold): <verbatim>
+  Claude Code Development Team: <verbatim>
+
+  ... (all 14 categories) ...
+  ```
+
+  Display in chat so Harold sees both sets together before reviewing improvement proposals. The official `docs/sprints/SPRINT_N_RETROSPECTIVE.md` already contains this same content from Step 3 -- the chat display is a presentation step, not a re-write.
+
+  **STEP 5 (Phase 7.5) -- Propose improvements from the combined feedback**
+
+  Claude reviews the combined retrospective and proposes specific improvements. Improvements may be of any type: process, code, tests, architecture, documentation, tooling.
+
+  Sources for proposals:
+  - Issues raised in any of the 14 categories by Harold's feedback
+  - Issues raised by Claude's draft feedback
+  - Any "proposed improvements" Harold included in his Step 1 reply
+  - Cross-cutting themes that emerge when both feedback sets are read together
+
+  Format each proposal:
+  - **Title**: short summary
+  - **Source**: which category / which role surfaced it
+  - **Type**: process / code / tests / architecture / docs / tooling
+  - **Effort**: rough estimate (S/M/L or hours)
+  - **Recommendation**: apply now or add to backlog (with one-sentence rationale)
+
+  Display all proposals in chat for Harold's review. Do NOT auto-apply any of them.
+
+  **STEP 6 (Phase 7.6) -- Harold decides: apply now or add to backlog**
+
+  Claude asks Harold for an explicit decision on each proposal. Default expectation (per Sprint 34 retro guidance): "almost all are faster to do now before the next sprint -- exceptions are directed to backlog."
+
+  Prompt format:
+  > For each proposal above, please indicate:
+  > (a) apply now in this sprint
+  > (b) add to backlog for a future sprint
+  > (c) skip / no change
+  >
+  > A blanket "all now" or "all backlog" answer is acceptable if you want to apply the same disposition across all proposals.
+
+  Wait for Harold's reply. Record his decisions inline in the retrospective document under a new "Improvement Decisions" section.
+
+  **STEP 7 (Phase 7.7) -- Apply approved improvements as part of the current sprint**
+
+  For each proposal Harold marked "apply now":
+  - Implement it as additional commits on the existing sprint branch (not a follow-up PR)
+  - This may include: doc updates, code changes, test additions, architecture doc updates, hookify rules, memory entries, etc.
+  - Re-run analyzer + tests after code/test changes
+  - Update CHANGELOG.md if user-facing
+  - Push commits to the existing PR branch (PR #N still tracks the sprint)
+
+  For each proposal Harold marked "add to backlog":
+  - Add as a numbered F-item to `docs/ALL_SPRINTS_MASTER_PLAN.md` HOLD section (or appropriate priority tier)
+  - Include detail section if non-trivial
+  - Cross-reference the originating retrospective and category
+
+  For each proposal Harold marked "skip":
+  - Note in the retrospective "Improvement Decisions" section that it was reviewed and declined; no further action.
+
+  After all approved improvements are applied and committed, proceed to the remaining Phase 7.7 mandatory completion updates (CHANGELOG entry for sprint summary if not already present, ALL_SPRINTS_MASTER_PLAN.md Last Completed Sprint update, Past Sprint Summary table row, etc.) and then to Phase 7.8.
+
+  ---
+
+  **Violation handling**: If you discover you have written Harold-role feedback yourself before receiving his input, OR you have skipped the combine-and-display step, OR you auto-applied improvements without Harold's now-vs-backlog decision: STOP immediately, move any incorrectly-authored content to `docs/sprints/drafts/`, mark the sprint Phase 7 as INCOMPLETE in `docs/ALL_SPRINTS_MASTER_PLAN.md`, and restart at Step 1. Do not attempt to retroactively justify the drafted content.
+
+- [ ] **7.4 Record Harold's Feedback Verbatim** (was "Provide Claude Feedback" -- Claude's feedback is now drafted in 7.3 Step 2)
+  - Open `docs/sprints/SPRINT_N_RETROSPECTIVE.md` and paste the 14-categories template
+  - Record Harold's exact words per category (combined PO/SM/Lead line acceptable)
+  - Copy Claude Code Development Team lines from the Step 2 draft
+  - See Phase 7.3 Step 3 above for full instructions
 
 - [ ] **7.4.1 Architecture Compliance Check** (MANDATORY - Added Sprint 30)
   - **Purpose**: Verify sprint code changes are consistent with documented architecture. Second safety net after Phase 3.6.1.
@@ -915,27 +992,44 @@ Before conducting sprint review, build and test the Windows desktop app:
   - **If no code changes** (documentation/analysis sprint): Note "No code changes -- architecture compliance N/A" and proceed
   - **Rationale**: Catches architecture drift that slips through planning. Ensures docs stay current with every sprint. (Learned Sprint 30)
 
-- [ ] **7.5 Create Improvement Suggestions**
-  - Identify common improvements from both feedbacks
-  - Prioritize: High, Medium, Low
-  - Group by category: Documentation, Process, Testing, Architecture, etc.
-  - Make suggestions optional, not mandatory
+- [ ] **7.4.5 Combine and Display Retrospective** (Added Sprint 34, Step 4 of Retrospective Protocol)
+  - Display the combined retrospective in chat per the format in Phase 7.3 Step 4 above
+  - No border lines (header line OK, fields OK, wrapping within fields OK, spacing between fields OK)
+  - Both Harold's and Claude's feedback shown together per category
+  - This is a presentation step -- the official retrospective file already contains the same content from Step 3
 
-- [ ] **7.6 Decide on Improvements**
-  - Ask user which improvements should be implemented
-  - Improvements are applied to documentation/process, not code
-  - Examples: Update SPRINT_EXECUTION_WORKFLOW.md, Create `.claude/model_assignment_heuristics.json`, etc.
-  - User selects which changes to make
+- [ ] **7.5 Propose Improvements from Combined Feedback** (Updated Sprint 34, Step 5 of Retrospective Protocol)
+  - Review the combined retrospective for improvement opportunities
+  - Sources: any of the 14 categories from either Harold or Claude, plus Harold's explicit suggestions, plus cross-cutting themes
+  - Improvements may be of ANY type: process, code, tests, architecture, documentation, tooling
+  - Format per proposal: Title / Source / Type / Effort / Recommendation
+  - Display all proposals in chat for Harold's review -- do NOT auto-apply
 
-- [ ] **7.7 Update Documentation** (MANDATORY UPDATES)
+- [ ] **7.6 Harold Decides: Apply Now or Add to Backlog** (Updated Sprint 34, Step 6 of Retrospective Protocol)
+  - Ask Harold for explicit decision on each proposal: (a) apply now, (b) add to backlog, (c) skip
+  - Default expectation: most improvements are faster to do now before the next sprint
+  - Blanket disposition (all now / all backlog) acceptable
+  - Record Harold's decisions in retrospective document under "Improvement Decisions" section
+  - Wait for Harold's reply before proceeding to 7.7
 
-  **Process Improvements** (from retrospective feedback):
-  - Apply agreed-upon improvements to relevant documents
-  - Update version/date on modified documents
-  - Create new documents if needed
-  - Commit improvements to feature branch
+- [ ] **7.7 Apply Approved Improvements + Update Documentation** (Updated Sprint 34, Step 7 of Retrospective Protocol)
 
-  **MANDATORY Sprint Completion Updates**:
+  **Step 7a: Apply "apply now" improvements to the current sprint**:
+  - For each Step 6 proposal Harold marked "apply now":
+    - Implement as additional commits on the existing sprint branch (NOT a follow-up PR)
+    - Improvement type can be: process docs, code, tests, architecture, hookify rules, memory entries, tooling
+    - Re-run `flutter analyze` and `flutter test` after any code/test changes
+    - Update CHANGELOG.md if user-facing
+    - Push commits to the existing PR branch (PR #N still tracks the sprint)
+  - For each Step 6 proposal Harold marked "add to backlog":
+    - Add as a numbered F-item to `docs/ALL_SPRINTS_MASTER_PLAN.md` HOLD section (or appropriate priority tier)
+    - Include detail section if non-trivial
+    - Cross-reference originating retrospective and category
+  - For each Step 6 proposal Harold marked "skip":
+    - Note in retrospective "Improvement Decisions" section that it was reviewed and declined
+    - No further action
+
+  **Step 7b: Mandatory sprint completion updates**:
   - [ ] **Update CHANGELOG.md** (MANDATORY - see Step 3 in "After Sprint Approval")
     - Add entry under `## [Unreleased]` section
     - Format: `### YYYY-MM-DD` with sprint summary
