@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: April 18, 2026 (Sprint 34 complete -- Phase 7 retrospective recorded with Harold's verbatim feedback)
+**Last Updated**: April 19, 2026 (Sprint 34 post-merge: added BUG-S34-1 carry-in for stale test assertion that escaped F73 review)
 
 ## How to Maintain This Document
 
@@ -377,6 +377,15 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Phase: Testing
 - Platform: All
 - From Sprint 34 retro Category 14: Only logic-level tests for F56 exist. Add widget tests covering radio button selection, input field validation feedback, pattern preview rendering, and confirmation dialog.
+
+**BUG-S34-1. Stale test assertion -- `seedIfEmpty skips after resetToDefaults has populated data` (~10min) Priority 95**
+- Phase: Bug fix (Sprint 34 escape -- found post-merge to develop on 2026-04-19)
+- Platform: All
+- File: `mobile-app/test/unit/services/default_rule_set_service_test.dart` line 422
+- Failure: `expect(resetResult.rules, 5)` -- pre-F73 expected count; post-F73 rebuild produces 1638 rules. Other assertions in the same file (lines 105, 122, 173) were updated to `greaterThan(100)` during F73; this line was missed
+- Fix: Change line 422 from `expect(resetResult.rules, 5)` to `expect(resetResult.rules, greaterThan(100))` to match the convention used elsewhere in the file
+- Source: PR #236 post-merge `flutter test` regression discovered during Sprint 34 post-merge cleanup
+- Note: Carry-in for Sprint 35 per Harold (option 3, 2026-04-19). Should be the first task of Sprint 35 to restore green test suite on develop
 
 ### HOLD Items (Android / Google Play Store)
 
@@ -1149,6 +1158,7 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 5.9 | 2026-04-19 | Sprint 34 post-merge: Added BUG-S34-1 (stale `expect(resetResult.rules, 5)` assertion in default_rule_set_service_test.dart that escaped F73 review and broke develop after PR #236 merge). Carry-in for Sprint 35 per Harold (option 3). Sprint 34 candidate cleanup (F56/F73/F62/F72 removal) deferred. |
 | 5.8 | 2026-04-16 | Sprint 33 completion: Removed F53, F54, F55, F65, F66 (features) and SEC-1b, SEC-14, SEC-19, SEC-22 (security). SEC-8 split -- HTTPS pinning done; SEC-8b tracks remaining IMAP pinning. SEC-11 split -- infrastructure done; SEC-11b tracks SQLCipher driver swap + migration. Added Sprint 33 to Past Sprint Summary. Updated Last Completed Sprint. |
 | 5.7 | 2026-04-14 | Sprint 33 planning: Moved F61 to HOLD per user direction (partial doc refresh happens organically in Sprint 33 via ARCHITECTURE.md updates for SQLCipher/HelpScreen/DataDeletionService/PatternCompiler). |
 | 5.6 | 2026-04-14 | Sprint 32 code review findings: Added SEC-1b (ReDoS runtime protection -- design work needed) and F72 (code hygiene cleanup -- emoji, MSVC guard, email message softening) from Phase 5.1.1 automated code review. |
