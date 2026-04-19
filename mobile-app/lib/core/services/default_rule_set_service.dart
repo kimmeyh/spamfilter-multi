@@ -224,13 +224,17 @@ class DefaultRuleSetService {
       final tldMatch = RegExp(r'\\\.([\w]+)\$$').firstMatch(pattern);
       final tld = tldMatch?.group(1) ?? 'unknown';
 
-      // Check 1: individual row already exists.
+      // Check 1: any existing individual row already carries this pattern as
+      // its sole condition_header entry, regardless of pattern_sub_type.
+      // The bundled YAML rebuild (F73 Part B) currently classifies bare
+      // @.*\.tld$ patterns as exact_domain rather than top_level_domain;
+      // we accept either classification here so a fresh-install seeding does
+      // not lead to a duplicate insert by this migration. (Copilot review
+      // PR #236 finding -- April 2026.)
       final individualRows = await db.query(
         'rules',
         columns: ['id'],
-        where: 'condition_header = ? '
-            "AND pattern_category = 'header_from' "
-            "AND pattern_sub_type = 'top_level_domain'",
+        where: "condition_header = ? AND pattern_category = 'header_from'",
         whereArgs: [jsonEncode([pattern])],
         limit: 1,
       );
@@ -245,24 +249,41 @@ class DefaultRuleSetService {
         continue;
       }
 
-      // Insert a new individual rule row for this TLD pattern.
+      // Insert a new individual rule row for this TLD pattern. Use a unique
+      // name to avoid colliding with any prior migration variant or
+      // user-created rule with the same base name (Copilot review finding).
       final now = DateTime.now().millisecondsSinceEpoch;
-      await db.insert('rules', {
-        'name': '.*.$tld',
-        'enabled': 1,
-        'is_local': 1,
-        'execution_order': 10,
-        'condition_type': 'OR',
-        'condition_header': jsonEncode([pattern]),
-        'action_delete': 1,
-        'date_added': now,
-        'created_by': 'migration_f53',
-        'pattern_category': 'header_from',
-        'pattern_sub_type': 'top_level_domain',
-        'source_domain': '.*.$tld',
-      });
-      added++;
-      _logger.i('Added TLD block rule for .$tld: $pattern');
+      final baseName = '.*.$tld';
+      final uniqueName = await _generateUniqueNameOnDb(db, baseName);
+      try {
+        await db.insert('rules', {
+          'name': uniqueName,
+          'enabled': 1,
+          'is_local': 1,
+          'execution_order': 10,
+          'condition_type': 'OR',
+          'condition_header': jsonEncode([pattern]),
+          'action_delete': 1,
+          'date_added': now,
+          'created_by': 'migration_f53',
+          'pattern_category': 'header_from',
+          'pattern_sub_type': 'top_level_domain',
+          'source_domain': baseName,
+        });
+        added++;
+        _logger.i('Added TLD block rule for .$tld: $pattern (name=$uniqueName)');
+      } on DatabaseException catch (e) {
+        // Defensive fallback: if a UNIQUE constraint violation slips through
+        // (e.g., a concurrent migration produced the same name between the
+        // uniqueness check and the insert), treat the pattern as already
+        // present rather than crashing app startup.
+        if (e.isUniqueConstraintError()) {
+          _logger.w(
+              'TLD pattern insert hit unique constraint, treating as present: $pattern');
+          continue;
+        }
+        rethrow;
+      }
     }
 
     if (added > 0) {
@@ -291,9 +312,10 @@ class DefaultRuleSetService {
   ) {
     switch (subType) {
       case 'top_level_domain':
-        // e.g., r'@.*\.cc$' -> '*.cc'
+        // e.g., r'@.*\.cc$' -> '.*.cc'
+        // (Single-dot form to match ManualRuleCreateScreen and rebuild_rules_yaml.py)
         final m = RegExp(r'\\\.([\w]+)\$$').firstMatch(pattern);
-        return m != null ? '.*..${m.group(1)!}' : pattern;
+        return m != null ? '.*.${m.group(1)!}' : pattern;
 
       case 'entire_domain':
         // e.g., r'@(?:[a-z0-9-]+\.)*americasurveys\.com$' -> 'americasurveys.com'
@@ -548,6 +570,38 @@ class DefaultRuleSetService {
     }
 
     // Extremely unlikely fallback.
+    return '${baseName}_${DateTime.now().millisecondsSinceEpoch}';
+  }
+
+  /// Generate a unique rule name (Database-context variant of [_generateUniqueName]).
+  ///
+  /// Used by [ensureTldBlockRules] which runs against a Database handle rather
+  /// than inside a Transaction.
+  Future<String> _generateUniqueNameOnDb(
+    Database db,
+    String baseName,
+  ) async {
+    var candidate = baseName;
+    var existing = await db.query(
+      'rules',
+      columns: ['id'],
+      where: 'name = ?',
+      whereArgs: [candidate],
+      limit: 1,
+    );
+    if (existing.isEmpty) return candidate;
+
+    for (var i = 2; i < 100000; i++) {
+      candidate = '${baseName}_$i';
+      existing = await db.query(
+        'rules',
+        columns: ['id'],
+        where: 'name = ?',
+        whereArgs: [candidate],
+        limit: 1,
+      );
+      if (existing.isEmpty) return candidate;
+    }
     return '${baseName}_${DateTime.now().millisecondsSinceEpoch}';
   }
 
