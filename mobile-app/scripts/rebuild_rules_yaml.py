@@ -25,6 +25,14 @@ def classify_pattern(pattern: str) -> tuple[str | None, str]:
     - Entire domain: @(?:[a-z0-9-]+\.)*domain\.[a-z0-9.-]+$
     - Exact domain: @domain\.[a-z0-9.-]+$
     """
+    # Top-level domain: @.*\.tld$ (TLD-style pattern, no specific domain).
+    # Must check this BEFORE entire_domain / exact_domain because the bare
+    # @.*\.tld$ form would otherwise be misclassified as exact_domain.
+    tld_match = re.match(r'^@\.\*\\\.([a-z0-9-]+)\$$', pattern)
+    if tld_match:
+        tld = tld_match.group(1)
+        return ('top_level_domain', f'.*.{tld}')
+
     # Entire domain: contains (?:[a-z0-9-]+\.) subdomain matcher
     if '(?:[a-z0-9-]+\\.' in pattern:
         # Extract domain between )* and the first \.

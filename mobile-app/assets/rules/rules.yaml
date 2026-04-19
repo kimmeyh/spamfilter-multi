@@ -21922,10 +21922,10 @@ rules:
   patternCategory: header_from
   patternSubType: entire_domain
   sourceDomain: zylocrystalia
-- name: exact_1370
+- name: tld_1370
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -21936,12 +21936,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.ac
-- name: exact_1371
+- name: tld_1371
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -21952,12 +21952,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.ar
-- name: exact_1372
+- name: tld_1372
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -21968,12 +21968,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.art
-- name: exact_1373
+- name: tld_1373
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -21984,12 +21984,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.at
-- name: exact_1374
+- name: tld_1374
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22000,12 +22000,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.au
-- name: exact_1375
+- name: tld_1375
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22016,12 +22016,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.be
-- name: exact_1376
+- name: tld_1376
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22032,12 +22032,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.biz
-- name: exact_1377
+- name: tld_1377
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22048,12 +22048,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.br
-- name: exact_1378
+- name: tld_1378
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22064,12 +22064,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.buzz
-- name: exact_1379
+- name: tld_1379
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22080,12 +22080,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.bz
-- name: exact_1380
+- name: tld_1380
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22096,12 +22096,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.c
-- name: exact_1381
+- name: tld_1381
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22112,12 +22112,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.ca
-- name: exact_1382
+- name: tld_1382
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22128,12 +22128,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.cc
-- name: exact_1383
+- name: tld_1383
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22144,12 +22144,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.cfd
-- name: exact_1384
+- name: tld_1384
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22160,12 +22160,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.ch
-- name: exact_1385
+- name: tld_1385
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22176,12 +22176,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.click
-- name: exact_1386
+- name: tld_1386
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22192,12 +22192,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.club
-- name: exact_1387
+- name: tld_1387
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22208,12 +22208,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.cn
-- name: exact_1388
+- name: tld_1388
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22224,12 +22224,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.co
-- name: exact_1389
+- name: tld_1389
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22240,12 +22240,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.cz
-- name: exact_1390
+- name: tld_1390
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22256,7 +22256,7 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.de
 - name: exact_1391
   enabled: 'True'
@@ -22290,10 +22290,10 @@ rules:
   patternCategory: header_from
   patternSubType: exact_domain
   sourceDomain: .*.de.net
-- name: exact_1393
+- name: tld_1393
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22304,12 +22304,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.dev
-- name: exact_1394
+- name: tld_1394
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22320,12 +22320,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.ee
-- name: exact_1395
+- name: tld_1395
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22336,12 +22336,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.es
-- name: exact_1396
+- name: tld_1396
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22352,12 +22352,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.eu
-- name: exact_1397
+- name: tld_1397
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22368,12 +22368,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.fan
-- name: exact_1398
+- name: tld_1398
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22384,12 +22384,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.fashion
-- name: exact_1399
+- name: tld_1399
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22400,12 +22400,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.fi
-- name: exact_1400
+- name: tld_1400
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22416,12 +22416,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.finance
-- name: exact_1401
+- name: tld_1401
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22432,12 +22432,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.financial
-- name: exact_1402
+- name: tld_1402
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22448,12 +22448,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.fishing
-- name: exact_1403
+- name: tld_1403
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22464,12 +22464,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.fit
-- name: exact_1404
+- name: tld_1404
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22480,12 +22480,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.fitness
-- name: exact_1405
+- name: tld_1405
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22496,12 +22496,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.florist
-- name: exact_1406
+- name: tld_1406
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22512,12 +22512,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.foo
-- name: exact_1407
+- name: tld_1407
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22528,12 +22528,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.forex
-- name: exact_1408
+- name: tld_1408
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22544,12 +22544,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.forsale
-- name: exact_1409
+- name: tld_1409
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22560,12 +22560,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.foundation
-- name: exact_1410
+- name: tld_1410
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22576,12 +22576,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.fr
-- name: exact_1411
+- name: tld_1411
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22592,12 +22592,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.fun
-- name: exact_1412
+- name: tld_1412
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22608,12 +22608,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.fund
-- name: exact_1413
+- name: tld_1413
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22624,12 +22624,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.futbol
-- name: exact_1414
+- name: tld_1414
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22640,12 +22640,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.fyi
-- name: exact_1415
+- name: tld_1415
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22656,12 +22656,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.ga
-- name: exact_1416
+- name: tld_1416
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22672,12 +22672,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.games
-- name: exact_1417
+- name: tld_1417
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22688,12 +22688,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.gdn
-- name: exact_1418
+- name: tld_1418
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22704,12 +22704,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.gent
-- name: exact_1419
+- name: tld_1419
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22720,12 +22720,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.gift
-- name: exact_1420
+- name: tld_1420
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22736,12 +22736,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.gives
-- name: exact_1421
+- name: tld_1421
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22752,12 +22752,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.giving
-- name: exact_1422
+- name: tld_1422
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22768,12 +22768,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.giw
-- name: exact_1423
+- name: tld_1423
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22784,12 +22784,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.glass
-- name: exact_1424
+- name: tld_1424
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22800,12 +22800,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.gold
-- name: exact_1425
+- name: tld_1425
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22816,12 +22816,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.golf
-- name: exact_1426
+- name: tld_1426
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22832,12 +22832,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.gq
-- name: exact_1427
+- name: tld_1427
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22848,12 +22848,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.gr
-- name: exact_1428
+- name: tld_1428
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22864,12 +22864,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.gratis
-- name: exact_1429
+- name: tld_1429
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22880,12 +22880,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.green
-- name: exact_1430
+- name: tld_1430
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22896,12 +22896,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.guide
-- name: exact_1431
+- name: tld_1431
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22912,12 +22912,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.guru
-- name: exact_1432
+- name: tld_1432
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22928,12 +22928,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.hair
-- name: exact_1433
+- name: tld_1433
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22944,12 +22944,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.haus
-- name: exact_1434
+- name: tld_1434
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22960,12 +22960,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.health
-- name: exact_1435
+- name: tld_1435
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22976,12 +22976,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.healthcare
-- name: exact_1436
+- name: tld_1436
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -22992,12 +22992,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.help
-- name: exact_1437
+- name: tld_1437
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23008,12 +23008,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.hk
-- name: exact_1438
+- name: tld_1438
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23024,12 +23024,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.homes
-- name: exact_1439
+- name: tld_1439
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23040,12 +23040,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.hot
-- name: exact_1440
+- name: tld_1440
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23056,12 +23056,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.house
-- name: exact_1441
+- name: tld_1441
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23072,12 +23072,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.how
-- name: exact_1442
+- name: tld_1442
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23088,12 +23088,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.hr
-- name: exact_1443
+- name: tld_1443
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23104,12 +23104,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.hu
-- name: exact_1444
+- name: tld_1444
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23120,12 +23120,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.icu
-- name: exact_1445
+- name: tld_1445
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23136,12 +23136,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.id
-- name: exact_1446
+- name: tld_1446
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23152,7 +23152,7 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.in
 - name: exact_1447
   enabled: 'True'
@@ -23170,10 +23170,10 @@ rules:
   patternCategory: header_from
   patternSubType: exact_domain
   sourceDomain: .*.in.net
-- name: exact_1448
+- name: tld_1448
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23184,12 +23184,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.info
-- name: exact_1449
+- name: tld_1449
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23200,12 +23200,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.ink
-- name: exact_1450
+- name: tld_1450
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23216,12 +23216,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.international
-- name: exact_1451
+- name: tld_1451
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23232,12 +23232,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.io
-- name: exact_1452
+- name: tld_1452
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23248,12 +23248,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.ir
-- name: exact_1453
+- name: tld_1453
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23264,12 +23264,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.irish
-- name: exact_1454
+- name: tld_1454
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23280,12 +23280,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.it
-- name: exact_1455
+- name: tld_1455
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23296,12 +23296,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.jewelry
-- name: exact_1456
+- name: tld_1456
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23312,12 +23312,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.joburg
-- name: exact_1457
+- name: tld_1457
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23328,7 +23328,7 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.jp
 - name: exact_1458
   enabled: 'True'
@@ -23362,10 +23362,10 @@ rules:
   patternCategory: header_from
   patternSubType: exact_domain
   sourceDomain: .*.jp.net
-- name: exact_1460
+- name: tld_1460
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23376,12 +23376,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.kim
-- name: exact_1461
+- name: tld_1461
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23392,12 +23392,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.lat
-- name: exact_1462
+- name: tld_1462
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23408,12 +23408,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.legal
-- name: exact_1463
+- name: tld_1463
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23424,12 +23424,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.lgbt
-- name: exact_1464
+- name: tld_1464
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23440,12 +23440,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.li
-- name: exact_1465
+- name: tld_1465
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23456,12 +23456,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.life
-- name: exact_1466
+- name: tld_1466
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23472,12 +23472,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.lifestyle
-- name: exact_1467
+- name: tld_1467
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23488,12 +23488,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.link
-- name: exact_1468
+- name: tld_1468
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23504,12 +23504,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.live
-- name: exact_1469
+- name: tld_1469
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23520,12 +23520,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.llc
-- name: exact_1470
+- name: tld_1470
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23536,12 +23536,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.llp
-- name: exact_1471
+- name: tld_1471
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23552,12 +23552,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.loan
-- name: exact_1472
+- name: tld_1472
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23568,12 +23568,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.loans
-- name: exact_1473
+- name: tld_1473
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23584,12 +23584,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.locker
-- name: exact_1474
+- name: tld_1474
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23600,12 +23600,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.lol
-- name: exact_1475
+- name: tld_1475
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23616,12 +23616,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.london
-- name: exact_1476
+- name: tld_1476
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23632,12 +23632,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.love
-- name: exact_1477
+- name: tld_1477
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23648,12 +23648,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.ltd
-- name: exact_1478
+- name: tld_1478
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23664,12 +23664,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.luxe
-- name: exact_1479
+- name: tld_1479
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23680,12 +23680,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.makeup
-- name: exact_1480
+- name: tld_1480
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23696,12 +23696,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.management
-- name: exact_1481
+- name: tld_1481
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23712,12 +23712,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.market
-- name: exact_1482
+- name: tld_1482
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23728,12 +23728,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.markets
-- name: exact_1483
+- name: tld_1483
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23744,12 +23744,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.mba
-- name: exact_1484
+- name: tld_1484
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23760,12 +23760,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.me
-- name: exact_1485
+- name: tld_1485
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23776,12 +23776,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.media
-- name: exact_1486
+- name: tld_1486
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23792,12 +23792,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.men
-- name: exact_1487
+- name: tld_1487
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23808,12 +23808,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.menu
-- name: exact_1488
+- name: tld_1488
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23824,12 +23824,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.miami
-- name: exact_1489
+- name: tld_1489
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23840,12 +23840,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.ml
-- name: exact_1490
+- name: tld_1490
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23856,12 +23856,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.moda
-- name: exact_1491
+- name: tld_1491
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23872,12 +23872,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.moe
-- name: exact_1492
+- name: tld_1492
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23888,12 +23888,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.mom
-- name: exact_1493
+- name: tld_1493
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23904,12 +23904,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.money
-- name: exact_1494
+- name: tld_1494
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23920,12 +23920,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.monster
-- name: exact_1495
+- name: tld_1495
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23936,12 +23936,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.motorcycles
-- name: exact_1496
+- name: tld_1496
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23952,12 +23952,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.mov
-- name: exact_1497
+- name: tld_1497
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23968,12 +23968,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.name
-- name: exact_1498
+- name: tld_1498
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -23984,12 +23984,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.navy
-- name: exact_1499
+- name: tld_1499
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24000,12 +24000,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.ne
-- name: exact_1500
+- name: tld_1500
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24016,12 +24016,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.new
-- name: exact_1501
+- name: tld_1501
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24032,12 +24032,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.ng
-- name: exact_1502
+- name: tld_1502
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24048,12 +24048,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.ninja
-- name: exact_1503
+- name: tld_1503
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24064,12 +24064,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.nl
-- name: exact_1504
+- name: tld_1504
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24080,12 +24080,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.nwm
-- name: exact_1505
+- name: tld_1505
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24096,12 +24096,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.nz
-- name: exact_1506
+- name: tld_1506
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24112,12 +24112,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.observer
-- name: exact_1507
+- name: tld_1507
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24128,12 +24128,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.okinawa
-- name: exact_1508
+- name: tld_1508
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24144,12 +24144,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.one
-- name: exact_1509
+- name: tld_1509
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24160,12 +24160,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.ong
-- name: exact_1510
+- name: tld_1510
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24176,12 +24176,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.onl
-- name: exact_1511
+- name: tld_1511
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24192,12 +24192,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.online
-- name: exact_1512
+- name: tld_1512
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24208,12 +24208,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.ooo
-- name: exact_1513
+- name: tld_1513
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24224,12 +24224,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.partners
-- name: exact_1514
+- name: tld_1514
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24240,12 +24240,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.parts
-- name: exact_1515
+- name: tld_1515
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24256,12 +24256,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.party
-- name: exact_1516
+- name: tld_1516
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24272,12 +24272,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.pet
-- name: exact_1517
+- name: tld_1517
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24288,12 +24288,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.ph
-- name: exact_1518
+- name: tld_1518
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24304,12 +24304,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.pharmacy
-- name: exact_1519
+- name: tld_1519
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24320,12 +24320,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.phd
-- name: exact_1520
+- name: tld_1520
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24336,12 +24336,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.photo
-- name: exact_1521
+- name: tld_1521
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24352,12 +24352,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.photos
-- name: exact_1522
+- name: tld_1522
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24368,12 +24368,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.pics
-- name: exact_1523
+- name: tld_1523
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24384,12 +24384,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.pictures
-- name: exact_1524
+- name: tld_1524
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24400,12 +24400,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.pink
-- name: exact_1525
+- name: tld_1525
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24416,12 +24416,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.pizza
-- name: exact_1526
+- name: tld_1526
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24432,12 +24432,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.pl
-- name: exact_1527
+- name: tld_1527
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24448,12 +24448,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.place
-- name: exact_1528
+- name: tld_1528
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24464,12 +24464,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.plus
-- name: exact_1529
+- name: tld_1529
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24480,12 +24480,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.poker
-- name: exact_1530
+- name: tld_1530
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24496,12 +24496,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.post
-- name: exact_1531
+- name: tld_1531
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24512,12 +24512,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.prof
-- name: exact_1532
+- name: tld_1532
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24528,12 +24528,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.promo
-- name: exact_1533
+- name: tld_1533
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24544,12 +24544,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.pub
-- name: exact_1534
+- name: tld_1534
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24560,12 +24560,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.pw
-- name: exact_1535
+- name: tld_1535
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24576,12 +24576,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.qpon
-- name: exact_1536
+- name: tld_1536
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24592,7 +24592,7 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.quest
 - name: exact_1537
   enabled: 'True'
@@ -24610,10 +24610,10 @@ rules:
   patternCategory: header_from
   patternSubType: exact_domain
   sourceDomain: .*.qzz.io
-- name: exact_1538
+- name: tld_1538
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24624,12 +24624,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.realtor
-- name: exact_1539
+- name: tld_1539
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24640,12 +24640,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.realty
-- name: exact_1540
+- name: tld_1540
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24656,12 +24656,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.recipes
-- name: exact_1541
+- name: tld_1541
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24672,12 +24672,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.red
-- name: exact_1542
+- name: tld_1542
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24688,12 +24688,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.rehab
-- name: exact_1543
+- name: tld_1543
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24704,12 +24704,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.ren
-- name: exact_1544
+- name: tld_1544
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24720,12 +24720,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.rent
-- name: exact_1545
+- name: tld_1545
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24736,12 +24736,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.repair
-- name: exact_1546
+- name: tld_1546
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24752,12 +24752,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.rest
-- name: exact_1547
+- name: tld_1547
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24768,12 +24768,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.restaurant
-- name: exact_1548
+- name: tld_1548
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24784,12 +24784,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.review
-- name: exact_1549
+- name: tld_1549
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24800,12 +24800,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.reviews
-- name: exact_1550
+- name: tld_1550
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24816,12 +24816,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.rich
-- name: exact_1551
+- name: tld_1551
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24832,12 +24832,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.rip
-- name: exact_1552
+- name: tld_1552
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24848,12 +24848,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.ro
-- name: exact_1553
+- name: tld_1553
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24864,12 +24864,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.rodeo
-- name: exact_1554
+- name: tld_1554
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24880,12 +24880,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.rs
-- name: exact_1555
+- name: tld_1555
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24896,12 +24896,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.ru
-- name: exact_1556
+- name: tld_1556
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24912,7 +24912,7 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.ryukyu
 - name: exact_1557
   enabled: 'True'
@@ -24930,10 +24930,10 @@ rules:
   patternCategory: header_from
   patternSubType: exact_domain
   sourceDomain: .*.sa.com
-- name: exact_1558
+- name: tld_1558
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24944,12 +24944,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.sale
-- name: exact_1559
+- name: tld_1559
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24960,12 +24960,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.sbs
-- name: exact_1560
+- name: tld_1560
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24976,12 +24976,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.schule
-- name: exact_1561
+- name: tld_1561
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -24992,12 +24992,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.science
-- name: exact_1562
+- name: tld_1562
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25008,12 +25008,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.se
-- name: exact_1563
+- name: tld_1563
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25024,12 +25024,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.sew
-- name: exact_1564
+- name: tld_1564
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25040,12 +25040,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.sexy
-- name: exact_1565
+- name: tld_1565
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25056,12 +25056,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.sho
-- name: exact_1566
+- name: tld_1566
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25072,12 +25072,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.shop
-- name: exact_1567
+- name: tld_1567
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25088,12 +25088,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.shopping
-- name: exact_1568
+- name: tld_1568
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25104,12 +25104,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.show
-- name: exact_1569
+- name: tld_1569
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25120,12 +25120,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.site
-- name: exact_1570
+- name: tld_1570
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25136,12 +25136,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.skin
-- name: exact_1571
+- name: tld_1571
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25152,12 +25152,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.sm
-- name: exact_1572
+- name: tld_1572
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25168,12 +25168,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.solar
-- name: exact_1573
+- name: tld_1573
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25184,12 +25184,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.soy
-- name: exact_1574
+- name: tld_1574
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25200,12 +25200,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.space
-- name: exact_1575
+- name: tld_1575
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25216,12 +25216,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.sport
-- name: exact_1576
+- name: tld_1576
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25232,12 +25232,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.srl
-- name: exact_1577
+- name: tld_1577
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25248,12 +25248,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.store
-- name: exact_1578
+- name: tld_1578
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25264,12 +25264,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.studio
-- name: exact_1579
+- name: tld_1579
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25280,12 +25280,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.style
-- name: exact_1580
+- name: tld_1580
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25296,12 +25296,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.su
-- name: exact_1581
+- name: tld_1581
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25312,12 +25312,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.support
-- name: exact_1582
+- name: tld_1582
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25328,12 +25328,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.surf
-- name: exact_1583
+- name: tld_1583
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25344,12 +25344,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.sweeps
-- name: exact_1584
+- name: tld_1584
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25360,12 +25360,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.sweepss
-- name: exact_1585
+- name: tld_1585
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25376,12 +25376,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.sx
-- name: exact_1586
+- name: tld_1586
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25392,12 +25392,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.sydney
-- name: exact_1587
+- name: tld_1587
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25408,12 +25408,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.tattoo
-- name: exact_1588
+- name: tld_1588
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25424,12 +25424,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.tax
-- name: exact_1589
+- name: tld_1589
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25440,12 +25440,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.taxi
-- name: exact_1590
+- name: tld_1590
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25456,12 +25456,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.tech
-- name: exact_1591
+- name: tld_1591
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25472,12 +25472,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.tel
-- name: exact_1592
+- name: tld_1592
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25488,12 +25488,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.tennis
-- name: exact_1593
+- name: tld_1593
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25504,12 +25504,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.tienda
-- name: exact_1594
+- name: tld_1594
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25520,12 +25520,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.tires
-- name: exact_1595
+- name: tld_1595
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25536,12 +25536,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.tk
-- name: exact_1596
+- name: tld_1596
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25552,12 +25552,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.tn
-- name: exact_1597
+- name: tld_1597
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25568,12 +25568,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.to
-- name: exact_1598
+- name: tld_1598
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25584,12 +25584,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.today
-- name: exact_1599
+- name: tld_1599
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25600,12 +25600,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.tokyo
-- name: exact_1600
+- name: tld_1600
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25616,12 +25616,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.top
-- name: exact_1601
+- name: tld_1601
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25632,12 +25632,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.town
-- name: exact_1602
+- name: tld_1602
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25648,12 +25648,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.tr
-- name: exact_1603
+- name: tld_1603
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25664,12 +25664,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.trade
-- name: exact_1604
+- name: tld_1604
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25680,12 +25680,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.trading
-- name: exact_1605
+- name: tld_1605
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25696,12 +25696,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.tube
-- name: exact_1606
+- name: tld_1606
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25712,12 +25712,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.tz
-- name: exact_1607
+- name: tld_1607
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25728,12 +25728,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.ua
-- name: exact_1608
+- name: tld_1608
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25744,7 +25744,7 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.uk
 - name: exact_1609
   enabled: 'True'
@@ -25762,10 +25762,10 @@ rules:
   patternCategory: header_from
   patternSubType: exact_domain
   sourceDomain: .*.uk.com
-- name: exact_1610
+- name: tld_1610
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25776,7 +25776,7 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.uno
 - name: exact_1611
   enabled: 'True'
@@ -25794,10 +25794,10 @@ rules:
   patternCategory: header_from
   patternSubType: exact_domain
   sourceDomain: .*.us.kg
-- name: exact_1612
+- name: tld_1612
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25808,12 +25808,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.vacations
-- name: exact_1613
+- name: tld_1613
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25824,12 +25824,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.vc
-- name: exact_1614
+- name: tld_1614
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25840,12 +25840,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.vegas
-- name: exact_1615
+- name: tld_1615
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25856,12 +25856,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.ventures
-- name: exact_1616
+- name: tld_1616
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25872,12 +25872,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.vin
-- name: exact_1617
+- name: tld_1617
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25888,12 +25888,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.vip
-- name: exact_1618
+- name: tld_1618
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25904,12 +25904,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.vision
-- name: exact_1619
+- name: tld_1619
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25920,12 +25920,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.vlaanderen
-- name: exact_1620
+- name: tld_1620
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25936,12 +25936,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.vn
-- name: exact_1621
+- name: tld_1621
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25952,12 +25952,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.vote
-- name: exact_1622
+- name: tld_1622
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25968,12 +25968,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.voto
-- name: exact_1623
+- name: tld_1623
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -25984,12 +25984,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.wang
-- name: exact_1624
+- name: tld_1624
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -26000,12 +26000,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.webcam
-- name: exact_1625
+- name: tld_1625
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -26016,12 +26016,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.website
-- name: exact_1626
+- name: tld_1626
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -26032,12 +26032,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.wedding
-- name: exact_1627
+- name: tld_1627
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -26048,12 +26048,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.wiki
-- name: exact_1628
+- name: tld_1628
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -26064,12 +26064,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.win
-- name: exact_1629
+- name: tld_1629
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -26080,12 +26080,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.wine
-- name: exact_1630
+- name: tld_1630
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -26096,12 +26096,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.work
-- name: exact_1631
+- name: tld_1631
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -26112,12 +26112,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.world
-- name: exact_1632
+- name: tld_1632
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -26128,12 +26128,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.ws
-- name: exact_1633
+- name: tld_1633
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -26144,12 +26144,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.wtf
-- name: exact_1634
+- name: tld_1634
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -26160,12 +26160,12 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.xd
-- name: exact_1635
+- name: tld_1635
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -26176,7 +26176,7 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.xin
 - name: exact_1636
   enabled: 'True'
@@ -26194,10 +26194,10 @@ rules:
   patternCategory: header_from
   patternSubType: exact_domain
   sourceDomain: .*.xn-*
-- name: exact_1637
+- name: tld_1637
   enabled: 'True'
   isLocal: 'True'
-  executionOrder: 30
+  executionOrder: 10
   conditions:
     type: OR
     body: []
@@ -26208,5 +26208,5 @@ rules:
   actions:
     delete: 'True'
   patternCategory: header_from
-  patternSubType: exact_domain
+  patternSubType: top_level_domain
   sourceDomain: .*.xyz
