@@ -26,6 +26,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-04-19 (Sprint 35 - Sprint 34 Cleanup + WinWright E2E Execution)
+- **fix**: BUG-S34-1: Update stale test assertion in `default_rule_set_service_test.dart` line 422 from `expect(resetResult.rules, 5)` to `expect(resetResult.rules, greaterThan(100))` to match sibling assertions and the post-F73 1638-rule baseline. Stale assertion escaped Sprint 34 review and broke develop after PR #236 merge. Test suite now 1363 passing / 0 failing (Issue #237)
+
 ### 2026-04-18 (Sprint 34 - Rule Management Foundation + UI Standards)
 - **fix**: F73: Fix broken monolithic rule split + bundled YAML rebuild. Part A: new `splitMonolithicRules()` detects remaining monolithic rules at startup and splits into individual per-pattern rows with classification metadata. Part B: rebuild bundled rules.yaml from 5 monolithic blobs to 1,638 individual per-pattern entries (header_from only). Part C: rewrite `ensureTldBlockRules()` for individual-row insertion with backwards-compat detection (Issue #235)
 - **feat**: F56: Manual rule creation UI. New `ManualRuleCreateScreen` with guided form for creating block rules (4 types: TLD, entire domain, exact domain, exact email) and safe sender rules (3 types: entire domain, exact domain, exact email). Input parsing handles bare email, bare domain, URL with protocol, URL with path. Pattern preview with ReDoS validation (SEC-1b). FAB added to Manage Rules and Manage Safe Senders screens (Issue #235)

@@ -417,9 +417,12 @@ void main() {
 
     group('seedIfEmpty and resetToDefaults interaction', () {
       test('seedIfEmpty skips after resetToDefaults has populated data', () async {
-        // Reset seeds the database with rules
+        // Reset seeds the database with rules from bundled rules.yaml
+        // (post-Sprint 34 F73: ~1638 individual per-pattern rules from
+        // monolithic split). Use greaterThan(100) to match sibling
+        // assertions in this file (lines 105, 122, 173).
         final resetResult = await service.resetToDefaults();
-        expect(resetResult.rules, 5);
+        expect(resetResult.rules, greaterThan(100));
 
         // seedIfEmpty should skip since rules exist
         final seedResult = await service.seedIfEmpty();
@@ -429,7 +432,7 @@ void main() {
         // Verify rules were not duplicated (no duplicates from attempted seed)
         final db = await testHelper.dbHelper.database;
         final rules = await db.query('rules');
-        expect(rules.length, greaterThan(100)); // 1638 from resetToDefaults
+        expect(rules.length, greaterThan(100));
       });
     });
   });
