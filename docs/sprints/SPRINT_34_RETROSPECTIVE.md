@@ -107,6 +107,21 @@ All 6 planned tasks completed. Two rounds of F56 testing feedback addressed inli
 
 ---
 
+## Improvement Decisions (Step 6)
+
+Harold provided the following directive after Phase 7.4 (recording verbatim feedback):
+
+> Need to update all sprint execution docs to appropriately reference that the process is 1) Ask for feedback from the Product Owner, Scrum Master and Lead Developer (Harold) 2) while waiting, generate and then provide your sprint retrospective feedback 3) once Product Owner, Scrum Master and Lead Developer (Harold) feedback has been provided then combine the 2 sets of feedback in to a combined feedback and produce (display) the combined feedback 4) propose suggestions from the combined feedback on process improvements 5) Request of the Product Owner, Scrum Master and Lead Developer (Harold) if any of the proposed improvements should be done now or added to the backlog 6) do any of the approved improvements as part of the current sprint 7) once complete move on to the next step in the sprint execution. Now, I believed that the documented sprint execution docs would have already reflected that, but since that isn't what you did, these improvements need to be made before the next sprint.
+
+| # | Proposal | Type | Disposition | Implementation |
+|---|---|---|---|---|
+| 1 | Document the 7-Step Retrospective Protocol in `SPRINT_EXECUTION_WORKFLOW.md` Phase 7.3-7.7, mirror in `SPRINT_RETROSPECTIVE.md` and `SPRINT_CHECKLIST.md`, update memory entry. Improvements applicable to any type (process, code, tests, architecture, docs, tooling). | Process / Documentation | **Apply now in Sprint 34** | Commit `dd9833f` -- 4 files updated, memory entry `feedback_phase7_prompt_protocol.md` rewritten and re-indexed in MEMORY.md |
+| 2 | Add CHANGELOG entry for the protocol documentation improvement | Documentation | **Apply now in Sprint 34** | This commit |
+
+No proposals deferred to backlog. No proposals skipped.
+
+---
+
 ## Phase 7 Completeness Check
 
 - [x] All 14 categories addressed

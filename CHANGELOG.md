@@ -33,6 +33,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **chore**: F62: Dead code cleanup -- remove deprecated config/app_paths.dart, consolidate duplicate LocalRuleStore, move legacy OAuth screens to lib/ui/screens/ (Issue #235)
 - **fix**: F72: Code hygiene -- remove 9 emojis from production code, add if(MSVC) guard in CMakeLists.txt, SEC-20 generic email validation messages (Issue #235)
 - **test**: F69: WinWright E2E test scripts for Windows desktop -- 7 JSON test scripts (navigation, settings tabs, manual scan, scan history, text selection per ADR-0037, F56 block rule creation, F56 safe sender creation), PowerShell runner with auto screen-reader-flag setup (Issue #235)
+- **docs**: Sprint 34 retro improvement: Phase 7 retrospective now follows the explicit 7-Step Retrospective Protocol (send prompt -> draft Claude in parallel -> record Harold verbatim -> combine+display -> propose improvements -> Harold decides now-vs-backlog -> apply approved). Updates SPRINT_EXECUTION_WORKFLOW.md, SPRINT_RETROSPECTIVE.md, SPRINT_CHECKLIST.md, and memory entry. Documents the protocol that 33 prior sprints implicitly followed (Issue #235)
 
 ### 2026-04-14 (Sprint 33 - Security Hardening + UX Polish)
 - **feat**: F53: Add `@.*\.cc$` (Cocos Islands) and `@.*\.ne$` (Niger) TLD block patterns to the bundled SpamAutoDeleteHeader rule; includes idempotent post-seed migration (DefaultRuleSetService.ensureTldBlockRules) that adds the patterns to existing installations on startup (Issue #233)
