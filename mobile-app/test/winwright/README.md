@@ -29,13 +29,24 @@ These end-to-end tests exercise the running Windows Desktop app via Windows UI A
 
 | Script | Purpose | Sprint | Status |
 |--------|--------|--------|--------|
-| `test_navigation.json` | Click through Account Selection -> Settings -> Manage Rules -> back | 34 | New |
-| `test_manual_scan_flow.json` | Run a manual scan on selected account, verify Scan Progress -> Results screens | 34 | New |
-| `test_settings_tabs.json` | Cycle through all 4 Settings tabs (General, Scan, Background, Account overrides) | 34 | New |
-| `test_text_selection.json` | Verify SelectionArea on Manage Rules / Manage Safe Senders / Help screens | 34 | New |
-| `test_f56_create_block_rule.json` | F56: open Manage Rules, tap FAB, create TLD block rule, verify in list | 34 | New |
-| `test_f56_create_safe_sender.json` | F56: open Manage Safe Senders, tap FAB, create entire-domain safe sender | 34 | New |
-| `test_scan_history.json` | Open Scan History, tap most recent entry, verify counts displayed | 34 | New |
+| `test_navigation.json` | Click through Account Selection -> Settings -> Manage Rules -> back | 34 | PASS (S35) |
+| `test_manual_scan_flow.json` | Run a manual scan on selected account, verify Scan Progress -> Results screens | 34 | PASS (S35) |
+| `test_settings_tabs.json` | Cycle through all 4 Settings tabs (General, Account, Manual Scan, Background) | 34 | PASS (S35) |
+| `test_text_selection.json` | Verify SelectionArea on Manage Rules / Manage Safe Senders / Help screens | 34 | PASS (S35) |
+| `test_f56_create_block_rule.json` | F56: full lifecycle -- create `.museum` TLD block rule, verify in list, delete, verify removed | 34 | PASS (S35) |
+| `test_f56_create_safe_sender.json` | F56: full lifecycle -- create `winwright-e2e-test.invalid` safe sender, verify, delete, verify removed | 34 | PASS (S35) |
+| `test_scan_history.json` | Open Scan History, tap most recent entry, verify counts displayed | 34 | PASS (S35) |
+
+## Sprint 35 Execution Notes (F69 closeout)
+
+All 7 scripts validated against a fresh Windows desktop dev build on 2026-04-19, driven via WinWright MCP primitives (`mcp__winwright__ww_*`) rather than the JSON `run` command. The JSON files document the test intent; the MCP-driven execution uses the same selectors/assertions interactively. Findings:
+
+- **Settings header button opens Account Selection dialog first** (per `_openSettings()` design — "Settings requires accountId"), then navigates to Settings. Scripts must dismiss/select account before reaching Settings. Not a bug; intended behavior.
+- **Settings Tab 2 is "Account"** (singular), shown as `name="Account\nTab 2 of 4"`. Selectors using bare `name*='Account'` collide with the "Saved Accounts" header text on the Account Selection screen — use `name*='Tab 2 of 4'` for unambiguous tab selection.
+- **Add Block Rule input field name is dynamic**: changes to "Enter TLD..." after selecting the TLD radio (was "Enter email, domain, or URL"). Use `type=Edit` selector instead of name match.
+- **`Save Rule` button can be off-screen** in 1600x900 window; `ww_invoke` (UIA InvokePattern) bypasses scroll requirement.
+- **Manage Rules count**: 3500 rules visible after F73 split (3055 entire-domain + 41 exact-domain + 131 exact-email + 269 TLD + a few other categories), confirms F73 monolithic-split rebuild is loaded.
+- **Lifecycle update for F56 scripts**: original Sprint 34 scripts created rules but never removed them, leaving test artifacts in the dev DB. As of Sprint 35, both F56 scripts now do create -> verify -> delete -> verify-absent. Test data was retuned to avoid bundle collision: `.museum` TLD (real IANA, not on spam list) replaces `.xyz` (collided with bundled `._.xyz` from F73 split), and `winwright-e2e-test.invalid` replaces `test-trusted-domain.com` (uses RFC 6761 reserved TLD that cannot collide with any real domain).
 
 ## Running Tests
 

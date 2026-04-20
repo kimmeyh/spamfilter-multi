@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: April 18, 2026 (Sprint 34 complete -- Phase 7 retrospective recorded with Harold's verbatim feedback)
+**Last Updated**: April 19, 2026 (Sprint 35 retrospective + 0.5.2.0 store MSIX shipped; F81 added as Sprint 36 carry-in (Issue #242) -- store release process documentation; Sprint 36 will bump dev to 0.5.3.0)
 
 ## How to Maintain This Document
 
@@ -99,6 +99,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 32 | docs/sprints/SPRINT_32_RETROSPECTIVE.md | [OK] Complete | Apr 13, 2026 |
 | 33 | docs/sprints/SPRINT_33_RETROSPECTIVE.md | [OK] Complete | Apr 14-16, 2026 |
 | 34 | docs/sprints/SPRINT_34_RETROSPECTIVE.md | [OK] Complete | Apr 17-18, 2026 |
+| 35 | docs/sprints/SPRINT_35_RETROSPECTIVE.md | [OK] Complete | Apr 19, 2026 |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -106,20 +107,21 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 34** (April 17-18, 2026)
-- **Type**: Mixed (bug fix + core feature + documentation + testing + tech debt)
-- **Feature**: 6 tasks + 2 rounds of testing feedback (Issue #235)
+**Sprint 35** (April 19, 2026)
+- **Type**: Mixed (bug fix + testing execution + process improvement)
+- **Feature**: 2 planned tasks (Issue #237) + retro-driven process improvements
 - **Delivered**:
-  - Bug fix (1): F73 (rule data layer fix -- 3-part: startup split, bundled YAML rebuild to 1638 individual rules, ensureTldBlockRules rewrite)
-  - Core feature (1): F56 (manual rule creation UI -- 4 block types, 3 safe sender types, IANA TLD validation)
-  - Documentation (1): ADR-0037 (UI/Accessibility standards) + ARSD AR-8/AR-9 + ARCHITECTURE.md UI Standards table + QUALITY_STANDARDS.md accessibility quality gate
-  - Testing (1): F69 (WinWright E2E test scripts -- 7 JSON scripts + PowerShell runner)
-  - Tech debt (2): F62 (dead code cleanup), F72 (emojis, MSVC guard, SEC-20)
-- **Backlog additions**: F74 (FAQ in Help), F75 (Help walkthrough), F76 (visual regression testing), F77 (hookify proceed-prompt rule), F78 (widget tests for ManualRuleCreateScreen) -- all HOLD post-Windows-Store
-- **Tests**: +49 (1362 total passing, 0 analyzer issues)
-- **Process improvement**: Phase 7.3 Prompt Protocol added to `docs/SPRINT_EXECUTION_WORKFLOW.md` to prevent Claude-authored PO/SM/Lead retrospective feedback (Sprint 34 violation corrected)
-- **Retrospective**: docs/sprints/SPRINT_34_RETROSPECTIVE.md
-- **Summary**: docs/sprints/SPRINT_34_SUMMARY.md
+  - Bug fix (1): BUG-S34-1 (1-line stale `expect(resetResult.rules, 5)` fix in default_rule_set_service_test.dart line 422; restored develop test suite to 1363/0)
+  - Testing execution (1): F69 (drove all 7 Sprint 34 WinWright scripts via MCP primitives against fresh Windows desktop dev build; 7 of 7 PASS; pivoted from JSON `run` schema to interactive MCP)
+  - F56 script lifecycle update (in-sprint per §4a): both F56 scripts now do create -> verify -> delete -> verify-absent; test data retuned to non-colliding values (`.museum`, `winwright-e2e-test.invalid`)
+  - WinWright run policy formalized: conditional per sprint + state-restoring (TESTING_STRATEGY.md mapping table)
+  - Sprint 35 retrospective process improvements (P1, P2, P4, P5 applied; P3 backlogged): Phase Auto-Advance Rule (CLAUDE.md), Standing Approval Inventory (Phase 3.7), Model-Version Pitfalls appendix (CLAUDE.md), Sprint Resume Pattern memory; Category 2 testing-gap closure as Phase 5.1.1 step 2a sibling-grep
+- **Backlog additions**: BUG-S35-1 (manual rule UI accepts duplicates -- Issue #239), F79 (full WinWright sweep -- HOLD, Issue #240), F80 (1-page Phase Cheat Sheet -- Issue #241, P3 deferred from retro)
+- **Tests**: +0 net (1 line changed, no new tests; 1363 total passing, 0 analyzer issues)
+- **Process improvement**: Codified the Opus 4.7 phase-boundary autonomy pattern that 4.6 had implicitly internalized; surfaced in retro after ~4h wall-clock cost across S34-S35
+- **Store release**: Bumped dev version 0.5.1.0 -> 0.5.2.0 (prod was at 0.5.1.0 in store; 0.5.2.0 is the new submission target). Built signed MSIX at `mobile-app/build/windows/x64/runner/Release/my_email_spam_filter.msix` (17.4 MB). Harold to merge develop -> main and upload MSIX to Microsoft Store. Sprint 36 will bump dev to 0.5.3.0
+- **Retrospective**: docs/sprints/SPRINT_35_RETROSPECTIVE.md
+- **PR**: #238 (against develop)
 
 ---
 
@@ -138,58 +140,6 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - All variants must run simultaneously without rebuild on same machine/device
 - [Detail](#f52-multi-variant-side-by-side-install)
 
-**F56. Manual rule creation UI - block and safe sender rules from user input (~10-14h) Priority 68**
-- Phase: Core Feature
-- Platform: All
-- Add UI for creating rules directly from user input (not just from scan results)
-- Block rules (4 types):
-  - Top-level domain: user enters TLD (e.g., .cc, .ru) and app creates `@.*\.cc$` pattern
-  - Exact domain: user pastes email address or domain string, app extracts domain and creates `@domain\.com$` pattern with confirmation
-  - Entire domain: user pastes email address, domain, or URL, app extracts domain and creates `@(?:[a-z0-9-]+\.)*domain\.com$` subdomain-matching pattern with confirmation
-  - Exact email: user enters email address, app validates format, creates `^user@domain\.com$` pattern with confirmation
-- Safe sender rules (3 types, no TLD):
-  - Exact domain: same as block but adds to safe senders
-  - Entire domain: same as block but adds to safe senders
-  - Exact email: same as block but adds to safe senders
-- App should parse and extract domain from various input formats: email address, bare domain, URL with protocol, URL with path
-- Validation: email format check, domain format check, warn if TLD-only for safe senders
-- Confirmation dialog showing generated pattern before saving
-- Accessible from Manage Rules and Manage Safe Senders screens
-- Related: F35 (rule editing UI), F25 (rule testing UI enhancements)
-- Testing note: SEC-1b (ReDoS compile-time rejection, Sprint 33) can only be manually tested once this UI exists. Include manual test: user enters catastrophic-backtracking regex (e.g. `(a+)+$`), app should reject on save with a clear error message.
-
-**F73. Monolithic rule split completion + bundled YAML rebuild (~6-10h) Priority 65 -- BUG FIX**
-- Phase: Core Feature / Data Integrity
-- Platform: All
-- **Problem**: The bundled YAML (`mobile-app/assets/rules/rules.yaml`) still stores rules in 5 monolithic entries (SpamAutoDeleteHeader, SpamAutoDeleteBody, SpamAutoDeleteFrom, SpamAutoDeleteSubject, SpamAutoDeleteBody-imgur.com) with hundreds of patterns per entry in JSON arrays. The Sprint 20 `split_rules.dart` script splits these into individual per-pattern DB rows (~3500 rows) for the Manage Rules UI. But:
-  1. New user seeding inserts the monolithic rows first, then requires a separate split step -- fragile
-  2. Post-seed migrations (like F53 TLD `.cc`/`.ne` addition) look for the monolithic `SpamAutoDeleteHeader` row by name; on existing installs where the split already ran, that row no longer exists, so the migration silently skips and the TLD patterns never get added
-  3. The bundled YAML format does not match the DB format, making it hard to reason about what users actually have
-- **Fix** (3 parts):
-  1. **One-off migration for existing installs (Harold's DB)**: Run the split script equivalent in-app at startup to split any remaining monolithic rules AND insert missing individual TLD patterns (`.cc`, `.ne`) as properly classified per-pattern rows (pattern_category=header_from, pattern_sub_type=top_level_domain)
-  2. **Rebuild bundled YAML from Harold's split DB**: Export the ~3500 individual per-pattern rules back to YAML so the bundled asset matches the DB format. New user seeding then inserts individual rows directly -- no split step needed
-  3. **Fix F53 migration (`ensureTldBlockRules`)**: Rewrite to insert individual per-pattern rows instead of patching a monolithic JSON array. Make it idempotent against the split DB format
-- **Dependency**: None (can be done independently)
-- **Impact**: Until this is fixed, `.cc` and `.ne` TLD block rules are missing from existing installs (Harold's DB confirmed 2026-04-17). New installs get them in the monolithic blob but they are not individually manageable until split
-- **Source**: Sprint 33 Phase 7 testing feedback (Harold reported `.cc`/`.ne` missing in Manage Rules search, 2026-04-17)
-
-**F62. Dead code cleanup - remove deprecated classes (~2h) Priority 55**
-- Phase: Tech Debt
-- Platform: All
-- Remove deprecated config/app_paths.dart (duplicate of adapters/storage/app_paths.dart)
-- Remove or consolidate duplicate LocalRuleStore classes (core/storage/ and adapters/storage/)
-- Move legacy OAuth screens from lib/screens/ to lib/ui/screens/ or remove if unused
-- Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gaps G7-G9)
-
-**F72. Code hygiene cleanup (~1-2h) Priority 72**
-- Phase: Tech Debt
-- Platform: All
-- Minor cleanup items identified in Sprint 32 Phase 5.1.1 automated code review:
-  - Remove emoji `📦` in secure_credentials_store.dart:527 (violates CLAUDE.md "No emojis" rule)
-  - Add `if(MSVC) ... endif()` guard around security flags in windows/runner/CMakeLists.txt for MinGW future-proofing
-  - SEC-20: Soften email validation error messages in account_setup_screen.dart -- current messages are prescriptive about email format in ways that are technically incorrect for RFC 5321 edge cases; use generic "Please enter a valid email address" or stricter regex
-- Source: Sprint 32 Phase 5.1.1 automated code review (H3 + Minor Notes)
-
 **F63. Responsive design framework (~8-12h) Priority 70**
 - Phase: UX Improvement
 - Platform: All
@@ -199,17 +149,35 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Related: F55 (navigation consistency) should be done before or with this
 - Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gap G23)
 
-### Testing
+### Process
 
-**F69. E2E WinWright desktop tests - scan flows, history, settings (~6-8h) Priority 58**
-- Phase: Testing / Quality
-- Platform: Windows
-- E2E tests using WinWright (desktop accessibility automation):
-  - Manual scan: run scan, navigate to Scan History, tap the scan entry, verify displayed counts match
-  - Background scan: trigger background scan, navigate to Scan History, tap the background scan entry, verify displayed counts match (validates Sprint 31 fix for stale results bug)
-  - Select email address: verify account selection flow
-  - Settings: test all settings on all tabs (General, Scan, Background, Account overrides)
-- Source: Sprint 31 manual testing feedback (scan history showed wrong results for background scan)
+**F81. Store release process documentation (~3-4h) Priority 100 -- SPRINT 36 CARRY-IN (Issue #242)**
+- Phase: Documentation / Release Engineering
+- Platform: Windows (Microsoft Store)
+- Mandatory Sprint 36 task -- not backlog. Carry-in from Sprint 35 retrospective Category 13 addendum (post-retro 2026-04-19).
+- New `docs/STORE_RELEASE_PROCESS.md`: end-to-end walkthrough -- pre-release checklist, version bump (5-file checklist), supported rebuild instructions (`flutter pub run msix:create`), MSIX verification, develop -> main merge process, Microsoft Partner Center upload + submit walkthrough, post-submission steps
+- Deprecate or remove `mobile-app/scripts/build-msix.ps1` (had a PowerShell parser bug patched in Sprint 35; the Dart `msix` package path is the supported one and is what's wired in `pubspec.yaml`)
+- Update CLAUDE.md Common Commands and ADR-0035 cross-references
+- Source: Sprint 35 store-prep made gaps visible (no team-runnable walkthrough doc, faulty script, undocumented merge + upload flow)
+
+**F80. 1-page Phase Cheat Sheet for SPRINT_EXECUTION_WORKFLOW.md (~45min) Priority 80 (Issue #241)**
+- Phase: Process / Documentation
+- Platform: N/A (Claude Code workflow)
+- Add a compact (~30-line) Phase Cheat Sheet at the top of SPRINT_EXECUTION_WORKFLOW.md (currently 1357 lines) so models can identify current phase + next action without reading the full doc
+- Format: 7-row table (Phase | Purpose | Top-3 Actions | Auto-advance trigger) with anchor links to detailed sections
+- Source: Sprint 35 retrospective Process Issues -- proposal P3 (Opus 4.7 phase-boundary overhead)
+- Companion to Sprint 35 fixes already shipped: Phase Auto-Advance Rule (CLAUDE.md), Standing Approval Inventory (Phase 3.7), Model-Version Pitfalls appendix (CLAUDE.md)
+
+### Bugs
+
+**BUG-S35-1. Manual rule creation allows duplicate TLD entries (~2-3h) Priority 70 (Issue #239)**
+- Phase: Bug fix
+- Platform: All (rule logic), Windows (where discovered)
+- File: `mobile-app/lib/core/services/manual_rule_creator.dart` (or equivalent), plus widget validation in `ManualRuleCreateScreen`
+- Failure: Saving a TLD block rule for a TLD already in the bundled rules table (e.g., `.xyz`) silently inserts a duplicate row. Two rules with identical pattern and identical sub-type both run on every scan.
+- Fix: Add a uniqueness check on save -- compare normalized pattern + condition_type + sub_type against existing rules table; reject with validation error if match found. Same logic for safe senders.
+- Discovery: Sprint 35 F69 execution; required direct SQLite cleanup because UI delete path was non-deterministic when two rules shared the same visible label.
+- Source: Sprint 35 F69 manual testing (`docs/sprints/SPRINT_35_PLAN.md` Manual Testing Notes)
 
 ### Security Hardening (Sprint 31 Audit)
 
@@ -377,6 +345,14 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Phase: Testing
 - Platform: All
 - From Sprint 34 retro Category 14: Only logic-level tests for F56 exist. Add widget tests covering radio button selection, input field validation feedback, pattern preview rendering, and confirmation dialog.
+
+**F79. Full WinWright E2E test sweep (run entire suite end-to-end) (~4-8h) Priority HOLD (Issue #240)**
+- Phase: Testing / Quality
+- Platform: Windows
+- Run the *entire* WinWright suite (currently 7 scripts) end-to-end against a fresh Windows desktop dev build, with strict pre/post snapshot of DB state to verify zero test artifacts left behind
+- Distinct from per-sprint conditional WinWright runs (which only execute scripts whose tested surface was touched by sprint changes)
+- Triggers: major release prep, large UI refactor (>10 files in `lib/ui/`), accessibility-tree change, or Product Owner request
+- HOLD rationale: On-demand only; not a recurring sprint item. Activate when a trigger condition is met.
 
 ### HOLD Items (Android / Google Play Store)
 
@@ -1149,6 +1125,12 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 5.14 | 2026-04-19 | Sprint 35 retro Category 13 addendum: F81 added as Sprint 36 carry-in (mandatory, not backlog -- Issue #242). Store release process documentation -- new `docs/STORE_RELEASE_PROCESS.md`, deprecate faulty `build-msix.ps1`, walk team through Partner Center upload. Triggered by Sprint 35 store-prep gap-finding. |
+| 5.13 | 2026-04-19 | Sprint 35 store release prep: Bumped dev version 0.5.1.0 -> 0.5.2.0 (prod at 0.5.1.0 in store; 0.5.2.0 is next submission). Built signed MSIX (17.4 MB) at `mobile-app/build/windows/x64/runner/Release/my_email_spam_filter.msix`. Sprint 36 to bump dev to 0.5.3.0. |
+| 5.12 | 2026-04-19 | Sprint 35 retrospective complete (Phase 7): Applied four of five proposed process improvements -- P1 Phase Auto-Advance Rule (CLAUDE.md item 7), P2 Standing Approval Inventory (Phase 3.7), P4 Model-Version Pitfalls appendix (CLAUDE.md), P5 Sprint Resume Pattern memory. Backlogged P3 as F80 (Phase Cheat Sheet, Issue #241). Closed Category 2 testing gap by adding Phase 5.1.1 step 2a (test-assertion sibling sweep for structural-data changes). Promoted Sprint 35 to Last Completed Sprint; added Sprint 35 row to Past Sprint Summary. |
+| 5.11 | 2026-04-19 | Sprint 35 in progress: Removed BUG-S34-1 and F69 (both shipping in Sprint 35 PR #238). Added BUG-S35-1 (manual rule UI accepts duplicates -- Issue #239) discovered during F69 execution; cleanup required direct SQLite delete because UI couldn't disambiguate the duplicate from the bundled rule. Added F79 (Full WinWright E2E sweep) as HOLD item -- Issue #240, on-demand only, distinct from per-sprint conditional WinWright runs. |
+| 5.10 | 2026-04-19 | Sprint 34 post-merge cleanup (pre-Sprint-35 backlog refinement): Removed F56, F73, F62, F72 from Next Sprint Candidates -- all four shipped in Sprint 34 (PR #236, see CHANGELOG 2026-04-18). Master plan now reflects only incomplete work for Sprint 35 planning. F69 (WinWright E2E) kept on list -- Sprint 34 shipped only the JSON test scripts (line 35 of CHANGELOG); execution work remains. |
+| 5.9 | 2026-04-19 | Sprint 34 post-merge: Added BUG-S34-1 (stale `expect(resetResult.rules, 5)` assertion in default_rule_set_service_test.dart that escaped F73 review and broke develop after PR #236 merge). Carry-in for Sprint 35 per Harold (option 3). |
 | 5.8 | 2026-04-16 | Sprint 33 completion: Removed F53, F54, F55, F65, F66 (features) and SEC-1b, SEC-14, SEC-19, SEC-22 (security). SEC-8 split -- HTTPS pinning done; SEC-8b tracks remaining IMAP pinning. SEC-11 split -- infrastructure done; SEC-11b tracks SQLCipher driver swap + migration. Added Sprint 33 to Past Sprint Summary. Updated Last Completed Sprint. |
 | 5.7 | 2026-04-14 | Sprint 33 planning: Moved F61 to HOLD per user direction (partial doc refresh happens organically in Sprint 33 via ARCHITECTURE.md updates for SQLCipher/HelpScreen/DataDeletionService/PatternCompiler). |
 | 5.6 | 2026-04-14 | Sprint 32 code review findings: Added SEC-1b (ReDoS runtime protection -- design work needed) and F72 (code hygiene cleanup -- emoji, MSVC guard, email message softening) from Phase 5.1.1 automated code review. |
