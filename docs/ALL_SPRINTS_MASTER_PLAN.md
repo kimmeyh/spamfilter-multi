@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: April 19, 2026 (Sprint 35 retrospective complete: applied P1/P2/P4/P5 process improvements and Category 2 testing-gap closure; added F80 to Process candidates as P3 deferral (Issue #241); promoted Sprint 35 to "Last Completed Sprint")
+**Last Updated**: April 19, 2026 (Sprint 35 retrospective complete + version bumped to 0.5.2.0 with store-ready MSIX built; Sprint 36 will bump dev to 0.5.3.0)
 
 ## How to Maintain This Document
 
@@ -119,6 +119,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 - **Backlog additions**: BUG-S35-1 (manual rule UI accepts duplicates -- Issue #239), F79 (full WinWright sweep -- HOLD, Issue #240), F80 (1-page Phase Cheat Sheet -- Issue #241, P3 deferred from retro)
 - **Tests**: +0 net (1 line changed, no new tests; 1363 total passing, 0 analyzer issues)
 - **Process improvement**: Codified the Opus 4.7 phase-boundary autonomy pattern that 4.6 had implicitly internalized; surfaced in retro after ~4h wall-clock cost across S34-S35
+- **Store release**: Bumped dev version 0.5.1.0 -> 0.5.2.0 (prod was at 0.5.1.0 in store; 0.5.2.0 is the new submission target). Built signed MSIX at `mobile-app/build/windows/x64/runner/Release/my_email_spam_filter.msix` (17.4 MB). Harold to merge develop -> main and upload MSIX to Microsoft Store. Sprint 36 will bump dev to 0.5.3.0
 - **Retrospective**: docs/sprints/SPRINT_35_RETROSPECTIVE.md
 - **PR**: #238 (against develop)
 
@@ -1115,6 +1116,7 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 5.13 | 2026-04-19 | Sprint 35 store release prep: Bumped dev version 0.5.1.0 -> 0.5.2.0 (prod at 0.5.1.0 in store; 0.5.2.0 is next submission). Built signed MSIX (17.4 MB) at `mobile-app/build/windows/x64/runner/Release/my_email_spam_filter.msix`. Sprint 36 to bump dev to 0.5.3.0. |
 | 5.12 | 2026-04-19 | Sprint 35 retrospective complete (Phase 7): Applied four of five proposed process improvements -- P1 Phase Auto-Advance Rule (CLAUDE.md item 7), P2 Standing Approval Inventory (Phase 3.7), P4 Model-Version Pitfalls appendix (CLAUDE.md), P5 Sprint Resume Pattern memory. Backlogged P3 as F80 (Phase Cheat Sheet, Issue #241). Closed Category 2 testing gap by adding Phase 5.1.1 step 2a (test-assertion sibling sweep for structural-data changes). Promoted Sprint 35 to Last Completed Sprint; added Sprint 35 row to Past Sprint Summary. |
 | 5.11 | 2026-04-19 | Sprint 35 in progress: Removed BUG-S34-1 and F69 (both shipping in Sprint 35 PR #238). Added BUG-S35-1 (manual rule UI accepts duplicates -- Issue #239) discovered during F69 execution; cleanup required direct SQLite delete because UI couldn't disambiguate the duplicate from the bundled rule. Added F79 (Full WinWright E2E sweep) as HOLD item -- Issue #240, on-demand only, distinct from per-sprint conditional WinWright runs. |
 | 5.10 | 2026-04-19 | Sprint 34 post-merge cleanup (pre-Sprint-35 backlog refinement): Removed F56, F73, F62, F72 from Next Sprint Candidates -- all four shipped in Sprint 34 (PR #236, see CHANGELOG 2026-04-18). Master plan now reflects only incomplete work for Sprint 35 planning. F69 (WinWright E2E) kept on list -- Sprint 34 shipped only the JSON test scripts (line 35 of CHANGELOG); execution work remains. |

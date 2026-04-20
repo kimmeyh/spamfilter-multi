@@ -399,7 +399,7 @@ Production (main branch) and development (feature/develop) builds coexist on the
 
 - **Dev builds**: data in `MyEmailSpamFilter_Dev\`, window title shows `[DEV]`
 - **Prod builds**: data in `MyEmailSpamFilter\`, no suffix
-- **Version**: dev = `0.5.1`, prod = `0.5.0` (dev always patch+1)
+- **Version**: dev = `0.5.2`, prod = `0.5.1` after Sprint 35 store release (dev always patch+1)
 - **Secrets**: dev uses `secrets.dev.json`, prod uses `secrets.prod.json`
 - **Single-instance**: mutex prevents duplicate same-environment instances
 
@@ -543,7 +543,7 @@ For complete structure, pattern conventions, examples, and validation rules, see
 - **Credentials Directory**: `{App Data Directory}\credentials\`
 - **Background Scan Log**: `{App Data Directory}\logs\{prefix}background_scan_v{VERSION}.log`
   - Production: `background_scan_v0.5.0.log`
-  - Development: `dev_background_scan_v0.5.1.log`
+  - Development: `dev_background_scan_v0.5.2.log`
   - Log filename includes app version (e.g., `background_scan_v0.5.0.log`) to distinguish logs from different builds/branches running concurrently
 
 ### iOS/macOS/Linux

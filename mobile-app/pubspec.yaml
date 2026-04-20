@@ -1,6 +1,6 @@
 name: my_email_spam_filter
 description: Cross-platform email spam filter app
-version: 0.5.1+1
+version: 0.5.2+1
 publish_to: 'none'
 
 environment:
@@ -82,7 +82,7 @@ msix_config:
   publisher_display_name: Kimmey Consulting - Ohio
   identity_name: KimmeyConsulting-Ohio.MyEmailSpamFilter
   publisher: CN=84EA8722-0CA5-4EC0-9B10-07EE79B66062
-  msix_version: 0.5.1.0
+  msix_version: 0.5.2.0
   logo_path: assets/icon/icon.png
   capabilities: internetClient, internetClientServer, privateNetworkClientServer
   # For Store submission: store: true, install_certificate: false
