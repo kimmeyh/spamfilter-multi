@@ -202,6 +202,13 @@ git merge develop
    - **NOT valid stopping reasons**: Implementation choices, approach uncertainty, minor code style, single test failure
    - **Reference**: SPRINT_EXECUTION_WORKFLOW.md Phase 3.7 and SPRINT_STOPPING_CRITERIA.md
 
+7. **Phase Auto-Advance Rule (Sprint 35+)**: When the work for the current phase completes (tests pass / build succeeds / PR pushed / docs updated / etc.), proceed *immediately* to the next phase's first action. **DO NOT** ask "want me to proceed to Phase N+1?" -- sprint-plan approval at Phase 3 is durable authorization through Phase 7. The only acceptable mid-sprint pauses are the 9 SPRINT_STOPPING_CRITERIA listed above. "Confirming the next step" is not on that list.
+   - State the next action in one sentence, then execute it. Example:
+     - **WRONG**: "Phase 5.2 tests pass. Want me to proceed to Phase 5.3 (build app)?"
+     - **RIGHT**: "Phase 5.2 tests pass. Building Windows desktop app for Phase 5.3 manual testing now." [executes build]
+   - Same rule applies to commit/push/PR-update boundaries when the sprint plan covers them: do NOT ask permission to commit Phase 5 work, push to the sprint feature branch, or update the sprint PR description -- those are within standing approval (see SPRINT_EXECUTION_WORKFLOW.md Phase 3.7 "Standing Approval Inventory")
+   - Established Sprint 35 retro after Opus 4.7 cost ~4 wall-clock hours across Sprints 34-35 by repeatedly asking permission at phase boundaries that prior models (Opus 4.6) crossed automatically
+
 **Example of Good Co-Lead Collaboration**:
 ```
 [BAD] [Silently runs git status, finds files missing, edits .gitignore, reports "Fixed!"]
@@ -659,6 +666,22 @@ When `develop` is merged to `main`, create a versioned release:
 - **Group by date**: Keep daily entries together for easy scanning
 - **Do not delete**: Never remove entries; move them to versioned sections
 - **PR description**: Use CHANGELOG entries as basis for PR descriptions
+
+## Model-Version Pitfalls (Living Appendix)
+
+A short list of behaviors observed in specific Claude model versions that cost wall-clock time during sprint execution. Each entry: what to avoid, what to do instead, when surfaced. Update this list during retros. Useful for self-correction within a session and for measuring whether new model versions still exhibit the same issues.
+
+**Opus 4.7 (added Sprint 35 retro, 2026-04-19)**:
+
+- **Asking permission to cross phase boundaries.** When Phase N work completes and Phase N+1 begins, do not ask "want me to proceed to Phase N+1?". Sprint plan approval at Phase 3 covers Phases 4-7. State the next action and execute it. See CLAUDE.md §"Phase Auto-Advance Rule" (item 7 under "Development Philosophy") and SPRINT_EXECUTION_WORKFLOW.md Phase 3.7 "Standing Approval Inventory".
+- **Re-reading SPRINT_CHECKLIST.md / SPRINT_EXECUTION_WORKFLOW.md per phase.** These docs total >1500 lines. Re-loading them every phase costs context tokens and wall-clock seconds. Hold a compact mental model of the current phase from a single read at sprint start; re-read only on actual uncertainty (not as a routine checkpoint). The 1-page Phase Cheat Sheet (P3 backlog item, Sprint 36) will reduce the cost of those rare re-reads.
+- **Asking before committing/pushing/PR-updating during sprint execution.** All three are in the Phase 3.7 Standing Approval Inventory [OK] list. Do not ask -- execute, then report what shipped. The only exceptions are the [FAIL] list items (force-push, reset --hard, etc.).
+- **Calling things "critical bug" before checking the source.** Sprint 35: I called the Settings header dialog a critical bug; it was intended behavior documented in `_openSettings()`. Verify intent against source before alarming framing -- a 30-second source check beats a 90-second retraction.
+- **Asking "want me to proceed to Phase 7?" after Phase 6 completes.** Phase 7 (Sprint Review) is mandatory per CLAUDE.md §"Phase 7 Sprint Review (4 ROLES x 14 CATEGORIES)". Always-execute, never-ask. Send the retro prompt, draft Claude feedback in parallel, follow the 7-Step Protocol verbatim.
+
+**How to use this list at the start of a session**: When CLAUDE.md is auto-loaded, scan this section. If the current task involves any pattern listed here, treat the listed corrective behavior as a hard constraint, not a suggestion.
+
+**How to maintain**: At each sprint retro, add new entries observed during that sprint (Category 9 Process Issues output). Remove entries when a model version known to exhibit the issue is retired. Keep the list short -- if entries become too numerous, reorganize by category (autonomy, communication, documentation, etc.).
 
 ## Known Limitations
 

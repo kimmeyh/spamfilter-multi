@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: April 19, 2026 (Sprint 35 in progress: removed BUG-S34-1 and F69 (shipping in Sprint 35); added BUG-S35-1 (duplicate-rule bug discovered during F69 execution, Issue #239) and F79 (full WinWright sweep, HOLD, Issue #240))
+**Last Updated**: April 19, 2026 (Sprint 35 retrospective complete: applied P1/P2/P4/P5 process improvements and Category 2 testing-gap closure; added F80 to Process candidates as P3 deferral (Issue #241); promoted Sprint 35 to "Last Completed Sprint")
 
 ## How to Maintain This Document
 
@@ -99,6 +99,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 32 | docs/sprints/SPRINT_32_RETROSPECTIVE.md | [OK] Complete | Apr 13, 2026 |
 | 33 | docs/sprints/SPRINT_33_RETROSPECTIVE.md | [OK] Complete | Apr 14-16, 2026 |
 | 34 | docs/sprints/SPRINT_34_RETROSPECTIVE.md | [OK] Complete | Apr 17-18, 2026 |
+| 35 | docs/sprints/SPRINT_35_RETROSPECTIVE.md | [OK] Complete | Apr 19, 2026 |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -106,20 +107,20 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 34** (April 17-18, 2026)
-- **Type**: Mixed (bug fix + core feature + documentation + testing + tech debt)
-- **Feature**: 6 tasks + 2 rounds of testing feedback (Issue #235)
+**Sprint 35** (April 19, 2026)
+- **Type**: Mixed (bug fix + testing execution + process improvement)
+- **Feature**: 2 planned tasks (Issue #237) + retro-driven process improvements
 - **Delivered**:
-  - Bug fix (1): F73 (rule data layer fix -- 3-part: startup split, bundled YAML rebuild to 1638 individual rules, ensureTldBlockRules rewrite)
-  - Core feature (1): F56 (manual rule creation UI -- 4 block types, 3 safe sender types, IANA TLD validation)
-  - Documentation (1): ADR-0037 (UI/Accessibility standards) + ARSD AR-8/AR-9 + ARCHITECTURE.md UI Standards table + QUALITY_STANDARDS.md accessibility quality gate
-  - Testing (1): F69 (WinWright E2E test scripts -- 7 JSON scripts + PowerShell runner)
-  - Tech debt (2): F62 (dead code cleanup), F72 (emojis, MSVC guard, SEC-20)
-- **Backlog additions**: F74 (FAQ in Help), F75 (Help walkthrough), F76 (visual regression testing), F77 (hookify proceed-prompt rule), F78 (widget tests for ManualRuleCreateScreen) -- all HOLD post-Windows-Store
-- **Tests**: +49 (1362 total passing, 0 analyzer issues)
-- **Process improvement**: Phase 7.3 Prompt Protocol added to `docs/SPRINT_EXECUTION_WORKFLOW.md` to prevent Claude-authored PO/SM/Lead retrospective feedback (Sprint 34 violation corrected)
-- **Retrospective**: docs/sprints/SPRINT_34_RETROSPECTIVE.md
-- **Summary**: docs/sprints/SPRINT_34_SUMMARY.md
+  - Bug fix (1): BUG-S34-1 (1-line stale `expect(resetResult.rules, 5)` fix in default_rule_set_service_test.dart line 422; restored develop test suite to 1363/0)
+  - Testing execution (1): F69 (drove all 7 Sprint 34 WinWright scripts via MCP primitives against fresh Windows desktop dev build; 7 of 7 PASS; pivoted from JSON `run` schema to interactive MCP)
+  - F56 script lifecycle update (in-sprint per §4a): both F56 scripts now do create -> verify -> delete -> verify-absent; test data retuned to non-colliding values (`.museum`, `winwright-e2e-test.invalid`)
+  - WinWright run policy formalized: conditional per sprint + state-restoring (TESTING_STRATEGY.md mapping table)
+  - Sprint 35 retrospective process improvements (P1, P2, P4, P5 applied; P3 backlogged): Phase Auto-Advance Rule (CLAUDE.md), Standing Approval Inventory (Phase 3.7), Model-Version Pitfalls appendix (CLAUDE.md), Sprint Resume Pattern memory; Category 2 testing-gap closure as Phase 5.1.1 step 2a sibling-grep
+- **Backlog additions**: BUG-S35-1 (manual rule UI accepts duplicates -- Issue #239), F79 (full WinWright sweep -- HOLD, Issue #240), F80 (1-page Phase Cheat Sheet -- Issue #241, P3 deferred from retro)
+- **Tests**: +0 net (1 line changed, no new tests; 1363 total passing, 0 analyzer issues)
+- **Process improvement**: Codified the Opus 4.7 phase-boundary autonomy pattern that 4.6 had implicitly internalized; surfaced in retro after ~4h wall-clock cost across S34-S35
+- **Retrospective**: docs/sprints/SPRINT_35_RETROSPECTIVE.md
+- **PR**: #238 (against develop)
 
 ---
 
@@ -146,6 +147,16 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Priority screens: scan progress, results display, settings
 - Related: F55 (navigation consistency) should be done before or with this
 - Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gap G23)
+
+### Process
+
+**F80. 1-page Phase Cheat Sheet for SPRINT_EXECUTION_WORKFLOW.md (~45min) Priority 80 (Issue #241)**
+- Phase: Process / Documentation
+- Platform: N/A (Claude Code workflow)
+- Add a compact (~30-line) Phase Cheat Sheet at the top of SPRINT_EXECUTION_WORKFLOW.md (currently 1357 lines) so models can identify current phase + next action without reading the full doc
+- Format: 7-row table (Phase | Purpose | Top-3 Actions | Auto-advance trigger) with anchor links to detailed sections
+- Source: Sprint 35 retrospective Process Issues -- proposal P3 (Opus 4.7 phase-boundary overhead)
+- Companion to Sprint 35 fixes already shipped: Phase Auto-Advance Rule (CLAUDE.md), Standing Approval Inventory (Phase 3.7), Model-Version Pitfalls appendix (CLAUDE.md)
 
 ### Bugs
 
@@ -1104,6 +1115,7 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 5.12 | 2026-04-19 | Sprint 35 retrospective complete (Phase 7): Applied four of five proposed process improvements -- P1 Phase Auto-Advance Rule (CLAUDE.md item 7), P2 Standing Approval Inventory (Phase 3.7), P4 Model-Version Pitfalls appendix (CLAUDE.md), P5 Sprint Resume Pattern memory. Backlogged P3 as F80 (Phase Cheat Sheet, Issue #241). Closed Category 2 testing gap by adding Phase 5.1.1 step 2a (test-assertion sibling sweep for structural-data changes). Promoted Sprint 35 to Last Completed Sprint; added Sprint 35 row to Past Sprint Summary. |
 | 5.11 | 2026-04-19 | Sprint 35 in progress: Removed BUG-S34-1 and F69 (both shipping in Sprint 35 PR #238). Added BUG-S35-1 (manual rule UI accepts duplicates -- Issue #239) discovered during F69 execution; cleanup required direct SQLite delete because UI couldn't disambiguate the duplicate from the bundled rule. Added F79 (Full WinWright E2E sweep) as HOLD item -- Issue #240, on-demand only, distinct from per-sprint conditional WinWright runs. |
 | 5.10 | 2026-04-19 | Sprint 34 post-merge cleanup (pre-Sprint-35 backlog refinement): Removed F56, F73, F62, F72 from Next Sprint Candidates -- all four shipped in Sprint 34 (PR #236, see CHANGELOG 2026-04-18). Master plan now reflects only incomplete work for Sprint 35 planning. F69 (WinWright E2E) kept on list -- Sprint 34 shipped only the JSON test scripts (line 35 of CHANGELOG); execution work remains. |
 | 5.9 | 2026-04-19 | Sprint 34 post-merge: Added BUG-S34-1 (stale `expect(resetResult.rules, 5)` assertion in default_rule_set_service_test.dart that escaped F73 review and broke develop after PR #236 merge). Carry-in for Sprint 35 per Harold (option 3). |

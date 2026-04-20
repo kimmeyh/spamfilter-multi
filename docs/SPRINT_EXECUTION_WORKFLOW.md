@@ -324,6 +324,37 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
 
   **Decision Rule**: If task acceptance criteria can be met with this decision, execute it. Only ask if acceptance criteria do not provide enough guidance.
 
+  **Standing Approval Inventory (Sprint 35+)**: Sprint plan approval at Phase 3 grants the following standing authorizations until sprint close. None of these require a per-occurrence permission prompt.
+
+  **[OK] Plan-approved actions (execute without asking)**:
+  - All file edits implementing approved tasks
+  - `git add` / `git commit` (single logical commits per task or task batch)
+  - `git push` to the sprint feature branch (`feature/YYYYMMDD_Sprint_N`)
+  - PR creation against `develop` and PR description / body updates on the sprint PR
+  - Build commands: `build-windows.ps1`, `flutter test`, `flutter analyze`, `build-with-secrets.ps1` (for sprint-relevant build types)
+  - Launching the desktop app for manual testing (Phase 5.3)
+  - WinWright MCP interactions per the conditional + state-restoration rule (`docs/TESTING_STRATEGY.md` Desktop E2E section)
+  - SQLite reads against the dev DB for diagnostic purposes
+  - Sprint doc updates: `CHANGELOG.md`, `docs/sprints/SPRINT_N_PLAN.md`, `docs/sprints/SPRINT_N_RETROSPECTIVE.md`, `docs/sprints/SPRINT_N_SUMMARY.md`, `docs/ALL_SPRINTS_MASTER_PLAN.md`
+  - GitHub issue creation for backlog items / bugs surfaced by sprint work (BUG-S##-#, F## entries)
+  - Memory file writes under `.claude/memory/` per the auto-memory protocol
+  - `gh pr view`, `gh issue view`, `gh issue list`, `gh pr list` (read-only GitHub CLI)
+
+  **[FAIL] Always-confirm actions (ask each time, regardless of plan approval)**:
+  - `git push --force` or `git push --force-with-lease`
+  - `git reset --hard`, `git checkout --` against tracked files, `git branch -D`
+  - Branch deletion (local or remote)
+  - `git rebase -i` or any interactive git command
+  - SQLite `DELETE` / `UPDATE` against the dev DB (Sprint 35 used this for cleanup; should have asked first)
+  - Modifications to secrets files (`secrets.dev.json`, `secrets.prod.json`, `google-services.json`)
+  - `flutter pub upgrade` or any dependency version change not explicitly in the plan
+  - `git push` to `develop` or `main` (only Harold pushes to these)
+  - Creating a PR against `main` (Claude PRs target `develop` only -- per CLAUDE.md branch policy)
+  - Hooks: `--no-verify`, `--no-gpg-sign`, or any commit/push that bypasses configured hooks
+  - Any action against shared infrastructure (CI configs, GitHub Actions workflows) outside the sprint plan
+
+  **Rationale**: Per Sprint 35 retro Process Issues, Opus 4.7 has a higher tendency to confirm before visible/persistent actions than prior models. This inventory makes the autonomy boundary explicit: if the action is in the [OK] list, execute it; if it's in the [FAIL] list, confirm. Anything not enumerated falls back to the Decision Rule above.
+
 **[CHECKPOINT]** Before proceeding to Phase 4, re-read Phase 4 items in `docs/SPRINT_CHECKLIST.md`.
 
 ---
@@ -443,6 +474,11 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
        - If sprint changes error handling in class Z, grep for other catch blocks that might need the same treatment
        - If sprint redacts sensitive data in file A, grep for other places the same sensitive variable is logged
        - Include findings in the review output tagged as `POTENTIAL_MISS: similar pattern at <file:line>`
+    2a. **Test-assertion sibling sweep for structural-data changes (MECHANICAL - run when applicable)**: When a sprint task changes a piece of structural data that tests assert against (seed count, default rule list size, default settings count, bundled YAML row count, schema field count, etc.), grep `test/` for ALL assertions that reference the old value or the data-producing function and verify each was updated. Do not rely on review judgment alone -- this is a 5-minute mechanical check.
+       - Trigger: any sprint task that modifies a function whose return value is asserted by tests with a literal expected value (e.g., `expect(x.length, 5)`, `expect(rules.count, 1638)`)
+       - Steps: (1) identify the changed data-producer (function, constant, bundled file); (2) `grep -rn "<producer-name>" test/`; (3) for each match, verify the literal expected value still holds; (4) if the change is structural (count, size, shape), prefer `greaterThan(N)` / `lessThan(N)` assertions over exact literals to make future structural changes non-breaking
+       - Why: Sprint 34 F73 changed bundled YAML from 5 monolithic blobs to 1638 individual rows. Three of four sibling assertions in `default_rule_set_service_test.dart` were updated to `greaterThan(100)`; the fourth at line 422 was missed because the reviewer focused on the diff, not on every sibling. Result: post-merge develop test suite went red. Sprint 35 BUG-S34-1 fix.
+       - Does not apply to: bug fixes that don't change data shape, refactors with no data change, doc-only updates
     3. **Two-phase review for cross-cutting policies (CONDITIONAL)**: When the sprint delivers a codebase-wide policy (not just a file-scoped change), run the code reviewer a second time with a feature-sweep prompt:
        - Applies when: feature is a cross-cutting policy (logging redaction, error handling pattern, input validation rule, accessibility attribute, etc.)
        - Does not apply when: feature is a single-screen UI change, a single-service implementation, or a bug fix
