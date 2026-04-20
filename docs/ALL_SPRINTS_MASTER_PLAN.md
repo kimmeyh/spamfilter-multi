@@ -151,14 +151,17 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 
 ### Process
 
-**F81. Store release process documentation (~3-4h) Priority 100 -- SPRINT 36 CARRY-IN (Issue #242)**
+**F81. Store release process documentation (~5-6h) Priority 100 -- SPRINT 36 CARRY-IN (Issue #242)**
 - Phase: Documentation / Release Engineering
 - Platform: Windows (Microsoft Store)
-- Mandatory Sprint 36 task -- not backlog. Carry-in from Sprint 35 retrospective Category 13 addendum (post-retro 2026-04-19).
-- New `docs/STORE_RELEASE_PROCESS.md`: end-to-end walkthrough -- pre-release checklist, version bump (5-file checklist), supported rebuild instructions (`flutter pub run msix:create`), MSIX verification, develop -> main merge process, Microsoft Partner Center upload + submit walkthrough, post-submission steps
+- Mandatory Sprint 36 task -- not backlog. Carry-in from Sprint 35 retrospective Category 13 addendum (post-retro 2026-04-19); scope expanded 2026-04-20 after the prod-worktree rebuild surfaced 3 additional gaps (see Issue #242 comment).
+- New `docs/STORE_RELEASE_PROCESS.md`: end-to-end walkthrough -- pre-release checklist, version bump (5-file checklist), supported rebuild instructions (`flutter pub run msix:create` + the mandatory `build_windows_args` config), MSIX verification, develop -> main merge process, Microsoft Partner Center upload + submit walkthrough, post-submission steps
 - Deprecate or remove `mobile-app/scripts/build-msix.ps1` (had a PowerShell parser bug patched in Sprint 35; the Dart `msix` package path is the supported one and is what's wired in `pubspec.yaml`)
+- Fix `mobile-app/.gitignore` line 120 (`*.manifest` blocks `runner.exe.manifest` which is required by Windows runner CMakeLists -- breaks fresh worktree builds with "No SOURCES given to target")
+- Document `secrets.prod.json` recreation procedure (3 required keys: `WINDOWS_GMAIL_DESKTOP_CLIENT_ID`, `WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET`, `GMAIL_REDIRECT_URI`); update `secrets.prod.json.template` to use the actual key names the code reads (template currently lists wrong key names)
+- Document `build_windows_args` in `msix_config` as a hard requirement (without it, `msix:create` silently produces MSIX with empty OAuth credentials -- Gmail sign-in fails at runtime for every user)
 - Update CLAUDE.md Common Commands and ADR-0035 cross-references
-- Source: Sprint 35 store-prep made gaps visible (no team-runnable walkthrough doc, faulty script, undocumented merge + upload flow)
+- Source: Sprint 35 store-prep + 2026-04-20 prod rebuild made all gaps visible
 
 **F80. 1-page Phase Cheat Sheet for SPRINT_EXECUTION_WORKFLOW.md (~45min) Priority 80 (Issue #241)**
 - Phase: Process / Documentation

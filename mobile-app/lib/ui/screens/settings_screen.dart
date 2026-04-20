@@ -470,7 +470,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Version 0.5.2${AppEnvironment.displaySuffix}',
+                            'Version 0.5.3${AppEnvironment.displaySuffix}',
                             style: TextStyle(color: Colors.grey.shade700),
                           ),
                         ],

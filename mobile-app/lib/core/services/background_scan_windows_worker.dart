@@ -42,7 +42,7 @@ class BackgroundScanWindowsWorker {
       final logDir = await _getLogDir();
       final logPrefix = AppEnvironment.logPrefix;
       final logFile = File(
-        '$logDir\\${logPrefix}background_scan_v0.5.2.log',
+        '$logDir\\${logPrefix}background_scan_v0.5.3.log',
       );
       final timestamp = DateTime.now().toIso8601String();
       await logFile.parent.create(recursive: true);
