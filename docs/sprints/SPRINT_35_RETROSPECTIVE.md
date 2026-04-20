@@ -90,8 +90,8 @@ Roles: **PO** = Product Owner (Harold), **SM** = Scrum Master (Harold), **LD** =
 
 ### Category 13 — Minor function updates for next sprint plan
 
-- **PO/SM/LD**: None
-- **CC**: None to add.
+- **PO/SM/LD** (added 2026-04-19, post-retro, after store-release prep): Document the store update process end-to-end. Includes: official rebuild instructions, version-bump process, removing the faulty `build-msix.ps1` instructions (the script with the PowerShell parser bug -- `flutter pub run msix:create` is the supported path), develop -> main merge process, Microsoft Partner Center upload + submit walkthrough so the team can do it without me. **Not for backlog -- must be in Sprint 36.**
+- **CC**: Agree -- this surfaced exactly because the Sprint 35 store-prep made the gaps visible (build-msix.ps1 had a parser bug we patched as a side-find; there was no single doc that walked the team through bump -> rebuild -> merge -> upload). Recommend a single new doc `docs/STORE_RELEASE_PROCESS.md` plus targeted edits to CLAUDE.md (Common Commands), `mobile-app/scripts/build-msix.ps1` (header note pointing to the supported path), and ADR-0035 (cross-reference). Estimated effort ~3-4h (Sonnet).
 
 ### Category 14 — Function updates for future backlog
 
@@ -167,10 +167,11 @@ What 4.7 may do differently by default:
 
 ## Carry-ins for Sprint 36 (from this retro)
 
-- **Category 13 minor updates for Sprint 36 plan**: None
+- **Category 13 minor updates for Sprint 36 plan**: Document the store update process end-to-end (added 2026-04-19 post-retro). Mandatory Sprint 36 task -- not backlog. See F81 below.
 - **Category 14 future backlog additions**: None added in retro (BUG-S35-1, F79, F80 were added during sprint execution)
-- **Recommended Sprint 36 Task 1**: BUG-S35-1 (Issue #239, ~2-3h, Priority 70) -- smoke test for new docs
-- **Recommended Sprint 36 Task 2**: F80 (Issue #241, ~45min, Priority 80) -- complete the P3 cheat sheet
+- **Mandatory Sprint 36 Task (carry-in)**: F81 (~3-4h, Sonnet) -- Document store release process. New `docs/STORE_RELEASE_PROCESS.md` covering version bump, official rebuild instructions (`flutter pub run msix:create`), develop -> main merge, MSIX verification, Microsoft Partner Center upload + submit walkthrough. Update CLAUDE.md Common Commands, add deprecation note to `mobile-app/scripts/build-msix.ps1`, cross-reference ADR-0035. Driven by Sprint 35 store-prep gaps surfaced in real time (build-msix.ps1 parser bug, no single team-runnable walkthrough doc). Sprint 35 also bumped dev to 0.5.2.0 and built MSIX; Sprint 36 must bump to 0.5.3.0 per ADR-0035 patch+1 convention.
+- **Recommended Sprint 36 Task 2**: BUG-S35-1 (Issue #239, ~2-3h, Priority 70) -- smoke test for new docs
+- **Recommended Sprint 36 Task 3**: F80 (Issue #241, ~45min, Priority 80) -- complete the P3 cheat sheet
 - **Sprint 36 success metric tied to this retro**: Wall-clock execution time per task should drop measurably vs Sprint 34/35; if not, the doc updates need iteration
 
 ---
