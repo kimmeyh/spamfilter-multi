@@ -42,7 +42,7 @@ This document describes the step-by-step process for executing sprints in the sp
 
 | Phase | Name | Purpose |
 |-------|------|---------|
-| **Phase 1** | Backlog Refinement | Optional, on-demand backlog grooming |
+| **Phase 1** | Backlog Refinement | **MANDATORY** -- every sprint; no PO request needed (Sprint 36 policy change) |
 | **Phase 2** | Sprint Pre-Kickoff | Verify prerequisites before starting |
 | **Phase 3** | Sprint Kickoff & Planning | Plan sprint, create branch and issues |
 | **Phase 4** | Sprint Execution (Development) | Implement tasks, test, commit |
@@ -54,31 +54,36 @@ This document describes the step-by-step process for executing sprints in the sp
 
 ## Sprint Execution Checklist
 
-### **Phase 1: Backlog Refinement** (OPTIONAL - On-Demand)
+### **Phase 1: Backlog Refinement** (MANDATORY -- every sprint, no PO request needed)
 
-Backlog refinement is conducted **when requested by Product Owner**, not before every sprint.
+**Policy change (Sprint 36, 2026-04-20)**: Phase 1 Backlog Refinement is now **MANDATORY** for every sprint. It does NOT require an explicit Product Owner request. Do NOT ask the user "should we do backlog refinement?" -- just run it. Skipping or asking is a process violation.
 
-- [ ] **1.1 Check if Refinement is Requested**
-  - Product Owner explicitly requests backlog refinement
-  - Skip to Phase 2 if refinement not requested
-  - Quick priority changes can be handled during Phase 3 without full refinement
+This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIONAL - On-Demand" language) and also skipped the Phase 3 sub-step that presents candidates in BACKLOG_REFINEMENT.md format. The user did not get a chance to redirect scope before the plan doc was drafted. Making Phase 1 mandatory forces the candidate-presentation step every sprint.
 
-- [ ] **1.2 Conduct Refinement Session** (30-60 minutes, timeboxed)
-  - **Prepare**: Read current backlog state from ALL_SPRINTS_MASTER_PLAN.md and ISSUE_BACKLOG.md
+- [ ] **1.1 Refinement Session** (30-60 minutes, timeboxed)
+  - **Prepare**: Read current backlog state from ALL_SPRINTS_MASTER_PLAN.md and ISSUE_BACKLOG.md (if present)
   - **Review**: Scan all items, identify stale entries (over 3 sprints old)
   - **Prioritize**: Re-order based on value, effort, and risk
   - **Estimate**: Update estimates with velocity calibration from recent sprints
   - **Add**: Capture newly identified work items
   - **Cleanup**: Remove obsolete items, update dependencies
 
+- [ ] **1.2 Present Candidates to User in BACKLOG_REFINEMENT.md Format**
+  - Required format: bullet-list per item with `**<ID>. <Title> (~<effort>) Priority <N>**` header + bullet details
+  - Do NOT use grid tables (explicit convention violation)
+  - Grouped by priority tier, HOLD items at bottom
+  - Include observations/alternative composition options when scope is tight
+  - Record user's selection for Phase 3 plan doc
+  - **This step is what Phase 3.2.1 used to reference ambiguously. It is now clearly owned by Phase 1.2.**
+
 - [ ] **1.3 Document Refinement Results**
-  - Update ALL_SPRINTS_MASTER_PLAN.md "Future Features" section
+  - Update ALL_SPRINTS_MASTER_PLAN.md "Next Sprint Candidates" section per the Maintenance Guide at top of that document
   - Update ISSUE_BACKLOG.md if issues changed
   - Commit changes: `git commit -m "docs: Backlog refinement - [date] - [summary]"`
 
 **Detailed Process**: See `BACKLOG_REFINEMENT.md` for complete step-by-step guide.
 
-**When to Request Refinement**:
+**Triggers that expand refinement scope beyond the baseline** (still mandatory baseline regardless):
 - Significant new features need scoping
 - Priorities have shifted due to business changes
 - Backlog items over 3 sprints old without review

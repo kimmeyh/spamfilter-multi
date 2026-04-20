@@ -128,6 +128,19 @@ $legitimatePatterns = @(
     '(?i)cannot proceed without .{0,80}(external|user input|credentials|secrets|approval|new|additional|authorization)' # §2
     '(?i)requires? .{0,80}(new|additional|external) (credentials|secrets|approval|api access|authorization)'  # §2
     '(?i)stopping criterion [1-9]'                              # Explicit §N invocation
+
+    # Phase 1 Backlog Refinement presentation (MANDATORY per SPRINT_EXECUTION_WORKFLOW.md Phase 1)
+    # After presenting candidates in BACKLOG_REFINEMENT.md format, the user's selection IS the documented gate.
+    # Allow the stop when the turn is clearly a refinement presentation.
+    '(?i)(next sprint candidates|backlog refinement|sprint 3\d candidate list|candidates? in .*sprint refinement format)'
+    '(?i)priority \d+ .{0,40}(mandatory|carry-?in|core app|process|bugs?|security|hold)'   # Priority-tier headers used in refinement format
+    '(?i)(your call|your selection|which items|select items for sprint|approve the drafted plan|redirect scope)'
+    '(?i)phase 3 .{0,40}(approval|approve|exit gate|scope change)'                 # Plan-approval gate is §3
+
+    # Phase 7 retrospective 7-Step Protocol Step 1: sending the retro prompt to Harold is a documented required stop
+    '(?i)(phase 7|sprint retrospective|retro) .{0,30}(prompt|feedback|awaiting)'
+    '(?i)please provide .{0,40}(retrospective|product owner|scrum master|lead developer) feedback'
+    '(?i)(14 categories|4 roles|7-step protocol)'
     '(?i)scope change'                                              # §3
     '(?i)expanding (beyond|outside) (sprint|task|plan) (scope|definition)'                # §3
     '(?i)critical bug'                                              # §4
