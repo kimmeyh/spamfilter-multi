@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: April 19, 2026 (Sprint 34 post-merge cleanup: removed completed F56/F73/F62/F72 candidates; added BUG-S34-1 carry-in for stale test assertion that escaped F73 review)
+**Last Updated**: April 19, 2026 (Sprint 35 in progress: removed BUG-S34-1 and F69 (shipping in Sprint 35); added BUG-S35-1 (duplicate-rule bug discovered during F69 execution, Issue #239) and F79 (full WinWright sweep, HOLD, Issue #240))
 
 ## How to Maintain This Document
 
@@ -147,17 +147,16 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Related: F55 (navigation consistency) should be done before or with this
 - Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gap G23)
 
-### Testing
+### Bugs
 
-**F69. E2E WinWright desktop tests - scan flows, history, settings (~6-8h) Priority 58**
-- Phase: Testing / Quality
-- Platform: Windows
-- E2E tests using WinWright (desktop accessibility automation):
-  - Manual scan: run scan, navigate to Scan History, tap the scan entry, verify displayed counts match
-  - Background scan: trigger background scan, navigate to Scan History, tap the background scan entry, verify displayed counts match (validates Sprint 31 fix for stale results bug)
-  - Select email address: verify account selection flow
-  - Settings: test all settings on all tabs (General, Scan, Background, Account overrides)
-- Source: Sprint 31 manual testing feedback (scan history showed wrong results for background scan)
+**BUG-S35-1. Manual rule creation allows duplicate TLD entries (~2-3h) Priority 70 (Issue #239)**
+- Phase: Bug fix
+- Platform: All (rule logic), Windows (where discovered)
+- File: `mobile-app/lib/core/services/manual_rule_creator.dart` (or equivalent), plus widget validation in `ManualRuleCreateScreen`
+- Failure: Saving a TLD block rule for a TLD already in the bundled rules table (e.g., `.xyz`) silently inserts a duplicate row. Two rules with identical pattern and identical sub-type both run on every scan.
+- Fix: Add a uniqueness check on save -- compare normalized pattern + condition_type + sub_type against existing rules table; reject with validation error if match found. Same logic for safe senders.
+- Discovery: Sprint 35 F69 execution; required direct SQLite cleanup because UI delete path was non-deterministic when two rules shared the same visible label.
+- Source: Sprint 35 F69 manual testing (`docs/sprints/SPRINT_35_PLAN.md` Manual Testing Notes)
 
 ### Security Hardening (Sprint 31 Audit)
 
@@ -326,14 +325,13 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Platform: All
 - From Sprint 34 retro Category 14: Only logic-level tests for F56 exist. Add widget tests covering radio button selection, input field validation feedback, pattern preview rendering, and confirmation dialog.
 
-**BUG-S34-1. Stale test assertion -- `seedIfEmpty skips after resetToDefaults has populated data` (~10min) Priority 95**
-- Phase: Bug fix (Sprint 34 escape -- found post-merge to develop on 2026-04-19)
-- Platform: All
-- File: `mobile-app/test/unit/services/default_rule_set_service_test.dart` line 422
-- Failure: `expect(resetResult.rules, 5)` -- pre-F73 expected count; post-F73 rebuild produces 1638 rules. Other assertions in the same file (lines 105, 122, 173) were updated to `greaterThan(100)` during F73; this line was missed
-- Fix: Change line 422 from `expect(resetResult.rules, 5)` to `expect(resetResult.rules, greaterThan(100))` to match the convention used elsewhere in the file
-- Source: PR #236 post-merge `flutter test` regression discovered during Sprint 34 post-merge cleanup
-- Note: Carry-in for Sprint 35 per Harold (option 3, 2026-04-19). Should be the first task of Sprint 35 to restore green test suite on develop
+**F79. Full WinWright E2E test sweep (run entire suite end-to-end) (~4-8h) Priority HOLD (Issue #240)**
+- Phase: Testing / Quality
+- Platform: Windows
+- Run the *entire* WinWright suite (currently 7 scripts) end-to-end against a fresh Windows desktop dev build, with strict pre/post snapshot of DB state to verify zero test artifacts left behind
+- Distinct from per-sprint conditional WinWright runs (which only execute scripts whose tested surface was touched by sprint changes)
+- Triggers: major release prep, large UI refactor (>10 files in `lib/ui/`), accessibility-tree change, or Product Owner request
+- HOLD rationale: On-demand only; not a recurring sprint item. Activate when a trigger condition is met.
 
 ### HOLD Items (Android / Google Play Store)
 
@@ -1106,6 +1104,7 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 5.11 | 2026-04-19 | Sprint 35 in progress: Removed BUG-S34-1 and F69 (both shipping in Sprint 35 PR #238). Added BUG-S35-1 (manual rule UI accepts duplicates -- Issue #239) discovered during F69 execution; cleanup required direct SQLite delete because UI couldn't disambiguate the duplicate from the bundled rule. Added F79 (Full WinWright E2E sweep) as HOLD item -- Issue #240, on-demand only, distinct from per-sprint conditional WinWright runs. |
 | 5.10 | 2026-04-19 | Sprint 34 post-merge cleanup (pre-Sprint-35 backlog refinement): Removed F56, F73, F62, F72 from Next Sprint Candidates -- all four shipped in Sprint 34 (PR #236, see CHANGELOG 2026-04-18). Master plan now reflects only incomplete work for Sprint 35 planning. F69 (WinWright E2E) kept on list -- Sprint 34 shipped only the JSON test scripts (line 35 of CHANGELOG); execution work remains. |
 | 5.9 | 2026-04-19 | Sprint 34 post-merge: Added BUG-S34-1 (stale `expect(resetResult.rules, 5)` assertion in default_rule_set_service_test.dart that escaped F73 review and broke develop after PR #236 merge). Carry-in for Sprint 35 per Harold (option 3). |
 | 5.8 | 2026-04-16 | Sprint 33 completion: Removed F53, F54, F55, F65, F66 (features) and SEC-1b, SEC-14, SEC-19, SEC-22 (security). SEC-8 split -- HTTPS pinning done; SEC-8b tracks remaining IMAP pinning. SEC-11 split -- infrastructure done; SEC-11b tracks SQLCipher driver swap + migration. Added Sprint 33 to Past Sprint Summary. Updated Last Completed Sprint. |

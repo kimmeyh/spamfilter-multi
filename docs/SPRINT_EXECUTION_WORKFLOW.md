@@ -603,6 +603,8 @@ After Phase 5.2 all tests pass, context can be compacted for efficiency:
 
   **Reference**: See `docs/MANUAL_INTEGRATION_TESTS.md` for comprehensive test scenarios
 
+  **Conditional WinWright E2E (Sprint 35 policy)**: If sprint changes touch any UI surface covered by a WinWright script, run the matching script(s) only -- not the full suite. See the When-to-Run table in `docs/TESTING_STRATEGY.md` (Desktop E2E section). Every script must obey the state-restore rule: any rule, safe sender, or setting it creates or modifies must be reverted before the script ends. The full WinWright sweep (F79, HOLD, Issue #240) is on-demand only.
+
   **NOTE**: Starting Sprint 5, user tests in parallel while Claude completes Phase 6-7
   - **User Ready?**: Yes -> Begin manual testing on running app
   - **Claude Meanwhile**: Proceeds to Phase 6.3 (PR creation) while monitoring app

@@ -1,12 +1,18 @@
 {
-  "name": "F56 - Create entire-domain safe sender via manual rule UI",
-  "description": "Open Manage Safe Senders screen, tap Add FAB, select Entire Domain type, enter a domain, save, and verify the new safe sender appears.",
+  "name": "F56 - Create AND remove entire-domain safe sender (full lifecycle)",
+  "description": "Open Manage Safe Senders screen, tap Add FAB, select Entire Domain type, enter a uniquely-named test domain (winwright-e2e-test.invalid), save, verify the new safe sender appears, then delete it and verify removal. Uses .invalid TLD per RFC 6761 to guarantee no real-world email collision; pattern parser accepts it because validation is structural (regex), not IANA membership lookup.",
   "sprint": 34,
   "feature": "F56 + F69",
   "prerequisites": [
     "Windows desktop dev build running",
-    "SPI_SETSCREENREADER flag enabled"
+    "SPI_SETSCREENREADER flag enabled",
+    "test_data.domain is NOT pre-existing in safe_senders table"
   ],
+  "test_data": {
+    "domain": "winwright-e2e-test.invalid",
+    "rationale": "Per RFC 6761, .invalid is a reserved TLD guaranteed not to resolve in DNS, so this domain cannot collide with any real safe sender. The unique 'winwright-e2e-test' label avoids collision even if .invalid were on a future blocklist.",
+    "expected_pattern_substring": "winwright-e2e-test"
+  },
   "steps": [
     {
       "action": "wait",
@@ -14,21 +20,30 @@
     },
     {
       "action": "click",
-      "selector": "type=Button[name*='Settings']",
-      "comment": "Open Settings"
-    },
-    {
-      "action": "wait",
-      "ms": 800
-    },
-    {
-      "action": "click",
-      "selector": "type=Button[name*='Manage Safe Senders']",
-      "comment": "Open Manage Safe Senders"
+      "selector": "type=Button[name='Settings']",
+      "comment": "Open Settings (header opens account-selection dialog first per Sprint 35 finding)"
     },
     {
       "action": "wait",
       "ms": 1000
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name*='kimmeyharold']",
+      "comment": "Pick first account in selection dialog"
+    },
+    {
+      "action": "wait",
+      "ms": 2000
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name*='Manage Safe Senders']",
+      "comment": "Open Manage Safe Senders from Settings General tab"
+    },
+    {
+      "action": "wait",
+      "ms": 1500
     },
     {
       "action": "verify",
@@ -46,13 +61,13 @@
     },
     {
       "action": "verify",
-      "selector": "type=Text[name='Add Safe Sender']",
+      "selector": "type=Group[name='Add Safe Sender']",
       "comment": "Verify ManualRuleCreateScreen in safeSender mode"
     },
     {
       "action": "verify_absent",
       "selector": "type=RadioButton[name*='Top-Level Domain']",
-      "comment": "Verify TLD type is NOT shown for safe senders"
+      "comment": "Verify TLD type is NOT shown for safe senders (per F56 design)"
     },
     {
       "action": "click",
@@ -60,40 +75,116 @@
       "comment": "Select Entire Domain type"
     },
     {
-      "action": "click",
-      "selector": "type=Edit[name*='Enter email']",
-      "comment": "Focus input"
-    },
-    {
-      "action": "type",
-      "text": "test-trusted-domain.com",
-      "comment": "Enter a domain (use real IANA TLD .com so validation passes)"
-    },
-    {
       "action": "wait",
       "ms": 500
     },
     {
-      "action": "verify",
-      "selector": "type=Text[name*='test-trusted-domain']",
-      "comment": "Verify pattern preview contains the source domain (avoid matching unbalanced regex chars in the selector)"
+      "action": "click",
+      "selector": "type=Edit",
+      "comment": "Focus the input field"
     },
     {
-      "action": "click",
-      "selector": "type=Button[name*='Save Rule']"
+      "action": "type",
+      "text": "winwright-e2e-test.invalid",
+      "comment": "Enter unique test domain (RFC 6761 .invalid TLD prevents real-world collision)"
     },
     {
       "action": "wait",
       "ms": 800
     },
     {
+      "action": "verify",
+      "selector": "type=Text[name*='winwright-e2e-test']",
+      "comment": "Verify pattern preview contains source domain"
+    },
+    {
+      "action": "invoke",
+      "selector": "type=Button[name='Save Rule']",
+      "comment": "Use ww_invoke (UIA pattern) since Save Rule may be off-screen"
+    },
+    {
+      "action": "wait",
+      "ms": 1000
+    },
+    {
       "action": "click",
       "selector": "type=Button[name='Save']",
-      "comment": "Confirm"
+      "comment": "Confirm save"
+    },
+    {
+      "action": "wait",
+      "ms": 2000
+    },
+    {
+      "action": "verify",
+      "selector": "type=Group[name='Manage Safe Senders']",
+      "comment": "Back at Manage Safe Senders screen"
+    },
+    {
+      "action": "click",
+      "selector": "type=Edit[name*='Search']",
+      "comment": "Focus search bar to filter for our test entry"
+    },
+    {
+      "action": "type",
+      "text": "winwright-e2e-test",
+      "comment": "Search for the unique test marker"
     },
     {
       "action": "wait",
       "ms": 1500
+    },
+    {
+      "action": "verify",
+      "selector": "type=Button[name*='winwright-e2e-test']",
+      "comment": "VERIFY CREATE: the new safe sender appears in filtered list"
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name*='winwright-e2e-test']",
+      "comment": "Open detail dialog to access Delete button"
+    },
+    {
+      "action": "wait",
+      "ms": 1000
+    },
+    {
+      "action": "verify",
+      "selector": "type=Group[name='Alert']",
+      "comment": "Safe sender detail dialog opened"
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name='Delete']",
+      "comment": "Tap Delete in the safe sender detail dialog"
+    },
+    {
+      "action": "wait",
+      "ms": 1000,
+      "comment": "Wait for confirmation dialog"
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name='Delete']",
+      "comment": "Confirm deletion"
+    },
+    {
+      "action": "wait",
+      "ms": 2000
+    },
+    {
+      "action": "verify_absent",
+      "selector": "type=Button[name*='winwright-e2e-test']",
+      "comment": "VERIFY DELETE: safe sender is no longer in the filtered list"
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name='Clear']",
+      "comment": "Clear search filter to restore default view"
+    },
+    {
+      "action": "wait",
+      "ms": 500
     }
   ]
 }

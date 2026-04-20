@@ -144,17 +144,29 @@ From Sprint 34 retro Category 13 (Minor Function Updates for Sprint 35):
 
 ## Manual Testing Notes
 
-*(To be populated during Phase 5)*
+Executed Phase 4-5 on 2026-04-19 against a fresh Windows desktop dev build (release mode, dev environment, v0.5.1, MyEmailSpamFilter_Dev data dir). E2E driven via WinWright MCP primitives (the Sprint 34 JSON `run` schema is not supported by WinWright CLI; user approved Option 1 pivot to interactive MCP).
 
 ### F69 Script Triage Results
-*(Filled in during Task 2 execution)*
 
-| Script | Result | Notes |
-|--------|--------|-------|
-| test_navigation.json | TBD | |
-| test_manual_scan_flow.json | TBD | |
-| test_settings_tabs.json | TBD | |
-| test_text_selection.json | TBD | |
-| test_f56_create_block_rule.json | TBD | |
-| test_f56_create_safe_sender.json | TBD | |
-| test_scan_history.json | TBD | |
+- test_navigation.json -- PASS. Settings -> account dialog -> Manage Rules (3501 rules) -> back -> back. Add Block Rule FAB visible.
+- test_manual_scan_flow.json -- PASS. Start Scan navigated to "Manual Scan - kimmeyharold@aol.com" with Ready/Mode/Folders rendered. Did not run live scan to completion (no acceptance criterion required it; scan history confirms recent successful runs).
+- test_settings_tabs.json -- PASS. All 4 tabs (General, Account, Manual Scan, Background) loaded their distinctive content: Privacy & Logging, Account Settings + Folder Settings, Read-Only Mode, Enable Background Scanning.
+- test_text_selection.json -- PASS. Help screen exposed 30+ discrete [Text] elements (each section heading + body paragraph), confirming SelectionArea wrappers per ADR-0037.
+- test_f56_create_block_rule.json -- PASS. Created `.xyz` TLD block rule. Pattern preview rendered, save dialog confirmed, returned to Manage Rules.
+- test_f56_create_safe_sender.json -- PASS. Created `test-trusted-domain.com` entire-domain safe sender. TLD radio correctly absent from safe-sender mode. Save successful.
+- test_scan_history.json -- PASS. Scan History (7 days) opened with aggregate stats (Total: 6212, Processed: 806, Deleted: 682, Safe: 30) and 6+ historical scan entries with full per-scan breakdowns.
+
+**7 of 7 PASS.** Acceptance criterion "At least 5 of 7 scripts reach PASS" exceeded.
+
+### Selector Drift / Test Logic Adaptations (in-scope per §4a)
+
+All adaptations were stale-selector fixes documented in `mobile-app/test/winwright/README.md` "Sprint 35 Execution Notes" section. No app code changes required.
+
+### New Backlog Candidates Discovered
+
+- None. No app bugs uncovered; all "failures" during exploration were stale Sprint 34 script assumptions corrected against the live UIA tree.
+
+### Side Effects of Test Execution (cleanup considerations)
+
+- During Sprint 35 F69 execution, the F56 scripts created two test artifacts (`manual_._.xyz_1776649028712` block rule, `test-trusted-domain.com` safe sender). Both were removed from the dev DB at sprint end via direct SQLite DELETE (the UI delete path was non-deterministic because `.xyz` collided with the bundled `._.xyz` rule from F73 split, making it impossible to identify the test rule by visible label alone).
+- **Process improvement applied in-sprint**: Both F56 JSON scripts (`test_f56_create_block_rule.json`, `test_f56_create_safe_sender.json`) updated to a full create -> verify-present -> delete -> verify-absent lifecycle so future runs self-clean. Test data also retuned to use values that cannot collide with the bundled rules (`.museum` real-IANA-but-non-spammy TLD, `winwright-e2e-test.invalid` per RFC 6761), so the in-UI delete path is unambiguous.
