@@ -17,6 +17,8 @@ import 'package:logger/logger.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/safe_sender_database_store.dart';
 import '../widgets/app_bar_with_exit.dart';
+import 'help_screen.dart';
+import 'manual_rule_create_screen.dart';
 
 /// Categories for filtering safe sender patterns by structure
 enum SafeSenderCategory {
@@ -219,37 +221,40 @@ class _SafeSendersManagementScreenState
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Safe Sender Details'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _detailRow('Pattern', sender.pattern, monospace: true),
-            const SizedBox(height: 8),
-            _detailRow('Type', _formatPatternType(sender)),
-            const SizedBox(height: 8),
-            _detailRow('Added', dateStr),
-            const SizedBox(height: 8),
-            _detailRow('Source', _formatCreatedBy(sender.createdBy)),
-            if (sender.exceptionPatterns != null &&
-                sender.exceptionPatterns!.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Text(
-                'Exceptions (${sender.exceptionPatterns!.length})',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 4),
-              ...sender.exceptionPatterns!.map(
-                (ex) => Padding(
-                  padding: const EdgeInsets.only(left: 8, top: 4),
-                  child: Text(
-                    ex,
-                    style:
-                        const TextStyle(fontFamily: 'monospace', fontSize: 12),
+        // Sprint 33 fix: wrap in SelectionArea so users can copy pattern text.
+        content: SelectionArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _detailRow('Pattern', sender.pattern, monospace: true),
+              const SizedBox(height: 8),
+              _detailRow('Type', _formatPatternType(sender)),
+              const SizedBox(height: 8),
+              _detailRow('Added', dateStr),
+              const SizedBox(height: 8),
+              _detailRow('Source', _formatCreatedBy(sender.createdBy)),
+              if (sender.exceptionPatterns != null &&
+                  sender.exceptionPatterns!.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Text(
+                  'Exceptions (${sender.exceptionPatterns!.length})',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                ...sender.exceptionPatterns!.map(
+                  (ex) => Padding(
+                    padding: const EdgeInsets.only(left: 8, top: 4),
+                    child: Text(
+                      ex,
+                      style:
+                          const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
-          ],
+          ),
         ),
         actions: [
           TextButton(
@@ -324,13 +329,19 @@ class _SafeSendersManagementScreenState
         title: const Text('Manage Safe Senders'),
         actions: [
           IconButton(
+            tooltip: 'Help',
+            icon: const Icon(Icons.help_outline),
+            onPressed: () => openHelp(context, HelpSection.safeSenders),
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Refresh',
             onPressed: _loadSafeSenders,
           ),
         ],
       ),
-      body: Column(
+      body: SelectionArea(
+        child: Column(
         children: [
           // Search bar
           Padding(
@@ -393,14 +404,43 @@ class _SafeSendersManagementScreenState
                   ],
                 ),
                 const SizedBox(height: 6),
-                Text(
-                  _selectedCategories.isEmpty && _searchQuery.isEmpty
-                      ? '${_safeSenders.length} safe sender${_safeSenders.length == 1 ? '' : 's'}'
-                      : '${_filteredSenders.length} of ${_safeSenders.length} shown',
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 13,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      _selectedCategories.isEmpty && _searchQuery.isEmpty
+                          ? '${_safeSenders.length} safe sender${_safeSenders.length == 1 ? '' : 's'}'
+                          : '${_filteredSenders.length} of ${_safeSenders.length} shown',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: Icon(
+                        Icons.add_circle,
+                        // ADR-0037: use theme color (secondary for safe sender
+                        // affordance to differentiate from block-rule add).
+                        color: Theme.of(context).colorScheme.secondary,
+                      ),
+                      iconSize: 24,
+                      tooltip: 'Add safe sender',
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () async {
+                        final result = await Navigator.push<bool>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ManualRuleCreateScreen(
+                              mode: ManualRuleMode.safeSender,
+                            ),
+                          ),
+                        );
+                        if (result == true) {
+                          await _loadSafeSenders();
+                        }
+                      },
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -459,6 +499,7 @@ class _SafeSendersManagementScreenState
                       ),
           ),
         ],
+      ),
       ),
     );
   }

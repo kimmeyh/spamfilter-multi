@@ -18,6 +18,8 @@ import '../../core/models/rule_set.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/rule_database_store.dart';
 import '../widgets/app_bar_with_exit.dart';
+import 'help_screen.dart';
+import 'manual_rule_create_screen.dart';
 import 'rule_test_screen.dart';
 
 /// Screen for managing spam filtering rules
@@ -251,40 +253,45 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: Text(
+              child: SelectableText(
                 displayName,
                 style: const TextStyle(fontSize: 16, fontFamily: 'monospace'),
               ),
             ),
           ],
         ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _detailSection('Status', rule.enabled ? 'Enabled' : 'Disabled'),
-              _detailSection('Category', categoryLabel),
-              _detailSection('Sub-Type', subTypeLabel),
-              _detailSection('Action', _getActionLabel(rule)),
-              _detailSection('Exec Order', '${rule.executionOrder}'),
-              if (rule.name != displayName) _detailSection('Rule Name', rule.name),
+        // Sprint 33 fix: dialogs in Flutter sit in a separate overlay and
+        // are not covered by the screen-level SelectionArea. Wrap the dialog
+        // body in its own SelectionArea so users can copy rule/pattern text.
+        content: SelectionArea(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _detailSection('Status', rule.enabled ? 'Enabled' : 'Disabled'),
+                _detailSection('Category', categoryLabel),
+                _detailSection('Sub-Type', subTypeLabel),
+                _detailSection('Action', _getActionLabel(rule)),
+                _detailSection('Exec Order', '${rule.executionOrder}'),
+                if (rule.name != displayName) _detailSection('Rule Name', rule.name),
 
-              const SizedBox(height: 12),
-              const Text(
-                'Pattern',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-              ),
-              const SizedBox(height: 4),
-              if (rule.conditions.header.isNotEmpty)
-                _patternList('Header', rule.conditions.header),
-              if (rule.conditions.from.isNotEmpty)
-                _patternList('From', rule.conditions.from),
-              if (rule.conditions.subject.isNotEmpty)
-                _patternList('Subject', rule.conditions.subject),
-              if (rule.conditions.body.isNotEmpty)
-                _patternList('Body', rule.conditions.body),
-            ],
+                const SizedBox(height: 12),
+                const Text(
+                  'Pattern',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                const SizedBox(height: 4),
+                if (rule.conditions.header.isNotEmpty)
+                  _patternList('Header', rule.conditions.header),
+                if (rule.conditions.from.isNotEmpty)
+                  _patternList('From', rule.conditions.from),
+                if (rule.conditions.subject.isNotEmpty)
+                  _patternList('Subject', rule.conditions.subject),
+                if (rule.conditions.body.isNotEmpty)
+                  _patternList('Body', rule.conditions.body),
+              ],
+            ),
           ),
         ),
         actions: [
@@ -415,6 +422,11 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
         title: const Text('Manage Rules'),
         actions: [
           IconButton(
+            tooltip: 'Help',
+            icon: const Icon(Icons.help_outline),
+            onPressed: () => openHelp(context, HelpSection.manageRules),
+          ),
+          IconButton(
             icon: const Icon(Icons.science),
             tooltip: 'Test a pattern against sample emails',
             onPressed: () {
@@ -468,9 +480,13 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
           // Category filter chips
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Wrap(
+            child: SizedBox(
+              width: double.infinity,
+              child: Wrap(
               spacing: 8,
               runSpacing: 4,
+              alignment: WrapAlignment.start,
+              runAlignment: WrapAlignment.start,
               children: [
                 ..._categoryLabels.entries.map((entry) {
                   final count = categoryCounts[entry.key] ?? 0;
@@ -506,14 +522,34 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
                   ),
               ],
             ),
+            ),
           ),
 
-          // Sub-type filter chips
+          // Sub-type filter chips (header_from scope only -- subject/body
+          // rules do not have these sub-types)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Header / From sub-types:',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey.shade600,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Wrap(
+            child: SizedBox(
+              width: double.infinity,
+              child: Wrap(
               spacing: 8,
               runSpacing: 4,
+              alignment: WrapAlignment.start,
+              runAlignment: WrapAlignment.start,
               children: _subTypeLabels.entries.map((entry) {
                 final count = subTypeCounts[entry.key] ?? 0;
                 if (count == 0) return const SizedBox.shrink();
@@ -536,6 +572,7 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
                 );
               }).toList(),
             ),
+            ),
           ),
 
           const SizedBox(height: 4),
@@ -550,6 +587,31 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
                       ? '${_filteredRules.length} of ${_rules.length} shown'
                       : '${_rules.length} rules',
                   style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: Icon(
+                    Icons.add_circle,
+                    // ADR-0037: use theme color so dark mode + high-contrast
+                    // mode get appropriate adjustments automatically.
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  iconSize: 24,
+                  tooltip: 'Add block rule',
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () async {
+                    final result = await Navigator.push<bool>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ManualRuleCreateScreen(
+                          mode: ManualRuleMode.blockRule,
+                        ),
+                      ),
+                    );
+                    if (result == true) {
+                      await _loadRules();
+                    }
+                  },
                 ),
                 const Spacer(),
                 Container(

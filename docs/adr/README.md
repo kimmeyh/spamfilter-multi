@@ -31,17 +31,18 @@ This directory contains Architectural Decision Records for the spamfilter-multi 
 | [0023](0023-in-memory-pattern-caching.md) | In-Memory Pattern Caching | Accepted | ~2025-10 |
 | [0024](0024-canonical-folder-mapping.md) | Canonical Folder Mapping | Accepted | ~2026-01 |
 | [0025](0025-changelog-per-commit-policy.md) | CHANGELOG Updated Per Commit Policy | Accepted | ~2026-01 |
-| [0026](0026-application-identity-and-package-naming.md) | Application Identity and Package Naming | Proposed | 2026-02-15 |
-| [0027](0027-android-release-signing-strategy.md) | Android Release Signing Strategy | Proposed | 2026-02-15 |
-| [0028](0028-android-permission-strategy.md) | Android Permission Strategy | Proposed | 2026-02-15 |
-| [0029](0029-gmail-api-scope-and-verification-strategy.md) | Gmail API Scope and Verification Strategy | Proposed | 2026-02-15 |
-| [0030](0030-privacy-and-data-governance-strategy.md) | Privacy and Data Governance Strategy | Proposed | 2026-02-15 |
-| [0031](0031-app-icon-and-visual-identity.md) | App Icon and Visual Identity | Proposed | 2026-02-15 |
-| [0032](0032-user-data-deletion-strategy.md) | User Data Deletion Strategy | Proposed | 2026-02-15 |
-| [0033](0033-analytics-and-crash-reporting-strategy.md) | Analytics and Crash Reporting Strategy | Proposed | 2026-02-15 |
-| [0034](0034-gmail-access-method-for-production.md) | Gmail Access Method for Production | Proposed | 2026-02-15 |
+| [0026](0026-application-identity-and-package-naming.md) | Application Identity and Package Naming | Accepted | 2026-02-15 |
+| [0027](0027-android-release-signing-strategy.md) | Android Release Signing Strategy | Accepted | 2026-02-15 |
+| [0028](0028-android-permission-strategy.md) | Android Permission Strategy | Accepted | 2026-02-15 |
+| [0029](0029-gmail-api-scope-and-verification-strategy.md) | Gmail API Scope and Verification Strategy | Accepted | 2026-02-15 |
+| [0030](0030-privacy-and-data-governance-strategy.md) | Privacy and Data Governance Strategy | Accepted | 2026-02-15 |
+| [0031](0031-app-icon-and-visual-identity.md) | App Icon and Visual Identity | Accepted | 2026-02-15 |
+| [0032](0032-user-data-deletion-strategy.md) | User Data Deletion Strategy | Accepted | 2026-02-15 |
+| [0033](0033-analytics-and-crash-reporting-strategy.md) | Analytics and Crash Reporting Strategy | Accepted | 2026-02-15 |
+| [0034](0034-gmail-access-method-for-production.md) | Gmail Access Method for Production | Accepted | 2026-02-15 |
 | [0035](0035-production-development-side-by-side.md) | Production and Development Builds Side-by-Side on Windows | Accepted | 2026-03-18 |
 | [0036](0036-msix-signing-strategy.md) | MSIX Signing Strategy for Windows Store Submission | Accepted | 2026-03-19 |
+| [0037](0037-ui-accessibility-standards.md) | UI/Accessibility Standards and Cross-Platform Compatibility | Proposed | 2026-04-18 |
 
 ## Creating a New ADR
 

@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
 import '../widgets/app_bar_with_exit.dart';
+import 'help_screen.dart';
 import 'scan_history_screen.dart';
 import 'scan_progress_screen.dart';
 import 'settings_screen.dart';
@@ -424,14 +425,16 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     final summary = scanProvider.getSummary();
     final liveResults = scanProvider.results;
 
-    // [NEW] ISSUE #157: When a live scan is active (scanning/paused), always use
-    // live results even if empty (scan just started). Only show historical results
-    // when truly idle with no live results.
+    // When viewing from Scan History (historicalScanId provided), always use
+    // the historically-loaded results, not stale provider results from a
+    // previous live scan. Only use live provider results for active scans.
     final isLiveScanActive = scanProvider.status == ScanStatus.scanning ||
         scanProvider.status == ScanStatus.paused;
-    final allResults = (liveResults.isNotEmpty || isLiveScanActive)
-        ? liveResults
-        : _historicalResults;
+    final allResults = (widget.historicalScanId != null)
+        ? _historicalResults
+        : ((liveResults.isNotEmpty || isLiveScanActive)
+            ? liveResults
+            : _historicalResults);
     final filteredResults = _getFilteredResults(allResults);
 
     // Issue 3: Cache folders list for performance (only extract once per results set)
@@ -498,31 +501,26 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                 icon: const Icon(Icons.arrow_back),
                 tooltip: widget.historicalScanId != null
                     ? 'Back to Scan History'
-                    : 'Back to Scan Progress',
+                    : 'Back to Manual Scan',
                 onPressed: () {
                   // Dismiss any showing snackbar before navigating
                   ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                  if (widget.historicalScanId != null) {
-                    // [FIX] FB-1: When viewing from Scan History, pop back to history screen
-                    Navigator.pop(context);
-                  } else {
-                    // Push replacement to Scan Progress screen (same as Scan Again button)
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ScanProgressScreen(
-                          platformId: widget.platformId,
-                          platformDisplayName: widget.platformDisplayName,
-                          accountId: widget.accountId,
-                          accountEmail: widget.accountEmail,
-                        ),
-                      ),
-                    );
-                  }
+                  // F55 (Sprint 33, v3): pop to Manual Scan (ScanProgress).
+                  // ScanProgress subscribes to routeObserver and resets its
+                  // scan provider on didPopNext, so the user lands on a
+                  // clean "Ready to Scan" screen -- no partial results.
+                  Navigator.pop(context);
                 },
               ),
+        // F55 (Sprint 33, v3): standardized icon order --
+        // Download, Search, History, Accounts, Help, Settings, [X auto].
         actions: [
           if (!_showSearch) ...[
+            IconButton(
+              tooltip: 'Export Results to CSV',
+              icon: const Icon(Icons.file_download),
+              onPressed: () => _exportResults(context, scanProvider),
+            ),
             IconButton(
               tooltip: 'Search (Ctrl+F)',
               icon: const Icon(Icons.search),
@@ -531,11 +529,6 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                   _showSearch = true;
                 });
               },
-            ),
-            IconButton(
-              tooltip: 'Export Results to CSV',
-              icon: const Icon(Icons.file_download),
-              onPressed: () => _exportResults(context, scanProvider),
             ),
             IconButton(
               tooltip: 'View Scan History',
@@ -554,6 +547,29 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               },
             ),
             IconButton(
+              tooltip: 'Select Account',
+              icon: const Icon(Icons.people),
+              onPressed: () {
+                Navigator.popUntil(context, (route) => route.isFirst);
+              },
+            ),
+            IconButton(
+              tooltip: 'Help',
+              icon: const Icon(Icons.help_outline),
+              onPressed: () => openHelp(
+                context,
+                // Use demo-scan section when this screen is showing a demo
+                // scan, otherwise the default live-scan Results section.
+                widget.platformId == 'demo'
+                    ? HelpSection.demoScan
+                    : HelpSection.resultsDisplay,
+                accountId: widget.accountId,
+                accountEmail: widget.accountEmail,
+                platformId: widget.platformId,
+                platformDisplayName: widget.platformDisplayName,
+              ),
+            ),
+            IconButton(
               tooltip: 'Settings',
               icon: const Icon(Icons.settings),
               onPressed: () {
@@ -567,7 +583,8 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           ],
         ],
       ),
-      body: Padding(
+      body: SelectionArea(
+        child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -684,6 +701,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           ],
         ),
       ),
+      ), // Close SelectionArea
     ),
     ); // Close Focus widget for Issue 2: Ctrl+F shortcut
   }
@@ -754,8 +772,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   }
 
   Widget _buildSummary(Map<String, dynamic> summary, EmailScanProvider scanProvider, List<EmailActionResult> allResults) {
-    // [NEW] Testing feedback FB-4: Determine if showing live or historical results
-    final hasLiveResults = scanProvider.results.isNotEmpty || scanProvider.status == ScanStatus.scanning;
+    // Determine if showing live or historical results.
+    // When historicalScanId is set (viewing from Scan History), always treat as historical
+    // regardless of stale provider state.
+    final isViewingHistory = widget.historicalScanId != null;
+    final hasLiveResults = !isViewingHistory &&
+        (scanProvider.results.isNotEmpty || scanProvider.status == ScanStatus.scanning);
     final showingHistorical = !hasLiveResults && _lastCompletedScan != null;
 
     // [UPDATED] FB-2a: Use historical scan's mode when showing historical results,
@@ -1333,7 +1355,8 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               child: Material(
                 elevation: 8,
                 borderRadius: BorderRadius.circular(12),
-                child: SingleChildScrollView(
+                child: SelectionArea(
+                  child: SingleChildScrollView(
                   child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -1577,6 +1600,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
             ),
           ),
                 ),
+              ), // Close SelectionArea
               ),
             ),
           ],

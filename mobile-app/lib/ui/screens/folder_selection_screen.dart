@@ -17,6 +17,7 @@ import '../../adapters/email_providers/spam_filter_platform.dart';
 import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../adapters/auth/google_auth_service.dart';
+import 'help_screen.dart';
 import 'settings_screen.dart';
 
 /// Folder selection screen for email account
@@ -366,6 +367,16 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
         elevation: 0,
         actions: [
           IconButton(
+            tooltip: 'Help',
+            icon: const Icon(Icons.help_outline),
+            onPressed: () => openHelp(
+              context,
+              HelpSection.folderSelection,
+              accountId: widget.accountId,
+              platformId: widget.platformId,
+            ),
+          ),
+          IconButton(
             tooltip: 'Settings',
             icon: const Icon(Icons.settings),
             onPressed: () {
@@ -378,7 +389,7 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
           ),
         ],
       ),
-      body: Column(
+      body: SelectionArea(child: Column(
         children: [
           // Account info
           Container(
@@ -628,7 +639,7 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
               ),
             ),
         ],
-      ),
+      )),
     );
   }
 }

@@ -9,6 +9,7 @@ import '../../core/storage/rule_database_store.dart';
 import '../../core/storage/safe_sender_database_store.dart';
 import '../../core/utils/pattern_normalization.dart';
 import '../../core/utils/pattern_generation.dart';
+import 'help_screen.dart';
 import 'rule_test_screen.dart';
 
 enum RuleActionType { delete, move }
@@ -123,7 +124,9 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
             removedCount++;
           }
         } catch (e) {
-          // If pattern is not valid regex, check exact match
+          // SEC-18: Log warning for invalid regex pattern instead of silent fallback
+          _logger.w('Invalid regex in safe sender pattern "${safeSender.pattern}", '
+              'falling back to exact match: $e');
           if (safeSender.pattern.toLowerCase() == _normalizedEmail.toLowerCase()) {
             _logger.i('Removing conflicting safe sender (exact match): ${safeSender.pattern}');
             await widget.safeSenderStore!.removeSafeSender(safeSender.pattern);
@@ -398,6 +401,11 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
         elevation: 0,
         actions: [
           IconButton(
+            tooltip: 'Help',
+            icon: const Icon(Icons.help_outline),
+            onPressed: () => openHelp(context, HelpSection.ruleQuickAdd),
+          ),
+          IconButton(
             icon: const Icon(Icons.science),
             tooltip: 'Test pattern against sample emails',
             onPressed: () {
@@ -432,7 +440,8 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
       ),
       body: Form(
         key: _formKey,
-        child: SingleChildScrollView(
+        child: SelectionArea(
+          child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -452,6 +461,7 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
               _buildActionButtons(),
             ],
           ),
+        ),
         ),
       ),
     );

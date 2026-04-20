@@ -13,6 +13,7 @@ import '../services/app_environment.dart';
 import '../services/email_scanner.dart';
 import '../../adapters/storage/app_paths.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
+import '../../util/redact.dart';
 
 /// Windows-specific background scan worker
 ///
@@ -41,7 +42,7 @@ class BackgroundScanWindowsWorker {
       final logDir = await _getLogDir();
       final logPrefix = AppEnvironment.logPrefix;
       final logFile = File(
-        '$logDir\\${logPrefix}background_scan_v0.5.1.log',
+        '$logDir\\${logPrefix}background_scan_v0.5.2.log',
       );
       final timestamp = DateTime.now().toIso8601String();
       await logFile.parent.create(recursive: true);
@@ -93,14 +94,14 @@ class BackgroundScanWindowsWorker {
       await _bgLog('Loading accounts from SecureCredentialsStore...');
       final accountIds = await credStore.getSavedAccounts();
       _logger.d('Found ${accountIds.length} total accounts');
-      await _bgLog('Found ${accountIds.length} total accounts: $accountIds');
+      await _bgLog('Found ${accountIds.length} total accounts: ${accountIds.map(Redact.accountId).toList()}');
 
       int successCount = 0;
       int failureCount = 0;
 
       // Scan accounts (all if test mode, only enabled if scheduled)
       for (final accountId in accountIds) {
-        await _bgLog('Processing account: $accountId');
+        await _bgLog('Processing account: ${Redact.accountId(accountId)}');
         try {
           // Skip disabled accounts unless this is a test run
           if (!isTest) {
@@ -108,8 +109,8 @@ class BackgroundScanWindowsWorker {
                 await settingsStore.getEffectiveBackgroundEnabled(accountId);
 
             if (!isBackgroundEnabled) {
-              _logger.d('Background scans disabled for account $accountId');
-              await _bgLog('Background scans disabled for $accountId, skipping');
+              _logger.d('Background scans disabled for account ${Redact.accountId(accountId)}');
+              await _bgLog('Background scans disabled for ${Redact.accountId(accountId)}, skipping');
               continue;
             }
           }
@@ -121,14 +122,14 @@ class BackgroundScanWindowsWorker {
             final dashIndex = accountId.indexOf('-');
             if (dashIndex > 0) {
               platformId = accountId.substring(0, dashIndex);
-              await _bgLog('Inferred platformId: $platformId from accountId: $accountId');
+              await _bgLog('Inferred platformId: $platformId from accountId: ${Redact.accountId(accountId)}');
             } else {
-              await _bgLog('Cannot determine platformId for $accountId, skipping');
+              await _bgLog('Cannot determine platformId for ${Redact.accountId(accountId)}, skipping');
               failureCount++;
               continue;
             }
           }
-          await _bgLog('Account $accountId -> platform: $platformId');
+          await _bgLog('Account ${Redact.accountId(accountId)} -> platform: $platformId');
 
           // Ensure account exists in SQLite accounts table (required for FK constraints).
           // Accounts are primarily stored in flutter_secure_storage but SQLite tables
@@ -151,7 +152,7 @@ class BackgroundScanWindowsWorker {
           final logId = await logStore.insertLog(logEntry);
 
           // Execute scan for this account
-          await _bgLog('Executing scan for $accountId (platform: $platformId)');
+          await _bgLog('Executing scan for ${Redact.accountId(accountId)} (platform: $platformId)');
           try {
             final result = await _scanAccount(
               accountId: accountId,
@@ -173,7 +174,7 @@ class BackgroundScanWindowsWorker {
               unmatchedCount: result.unmatchedCount,
             );
             await logStore.updateLog(successLog);
-            await _bgLog('Account $accountId scan SUCCESS: Processed: ${result.emailsProcessed}, Deleted: ${result.deletedCount}, Moved: ${result.movedCount}, Safe: ${result.safeCount}, No Rule: ${result.unmatchedCount}, Errors: ${result.errorCount}');
+            await _bgLog('Account ${Redact.accountId(accountId)} scan SUCCESS: Processed: ${result.emailsProcessed}, Deleted: ${result.deletedCount}, Moved: ${result.movedCount}, Safe: ${result.safeCount}, No Rule: ${result.unmatchedCount}, Errors: ${result.errorCount}');
 
             // Export debug CSV if enabled
             await _exportDebugCsvIfEnabled(
@@ -184,8 +185,8 @@ class BackgroundScanWindowsWorker {
 
             successCount++;
           } catch (e, stackTrace) {
-            _logger.e('Failed to scan account $accountId', error: e);
-            await _bgLog('Account $accountId scan FAILED: $e');
+            _logger.e('Failed to scan account ${Redact.accountId(accountId)}', error: e);
+            await _bgLog('Account ${Redact.accountId(accountId)} scan FAILED: $e');
             await _bgLog('Stack trace: $stackTrace');
 
             // Update log with failure
@@ -203,7 +204,7 @@ class BackgroundScanWindowsWorker {
           }
         } catch (e, stackTrace) {
           _logger.e('Error processing account in background scan', error: e);
-          await _bgLog('OUTER catch for $accountId: $e');
+          await _bgLog('OUTER catch for ${Redact.accountId(accountId)}: $e');
           await _bgLog('Stack trace: $stackTrace');
           failureCount++;
         }
@@ -267,7 +268,7 @@ class BackgroundScanWindowsWorker {
           'email': email,
           'date_added': DateTime.now().millisecondsSinceEpoch,
         });
-        await _bgLog('Inserted account $accountId into SQLite accounts table');
+        await _bgLog('Inserted account ${Redact.accountId(accountId)} into SQLite accounts table');
       }
     } catch (e) {
       await _bgLog('Failed to ensure account in database: $e');
@@ -387,7 +388,8 @@ class BackgroundScanWindowsWorker {
       workbook.dispose();
 
       final addedRows = newRows.isEmpty ? 1 : newRows.length;
-      await _bgLog('Debug Excel exported: $xlsxPath ($addedRows new rows, ${allDataLines.length} total)');
+      // SEC-17: Log redacted filename rather than full path (path contains account email)
+      await _bgLog('Debug Excel exported for ${Redact.accountId(accountId)} ($addedRows new rows, ${allDataLines.length} total)');
     } catch (e) {
       await _bgLog('Debug Excel export failed: $e');
       // Not critical - do not rethrow
@@ -402,7 +404,7 @@ class BackgroundScanWindowsWorker {
     required RuleSetProvider ruleSetProvider,
     required SettingsStore settingsStore,
   }) async {
-    _logger.i('Scanning account: $accountId (platform: $platformId)');
+    _logger.i('Scanning account: ${Redact.accountId(accountId)} (platform: $platformId)');
 
     // Get effective background scan settings for this account
     final scanMode = await settingsStore.getEffectiveScanMode(
@@ -421,7 +423,7 @@ class BackgroundScanWindowsWorker {
     );
 
     _logger.d('Scan mode: ${scanMode.name}, folders: $folders, daysBack: $daysBack');
-    await _bgLog('Scan settings for $accountId: mode=${scanMode.name}, folders=$folders, daysBack=$daysBack');
+    await _bgLog('Scan settings for ${Redact.accountId(accountId)}: mode=${scanMode.name}, folders=$folders, daysBack=$daysBack');
 
     // Create a headless scan provider (no UI listeners in background mode)
     final scanProvider = EmailScanProvider();
@@ -450,7 +452,7 @@ class BackgroundScanWindowsWorker {
     final errorCount = scanProvider.errorCount;
 
     _logger.i(
-      'Account scan completed: $accountId - '
+      'Account scan completed: ${Redact.accountId(accountId)} - '
       'Processed: $emailsProcessed, Deleted: $deletedCount, Moved: $movedCount, '
       'Safe: $safeCount, No Rule: $unmatchedCount, Errors: $errorCount',
     );

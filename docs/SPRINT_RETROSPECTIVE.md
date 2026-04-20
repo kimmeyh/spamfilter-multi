@@ -71,101 +71,112 @@ Conduct the sprint retrospective:
 
 ### Phase 7 Integration
 
-Sprint retrospectives are integrated into Phase 7 of the sprint execution workflow. See `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 7 for the complete checklist.
+Sprint retrospectives are integrated into Phase 7 of the sprint execution workflow as a 7-step protocol. See `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 7.3-7.7 for the complete authoritative checklist. This summary mirrors that protocol.
 
-**Summary of Steps**:
+**The 7-Step Retrospective Protocol** (Updated Sprint 34):
 
-1. **Pre-Review: Windows Build Verification** (7.1)
-   - Build and test Windows desktop app
-   - Verify build succeeds before proceeding
-   - Identify any platform-specific issues
+1. **Pre-Review** (7.1, 7.2): Windows build verification + offer sprint review.
 
-2. **Offer Sprint Review** (7.2)
-   - Ask user if they want to conduct review
-   - Review is mandatory but can be quick
-   - Timing: While user reviews PR, before merge
+2. **Step 1 -- Send the prompt to Harold** (7.3 Step 1): Claude sends the verbatim Phase 7.3 prompt asking Harold for his Product Owner / Scrum Master / Lead Developer feedback across all 14 categories. The prompt also tells Harold that Claude will draft Claude Code Development Team feedback in parallel, then combine and display, then propose improvements, then ask now-vs-backlog.
 
-3. **Gather User Feedback** (7.3)
-   - Collect feedback on key topics (see below)
-   - User can provide brief feedback or detailed analysis
-   - Focus on actionable improvements
+3. **Step 2 -- Generate Claude's draft in parallel** (7.3 Step 2): While Harold writes his feedback, Claude immediately drafts Claude Code Development Team feedback for all 14 categories into `docs/sprints/drafts/SPRINT_N_RETROSPECTIVE_claude_draft.md`. Header marks it as Claude-authored. Draft is for Step 3 use only -- never substituted for Harold's input.
 
-4. **Identify Improvements** (7.4)
-   - Claude analyzes feedback
-   - Proposes specific improvements
-   - Categorizes by priority (High/Medium/Low)
+4. **Step 3 -- Record Harold's feedback verbatim** (7.4): Once Harold replies, paste the 14-category template into `docs/sprints/SPRINT_N_RETROSPECTIVE.md`, record Harold's exact words per category (combined PO/SM/Lead line acceptable), copy Claude's lines from the Step 2 draft. Phase 7.3/7.4 EXIT GATE: all 14 categories present, all 4 roles addressed, no placeholder text, Harold's words verbatim.
 
-5. **Select Improvements** (7.5)
-   - User reviews proposed improvements
-   - Selects which to implement now vs later
-   - Documents decisions
+5. **Step 4 -- Combine and display** (7.4.5): Display the combined retrospective in chat using the no-borders format documented in `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 7.3 Step 4. Both feedback sets shown together per category.
 
-6. **Update Documentation** (7.7)
-   - Apply agreed-upon improvements to relevant documents
-   - Update version/date on modified documents
-   - Create new documents if needed
+6. **Step 5 -- Propose improvements from combined feedback** (7.5): Claude reviews combined retrospective and proposes improvements of any type (process, code, tests, architecture, docs, tooling). Sources include all 14 categories from both feedback sets, plus Harold's explicit suggestions. Format per proposal: Title / Source / Type / Effort / Recommendation. Display in chat -- do NOT auto-apply.
 
-7. **Summarize Review** (7.8)
-   - Provide summary of review findings
-   - List which improvements were selected
-   - Confirm PR is ready for user approval
+7. **Step 6 -- Harold decides: apply now or add to backlog** (7.6): Claude asks Harold for explicit decision per proposal: (a) apply now, (b) add to backlog, (c) skip. Default expectation: most improvements faster to do now before next sprint. Blanket disposition acceptable. Record decisions in retrospective "Improvement Decisions" section.
+
+8. **Step 7 -- Apply approved improvements + sprint completion docs** (7.7): For each "apply now" proposal, implement as additional commits on the existing sprint branch. For each "add to backlog" proposal, add to `ALL_SPRINTS_MASTER_PLAN.md`. For each "skip" proposal, note in retrospective. Then perform mandatory sprint completion updates (CHANGELOG, master plan Last Completed Sprint, summary doc, ARCHITECTURE.md if changed).
+
+9. **Summarize and proactive next steps** (7.8, 7.9): Summarize review findings and present next-steps options.
+
+**Critical**: Steps 1-7 must run in order. Do NOT collapse, reorder, or skip steps. The velocity bias is the trap that caused the Sprint 34 process violation -- the documented protocol exists to prevent it.
 
 ---
 
 ## Retrospective Categories
 
-### 1. Effectiveness & Efficiency
+[CRITICAL] **All 14 categories below are MANDATORY. For each category, feedback MUST be collected from ALL FOUR roles: Product Owner, Scrum Master, Lead Developer, AND the Claude Code Development Team. A retrospective with any role missing for any category is INCOMPLETE and the sprint is NOT considered complete.**
+
+In this single-developer project, Harold wears the Product Owner, Scrum Master, AND Lead Developer hats; Claude Code provides the Development Team perspective. Even when one human person provides three of the four perspectives, each role MUST be addressed separately because each role looks at the sprint through a different lens:
+
+- **Product Owner**: business value, user-facing impact, scope/priority, backlog implications
+- **Scrum Master**: process adherence, ceremony quality, blockers, team health, workflow friction
+- **Lead Developer**: technical quality, code/architecture, engineering decisions, technical debt
+- **Claude Code Development Team**: execution-side observations -- what the model(s) saw during implementation, where prompts/instructions were ambiguous, where tooling helped or hurt, where automation could be improved
+
+If a role has nothing to say for a category, write `Product Owner: No issues -- expectations met.` (or equivalent) -- but the role MUST be explicitly addressed. Silence is NOT acceptable.
+
+### The 14 Mandatory Categories
+
+1. **Effective while as Efficient as Reasonably Possible** -- Did we deliver the right outcome with the least reasonable effort? (Replaces former "Effectiveness & Efficiency" + "Sprint Execution".)
+2. **Testing Approach**
+3. **Effort Accuracy**
+4. **Planning Quality**
+5. **Model Assignments**
+6. **Communication**
+7. **Requirements Clarity**
+8. **Documentation**
+9. **Process Issues**
+10. **Risk Management**
+11. **Next Sprint Readiness**
+12. **Architecture Maintenance**
+13. **Minor Function Updates for the Next Sprint Plan** -- Small enhancements/fixes uncovered during this sprint that should be folded into the NEXT sprint's plan (not full backlog items, but inline scope additions).
+14. **Function Updates for the Future Backlog** -- Larger or non-urgent enhancements/ideas uncovered during this sprint that should be added to `ALL_SPRINTS_MASTER_PLAN.md` "Next Sprint Candidates" for future sprint scoping.
+
+---
+
+### Category Definitions
+
+#### 1. Effective while as Efficient as Reasonably Possible
 
 **Questions**:
-- Did we deliver all planned tasks?
+- Did we deliver all planned tasks with the right level of quality?
 - Were tasks completed on first attempt or did we need rework?
-- Did we work efficiently or encounter unnecessary overhead?
-- Were there faster approaches we could have taken?
+- Did we encounter unnecessary overhead, repeated work, or process friction?
+- Were there faster approaches we could have taken without sacrificing quality?
+- Did we follow the sprint workflow properly? Were any phases skipped or rushed?
+- Were blockers communicated and resolved promptly?
 
 **What to Look For**:
-- Tasks completed vs tasks planned
-- Rework cycles (how many times did we revise code?)
+- Tasks completed vs tasks planned (and quality of completion)
+- Rework cycles
 - Time spent on non-value-adding activities
 - Opportunities to parallelize work
-
-**Example Feedback**:
-> "Task A required 3 rework cycles due to unclear acceptance criteria. Future sprints should include more specific examples in task descriptions."
-
-### 2. Sprint Execution
-
-**Questions**:
-- Did we follow the sprint workflow properly?
-- Were there phases that felt unclear or unnecessary?
-- Did we encounter blockers? How were they resolved?
-- Was communication effective throughout?
-
-**What to Look For**:
 - Adherence to SPRINT_EXECUTION_WORKFLOW.md
-- Phases that were skipped or rushed
-- Blockers and how long they lasted
+- Phases skipped, rushed, or executed out of order
+- Blocker resolution time
 - Communication gaps or misunderstandings
 
-**Example Feedback**:
-> "Phase 5.3 (Manual Testing) lacked parallel log monitoring, causing us to miss errors until user reported them."
+**Example Feedback (per role)**:
+> **Product Owner**: All 12 planned features shipped, but 4 rounds of UX testing on F55 felt excessive.
+> **Scrum Master**: Phase 7 was nearly skipped despite reminders -- need a hard gate.
+> **Lead Developer**: Task A required 3 rework cycles due to unclear acceptance criteria.
+> **Claude Code Development Team**: Auto-push state-machine bug took 3 surface-patch attempts before escalation to Opus -- escalation criterion needs to be explicit.
 
-### 3. Testing Approach
+#### 2. Testing Approach
 
 **Questions**:
-- Did tests catch bugs before user testing?
-- Was test coverage adequate?
+- Did automated tests catch bugs before user testing?
+- Was test coverage adequate for the scope?
 - Were tests easy to understand and maintain?
 - Did we test the right scenarios?
 
 **What to Look For**:
 - Bugs found by automated tests vs manual testing
-- Test coverage percentage
 - Edge cases covered vs missed
 - Integration test vs unit test balance
 
-**Example Feedback**:
-> "No database operation tests existed, leading to undetected migration bugs. Need comprehensive database test suite."
+**Example Feedback (per role)**:
+> **Product Owner**: All user-facing flows passed automated tests; manual QA caught only UX nuances.
+> **Scrum Master**: Phase 5.3 (manual testing) was actually executed this sprint -- good.
+> **Lead Developer**: Need a database migration test fixture; we keep finding migration regressions in manual testing.
+> **Claude Code Development Team**: Test discovery worked well via flutter test but writing async timer tests required multiple iterations.
 
-### 4. Effort Accuracy
+#### 3. Effort Accuracy
 
 **Questions**:
 - Did actual effort match estimated effort?
@@ -175,19 +186,16 @@ Sprint retrospectives are integrated into Phase 7 of the sprint execution workfl
 
 **What to Look For**:
 - Estimated hours vs actual hours per task
-- Tasks with >50% variance
-- Patterns in estimation errors (always underestimate refactoring, etc.)
+- Tasks with > 50% variance
+- Patterns in estimation errors
 
-**Example Tracking**:
-```markdown
-| Task | Estimated | Actual | Variance | Reason |
-|------|-----------|--------|----------|--------|
-| Task A | 2h | 4h | +100% | Unclear requirements, needed 3 revisions |
-| Task B | 3h | 2h | -33% | Simpler than expected, existing helper used |
-| Task C | 1h | 1h | 0% | Accurate |
-```
+**Example Feedback (per role)**:
+> **Product Owner**: Sprint landed in expected window.
+> **Scrum Master**: 3 of 12 tasks ran > 50% over estimate -- pattern is UI tasks with multi-tab navigation.
+> **Lead Developer**: Help system grew from 12 to 19 sections -- under-scoped initial design.
+> **Claude Code Development Team**: Token usage tracked Sonnet estimates well; Opus calls for Round 4 root-cause were not budgeted.
 
-### 5. Planning Quality
+#### 4. Planning Quality
 
 **Questions**:
 - Were task descriptions clear and complete?
@@ -197,62 +205,55 @@ Sprint retrospectives are integrated into Phase 7 of the sprint execution workfl
 
 **What to Look For**:
 - Number of clarification questions asked during execution
-- Scope creep (tasks added mid-sprint)
+- Scope creep
 - Missing dependencies discovered late
 - Tasks that required re-planning
 
-**Example Feedback**:
-> "Task acceptance criteria were vague ('comprehensive testing'). Future tasks need quantifiable criteria ('minimum 20 tests covering CRUD operations')."
+**Example Feedback (per role)**:
+> **Product Owner**: Plan correctly identified the security + features mix; scope was right.
+> **Scrum Master**: Sprint plan did not include explicit back-button spec for F55; that omission cost 3 testing rounds.
+> **Lead Developer**: SEC-11 was rightly scoped as "infrastructure only" -- good engineering call.
+> **Claude Code Development Team**: Plan-as-prompt was clear for the 12 listed tasks; ambiguity entered when "navigation consistency" required interpretation.
 
-### 6. Model Assignments
+#### 5. Model Assignments
 
 **Questions**:
 - Were Haiku/Sonnet/Opus assignments appropriate?
 - Did any tasks require escalation to higher model?
-- Could simpler tasks have used lower-cost model?
-- How confident were we in assignments (before sprint)?
+- Could simpler tasks have used a lower-cost model?
 
 **What to Look For**:
 - Tasks completed by assigned model without escalation
-- Tasks that required model escalation (Haiku → Sonnet → Opus)
+- Tasks that required model escalation
 - Cost optimization opportunities
 - Assignment heuristic accuracy
 
-**Example Analysis**:
-```markdown
-**Task A** (Assigned: Sonnet, Actual: Sonnet)
-- [OK] Correct assignment - architectural decisions required
-- Confidence: High (85%)
+**Example Feedback (per role)**:
+> **Product Owner**: Cost was acceptable.
+> **Scrum Master**: Escalation to Opus for Round 4 happened after 2 failed surface fixes -- should have been 1.
+> **Lead Developer**: Sonnet handled most implementation cleanly; Opus call was correct for state-machine debugging.
+> **Claude Code Development Team**: Sonnet would have benefited from a navigation invariants mental model loaded earlier -- suggests adding a NAVIGATION.md reference doc.
 
-**Task B** (Assigned: Sonnet, Actual: Haiku would have worked)
-- [WARNING] Over-assignment - straightforward find/replace
-- Opportunity: Could have saved tokens with Haiku
-- Confidence: Medium (70%)
-
-**Task C** (Assigned: Haiku, Actual: Sonnet needed)
-- [FAIL] Under-assignment - complex edge cases required deeper reasoning
-- Lesson: Testing tasks with >10 edge cases = Sonnet minimum
-- Confidence: Low (50%)
-```
-
-### 7. Communication
+#### 6. Communication
 
 **Questions**:
 - Were progress updates clear and timely?
 - Did we narrate investigations or work silently?
 - Were blockers communicated immediately?
-- Was technical reasoning explained well?
 
 **What to Look For**:
-- "Silent tool usage" (running commands without explaining why)
+- Silent tool usage
 - Delayed blocker communication
-- Commit messages clarity
+- Commit message clarity
 - PR description completeness
 
-**Example Feedback**:
-> "Claude ran 5 analyzer checks silently without explaining findings. Future sprints should narrate diagnostic work: 'Checking analyzer status to see if warnings were fixed...'"
+**Example Feedback (per role)**:
+> **Product Owner**: PR descriptions were thorough.
+> **Scrum Master**: Mid-sprint check-ins were on time.
+> **Lead Developer**: Commit messages followed convention.
+> **Claude Code Development Team**: Investigation narration was good; one stretch of 5 silent grep calls before reporting findings.
 
-### 8. Requirements Clarity
+#### 7. Requirements Clarity
 
 **Questions**:
 - Were requirements clear from the start?
@@ -261,49 +262,54 @@ Sprint retrospectives are integrated into Phase 7 of the sprint execution workfl
 - Were non-functional requirements specified?
 
 **What to Look For**:
-- Number of AskUserQuestion calls
 - Mid-sprint scope changes
 - Ambiguous acceptance criteria
 - Missing quality standards
 
-**Example Feedback**:
-> "Task said 'improve performance' but did not specify target (50ms? 100ms?). Need quantifiable non-functional requirements."
+**Example Feedback (per role)**:
+> **Product Owner**: F55 back-button intent was clearer in my head than in the plan.
+> **Scrum Master**: Round 1 reinterpretation cost a fix-and-retest cycle.
+> **Lead Developer**: SEC-11 infrastructure-only boundary was crisp -- good model.
+> **Claude Code Development Team**: Where requirements named exact files/screens, execution was first-pass correct; abstract requirements triggered interpretation.
 
-### 9. Documentation
+#### 8. Documentation
 
 **Questions**:
 - Was documentation updated alongside code?
 - Are docs accurate and up-to-date?
-- Is documentation discoverable and well-organized?
 - Did we document decisions and trade-offs?
 
 **What to Look For**:
 - Docs updated in same commit as code
 - Broken links or outdated references
-- Missing architecture decision records
+- Missing ADRs
 - CHANGELOG.md completeness
 
-**Example Feedback**:
-> "Completed Sprint 9 but did not add entry to CHANGELOG.md. Add CHANGELOG update as mandatory sprint completion checklist item."
+**Example Feedback (per role)**:
+> **Product Owner**: CHANGELOG was readable.
+> **Scrum Master**: ARCHITECTURE.md updated in same sprint -- good.
+> **Lead Developer**: SEC-1b backlog note correctly captured for F56.
+> **Claude Code Development Team**: Doc updates landed cleanly; consider auto-generating ADR scaffolds when new lib/core/security/ modules appear.
 
-### 10. Process Issues
+#### 9. Process Issues
 
 **Questions**:
 - What errors or blockers were encountered?
 - How long did they take to resolve?
 - Are these errors documented for future reference?
-- What process changes would prevent recurrence?
 
 **What to Look For**:
-- Common errors (test binding initialization, path escaping, etc.)
+- Common errors
 - Time spent debugging vs implementing
 - Errors not in TROUBLESHOOTING.md
-- Process gaps
 
-**Example Feedback**:
-> "Encountered 'Test binding not initialized' error for 10 minutes. Add to TROUBLESHOOTING.md and create test template with binding pre-configured."
+**Example Feedback (per role)**:
+> **Product Owner**: No process surprises from my side.
+> **Scrum Master**: Phase 7 reminder fired but the gate was soft -- needs to be hard.
+> **Lead Developer**: SelectionArea + AlertDialog gotcha is now in code comments -- should also go in TROUBLESHOOTING.md.
+> **Claude Code Development Team**: Write tool kept getting denied for .claude/memory/*.json; PowerShell-first updated in skill docs.
 
-### 11. Risk Management
+#### 10. Risk Management
 
 **Questions**:
 - Were risks identified before sprint?
@@ -315,22 +321,14 @@ Sprint retrospectives are integrated into Phase 7 of the sprint execution workfl
 - Risk register completeness
 - Risks that occurred vs risks identified
 - Mitigation effectiveness
-- Unidentified risks that occurred
 
-**Example Analysis**:
-```markdown
-**Identified Risk**: Refactoring might break existing tests
-- Likelihood: Medium, Impact: High
-- Mitigation: Run tests after each file refactored
-- **Outcome**: Did not occur - mitigation effective [OK]
+**Example Feedback (per role)**:
+> **Product Owner**: SEC-11 partial-scope risk was called out in plan -- well-managed.
+> **Scrum Master**: SEC-1b ReDoS rejection had no fallback for already-stored vulnerable patterns -- not in risk register.
+> **Lead Developer**: Cert pinning rotation procedure is a future operational risk -- documented.
+> **Claude Code Development Team**: No model-side risks materialized; context stayed below 85%.
 
-**Unidentified Risk**: Windows build script incompatible with new dependency
-- Likelihood: (not identified), Impact: Medium
-- **Outcome**: Occurred - lost 2 hours debugging
-- **Lesson**: Always test build scripts after dependency changes
-```
-
-### 12. Next Sprint Readiness
+#### 11. Next Sprint Readiness
 
 **Questions**:
 - Is the codebase in good state for next sprint?
@@ -344,61 +342,212 @@ Sprint retrospectives are integrated into Phase 7 of the sprint execution workfl
 - Process documentation that needs updating
 - Backlog grooming status
 
-**Example Feedback**:
-> "ALL_SPRINTS_MASTER_PLAN.md not updated with Sprint 9 actuals. Must update before planning Sprint 10 to ensure lessons learned are captured."
+**Example Feedback (per role)**:
+> **Product Owner**: F56 (manual rule UI) is the obvious next candidate.
+> **Scrum Master**: ALL_SPRINTS_MASTER_PLAN.md updated; ready to plan.
+> **Lead Developer**: No technical debt blocking next sprint.
+> **Claude Code Development Team**: Skills updated; memory cleared; ready to plan from a clean slate.
+
+#### 12. Architecture Maintenance
+
+**Questions**:
+- Did this sprint introduce changes that affect documented architecture?
+- Are all architecture documents current after this sprint's changes?
+- Do any ADRs need creation, updates, or superseding?
+- Were any architectural decisions made during execution that were not in the sprint plan?
+
+**What to Look For**:
+- New services, screens, database tables, or patterns not reflected in ARCHITECTURE.md
+- Changes that conflict with existing ADR decisions
+- Design pattern changes not reflected in ARSD.md
+- Implicit architectural decisions made during coding that should be documented
+
+**Example Feedback (per role)**:
+> **Product Owner**: Architecture sections in CHANGELOG were clear to read.
+> **Scrum Master**: Architecture compliance check (Phase 7.4.1) was executed.
+> **Lead Developer**: PatternCompiler provenance + new lib/core/security/ directory documented.
+> **Claude Code Development Team**: Schema v3 migration tested; future SQLCipher swap documented as known follow-up.
+
+#### 13. Minor Function Updates for the Next Sprint Plan
+
+**Purpose**: Capture small enhancements, fixes, or polish items uncovered during this sprint that should be folded into the NEXT sprint's plan as inline scope additions (not full backlog items).
+
+**Questions**:
+- What small UX/UI nits did manual testing surface that did not make this sprint's scope?
+- Were there minor refactors or cleanups noticed during code review that fit the next sprint's theme?
+- Are there sub-1-hour touch-ups that should ride along with related work next sprint?
+
+**What to Look For**:
+- "While I am in this file" candidates
+- UX nits too minor for a backlog item but too noticeable to ignore
+- Refactors that unlock the next sprint's work
+
+**Output**: Each entry MUST be added to the NEXT sprint's plan during Phase 3 planning. Format: `[ROLE] <one-line description> -- target: Sprint N+1 plan, est: <Xh>`
+
+**Example Feedback (per role)**:
+> **Product Owner**: Help icon on Demo Scan results screen (~15 min).
+> **Scrum Master**: Add Phase 7 hard-gate reminder to checklist (~30 min).
+> **Lead Developer**: Extract Navigator.push boilerplate into pushScreen() helper (~1h).
+> **Claude Code Development Team**: Add a /sprint-status skill to summarize Phase progress (~1h).
+
+#### 14. Function Updates for the Future Backlog
+
+**Purpose**: Capture larger or non-urgent enhancements/ideas uncovered during this sprint that should be added to `docs/ALL_SPRINTS_MASTER_PLAN.md` "Next Sprint Candidates" for future scoping.
+
+**Questions**:
+- What did this sprint surface as a "we should really build that someday" item?
+- What user feedback during testing pointed at a future feature?
+- What technical debt is too large for inline cleanup?
+
+**What to Look For**:
+- New feature ideas (assign F-number when added to master plan)
+- Larger refactors or migrations
+- Tooling/automation opportunities
+- Cross-sprint themes (e.g., "Android security pass")
+
+**Output**: Each entry MUST be added to `ALL_SPRINTS_MASTER_PLAN.md` "Next Sprint Candidates" with a new feature/issue number. Format: `[ROLE] <title> -- estimated: <Xh>, priority: <High|Medium|Low>, depends on: <list>`
+
+**Example Feedback (per role)**:
+> **Product Owner**: F-XX: Recently-added rules filter on Manage Rules screen -- Medium, ~4h.
+> **Scrum Master**: Process: standardize sprint plan template to require back-button spec for any nav-touching feature -- Low, ~30 min.
+> **Lead Developer**: F-XX: SQLCipher driver swap + plaintext-to-encrypted migration (completes SEC-11) -- High, ~8h, dedicated QA sprint.
+> **Claude Code Development Team**: Tooling: linter rule that warns when Navigator.push is added without a corresponding pop site -- Medium, ~2h.
 
 ---
 
 ## Gathering Feedback
 
-### User Feedback Collection (Phase 7.3)
+### Sprint Retrospective Feedback Collection (Phase 7.3) -- MANDATORY 4 ROLES x 14 CATEGORIES
 
-Claude should ask user for feedback on the following topics. User can provide:
-- **Brief feedback**: 1-2 sentences per topic
+[CRITICAL] **A Sprint Retrospective is NEVER considered complete unless all 14 categories are addressed by all 4 roles (Product Owner, Scrum Master, Lead Developer, Claude Code Development Team). Missing roles or categories = retrospective is INCOMPLETE = sprint is NOT complete.**
+
+Claude MUST present each of the 14 categories to the user (who fills the PO + SM + Lead Dev roles) and MUST contribute the Claude Code Development Team perspective itself. Each role provides:
+
+- **Brief feedback**: 1-2 sentences -- minimum acceptable
 - **Detailed feedback**: Full analysis with examples
-- **Skip**: "N/A" or "No feedback" for topics not relevant
+- **Explicit "no issues"**: e.g., `Product Owner: No issues -- expectations met.` -- still counts as addressed
 
-**Feedback Template**:
+Empty/silent rows are NOT acceptable. If a role has nothing to say, that role must explicitly say so.
+
+**Mandatory Feedback Template** (copy verbatim into `docs/sprints/SPRINT_N_RETROSPECTIVE.md`):
 
 ```markdown
 ## Sprint N Retrospective Feedback
 
-### 1. Effectiveness & Efficiency
-[User feedback]
+### 1. Effective while as Efficient as Reasonably Possible
 
-### 2. Sprint Execution
-[User feedback]
+- **Product Owner**: [feedback]
+- **Scrum Master**: [feedback]
+- **Lead Developer**: [feedback]
+- **Claude Code Development Team**: [feedback]
 
-### 3. Testing Approach
-[User feedback]
+### 2. Testing Approach
 
-### 4. Effort Accuracy
-[User feedback]
+- **Product Owner**: [feedback]
+- **Scrum Master**: [feedback]
+- **Lead Developer**: [feedback]
+- **Claude Code Development Team**: [feedback]
 
-### 5. Planning Quality
-[User feedback]
+### 3. Effort Accuracy
 
-### 6. Model Assignments
-[User feedback]
+- **Product Owner**: [feedback]
+- **Scrum Master**: [feedback]
+- **Lead Developer**: [feedback]
+- **Claude Code Development Team**: [feedback]
 
-### 7. Communication
-[User feedback]
+### 4. Planning Quality
 
-### 8. Requirements Clarity
-[User feedback]
+- **Product Owner**: [feedback]
+- **Scrum Master**: [feedback]
+- **Lead Developer**: [feedback]
+- **Claude Code Development Team**: [feedback]
 
-### 9. Documentation
-[User feedback]
+### 5. Model Assignments
 
-### 10. Process Issues
-[User feedback]
+- **Product Owner**: [feedback]
+- **Scrum Master**: [feedback]
+- **Lead Developer**: [feedback]
+- **Claude Code Development Team**: [feedback]
 
-### 11. Risk Management
-[User feedback]
+### 6. Communication
 
-### 12. Next Sprint Readiness
-[User feedback]
+- **Product Owner**: [feedback]
+- **Scrum Master**: [feedback]
+- **Lead Developer**: [feedback]
+- **Claude Code Development Team**: [feedback]
+
+### 7. Requirements Clarity
+
+- **Product Owner**: [feedback]
+- **Scrum Master**: [feedback]
+- **Lead Developer**: [feedback]
+- **Claude Code Development Team**: [feedback]
+
+### 8. Documentation
+
+- **Product Owner**: [feedback]
+- **Scrum Master**: [feedback]
+- **Lead Developer**: [feedback]
+- **Claude Code Development Team**: [feedback]
+
+### 9. Process Issues
+
+- **Product Owner**: [feedback]
+- **Scrum Master**: [feedback]
+- **Lead Developer**: [feedback]
+- **Claude Code Development Team**: [feedback]
+
+### 10. Risk Management
+
+- **Product Owner**: [feedback]
+- **Scrum Master**: [feedback]
+- **Lead Developer**: [feedback]
+- **Claude Code Development Team**: [feedback]
+
+### 11. Next Sprint Readiness
+
+- **Product Owner**: [feedback]
+- **Scrum Master**: [feedback]
+- **Lead Developer**: [feedback]
+- **Claude Code Development Team**: [feedback]
+
+### 12. Architecture Maintenance
+
+- **Product Owner**: [feedback]
+- **Scrum Master**: [feedback]
+- **Lead Developer**: [feedback]
+- **Claude Code Development Team**: [feedback]
+
+### 13. Minor Function Updates for the Next Sprint Plan
+
+(Each entry below is a CARRY-IN to the next sprint's plan. Apply during Phase 3 of Sprint N+1.)
+
+- **Product Owner**: [item or "None"]
+- **Scrum Master**: [item or "None"]
+- **Lead Developer**: [item or "None"]
+- **Claude Code Development Team**: [item or "None"]
+
+### 14. Function Updates for the Future Backlog
+
+(Each entry below MUST be added to `docs/ALL_SPRINTS_MASTER_PLAN.md` "Next Sprint Candidates" with a feature/issue number assigned during Phase 7.7 documentation updates.)
+
+- **Product Owner**: [item or "None"]
+- **Scrum Master**: [item or "None"]
+- **Lead Developer**: [item or "None"]
+- **Claude Code Development Team**: [item or "None"]
 ```
+
+### Completeness Validation Gate (Phase 7.3 exit criterion)
+
+Before exiting Phase 7.3, Claude MUST verify:
+
+- [ ] All 14 categories are present in the retrospective document
+- [ ] Each category contains explicit feedback from ALL 4 roles (Product Owner, Scrum Master, Lead Developer, Claude Code Development Team)
+- [ ] No feedback line is empty or contains only `[feedback]` placeholder text
+- [ ] Category 13 entries (if any) are documented for carry-in to Sprint N+1 plan
+- [ ] Category 14 entries (if any) have follow-up tasks tracked for `ALL_SPRINTS_MASTER_PLAN.md` update in Phase 7.7
+
+If ANY box above is unchecked, Phase 7 is INCOMPLETE. Sprint cannot be declared complete. Stop and request the missing feedback.
 
 ### Claude Analysis (Phase 7.4)
 
@@ -611,10 +760,12 @@ Identify patterns over multiple sprints:
 Use this quick checklist during Phase 7:
 
 - [ ] Windows build verified (7.1)
-- [ ] User feedback collected on 12 categories (7.3)
+- [ ] **MANDATORY: Feedback collected on ALL 14 categories from ALL 4 roles** (Product Owner, Scrum Master, Lead Developer, Claude Code Development Team) (7.3) -- retrospective is INCOMPLETE without this
+- [ ] **MANDATORY: Completeness Validation Gate passed** (no empty role-feedback lines, all 14 categories present, Category 13 + 14 follow-ups tracked) (7.3 exit)
 - [ ] Claude analyzed feedback and proposed improvements (7.4)
 - [ ] User selected improvements to implement (7.5)
-- [ ] ALL_SPRINTS_MASTER_PLAN.md updated per Maintenance Guide (7.7)
+- [ ] ALL_SPRINTS_MASTER_PLAN.md updated per Maintenance Guide (7.7) -- includes Category 14 backlog additions
+- [ ] Next Sprint Plan stub updated with Category 13 carry-ins (7.7)
 - [ ] Relevant workflow docs updated with improvements (7.7)
 - [ ] CHANGELOG.md updated with sprint entry (7.7)
 - [ ] Sprint retrospective document created (7.7)
@@ -798,11 +949,13 @@ Use these standard categories when presenting recommendations:
 
 ## Version History
 
-**Version**: 1.1
-**Date**: January 31, 2026
-**Author**: Claude Sonnet 4.5
+**Version**: 2.0
+**Date**: April 16, 2026
+**Author**: Claude Opus 4.6
 **Status**: Active
 
 **Updates**:
+- 2.0 (2026-04-16): MANDATORY 14 categories x 4 roles (Product Owner, Scrum Master, Lead Developer, Claude Code Development Team). Added Categories 13 (minor next-sprint carry-ins) and 14 (future-backlog additions). Replaced "Effectiveness & Efficiency" + "Sprint Execution" with "Effective while as Efficient as Reasonably Possible". Retrospective is now INCOMPLETE if any role/category is unaddressed -- sprint cannot be declared complete (Sprint 33 retrospective gap)
+- 1.2 (2026-04-13): Added Category 13 "Architecture Maintenance" to retrospective categories and feedback template (Sprint 30 improvement)
 - 1.1 (2026-01-31): Added "Recommendation Presentation Format" section with grouping strategy, numbering system, and template
 - 1.0 (2026-01-31): Initial version extracted from Sprint 8 retrospective and SPRINT_EXECUTION_WORKFLOW.md Phase 7

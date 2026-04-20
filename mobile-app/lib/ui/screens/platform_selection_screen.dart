@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/email_providers/spam_filter_platform.dart';
+import '../widgets/app_bar_with_exit.dart';
 import 'account_setup_screen.dart';
+import 'help_screen.dart';
 import 'scan_progress_screen.dart';
 
 /// Platform selection screen - first step in account setup
@@ -74,77 +76,97 @@ class _PlatformSelectionScreenState extends State<PlatformSelectionScreen> {
     final platforms = _getSupportedPlatforms();
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: AppBarWithExit(
         title: const Text('Select Email Provider'),
         elevation: 0,
+        // F55 (Sprint 33): standardized icon order -- Accounts, Help.
+        // Settings omitted here: the settings UI needs an accountId context
+        // which does not exist on the pre-account-creation screen. X auto-
+        // appended on Windows by AppBarWithExit.
+        actions: [
+          IconButton(
+            tooltip: 'Select Account',
+            icon: const Icon(Icons.people),
+            onPressed: () {
+              Navigator.popUntil(context, (route) => route.isFirst);
+            },
+          ),
+          IconButton(
+            tooltip: 'Help',
+            icon: const Icon(Icons.help_outline),
+            onPressed: () => openHelp(context, HelpSection.accountSetup),
+          ),
+        ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Header section with introduction
-            Container(
-              color: Theme.of(context).colorScheme.surface,
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Choose Your Email Provider',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Select your email provider to get started with spam filtering',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey[600],
-                        ),
-                  ),
-                  const SizedBox(height: 16),
-                  // [UPDATED] Sprint 19: Demo Mode as direct-launch card
-                  Card(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                    child: ListTile(
-                      leading: Icon(Icons.science_outlined, color: Colors.purple.shade400),
-                      title: const Text('Try Demo Mode'),
-                      subtitle: const Text('Test with 50+ sample emails (no email account needed)'),
-                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                      onTap: _startDemoMode,
+      body: SelectionArea(
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Header section with introduction
+              Container(
+                color: Theme.of(context).colorScheme.surface,
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Choose Your Email Provider',
+                      style: Theme.of(context).textTheme.headlineSmall,
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    Text(
+                      'Select your email provider to get started with spam filtering',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Colors.grey[600],
+                          ),
+                    ),
+                    const SizedBox(height: 16),
+                    // [UPDATED] Sprint 19: Demo Mode as direct-launch card
+                    Card(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      child: ListTile(
+                        leading: Icon(Icons.science_outlined, color: Colors.purple.shade400),
+                        title: const Text('Try Demo Mode'),
+                        subtitle: const Text('Test with 50+ sample emails (no email account needed)'),
+                        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                        onTap: _startDemoMode,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
 
-            // Platform cards section
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  // Phase 1 - MVP platforms
-                  _buildPhaseHeader('Available Now', 1),
-                  const SizedBox(height: 12),
-                  ...platforms
-                      .where((p) => p.phase == 1)
-                      .map((p) => _buildPlatformCard(p))
-                      .toList(),
+              // Platform cards section
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    // Phase 1 - MVP platforms
+                    _buildPhaseHeader('Available Now', 1),
+                    const SizedBox(height: 12),
+                    ...platforms
+                        .where((p) => p.phase == 1)
+                        .map((p) => _buildPlatformCard(p))
+                        .toList(),
 
-                  // Phase 2 platforms
-                  const SizedBox(height: 24),
-                  _buildPhaseHeader('Coming Soon', 2),
-                  const SizedBox(height: 12),
-                  ...platforms
-                      .where((p) => p.phase == 2)
-                      .map((p) => _buildPlatformCard(p))
-                      .toList(),
+                    // Phase 2 platforms
+                    const SizedBox(height: 24),
+                    _buildPhaseHeader('Coming Soon', 2),
+                    const SizedBox(height: 12),
+                    ...platforms
+                        .where((p) => p.phase == 2)
+                        .map((p) => _buildPlatformCard(p))
+                        .toList(),
 
-                  // Info section
-                  const SizedBox(height: 32),
-                  _buildInfoCard(),
-                ],
+                    // Info section
+                    const SizedBox(height: 32),
+                    _buildInfoCard(),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -323,9 +345,11 @@ class _PlatformSelectionScreenState extends State<PlatformSelectionScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Coming Soon'),
-        content: Text(
-          '${platformInfo.displayName} support is planned for Phase 2.\n\n'
-          'For now, you can use ${platformInfo.displayName} via our generic IMAP support if you have an app password available.',
+        content: SelectionArea(
+          child: Text(
+            '${platformInfo.displayName} support is planned for Phase 2.\n\n'
+            'For now, you can use ${platformInfo.displayName} via our generic IMAP support if you have an app password available.',
+          ),
         ),
         actions: [
           TextButton(
@@ -415,13 +439,14 @@ class _SetupInstructionsDialogState extends State<_SetupInstructionsDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text('${widget.platformInfo.displayName} Setup'),
-      content: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Before connecting, you\'ll need to generate an app password:',
+      content: SelectionArea(
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Before connecting, you\'ll need to generate an app password:',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 16),
@@ -456,7 +481,8 @@ class _SetupInstructionsDialogState extends State<_SetupInstructionsDialog> {
                   ],
                 ),
               ),
-          ],
+            ],
+          ),
         ),
       ),
       actions: [

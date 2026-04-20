@@ -248,4 +248,164 @@ void main() {
       expect(pattern.hasMatch('5-SECOND MORNING HACK'), isTrue);
     });
   });
+
+  group('PatternCompiler - ReDoS Detection (SEC-1)', () {
+    test('detects nested quantifiers (a+)+', () {
+      final warnings = PatternCompiler.detectReDoS(r'(a+)+');
+      expect(warnings, isNotEmpty);
+      expect(warnings.first, contains('nested quantifiers'));
+    });
+
+    test('detects nested quantifiers (a*)*', () {
+      final warnings = PatternCompiler.detectReDoS(r'(a*)*');
+      expect(warnings, isNotEmpty);
+      expect(warnings.first, contains('nested quantifiers'));
+    });
+
+    test('detects nested quantifiers (.*)+', () {
+      final warnings = PatternCompiler.detectReDoS(r'(.*)+');
+      expect(warnings, isNotEmpty);
+      expect(warnings.first, contains('nested quantifiers'));
+    });
+
+    test('detects nested quantifiers ([^@]+)+', () {
+      final warnings = PatternCompiler.detectReDoS(r'([^@]+)+');
+      expect(warnings, isNotEmpty);
+      expect(warnings.first, contains('nested quantifiers'));
+    });
+
+    test('detects nested quantifiers with curly braces (a{2,})+', () {
+      final warnings = PatternCompiler.detectReDoS(r'(a{2,})+');
+      expect(warnings, isNotEmpty);
+      expect(warnings.any((w) => w.contains('nested quantifiers')), isTrue);
+    });
+
+    test('does not flag safe domain patterns', () {
+      // These are common patterns in the app that should NOT be flagged
+      final safePatterns = [
+        r'^[^@\s]+@(?:[a-z0-9-]+\.)*example\.com$',
+        r'@spam\.com$',
+        r'.*\.ru$',
+        r'^user@domain\.com$',
+        r'(?:test|example)\.com',
+      ];
+
+      for (final pattern in safePatterns) {
+        final warnings = PatternCompiler.detectReDoS(pattern);
+        expect(warnings, isEmpty, reason: 'Pattern "$pattern" should not trigger ReDoS warning');
+      }
+    });
+
+    test('does not flag non-capturing groups without nesting', () {
+      // (?:...) is non-capturing, not a nested quantifier
+      final warnings = PatternCompiler.detectReDoS(r'(?:[a-z0-9-]+\.)*example\.com$');
+      expect(warnings, isEmpty);
+    });
+
+    test('validatePattern includes ReDoS warnings', () {
+      final warnings = compiler.validatePattern(r'(a+)+');
+      expect(warnings.any((w) => w.contains('catastrophic backtracking')), isTrue);
+    });
+
+    test('validatePattern does not warn on safe patterns', () {
+      final warnings = compiler.validatePattern(r'^[^@\s]+@spam\.com$');
+      // Should have no ReDoS warnings (may have other warnings)
+      expect(warnings.any((w) => w.contains('catastrophic backtracking')), isFalse);
+    });
+  });
+
+  group('PatternCompiler - safeHasMatch (SEC-1)', () {
+    test('returns true for matching pattern', () async {
+      final regex = RegExp(r'^test@example\.com$', caseSensitive: false);
+      final result = await PatternCompiler.safeHasMatch(regex, 'test@example.com');
+      expect(result, isTrue);
+    });
+
+    test('returns false for non-matching pattern', () async {
+      final regex = RegExp(r'^test@example\.com$', caseSensitive: false);
+      final result = await PatternCompiler.safeHasMatch(regex, 'other@example.com');
+      expect(result, isFalse);
+    });
+
+    test('returns false on timeout (does not hang)', () async {
+      // This pattern with this input causes catastrophic backtracking
+      final regex = RegExp(r'^(a+)+$');
+      final evilInput = '${'a' * 25}!'; // 25 a's followed by ! causes exponential backtracking
+
+      final result = await PatternCompiler.safeHasMatch(
+        regex,
+        evilInput,
+        timeout: const Duration(milliseconds: 500),
+      );
+      expect(result, isFalse);
+    }, timeout: const Timeout(Duration(seconds: 10)));
+
+    test('normal patterns complete well within timeout', () async {
+      final regex = RegExp(r'^[^@\s]+@(?:[a-z0-9-]+\.)*example\.com$', caseSensitive: false);
+      final stopwatch = Stopwatch()..start();
+      final result = await PatternCompiler.safeHasMatch(
+        regex,
+        'user@mail.example.com',
+        timeout: const Duration(seconds: 2),
+      );
+      stopwatch.stop();
+      expect(result, isTrue);
+      expect(stopwatch.elapsedMilliseconds, lessThan(2000));
+    });
+  });
+
+  group('SEC-1b (Sprint 33) provenance tracking', () {
+    late PatternCompiler compiler;
+    setUp(() {
+      compiler = PatternCompiler();
+    });
+
+    test('compile() defaults to bundled provenance', () {
+      compiler.compile(r'^bundled@example\.com$');
+      expect(compiler.provenanceOf(r'^bundled@example\.com$'),
+          PatternProvenance.bundled);
+    });
+
+    test('compileWithProvenance records user provenance for safe patterns',
+        () {
+      compiler.compileWithProvenance(
+          r'^user@example\.com$', PatternProvenance.user);
+      expect(compiler.provenanceOf(r'^user@example\.com$'),
+          PatternProvenance.user);
+      expect(compiler.rejectedUserPatterns, isEmpty);
+    });
+
+    test(
+        'compileWithProvenance rejects ReDoS user pattern with never-match fallback',
+        () {
+      // Classic nested-quantifier ReDoS: (a+)+
+      const dangerous = r'(a+)+';
+      final regex = compiler.compileWithProvenance(
+          dangerous, PatternProvenance.user);
+      expect(compiler.rejectedUserPatterns.containsKey(dangerous), isTrue);
+      // The fallback regex does not match any input.
+      expect(regex.hasMatch(''), isFalse);
+      expect(regex.hasMatch('aaa'), isFalse);
+      expect(regex.hasMatch('ab'), isFalse);
+    });
+
+    test('compileWithProvenance does NOT reject ReDoS pattern if bundled',
+        () {
+      // Same dangerous pattern, but shipped with the app -- trusted.
+      const dangerous = r'(a+)+';
+      final regex = compiler.compileWithProvenance(
+          dangerous, PatternProvenance.bundled);
+      expect(compiler.rejectedUserPatterns, isEmpty);
+      // Real regex is cached (will match "aaa"), no fallback.
+      expect(regex.hasMatch('aaa'), isTrue);
+    });
+
+    test('clear() wipes provenance and rejection tracking', () {
+      compiler.compileWithProvenance(r'(a+)+', PatternProvenance.user);
+      expect(compiler.rejectedUserPatterns, isNotEmpty);
+      compiler.clear();
+      expect(compiler.rejectedUserPatterns, isEmpty);
+      expect(compiler.provenanceOf(r'(a+)+'), isNull);
+    });
+  });
 }

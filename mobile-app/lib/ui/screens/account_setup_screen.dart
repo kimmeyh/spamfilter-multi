@@ -6,7 +6,10 @@ import '../../adapters/email_providers/email_provider.dart';
 import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/providers/email_scan_provider.dart';
+import '../../core/security/auth_rate_limiter.dart';
 import '../../core/storage/settings_store.dart';
+import '../../util/redact.dart';
+import 'help_screen.dart';
 import 'scan_progress_screen.dart';
 import 'gmail_oauth_screen.dart';
 
@@ -100,6 +103,76 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     }
   }
 
+  /// Basic email format validation (SEC-20)
+  /// Returns null if valid, or a generic error message if invalid.
+  /// Messages are intentionally generic to avoid leaking validation details.
+  String? _validateEmailFormat(String email) {
+    if (email.isEmpty) return 'Email is required.';
+    // All format checks return the same generic message (SEC-20)
+    final atCount = '@'.allMatches(email).length;
+    if (atCount != 1) return 'Please enter a valid email address.';
+    final parts = email.split('@');
+    if (parts[0].isEmpty) return 'Please enter a valid email address.';
+    if (parts[1].isEmpty) return 'Please enter a valid email address.';
+    if (!parts[1].contains('.')) return 'Please enter a valid email address.';
+    if (parts[1].startsWith('.') || parts[1].endsWith('.')) {
+      return 'Please enter a valid email address.';
+    }
+    return null;
+  }
+
+  /// Password length warning (SEC-21)
+  /// Returns a warning message for short passwords, or null if OK.
+  String? _passwordLengthWarning(String password) {
+    if (password.isNotEmpty && password.length < 8) {
+      return 'App passwords are typically 16 characters. '
+          'Short passwords may indicate an incorrect entry.';
+    }
+    return null;
+  }
+
+  /// Validate email and password inputs before connection attempt.
+  /// Returns true if validation passes, false if blocked.
+  bool _validateInputs(String email, String password) {
+    if (email.isEmpty || password.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Email and app password are required.')),
+        );
+      }
+      return false;
+    }
+
+    final emailError = _validateEmailFormat(email);
+    if (emailError != null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(emailError)),
+        );
+      }
+      return false;
+    }
+
+    // SEC-21 / H2 fix: Password length warning is now surfaced in the UI
+    // (SnackBar, 5s duration) instead of log-only. Length is intentionally
+    // NOT logged to avoid creating a password-search-space oracle.
+    final passwordWarning = _passwordLengthWarning(password);
+    if (passwordWarning != null) {
+      _logger.w('[Account Setup] Short password entered (warning shown to user)');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(passwordWarning),
+            duration: const Duration(seconds: 5),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    }
+
+    return true;
+  }
+
   /// Test IMAP connection with provided credentials
   Future<void> _testConnection() async {
     if (_isGmailOAuth) {
@@ -110,14 +183,7 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
-    if (email.isEmpty || password.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Email and app password are required.')),
-        );
-      }
-      return;
-    }
+    if (!_validateInputs(email, password)) return;
 
     setState(() {
       _isTesting = true;
@@ -157,14 +223,28 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
       // Disconnect after test
       await platform.disconnect();
     } catch (e) {
+      // SEC-22 (Sprint 33): surface rate-limit blocks with a clear unlock
+      // time instead of a raw toString() that exposes the redacted account
+      // and exception name.
+      String userMessage;
+      if (e is AuthRateLimitedException) {
+        final unlock = e.blockedUntil.toLocal();
+        final hh = unlock.hour.toString().padLeft(2, '0');
+        final mm = unlock.minute.toString().padLeft(2, '0');
+        userMessage =
+            'Too many failed sign-in attempts. Try again at $hh:$mm.';
+      } else {
+        userMessage = 'Connection failed: $e';
+      }
+
       setState(() {
         _isTesting = false;
-        _connectionStatus = '[FAIL] Connection failed: $e';
+        _connectionStatus = '[FAIL] $userMessage';
       });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Connection test failed: $e')),
+          SnackBar(content: Text(userMessage)),
         );
       }
     }
@@ -191,13 +271,8 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
-    if (email.isEmpty || password.isEmpty) {
+    if (!_validateInputs(email, password)) {
       setState(() => _isLoading = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Email and app password are required.')),
-        );
-      }
       return;
     }
 
@@ -215,7 +290,7 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
         platformId: _effectivePlatformId,
       );
 
-      _logger.i('[OK] Saved credentials for account: $accountId (platform: $_effectivePlatformId)');
+      _logger.i('[OK] Saved credentials for account: ${Redact.accountId(accountId)} (platform: $_effectivePlatformId)');
     } catch (e) {
       setState(() => _isLoading = false);
       _logger.e('Failed to save credentials: $e');
@@ -295,14 +370,30 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Gmail - Sign In Method'),
+        // F55 (Sprint 33): standardized icon order -- Accounts, Help.
+        actions: [
+          IconButton(
+            tooltip: 'Select Account',
+            icon: const Icon(Icons.people),
+            onPressed: () {
+              Navigator.popUntil(context, (route) => route.isFirst);
+            },
+          ),
+          IconButton(
+            tooltip: 'Help',
+            icon: const Icon(Icons.help_outline),
+            onPressed: () => openHelp(context, HelpSection.accountSetup),
+          ),
+        ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Text(
-              'How would you like to sign in to Gmail?',
+      body: SelectionArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                'How would you like to sign in to Gmail?',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
@@ -370,7 +461,8 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
                 ],
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -481,14 +573,31 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
                 },
               )
             : null,
+        // F55 (Sprint 33): standardized icon order -- Accounts, Help.
+        actions: [
+          IconButton(
+            tooltip: 'Select Account',
+            icon: const Icon(Icons.people),
+            onPressed: () {
+              Navigator.popUntil(context, (route) => route.isFirst);
+            },
+          ),
+          // F54 (Sprint 33): Help icon -> Account Setup section.
+          IconButton(
+            tooltip: 'Help',
+            icon: const Icon(Icons.help_outline),
+            onPressed: () => openHelp(context, HelpSection.accountSetup),
+          ),
+        ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              '${_effectiveDisplayName} Email Setup',
+      body: SelectionArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                '${_effectiveDisplayName} Email Setup',
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
 
@@ -646,7 +755,8 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
               style: const TextStyle(color: Colors.grey, fontSize: 12),
               textAlign: TextAlign.center,
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -946,11 +1056,13 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
               Text('Warning: Full Scan Mode'),
             ],
           ),
-          content: const Text(
-            'Full Scan mode will PERMANENTLY delete or move emails based on your rules.\n\n'
-            'This action CANNOT be undone.\n\n'
-            'Are you sure you want to enable Full Scan mode?',
-            style: TextStyle(fontSize: 14),
+          content: SelectionArea(
+            child: const Text(
+              'Full Scan mode will PERMANENTLY delete or move emails based on your rules.\n\n'
+              'This action CANNOT be undone.\n\n'
+              'Are you sure you want to enable Full Scan mode?',
+              style: TextStyle(fontSize: 14),
+            ),
           ),
           actions: [
             TextButton(
@@ -1022,11 +1134,12 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('Scan Mode'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      content: SelectionArea(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             const Text(
               'How would you like to scan emails?',
               style: TextStyle(fontWeight: FontWeight.bold),
@@ -1205,7 +1318,7 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
                               ),
                               const SizedBox(height: 4),
                               const Text(
-                                '⚡ Apply all changes (can be reverted)',
+                                'Apply all changes (can be reverted)',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.red,
@@ -1260,7 +1373,7 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
                               ),
                               const SizedBox(height: 4),
                               const Text(
-                                '🔥 PERMANENT delete/move (cannot revert)',
+                                'PERMANENT delete/move (cannot revert)',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.red,
@@ -1307,7 +1420,8 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
                 ],
               ),
             ),
-          ],
+            ],
+          ),
         ),
       ),
       actions: [

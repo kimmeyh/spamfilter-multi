@@ -17,7 +17,8 @@ class BackgroundScanProgressScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      body: Center(
+      body: SelectionArea(
+        child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -58,6 +59,7 @@ class BackgroundScanProgressScreen extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

@@ -123,7 +123,17 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
   - Local develop branch matches remote
   - Ready to create new sprint feature branch
 
-- [ ] **2.6 Now Proceed to Phase 3: Sprint Kickoff & Planning**
+- [ ] **2.6 Dependency Vulnerability Check** (SEC-16)
+  - Command: `cd mobile-app && dart pub outdated`
+  - Review output for:
+    - Discontinued packages (replace or plan migration)
+    - Major version bumps with known security fixes
+    - Any packages flagged with security advisories
+  - If critical vulnerabilities found: add to sprint scope or create backlog item
+  - If only minor/major version drift: document in sprint plan, no action needed
+  - Consider running `dart pub audit` if available in current Dart SDK
+
+- [ ] **2.7 Now Proceed to Phase 3: Sprint Kickoff & Planning**
   - Create new feature branch for next sprint
   - Create sprint cards
   - Begin execution
@@ -262,6 +272,21 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
   - Risk assessments documented for all tasks (even if "Low - maintenance work")
   - Effort estimates included for all tasks (with 20% buffer for manual testing tasks)
 
+- [ ] **3.6.1 Architecture Impact Check** (MANDATORY - Added Sprint 30)
+  - **Purpose**: Prevent architecture drift by catching documentation gaps BEFORE sprint approval
+  - **Check**: Review planned sprint tasks against documented architecture:
+    - `docs/ARCHITECTURE.md` -- Do planned changes affect documented components, patterns, or data flows?
+    - `docs/ARSD.md` -- Do planned changes affect architecture requirements or design specifications?
+    - `docs/adr/*.md` -- Do planned changes conflict with or extend any ADR decisions?
+  - **Determine if sprint scope needs**:
+    - New ADR (for new architectural decisions)
+    - ADR update (for changes to existing decisions)
+    - ARCHITECTURE.md update (for new services, screens, patterns, database tables)
+    - ARSD.md update (for requirements or design spec changes)
+  - **If updates needed**: Include architecture documentation tasks in the sprint plan
+  - **If no impact**: Note "No architecture impact" in sprint plan and proceed
+  - **Rationale**: Architecture drift accumulated over Sprints 20-29 because docs were not checked during planning. This step prevents recurrence. (Learned Sprint 30)
+
 - [ ] **3.7 CRITICAL: Plan Approval = Task Execution Pre-Approval**
   - **SUGGESTION**: User may optionally run `/compact` before approving plan to refresh context for execution
     - **When Helpful**: After long planning discussions (>30K tokens used)
@@ -298,6 +323,37 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
   - Design decision with multiple equally-valid approaches AND task does not specify which
 
   **Decision Rule**: If task acceptance criteria can be met with this decision, execute it. Only ask if acceptance criteria do not provide enough guidance.
+
+  **Standing Approval Inventory (Sprint 35+)**: Sprint plan approval at Phase 3 grants the following standing authorizations until sprint close. None of these require a per-occurrence permission prompt.
+
+  **[OK] Plan-approved actions (execute without asking)**:
+  - All file edits implementing approved tasks
+  - `git add` / `git commit` (single logical commits per task or task batch)
+  - `git push` to the sprint feature branch (`feature/YYYYMMDD_Sprint_N`)
+  - PR creation against `develop` and PR description / body updates on the sprint PR
+  - Build commands: `build-windows.ps1`, `flutter test`, `flutter analyze`, `build-with-secrets.ps1` (for sprint-relevant build types)
+  - Launching the desktop app for manual testing (Phase 5.3)
+  - WinWright MCP interactions per the conditional + state-restoration rule (`docs/TESTING_STRATEGY.md` Desktop E2E section)
+  - SQLite reads against the dev DB for diagnostic purposes
+  - Sprint doc updates: `CHANGELOG.md`, `docs/sprints/SPRINT_N_PLAN.md`, `docs/sprints/SPRINT_N_RETROSPECTIVE.md`, `docs/sprints/SPRINT_N_SUMMARY.md`, `docs/ALL_SPRINTS_MASTER_PLAN.md`
+  - GitHub issue creation for backlog items / bugs surfaced by sprint work (BUG-S##-#, F## entries)
+  - Memory file writes under `.claude/memory/` per the auto-memory protocol
+  - `gh pr view`, `gh issue view`, `gh issue list`, `gh pr list` (read-only GitHub CLI)
+
+  **[FAIL] Always-confirm actions (ask each time, regardless of plan approval)**:
+  - `git push --force` or `git push --force-with-lease`
+  - `git reset --hard`, `git checkout --` against tracked files, `git branch -D`
+  - Branch deletion (local or remote)
+  - `git rebase -i` or any interactive git command
+  - SQLite `DELETE` / `UPDATE` against the dev DB (Sprint 35 used this for cleanup; should have asked first)
+  - Modifications to secrets files (`secrets.dev.json`, `secrets.prod.json`, `google-services.json`)
+  - `flutter pub upgrade` or any dependency version change not explicitly in the plan
+  - `git push` to `develop` or `main` (only Harold pushes to these)
+  - Creating a PR against `main` (Claude PRs target `develop` only -- per CLAUDE.md branch policy)
+  - Hooks: `--no-verify`, `--no-gpg-sign`, or any commit/push that bypasses configured hooks
+  - Any action against shared infrastructure (CI configs, GitHub Actions workflows) outside the sprint plan
+
+  **Rationale**: Per Sprint 35 retro Process Issues, Opus 4.7 has a higher tendency to confirm before visible/persistent actions than prior models. This inventory makes the autonomy boundary explicit: if the action is in the [OK] list, execute it; if it's in the [FAIL] list, confirm. Anything not enumerated falls back to the Decision Rule above.
 
 **[CHECKPOINT]** Before proceeding to Phase 4, re-read Phase 4 items in `docs/SPRINT_CHECKLIST.md`.
 
@@ -399,6 +455,40 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
   - Verify code follows project patterns
   - Check test coverage is adequate
   - Ensure documentation is updated
+
+- [ ] **5.1.1 Automated Code Review** (Sprint 32 improvement - MANDATORY)
+  - **Purpose**: Second-pass review by specialized agents catches issues that implementation-mode thinking can miss (convention adherence, subtle bugs, missing tests, silent failures, type design issues)
+  - **Required agent**: `pr-review-toolkit:code-reviewer`
+    - Runs on current sprint's git diff vs develop
+    - Produces categorized findings (HIGH / MEDIUM / LOW)
+  - **Optional agents** (run if sprint scope suggests):
+    - `pr-review-toolkit:silent-failure-hunter` - when sprint includes error handling, catch blocks, or fallback logic
+    - `pr-review-toolkit:comment-analyzer` - when sprint adds significant comments or docstrings
+    - `pr-review-toolkit:type-design-analyzer` - when sprint introduces or refactors types
+    - `pr-review-toolkit:pr-test-analyzer` - when sprint adds new functionality (test coverage analysis)
+  - **Process**:
+    1. Run `pr-review-toolkit:code-reviewer` agent with git diff as input
+    2. **Related-patterns grep (MECHANICAL - always run)**: Instruct the reviewer to grep the codebase for patterns adjacent to the sprint changes. This is not optional -- it catches cross-cutting gaps that look file-scoped during implementation. Examples:
+       - If sprint changes logging in file X, grep for similar `_logger.` sites in other files
+       - If sprint adds validation in method Y, grep for other call sites that lack the same validation
+       - If sprint changes error handling in class Z, grep for other catch blocks that might need the same treatment
+       - If sprint redacts sensitive data in file A, grep for other places the same sensitive variable is logged
+       - Include findings in the review output tagged as `POTENTIAL_MISS: similar pattern at <file:line>`
+    2a. **Test-assertion sibling sweep for structural-data changes (MECHANICAL - run when applicable)**: When a sprint task changes a piece of structural data that tests assert against (seed count, default rule list size, default settings count, bundled YAML row count, schema field count, etc.), grep `test/` for ALL assertions that reference the old value or the data-producing function and verify each was updated. Do not rely on review judgment alone -- this is a 5-minute mechanical check.
+       - Trigger: any sprint task that modifies a function whose return value is asserted by tests with a literal expected value (e.g., `expect(x.length, 5)`, `expect(rules.count, 1638)`)
+       - Steps: (1) identify the changed data-producer (function, constant, bundled file); (2) `grep -rn "<producer-name>" test/`; (3) for each match, verify the literal expected value still holds; (4) if the change is structural (count, size, shape), prefer `greaterThan(N)` / `lessThan(N)` assertions over exact literals to make future structural changes non-breaking
+       - Why: Sprint 34 F73 changed bundled YAML from 5 monolithic blobs to 1638 individual rows. Three of four sibling assertions in `default_rule_set_service_test.dart` were updated to `greaterThan(100)`; the fourth at line 422 was missed because the reviewer focused on the diff, not on every sibling. Result: post-merge develop test suite went red. Sprint 35 BUG-S34-1 fix.
+       - Does not apply to: bug fixes that don't change data shape, refactors with no data change, doc-only updates
+    3. **Two-phase review for cross-cutting policies (CONDITIONAL)**: When the sprint delivers a codebase-wide policy (not just a file-scoped change), run the code reviewer a second time with a feature-sweep prompt:
+       - Applies when: feature is a cross-cutting policy (logging redaction, error handling pattern, input validation rule, accessibility attribute, etc.)
+       - Does not apply when: feature is a single-screen UI change, a single-service implementation, or a bug fix
+       - Prompt the reviewer: "The sprint applied <policy> in <files>. Search all of `lib/` for places where the same policy should apply but does not. Produce a list of gaps to fix or backlog."
+       - Fix gaps that are <15 min each; backlog larger ones
+    4. Address HIGH / CRITICAL findings before PR creation (fix or document why not)
+    5. MEDIUM / LOW findings: fix if quick (<15 min), otherwise add to backlog
+    6. Record findings and disposition in sprint retrospective
+  - **Model**: Requires Opus (review analysis -- see SPRINT_PLANNING.md "Activities Requiring Opus")
+  - **Learning (Sprint 32)**: Code reviewer focused on sprint diff missed SEC-17 gaps in adjacent files (background scan worker, UI screens). User manual testing of logs surfaced the gap. Step 2 (mechanical grep) and step 3 (two-phase review) were added to prevent recurrence.
 
 - [ ] **5.2 Run Complete Test Suite**
   - Execute full test suite: `flutter test`
@@ -549,6 +639,8 @@ After Phase 5.2 all tests pass, context can be compacted for efficiency:
 
   **Reference**: See `docs/MANUAL_INTEGRATION_TESTS.md` for comprehensive test scenarios
 
+  **Conditional WinWright E2E (Sprint 35 policy)**: If sprint changes touch any UI surface covered by a WinWright script, run the matching script(s) only -- not the full suite. See the When-to-Run table in `docs/TESTING_STRATEGY.md` (Desktop E2E section). Every script must obey the state-restore rule: any rule, safe sender, or setting it creates or modifies must be reverted before the script ends. The full WinWright sweep (F79, HOLD, Issue #240) is on-demand only.
+
   **NOTE**: Starting Sprint 5, user tests in parallel while Claude completes Phase 6-7
   - **User Ready?**: Yes -> Begin manual testing on running app
   - **Claude Meanwhile**: Proceeds to Phase 6.3 (PR creation) while monitoring app
@@ -672,9 +764,35 @@ After Phase 5.2 all tests pass, context can be compacted for efficiency:
   - Reference all sprint cards: `Closes #XX, #YY, #ZZ`
 
 - [ ] **6.4 Assign Code Review**
-  - Assign GitHub Copilot for automated review
-  - Add user as reviewer if manual review needed
-  - Request specific review focus if applicable
+  - **@kimmeyh** is auto-assigned via `.github/CODEOWNERS`.
+  - **Copilot** is auto-assigned via Repository Ruleset (Settings -> Rules -> Rulesets -> enable "Automatically request Copilot code review"). Note: CODEOWNERS does NOT support the Copilot bot; the Ruleset is the only supported mechanism.
+  - Fallback if Ruleset is not configured and Copilot review is desired: `gh pr edit <PR#> --add-reviewer "@copilot"` (requires gh CLI v2.88.0+).
+  - Copilot instructions come from `.github/copilot-instructions.md` on the PR base branch (develop).
+
+- [ ] **6.4.1 GitHub Copilot Review Response** (Sprint 32 improvement - if Copilot enabled)
+  - **Purpose**: External review layer independent of Claude Code. Catches language-specific issues, convention violations, best-practice gaps.
+  - **Trigger**: Wait for Copilot review to complete after PR creation (typically 1-3 minutes).
+  - **Known gotcha**: The auto-assignment Ruleset fires on push to an existing PR, not reliably at PR creation. If a PR opens with a single initial commit and Copilot review does not appear within 3-5 minutes, push a follow-up commit or manually request via `gh pr edit <PR#> --add-reviewer "@copilot"`.
+  - **Process**:
+    1. Fetch Copilot review comments: `gh pr view <PR#> --json reviews,reviewThreads` or review on GitHub UI.
+    2. For each Copilot comment, draft a response with these fields:
+       - **What**: Copilot's feedback quoted or summarized.
+       - **Why**: Context of the code being reviewed.
+       - **Impact**: What would change if addressed (similar to mini-ADR).
+       - **Recommendation**: One of:
+         - `Fix now` (with proposed diff).
+         - `Add to backlog` (with backlog item title + rationale).
+         - `Not applicable` (with reasoning).
+    3. Present all responses to user sequentially (or as a batch table) for decision:
+       - **y** = approve recommendation.
+       - **n** = decline recommendation (ask for alternative).
+       - **comment** = user feedback; revise recommendation.
+    4. Accumulate approved responses.
+    5. Implement approved "Fix now" items as part of retrospective (Phase 7).
+    6. Add approved "Add to backlog" items to ALL_SPRINTS_MASTER_PLAN.md.
+    7. Post reply comments to Copilot threads explaining resolution.
+  - **Model**: Requires Opus (review analysis -- see SPRINT_PLANNING.md "Activities Requiring Opus").
+  - **Skip condition**: If Copilot review is not enabled in repo, skip this step (document in retrospective that Copilot review was unavailable).
 
 - [ ] **6.5 Notify User**
   - Inform user PR is ready for review
@@ -746,47 +864,210 @@ Before conducting sprint review, build and test the Windows desktop app:
   - Timing: Conduct while user reviews PR, before merge
   - **DO NOT PROCEED TO MERGE WITHOUT COMPLETING PHASE 7**
 
-- [ ] **7.3 Gather User Feedback (if review desired)**
-  - Ask user for feedback on optional topics:
-    - **Effort Accuracy**: Did actual effort match estimate?
-    - **Planning Quality**: Was the sprint plan clear and complete?
-    - **Model Assignments**: Were Haiku/Sonnet task assignments correct?
-    - **Communication**: Was progress clear? Any unanswered questions?
-    - **Requirements Clarity**: Was the specification clear?
-    - **Testing Approach**: Did the test-first approach work well?
-    - **Documentation**: Was code/PR documentation sufficient?
-    - **Process Issues**: Any friction in the sprint workflow?
-    - **Risk Management**: Were identified risks handled well?
-    - **Next Sprint Readiness**: How prepared are we for next sprint?
-  - Document user feedback verbatim
+- [ ] **7.3 Gather Sprint Retrospective Feedback (MANDATORY -- 4 ROLES x 14 CATEGORIES)**
 
-- [ ] **7.4 Provide Claude Feedback**
-  - Share my assessment of what went well (quality, architecture, patterns)
-  - Share what could be improved (edge cases, documentation gaps)
-  - Provide specific, actionable observations
-  - Format: "What Went Well" + "What Could Be Improved"
+  [CRITICAL] **A Sprint Retrospective is NEVER considered complete unless all 14 categories are addressed by all 4 roles. Missing roles or categories = retrospective is INCOMPLETE = sprint is NOT complete.**
 
-- [ ] **7.5 Create Improvement Suggestions**
-  - Identify common improvements from both feedbacks
-  - Prioritize: High, Medium, Low
-  - Group by category: Documentation, Process, Testing, Architecture, etc.
-  - Make suggestions optional, not mandatory
+  **The 4 mandatory roles** (in this single-developer project, Harold wears 3 of the 4 hats; Claude Code provides the 4th):
+  1. **Product Owner** -- business value, user-facing impact, scope/priority, backlog implications
+  2. **Scrum Master** -- process adherence, ceremony quality, blockers, team health, workflow friction
+  3. **Lead Developer** -- technical quality, code/architecture, engineering decisions, technical debt
+  4. **Claude Code Development Team** -- execution-side observations: where prompts/instructions were ambiguous, where tooling helped or hurt, where automation could improve
 
-- [ ] **7.6 Decide on Improvements**
-  - Ask user which improvements should be implemented
-  - Improvements are applied to documentation/process, not code
-  - Examples: Update SPRINT_EXECUTION_WORKFLOW.md, Create `.claude/model_assignment_heuristics.json`, etc.
-  - User selects which changes to make
+  Even when one human person provides 3 of the 4 perspectives, each role MUST be addressed separately because each looks through a different lens. Empty/silent rows are NOT acceptable. If a role has nothing to say, that role must explicitly write `No issues -- expectations met.` -- but the role MUST be addressed.
 
-- [ ] **7.7 Update Documentation** (MANDATORY UPDATES)
+  **The 14 mandatory categories** (gather feedback from all 4 roles for EACH):
+  1. **Effective while as Efficient as Reasonably Possible** -- Did we deliver the right outcome with the least reasonable effort? (Combines former Effectiveness/Efficiency + Sprint Execution.)
+  2. **Testing Approach**
+  3. **Effort Accuracy**
+  4. **Planning Quality**
+  5. **Model Assignments**
+  6. **Communication**
+  7. **Requirements Clarity**
+  8. **Documentation**
+  9. **Process Issues**
+  10. **Risk Management**
+  11. **Next Sprint Readiness**
+  12. **Architecture Maintenance**
+  13. **Minor Function Updates for the Next Sprint Plan** -- Small enhancements/fixes uncovered this sprint that should be folded into the NEXT sprint's plan as inline scope additions.
+  14. **Function Updates for the Future Backlog** -- Larger or non-urgent items that should be added to `ALL_SPRINTS_MASTER_PLAN.md` "Next Sprint Candidates".
 
-  **Process Improvements** (from retrospective feedback):
-  - Apply agreed-upon improvements to relevant documents
-  - Update version/date on modified documents
-  - Create new documents if needed
-  - Commit improvements to feature branch
+  **Reference**: See `docs/SPRINT_RETROSPECTIVE.md` for full category definitions, per-role example feedback, and the verbatim feedback template to copy into `docs/sprints/SPRINT_N_RETROSPECTIVE.md`.
 
-  **MANDATORY Sprint Completion Updates**:
+  **[CRITICAL] Phase 7.3 -- 7.6 Retrospective Protocol** (Updated Sprint 34, in response to a process violation):
+
+  The retrospective is a 7-step protocol mapped onto Phases 7.3 through 7.7. Steps must run in order. Do NOT collapse, reorder, or skip steps to "save time" -- the velocity bias is exactly the trap that caused the Sprint 34 violation.
+
+  **Roles**: Harold wears Product Owner / Scrum Master / Lead Developer (3 of 4). Claude is the Claude Code Development Team (4th). Harold's 3 roles produce one set of feedback (combined or separate, his choice). Claude produces the 4th separately.
+
+  **Categories**: All 14, addressed by both feedback sets. Empty/silent rows NOT acceptable -- write `No issues -- expectations met.` if a role has nothing to say for a category. See `docs/SPRINT_RETROSPECTIVE.md` for category definitions.
+
+  ---
+
+  **STEP 1 (Phase 7.3) -- Send the prompt to Harold**
+
+  Claude sends EXACTLY this message to Harold (substituting N) and then proceeds to Step 2. Do NOT write content into `docs/sprints/SPRINT_N_RETROSPECTIVE.md` yet.
+
+  > Sprint N is ready for the Phase 7 retrospective. Per `docs/SPRINT_RETROSPECTIVE.md` Completeness Validation Gate, the Product Owner / Scrum Master / Lead Developer feedback for all 14 categories must come from you. While you write yours, I will draft my Claude Code Development Team feedback to `docs/sprints/drafts/SPRINT_N_RETROSPECTIVE_claude_draft.md`. After you reply I will combine both sets, display the combined retrospective for your review, propose improvements, and ask you for now-vs-backlog decisions per the Phase 7 protocol in `docs/SPRINT_EXECUTION_WORKFLOW.md`.
+  >
+  > Please provide your feedback for the 14 categories. You may answer one role at a time, one category at a time, in a single message, or however suits you. Combined PO/SM/Lead lines per category are acceptable. If a role has nothing to say for a category, write `No issues -- expectations met.` -- but every (role, category) pair must be addressed. Include any improvement suggestions you want considered for "apply now" or "add to backlog".
+  >
+  > The 14 categories: (1) Effective while as Efficient as Reasonably Possible; (2) Testing Approach; (3) Effort Accuracy; (4) Planning Quality; (5) Model Assignments; (6) Communication; (7) Requirements Clarity; (8) Documentation; (9) Process Issues; (10) Risk Management; (11) Next Sprint Readiness; (12) Architecture Maintenance; (13) Minor Function Updates for the Next Sprint Plan (carry-ins); (14) Function Updates for the Future Backlog.
+
+  **STEP 2 (Phase 7.3 continued) -- Generate Claude's draft in parallel while Harold writes his**
+
+  After sending the Step 1 prompt, Claude immediately drafts its Claude Code Development Team feedback for all 14 categories into `docs/sprints/drafts/SPRINT_N_RETROSPECTIVE_claude_draft.md`. The draft file has a header marking it as Claude-authored. The draft is for Step 3 use only -- it is never substituted for Harold's input and never written into the official retrospective file.
+
+  This step runs in parallel with Harold's writing time. It does NOT proceed to Step 3 until Harold replies in Step 1.
+
+  **STEP 3 (Phase 7.4) -- Record Harold's feedback verbatim**
+
+  Once Harold replies:
+  1. Open `docs/sprints/SPRINT_N_RETROSPECTIVE.md` and paste the 4-role x 14-category template from `docs/SPRINT_RETROSPECTIVE.md`.
+  2. Write Harold's exact words into each (role, category) cell. Do NOT paraphrase. Do NOT "improve" wording. Combined PO/SM/Lead lines are acceptable if that is how Harold provided them -- record them as he wrote them.
+  3. Copy the Claude Code Development Team lines for each category from the Step 2 draft into the official retrospective file.
+  4. For Categories 13 and 14: if Harold answered "none", record that verbatim. Do NOT auto-add Claude's predicted items; if Claude has Category 14 candidates, surface them in Step 5 (improvement proposals) for Harold to decide on.
+
+  **Phase 7.3/7.4 EXIT GATE -- Completeness Validation (MANDATORY)**:
+  - [ ] All 14 categories present
+  - [ ] All 4 roles addressed in each category (Harold's combined PO/SM/Lead line counts as 3 roles if he chose combined format)
+  - [ ] No `[feedback]` placeholder text remaining
+  - [ ] Harold's feedback recorded verbatim, not paraphrased
+
+  If ANY box unchecked, Phase 7 is INCOMPLETE. Do NOT proceed to Step 4.
+
+  **STEP 4 (Phase 7.4.5) -- Combine and display the retrospective**
+
+  Display the combined retrospective in chat using this format (no border lines, header line OK, fields OK, wrapping within fields OK, spacing between fields OK):
+
+  ```
+  ## Sprint N Retrospective -- Combined Feedback
+
+  ### 1. Effective while as Efficient as Reasonably Possible
+  Product Owner / Scrum Master / Lead Developer (Harold): <verbatim>
+  Claude Code Development Team: <verbatim>
+
+  ### 2. Testing Approach
+  Product Owner / Scrum Master / Lead Developer (Harold): <verbatim>
+  Claude Code Development Team: <verbatim>
+
+  ... (all 14 categories) ...
+  ```
+
+  Display in chat so Harold sees both sets together before reviewing improvement proposals. The official `docs/sprints/SPRINT_N_RETROSPECTIVE.md` already contains this same content from Step 3 -- the chat display is a presentation step, not a re-write.
+
+  **STEP 5 (Phase 7.5) -- Propose improvements from the combined feedback**
+
+  Claude reviews the combined retrospective and proposes specific improvements. Improvements may be of any type: process, code, tests, architecture, documentation, tooling.
+
+  Sources for proposals:
+  - Issues raised in any of the 14 categories by Harold's feedback
+  - Issues raised by Claude's draft feedback
+  - Any "proposed improvements" Harold included in his Step 1 reply
+  - Cross-cutting themes that emerge when both feedback sets are read together
+
+  Format each proposal:
+  - **Title**: short summary
+  - **Source**: which category / which role surfaced it
+  - **Type**: process / code / tests / architecture / docs / tooling
+  - **Effort**: rough estimate (S/M/L or hours)
+  - **Recommendation**: apply now or add to backlog (with one-sentence rationale)
+
+  Display all proposals in chat for Harold's review. Do NOT auto-apply any of them.
+
+  **STEP 6 (Phase 7.6) -- Harold decides: apply now or add to backlog**
+
+  Claude asks Harold for an explicit decision on each proposal. Default expectation (per Sprint 34 retro guidance): "almost all are faster to do now before the next sprint -- exceptions are directed to backlog."
+
+  Prompt format:
+  > For each proposal above, please indicate:
+  > (a) apply now in this sprint
+  > (b) add to backlog for a future sprint
+  > (c) skip / no change
+  >
+  > A blanket "all now" or "all backlog" answer is acceptable if you want to apply the same disposition across all proposals.
+
+  Wait for Harold's reply. Record his decisions inline in the retrospective document under a new "Improvement Decisions" section.
+
+  **STEP 7 (Phase 7.7) -- Apply approved improvements as part of the current sprint**
+
+  For each proposal Harold marked "apply now":
+  - Implement it as additional commits on the existing sprint branch (not a follow-up PR)
+  - This may include: doc updates, code changes, test additions, architecture doc updates, hookify rules, memory entries, etc.
+  - Re-run analyzer + tests after code/test changes
+  - Update CHANGELOG.md if user-facing
+  - Push commits to the existing PR branch (PR #N still tracks the sprint)
+
+  For each proposal Harold marked "add to backlog":
+  - Add as a numbered F-item to `docs/ALL_SPRINTS_MASTER_PLAN.md` HOLD section (or appropriate priority tier)
+  - Include detail section if non-trivial
+  - Cross-reference the originating retrospective and category
+
+  For each proposal Harold marked "skip":
+  - Note in the retrospective "Improvement Decisions" section that it was reviewed and declined; no further action.
+
+  After all approved improvements are applied and committed, proceed to the remaining Phase 7.7 mandatory completion updates (CHANGELOG entry for sprint summary if not already present, ALL_SPRINTS_MASTER_PLAN.md Last Completed Sprint update, Past Sprint Summary table row, etc.) and then to Phase 7.8.
+
+  ---
+
+  **Violation handling**: If you discover you have written Harold-role feedback yourself before receiving his input, OR you have skipped the combine-and-display step, OR you auto-applied improvements without Harold's now-vs-backlog decision: STOP immediately, move any incorrectly-authored content to `docs/sprints/drafts/`, mark the sprint Phase 7 as INCOMPLETE in `docs/ALL_SPRINTS_MASTER_PLAN.md`, and restart at Step 1. Do not attempt to retroactively justify the drafted content.
+
+- [ ] **7.4 Record Harold's Feedback Verbatim** (was "Provide Claude Feedback" -- Claude's feedback is now drafted in 7.3 Step 2)
+  - Open `docs/sprints/SPRINT_N_RETROSPECTIVE.md` and paste the 14-categories template
+  - Record Harold's exact words per category (combined PO/SM/Lead line acceptable)
+  - Copy Claude Code Development Team lines from the Step 2 draft
+  - See Phase 7.3 Step 3 above for full instructions
+
+- [ ] **7.4.1 Architecture Compliance Check** (MANDATORY - Added Sprint 30)
+  - **Purpose**: Verify sprint code changes are consistent with documented architecture. Second safety net after Phase 3.6.1.
+  - **Check**: Review all code changes in this sprint against:
+    - `docs/ARCHITECTURE.md` -- Are new/changed components, services, screens, database tables reflected?
+    - `docs/ARSD.md` -- Are design specifications still accurate after sprint changes?
+    - `docs/adr/*.md` -- Were any ADR decisions violated or extended without documentation?
+  - **Determine**:
+    - (a) Do architecture docs need updating to reflect sprint changes? If yes, add to Phase 7.7 updates.
+    - (b) Did code changes diverge from approved architecture without prior approval? If yes, flag for Scrum Master review -- code may need reverting or architecture may need formal update.
+  - **If no code changes** (documentation/analysis sprint): Note "No code changes -- architecture compliance N/A" and proceed
+  - **Rationale**: Catches architecture drift that slips through planning. Ensures docs stay current with every sprint. (Learned Sprint 30)
+
+- [ ] **7.4.5 Combine and Display Retrospective** (Added Sprint 34, Step 4 of Retrospective Protocol)
+  - Display the combined retrospective in chat per the format in Phase 7.3 Step 4 above
+  - No border lines (header line OK, fields OK, wrapping within fields OK, spacing between fields OK)
+  - Both Harold's and Claude's feedback shown together per category
+  - This is a presentation step -- the official retrospective file already contains the same content from Step 3
+
+- [ ] **7.5 Propose Improvements from Combined Feedback** (Updated Sprint 34, Step 5 of Retrospective Protocol)
+  - Review the combined retrospective for improvement opportunities
+  - Sources: any of the 14 categories from either Harold or Claude, plus Harold's explicit suggestions, plus cross-cutting themes
+  - Improvements may be of ANY type: process, code, tests, architecture, documentation, tooling
+  - Format per proposal: Title / Source / Type / Effort / Recommendation
+  - Display all proposals in chat for Harold's review -- do NOT auto-apply
+
+- [ ] **7.6 Harold Decides: Apply Now or Add to Backlog** (Updated Sprint 34, Step 6 of Retrospective Protocol)
+  - Ask Harold for explicit decision on each proposal: (a) apply now, (b) add to backlog, (c) skip
+  - Default expectation: most improvements are faster to do now before the next sprint
+  - Blanket disposition (all now / all backlog) acceptable
+  - Record Harold's decisions in retrospective document under "Improvement Decisions" section
+  - Wait for Harold's reply before proceeding to 7.7
+
+- [ ] **7.7 Apply Approved Improvements + Update Documentation** (Updated Sprint 34, Step 7 of Retrospective Protocol)
+
+  **Step 7a: Apply "apply now" improvements to the current sprint**:
+  - For each Step 6 proposal Harold marked "apply now":
+    - Implement as additional commits on the existing sprint branch (NOT a follow-up PR)
+    - Improvement type can be: process docs, code, tests, architecture, hookify rules, memory entries, tooling
+    - Re-run `flutter analyze` and `flutter test` after any code/test changes
+    - Update CHANGELOG.md if user-facing
+    - Push commits to the existing PR branch (PR #N still tracks the sprint)
+  - For each Step 6 proposal Harold marked "add to backlog":
+    - Add as a numbered F-item to `docs/ALL_SPRINTS_MASTER_PLAN.md` HOLD section (or appropriate priority tier)
+    - Include detail section if non-trivial
+    - Cross-reference originating retrospective and category
+  - For each Step 6 proposal Harold marked "skip":
+    - Note in retrospective "Improvement Decisions" section that it was reviewed and declined
+    - No further action
+
+  **Step 7b: Mandatory sprint completion updates**:
   - [ ] **Update CHANGELOG.md** (MANDATORY - see Step 3 in "After Sprint Approval")
     - Add entry under `## [Unreleased]` section
     - Format: `### YYYY-MM-DD` with sprint summary

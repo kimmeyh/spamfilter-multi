@@ -1,0 +1,76 @@
+{
+  "name": "Settings tab cycling",
+  "description": "Cycle through all 4 Settings tabs (General, Scan, Background, Account overrides) and verify each tab loads its content.",
+  "sprint": 34,
+  "feature": "F69",
+  "prerequisites": [
+    "Windows desktop dev build running",
+    "SPI_SETSCREENREADER flag enabled"
+  ],
+  "steps": [
+    {
+      "action": "wait",
+      "ms": 2000
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name*='Settings']",
+      "comment": "Open Settings"
+    },
+    {
+      "action": "wait",
+      "ms": 1000
+    },
+    {
+      "action": "click",
+      "selector": "type=Text[name*='General']",
+      "comment": "Click General tab"
+    },
+    {
+      "action": "wait",
+      "ms": 500
+    },
+    {
+      "action": "verify",
+      "selector": "type=Text[name*='Privacy']",
+      "comment": "Verify Privacy & Logging section visible (General tab content)"
+    },
+    {
+      "action": "click",
+      "selector": "type=Text[name*='Scan']",
+      "comment": "Click Scan tab"
+    },
+    {
+      "action": "wait",
+      "ms": 500
+    },
+    {
+      "action": "verify",
+      "selector": "type=Text[name*='Read-Only']",
+      "comment": "Verify Read-Only Mode toggle visible (Scan tab content)"
+    },
+    {
+      "action": "click",
+      "selector": "type=Text[name*='Background']",
+      "comment": "Click Background tab"
+    },
+    {
+      "action": "wait",
+      "ms": 500
+    },
+    {
+      "action": "verify",
+      "selector": "type=Text[name*='Background scanning']",
+      "comment": "Verify Background scan settings visible"
+    },
+    {
+      "action": "click",
+      "selector": "type=Text[name*='Account']",
+      "comment": "Click Account overrides tab"
+    },
+    {
+      "action": "wait",
+      "ms": 500
+    }
+  ]
+}

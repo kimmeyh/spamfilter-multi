@@ -1,0 +1,189 @@
+{
+  "name": "F56 - Create AND remove TLD block rule (full lifecycle)",
+  "description": "Open Manage Rules screen, tap Add FAB, select Top-Level Domain type, enter a real IANA TLD that is NOT in the bundled rules (.museum), save, verify the new rule appears, then delete it and verify removal. Self-cleaning to keep the dev DB pristine.",
+  "sprint": 34,
+  "feature": "F56 + F69",
+  "prerequisites": [
+    "Windows desktop dev build running",
+    "SPI_SETSCREENREADER flag enabled",
+    "F73 bundled YAML loaded (1638 individual rules expected)",
+    "Test TLD (.museum) is NOT pre-existing in bundled rules (verified during Sprint 35 F69 execution)"
+  ],
+  "test_data": {
+    "tld": "museum",
+    "rationale": "Real IANA TLD, sponsored/restricted (museums only), not present in bundled spam TLD list. Avoids collision with the bundled .xyz/.cc/.store entries that caused Sprint 35 ambiguity.",
+    "expected_pattern_substring": ".museum"
+  },
+  "steps": [
+    {
+      "action": "wait",
+      "ms": 2000
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name='Settings']",
+      "comment": "Open Settings (header opens account-selection dialog first per Sprint 35 finding)"
+    },
+    {
+      "action": "wait",
+      "ms": 1000
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name*='kimmeyharold']",
+      "comment": "Pick first account in selection dialog"
+    },
+    {
+      "action": "wait",
+      "ms": 2000
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name*='Manage Rules']",
+      "comment": "Open Manage Rules from Settings General tab"
+    },
+    {
+      "action": "wait",
+      "ms": 1500
+    },
+    {
+      "action": "verify",
+      "selector": "type=Button[name='Add block rule']",
+      "comment": "Verify FAB present"
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name='Add block rule']",
+      "comment": "Tap FAB to open manual rule creation screen"
+    },
+    {
+      "action": "wait",
+      "ms": 1000
+    },
+    {
+      "action": "verify",
+      "selector": "type=Group[name='Add Block Rule']",
+      "comment": "Verify ManualRuleCreateScreen loaded"
+    },
+    {
+      "action": "click",
+      "selector": "type=RadioButton[name*='Top-Level Domain']",
+      "comment": "Select TLD rule type"
+    },
+    {
+      "action": "wait",
+      "ms": 500
+    },
+    {
+      "action": "click",
+      "selector": "type=Edit",
+      "comment": "Focus the input field (name changes to 'Enter TLD...' after radio selection)"
+    },
+    {
+      "action": "type",
+      "text": "museum",
+      "comment": "Enter a real IANA TLD that is not in the bundled spam list, so we can unambiguously identify and remove our test rule"
+    },
+    {
+      "action": "wait",
+      "ms": 800,
+      "comment": "Wait for pattern preview to generate"
+    },
+    {
+      "action": "verify",
+      "selector": "type=Text[name*='museum']",
+      "comment": "Verify generated pattern preview contains source TLD"
+    },
+    {
+      "action": "invoke",
+      "selector": "type=Button[name='Save Rule']",
+      "comment": "Use ww_invoke (UIA pattern) since Save Rule may be off-screen at 1600x900"
+    },
+    {
+      "action": "wait",
+      "ms": 1000
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name='Save']",
+      "comment": "Confirm save in dialog"
+    },
+    {
+      "action": "wait",
+      "ms": 2000,
+      "comment": "Wait for save and return to Manage Rules"
+    },
+    {
+      "action": "verify",
+      "selector": "type=Group[name='Manage Rules']",
+      "comment": "Back at Manage Rules screen"
+    },
+    {
+      "action": "click",
+      "selector": "type=Edit[name*='Search by domain']",
+      "comment": "Focus search bar to filter for our test rule"
+    },
+    {
+      "action": "type",
+      "text": "museum",
+      "comment": "Search for the test TLD"
+    },
+    {
+      "action": "wait",
+      "ms": 1500,
+      "comment": "Wait for filter to apply"
+    },
+    {
+      "action": "verify",
+      "selector": "type=Button[name*='.museum']",
+      "comment": "VERIFY CREATE: the new .museum block rule appears in filtered list"
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name*='.museum']",
+      "comment": "Open rule detail to use the dialog Delete button (avoids ambiguity if list shows multiple rules)"
+    },
+    {
+      "action": "wait",
+      "ms": 1000
+    },
+    {
+      "action": "verify",
+      "selector": "type=Group[name='Alert']",
+      "comment": "Rule detail dialog opened"
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name='Delete']",
+      "comment": "Tap Delete in the rule detail dialog"
+    },
+    {
+      "action": "wait",
+      "ms": 1000,
+      "comment": "Wait for confirmation dialog"
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name='Delete']",
+      "comment": "Confirm deletion in second dialog (Manage Rules screen Delete confirmation)"
+    },
+    {
+      "action": "wait",
+      "ms": 2000
+    },
+    {
+      "action": "verify_absent",
+      "selector": "type=Button[name*='.museum']",
+      "comment": "VERIFY DELETE: .museum rule is no longer in the filtered list"
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name='Clear']",
+      "comment": "Clear search filter to restore default Manage Rules view"
+    },
+    {
+      "action": "wait",
+      "ms": 500
+    }
+  ]
+}

@@ -8,6 +8,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:logger/logger.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
 
+import '../../core/security/certificate_pinner.dart';
+
 /// Handles Gmail OAuth for Windows platform using browser-based flow
 ///
 /// Uses OAuth 2.0 Authorization Code with PKCE and a loopback
@@ -18,9 +20,10 @@ class GmailWindowsOAuthHandler {
 
   // OAuth 2.0 Configuration - injected at build time via --dart-define
   // Read from compile-time environment (works on Android where Platform.environment is empty)
+  // SEC-13: Empty default triggers fail-fast instead of silently using a placeholder
   static const String _clientId = String.fromEnvironment(
     'WINDOWS_GMAIL_DESKTOP_CLIENT_ID',
-    defaultValue: String.fromEnvironment('GMAIL_DESKTOP_CLIENT_ID', defaultValue: 'YOUR_CLIENT_ID.apps.googleusercontent.com'),
+    defaultValue: String.fromEnvironment('GMAIL_DESKTOP_CLIENT_ID', defaultValue: ''),
   );
   static const String _clientSecret = String.fromEnvironment(
     'WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET',
@@ -57,20 +60,22 @@ class GmailWindowsOAuthHandler {
     if (!_configLogged) {
       _configLogged = true;
       // Use warning level to ensure visibility in release builds
+      // SEC-17: Redact sensitive configuration values in logs
       _logger.w('OAuth Configuration:');
-      _logger.w('  Client ID: ${_clientId}');
+      _logger.w('  Client ID: ${_clientId.isEmpty ? "(not set)" : "${_clientId.substring(0, _clientId.length > 8 ? 8 : _clientId.length)}... (${_clientId.length} chars)"}');
       _logger.w('  Client Secret: ${_clientSecret.isEmpty ? "(not set)" : "(set, ${_clientSecret.length} chars)"}');
       _logger.w('  Redirect URI: $_redirectUri');
       // Explicitly log which client ID is being used and why
       if (Platform.isWindows) {
-        if (_clientId == '' || _clientId.startsWith('YOUR_CLIENT_ID')) {
-          _logger.e('  ERROR: WINDOWS_GMAIL_DESKTOP_CLIENT_ID is missing or placeholder! Gmail OAuth will fail.');
+        if (_clientId.isEmpty) {
+          _logger.e('  ERROR: WINDOWS_GMAIL_DESKTOP_CLIENT_ID is not set! Gmail OAuth will fail. '
+              'Build with --dart-define-from-file=secrets.dev.json to inject credentials.');
         } else {
           _logger.i('  Using WINDOWS_GMAIL_DESKTOP_CLIENT_ID for Windows Gmail OAuth.');
         }
       }
-      if (_clientId == '' || _clientId.startsWith('YOUR_CLIENT_ID')) {
-        _logger.w('  WARNING: Using placeholder client ID! Build with --dart-define or --dart-define-from-file to inject real credentials.');
+      if (_clientId.isEmpty) {
+        _logger.w('  WARNING: OAuth client ID is empty! Build with --dart-define or --dart-define-from-file to inject real credentials.');
       }
     }
   }
@@ -78,10 +83,21 @@ class GmailWindowsOAuthHandler {
   /// Start browser-based OAuth flow (loopback + PKCE)
   /// On desktop, uses localhost redirect with local HTTP server.
   /// On mobile, uses custom scheme redirect with app_links.
+  ///
+  /// Throws [StateError] if OAuth client ID is not configured.
   static Future<Map<String, String>?> authenticateWithBrowser() async {
+    // SEC-13: Fail fast if client ID is not configured
+    if (_clientId.isEmpty) {
+      throw StateError(
+        'Gmail OAuth client ID is not configured. '
+        'Build with --dart-define-from-file=secrets.dev.json to inject credentials. '
+        'See CLAUDE.md "OAuth and Secrets Management" section for setup instructions.',
+      );
+    }
+
     // Check if we're on mobile (Android/iOS)
     final isMobile = Platform.isAndroid || Platform.isIOS;
-    
+
     if (isMobile) {
       return await _authenticateWithBrowserMobile();
     } else {
@@ -258,30 +274,26 @@ class GmailWindowsOAuthHandler {
         _logger.i('Including client_secret in token exchange');
       }
       
-      _logger.i('Token exchange request body:');
-      requestBody.forEach((key, value) {
-        if (key == 'code_verifier' || key == 'client_secret') {
-          _logger.i('  $key: ${value.substring(0, 20)}... (truncated)');
-        } else {
-          _logger.i('  $key: $value');
-        }
-      });
+      // SEC-17: Log token exchange parameters without sensitive values
+      _logger.d('Token exchange: client_id=${_clientId.length > 8 ? '${_clientId.substring(0, 8)}...' : '[short]'}, '
+          'redirect_uri=$redirectUri, grant_type=authorization_code');
 
-      // Manually construct and log the form body for debugging
-      final formBody = requestBody.entries
-          .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
-          .join('&');
-      _logger.d('Form-encoded body (first 100 chars): ${formBody.substring(0, 100)}');
-
-      final response = await http.post(
-        Uri.parse(_tokenEndpoint),
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: requestBody,
-      );
+      // SEC-8 (Sprint 33): pin the Google OAuth token endpoint.
+      final client = PinnedHttpClient();
+      final http.Response response;
+      try {
+        response = await client.post(
+          Uri.parse(_tokenEndpoint),
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          body: requestBody,
+        );
+      } finally {
+        client.close();
+      }
 
       if (response.statusCode != 200) {
-        _logger.e('Token exchange failed: ${response.statusCode} - ${response.body}');
-        throw Exception('Token exchange failed: ${response.body}');
+        _logger.e('Token exchange failed: ${response.statusCode}');
+        throw Exception('Token exchange failed (HTTP ${response.statusCode})');
       }
 
       final data = json.decode(response.body) as Map<String, dynamic>;
@@ -316,15 +328,22 @@ class GmailWindowsOAuthHandler {
         _logger.i('Including client_secret in token refresh');
       }
 
-      final response = await http.post(
-        Uri.parse(_tokenEndpoint),
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: body,
-      );
+      // SEC-8 (Sprint 33): pin the Google OAuth token endpoint.
+      final client = PinnedHttpClient();
+      final http.Response response;
+      try {
+        response = await client.post(
+          Uri.parse(_tokenEndpoint),
+          headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+          body: body,
+        );
+      } finally {
+        client.close();
+      }
 
       if (response.statusCode != 200) {
-        _logger.e('Token refresh failed: ${response.statusCode} - ${response.body}');
-        throw Exception('Token refresh failed: ${response.body}');
+        _logger.e('Token refresh failed: ${response.statusCode}');
+        throw Exception('Token refresh failed (HTTP ${response.statusCode})');
       }
 
       final data = json.decode(response.body) as Map<String, dynamic>;
@@ -338,10 +357,17 @@ class GmailWindowsOAuthHandler {
   /// Validate access token and get user email
   static Future<String> getUserEmail(String accessToken) async {
     try {
-      final response = await http.get(
-        Uri.parse('https://www.googleapis.com/oauth2/v1/userinfo?alt=json'),
-        headers: {'Authorization': 'Bearer $accessToken'},
-      );
+      // SEC-8 (Sprint 33): pin the Google userinfo endpoint.
+      final client = PinnedHttpClient();
+      final http.Response response;
+      try {
+        response = await client.get(
+          Uri.parse('https://www.googleapis.com/oauth2/v1/userinfo?alt=json'),
+          headers: {'Authorization': 'Bearer $accessToken'},
+        );
+      } finally {
+        client.close();
+      }
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;

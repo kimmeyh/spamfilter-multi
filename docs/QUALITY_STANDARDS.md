@@ -395,6 +395,59 @@ open coverage/html/index.html
 
 ---
 
+## Accessibility Standards (ADR-0037)
+
+**Target**: WCAG 2.1 AA conformance
+
+**Required for All New UI Code**:
+- [ ] Interactive elements have Semantics labels (buttons, text fields, tappable list items)
+- [ ] Touch targets meet 48dp minimum (`AccessibilityHelper.minTouchTargetSize`)
+- [ ] Screen content wrapped in `SelectionArea` or uses `SelectableText` for copyable text
+- [ ] Decorative elements use `ExcludeSemantics`
+- [ ] Color contrast meets 4.5:1 ratio (use theme colors, not hardcoded values)
+
+**Semantics Label Rules**:
+```dart
+// [OK] Button with semantic label
+IconButton(
+  icon: const Icon(Icons.delete),
+  tooltip: 'Delete rule',  // Serves as both tooltip and semantic label
+  onPressed: _deleteRule,
+)
+
+// [OK] TextField with label
+TextField(
+  decoration: InputDecoration(labelText: 'Email address'),
+)
+
+// [OK] Tappable list item
+Semantics(
+  label: 'Rule: Block emails from example.com',
+  child: ListTile(
+    title: Text('example.com'),
+    onTap: _editRule,
+  ),
+)
+```
+
+**SelectionArea Usage**:
+```dart
+// Wrap at Scaffold body level
+Scaffold(
+  body: SelectionArea(
+    child: ListView(
+      children: [/* screen content */],
+    ),
+  ),
+)
+```
+
+**YAML Round-Trip Invariant**: All rule schema changes must preserve `patternCategory`, `patternSubType`, and `sourceDomain` through the export -> edit -> re-import cycle. See ADR-0037 for details.
+
+**Reference**: `lib/ui/utils/accessibility_helper.dart` for helper methods and constants.
+
+---
+
 ## Enforcement
 
 ### Pre-Commit Checks

@@ -5,12 +5,28 @@ import '../models/safe_sender_list.dart';
 
 /// Handles YAML import/export for rules and safe senders
 class YamlService {
+  /// Maximum file size for YAML imports (10 MB)
+  static const int maxImportFileSize = 10 * 1024 * 1024;
+
+  /// Validate file size before reading
+  Future<void> _validateFileSize(File file) async {
+    final size = await file.length();
+    if (size > maxImportFileSize) {
+      throw FileSystemException(
+        'File too large (${(size / 1024 / 1024).toStringAsFixed(1)} MB). '
+        'Maximum allowed size is ${maxImportFileSize ~/ 1024 ~/ 1024} MB.',
+        file.path,
+      );
+    }
+  }
+
   /// Load rules from YAML file
   Future<RuleSet> loadRules(String filePath) async {
     final file = File(filePath);
     if (!await file.exists()) {
       throw FileSystemException('Rules file not found', filePath);
     }
+    await _validateFileSize(file);
     final content = await file.readAsString();
     final yaml = loadYaml(content);
     final converted = _convertYamlToMap(yaml);
@@ -32,12 +48,26 @@ class YamlService {
     }
   }
 
+  /// Parse rules from a YAML string (no file I/O)
+  RuleSet parseRulesFromString(String yamlContent) {
+    final yaml = loadYaml(yamlContent);
+    final converted = _convertYamlToMap(yaml);
+    return RuleSet.fromMap(converted as Map<String, dynamic>);
+  }
+
+  /// Parse safe senders from a YAML string (no file I/O)
+  SafeSenderList parseSafeSendersFromString(String yamlContent) {
+    final yaml = loadYaml(yamlContent) as Map;
+    return SafeSenderList.fromMap(Map<String, dynamic>.from(yaml));
+  }
+
   /// Load safe senders from YAML file
   Future<SafeSenderList> loadSafeSenders(String filePath) async {
     final file = File(filePath);
     if (!await file.exists()) {
       throw FileSystemException('Safe senders file not found', filePath);
     }
+    await _validateFileSize(file);
     final content = await file.readAsString();
     final yaml = loadYaml(content) as Map;
     return SafeSenderList.fromMap(Map<String, dynamic>.from(yaml));

@@ -1,37 +1,50 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-03-21T18:00:00Z",
+  "_last_updated": "2026-04-19T00:00:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
 
   "current_sprint": {
-    "number": 24,
-    "branch": "feature/20260320_Sprint_24",
+    "number": 35,
+    "branch": "feature/20260419_Sprint_35",
     "pr_number": null,
     "pr_url": null,
-    "start_date": "2026-03-20",
+    "start_date": "2026-04-19",
+    "status": "pre-kickoff",
+    "plan_approved": false,
+    "plan_approval_date": null,
+    "blanket_execution_approved": false
+  },
+
+  "previous_sprint": {
+    "number": 34,
+    "branch": "feature/20260417_Sprint_34",
+    "pr_number": 236,
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/236",
+    "merged_at": "2026-04-19T03:53:26Z",
+    "merge_commit": "a3ca9bd2294a8de1175777d7a7223f6b304680bb",
     "status": "complete",
-    "plan_approved": true,
-    "plan_approval_date": "2026-03-20",
-    "blanket_execution_approved": true
+    "deliverables": ["F73", "ADR-0037", "F56", "F62", "F72"]
   },
 
   "github_issues": [
-    {"number": 197, "title": "Sprint 24: Windows Store Readiness - Privacy Policy, Store Assets, Submission", "status": "completed"},
-    {"number": 198, "title": "Safe sender matches showing in results for Gmail IMAP", "status": "open"}
+    {"number": 235, "title": "Sprint 34: Rule Management Foundation + UI Standards", "status": "closed"},
+    {"number": 233, "title": "Sprint 33: Security hardening + UX", "status": "closed"}
   ],
 
   "test_metrics": {
-    "tests_passing": 1145,
+    "tests_passing": 1362,
     "tests_skipped": 28,
+    "tests_failing": 1,
     "analyzer_warnings": 0,
-    "coverage_percent": null
+    "coverage_percent": null,
+    "_failing_test_note": "default_rule_set_service_test.dart line 422 - stale F73 assertion. Tracked as BUG-S34-1 in ALL_SPRINTS_MASTER_PLAN.md, carry-in for Sprint 35."
   },
 
   "blocking_issues": [],
 
   "next_actions": [
-    "Wait for Microsoft Store certification (1-3 business days)",
-    "Merge Sprint 24 PR to develop",
-    "Fix Issue #198 (safe sender Gmail IMAP bug) in next sprint"
+    "Sprint 35 Phase 2: pre-kickoff verification (working tree clean, develop pulled, dependency check)",
+    "Sprint 35 Phase 3: planning - first task is BUG-S34-1 (restore green test suite)",
+    "Master plan cleanup: F56/F73/F62/F72 still listed as Next Sprint Candidates - remove during Phase 7.7 of Sprint 35 or earlier"
   ]
 }

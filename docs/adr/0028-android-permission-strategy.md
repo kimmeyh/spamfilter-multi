@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Accepted
 
 ## Date
 
@@ -47,52 +47,63 @@ Google Play Store reviewers evaluate whether requested permissions are justified
 
 ## Decision
 
-**TO BE DETERMINED** - This ADR captures the decision criteria. The decision will be made by the Product Owner.
+**Option B: Full background support permissions.** Declare all permissions needed for reliable background scanning, including foreground service support.
 
-### Options Under Consideration
+### Permissions Declared in Main AndroidManifest.xml
 
-#### Option A: Minimal Permissions (Request Only What is Used)
-- INTERNET, POST_NOTIFICATIONS, RECEIVE_BOOT_COMPLETED, WAKE_LOCK
-- No foreground service permissions
-- Background scans may be killed by system on long scans
+| Permission | Type | API Level | Purpose |
+|------------|------|-----------|---------|
+| `INTERNET` | Normal | All | IMAP/Gmail API network access |
+| `POST_NOTIFICATIONS` | Dangerous | 33+ (Android 13+) | Background scan completion notifications |
+| `RECEIVE_BOOT_COMPLETED` | Normal | All | Re-schedule background scans after device restart |
+| `WAKE_LOCK` | Normal | All | Keep CPU awake during background scan execution |
+| `FOREGROUND_SERVICE` | Normal | 28+ (Android 9+) | Run long background scans without system kill |
+| `FOREGROUND_SERVICE_DATA_SYNC` | Normal | 34+ (Android 14+) | Required foreground service type declaration |
 
-#### Option B: Full Background Support Permissions
-- All Option A permissions plus FOREGROUND_SERVICE, FOREGROUND_SERVICE_DATA_SYNC
-- Ensures background scans complete even for large mailboxes
-- More permissions to justify in Play Store review
+### Runtime Permission Strategy
 
-#### Option C: Progressive Permission Requests
-- Start with INTERNET only
-- Request POST_NOTIFICATIONS when user first enables background scanning
-- Request foreground service permissions only when needed
-- Most user-friendly but most complex to implement
-
-### Decision Criteria
-
-1. **User trust**: Fewer permissions = higher install rate
-2. **Functionality**: Background scans must complete reliably
-3. **Android version support**: Must work on API 26+ (Android 8+) through API 35+ (Android 15+)
-4. **Play Store compliance**: All permissions must be justified
-5. **User experience**: When and how to ask for runtime permissions
-6. **Graceful degradation**: App must work even if permissions are denied
+- `POST_NOTIFICATIONS` is the only dangerous permission (requires runtime request on Android 13+)
+- Request when user first enables background scanning in Settings
+- Show rationale dialog explaining why notifications are needed for scan results
+- Create notification channel BEFORE requesting permission
+- Handle denial gracefully: background scans work but complete silently without notifications
+- All other permissions are normal (auto-granted at install time)
 
 ### Key Points
 
-- `POST_NOTIFICATIONS` is the only dangerous permission needed (requires runtime request)
-- All other permissions are normal (auto-granted at install)
-- The notification channel must be created BEFORE requesting `POST_NOTIFICATIONS`
 - WorkManager handles background scheduling without exact alarm permissions
-- Foreground service may be needed for scans of large mailboxes (>500 emails) to prevent system kill
-- Android 14+ requires foreground service type declaration for ALL foreground services
-- The `workmanager` Flutter plugin may handle some permission requirements internally
+- `SCHEDULE_EXACT_ALARM` is NOT requested (inexact scheduling is acceptable for background scans)
+- Foreground service ensures scans of large mailboxes (>500 emails) complete without system kill
+- Android 14+ requires foreground service type declaration (`dataSync`) for all foreground services
 
 ## Alternatives Considered
 
-Analysis deferred until decision criteria are evaluated by Product Owner.
+### Option A: Minimal Permissions
+- **Description**: INTERNET, POST_NOTIFICATIONS, RECEIVE_BOOT_COMPLETED, WAKE_LOCK only. No foreground service permissions.
+- **Pros**: Fewest permissions to justify in Play Store review, highest user trust
+- **Cons**: Background scans may be killed by the system on large mailboxes without foreground service protection
+- **Why Rejected**: Reliability of background scanning is a core feature; users with large mailboxes would experience silent scan failures
+
+### Option C: Progressive Permission Requests
+- **Description**: Start with INTERNET only, request POST_NOTIFICATIONS when user enables background scanning, add foreground service permissions only when needed.
+- **Pros**: Most user-friendly, minimizes upfront permission requests
+- **Cons**: Most complex to implement, requires multiple permission request flows and state tracking
+- **Why Rejected**: Implementation complexity not justified for a single-developer project; can always refactor to progressive requests later if user feedback warrants it
 
 ## Consequences
 
-To be documented after decision is made.
+### Positive
+- Background scans complete reliably even for large mailboxes (foreground service prevents system kill)
+- All requested permissions are justified by actual app features (defensible in Play Store review)
+- Single runtime permission request (`POST_NOTIFICATIONS`) keeps UX simple
+
+### Negative
+- More permissions listed in Play Store than the minimal option, which may reduce install rate slightly
+- `POST_NOTIFICATIONS` requires a runtime request UX with rationale dialog (implementation effort)
+
+### Neutral
+- All permissions except `POST_NOTIFICATIONS` are normal (auto-granted), so the effective user-facing permission count is low
+- Foreground service type declaration (`dataSync`) is a standard Android 14+ requirement for background processing apps
 
 ## References
 

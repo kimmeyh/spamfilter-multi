@@ -3,6 +3,7 @@ import 'package:logger/logger.dart';
 import 'package:sqflite/sqflite.dart';
 import 'database_helper.dart';
 import '../providers/email_scan_provider.dart';
+import '../../util/redact.dart';
 
 /// Settings storage for app-wide and per-account configuration
 ///
@@ -50,6 +51,10 @@ class SettingsStore {
   static const String keyManualScanDaysBack = 'manual_scan_days_back';
   static const String keyBackgroundScanDaysBack = 'background_scan_days_back';
   static const String keyScanHistoryRetentionDays = 'scan_history_retention_days';
+  static const String keyDisableAuthLogging = 'disable_auth_logging';
+  static const String keyUnmatchedRetentionDays = 'unmatched_retention_days';
+  static const String keyCertificatePinningEnabled = 'certificate_pinning_enabled';
+  static const String keyEncryptDatabase = 'encrypt_database';
 
   // ============================================================
   // Default Values
@@ -66,6 +71,10 @@ class SettingsStore {
   static const int defaultManualScanDaysBack = 0; // 0 = all emails
   static const int defaultBackgroundScanDaysBack = 0; // 0 = all emails
   static const int defaultScanHistoryRetentionDays = 7; // days to keep scan history
+  static const bool defaultDisableAuthLogging = false; // SEC-19: default OFF preserves debug behavior
+  static const int defaultUnmatchedRetentionDays = 30; // SEC-14: keep unmatched emails 30 days
+  static const bool defaultCertificatePinningEnabled = true; // SEC-8: pinning on by default
+  static const bool defaultEncryptDatabase = false; // SEC-11: opt-in until QA gates
 
   // ============================================================
   // Manual Scan Settings
@@ -217,6 +226,69 @@ class SettingsStore {
   /// Set how many days to keep scan history
   Future<void> setScanHistoryRetentionDays(int days) async {
     await _setAppSetting(keyScanHistoryRetentionDays, days.toString(), 'int');
+  }
+
+  // ============================================================
+  // Privacy & Logging Settings (SEC-19, Sprint 33)
+  // ============================================================
+
+  /// Get whether detailed auth logging is disabled.
+  ///
+  /// When true, [Redact.logSafe] becomes a no-op even in debug builds. This
+  /// allows users to suppress sensitive auth traces from log output without
+  /// rebuilding the app.
+  Future<bool> getDisableAuthLogging() async {
+    final value = await _getAppSetting(keyDisableAuthLogging);
+    if (value == null) return defaultDisableAuthLogging;
+    return value == 'true';
+  }
+
+  /// Set whether detailed auth logging is disabled.
+  Future<void> setDisableAuthLogging(bool disabled) async {
+    await _setAppSetting(keyDisableAuthLogging, disabled.toString(), 'bool');
+  }
+
+  /// Get how many days unmatched emails are retained before auto-deletion
+  /// (SEC-14, Sprint 33). A non-positive value means "retain forever".
+  Future<int> getUnmatchedRetentionDays() async {
+    final value = await _getAppSetting(keyUnmatchedRetentionDays);
+    if (value == null) return defaultUnmatchedRetentionDays;
+    return int.tryParse(value) ?? defaultUnmatchedRetentionDays;
+  }
+
+  /// Set how many days unmatched emails are retained before auto-deletion.
+  /// Pass 0 (or negative) to retain forever.
+  Future<void> setUnmatchedRetentionDays(int days) async {
+    await _setAppSetting(keyUnmatchedRetentionDays, days.toString(), 'int');
+  }
+
+  /// Get whether certificate pinning is enforced for Google OAuth endpoints
+  /// (SEC-8, Sprint 33). Default is `true`. Users can disable this if
+  /// Google rotates a key before the app ships with the updated hash.
+  Future<bool> getCertificatePinningEnabled() async {
+    final value = await _getAppSetting(keyCertificatePinningEnabled);
+    if (value == null) return defaultCertificatePinningEnabled;
+    return value == 'true';
+  }
+
+  /// Set whether certificate pinning is enforced.
+  Future<void> setCertificatePinningEnabled(bool enabled) async {
+    await _setAppSetting(
+        keyCertificatePinningEnabled, enabled.toString(), 'bool');
+  }
+
+  /// SEC-11 (Sprint 33): opt-in flag for SQLCipher at-rest encryption.
+  /// Default is `false`; infrastructure (key + migration) ships disabled
+  /// until dedicated platform QA validates the swap.
+  Future<bool> getEncryptDatabase() async {
+    final value = await _getAppSetting(keyEncryptDatabase);
+    if (value == null) return defaultEncryptDatabase;
+    return value == 'true';
+  }
+
+  /// Set the database encryption flag.
+  Future<void> setEncryptDatabase(bool enabled) async {
+    await _setAppSetting(keyEncryptDatabase, enabled.toString(), 'bool');
   }
 
   // ============================================================
@@ -489,7 +561,7 @@ class SettingsStore {
       where: 'account_id = ?',
       whereArgs: [accountId],
     );
-    _logger.i('Cleared all setting overrides for account: $accountId');
+    _logger.i('Cleared all setting overrides for account: ${Redact.accountId(accountId)}');
   }
 
   // ============================================================
@@ -633,7 +705,7 @@ class SettingsStore {
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-    _logger.d('Set account setting: $accountId.$key = $value');
+    _logger.d('Set account setting: ${Redact.accountId(accountId)}.$key = $value');
   }
 
   Future<void> _deleteAccountSetting(String accountId, String key) async {
@@ -643,7 +715,7 @@ class SettingsStore {
       where: 'account_id = ? AND setting_key = ?',
       whereArgs: [accountId, key],
     );
-    _logger.d('Deleted account setting: $accountId.$key');
+    _logger.d('Deleted account setting: ${Redact.accountId(accountId)}.$key');
   }
 
   ScanMode _parseScanMode(String value) {

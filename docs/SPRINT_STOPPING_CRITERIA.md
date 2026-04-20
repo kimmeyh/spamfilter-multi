@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models executing sprint tasks; User reviewing sprint execution.
 
-**Last Updated**: January 31, 2026
+**Last Updated**: April 14, 2026 (Sprint 32 retrospective -- added Criterion 4a: User-Found Gap in Sprint Theme)
 
 ## SPRINT EXECUTION Documentation
 
@@ -226,6 +226,34 @@ What's Required to Unblock:
 4. Add to backlog for future sprint
 
 **Timing**: Decision depends on bug severity. Critical bugs stop sprint; others are deferred.
+
+---
+
+### 4a. User-Found Gap in Sprint Theme (Extended Scope Within Theme) (Sprint 32 addition)
+
+**When**: During manual testing, user discovers a gap directly related to the current sprint's theme/feature, not covered by the original sprint scope.
+
+**Classic example (Sprint 32)**: SEC-17 sprint scope was `secure_credentials_store.dart`. User reviewed background scan logs and found the redaction policy should have applied to 9 other files. Gap was real, related, and low-effort.
+
+**Decision Rule**: This is NOT a scope change requiring pause and re-approval when ALL of these are true:
+- [ ] Gap is the same category as sprint work (same policy, same bug class, same feature family)
+- [ ] Fix is estimated <1 hour per file (cumulative effort <2h for the gap)
+- [ ] Fix does not require new design decisions or ADR work
+- [ ] Gap is user-reported, not self-discovered (user has decided it matters)
+
+When ALL conditions true:
+1. Add fix to current sprint scope
+2. Continue execution without formal scope change
+3. Document in retrospective as a learning (what was missed in original scoping + how to prevent)
+4. Include in sprint CHANGELOG entry
+
+When ANY condition false:
+- Treat as Criterion 3 (Scope Change) or Criterion 4 (Bug Discovery) per the normal rules
+- Get user decision before adding to scope
+
+**Why this exists**: Sprint 32 had exactly this case. User-found SEC-17 gap was added to scope without formal scope change because it was a direct extension of sprint work. Codifying this prevents future ambiguity about whether to stop vs. extend.
+
+**Action**: Fix within current sprint, update retrospective with the learning, continue.
 
 ---
 
@@ -548,6 +576,11 @@ START: Am I working on sprint tasks?
 │  ├─ MEDIUM/LOW → Defer (Criterion 4: Bug - Medium/Low)
 │  └─ NO BUG → Continue
 │
+├─ Did user report a gap in current sprint theme (manual testing finding)?
+│  ├─ Same category + <2h + no new design + user-reported
+│  │   → Extend scope, continue (Criterion 4a: User-Found Gap)
+│  └─ Otherwise → Treat as Criterion 3 (Scope Change) or 4 (Bug Discovery)
+│
 ├─ Did user request sprint review early?
 │  ├─ YES → Stop (Criterion 5: Review Request)
 │  └─ NO → Continue
@@ -708,8 +741,9 @@ User Decision Needed: None (escalation to Sonnet handles this)
 
 ## Document Version Control
 
-**Version**: 1.0
+**Version**: 1.1
 **Created**: January 27, 2026
+**Last Modified**: April 14, 2026 (Sprint 32 retrospective)
 **Applies To**: All sprints post Sprint 6
 **Reference**: SPRINT_EXECUTION_WORKFLOW.md, CLAUDE.md Development Philosophy
 **Related**: PHASE_0_PRE_SPRINT_CHECKLIST.md, SPRINT_PLANNING.md

@@ -53,6 +53,9 @@ class FakeUnmatchedEmailStore implements UnmatchedEmailStore {
     String status,
   ) async =>
       true;
+
+  @override
+  Future<int> deleteOlderThan(int retentionDays) async => 0;
 }
 
 void main() {

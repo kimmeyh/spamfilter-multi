@@ -271,7 +271,28 @@ void main() {
 - Best for testing navigation flow, form inputs, and button interactions
 - Not suitable for pixel-perfect visual regression testing
 
-**When to Run**: During sprint development via Claude Code MCP tools, or via `winwright run` for scripted replays
+**When to Run** (Sprint 35 policy):
+
+WinWright is **conditional** -- it does NOT run every sprint. Run only the scripts whose tested surface is touched by the current sprint's changes:
+
+| Sprint changes touch... | Run these WinWright scripts |
+|-------------------------|-----------------------------|
+| Account selection / app shell / AppBar | `test_navigation.json` |
+| Manual scan UI / scan progress / results | `test_manual_scan_flow.json` |
+| Settings screens / settings tabs | `test_settings_tabs.json` |
+| Help screen / SelectionArea / accessibility labels | `test_text_selection.json` |
+| Manage Rules / ManualRuleCreateScreen (block side) | `test_f56_create_block_rule.json` |
+| Manage Safe Senders / ManualRuleCreateScreen (safe sender side) | `test_f56_create_safe_sender.json` |
+| Scan History screen / aggregate stats | `test_scan_history.json` |
+| **No UI changes in sprint** | **Skip all WinWright scripts** |
+
+If a sprint touches multiple surfaces, run the union of applicable scripts. The full suite is not required every sprint -- F79 (HOLD) tracks the on-demand "full sweep" run for major releases or large refactors.
+
+**State-restore rule (mandatory for every WinWright script)**: Any rule, safe sender, setting, or other persistent state that a script creates or modifies must be reverted before the script ends. If a script adds a rule, it must delete that rule. If a script changes a setting, it must restore the original value. The dev DB / settings file at script end must be byte-identical (or semantically equivalent) to its state at script start. Sprint 35 added create-verify-delete-verify lifecycle to both F56 scripts as the first application of this rule.
+
+**During sprint development**: Claude Code may also drive the app interactively via WinWright MCP primitives without running any pre-recorded script. The state-restore rule still applies -- whatever you create during exploration, clean up before sprint close.
+
+**Scripted replay**: `winwright run <script.json>` is supported by the CLI but the JSON-script `run` mode in WinWright v2.0.0 has parser limitations (Sprint 35 finding). Driving via MCP primitives (`mcp__winwright__ww_*`) is the supported path until a future WinWright release fixes the JSON runner.
 
 **Commands**:
 ```powershell
@@ -286,6 +307,29 @@ C:\Tools\WinWright\Civyk.WinWright.Mcp.exe run <script.json>
 ```
 
 **Added**: Sprint 27 (March 2026)
+
+**Sprint 34 (F69) Test Scripts**: Reusable WinWright JSON scripts in `mobile-app/test/winwright/`:
+
+| Script | Purpose |
+|--------|---------|
+| `test_navigation.json` | Click through Account Selection -> Settings -> Manage Rules -> back |
+| `test_settings_tabs.json` | Cycle through all 4 Settings tabs |
+| `test_manual_scan_flow.json` | Run a manual scan, verify Scan Progress -> Results screens |
+| `test_scan_history.json` | Open Scan History, tap entry, verify counts |
+| `test_text_selection.json` | Verify SelectionArea on Manage Rules / Help screens (ADR-0037) |
+| `test_f56_create_block_rule.json` | F56: Create TLD block rule, verify, then delete and verify removal (full lifecycle, Sprint 35 update) |
+| `test_f56_create_safe_sender.json` | F56: Create entire-domain safe sender, verify, then delete and verify removal (full lifecycle, Sprint 35 update) |
+
+**Run all tests**:
+```powershell
+cd mobile-app/scripts
+.\run-winwright-tests.ps1                       # All tests
+.\run-winwright-tests.ps1 -TestName f56         # Only F56 tests
+```
+
+The runner automatically enables `SPI_SETSCREENREADER` (required for Flutter Semantics tree) and runs `winwright doctor` before executing tests.
+
+See `mobile-app/test/winwright/README.md` for details and selector patterns.
 
 ---
 

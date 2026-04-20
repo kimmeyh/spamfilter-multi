@@ -213,6 +213,6 @@ Write-Host "Package Version:  $MsixVersion" -ForegroundColor White
 Write-Host ""
 Write-Host "Next Steps:" -ForegroundColor Yellow
 Write-Host "1. Sign the MSIX package with a certificate (required for installation)" -ForegroundColor White
-Write-Host "2. Test installation: Add-AppxPackage -Path <path-to-msix>" -ForegroundColor White
+Write-Host "2. Test installation: Add-AppxPackage -Path [path-to-msix]" -ForegroundColor White
 Write-Host "3. Create AppInstaller file for auto-updates (see generate-appinstaller.ps1)" -ForegroundColor White
 Write-Host ""

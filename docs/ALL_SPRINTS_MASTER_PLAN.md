@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: April 2, 2026 (Sprint 28 retrospective)
+**Last Updated**: April 19, 2026 (Sprint 35 retrospective + 0.5.2.0 store MSIX shipped; F81 added as Sprint 36 carry-in (Issue #242) -- store release process documentation; Sprint 36 will bump dev to 0.5.3.0)
 
 ## How to Maintain This Document
 
@@ -93,6 +93,13 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 26 | docs/sprints/SPRINT_26_RETROSPECTIVE.md | [OK] Complete | Mar 22-24, 2026 |
 | 27 | docs/sprints/SPRINT_27_RETROSPECTIVE.md | [OK] Complete | Mar 29 - Apr 2, 2026 |
 | 28 | docs/sprints/SPRINT_28_RETROSPECTIVE.md | [OK] Complete | Apr 2, 2026 |
+| 29 | docs/sprints/SPRINT_29_RETROSPECTIVE.md | [OK] Complete | Apr 3-13, 2026 |
+| 30 | docs/sprints/SPRINT_30_RETROSPECTIVE.md | [OK] Complete | Apr 13, 2026 |
+| 31 | docs/sprints/SPRINT_31_RETROSPECTIVE.md | [OK] Complete | Apr 13, 2026 |
+| 32 | docs/sprints/SPRINT_32_RETROSPECTIVE.md | [OK] Complete | Apr 13, 2026 |
+| 33 | docs/sprints/SPRINT_33_RETROSPECTIVE.md | [OK] Complete | Apr 14-16, 2026 |
+| 34 | docs/sprints/SPRINT_34_RETROSPECTIVE.md | [OK] Complete | Apr 17-18, 2026 |
+| 35 | docs/sprints/SPRINT_35_RETROSPECTIVE.md | [OK] Complete | Apr 19, 2026 |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -100,98 +107,191 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 28** (April 2, 2026)
-- **Bug Fix**: B1 MSIX sandbox crash at launch - replaced hardcoded APPDATA paths with path_provider (Issue #218)
-- **Features**: F49 Remove Scan All Accounts + account-specific Scan History (Issue #219), F51 Background settings reorder (Issue #221)
-- **Bug Fixes**: Account selection dialog display, Test Background Scan runs all accounts
-- **MSIX**: Built, installed, launched successfully in local testing
-- **Process**: Sprint summary made mandatory in Phase 7, winwright E2E added to Phase 5, python3 hook fix
-- **Retrospective**: docs/sprints/SPRINT_28_RETROSPECTIVE.md
+**Sprint 35** (April 19, 2026)
+- **Type**: Mixed (bug fix + testing execution + process improvement)
+- **Feature**: 2 planned tasks (Issue #237) + retro-driven process improvements
+- **Delivered**:
+  - Bug fix (1): BUG-S34-1 (1-line stale `expect(resetResult.rules, 5)` fix in default_rule_set_service_test.dart line 422; restored develop test suite to 1363/0)
+  - Testing execution (1): F69 (drove all 7 Sprint 34 WinWright scripts via MCP primitives against fresh Windows desktop dev build; 7 of 7 PASS; pivoted from JSON `run` schema to interactive MCP)
+  - F56 script lifecycle update (in-sprint per §4a): both F56 scripts now do create -> verify -> delete -> verify-absent; test data retuned to non-colliding values (`.museum`, `winwright-e2e-test.invalid`)
+  - WinWright run policy formalized: conditional per sprint + state-restoring (TESTING_STRATEGY.md mapping table)
+  - Sprint 35 retrospective process improvements (P1, P2, P4, P5 applied; P3 backlogged): Phase Auto-Advance Rule (CLAUDE.md), Standing Approval Inventory (Phase 3.7), Model-Version Pitfalls appendix (CLAUDE.md), Sprint Resume Pattern memory; Category 2 testing-gap closure as Phase 5.1.1 step 2a sibling-grep
+- **Backlog additions**: BUG-S35-1 (manual rule UI accepts duplicates -- Issue #239), F79 (full WinWright sweep -- HOLD, Issue #240), F80 (1-page Phase Cheat Sheet -- Issue #241, P3 deferred from retro)
+- **Tests**: +0 net (1 line changed, no new tests; 1363 total passing, 0 analyzer issues)
+- **Process improvement**: Codified the Opus 4.7 phase-boundary autonomy pattern that 4.6 had implicitly internalized; surfaced in retro after ~4h wall-clock cost across S34-S35
+- **Store release**: Bumped dev version 0.5.1.0 -> 0.5.2.0 (prod was at 0.5.1.0 in store; 0.5.2.0 is the new submission target). Built signed MSIX at `mobile-app/build/windows/x64/runner/Release/my_email_spam_filter.msix` (17.4 MB). Harold to merge develop -> main and upload MSIX to Microsoft Store. Sprint 36 will bump dev to 0.5.3.0
+- **Retrospective**: docs/sprints/SPRINT_35_RETROSPECTIVE.md
+- **PR**: #238 (against develop)
 
 ---
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: April 2, 2026 (Sprint 28 retrospective)
+**Last Reviewed**: April 16, 2026 (Sprint 33 completion -- removed F53, F54, F55, F65, F66, SEC-1b, SEC-8, SEC-14, SEC-19, SEC-22 and partial SEC-11)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
-### Windows Store Readiness
-
-**~~B1. MSIX sandbox crash at launch - File system error (Issue #218) (~10h)~~** [OK] Complete (Sprint 28)
-- Awaiting Microsoft Store resubmission and certification verification
-
-**~~WS-B1. MSIX config fixes (~1h)~~** [OK] Complete (Sprint 23)
-
-**~~WS-B3. MSIX signing strategy ADR (~2h)~~** [OK] Complete (Sprint 23, ADR-0036)
-
-**~~F28. App icon and branding finalization (~2-4h)~~** [OK] Complete (Sprint 23, ADR-0031)
-
-**~~F29. Register myemailspamfilter.com domain (~1h)~~** [OK] Complete (Sprint 23, Issue #166)
-
-**~~WS-B4. Privacy policy - write, host, and publish (~4-8h)~~** [OK] Complete (Sprint 24, Issue #197)
-
-**~~WS-I1. Store listing assets (~3-4h)~~** [OK] Complete (Sprint 24, Issue #197)
-
-**~~WS. Microsoft Partner Center account setup and first submission (~2-4h)~~** [OK] Complete (Sprint 24, Issue #197)
-
 ### Core App
 
-**~~F40. Safe sender matches showing in results for Gmail IMAP (Issue #198)~~** [OK] Complete (Sprint 25)
+**F52. Multi-variant side-by-side install across all stores (~16-24h) Priority 90**
+- Phase: Build and Release Infrastructure
+- Platform: All (Windows, Android, iOS)
+- Extend ADR-0035 dev/prod separation to all 9 build variants (3 stores × 3 channels: dev, production, store)
+- All variants must run simultaneously without rebuild on same machine/device
+- [Detail](#f52-multi-variant-side-by-side-install)
 
-**~~F30. Safe Senders "Exact Domain" filter shows 0 results~~** [OK] Complete (Sprint 25)
-
-**~~F41. Safe sender emails in Bulk Mail not moved to safe sender folder (Issue #201)~~** [OK] Complete (Sprint 25, diagnostic logging added)
-
-**~~F31. Background scan task deleted on rebuild~~** [OK] Complete (Sprint 25)
-
-**~~F32. Test coverage analysis~~** [OK] Complete (Sprint 25, 28.9% baseline, Issue #203 for remaining gaps)
-
-**F42. Test coverage gaps - medium+ priority uncovered files (Issue #203) Priority 54**
-- Phase: Quality and Testing
-- Platform: All
-- On Hold - remaining test gaps from F32 analysis
-
-**~~F34. Live Scan: in-progress and completed status indicator~~** [OK] Complete (Sprint 25)
-
-**~~F38. Live Scan: re-process emails after rule changes~~** [OK] Complete (Sprint 25)
-
-**~~F43. Folder settings selection UX~~** [OK] Complete (Sprint 26)
-
-**~~F44. Add "Go to View Scan History" to Manual Scan settings~~** [OK] Complete (Sprint 26)
-
-**~~F45. Background scan CSV to Excel export~~** [OK] Complete (Sprint 26)
-
-**~~F36. Settings: Add General tab for app-wide settings~~** [OK] Complete (Sprint 26)
-
-**F46. Default rule set creation (~6-8h) Priority 74**
-- Phase: Core Feature
-- Platform: All
-- Create a default set of rules including all top-level domain rules and all Entire Domain rules
-
-**~~F47. Email provider domain warning on rule creation~~** [OK] Complete (Sprint 26)
-
-**F48. Scan History enhancements - multi-account, filters, totals (Issue #212) (~6-8h) Priority 78**
-- Phase: Core Feature
-- Platform: All
-- Combine all accounts, account filters, totals with tooltips, retention days in title
-- Follow-up to F7 Multi-Account Scanning
-
-**~~F7. Multi-Account Scanning~~** [OK] Complete (Sprint 26)
-
-**~~F49. Remove "Scan All Accounts" button, add account selection to Scan History (Issue #219) (~2-3h)~~** [OK] Complete (Sprint 28)
-
-**F50. Make all page text selectable and copyable to clipboard (Issue #220) (~4-6h) Priority 82**
+**F63. Responsive design framework (~8-12h) Priority 70**
 - Phase: UX Improvement
 - Platform: All
-- Sprint 27 retrospective feedback: extend existing selectable text pattern to all screens
+- Implement adaptive breakpoints per ARSD AR-7: phone (<600dp), tablet (600-900dp), desktop (>900dp)
+- LayoutBuilder + breakpoints approach (ARSD A6 recommendation)
+- Priority screens: scan progress, results display, settings
+- Related: F55 (navigation consistency) should be done before or with this
+- Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gap G23)
 
-**~~F51. Background settings - move Scan Mode above Default Folders (Issue #221) (~0.5h)~~** [OK] Complete (Sprint 28)
+### Process
+
+**F81. Store release process documentation (~3-4h) Priority 100 -- SPRINT 36 CARRY-IN (Issue #242)**
+- Phase: Documentation / Release Engineering
+- Platform: Windows (Microsoft Store)
+- Mandatory Sprint 36 task -- not backlog. Carry-in from Sprint 35 retrospective Category 13 addendum (post-retro 2026-04-19).
+- New `docs/STORE_RELEASE_PROCESS.md`: end-to-end walkthrough -- pre-release checklist, version bump (5-file checklist), supported rebuild instructions (`flutter pub run msix:create`), MSIX verification, develop -> main merge process, Microsoft Partner Center upload + submit walkthrough, post-submission steps
+- Deprecate or remove `mobile-app/scripts/build-msix.ps1` (had a PowerShell parser bug patched in Sprint 35; the Dart `msix` package path is the supported one and is what's wired in `pubspec.yaml`)
+- Update CLAUDE.md Common Commands and ADR-0035 cross-references
+- Source: Sprint 35 store-prep made gaps visible (no team-runnable walkthrough doc, faulty script, undocumented merge + upload flow)
+
+**F80. 1-page Phase Cheat Sheet for SPRINT_EXECUTION_WORKFLOW.md (~45min) Priority 80 (Issue #241)**
+- Phase: Process / Documentation
+- Platform: N/A (Claude Code workflow)
+- Add a compact (~30-line) Phase Cheat Sheet at the top of SPRINT_EXECUTION_WORKFLOW.md (currently 1357 lines) so models can identify current phase + next action without reading the full doc
+- Format: 7-row table (Phase | Purpose | Top-3 Actions | Auto-advance trigger) with anchor links to detailed sections
+- Source: Sprint 35 retrospective Process Issues -- proposal P3 (Opus 4.7 phase-boundary overhead)
+- Companion to Sprint 35 fixes already shipped: Phase Auto-Advance Rule (CLAUDE.md), Standing Approval Inventory (Phase 3.7), Model-Version Pitfalls appendix (CLAUDE.md)
+
+### Bugs
+
+**BUG-S35-1. Manual rule creation allows duplicate TLD entries (~2-3h) Priority 70 (Issue #239)**
+- Phase: Bug fix
+- Platform: All (rule logic), Windows (where discovered)
+- File: `mobile-app/lib/core/services/manual_rule_creator.dart` (or equivalent), plus widget validation in `ManualRuleCreateScreen`
+- Failure: Saving a TLD block rule for a TLD already in the bundled rules table (e.g., `.xyz`) silently inserts a duplicate row. Two rules with identical pattern and identical sub-type both run on every scan.
+- Fix: Add a uniqueness check on save -- compare normalized pattern + condition_type + sub_type against existing rules table; reject with validation error if match found. Same logic for safe senders.
+- Discovery: Sprint 35 F69 execution; required direct SQLite cleanup because UI delete path was non-deterministic when two rules shared the same visible label.
+- Source: Sprint 35 F69 manual testing (`docs/sprints/SPRINT_35_PLAN.md` Manual Testing Notes)
+
+### Security Hardening (Sprint 31 Audit)
+
+**SEC-4. Android: Create network_security_config.xml (~1h) Priority 40 -- HIGH**
+- Phase: Security
+- Platform: Android
+- Block cleartext traffic, pin domains for OAuth and IMAP
+- Reference in AndroidManifest.xml
+- Source: Sprint 31 security audit (S11)
+
+
+**SEC-6. Android: Configure release signing (~2h) Priority 40 -- HIGH**
+- Phase: Security
+- Platform: Android
+- Create release keystore, configure in build.gradle.kts
+- Overlaps with GP-2 (release signing)
+- Source: Sprint 31 security audit (S12)
+
+**SEC-7. Android: Enable R8 obfuscation + Dart obfuscation (~2h) Priority 40 -- HIGH**
+- Phase: Security
+- Platform: Android
+- Enable minifyEnabled, create proguard-rules.pro
+- Use --obfuscate --split-debug-info for Dart
+- Overlaps with GP-9 (ProGuard/R8)
+- Source: Sprint 31 security audit (S13)
+
+**SEC-8b. Certificate pinning for IMAP endpoints (~4-6h) Priority 42 -- HIGH**
+- Phase: Security
+- Platform: All
+- OAuth HTTPS pinning shipped Sprint 33 (CertificatePinner + PinnedHttpClient for accounts.google.com, oauth2.googleapis.com, gmail.googleapis.com, www.googleapis.com)
+- Gap: `enough_mail.ImapClient.connectToServer` does not expose a `SecurityContext` or bad-cert callback, so IMAP pinning (imap.gmail.com, imap.aol.com, etc.) was deferred
+- Options: (1) fork `enough_mail` to expose the callback; (2) wrap the socket manually via `SecureSocket.connect` with a custom `SecurityContext` before handing it to the IMAP client; (3) file upstream issue on `enough_mail`
+- Source: Sprint 33 SEC-8 implementation notes (CertificatePinner dartdoc)
+
+**SEC-9. Move hardcoded Android client ID to build-time injection (~1h) Priority 42 -- HIGH**
+- Phase: Security
+- Platform: Android
+- Move _androidClientId to --dart-define or google-services.json
+- Source: Sprint 31 security audit (S5)
+
+**SEC-11b. SQLCipher driver swap + plaintext-to-encrypted migration (~6-10h) Priority 60 -- MEDIUM**
+- Phase: Security
+- Platform: All
+- Sprint 33 shipped the infrastructure: DatabaseEncryptionKeyService (256-bit key in flutter_secure_storage), opt-in `encrypt_database` settings toggle (default off)
+- Gap: DatabaseHelper still uses the plaintext sqflite driver. Flipping requires:
+  - Add deps: `sqflite_sqlcipher` + `sqlcipher_flutter_libs`
+  - Platform plugin registration for Windows + Android
+  - Atomic plaintext-to-encrypted migration on first opt-in (backup, re-open with key, copy, swap, verify, delete backup)
+  - QA on real installs (Windows desktop + Android emulator + physical device)
+  - Flip `encrypt_database` default to true after QA
+- Source: Sprint 33 SEC-11 scoping decision (partial completion)
+
+**SEC-15. IMAP host validation for custom servers (~1h) Priority 62 -- MEDIUM**
+- Phase: Security
+- Platform: All
+- Reject internal/private IP ranges when custom IMAP is implemented
+- Dependency: F37 (folder selectors / custom IMAP)
+- Source: Sprint 31 security audit (S19)
 
 **F6. Provider-Specific Optimizations (~10-12h) Priority 100**
 - Phase: Performance
 - Platform: All
 - [Detail](#f6-provider-specific-optimizations)
+
+**F61. Architecture documentation refresh (~3-4h) Priority HOLD**
+- Phase: Documentation
+- Platform: All
+- Update ARCHITECTURE.md: remove Dual-Write pattern (superseded Sprint 20), add missing services (DefaultRuleSetService, RuleConflictDetector, EmailAvailabilityChecker, EmailBodyParser, DevEnvironmentSeeder), add missing screens (yaml_import_export, rule_test), add missing DB tables (unmatched_emails, background_scan_log)
+- Update ARSD.md: remove Dual-Write from design patterns table, update Store certification status to "Passed", update Glossary
+- HOLD rationale: Moved to HOLD during Sprint 33 planning (April 14, 2026) per user direction. Sprint 33 includes ARCHITECTURE.md updates for new components (SQLCipher, HelpScreen, DataDeletionService, PatternCompiler revisions) so partial doc refresh happens organically. Full F61 work can be reactivated when next periodic architecture review is scheduled.
+- Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gaps G1-G6, G16-G22)
+
+**F64. CI/CD pipeline with GitHub Actions (~4-6h) Priority HOLD**
+- Phase: DevOps
+- Platform: All
+- GitHub Actions workflow for: flutter analyze, flutter test, build verification
+- Trigger on PR to develop
+- HOLD rationale: Current CI/CD equivalent is handled by Claude Code sprint execution workflow (flutter analyze, flutter test, Windows build in Phase 5). Could be implemented later if beneficial to dev team, maintenance team, or instructed by Product Owner.
+- Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gap G24)
+
+### HOLD Items (Periodic Reviews)
+
+**F70. Periodic Security Deep Dive (~4-8h per review) Priority HOLD**
+- Phase: Security Spike (reusable template)
+- Platform: All
+- **Generic scope**: Security review based on Application Development Best Practices and OWASP Mobile Top 10 (use current year edition)
+- **Application-specific scope**:
+  - Dependency CVEs (flutter pub outdated, known vulnerability databases)
+  - SQL injection and parameterization audit
+  - Regex injection and ReDoS pattern review
+  - Credential storage and logging audit
+  - Platform-specific security: Windows 11 Store (MSIX sandbox, AppContainer), Android (APK/AAB signing, manifest permissions, ProGuard), iOS (App Transport Security, keychain, sandbox), Linux (file permissions, desktop integration)
+  - App store compliance: Microsoft Store certification requirements, Google Play data safety policies, Apple App Store review guidelines
+  - Device-specific concerns: biometric auth, secure enclave, clipboard access, screenshot protection
+- **How to use**: Duplicate this item, assign a sprint, and remove HOLD. After completion, keep this template for next review.
+- HOLD rationale: Template item. Duplicate when periodic security review is needed.
+- Source: Sprint 31 retrospective feedback
+
+**F71. Periodic Architecture Deep Dive (~4-8h per review) Priority HOLD**
+- Phase: Architecture Spike (reusable template)
+- Platform: All
+- **Generic scope**: Architecture review based on Application Development Best Practices
+- **Application-specific scope**:
+  - ADR drift detection: compare all ADRs against current codebase implementation
+  - ARCHITECTURE.md alignment: verify documented components, services, and patterns match code
+  - ARSD.md alignment: verify architectural requirements and standards document is current
+  - Platform-specific architecture: Windows 11 Store (MSIX packaging, single-instance mutex, app data paths), Android (activity lifecycle, WorkManager, flavors), iOS (SwiftUI/UIKit bridge, entitlements, provisioning), Linux (GTK integration, libsecret, packaging)
+  - App store constraints: store-specific sandboxing, capability declarations, update mechanisms
+  - Device constraints: screen size breakpoints, input methods (touch, mouse, keyboard), offline capability
+  - Dead code and deprecated class detection
+  - Test coverage gaps relative to architecture
+- **How to use**: Duplicate this item, assign a sprint, and remove HOLD. After completion, keep this template for next review.
+- HOLD rationale: Template item. Duplicate when periodic architecture review is needed.
+- Source: Sprint 31 retrospective feedback (based on Sprint 30 architecture deep dive experience)
 
 ### HOLD Items (Post-Windows Store)
 
@@ -219,17 +319,49 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Post-Windows Store release
 - [Detail](#folder-selectors-two-level-listing)
 
+**F74. FAQ section in Help (~2-4h) Priority HOLD**
+- Phase: Documentation / UX
+- Platform: All
+- Post-Windows Store release
+- [Detail](#f74-faq-section-in-help)
+
+**F75. Help walkthrough: end-to-end first-use guide (~4-6h) Priority HOLD**
+- Phase: Documentation / UX
+- Platform: All
+- Post-Windows Store release
+- [Detail](#f75-help-walkthrough-end-to-end-first-use-guide)
+
+**F76. Visual regression testing for WinWright (~6-10h) Priority HOLD**
+- Phase: Testing infrastructure
+- Platform: Windows desktop (initially)
+- From Sprint 34 retro Category 14: WinWright tests verify presence/clickability via accessibility tree but cannot detect alignment, centering, or visual layout issues. Add screenshot diffing or layout-bounds-check assertions to F69 test suite.
+
+**F77. Hookify rule: block "want me to proceed?" patterns (~1h) Priority HOLD**
+- Phase: Process automation
+- Platform: N/A (Claude Code harness)
+- From Sprint 34 retro Category 14: Sprint plan approval covers all tasks; Claude paused twice for "should I continue?" mid-sprint. Hookify rule should reject phrases like "want me to proceed?", "should I continue?", "ready to proceed with X?" with the sprint-plan-approval reminder.
+
+**F78. Widget tests for ManualRuleCreateScreen rendering (~3-4h) Priority HOLD**
+- Phase: Testing
+- Platform: All
+- From Sprint 34 retro Category 14: Only logic-level tests for F56 exist. Add widget tests covering radio button selection, input field validation feedback, pattern preview rendering, and confirmation dialog.
+
+**F79. Full WinWright E2E test sweep (run entire suite end-to-end) (~4-8h) Priority HOLD (Issue #240)**
+- Phase: Testing / Quality
+- Platform: Windows
+- Run the *entire* WinWright suite (currently 7 scripts) end-to-end against a fresh Windows desktop dev build, with strict pre/post snapshot of DB state to verify zero test artifacts left behind
+- Distinct from per-sprint conditional WinWright runs (which only execute scripts whose tested surface was touched by sprint changes)
+- Triggers: major release prep, large UI refactor (>10 files in `lib/ui/`), accessibility-tree change, or Product Owner request
+- HOLD rationale: On-demand only; not a recurring sprint item. Activate when a trigger condition is met.
+
 ### HOLD Items (Android / Google Play Store)
 
 **Issue #163. Android app not tested in several sprints (~2-4h) Priority HOLD**
 - Phase: Android Google Play Store Readiness
 - Platform: Android
 - Validation sprint needed to verify Android app still works
-
-**~~F11. Desktop App E2E Testing with civyk-winwright (~8-10h)~~** [OK] Complete (Sprint 27)
-- Phase: Quality and Testing
-- Platform: Windows Desktop
-- [Detail](#f11-desktop-app-e2e-testing-with-civyk-winwright)
+- Expanded scope (Sprint 30 review): ADR-0028 permission validation (POST_NOTIFICATIONS not needed initially, add when background scanning implemented)
+- Expanded scope (Sprint 30 review): Include unique UI tests via Playwright/WinWright as needed/appropriate
 
 **F4. Background Scanning - Android (~14-16h) Priority HOLD**
 - Phase: Android Google Play Store Readiness
@@ -273,9 +405,7 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Phase: Android Google Play Store Readiness
 - Platform: Android
 
-**GP-11. Account and Data Deletion Feature (~8-12h) Priority HOLD**
-- Phase: Android Google Play Store Readiness
-- Platform: All
+**GP-11. Account and Data Deletion Feature** -- Moved to F66 (off HOLD, all platforms including Windows Store). See F66 in Core App section above.
 
 **GP-12. Firebase Analytics Decision (~2-4h) Priority HOLD**
 - Phase: Android Google Play Store Readiness
@@ -284,6 +414,18 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 **GP-16. Google Play Developer Account Setup (~2-4h) Priority HOLD**
 - Phase: Android Google Play Store Readiness
 - Platform: Android
+
+### HOLD Items (Multi-Platform)
+
+**F67. Platform validation - iOS, Linux, macOS (~4-6h per platform) Priority HOLD**
+- Phase: Multi-Platform Readiness
+- Platform: iOS, Linux, macOS
+- Shared tasks (all 3): validation build, smoke test, IMAP scan test, storage path verification, auth flow testing
+- iOS-specific: Xcode config, signing, keychain access for credentials
+- macOS-specific: entitlements, sandbox config, notarization requirements
+- Linux-specific: desktop entry, packaging (snap/flatpak/AppImage), dependency verification (GTK, libsecret)
+- HOLD rationale: No current business need. Activate when distribution is prioritized by Product Owner.
+- Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gap G25)
 
 ### HOLD Items (Post-MVP)
 
@@ -322,50 +464,6 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 ## Feature and Bug Details
 
 This section contains detailed specifications for incomplete items only. Completed features have their details in sprint documents and CHANGELOG.md.
-
-### B1: MSIX Sandbox Crash at Launch
-
-**Status**: New (Microsoft Store certification failure, March 30 2026)
-**Estimated Effort**: ~10h
-**Phase**: Windows Store Readiness (BLOCKER)
-**Platform**: Windows Desktop
-**Issue**: #218
-**Target**: Sprint 28
-
-**Problem**: App crashes at launch when installed from MSIX package (Microsoft Store). Error: `File system error (-2015295536)` / 0x87E107D0. Certification testing on Surface Laptop 5 and Dell Inspiron 13-5379, OS build 26200.8037.
-
-**Root Causes (3 issues)**:
-
-1. **sqflite_common_ffi FFI initialization** (PRIMARY, ~4h)
-   - `sqfliteFfiInit()` in `main.dart:36` loads sqlite3.dll via Dart FFI
-   - Inside MSIX sandbox, DLL resolution fails or tries to write `.dart_tool/` to read-only install dir
-   - Known issue: tekartik/sqflite#945, YehudaKremer/msix#189, YehudaKremer/msix#76
-   - Fix options:
-     - **Option A** (Preferred): Replace `sqflite_common_ffi` with `sqlite3` v3.x direct usage (already transitive dep, uses build hooks for DLL bundling)
-     - **Option B**: Configure explicit DLL path in `sqfliteFfiInit()`
-     - **Option C**: Add `sqlite3_flutter_libs` dependency
-
-2. **Hardcoded `Platform.environment['APPDATA']` paths** (SECONDARY, ~2h)
-   - MSIX virtualizes `%APPDATA%` to `...\Packages\{PackageFamilyName}\LocalCache\Roaming\`
-   - Raw `Platform.environment['APPDATA']` may not match `path_provider` resolved paths
-   - Affected files (6 occurrences):
-     - `lib/main.dart:49` (background scan log)
-     - `lib/core/services/background_scan_windows_worker.dart:30,279` (log + Excel export)
-     - `lib/core/services/app_identity_migration.dart:29,35` (legacy migration)
-     - `lib/core/services/dev_environment_seeder.dart:28` (dev seeding)
-   - Fix: Replace all with `AppPaths` methods using `path_provider`
-
-3. **Platform.resolvedExecutable in MSIX** (TERTIARY, ~1h)
-   - Returns MSIX package path (read-only, changes on updates)
-   - Task Scheduler registration at `windows_task_scheduler_service.dart:259,369` may fail
-   - Fix: Detect MSIX context, skip/adapt Task Scheduler registration
-
-**Testing** (~2h):
-- Build MSIX locally: `dart run msix:create`
-- Install as non-admin user
-- Verify launch, database, rules, scanning, export
-
-**Current deps**: `sqflite: ^2.3.0`, `sqflite_common_ffi: ^2.3.0`, `sqlite3: 3.1.4` (transitive), `msix: ^3.16.8`
 
 ### Folder Selectors: Two-Level Listing (F37)
 
@@ -466,34 +564,118 @@ Provider defaults:
 
 ---
 
-### F11: Desktop App E2E Testing with civyk-winwright
+### F52: Multi-Variant Side-by-Side Install
 
-**Status**: In Progress (Sprint 27)
-**Estimated Effort**: ~8-10h
-**Phase**: Quality and Testing
-**Platform**: Windows Desktop
+**Status**: New (April 8, 2026)
+**Estimated Effort**: ~16-24h (phased per platform)
+**Phase**: Build and Release Infrastructure
+**Platform**: All (Windows, Android, iOS)
 
-**Overview**: Set up automated desktop app E2E testing using civyk-winwright MCP server, which provides Windows UI Automation (UIA3/MSAA) tools for native desktop app interaction. Playwright cannot directly test Flutter Desktop apps (Skia rendering, not browser-based), so civyk-winwright bridges this gap.
+**Overview**: Extend the existing dev/prod separation (ADR-0035, Windows only) to support all 9 build variants -- 3 channels (dev, production, store) across 3 platforms (Windows, Android, iOS) -- running simultaneously on the same machine/device without rebuilds.
 
-**Approach**:
-- **civyk-winwright**: MCP server with ~59 tools for desktop automation (UIA3), browser CDP, system tools, and script recording/replay
-- **Accessibility tree**: Flutter Windows exposes MSAA accessibility; civyk-winwright uses UIA3 which can bridge to MSAA
-- **Investigation first**: Evaluate accessibility tree richness before committing to full test scripting
+**The 9 Variants**:
 
-**Key Features**:
-- Install and configure civyk-winwright MCP server
-- Evaluate Flutter app accessibility tree for automation feasibility
-- Exploratory testing of all Windows Desktop screens via MCP tools
-- Document bugs found, script repeatable tests via record/replay
+| Platform | Dev (feature/develop) | Production (main) | Store (downloaded) |
+|----------|----------------------|-------------------|--------------------|
+| Windows | [OK] Built today | [OK] Built today | Microsoft Store install |
+| Android | TBD | TBD | Google Play install |
+| iOS | TBD | TBD | App Store install |
 
-**Dependencies**: Core UI features complete (Sprints 12-17), civyk-winwright v2.0.0
+**Current State**:
+- **Windows dev/prod**: ADR-0035 implemented in Sprint 19. Same .exe path, but different `secrets.*.json` builds use different data dirs (`MyEmailSpamFilter` vs `MyEmailSpamFilter_Dev`), task names, and mutexes. Whichever was built last is what runs.
+- **Windows store**: MSIX submitted to Microsoft Store (Sprint 28). Installs to `Packages\{PackageFamilyName}\` -- separate from dev/prod data dirs.
+- **Android**: Single applicationId (`com.example.my_email_spam_filter`). No flavors configured.
+- **iOS**: Not yet built.
+
+**Problem**: A user/developer needs to be able to run any combination of these 9 variants simultaneously to:
+- Compare dev vs prod behavior on same data
+- Test store version against local builds without uninstalling
+- Reproduce store-only bugs while a fix is in dev
+- Demonstrate prod features while continuing dev work
+
+The Windows dev/prod current implementation requires a rebuild to switch -- only one is "current" at a time.
+
+**Industry Best Practices**:
+
+**Android (Build Flavors)** -- See [Android docs](https://developer.android.com/build/build-variants):
+- Use `productFlavors` in `build.gradle.kts` with distinct `applicationIdSuffix` per flavor
+- Example: `com.example.app` (store), `com.example.app.prod` (sideloaded prod), `com.example.app.dev` (dev)
+- Each variant gets its own data directory, app icon, and Launcher entry
+- Side-by-side install works automatically on the same device
+- Use Manifest Placeholders for distinct app names (e.g., "SpamFilter", "SpamFilter PROD", "SpamFilter DEV")
+
+**iOS (Bundle ID + Targets/Configurations)** -- See [Xcode multi-config](https://medium.com/@danielgalasko/run-multiple-versions-of-your-app-on-the-same-device-using-xcode-configurations-1fd3a220c608):
+- iOS identifies apps by bundle identifier; cannot have two apps with the same ID
+- Create distinct bundle IDs per variant: `com.example.spamfilter`, `com.example.spamfilter.prod`, `com.example.spamfilter.dev`
+- Use Xcode build configurations or separate targets to switch bundle ID at build time
+- Each variant becomes a distinct app on the device with its own data, icon, and TestFlight stream
+- TestFlight typically uses a `.test` or `.beta` suffix to avoid colliding with App Store releases
+
+**Windows (MSIX Package Family + Distinct .exe Names)**:
+- MSIX uses `PackageFamilyName` for identity. Different `Identity Name` values produce distinct sandboxed installs.
+- For non-MSIX (sideloaded) builds, distinct .exe filenames + distinct install directories enable coexistence
+- Currently: `MyEmailSpamFilter.exe` is the same filename for dev and prod (only data dirs differ)
+- Recommendation: build to environment-specific subdirs (`Release-dev/`, `Release-prod/`) and use environment-specific .exe names (`MyEmailSpamFilter.exe`, `MyEmailSpamFilter-Dev.exe`)
+
+**Cross-Platform Pattern**:
+1. **Single source tree, build-time variants**: Use Flutter's `--dart-define` + `flutter run --flavor` for entry points
+2. **Distinct identifiers per variant**: applicationId/bundle ID/package family
+3. **Distinct visual markers**: app name, icon overlay (e.g., yellow stripe for dev, red for staging)
+4. **Distinct data isolation**: separate data dirs (already done for Windows; automatic for Android/iOS via OS)
+5. **Build matrix in CI**: each push to `main` builds prod variants, each push to `develop` builds dev variants
+
+**Key Decisions Needed (during sprint planning)**:
+1. **Naming convention**: `SpamFilter` (store) / `SpamFilter Pro` (sideloaded prod) / `SpamFilter Dev` (dev)? Or use suffixes?
+2. **Build artifact location**: Should dev and prod Windows builds output to separate dirs to enable coexistence without rebuild?
+3. **Icon variants**: Acceptable to ship 3 icon designs (or icon overlays generated at build time)?
+4. **Store identifier strategy**: Reserve all bundle IDs in advance (App Store Connect, Google Play Console, Microsoft Partner Center)?
+
+**Implementation Phases**:
+
+**Phase 1: Windows distinct .exe + distinct dirs (~4-6h)**
+- Update `build-windows.ps1` to output to `build/windows/x64/runner/Release-{env}/`
+- Rename .exe to `MyEmailSpamFilter.exe` (prod) and `MyEmailSpamFilter-Dev.exe` (dev) at build time
+- Verify Microsoft Store MSIX is unaffected (it installs separately)
+- Update launch scripts and docs to reference env-specific paths
+- Test: prod and dev builds present simultaneously, both runnable
+
+**Phase 2: Android flavors (~6-8h)**
+- Configure `productFlavors` in `mobile-app/android/app/build.gradle.kts`
+- Define `dev`, `prod`, `store` flavors with distinct `applicationIdSuffix`
+- Add Manifest Placeholder for app name
+- Generate distinct icons per flavor (or use icon overlay)
+- Update build scripts (`build-with-secrets.ps1`) to take a flavor parameter
+- Test: install all 3 variants on emulator side-by-side
+- Note: Cannot fully test "store" flavor until app is in Google Play (use `prod` flavor as proxy with different applicationId)
+
+**Phase 3: iOS bundle IDs (~6-10h, requires macOS)**
+- Configure Xcode build configurations or targets for `dev`, `prod`, `store`
+- Set distinct bundle IDs per configuration
+- Configure provisioning profiles for each variant
+- Update CI to build correct variant per branch
+- Note: Requires Apple Developer Program account and reserved bundle IDs
+- HOLD until iOS development begins
 
 **Acceptance Criteria**:
-- [ ] civyk-winwright installed and accessible as MCP server in Claude Code
-- [ ] Accessibility tree evaluated and findings documented
-- [ ] Exploratory testing covers all major screens
-- [ ] Bugs found filed as GitHub issues
-- [ ] TESTING_STRATEGY.md and ARCHITECTURE.md updated with E2E testing approach
+- [ ] Windows: dev, prod, and store builds all installable and runnable simultaneously
+- [ ] Android: dev, prod, and store flavors all installable and runnable simultaneously on emulator
+- [ ] iOS: dev, prod, and store configurations defined (full validation deferred to iOS dev)
+- [ ] All 9 variants have distinct data directories (no cross-contamination)
+- [ ] All 9 variants have visual markers (different name and/or icon)
+- [ ] Build scripts updated to support variant selection
+- [ ] Documentation updated: ADR (extend ADR-0035 or create new ADR), CLAUDE.md, build script READMEs
+- [ ] No regression in existing dev/prod Windows separation
+- [ ] CI builds correct variant per branch (main = prod+store, develop = dev)
+
+**Dependencies**:
+- iOS phase blocked until iOS development begins
+- Android store flavor blocked until app is published to Google Play
+- Windows store flavor already in place (MSIX from Sprint 28)
+
+**Notes**:
+- Phase 1 (Windows) is the only phase that can be done now without external dependencies
+- Phases 2 and 3 should be combined with broader Android/iOS work
+- Consider whether "store" flavor is really needed as a separate build, or if the actual store-downloaded app suffices
 
 ---
 
@@ -563,70 +745,6 @@ Provider defaults:
 
 ---
 
-### Windows Store Readiness (Complete - Sprint 22)
-
-**Status**: [OK] Complete (Sprint 22)
-**Estimated Effort**: ~8-12h (research + gap analysis; implementation in separate backlog items)
-**Phase**: Windows Store Readiness
-**Platform**: Windows Desktop
-
-**Overview**: Research all requirements for publishing on the Microsoft Store (Windows Store), perform a deep analysis of the current codebase to identify gaps, and create actionable backlog items to bridge each gap. This includes creating or updating ADRs for architectural decisions required for store compliance.
-
-**Phase 1: Requirements Research (~3-4h)**
-- Microsoft Store app submission requirements (2026)
-- MSIX packaging requirements and signing
-- Store listing requirements (screenshots, descriptions, privacy policy)
-- Content policy and app certification requirements
-- Age ratings and content declarations
-- Accessibility requirements
-- Privacy and data handling declarations
-- Update and versioning requirements
-- Testing and certification process
-
-**Phase 2: Codebase Gap Analysis (~3-4h)**
-- Deep analysis of current app against each store requirement
-- Review existing MSIX config in pubspec.yaml
-- Review app identity, signing, and packaging
-- Review privacy policy status (ADR-0030)
-- Review data handling declarations
-- Review accessibility compliance
-- Review app capabilities and permissions
-- Identify all gaps with severity (blocking vs nice-to-have)
-
-**Phase 3: Gap Summary and Review (~1-2h)**
-- Present findings to user with categorized gaps
-- Discuss prioritization and approach for each gap
-- Create/update ADRs for architectural decisions needed
-
-**Phase 4: Backlog Item Creation (~1-2h)**
-- Create individual backlog items for each gap
-- Estimate effort per item
-- Identify dependencies between items
-- Propose implementation order
-
-**Acceptance Criteria**:
-- [ ] All Microsoft Store requirements documented
-- [ ] Codebase gap analysis complete with severity ratings
-- [ ] Findings reviewed with user
-- [ ] ADRs created or updated for store-related architectural decisions
-- [ ] Individual backlog items created for each gap
-- [ ] Implementation order and dependencies documented
-
-**Note**: This is similar to the existing Google Play Store Readiness section (HOLD items H6-H17) but for the Microsoft Store. Some requirements overlap (privacy policy, data deletion, icons/branding).
-
----
-
-### ~~WS-B4: Privacy Policy~~ [OK] Complete (Sprint 24)
-
-### ~~WS: Implementation Order and Dependencies~~ [OK] Complete (Sprint 24)
-
-All Windows Store readiness items completed. App submitted to Microsoft Store for certification (Sprint 24, 2026-03-21).
-```
-
-**Parallel tracks**: #17, #18, #21 can be done in parallel. #19 and #20 can be done in parallel after their dependencies.
-
----
-
 ### F25: Rule Testing UI Enhancements
 
 **Status**: Planned
@@ -688,6 +806,86 @@ All Windows Store readiness items completed. App submitted to Microsoft Store fo
 - [ ] Bulk action applies chosen rule to all selected emails
 - [ ] Works in both live scan results and scan history views
 - [ ] Platform-appropriate UI for Windows, Android, and iOS
+
+### F74: FAQ Section in Help
+
+**Status**: HOLD (Post-Windows Store)
+**Estimated Effort**: ~2-4h
+**Phase**: Documentation / UX
+**Platform**: All
+**Added**: April 18, 2026 (Sprint 34 testing feedback)
+
+**Overview**: Add a Frequently Asked Questions section to the in-app Help screen (F54 from Sprint 33 added the Help infrastructure). Users have asked about technical concepts during F56 testing that warrant FAQ-style answers rather than burying them in walkthrough text.
+
+**Required FAQ topics**:
+- **What is a TLD (Top-Level Domain)?** -- explain TLD concept (.com, .uk, .xyz), how the app's TLD block rules work, why blocking a TLD is heavy-handed (blocks everything from that TLD), and when to use entire-domain rules instead.
+- **What is the IANA TLD list and why does the app use it?** -- explain IANA's role as the authority for valid TLDs, why the app rejects fake TLDs (`.com444`, `.whatevericanthinkof`), how the list is updated (`scripts/update_iana_tlds.sh`), and what to do if a real new TLD is rejected (file an issue).
+- **What is the difference between Entire Domain, Exact Domain, Exact Email, and Top-Level Domain?** -- with concrete examples and matched/unmatched email lists for each.
+- **What is a Safe Sender?** -- explain whitelist precedence over block rules.
+- **Why does the scanner skip some emails?** -- explain Read-Only mode, default folders setting, retention.
+- **What does "ReDoS" mean and why was my pattern rejected?** -- explain catastrophic backtracking in plain language with the rejected pattern shown.
+- **Where is my data stored?** -- per ADR-0030 (privacy/zero telemetry), point to `MyEmailSpamFilter` AppData directory.
+- **How do I export and re-import my rules?** -- point to Settings > Data Management.
+
+**Implementation**:
+- New `HelpSection.faq` enum value
+- New `_buildFaqSection()` method in `help_screen.dart`
+- ExpansionTile per question for collapsible Q&A
+- Add `Help` icon entry on the Help screen jumping to FAQ
+- Cross-reference from manual rule creation screen ("Learn more about TLDs" link)
+
+**Acceptance Criteria**:
+- [ ] FAQ section accessible from Help screen
+- [ ] At least 8 questions answered (the topics above)
+- [ ] Each answer fits on one screen (no scrolling within an answer)
+- [ ] TLD/IANA answers explain the F56 validation behavior users encountered
+- [ ] Cross-references from rule creation screens to relevant FAQ entries
+
+### F75: Help Walkthrough -- End-to-End First-Use Guide
+
+**Status**: HOLD (Post-Windows Store)
+**Estimated Effort**: ~4-6h
+**Phase**: Documentation / UX
+**Platform**: All
+**Added**: April 18, 2026 (Sprint 34 testing feedback)
+
+**Overview**: Add a step-by-step walkthrough to the in-app Help screen that guides a first-time user through the recommended workflow from install to confident production use. Builds on the F54 Help infrastructure (Sprint 33).
+
+**Walkthrough steps to document**:
+
+1. **Install + first launch** -- account setup, choose provider, OAuth or app-password flow, first-run rule seeding (1638 default block rules from F73).
+
+2. **Run a Demo scan first** -- explain the Demo Mode (ADR-0020) with synthetic emails. Lets users see how rule matching, results display, and the Process Results flow work without touching real email.
+
+3. **Read-only manual scan with "move matched" target folder**:
+   - Set Manual Scan to **Read-Only Mode** (Settings > Scan)
+   - Set the **Default Folders > Spam folder** target to a safe destination (e.g., a user-created `Review-Spam` folder) so matched emails get **moved** rather than deleted
+   - Run a manual scan
+   - Walk through Results: which emails matched which rules
+   - **For false positives** (legitimate emails matched as spam): use F56 to add a Safe Sender (recommend Entire Domain as the general best path; recommend Exact Email for transactional senders like banks/airlines/utilities where only one specific address is trusted)
+   - **For real spam** that matched correctly: confirm the rule, no action needed
+   - **For real spam not matched**: use F56 Add Block Rule -- recommend Entire Domain as default best practice; recommend Exact Email only for one-off senders that share a domain with legitimate mail (e.g., a single bad sender at gmail.com)
+
+4. **Switch to "move all" mode and re-scan**:
+   - After tuning rules and safe senders, change Manual Scan back to delete/move based on rule actions (not Read-Only)
+   - Run another manual scan
+   - Verify behavior matches expectations from the dry-run pass
+   - If unexpected results: revert via Scan History -> per-email undo (where supported), then refine rules
+
+**Implementation**:
+- New `HelpSection.walkthrough` enum value
+- Numbered step list with screenshots (or text-only initially) per step
+- Each step links to the relevant in-app screen (e.g., "Open Settings > Scan" deep-link)
+- Add a "First time? Start here" callout on the main Help screen entry pointing to the walkthrough
+- Could be presented as a one-time onboarding overlay on first launch (out of scope for v1; flag for future consideration)
+
+**Acceptance Criteria**:
+- [ ] Walkthrough section accessible from Help screen
+- [ ] All 4 numbered steps documented with concrete UI references
+- [ ] Recommendation hierarchy stated clearly: Entire Domain (general best), Exact Email (provider/transactional senders), TLD (heavy-handed, last resort)
+- [ ] Read-Only -> review -> tune -> move-all loop documented as the recommended adoption pattern
+- [ ] Scan History referenced as the recovery path for unexpected actions
+- [ ] Cross-references from Manual Rule Creation screen ("Need help choosing a rule type? See walkthrough")
 
 ---
 
@@ -927,6 +1125,17 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 5.14 | 2026-04-19 | Sprint 35 retro Category 13 addendum: F81 added as Sprint 36 carry-in (mandatory, not backlog -- Issue #242). Store release process documentation -- new `docs/STORE_RELEASE_PROCESS.md`, deprecate faulty `build-msix.ps1`, walk team through Partner Center upload. Triggered by Sprint 35 store-prep gap-finding. |
+| 5.13 | 2026-04-19 | Sprint 35 store release prep: Bumped dev version 0.5.1.0 -> 0.5.2.0 (prod at 0.5.1.0 in store; 0.5.2.0 is next submission). Built signed MSIX (17.4 MB) at `mobile-app/build/windows/x64/runner/Release/my_email_spam_filter.msix`. Sprint 36 to bump dev to 0.5.3.0. |
+| 5.12 | 2026-04-19 | Sprint 35 retrospective complete (Phase 7): Applied four of five proposed process improvements -- P1 Phase Auto-Advance Rule (CLAUDE.md item 7), P2 Standing Approval Inventory (Phase 3.7), P4 Model-Version Pitfalls appendix (CLAUDE.md), P5 Sprint Resume Pattern memory. Backlogged P3 as F80 (Phase Cheat Sheet, Issue #241). Closed Category 2 testing gap by adding Phase 5.1.1 step 2a (test-assertion sibling sweep for structural-data changes). Promoted Sprint 35 to Last Completed Sprint; added Sprint 35 row to Past Sprint Summary. |
+| 5.11 | 2026-04-19 | Sprint 35 in progress: Removed BUG-S34-1 and F69 (both shipping in Sprint 35 PR #238). Added BUG-S35-1 (manual rule UI accepts duplicates -- Issue #239) discovered during F69 execution; cleanup required direct SQLite delete because UI couldn't disambiguate the duplicate from the bundled rule. Added F79 (Full WinWright E2E sweep) as HOLD item -- Issue #240, on-demand only, distinct from per-sprint conditional WinWright runs. |
+| 5.10 | 2026-04-19 | Sprint 34 post-merge cleanup (pre-Sprint-35 backlog refinement): Removed F56, F73, F62, F72 from Next Sprint Candidates -- all four shipped in Sprint 34 (PR #236, see CHANGELOG 2026-04-18). Master plan now reflects only incomplete work for Sprint 35 planning. F69 (WinWright E2E) kept on list -- Sprint 34 shipped only the JSON test scripts (line 35 of CHANGELOG); execution work remains. |
+| 5.9 | 2026-04-19 | Sprint 34 post-merge: Added BUG-S34-1 (stale `expect(resetResult.rules, 5)` assertion in default_rule_set_service_test.dart that escaped F73 review and broke develop after PR #236 merge). Carry-in for Sprint 35 per Harold (option 3). |
+| 5.8 | 2026-04-16 | Sprint 33 completion: Removed F53, F54, F55, F65, F66 (features) and SEC-1b, SEC-14, SEC-19, SEC-22 (security). SEC-8 split -- HTTPS pinning done; SEC-8b tracks remaining IMAP pinning. SEC-11 split -- infrastructure done; SEC-11b tracks SQLCipher driver swap + migration. Added Sprint 33 to Past Sprint Summary. Updated Last Completed Sprint. |
+| 5.7 | 2026-04-14 | Sprint 33 planning: Moved F61 to HOLD per user direction (partial doc refresh happens organically in Sprint 33 via ARCHITECTURE.md updates for SQLCipher/HelpScreen/DataDeletionService/PatternCompiler). |
+| 5.6 | 2026-04-14 | Sprint 32 code review findings: Added SEC-1b (ReDoS runtime protection -- design work needed) and F72 (code hygiene cleanup -- emoji, MSVC guard, email message softening) from Phase 5.1.1 automated code review. |
+| 5.5 | 2026-04-13 | Sprint 32 completion: Removed 10 completed security items (SEC-1/10/12/13/16/17/18/20/21/23). Added Sprint 32 to Past Sprint Summary. Updated Last Completed Sprint. |
+| 5.4 | 2026-04-13 | Sprint 31 retrospective: Added F70 (Periodic Security Deep Dive template) and F71 (Periodic Architecture Deep Dive template) as HOLD items. |
 | 5.3 | 2026-03-24 | Sprint 26: Marked F7, F36, F43, F44, F45, F47 complete. Removed F7/F36/F45/F47 detail sections. Added F48 (scan history enhancements). Updated Last Completed Sprint. |
 | 5.2 | 2026-03-22 | Sprint 25: Marked F30, F31, F34, F38, F40, F41 complete. Removed F31/F32/F38 detail sections. Added F42 (coverage gaps, on hold). Updated Last Completed Sprint. |
 | 5.1 | 2026-03-21 | Sprint 24: Marked WS items complete. Added F40, F41. Updated Last Completed Sprint. |

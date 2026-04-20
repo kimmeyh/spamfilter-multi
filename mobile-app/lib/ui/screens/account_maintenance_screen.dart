@@ -404,7 +404,8 @@ class _AccountMaintenanceScreenState extends State<AccountMaintenanceScreen> {
         title: const Text('Account Maintenance'),
         elevation: 0,
       ),
-      body: _isLoading
+      body: SelectionArea(
+        child: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _accounts.isEmpty
               ? Center(
@@ -441,6 +442,7 @@ class _AccountMaintenanceScreenState extends State<AccountMaintenanceScreen> {
                   separatorBuilder: (_, __) => const Divider(),
                   itemBuilder: (_, index) => _buildAccountTile(_accounts[index]),
                 ),
+      ),
     );
   }
 

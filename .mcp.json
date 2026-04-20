@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "winwright": {
+      "command": "C:\\Tools\\WinWright\\Civyk.WinWright.Mcp.exe",
+      "args": ["mcp"]
+    }
+  }
+}

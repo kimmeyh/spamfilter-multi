@@ -11,6 +11,7 @@ library;
 
 import 'package:logger/logger.dart';
 
+import '../../util/redact.dart';
 import 'database_helper.dart';
 
 /// Model class for scan results
@@ -190,10 +191,10 @@ class ScanResultStore {
       );
 
       final results = maps.map(ScanResult.fromMap).toList();
-      _logger.d('Retrieved ${results.length} scan results for account $accountId');
+      _logger.d('Retrieved ${results.length} scan results for account ${Redact.accountId(accountId)}');
       return results;
     } catch (e) {
-      _logger.e('Failed to get scan results for account $accountId: $e');
+      _logger.e('Failed to get scan results for account ${Redact.accountId(accountId)}: $e');
       rethrow;
     }
   }
@@ -282,7 +283,7 @@ class ScanResultStore {
       );
 
       if (maps.isEmpty) {
-        _logger.d('No scans found for account $accountId, type $scanType');
+        _logger.d('No scans found for account ${Redact.accountId(accountId)}, type $scanType');
         return null;
       }
 
@@ -308,7 +309,7 @@ class ScanResultStore {
       );
 
       if (maps.isEmpty) {
-        _logger.d('No completed scans found for account $accountId');
+        _logger.d('No completed scans found for account ${Redact.accountId(accountId)}');
         return null;
       }
 
@@ -471,10 +472,10 @@ class ScanResultStore {
         whereArgs: [accountId],
       );
 
-      _logger.d('Deleted $count scan results for account $accountId');
+      _logger.d('Deleted $count scan results for account ${Redact.accountId(accountId)}');
       return count;
     } catch (e) {
-      _logger.e('Failed to delete scans for account $accountId: $e');
+      _logger.e('Failed to delete scans for account ${Redact.accountId(accountId)}: $e');
       rethrow;
     }
   }

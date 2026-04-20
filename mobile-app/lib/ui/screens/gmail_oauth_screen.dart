@@ -6,8 +6,8 @@ import 'package:provider/provider.dart';
 import '../../adapters/auth/google_auth_service.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/providers/email_scan_provider.dart';
-import '../../screens/gmail_webview_oauth_screen.dart';
-import '../../screens/gmail_manual_token_screen.dart';
+import 'gmail_webview_oauth_screen.dart';
+import 'gmail_manual_token_screen.dart';
 import '../../util/redact.dart';
 import 'folder_selection_screen.dart';
 import 'scan_progress_screen.dart';
@@ -52,13 +52,14 @@ class _GmailOAuthScreenState extends State<GmailOAuthScreen> {
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text('Choose Authentication Method'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Gmail OAuth on Windows requires one of these methods:',
+        content: SelectionArea(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Gmail OAuth on Windows requires one of these methods:',
                 style: TextStyle(fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 16),
@@ -94,7 +95,8 @@ class _GmailOAuthScreenState extends State<GmailOAuthScreen> {
                   _handleManualTokenEntry();
                 },
               ),
-            ],
+              ],
+            ),
           ),
         ),
         actions: [
@@ -124,13 +126,14 @@ class _GmailOAuthScreenState extends State<GmailOAuthScreen> {
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text('Alternate Sign-In Methods'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'If Google Sign-In is unresponsive in this emulator, try one of these:',
+        content: SelectionArea(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'If Google Sign-In is unresponsive in this emulator, try one of these:',
                 style: TextStyle(fontWeight: FontWeight.w500),
               ),
               const SizedBox(height: 16),
@@ -155,7 +158,8 @@ class _GmailOAuthScreenState extends State<GmailOAuthScreen> {
                   _handleManualTokenEntry();
                 },
               ),
-            ],
+              ],
+            ),
           ),
         ),
         actions: [
@@ -437,10 +441,11 @@ class _GmailOAuthScreenState extends State<GmailOAuthScreen> {
         title: const Text('Gmail Sign-In'),
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
+      body: SelectionArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
             mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -579,6 +584,7 @@ class _GmailOAuthScreenState extends State<GmailOAuthScreen> {
               // Privacy notice
               _buildPrivacyNotice(context),
             ],
+          ),
           ),
         ),
       ),

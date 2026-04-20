@@ -1,0 +1,17 @@
+# CODEOWNERS - Automatic review assignment for pull requests
+#
+# See https://docs.github.com/en/repositories/managing-your-repositories-settings-and-features/customizing-your-repository/about-code-owners
+# Referenced by docs/SPRINT_EXECUTION_WORKFLOW.md Phase 6.4 and Phase 6.4.1
+#
+# Syntax: pattern<space>@user1 @user2 ...
+# Later rules override earlier ones. Most-specific rule wins.
+#
+# Note on Copilot: CODEOWNERS does NOT support the Copilot bot
+# (copilot-pull-request-reviewer is a Bot account, not resolvable here).
+# To auto-request Copilot review, use a Repository Ruleset instead:
+# Settings -> Rules -> Rulesets -> New branch ruleset ->
+# enable "Automatically request Copilot code review"
+
+# Default owners for everything in the repo
+# - @kimmeyh: Project owner / Chief Architect / Chief Developer
+*       @kimmeyh

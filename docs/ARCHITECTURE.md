@@ -28,7 +28,7 @@
 
 Cross-platform email spam filtering application built with 100% Flutter/Dart for all platforms (Windows, macOS, Linux, Android, iOS). The app uses IMAP/OAuth protocols to support multiple email providers (AOL, Gmail, Yahoo, iCloud) with a single codebase, SQLite database for rules and scan history, and portable YAML rule export for version control.
 
-**Current Status**: Sprint 17 complete (Feb 2026) - 977 tests passing, 28 skipped, 0 failures.
+**Current Status**: See [CHANGELOG.md](../CHANGELOG.md) for current version, sprint, and test count.
 
 ---
 
@@ -131,20 +131,30 @@ Business logic and domain services.
 - `_matchesConditions(EmailMessage, RuleConditions) -> bool`
 - `_matchesExceptions(EmailMessage, RuleExceptions) -> bool`
 
-#### PatternCompiler (ADR-0023)
+#### PatternCompiler (ADR-0023, SEC-1/SEC-1b Sprint 32-33)
 
-**Purpose**: Compiles and caches regex patterns for efficient matching
+**Purpose**: Compiles and caches regex patterns for efficient matching, with ReDoS protection
 
 **Features**:
-- `HashMap<String, RegExp>` cache with ~100x speedup (2.1ms -> 0.18ms)
+- `HashMap<String, RegExp>` cache (see [PERFORMANCE_BENCHMARKS.md](PERFORMANCE_BENCHMARKS.md) for speedup metrics)
 - Case-insensitive matching
 - Python-style inline flag stripping (`(?i)`, `(?m)`, `(?s)`, `(?x)`)
 - Error tracking for invalid patterns (graceful fallback to never-matching regex)
 - Cache hit/miss statistics
+- **ReDoS detection** (`detectReDoS`): heuristics for nested quantifiers, overlapping alternation, bounded-repetition ReDoS shapes (SEC-1, Sprint 32)
+- **Pattern provenance tracking** (SEC-1b, Sprint 33): `PatternProvenance { bundled, user }` enum. `compileWithProvenance(pattern, provenance)` rejects user patterns that match the ReDoS heuristics (caches a never-match fallback and records the rejection in `rejectedUserPatterns`). Bundled patterns skip the check -- curated rules stay on the fast `regex.hasMatch()` path with no per-match overhead
+- **Isolate-timeout matching** (`safeHasMatch`): optional async defense-in-depth for callers that want a wall-clock bound even after the compile-time guard
 
 **Key Methods**:
-- `compile(String pattern) -> RegExp`
-- `getStats() -> Map<String, int>` (cached_patterns, cache_hits, cache_misses, failed_patterns)
+- `compile(String pattern) -> RegExp` (defaults to bundled provenance)
+- `compileWithProvenance(String pattern, PatternProvenance provenance) -> RegExp`
+- `detectReDoS(String pattern) -> List<String>` (static; warnings list)
+- `safeHasMatch(RegExp regex, String input, {Duration timeout}) -> Future<bool>` (static; isolate-timeout wrapper)
+- `getStats() -> Map<String, int>`
+- `provenanceOf(String pattern) -> PatternProvenance?`
+- `rejectedUserPatterns -> Map<String, String>` (read-only)
+
+**Enforcement chokepoints** (SEC-1b): `RuleDatabaseStore.addRule`/`updateRule` and `SafeSenderDatabaseStore.addSafeSender`/`updateSafeSender` call `detectReDoS` before persisting and throw on match, blocking dangerous patterns at the persistence boundary so the scanner hot path never sees them.
 
 **Known Issue**: Cache grows unbounded (Issue #16)
 
@@ -159,7 +169,7 @@ Business logic and domain services.
 4. Initialize scan result persistence (database)
 5. For each folder: fetch messages, evaluate against rules, take actions (batch operations)
 6. Persist individual email actions to database
-7. Update UI progress (throttled: every 10 emails OR every 2 seconds)
+7. Update UI progress (throttled per [ADR-0022](adr/0022-throttled-ui-progress-updates.md))
 8. Finalize scan results
 
 #### RuleConflictDetector
@@ -189,6 +199,20 @@ Business logic and domain services.
 | **EmailBodyParser** | Extract/decode email bodies |
 | **EmailAvailabilityChecker** | Check if email provider is reachable |
 | **AppLogger** | Keyword-based logging (EMAIL, RULES, EVAL, DB, AUTH, SCAN, ERROR, PERF, UI, DEBUG) |
+| **DataDeletionService** (F66, Sprint 33) | Per-account wipe (`deleteAccountData`) and full-app wipe (`wipeAllData`). Account-level clears credentials + scan results + email actions + unmatched emails + per-account settings + rate-limit state while preserving global rules/safe-senders/other accounts; full wipe calls `DatabaseHelper.deleteAllData` + `SecureCredentialsStore.deleteAllCredentials`. Used by Account Selection "Delete Account" and Settings > General "Delete All App Data" |
+| **DefaultRuleSetService** | Seed bundled rules on first launch; reset to defaults; SEC-1b marks seeded patterns as `bundled` provenance so they skip ReDoS checks. Includes F53 `ensureTldBlockRules` post-seed migration for existing installs |
+
+---
+
+### Security Services (`lib/core/security/`)
+
+New directory introduced in Sprint 33 for security-cross-cutting services.
+
+| Service | Purpose |
+|---------|---------|
+| **AuthRateLimiter** (SEC-22) | Tracks up to 10 failed IMAP auth attempts in a rolling 1h window per `{platform}-{email}` account ID; blocks further attempts for 1h once the threshold is hit. State persists in the `auth_rate_limit` table (DB schema v3). `GenericIMAPAdapter.loadCredentials` calls `assertNotBlocked` before network I/O and records failures on `AuthenticationException`; success resets the counter |
+| **CertificatePinner** / **PinnedHttpClient** (SEC-8) | SPKI pins for Google OAuth endpoints (`accounts.google.com`, `oauth2.googleapis.com`, `gmail.googleapis.com`, `www.googleapis.com`). `PinnedHttpClient` wraps `dart:io HttpClient` with a bad-cert callback; `GmailWindowsOAuthHandler` token-exchange / refresh / userinfo calls route through the pinned client. Runtime kill switch via `setEnabled` (wired to a Settings toggle). IMAP is NOT pinned (enough_mail does not expose a `SecurityContext`; tracked as future work) |
+| **DatabaseEncryptionKeyService** (SEC-11) | Per-device 256-bit key in `flutter_secure_storage`, base64-encoded for SQLCipher's `PRAGMA key`. Infrastructure ships opt-in behind `encrypt_database` setting (default `false`) until dedicated platform QA validates the plaintext→encrypted migration |
 
 ---
 
@@ -221,7 +245,7 @@ Note: The legacy `EmailProvider` abstract class still exists but is only used fo
 |---------|----------|------|---------|-------------|
 | **GmailApiAdapter** | Gmail REST API | OAuth 2.0 | `PlatformRegistry.getPlatform('gmail')` | Uses `googleapis` package, batch operations via `BatchOperationsMixin`, Gmail labels |
 | **GenericIMAPAdapter** | IMAP | Username/password | `.aol()`, `.yahoo()`, `.icloud()`, `.custom()` | Uses `enough_mail` package, UID-based operations (not sequence IDs), reconnects every 50 ops |
-| **MockEmailProvider** | None (in-memory) | None | `PlatformRegistry.getPlatform('demo')` | 55 synthetic emails across 5 categories (ADR-0020) |
+| **MockEmailProvider** | None (in-memory) | None | `PlatformRegistry.getPlatform('demo')` | Synthetic test emails (see [ADR-0020](adr/0020-demo-mode-synthetic-emails.md) for details) |
 
 **PlatformRegistry** (Factory Pattern):
 ```dart
@@ -282,7 +306,7 @@ Uses IMAP UID sequence sets to reduce round-trips from 3N to ~3 batch operations
 
 #### Schema (ADR-0010)
 
-SQLite database with the following tables:
+SQLite database schema. See [ADR-0010](adr/0010-normalized-database-schema.md) for the authoritative table count and schema definition. Key tables:
 
 | Table | Purpose | Key Fields |
 |-------|---------|------------|
@@ -294,6 +318,13 @@ SQLite database with the following tables:
 | **app_settings** | Global app settings | key-value pairs |
 | **account_settings** | Per-account setting overrides (ADR-0013) | account_id, setting key-value pairs |
 | **background_scan_log** | Background scan execution logs | timestamp, account_id, status, stats |
+| **unmatched_emails** | Emails captured by scans that did not match any rule. Body previews truncated to 100 chars at insert (SEC-14); rows pruned by `UnmatchedEmailStore.deleteOlderThan` on startup + after each scan (default 30d, configurable) | id (PK), scan_result_id (FK), provider_identifier_type/value, from_email, subject, body_preview, folder_name, availability_status, processed, created_at |
+| **auth_rate_limit** (DB v3, SEC-22 Sprint 33) | Tracks failed IMAP auth attempts per account for rate limiting | account_id (PK), window_start, attempts, block_until |
+
+**Schema version history**:
+- v1: Initial schema (Sprint 12)
+- v2: Pattern classification columns on rules (Sprint 20)
+- v3: `auth_rate_limit` table for failed-auth throttling (SEC-22, Sprint 33)
 
 **Indexes**: 10+ targeted indexes for fast lookups (by platform, account, completion time, scan ID, folder, no-rule matches).
 
@@ -369,7 +400,7 @@ Reactive state using Provider pattern (ADR-0009).
 
 **Methods**:
 - `startScan(totalEmails, scanType, foldersScanned)`: Initialize scan with persistence
-- `updateProgress(email, message)`: Report progress (throttled: every 10 emails OR 2 seconds, ADR-0022)
+- `updateProgress(email, message)`: Report progress (throttled per [ADR-0022](adr/0022-throttled-ui-progress-updates.md))
 - `completeScan()`: Finalize results and persist
 - `setCurrentFolder(folderName)`: Track folder being scanned
 - `initializePersistence()`: Setup database stores for scan history
@@ -474,7 +505,7 @@ RuleEvaluator.evaluate(EmailMessage)
 
 ## UI Layer (`lib/ui/`)
 
-### Screens (19 screens)
+### Screens
 
 | Screen | Purpose |
 |--------|---------|
@@ -495,8 +526,9 @@ RuleEvaluator.evaluate(EmailMessage)
 | **safe_senders_management_screen.dart** | View/edit/delete whitelist |
 | **safe_sender_quick_add_screen.dart** | Quick-add safe sender from email |
 | **email_detail_view.dart** | Full email details display |
-| **settings_screen.dart** | App configuration (Manual Scan, Background, Account tabs) |
+| **settings_screen.dart** | App configuration (General, Account, Manual Scan, Background tabs). General tab hosts Privacy & Logging toggles (auth logging, unmatched retention, cert pinning) and the "Delete All App Data" action (F66) |
 | **gmail_oauth_screen.dart** | Gmail OAuth flow (legacy WebView) |
+| **help_screen.dart** (F54, Sprint 33) | Scrollable single-page Help screen with one anchored section per primary screen. `HelpSection` enum + `openHelp(context, section)` helper; every primary AppBar has a Help icon that deep-links to that screen's section |
 
 ### Widgets (`lib/ui/widgets/`)
 
@@ -506,6 +538,19 @@ RuleEvaluator.evaluate(EmailMessage)
 | **empty_state.dart** | Empty state placeholder |
 | **error_display.dart** | Error display component |
 | **skeleton_loader.dart** | Loading skeleton UI |
+
+### UI Standards (ADR-0037)
+
+| Standard | Requirement |
+|----------|-------------|
+| **Accessibility target** | WCAG 2.1 AA |
+| **Semantics labels** | Required on all interactive elements (buttons, text fields, tappable list items) |
+| **Touch target minimum** | 48dp (`AccessibilityHelper.minTouchTargetSize`) |
+| **Text selectability** | `SelectionArea` at Scaffold body level for copyable content |
+| **Typography** | Material 3 type scale via `Theme.of(context).textTheme` |
+| **Colors** | Theme colors only (no hardcoded values) for dark mode support |
+| **Responsive breakpoints** | Phone < 600dp, Tablet 600-900dp, Desktop > 900dp |
+| **Helper utilities** | `lib/ui/utils/accessibility_helper.dart` |
 
 ---
 
@@ -526,11 +571,11 @@ mobile-app/
 |   |   |- auth/               # Auth adapters (GoogleAuthService, SecureTokenStore)
 |   |   |- gmail/              # Gmail API client wrapper
 |   |- ui/                      # Flutter screens and widgets
-|       |- screens/            # 19 full-screen pages
+|       |- screens/            # Full-screen pages
 |       |- widgets/            # Reusable components
 |       |- theme/              # AppTheme (Material Design)
 |       |- utils/              # Accessibility helpers
-|- test/                        # Tests (977 passing, 28 skipped)
+|- test/                        # Tests (run `flutter test` for current count)
 |   |- unit/                   # Unit tests (models, services)
 |   |- integration/            # Integration tests (adapters, workflows)
 |   |- adapters/               # Adapter-specific tests
@@ -547,16 +592,17 @@ mobile-app/
 
 | Layer | Technology | Purpose |
 |-------|------------|---------|
-| **UI Framework** | Flutter 3.x | Cross-platform UI (5 platforms) |
-| **Language** | Dart 3.x | Application logic |
-| **State Management** | Provider (v6.1.0) | Reactive state via ChangeNotifier |
-| **Local Storage** | SQLite (sqflite/sqflite_ffi) | Persistent data (8 tables, 10+ indexes) |
+| **UI Framework** | Flutter / Dart | Cross-platform UI and application logic |
+| **State Management** | Provider | Reactive state via ChangeNotifier ([ADR-0009](adr/0009-provider-pattern-state-management.md)) |
+| **Local Storage** | SQLite (sqflite/sqflite_ffi) | Persistent data ([ADR-0010](adr/0010-normalized-database-schema.md)) |
 | **Secure Storage** | flutter_secure_storage | Credentials, tokens (OS-native keystores) |
 | **Networking** | http, googleapis | REST APIs (Gmail) |
 | **Email** | enough_mail | IMAP protocol (AOL, Yahoo, iCloud) |
 | **OAuth** | google_sign_in (mobile), flutter_appauth (desktop) | Gmail authentication |
-| **System Tray** | system_tray (v2.0.3), window_manager (v0.3.7) | Windows desktop integration |
-| **Logging** | logger (v2.0.0) | Keyword-based logging via AppLogger |
+| **System Tray** | system_tray, window_manager | Windows desktop integration |
+| **Logging** | logger | Keyword-based logging via AppLogger |
+
+**Package versions**: See `mobile-app/pubspec.yaml` for current dependency versions.
 
 ---
 
@@ -620,6 +666,15 @@ mobile-app/
 - PKCE used for desktop OAuth flows (public client, no client secret)
 - No tokens logged (log "token refreshed" not token value)
 
+### Sprint 33 Security Layers
+- **ReDoS protection** (SEC-1/1b): user-supplied regex patterns pass `PatternCompiler.detectReDoS` before persisting to the `rules` / `safe_senders` tables; dangerous patterns are rejected at the storage boundary so the evaluator hot path stays on the fast direct-`hasMatch` route. Bundled patterns in `assets/rules/*.yaml` are trusted and skip the check.
+- **Failed-auth rate limit** (SEC-22): `AuthRateLimiter` blocks an account for 1h after 10 failed IMAP sign-ins in a rolling 1h window; state persists in the `auth_rate_limit` table so blocks survive app restart. UI surfaces a "Try again at HH:MM" message in place of the generic auth error.
+- **Certificate pinning** (SEC-8): `PinnedHttpClient` enforces SPKI pins for Google OAuth endpoints. Runtime kill switch in Settings > General > Privacy & Logging. IMAP is not pinned (enough_mail limitation, tracked as future work).
+- **Auth logging suppression** (SEC-19): Settings toggle makes `Redact.logSafe` a no-op even in debug builds.
+- **Unmatched email retention** (SEC-14): rows pruned on startup + after each scan; body previews capped at 100 chars at insert.
+- **User data deletion** (F66): per-account wipe + full-app reset via `DataDeletionService`.
+- **SQLCipher infrastructure** (SEC-11, opt-in): `DatabaseEncryptionKeyService` ships enabled; actual driver swap deferred until dedicated QA pass.
+
 ### Email Safety (ADR-0006, ADR-0007)
 - Four progressive scan modes with boolean enforcement flags
 - Default mode is `readonly` (no modifications)
@@ -637,7 +692,7 @@ mobile-app/
 
 ## Testing Strategy
 
-**Current State**: 977 tests passing, 28 skipped, 0 failures (Sprint 17)
+**Current State**: Run `flutter test` for current count. See [CHANGELOG.md](../CHANGELOG.md) for test history.
 
 ### Unit Tests
 - Models: Immutability, copyWith, serialization
@@ -670,25 +725,29 @@ mobile-app/
 
 ### Pattern Caching (ADR-0023)
 - `PatternCompiler` uses `HashMap<String, RegExp>` cache
-- ~100x speedup (2.1ms -> 0.18ms per pattern)
+- See [PERFORMANCE_BENCHMARKS.md](PERFORMANCE_BENCHMARKS.md) for detailed speedup metrics
 - Cache hit/miss statistics for monitoring
 
 ### Throttled UI Updates (ADR-0022)
-- Dual-threshold: notify every 10 emails OR every 2 seconds
+- Dual-threshold notify (see [ADR-0022](adr/0022-throttled-ui-progress-updates.md) for thresholds)
 - Separate throttle for result recording
 - Reset counters on scan start to prevent accumulation
 
 ### Batch Operations
-- `BatchOperationsMixin` reduces IMAP round-trips from 3N to ~3 batch operations
+- `BatchOperationsMixin` reduces IMAP round-trips via batch operations
 - Uses IMAP UID sequence sets for bulk delete/move/mark-as-read
 
 ### Asynchronous Operations
 - All I/O operations are async (file, network, database)
-- Folder-by-folder progressive scanning with 2-second UI refresh interval
+- Folder-by-folder progressive scanning with throttled UI refresh
 
 ---
 
 ## Future Architecture Enhancements
+
+### Browser / Flutter Web (Excluded)
+
+A browser target has been evaluated and excluded. The app's IMAP-based email providers (AOL, Yahoo, iCloud, custom IMAP) require raw TCP socket connections, which browsers block via the Same-Origin Policy. The only viable workaround -- a server-side IMAP proxy (the approach used by browser-based email clients such as Outlook Web) -- would route user credentials and email content through a backend server, directly contradicting the local-only, zero-telemetry privacy architecture ([ADR-0030](adr/0030-privacy-and-data-governance-strategy.md)). Chromebook users are served by the existing Android (Play Store) and Linux (Crostini) targets. See [ARSD.md](ARSD.md) Section A1 for full rationale.
 
 ### Rule Sync (Future)
 - Cloud sync for rules across devices
@@ -698,70 +757,19 @@ mobile-app/
 - Extensible rule actions (custom scripts)
 - Third-party email provider plugins
 
-### Google Play Store Readiness (ADRs 0026-0034)
+### Google Play Store Readiness
 
-Product readiness decisions documented as ADRs. See `docs/adr/` for details.
+Product readiness decisions documented as ADRs (0026-0034). See [ADR Index](adr/README.md) for current status of each.
 
-**Accepted**:
-- ADR-0026: Application Identity -- Domain `myemailspamfilter.com`, App ID `com.myemailspamfilter`, App Name `MyEmailSpamFilter`
-- ADR-0029: Gmail API Scope Strategy -- Phased approach: unverified OAuth for alpha/beta, app passwords for general users, CASA deferred until 2,500+ users or $5K/yr revenue
-- ADR-0030: Privacy and Data Governance -- Zero telemetry, host privacy policy on `myemailspamfilter.com` via GitHub Pages, indefinite local storage, in-app + web account deletion
-- ADR-0034: Gmail Access Method -- Dual path: Gmail REST API (OAuth) for alpha/beta, Gmail IMAP (app passwords) for general users
+### Gmail Authentication Strategy
 
-**Proposed** (decisions pending):
-- ADR-0027: Android Release Signing Strategy
-- ADR-0028: Android Permission Strategy
-- ADR-0031: App Icon and Visual Identity
-- ADR-0032: User Data Deletion Strategy
-- ADR-0033: Analytics and Crash Reporting Strategy
-
-### Gmail Authentication Strategy (ADR-0029, ADR-0034)
-
-The app supports two Gmail access paths, matching investment to viability:
-
-| Phase | Method | Users | Scope | Verification |
-|-------|--------|-------|-------|--------------|
-| 1 (Alpha/Beta) | Gmail REST API + OAuth | Up to 100 testers | `gmail.modify` | None (Testing mode) |
-| 2 (General) | Gmail IMAP + App Passwords | Unlimited | N/A (no OAuth) | None |
-| 3 (Future) | Gmail REST API + Verified OAuth | Unlimited | `gmail.modify` | CASA audit required |
-
-**CASA trigger**: Pursue verification when app has 2,500+ active Gmail IMAP users at $3/yr or yearly revenue exceeds $5,000.
+The app supports dual Gmail access paths. See [ADR-0029](adr/0029-gmail-api-scope-and-verification-strategy.md) and [ADR-0034](adr/0034-gmail-access-method-for-production.md) for the phased strategy and CASA trigger thresholds.
 
 ---
 
 ## Architecture Decision Records
 
-All architectural decisions are documented as ADRs in `docs/adr/`. Currently 29 accepted and 5 proposed.
-
-**Accepted ADRs** (0001-0025):
-
-| ADR | Title | Key Decision |
-|-----|-------|--------------|
-| 0001 | Flutter/Dart Single Codebase | 100% Flutter for all 5 platforms |
-| 0002 | Adapter Pattern for Email Providers | SpamFilterPlatform interface + PlatformRegistry factory |
-| 0003 | Regex-Only Pattern Matching | All patterns compiled as Dart RegExp, case-insensitive |
-| 0004 | Dual-Write Storage (SQLite + YAML) | SQLite authoritative, YAML exported for version control |
-| 0005 | Safe Senders Evaluated Before Rules | Whitelist checked first, then rules in execution order |
-| 0006 | Four Progressive Scan Modes | readonly/testLimit/testAll/fullScan with enforcement flags |
-| 0007 | Move-to-Trash, Not Permanent Delete | Delete = trash (recoverable) |
-| 0008 | Platform-Native Secure Storage | flutter_secure_storage wraps OS keystores |
-| 0009 | Provider Pattern for State Management | ChangeNotifier-based providers |
-| 0010 | Normalized Database Schema | 8 tables, JSON arrays, text enums, 10+ indexes |
-| 0011 | Desktop OAuth via Loopback + PKCE | Desktop: loopback server; Mobile: native SDKs |
-| 0012 | AppPaths Platform Storage Abstraction | Platform-agnostic path resolution |
-| 0013 | Per-Account Settings with Inheritance | Account -> App -> Hardcoded three-tier fallback |
-| 0014 | Windows Background Scanning | Task Scheduler with PowerShell scripts |
-| 0015 | GitFlow Branching Strategy | main <- develop <- feature branches |
-| 0016 | Sprint-Based Development with Model Tiering | Haiku/Sonnet/Opus complexity scoring |
-| 0017 | PowerShell as Primary Build Automation | All build scripts are .ps1 |
-| 0018 | Windows Toast Notifications | PowerShell-generated WinRT notifications |
-| 0019 | Windows System Tray Integration | system_tray + window_manager |
-| 0020 | Demo Mode with Synthetic Emails | MockEmailProvider with 55 test emails |
-| 0021 | YAML-to-Database One-Time Migration | Transaction-wrapped idempotent import |
-| 0022 | Throttled UI Progress Updates | Every 10 emails OR every 2 seconds |
-| 0023 | In-Memory Pattern Caching | HashMap cache, ~100x speedup |
-| 0024 | Canonical Folder Mapping | Provider-specific junk folder names |
-| 0025 | CHANGELOG Updated Per Commit | Update in same commit as code changes |
+All architectural decisions are documented as ADRs in `docs/adr/`. See [ADR Index](adr/README.md) for the complete list with current status.
 
 ---
 
@@ -771,7 +779,7 @@ All architectural decisions are documented as ADRs in `docs/adr/`. Currently 29 
 **Update**: February 24, 2026 (ADR-0026/0029/0030/0034 accepted, Gmail auth strategy documented)
 **Related Documents**:
 - `docs/RULE_FORMAT.md` - YAML rule specification
-- `docs/adr/` - Architecture Decision Records (ADR-0001 through ADR-0034)
+- `docs/adr/README.md` - Architecture Decision Records index
 - `CLAUDE.md` - Primary development guide
 - `docs/SPRINT_PLANNING.md` - Development methodology
 - `CHANGELOG.md` - Project change history

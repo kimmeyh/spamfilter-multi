@@ -1,0 +1,78 @@
+{
+  "name": "Navigation smoke test",
+  "description": "Click through Account Selection -> Settings -> Manage Rules -> back. Verifies primary navigation paths from Sprint 33 (F55 navigation consistency) and Sprint 34 (F56 manual rule creation FAB).",
+  "sprint": 34,
+  "feature": "F69",
+  "prerequisites": [
+    "Windows desktop dev build running (build-windows.ps1)",
+    "SPI_SETSCREENREADER flag enabled (enable-screen-reader-flag.ps1 enable)",
+    "At least one account configured"
+  ],
+  "steps": [
+    {
+      "action": "wait",
+      "ms": 2000,
+      "comment": "Allow app to fully render"
+    },
+    {
+      "action": "dump_tree",
+      "comment": "Capture initial state for debugging"
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name*='Settings']",
+      "comment": "Open Settings from Account Selection"
+    },
+    {
+      "action": "wait",
+      "ms": 1000
+    },
+    {
+      "action": "verify",
+      "selector": "type=Text[name*='General']",
+      "comment": "Verify Settings General tab is visible"
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name*='Manage Rules']",
+      "comment": "Open Manage Rules from Settings"
+    },
+    {
+      "action": "wait",
+      "ms": 1000
+    },
+    {
+      "action": "verify",
+      "selector": "type=Text[name='Manage Rules']",
+      "comment": "Verify Manage Rules screen loaded"
+    },
+    {
+      "action": "verify",
+      "selector": "type=Button[name='Add block rule']",
+      "comment": "F56: Verify FAB for adding block rules is present"
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name*='Back']",
+      "comment": "Navigate back to Settings"
+    },
+    {
+      "action": "wait",
+      "ms": 500
+    },
+    {
+      "action": "click",
+      "selector": "type=Button[name*='Back']",
+      "comment": "Navigate back to Account Selection"
+    },
+    {
+      "action": "wait",
+      "ms": 500
+    },
+    {
+      "action": "verify",
+      "selector": "type=Button[name*='Start Scan']",
+      "comment": "Verify back at Account Selection (Start Scan visible)"
+    }
+  ]
+}

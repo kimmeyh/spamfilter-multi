@@ -11,8 +11,10 @@ import '../../core/models/email_message.dart';
 import '../../core/models/evaluation_result.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/scan_result_store.dart';
+import '../../core/storage/settings_store.dart';
 import '../../core/storage/unmatched_email_store.dart';
 import '../../core/utils/pattern_normalization.dart';
+import '../../util/redact.dart';
 
 /// Scan status states
 enum ScanStatus { idle, scanning, paused, completed, error }
@@ -215,7 +217,7 @@ class EmailScanProvider extends ChangeNotifier {
   /// [NEW] SPRINT 4: Set the current account ID for scan result tracking
   void setCurrentAccountId(String accountId) {
     _currentAccountId = accountId;
-    _logger.d('Set current account ID: $accountId');
+    _logger.d('Set current account ID: ${Redact.accountId(accountId)}');
   }
 
   /// Start a new scan session
@@ -303,7 +305,7 @@ class EmailScanProvider extends ChangeNotifier {
     if (shouldNotify) {
       _emailsSinceLastNotification = 0;
       _lastProgressNotification = now;
-      _logger.d('📊 UI update triggered: $_processedCount / $_totalEmails');
+      _logger.d('[PROGRESS] UI update triggered: $_processedCount / $_totalEmails');
       notifyListeners();
     }
   }
@@ -365,6 +367,24 @@ class EmailScanProvider extends ChangeNotifier {
     }
 
     notifyListeners();  // Final update always sent (bypasses throttling)
+
+    // SEC-14 (Sprint 33): enforce unmatched-email retention after every scan.
+    // Runs independently of UI navigation so stale data is purged even if the
+    // user never opens the app after an automated background scan.
+    if (_unmatchedEmailStore != null) {
+      try {
+        final retentionDays = await SettingsStore(_databaseHelper)
+            .getUnmatchedRetentionDays();
+        final deleted =
+            await _unmatchedEmailStore!.deleteOlderThan(retentionDays);
+        if (deleted > 0) {
+          _logger.i('Post-scan retention cleanup removed $deleted unmatched '
+              'emails older than $retentionDays days');
+        }
+      } catch (e) {
+        _logger.w('Post-scan retention cleanup failed: $e');
+      }
+    }
   }
 
   /// Persist individual email actions to database for historical "View Results"
@@ -532,7 +552,7 @@ class EmailScanProvider extends ChangeNotifier {
       _selectedFoldersByAccount[targetAccountId] = ['INBOX'];
     } else {
       _selectedFoldersByAccount[targetAccountId] = List.from(folders);  // Create copy to avoid mutation
-      _logger.i('📁 Selected folders for $targetAccountId: ${_selectedFoldersByAccount[targetAccountId]}');
+      _logger.i('[FOLDERS] Selected folders for $targetAccountId: ${_selectedFoldersByAccount[targetAccountId]}');
     }
     notifyListeners();
   }
@@ -540,7 +560,7 @@ class EmailScanProvider extends ChangeNotifier {
   /// [NEW] ISSUE #41: Set current account ID for folder lookup
   void setCurrentAccount(String accountId) {
     _currentAccountId = accountId;
-    _logger.i('📧 Current account set to: $accountId');
+    _logger.i('[EMAIL] Current account set to: ${Redact.accountId(accountId)}');
     // Don't notify - this is just for internal state tracking
   }
   
@@ -552,7 +572,7 @@ class EmailScanProvider extends ChangeNotifier {
   /// [NEW] ISSUE #41: Clear folders for a specific account
   void clearSelectedFoldersForAccount(String accountId) {
     _selectedFoldersByAccount.remove(accountId);
-    _logger.i('🗑️ Cleared folder selection for $accountId');
+    _logger.i('[CLEARED] Folder selection for ${Redact.accountId(accountId)}');
   }
 
   /// Mode-aware recordResult.
@@ -585,7 +605,7 @@ class EmailScanProvider extends ChangeNotifier {
         _lastRunActions.add(result);
         _logger.i('[NOTES] Action recorded (revertable): ${result.action} - ${result.email.from}');
       } else if (_scanMode == ScanMode.safeSendersAndRules) {
-        _logger.i('🔥 Action executed (PERMANENT): ${result.action} - ${result.email.from}');
+        _logger.i('[WARNING] Action executed (PERMANENT): ${result.action} - ${result.email.from}');
       }
     } else {
       // Read-only or limit reached: log what would happen
@@ -643,7 +663,7 @@ class EmailScanProvider extends ChangeNotifier {
 
     if (shouldNotify) {
       _lastProgressNotification = now;
-      _logger.d('📊 Results UI update triggered: $resultCount results');
+      _logger.d('[PROGRESS] Results UI update triggered: $resultCount results');
       notifyListeners();
     }
   }

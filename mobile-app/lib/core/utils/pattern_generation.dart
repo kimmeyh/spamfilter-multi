@@ -44,9 +44,9 @@ class PatternGeneration {
   /// - Output: "@example\\.com\$"
   ///
   /// This pattern will match any email from example.com:
-  /// - user@example.com ✓
-  /// - admin@example.com ✓
-  /// - user@subdomain.example.com ✗
+  /// - user@example.com [OK]
+  /// - admin@example.com [OK]
+  /// - user@subdomain.example.com [FAIL]
   ///
   /// Returns empty string if email is null, empty, or invalid.
   static String generateDomainPattern(String? email) {
@@ -82,9 +82,9 @@ class PatternGeneration {
   /// - Output: "@(?:[a-z0-9-]+\\.)*example\\.com\$"
   ///
   /// This pattern will match emails from example.com and any subdomain:
-  /// - user@example.com ✓
-  /// - user@mail.example.com ✓
-  /// - user@subdomain.mail.example.com ✓
+  /// - user@example.com [OK]
+  /// - user@mail.example.com [OK]
+  /// - user@subdomain.mail.example.com [OK]
   ///
   /// Returns empty string if email is null, empty, or invalid.
   static String generateSubdomainPattern(String? email) {

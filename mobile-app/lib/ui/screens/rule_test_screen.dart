@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import '../../core/services/pattern_compiler.dart';
+import 'help_screen.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/unmatched_email_store.dart';
@@ -191,8 +192,15 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Test Rule Pattern'),
+        actions: [
+          IconButton(
+            tooltip: 'Help',
+            icon: const Icon(Icons.help_outline),
+            onPressed: () => openHelp(context, HelpSection.ruleTest),
+          ),
+        ],
       ),
-      body: Column(
+      body: SelectionArea(child: Column(
         children: [
           // Pattern input area
           _buildPatternInput(),
@@ -204,7 +212,7 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
                 : _buildResults(),
           ),
         ],
-      ),
+      )),
     );
   }
 

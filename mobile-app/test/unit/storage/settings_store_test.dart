@@ -292,4 +292,45 @@ void main() {
       expect(retrieved, isNull);
     });
   });
+
+  group('Privacy & Logging Settings (SEC-19, Sprint 33)', () {
+    test('getDisableAuthLogging returns false by default', () async {
+      final disabled = await settingsStore.getDisableAuthLogging();
+      expect(disabled, isFalse);
+      expect(disabled, SettingsStore.defaultDisableAuthLogging);
+    });
+
+    test('setDisableAuthLogging(true) persists and retrieves correctly',
+        () async {
+      await settingsStore.setDisableAuthLogging(true);
+      final disabled = await settingsStore.getDisableAuthLogging();
+      expect(disabled, isTrue);
+    });
+
+    test('setDisableAuthLogging survives a second write', () async {
+      await settingsStore.setDisableAuthLogging(true);
+      await settingsStore.setDisableAuthLogging(false);
+      expect(await settingsStore.getDisableAuthLogging(), isFalse);
+
+      await settingsStore.setDisableAuthLogging(true);
+      expect(await settingsStore.getDisableAuthLogging(), isTrue);
+    });
+
+    test('getUnmatchedRetentionDays returns 30 by default', () async {
+      final days = await settingsStore.getUnmatchedRetentionDays();
+      expect(days, 30);
+      expect(days, SettingsStore.defaultUnmatchedRetentionDays);
+    });
+
+    test('setUnmatchedRetentionDays persists and retrieves correctly',
+        () async {
+      await settingsStore.setUnmatchedRetentionDays(90);
+      expect(await settingsStore.getUnmatchedRetentionDays(), 90);
+    });
+
+    test('setUnmatchedRetentionDays accepts 0 (retain forever)', () async {
+      await settingsStore.setUnmatchedRetentionDays(0);
+      expect(await settingsStore.getUnmatchedRetentionDays(), 0);
+    });
+  });
 }

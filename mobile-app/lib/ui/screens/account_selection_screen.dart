@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
+import '../../core/services/data_deletion_service.dart';
+import '../../util/redact.dart';
 import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/email_providers/spam_filter_platform.dart';
 import '../../main.dart' show routeObserver;
@@ -11,6 +13,7 @@ import '../widgets/app_bar_with_exit.dart';
 import 'platform_selection_screen.dart';
 import 'scan_history_screen.dart';
 import 'scan_progress_screen.dart';
+import 'help_screen.dart';
 import 'settings_screen.dart';
 
 /// Display data for an account in the account selection list.
@@ -181,7 +184,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       final creds = await _credStore.getCredentials(accountId);
 
       if (creds == null) {
-        _logger.w('[WARNING] No credentials found for account: $accountId');
+        _logger.w('[WARNING] No credentials found for account: ${Redact.accountId(accountId)}');
         return null;
       }
 
@@ -193,7 +196,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
         // This is likely an old account where accountId was just the platformId
         // Try to infer email from accountId or use a placeholder
         email = accountId.contains('@') ? accountId : 'Account (email not set)';
-        _logger.w('[WARNING] Email not properly stored for account: $accountId, using fallback: $email');
+        _logger.w('[WARNING] Email not properly stored for account: ${Redact.accountId(accountId)}, using fallback: ${Redact.email(email)}');
       }
 
       // Get platformId from storage or infer from email domain
@@ -220,14 +223,14 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
         platformId = accountId;
       }
 
-      _logger.d('[OK] Loaded account data: email=$email, platformId=$platformId for accountId=$accountId');
+      _logger.d('[OK] Loaded account data: email=${Redact.email(email)}, platformId=$platformId for accountId=${Redact.accountId(accountId)}');
 
       return AccountDisplayData(
         email: email,
         platformId: platformId,
       );
     } catch (e) {
-      _logger.e('[FAIL] Error loading account display data for $accountId: $e');
+      _logger.e('[FAIL] Error loading account display data for ${Redact.accountId(accountId)}: $e');
       // Return null instead of throwing to prevent FutureBuilder from crashing
       return null;
     }
@@ -348,7 +351,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
     
     // If platformId is not found, try to infer from email domain
     if (platformId.isEmpty) {
-      _logger.w('Platform ID not found for $accountId, attempting to infer from email');
+      _logger.w('Platform ID not found for ${Redact.accountId(accountId)}, attempting to infer from email');
       
       if (email.contains('@gmail.com')) {
         platformId = 'gmail';
@@ -364,10 +367,10 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
         platformId = 'unknown';
       }
       
-      _logger.i('Inferred platform: $platformId from email: $email');
+      _logger.i('Inferred platform: $platformId from email: ${Redact.email(email)}');
     }
 
-    _logger.i('Selected account: $accountId (platform: $platformId)');
+    _logger.i('Selected account: ${Redact.accountId(accountId)} (platform: $platformId)');
 
     if (!mounted) return;
 
@@ -482,49 +485,47 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
     );
   }
 
-  /// Navigate to scan history with account selection
-  /// [NEW] ISSUE #219: Reuses shared account selection dialog
-  void _openScanHistory() async {
-    if (_savedAccounts.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please add an email account first')),
-      );
-      return;
-    }
-
-    final selected = await _showAccountSelectionDialog();
-
-    if (selected != null && mounted) {
-      final displayData = _accountDataCache[selected];
-      final email = displayData?.email ?? selected;
-      final platformId = displayData?.platformId ?? '';
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ScanHistoryScreen(
-            accountId: selected,
-            accountEmail: email,
-            platformId: platformId,
-            platformDisplayName: _getPlatformDisplayName(platformId),
-          ),
-        ),
-      );
-    }
+  /// F54 (Sprint 33): Help icon button for AppBar -> Select Account section.
+  Widget _buildHelpButton() {
+    return IconButton(
+      icon: const Icon(Icons.help_outline),
+      tooltip: 'Help',
+      onPressed: () => openHelp(context, HelpSection.selectAccount),
+    );
   }
 
-  /// Delete account with confirmation dialog
+  /// Navigate to scan history (shows all accounts with filter chips)
+  void _openScanHistory() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const ScanHistoryScreen(),
+      ),
+    );
+  }
+
+  /// Delete account with confirmation dialog.
+  ///
+  /// F66 (Sprint 33): expanded from credential-only delete to a full
+  /// per-account wipe -- credentials + scan history + unmatched emails +
+  /// per-account settings + rate-limit state. Global rules, safe senders,
+  /// and other accounts are preserved.
   Future<void> _deleteAccount(String accountId) async {
     final email = accountId; // accountId is the email
 
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Account'),
+        title: const Text('Delete Account Data'),
         content: Text(
-          'Are you sure you want to delete this account?\n\n'
+          'Delete all data for this account?\n\n'
           '$email\n\n'
-          'This will remove saved credentials. You can re-add the account later.',
+          'This removes:\n'
+          '- Saved credentials / OAuth tokens\n'
+          '- Scan history for this account\n'
+          '- Unmatched emails captured in past scans\n'
+          '- Per-account settings and overrides\n\n'
+          'App-wide rules and other accounts are preserved.',
         ),
         actions: [
           TextButton(
@@ -542,22 +543,22 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
 
     if (confirmed == true) {
       try {
-        await _credStore.deleteCredentials(accountId);
+        final service = DataDeletionService(credStore: _credStore);
+        final report = await service.deleteAccountData(accountId);
         setState(() {
           _savedAccounts.remove(accountId);
-          // Remove from cache
           _accountDataCache.remove(accountId);
         });
-        _logger.i('Deleted account: $accountId');
+        _logger.i('Deleted account: ${Redact.accountId(accountId)} '
+            '(scans=${report.scanResultsDeleted}, '
+            'emails=${report.emailActionsDeleted}, '
+            'unmatched=${report.unmatchedEmailsDeleted})');
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Deleted $email')),
           );
         }
-
-        // No need to navigate anywhere - the build method will show
-        // the "Add Account" UI when _savedAccounts.isEmpty (lines 505-547)
       } catch (e) {
         _logger.e('Failed to delete account: $e');
         if (mounted) {
@@ -588,7 +589,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       return Scaffold(
         appBar: AppBarWithExit(
           title: const Text('Select Account'),
-          actions: [_buildHistoryButton(), _buildSettingsButton()],
+          actions: [_buildHelpButton(), _buildHistoryButton(), _buildSettingsButton()],
         ),
         body: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -623,7 +624,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
         appBar: AppBarWithExit(
           title: const Text('Select Account'),
           elevation: 2,
-          actions: [_buildHistoryButton(), _buildSettingsButton()],
+          actions: [_buildHelpButton(), _buildHistoryButton(), _buildSettingsButton()],
         ),
         body: NoAccountsEmptyState(onAddAccount: _addNewAccount),
       );
@@ -634,12 +635,13 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       appBar: AppBarWithExit(
         title: const Text('Select Account'),
         elevation: 2,
-        actions: [_buildHistoryButton(), _buildSettingsButton()],
+        actions: [_buildHelpButton(), _buildHistoryButton(), _buildSettingsButton()],
       ),
-      body: Column(
-        children: [
-          // Header section
-          Container(
+      body: SelectionArea(
+        child: Column(
+          children: [
+            // Header section
+            Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             color: Theme.of(context).colorScheme.surface,
@@ -677,7 +679,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                   builder: (context, snapshot) {
                     // Handle errors
                     if (snapshot.hasError) {
-                      _logger.e('Error loading account $accountId: ${snapshot.error}');
+                      _logger.e('Error loading account ${Redact.accountId(accountId)}: ${snapshot.error}');
                     }
 
                     final displayData = snapshot.data;
@@ -771,7 +773,8 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
               },
             ),
           ),
-        ],
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _addNewAccount,
