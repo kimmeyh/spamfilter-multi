@@ -230,7 +230,7 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
     ---
     *This PR will be updated as tasks complete. Mark ready for review when Phase 5 testing passes.*
     ```
-  - **Note**: Convert from draft to ready when Phase 5.2 tests pass
+  - **Note**: Draft-to-ready conversion happens at Phase 6.4.5 (mandatory step, not advisory). Do NOT mark ready here at Phase 3.3.1 -- the PR stays draft until Phase 6 work is in and tests are green.
 
 - [ ] **3.4 Create GitHub Sprint Cards** (MANDATORY - Never Skip)
   - **CRITICAL**: GitHub issues MUST be created for ALL sprint tasks, even if sprint plan is pre-approved
@@ -331,6 +331,7 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
   - `git add` / `git commit` (single logical commits per task or task batch)
   - `git push` to the sprint feature branch (`feature/YYYYMMDD_Sprint_N`)
   - PR creation against `develop` and PR description / body updates on the sprint PR
+  - `gh pr ready <PR-number>` to convert draft PR to ready for review (Phase 6.4.5)
   - Build commands: `build-windows.ps1`, `flutter test`, `flutter analyze`, `build-with-secrets.ps1` (for sprint-relevant build types)
   - Launching the desktop app for manual testing (Phase 5.3)
   - WinWright MCP interactions per the conditional + state-restoration rule (`docs/TESTING_STRATEGY.md` Desktop E2E section)
@@ -794,11 +795,19 @@ After Phase 5.2 all tests pass, context can be compacted for efficiency:
   - **Model**: Requires Opus (review analysis -- see SPRINT_PLANNING.md "Activities Requiring Opus").
   - **Skip condition**: If Copilot review is not enabled in repo, skip this step (document in retrospective that Copilot review was unavailable).
 
+- [ ] **6.4.5 Convert PR from draft to ready for review** (Sprint 35 retro addition -- MANDATORY)
+  - **Trigger**: Phase 5.2 tests pass, Phase 5.1.1 code review complete, Phase 6.4 Copilot review (if any) handled, all Phase 6 commits pushed
+  - **Action**: `gh pr ready <PR-number>` (or via the GitHub UI "Ready for review" button)
+  - **Verify**: `gh pr view <PR-number> --json isDraft,mergeable --jq '{isDraft, mergeable}'` -- expect `isDraft: false` and `mergeable: MERGEABLE`
+  - **Why this is its own step**: Sprint 35 PR #238 was created as a draft per Phase 3.3.1 (correct -- early visibility) but stayed draft through Phase 6 and Phase 7 close-out because no enumerated step required flipping it. Harold had to surface the issue manually, blocking merge until the draft was converted. The original Phase 3.3.1 note "Convert from draft to ready when Phase 5.2 tests pass" was advisory; this step makes it mandatory.
+  - **Skip condition**: PR was created as non-draft (Phase 3.3.1 was skipped). In that case, just confirm `isDraft: false` is already true.
+
 - [ ] **6.5 Notify User**
   - Inform user PR is ready for review
   - Provide summary of sprint results
   - Ask for approval or feedback
   - Note any follow-up items
+  - **Verify before notifying**: `gh pr view <PR-number> --json isDraft,mergeable` shows `isDraft: false` and `mergeable: MERGEABLE`. If the PR is still draft, return to Phase 6.4.5 first.
 
 **[CHECKPOINT]** [WARNING] Phase 7 is MANDATORY. Re-read Phase 7 items in `docs/SPRINT_CHECKLIST.md` before proceeding. DO NOT declare sprint complete until Phase 7 is finished.
 

@@ -86,6 +86,7 @@ These documents MUST be created/updated during each sprint:
 - [ ] PR description complete with task summary
 - [ ] PR references issues: `Closes #XX, #YY, #ZZ`
 - [ ] **GitHub Copilot review responded to** (if Copilot enabled): draft Fix/Backlog/NA recommendations per comment, get user approval, implement approved items (see SPRINT_EXECUTION_WORKFLOW.md § 6.4.1)
+- [ ] **PR converted from draft to ready for review** (`gh pr ready <PR-number>`; verify `gh pr view <PR-number> --json isDraft,mergeable` shows `isDraft: false`, `mergeable: MERGEABLE`) -- Sprint 35 retro addition (§ 6.4.5)
 - [ ] User notified PR is ready
 
 **[CHECKPOINT]** Review Phase 7 checklist before proceeding. Phase 7 is MANDATORY. **[CONTEXT CHECK]** Verify context < 85% before starting Phase 7.
