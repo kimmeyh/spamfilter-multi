@@ -114,11 +114,14 @@ share/python-wheels/
 *.egg
 MANIFEST
 
-# PyInstaller
+# PyInstaller (scoped to Archive/ only -- the bare `*.manifest` rule previously
+# here also excluded Flutter Windows runner manifests like
+# mobile-app/windows/runner/runner.exe.manifest, which are required by the
+# Windows CMakeLists and must be tracked. See docs/STORE_RELEASE_PROCESS.md.
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
+Archive/**/*.manifest
+Archive/**/*.spec
 
 # Installer logs
 pip-log.txt

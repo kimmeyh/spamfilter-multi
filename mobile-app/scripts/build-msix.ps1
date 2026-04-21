@@ -1,8 +1,28 @@
 <#
 .SYNOPSIS
-    Build MSIX installer for Spam Filter Multi Windows desktop app
+    [DEPRECATED] Build MSIX installer for Spam Filter Multi Windows desktop app via makeappx.exe.
 
 .DESCRIPTION
+    DEPRECATED as of Sprint 36 (2026-04-21). The supported MSIX build path for both
+    store submission and local testing is:
+
+        flutter pub run msix:create
+
+    which uses the `msix` Dart package and honors the `msix_config` block in
+    mobile-app/pubspec.yaml (including the critical `build_windows_args` that
+    injects OAuth credentials via --dart-define-from-file).
+
+    See docs/STORE_RELEASE_PROCESS.md for the supported end-to-end procedure.
+
+    This script uses a separate makeappx.exe-based path that does NOT inject
+    dart-defines -- any MSIX built with this script will ship with EMPTY OAuth
+    credentials and Gmail sign-in will silently fail for every user. Sprint 35
+    patched a PowerShell parser bug here (escaping literal angle brackets); the
+    script is otherwise untouched and is kept only as a reference for the
+    makeappx.exe code path and because generate-appinstaller.ps1 historically
+    mentioned it in its Update Workflow output. Do NOT use this for store
+    submissions or user-facing builds.
+
     Builds the Windows desktop app and packages it as an MSIX installer.
     Requires Windows 10 SDK and MSIX Packaging Tool or makeappx.exe.
 

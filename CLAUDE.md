@@ -403,6 +403,21 @@ Production (main branch) and development (feature/develop) builds coexist on the
 - **Secrets**: dev uses `secrets.dev.json`, prod uses `secrets.prod.json`
 - **Single-instance**: mutex prevents duplicate same-environment instances
 
+### Microsoft Store Release (Windows)
+
+Store release is a distinct workflow from day-to-day dev/prod builds. The supported MSIX build command is:
+
+```powershell
+cd D:\Data\Harold\github\spamfilter-multi-prod\mobile-app
+flutter clean
+flutter pub get
+flutter pub run msix:create
+```
+
+`flutter pub run msix:create` honors the `msix_config` block in `pubspec.yaml`, including the critical `build_windows_args` field that injects OAuth credentials via `--dart-define-from-file`. **Do NOT use `scripts/build-msix.ps1`** -- that is a deprecated makeappx.exe path that produces an MSIX with empty credentials (silent Gmail sign-in failure).
+
+For the full end-to-end procedure (version bump 5-file checklist, `secrets.prod.json` recreation, verification steps, Partner Center upload walkthrough, post-submission), see **`docs/STORE_RELEASE_PROCESS.md`**.
+
 ### Android Development
 
 ```powershell
