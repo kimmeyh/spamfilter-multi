@@ -173,7 +173,7 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 
 ### Bugs
 
-**BUG-S35-1. Manual rule creation allows duplicate TLD entries (~2-3h) Priority 70 (Issue #239)**
+**BUG-S35-1. Manual rule creation allows duplicate TLD entries (~2-3h) Priority 70 (Issue #239) -- SHIPPED Sprint 36**
 - Phase: Bug fix
 - Platform: All (rule logic), Windows (where discovered)
 - File: `mobile-app/lib/core/services/manual_rule_creator.dart` (or equivalent), plus widget validation in `ManualRuleCreateScreen`
@@ -181,6 +181,21 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Fix: Add a uniqueness check on save -- compare normalized pattern + condition_type + sub_type against existing rules table; reject with validation error if match found. Same logic for safe senders.
 - Discovery: Sprint 35 F69 execution; required direct SQLite cleanup because UI delete path was non-deterministic when two rules shared the same visible label.
 - Source: Sprint 35 F69 manual testing (`docs/sprints/SPRINT_35_PLAN.md` Manual Testing Notes)
+
+**BUG-S36-1. Manual rule creation allows semantic subsumption (~3-5h) Priority 70 (Issue #246) -- NEXT SPRINT (Sprint 37) CARRY-IN**
+- Phase: Bug fix / UX enhancement
+- Platform: All (rule logic), Windows (where discovered)
+- File: `mobile-app/lib/core/services/manual_rule_duplicate_checker.dart` (extend), `mobile-app/lib/ui/screens/manual_rule_create_screen.dart`
+- Failure: Sprint 36 BUG-S35-1 catches EXACT duplicates only (same pattern + same sub-type). It does NOT catch semantic subsumption -- e.g., an `exact_domain` safe sender for `cwru.edu` when an `entire_domain` safe sender for `cwru.edu` already exists (the entire-domain rule covers the exact-domain case including all subdomains). Same applies to block rules. Harold found this during Sprint 36 Phase 5 manual testing.
+- Fix: Extend duplicate checker to also detect coverage relationships. For safe senders and block rules, if a new rule's pattern is a strict subset of an existing rule's pattern (by sub-type semantics, not regex-subset computation), reject with a validation error that names the existing rule. Coverage matrix:
+  - New `exact_email` covered by existing `exact_domain` or `entire_domain` with matching domain
+  - New `exact_domain` covered by existing `entire_domain` with matching base domain
+  - New `entire_domain` NOT covered by `exact_domain` or `exact_email` (broader type)
+  - TLD (block only) has no coverage overlap with domain types -- different comparison space
+- Error message must name the existing covering rule so the user knows what's already in place: "A safe sender already covers this: entire_domain cwru.edu."
+- 5-8 new unit tests covering the coverage matrix plus the null case (no coverage -> insert succeeds).
+- Source: Sprint 36 Phase 5 manual testing feedback (Harold, 2026-04-21)
+- Dependencies: Sprint 36 BUG-S35-1 pre-insert checker infrastructure (already shipped in `manual_rule_duplicate_checker.dart`)
 
 ### Security Hardening (Sprint 31 Audit)
 
