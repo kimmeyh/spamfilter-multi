@@ -315,6 +315,58 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
     return 'Could not save. See logs for details.';
   }
 
+  /// Pre-confirm duplicate check. Called from _confirmAndSave BEFORE the
+  /// Confirm dialog so duplicates are surfaced with an error instead of a
+  /// misleading confirmation step.
+  Future<bool> _isDuplicate() async {
+    final dbHelper = DatabaseHelper();
+    final db = await dbHelper.database;
+    final checker = ManualRuleDuplicateChecker(db);
+
+    if (widget.mode == ManualRuleMode.blockRule) {
+      String subType;
+      switch (_selectedType) {
+        case ManualRuleType.topLevelDomain:
+          subType = 'top_level_domain';
+          break;
+        case ManualRuleType.entireDomain:
+          subType = 'entire_domain';
+          break;
+        case ManualRuleType.exactDomain:
+          subType = 'exact_domain';
+          break;
+        case ManualRuleType.exactEmail:
+          subType = 'exact_email';
+          break;
+      }
+      return checker.blockRuleExists(
+        pattern: _generatedPattern,
+        patternCategory: 'header_from',
+        patternSubType: subType,
+      );
+    } else {
+      String patternType;
+      switch (_selectedType) {
+        case ManualRuleType.entireDomain:
+          patternType = 'entire_domain';
+          break;
+        case ManualRuleType.exactDomain:
+          patternType = 'exact_domain';
+          break;
+        case ManualRuleType.exactEmail:
+          patternType = 'exact_email';
+          break;
+        case ManualRuleType.topLevelDomain:
+          patternType = 'top_level_domain';
+          break;
+      }
+      return checker.safeSenderExists(
+        pattern: _generatedPattern,
+        patternType: patternType,
+      );
+    }
+  }
+
   Future<void> _saveBlockRule(DatabaseHelper dbHelper) async {
     // Determine execution order based on type
     int executionOrder;
@@ -420,6 +472,25 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
     if (!_formKey.currentState!.validate()) return;
     _generatePattern();
     if (_generatedPattern.isEmpty || _patternError != null) return;
+
+    // BUG-S35-1: run the duplicate check BEFORE the Confirm dialog so the
+    // user sees the "already exists" error directly instead of a misleading
+    // confirmation step that fails silently. The insert-path check in
+    // _saveBlockRule / _saveSafeSender remains as a second line of defense
+    // against a race where a duplicate is created between the dialog open
+    // and the user tapping Save.
+    if (await _isDuplicate()) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(widget.mode == ManualRuleMode.blockRule
+                ? 'A block rule with this pattern already exists.'
+                : 'A safe sender with this pattern already exists.'),
+          ),
+        );
+      }
+      return;
+    }
 
     final actionLabel = widget.mode == ManualRuleMode.blockRule ? 'block' : 'allow';
     final confirmed = await showDialog<bool>(
