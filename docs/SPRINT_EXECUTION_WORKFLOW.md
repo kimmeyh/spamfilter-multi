@@ -52,6 +52,29 @@ This document describes the step-by-step process for executing sprints in the sp
 
 ---
 
+## Phase Cheat Sheet (F80)
+
+One-line-per-phase quick reference. Use this at the start of a sprint and at every phase boundary instead of re-reading the detail sections below. Click a phase name to jump to its detail.
+
+| Phase | Top-3 Actions | Auto-Advance Trigger (when phase is "done") |
+|-------|---------------|---------------------------------------------|
+| [**1. Backlog Refinement**](#phase-1-backlog-refinement-mandatory----every-sprint-no-po-request-needed) | Read master plan + ISSUE_BACKLOG; present candidates as bullet list (not grid) grouped by priority; capture user selections | User has picked items for the sprint (can be "same as proposed"), no scope questions open |
+| [**2. Sprint Pre-Kickoff**](#phase-2-sprint-pre-kickoff-warning-critical-prerequisite) | Verify develop green (tests, analyze); verify previous retro done; check dependency vulnerabilities | All prerequisite gates green; no blockers to planning |
+| [**3. Sprint Kickoff & Planning**](#phase-3-sprint-kickoff--planning) | Draft `docs/sprints/SPRINT_N_PLAN.md`; open Issue #N + create draft PR (3.3.1); **get explicit Phase 3.7 approval** | User says "plan approved" (or equivalent) -- this authorizes Phases 4-7 (durable) |
+| [**4. Sprint Execution (Development)**](#phase-4-sprint-execution-development) | Implement tasks in plan order; run tests + analyze after each; commit with issue number | All acceptance criteria in plan met; test suite green |
+| [**5. Code Review & Testing**](#phase-5-code-review--testing) | Test-assertion sibling sweep (5.1.1); full test suite; build + launch Windows app for manual test | Manual test golden-path + edge cases verified; no regressions |
+| [**6. Push to Remote & Create PR**](#phase-6-push-to-remote--create-pr) | Push branch; update PR description; **convert draft to ready (6.4.5)** after Copilot pass | PR is `isDraft: false`, `mergeable: MERGEABLE`; Copilot review received |
+| [**7. Sprint Review & Retrospective**](#phase-7-sprint-review--retrospective-after-pr-submitted---mandatory-for-all-sprints) | Send retro prompt; draft Claude feedback in parallel; combine + apply now-vs-backlog decisions | Retrospective doc committed with 4 roles x 14 categories; Cat 13 -> Sprint N+1 plan; Cat 14 -> master plan backlog |
+
+**Invariants** (apply to all phases):
+
+- Phase 3.7 approval is durable through Phase 7 -- do not re-ask permission at phase boundaries (Phase Auto-Advance Rule, CLAUDE.md §7).
+- Standing Approval Inventory (Phase 3.7): commits, pushes, PR-description updates, test/analyze runs do NOT need permission.
+- Stop only for the 9 reasons in `docs/SPRINT_STOPPING_CRITERIA.md` -- not for implementation choices, approach uncertainty, or "confirming the next step".
+- If Phase 1 was skipped for a given sprint, STOP and return to Phase 1 before any Phase 4 work (Sprint 36 gate).
+
+---
+
 ## Sprint Execution Checklist
 
 ### **Phase 1: Backlog Refinement** (MANDATORY -- every sprint, no PO request needed)
