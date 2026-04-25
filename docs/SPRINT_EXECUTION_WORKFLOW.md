@@ -220,6 +220,17 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
   - **Why**: Provides a durable, self-contained record of what was planned for this sprint
   - **Naming Convention**: Uppercase `SPRINT_N_PLAN.md` (e.g., `SPRINT_17_PLAN.md`)
 
+- [ ] **3.2.2.1 Plan-to-Branch-State Verification Gate** (MANDATORY -- Sprint 36 retro IMP-1)
+  - **Before committing** `SPRINT_N_PLAN.md`, verify each task in the plan against current branch state. The plan describes work to be done; if any task has already shipped (sprint kickoff commits, prior-session work, or upstream merges), the plan must be corrected.
+  - **For each task in the plan**:
+    1. **Identify the task's tangible artifact**: file path, function name, config key, doc section, etc.
+    2. **Check repo state**: `git log --oneline -20`, `Read` the referenced file, or `Grep` for the acceptance-criteria keyword.
+    3. **If the work is already done** (file exists, function has expected body, config key is present, etc.): mark the task as DONE in the plan, attribute to the prior commit (e.g., "Already shipped in 46e7b6d"), and remove from active scope.
+    4. **If the plan cites a specific file path or line number** (e.g., "fix mobile-app/.gitignore line 120"), verify the path/line still exists and matches the description. Plans that cite stale line numbers slow execution.
+  - **Why**: Sprint 36 escape -- Task 1.3 (`build_windows_args` in dev pubspec) was listed as pending but had already shipped in kickoff commit `46e7b6d`. Sprint 36 plan also cited `mobile-app/.gitignore line 120` for the `*.manifest` rule, but the actual rule was in root `.gitignore` line 120 (PyInstaller legacy). Both surfaced at Phase 4 execution and cost inspection time. Catching them at plan-write time is cheaper.
+  - **Cost**: ~30-45 min added to Phase 3.2.2 per sprint.
+  - **Enforcement**: A plan that has not been verified against branch state should not be committed. If you find this step skipped at session resume, return to it before any Phase 4 work (same gate as Phase 1).
+
 - [ ] **3.3 Branch Management**
   - Check if repository is in a PR branch
   - If yes: Wait for PR approval/merge, then switch to main/develop
