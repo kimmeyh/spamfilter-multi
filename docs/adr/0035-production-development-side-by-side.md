@@ -250,6 +250,7 @@ Option A is simplest, requires minimal code changes, and integrates with existin
 - ADR-0012: AppPaths Platform Storage Abstraction (data directory resolution)
 - ADR-0014: Windows Background Scanning Task Scheduler (task naming)
 - ADR-0026: Application Identity and Package Naming (app identity)
+- `docs/STORE_RELEASE_PROCESS.md` -- consumes the prod/dev worktree split defined here for the Microsoft Store release workflow (MSIX build from prod worktree, version bump lives in dev worktree, 5-file version-string checklist)
 - [Flutter Flavors Documentation](https://docs.flutter.dev/deployment/flavors)
 - [Android Build Variants](https://developer.android.com/build/build-variants)
 - [Windows Single Instance with Mutex](https://learn.microsoft.com/en-us/archive/technet-wiki/34423.create-a-single-instance-desktop-application)

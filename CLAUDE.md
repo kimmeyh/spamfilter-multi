@@ -399,9 +399,24 @@ Production (main branch) and development (feature/develop) builds coexist on the
 
 - **Dev builds**: data in `MyEmailSpamFilter_Dev\`, window title shows `[DEV]`
 - **Prod builds**: data in `MyEmailSpamFilter\`, no suffix
-- **Version**: dev = `0.5.2`, prod = `0.5.1` after Sprint 35 store release (dev always patch+1)
+- **Version**: dev = `0.5.3`, prod = `0.5.2` after Sprint 35 store release / Sprint 36 dev bump (dev always patch+1)
 - **Secrets**: dev uses `secrets.dev.json`, prod uses `secrets.prod.json`
 - **Single-instance**: mutex prevents duplicate same-environment instances
+
+### Microsoft Store Release (Windows)
+
+Store release is a distinct workflow from day-to-day dev/prod builds. The supported MSIX build command is:
+
+```powershell
+cd D:\Data\Harold\github\spamfilter-multi-prod\mobile-app
+flutter clean
+flutter pub get
+flutter pub run msix:create
+```
+
+`flutter pub run msix:create` honors the `msix_config` block in `pubspec.yaml`, including the critical `build_windows_args` field that injects OAuth credentials via `--dart-define-from-file`. **Do NOT use `scripts/build-msix.ps1`** -- that is a deprecated makeappx.exe path that produces an MSIX with empty credentials (silent Gmail sign-in failure).
+
+For the full end-to-end procedure (version bump 5-file checklist, `secrets.prod.json` recreation, verification steps, Partner Center upload walkthrough, post-submission), see **`docs/STORE_RELEASE_PROCESS.md`**.
 
 ### Android Development
 
@@ -543,7 +558,7 @@ For complete structure, pattern conventions, examples, and validation rules, see
 - **Credentials Directory**: `{App Data Directory}\credentials\`
 - **Background Scan Log**: `{App Data Directory}\logs\{prefix}background_scan_v{VERSION}.log`
   - Production: `background_scan_v0.5.0.log`
-  - Development: `dev_background_scan_v0.5.2.log`
+  - Development: `dev_background_scan_v0.5.3.log`
   - Log filename includes app version (e.g., `background_scan_v0.5.0.log`) to distinguish logs from different builds/branches running concurrently
 
 ### iOS/macOS/Linux
@@ -678,6 +693,9 @@ A short list of behaviors observed in specific Claude model versions that cost w
 - **Asking before committing/pushing/PR-updating during sprint execution.** All three are in the Phase 3.7 Standing Approval Inventory [OK] list. Do not ask -- execute, then report what shipped. The only exceptions are the [FAIL] list items (force-push, reset --hard, etc.).
 - **Calling things "critical bug" before checking the source.** Sprint 35: I called the Settings header dialog a critical bug; it was intended behavior documented in `_openSettings()`. Verify intent against source before alarming framing -- a 30-second source check beats a 90-second retraction.
 - **Asking "want me to proceed to Phase 7?" after Phase 6 completes.** Phase 7 (Sprint Review) is mandatory per CLAUDE.md §"Phase 7 Sprint Review (4 ROLES x 14 CATEGORIES)". Always-execute, never-ask. Send the retro prompt, draft Claude feedback in parallel, follow the 7-Step Protocol verbatim.
+- **Leaving the sprint PR in draft state through close-out.** Sprint 35 escape: PR #238 was created as draft per Phase 3.3.1 (correct -- early visibility) but stayed draft through Phase 6 and Phase 7 because no enumerated step required flipping it. Harold had to surface the issue manually, blocking merge. Phase 6.4.5 now mandates `gh pr ready <PR-number>` after Copilot review and before user notification. Verify with `gh pr view <PR-number> --json isDraft,mergeable` showing `isDraft: false`, `mergeable: MERGEABLE`.
+- **Skipping Phase 1 Backlog Refinement.** Sprint 36 escape: I jumped from Phase 2 (dependency check) straight to Phase 3 plan drafting without presenting the candidate list to Harold in BACKLOG_REFINEMENT.md format. The prior "OPTIONAL - On-Demand" language in SPRINT_EXECUTION_WORKFLOW.md was the loophole. Harold caught it post-facto, and Phase 1 is now MANDATORY every sprint with no PO request needed (Sprint 36 policy change, 2026-04-20). Do NOT ask "should we do backlog refinement?" -- just run Phase 1.1 / 1.2 / 1.3 as the first step of every sprint. Present candidates in bullet-list format (NOT grid tables) grouped by priority tier, with HOLD items at bottom.
+- **Improvising around the Sprint Execution docs when following them would feel slower in the moment.** Sprint 36 retro Category 9 (PO/SM/LD): "general unwillingness to follow the Sprint Execution Docs, /docs, checklist... and just try to wing it when winging it is costly to the overall process". Concrete failure modes I exhibited across Sprints 34-36: (a) reading SPRINT_N_PLAN.md from scratch on session resume instead of running `/startup-check` first; (b) starting Task 1 without checking TaskList; (c) starting Task 1 without verifying Phase 3.7 approval evidence; (d) writing SPRINT_N_PLAN.md without running the Phase 3.2.2.1 plan-to-branch-state verification gate; (e) skipping the Phase 5.1.1 sibling-test sweep when the data change "obviously" did not affect siblings; (f) running `flutter` commands directly when the project standard is the PowerShell scripts in `mobile-app/scripts/`. The pattern: each individual skip "feels faster" by 30-60 seconds, but the resulting escapes (stale plan tasks, wrong file paths, unapproved Phase 4 starts, missed UX widget tests, broken siblings) cost minutes-to-hours per incident plus interaction overhead with Harold. **Corrective behavior**: at every phase boundary, do the listed checklist step BEFORE the productive work. The checklist is the cheap, fast path; "winging it" is the expensive path that feels cheap. If you catch yourself thinking "I know what to do, the checklist is just overhead," that is the signal to run the checklist step.
 
 **How to use this list at the start of a session**: When CLAUDE.md is auto-loaded, scan this section. If the current task involves any pattern listed here, treat the listed corrective behavior as a hard constraint, not a suggestion.
 

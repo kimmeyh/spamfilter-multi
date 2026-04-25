@@ -100,6 +100,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 33 | docs/sprints/SPRINT_33_RETROSPECTIVE.md | [OK] Complete | Apr 14-16, 2026 |
 | 34 | docs/sprints/SPRINT_34_RETROSPECTIVE.md | [OK] Complete | Apr 17-18, 2026 |
 | 35 | docs/sprints/SPRINT_35_RETROSPECTIVE.md | [OK] Complete | Apr 19, 2026 |
+| 36 | docs/sprints/SPRINT_36_RETROSPECTIVE.md | [OK] Complete | Apr 20-25, 2026 |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -107,21 +108,20 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 35** (April 19, 2026)
-- **Type**: Mixed (bug fix + testing execution + process improvement)
-- **Feature**: 2 planned tasks (Issue #237) + retro-driven process improvements
+**Sprint 36** (April 20-25, 2026)
+- **Type**: Mixed (process docs + bug fix + process improvement)
+- **Feature**: 3 planned tasks (Issue #244) + retro-driven process improvements (5 IMPs applied)
 - **Delivered**:
-  - Bug fix (1): BUG-S34-1 (1-line stale `expect(resetResult.rules, 5)` fix in default_rule_set_service_test.dart line 422; restored develop test suite to 1363/0)
-  - Testing execution (1): F69 (drove all 7 Sprint 34 WinWright scripts via MCP primitives against fresh Windows desktop dev build; 7 of 7 PASS; pivoted from JSON `run` schema to interactive MCP)
-  - F56 script lifecycle update (in-sprint per §4a): both F56 scripts now do create -> verify -> delete -> verify-absent; test data retuned to non-colliding values (`.museum`, `winwright-e2e-test.invalid`)
-  - WinWright run policy formalized: conditional per sprint + state-restoring (TESTING_STRATEGY.md mapping table)
-  - Sprint 35 retrospective process improvements (P1, P2, P4, P5 applied; P3 backlogged): Phase Auto-Advance Rule (CLAUDE.md), Standing Approval Inventory (Phase 3.7), Model-Version Pitfalls appendix (CLAUDE.md), Sprint Resume Pattern memory; Category 2 testing-gap closure as Phase 5.1.1 step 2a sibling-grep
-- **Backlog additions**: BUG-S35-1 (manual rule UI accepts duplicates -- Issue #239), F79 (full WinWright sweep -- HOLD, Issue #240), F80 (1-page Phase Cheat Sheet -- Issue #241, P3 deferred from retro)
-- **Tests**: +0 net (1 line changed, no new tests; 1363 total passing, 0 analyzer issues)
-- **Process improvement**: Codified the Opus 4.7 phase-boundary autonomy pattern that 4.6 had implicitly internalized; surfaced in retro after ~4h wall-clock cost across S34-S35
-- **Store release**: Bumped dev version 0.5.1.0 -> 0.5.2.0 (prod was at 0.5.1.0 in store; 0.5.2.0 is the new submission target). Built signed MSIX at `mobile-app/build/windows/x64/runner/Release/my_email_spam_filter.msix` (17.4 MB). Harold to merge develop -> main and upload MSIX to Microsoft Store. Sprint 36 will bump dev to 0.5.3.0
-- **Retrospective**: docs/sprints/SPRINT_35_RETROSPECTIVE.md
-- **PR**: #238 (against develop)
+  - F81 (Issue #242): Store release process documentation. New `docs/STORE_RELEASE_PROCESS.md` (231 lines) covering pre-release, version-bump (5-file), `secrets.prod.json` recreation, supported MSIX build (`flutter pub run msix:create`), MSIX verification, develop -> main merge, Partner Center upload, post-submission, troubleshooting. Plus 5 supporting fixes (root `.gitignore` `*.manifest` scoped to Archive only; `secrets.prod.json.template` key correction to `WINDOWS_GMAIL_*`; `build-msix.ps1` deprecation header; `runner.exe.manifest` committed; CLAUDE.md + ADR-0035 cross-references).
+  - BUG-S35-1 (Issue #239): Manual rule duplicate prevention. New `ManualRuleDuplicateChecker` service (normalized lowercase+trim SELECT against rules and safe_senders) + 15 unit tests across all 4 block-rule sub-types and 3 safe-sender sub-types. Phase 5 UX refinement moved the duplicate check before the Confirm dialog (was after).
+  - F80 (Issue #241): 24-line Phase Cheat Sheet prepended to `docs/SPRINT_EXECUTION_WORKFLOW.md`.
+  - Sprint 36 retrospective process improvements (5 IMPs applied this sprint): IMP-1 Phase 3.2.2.1 plan-to-branch-state verification gate (SPRINT_EXECUTION_WORKFLOW.md), IMP-2 widget-test mandate for UX flow changes (TESTING_STRATEGY.md), IMP-3 Phase 3.7 approval verification gate in `/startup-check` skill, IMP-4 Opus 4.7 pitfall entry 7 + memory `feedback_follow_the_docs.md`, IMP-5 memory `feedback_background_task_stdout.md`.
+- **Backlog additions**: BUG-S36-1 (manual rule allows semantic subsumption -- Issue #246, Sprint 37 carry-in)
+- **Tests**: +15 net (1378 total passing, 0 analyzer issues)
+- **Effort**: ~3h wall clock vs 8-10h estimate (~40% of estimate; doc-heavy sprints compress further than estimates suggest)
+- **Process improvement**: Closed the session-resume approval-verification gap (IMP-3 startup-check), the plan-staleness gap (IMP-1 Phase 3.2.2.1), and the UX-flow-change-without-widget-test gap (IMP-2 TESTING_STRATEGY mandate). Stop-hook fired once during sprint, worked as intended, 0 false positives.
+- **Retrospective**: docs/sprints/SPRINT_36_RETROSPECTIVE.md
+- **PR**: #245 (against develop)
 
 ---
 
@@ -151,14 +151,17 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 
 ### Process
 
-**F81. Store release process documentation (~3-4h) Priority 100 -- SPRINT 36 CARRY-IN (Issue #242)**
+**F81. Store release process documentation (~5-6h) Priority 100 -- SPRINT 36 CARRY-IN (Issue #242)**
 - Phase: Documentation / Release Engineering
 - Platform: Windows (Microsoft Store)
-- Mandatory Sprint 36 task -- not backlog. Carry-in from Sprint 35 retrospective Category 13 addendum (post-retro 2026-04-19).
-- New `docs/STORE_RELEASE_PROCESS.md`: end-to-end walkthrough -- pre-release checklist, version bump (5-file checklist), supported rebuild instructions (`flutter pub run msix:create`), MSIX verification, develop -> main merge process, Microsoft Partner Center upload + submit walkthrough, post-submission steps
+- Mandatory Sprint 36 task -- not backlog. Carry-in from Sprint 35 retrospective Category 13 addendum (post-retro 2026-04-19); scope expanded 2026-04-20 after the prod-worktree rebuild surfaced 3 additional gaps (see Issue #242 comment).
+- New `docs/STORE_RELEASE_PROCESS.md`: end-to-end walkthrough -- pre-release checklist, version bump (5-file checklist), supported rebuild instructions (`flutter pub run msix:create` + the mandatory `build_windows_args` config), MSIX verification, develop -> main merge process, Microsoft Partner Center upload + submit walkthrough, post-submission steps
 - Deprecate or remove `mobile-app/scripts/build-msix.ps1` (had a PowerShell parser bug patched in Sprint 35; the Dart `msix` package path is the supported one and is what's wired in `pubspec.yaml`)
+- Fix `mobile-app/.gitignore` line 120 (`*.manifest` blocks `runner.exe.manifest` which is required by Windows runner CMakeLists -- breaks fresh worktree builds with "No SOURCES given to target")
+- Document `secrets.prod.json` recreation procedure (3 required keys: `WINDOWS_GMAIL_DESKTOP_CLIENT_ID`, `WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET`, `GMAIL_REDIRECT_URI`); update `secrets.prod.json.template` to use the actual key names the code reads (template currently lists wrong key names)
+- Document `build_windows_args` in `msix_config` as a hard requirement (without it, `msix:create` silently produces MSIX with empty OAuth credentials -- Gmail sign-in fails at runtime for every user)
 - Update CLAUDE.md Common Commands and ADR-0035 cross-references
-- Source: Sprint 35 store-prep made gaps visible (no team-runnable walkthrough doc, faulty script, undocumented merge + upload flow)
+- Source: Sprint 35 store-prep + 2026-04-20 prod rebuild made all gaps visible
 
 **F80. 1-page Phase Cheat Sheet for SPRINT_EXECUTION_WORKFLOW.md (~45min) Priority 80 (Issue #241)**
 - Phase: Process / Documentation
@@ -170,7 +173,7 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 
 ### Bugs
 
-**BUG-S35-1. Manual rule creation allows duplicate TLD entries (~2-3h) Priority 70 (Issue #239)**
+**BUG-S35-1. Manual rule creation allows duplicate TLD entries (~2-3h) Priority 70 (Issue #239) -- SHIPPED Sprint 36**
 - Phase: Bug fix
 - Platform: All (rule logic), Windows (where discovered)
 - File: `mobile-app/lib/core/services/manual_rule_creator.dart` (or equivalent), plus widget validation in `ManualRuleCreateScreen`
@@ -178,6 +181,21 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Fix: Add a uniqueness check on save -- compare normalized pattern + condition_type + sub_type against existing rules table; reject with validation error if match found. Same logic for safe senders.
 - Discovery: Sprint 35 F69 execution; required direct SQLite cleanup because UI delete path was non-deterministic when two rules shared the same visible label.
 - Source: Sprint 35 F69 manual testing (`docs/sprints/SPRINT_35_PLAN.md` Manual Testing Notes)
+
+**BUG-S36-1. Manual rule creation allows semantic subsumption (~3-5h) Priority 70 (Issue #246) -- NEXT SPRINT (Sprint 37) CARRY-IN**
+- Phase: Bug fix / UX enhancement
+- Platform: All (rule logic), Windows (where discovered)
+- File: `mobile-app/lib/core/services/manual_rule_duplicate_checker.dart` (extend), `mobile-app/lib/ui/screens/manual_rule_create_screen.dart`
+- Failure: Sprint 36 BUG-S35-1 catches EXACT duplicates only (same pattern + same sub-type). It does NOT catch semantic subsumption -- e.g., an `exact_domain` safe sender for `cwru.edu` when an `entire_domain` safe sender for `cwru.edu` already exists (the entire-domain rule covers the exact-domain case including all subdomains). Same applies to block rules. Harold found this during Sprint 36 Phase 5 manual testing.
+- Fix: Extend duplicate checker to also detect coverage relationships. For safe senders and block rules, if a new rule's pattern is a strict subset of an existing rule's pattern (by sub-type semantics, not regex-subset computation), reject with a validation error that names the existing rule. Coverage matrix:
+  - New `exact_email` covered by existing `exact_domain` or `entire_domain` with matching domain
+  - New `exact_domain` covered by existing `entire_domain` with matching base domain
+  - New `entire_domain` NOT covered by `exact_domain` or `exact_email` (broader type)
+  - TLD (block only) has no coverage overlap with domain types -- different comparison space
+- Error message must name the existing covering rule so the user knows what's already in place: "A safe sender already covers this: entire_domain cwru.edu."
+- 5-8 new unit tests covering the coverage matrix plus the null case (no coverage -> insert succeeds).
+- Source: Sprint 36 Phase 5 manual testing feedback (Harold, 2026-04-21)
+- Dependencies: Sprint 36 BUG-S35-1 pre-insert checker infrastructure (already shipped in `manual_rule_duplicate_checker.dart`)
 
 ### Security Hardening (Sprint 31 Audit)
 

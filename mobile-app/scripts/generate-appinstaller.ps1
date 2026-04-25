@@ -119,8 +119,8 @@ Write-Host "3. Users install via: https://your-server.com/path/to/SpamFilterMult
 Write-Host "4. The app will automatically check for updates every $UpdateCheckHours hours" -ForegroundColor White
 Write-Host ""
 Write-Host "Update Workflow:" -ForegroundColor Yellow
-Write-Host "1. Build new MSIX version: .\build-msix.ps1" -ForegroundColor White
-Write-Host "2. Update .appinstaller file: .\generate-appinstaller.ps1 -MsixUri <new-uri>" -ForegroundColor White
+Write-Host "1. Build new MSIX version: flutter pub run msix:create (see docs/STORE_RELEASE_PROCESS.md)" -ForegroundColor White
+Write-Host "2. Update .appinstaller file: .\generate-appinstaller.ps1 -MsixUri [new-uri]" -ForegroundColor White
 Write-Host "3. Upload new .msix and updated .appinstaller to server" -ForegroundColor White
 Write-Host "4. Installed apps will automatically detect and prompt for update" -ForegroundColor White
 Write-Host ""

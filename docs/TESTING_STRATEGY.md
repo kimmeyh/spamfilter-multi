@@ -201,6 +201,20 @@ void main() {
 - Navigation (screen transitions)
 - State-driven UI updates (Provider changes)
 
+**MANDATORY for UX Flow Changes** (Sprint 36 retro IMP-2):
+
+When a fix or feature changes **dialog flow or screen flow** (a dialog newly appears, a dialog is now skipped, a navigation step is added/removed/reordered), a widget test that exercises the flow is **required** before the change ships. Pure-data changes (validator returns a different message, DB column added) do NOT require a widget test if the data-path tests cover them.
+
+Examples of changes that require a widget test:
+
+- A duplicate-detection check that prevents the Confirm dialog from appearing for duplicates -> widget test confirms `expect(find.byType(AlertDialog), findsNothing)` after entering duplicate input.
+- A Save button that should be disabled while async work is in flight -> widget test pumps the future and confirms the button's `enabled` property.
+- A new tab/screen appearing only when a feature flag is on -> widget test under both flag states.
+
+**Why**: Sprint 36 BUG-S35-1 fix shipped 15 unit tests on the duplicate-checker service but NO widget test for the dialog-skip behavior. The initial fix placed the duplicate check after the Confirm dialog (wrong UX) and the defect was caught only at Phase 5 manual testing. A widget test asserting the dialog is skipped on duplicate would have caught it during Phase 4.
+
+**Cost**: ~20-30 min per UX-flow fix to write the widget test. Saves the equivalent or more in Phase 5 manual-testing iteration time.
+
 **Template**:
 ```dart
 import 'package:flutter_test/flutter_test.dart';

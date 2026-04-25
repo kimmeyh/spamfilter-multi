@@ -42,7 +42,7 @@ This document describes the step-by-step process for executing sprints in the sp
 
 | Phase | Name | Purpose |
 |-------|------|---------|
-| **Phase 1** | Backlog Refinement | Optional, on-demand backlog grooming |
+| **Phase 1** | Backlog Refinement | **MANDATORY** -- every sprint; no PO request needed (Sprint 36 policy change) |
 | **Phase 2** | Sprint Pre-Kickoff | Verify prerequisites before starting |
 | **Phase 3** | Sprint Kickoff & Planning | Plan sprint, create branch and issues |
 | **Phase 4** | Sprint Execution (Development) | Implement tasks, test, commit |
@@ -52,33 +52,61 @@ This document describes the step-by-step process for executing sprints in the sp
 
 ---
 
+## Phase Cheat Sheet (F80)
+
+One-line-per-phase quick reference. Use this at the start of a sprint and at every phase boundary instead of re-reading the detail sections below. Click a phase name to jump to its detail.
+
+| Phase | Top-3 Actions | Auto-Advance Trigger (when phase is "done") |
+|-------|---------------|---------------------------------------------|
+| [**1. Backlog Refinement**](#phase-1-backlog-refinement-mandatory----every-sprint-no-po-request-needed) | Read master plan + ISSUE_BACKLOG; present candidates as bullet list (not grid) grouped by priority; capture user selections | User has picked items for the sprint (can be "same as proposed"), no scope questions open |
+| [**2. Sprint Pre-Kickoff**](#phase-2-sprint-pre-kickoff-warning-critical-prerequisite) | Verify develop green (tests, analyze); verify previous retro done; check dependency vulnerabilities | All prerequisite gates green; no blockers to planning |
+| [**3. Sprint Kickoff & Planning**](#phase-3-sprint-kickoff--planning) | Draft `docs/sprints/SPRINT_N_PLAN.md`; open Issue #N + create draft PR (3.3.1); **get explicit Phase 3.7 approval** | User says "plan approved" (or equivalent) -- this authorizes Phases 4-7 (durable) |
+| [**4. Sprint Execution (Development)**](#phase-4-sprint-execution-development) | Implement tasks in plan order; run tests + analyze after each; commit with issue number | All acceptance criteria in plan met; test suite green |
+| [**5. Code Review & Testing**](#phase-5-code-review--testing) | Test-assertion sibling sweep (5.1.1); full test suite; build + launch Windows app for manual test | Manual test golden-path + edge cases verified; no regressions |
+| [**6. Push to Remote & Create PR**](#phase-6-push-to-remote--create-pr) | Push branch; update PR description; **convert draft to ready (6.4.5)** after Copilot pass | PR is `isDraft: false`, `mergeable: MERGEABLE`; Copilot review received |
+| [**7. Sprint Review & Retrospective**](#phase-7-sprint-review--retrospective-after-pr-submitted---mandatory-for-all-sprints) | Send retro prompt; draft Claude feedback in parallel; combine + apply now-vs-backlog decisions | Retrospective doc committed with 4 roles x 14 categories; Cat 13 -> Sprint N+1 plan; Cat 14 -> master plan backlog |
+
+**Invariants** (apply to all phases):
+
+- Phase 3.7 approval is durable through Phase 7 -- do not re-ask permission at phase boundaries (Phase Auto-Advance Rule, CLAUDE.md §7).
+- Standing Approval Inventory (Phase 3.7): commits, pushes, PR-description updates, test/analyze runs do NOT need permission.
+- Stop only for the 9 reasons in `docs/SPRINT_STOPPING_CRITERIA.md` -- not for implementation choices, approach uncertainty, or "confirming the next step".
+- If Phase 1 was skipped for a given sprint, STOP and return to Phase 1 before any Phase 4 work (Sprint 36 gate).
+
+---
+
 ## Sprint Execution Checklist
 
-### **Phase 1: Backlog Refinement** (OPTIONAL - On-Demand)
+### **Phase 1: Backlog Refinement** (MANDATORY -- every sprint, no PO request needed)
 
-Backlog refinement is conducted **when requested by Product Owner**, not before every sprint.
+**Policy change (Sprint 36, 2026-04-20)**: Phase 1 Backlog Refinement is now **MANDATORY** for every sprint. It does NOT require an explicit Product Owner request. Do NOT ask the user "should we do backlog refinement?" -- just run it. Skipping or asking is a process violation.
 
-- [ ] **1.1 Check if Refinement is Requested**
-  - Product Owner explicitly requests backlog refinement
-  - Skip to Phase 2 if refinement not requested
-  - Quick priority changes can be handled during Phase 3 without full refinement
+This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIONAL - On-Demand" language) and also skipped the Phase 3 sub-step that presents candidates in BACKLOG_REFINEMENT.md format. The user did not get a chance to redirect scope before the plan doc was drafted. Making Phase 1 mandatory forces the candidate-presentation step every sprint.
 
-- [ ] **1.2 Conduct Refinement Session** (30-60 minutes, timeboxed)
-  - **Prepare**: Read current backlog state from ALL_SPRINTS_MASTER_PLAN.md and ISSUE_BACKLOG.md
+- [ ] **1.1 Refinement Session** (30-60 minutes, timeboxed)
+  - **Prepare**: Read current backlog state from ALL_SPRINTS_MASTER_PLAN.md and ISSUE_BACKLOG.md (if present)
   - **Review**: Scan all items, identify stale entries (over 3 sprints old)
   - **Prioritize**: Re-order based on value, effort, and risk
   - **Estimate**: Update estimates with velocity calibration from recent sprints
   - **Add**: Capture newly identified work items
   - **Cleanup**: Remove obsolete items, update dependencies
 
+- [ ] **1.2 Present Candidates to User in BACKLOG_REFINEMENT.md Format**
+  - Required format: bullet-list per item with `**<ID>. <Title> (~<effort>) Priority <N>**` header + bullet details
+  - Do NOT use grid tables (explicit convention violation)
+  - Grouped by priority tier, HOLD items at bottom
+  - Include observations/alternative composition options when scope is tight
+  - Record user's selection for Phase 3 plan doc
+  - **This step is what Phase 3.2.1 used to reference ambiguously. It is now clearly owned by Phase 1.2.**
+
 - [ ] **1.3 Document Refinement Results**
-  - Update ALL_SPRINTS_MASTER_PLAN.md "Future Features" section
+  - Update ALL_SPRINTS_MASTER_PLAN.md "Next Sprint Candidates" section per the Maintenance Guide at top of that document
   - Update ISSUE_BACKLOG.md if issues changed
   - Commit changes: `git commit -m "docs: Backlog refinement - [date] - [summary]"`
 
 **Detailed Process**: See `BACKLOG_REFINEMENT.md` for complete step-by-step guide.
 
-**When to Request Refinement**:
+**Triggers that expand refinement scope beyond the baseline** (still mandatory baseline regardless):
 - Significant new features need scoping
 - Priorities have shifted due to business changes
 - Backlog items over 3 sprints old without review
@@ -191,6 +219,17 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
   - **Source**: Copy from ALL_SPRINTS_MASTER_PLAN.md Sprint N section and expand with implementation details
   - **Why**: Provides a durable, self-contained record of what was planned for this sprint
   - **Naming Convention**: Uppercase `SPRINT_N_PLAN.md` (e.g., `SPRINT_17_PLAN.md`)
+
+- [ ] **3.2.2.1 Plan-to-Branch-State Verification Gate** (MANDATORY -- Sprint 36 retro IMP-1)
+  - **Before committing** `SPRINT_N_PLAN.md`, verify each task in the plan against current branch state. The plan describes work to be done; if any task has already shipped (sprint kickoff commits, prior-session work, or upstream merges), the plan must be corrected.
+  - **For each task in the plan**:
+    1. **Identify the task's tangible artifact**: file path, function name, config key, doc section, etc.
+    2. **Check repo state**: `git log --oneline -20`, `Read` the referenced file, or `Grep` for the acceptance-criteria keyword.
+    3. **If the work is already done** (file exists, function has expected body, config key is present, etc.): mark the task as DONE in the plan, attribute to the prior commit (e.g., "Already shipped in 46e7b6d"), and remove from active scope.
+    4. **If the plan cites a specific file path or line number** (e.g., "fix mobile-app/.gitignore line 120"), verify the path/line still exists and matches the description. Plans that cite stale line numbers slow execution.
+  - **Why**: Sprint 36 escape -- Task 1.3 (`build_windows_args` in dev pubspec) was listed as pending but had already shipped in kickoff commit `46e7b6d`. Sprint 36 plan also cited `mobile-app/.gitignore line 120` for the `*.manifest` rule, but the actual rule was in root `.gitignore` line 120 (PyInstaller legacy). Both surfaced at Phase 4 execution and cost inspection time. Catching them at plan-write time is cheaper.
+  - **Cost**: ~30-45 min added to Phase 3.2.2 per sprint.
+  - **Enforcement**: A plan that has not been verified against branch state should not be committed. If you find this step skipped at session resume, return to it before any Phase 4 work (same gate as Phase 1).
 
 - [ ] **3.3 Branch Management**
   - Check if repository is in a PR branch

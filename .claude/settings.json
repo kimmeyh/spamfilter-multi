@@ -1,0 +1,16 @@
+{
+  "_comment": "Project-level Claude Code settings shared across the team. Machine-specific overrides go in .claude/settings.local.json (gitignored).",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"${CLAUDE_PROJECT_DIR}\\.claude\\hooks\\sprint-auto-advance.ps1\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

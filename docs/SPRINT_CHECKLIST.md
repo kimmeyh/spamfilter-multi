@@ -23,6 +23,24 @@ These documents MUST be created/updated during each sprint:
 
 ---
 
+## Phase 1: Backlog Refinement (MANDATORY -- every sprint, no PO request needed)
+
+**Sprint 36 policy change (2026-04-20)**: Phase 1 is MANDATORY on every sprint. Do NOT ask the user "should we do backlog refinement?" -- just run it. Skipping or asking is a process violation.
+
+- [ ] Read current `docs/ALL_SPRINTS_MASTER_PLAN.md` "Next Sprint Candidates" section
+- [ ] Scan for stale items (>3 sprints old without review)
+- [ ] Re-prioritize if needed (value, effort, risk)
+- [ ] Update estimates with velocity from recent sprints
+- [ ] Capture newly identified work items
+- [ ] Remove obsolete items
+- [ ] **Present candidates to user in BACKLOG_REFINEMENT.md bullet-list format** (NOT grid tables). Required format: `**<ID>. <Title> (~<effort>) Priority <N>**` with bullet details per item, grouped by priority tier, HOLD items at bottom, include observations/alternative composition options when scope is tight
+- [ ] User selects items for Sprint N; record selection for Phase 3 plan doc
+- [ ] Commit refinement changes if ALL_SPRINTS_MASTER_PLAN.md was updated: `git commit -m "docs: Backlog refinement - [date] - [summary]"`
+
+**Detailed Process**: See `BACKLOG_REFINEMENT.md`.
+
+**[CHECKPOINT]** Review Phase 2 checklist before proceeding.
+
 ## Phase 2: Pre-Kickoff
 
 - [ ] Previous sprint PR merged to `develop`
@@ -37,10 +55,9 @@ These documents MUST be created/updated during each sprint:
 
 - [ ] **Verify active model is Opus** (sprint planning requires Opus per SPRINT_PLANNING.md "Activities Requiring Opus")
 - [ ] Sprint number determined (N = previous + 1)
-- [ ] Read ALL_SPRINTS_MASTER_PLAN.md "Next Sprint Candidates" table
-- [ ] **Present candidates in sprint refinement format** (BACKLOG_REFINEMENT.md format, not grid tables)
+- [ ] **Phase 1 Backlog Refinement complete** (candidates presented in BACKLOG_REFINEMENT.md format, user selected items) -- if Phase 1 was skipped, STOP and return to Phase 1 first
 - [ ] **Verify** `docs/sprints/SPRINT_(N-1)_SUMMARY.md` exists for previous sprint (created in Phase 7)
-- [ ] **Created `docs/sprints/SPRINT_N_PLAN.md`** for current sprint (3.2.2 - MANDATORY)
+- [ ] **Created `docs/sprints/SPRINT_N_PLAN.md`** for current sprint (3.2.2 - MANDATORY) using items selected in Phase 1.2
 - [ ] Created feature branch: `feature/YYYYMMDD_Sprint_N`
 - [ ] Created GitHub issues for all tasks
 - [ ] Verified all issues are OPEN
