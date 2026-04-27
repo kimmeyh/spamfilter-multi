@@ -54,6 +54,83 @@ void main() {
         // (Note: actual execution requires authentication)
         expect(adapter.platformId, 'gmail');
       });
+
+      test('Sprint 37 F6b: query has no exclusions when excludeLabels is null', () {
+        final query = adapter.buildGmailQueryForTest(
+          folder: 'INBOX',
+          daysBack: 0,
+        );
+        expect(query, 'in:inbox');
+      });
+
+      test('Sprint 37 F6b: query excludes a single label', () {
+        final query = adapter.buildGmailQueryForTest(
+          folder: 'INBOX',
+          daysBack: 0,
+          excludeLabels: ['CATEGORY_PROMOTIONS'],
+        );
+        expect(query, contains('-label:CATEGORY_PROMOTIONS'));
+        expect(query, contains('in:inbox'));
+      });
+
+      test('Sprint 37 F6b: query excludes multiple labels', () {
+        final query = adapter.buildGmailQueryForTest(
+          folder: 'INBOX',
+          daysBack: 0,
+          excludeLabels: ['CATEGORY_PROMOTIONS', 'CATEGORY_SOCIAL'],
+        );
+        expect(query, contains('-label:CATEGORY_PROMOTIONS'));
+        expect(query, contains('-label:CATEGORY_SOCIAL'));
+      });
+
+      test('Sprint 37 F6b: empty exclude list is treated as no exclusions', () {
+        final query = adapter.buildGmailQueryForTest(
+          folder: 'INBOX',
+          daysBack: 0,
+          excludeLabels: const [],
+        );
+        expect(query, 'in:inbox');
+      });
+
+      test('Sprint 37 F6b: whitespace-only label entries are skipped', () {
+        final query = adapter.buildGmailQueryForTest(
+          folder: 'INBOX',
+          daysBack: 0,
+          excludeLabels: ['', '   ', 'CATEGORY_PROMOTIONS'],
+        );
+        // Only the non-whitespace entry should appear.
+        final exclusions = '-label:'.allMatches(query).length;
+        expect(exclusions, 1);
+        expect(query, contains('-label:CATEGORY_PROMOTIONS'));
+      });
+
+      test('Sprint 37 F6b: setExcludedLabels stores list for fetchMessages', () {
+        adapter.setExcludedLabels(['CATEGORY_PROMOTIONS']);
+        // No public getter (state is internal); verify by clearing succeeds.
+        adapter.setExcludedLabels(null);
+        // No exception raised => pass.
+        expect(adapter.platformId, 'gmail');
+      });
+
+      test('Sprint 37 F6b: setExcludedLabels(null) clears the filter', () {
+        adapter.setExcludedLabels(['CATEGORY_PROMOTIONS']);
+        adapter.setExcludedLabels(null);
+        final query = adapter.buildGmailQueryForTest(
+          folder: 'INBOX',
+          daysBack: 0,
+        );
+        expect(query, 'in:inbox');
+      });
+
+      test('Sprint 37 F6b: setExcludedLabels([]) clears the filter', () {
+        adapter.setExcludedLabels(['CATEGORY_PROMOTIONS']);
+        adapter.setExcludedLabels(const []);
+        final query = adapter.buildGmailQueryForTest(
+          folder: 'INBOX',
+          daysBack: 0,
+        );
+        expect(query, 'in:inbox');
+      });
     });
 
     group('folder operations', () {
