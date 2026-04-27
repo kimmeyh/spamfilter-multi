@@ -245,12 +245,45 @@ Option A is simplest, requires minimal code changes, and integrates with existin
 20. Document version bumping process (when to bump patch on develop)
 21. Build and verify production release in worktree
 
+## Sprint 37 Update (2026-04-27): Distinct .exe + Distinct Output Dirs
+
+### Problem
+The original ADR-0035 implementation isolated dev and prod by data directory, task name, mutex, window title, and log file -- but **both builds still produced the same canonical artifact path** `build\windows\x64\runner\Release\MyEmailSpamFilter.exe`. Whichever environment was built last overwrote the other on disk, so the two binaries could not coexist as runnable artifacts. To switch between dev and prod the developer had to rebuild.
+
+### Decision
+Sprint 37 F52 Phase 1 layers env-specific persistent run targets on top of the existing Flutter build:
+
+1. `flutter build windows` continues to produce `build\windows\x64\runner\Release\MyEmailSpamFilter.exe` (no change to Flutter or CMakeLists.txt).
+2. `build-windows.ps1` post-build copies the canonical Release/ output to an env-specific directory:
+   - **prod** -> `build\windows\x64\runner\Release-prod\MyEmailSpamFilter.exe`
+   - **dev** -> `build\windows\x64\runner\Release-dev\MyEmailSpamFilter-Dev.exe`
+3. The Windows Task Scheduler scheduled task points to the env-specific persistent path (not the canonical Release/ path), so the prod and dev tasks reference distinct .exe files that survive cross-environment rebuilds.
+4. The Microsoft Store MSIX path is unchanged -- it installs to its own `Packages\{PackageFamilyName}\` location and is independent of the build output.
+
+### Properties Preserved
+- All ADR-0035 isolation properties (data dir, mutex, task name, log file, window title) still apply.
+- MSIX store builds still use `flutter pub run msix:create` against the prod worktree per `docs/STORE_RELEASE_PROCESS.md`.
+- Debug builds are unaffected (debug runner paths are temporary).
+
+### Variant Layout
+
+| Variant | Source Branch | Build Output (Persistent) | App Data | Task Name |
+|---|---|---|---|---|
+| Dev | feature/* or develop | `Release-dev\MyEmailSpamFilter-Dev.exe` | `MyEmailSpamFilter_Dev\` | `SpamFilterBackgroundScan_Dev` |
+| Prod | main | `Release-prod\MyEmailSpamFilter.exe` | `MyEmailSpamFilter\` | `SpamFilterBackgroundScan` |
+| Store (MSIX) | main | `Packages\{PackageFamilyName}\` | (sandboxed by MSIX) | (none -- store builds do not register Task Scheduler) |
+
+### Future Phases (F52)
+- **Phase 2 (Android flavors)**: ships in same sprint -- adds `dev`/`prod`/`store` `productFlavors` with distinct `applicationIdSuffix`. Each flavor installs as a distinct app on the device, with its own data directory (Android per-applicationId isolation) and launcher icon.
+- **Phase 3 (iOS bundle IDs)**: deferred -- requires macOS + Apple Developer Program enrollment.
+
 ## References
 
 - ADR-0012: AppPaths Platform Storage Abstraction (data directory resolution)
 - ADR-0014: Windows Background Scanning Task Scheduler (task naming)
 - ADR-0026: Application Identity and Package Naming (app identity)
 - `docs/STORE_RELEASE_PROCESS.md` -- consumes the prod/dev worktree split defined here for the Microsoft Store release workflow (MSIX build from prod worktree, version bump lives in dev worktree, 5-file version-string checklist)
+- `docs/sprints/SPRINT_37_PLAN.md` -- F52 Phase 1 (Windows) + Phase 2 (Android) implementation
 - [Flutter Flavors Documentation](https://docs.flutter.dev/deployment/flavors)
 - [Android Build Variants](https://developer.android.com/build/build-variants)
 - [Windows Single Instance with Mutex](https://learn.microsoft.com/en-us/archive/technet-wiki/34423.create-a-single-instance-desktop-application)

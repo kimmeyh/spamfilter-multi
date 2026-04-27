@@ -25,6 +25,12 @@ param(
 $ErrorActionPreference = 'Stop'
 
 # Determine build mode
+# Sprint 37 F52 Phase 1: post-build the canonical Flutter output
+# (build\windows\x64\runner\Release\MyEmailSpamFilter.exe) is copied to
+# an env-specific subdir with an env-specific .exe name so that prod
+# and dev builds can coexist on disk and run simultaneously without
+# rebuild. The build itself still produces the same output path -- we
+# layer the multi-variant capability on top via copy + rename.
 if ($Debug) {
     $Release = $false
     $buildMode = "debug"
@@ -32,6 +38,27 @@ if ($Debug) {
 } else {
     $buildMode = "release"
     $buildTarget = "build\windows\x64\runner\Release\MyEmailSpamFilter.exe"
+}
+
+# F52 Phase 1: env-specific persistent output directory and executable name.
+# These are the user-facing run targets after the build completes.
+if ($Debug) {
+    # Debug builds skip multi-variant copy (debug runner paths are temporary).
+    $variantDir = $null
+    $variantExeName = $null
+    $variantBuildTarget = $null
+} else {
+    $variantDir = if ($Environment -eq 'prod') {
+        "build\windows\x64\runner\Release-prod"
+    } else {
+        "build\windows\x64\runner\Release-dev"
+    }
+    $variantExeName = if ($Environment -eq 'prod') {
+        "MyEmailSpamFilter.exe"
+    } else {
+        "MyEmailSpamFilter-Dev.exe"
+    }
+    $variantBuildTarget = Join-Path $variantDir $variantExeName
 }
 
 # Set working directory to the Flutter app root
@@ -47,7 +74,11 @@ Write-Host "============================================================" -Foreg
 Write-Host ""
 Write-Host "Configuration:" -ForegroundColor Cyan
 Write-Host "  Build Mode: $buildMode"
+Write-Host "  Environment: $($Environment.ToUpper())"
 Write-Host "  Build Target: $buildTarget"
+if ($variantBuildTarget) {
+    Write-Host "  Variant Target: $variantBuildTarget"
+}
 Write-Host "  Clean Before Build: $(-not $SkipClean)"
 Write-Host "  Run After Build: $RunAfterBuild"
 Write-Host "  Analyze Size: $AnalyzeSize"
@@ -151,6 +182,32 @@ if (Test-Path $buildTarget) {
     Write-Host "       Executable: $($exeInfo.Name)" -ForegroundColor Green
     Write-Host "       Path: $buildTarget" -ForegroundColor Green
     Write-Host "       Size: $exeSize MB" -ForegroundColor Green
+
+    # Sprint 37 F52 Phase 1: copy the canonical Flutter output to an
+    # env-specific subdir + filename so dev and prod can coexist on disk.
+    # Whichever was built last is reflected in the canonical Release/
+    # path, but each env's persistent target is the variant subdir.
+    if (-not $Debug -and $variantBuildTarget) {
+        Write-Host "       Copying to variant target: $variantBuildTarget" -ForegroundColor Cyan
+        $sourceDir = Split-Path $buildTarget -Parent
+        # Recreate variant dir cleanly so resources/dlls match the latest build.
+        if (Test-Path $variantDir) {
+            Remove-Item -Path $variantDir -Recurse -Force
+        }
+        Copy-Item -Path $sourceDir -Destination $variantDir -Recurse
+        # Rename the .exe inside the variant dir to the env-specific name.
+        $copiedExe = Join-Path $variantDir "MyEmailSpamFilter.exe"
+        if ((Test-Path $copiedExe) -and ($variantExeName -ne "MyEmailSpamFilter.exe")) {
+            Rename-Item -Path $copiedExe -NewName $variantExeName
+        }
+        if (Test-Path $variantBuildTarget) {
+            Write-Host "       Variant build: $variantBuildTarget" -ForegroundColor Green
+        } else {
+            Write-Host "[ERROR] Variant copy failed: $variantBuildTarget not found" -ForegroundColor Red
+            exit 1
+        }
+    }
+
     Write-Host "[DONE] Build output verified" -ForegroundColor Green
 } else {
     Write-Host "[ERROR] Build output not found at: $buildTarget" -ForegroundColor Red
@@ -166,7 +223,15 @@ Write-Host "[6/6] Checking background scan task..." -ForegroundColor Cyan
 
 # Only repair task for release builds (debug mode uses temp runner paths)
 if (-not $Debug) {
-    $fullExePath = (Resolve-Path $buildTarget).Path
+    # Sprint 37 F52 Phase 1: scheduled task points at the env-specific
+    # variant .exe so dev and prod tasks reference distinct binaries
+    # (matching the env-specific $taskName).
+    $taskExeTarget = if ($variantBuildTarget -and (Test-Path $variantBuildTarget)) {
+        $variantBuildTarget
+    } else {
+        $buildTarget
+    }
+    $fullExePath = (Resolve-Path $taskExeTarget).Path
 
     # Delete old task (safe even if it does not exist)
     try {
@@ -248,8 +313,13 @@ if ($RunAfterBuild) {
     Write-Host "[INFO] Skipping app launch (-RunAfterBuild=false)" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "To run the app manually, execute one of:" -ForegroundColor Cyan
-    Write-Host "  powershell -Command ""& '.\$buildTarget'""" -ForegroundColor Gray
-    Write-Host "  flutter run -d windows" -ForegroundColor Gray
+    if ($variantBuildTarget -and (Test-Path $variantBuildTarget)) {
+        Write-Host "  powershell -Command ""& '.\$variantBuildTarget'""" -ForegroundColor Gray
+        Write-Host "  (env-specific variant build for $Environment)" -ForegroundColor Gray
+    } else {
+        Write-Host "  powershell -Command ""& '.\$buildTarget'""" -ForegroundColor Gray
+    }
+    Write-Host "  flutter run -d windows --dart-define=APP_ENV=$Environment" -ForegroundColor Gray
 }
 
 Write-Host ""
