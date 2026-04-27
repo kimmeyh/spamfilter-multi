@@ -95,4 +95,209 @@ class ManualRuleDuplicateChecker {
   /// (see `gmail_windows_oauth_handler.dart` and rule_evaluator), so
   /// `.XYZ` and `.xyz` generate semantically identical rules.
   String _normalize(String pattern) => pattern.trim().toLowerCase();
+
+  /// Sprint 37 BUG-S36-1: Find an existing block rule that already covers
+  /// the given source domain/email by virtue of being a broader sub-type.
+  ///
+  /// Coverage matrix (returns the existing covering rule when found):
+  /// - new `exact_email` covered by existing `exact_domain` (matching domain)
+  /// - new `exact_email` covered by existing `entire_domain` (matching base)
+  /// - new `exact_domain` covered by existing `entire_domain` (matching base)
+  /// - new `entire_domain` is broader than `exact_domain` and `exact_email` --
+  ///   never covered by them
+  /// - `top_level_domain` has no overlap with domain/email types
+  ///
+  /// Returns a `SubsumingRuleInfo` describing the existing rule (sub-type +
+  /// source domain + rule name) so the caller can name it in the error
+  /// message, or `null` if no covering rule exists.
+  Future<SubsumingRuleInfo?> findSubsumingBlockRule({
+    required String sourceDomain,
+    required String patternSubType,
+    required String patternCategory,
+  }) async {
+    final newBase = _baseDomainFor(sourceDomain, patternSubType);
+    if (newBase == null) return null;
+
+    final broaderTypes = _broaderBlockSubTypes(patternSubType);
+    if (broaderTypes.isEmpty) return null;
+
+    final placeholders = List.filled(broaderTypes.length, '?').join(',');
+    final results = await _db.query(
+      'rules',
+      columns: ['name', 'pattern_sub_type', 'source_domain'],
+      where: '''
+        pattern_category = ?
+        AND pattern_sub_type IN ($placeholders)
+        AND LOWER(TRIM(source_domain)) = ?
+      ''',
+      whereArgs: [patternCategory, ...broaderTypes, newBase],
+      limit: 1,
+    );
+
+    if (results.isEmpty) return null;
+    final row = results.first;
+    return SubsumingRuleInfo(
+      ruleName: row['name'] as String,
+      subType: row['pattern_sub_type'] as String,
+      sourceDomain: row['source_domain'] as String,
+    );
+  }
+
+  /// Sprint 37 BUG-S36-1: Find an existing safe sender that already covers
+  /// the given source domain/email. Same coverage matrix as block rules
+  /// but operates on the `safe_senders` table, which does not have a
+  /// `source_domain` column -- the base domain is extracted from `pattern`.
+  Future<SubsumingRuleInfo?> findSubsumingSafeSender({
+    required String sourceDomain,
+    required String patternType,
+  }) async {
+    final newBase = _baseDomainFor(sourceDomain, patternType);
+    if (newBase == null) return null;
+
+    final broaderTypes = _broaderSafeSenderTypes(patternType);
+    if (broaderTypes.isEmpty) return null;
+
+    final placeholders = List.filled(broaderTypes.length, '?').join(',');
+    final results = await _db.query(
+      'safe_senders',
+      columns: ['pattern', 'pattern_type'],
+      where: 'pattern_type IN ($placeholders)',
+      whereArgs: broaderTypes,
+    );
+
+    for (final row in results) {
+      final existingPattern = row['pattern'] as String;
+      final existingType = row['pattern_type'] as String;
+      final existingBase = _extractBaseFromPattern(existingPattern, existingType);
+      if (existingBase == null) continue;
+      if (existingBase == newBase) {
+        return SubsumingRuleInfo(
+          ruleName: existingPattern,
+          subType: existingType,
+          sourceDomain: existingBase,
+        );
+      }
+    }
+    return null;
+  }
+
+  /// Returns the comparable base for the given input. For domain types this
+  /// is the lowercased domain. For `exact_email` it returns the domain part
+  /// (everything after `@`) because an `exact_email` `bob@cwru.edu` is
+  /// covered by `exact_domain cwru.edu` or `entire_domain cwru.edu`.
+  ///
+  /// Returns `null` for `top_level_domain` (no comparable base in the
+  /// domain space) and for empty/malformed input.
+  String? _baseDomainFor(String input, String subType) {
+    final trimmed = input.trim().toLowerCase();
+    if (trimmed.isEmpty) return null;
+    switch (subType) {
+      case 'exact_email':
+        if (!trimmed.contains('@')) return null;
+        final domain = trimmed.split('@').last;
+        return domain.isEmpty ? null : domain;
+      case 'exact_domain':
+      case 'entire_domain':
+        return trimmed.startsWith('@') ? trimmed.substring(1) : trimmed;
+      case 'top_level_domain':
+        return null;
+      default:
+        return null;
+    }
+  }
+
+  /// Returns the sub-types that, if matched on base domain, would already
+  /// cover a new rule of the given sub-type. `entire_domain` is the
+  /// broadest, so an `exact_domain` is covered by `entire_domain`. An
+  /// `exact_email` is covered by either `exact_domain` (same domain) or
+  /// `entire_domain`.
+  List<String> _broaderBlockSubTypes(String newSubType) {
+    switch (newSubType) {
+      case 'exact_email':
+        return const ['exact_domain', 'entire_domain'];
+      case 'exact_domain':
+        return const ['entire_domain'];
+      case 'entire_domain':
+      case 'top_level_domain':
+        return const [];
+      default:
+        return const [];
+    }
+  }
+
+  /// Same coverage matrix for safe senders. `safe_senders.pattern_type`
+  /// uses the same vocabulary as `rules.pattern_sub_type`.
+  List<String> _broaderSafeSenderTypes(String newPatternType) =>
+      _broaderBlockSubTypes(newPatternType);
+
+  /// Extract the base domain or email from a stored regex pattern.
+  /// Inverse of `_generatePattern` in `manual_rule_create_screen.dart`.
+  ///
+  /// Pattern shapes:
+  /// - `entire_domain`: `@(?:[a-z0-9-]+\.)*{escaped_domain}$`
+  /// - `exact_domain`: `@{escaped_domain}$`
+  /// - `exact_email`: `^{escaped_email}$`
+  /// - `top_level_domain`: `@.*\.{tld}$` (block only -- no base for matching)
+  ///
+  /// Returns `null` if the pattern shape does not match the expected form
+  /// for the given sub-type.
+  static String? _extractBaseFromPattern(String pattern, String subType) {
+    final trimmed = pattern.trim();
+    switch (subType) {
+      case 'entire_domain':
+        final match = RegExp(r'^@\(\?:\[a-z0-9-\]\+\\\.\)\*(.+)\$$')
+            .firstMatch(trimmed);
+        if (match == null) return null;
+        return _unescapeRegexLiteral(match.group(1)!);
+      case 'exact_domain':
+        if (!trimmed.startsWith('@') || !trimmed.endsWith(r'$')) return null;
+        final body = trimmed.substring(1, trimmed.length - 1);
+        return _unescapeRegexLiteral(body);
+      case 'exact_email':
+        if (!trimmed.startsWith('^') || !trimmed.endsWith(r'$')) return null;
+        final body = trimmed.substring(1, trimmed.length - 1);
+        final unescaped = _unescapeRegexLiteral(body);
+        return unescaped.contains('@') ? unescaped : null;
+      default:
+        return null;
+    }
+  }
+
+  /// Reverse `RegExp.escape`: turn `\.` into `.`, `\-` into `-`, etc.
+  /// Only handles the characters that `RegExp.escape` actually escapes for
+  /// domains and emails; not a general regex unescape.
+  static String _unescapeRegexLiteral(String escaped) {
+    final buf = StringBuffer();
+    var i = 0;
+    while (i < escaped.length) {
+      final c = escaped[i];
+      if (c == r'\' && i + 1 < escaped.length) {
+        buf.write(escaped[i + 1]);
+        i += 2;
+      } else {
+        buf.write(c);
+        i++;
+      }
+    }
+    return buf.toString().toLowerCase();
+  }
+}
+
+/// Description of an existing rule that subsumes a candidate new rule.
+/// Returned by `findSubsumingBlockRule` and `findSubsumingSafeSender` so
+/// the caller can render a validation error that names the existing rule.
+class SubsumingRuleInfo {
+  final String ruleName;
+  final String subType;
+  final String sourceDomain;
+
+  const SubsumingRuleInfo({
+    required this.ruleName,
+    required this.subType,
+    required this.sourceDomain,
+  });
+
+  /// Human-readable phrase like `entire_domain cwru.edu` for use in
+  /// validation error messages.
+  String get displayLabel => '$subType $sourceDomain';
 }
