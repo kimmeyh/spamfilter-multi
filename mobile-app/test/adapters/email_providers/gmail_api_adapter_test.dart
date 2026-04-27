@@ -181,6 +181,44 @@ void main() {
     // - Manual testing with test Google account
   });
 
+  group('Sprint 37 F6c: IncrementalFetchResult', () {
+    test('empty factory yields empty emails and given historyId', () {
+      final result = IncrementalFetchResult.empty(newHistoryId: '12345');
+      expect(result.emails, isEmpty);
+      expect(result.newHistoryId, '12345');
+      expect(result.isExpired, isFalse);
+    });
+
+    test('expired factory yields null historyId and isExpired=true', () {
+      final result = IncrementalFetchResult.expired();
+      expect(result.emails, isEmpty);
+      expect(result.newHistoryId, isNull);
+      expect(result.isExpired, isTrue);
+    });
+
+    test('normal result preserves emails list and historyId', () {
+      final result = IncrementalFetchResult(
+        emails: const [],
+        newHistoryId: 'abc123',
+      );
+      expect(result.newHistoryId, 'abc123');
+      expect(result.isExpired, isFalse);
+    });
+
+    test('getCurrentHistoryId returns null when not connected', () async {
+      final unconnected = GmailApiAdapter();
+      expect(await unconnected.getCurrentHistoryId(), isNull);
+    });
+
+    test('fetchMessagesIncremental throws StateError when not connected', () async {
+      final unconnected = GmailApiAdapter();
+      expect(
+        () => unconnected.fetchMessagesIncremental(startHistoryId: '1'),
+        throwsA(isA<StateError>()),
+      );
+    });
+  });
+
   group('GmailApiAdapter Integration (Requires Auth)', () {
     late GmailApiAdapter adapter;
 

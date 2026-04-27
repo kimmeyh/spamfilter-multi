@@ -317,6 +317,111 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
     }
   }
 
+  /// Sprint 37 F6c: Read the current Gmail account's `historyId` from
+  /// `users.getProfile`. The caller (EmailScanProvider) persists this to
+  /// `accounts.last_history_id` after the first full scan so subsequent
+  /// scans can use `fetchMessagesIncremental` instead of full-folder
+  /// fetches.
+  ///
+  /// Returns null if not connected or the API call fails.
+  Future<String?> getCurrentHistoryId() async {
+    if (_gmailApi == null) return null;
+    try {
+      final profile = await _gmailApi!.users.getProfile('me');
+      return profile.historyId;
+    } catch (e) {
+      Redact.logError('Failed to get Gmail historyId', e);
+      return null;
+    }
+  }
+
+  /// Sprint 37 F6c: Incremental delta scan. Calls `users.history.list`
+  /// starting from [startHistoryId] and returns the messages that have
+  /// been added or modified since that point, plus the new historyId
+  /// for the caller to persist.
+  ///
+  /// Returns `IncrementalFetchResult.expired()` if the API returns
+  /// `historyNotFound` (Gmail history records expire after roughly 7 days).
+  /// The caller must respond by triggering a full scan and then calling
+  /// [getCurrentHistoryId] to capture the new starting point.
+  ///
+  /// Throws `StateError` if not connected.
+  Future<IncrementalFetchResult> fetchMessagesIncremental({
+    required String startHistoryId,
+    String folderForLabel = 'INBOX',
+  }) async {
+    if (_gmailApi == null) {
+      throw StateError('Not connected. Call signIn() first.');
+    }
+
+    Redact.logSafe('Gmail incremental fetch: startHistoryId=$startHistoryId');
+
+    try {
+      final historyResponse = await _gmailApi!.users.history.list(
+        'me',
+        startHistoryId: startHistoryId,
+        historyTypes: ['messageAdded', 'labelAdded', 'labelRemoved'],
+      );
+
+      final messageIds = <String>{};
+      if (historyResponse.history != null) {
+        for (final entry in historyResponse.history!) {
+          for (final added in entry.messagesAdded ?? const []) {
+            final id = added.message?.id;
+            if (id != null) messageIds.add(id);
+          }
+          for (final modified in entry.messages ?? const []) {
+            final id = modified.id;
+            if (id != null) messageIds.add(id);
+          }
+        }
+      }
+
+      if (messageIds.isEmpty) {
+        Redact.logSafe('Gmail incremental fetch: no changes since $startHistoryId');
+        return IncrementalFetchResult.empty(
+          newHistoryId: historyResponse.historyId ?? startHistoryId,
+        );
+      }
+
+      Redact.logSafe('Gmail incremental fetch: ${messageIds.length} changed messages');
+
+      final fetched = await Future.wait(
+        messageIds.map((id) async {
+          try {
+            final fullMessage = await _gmailApi!.users.messages.get(
+              'me',
+              id,
+              format: 'full',
+            );
+            return _convertGmailMessage(fullMessage, folderForLabel);
+          } catch (e) {
+            Redact.logError('Error fetching Gmail message $id', e);
+            return null;
+          }
+        }),
+        eagerError: false,
+      );
+
+      final emails = fetched.whereType<EmailMessage>().toList();
+      return IncrementalFetchResult(
+        emails: emails,
+        newHistoryId: historyResponse.historyId ?? startHistoryId,
+      );
+    } on gmail.DetailedApiRequestError catch (apiErr) {
+      // Gmail returns 404 with reason `notFound` when historyId is too old.
+      // The startHistoryId is valid for ~7 days; after that the caller
+      // must do a full scan and re-capture historyId.
+      final isExpired = apiErr.status == 404 ||
+          (apiErr.message?.toLowerCase().contains('history') ?? false);
+      if (isExpired) {
+        Redact.logSafe('Gmail historyId expired (status=${apiErr.status}); caller should full-scan');
+        return IncrementalFetchResult.expired();
+      }
+      rethrow;
+    }
+  }
+
   /// Delete a Gmail message by moving it to configured folder (or TRASH by default).
   Future<void> deleteMessage(EmailMessage message) async {
     if (_gmailApi == null) {
@@ -1136,6 +1241,37 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
       return false;
     }
   }
+}
+
+/// Sprint 37 F6c: result of an incremental Gmail history.list scan.
+/// Three states:
+/// - normal: emails populated, newHistoryId valid -> caller persists
+///   newHistoryId for the next scan
+/// - empty: no changes since the prior historyId; caller still persists
+///   newHistoryId because Gmail advances it on every account event
+///   (some changes are not delivered as message events)
+/// - expired: prior historyId is older than the Gmail history window
+///   (~7 days); caller MUST do a full scan and call getCurrentHistoryId
+///   to capture a fresh starting point
+class IncrementalFetchResult {
+  final List<EmailMessage> emails;
+  final String? newHistoryId;
+  final bool isExpired;
+
+  const IncrementalFetchResult({
+    required this.emails,
+    required this.newHistoryId,
+    this.isExpired = false,
+  });
+
+  factory IncrementalFetchResult.empty({required String newHistoryId}) =>
+      IncrementalFetchResult(emails: const [], newHistoryId: newHistoryId);
+
+  factory IncrementalFetchResult.expired() => const IncrementalFetchResult(
+        emails: [],
+        newHistoryId: null,
+        isExpired: true,
+      );
 }
 
 /// HTTP client with Google auth headers
