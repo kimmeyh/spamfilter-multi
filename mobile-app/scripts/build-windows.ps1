@@ -1,14 +1,28 @@
 # Rebuilds the Flutter Windows desktop app from scratch.
 #
-# USAGE:
+# USAGE (interactive PowerShell session):
 #   .\build-windows.ps1                          # Dev build, run app after build (default)
 #   .\build-windows.ps1 -Environment prod        # Production build
-#   .\build-windows.ps1 -RunAfterBuild:$false    # Build without running
+#   .\build-windows.ps1 -RunAfterBuild:$false    # Build without running (interactive only)
 #   .\build-windows.ps1 -Release                 # Release build (default)
 #   .\build-windows.ps1 -Debug                   # Debug build (slower, larger executable)
 #
+# USAGE (powershell -File ... invocation):
+#   The colon-prefixed switch syntax (-RunAfterBuild:$false) only parses
+#   correctly in an interactive PowerShell session. When invoked via
+#   `powershell -File ...`, use one of:
+#     powershell -NoProfile -ExecutionPolicy Bypass -File ./build-windows.ps1 -Environment prod
+#     powershell -NoProfile -ExecutionPolicy Bypass -Command "& './build-windows.ps1' -RunAfterBuild:`$false -Environment prod"
+#
 # EXECUTION:
 #   powershell -NoProfile -ExecutionPolicy Bypass -File ./build-windows.ps1
+#
+# Sprint 37 F52 Phase 1: builds dev and prod can coexist on disk via
+# env-specific variant subdirs (Release-dev/, Release-prod/) and
+# env-specific .exe names (MyEmailSpamFilter-Dev.exe, MyEmailSpamFilter.exe).
+# The script kills stale Dart VMs before flutter clean and launches the
+# variant binary directly (no flutter run) so back-to-back environment
+# builds do not contaminate each other's AOT artifacts.
 #
 # NOTE: Place this script in your mobile-app/scripts directory.
 
@@ -42,6 +56,13 @@ if ($Debug) {
 
 # F52 Phase 1: env-specific persistent output directory and executable name.
 # These are the user-facing run targets after the build completes.
+#
+# Variant directories live OUTSIDE build/ (under mobile-app/dist/) so
+# they survive `flutter clean`, which wipes the entire build/ tree. The
+# original Sprint 37 implementation placed variants under build/ and
+# discovered during Phase 5.3 testing that back-to-back builds wiped
+# the prior variant. Moving variants to dist/ is the architectural fix
+# (option A from Sprint 37 mid-sprint scope decision, 2026-04-29).
 if ($Debug) {
     # Debug builds skip multi-variant copy (debug runner paths are temporary).
     $variantDir = $null
@@ -49,9 +70,9 @@ if ($Debug) {
     $variantBuildTarget = $null
 } else {
     $variantDir = if ($Environment -eq 'prod') {
-        "build\windows\x64\runner\Release-prod"
+        "dist\prod"
     } else {
-        "build\windows\x64\runner\Release-dev"
+        "dist\dev"
     }
     $variantExeName = if ($Environment -eq 'prod') {
         "MyEmailSpamFilter.exe"
@@ -94,8 +115,28 @@ $dbPath = Join-Path $appDataDir "spam_filter.db"
 $taskName = if ($Environment -eq 'prod') { "SpamFilterBackgroundScan" } else { "SpamFilterBackgroundScan_Dev" }
 
 # Step 1: Clean previous build (optional)
+# Sprint 37 F52 Phase 1 fix: terminate stale Dart VMs and any running app
+# instances before `flutter clean`. Without this, Windows file locks held
+# by leftover dart.exe / dartvm.exe / MyEmailSpamFilter*.exe processes
+# cause `flutter clean` to silently no-op on locked files, then
+# `flutter build` short-circuits ("nothing changed") and produces a stale
+# AOT. Concretely: building -Environment dev then -Environment prod
+# back-to-back without this step ships a prod variant containing the
+# previous dev AOT (window title reads [DEV] despite APP_ENV=prod).
 if (-not $SkipClean) {
     Write-Host "[1/6] Cleaning previous build..." -ForegroundColor Cyan
+
+    $staleProcessNames = @('MyEmailSpamFilter', 'MyEmailSpamFilter-Dev', 'dart', 'dartvm')
+    foreach ($procName in $staleProcessNames) {
+        $running = Get-Process -Name $procName -ErrorAction SilentlyContinue
+        if ($running) {
+            Write-Host "       Terminating $($running.Count) stale $procName process(es) holding build/ locks" -ForegroundColor Yellow
+            $running | Stop-Process -Force -ErrorAction SilentlyContinue
+            # Brief pause so the OS releases file handles before flutter clean
+            Start-Sleep -Milliseconds 500
+        }
+    }
+
     flutter clean
     Write-Host "[DONE] Clean complete" -ForegroundColor Green
     Write-Host ""
@@ -184,12 +225,21 @@ if (Test-Path $buildTarget) {
     Write-Host "       Size: $exeSize MB" -ForegroundColor Green
 
     # Sprint 37 F52 Phase 1: copy the canonical Flutter output to an
-    # env-specific subdir + filename so dev and prod can coexist on disk.
-    # Whichever was built last is reflected in the canonical Release/
-    # path, but each env's persistent target is the variant subdir.
+    # env-specific persistent dir + filename so dev and prod can coexist
+    # on disk. Variant dirs live under mobile-app/dist/ (NOT build/) so
+    # `flutter clean` does not wipe them. Whichever was built last is
+    # reflected in the canonical build/.../Release/ path, but each env's
+    # persistent target is the dist/ variant subdir.
     if (-not $Debug -and $variantBuildTarget) {
         Write-Host "       Copying to variant target: $variantBuildTarget" -ForegroundColor Cyan
         $sourceDir = Split-Path $buildTarget -Parent
+
+        # Ensure parent dist/ exists
+        $variantParent = Split-Path $variantDir -Parent
+        if ($variantParent -and -not (Test-Path $variantParent)) {
+            New-Item -ItemType Directory -Path $variantParent -Force | Out-Null
+        }
+
         # Recreate variant dir cleanly so resources/dlls match the latest build.
         if (Test-Path $variantDir) {
             Remove-Item -Path $variantDir -Recurse -Force
@@ -294,21 +344,42 @@ Write-Host "[DONE] Background scan task check complete" -ForegroundColor Green
 Write-Host ""
 
 # Final step: Run app if requested
+# Sprint 37 F52 Phase 1 fix: launch the variant binary DIRECTLY instead of
+# invoking `flutter run`. `flutter run` rebuilds, reattaches a Dart VM,
+# and leaves dart.exe processes holding file locks under build/ -- which
+# was the root cause of the back-to-back -Environment dev / prod build
+# producing a prod variant with the dev AOT baked in. Direct launch via
+# Start-Process spawns the variant .exe with no Dart VM attached, so a
+# subsequent build can `flutter clean` cleanly.
 if ($RunAfterBuild) {
     Write-Host "Launching Windows app..." -ForegroundColor Cyan
 
-    $runCommand = "flutter run -d windows --dart-define=APP_ENV=$Environment"
-    if (Test-Path $secretsFile) {
-        $runCommand += " --dart-define-from-file=$secretsFileName"
-    }
     if ($Debug) {
+        # Debug builds skip variant copy and have no persistent .exe to
+        # launch directly; fall back to `flutter run` for hot-reload.
+        $runCommand = "flutter run -d windows --dart-define=APP_ENV=$Environment"
+        if (Test-Path $secretsFile) {
+            $runCommand += " --dart-define-from-file=$secretsFileName"
+        }
         $runCommand += " --debug"
+        Write-Host "       Command: $runCommand" -ForegroundColor Gray
+        Invoke-Expression $runCommand
+    } elseif ($variantBuildTarget -and (Test-Path $variantBuildTarget)) {
+        # Release builds: launch the env-specific variant binary directly.
+        # No Dart VM is attached after launch, so future `flutter clean`
+        # invocations are not blocked by file locks.
+        $launchTarget = (Resolve-Path $variantBuildTarget).Path
+        Write-Host "       Variant target: $launchTarget" -ForegroundColor Gray
+        Start-Process -FilePath $launchTarget
+        Write-Host "[DONE] App launched (no Dart VM attached)" -ForegroundColor Green
     } else {
-        $runCommand += " --release"
+        # Fallback: variant target missing for some reason -- launch
+        # canonical Release/MyEmailSpamFilter.exe.
+        $launchTarget = (Resolve-Path $buildTarget).Path
+        Write-Host "       Fallback target: $launchTarget" -ForegroundColor Yellow
+        Start-Process -FilePath $launchTarget
+        Write-Host "[DONE] App launched (canonical fallback)" -ForegroundColor Green
     }
-
-    Write-Host "       Command: $runCommand" -ForegroundColor Gray
-    Invoke-Expression $runCommand
 } else {
     Write-Host "[INFO] Skipping app launch (-RunAfterBuild=false)" -ForegroundColor Cyan
     Write-Host ""

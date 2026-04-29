@@ -26,6 +26,15 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-04-29 (Sprint 37 -- F52 Phase 1 Phase 5.3 fixes)
+- **fix**: F52 Phase 1 build-windows.ps1 robustness against back-to-back environment builds. Three changes:
+  1. Variant dirs moved from `build/windows/x64/runner/Release-{env}/` to `mobile-app/dist/{env}/` (outside `build/`) so `flutter clean` does not wipe the prior variant on the next build.
+  2. Step 1 now terminates running `MyEmailSpamFilter*.exe`, `dart.exe`, and `dartvm.exe` processes before `flutter clean`. Without this, file locks held by leftover Dart VMs cause `flutter clean` to silently no-op and the next `flutter build` reuses stale AOT artifacts (root cause of Phase 5.3 escape where building dev then prod produced a prod variant with the dev AOT baked in).
+  3. Final-step launch replaced `flutter run` with `Start-Process $variantBuildTarget` (direct .exe launch). `flutter run` left a Dart VM attached after exit which defeated the next build's clean step.
+- **chore**: `mobile-app/.gitignore` now excludes `/dist/` (env-specific variant artifacts).
+- **docs**: ADR-0035 "Sprint 37 Update" section refreshed with new dist/ paths, the kill-stale-processes fix, and the direct-launch fix.
+- Verified end-to-end: built dev, then `flutter clean` + built prod, both `dist/dev/MyEmailSpamFilter-Dev.exe` and `dist/prod/MyEmailSpamFilter.exe` coexist. (Issue #248)
+
 ### 2026-04-27 (Sprint 37)
 - **feat**: F52 Phase 1 -- Windows multi-variant install. `build-windows.ps1` now post-build copies the canonical Flutter `Release/MyEmailSpamFilter.exe` to env-specific persistent paths so dev and prod can coexist on disk without rebuild. Dev -> `Release-dev/MyEmailSpamFilter-Dev.exe`, prod -> `Release-prod/MyEmailSpamFilter.exe`. Windows Task Scheduler scheduled task points to the env-specific variant exe so the prod and dev tasks reference distinct binaries. MSIX store builds are unaffected (PackageFamilyName isolation). ADR-0035 extended with "Sprint 37 Update" section documenting the variant layout. (Issue #248)
 - **feat**: F6c Gmail historyId-based incremental delta scan -- adapter-side capability shipped. New `GmailApiAdapter.getCurrentHistoryId()` reads the current Gmail historyId; `fetchMessagesIncremental(startHistoryId)` calls `users.history.list` and returns only added/modified messages since the given point, plus the new historyId for the caller to persist. Returns `IncrementalFetchResult.expired()` on Gmail's 7-day historyId expiration so the caller can fall back to a full scan. Database v3 -> v4 migration adds `last_history_id TEXT` column to `accounts` table (additive, nullable, safe). Wiring into `EmailScanProvider` is staged for a follow-up commit. 5 new unit tests for the result shape; 2 new schema/round-trip tests. (Issue #247)

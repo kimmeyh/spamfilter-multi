@@ -1,36 +1,19 @@
 ***BELOW IS NOT FOR CLAUDE CODE USE***
 ***BELOW IS NOT FOR Github Copilot USE***
 
-# *** needs to be updated *** Run the Development Executable (feature/<branch>):
-Start-Process "D:\Data\Harold\github\spamfilter-multi\mobile-app\build\windows\x64\runner\Release\MyEmailSpamFilter.exe"
+# WINDOWS APP
+# *** build + launch DEV variant (creates Release-dev/MyEmailSpamFilter-Dev.exe, runs it)
+  powershell -NoProfile -ExecutionPolicy Bypass -File "D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts\build-windows.ps1" -Environment dev
 
-# Run the Production (main)
-Start-Process "D:\Data\Harold\github\spamfilter-multi\mobile-app\build\windows\x64\runner\Release\MyEmailSpamFilter.exe"
-# if it does not exist, then build first:
+# *** build + launch PROD variant (creates Release-prod/MyEmailSpamFilter.exe, runs it)
+  powershell -NoProfile -ExecutionPolicy Bypass -File "D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts\build-windows.ps1" -Environment prod
 
-# Build and run Production from Main branch
-  # 1. Switch to main branch and pull latest
-  cd D:\Data\Harold\github\spamfilter-multi
-  git checkout main
-  git pull origin main
+# *** RUN DEV variant manually
+Start-Process "D:\Data\Harold\github\spamfilter-multi\mobile-app\dist\dev\MyEmailSpamFilter-Dev.exe"
 
-  # 2. Build and launch production app
-  cd mobile-app\scripts
-  .\build-windows.ps1 -Environment prod -RunAfterBuild:$false
+# *** RUN PROD variant manually
+Start-Process "D:\Data\Harold\github\spamfilter-multi\mobile-app\dist\prod\MyEmailSpamFilter.exe"
 
-# Run Windows Emulator
-cd D:\Data\Harold\github\spamfilter-multi\mobile-app; flutter run -d windows
-# If needed confirm dependencies and then re-build the app
-cd d:\Data\Harold\github\spamfilter-multi\mobile-app; flutter pub get
-cd d:\Data\Harold\github\spamfilter-multi\mobile-app; flutter build windows
-# single command line for full Windows App rebuild and run for testing
-powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-windows.ps1"
-
-powershell -NoProfile -ExecutionPolicy Bypass -File D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts\build-windows.ps1
-
-
-cd D:\Data\Harold\github\spamfilter-multi\mobile-app; flutter put get; flutter build windows; flutter run -d windows
-# NOTE: Log file is: 
 
 # Run Android Emulator -------------------------
 #   Preferred method

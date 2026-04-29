@@ -254,23 +254,25 @@ The original ADR-0035 implementation isolated dev and prod by data directory, ta
 Sprint 37 F52 Phase 1 layers env-specific persistent run targets on top of the existing Flutter build:
 
 1. `flutter build windows` continues to produce `build\windows\x64\runner\Release\MyEmailSpamFilter.exe` (no change to Flutter or CMakeLists.txt).
-2. `build-windows.ps1` post-build copies the canonical Release/ output to an env-specific directory:
-   - **prod** -> `build\windows\x64\runner\Release-prod\MyEmailSpamFilter.exe`
-   - **dev** -> `build\windows\x64\runner\Release-dev\MyEmailSpamFilter-Dev.exe`
+2. `build-windows.ps1` post-build copies the canonical Release/ output to an env-specific directory **outside `build/`** so `flutter clean` does not wipe it on the next build:
+   - **prod** -> `mobile-app\dist\prod\MyEmailSpamFilter.exe`
+   - **dev** -> `mobile-app\dist\dev\MyEmailSpamFilter-Dev.exe`
 3. The Windows Task Scheduler scheduled task points to the env-specific persistent path (not the canonical Release/ path), so the prod and dev tasks reference distinct .exe files that survive cross-environment rebuilds.
-4. The Microsoft Store MSIX path is unchanged -- it installs to its own `Packages\{PackageFamilyName}\` location and is independent of the build output.
+4. Before `flutter clean`, `build-windows.ps1` Step 1 terminates any running `MyEmailSpamFilter*.exe`, `dart.exe`, or `dartvm.exe` processes that hold file locks under `build/`. Without this, `flutter clean` silently no-ops on locked files and the next `flutter build` reuses stale AOT artifacts (root cause of the original Sprint 37 Phase 5.3 escape where building dev then prod produced a prod variant with the dev AOT baked in).
+5. The script's "run after build" step uses `Start-Process $variantBuildTarget` (direct launch of the variant `.exe`) instead of `flutter run`. `flutter run` rebuilds and leaves a Dart VM attached that holds `build/` file locks, defeating step 4 on the next build.
+6. The Microsoft Store MSIX path is unchanged -- it installs to its own `Packages\{PackageFamilyName}\` location and is independent of the build output.
 
 ### Properties Preserved
 - All ADR-0035 isolation properties (data dir, mutex, task name, log file, window title) still apply.
 - MSIX store builds still use `flutter pub run msix:create` against the prod worktree per `docs/STORE_RELEASE_PROCESS.md`.
-- Debug builds are unaffected (debug runner paths are temporary).
+- Debug builds are unaffected (debug runner paths are temporary -- variant copy and direct launch only apply in release mode).
 
 ### Variant Layout
 
 | Variant | Source Branch | Build Output (Persistent) | App Data | Task Name |
 |---|---|---|---|---|
-| Dev | feature/* or develop | `Release-dev\MyEmailSpamFilter-Dev.exe` | `MyEmailSpamFilter_Dev\` | `SpamFilterBackgroundScan_Dev` |
-| Prod | main | `Release-prod\MyEmailSpamFilter.exe` | `MyEmailSpamFilter\` | `SpamFilterBackgroundScan` |
+| Dev | feature/* or develop | `mobile-app\dist\dev\MyEmailSpamFilter-Dev.exe` | `MyEmailSpamFilter_Dev\` | `SpamFilterBackgroundScan_Dev` |
+| Prod | main | `mobile-app\dist\prod\MyEmailSpamFilter.exe` | `MyEmailSpamFilter\` | `SpamFilterBackgroundScan` |
 | Store (MSIX) | main | `Packages\{PackageFamilyName}\` | (sandboxed by MSIX) | (none -- store builds do not register Task Scheduler) |
 
 ### Future Phases (F52)
