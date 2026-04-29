@@ -26,6 +26,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-04-29 (Sprint 37 -- F52 Phase 1 compile-time window title fix)
+- **fix**: Window title for prod variant now correctly omits `[DEV]` suffix. Root cause: `windows/runner/main.cpp` was deciding the title at runtime by parsing `GetCommandLineW()` for the literal `APP_ENV=prod`, which works for `flutter run --dart-define=APP_ENV=prod` invocations but FAILS for direct-launch variants (`Start-Process .exe` with no args) AND for Microsoft Store MSIX where the Store launcher does not pass dart-define args. Fix bakes `SPAMFILTER_APP_ENV` into the .exe at compile time via a `target_compile_definitions` entry in `windows/runner/CMakeLists.txt`, sourced from the `SPAMFILTER_APP_ENV` environment variable that `build-windows.ps1` exports before invoking `flutter build windows`. Verified: `dist/prod/MyEmailSpamFilter.exe` launched via `Start-Process` with no args now shows window title `MyEmailSpamFilter` (no `[DEV]` suffix). Critical for store-bound builds. (Issue #248)
+
 ### 2026-04-29 (Sprint 37 -- F52 Phase 1 Phase 5.3 fixes)
 - **fix**: F52 Phase 1 build-windows.ps1 robustness against back-to-back environment builds. Three changes:
   1. Variant dirs moved from `build/windows/x64/runner/Release-{env}/` to `mobile-app/dist/{env}/` (outside `build/`) so `flutter clean` does not wipe the prior variant on the next build.

@@ -205,6 +205,16 @@ if ($AnalyzeSize) {
     $buildCommand += " --analyze-size"
 }
 
+# Sprint 37 F52 Phase 1: export SPAMFILTER_APP_ENV so CMake (configuring
+# the Windows runner) sees it at build time. CMakeLists.txt picks this up
+# and bakes it into the .exe via target_compile_definitions, so the
+# window title is determined by the binary itself rather than by a
+# runtime command-line check. Required for direct-launch variants and
+# for Microsoft Store MSIX uploads (where the Store launcher does NOT
+# pass --dart-define on the command line).
+$env:SPAMFILTER_APP_ENV = $Environment
+Write-Host "       SPAMFILTER_APP_ENV exported as: $env:SPAMFILTER_APP_ENV" -ForegroundColor Gray
+
 # Execute build
 Write-Host "       Command: $buildCommand" -ForegroundColor Gray
 Invoke-Expression $buildCommand

@@ -37,6 +37,23 @@ target_compile_definitions(${BINARY_NAME} PRIVATE "FLUTTER_VERSION_MINOR=${FLUTT
 target_compile_definitions(${BINARY_NAME} PRIVATE "FLUTTER_VERSION_PATCH=${FLUTTER_VERSION_PATCH}")
 target_compile_definitions(${BINARY_NAME} PRIVATE "FLUTTER_VERSION_BUILD=${FLUTTER_VERSION_BUILD}")
 
+# Sprint 37 F52 Phase 1: bake APP_ENV into the runner .exe at compile time
+# so the window title is determined by the binary itself, not by a runtime
+# command-line check. Required for direct-launch variants (Start-Process
+# .exe with no args) and for Microsoft Store MSIX uploads where the
+# launcher cannot pass --dart-define.
+#
+# Drives APP_ENV from the SPAMFILTER_APP_ENV environment variable seen by
+# CMake at configure time (set by build-windows.ps1 before invoking
+# `flutter build windows`). Defaults to "dev" if unset.
+if(DEFINED ENV{SPAMFILTER_APP_ENV})
+  set(SPAMFILTER_APP_ENV "$ENV{SPAMFILTER_APP_ENV}")
+else()
+  set(SPAMFILTER_APP_ENV "dev")
+endif()
+message(STATUS "Sprint 37 F52: SPAMFILTER_APP_ENV='${SPAMFILTER_APP_ENV}'")
+target_compile_definitions(${BINARY_NAME} PRIVATE "SPAMFILTER_APP_ENV=\"${SPAMFILTER_APP_ENV}\"")
+
 # Disable Windows macros that collide with C++ standard library functions.
 target_compile_definitions(${BINARY_NAME} PRIVATE "NOMINMAX")
 
