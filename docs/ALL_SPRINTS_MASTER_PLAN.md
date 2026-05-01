@@ -101,6 +101,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 34 | docs/sprints/SPRINT_34_RETROSPECTIVE.md | [OK] Complete | Apr 17-18, 2026 |
 | 35 | docs/sprints/SPRINT_35_RETROSPECTIVE.md | [OK] Complete | Apr 19, 2026 |
 | 36 | docs/sprints/SPRINT_36_RETROSPECTIVE.md | [OK] Complete | Apr 20-25, 2026 |
+| 37 | docs/sprints/SPRINT_37_RETROSPECTIVE.md | [OK] Complete | Apr 27 - May 1, 2026 |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -108,20 +109,19 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 36** (April 20-25, 2026)
-- **Type**: Mixed (process docs + bug fix + process improvement)
-- **Feature**: 3 planned tasks (Issue #244) + retro-driven process improvements (5 IMPs applied)
+**Sprint 37** (April 27 -- May 1, 2026)
+- **Type**: Mixed (bug fix + perf optimization + build infrastructure + retrospective improvements)
+- **Feature**: 3 main tasks (BUG-S36-1 Issue #246; F6 Issue #247; F52 Phase 1 Issue #248) + 7 retrospective IMPs applied at Phase 7
 - **Delivered**:
-  - F81 (Issue #242): Store release process documentation. New `docs/STORE_RELEASE_PROCESS.md` (231 lines) covering pre-release, version-bump (5-file), `secrets.prod.json` recreation, supported MSIX build (`flutter pub run msix:create`), MSIX verification, develop -> main merge, Partner Center upload, post-submission, troubleshooting. Plus 5 supporting fixes (root `.gitignore` `*.manifest` scoped to Archive only; `secrets.prod.json.template` key correction to `WINDOWS_GMAIL_*`; `build-msix.ps1` deprecation header; `runner.exe.manifest` committed; CLAUDE.md + ADR-0035 cross-references).
-  - BUG-S35-1 (Issue #239): Manual rule duplicate prevention. New `ManualRuleDuplicateChecker` service (normalized lowercase+trim SELECT against rules and safe_senders) + 15 unit tests across all 4 block-rule sub-types and 3 safe-sender sub-types. Phase 5 UX refinement moved the duplicate check before the Confirm dialog (was after).
-  - F80 (Issue #241): 24-line Phase Cheat Sheet prepended to `docs/SPRINT_EXECUTION_WORKFLOW.md`.
-  - Sprint 36 retrospective process improvements (5 IMPs applied this sprint): IMP-1 Phase 3.2.2.1 plan-to-branch-state verification gate (SPRINT_EXECUTION_WORKFLOW.md), IMP-2 widget-test mandate for UX flow changes (TESTING_STRATEGY.md), IMP-3 Phase 3.7 approval verification gate in `/startup-check` skill, IMP-4 Opus 4.7 pitfall entry 7 + memory `feedback_follow_the_docs.md`, IMP-5 memory `feedback_background_task_stdout.md`.
-- **Backlog additions**: BUG-S36-1 (manual rule allows semantic subsumption -- Issue #246, Sprint 37 carry-in)
-- **Tests**: +15 net (1378 total passing, 0 analyzer issues)
-- **Effort**: ~3h wall clock vs 8-10h estimate (~40% of estimate; doc-heavy sprints compress further than estimates suggest)
-- **Process improvement**: Closed the session-resume approval-verification gap (IMP-3 startup-check), the plan-staleness gap (IMP-1 Phase 3.2.2.1), and the UX-flow-change-without-widget-test gap (IMP-2 TESTING_STRATEGY mandate). Stop-hook fired once during sprint, worked as intended, 0 false positives.
-- **Retrospective**: docs/sprints/SPRINT_36_RETROSPECTIVE.md
-- **PR**: #245 (against develop)
+  - BUG-S36-1 (Issue #246): Manual rule semantic subsumption pre-insert check. Coverage matrix (`exact_email` covered by `exact_domain`/`entire_domain`; `exact_domain` covered by `entire_domain`; `entire_domain` not covered; TLD no overlap). 14 new unit tests. New `SubsumingRuleInfo` type carries the covering-rule details to the user-facing validation error.
+  - F6a/F6b/F6c (Issue #247): Gmail scan-path optimization. F6a parallelized `messages.get` via `Future.wait` (~10x fetch speedup); F6b added optional server-side label exclusion via new `setExcludedLabels(...)`; F6c shipped the Gmail historyId adapter (`fetchMessagesIncremental(startHistoryId)` returns `IncrementalFetchResult` full / partial / expired). DB schema v3 -> v4 migration adds `last_history_id` column to `accounts`. EmailScanProvider wiring tracked separately for Sprint 38 (Issue #250).
+  - F52 Phase 1 (Issue #248): Windows distinct .exe + dirs. `dist/dev/MyEmailSpamFilter-Dev.exe` + `dist/prod/MyEmailSpamFilter.exe` coexist on disk; build-windows.ps1 kills stale Dart VMs before flutter clean and direct-launches the variant binary (no Dart VM reattach). CMakeLists.txt bakes `SPAMFILTER_APP_ENV` at compile time so window title is correct in store/MSIX builds. F52 Phase 2 (Android flavors) deferred to Sprint 38 -- external Firebase Console + GCP setup prerequisites surfaced.
+  - Phase 7 retrospective improvements applied this sprint (7 IMPs): IMP-1 SelectableText on Manage Rules + Manage Safe Senders rows (UX); IMP-2 Help screen "Other ways to reduce junk email/mail/texts/phone calls" section (UX, sources FTC + DoNotCall.gov); IMP-6 Phase 6.4 Copilot review marked conditional in SPRINT_EXECUTION_WORKFLOW.md; IMP-7 new Phase 3.2.2.2 re-estimate-after-dependency-findings sub-step; IMP-8 F52 Phase 2 carry-in row in master plan (this section); IMP-9 Issue #250 created tracking F6c provider wiring; IMP-11 build-windows.ps1 fixes verified already-shipped mid-sprint.
+- **Backlog additions** (5 new items from Phase 7 Imp-3/4/5/10/12): F82 Scan Results "no rules" progress indicator (UX), F83 per-account Background Scanning separation (architecture, multi-sprint), BUG-S37-1 background scan SQLite "database is locked", BUG-S37-2 TLD data quality cleanup + ccTLD blocklist expansion (with 4 design-option scoping alternatives), F61 extended to cover Sprint 37 type/schema additions.
+- **Tests**: +29 in main sprint scope (BUG-S36-1 14, F6b 8, F6c 5+2) + 3 from Imp-2 widget tests = 1409 total passing / 0 failing / 0 analyzer issues. Imp-1 widget tests dropped (FakeAsync + sqflite_ffi `pumpWidget` incompatibility; trivial `Text -> SelectableText` swap covered by manual testing + code review).
+- **Effort**: ~5h main-sprint wall clock vs 23-31h estimate (~20% of estimate); +~2h Phase 7 IMPs application = ~7h total
+- **Retrospective**: docs/sprints/SPRINT_37_RETROSPECTIVE.md
+- **PR**: #249 (against develop)
 
 ---
 
@@ -133,12 +133,25 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 
 ### Core App
 
-**F52. Multi-variant side-by-side install across all stores (~16-24h) Priority 90**
+**F52 Phase 2. Android dev/prod/store flavors (~6-8h) Priority 90 (Issue #248) -- SPRINT 38 CARRY-IN from Sprint 37**
 - Phase: Build and Release Infrastructure
-- Platform: All (Windows, Android, iOS)
-- Extend ADR-0035 dev/prod separation to all 9 build variants (3 stores × 3 channels: dev, production, store)
+- Platform: Android
+- Sprint 37 shipped Phase 1 (Windows distinct .exe + dirs); Phase 2 (Android `productFlavors` with `applicationIdSuffix .dev` / `.prod`) was deferred per SPRINT_STOPPING_CRITERIA.md Criterion 2 (external dependency).
+- **Prerequisites (must be done BEFORE this work can produce a runnable Android build):**
+  1. Firebase Console -- register SHA-1 fingerprint for `com.myemailspamfilter.dev` applicationId
+  2. Firebase Console -- register SHA-1 fingerprint for `com.myemailspamfilter.prod` applicationId
+  3. Google Cloud Console -- create OAuth client ID for `.dev` package + matching SHA-1
+  4. Google Cloud Console -- create OAuth client ID for `.prod` package + matching SHA-1
+- **Pre-existing investigation item (surfaced during Sprint 37 Phase 2 dependency check)**: `mobile-app/android/app/google-services.json` has `applicationId="com.example.spamfiltermobile"` while `build.gradle.kts` declares `applicationId="com.myemailspamfilter"`. This mismatch should be diagnosed and fixed BEFORE adding flavor complexity (could be why current Android Gmail OAuth has been intermittent).
+- Memory note: `project_f52_phase2_blockers.md` has full Sprint 37 deferral context.
+- Source: Sprint 37 retrospective Category 11 + Category 13; Issue #248 deferral comment
+
+**F52 Phase 3+. iOS variants + cross-store hardening (remaining ~10-16h) Priority 88**
+- Phase: Build and Release Infrastructure
+- Platform: iOS, plus polish across all 9 variants (3 stores x 3 channels: dev, production, store)
 - All variants must run simultaneously without rebuild on same machine/device
 - [Detail](#f52-multi-variant-side-by-side-install)
+- Source: ADR-0035 dev/prod separation
 
 **F63. Responsive design framework (~8-12h) Priority 70**
 - Phase: UX Improvement
@@ -148,6 +161,18 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Priority screens: scan progress, results display, settings
 - Related: F55 (navigation consistency) should be done before or with this
 - Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gap G23)
+
+**F82. Scan History > Scan Results "no rules" progress indicator (~4-8h, design + impl) Priority 75 -- SPRINT 38 CARRY-IN from Sprint 37**
+- Phase: UX Improvement
+- Platform: All
+- Source: Sprint 37 retrospective Category 13 (Harold) -- "What would you suggest for this screen?"
+- **Problem**: Users frequently use Scan History > Scan Results to add rules for items showing "no rules". When background scanning is enabled, known-rule matches are deleted and safe-sender matches are moved away, so what remains is the "no rules" pool. Users need to see which items have already had rules added (this session) vs. which still need rules so they can quickly process the entire pool.
+- **Reference pattern**: Manual Scan > Live Scan > Results already does this well -- adding a rule removes ALL matching rows from the visible list and async-deletes matching emails. The Scan History > Scan Results screen needs equivalent behavior.
+- **Design phase first** (~1-2h, do in Phase 3): produce 1-2 mock variants for Harold's selection. Three candidate approaches:
+  - **(a) Mirror Live Scan exactly**: re-evaluate the new rule against in-memory result set; remove all matching rows; toast "Rule applied -- N items removed, M 'no rules' items remaining"; footer counter "M no-rules remaining / total".
+  - **(b) Visual badging**: keep all rows but mark addressed rows green/dimmed and remaining "no rules" rows with a yellow flag; "Hide addressed" toggle; counter "[2 addressed / 17 no-rules remaining]".
+  - **(c) Two-tab layout**: split Scan Results into "Addressed (rules created this session)" and "Pending (no rules)" tabs with per-tab counter.
+- **Implementation phase** (~3-6h, Phase 4): wire the chosen design + 3-5 widget/integration tests covering rule-add -> list-update -> counter-update flow. Async background-delete of matching emails (mirroring Live Scan) so future background scans do not re-encounter them.
 
 ### Process
 
@@ -170,6 +195,29 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Format: 7-row table (Phase | Purpose | Top-3 Actions | Auto-advance trigger) with anchor links to detailed sections
 - Source: Sprint 35 retrospective Process Issues -- proposal P3 (Opus 4.7 phase-boundary overhead)
 - Companion to Sprint 35 fixes already shipped: Phase Auto-Advance Rule (CLAUDE.md), Standing Approval Inventory (Phase 3.7), Model-Version Pitfalls appendix (CLAUDE.md)
+
+**F83. Per-account Background Scanning -- separation of concerns (~2 sprints, design + impl + cross-platform validation) Priority 60 -- SPRINT 38+ from Sprint 37**
+- Phase: Architecture refactor + code
+- Platform: All (Windows, Android, iOS) x (dev, prod, store)
+- Source: Sprint 37 retrospective Category 14 (Harold) -- "Important for separation of concerns and future debugging"
+- **Current behavior (problem)**: Background Scanning is currently treated as an app-wide setting -- enabling it on ANY account causes ALL accounts to be scanned by the background pipeline. There is no way to enable background scanning for one account but not another.
+- **Desired behavior**: Full per-account / per-(provider, email-address) separation of background-scan state, scheduling, and artifacts. Enabling on one account must NOT enable it on another.
+- **Phase 1 -- Deep code research (~1 sprint)**: produce a written design doc / ADR enumerating every place in the code that the global background-scan setting is read, written, or assumed, and every artifact path it influences. Required scope:
+  - Settings UI -- per-account toggle vs. app-wide toggle
+  - Settings storage -- DB schema additions (`background_scan_enabled` per account row vs. a single global key)
+  - Task Scheduler entries (Windows) -- one entry per account vs. one global entry that iterates accounts; naming convention for per-account tasks
+  - WorkManager entries (Android) -- equivalent
+  - Log file separation -- per-account log paths under `logs/`
+  - CSV / .xlsx export file separation -- include accountId in filenames
+  - Scan modes per account -- already per-account in Sprint 31; verify
+  - Scan range per account -- already per-account; verify
+  - Selected folders per account -- already per-account; verify
+  - Background-scan invocation: `--background-scan` CLI arg currently scans all accounts; change to `--background-scan --account-id=<id>`
+  - Help text updates -- explain per-account toggle and what it controls
+  - Cross-cutting variant correctness: must work correctly across {Windows Store, Android, iOS} x {dev, prod}
+- **Phase 2 -- Implementation (~1 sprint)**: against approved Phase 1 design.
+- **Phase 3 -- Cross-platform validation**: Windows dev + prod + Store, Android dev + prod, iOS (when available) dev + prod.
+- **Out of scope**: per-account scan-history retention (already handled per-account); per-account safe-sender list (already per-account via accountId).
 
 ### Bugs
 
@@ -196,6 +244,42 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - 5-8 new unit tests covering the coverage matrix plus the null case (no coverage -> insert succeeds).
 - Source: Sprint 36 Phase 5 manual testing feedback (Harold, 2026-04-21)
 - Dependencies: Sprint 36 BUG-S35-1 pre-insert checker infrastructure (already shipped in `manual_rule_duplicate_checker.dart`)
+
+**BUG-S37-1. Background scan SQLite "database is locked" when foreground UI is also running (~2-3h) Priority 65 -- SPRINT 38+ from Sprint 37**
+- Phase: Bug fix / Concurrency / Single-instance enforcement
+- Platform: Windows (where discovered; investigate cross-platform implications)
+- Files (likely): `mobile-app/lib/core/storage/database_helper.dart`, the single-instance mutex code (per ADR-0035), background scan worker code path (`--background-scan` invocation)
+- Failure: During Sprint 37 Phase 5.3 prod-build manual testing, "Test Background Scan" failed with `SqfliteFfiException(sqlite_error: 5, "database is locked")`. Cause confirmed via `tasklist`: a leftover prod variant process (PID 21772) was holding the prod DB open while the foreground UI also queried it. The single-instance mutex was supposed to make this impossible per ADR-0035.
+- **Investigation questions**:
+  1. Is the single-instance mutex correctly preventing duplicate prod processes from launching, OR did the user manage to launch a second prod process despite the mutex?
+  2. Does the background scan path open its own DB connection that conflicts with the UI's connection within the same process?
+  3. Does `--background-scan` run as a separate process from the UI, and if so does it bypass the single-instance mutex (since they would both be valid "first" instances)?
+- **Acceptance criteria**:
+  - Reproduce reliably (start prod variant, leave running, attempt "Test Background Scan" from same UI -- or some equivalent that triggers the lock).
+  - Diagnose whether root cause is mutex bypass, intra-process connection conflict, or inter-process `--background-scan` invocation.
+  - Fix root cause (do not silently suppress the SqfliteFfiException).
+  - Add 2-3 tests covering the diagnosed scenario.
+- Source: Sprint 37 retrospective Category 14 (Phase 5.3 manual testing surfaced this; pre-existing -- not a Sprint 37 regression).
+
+**BUG-S37-2. Bundled-rule TLD data quality + country-TLD blocklist expansion (~3-5h) Priority 50 -- SPRINT 38+ from Sprint 37**
+- Phase: Bug fix / Data quality / Bundled rules
+- Platform: All
+- File: bundled `rules.yaml` + `rules_safe_senders.yaml`, plus `condition_header` rows where `pattern_sub_type='top_level_domain'` in the seeded DB
+- **Two combined sub-tasks**:
+  - **(a) Data quality cleanup** -- audit existing bundled TLD rules for typos and miscategorizations:
+    - Likely typos (single-character TLDs, double-suffix typos): `*.c`, `*.giw`, `*.nwm`, `*.sweepss`, `*.xd`, `*.xn-*`
+    - Miscategorized second-level domains masquerading as TLDs: `*.de.com`, `*.in.net`, `*.jp.com`, `*.qzz.io`, `*.sa.com`, `*.uk.com`, `*.us.kg`
+    - Approach: script-driven sweep that outputs candidates for Harold review; do NOT auto-apply changes.
+  - **(b) Country-TLD (ccTLD) blocklist expansion** -- pre-populate the bundled blocklist with country-code TLDs.
+    - **Stated scope (Harold, Sprint 37 retro)**: "Add all 'country' TLD's except US and UK -- open to other suggestions."
+    - **Design phase first** (~1h, Phase 3 of whichever sprint takes this): pick a scoping strategy. Four candidate options:
+      - **(a) Strict per stated scope**: block all ~250 ccTLDs except `.us` and `.uk`. Simplest, broadest. Risk: blocks legitimate mail from `.ca` Canada, `.au` Australia, `.ie` Ireland, `.nz` New Zealand which Harold may interact with.
+      - **(b) English-speaking allies allowlist**: allow `.us`, `.uk`, `.ca`, `.au`, `.nz`, `.ie`. Block all other ccTLDs. Lower false-positive risk for North American / Oceania / Ireland correspondents.
+      - **(c) High-spam ccTLDs only**: block known abuse-heavy ccTLDs (`.tk`, `.ml`, `.ga`, `.cf`, `.gq` -- the Freenom set; plus `.ru`, `.cn`, `.top`, etc.). More surgical, fewer false positives, but requires curated source list.
+      - **(d) Allowlist-driven**: user configures allowed ccTLDs at first run; default-block everything else. Most flexible, most setup friction.
+    - Source for the canonical ccTLD list: ICANN ISO 3166-1 alpha-2 list.
+- **Implementation phase**: produce a YAML patch / DB migration with the chosen TLDs as `pattern_sub_type='top_level_domain'` block rules. Include a one-time migration that removes the typos identified in sub-task (a) so the cleanup ships with the expansion.
+- Source: Sprint 37 retrospective Category 14 (Claude + Harold combined). Could roll into F33 (HOLD) when reactivated, OR ship standalone as a smaller Sprint 38+ task.
 
 ### Security Hardening (Sprint 31 Audit)
 
@@ -260,13 +344,19 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Platform: All
 - [Detail](#f6-provider-specific-optimizations)
 
-**F61. Architecture documentation refresh (~3-4h) Priority HOLD**
+**F61. Architecture documentation refresh (~4-6h) Priority HOLD**
 - Phase: Documentation
 - Platform: All
 - Update ARCHITECTURE.md: remove Dual-Write pattern (superseded Sprint 20), add missing services (DefaultRuleSetService, RuleConflictDetector, EmailAvailabilityChecker, EmailBodyParser, DevEnvironmentSeeder), add missing screens (yaml_import_export, rule_test), add missing DB tables (unmatched_emails, background_scan_log)
 - Update ARSD.md: remove Dual-Write from design patterns table, update Store certification status to "Passed", update Glossary
+- **Sprint 37 additions** (added 2026-05-01 from Sprint 37 retrospective Imp-10): also add the new types and schema introduced after the original F61 scope was written:
+  - `manual_rule_duplicate_checker.dart` -- new service that owns subsumption + duplicate detection (Sprint 36 BUG-S35-1, Sprint 37 BUG-S36-1).
+  - `SubsumingRuleInfo` class -- carries the "covering rule" details surfaced to the user when a manual rule attempt is rejected (Sprint 37).
+  - `IncrementalFetchResult` class -- Gmail-specific incremental scan result (full / partial / expired) returned by `GmailApiAdapter.fetchIncrementalChanges` (Sprint 37 F6c).
+  - `Gmail batch operations` (Sprint 25) and parallel `messages.get` fetch (Sprint 37 F6a) -- both should appear in the Gmail adapter section of ARCHITECTURE.md.
+  - DB schema v4 migration (`last_history_id` column on the per-account state table, Sprint 37 F6c) -- ARCHITECTURE.md DB schema section should reflect v4.
 - HOLD rationale: Moved to HOLD during Sprint 33 planning (April 14, 2026) per user direction. Sprint 33 includes ARCHITECTURE.md updates for new components (SQLCipher, HelpScreen, DataDeletionService, PatternCompiler revisions) so partial doc refresh happens organically. Full F61 work can be reactivated when next periodic architecture review is scheduled.
-- Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gaps G1-G6, G16-G22)
+- Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gaps G1-G6, G16-G22) + Sprint 37 retrospective Category 12 + Imp-10
 
 **F64. CI/CD pipeline with GitHub Actions (~4-6h) Priority HOLD**
 - Phase: DevOps
