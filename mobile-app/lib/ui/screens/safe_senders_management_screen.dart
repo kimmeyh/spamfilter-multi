@@ -536,24 +536,31 @@ class _SafeSendersManagementScreenState
     final hasExceptions = sender.exceptionPatterns != null &&
         sender.exceptionPatterns!.isNotEmpty;
 
+    // Sprint 37 Phase 7 Imp-1: row text must be selectable so users can copy a
+     // pattern out of the list. The ListTile's onTap (open details) is moved to
+     // the leading icon and to the SelectableText.onTap so text-tap selects.
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: ListTile(
-        leading: Icon(
-          _getPatternTypeIcon(sender),
-          color: Colors.green.shade700,
+        leading: GestureDetector(
+          onTap: () => _showPatternDetails(sender),
+          child: Icon(
+            _getPatternTypeIcon(sender),
+            color: Colors.green.shade700,
+          ),
         ),
-        title: Text(
+        title: SelectableText(
           sender.pattern,
           style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
           maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+          onTap: () => _showPatternDetails(sender),
         ),
         subtitle: Row(
           children: [
-            Text(
+            SelectableText(
               _formatPatternType(sender),
               style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              onTap: () => _showPatternDetails(sender),
             ),
             if (hasExceptions) ...[
               const SizedBox(width: 8),
@@ -581,7 +588,6 @@ class _SafeSendersManagementScreenState
           tooltip: 'Delete',
           onPressed: () => _deleteSafeSender(sender),
         ),
-        onTap: () => _showPatternDetails(sender),
       ),
     );
   }

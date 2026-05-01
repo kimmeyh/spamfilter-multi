@@ -42,6 +42,9 @@ enum HelpSection {
   safeSenders,
   folderSelection,
   yamlImportExport,
+  // Sprint 37 Phase 7 Imp-2: terminal "see also" section pointing users to
+  // outside-the-app channels for unwanted email/text/mail/calls.
+  otherWaysToReduceJunk,
 }
 
 class HelpScreen extends StatefulWidget {
@@ -478,9 +481,106 @@ class _HelpScreenState extends State<HelpScreen> {
                       'capped at 10 MB and parsed with ReDoS detection -- '
                       'dangerous patterns are rejected at parse time.',
                 ),
+                _section(
+                  HelpSection.otherWaysToReduceJunk,
+                  title:
+                      'Other ways to reduce junk email, mail, texts, and phone calls',
+                  body:
+                      'This app filters mail in your inbox. The unwanted '
+                      'messages you receive at all also have official '
+                      'reporting and opt-out channels run by the FTC, FCC, '
+                      'major carriers, and direct-mail trade groups. Using '
+                      'them in addition to (not instead of) this app reduces '
+                      'the volume that ever reaches your inbox in the first '
+                      'place.\n\n'
+                      'Unwanted emails:\n'
+                      '- Use the "Unsubscribe" link in any email from a '
+                      'sender you once did business with. Legitimate U.S. '
+                      'senders are required by the CAN-SPAM Act to honor '
+                      'unsubscribe requests within 10 business days.\n'
+                      '- Mark obvious spam as "Junk" or "Spam" in your '
+                      'provider (Gmail, Outlook.com, AOL, Yahoo). This '
+                      'trains your provider\'s filter and demotes the '
+                      'sender for everyone.\n'
+                      '- Do not click links or open attachments in spam; '
+                      'doing so confirms the address is live and increases '
+                      'volume.\n'
+                      '- Forward phishing email to '
+                      'reportphishing@apwg.org (Anti-Phishing Working '
+                      'Group) and to the impersonated brand\'s abuse '
+                      'address.\n'
+                      '- Report scams (not just spam) to the FTC at '
+                      'ReportFraud.ftc.gov.\n'
+                      '- See: '
+                      'consumer.ftc.gov/unwanted-calls-emails-and-texts/'
+                      'unwanted-emails-texts-and-mail\n\n'
+                      'Unwanted texts:\n'
+                      '- Forward the spam text to 7726 (which spells '
+                      '"SPAM"). All major U.S. carriers accept reports at '
+                      'this short code free of charge; they use the '
+                      'reports to identify and block sending numbers.\n'
+                      '- Use your phone\'s built-in "Block this number" / '
+                      '"Report Junk" option (iOS Messages and Google '
+                      'Messages both have one-tap reporting).\n'
+                      '- Report scam texts to the FTC at '
+                      'ReportFraud.ftc.gov.\n'
+                      '- Do not reply -- not even with "STOP" -- to texts '
+                      'from unknown senders. Replying confirms a live '
+                      'number to spammers. Use carrier or device blocking '
+                      'instead.\n'
+                      '- See: '
+                      'consumer.ftc.gov/unwanted-calls-emails-and-texts/'
+                      'unwanted-emails-texts-and-mail\n\n'
+                      'Unwanted postal mail:\n'
+                      '- Opt out of pre-screened credit and insurance '
+                      'offers at OptOutPrescreen.com (the official site '
+                      'authorized by the major credit bureaus). You can '
+                      'opt out for 5 years online or for life by mailing '
+                      'a signed form. Phone: 1-888-5-OPTOUT '
+                      '(1-888-567-8688).\n'
+                      '- Opt out of marketing mail from the Direct '
+                      'Marketing Association at DMAchoice.org. Small '
+                      'one-time fee; reduces national-list mailings for '
+                      '10 years.\n'
+                      '- For mail addressed to a previous resident, write '
+                      '"Not at this address" on the unopened envelope and '
+                      'put it back in the mailbox.\n'
+                      '- For mail-order catalogs, contact each catalog '
+                      'directly to be removed; CatalogChoice.org also '
+                      'streamlines opt-outs across many catalogs.\n'
+                      '- See: '
+                      'consumer.ftc.gov/unwanted-calls-emails-and-texts/'
+                      'unwanted-emails-texts-and-mail\n\n'
+                      'Unwanted phone calls:\n'
+                      '- Register your phone number on the National Do '
+                      'Not Call Registry at DoNotCall.gov, or by calling '
+                      '1-888-382-1222 from the phone you want to '
+                      'register. Free; registration is permanent until '
+                      'you remove the number.\n'
+                      '- Note what the registry does NOT cover: political '
+                      'calls, charities, debt collectors, surveys, and '
+                      'companies you have a recent business relationship '
+                      'with are all exempt.\n'
+                      '- After 31 days on the registry, report unwanted '
+                      'sales calls and most robocalls at DoNotCall.gov '
+                      '(or 1-888-382-1222).\n'
+                      '- Use your phone\'s "Silence Unknown Callers" '
+                      'feature (iOS) or "Filter spam calls" (Google '
+                      'Phone) to send unrecognized callers straight to '
+                      'voicemail.\n'
+                      '- Most U.S. carriers offer a free spam-call '
+                      'blocking service: Verizon Call Filter, AT&T '
+                      'ActiveArmor, T-Mobile Scam Shield. Enable it from '
+                      'your carrier account or app.\n'
+                      '- Report scam and robocall violations to the FTC '
+                      'at ReportFraud.ftc.gov and to the FCC at '
+                      'fcc.gov/consumers/guides/stop-unwanted-robocalls-'
+                      'and-texts.\n'
+                      '- See: DoNotCall.gov',
+                ),
                 const SizedBox(height: 24),
                 Text(
-                  'Last updated: Sprint 33 (April 2026). Report issues at '
+                  'Last updated: Sprint 37 (May 2026). Report issues at '
                   'github.com/kimmeyh/spamfilter-multi/issues.',
                   style: TextStyle(
                     color: Colors.grey.shade600,

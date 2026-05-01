@@ -680,16 +680,23 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
     final categoryLabel = _categoryLabels[rule.patternCategory] ?? rule.patternCategory ?? '';
     final subTypeLabel = _subTypeLabels[rule.patternSubType] ?? rule.patternSubType ?? '';
 
+    // Sprint 37 Phase 7 Imp-1: row text must be selectable so users can copy a
+     // domain/email/pattern out of the list. The ListTile's onTap (open details)
+     // is preserved by tapping the icon column or the empty trailing area; text
+     // taps now select instead of opening the dialog.
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       child: ListTile(
         dense: true,
-        leading: Icon(
-          _getCategoryIcon(rule.patternCategory),
-          color: rule.enabled ? _getSubTypeColor(rule.patternSubType) : Colors.grey.shade400,
-          size: 22,
+        leading: GestureDetector(
+          onTap: () => _showRuleDetails(rule),
+          child: Icon(
+            _getCategoryIcon(rule.patternCategory),
+            color: rule.enabled ? _getSubTypeColor(rule.patternSubType) : Colors.grey.shade400,
+            size: 22,
+          ),
         ),
-        title: Text(
+        title: SelectableText(
           displayName,
           style: TextStyle(
             fontFamily: 'monospace',
@@ -699,21 +706,21 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
             decoration: rule.enabled ? null : TextDecoration.lineThrough,
           ),
           maxLines: 1,
-          overflow: TextOverflow.ellipsis,
+          onTap: () => _showRuleDetails(rule),
         ),
-        subtitle: Text(
+        subtitle: SelectableText(
           '$categoryLabel - $subTypeLabel',
           style: TextStyle(
             fontSize: 11,
             color: rule.enabled ? _getSubTypeColor(rule.patternSubType) : Colors.grey.shade400,
           ),
+          onTap: () => _showRuleDetails(rule),
         ),
         trailing: IconButton(
           icon: Icon(Icons.delete_outline, color: Colors.red.shade400, size: 20),
           tooltip: 'Delete',
           onPressed: () => _deleteRule(rule),
         ),
-        onTap: () => _showRuleDetails(rule),
       ),
     );
   }
