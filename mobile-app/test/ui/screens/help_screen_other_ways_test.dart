@@ -82,7 +82,7 @@ void main() {
         (w) =>
             w is Text &&
             (w.data ?? '').contains('Fortune 1000') &&
-            (w.data ?? '').contains('mark as Junk/Spam'),
+            (w.data ?? '').contains('mark as Junk/Spam (above)'),
       );
       expect(
         body,

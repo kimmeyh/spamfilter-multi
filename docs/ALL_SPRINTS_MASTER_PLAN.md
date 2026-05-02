@@ -162,6 +162,31 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Related: F55 (navigation consistency) should be done before or with this
 - Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gap G23)
 
+**F84. Keyboard + multi-region selection enhancements on list screens (~4-6h) Priority 65 -- BACKLOG from Sprint 37**
+- Phase: UX Improvement
+- Platform: Windows desktop (primary); macOS / Linux desktop (secondary -- adapt platform-specific shortcuts)
+- Source: Sprint 37 retrospective Phase 5.3 round-2 manual testing (Harold, 2026-05-01) -- after the screen-level `SelectionArea` fix on Manage Rules + Manage Safe Senders, three desktop-standard selection gestures still do not work as users expect:
+- **Sub-task A**: `Ctrl+A` should select ALL text across the entire filtered list, not just the items currently rendered in the viewport. Today (Flutter `SelectionArea` default behavior on a `ListView.builder`), only items that have been laid out in the viewport are selectable -- items below the visible region are not yet built and are skipped. Fix likely involves: (1) precomputing the row strings into one synthesized `SelectionContainer` with all text content even for off-screen rows, OR (2) switching the list to a non-virtualized layout for the selection scope (acceptable for typical list sizes -- Manage Rules ~200-1500 rows, Manage Safe Senders ~500-1000), OR (3) custom `Ctrl+A` Shortcuts handler that reads `_filteredRules` / `_filteredSenders` and writes the joined text to clipboard directly (skip Flutter's selection model for this case).
+- **Sub-task B**: `Shift+LeftClick` should "extend selection to here" (Windows-standard): preserve the existing selection's start anchor and update its end to the click position. Today an unmodified click resets selection.
+- **Sub-task C**: `Ctrl+LeftClick`-and-drag should "add a new disjoint selection range" without clearing the prior selection (Windows-standard for non-contiguous select). Today this is not supported -- only one contiguous selection at a time.
+- Cross-platform parity: macOS `Cmd+A`, `Shift+Click`, `Cmd+Click` should map equivalently. Linux uses Ctrl as on Windows.
+- Tests: 3-5 widget tests covering Ctrl+A select-all (assert the in-memory list of strings ends up in clipboard, not just the viewport subset), Shift+Click extend-selection, Ctrl+Click disjoint-range. Real keyboard simulation via `WidgetTester.sendKeyEvent`.
+- Related: applies to any screen with a long virtualized list of selectable text (Scan Results, Scan History detail rows, etc.) -- worth designing as a reusable `SelectableScrollableList` widget rather than duplicating per screen.
+
+**F85. Help text externalized to a content-management file (~3-5h) Priority 50 -- BACKLOG from Sprint 37**
+- Phase: Architecture / Documentation
+- Platform: All
+- Source: Sprint 37 Phase 5.3 round-2 question from Harold (2026-05-01): "is all the help text in a 'content management' item/text file or .md that I can edit instead of doing via claude code?"
+- **Current state**: All Help screen text lives inline in `mobile-app/lib/ui/screens/help_screen.dart` as Dart string literals inside `_section(...)` calls. Editing requires a Dart code change + `flutter build` + `git commit`. Roughly 250-300 lines of body text across 20 sections.
+- **Desired state**: Help text lives in a separate, version-controlled, plain-text/Markdown file (e.g., `mobile-app/assets/help/help_content.yaml` or `help_content.md` with section anchors). The Dart code reads + parses the file at runtime (or as a build-time bundled asset). Harold (or anyone with edit rights) can update the content without touching Dart code.
+- **Design phase first**: pick the format -- options:
+  - **(a) YAML keyed by `HelpSection` enum value**: structured, easy to validate at build time, supports list-of-bullets without ad-hoc parsing. `help_content.yaml` shipped as a bundled asset. Simple Dart loader that returns `Map<HelpSection, HelpSectionContent>`.
+  - **(b) Markdown with H2 anchors per section**: readable as a standalone doc, but requires bringing in `flutter_markdown` (already used elsewhere?) and parsing logic.
+  - **(c) JSON keyed by section**: same as YAML but with the asset format Flutter already uses for L10n.
+- **Implementation phase**: refactor `help_screen.dart` so `_section()` looks up content from the loaded asset rather than hardcoded strings. Migration of all 20 sections in one PR. Add a build-time validation step (asset has all `HelpSection.values` keys; Dart enum matches asset keys exactly).
+- **Acceptance criteria**: Harold can edit Help text by opening one file (no Dart code touched) and the change appears in the next build. Existing widget tests pass against the asset-loaded content. Single-source-of-truth: removing a section removes both the enum value AND the asset entry; CI fails if they drift.
+- **Out of scope**: localization (separate F-item if/when needed); rich content (images, links opened in browser) -- text-only for now.
+
 **F82. Scan History > Scan Results "no rules" progress indicator (~4-8h, design + impl) Priority 75 -- SPRINT 38 CARRY-IN from Sprint 37**
 - Phase: UX Improvement
 - Platform: All

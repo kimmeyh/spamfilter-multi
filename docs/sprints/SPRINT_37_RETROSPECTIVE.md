@@ -172,3 +172,15 @@ After Round 1 commits (Imp-1 + Imp-2 shipped), Phase 5.3 round-2 manual testing 
 3. **Imp-2 catalog opt-out advice had the same address-confirmation problem.** Round 1 advised "for mail-order catalogs, contact each catalog directly to be removed". Harold flagged that the same confirm-monitored-address pattern applies. Fix: that bullet inverted to advise AGAINST direct catalog contact and steers users to the DMAchoice.org bulk opt-out (which removes upstream from the list-rental marketplace catalogs draw from). Test added.
 
 Round 2 commits applied on the same Sprint 37 branch (additional commits in PR #249).
+
+## Round 3 Manual Testing Feedback (Phase 7.7, 2026-05-02)
+
+After Round 2 commits (cross-row selection + Help content edits), Phase 5.3 round-3 manual testing surfaced one content-ordering tweak (applied this round) and three follow-up items added to backlog:
+
+1. **Imp-2 round-3 content tweak (applied)**: Within the Help "Unwanted emails" subsection, the Unsubscribe bullet was moved from FIRST position to LAST position (after the FTC `See:` link). Rationale: the leading position in the list elevated unsubscribe as the recommended first move; placing it last after Junk/Spam, phishing-forwarding, and FTC reporting properly demotes it to "last-resort, only for the most reputable senders" advice. The intra-bullet "(above)" cross-reference replaces the round-2 "below" reference. Test guard updated.
+
+2. **F84 added to backlog (Imp-1 round-3 follow-up)**: Three desktop-standard selection gestures still do not work on Manage Rules / Manage Safe Senders after the round-2 cross-row fix. (a) `Ctrl+A` selects only the viewport-rendered subset, not all items in the filtered list (Flutter `SelectionArea` + virtualized `ListView.builder` interaction). (b) `Shift+LeftClick` does not extend the existing selection to the click position. (c) `Ctrl+LeftClick`-and-drag does not add a disjoint selection range. Backlog F-item lays out three sub-tasks plus reusable-widget design (`SelectableScrollableList`) since this affects any virtualized-list-with-selectable-text screen (Scan Results, Scan History detail, etc.).
+
+3. **F85 added to backlog (Help-text content management)**: Harold asked whether Help text is in a content-management file editable without Claude Code. Today it is inline Dart string literals in `help_screen.dart` (~250-300 lines across 20 sections). Backlog F-item proposes externalizing to a YAML / Markdown / JSON asset bundled with the app, plus a build-time validation step keying the asset against the `HelpSection` enum. Acceptance criterion: Harold can edit Help text by opening one file and rebuilding -- no Dart code touched. (Note: Round-3 of *this* sprint kept the Dart-edit path for the unsubscribe move, since externalizing the content is its own ~3-5h F-item, not a same-sprint add-on.)
+
+Round 3 commit applied on the same Sprint 37 branch (additional commit in PR #249).
