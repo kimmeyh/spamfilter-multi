@@ -68,4 +68,52 @@ void main() {
       expect(footer, findsOneWidget);
     },
   );
+
+  testWidgets(
+    'Help section warns about unsubscribe risk for non-reputable senders',
+    (tester) async {
+      await tester.pumpWidget(const MaterialApp(home: HelpScreen()));
+      await tester.pump();
+
+      // Sprint 37 Phase 7 round 2 (Harold feedback): unsubscribe advice was
+      // initially too generous. Verify the section now warns to ONLY use
+      // unsubscribe for well-known / Fortune 1000 senders.
+      final body = find.byWidgetPredicate(
+        (w) =>
+            w is Text &&
+            (w.data ?? '').contains('Fortune 1000') &&
+            (w.data ?? '').contains('mark as Junk/Spam'),
+      );
+      expect(
+        body,
+        findsOneWidget,
+        reason:
+            'Unsubscribe section must caution that unsubscribing can confirm a live address to non-reputable senders.',
+      );
+    },
+  );
+
+  testWidgets(
+    'Help section advises AGAINST contacting individual mail-order catalogs',
+    (tester) async {
+      await tester.pumpWidget(const MaterialApp(home: HelpScreen()));
+      await tester.pump();
+
+      // Sprint 37 Phase 7 round 2 (Harold feedback): contacting a catalog
+      // directly is often interpreted as a confirmed-monitored address;
+      // verify the section now recommends DMAchoice bulk opt-out instead.
+      final body = find.byWidgetPredicate(
+        (w) =>
+            w is Text &&
+            (w.data ?? '').contains('AVOID contacting individual mail-order catalogs') &&
+            (w.data ?? '').contains('DMAchoice.org bulk opt-out'),
+      );
+      expect(
+        body,
+        findsOneWidget,
+        reason:
+            'Postal mail section must advise AGAINST direct catalog contact and steer users to DMAchoice bulk opt-out.',
+      );
+    },
+  );
 }

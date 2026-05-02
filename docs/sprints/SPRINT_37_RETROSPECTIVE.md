@@ -162,3 +162,13 @@ After Step 4 combine-and-display and Step 5 improvement proposals, Harold provid
 12. **Background scan SQLite "database is locked" investigation** (~2-3h) -- foreground UI vs. stale prod-variant process conflict; single-instance mutex was supposed to prevent this per ADR-0035.
 
 **Skip:** None.
+
+## Round 2 Manual Testing Feedback (Phase 7.7, 2026-05-01)
+
+After Round 1 commits (Imp-1 + Imp-2 shipped), Phase 5.3 round-2 manual testing surfaced three issues that drove additional commits within Phase 7.7:
+
+1. **Imp-1 selection scope was per-field, not cross-row.** Round 1 used per-row `SelectableText` widgets, which create isolated selection scopes -- users could select a single rule's title OR its subtype, but not both together, and could not sweep-select across multiple rules. Fix: wrap the entire list body in a single `SelectionArea` and switch tile fields back to plain `Text`. The shared `SelectionArea` lets a drag selection span any contiguous region of the list. Same fix applied to both Manage Rules (where `SelectionArea` did not previously exist) and Manage Safe Senders (which already had a screen-level `SelectionArea` but I had over-wrapped with per-field `SelectableText`).
+2. **Imp-2 unsubscribe advice was too generous.** Round 1 said "use the Unsubscribe link in any email from a sender you once did business with"; Harold flagged that less-reputable list operators interpret an unsubscribe click as confirmation of a monitored address and respond by selling it at a premium. Fix: section now restricts unsubscribe advice to "well-known, reputable companies (roughly Fortune 1000 / household-name brands)" and steers everyone else to mark-as-Junk-or-Spam. Two new widget tests guard the warning text.
+3. **Imp-2 catalog opt-out advice had the same address-confirmation problem.** Round 1 advised "for mail-order catalogs, contact each catalog directly to be removed". Harold flagged that the same confirm-monitored-address pattern applies. Fix: that bullet inverted to advise AGAINST direct catalog contact and steers users to the DMAchoice.org bulk opt-out (which removes upstream from the list-rental marketplace catalogs draw from). Test added.
+
+Round 2 commits applied on the same Sprint 37 branch (additional commits in PR #249).

@@ -631,6 +631,12 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
           const SizedBox(height: 8),
 
           // Rules list
+          // Sprint 37 Phase 7 Imp-1 (round 2): wrap the list in a single
+          // SelectionArea so a drag selection can span MULTIPLE rows and
+          // both fields per row. Per-row SelectableText creates isolated
+          // selection scopes (Round 1 issue: only one field selectable
+          // at a time). SelectionArea + plain Text widgets share one
+          // selection so users can sweep-select N rules at once.
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -659,14 +665,16 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
                           ],
                         ),
                       )
-                    : RefreshIndicator(
-                        onRefresh: _loadRules,
-                        child: ListView.builder(
-                          itemCount: _filteredRules.length,
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          itemBuilder: (context, index) {
-                            return _buildRuleTile(_filteredRules[index]);
-                          },
+                    : SelectionArea(
+                        child: RefreshIndicator(
+                          onRefresh: _loadRules,
+                          child: ListView.builder(
+                            itemCount: _filteredRules.length,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            itemBuilder: (context, index) {
+                              return _buildRuleTile(_filteredRules[index]);
+                            },
+                          ),
                         ),
                       ),
           ),
@@ -680,10 +688,11 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
     final categoryLabel = _categoryLabels[rule.patternCategory] ?? rule.patternCategory ?? '';
     final subTypeLabel = _subTypeLabels[rule.patternSubType] ?? rule.patternSubType ?? '';
 
-    // Sprint 37 Phase 7 Imp-1: row text must be selectable so users can copy a
-     // domain/email/pattern out of the list. The ListTile's onTap (open details)
-     // is preserved by tapping the icon column or the empty trailing area; text
-     // taps now select instead of opening the dialog.
+    // Sprint 37 Phase 7 Imp-1 (round 2): the parent SelectionArea governs
+     // text selection across rows. Title + subtitle are plain Text widgets so
+     // selection sweeps across multiple rows. The leading category icon is
+     // wrapped in GestureDetector to open the details dialog (text-tap is now
+     // a selection gesture, not a dialog trigger).
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       child: ListTile(
@@ -696,7 +705,7 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
             size: 22,
           ),
         ),
-        title: SelectableText(
+        title: Text(
           displayName,
           style: TextStyle(
             fontFamily: 'monospace',
@@ -706,15 +715,14 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
             decoration: rule.enabled ? null : TextDecoration.lineThrough,
           ),
           maxLines: 1,
-          onTap: () => _showRuleDetails(rule),
+          overflow: TextOverflow.ellipsis,
         ),
-        subtitle: SelectableText(
+        subtitle: Text(
           '$categoryLabel - $subTypeLabel',
           style: TextStyle(
             fontSize: 11,
             color: rule.enabled ? _getSubTypeColor(rule.patternSubType) : Colors.grey.shade400,
           ),
-          onTap: () => _showRuleDetails(rule),
         ),
         trailing: IconButton(
           icon: Icon(Icons.delete_outline, color: Colors.red.shade400, size: 20),
