@@ -688,22 +688,25 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
     final categoryLabel = _categoryLabels[rule.patternCategory] ?? rule.patternCategory ?? '';
     final subTypeLabel = _subTypeLabels[rule.patternSubType] ?? rule.patternSubType ?? '';
 
-    // Sprint 37 Phase 7 Imp-1 (round 2): the parent SelectionArea governs
-     // text selection across rows. Title + subtitle are plain Text widgets so
-     // selection sweeps across multiple rows. The leading category icon is
-     // wrapped in GestureDetector to open the details dialog (text-tap is now
-     // a selection gesture, not a dialog trigger).
+    // Sprint 37 Phase 7 Imp-1 (round 2 + Copilot a11y fix): the parent
+     // SelectionArea governs text selection across rows. Title + subtitle are
+     // plain Text widgets so selection sweeps across multiple rows. The
+     // leading icon is an IconButton (not a bare GestureDetector) so it has
+     // proper Button semantics, focusability, tooltip, and Material ink for
+     // assistive tech (Copilot review #2).
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       child: ListTile(
         dense: true,
-        leading: GestureDetector(
-          onTap: () => _showRuleDetails(rule),
-          child: Icon(
+        leading: IconButton(
+          icon: Icon(
             _getCategoryIcon(rule.patternCategory),
             color: rule.enabled ? _getSubTypeColor(rule.patternSubType) : Colors.grey.shade400,
             size: 22,
           ),
+          tooltip: 'View rule details',
+          visualDensity: VisualDensity.compact,
+          onPressed: () => _showRuleDetails(rule),
         ),
         title: Text(
           displayName,

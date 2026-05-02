@@ -218,6 +218,22 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - **Out of scope**: live-reload during Background Scan (the background pipeline is shorter-lived per invocation; user-initiated mid-scan rule additions are less frequent there).
 - **Note**: This unblocks a UX pattern Harold uses heavily on the Live Scan results screen (add a rule for a "no rules" hit, see remaining matches removed) -- today that pattern only works at the per-rule async-delete level, not for newly-added rules being applied to the still-in-progress scan.
 
+**F88. F6a Phase 2: true Gmail batchGet via /batch/gmail/v1 multipart endpoint (~3-4h) Priority 60 -- BACKLOG from Sprint 37 Copilot review**
+- Phase: Performance / Gmail adapter
+- Platform: Gmail (all hosting platforms)
+- Source: Sprint 37 PR #249 Copilot review #4 (2026-05-02). Gap surfaced when comparing implementation against the Issue #247 acceptance criteria.
+- **Current state (Sprint 37 ship)**: `gmail_api_adapter.dart` `fetchMessages` parallelizes individual `users.messages.get` calls via `_fetchMessagesConcurrent` (8-concurrent chunked `Future.wait`). This delivered ~10x speedup over the prior serial loop AND respects Gmail's per-user concurrency cap (Copilot review #5 fix).
+- **Gap vs Issue #247 acceptance criteria**: Issue #247 F6a explicitly required `users.messages.batchGet` via the `/batch/gmail/v1` HTTP endpoint (multipart/mixed body, 100 IDs per call, per-chunk fallback to individual `messages.get` matching the existing `_batchModifyLabels` fallback pattern). Sprint 37 shipped the parallel-fetch optimization but NOT the batchGet endpoint. The PR description and CHANGELOG correctly described the parallel-fetch shipping, but Issue #247's acceptance line "`scanInbox` uses batchGet instead of `Future.wait` of individual `messages.get`" remains unsatisfied.
+- **Acceptance criteria for F6a Phase 2**:
+  - Implement `_batchGetMessages(List<String> messageIds)` using `/batch/gmail/v1` HTTP endpoint with `multipart/mixed` body, 100 IDs per call.
+  - Per-chunk fallback to individual `messages.get` on failure -- match the existing `_batchModifyLabels` fallback pattern in this file (look for `_batchModifyLabels` near lines 752-1100).
+  - Refactor `_fetchMessagesConcurrent` (Sprint 37) to call `_batchGetMessages` instead of N individual `messages.get` calls. Keep the 8-concurrent chunking around the batchGet HTTP calls themselves (a single batchGet HTTP request can wrap up to 100 sub-requests, so concurrency is much less critical post-batchGet -- but still cap at 2-3 concurrent batchGet calls for very large mailboxes).
+  - Apply same change to `fetchMessagesIncremental` so incremental delta scans also use batchGet.
+  - Update Issue #247 acceptance check: re-verify on real Gmail account that scan path produces same `EmailMessage` outputs as the Sprint 37 parallel-fetch path.
+  - Tests: existing `_fetchMessagesConcurrent` tests pass with batchGet implementation underneath; add 2-3 new tests with mocked HTTP for the `multipart/mixed` request/response parsing.
+- **Performance expected over Sprint 37 baseline**: One HTTP request per 100 messages instead of 100 (with 8 concurrent), so ~12-13x reduction in HTTP request count. Wall-clock improvement depends on Gmail batchGet latency vs N parallel small calls; expect modest additional speedup (~1.5-2x over Sprint 37) plus much-reduced rate-limit risk for very large mailboxes.
+- **Out of scope**: AOL / IMAP equivalents (no batch endpoint exists for IMAP folder-scoped FETCH); changes to the `_fetchMessagesConcurrent` public-ish signature (callers should not need to change).
+
 **F87. Settings icon on Scan History pages (~1-2h) Priority 55 -- BACKLOG from Sprint 37**
 - Phase: UX consistency
 - Platform: All

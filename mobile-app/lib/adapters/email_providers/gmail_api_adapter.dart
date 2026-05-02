@@ -283,30 +283,19 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
 
         Redact.logSafe('Found ${messagesResponse.messages!.length} messages in $folder');
 
-        // Sprint 37 F6a: parallel fetch instead of serial loop. Each
-        // messages.get is an independent HTTP call; await-in-loop forces
-        // them sequential and dominates scan wall-clock time. Future.wait
-        // pipelines them through the underlying HTTP/2 connection (Gmail
-        // accepts up to ~10 concurrent requests per user before rate
-        // limiting). For 100-message lists this drops from ~10s serial to
-        // ~1s parallel on typical broadband.
-        final fetched = await Future.wait(
-          messagesResponse.messages!.map((message) async {
-            try {
-              final fullMessage = await _gmailApi!.users.messages.get(
-                'me',
-                message.id!,
-                format: 'full',
-              );
-              return _convertGmailMessage(fullMessage, folder);
-            } catch (e) {
-              Redact.logError('Error fetching Gmail message ${message.id}', e);
-              return null;
-            }
-          }),
-          eagerError: false,
+        // Sprint 37 F6a: parallel fetch instead of serial loop, BUT with a
+        // concurrency cap. Each messages.get is an independent HTTP call;
+        // await-in-loop forces them sequential and dominates scan
+        // wall-clock time. Unbounded Future.wait of 100 calls bursts past
+        // Gmail's per-user concurrency limit (~10 concurrent) and triggers
+        // 429s that the catch-and-return-null path silently drops as
+        // missing messages (Copilot review #5). Cap at 8 concurrent via
+        // _fetchMessagesConcurrent.
+        final fetched = await _fetchMessagesConcurrent(
+          messagesResponse.messages!.map((m) => m.id!).toList(),
+          folder,
         );
-        emails.addAll(fetched.whereType<EmailMessage>());
+        emails.addAll(fetched);
       }
 
       Redact.logSafe('Successfully fetched ${emails.length} Gmail messages');
@@ -315,6 +304,67 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
       Redact.logError('Error fetching Gmail messages', e);
       rethrow;
     }
+  }
+
+  /// Sprint 37 F6a (Copilot review #5/#6): concurrency-capped parallel
+  /// fetch of Gmail messages by ID.
+  ///
+  /// Gmail's per-user concurrency cap is roughly 10 simultaneous requests.
+  /// Unbounded `Future.wait` over a 100-message page bursts past that and
+  /// triggers 429s that the per-message try/catch silently swallows --
+  /// resulting in dropped messages with no surface error. Cap is 8 to
+  /// stay comfortably below the limit while still pipelining.
+  ///
+  /// [folderForLabel] is forwarded to `_convertGmailMessage` so the
+  /// resulting `EmailMessage.folder` field matches the caller's expected
+  /// folder. [applyExcludedLabelFilter] (default false) post-filters the
+  /// fetched messages against `_excludedLabels` -- used by
+  /// `fetchMessagesIncremental` because `users.history.list` accepts
+  /// only an inclusion `labelId` filter, not an exclusion list, so
+  /// Promotions/Social filtering must happen client-side after fetch.
+  /// The full-scan path uses the `q:` query string (see `_buildGmailQuery`)
+  /// for exclusion at list time, so it does not need client-side filtering.
+  static const int _gmailFetchConcurrency = 8;
+  Future<List<EmailMessage>> _fetchMessagesConcurrent(
+    List<String> messageIds,
+    String folderForLabel, {
+    bool applyExcludedLabelFilter = false,
+  }) async {
+    final results = <EmailMessage>[];
+    for (var i = 0; i < messageIds.length; i += _gmailFetchConcurrency) {
+      final end = (i + _gmailFetchConcurrency < messageIds.length)
+          ? i + _gmailFetchConcurrency
+          : messageIds.length;
+      final chunk = messageIds.sublist(i, end);
+      final fetched = await Future.wait(
+        chunk.map((id) async {
+          try {
+            final fullMessage = await _gmailApi!.users.messages.get(
+              'me',
+              id,
+              format: 'full',
+            );
+            // Copilot review #7: drop messages whose Gmail label set
+            // intersects _excludedLabels (Promotions/Social/etc.). Skipped
+            // for the full-scan path where the q: query already filtered
+            // server-side.
+            if (applyExcludedLabelFilter && _excludedLabels != null) {
+              final labels = fullMessage.labelIds ?? const <String>[];
+              if (labels.any(_excludedLabels!.contains)) {
+                return null;
+              }
+            }
+            return _convertGmailMessage(fullMessage, folderForLabel);
+          } catch (e) {
+            Redact.logError('Error fetching Gmail message $id', e);
+            return null;
+          }
+        }),
+        eagerError: false,
+      );
+      results.addAll(fetched.whereType<EmailMessage>());
+    }
+    return results;
   }
 
   /// Sprint 37 F6c: Read the current Gmail account's `historyId` from
@@ -340,6 +390,14 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
   /// been added or modified since that point, plus the new historyId
   /// for the caller to persist.
   ///
+  /// [folderForLabel] doubles as the Gmail labelId filter passed to
+  /// `users.history.list` -- without it the API returns mailbox-wide
+  /// history (Sent, Trash, Promotions, etc.) and the returned changes
+  /// would be incorrectly attributed to the caller's single folder
+  /// (Copilot review #7). The label is also reapplied as a post-filter
+  /// against the configured `_excludedLabels` set so Promotions/Social
+  /// changes never reach the caller.
+  ///
   /// Returns `IncrementalFetchResult.expired()` if the API returns
   /// `historyNotFound` (Gmail history records expire after roughly 7 days).
   /// The caller must respond by triggering a full scan and then calling
@@ -354,13 +412,18 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
       throw StateError('Not connected. Call signIn() first.');
     }
 
-    Redact.logSafe('Gmail incremental fetch: startHistoryId=$startHistoryId');
+    Redact.logSafe('Gmail incremental fetch: startHistoryId=$startHistoryId folder=$folderForLabel');
 
     try {
+      // Copilot review #7: scope history.list to the calling folder's
+      // label so we do not get Sent/Trash/Drafts/Promotions changes
+      // attributed to this folder. labelId is documented as a server-side
+      // filter on users.history.list.
       final historyResponse = await _gmailApi!.users.history.list(
         'me',
         startHistoryId: startHistoryId,
         historyTypes: ['messageAdded', 'labelAdded', 'labelRemoved'],
+        labelId: folderForLabel,
       );
 
       final messageIds = <String>{};
@@ -386,24 +449,16 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
 
       Redact.logSafe('Gmail incremental fetch: ${messageIds.length} changed messages');
 
-      final fetched = await Future.wait(
-        messageIds.map((id) async {
-          try {
-            final fullMessage = await _gmailApi!.users.messages.get(
-              'me',
-              id,
-              format: 'full',
-            );
-            return _convertGmailMessage(fullMessage, folderForLabel);
-          } catch (e) {
-            Redact.logError('Error fetching Gmail message $id', e);
-            return null;
-          }
-        }),
-        eagerError: false,
+      // Copilot review #6 + #7: chunked concurrent fetch (matches the full-
+      // scan path). _fetchMessagesConcurrent reapplies _excludedLabels so
+      // Promotions/Social changes are dropped post-fetch (history.list does
+      // not let us pass an exclude-label filter; only an include-label).
+      final emails = await _fetchMessagesConcurrent(
+        messageIds.toList(),
+        folderForLabel,
+        applyExcludedLabelFilter: true,
       );
 
-      final emails = fetched.whereType<EmailMessage>().toList();
       return IncrementalFetchResult(
         emails: emails,
         newHistoryId: historyResponse.historyId ?? startHistoryId,

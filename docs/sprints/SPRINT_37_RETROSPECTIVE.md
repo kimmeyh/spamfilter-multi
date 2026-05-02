@@ -196,3 +196,19 @@ Round-3 manual testing passed. Three additional backlog items captured from obse
 3. **F87 added to backlog**: Settings icon missing from Scan History AppBar. Inconsistent with every other primary screen's AppBar. ~1-2h, P55. Likely a one-line `IconButton` addition; investigate whether there is a shared AppBar component to fix at the component level.
 
 No round-4 code changes -- all three items are deferred to a future sprint per Harold's "Another backlog item for next sprint" framing.
+
+## Round 5: Copilot Review Responses (Phase 6.4.1, 2026-05-02)
+
+GitHub Copilot reviewed PR #249 and surfaced 7 substantive comments. Per the Phase 6.4.1 protocol, each comment was assessed (What / Why / Impact / Recommendation) and Harold approved a blanket "all as recommended" disposition. Final dispositions:
+
+| # | Comment | Disposition |
+|---|---|---|
+| 1 | manual_rule_create_screen.dart:367 -- subsumption check before exact-duplicate check | **Not applicable** -- intentional per BUG-S36-1 / Issue #246 spec; subsumption message is more informative when both apply |
+| 2 | rules_management_screen.dart:706 -- a11y regression on details affordance | **Fix now** -- replace bare `GestureDetector` with `IconButton` (full Button semantics + focus + tooltip + Material ink) |
+| 3 | safe_senders_management_screen.dart:551 -- same a11y regression | **Fix now** -- same `IconButton` replacement |
+| 4 | gmail_api_adapter.dart:308 -- F6a still per-message, not batched | **Add to backlog** as F88 (true `/batch/gmail/v1` batchGet) -- Sprint 37 shipped a parallel-fetch optimization with ~10x speedup + concurrency cap, but Issue #247 acceptance line "scanInbox uses batchGet instead of Future.wait" remains unsatisfied |
+| 5 | gmail_api_adapter.dart:309 -- unbounded concurrency on full-scan path | **Fix now** -- new `_fetchMessagesConcurrent` helper chunks at 8 concurrent (Gmail's per-user cap is ~10) |
+| 6 | gmail_api_adapter.dart:404 -- same unbounded concurrency on incremental path | **Fix now** -- same helper |
+| 7 | gmail_api_adapter.dart:396 -- `history.list` is mailbox-wide; would surface Sent/Trash/Promotions changes as the caller's folder | **Fix now** -- pass `labelId: folderForLabel` to `users.history.list` AND reapply `_excludedLabels` post-filter (history.list accepts only an inclusion label filter) |
+
+4 fixes applied this round (commits on the same Sprint 37 branch). 1 backlog F-item added (F88). 1 review comment declined with explanation. Tests + analyze re-verified after fixes.
