@@ -173,19 +173,62 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Tests: 3-5 widget tests covering Ctrl+A select-all (assert the in-memory list of strings ends up in clipboard, not just the viewport subset), Shift+Click extend-selection, Ctrl+Click disjoint-range. Real keyboard simulation via `WidgetTester.sendKeyEvent`.
 - Related: applies to any screen with a long virtualized list of selectable text (Scan Results, Scan History detail rows, etc.) -- worth designing as a reusable `SelectableScrollableList` widget rather than duplicating per screen.
 
-**F85. Help text externalized to a content-management file (~3-5h) Priority 50 -- BACKLOG from Sprint 37**
+**F85. Content-management architecture for long inline strings (~6-10h, ADR + Help refactor + Settings audit) Priority 50 -- BACKLOG from Sprint 37**
 - Phase: Architecture / Documentation
 - Platform: All
-- Source: Sprint 37 Phase 5.3 round-2 question from Harold (2026-05-01): "is all the help text in a 'content management' item/text file or .md that I can edit instead of doing via claude code?"
-- **Current state**: All Help screen text lives inline in `mobile-app/lib/ui/screens/help_screen.dart` as Dart string literals inside `_section(...)` calls. Editing requires a Dart code change + `flutter build` + `git commit`. Roughly 250-300 lines of body text across 20 sections.
-- **Desired state**: Help text lives in a separate, version-controlled, plain-text/Markdown file (e.g., `mobile-app/assets/help/help_content.yaml` or `help_content.md` with section anchors). The Dart code reads + parses the file at runtime (or as a build-time bundled asset). Harold (or anyone with edit rights) can update the content without touching Dart code.
-- **Design phase first**: pick the format -- options:
-  - **(a) YAML keyed by `HelpSection` enum value**: structured, easy to validate at build time, supports list-of-bullets without ad-hoc parsing. `help_content.yaml` shipped as a bundled asset. Simple Dart loader that returns `Map<HelpSection, HelpSectionContent>`.
-  - **(b) Markdown with H2 anchors per section**: readable as a standalone doc, but requires bringing in `flutter_markdown` (already used elsewhere?) and parsing logic.
-  - **(c) JSON keyed by section**: same as YAML but with the asset format Flutter already uses for L10n.
-- **Implementation phase**: refactor `help_screen.dart` so `_section()` looks up content from the loaded asset rather than hardcoded strings. Migration of all 20 sections in one PR. Add a build-time validation step (asset has all `HelpSection.values` keys; Dart enum matches asset keys exactly).
-- **Acceptance criteria**: Harold can edit Help text by opening one file (no Dart code touched) and the change appears in the next build. Existing widget tests pass against the asset-loaded content. Single-source-of-truth: removing a section removes both the enum value AND the asset entry; CI fails if they drift.
-- **Out of scope**: localization (separate F-item if/when needed); rich content (images, links opened in browser) -- text-only for now.
+- Source: Sprint 37 Phase 5.3 round-2 question from Harold (2026-05-01); scope expanded round-3 (2026-05-02) to be a general content-management architecture rather than Help-only.
+- **Driving threshold**: any Dart string literal **longer than 500 characters** (whether one continuous string or a concatenation across adjacent line-continuation `'...' '...'` literals) is a candidate for extraction. Threshold chosen because at that length the string is content authored for end-users, not a prompt or label, and editing it via Dart-source-edit + rebuild + commit is significantly more friction than editing a plain-text asset.
+- **Phase 1 -- ADR (mandatory first step, ~2-3h)**: Create `docs/adr/0036-content-management-for-long-strings.md` (or next available ADR number). The ADR must:
+  1. State the >500-character threshold rule and the rationale.
+  2. Survey + decide between candidate formats:
+     - **(a) YAML keyed by enum / route key**: structured, build-time-validatable, supports lists-of-bullets without ad-hoc parsing.
+     - **(b) Markdown with H2/H3 anchors**: readable as standalone docs, but requires `flutter_markdown` and richer parsing.
+     - **(c) JSON keyed by enum / route key**: same as YAML; matches Flutter's L10n asset format.
+     - **(d) Per-section .md files** (one file per section): friendliest for non-technical editors and diff review; needs an index registry.
+  3. Decide loader strategy: build-time bake (asset bundle) vs. runtime fetch (fallback for ship-without-rebuild updates -- probably out of scope for V1).
+  4. Decide validation strategy: how does CI verify that every (enum value or route key) has a matching asset entry, and that every asset entry has a matching (enum value or route key)? Failure mode: drift between Dart code and assets.
+  5. Decide on test strategy: existing widget tests must still pass; tests must read from the loaded asset, not hardcoded duplicate strings.
+  6. Decide on i18n posture: leave room for future L10n by structuring asset paths or keys to allow language suffixes (`help_content.en.yaml` vs `help_content.yaml`), even if V1 is English-only.
+- **Phase 2 -- Help screen migration (~2-3h)**: Refactor `mobile-app/lib/ui/screens/help_screen.dart` per the ADR. Today ~250-300 lines of body text across 20 sections (multiple sections >500 chars after concatenation). All migrated in one PR; no mixed state where some sections are inline and others are external.
+- **Phase 3 -- Settings descriptions migration + codebase audit (~2-4h)**: Audit ALL `lib/` for string literals >500 characters that are user-facing content (not prompts, not error messages, not regex patterns). Concrete known candidates as of Sprint 37:
+  - **Settings tabs** -- the descriptive subtitles / explainer paragraphs on the General, Account, Manual Scan, and Background tabs of `lib/ui/screens/settings_screen.dart` (some explainer paragraphs run multi-paragraph and would benefit from external authoring).
+  - Any other screen explainer paragraph the audit surfaces.
+  - **Excluded**: regex pattern strings; SQL DDL strings; YAML rule literals; debug log message templates; string interpolation that needs runtime values (those stay inline).
+- **Acceptance criteria**:
+  - ADR shipped + linked from CLAUDE.md
+  - Harold can edit any of the migrated content by opening one asset file (no Dart code touched) and the change appears in the next build
+  - All pre-existing widget tests pass against asset-loaded content
+  - Build-time validation step in CI/build scripts: drift between enum values and asset keys causes the build to fail (catches "added a section to enum but forgot the asset content")
+  - Codebase audit doc enumerates every >500-char user-facing string found and shows it now lives in an asset
+  - Single-source-of-truth: removing a section removes both the enum/route key AND the asset entry
+- **Out of scope**: localization runtime switching (separate F-item if/when needed); rich content (images, embedded links opened in browser) -- text-only for V1; runtime asset fetching (future enhancement).
+
+**F86. Live reload of rules / safe senders during an active Manual Scan (~2-4h) Priority 60 -- BACKLOG from Sprint 37**
+- Phase: UX / Core App
+- Platform: All
+- Source: Sprint 37 Phase 5.3 round-3 manual testing observation (Harold, 2026-05-02): "adding safe-sender or rules via Settings does not apply in live scan until exit and re-enter."
+- **Current behavior (problem)**: Manual Scan / Live Scan caches the active rule set + safe sender list at scan start. If the user navigates away to Settings, adds a new rule or safe sender, and returns to Manual Scan, the in-flight scan continues using the old cached rule set. The new rule does not apply until the user exits the Manual Scan screen and re-enters it (which restarts the scan from scratch).
+- **Desired behavior**: When a rule or safe sender is added/edited/deleted via Settings (Manage Rules, Manage Safe Senders, or any quick-add affordance), the change propagates to the active scan's rule evaluator without requiring a screen-level restart. The user sees the new rule applied to remaining-to-be-evaluated emails on the next batch boundary.
+- **Acceptance criteria**:
+  - Add/edit/delete a rule from any rule-management surface while a scan is in progress -> the new rule set is observed by the scanner before the next email batch is evaluated
+  - Same for safe senders
+  - Already-evaluated emails in the current scan are NOT re-evaluated (avoid surprise reclassification of completed work)
+  - 3-5 widget tests covering rule-add-during-scan, safe-sender-add-during-scan, rule-delete-during-scan
+- **Implementation sketch**: Subscribe `EmailScanProvider` (or whichever owns the running scan) to the rule + safe-sender database streams (or a `RuleSetProvider.notifyListeners()` signal). On change notification, atomically swap the in-memory `RuleSet` reference at a batch boundary; do not re-evaluate already-completed emails.
+- **Out of scope**: live-reload during Background Scan (the background pipeline is shorter-lived per invocation; user-initiated mid-scan rule additions are less frequent there).
+- **Note**: This unblocks a UX pattern Harold uses heavily on the Live Scan results screen (add a rule for a "no rules" hit, see remaining matches removed) -- today that pattern only works at the per-rule async-delete level, not for newly-added rules being applied to the still-in-progress scan.
+
+**F87. Settings icon on Scan History pages (~1-2h) Priority 55 -- BACKLOG from Sprint 37**
+- Phase: UX consistency
+- Platform: All
+- Source: Sprint 37 Phase 5.3 round-3 manual testing observation (Harold, 2026-05-02): "Setting icon is missing from all Scan history pages, can you add it to all Scan History pages (may only be one)."
+- **Current state**: `mobile-app/lib/ui/screens/scan_history_screen.dart` AppBar (and any sub-screens like a Scan Results detail view reached from a history row) does not include the Settings icon that every other primary screen has. Inconsistent with the rest of the app where Settings is one tap away from any AppBar.
+- **Acceptance criteria**:
+  - Settings IconButton (gear icon) appears in the Scan History AppBar with the same `tooltip: 'Settings'` and `onPressed` behavior as other screens (push `SettingsScreen(accountId: widget.accountId)` route)
+  - If there are sub-screens reached from Scan History (e.g., a Scan Results detail), they get the same icon
+  - Verify against any AppBar widget standardization (Sprint 33+ navigation consistency work) -- if there is a shared AppBar component, fix at the component level rather than per-screen
+  - 1-2 widget tests asserting the Settings icon is present + tappable
+- **Implementation note**: Likely a one-line addition (`IconButton` in `actions:`) per affected AppBar. Investigate first whether there is one Scan History screen or several -- Harold's note ("may only be one") suggests possibly only `scan_history_screen.dart` itself.
 
 **F82. Scan History > Scan Results "no rules" progress indicator (~4-8h, design + impl) Priority 75 -- SPRINT 38 CARRY-IN from Sprint 37**
 - Phase: UX Improvement

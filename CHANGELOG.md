@@ -26,6 +26,11 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-05-02 (Sprint 37 -- Phase 7 retrospective improvements, round 4 backlog additions)
+- **chore**: F85 scope expanded from "Help text externalized to a file" to a general content-management architecture for any inline Dart string literal >500 characters. Phase 1 now mandates an ADR (`docs/adr/0036-content-management-for-long-strings.md` or next available) deciding format, loader, validation, and i18n posture. Phase 2 migrates Help. Phase 3 audits the rest of `lib/` for long user-facing strings; known candidate is Settings tab descriptions. Re-estimated 3-5h -> 6-10h. (Sprint 37 Phase 7 round-4 expansion of round-3 F85)
+- **chore**: F86 added to ALL_SPRINTS_MASTER_PLAN.md -- live reload of rules / safe senders during an active Manual Scan. Today mid-scan additions via Settings do not apply until the scan is restarted. ~2-4h, P60. (Sprint 37 Phase 7 round-4 backlog addition; Harold Phase 5.3 round-3 manual testing observation)
+- **chore**: F87 added to ALL_SPRINTS_MASTER_PLAN.md -- Settings icon missing from Scan History AppBar. Inconsistent with every other primary screen. ~1-2h, P55. (Sprint 37 Phase 7 round-4 backlog addition; Harold Phase 5.3 round-3 manual testing observation)
+
 ### 2026-05-02 (Sprint 37 -- Phase 7 retrospective improvements, round 3 fixes)
 - **fix**: Help "Unwanted emails" Unsubscribe bullet moved from FIRST to LAST position in the section (after the FTC `See:` link). Rationale: leading position implicitly recommended Unsubscribe; placing it last after Junk/Spam + phishing forwarding + FTC reporting demotes it to "last-resort, only for Fortune 1000 / well-known senders" advice. Intra-bullet "(above)" cross-reference replaces round-2 "below". Test guard updated. (Sprint 37 Phase 7 Imp-2 round-3; Phase 5.3 round-3 manual testing feedback)
 - **chore**: Two new backlog F-items added to ALL_SPRINTS_MASTER_PLAN.md: F84 (keyboard + multi-region selection enhancements: Ctrl+A select-all-across-virtualized-list, Shift+Click extend-selection, Ctrl+Click disjoint-range) and F85 (Help text externalized to a content-management file -- YAML/Markdown asset editable without Dart code changes). Both surfaced from Phase 5.3 round-3 manual testing.

@@ -184,3 +184,15 @@ After Round 2 commits (cross-row selection + Help content edits), Phase 5.3 roun
 3. **F85 added to backlog (Help-text content management)**: Harold asked whether Help text is in a content-management file editable without Claude Code. Today it is inline Dart string literals in `help_screen.dart` (~250-300 lines across 20 sections). Backlog F-item proposes externalizing to a YAML / Markdown / JSON asset bundled with the app, plus a build-time validation step keying the asset against the `HelpSection` enum. Acceptance criterion: Harold can edit Help text by opening one file and rebuilding -- no Dart code touched. (Note: Round-3 of *this* sprint kept the Dart-edit path for the unsubscribe move, since externalizing the content is its own ~3-5h F-item, not a same-sprint add-on.)
 
 Round 3 commit applied on the same Sprint 37 branch (additional commit in PR #249).
+
+## Round 4 Manual Testing Feedback (Phase 7.7, 2026-05-02)
+
+Round-3 manual testing passed. Three additional backlog items captured from observations during the same testing session (no new in-sprint code changes):
+
+1. **F85 scope expanded**: rather than "Help text externalized to a content-management file" (F85 round-2 scope), the F-item is now a general content-management architecture for any inline string >500 characters. Phase 1 mandates an ADR (`docs/adr/0036-content-management-for-long-strings.md` or equivalent) deciding the format (YAML / Markdown / per-section .md / JSON), the loader strategy (build-time bake vs. runtime fetch), the validation strategy (CI catches enum-vs-asset drift), and the i18n posture. Phase 2 migrates Help. Phase 3 audits the rest of `lib/` for >500-char user-facing strings -- known candidate: Settings tab descriptions on `settings_screen.dart`. Re-estimated 3-5h -> 6-10h to reflect the broader scope.
+
+2. **F86 added to backlog**: live reload of rules / safe senders during an active Manual Scan. Today, mid-scan additions via Settings do not apply until the scan is restarted. Acceptance: rule/safe-sender add propagates to the in-flight scan at the next batch boundary; already-evaluated emails are NOT re-evaluated. ~2-4h, P60.
+
+3. **F87 added to backlog**: Settings icon missing from Scan History AppBar. Inconsistent with every other primary screen's AppBar. ~1-2h, P55. Likely a one-line `IconButton` addition; investigate whether there is a shared AppBar component to fix at the component level.
+
+No round-4 code changes -- all three items are deferred to a future sprint per Harold's "Another backlog item for next sprint" framing.
