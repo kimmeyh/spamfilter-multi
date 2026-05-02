@@ -153,8 +153,28 @@ Write-Host "[DONE] Dependencies installed" -ForegroundColor Green
 Write-Host ""
 
 # Step 3: Analyze code
+# Sprint 37 round-5 fix: pub.dev intermittently 503s on the advisory
+# fetch that `flutter analyze` performs at startup. Without explicit
+# exit-code handling, that transient remote error was swallowed by the
+# pipe-into-Select-Object, the script skipped Step 4, and the previous
+# round's stale `dist/dev/MyEmailSpamFilter-Dev.exe` was launched as if
+# fresh -- a silent-failure path that took two manual-test rounds to
+# diagnose. Now: capture flutter exit code, and only treat NON-pub-dev
+# failures as fatal. A pub.dev advisory hiccup gets a warning + skip;
+# any other analyze failure halts the build.
 Write-Host "[3/6] Analyzing code (flutter analyze)..." -ForegroundColor Cyan
-flutter analyze --no-fatal-infos 2>&1 | Select-Object -First 10
+$analyzeOutput = & flutter analyze --no-fatal-infos 2>&1
+$analyzeExit = $LASTEXITCODE
+$analyzeOutput | Select-Object -First 10 | ForEach-Object { Write-Host $_ }
+if ($analyzeExit -ne 0) {
+    $isPubDevHiccup = ($analyzeOutput -join "`n") -match 'Failed to decode advisories|Failed to fetch advisories|pub\.dev'
+    if ($isPubDevHiccup) {
+        Write-Host "[WARNING] flutter analyze hit a transient pub.dev advisory error. Skipping analyze; relying on prior verified-clean state. Continuing to build." -ForegroundColor Yellow
+    } else {
+        Write-Host "[ERROR] flutter analyze failed (exit $analyzeExit). Halting build to avoid shipping a stale binary." -ForegroundColor Red
+        exit $analyzeExit
+    }
+}
 Write-Host "[DONE] Code analysis complete" -ForegroundColor Green
 Write-Host ""
 
