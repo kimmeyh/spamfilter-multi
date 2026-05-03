@@ -24,7 +24,7 @@ abstract class RuleDatabaseProvider {
 /// v1: Initial schema (Sprint 12)
 /// v2: Add pattern classification columns to rules table (Sprint 20)
 /// v3: Add auth_rate_limit table for failed-auth throttling (SEC-22, Sprint 33)
-const int databaseVersion = 3;
+const int databaseVersion = 4;
 
 /// SQLite database helper - singleton pattern
 class DatabaseHelper implements RuleDatabaseProvider {
@@ -80,6 +80,10 @@ class DatabaseHelper implements RuleDatabaseProvider {
     _logger.i('Creating database tables (version: $version)');
 
     // Accounts table (virtual, for tracking account metadata)
+    // last_history_id is Gmail-only (Sprint 37 F6c). Used as the
+    // startHistoryId for users.history.list incremental delta scans;
+    // null means "no successful scan yet, do a full scan and then
+    // persist the resulting historyId".
     await db.execute('''
       CREATE TABLE IF NOT EXISTS accounts (
         account_id TEXT PRIMARY KEY,
@@ -87,7 +91,8 @@ class DatabaseHelper implements RuleDatabaseProvider {
         email TEXT NOT NULL,
         display_name TEXT,
         date_added INTEGER NOT NULL,
-        last_scanned INTEGER
+        last_scanned INTEGER,
+        last_history_id TEXT
       );
     ''');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_accounts_platform ON accounts(platform_id);');
@@ -317,6 +322,18 @@ class DatabaseHelper implements RuleDatabaseProvider {
         );
       ''');
       _logger.i('v3 migration complete');
+    }
+
+    if (oldVersion < 4) {
+      // v4: Gmail historyId column on accounts table (Sprint 37 F6c)
+      // Null-default additive column; safe migration.
+      _logger.i('Applying v4 migration: adding last_history_id to accounts');
+      final tableInfo = await db.rawQuery('PRAGMA table_info(accounts)');
+      final existingColumns = tableInfo.map((r) => r['name'] as String).toSet();
+      if (!existingColumns.contains('last_history_id')) {
+        await db.execute('ALTER TABLE accounts ADD COLUMN last_history_id TEXT;');
+      }
+      _logger.i('v4 migration complete');
     }
   }
 

@@ -63,7 +63,7 @@ One-line-per-phase quick reference. Use this at the start of a sprint and at eve
 | [**3. Sprint Kickoff & Planning**](#phase-3-sprint-kickoff--planning) | Draft `docs/sprints/SPRINT_N_PLAN.md`; open Issue #N + create draft PR (3.3.1); **get explicit Phase 3.7 approval** | User says "plan approved" (or equivalent) -- this authorizes Phases 4-7 (durable) |
 | [**4. Sprint Execution (Development)**](#phase-4-sprint-execution-development) | Implement tasks in plan order; run tests + analyze after each; commit with issue number | All acceptance criteria in plan met; test suite green |
 | [**5. Code Review & Testing**](#phase-5-code-review--testing) | Test-assertion sibling sweep (5.1.1); full test suite; build + launch Windows app for manual test | Manual test golden-path + edge cases verified; no regressions |
-| [**6. Push to Remote & Create PR**](#phase-6-push-to-remote--create-pr) | Push branch; update PR description; **convert draft to ready (6.4.5)** after Copilot pass | PR is `isDraft: false`, `mergeable: MERGEABLE`; Copilot review received |
+| [**6. Push to Remote & Create PR**](#phase-6-push-to-remote--create-pr) | Push branch; update PR description; **convert draft to ready (6.4.5)** after Copilot pass (or after CODEOWNER review if Copilot is unavailable) | PR is `isDraft: false`, `mergeable: MERGEABLE`; Copilot review received IF Copilot is configured as a collaborator on the repo (otherwise skipped per Sprint 37 retro Imp-6) |
 | [**7. Sprint Review & Retrospective**](#phase-7-sprint-review--retrospective-after-pr-submitted---mandatory-for-all-sprints) | Send retro prompt; draft Claude feedback in parallel; combine + apply now-vs-backlog decisions | Retrospective doc committed with 4 roles x 14 categories; Cat 13 -> Sprint N+1 plan; Cat 14 -> master plan backlog |
 
 **Invariants** (apply to all phases):
@@ -230,6 +230,17 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
   - **Why**: Sprint 36 escape -- Task 1.3 (`build_windows_args` in dev pubspec) was listed as pending but had already shipped in kickoff commit `46e7b6d`. Sprint 36 plan also cited `mobile-app/.gitignore line 120` for the `*.manifest` rule, but the actual rule was in root `.gitignore` line 120 (PyInstaller legacy). Both surfaced at Phase 4 execution and cost inspection time. Catching them at plan-write time is cheaper.
   - **Cost**: ~30-45 min added to Phase 3.2.2 per sprint.
   - **Enforcement**: A plan that has not been verified against branch state should not be committed. If you find this step skipped at session resume, return to it before any Phase 4 work (same gate as Phase 1).
+
+- [ ] **3.2.2.2 Re-Estimate After Dependency Findings** (MANDATORY -- Sprint 37 retro Imp-7)
+  - **Trigger**: 3.2.2.1 produced findings that change task scope. Examples:
+    - Task is partially or fully already shipped (subtract that effort from the estimate).
+    - Task scaffolding turned out to be already in place from a prior sprint (subtract setup effort).
+    - Task target file/function has been refactored or renamed since the master-plan entry was written (re-scope the task).
+    - Task depends on an external precondition discovered during 3.2.2.1 (Firebase Console SHA-1, OAuth client setup, vendor config) that must move to "deferred / blocked" with a new owner action item.
+  - **Action**: Update the per-task effort line in `SPRINT_N_PLAN.md` BEFORE committing the plan. Each affected task gets a one-line rationale: `Estimate: X-Yh -> A-Bh (Phase 3.2.2.1 found <fact>)`. Update the sprint-total line at the top of the plan.
+  - **Why**: Sprint 37 retro Effort Accuracy category found 2-4x over-estimation across BUG-S36-1 / F6 / F52 Phase 1 because the original estimates assumed scaffolding that prior sprints had already shipped. The 3.2.2.1 gate caught the scaffolding state but the plan was committed with stale effort numbers. Re-estimating after gate findings is the corrective step.
+  - **Cost**: ~5-15 min per sprint, only fires when 3.2.2.1 produces findings.
+  - **Skip condition**: If 3.2.2.1 surfaced no scope-changing findings, this step is a no-op. State that explicitly in the commit message ("Phase 3.2.2.2 N/A -- no Phase 3.2.2.1 findings") so future-you can audit.
 
 - [ ] **3.3 Branch Management**
   - Check if repository is in a PR branch
@@ -804,9 +815,13 @@ After Phase 5.2 all tests pass, context can be compacted for efficiency:
 
 - [ ] **6.4 Assign Code Review**
   - **@kimmeyh** is auto-assigned via `.github/CODEOWNERS`.
-  - **Copilot** is auto-assigned via Repository Ruleset (Settings -> Rules -> Rulesets -> enable "Automatically request Copilot code review"). Note: CODEOWNERS does NOT support the Copilot bot; the Ruleset is the only supported mechanism.
-  - Fallback if Ruleset is not configured and Copilot review is desired: `gh pr edit <PR#> --add-reviewer "@copilot"` (requires gh CLI v2.88.0+).
+  - **Copilot review is OPTIONAL** (Sprint 37 retrospective Imp-6, Phase 7.6 decision). Copilot is auto-assigned via Repository Ruleset (Settings -> Rules -> Rulesets -> enable "Automatically request Copilot code review") IF the Copilot reviewer is configured as a collaborator on the repository. Note: CODEOWNERS does NOT support the Copilot bot; the Ruleset is the only supported mechanism.
+  - **Quick availability check before requesting Copilot**:
+    `gh pr edit <PR#> --add-reviewer copilot-pull-request-reviewer 2>&1`
+    A `422` response (validation failed: reviewer is not a collaborator) means Copilot is not wired up on this repo -- proceed without Copilot review and skip Phase 6.4.1. A `0` exit means Copilot was successfully requested.
+  - Fallback if Ruleset is not configured and Copilot review IS available: `gh pr edit <PR#> --add-reviewer "@copilot"` (requires gh CLI v2.88.0+).
   - Copilot instructions come from `.github/copilot-instructions.md` on the PR base branch (develop).
+  - **Sprint 35-37 history note**: Copilot reviewer was NOT a collaborator on this repo across Sprints 35, 36, and 37; the auto-assignment + manual fallback both returned 422. Treat Copilot review as "if available" rather than mandatory; document its absence in the retrospective Process Issues category if it remains unavailable.
 
 - [ ] **6.4.1 GitHub Copilot Review Response** (Sprint 32 improvement - if Copilot enabled)
   - **Purpose**: External review layer independent of Claude Code. Catches language-specific issues, convention violations, best-practice gaps.

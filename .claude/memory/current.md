@@ -1,50 +1,71 @@
-# Sprint Context Save
+# Sprint 37 Context Save (Updated 2026-04-27)
 
-**Sprint**: Between Sprints 29-30
-**Date**: 2026-04-13 12:55:30 UTC
-**Branch**: feature/20260403_Sprint_29
-**Status**: Between Sprints - Startup fixes completed
+**Sprint**: Sprint 37
+**Date**: 2026-04-27
+**Branch**: develop
+**Status**: Pre-Kickoff (Phase 1 ready)
 
-## Current Tasks
+## Session Summary
 
-- [x] Fixed Semgrep plugin hook errors (disabled plugin - not installed)
-- [x] Fixed startup-check skill Bash permission error (changed Attempt 1 to use Write tool instead of echo redirect)
-- [x] Verified PR #225 is still open and ready to merge
-- [ ] Merge PR #225 to develop
-- [ ] Start Sprint 30 with architecture spike card
+**Startup Issues Fixed**:
+- **Hook error resolved**: Fixed "Python was not found" error in Claude Code hooks
+- **Root cause**: Microsoft Store python3 stub at `C:\Users\kimme\AppData\Local\Microsoft\WindowsApps\python3.exe` was intercepting `python3` invocations from plugin hooks, even though `python` works fine in PowerShell 7.5
+- **Fix applied**: Changed all `python3` → `python` references in plugin hook configs:
+  - hookify/hooks/hooks.json (4 hooks: PreToolUse, PostToolUse, Stop, UserPromptSubmit) — both marketplaces and cache copies
+  - security-guidance/hooks/hooks.json (PreToolUse) — both marketplaces and cache copies
+  - **Total**: 10 file edits across 2 plugins in 2 locations each
+- **Verification**: Tested hookify userpromptsubmit hook directly with `python` → exit 0, no errors
+- **Caveat**: Fix is on disk; running session still has in-memory cache from startup. Takes effect on next Claude Code restart.
 
-## Recent Work
+## Current State
 
-**Session Focus**: Fixed critical startup errors that would repeat on every Claude Code launch
-- **Semgrep plugin**: Disabled in `C:\Users\kimme\.claude\settings.json` (was causing 2 hook errors on startup)
-- **startup-check skill**: Updated `.claude/skills/startup-check/SKILL.md` to use Write tool for pending_restore flag instead of `echo > redirect` which gets denied in don't-ask mode
-- **Memory restore**: Successfully restored saved Sprint 29 context on startup
-- **Settings confirmed**: All environment checks passing (git status, GitHub CLI, memory restored)
+**On**: develop branch, clean tree (post Sprint 36 merge ea7e14c)
+**Git**: Clean working directory (2 uncommitted memory files expected)
+**GitHub CLI**: Working
+**Ready for**: Sprint 37 Phase 1 Backlog Refinement (MANDATORY first step)
 
-## Next Steps
+## Recent Work (Prior Session — Sprint 36 Complete)
 
-1. **Merge PR #225 to develop** - Contains Sprint 29 work + testing feedback + ASRD docs
-2. **Start Sprint 30 planning** with architecture spike:
-   - Deep dive on docs/adr/, docs/ARCHITECTURE.md, docs/ASRD.md
-   - Compare current codebase to documented architecture
-   - List gaps and suggest backlog updates
-3. **Review backlog candidates** from ALL_SPRINTS_MASTER_PLAN.md:
-   - F59 (Store guard rails + privacy compliance tests)
-   - F53 (.cc/.ne TLD blocks)
-   - YAML export suggestions from Sprint 29 retro
+Sprint 36 shipped all deliverables:
+- F81: Store release process documentation
+- BUG-S35-1: Manual rule duplicate prevention (3 commits)
+- F80: Phase Cheat Sheet (IMP-1)
+- Process improvements IMP-1 through IMP-5 now in effect
+- PR #245 merged to develop
+
+## Next Steps (Sprint 37 Phase 1)
+
+1. **Phase 1 Kickoff: MANDATORY Backlog Refinement**
+   - Read `docs/ALL_SPRINTS_MASTER_PLAN.md` "Next Sprint Candidates" section
+   - Review prioritized feature/bug table
+   - Present candidates to user in bullet-list format (grouped by priority tier, HOLD at bottom)
+   - Get user scope approval for Sprint 37
+
+2. **Parallel to Phase 1**: If any questions on the fix or carry-in items
+
+3. **Phase 2**: Dependency check (if needed based on candidates selected)
+
+4. **Phase 3**: Sprint planning (create SPRINT_37_PLAN.md, feature branch, draft PR)
+   - **NEW**: Phase 3.2.2.1 plan-to-branch-state verification gate (IMP-1)
+   - **NEW**: Phase 3.7 approval verification gate (IMP-3)
+
+## Carry-in Reminder
+
+- BUG-S36-1 (Issue #246): Manual rule semantic subsumption — logged for Sprint 37 consideration
 
 ## Blockers/Notes
 
-- No blockers identified
-- Startup fixes are foundational and should prevent future session startup errors
-- Sprint 29 retrospective rated all items as "Very Good" - solid foundation for Sprint 30
-- Test suite: 1223 passing, 28 skipped, 0 failures
+None. Clean state. The hook error is fixed on disk and will resolve on next session restart.
 
 ---
 
 **Instructions for Claude on Resume**:
-1. Run `/startup-check` to restore this context
-2. Verify Semgrep hook errors are gone
-3. If PR #225 not yet merged, proceed with merge to develop
-4. Review ALL_SPRINTS_MASTER_PLAN.md section "Next Sprint Candidates" for Sprint 30 scope
-5. Continue with Sprint 30 planning using architecture spike as first task
+1. Run `/startup-check` to verify environment and restore this context
+2. Confirm on develop branch, clean tree
+3. **Hook fix note**: If you see "Python was not found" errors in hook runs, they are from in-memory cache. Restart Claude Code to load disk fixes. The fix is already applied to:
+   - `C:\Users\kimme\.claude\plugins\marketplaces\claude-plugins-official\plugins\hookify\hooks\hooks.json`
+   - `C:\Users\kimme\.claude\plugins\cache\claude-plugins-official\hookify\unknown\hooks\hooks.json`
+   - `C:\Users\kimme\.claude\plugins\marketplaces\claude-plugins-official\plugins\security-guidance\hooks\hooks.json`
+   - `C:\Users\kimme\.claude\plugins\cache\claude-plugins-official\security-guidance\unknown\hooks\hooks.json`
+4. Execute: Begin Phase 1 Backlog Refinement
+5. Reference: `docs/ALL_SPRINTS_MASTER_PLAN.md` for Next Sprint Candidates
