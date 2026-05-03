@@ -688,25 +688,36 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
     final categoryLabel = _categoryLabels[rule.patternCategory] ?? rule.patternCategory ?? '';
     final subTypeLabel = _subTypeLabels[rule.patternSubType] ?? rule.patternSubType ?? '';
 
-    // Sprint 37 Phase 7 Imp-1 (round 2 + Copilot a11y fix): the parent
-     // SelectionArea governs text selection across rows. Title + subtitle are
-     // plain Text widgets so selection sweeps across multiple rows. The
-     // leading icon is an IconButton (not a bare GestureDetector) so it has
-     // proper Button semantics, focusability, tooltip, and Material ink for
-     // assistive tech (Copilot review #2).
+    // Sprint 37 Phase 7 Imp-1 (round 2 + round 5b Copilot a11y fix): the
+     // parent SelectionArea governs text selection across rows. Title +
+     // subtitle are plain Text widgets so selection sweeps across multiple
+     // rows.
+     //
+     // Round 5b note: round 5's `IconButton` in `leading:` rendered the icon
+     // but pointer events / hover / Tab focus failed in the running app
+     // (manual test 2026-05-02/03). Hypothesis: `dense: true` + the default
+     // ListTile.leading layout collapses the IconButton's hit/tooltip region
+     // to near-zero. Round 5b uses `Tooltip + InkWell + Padding` directly:
+     // gives explicit tooltip, full clickable area, keyboard focus via
+     // InkWell.canRequestFocus, and Material ink response.
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       child: ListTile(
         dense: true,
-        leading: IconButton(
-          icon: Icon(
-            _getCategoryIcon(rule.patternCategory),
-            color: rule.enabled ? _getSubTypeColor(rule.patternSubType) : Colors.grey.shade400,
-            size: 22,
+        leading: Tooltip(
+          message: 'View rule details',
+          child: InkWell(
+            onTap: () => _showRuleDetails(rule),
+            borderRadius: BorderRadius.circular(20),
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Icon(
+                _getCategoryIcon(rule.patternCategory),
+                color: rule.enabled ? _getSubTypeColor(rule.patternSubType) : Colors.grey.shade400,
+                size: 22,
+              ),
+            ),
           ),
-          tooltip: 'View rule details',
-          visualDensity: VisualDensity.compact,
-          onPressed: () => _showRuleDetails(rule),
         ),
         title: Text(
           displayName,

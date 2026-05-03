@@ -536,23 +536,32 @@ class _SafeSendersManagementScreenState
     final hasExceptions = sender.exceptionPatterns != null &&
         sender.exceptionPatterns!.isNotEmpty;
 
-    // Sprint 37 Phase 7 Imp-1 (round 2 + Copilot a11y fix): the screen-level
-     // SelectionArea (in the Scaffold body) governs selection across rows.
-     // Title + subtitle are plain Text so selection can sweep multiple rows.
-     // The leading icon is an IconButton (not a bare GestureDetector) so it
-     // has proper Button semantics, focusability, tooltip, and Material ink
-     // for assistive tech (Copilot review #3).
+    // Sprint 37 Phase 7 Imp-1 (round 2 + round 5b Copilot a11y fix): the
+     // screen-level SelectionArea (in the Scaffold body) governs selection
+     // across rows. Title + subtitle are plain Text so selection can sweep
+     // multiple rows.
+     //
+     // Round 5b note: round 5's `IconButton` in `leading:` rendered the icon
+     // but pointer events / hover / Tab focus failed in the running app
+     // (manual test 2026-05-02/03). Round 5b uses `Tooltip + InkWell +
+     // Padding` directly: explicit tooltip, full clickable area, keyboard
+     // focus via InkWell.canRequestFocus, Material ink response.
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: ListTile(
-        leading: IconButton(
-          icon: Icon(
-            _getPatternTypeIcon(sender),
-            color: Colors.green.shade700,
+        leading: Tooltip(
+          message: 'View safe sender details',
+          child: InkWell(
+            onTap: () => _showPatternDetails(sender),
+            borderRadius: BorderRadius.circular(20),
+            child: Padding(
+              padding: const EdgeInsets.all(8),
+              child: Icon(
+                _getPatternTypeIcon(sender),
+                color: Colors.green.shade700,
+              ),
+            ),
           ),
-          tooltip: 'View safe sender details',
-          visualDensity: VisualDensity.compact,
-          onPressed: () => _showPatternDetails(sender),
         ),
         title: Text(
           sender.pattern,
