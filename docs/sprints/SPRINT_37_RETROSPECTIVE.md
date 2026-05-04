@@ -232,3 +232,19 @@ Round 6 scope:
 Round 6 widget tests were attempted (4 per screen: hover-reveal, focus-reveal, export-disabled-when-empty, export-enabled-with-count) but hit the same FakeAsync + sqflite_ffi + pumpWidget hang Sprint 37 round 1 widget tests hit (initState's async DB load future never resolves under FakeAsync). Same disposition as round 1: dropped the tests, verified via manual testing + code review.
 
 This closes the row-affordance work that consumed 6 rounds across Phase 7. The lesson preserved for the retro Category 9 (Process Issues) for Sprint 38: when a UI affordance change goes through 3+ rounds of fix-revealed-new-bug, stop incremental fixing and request a design review with alternatives. The 6-round timeline cost ~3-4h of cumulative iteration; the design review took ~10 minutes and produced a clean answer.
+
+## Round 7: CSV bug fixes + leading icon clickable + Settings reorg (Phase 7.7, 2026-05-04)
+
+Round-6 manual testing surfaced four follow-up items, all applied this round (no new backlog):
+
+1. **CSV-injection bug -- Excel `#NAME?` on `-offers.com` rule** (Harold's Excel screenshot). When a rule's source domain or rule name starts with `-`, `=`, `+`, `@`, tab, or CR, Excel/LibreOffice/Sheets read the cell as a formula. Fix per OWASP: the `_csvEscape` helper now detects these leading characters via `codeUnitAt(0)` check and prefixes the cell with a single quote `'` -- spreadsheet apps treat that as a "literal text" hint and strip it on display, leaving the actual content intact. Same fix applied to both `rules_management_screen.dart::_csvEscape` and `safe_senders_management_screen.dart::_csvEscape`. The Safe Senders fix is also significant: every regex pattern starts with `@(?:...)` or `^[^@\s]+@...`, so the entire Pattern column would have been broken in Excel without this fix.
+
+2. **Missing `Pattern` column on rules CSV** (Harold's feedback). Added `Pattern` column to Manage Rules CSV export, positioned between `Rule Name` and `Category`. Each rule's condition lists (header / from / subject / body) are joined with `; ` since CSV uses comma as the field delimiter. Safe Senders CSV already had its single-pattern column.
+
+3. **Leading category icon now clickable** (Harold's UX feedback: "match the hover/highlight/click of `i` icon for each row's leading icon"). Round-6 left the leading icon decorative-only; round-7 makes it ALSO open the details dialog with the same `IconButton` hover ring + tooltip + keyboard focus + tap response as the trailing info icon. Wrapped in explicit `SizedBox(36, 36)` so the round-5b "tight ListTile.leading constraints collapse the IconButton hit region" failure does not recur. Cross-row text selection (round-2) preserved -- the leading icon is outside the title/subtitle text region so selection drags through unchanged.
+
+4. **Settings tab reorg** (Harold's UX feedback). Two changes:
+   - Export Settings (CSV export directory selector) moved from Manual Scan tab to General tab, positioned above Import / Export YAML. The selector is now used by 3 callers (Manage Rules, Manage Safe Senders, Manual Scan results) -- general-purpose enough to live on the General tab next to the related YAML import/export action.
+   - Reset Rules to Defaults + Delete All App Data... moved from top of General tab (under Rules Management) to BOTTOM of General tab in a new "Danger Zone" section, just above About. Destructive actions belong below regular controls so users do not accidentally tap them while scrolling. The two irreversible-action buttons stay grouped under one explanatory header.
+
+No backlog additions this round -- all four items were apply-now sized.

@@ -735,13 +735,30 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
         },
         child: ListTile(
           dense: true,
-          leading: Icon(
-            _getCategoryIcon(rule.patternCategory),
-            color: rule.enabled
-                ? _getSubTypeColor(rule.patternSubType).withValues(alpha: 0.85)
-                : Colors.grey.shade400,
-            size: 20,
-            semanticLabel: '$categoryLabel category, $subTypeLabel sub-type',
+          // Sprint 37 round 7: leading category icon is now ALSO clickable
+          // (Harold feedback 2026-05-04). Symmetry with trailing info icon
+          // -- both icons open the details dialog with the same hover ring,
+          // tooltip, and tap behavior. Wrapped in IconButton with explicit
+          // 36x36 SizedBox constraints so the round-5b "tight ListTile.
+          // leading constraints collapse the IconButton hit region" failure
+          // does not recur.
+          leading: SizedBox(
+            width: 36,
+            height: 36,
+            child: IconButton(
+              icon: Icon(
+                _getCategoryIcon(rule.patternCategory),
+                color: rule.enabled
+                    ? _getSubTypeColor(rule.patternSubType).withValues(alpha: 0.85)
+                    : Colors.grey.shade400,
+                size: 20,
+                semanticLabel: '$categoryLabel category, $subTypeLabel sub-type',
+              ),
+              tooltip: 'View rule details',
+              padding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+              onPressed: () => _showRuleDetails(rule),
+            ),
           ),
           title: Text(
             displayName,
@@ -823,15 +840,20 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
       final filePath = '$normalizedPath$separator$filename';
 
       final buffer = StringBuffer();
-      buffer.writeln('Source Domain,Rule Name,Category,Sub-Type,Action,Enabled,Execution Order');
+      // Sprint 37 round 7: added Pattern column. Pattern joins all the
+      // rule's condition lists (header / from / subject / body) with `; `
+      // since CSV uses comma as field delimiter and a rule can target
+      // multiple condition buckets.
+      buffer.writeln('Source Domain,Rule Name,Pattern,Category,Sub-Type,Action,Enabled,Execution Order');
       for (final r in _filteredRules) {
         final domain = _csvEscape(r.sourceDomain ?? '');
         final name = _csvEscape(r.name);
+        final pattern = _csvEscape(_collectPatternsForCsv(r));
         final cat = _csvEscape(_categoryLabels[r.patternCategory] ?? r.patternCategory ?? '');
         final sub = _csvEscape(_subTypeLabels[r.patternSubType] ?? r.patternSubType ?? '');
         final action = _csvEscape(_getActionLabel(r));
         final enabled = r.enabled ? 'true' : 'false';
-        buffer.writeln('$domain,$name,$cat,$sub,$action,$enabled,${r.executionOrder}');
+        buffer.writeln('$domain,$name,$pattern,$cat,$sub,$action,$enabled,${r.executionOrder}');
       }
       final file = File(filePath);
       await file.writeAsString(buffer.toString());
@@ -855,10 +877,40 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
     }
   }
 
+  /// Joins all of a rule's condition patterns (header / from / subject /
+  /// body) into a single string for the CSV "Pattern" column. Multiple
+  /// patterns are separated with `; ` because CSV already uses `,` as the
+  /// field delimiter. The cell will be quoted by `_csvEscape` when needed.
+  String _collectPatternsForCsv(Rule r) {
+    final parts = <String>[
+      ...r.conditions.header,
+      ...r.conditions.from,
+      ...r.conditions.subject,
+      ...r.conditions.body,
+    ];
+    return parts.join('; ');
+  }
+
+  /// Sprint 37 round 7: CSV-injection-safe escape (OWASP guidance, Bug
+  /// observed by Harold 2026-05-04: rules whose source domain starts with
+  /// `-` showed `#NAME?` in Excel because Excel/LibreOffice/Sheets all
+  /// interpret cells starting with `=`, `+`, `-`, `@`, tab (`\t`), or CR
+  /// (`\r`) as formulas. The fix is to prefix such cells with a single
+  /// quote `'` -- spreadsheet apps treat that as a "literal text" hint and
+  /// strip it on display, leaving the actual content intact).
   String _csvEscape(String s) {
-    if (s.contains(',') || s.contains('"') || s.contains('\n')) {
-      return '"${s.replaceAll('"', '""')}"';
+    if (s.isEmpty) return s;
+    final first = s.codeUnitAt(0);
+    final isFormulaTrigger = first == 0x3D /* = */ ||
+        first == 0x2B /* + */ ||
+        first == 0x2D /* - */ ||
+        first == 0x40 /* @ */ ||
+        first == 0x09 /* TAB */ ||
+        first == 0x0D /* CR */;
+    final escaped = isFormulaTrigger ? "'$s" : s;
+    if (escaped.contains(',') || escaped.contains('"') || escaped.contains('\n')) {
+      return '"${escaped.replaceAll('"', '""')}"';
     }
-    return s;
+    return escaped;
   }
 }

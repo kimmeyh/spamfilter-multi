@@ -568,11 +568,25 @@ class _SafeSendersManagementScreenState
           }
         },
         child: ListTile(
-          leading: Icon(
-            _getPatternTypeIcon(sender),
-            color: Colors.green.shade700.withValues(alpha: 0.85),
-            size: 20,
-            semanticLabel: '${_formatPatternType(sender)} category',
+          // Sprint 37 round 7: leading icon is now ALSO clickable (Harold
+          // feedback 2026-05-04). See rules_management_screen.dart for
+          // rationale + the SizedBox constraint that prevents round-5b's
+          // collapsed-hit-region failure.
+          leading: SizedBox(
+            width: 36,
+            height: 36,
+            child: IconButton(
+              icon: Icon(
+                _getPatternTypeIcon(sender),
+                color: Colors.green.shade700.withValues(alpha: 0.85),
+                size: 20,
+                semanticLabel: '${_formatPatternType(sender)} category',
+              ),
+              tooltip: 'View safe sender details',
+              padding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+              onPressed: () => _showPatternDetails(sender),
+            ),
           ),
           title: Text(
             sender.pattern,
@@ -699,10 +713,23 @@ class _SafeSendersManagementScreenState
     }
   }
 
+  /// Sprint 37 round 7: CSV-injection-safe escape (OWASP guidance). See
+  /// rules_management_screen.dart::_csvEscape for full rationale -- regex
+  /// patterns starting with `@(?:...)` would otherwise be read by Excel
+  /// as a formula and produce `#NAME?` errors.
   String _csvEscape(String s) {
-    if (s.contains(',') || s.contains('"') || s.contains('\n')) {
-      return '"${s.replaceAll('"', '""')}"';
+    if (s.isEmpty) return s;
+    final first = s.codeUnitAt(0);
+    final isFormulaTrigger = first == 0x3D /* = */ ||
+        first == 0x2B /* + */ ||
+        first == 0x2D /* - */ ||
+        first == 0x40 /* @ */ ||
+        first == 0x09 /* TAB */ ||
+        first == 0x0D /* CR */;
+    final escaped = isFormulaTrigger ? "'$s" : s;
+    if (escaped.contains(',') || escaped.contains('"') || escaped.contains('\n')) {
+      return '"${escaped.replaceAll('"', '""')}"';
     }
-    return s;
+    return escaped;
   }
 }

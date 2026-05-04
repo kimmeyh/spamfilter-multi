@@ -300,6 +300,15 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         ),
         const SizedBox(height: 8),
 
+        // Sprint 37 round 7: Export Settings moved here from Manual Scan
+        // tab (Harold's UX feedback 2026-05-04). The CSV export directory
+        // is used by Manage Rules + Manage Safe Senders + Manual Scan
+        // results -- general-purpose enough to live on the General tab.
+        // Positioned just above Import / Export YAML to group all
+        // import/export-related controls together.
+        _buildCsvExportDirectorySelector(),
+        const SizedBox(height: 8),
+
         OutlinedButton.icon(
           icon: const Icon(Icons.swap_vert_outlined),
           label: const Text('Import / Export YAML'),
@@ -316,31 +325,11 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             alignment: Alignment.centerLeft,
           ),
         ),
-        const SizedBox(height: 8),
-
-        OutlinedButton.icon(
-          icon: const Icon(Icons.restore),
-          label: const Text('Reset Rules to Defaults'),
-          onPressed: _resetRulesToDefaults,
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            alignment: Alignment.centerLeft,
-            foregroundColor: Colors.orange.shade700,
-          ),
-        ),
-        const SizedBox(height: 8),
-
-        // F66 (Sprint 33): full-app data wipe
-        OutlinedButton.icon(
-          icon: const Icon(Icons.delete_forever),
-          label: const Text('Delete All App Data...'),
-          onPressed: _confirmDeleteAllData,
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            alignment: Alignment.centerLeft,
-            foregroundColor: Colors.red.shade700,
-          ),
-        ),
+        // Sprint 37 round 7: Reset Rules to Defaults + Delete All App
+        // Data... moved to BOTTOM of the General tab (just above About,
+        // see end of this method) per Harold's UX feedback 2026-05-04.
+        // Destructive actions belong below regular controls so users do
+        // not accidentally tap them while scrolling.
 
         const SizedBox(height: 24),
 
@@ -436,6 +425,48 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               setState(() => _encryptDatabase = value);
             }
           },
+        ),
+
+        const SizedBox(height: 24),
+
+        // Sprint 37 round 7: destructive actions (Reset Rules to Defaults,
+        // Delete All App Data) moved to bottom of General tab per Harold's
+        // UX feedback 2026-05-04. Originally lived under Rules Management
+        // at the top; moving them down avoids accidental taps during
+        // scrolling and keeps the irreversible-action pair grouped.
+        Text(
+          'Danger Zone',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Colors.red.shade700,
+              ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Irreversible operations. Each requires explicit confirmation.',
+          style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+        ),
+        const SizedBox(height: 16),
+        OutlinedButton.icon(
+          icon: const Icon(Icons.restore),
+          label: const Text('Reset Rules to Defaults'),
+          onPressed: _resetRulesToDefaults,
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            alignment: Alignment.centerLeft,
+            foregroundColor: Colors.orange.shade700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          icon: const Icon(Icons.delete_forever),
+          label: const Text('Delete All App Data...'),
+          onPressed: _confirmDeleteAllData,
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            alignment: Alignment.centerLeft,
+            foregroundColor: Colors.red.shade700,
+          ),
         ),
 
         const SizedBox(height: 24),
@@ -666,9 +697,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             await _settingsStore.setConfirmDialogsEnabled(value);
           },
         ),
-        const SizedBox(height: 24),
-        _buildSectionHeader('Export Settings'),
-        _buildCsvExportDirectorySelector(),
+        // Sprint 37 round 7: Export Settings moved to General tab (above
+        // Import / Export YAML), per Harold's UX feedback 2026-05-04.
+        // CSV export dir is now used by Manage Rules + Manage Safe Senders
+        // export buttons too, not just Manual Scan results.
       ],
     ));
   }
