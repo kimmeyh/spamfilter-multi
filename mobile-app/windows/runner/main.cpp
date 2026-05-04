@@ -60,13 +60,24 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
 
   project.set_dart_entrypoint_arguments(std::move(command_line_arguments));
 
-  // Determine window title based on APP_ENV (ADR-0035)
-  // Check command line for --dart-define=APP_ENV=dev
-  bool isDevEnvironment = true; // Default to dev
-  std::wstring fullCmdLine(GetCommandLineW());
-  if (fullCmdLine.find(L"APP_ENV=prod") != std::wstring::npos) {
-    isDevEnvironment = false;
-  }
+  // Determine window title based on APP_ENV (ADR-0035).
+  //
+  // Sprint 37 F52 Phase 1 (2026-04-29): SPAMFILTER_APP_ENV is baked
+  // into the .exe at compile time via CMakeLists.txt, sourced from the
+  // SPAMFILTER_APP_ENV environment variable seen by CMake at
+  // configure time. This is the ONLY correct mechanism for the
+  // Microsoft Store MSIX path -- the Store launcher does not pass
+  // --dart-define on the command line, so any runtime-only check
+  // would default to dev for the published prod binary. CMake-driven
+  // compile-time defines are also robust for direct-launch variants
+  // (Start-Process .exe).
+  //
+  // SPAMFILTER_APP_ENV defaults to "dev" if the env var was unset at
+  // CMake configure time (CMakeLists.txt fallback).
+  #ifndef SPAMFILTER_APP_ENV
+  #define SPAMFILTER_APP_ENV "dev"
+  #endif
+  const bool isDevEnvironment = (std::string(SPAMFILTER_APP_ENV) != "prod");
   const wchar_t* windowTitle = isDevEnvironment
       ? L"MyEmailSpamFilter [DEV]"
       : L"MyEmailSpamFilter";

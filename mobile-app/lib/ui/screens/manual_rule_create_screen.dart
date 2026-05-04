@@ -291,6 +291,21 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
     }
   }
 
+  /// Render the user-facing message for a `_DuplicateOutcome`. Subsumption
+  /// outcomes name the existing covering rule so the user knows what is
+  /// already in place.
+  String _duplicateMessage(_DuplicateOutcome outcome) {
+    final kind = widget.mode == ManualRuleMode.blockRule
+        ? 'block rule'
+        : 'safe sender';
+    if (outcome.subsumingRule != null) {
+      return 'A $kind already covers this: ${outcome.subsumingRule!.displayLabel}.';
+    }
+    return widget.mode == ManualRuleMode.blockRule
+        ? 'A block rule with this pattern already exists.'
+        : 'A safe sender with this pattern already exists.';
+  }
+
   /// Map an exception to a user-facing message that does not leak internal
   /// detail. Logs already capture the full exception via _logger.e.
   String _userFriendlyErrorMessage(Object error) {
@@ -318,52 +333,80 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
   /// Pre-confirm duplicate check. Called from _confirmAndSave BEFORE the
   /// Confirm dialog so duplicates are surfaced with an error instead of a
   /// misleading confirmation step.
-  Future<bool> _isDuplicate() async {
+  ///
+  /// Returns a non-null `_DuplicateOutcome` if the rule cannot be saved, or
+  /// `null` if it is unique. Sprint 37 BUG-S36-1 extends the original
+  /// boolean return shape to also report semantic subsumption (an existing
+  /// broader rule that already covers this one) so the error message can
+  /// name the covering rule.
+  Future<_DuplicateOutcome?> _isDuplicate() async {
     final dbHelper = DatabaseHelper();
     final db = await dbHelper.database;
     final checker = ManualRuleDuplicateChecker(db);
 
     if (widget.mode == ManualRuleMode.blockRule) {
-      String subType;
-      switch (_selectedType) {
-        case ManualRuleType.topLevelDomain:
-          subType = 'top_level_domain';
-          break;
-        case ManualRuleType.entireDomain:
-          subType = 'entire_domain';
-          break;
-        case ManualRuleType.exactDomain:
-          subType = 'exact_domain';
-          break;
-        case ManualRuleType.exactEmail:
-          subType = 'exact_email';
-          break;
+      final subType = _blockRuleSubType();
+
+      // Subsumption check first -- if a broader rule already covers this,
+      // surface that with a more informative error than the exact-duplicate
+      // path would give.
+      final subsuming = await checker.findSubsumingBlockRule(
+        sourceDomain: _sourceDomain,
+        patternSubType: subType,
+        patternCategory: 'header_from',
+      );
+      if (subsuming != null) {
+        return _DuplicateOutcome.subsumed(subsuming);
       }
-      return checker.blockRuleExists(
+
+      final exact = await checker.blockRuleExists(
         pattern: _generatedPattern,
         patternCategory: 'header_from',
         patternSubType: subType,
       );
+      return exact ? _DuplicateOutcome.exact() : null;
     } else {
-      String patternType;
-      switch (_selectedType) {
-        case ManualRuleType.entireDomain:
-          patternType = 'entire_domain';
-          break;
-        case ManualRuleType.exactDomain:
-          patternType = 'exact_domain';
-          break;
-        case ManualRuleType.exactEmail:
-          patternType = 'exact_email';
-          break;
-        case ManualRuleType.topLevelDomain:
-          patternType = 'top_level_domain';
-          break;
+      final patternType = _safeSenderPatternType();
+
+      final subsuming = await checker.findSubsumingSafeSender(
+        sourceDomain: _sourceDomain,
+        patternType: patternType,
+      );
+      if (subsuming != null) {
+        return _DuplicateOutcome.subsumed(subsuming);
       }
-      return checker.safeSenderExists(
+
+      final exact = await checker.safeSenderExists(
         pattern: _generatedPattern,
         patternType: patternType,
       );
+      return exact ? _DuplicateOutcome.exact() : null;
+    }
+  }
+
+  String _blockRuleSubType() {
+    switch (_selectedType) {
+      case ManualRuleType.topLevelDomain:
+        return 'top_level_domain';
+      case ManualRuleType.entireDomain:
+        return 'entire_domain';
+      case ManualRuleType.exactDomain:
+        return 'exact_domain';
+      case ManualRuleType.exactEmail:
+        return 'exact_email';
+    }
+  }
+
+  String _safeSenderPatternType() {
+    switch (_selectedType) {
+      case ManualRuleType.entireDomain:
+        return 'entire_domain';
+      case ManualRuleType.exactDomain:
+        return 'exact_domain';
+      case ManualRuleType.exactEmail:
+        return 'exact_email';
+      case ManualRuleType.topLevelDomain:
+        return 'top_level_domain';
     }
   }
 
@@ -396,7 +439,22 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
     // constraint on pattern+sub_type, so without this the user could silently
     // create a second copy of a bundled rule (e.g., `.xyz` duplicating the
     // bundled `._.xyz` split).
-    final isDuplicate = await ManualRuleDuplicateChecker(db).blockRuleExists(
+    final checker = ManualRuleDuplicateChecker(db);
+
+    // Sprint 37 BUG-S36-1: subsumption check is the primary path; exact-dup
+    // is the fallback. _confirmAndSave already runs both before showing the
+    // Confirm dialog, so reaching this code with a duplicate would only
+    // happen via a race between dialog open and Save tap.
+    final subsuming = await checker.findSubsumingBlockRule(
+      sourceDomain: _sourceDomain,
+      patternSubType: patternSubType,
+      patternCategory: 'header_from',
+    );
+    if (subsuming != null) {
+      throw _DuplicateRuleException();
+    }
+
+    final isDuplicate = await checker.blockRuleExists(
       pattern: _generatedPattern,
       patternCategory: 'header_from',
       patternSubType: patternSubType,
@@ -449,7 +507,18 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
     // schema-level UNIQUE index that would also catch this, but running the
     // check before the insert keeps the error path symmetric with block rules
     // and avoids relying on DB error text for UX.
-    final isDuplicate = await ManualRuleDuplicateChecker(db).safeSenderExists(
+    final checker = ManualRuleDuplicateChecker(db);
+
+    // Sprint 37 BUG-S36-1: subsumption check parallel to block-rule path.
+    final subsuming = await checker.findSubsumingSafeSender(
+      sourceDomain: _sourceDomain,
+      patternType: patternType,
+    );
+    if (subsuming != null) {
+      throw _DuplicateRuleException();
+    }
+
+    final isDuplicate = await checker.safeSenderExists(
       pattern: _generatedPattern,
       patternType: patternType,
     );
@@ -479,13 +548,12 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
     // _saveBlockRule / _saveSafeSender remains as a second line of defense
     // against a race where a duplicate is created between the dialog open
     // and the user tapping Save.
-    if (await _isDuplicate()) {
+    final duplicateOutcome = await _isDuplicate();
+    if (duplicateOutcome != null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(widget.mode == ManualRuleMode.blockRule
-                ? 'A block rule with this pattern already exists.'
-                : 'A safe sender with this pattern already exists.'),
+            content: Text(_duplicateMessage(duplicateOutcome)),
           ),
         );
       }
@@ -732,4 +800,18 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
 /// `_saveRule` -> `_userFriendlyErrorMessage` to show the user a clear
 /// "already exists" message instead of silently creating a duplicate.
 class _DuplicateRuleException implements Exception {}
+
+/// Outcome of the pre-confirm duplicate check. Either reports an exact
+/// duplicate (same pattern + sub-type) or a semantic subsumption (a broader
+/// existing rule already covers the candidate). Sprint 37 BUG-S36-1 added
+/// the subsumption case; the exact case is the original BUG-S35-1 behavior.
+class _DuplicateOutcome {
+  final SubsumingRuleInfo? subsumingRule;
+
+  const _DuplicateOutcome._({this.subsumingRule});
+
+  factory _DuplicateOutcome.exact() => const _DuplicateOutcome._();
+  factory _DuplicateOutcome.subsumed(SubsumingRuleInfo info) =>
+      _DuplicateOutcome._(subsumingRule: info);
+}
 

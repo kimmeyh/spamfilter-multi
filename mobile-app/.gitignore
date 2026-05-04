@@ -30,6 +30,11 @@ migrate_working_dir/
 .pub/
 /build/
 
+# Sprint 37 F52 Phase 1: env-specific Windows variant build artifacts
+# (Release-Dev/MyEmailSpamFilter-Dev.exe, Release-Prod/MyEmailSpamFilter.exe).
+# Lives outside /build/ so `flutter clean` does not wipe across builds.
+/dist/
+
 # Symbolication related
 app.*.symbols
 
