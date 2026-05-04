@@ -12,10 +12,13 @@
 /// - View pattern details and exceptions
 library;
 
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/safe_sender_database_store.dart';
+import '../../core/storage/settings_store.dart';
 import '../widgets/app_bar_with_exit.dart';
 import 'help_screen.dart';
 import 'manual_rule_create_screen.dart';
@@ -87,6 +90,11 @@ class _SafeSendersManagementScreenState
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
   final Set<SafeSenderCategory> _selectedCategories = {};
+
+  /// Sprint 37 round 6 (Alt-2 UX): tracks the currently-hovered or
+  /// keyboard-focused row. The hover-revealed info_outline button is
+  /// visible only for the row whose pattern matches this field.
+  String? _hoveredPattern;
 
   bool get _hasActiveFilters =>
       _searchQuery.isNotEmpty || _selectedCategories.isNotEmpty;
@@ -338,6 +346,14 @@ class _SafeSendersManagementScreenState
             tooltip: 'Refresh',
             onPressed: _loadSafeSenders,
           ),
+          // Sprint 37 round 6: filter-aware bulk export.
+          IconButton(
+            icon: const Icon(Icons.file_download_outlined),
+            tooltip: _filteredSenders.isEmpty
+                ? 'Nothing to export'
+                : 'Export ${_filteredSenders.length} shown safe sender${_filteredSenders.length == 1 ? '' : 's'} as CSV',
+            onPressed: _filteredSenders.isEmpty ? null : _exportFilteredSafeSenders,
+          ),
         ],
       ),
       body: SelectionArea(
@@ -536,72 +552,157 @@ class _SafeSendersManagementScreenState
     final hasExceptions = sender.exceptionPatterns != null &&
         sender.exceptionPatterns!.isNotEmpty;
 
-    // Sprint 37 Phase 7 Imp-1 (round 2 + round 5b Copilot a11y fix): the
-     // screen-level SelectionArea (in the Scaffold body) governs selection
-     // across rows. Title + subtitle are plain Text so selection can sweep
-     // multiple rows.
-     //
-     // Round 5b note: round 5's `IconButton` in `leading:` rendered the icon
-     // but pointer events / hover / Tab focus failed in the running app
-     // (manual test 2026-05-02/03). Round 5b uses `Tooltip + InkWell +
-     // Padding` directly: explicit tooltip, full clickable area, keyboard
-     // focus via InkWell.canRequestFocus, Material ink response.
+    // Sprint 37 Phase 7 Imp-1 round 6 (Alt-2 final UX, supersedes rounds
+    // 1-5b on this screen). See rules_management_screen.dart for the same
+    // design rationale: leading icon decorative-only; trailing reveal-on-
+    // hover info_outline; trailing delete REMOVED (delete remains
+    // available inside the details dialog).
+    final isRevealed = _hoveredPattern == sender.pattern;
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: ListTile(
-        leading: Tooltip(
-          message: 'View safe sender details',
-          child: InkWell(
-            onTap: () => _showPatternDetails(sender),
-            borderRadius: BorderRadius.circular(20),
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Icon(
-                _getPatternTypeIcon(sender),
-                color: Colors.green.shade700,
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hoveredPattern = sender.pattern),
+        onExit: (_) {
+          if (_hoveredPattern == sender.pattern) {
+            setState(() => _hoveredPattern = null);
+          }
+        },
+        child: ListTile(
+          leading: Icon(
+            _getPatternTypeIcon(sender),
+            color: Colors.green.shade700.withValues(alpha: 0.85),
+            size: 20,
+            semanticLabel: '${_formatPatternType(sender)} category',
+          ),
+          title: Text(
+            sender.pattern,
+            style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: Row(
+            children: [
+              Text(
+                _formatPatternType(sender),
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              ),
+              if (hasExceptions) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: Colors.orange.shade200),
+                  ),
+                  child: Text(
+                    '${sender.exceptionPatterns!.length} exception${sender.exceptionPatterns!.length == 1 ? '' : 's'}',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.orange.shade800,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          trailing: Focus(
+            onFocusChange: (hasFocus) {
+              if (hasFocus) {
+                setState(() => _hoveredPattern = sender.pattern);
+              }
+            },
+            child: AnimatedOpacity(
+              opacity: isRevealed ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 120),
+              child: IconButton(
+                icon: const Icon(Icons.info_outline, size: 18),
+                tooltip: 'View safe sender details (Enter)',
+                visualDensity: VisualDensity.compact,
+                onPressed: () => _showPatternDetails(sender),
               ),
             ),
           ),
         ),
-        title: Text(
-          sender.pattern,
-          style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Row(
-          children: [
-            Text(
-              _formatPatternType(sender),
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-            ),
-            if (hasExceptions) ...[
-              const SizedBox(width: 8),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade50,
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: Colors.orange.shade200),
-                ),
-                child: Text(
-                  '${sender.exceptionPatterns!.length} exception${sender.exceptionPatterns!.length == 1 ? '' : 's'}',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.orange.shade800,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-        trailing: IconButton(
-          icon: Icon(Icons.delete_outline, color: Colors.red.shade400),
-          tooltip: 'Delete',
-          onPressed: () => _deleteSafeSender(sender),
-        ),
       ),
     );
+  }
+
+  /// Sprint 37 round 6: export the currently-filtered safe sender list as
+  /// a CSV file. Respects search query + filter chips. Mirrors
+  /// `_exportFilteredRules` on the rules screen.
+  Future<void> _exportFilteredSafeSenders() async {
+    if (_filteredSenders.isEmpty) return;
+    try {
+      final settingsStore = SettingsStore();
+      final configuredDir = await settingsStore.getCsvExportDirectory();
+
+      String exportPath;
+      if (configuredDir != null && configuredDir.isNotEmpty) {
+        final dir = Directory(configuredDir);
+        if (!await dir.exists()) {
+          await dir.create(recursive: true);
+        }
+        exportPath = configuredDir;
+      } else {
+        final directory = Platform.isAndroid || Platform.isIOS
+            ? await getExternalStorageDirectory()
+            : await getApplicationDocumentsDirectory();
+        if (directory == null) {
+          throw Exception('Could not access storage directory');
+        }
+        exportPath = directory.path;
+      }
+
+      String normalizedPath = exportPath;
+      while (normalizedPath.endsWith('/') || normalizedPath.endsWith('\\')) {
+        normalizedPath = normalizedPath.substring(0, normalizedPath.length - 1);
+      }
+      final separator = Platform.isWindows ? '\\' : '/';
+      final timestamp =
+          DateTime.now().toIso8601String().replaceAll(':', '-').split('.')[0];
+      final filename = 'manage_safe_senders_filtered_$timestamp.csv';
+      final filePath = '$normalizedPath$separator$filename';
+
+      final buffer = StringBuffer();
+      buffer.writeln('Pattern,Type,Date Added,Source,Exceptions');
+      for (final s in _filteredSenders) {
+        final pattern = _csvEscape(s.pattern);
+        final type = _csvEscape(_formatPatternType(s));
+        final dateAdded = DateTime.fromMillisecondsSinceEpoch(s.dateAdded);
+        final dateStr =
+            '${dateAdded.year}-${dateAdded.month.toString().padLeft(2, '0')}-${dateAdded.day.toString().padLeft(2, '0')}';
+        final source = _csvEscape(_formatCreatedBy(s.createdBy));
+        final exceptions = (s.exceptionPatterns?.length ?? 0).toString();
+        buffer.writeln('$pattern,$type,$dateStr,$source,$exceptions');
+      }
+      final file = File(filePath);
+      await file.writeAsString(buffer.toString());
+      _logger.i('[OK] Exported ${_filteredSenders.length} filtered safe senders to $filePath');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Exported ${_filteredSenders.length} safe sender${_filteredSenders.length == 1 ? '' : 's'} to $filename'),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      _logger.e('Failed to export filtered safe senders', error: e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Export failed: $e')),
+        );
+      }
+    }
+  }
+
+  String _csvEscape(String s) {
+    if (s.contains(',') || s.contains('"') || s.contains('\n')) {
+      return '"${s.replaceAll('"', '""')}"';
+    }
+    return s;
   }
 }

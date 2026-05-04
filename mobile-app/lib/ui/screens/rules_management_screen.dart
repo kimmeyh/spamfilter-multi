@@ -12,11 +12,14 @@
 /// - View rule details (conditions, pattern, action)
 library;
 
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../core/models/rule_set.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/rule_database_store.dart';
+import '../../core/storage/settings_store.dart';
 import '../widgets/app_bar_with_exit.dart';
 import 'help_screen.dart';
 import 'manual_rule_create_screen.dart';
@@ -42,6 +45,11 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
   // Filter state
   final Set<String> _selectedCategories = {};
   final Set<String> _selectedSubTypes = {};
+
+  // Sprint 37 round 6 (Alt-2 UX): tracks the currently-hovered or
+  // keyboard-focused row. The hover-revealed info_outline button is
+  // visible only for the row whose name matches this field.
+  String? _hoveredRuleName;
 
   // Category display labels
   static const Map<String, String> _categoryLabels = {
@@ -441,6 +449,17 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
             tooltip: 'Refresh',
             onPressed: _loadRules,
           ),
+          // Sprint 37 round 6: filter-aware bulk export. Exports the
+          // currently-shown subset (search + filter chips applied) as CSV.
+          // Respects the "filter is the selection" UX -- power users
+          // narrow the list to what they want, then export.
+          IconButton(
+            icon: const Icon(Icons.file_download_outlined),
+            tooltip: _filteredRules.isEmpty
+                ? 'Nothing to export'
+                : 'Export ${_filteredRules.length} shown rule${_filteredRules.length == 1 ? '' : 's'} as CSV',
+            onPressed: _filteredRules.isEmpty ? null : _exportFilteredRules,
+          ),
         ],
       ),
       body: Column(
@@ -688,62 +707,158 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
     final categoryLabel = _categoryLabels[rule.patternCategory] ?? rule.patternCategory ?? '';
     final subTypeLabel = _subTypeLabels[rule.patternSubType] ?? rule.patternSubType ?? '';
 
-    // Sprint 37 Phase 7 Imp-1 (round 2 + round 5b Copilot a11y fix): the
-     // parent SelectionArea governs text selection across rows. Title +
-     // subtitle are plain Text widgets so selection sweeps across multiple
-     // rows.
-     //
-     // Round 5b note: round 5's `IconButton` in `leading:` rendered the icon
-     // but pointer events / hover / Tab focus failed in the running app
-     // (manual test 2026-05-02/03). Hypothesis: `dense: true` + the default
-     // ListTile.leading layout collapses the IconButton's hit/tooltip region
-     // to near-zero. Round 5b uses `Tooltip + InkWell + Padding` directly:
-     // gives explicit tooltip, full clickable area, keyboard focus via
-     // InkWell.canRequestFocus, and Material ink response.
+    // Sprint 37 Phase 7 Imp-1 round 6 (Alt-2 final UX, supersedes rounds
+    // 1-5b). Design rationale:
+    //   - Leading icon is purely decorative (category badge). NOT clickable.
+    //     Lower opacity (0.85) so it reads as a label, not a button.
+    //   - Trailing affordance is a hover/focus-revealed `info_outline`
+    //     IconButton. Hidden by default via AnimatedOpacity so the row body
+    //     stays visually clean and the screen-level SelectionArea (round 2)
+    //     gets unobstructed access to title/subtitle text for cross-row
+    //     drag-select.
+    //   - Trailing delete IconButton REMOVED from the row. Delete remains
+    //     reachable inside the details dialog (existing button at line ~309
+    //     of this file). Net: one fewer accidental-click footgun.
+    //   - The IconButton is always present in the widget tree (so layout is
+    //     stable + screen readers find it + Tab can focus it) but visually
+    //     hidden until the row is hovered or the IconButton itself receives
+    //     keyboard focus (Focus.onFocusChange below).
+    final isRevealed = _hoveredRuleName == rule.name;
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      child: ListTile(
-        dense: true,
-        leading: Tooltip(
-          message: 'View rule details',
-          child: InkWell(
-            onTap: () => _showRuleDetails(rule),
-            borderRadius: BorderRadius.circular(20),
-            child: Padding(
-              padding: const EdgeInsets.all(8),
-              child: Icon(
-                _getCategoryIcon(rule.patternCategory),
-                color: rule.enabled ? _getSubTypeColor(rule.patternSubType) : Colors.grey.shade400,
-                size: 22,
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _hoveredRuleName = rule.name),
+        onExit: (_) {
+          if (_hoveredRuleName == rule.name) {
+            setState(() => _hoveredRuleName = null);
+          }
+        },
+        child: ListTile(
+          dense: true,
+          leading: Icon(
+            _getCategoryIcon(rule.patternCategory),
+            color: rule.enabled
+                ? _getSubTypeColor(rule.patternSubType).withValues(alpha: 0.85)
+                : Colors.grey.shade400,
+            size: 20,
+            semanticLabel: '$categoryLabel category, $subTypeLabel sub-type',
+          ),
+          title: Text(
+            displayName,
+            style: TextStyle(
+              fontFamily: 'monospace',
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: rule.enabled ? null : Colors.grey.shade500,
+              decoration: rule.enabled ? null : TextDecoration.lineThrough,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: Text(
+            '$categoryLabel - $subTypeLabel',
+            style: TextStyle(
+              fontSize: 11,
+              color: rule.enabled ? _getSubTypeColor(rule.patternSubType) : Colors.grey.shade400,
+            ),
+          ),
+          trailing: Focus(
+            onFocusChange: (hasFocus) {
+              if (hasFocus) {
+                setState(() => _hoveredRuleName = rule.name);
+              }
+            },
+            child: AnimatedOpacity(
+              opacity: isRevealed ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 120),
+              child: IconButton(
+                icon: const Icon(Icons.info_outline, size: 18),
+                tooltip: 'View rule details (Enter)',
+                visualDensity: VisualDensity.compact,
+                onPressed: () => _showRuleDetails(rule),
               ),
             ),
           ),
         ),
-        title: Text(
-          displayName,
-          style: TextStyle(
-            fontFamily: 'monospace',
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: rule.enabled ? null : Colors.grey.shade500,
-            decoration: rule.enabled ? null : TextDecoration.lineThrough,
-          ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Text(
-          '$categoryLabel - $subTypeLabel',
-          style: TextStyle(
-            fontSize: 11,
-            color: rule.enabled ? _getSubTypeColor(rule.patternSubType) : Colors.grey.shade400,
-          ),
-        ),
-        trailing: IconButton(
-          icon: Icon(Icons.delete_outline, color: Colors.red.shade400, size: 20),
-          tooltip: 'Delete',
-          onPressed: () => _deleteRule(rule),
-        ),
       ),
     );
+  }
+
+  /// Sprint 37 round 6: export the currently-filtered rule list as a CSV
+  /// file. Respects the search query and any active filter chips -- the
+  /// "filter is the selection" pattern (Harold's framing). Uses the same
+  /// settings-driven export directory + path normalization as
+  /// `results_display_screen.dart::_exportResults`.
+  Future<void> _exportFilteredRules() async {
+    if (_filteredRules.isEmpty) return;
+    try {
+      final settingsStore = SettingsStore();
+      final configuredDir = await settingsStore.getCsvExportDirectory();
+
+      String exportPath;
+      if (configuredDir != null && configuredDir.isNotEmpty) {
+        final dir = Directory(configuredDir);
+        if (!await dir.exists()) {
+          await dir.create(recursive: true);
+        }
+        exportPath = configuredDir;
+      } else {
+        final directory = Platform.isAndroid || Platform.isIOS
+            ? await getExternalStorageDirectory()
+            : await getApplicationDocumentsDirectory();
+        if (directory == null) {
+          throw Exception('Could not access storage directory');
+        }
+        exportPath = directory.path;
+      }
+
+      String normalizedPath = exportPath;
+      while (normalizedPath.endsWith('/') || normalizedPath.endsWith('\\')) {
+        normalizedPath = normalizedPath.substring(0, normalizedPath.length - 1);
+      }
+      final separator = Platform.isWindows ? '\\' : '/';
+      final timestamp =
+          DateTime.now().toIso8601String().replaceAll(':', '-').split('.')[0];
+      final filename = 'manage_rules_filtered_$timestamp.csv';
+      final filePath = '$normalizedPath$separator$filename';
+
+      final buffer = StringBuffer();
+      buffer.writeln('Source Domain,Rule Name,Category,Sub-Type,Action,Enabled,Execution Order');
+      for (final r in _filteredRules) {
+        final domain = _csvEscape(r.sourceDomain ?? '');
+        final name = _csvEscape(r.name);
+        final cat = _csvEscape(_categoryLabels[r.patternCategory] ?? r.patternCategory ?? '');
+        final sub = _csvEscape(_subTypeLabels[r.patternSubType] ?? r.patternSubType ?? '');
+        final action = _csvEscape(_getActionLabel(r));
+        final enabled = r.enabled ? 'true' : 'false';
+        buffer.writeln('$domain,$name,$cat,$sub,$action,$enabled,${r.executionOrder}');
+      }
+      final file = File(filePath);
+      await file.writeAsString(buffer.toString());
+      _logger.i('[OK] Exported ${_filteredRules.length} filtered rules to $filePath');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Exported ${_filteredRules.length} rule${_filteredRules.length == 1 ? '' : 's'} to $filename'),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      _logger.e('Failed to export filtered rules', error: e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Export failed: $e')),
+        );
+      }
+    }
+  }
+
+  String _csvEscape(String s) {
+    if (s.contains(',') || s.contains('"') || s.contains('\n')) {
+      return '"${s.replaceAll('"', '""')}"';
+    }
+    return s;
   }
 }

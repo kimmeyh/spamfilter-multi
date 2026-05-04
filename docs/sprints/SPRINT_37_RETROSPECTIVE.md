@@ -212,3 +212,23 @@ GitHub Copilot reviewed PR #249 and surfaced 7 substantive comments. Per the Pha
 | 7 | gmail_api_adapter.dart:396 -- `history.list` is mailbox-wide; would surface Sent/Trash/Promotions changes as the caller's folder | **Fix now** -- pass `labelId: folderForLabel` to `users.history.list` AND reapply `_excludedLabels` post-filter (history.list accepts only an inclusion label filter) |
 
 4 fixes applied this round (commits on the same Sprint 37 branch). 1 backlog F-item added (F88). 1 review comment declined with explanation. Tests + analyze re-verified after fixes.
+
+## Round 6: Alt-2 Final UX Redesign (Phase 7.7, 2026-05-04)
+
+After 5 rounds of incremental fixes on the row open-details affordance (per-row `SelectableText` -> screen-level `SelectionArea` + `Text` -> `GestureDetector` -> `IconButton` -> `Tooltip+InkWell+Padding` -- each round breaking a different gesture/a11y guarantee), Harold asked for a deep-dive UI design review with 3 concrete alternatives. The general-purpose UI design agent diagnosed the root cause as **semantic conflation** -- the leading category icon was doing three jobs at once (classify, encode sub-type via color, AND be a click target). Material 3's `ListTile.leading` slot is specced as decorative; every "make it clickable" fix had been a battle against the framework.
+
+Three alternatives proposed; Harold chose **Alt 2 (hover/focus-revealed dedicated info_outline button)** with two refinements:
+1. **Drop the trailing per-row delete icon entirely** -- delete is already reachable via the details dialog's existing Delete button, so the row-level delete was redundant and a misclick footgun.
+2. **Add a filter-aware Export-CSV AppBar button** -- the "filter is the selection" pattern. Power users narrow the list via search + chips, then export.
+
+Round 6 scope:
+- Leading icon: decorative-only at 20px / 0.85 opacity (was 22px / full opacity + clickable in round 5b).
+- Trailing affordance: `MouseRegion` + `Focus.onFocusChange` + `AnimatedOpacity` reveal of an `info_outline` IconButton (18px, `VisualDensity.compact`, tooltip `'View rule details (Enter)'` / `'View safe sender details (Enter)'`). Always present in the widget tree (so Tab focus + screen readers find it), visible only when the row is hovered or the IconButton has keyboard focus.
+- Trailing delete IconButton REMOVED from row body. Delete remains in the details dialog.
+- New AppBar button (both screens): `Icons.file_download_outlined` to the right of Refresh. Dynamic tooltip (`'Export N shown rule(s) as CSV'` or `'Nothing to export'`). Disabled when `_filtered*` is empty. CSV writes to user's configured export directory or platform default.
+- CSV escapes commas, quotes, newlines per RFC 4180.
+- Cross-row text selection (Sprint 37 round 2) preserved 100% -- nothing on the row body owns gestures.
+
+Round 6 widget tests were attempted (4 per screen: hover-reveal, focus-reveal, export-disabled-when-empty, export-enabled-with-count) but hit the same FakeAsync + sqflite_ffi + pumpWidget hang Sprint 37 round 1 widget tests hit (initState's async DB load future never resolves under FakeAsync). Same disposition as round 1: dropped the tests, verified via manual testing + code review.
+
+This closes the row-affordance work that consumed 6 rounds across Phase 7. The lesson preserved for the retro Category 9 (Process Issues) for Sprint 38: when a UI affordance change goes through 3+ rounds of fix-revealed-new-bug, stop incremental fixing and request a design review with alternatives. The 6-round timeline cost ~3-4h of cumulative iteration; the design review took ~10 minutes and produced a clean answer.
