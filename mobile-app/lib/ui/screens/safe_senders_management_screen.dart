@@ -679,17 +679,38 @@ class _SafeSendersManagementScreenState
       final filename = 'manage_safe_senders_filtered_$timestamp.csv';
       final filePath = '$normalizedPath$separator$filename';
 
+      // Sprint 37 round 8: align column order with the rules CSV export
+      // for the columns that make sense on both sides:
+      //   Source Domain | Rule Name | Pattern | Category | Sub-Type
+      // Columns that do not apply to safe senders are intentionally
+      // omitted (Action -- safe senders just bypass block rules with no
+      // per-row action; Enabled -- safe senders have no disable flag;
+      // Execution Order -- safe senders have no order). Safe-sender-
+      // specific extras (Date Added, Source, Exceptions) are kept as
+      // trailing columns so users do not lose information they had in
+      // earlier exports.
       final buffer = StringBuffer();
-      buffer.writeln('Pattern,Type,Date Added,Source,Exceptions');
+      buffer.writeln('Source Domain,Rule Name,Pattern,Category,Sub-Type,Date Added,Source,Exceptions');
       for (final s in _filteredSenders) {
+        final subTypeKey = _safeSenderSubTypeKey(s);
+        final extracted =
+            _extractBaseFromSafeSenderPattern(s.pattern, subTypeKey);
+        final sourceDomain = _csvEscape(extracted ?? '');
+        // Rule Name parity with the rules screen: rules use either the
+        // explicit `name` field or `sourceDomain` for the displayed
+        // identifier; safe senders fall back to the pattern when no
+        // structural extraction is possible.
+        final ruleName = _csvEscape(extracted ?? s.pattern);
         final pattern = _csvEscape(s.pattern);
-        final type = _csvEscape(_formatPatternType(s));
+        // Safe senders only ever match the From / Header field.
+        final category = _csvEscape('Header / From');
+        final subType = _csvEscape(_formatPatternType(s));
         final dateAdded = DateTime.fromMillisecondsSinceEpoch(s.dateAdded);
         final dateStr =
             '${dateAdded.year}-${dateAdded.month.toString().padLeft(2, '0')}-${dateAdded.day.toString().padLeft(2, '0')}';
-        final source = _csvEscape(_formatCreatedBy(s.createdBy));
+        final sourceField = _csvEscape(_formatCreatedBy(s.createdBy));
         final exceptions = (s.exceptionPatterns?.length ?? 0).toString();
-        buffer.writeln('$pattern,$type,$dateStr,$source,$exceptions');
+        buffer.writeln('$sourceDomain,$ruleName,$pattern,$category,$subType,$dateStr,$sourceField,$exceptions');
       }
       final file = File(filePath);
       await file.writeAsString(buffer.toString());
@@ -711,6 +732,85 @@ class _SafeSendersManagementScreenState
         );
       }
     }
+  }
+
+  /// Sprint 37 round 8: maps a SafeSenderPattern's category to the
+  /// sub-type vocabulary used by `_extractBaseFromSafeSenderPattern`.
+  /// Mirrors `manual_rule_duplicate_checker.dart::_extractBaseFromPattern`
+  /// keys (`exact_email` / `exact_domain` / `entire_domain`).
+  String _safeSenderSubTypeKey(SafeSenderPattern sender) {
+    switch (SafeSenderCategory.categorize(sender)) {
+      case SafeSenderCategory.exactEmail:
+        return 'exact_email';
+      case SafeSenderCategory.exactDomain:
+        return 'exact_domain';
+      case SafeSenderCategory.entireDomain:
+        return 'entire_domain';
+      case SafeSenderCategory.other:
+        return 'other';
+    }
+  }
+
+  /// Sprint 37 round 8: extract the human-readable domain (or
+  /// user@domain for exact_email) from a safe-sender regex pattern.
+  /// Mirrors the regex-shape recognition in
+  /// `manual_rule_duplicate_checker.dart::_extractBaseFromPattern` so the
+  /// CSV `Source Domain` column shows the same identifier the user sees
+  /// when adding the rule (e.g. `cwru.edu`, not the raw regex). Returns
+  /// null when the pattern does not match a known shape -- the export
+  /// then falls back to using the pattern itself for the Rule Name
+  /// column and leaves Source Domain blank.
+  String? _extractBaseFromSafeSenderPattern(String pattern, String subType) {
+    final trimmed = pattern.trim();
+    switch (subType) {
+      case 'entire_domain':
+        final match =
+            RegExp(r'^\^\[\^@\\s\]\+@\(\?:\[a-z0-9-\]\+\\\.\)\*(.+)\$$')
+                .firstMatch(trimmed);
+        if (match == null) return null;
+        return _unescapeRegexLiteral(match.group(1)!);
+      case 'exact_domain':
+        // Two shapes seen on this screen:
+        //   `@example.com` (unanchored)
+        //   `^[^@\s]+@example\.com$` (anchored)
+        // Either way the visible identifier is `example.com`.
+        if (trimmed.startsWith('@') && !trimmed.startsWith('@(')) {
+          return _unescapeRegexLiteral(trimmed.substring(1));
+        }
+        if (trimmed.startsWith('^') && trimmed.endsWith(r'$')) {
+          final body = trimmed.substring(1, trimmed.length - 1);
+          final atIdx = body.lastIndexOf('@');
+          if (atIdx == -1) return null;
+          return _unescapeRegexLiteral(body.substring(atIdx + 1));
+        }
+        return null;
+      case 'exact_email':
+        if (!trimmed.startsWith('^') || !trimmed.endsWith(r'$')) return null;
+        final body = trimmed.substring(1, trimmed.length - 1);
+        final unescaped = _unescapeRegexLiteral(body);
+        return unescaped.contains('@') ? unescaped : null;
+      default:
+        return null;
+    }
+  }
+
+  /// Reverse `RegExp.escape` for the limited set of characters used in
+  /// domain/email patterns. Mirrors the helper in
+  /// `manual_rule_duplicate_checker.dart`. NOT a general regex unescape.
+  String _unescapeRegexLiteral(String escaped) {
+    final buf = StringBuffer();
+    var i = 0;
+    while (i < escaped.length) {
+      final c = escaped[i];
+      if (c == r'\' && i + 1 < escaped.length) {
+        buf.write(escaped[i + 1]);
+        i += 2;
+      } else {
+        buf.write(c);
+        i++;
+      }
+    }
+    return buf.toString().toLowerCase();
   }
 
   /// Sprint 37 round 7: CSV-injection-safe escape (OWASP guidance). See

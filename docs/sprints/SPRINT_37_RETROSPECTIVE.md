@@ -248,3 +248,20 @@ Round-6 manual testing surfaced four follow-up items, all applied this round (no
    - Reset Rules to Defaults + Delete All App Data... moved from top of General tab (under Rules Management) to BOTTOM of General tab in a new "Danger Zone" section, just above About. Destructive actions belong below regular controls so users do not accidentally tap them while scrolling. The two irreversible-action buttons stay grouped under one explanatory header.
 
 No backlog additions this round -- all four items were apply-now sized.
+
+## Round 8: align safe-senders CSV with rules CSV (Phase 7.7, 2026-05-04)
+
+After round-7 manual testing Harold confirmed everything worked except the safe-senders CSV column structure, which was the original `Pattern,Type,Date Added,Source,Exceptions` layout from round 6. Round 7 had added the `Pattern` column to the rules CSV but did not align safe senders.
+
+Round 8 (this round) changes the safe-senders header to match the rules CSV for the columns that apply to both: `Source Domain | Rule Name | Pattern | Category | Sub-Type`. Safe-sender-only extras (`Date Added | Source | Exceptions`) trail at the end so previous exports' information is preserved. Per Harold's "match as best possible. NO need to add where it does not make sense" guidance, three rules columns are dropped:
+- `Action`: safe senders have no per-row action; they bypass the block-rule pipeline entirely
+- `Enabled`: safe senders have no enable/disable flag in this app's model
+- `Execution Order`: safe senders have no execution order
+
+`Source Domain` is now extracted from the regex pattern using the same shape-recognition vocabulary as `manual_rule_duplicate_checker.dart::_extractBaseFromPattern`, ported into the safe-senders screen as `_extractBaseFromSafeSenderPattern`. Three regex shapes are recognized:
+- `entire_domain`: `^[^@\s]+@(?:[a-z0-9-]+\.)*<base>$` -> captures `<base>`
+- `exact_domain`: `@<base>` (unanchored) or `^[^@\s]+@<base>$` (anchored) -> captures `<base>`
+- `exact_email`: `^<user>@<domain>$` -> captures `<user>@<domain>`
+Patterns whose shape is not recognized leave Source Domain blank and fall back to using the pattern itself for the Rule Name column.
+
+No backlog additions this round.
