@@ -133,7 +133,7 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
 - [ ] **2.2 Verify Previous Sprint is Merged**
   - Confirm previous sprint PR is merged to `develop`
   - Command: `git log develop --oneline -1` should show last sprint commits
-  - Previous feature branch is deleted locally and remote
+  - **Branch retention policy**: Do NOT delete previous feature branches (local or remote). Harold preserves all sprint branches for historical reference. Branches are kept indefinitely. (Sprint 38 policy clarification, 2026-05-05)
 
 - [ ] **2.3 Verify All Sprint Cards Are Closed**
   - Run: `gh issue list --label sprint --state open`
@@ -1351,7 +1351,7 @@ dart format --set-exit-if-changed lib/
 
 ### After Merge (Cleanup Complete)
 - [OK] PR merged to develop
-- [OK] Feature branch deleted (locally and remote)
+- [OK] Feature branch RETAINED (local and remote) -- Harold's policy: never delete sprint branches
 - [OK] All related GitHub issues closed
 - [OK] Sprint retrospective documented (if applicable)
 - [OK] Ready to begin next sprint
@@ -1364,8 +1364,8 @@ Once user approves PR:
 
 1. **Merge to develop**
    - PR approved and merged via GitHub
-   - Branch deleted on remote (automatic or manual)
-   - Local branch deleted: `git branch -d feature/YYYYMMDD_Sprint_N`
+   - **Do NOT delete the remote branch on merge** -- in the GitHub PR merge UI, leave "Delete branch" unchecked, or restore the branch if it was auto-deleted
+   - **Do NOT delete the local feature branch** -- Harold's policy retains all sprint branches indefinitely for historical reference (Sprint 38 policy clarification, 2026-05-05)
 
 2. **Close All Related GitHub Issues**
    - Find all sprint card issues referenced in PR (e.g., #60, #61)
@@ -1408,12 +1408,12 @@ Once user approves PR:
      - Link to PR for code artifacts
      - See `docs/SPRINT_RETROSPECTIVE.md` for template
 
-4. **Clean up feature branch (OPTIONAL - User Managed)**
-   - Branch cleanup is optional and user-managed
-   - Do NOT auto-delete branch after merge
-   - User will manually delete when ready: `git branch -d feature/YYYYMMDD_Sprint_N`
-   - Remote cleanup also user-managed: `git push origin --delete feature/YYYYMMDD_Sprint_N`
-   - Keeps branch available for reference if needed
+4. **Feature branch retention (Harold's policy -- Sprint 38 clarification, 2026-05-05)**
+   - **Sprint feature branches are NEVER deleted** (local or remote). Harold retains them indefinitely for historical reference.
+   - Do NOT auto-delete the branch after merge.
+   - Do NOT suggest `git branch -d` or `git push origin --delete` for sprint branches.
+   - Even when GitHub's PR merge UI offers "Delete branch", leave it unchecked. If a branch is auto-deleted on merge, restore it from the PR's "Restore branch" button.
+   - Stale branches in `git branch` output are expected and intentional.
 
 ---
 
