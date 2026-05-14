@@ -18,6 +18,7 @@ import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../core/models/rule_set.dart';
 import '../../core/storage/database_helper.dart';
+import '../widgets/copy_all_shortcut.dart';
 import '../../core/storage/rule_database_store.dart';
 import '../../core/storage/settings_store.dart';
 import '../widgets/app_bar_with_exit.dart';
@@ -462,7 +463,28 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
           ),
         ],
       ),
-      body: Column(
+      // Sprint 38 F84 Sub-task A (Issue #253): Ctrl+A / Cmd+A copies the
+      // ENTIRE filtered rule list to clipboard, not just the viewport
+      // subset. Bypasses Flutter's selection model -- writes joined row
+      // text directly. Sub-tasks B/C (Shift+Click, Ctrl+Click-drag)
+      // deferred per the issue's prioritization.
+      body: CopyAllShortcut(
+        itemLabel: 'rules',
+        textBuilder: () {
+          if (_filteredRules.isEmpty) return '';
+          return _filteredRules.map((rule) {
+            final name = rule.sourceDomain ?? rule.name;
+            final pattern = (rule.conditions.header.isNotEmpty
+                    ? rule.conditions.header.join('; ')
+                    : (rule.conditions.from.isNotEmpty
+                        ? rule.conditions.from.join('; ')
+                        : (rule.conditions.subject.isNotEmpty
+                            ? rule.conditions.subject.join('; ')
+                            : rule.conditions.body.join('; '))));
+            return '$name\t$pattern';
+          }).join('\n');
+        },
+        child: Column(
         children: [
           // Search bar
           Padding(
@@ -698,6 +720,7 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
                       ),
           ),
         ],
+      ),
       ),
     );
   }
