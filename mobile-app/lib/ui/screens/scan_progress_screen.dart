@@ -497,6 +497,28 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware
     logger.i('[SCAN_SCREEN] accountId=${widget.accountId}, platformId=${widget.platformId}');
     logger.i('[SCAN_SCREEN] Loaded settings: scanMode=$scanMode, daysBack=$daysBack');
 
+    // Sprint 38 F86 (Issue #254): if the user added/edited a rule or safe
+    // sender right before tapping Start Scan and the rule set is still
+    // loading from disk, show a brief "Applying rule(s)..." snackbar and
+    // await readiness BEFORE starting the scan. The opportunistic-async
+    // mid-scan path handles changes made DURING a scan; this check handles
+    // the narrow window between save and re-scan trigger.
+    if (ruleProvider.isLoading && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Applying new rule(s) before scan starts...'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      // Poll briefly for rule-set readiness (max ~2s). The provider's
+      // isLoading flag transitions to false once loadRules() completes.
+      final deadline = DateTime.now().add(const Duration(seconds: 2));
+      while (ruleProvider.isLoading && DateTime.now().isBefore(deadline)) {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      }
+      logger.i('[SCAN_SCREEN] F86: rule-set ready (isLoading=${ruleProvider.isLoading})');
+    }
+
     // Immediately update UI to show scan is starting (no database record -
     // the EmailScanner.executeScan() will create the real persisted record)
     scanProvider.startScan(totalEmails: 0, persist: false);

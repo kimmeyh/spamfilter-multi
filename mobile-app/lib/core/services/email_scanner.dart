@@ -1,6 +1,8 @@
 /// Email scanning service that connects IMAP adapters with rule evaluation
 library;
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
+
 import '../models/email_message.dart';
 import '../models/rule_set.dart';
 import '../models/safe_sender_list.dart';
@@ -29,12 +31,50 @@ class EmailScanner {
   final SecureCredentialsStore _credStore = SecureCredentialsStore();
   final SettingsStore _settingsStore = SettingsStore();
 
+  /// Sprint 38 F86 (Issue #254): set to true by the RuleSetProvider listener
+  /// when the user adds/edits/deletes a rule or safe sender during an active
+  /// scan. The per-message evaluation loop checks this flag at each iteration
+  /// and rebuilds the RuleEvaluator with fresh `ruleSetProvider.rules` and
+  /// `ruleSetProvider.safeSenders` before evaluating the next email. Already-
+  /// evaluated emails are NOT re-evaluated -- the swap takes effect from the
+  /// next message forward, mirroring the issue's "next batch boundary"
+  /// semantics.
+  bool _rulesDirty = false;
+
+  /// Sprint 38 F86: number of rule-set-change notifications received since
+  /// scan start. Exposed via `pendingRuleSetChanges` so the re-scan path
+  /// can surface "Applying N new rule(s)..." messaging when the user triggers
+  /// a re-scan and the rule-set sync has not yet completed.
+  int _ruleSetChangeCount = 0;
+
+  /// Sprint 38 F86: number of rule-set-change notifications received during
+  /// the most recent scan (or in progress now). Zero before the first scan,
+  /// reset to zero at each `scanInbox` start.
+  int get pendingRuleSetChanges => _ruleSetChangeCount;
+
   EmailScanner({
     required this.platformId,
     required this.accountId,
     required this.ruleSetProvider,
     required this.scanProvider,
   });
+
+  /// Sprint 38 F86: marks the rule set as dirty so the next per-message
+  /// evaluation loop iteration rebuilds the RuleEvaluator with fresh rules.
+  /// Visible for testing; not intended for direct call from production code.
+  @visibleForTesting
+  void markRulesDirtyForTesting() {
+    _rulesDirty = true;
+    _ruleSetChangeCount++;
+  }
+
+  void _onRuleSetChanged() {
+    _rulesDirty = true;
+    _ruleSetChangeCount++;
+    AppLogger.scan(
+        'F86: rule-set change detected during scan; will swap evaluator at '
+        'next message boundary (pending count=$_ruleSetChangeCount)');
+  }
 
   /// Scan inbox with live IMAP connection
   /// [NEW] SPRINT 4: Includes scan result persistence
@@ -44,6 +84,15 @@ class EmailScanner {
     String scanType = 'manual',
   }) async {
     SpamFilterPlatform? platform;
+
+    // Sprint 38 F86 (Issue #254): subscribe to rule-set changes for the
+    // duration of this scan so user-initiated rule/safe-sender edits
+    // propagate to the running evaluator at the next message boundary.
+    // Reset counters at scan start so `pendingRuleSetChanges` reflects only
+    // this scan.
+    _rulesDirty = false;
+    _ruleSetChangeCount = 0;
+    ruleSetProvider.addListener(_onRuleSetChanged);
 
     try {
       AppLogger.scan('========== SCAN START ==========');
@@ -186,7 +235,10 @@ class EmailScanner {
         effectiveSafeSenders = ruleSetProvider.safeSenders;
       }
 
-      final evaluator = RuleEvaluator(
+      // Sprint 38 F86: evaluator is mutable so the per-message loop can
+      // rebuild it with fresh ruleSetProvider state when _rulesDirty is set
+      // (an async rule/safe-sender add/edit/delete during scan).
+      var evaluator = RuleEvaluator(
         ruleSet: effectiveRules,
         safeSenderList: effectiveSafeSenders,
         compiler: PatternCompiler(),
@@ -210,6 +262,26 @@ class EmailScanner {
       AppLogger.scan('Safe sender target folder: "$safeSenderTarget" (raw: "$rawTarget")');
 
       for (final message in messages) {
+        // Sprint 38 F86 (Issue #254): if a rule/safe-sender change came in
+        // since the last iteration, rebuild the evaluator with fresh rules
+        // BEFORE evaluating this next message. Already-evaluated emails
+        // (above in evaluatedEmails) are NOT re-evaluated -- the swap takes
+        // effect from this message forward, mirroring "next batch boundary"
+        // semantics. Demo mode is exempt (uses MockEmailData rules which do
+        // not change mid-scan).
+        if (_rulesDirty && platformId != 'demo') {
+          AppLogger.scan(
+              'F86: rebuilding evaluator with fresh rules '
+              '(rules=${ruleSetProvider.rules.rules.length}, '
+              'safe=${ruleSetProvider.safeSenders.safeSenders.length})');
+          evaluator = RuleEvaluator(
+            ruleSet: ruleSetProvider.rules,
+            safeSenderList: ruleSetProvider.safeSenders,
+            compiler: PatternCompiler(),
+          );
+          _rulesDirty = false;
+        }
+
         scanProvider.updateProgress(
           email: message,
           message: 'Evaluating: ${message.subject}',
@@ -567,6 +639,10 @@ class EmailScanner {
       await scanProvider.errorScan('Scan failed: $e');
       rethrow;
     } finally {
+      // Sprint 38 F86: always deregister the rule-set listener, including
+      // on error paths, to avoid leaking listeners across scans.
+      ruleSetProvider.removeListener(_onRuleSetChanged);
+
       // 8. Disconnect
       if (platform != null) {
         try {
