@@ -26,6 +26,10 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-05-13 (Sprint 38 -- Task 1: F87 Settings icon on Scan History)
+- **feat**: Scan History AppBar now includes a Settings IconButton (gear icon) so users can reach Settings from sub-screens with one tap rather than back-navigating. Inserted in F55 (Sprint 33 v3) icon order between Accounts and Help (`Refresh | Accounts | Settings | Help | [X auto]`). `onPressed` pushes `SettingsScreen(accountId: widget.accountId)` matching the pattern used in `results_display_screen.dart`, `scan_progress_screen.dart`, `account_selection_screen.dart`, `folder_selection_screen.dart`, and `help_screen.dart`. Investigation showed `AppBarWithExit` is a thin shared wrapper that only appends the Exit button on Windows; each calling screen owns its own `actions:` list. Component-level fix not appropriate; fix applied per-screen. Widget test dropped per Sprint 37 round-1 disposition (FakeAsync + sqflite_ffi + initState DB load hang); manual testing in Phase 5.3 verifies. (Sprint 38 Task 1, Issue #251)
+- **chore**: Updated F55 icon-order comment in `scan_history_screen.dart` to reflect new Settings icon position.
+
 ### 2026-05-04 (Sprint 37 -- Phase 7 round 8: align safe-senders CSV with rules CSV)
 - **chore**: Manage Safe Senders CSV export now uses the same column order as Manage Rules CSV for the columns that apply to both: `Source Domain | Rule Name | Pattern | Category | Sub-Type`. Safe-sender-only extras (`Date Added | Source | Exceptions`) follow as trailing columns so no information is lost vs the round-6 export. Columns that have no meaning for safe senders (`Action`, `Enabled`, `Execution Order`) are intentionally omitted. Source Domain is now extracted from the regex pattern using the same shape-recognition logic as `manual_rule_duplicate_checker.dart` (entire_domain `^[^@\s]+@(?:[a-z0-9-]+\.)*<base>$`, exact_domain `@<base>` or `^[^@\s]+@<base>$`, exact_email `^<user>@<domain>$`); falls back to the pattern itself for the Rule Name column when no extraction is possible. (Sprint 37 round 8, Harold's CSV-format-parity feedback 2026-05-04)
 
