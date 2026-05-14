@@ -102,6 +102,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   int _reProcessTotal = 0;
   int _reProcessCompleted = 0;
 
+  // Sprint 38 F82 (Issue #252): the "no-rules" count at first display of
+  // this screen for this scan. Captured once via _captureInitialNoRuleCount
+  // and unchanged for the session, so the footer can show
+  // "M addressed / N initial no-rules" cumulatively.
+  int? _initialNoRuleCount;
+
   @override
   void initState() {
     super.initState();
@@ -601,6 +607,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               _buildFilterStatus(filteredResults.length, allResults.length),
               const SizedBox(height: 8),
             ],
+            // Sprint 38 F82 (Issue #252): "M of N no-rules addressed" indicator
+            // when there were any no-rule emails to triage. Hidden when the
+            // initial count was zero (clean scan, nothing for the user to do).
+            _buildNoRuleProgressFooter(),
             Expanded(
               child: RefreshIndicator(
                 onRefresh: () async {
@@ -1822,6 +1832,50 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     return result;
   }
 
+  /// Sprint 38 F82 (Issue #252): compute current "no-rule" and addressed
+  /// counts for the F82 progress indicator footer and snackbar wording.
+  ///
+  /// `remaining` is the count of emails whose effective action (override
+  /// or original) is still `EmailActionType.none`. `addressed` is the
+  /// count of emails that originally had `none` but now have an override
+  /// to a non-none action -- i.e., the user-progress in this session.
+  ///
+  /// Operates over the same `allResults` set the rest of the screen uses,
+  /// so live scans and historical-scan reviews both work.
+  ({int remaining, int addressed, int initial}) _computeNoRuleStats() {
+    final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
+    final liveResults = scanProvider.results;
+    final isLiveScanActive = scanProvider.status == ScanStatus.scanning ||
+        scanProvider.status == ScanStatus.paused;
+    final allResults = (liveResults.isNotEmpty || isLiveScanActive)
+        ? liveResults
+        : _historicalResults;
+
+    var remaining = 0;
+    var addressed = 0;
+    for (final result in allResults) {
+      final originalAction = result.action;
+      final effectiveAction = _getEffectiveAction(result);
+      if (effectiveAction == EmailActionType.none) {
+        remaining++;
+      } else if (originalAction == EmailActionType.none &&
+          effectiveAction != EmailActionType.none) {
+        addressed++;
+      }
+    }
+    final initial = _initialNoRuleCount ?? (remaining + addressed);
+    return (remaining: remaining, addressed: addressed, initial: initial);
+  }
+
+  /// Sprint 38 F82: capture the initial no-rule count once per scan view so
+  /// the F82 footer can show cumulative progress ("M of N addressed") rather
+  /// than just the current remaining count.
+  void _captureInitialNoRuleCount() {
+    if (_initialNoRuleCount != null) return;
+    final stats = _computeNoRuleStats();
+    _initialNoRuleCount = stats.remaining + stats.addressed;
+  }
+
   /// Re-evaluate all emails that currently have no matching rule.
   ///
   /// Called after adding a new block rule or safe sender so that
@@ -1856,6 +1910,80 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         }
       }
     }
+  }
+
+  /// Sprint 38 F82 (Issue #252): "M of N no-rules addressed" progress footer.
+  /// Shows under the chip strip when the scan had any no-rule emails. Renders
+  /// nothing if the user has nothing to triage (clean scan). Updates as the
+  /// user adds rules / safe senders inline -- `addressed` increments and
+  /// `remaining` decrements at the same time.
+  Widget _buildNoRuleProgressFooter() {
+    // Capture the initial no-rule count on the first render where any
+    // results are available. Subsequent renders use the cached value so
+    // the "addressed" count climbs as the user adds rules.
+    _captureInitialNoRuleCount();
+    final stats = _computeNoRuleStats();
+    if (stats.initial <= 0) return const SizedBox.shrink();
+
+    final addressed = stats.addressed;
+    final initial = stats.initial;
+    final remaining = stats.remaining;
+    final isComplete = remaining == 0 && initial > 0;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isComplete
+              ? Colors.green.shade50
+              : Colors.amber.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isComplete ? Colors.green.shade300 : Colors.amber.shade300,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isComplete ? Icons.check_circle : Icons.flag_outlined,
+              size: 18,
+              color: isComplete ? Colors.green.shade700 : Colors.amber.shade800,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                isComplete
+                    ? 'All $initial "No rule" emails addressed.'
+                    : '$addressed of $initial "No rule" emails addressed -- $remaining remaining.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isComplete
+                      ? Colors.green.shade900
+                      : Colors.amber.shade900,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            if (initial > 0)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: SizedBox(
+                  width: 80,
+                  height: 6,
+                  child: LinearProgressIndicator(
+                    value: addressed / initial,
+                    backgroundColor: Colors.grey.shade300,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      isComplete ? Colors.green.shade600 : Colors.amber.shade700,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   /// F38: Non-blocking re-processing banner widget
@@ -2147,16 +2275,25 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       }
 
       // Re-evaluate all remaining "No rule" emails against the new safe sender
+      final preStats = _computeNoRuleStats();
       await _reEvaluateNoRuleEmails();
+      final postStats = _computeNoRuleStats();
 
       // F38: Execute IMAP actions for affected emails
       await _reProcessAffectedEmails();
 
       if (mounted) {
         setState(() {}); // Refresh list to show updated rule assignment
+        // Sprint 38 F82 (Issue #252): append "N removed, M remaining" so the
+        // user sees concrete progress against the no-rules pool.
+        final removedNow = preStats.remaining - postStats.remaining;
+        final remaining = postStats.remaining;
+        final progressSuffix = removedNow > 0
+            ? ' -- $removedNow removed, $remaining "No rule" remaining'
+            : (remaining > 0 ? ' -- $remaining "No rule" remaining' : '');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(displayMessage),
+            content: Text('$displayMessage$progressSuffix'),
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 3),
             behavior: SnackBarBehavior.floating,
@@ -2314,16 +2451,25 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       }
 
       // Re-evaluate all remaining "No rule" emails against the new rule
+      final preStats = _computeNoRuleStats();
       await _reEvaluateNoRuleEmails();
+      final postStats = _computeNoRuleStats();
 
       // F38: Execute IMAP actions for affected emails
       await _reProcessAffectedEmails();
 
       if (mounted) {
         setState(() {}); // Refresh list to show updated rule assignment
+        // Sprint 38 F82 (Issue #252): append "N removed, M remaining" so the
+        // user sees concrete progress against the no-rules pool.
+        final removedNow = preStats.remaining - postStats.remaining;
+        final remaining = postStats.remaining;
+        final progressSuffix = removedNow > 0
+            ? ' -- $removedNow removed, $remaining "No rule" remaining'
+            : (remaining > 0 ? ' -- $remaining "No rule" remaining' : '');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(displayMessage),
+            content: Text('$displayMessage$progressSuffix'),
             backgroundColor: Colors.blue,
             duration: const Duration(seconds: 3),
             behavior: SnackBarBehavior.floating,
