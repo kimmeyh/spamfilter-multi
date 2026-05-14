@@ -747,6 +747,29 @@ class DatabaseHelper implements RuleDatabaseProvider {
   }
 
   // ============================================================================
+  // Gmail Incremental Scan (Sprint 37 F6c + Sprint 38 F6c Phase 2)
+  // ============================================================================
+
+  /// Returns the persisted Gmail historyId for [accountId], or null if no
+  /// previous scan has persisted one yet. Used by EmailScanner to decide
+  /// between a full scan (null) and an incremental scan (non-null) via
+  /// GmailApiAdapter.fetchMessagesIncremental.
+  Future<String?> getLastHistoryId(String accountId) async {
+    final account = await getAccount(accountId);
+    if (account == null) return null;
+    final value = account['last_history_id'];
+    return value is String ? value : null;
+  }
+
+  /// Persists the Gmail historyId returned by GmailApiAdapter.getCurrentHistoryId
+  /// or .fetchMessagesIncremental for [accountId]. Pass null to clear (used
+  /// when an incremental scan returns IncrementalFetchResult.expired and the
+  /// caller has to fall back to a full scan and re-capture the historyId).
+  Future<void> setLastHistoryId(String accountId, String? historyId) async {
+    await updateAccount(accountId, {'last_history_id': historyId});
+  }
+
+  // ============================================================================
   // Utility Methods
   // ============================================================================
 

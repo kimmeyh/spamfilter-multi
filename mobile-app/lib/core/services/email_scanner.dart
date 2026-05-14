@@ -15,6 +15,7 @@ import '../storage/scan_result_store.dart';
 import '../storage/settings_store.dart';
 import '../storage/unmatched_email_store.dart';
 import '../utils/app_logger.dart';
+import '../../adapters/email_providers/gmail_api_adapter.dart';
 import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/email_providers/spam_filter_platform.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
@@ -112,9 +113,14 @@ class EmailScanner {
 
         // Fetch messages from this folder
         try {
-          final folderMessages = await platform.fetchMessages(
+          // Sprint 38 F6c Phase 2 (Issue #250): Gmail-specific incremental
+          // delta scan via historyId, falling back to the provider-agnostic
+          // full-folder fetch on first-ever scan, historyId expiry, or any
+          // non-Gmail platform.
+          final folderMessages = await _fetchFolderMessages(
+            platform: platform,
+            folderName: folderName,
             daysBack: daysBack,
-            folderNames: [folderName],  // Fetch one folder at a time
           );
           AppLogger.scan('Step 4: Folder "$folderName" returned ${folderMessages.length} messages');
 
@@ -629,6 +635,92 @@ class EmailScanner {
       }
       rethrow;
     }
+  }
+
+  /// Sprint 38 F6c Phase 2 (Issue #250): Fetch messages for a single folder,
+  /// using Gmail's historyId-based incremental delta scan when the platform
+  /// is a `GmailApiAdapter` AND a previous scan persisted a `last_history_id`
+  /// for this account. Falls back to the provider-agnostic full-folder fetch
+  /// in the following cases:
+  ///
+  ///   1. Platform is not Gmail (AOL, IMAP, demo, etc.)
+  ///   2. First-ever scan for this account on Gmail (no persisted historyId)
+  ///   3. Persisted historyId has expired (Gmail expires history after ~7 days)
+  ///
+  /// After a successful incremental scan, the new historyId is persisted so
+  /// the next scan can start from there. After a successful full scan on
+  /// Gmail (case 2 or fallback from case 3), the current historyId is
+  /// captured and persisted for the next scan.
+  ///
+  /// Note: Gmail's history.list returns ALL changed messages in the configured
+  /// time window (subject to ~7-day expiry), independent of the `daysBack`
+  /// parameter. The `daysBack` parameter only matters for the full-fetch path
+  /// (first scan or expired fallback).
+  Future<List<EmailMessage>> _fetchFolderMessages({
+    required SpamFilterPlatform platform,
+    required String folderName,
+    required int daysBack,
+  }) async {
+    // Non-Gmail platforms: provider-agnostic full-folder fetch (existing path).
+    if (platform is! GmailApiAdapter) {
+      return platform.fetchMessages(
+        daysBack: daysBack,
+        folderNames: [folderName],
+      );
+    }
+
+    final gmail = platform;
+    final dbHelper = DatabaseHelper();
+    final lastHistoryId = await dbHelper.getLastHistoryId(accountId);
+
+    if (lastHistoryId == null) {
+      // First-ever Gmail scan for this account. Full-fetch, then capture
+      // historyId so the next scan can run incrementally.
+      AppLogger.scan('Step 4: Gmail first-scan for $folderName -- full fetch');
+      final messages = await gmail.fetchMessages(
+        daysBack: daysBack,
+        folderNames: [folderName],
+      );
+      final newHistoryId = await gmail.getCurrentHistoryId();
+      if (newHistoryId != null) {
+        await dbHelper.setLastHistoryId(accountId, newHistoryId);
+        AppLogger.scan('Step 4: Persisted initial historyId=$newHistoryId for $accountId');
+      }
+      return messages;
+    }
+
+    // Subsequent Gmail scan: incremental delta from persisted historyId.
+    AppLogger.scan(
+        'Step 4: Gmail incremental scan for $folderName from historyId=$lastHistoryId');
+    final result = await gmail.fetchMessagesIncremental(
+      startHistoryId: lastHistoryId,
+      folderForLabel: folderName,
+    );
+
+    if (result.isExpired) {
+      // Gmail rotated the history window; we have to start over with a full
+      // fetch and re-capture historyId.
+      AppLogger.scan('Step 4: Gmail historyId expired -- falling back to full scan');
+      await dbHelper.setLastHistoryId(accountId, null);
+      final messages = await gmail.fetchMessages(
+        daysBack: daysBack,
+        folderNames: [folderName],
+      );
+      final newHistoryId = await gmail.getCurrentHistoryId();
+      if (newHistoryId != null) {
+        await dbHelper.setLastHistoryId(accountId, newHistoryId);
+        AppLogger.scan('Step 4: Re-captured historyId=$newHistoryId after expiry');
+      }
+      return messages;
+    }
+
+    // Incremental scan succeeded. Persist the new historyId for next time.
+    if (result.newHistoryId != null) {
+      await dbHelper.setLastHistoryId(accountId, result.newHistoryId);
+      AppLogger.scan(
+          'Step 4: Persisted new historyId=${result.newHistoryId} after incremental scan');
+    }
+    return result.emails;
   }
 }
 
