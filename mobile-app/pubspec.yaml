@@ -76,6 +76,32 @@ flutter:
     # AOL IMAP CA certificate for custom SecurityContext
     - assets/certs/aol_ca.pem
 
+    # Sprint 38 F85 (ADR-0038): user-facing content extracted from Dart source
+    # to per-section Markdown files. Manifest at assets/content/manifest.yaml
+    # maps content keys to .md paths.
+    - assets/content/manifest.yaml
+    - assets/content/audit-log.md
+    - assets/content/help/select_account.md
+    - assets/content/help/account_setup.md
+    - assets/content/help/demo_scan.md
+    - assets/content/help/manual_scan.md
+    - assets/content/help/results_display.md
+    - assets/content/help/scan_history.md
+    - assets/content/help/settings.md
+    - assets/content/help/general_rules_management.md
+    - assets/content/help/general_scan_history_retention.md
+    - assets/content/help/general_privacy_logging.md
+    - assets/content/help/folder_settings.md
+    - assets/content/help/manual_scan_settings.md
+    - assets/content/help/background_scanning.md
+    - assets/content/help/manage_rules.md
+    - assets/content/help/rule_quick_add.md
+    - assets/content/help/rule_test.md
+    - assets/content/help/safe_senders.md
+    - assets/content/help/folder_selection.md
+    - assets/content/help/yaml_import_export.md
+    - assets/content/help/other_ways_to_reduce_junk.md
+
 # MSIX Configuration for Windows Desktop
 msix_config:
   display_name: MyEmailSpamFilter

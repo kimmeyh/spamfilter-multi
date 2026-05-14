@@ -305,6 +305,7 @@ As of January 24, 2026, **sprints replace the previous phase-based development m
   - Use text alternatives in brackets: [OK] [FAIL] [WARNING] [PENDING] [NEW] [BUG] [STOP]
   - Exception: Customer-facing UI can use emojis when appropriate for user experience
   - Rationale: Emojis do not render consistently across terminals and are harder to search/grep
+- **Long user-facing strings live in asset files, not Dart source** (ADR-0038, Sprint 38): any Dart string literal longer than 500 characters that is user-facing content (Help, Settings descriptions, walkthrough) must live as a Markdown file under `mobile-app/assets/content/` and be loaded via the asset manifest at `assets/content/manifest.yaml`. Excluded: regex patterns, SQL DDL, log message templates, runtime-interpolated strings. See `docs/adr/0038-content-management-for-long-strings.md`.
 
 ### Example
 ```dart

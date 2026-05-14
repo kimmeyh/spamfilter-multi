@@ -31,7 +31,10 @@ void main() {
     'Help section names key reporting destinations (7726, DoNotCall.gov, OptOutPrescreen, DMAchoice, ReportFraud.ftc.gov)',
     (tester) async {
       await tester.pumpWidget(const MaterialApp(home: HelpScreen()));
-      await tester.pump();
+      // Sprint 38 F85: bodies now load asynchronously via FutureBuilder
+      // against the asset bundle. pumpAndSettle so the futures resolve
+      // before the body assertion runs.
+      await tester.pumpAndSettle();
 
       // The section body is one large Text widget; assert key tokens that
       // future-me must not silently lose during a content edit.

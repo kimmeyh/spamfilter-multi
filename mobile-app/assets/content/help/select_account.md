@@ -1,0 +1,1 @@
+Start here. This screen lists every email account you have added, along with the last-scan status. Tap an account to open Manual Scan for that inbox. Use the "+" button to add a new account, or swipe an account to delete all of its data.
