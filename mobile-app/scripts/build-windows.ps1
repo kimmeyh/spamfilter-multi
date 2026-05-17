@@ -356,6 +356,27 @@ if (-not $Debug) {
                     -RestartInterval (New-TimeSpan -Minutes 5)
 
                 Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Settings $settings -Force | Out-Null
+
+                # Sprint 38 Round 4 (2026-05-17): Round 3 testing surfaced
+                # that the task was sometimes not actually running after
+                # rebuild. Explicitly verify the task is enabled and start
+                # it once immediately so the user sees the post-rebuild
+                # background scan in the next ~15 minutes (matching the
+                # configured frequency).
+                try {
+                    $task = Get-ScheduledTask -TaskName $taskName -ErrorAction Stop
+                    if ($task.State -eq 'Disabled') {
+                        Enable-ScheduledTask -TaskName $taskName | Out-Null
+                        Write-Host "       Task was Disabled; re-enabled" -ForegroundColor Yellow
+                    }
+                    # Trigger an immediate run so the first scan after build
+                    # is visible (the regular trigger will fire on schedule).
+                    Start-ScheduledTask -TaskName $taskName
+                    Write-Host "       Started one immediate run for verification" -ForegroundColor Gray
+                } catch {
+                    Write-Host "       [WARNING] Task verification failed: $_" -ForegroundColor Yellow
+                }
+
                 Write-Host "       Re-registered '$taskName' with frequency: ${bgFrequency}min" -ForegroundColor Green
                 Write-Host "       Executable: $fullExePath" -ForegroundColor Gray
             } else {

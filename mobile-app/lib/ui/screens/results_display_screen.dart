@@ -1843,13 +1843,19 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   /// Operates over the same `allResults` set the rest of the screen uses,
   /// so live scans and historical-scan reviews both work.
   ({int remaining, int addressed, int initial}) _computeNoRuleStats() {
+    // Sprint 38 Round 4 fix (2026-05-17): historical-scan views must
+    // always use _historicalResults, even when a prior Live Scan left
+    // stale results in EmailScanProvider. Matches the build() resolver
+    // and _reEvaluateNoRuleEmails.
     final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
     final liveResults = scanProvider.results;
     final isLiveScanActive = scanProvider.status == ScanStatus.scanning ||
         scanProvider.status == ScanStatus.paused;
-    final allResults = (liveResults.isNotEmpty || isLiveScanActive)
-        ? liveResults
-        : _historicalResults;
+    final allResults = (widget.historicalScanId != null)
+        ? _historicalResults
+        : ((liveResults.isNotEmpty || isLiveScanActive)
+            ? liveResults
+            : _historicalResults);
 
     var remaining = 0;
     var addressed = 0;
@@ -1865,6 +1871,62 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     }
     final initial = _initialNoRuleCount ?? (remaining + addressed);
     return (remaining: remaining, addressed: addressed, initial: initial);
+  }
+
+  /// Sprint 38 Round 4 (2026-05-17): after the user adds a rule or safe
+  /// sender that makes a previously-no-rule email match (its override is
+  /// set and effective action != none), recompute the oldest UID that is
+  /// still unaddressed-no-rule per folder, and write the per-folder
+  /// cursor so the next IMAP scan re-fetches from that point forward.
+  ///
+  /// Walks the current `allResults` set (live or historical) plus the
+  /// in-memory `_evaluationOverrides`. For each folder, finds the
+  /// smallest UID whose effective action is still `none`. If a folder
+  /// has zero unaddressed no-rules, the cursor is cleared so the next
+  /// scan falls back to the configured `daysBack` window.
+  ///
+  /// Only IMAP UIDs (parseable as int) are eligible. Gmail OAuth message
+  /// IDs are opaque strings; they're skipped here (Gmail uses a separate
+  /// historyId cursor, not yet redesigned in Round 4).
+  ///
+  /// Caller invokes this after every rule-add and safe-sender-add in
+  /// Scan Results, so the cursor stays current as the user works
+  /// through the backlog.
+  Future<void> _updateOldestNoRuleCursorsFromResults() async {
+    final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
+    final liveResults = scanProvider.results;
+    final isLiveScanActive = scanProvider.status == ScanStatus.scanning ||
+        scanProvider.status == ScanStatus.paused;
+    final allResults = (widget.historicalScanId != null)
+        ? _historicalResults
+        : ((liveResults.isNotEmpty || isLiveScanActive)
+            ? liveResults
+            : _historicalResults);
+    if (allResults.isEmpty) return;
+
+    final dbHelper = DatabaseHelper();
+    final foldersTouched = <String>{};
+    final oldestPerFolder = <String, int>{};
+    for (final result in allResults) {
+      foldersTouched.add(result.email.folderName);
+      if (_getEffectiveAction(result) != EmailActionType.none) continue;
+      final uid = int.tryParse(result.email.id);
+      if (uid == null) continue; // non-IMAP id (Gmail OAuth opaque)
+      final current = oldestPerFolder[result.email.folderName];
+      if (current == null || uid < current) {
+        oldestPerFolder[result.email.folderName] = uid;
+      }
+    }
+
+    for (final folder in foldersTouched) {
+      final oldest = oldestPerFolder[folder];
+      // Pass null to clear when the folder has zero unaddressed no-rules.
+      await dbHelper.setFolderCursor(
+        widget.accountId,
+        folder,
+        oldest?.toString(),
+      );
+    }
   }
 
   /// Sprint 38 F82: capture the initial no-rule count once per scan view so
@@ -1892,6 +1954,15 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   /// remaining "No rule" items are updated if the new rule matches them.
   /// Uses [_sharedCompiler] so patterns are compiled once and cached
   /// for all subsequent email evaluations.
+  ///
+  /// Sprint 38 Round 4 fix (2026-05-17): now uses the same result-set
+  /// resolution as the build method (preferring `_historicalResults`
+  /// when `widget.historicalScanId != null`). The previous logic
+  /// skipped historical-scan emails when a prior Live Scan left stale
+  /// results in EmailScanProvider, causing inline rule-adds on the Scan
+  /// History > Scan Results page to silently fail to update the
+  /// `_evaluationOverrides` map -- which in turn made the F82 footer
+  /// counter stay at 0 and the addressed rows never hide.
   Future<void> _reEvaluateNoRuleEmails() async {
     final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
     final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
@@ -1901,13 +1972,17 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       compiler: _sharedCompiler,
     );
 
-    // Get current results (live or historical)
+    // Match build()'s resolution: historical-scan views always use
+    // _historicalResults, regardless of any stale liveResults in the
+    // provider.
     final liveResults = scanProvider.results;
     final isLiveScanActive = scanProvider.status == ScanStatus.scanning ||
         scanProvider.status == ScanStatus.paused;
-    final allResults = (liveResults.isNotEmpty || isLiveScanActive)
-        ? liveResults
-        : _historicalResults;
+    final allResults = (widget.historicalScanId != null)
+        ? _historicalResults
+        : ((liveResults.isNotEmpty || isLiveScanActive)
+            ? liveResults
+            : _historicalResults);
 
     // Find all emails with effective action "none" (No rule)
     for (final result in allResults) {
@@ -2047,13 +2122,17 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       return;
     }
 
-    // Collect emails whose effective action changed and have not been re-processed yet
+    // Sprint 38 Round 4 fix (2026-05-17): historical-scan views must
+    // always use _historicalResults. See _reEvaluateNoRuleEmails for
+    // the matching fix and rationale.
     final liveResults = scanProvider.results;
     final isLiveScanActive = scanProvider.status == ScanStatus.scanning ||
         scanProvider.status == ScanStatus.paused;
-    final allResults = (liveResults.isNotEmpty || isLiveScanActive)
-        ? liveResults
-        : _historicalResults;
+    final allResults = (widget.historicalScanId != null)
+        ? _historicalResults
+        : ((liveResults.isNotEmpty || isLiveScanActive)
+            ? liveResults
+            : _historicalResults);
 
     final toDelete = <EmailMessage>[];
     final toMoveSafe = <EmailMessage>[];
@@ -2295,6 +2374,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       await _reEvaluateNoRuleEmails();
       final postStats = _computeNoRuleStats();
 
+      // Sprint 38 Round 4 (2026-05-17): advance the oldest-unaddressed-no-rule
+      // UID cursor per folder so the next IMAP scan resumes from the
+      // remaining backlog (or clears the cursor and falls back to daysBack
+      // if all are addressed). Non-IMAP rows are skipped inside the helper.
+      await _updateOldestNoRuleCursorsFromResults();
+
       // F38: Execute IMAP actions for affected emails
       await _reProcessAffectedEmails();
 
@@ -2477,6 +2562,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       final preStats = _computeNoRuleStats();
       await _reEvaluateNoRuleEmails();
       final postStats = _computeNoRuleStats();
+
+      // Sprint 38 Round 4 (2026-05-17): advance the oldest-unaddressed-no-rule
+      // UID cursor per folder so the next IMAP scan resumes from the
+      // remaining backlog. See companion call site in safe-sender-add
+      // handler above.
+      await _updateOldestNoRuleCursorsFromResults();
 
       // F38: Execute IMAP actions for affected emails
       await _reProcessAffectedEmails();

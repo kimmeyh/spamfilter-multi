@@ -815,20 +815,42 @@ class DatabaseHelper implements RuleDatabaseProvider {
   // IMAP Per-Folder Cursors (Sprint 38 Round 1, extending F6c Phase 2 to IMAP)
   // ============================================================================
 
-  /// Cursor type constant for IMAP UID-based incremental scans.
+  /// Sprint 38 Round 4 (post-Round-3 redesign 2026-05-17): cursor type for
+  /// the **oldest unaddressed no-rule** IMAP UID per (account, folder).
+  ///
+  /// The Round 1 design used a "highest UID seen" cursor, which caused
+  /// subsequent scans to skip previously-no-rule emails -- the wrong
+  /// behavior for the manual-scan re-evaluation workflow. Round 4 inverts
+  /// the semantics: the cursor points at the OLDEST UID still tagged as
+  /// no-rule, so each scan re-fetches that backlog from cursor forward
+  /// (via `UID SEARCH UID cursor:*`). The cursor advances as the user
+  /// adds rules / safe senders that match the oldest no-rule emails.
+  /// When all no-rules are addressed, the cursor is cleared and the
+  /// next scan falls back to the configured `daysBack` window.
+  ///
+  /// One row per (account_id, folder_name) since IMAP UIDs are
+  /// mailbox-scoped per RFC 3501.
+  static const String cursorTypeOldestNoRuleUid = 'oldest_no_rule_uid';
+
+  /// Round 1 cursor type (next-after-max-UID). Retained as a constant so
+  /// the v5 migration's table accepts both kinds while we clean up any
+  /// Round 1 rows on first launch. New code uses
+  /// [cursorTypeOldestNoRuleUid] exclusively.
+  @Deprecated('Round 1 design replaced by cursorTypeOldestNoRuleUid in Round 4')
   static const String cursorTypeImapUid = 'imap_uid';
 
   /// Returns the persisted cursor value for [accountId] / [folderName] /
   /// [cursorType], or null if no previous scan has persisted one yet.
   ///
-  /// Used by EmailScanner to decide between a full IMAP folder scan
-  /// (null) and an incremental UID-since scan (non-null). The non-null
-  /// value is the highest UID seen during the last successful scan;
-  /// the next scan does `UID SEARCH UID lastUid+1:*`.
+  /// Round 4 default cursor type is [cursorTypeOldestNoRuleUid] -- the
+  /// oldest UID still tagged as no-rule. EmailScanner uses it to start
+  /// the next scan at `UID SEARCH UID cursor:*`, re-fetching the
+  /// still-unaddressed backlog. When null, scan falls back to the
+  /// configured `daysBack` window.
   Future<String?> getFolderCursor(
     String accountId,
     String folderName, {
-    String cursorType = cursorTypeImapUid,
+    String cursorType = cursorTypeOldestNoRuleUid,
   }) async {
     final db = await database;
     final rows = await db.query(
@@ -843,12 +865,13 @@ class DatabaseHelper implements RuleDatabaseProvider {
   }
 
   /// Persists [cursorValue] for [accountId] / [folderName] / [cursorType].
-  /// Inserts or replaces on conflict. Pass null to clear.
+  /// Inserts or replaces on conflict. Pass null to clear (sets the next
+  /// scan back to full-fetch by `daysBack`).
   Future<void> setFolderCursor(
     String accountId,
     String folderName,
     String? cursorValue, {
-    String cursorType = cursorTypeImapUid,
+    String cursorType = cursorTypeOldestNoRuleUid,
   }) async {
     final db = await database;
     if (cursorValue == null) {

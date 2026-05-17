@@ -1,8 +1,13 @@
-/// Sprint 38 Round 1 (post-retro IMAP extension of F6c Phase 2, Issue #250):
-/// tests for the per-(account, folder) IMAP UID cursor helpers added to
-/// DatabaseHelper.
+/// Sprint 38 Round 1 / Round 4 (Issue #250 post-retro): tests for the
+/// per-(account, folder) IMAP UID cursor helpers added to DatabaseHelper.
 ///
-/// Verifies the v5 schema + getFolderCursor / setFolderCursor pass-throughs.
+/// Round 1 design: cursor = max UID seen (was wrong -- skipped previously
+/// no-rule emails). Round 4 redesign: cursor = OLDEST unaddressed no-rule
+/// UID. The DB schema (v5 `account_folder_cursors`) is unchanged; only
+/// the cursor type constant and the semantic meaning of the value
+/// differ. These tests verify the schema + persistence pass-throughs
+/// work for the Round 4 cursor type.
+///
 /// Real IMAP UID search is provider-coupled and verified via Phase 5.3
 /// manual testing per the Sprint 37 retrospective Category 2 disposition.
 library;

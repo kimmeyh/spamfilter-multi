@@ -630,6 +630,19 @@ class EmailScanner {
         }
       }
 
+      // Sprint 38 Round 4 (2026-05-17): write the oldest-unaddressed-no-rule
+      // UID cursor per folder so the next scan re-evaluates the still-
+      // unaddressed backlog against any newly-added rules. IMAP-only;
+      // Gmail OAuth and demo are no-ops. See _updateOldestNoRuleCursors
+      // dartdoc for the algorithm.
+      // platform is guaranteed non-null at this point (throws earlier
+      // if PlatformRegistry.getPlatform returned null), so no nullcheck.
+      try {
+        await _updateOldestNoRuleCursors(evaluatedEmails, platform);
+      } catch (e) {
+        AppLogger.warning('Round 4: oldest-no-rule cursor update failed (non-fatal): $e');
+      }
+
       AppLogger.scan('========== SCAN COMPLETE ==========');
     } catch (e, st) {
       // Handle scan error
@@ -819,42 +832,109 @@ class EmailScanner {
     String folderName,
     int daysBack,
   ) async {
+    // Sprint 38 Round 4 redesign (2026-05-17): cursor semantics inverted.
+    //
+    // The cursor (cursorTypeOldestNoRuleUid) now points at the OLDEST UID
+    // still tagged as no-rule from a prior scan. When set, this scan
+    // re-fetches the backlog from cursor forward via `UID SEARCH UID
+    // cursor:*` PLUS anything newer that arrived since the last scan.
+    // The user expects to keep seeing the same no-rules pool until they
+    // address it; new rules get a chance to match the backlog this way.
+    //
+    // When the cursor is null (no unaddressed backlog OR first-ever scan
+    // for this account+folder), the scan falls back to the configured
+    // `daysBack` time window -- the existing baseline.
+    //
+    // The cursor is written by the post-scan computation in
+    // `scanInbox()` and by the post-rule-add handlers in
+    // `results_display_screen.dart`. This method only READS the cursor.
     final dbHelper = DatabaseHelper();
     final cursorStr = await dbHelper.getFolderCursor(accountId, folderName);
-    final lastUid = cursorStr == null ? null : int.tryParse(cursorStr);
+    final oldestNoRuleUid = cursorStr == null ? null : int.tryParse(cursorStr);
 
-    if (lastUid == null) {
-      // First-ever scan for this (account, folder). Full-fetch (honoring
-      // daysBack), then capture the current max UID so subsequent scans
-      // can run incrementally.
-      AppLogger.scan('Step 4: IMAP first-scan for $folderName -- full fetch (daysBack=$daysBack)');
-      final messages = await imap.fetchMessages(
+    if (oldestNoRuleUid == null) {
+      // No unaddressed backlog. Standard time-window scan.
+      AppLogger.scan(
+          'Step 4: IMAP full-fetch for $folderName (daysBack=$daysBack, no no-rule backlog cursor)');
+      return imap.fetchMessages(
         daysBack: daysBack,
         folderNames: [folderName],
       );
-      final maxUid = await imap.getCurrentMaxUid(folderName);
-      if (maxUid != null) {
-        await dbHelper.setFolderCursor(accountId, folderName, maxUid.toString());
-        AppLogger.scan('Step 4: Persisted initial UID cursor=$maxUid for $accountId / $folderName');
-      }
-      return messages;
     }
 
-    // Subsequent scan: only UIDs greater than the persisted cursor.
-    AppLogger.scan('Step 4: IMAP incremental scan for $folderName from UID > $lastUid');
+    // Backlog cursor set -- re-scan from the oldest unaddressed no-rule
+    // UID forward. This re-evaluates the still-unaddressed pool against
+    // any rules / safe senders the user has added since the last scan,
+    // and also picks up anything newer that arrived in the meantime.
+    //
+    // Use startUid = cursor - 1 so the cursor itself is INCLUDED in the
+    // result (fetchMessagesIncremental does `UID startUid+1:*`).
+    AppLogger.scan(
+        'Step 4: IMAP backlog re-scan for $folderName from oldest no-rule UID=$oldestNoRuleUid');
     final result = await imap.fetchMessagesIncremental(
-      startUid: lastUid,
+      startUid: oldestNoRuleUid - 1,
       folderName: folderName,
     );
-
-    // Always persist the new cursor (even when result.emails is empty,
-    // result.newCursor advances if the mailbox grew). This prevents the
-    // next scan from re-checking already-scanned UIDs.
-    if (result.newCursor != lastUid) {
-      await dbHelper.setFolderCursor(accountId, folderName, result.newCursor.toString());
-      AppLogger.scan('Step 4: Persisted new UID cursor=${result.newCursor} after incremental scan');
-    }
+    AppLogger.scan(
+        'Step 4: IMAP backlog re-scan returned ${result.emails.length} messages (cursor was $oldestNoRuleUid)');
     return result.emails;
+  }
+
+  /// Sprint 38 Round 4 (2026-05-17): compute the oldest unaddressed
+  /// no-rule UID per scanned folder from the just-completed scan results,
+  /// and persist it as the cursor for the next scan.
+  ///
+  /// Walks the `evaluatedEmails` set, groups by folder, and for each
+  /// folder finds the smallest UID whose action is still
+  /// `EmailActionType.none`. Writes that UID to
+  /// `account_folder_cursors` with type `oldest_no_rule_uid`. If a folder
+  /// has zero no-rule emails this scan, the cursor for that folder is
+  /// cleared (the next scan falls back to `daysBack`).
+  ///
+  /// Called by `scanInbox()` after `completeScan()`. Idempotent: re-running
+  /// with the same data produces the same cursor.
+  ///
+  /// Non-IMAP platforms (Gmail OAuth, demo): no-op. Cursor table is
+  /// IMAP-scoped because UIDs are IMAP-specific.
+  Future<void> _updateOldestNoRuleCursors(
+    List<_EvaluatedEmail> evaluatedEmails,
+    SpamFilterPlatform platform,
+  ) async {
+    if (platform is! GenericIMAPAdapter) return;
+    if (evaluatedEmails.isEmpty) return;
+
+    final dbHelper = DatabaseHelper();
+
+    // Group no-rule UIDs by folder. Note: evaluated.email.id is a string
+    // (IMAP UIDs are persisted as strings via fromMap parsing), so parse
+    // back to int and skip anything that doesn't look like a UID.
+    final foldersTouched = <String>{};
+    final oldestPerFolder = <String, int>{};
+    for (final ev in evaluatedEmails) {
+      foldersTouched.add(ev.message.folderName);
+      if (ev.action != EmailActionType.none) continue;
+      final uid = int.tryParse(ev.message.id);
+      if (uid == null) continue;
+      final current = oldestPerFolder[ev.message.folderName];
+      if (current == null || uid < current) {
+        oldestPerFolder[ev.message.folderName] = uid;
+      }
+    }
+
+    for (final folder in foldersTouched) {
+      final oldest = oldestPerFolder[folder];
+      if (oldest == null) {
+        // No unaddressed no-rules in this folder this scan. Clear the
+        // cursor so the next scan reverts to the daysBack window.
+        await dbHelper.setFolderCursor(accountId, folder, null);
+        AppLogger.scan(
+            'Step 7b: cleared oldest-no-rule cursor for $folder (zero no-rules this scan)');
+      } else {
+        await dbHelper.setFolderCursor(accountId, folder, oldest.toString());
+        AppLogger.scan(
+            'Step 7b: persisted oldest-no-rule UID cursor=$oldest for $folder');
+      }
+    }
   }
 }
 
