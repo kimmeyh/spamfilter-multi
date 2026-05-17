@@ -245,6 +245,26 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           await _reEvaluateNoRuleEmails();
           await _updateOldestNoRuleCursorsFromResults();
           await _reProcessAffectedEmails();
+          // Sprint 38 Round 9 fix (2026-05-17): _reProcessAffectedEmails
+          // returns early when scanProvider.scanMode == readOnly, which is
+          // the default state on app launch when no scan has been
+          // initiated in the current session. That leaves _hiddenEmailKeys
+          // empty even though _evaluationOverrides now contains
+          // newly-matched cross-screen rule entries -- the user sees the
+          // chip count and footer update (those read from overrides) but
+          // the matched rows still appear in the unfiltered list. The
+          // visual hiding is purely UI cleanup of addressed no-rules and
+          // is safe regardless of scanMode (no IMAP side effects). Apply
+          // it here as an unconditional pass so the unfiltered list shows
+          // the same final state the "No rule" filter would show.
+          for (final result in historicalResults) {
+            final key = _getEmailKey(result.email);
+            final override = _evaluationOverrides[key];
+            if (override == null) continue;
+            if (result.action != EmailActionType.none) continue;
+            if (override.matchedRule.isEmpty && !override.isSafeSender) continue;
+            _hiddenEmailKeys.add(key);
+          }
         } catch (_) {
           // Non-fatal: stale view falls back to last-known evaluation.
           // Inline rule-adds on this screen still pick up correctly.
