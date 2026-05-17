@@ -1879,21 +1879,6 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
             ? liveResults
             : _historicalResults);
 
-    // Sprint 38 Round 6 diagnostic (2026-05-17): trace why footer disagrees
-    // with row renderer. Both use _getEffectiveAction so should agree.
-    Logger().i('[F82-R6] _computeNoRuleStats: '
-        'historicalScanId=${widget.historicalScanId}, '
-        'allResults.length=${allResults.length}, '
-        'overrides.length=${_evaluationOverrides.length}, '
-        'overrideKeys=${_evaluationOverrides.keys.take(3).toList()}');
-    if (allResults.isNotEmpty) {
-      final first = allResults.first;
-      Logger().i('[F82-R6] first result key=${_getEmailKey(first.email)} '
-          'originalAction=${first.action} '
-          'effectiveAction=${_getEffectiveAction(first)} '
-          'overrideHit=${_evaluationOverrides.containsKey(_getEmailKey(first.email))}');
-    }
-
     var remaining = 0;
     var addressed = 0;
     for (final result in allResults) {
