@@ -207,29 +207,36 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         }).toList();
       }
 
-      if (mounted) {
-        setState(() {
-          _lastCompletedScan = lastScan;
-          _hasEverScanned = lastScan != null;
-          _historicalResults = historicalResults;
-          _historicalLoaded = true;
-        });
-      }
+      // Stage historical results into the field before re-evaluation so
+      // _reEvaluateNoRuleEmails / _updateOldestNoRuleCursorsFromResults /
+      // _reProcessAffectedEmails all see the freshly-loaded set. We
+      // intentionally do NOT call setState yet -- we want the FIRST paint
+      // of this screen to already reflect any cross-screen rule-adds.
+      _lastCompletedScan = lastScan;
+      _hasEverScanned = lastScan != null;
+      _historicalResults = historicalResults;
 
-      // Sprint 38 Round 7 fix (2026-05-17): when re-entering Scan History >
-      // Scan Results for a historical scan, mirror the inline-rule-add
-      // sibling sequence so rules added/changed via Settings > Manage Rules
-      // (or any other cross-screen path) are reflected. Without this, the
-      // in-memory RuleSetProvider can be stale (manage-rules screen writes
-      // via its own store without notifying the provider) and even if
-      // fresh, the override map for `_historicalResults` is empty so the
-      // F82 footer/chip/list will not reflect the new rule until an inline
-      // add happens on this screen.
+      // Sprint 38 Round 7 fix (2026-05-17, revised Round 8 same day): when
+      // re-entering Scan History > Scan Results for a historical scan,
+      // mirror the inline-rule-add sibling sequence so rules added/changed
+      // via Settings > Manage Rules (or any other cross-screen path) are
+      // reflected on the FIRST paint, before _initialNoRuleCount is
+      // captured and before the user toggles any filter.
       //
-      // Gated on historicalScanId != null so the live-scan-open path
-      // (initState path for the running scan) is not perturbed -- the live
-      // path manages its own re-evaluation via the scan progress flow.
-      if (widget.historicalScanId != null && mounted) {
+      // Round 7's mistake: this block ran AFTER setState({_historicalLoaded
+      // = true}), so the first paint cached _initialNoRuleCount and
+      // populated the chip count from the pre-eval state; only the
+      // subsequent rebuild (triggered by the user selecting the "No rule"
+      // filter) saw the post-eval overrides.
+      //
+      // Round 8 corrects ordering: run the full reload + re-eval +
+      // re-process sequence FIRST, then commit _historicalLoaded = true
+      // in a single setState so the initial paint shows the correct
+      // chip count, hidden rows, and footer denominator.
+      //
+      // Gated on historicalScanId != null so the live-scan-open path is
+      // untouched.
+      if (widget.historicalScanId != null && historicalResults.isNotEmpty) {
         try {
           final ruleProvider =
               Provider.of<RuleSetProvider>(context, listen: false);
@@ -238,14 +245,16 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           await _reEvaluateNoRuleEmails();
           await _updateOldestNoRuleCursorsFromResults();
           await _reProcessAffectedEmails();
-          if (mounted) {
-            setState(() {});
-          }
         } catch (_) {
-          // Non-fatal: stale view falls back to last-known evaluation,
-          // matches Round 6 behavior. Inline rule-adds on this screen
-          // will still pick up correctly.
+          // Non-fatal: stale view falls back to last-known evaluation.
+          // Inline rule-adds on this screen still pick up correctly.
         }
+      }
+
+      if (mounted) {
+        setState(() {
+          _historicalLoaded = true;
+        });
       }
     } catch (e) {
       // If loading fails, continue with empty state
