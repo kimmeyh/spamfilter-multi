@@ -215,6 +215,38 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           _historicalLoaded = true;
         });
       }
+
+      // Sprint 38 Round 7 fix (2026-05-17): when re-entering Scan History >
+      // Scan Results for a historical scan, mirror the inline-rule-add
+      // sibling sequence so rules added/changed via Settings > Manage Rules
+      // (or any other cross-screen path) are reflected. Without this, the
+      // in-memory RuleSetProvider can be stale (manage-rules screen writes
+      // via its own store without notifying the provider) and even if
+      // fresh, the override map for `_historicalResults` is empty so the
+      // F82 footer/chip/list will not reflect the new rule until an inline
+      // add happens on this screen.
+      //
+      // Gated on historicalScanId != null so the live-scan-open path
+      // (initState path for the running scan) is not perturbed -- the live
+      // path manages its own re-evaluation via the scan progress flow.
+      if (widget.historicalScanId != null && mounted) {
+        try {
+          final ruleProvider =
+              Provider.of<RuleSetProvider>(context, listen: false);
+          await ruleProvider.loadRules();
+          await ruleProvider.loadSafeSenders();
+          await _reEvaluateNoRuleEmails();
+          await _updateOldestNoRuleCursorsFromResults();
+          await _reProcessAffectedEmails();
+          if (mounted) {
+            setState(() {});
+          }
+        } catch (_) {
+          // Non-fatal: stale view falls back to last-known evaluation,
+          // matches Round 6 behavior. Inline rule-adds on this screen
+          // will still pick up correctly.
+        }
+      }
     } catch (e) {
       // If loading fails, continue with empty state
       if (mounted) {
