@@ -143,12 +143,34 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           scanResultId: lastScan.id,
         );
         historicalResults = actionMaps.map((map) {
+          final emailFrom = map['email_from'] as String? ?? '';
+          final emailSubject = map['email_subject'] as String? ?? '';
+          // Sprint 38 Round 5 fix (2026-05-17): populate a minimal headers
+          // map so header-based block rules ('header' conditions targeting
+          // the From: header, which is what the entire_domain /
+          // exact_domain inline-add types generate) match historical
+          // emails. Round 4 had headers={} which made
+          // RuleEvaluator._matchesHeaderList iterate an empty entries
+          // list and return no match -- this caused the F82 footer
+          // counter to stay at 0 and rows not to hide after inline
+          // rule-add on the Scan History > Scan Results path (Image 9
+          // from Round 4 testing). Subject header included for parity
+          // with subject-targeting rules.
+          // Use 'From' / 'Subject' case to match what the IMAP and Gmail
+          // adapters populate (raw RFC822 header names). The evaluator's
+          // _matchesHeaderList compares keys case-insensitively, so this
+          // is just for parity, but if any future code does a case-
+          // sensitive header lookup it should see the same shape that
+          // live scans produce.
           final email = EmailMessage(
             id: map['email_id'] as String? ?? '',
-            from: map['email_from'] as String? ?? '',
-            subject: map['email_subject'] as String? ?? '',
+            from: emailFrom,
+            subject: emailSubject,
             body: '',
-            headers: {},
+            headers: {
+              'From': emailFrom,
+              'Subject': emailSubject,
+            },
             receivedDate: DateTime.fromMillisecondsSinceEpoch(
               (map['email_received_date'] as int?) ?? 0,
             ),
