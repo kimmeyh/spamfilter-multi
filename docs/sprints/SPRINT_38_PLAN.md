@@ -1,12 +1,23 @@
 # Sprint 38 Plan: UX Backlog + Gmail Incremental Scans + Content Architecture
 
 **Sprint**: 38
-**Date**: 2026-05-13
+**Date**: 2026-05-13 (Round 1 post-retro additions: 2026-05-16)
 **Branch**: `feature/20260505_Sprint_38`
 **Issues**: #250 (F6c Phase 2), #251 (F87), #252 (F82), #253 (F84), #254 (F86), #255 (F88), #256 (BUG-S37-1), #257 (F85)
 **Type**: Mixed -- UX (F87, F82, F84, F86), Performance (F6c Phase 2, F88), Bug fix (BUG-S37-1), Architecture (F85)
-**Estimated Effort**: ~27-41h
+**Estimated Effort**: ~27-41h (Round 1 additions: +~3-4h)
 **Wall-clock target**: ~6-10h (based on Sprint 37 actual/estimate ratio of ~20-25%)
+
+## Round 1 Post-Retro Additions (2026-05-16)
+
+Manual testing surfaced four items that required Sprint-internal fixes:
+
+- **F6c Phase 2 + F88 scope extension to IMAP**: original plan scoped these as Gmail-OAuth-only. Manual testing used a `gmail-imap` account so neither feature visibly fired. Scope expanded in Round 1: F6c Phase 2 now ALSO covers IMAP via per-(account, folder) UID cursors (new DB v5 schema + `GenericIMAPAdapter.fetchMessagesIncremental`). F88 IMAP equivalent is NOT shipped (IMAP has no batch endpoint; per `enough_mail`'s FETCH semantics, individual UID FETCHes are the per-message path). The Gmail OAuth path remains the only beneficiary of F88 batchGet.
+- **F86 redesign**: original Task 5 design (mid-scan evaluator rebuild) solved the wrong problem. Harold's actual workflow is "scan A completes -> add rule -> scan B does not see new rule". Round 1 removes the mid-scan rebuild and adds post-scan + post-Scan-Results-rule-add reloads.
+- **F82 historical-scan path**: the progress footer was hidden on Scan History > Scan Results because the initial-count capture fired BEFORE the async `_historicalResults` load completed, caching count=0 and hiding the footer permanently. Round 1 defers capture until results are loaded.
+- **Test 4 batchGet runtime verification gap**: noted in retro Category 2; no code fix (would require dedicated diagnostic surface).
+
+See CHANGELOG `### 2026-05-16` entry for full Round 1 details and the SPRINT_38_RETROSPECTIVE.md for the testing-feedback narrative.
 
 ---
 

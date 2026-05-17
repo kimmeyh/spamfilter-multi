@@ -1870,10 +1870,20 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   /// Sprint 38 F82: capture the initial no-rule count once per scan view so
   /// the F82 footer can show cumulative progress ("M of N addressed") rather
   /// than just the current remaining count.
+  ///
+  /// Sprint 38 Round 1 fix (post-retro 2026-05-16): only capture once
+  /// `allResults` is non-empty. On historical-scan navigation, the first
+  /// render fires BEFORE `_loadLastCompletedScan` completes (async), so
+  /// `_historicalResults` is briefly empty and a naive capture would cache
+  /// `_initialNoRuleCount = 0`, which then hides the footer permanently
+  /// (footer's `initial <= 0` returns SizedBox.shrink). Skipping the empty
+  /// case lets the capture fire on the next rebuild after the async load.
   void _captureInitialNoRuleCount() {
     if (_initialNoRuleCount != null) return;
     final stats = _computeNoRuleStats();
-    _initialNoRuleCount = stats.remaining + stats.addressed;
+    final total = stats.remaining + stats.addressed;
+    if (total == 0) return; // wait for async load (or genuinely empty scan)
+    _initialNoRuleCount = total;
   }
 
   /// Re-evaluate all emails that currently have no matching rule.
@@ -2262,6 +2272,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       // Add to safe senders via provider (persists to database and YAML)
       await ruleProvider.addSafeSender(pattern);
 
+      // Sprint 38 Round 1 F86: reload from DB so any conflict-resolved
+      // changes or safe-sender list normalization are reflected in
+      // ruleProvider before subsequent re-evaluation runs.
+      await ruleProvider.loadSafeSenders();
+      await ruleProvider.loadRules();
+
       // Include conflict removal info in display message
       if (conflicts.conflictsRemoved > 0) {
         displayMessage += ' (removed ${conflicts.conflictsRemoved} conflicting rule${conflicts.conflictsRemoved > 1 ? "s" : ""})';
@@ -2437,6 +2453,13 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
 
       // Add rule via provider (persists to database and YAML)
       await ruleProvider.addRule(rule);
+
+      // Sprint 38 Round 1 F86: reload from DB so any conflict-resolved
+      // changes or rule-list normalization are reflected in ruleProvider
+      // before subsequent re-evaluation runs (and so the next scan sees
+      // the rule even if it was added during an active scan).
+      await ruleProvider.loadRules();
+      await ruleProvider.loadSafeSenders();
 
       // Include conflict removal info in display message
       if (conflicts.conflictsRemoved > 0) {

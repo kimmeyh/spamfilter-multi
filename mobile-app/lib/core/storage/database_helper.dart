@@ -24,7 +24,7 @@ abstract class RuleDatabaseProvider {
 /// v1: Initial schema (Sprint 12)
 /// v2: Add pattern classification columns to rules table (Sprint 20)
 /// v3: Add auth_rate_limit table for failed-auth throttling (SEC-22, Sprint 33)
-const int databaseVersion = 4;
+const int databaseVersion = 5;
 
 /// SQLite database helper - singleton pattern
 class DatabaseHelper implements RuleDatabaseProvider {
@@ -96,6 +96,20 @@ class DatabaseHelper implements RuleDatabaseProvider {
       );
     ''');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_accounts_platform ON accounts(platform_id);');
+
+    // Sprint 38 Round 1: per-(account, folder) cursor table for IMAP
+    // incremental scans (extending F6c Phase 2 to IMAP). See v5 migration
+    // block for the rationale + cursor strategy.
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS account_folder_cursors (
+        account_id TEXT NOT NULL,
+        folder_name TEXT NOT NULL,
+        cursor_type TEXT NOT NULL,
+        cursor_value TEXT NOT NULL,
+        updated_at INTEGER NOT NULL,
+        PRIMARY KEY (account_id, folder_name, cursor_type)
+      );
+    ''');
 
     // Scan results table
     await db.execute('''
@@ -334,6 +348,34 @@ class DatabaseHelper implements RuleDatabaseProvider {
         await db.execute('ALTER TABLE accounts ADD COLUMN last_history_id TEXT;');
       }
       _logger.i('v4 migration complete');
+    }
+
+    if (oldVersion < 5) {
+      // v5: per-(account, folder) cursor table for IMAP incremental scans
+      // (Sprint 38 Round 1 -- extending F6c Phase 2 from Gmail-OAuth-only
+      // to also cover IMAP-backed accounts: gmail-imap, aol, yahoo, etc.)
+      //
+      // IMAP cursor strategy: persist the highest UID seen per (account,
+      // folder) after each successful scan. Next scan does
+      // `UID SEARCH UID lastUid+1:*` to fetch only new messages.
+      //
+      // Why a separate table instead of more columns on accounts:
+      //   - Gmail historyId is per-account (one cursor per account)
+      //   - IMAP UID cursors are per-folder (separate cursors per folder)
+      //   - Forward-compatible with future per-folder cursors for any
+      //     provider (e.g., MODSEQ for IMAP CONDSTORE)
+      _logger.i('Applying v5 migration: creating account_folder_cursors');
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS account_folder_cursors (
+          account_id TEXT NOT NULL,
+          folder_name TEXT NOT NULL,
+          cursor_type TEXT NOT NULL,
+          cursor_value TEXT NOT NULL,
+          updated_at INTEGER NOT NULL,
+          PRIMARY KEY (account_id, folder_name, cursor_type)
+        );
+      ''');
+      _logger.i('v5 migration complete');
     }
   }
 
@@ -767,6 +809,67 @@ class DatabaseHelper implements RuleDatabaseProvider {
   /// caller has to fall back to a full scan and re-capture the historyId).
   Future<void> setLastHistoryId(String accountId, String? historyId) async {
     await updateAccount(accountId, {'last_history_id': historyId});
+  }
+
+  // ============================================================================
+  // IMAP Per-Folder Cursors (Sprint 38 Round 1, extending F6c Phase 2 to IMAP)
+  // ============================================================================
+
+  /// Cursor type constant for IMAP UID-based incremental scans.
+  static const String cursorTypeImapUid = 'imap_uid';
+
+  /// Returns the persisted cursor value for [accountId] / [folderName] /
+  /// [cursorType], or null if no previous scan has persisted one yet.
+  ///
+  /// Used by EmailScanner to decide between a full IMAP folder scan
+  /// (null) and an incremental UID-since scan (non-null). The non-null
+  /// value is the highest UID seen during the last successful scan;
+  /// the next scan does `UID SEARCH UID lastUid+1:*`.
+  Future<String?> getFolderCursor(
+    String accountId,
+    String folderName, {
+    String cursorType = cursorTypeImapUid,
+  }) async {
+    final db = await database;
+    final rows = await db.query(
+      'account_folder_cursors',
+      columns: ['cursor_value'],
+      where: 'account_id = ? AND folder_name = ? AND cursor_type = ?',
+      whereArgs: [accountId, folderName, cursorType],
+    );
+    if (rows.isEmpty) return null;
+    final v = rows.first['cursor_value'];
+    return v is String ? v : null;
+  }
+
+  /// Persists [cursorValue] for [accountId] / [folderName] / [cursorType].
+  /// Inserts or replaces on conflict. Pass null to clear.
+  Future<void> setFolderCursor(
+    String accountId,
+    String folderName,
+    String? cursorValue, {
+    String cursorType = cursorTypeImapUid,
+  }) async {
+    final db = await database;
+    if (cursorValue == null) {
+      await db.delete(
+        'account_folder_cursors',
+        where: 'account_id = ? AND folder_name = ? AND cursor_type = ?',
+        whereArgs: [accountId, folderName, cursorType],
+      );
+      return;
+    }
+    await db.insert(
+      'account_folder_cursors',
+      {
+        'account_id': accountId,
+        'folder_name': folderName,
+        'cursor_type': cursorType,
+        'cursor_value': cursorValue,
+        'updated_at': DateTime.now().millisecondsSinceEpoch,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   // ============================================================================

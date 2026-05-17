@@ -17,6 +17,7 @@ import '../storage/scan_result_store.dart';
 import '../storage/settings_store.dart';
 import '../storage/unmatched_email_store.dart';
 import '../utils/app_logger.dart';
+import '../../adapters/email_providers/generic_imap_adapter.dart';
 import '../../adapters/email_providers/gmail_api_adapter.dart';
 import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/email_providers/spam_filter_platform.dart';
@@ -31,20 +32,13 @@ class EmailScanner {
   final SecureCredentialsStore _credStore = SecureCredentialsStore();
   final SettingsStore _settingsStore = SettingsStore();
 
-  /// Sprint 38 F86 (Issue #254): set to true by the RuleSetProvider listener
-  /// when the user adds/edits/deletes a rule or safe sender during an active
-  /// scan. The per-message evaluation loop checks this flag at each iteration
-  /// and rebuilds the RuleEvaluator with fresh `ruleSetProvider.rules` and
-  /// `ruleSetProvider.safeSenders` before evaluating the next email. Already-
-  /// evaluated emails are NOT re-evaluated -- the swap takes effect from the
-  /// next message forward, mirroring the issue's "next batch boundary"
-  /// semantics.
-  bool _rulesDirty = false;
-
-  /// Sprint 38 F86: number of rule-set-change notifications received since
-  /// scan start. Exposed via `pendingRuleSetChanges` so the re-scan path
-  /// can surface "Applying N new rule(s)..." messaging when the user triggers
-  /// a re-scan and the rule-set sync has not yet completed.
+  /// Sprint 38 F86 (Issue #254), revised in Sprint 38 Round 1 (post-retro):
+  /// number of rule-set-change notifications received during the most
+  /// recent scan. The mid-scan evaluator rebuild was removed -- rule
+  /// reloads now happen AFTER `completeScan()` so the NEXT scan picks
+  /// them up. This counter is kept (and incremented by the listener)
+  /// for diagnostic purposes; the `pendingRuleSetChanges` getter is
+  /// retained for any future pre-scan sync-pending UI affordance.
   int _ruleSetChangeCount = 0;
 
   /// Sprint 38 F86: number of rule-set-change notifications received during
@@ -59,21 +53,19 @@ class EmailScanner {
     required this.scanProvider,
   });
 
-  /// Sprint 38 F86: marks the rule set as dirty so the next per-message
-  /// evaluation loop iteration rebuilds the RuleEvaluator with fresh rules.
-  /// Visible for testing; not intended for direct call from production code.
+  /// Sprint 38 F86: increments the pending-change counter as if the user
+  /// added/edited/deleted a rule during the scan. Visible for testing.
+  /// Production code does not call this directly -- the listener does.
   @visibleForTesting
   void markRulesDirtyForTesting() {
-    _rulesDirty = true;
     _ruleSetChangeCount++;
   }
 
   void _onRuleSetChanged() {
-    _rulesDirty = true;
     _ruleSetChangeCount++;
     AppLogger.scan(
-        'F86: rule-set change detected during scan; will swap evaluator at '
-        'next message boundary (pending count=$_ruleSetChangeCount)');
+        'F86: rule-set change detected during scan; rules will be reloaded '
+        'after scan completes (pending count=$_ruleSetChangeCount)');
   }
 
   /// Scan inbox with live IMAP connection
@@ -85,12 +77,11 @@ class EmailScanner {
   }) async {
     SpamFilterPlatform? platform;
 
-    // Sprint 38 F86 (Issue #254): subscribe to rule-set changes for the
-    // duration of this scan so user-initiated rule/safe-sender edits
-    // propagate to the running evaluator at the next message boundary.
-    // Reset counters at scan start so `pendingRuleSetChanges` reflects only
-    // this scan.
-    _rulesDirty = false;
+    // Sprint 38 F86 (Issue #254), revised Round 1: subscribe to rule-set
+    // changes for the duration of this scan for diagnostic counting. The
+    // mid-scan evaluator rebuild was removed in Round 1; the post-scan
+    // reload of rules + safe senders (after `completeScan()` below)
+    // ensures the NEXT scan picks up any changes made during this one.
     _ruleSetChangeCount = 0;
     ruleSetProvider.addListener(_onRuleSetChanged);
 
@@ -235,10 +226,10 @@ class EmailScanner {
         effectiveSafeSenders = ruleSetProvider.safeSenders;
       }
 
-      // Sprint 38 F86: evaluator is mutable so the per-message loop can
-      // rebuild it with fresh ruleSetProvider state when _rulesDirty is set
-      // (an async rule/safe-sender add/edit/delete during scan).
-      var evaluator = RuleEvaluator(
+      // Sprint 38 F86 (revised in Sprint 38 Round 1): per-scan evaluator
+      // is final again. Mid-scan rule changes are NOT applied; reload
+      // happens after `completeScan()` below so the NEXT scan sees them.
+      final evaluator = RuleEvaluator(
         ruleSet: effectiveRules,
         safeSenderList: effectiveSafeSenders,
         compiler: PatternCompiler(),
@@ -262,25 +253,14 @@ class EmailScanner {
       AppLogger.scan('Safe sender target folder: "$safeSenderTarget" (raw: "$rawTarget")');
 
       for (final message in messages) {
-        // Sprint 38 F86 (Issue #254): if a rule/safe-sender change came in
-        // since the last iteration, rebuild the evaluator with fresh rules
-        // BEFORE evaluating this next message. Already-evaluated emails
-        // (above in evaluatedEmails) are NOT re-evaluated -- the swap takes
-        // effect from this message forward, mirroring "next batch boundary"
-        // semantics. Demo mode is exempt (uses MockEmailData rules which do
-        // not change mid-scan).
-        if (_rulesDirty && platformId != 'demo') {
-          AppLogger.scan(
-              'F86: rebuilding evaluator with fresh rules '
-              '(rules=${ruleSetProvider.rules.rules.length}, '
-              'safe=${ruleSetProvider.safeSenders.safeSenders.length})');
-          evaluator = RuleEvaluator(
-            ruleSet: ruleSetProvider.rules,
-            safeSenderList: ruleSetProvider.safeSenders,
-            compiler: PatternCompiler(),
-          );
-          _rulesDirty = false;
-        }
+        // Sprint 38 F86 mid-scan evaluator rebuild was removed in
+        // Sprint 38 Round 1 (post-retro 2026-05-16). Per Harold's clarified
+        // requirement, rules should reload AFTER each scan completes and
+        // AFTER rule-add in Scan Results -- not mid-scan. The post-scan
+        // reload happens after `await scanProvider.completeScan()` below.
+        // The `_rulesDirty` listener is still registered so the diagnostic
+        // counter `pendingRuleSetChanges` keeps working for any future
+        // pre-scan sync-pending message.
 
         scanProvider.updateProgress(
           email: message,
@@ -632,6 +612,24 @@ class EmailScanner {
       // 7. Complete scan ([NEW] SPRINT 4: Now async to persist final state)
       AppLogger.scan('Step 7: Completing scan. Final counts: found=${scanProvider.totalEmails}, processed=${scanProvider.processedCount}, deleted=${scanProvider.deletedCount}, moved=${scanProvider.movedCount}, safe=${scanProvider.safeSendersCount}, noRule=${scanProvider.noRuleCount}, errors=${scanProvider.errorCount}');
       await scanProvider.completeScan();
+
+      // Sprint 38 Round 1 (F86 revised, post-retro 2026-05-16): reload
+      // rules + safe senders from the DB so the NEXT scan picks up any
+      // rule changes the user made during this scan or while reviewing
+      // results. Demo platform exempt (uses MockEmailData, not DB).
+      if (platformId != 'demo') {
+        try {
+          await ruleSetProvider.loadRules();
+          await ruleSetProvider.loadSafeSenders();
+          AppLogger.scan(
+              'F86: reloaded rules + safe senders after scan complete '
+              '(rules=${ruleSetProvider.rules.rules.length}, '
+              'safe=${ruleSetProvider.safeSenders.safeSenders.length})');
+        } catch (e) {
+          AppLogger.warning('F86: post-scan rule reload failed (non-fatal): $e');
+        }
+      }
+
       AppLogger.scan('========== SCAN COMPLETE ==========');
     } catch (e, st) {
       // Handle scan error
@@ -713,39 +711,56 @@ class EmailScanner {
     }
   }
 
-  /// Sprint 38 F6c Phase 2 (Issue #250): Fetch messages for a single folder,
-  /// using Gmail's historyId-based incremental delta scan when the platform
-  /// is a `GmailApiAdapter` AND a previous scan persisted a `last_history_id`
-  /// for this account. Falls back to the provider-agnostic full-folder fetch
-  /// in the following cases:
+  /// Sprint 38 F6c Phase 2 (Issue #250) + Sprint 38 Round 1 IMAP extension
+  /// (post-retro): Fetch messages for a single folder using whichever
+  /// incremental-scan capability the platform exposes, falling back to the
+  /// provider-agnostic full-folder fetch on first scan or unsupported
+  /// platforms.
   ///
-  ///   1. Platform is not Gmail (AOL, IMAP, demo, etc.)
-  ///   2. First-ever scan for this account on Gmail (no persisted historyId)
-  ///   3. Persisted historyId has expired (Gmail expires history after ~7 days)
+  /// Three paths:
   ///
-  /// After a successful incremental scan, the new historyId is persisted so
-  /// the next scan can start from there. After a successful full scan on
-  /// Gmail (case 2 or fallback from case 3), the current historyId is
-  /// captured and persisted for the next scan.
+  ///   1. **Gmail OAuth** (`GmailApiAdapter`, platformId='gmail'):
+  ///      account-wide historyId cursor stored in `accounts.last_history_id`.
+  ///      First scan -> full fetch + capture historyId. Subsequent scans ->
+  ///      `users.history.list` from cursor. On expiry -> fall back to full
+  ///      fetch + re-capture.
   ///
-  /// Note: Gmail's history.list returns ALL changed messages in the configured
-  /// time window (subject to ~7-day expiry), independent of the `daysBack`
-  /// parameter. The `daysBack` parameter only matters for the full-fetch path
-  /// (first scan or expired fallback).
+  ///   2. **IMAP-backed providers** (`GenericIMAPAdapter`, platformId
+  ///      in {'aol', 'gmail-imap', 'yahoo', 'imap', ...}): per-folder UID
+  ///      cursor stored in `account_folder_cursors` keyed by
+  ///      (accountId, folderName, 'imap_uid'). First scan -> full fetch +
+  ///      capture max UID. Subsequent scans -> `UID SEARCH UID lastUid+1:*`.
+  ///      No "expired" state (UIDs are monotonically increasing).
+  ///
+  ///   3. **Other** (demo, etc.): provider-agnostic full-folder fetch via
+  ///      `platform.fetchMessages` -- no cursor, no incremental.
+  ///
+  /// All three paths persist the new cursor after a successful scan so the
+  /// next scan resumes correctly. After a Gmail-expiry fallback or an IMAP
+  /// first scan, the cursor is captured for the next run.
   Future<List<EmailMessage>> _fetchFolderMessages({
     required SpamFilterPlatform platform,
     required String folderName,
     required int daysBack,
   }) async {
-    // Non-Gmail platforms: provider-agnostic full-folder fetch (existing path).
-    if (platform is! GmailApiAdapter) {
-      return platform.fetchMessages(
-        daysBack: daysBack,
-        folderNames: [folderName],
-      );
+    if (platform is GmailApiAdapter) {
+      return _fetchFolderMessagesGmail(platform, folderName, daysBack);
     }
+    if (platform is GenericIMAPAdapter) {
+      return _fetchFolderMessagesImap(platform, folderName, daysBack);
+    }
+    // Other (demo, etc.) -- no incremental, full fetch.
+    return platform.fetchMessages(
+      daysBack: daysBack,
+      folderNames: [folderName],
+    );
+  }
 
-    final gmail = platform;
+  Future<List<EmailMessage>> _fetchFolderMessagesGmail(
+    GmailApiAdapter gmail,
+    String folderName,
+    int daysBack,
+  ) async {
     final dbHelper = DatabaseHelper();
     final lastHistoryId = await dbHelper.getLastHistoryId(accountId);
 
@@ -795,6 +810,49 @@ class EmailScanner {
       await dbHelper.setLastHistoryId(accountId, result.newHistoryId);
       AppLogger.scan(
           'Step 4: Persisted new historyId=${result.newHistoryId} after incremental scan');
+    }
+    return result.emails;
+  }
+
+  Future<List<EmailMessage>> _fetchFolderMessagesImap(
+    GenericIMAPAdapter imap,
+    String folderName,
+    int daysBack,
+  ) async {
+    final dbHelper = DatabaseHelper();
+    final cursorStr = await dbHelper.getFolderCursor(accountId, folderName);
+    final lastUid = cursorStr == null ? null : int.tryParse(cursorStr);
+
+    if (lastUid == null) {
+      // First-ever scan for this (account, folder). Full-fetch (honoring
+      // daysBack), then capture the current max UID so subsequent scans
+      // can run incrementally.
+      AppLogger.scan('Step 4: IMAP first-scan for $folderName -- full fetch (daysBack=$daysBack)');
+      final messages = await imap.fetchMessages(
+        daysBack: daysBack,
+        folderNames: [folderName],
+      );
+      final maxUid = await imap.getCurrentMaxUid(folderName);
+      if (maxUid != null) {
+        await dbHelper.setFolderCursor(accountId, folderName, maxUid.toString());
+        AppLogger.scan('Step 4: Persisted initial UID cursor=$maxUid for $accountId / $folderName');
+      }
+      return messages;
+    }
+
+    // Subsequent scan: only UIDs greater than the persisted cursor.
+    AppLogger.scan('Step 4: IMAP incremental scan for $folderName from UID > $lastUid');
+    final result = await imap.fetchMessagesIncremental(
+      startUid: lastUid,
+      folderName: folderName,
+    );
+
+    // Always persist the new cursor (even when result.emails is empty,
+    // result.newCursor advances if the mailbox grew). This prevents the
+    // next scan from re-checking already-scanned UIDs.
+    if (result.newCursor != lastUid) {
+      await dbHelper.setFolderCursor(accountId, folderName, result.newCursor.toString());
+      AppLogger.scan('Step 4: Persisted new UID cursor=${result.newCursor} after incremental scan');
     }
     return result.emails;
   }

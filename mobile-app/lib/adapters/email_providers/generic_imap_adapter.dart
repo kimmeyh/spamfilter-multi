@@ -280,6 +280,107 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     return messages;
   }
 
+  /// Sprint 38 Round 1 (extending F6c Phase 2 to IMAP): fetch only messages
+  /// with a UID strictly greater than [startUid] in [folderName]. Returns
+  /// the list of new emails plus the new highest-UID-seen for the caller
+  /// to persist as the next scan's cursor.
+  ///
+  /// Used by EmailScanner._fetchFolderMessages for the per-folder
+  /// incremental scan path. Unlike Gmail's history.list (which is
+  /// account-wide and has a ~7-day expiry window), IMAP UID cursors are
+  /// per-mailbox and never "expire" -- UIDs are monotonically increasing
+  /// per RFC 3501 (subject to UIDVALIDITY changes; not handled in V1
+  /// because UIDVALIDITY changes are rare for established mailboxes).
+  ///
+  /// Returns ImapIncrementalFetchResult.empty() when no new UIDs exist
+  /// (caller still persists the cursor, which advances on every server
+  /// state change). Throws on connection errors.
+  Future<ImapIncrementalFetchResult> fetchMessagesIncremental({
+    required int startUid,
+    required String folderName,
+  }) async {
+    if (_imapClient == null) {
+      _logger.e('[IMAP] fetchMessagesIncremental called but _imapClient is NULL');
+      throw ConnectionException('Not connected - call loadCredentials first');
+    }
+
+    _logger.i('[IMAP] fetchMessagesIncremental: startUid=$startUid, folder=$folderName');
+
+    try {
+      await _selectMailbox(folderName);
+
+      // UID lastUid+1:* = "every UID strictly greater than lastUid up
+      // through the end of the mailbox". Standard RFC 3501 syntax.
+      final lowerBound = startUid + 1;
+      final searchCriteria = 'UID $lowerBound:*';
+      _logger.i('[IMAP] fetchMessagesIncremental: UID SEARCH criteria="$searchCriteria"');
+
+      final searchResult = await _imapClient!.uidSearchMessages(
+        searchCriteria: searchCriteria,
+      );
+
+      final sequence = searchResult.matchingSequence;
+      if (sequence == null || sequence.isEmpty) {
+        _logger.i('[IMAP] fetchMessagesIncremental: no new UIDs since $startUid');
+        return ImapIncrementalFetchResult.empty(newCursor: startUid);
+      }
+
+      // Compute the new cursor BEFORE the per-message fetch in case any
+      // individual message fetch fails -- we still want to advance the
+      // cursor past the IDs we successfully discovered, since rerunning
+      // the search next time would just discover them again.
+      var maxUid = startUid;
+      for (final id in sequence.toList()) {
+        if (id > maxUid) maxUid = id;
+      }
+
+      _logger.i('[IMAP] fetchMessagesIncremental: found ${sequence.length} new UIDs in $folderName (new cursor=$maxUid)');
+
+      final fetched = await _fetchMessageDetails(sequence, folderName);
+      _logger.i('[IMAP] fetchMessagesIncremental: fetched ${fetched.length} message details');
+
+      return ImapIncrementalFetchResult(
+        emails: fetched,
+        newCursor: maxUid,
+      );
+    } catch (e, st) {
+      _logger.e('[IMAP] fetchMessagesIncremental ERROR for $folderName: $e\n$st');
+      rethrow;
+    }
+  }
+
+  /// Sprint 38 Round 1: returns the current highest UID in [folderName],
+  /// or null if the folder is empty / not selectable. Used by
+  /// EmailScanner._fetchFolderMessages to capture an initial cursor
+  /// AFTER a full first-scan so subsequent scans can run incrementally.
+  Future<int?> getCurrentMaxUid(String folderName) async {
+    if (_imapClient == null) {
+      _logger.e('[IMAP] getCurrentMaxUid called but _imapClient is NULL');
+      throw ConnectionException('Not connected - call loadCredentials first');
+    }
+    try {
+      await _selectMailbox(folderName);
+      // UID 1:* matches every existing UID; we then take the max.
+      final searchResult = await _imapClient!.uidSearchMessages(
+        searchCriteria: 'UID 1:*',
+      );
+      final seq = searchResult.matchingSequence;
+      if (seq == null || seq.isEmpty) {
+        _logger.i('[IMAP] getCurrentMaxUid: $folderName is empty');
+        return 0; // cursor of 0 means "next scan picks up everything from UID 1"
+      }
+      var maxUid = 0;
+      for (final id in seq.toList()) {
+        if (id > maxUid) maxUid = id;
+      }
+      _logger.i('[IMAP] getCurrentMaxUid: $folderName -> $maxUid');
+      return maxUid;
+    } catch (e) {
+      _logger.e('[IMAP] getCurrentMaxUid ERROR for $folderName: $e');
+      return null;
+    }
+  }
+
   @override
   Future<List<EvaluationResult>> applyRules({
     required List<EmailMessage> messages,
@@ -983,4 +1084,31 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     if (lowerName.contains('archive')) return CanonicalFolder.archive;
     return CanonicalFolder.custom;
   }
+}
+
+/// Sprint 38 Round 1 (extending F6c Phase 2 to IMAP): result of an
+/// incremental IMAP UID-since fetch.
+///
+/// `emails` is the list of messages with UID > startUid (empty if no new
+/// messages exist). `newCursor` is the highest UID seen during this scan
+/// -- caller persists it as `account_folder_cursors.cursor_value` so the
+/// next scan resumes from `newCursor + 1`.
+///
+/// Unlike Gmail's IncrementalFetchResult there is no `expired` state for
+/// IMAP. UIDs are monotonically increasing per RFC 3501 (subject to
+/// UIDVALIDITY changes; if UIDVALIDITY changes mid-mailbox, the
+/// `UID startUid+1:*` search returns zero results and the scan
+/// silently picks up from the new UIDVALIDITY -- a rare edge case
+/// acceptable for V1).
+class ImapIncrementalFetchResult {
+  final List<EmailMessage> emails;
+  final int newCursor;
+
+  const ImapIncrementalFetchResult({
+    required this.emails,
+    required this.newCursor,
+  });
+
+  factory ImapIncrementalFetchResult.empty({required int newCursor}) =>
+      ImapIncrementalFetchResult(emails: const [], newCursor: newCursor);
 }
