@@ -26,7 +26,12 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
-### 2026-05-18 (Sprint 38 Phase 7 close-out: retrospective + 10 IMPs applied)
+### 2026-05-18 (Sprint 38 Phase 7 follow-up: CLAUDE.md size reduction below 40K)
+- **chore**: Reduced `CLAUDE.md` from 46,220 -> 38,747 bytes (16% reduction; 1,253-byte buffer below 40K threshold) while preserving full content via pointers. Three extractions applied (A, B, D from Harold's review):
+  - **A**: "Changelog Policy" section moved to new `docs/CHANGELOG_POLICY.md` (full GitFlow / Adding Entries / Releasing / Best Practices). CLAUDE.md now carries a 1-paragraph quick-rule + pointer.
+  - **B**: "Model-Version Pitfalls (Living Appendix)" section moved to new memory entry `feedback_opus_pitfalls.md` (Opus 4.7 fully populated; Opus 4.6 placeholder for Sprint 39 IMP-8 side-by-side). CLAUDE.md now carries a 2-paragraph pointer; memory is auto-loaded at session start.
+  - **D**: Merged the two `## Development Workflow` sections (lines 57 and 635 pre-edit) into one consolidated section at line 57; deleted the duplicate.
+- Skipped C/E/F proposals at Harold's direction.
 - **docs**: Sprint 38 retrospective complete with 4 roles x 14 categories. 10 improvements proposed (IMP-1 through IMP-10); all 10 approved for "Now" application before Sprint 39. (`docs/sprints/SPRINT_38_RETROSPECTIVE.md`, `docs/sprints/SPRINT_38_SUMMARY.md`)
 - **docs**: Master plan updated -- "Last Completed Sprint" set to Sprint 38; "Past Sprint Summary" row added; Sprint 39 carry-ins (S38-CI-1 through S38-CI-7) loaded into "Next Sprint Candidates". (`docs/ALL_SPRINTS_MASTER_PLAN.md`)
 - **chore (IMP-2)**: `docs/SPRINT_STOPPING_CRITERIA.md` Criterion 9 clarified: wall-clock hours are NOT a stop signal by themselves; only stop on time if total sprint estimate exceeds 400 wall-clock hours AND the threshold has been met. New memory `feedback_stopping_400hr.md`.

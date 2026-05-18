@@ -56,12 +56,18 @@ If any check fails, **STOP and resolve with user before accepting work**.
 
 ## Development Workflow
 
-Give Claude verification loops for 2-3x quality improvement:
+**Setup**:
+1. Follow `mobile-app/NEW_DEVELOPER_SETUP.md` for validated Windows 11 setup
+2. Configure `secrets.dev.json` with Gmail and/or AOL credentials
+3. Build:
+   - Windows: `.\scripts\build-windows.ps1`
+   - Android: `.\scripts\build-with-secrets.ps1 -BuildType debug -InstallToEmulator`
 
+**Per-change verification loop** (give Claude 2-3x quality improvement):
 1. Make changes
-3. Run tests
-4. Lint before committing
-5. Commit changes and sync to repository
+2. Run tests: `flutter test`
+3. Lint before committing: `flutter analyze`
+4. Commit changes and sync to repository
 5. Before creating PR: run full lint and test suite
 
 ## [WARNING] CRITICAL: Pull Request Branch Policy
@@ -632,109 +638,15 @@ For comprehensive troubleshooting, see `docs/TROUBLESHOOTING.md`.
 - **Windows OAuth Fails**: Ensure `secrets.dev.json` contains `WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET`
 - **Git Not Tracking Files**: Fixed Dec 2025 - update `.gitignore`
 
-## Development Workflow
-
-1. **Setup**: Follow `mobile-app/NEW_DEVELOPER_SETUP.md` for validated Windows 11 setup
-2. **Secrets**: Configure `secrets.dev.json` with Gmail and/or AOL credentials
-3. **Build**:
-   - Windows: `.\scripts\build-windows.ps1`
-   - Android: `.\scripts\build-with-secrets.ps1 -BuildType debug -InstallToEmulator`
-4. **Test**: `flutter test` (verify all 185 tests passing)
-5. **Analyze**: `flutter analyze` (ensure 0 issues)
-
 ## Changelog Policy
 
-This project follows [Keep a Changelog](https://keepachangelog.com/) conventions.
-
-### Adding Entries (During Development)
-
-**CHANGELOG.md** should be updated with each commit that introduces user-facing changes:
-
-1. **When to Update**: Update CHANGELOG.md in the same commit as the code changes (not after PR merge)
-2. **Format**: `- **type**: Description (Issue #N)` where type is:
-   - `feat`: New feature or enhancement
-   - `fix`: Bug fix
-   - `chore`: Maintenance, refactoring, dependencies
-   - `docs`: Documentation only changes
-   - `test`: Adding or updating tests
-3. **Location**: Add entries under `## [Unreleased]` section, grouped by date (newest first)
-4. **Issue References**: Always include GitHub issue number when applicable
-5. **Commit Together**: Stage CHANGELOG.md with the related code changes in a single commit
-
-**Example Entry**:
-```markdown
-### 2026-01-12
-- **feat**: Update Results screen to show folder - subject - rule format (Issue #47)
-- **feat**: Add AOL Bulk/Bulk Email folder recognition as junk folders (Issue #48)
-```
-
-### Releasing (After PR Merge to main)
-
-This project uses **GitFlow**: feature branches -> `develop` -> `main`
-
-- **PRs to `develop`**: Entries stay in `[Unreleased]` - these are integration builds
-- **PRs to `main`**: Move entries from `[Unreleased]` to a versioned release - these are production releases
-
-When `develop` is merged to `main`, create a versioned release:
-
-1. **Check for merged PRs to develop**: Review what is included since last release
-   ```powershell
-   # PRs merged to develop since a date
-   gh pr list --state merged --base develop --json number,title,mergedAt
-
-   # Commits on develop not yet on main
-   git rev-list --count origin/main..origin/develop
-   ```
-
-2. **Create version section**: Move relevant `[Unreleased]` entries to a new version heading
-   ```markdown
-   ## [1.0.0] - 2026-01-12
-   ### 2026-01-12
-   - **feat**: Update Results screen format (Issue #47)
-   ...
-
-   ## [Unreleased]
-   (empty or new entries since release)
-   ```
-
-3. **Version numbering**: Follow [Semantic Versioning](https://semver.org/)
-   - **MAJOR**: Breaking changes or major milestones (Phase releases)
-   - **MINOR**: New features (feat)
-   - **PATCH**: Bug fixes (fix)
-
-4. **Update Version History**: Add summary to the `## Version History` section at bottom of CHANGELOG.md
-
-5. **Link versions**: Add comparison links at bottom of CHANGELOG.md
-   ```markdown
-   [1.0.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.9.0...v1.0.0
-   [Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v1.0.0...HEAD
-   ```
-
-### Best Practices
-
-- **Human-readable**: Write for users, not developers. Focus on "what changed" not "how"
-- **Group by date**: Keep daily entries together for easy scanning
-- **Do not delete**: Never remove entries; move them to versioned sections
-- **PR description**: Use CHANGELOG entries as basis for PR descriptions
+Full policy (Adding Entries, Releasing, GitFlow, version numbering, link headers, Best Practices): **`docs/CHANGELOG_POLICY.md`**. Quick rule: update `CHANGELOG.md` in the same commit as user-facing code changes, under `## [Unreleased]`, grouped by date (newest first). Format: `- **type**: Description (Issue #N)` where type is `feat` | `fix` | `chore` | `docs` | `test`. Releases happen when `develop` is merged to `main` (user-only).
 
 ## Model-Version Pitfalls (Living Appendix)
 
-A short list of behaviors observed in specific Claude model versions that cost wall-clock time during sprint execution. Each entry: what to avoid, what to do instead, when surfaced. Update this list during retros. Useful for self-correction within a session and for measuring whether new model versions still exhibit the same issues.
+Living appendix of behaviors observed in specific Claude model versions that cost wall-clock time during sprint execution lives in memory: **`feedback_opus_pitfalls.md`** (auto-loaded with the rest of memory at session start).
 
-**Opus 4.7 (added Sprint 35 retro, 2026-04-19)**:
-
-- **Asking permission to cross phase boundaries.** When Phase N work completes and Phase N+1 begins, do not ask "want me to proceed to Phase N+1?". Sprint plan approval at Phase 3 covers Phases 4-7. State the next action and execute it. See CLAUDE.md §"Phase Auto-Advance Rule" (item 7 under "Development Philosophy") and SPRINT_EXECUTION_WORKFLOW.md Phase 3.7 "Standing Approval Inventory".
-- **Re-reading SPRINT_CHECKLIST.md / SPRINT_EXECUTION_WORKFLOW.md per phase.** These docs total >1500 lines. Re-loading them every phase costs context tokens and wall-clock seconds. Hold a compact mental model of the current phase from a single read at sprint start; re-read only on actual uncertainty (not as a routine checkpoint). The 1-page Phase Cheat Sheet (P3 backlog item, Sprint 36) will reduce the cost of those rare re-reads.
-- **Asking before committing/pushing/PR-updating during sprint execution.** All three are in the Phase 3.7 Standing Approval Inventory [OK] list. Do not ask -- execute, then report what shipped. The only exceptions are the [FAIL] list items (force-push, reset --hard, etc.).
-- **Calling things "critical bug" before checking the source.** Sprint 35: I called the Settings header dialog a critical bug; it was intended behavior documented in `_openSettings()`. Verify intent against source before alarming framing -- a 30-second source check beats a 90-second retraction.
-- **Asking "want me to proceed to Phase 7?" after Phase 6 completes.** Phase 7 (Sprint Review) is mandatory per CLAUDE.md §"Phase 7 Sprint Review (4 ROLES x 14 CATEGORIES)". Always-execute, never-ask. Send the retro prompt, draft Claude feedback in parallel, follow the 7-Step Protocol verbatim.
-- **Leaving the sprint PR in draft state through close-out.** Sprint 35 escape: PR #238 was created as draft per Phase 3.3.1 (correct -- early visibility) but stayed draft through Phase 6 and Phase 7 because no enumerated step required flipping it. Harold had to surface the issue manually, blocking merge. Phase 6.4.5 now mandates `gh pr ready <PR-number>` after Copilot review and before user notification. Verify with `gh pr view <PR-number> --json isDraft,mergeable` showing `isDraft: false`, `mergeable: MERGEABLE`.
-- **Skipping Phase 1 Backlog Refinement.** Sprint 36 escape: I jumped from Phase 2 (dependency check) straight to Phase 3 plan drafting without presenting the candidate list to Harold in BACKLOG_REFINEMENT.md format. The prior "OPTIONAL - On-Demand" language in SPRINT_EXECUTION_WORKFLOW.md was the loophole. Harold caught it post-facto, and Phase 1 is now MANDATORY every sprint with no PO request needed (Sprint 36 policy change, 2026-04-20). Do NOT ask "should we do backlog refinement?" -- just run Phase 1.1 / 1.2 / 1.3 as the first step of every sprint. Present candidates in bullet-list format (NOT grid tables) grouped by priority tier, with HOLD items at bottom.
-- **Improvising around the Sprint Execution docs when following them would feel slower in the moment.** Sprint 36 retro Category 9 (PO/SM/LD): "general unwillingness to follow the Sprint Execution Docs, /docs, checklist... and just try to wing it when winging it is costly to the overall process". Concrete failure modes I exhibited across Sprints 34-36: (a) reading SPRINT_N_PLAN.md from scratch on session resume instead of running `/startup-check` first; (b) starting Task 1 without checking TaskList; (c) starting Task 1 without verifying Phase 3.7 approval evidence; (d) writing SPRINT_N_PLAN.md without running the Phase 3.2.2.1 plan-to-branch-state verification gate; (e) skipping the Phase 5.1.1 sibling-test sweep when the data change "obviously" did not affect siblings; (f) running `flutter` commands directly when the project standard is the PowerShell scripts in `mobile-app/scripts/`. The pattern: each individual skip "feels faster" by 30-60 seconds, but the resulting escapes (stale plan tasks, wrong file paths, unapproved Phase 4 starts, missed UX widget tests, broken siblings) cost minutes-to-hours per incident plus interaction overhead with Harold. **Corrective behavior**: at every phase boundary, do the listed checklist step BEFORE the productive work. The checklist is the cheap, fast path; "winging it" is the expensive path that feels cheap. If you catch yourself thinking "I know what to do, the checklist is just overhead," that is the signal to run the checklist step.
-
-**How to use this list at the start of a session**: When CLAUDE.md is auto-loaded, scan this section. If the current task involves any pattern listed here, treat the listed corrective behavior as a hard constraint, not a suggestion.
-
-**How to maintain**: At each sprint retro, add new entries observed during that sprint (Category 9 Process Issues output). Remove entries when a model version known to exhibit the issue is retired. Keep the list short -- if entries become too numerous, reorganize by category (autonomy, communication, documentation, etc.).
+Scan that file when the active model matches any version block in it; treat listed corrective behaviors as hard constraints. Update at each sprint retro from Category 9 (Process Issues) output. Currently populated for Opus 4.7 (Sprints 35-38); Opus 4.6 placeholder pending Sprint 39 IMP-8 side-by-side eval (S38-CI-7).
 
 ## Known Limitations
 
