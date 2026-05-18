@@ -83,14 +83,14 @@ These documents MUST be created/updated during each sprint:
 
 - [ ] Local code review complete
 - [ ] **Automated code review**: Run `pr-review-toolkit:code-reviewer` agent on sprint diff (always include related-patterns grep step); for cross-cutting policy sprints, run a second feature-sweep pass; address HIGH/CRITICAL findings (see SPRINT_EXECUTION_WORKFLOW.md § 5.1.1)
+- [ ] **5.1.5 WinWright UI Test Sweep** (MANDATORY -- Sprint 38 retro): update WinWright scripts for sprint UI changes; run all scripts that exercise sprint-touched screens; fix in-sprint or backlog (see SPRINT_EXECUTION_WORKFLOW.md § 5.1.5). If no WinWright coverage exists for sprint's UI surface, file a Sprint N+1 carry-in.
 - [ ] Full test suite passing (`flutter test`)
 - [ ] Code analysis clean (`flutter analyze` - target <50 warnings)
 - [ ] Risk mitigations validated
-- [ ] **Desktop E2E tests** (if UI changes): Run winwright accessibility tests on affected screens (see `docs/WINWRIGHT_SELECTORS.md`)
 - [ ] **App built for user testing** (Windows: `build-windows.ps1`)
 - [ ] **Platform-specific UI verified** at native level (Win32 window title, system tray, notifications) -- Flutter UI layer may not control platform-level behavior (learned Sprint 21)
-- [ ] Manual testing complete (user)
-- [ ] Issues from testing fixed
+- [ ] **Manual integration testing complete (Lead Developer)** -- this is a LOOP, not a single step. Each round of testing feedback can produce in-sprint fixes OR backlog additions; do not move to Code Review until the Lead Developer explicitly notes testing complete (see SPRINT_EXECUTION_WORKFLOW.md "Canonical Next Steps progression")
+- [ ] Issues from testing fixed (in-sprint) or filed (backlog)
 
 **[CHECKPOINT]** Review Phase 6 checklist before proceeding. **[CONTEXT CHECK]** Verify context < 85% before starting Phase 6.
 

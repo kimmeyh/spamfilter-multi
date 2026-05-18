@@ -102,6 +102,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 35 | docs/sprints/SPRINT_35_RETROSPECTIVE.md | [OK] Complete | Apr 19, 2026 |
 | 36 | docs/sprints/SPRINT_36_RETROSPECTIVE.md | [OK] Complete | Apr 20-25, 2026 |
 | 37 | docs/sprints/SPRINT_37_RETROSPECTIVE.md | [OK] Complete | Apr 27 - May 1, 2026 |
+| 38 | docs/sprints/SPRINT_38_RETROSPECTIVE.md | [OK] Complete | May 5-18, 2026 |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -109,19 +110,25 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 37** (April 27 -- May 1, 2026)
-- **Type**: Mixed (bug fix + perf optimization + build infrastructure + retrospective improvements)
-- **Feature**: 3 main tasks (BUG-S36-1 Issue #246; F6 Issue #247; F52 Phase 1 Issue #248) + 7 retrospective IMPs applied at Phase 7
+**Sprint 38** (May 5 -- May 18, 2026)
+- **Type**: Mixed (UX progress indicator + IMAP incremental scans + Gmail batch + live reload + selection + content management + bug fix)
+- **Feature**: 8 planned tasks shipped + 1 added mid-sprint (Task 2b PowerShell integration test) + 10 rounds of post-Phase-5.3 manual-testing fixes + 10 Phase 7 retrospective IMPs applied
 - **Delivered**:
-  - BUG-S36-1 (Issue #246): Manual rule semantic subsumption pre-insert check. Coverage matrix (`exact_email` covered by `exact_domain`/`entire_domain`; `exact_domain` covered by `entire_domain`; `entire_domain` not covered; TLD no overlap). 14 new unit tests. New `SubsumingRuleInfo` type carries the covering-rule details to the user-facing validation error.
-  - F6a/F6b/F6c (Issue #247): Gmail scan-path optimization. F6a parallelized `messages.get` via `Future.wait` (~10x fetch speedup); F6b added optional server-side label exclusion via new `setExcludedLabels(...)`; F6c shipped the Gmail historyId adapter (`fetchMessagesIncremental(startHistoryId)` returns `IncrementalFetchResult` full / partial / expired). DB schema v3 -> v4 migration adds `last_history_id` column to `accounts`. EmailScanProvider wiring tracked separately for Sprint 38 (Issue #250).
-  - F52 Phase 1 (Issue #248): Windows distinct .exe + dirs. `dist/dev/MyEmailSpamFilter-Dev.exe` + `dist/prod/MyEmailSpamFilter.exe` coexist on disk; build-windows.ps1 kills stale Dart VMs before flutter clean and direct-launches the variant binary (no Dart VM reattach). CMakeLists.txt bakes `SPAMFILTER_APP_ENV` at compile time so window title is correct in store/MSIX builds. F52 Phase 2 (Android flavors) deferred to Sprint 38 -- external Firebase Console + GCP setup prerequisites surfaced.
-  - Phase 7 retrospective improvements applied this sprint (7 IMPs): IMP-1 SelectableText on Manage Rules + Manage Safe Senders rows (UX); IMP-2 Help screen "Other ways to reduce junk email/mail/texts/phone calls" section (UX, sources FTC + DoNotCall.gov); IMP-6 Phase 6.4 Copilot review marked conditional in SPRINT_EXECUTION_WORKFLOW.md; IMP-7 new Phase 3.2.2.2 re-estimate-after-dependency-findings sub-step; IMP-8 F52 Phase 2 carry-in row in master plan (this section); IMP-9 Issue #250 created tracking F6c provider wiring; IMP-11 build-windows.ps1 fixes verified already-shipped mid-sprint.
-- **Backlog additions** (5 new items from Phase 7 Imp-3/4/5/10/12): F82 Scan Results "no rules" progress indicator (UX), F83 per-account Background Scanning separation (architecture, multi-sprint), BUG-S37-1 background scan SQLite "database is locked", BUG-S37-2 TLD data quality cleanup + ccTLD blocklist expansion (with 4 design-option scoping alternatives), F61 extended to cover Sprint 37 type/schema additions.
-- **Tests**: +29 in main sprint scope (BUG-S36-1 14, F6b 8, F6c 5+2) + 3 from Imp-2 widget tests = 1409 total passing / 0 failing / 0 analyzer issues. Imp-1 widget tests dropped (FakeAsync + sqflite_ffi `pumpWidget` incompatibility; trivial `Text -> SelectableText` swap covered by manual testing + code review).
-- **Effort**: ~5h main-sprint wall clock vs 23-31h estimate (~20% of estimate); +~2h Phase 7 IMPs application = ~7h total
-- **Retrospective**: docs/sprints/SPRINT_37_RETROSPECTIVE.md
-- **PR**: #249 (against develop)
+  - F87 (Settings icon): leading-icon clickable + Settings reorg.
+  - BUG-S37-1: background scan SQLite "database is locked" -- main.cpp read-only mutex probe + PowerShell integration test (Task 2b, added mid-sprint).
+  - F6c Phase 2 + Issue #250 extension: Gmail OAuth historyId incremental scans wired into EmailScanProvider; ALSO extended to IMAP-backed accounts via new `account_folder_cursors` DB v5 table + GenericIMAPAdapter `fetchMessagesIncremental(startUid, folderName)` using `UID SEARCH UID cursor:*`. Cursor semantics evolved Round 1->Round 4: from "max UID seen" (wrong -- skipped previously-no-rule emails) to **"oldest unaddressed no-rule UID"** per (account, folder); next scan re-fetches from cursor forward so the user's no-rule backlog stays visible until addressed. Cursor advances as rules are added; cleared per-folder when zero unaddressed remain (falls back to daysBack).
+  - F88 (Gmail batchGet): batched `users.messages.batchGet` for Gmail OAuth path (gmail-imap intentionally excluded -- IMAP has no batch endpoint per RFC 3501).
+  - F86 (live rule reload): post-scan-complete reload + post-rule-add reload pattern; rejected mid-scan rebuild in Round 1 retro.
+  - F84 Sub-task A (Ctrl+A select-all): correctly selects all rows in a virtualized list. Sub-tasks B (Shift+Click extend) and C (Ctrl+Click-drag disjoint) deferred to Sprint 39 backlog.
+  - F82 (Scan Results "No rule" progress indicator + cross-screen rule-add reload): footer "M of N No rule emails addressed -- K remaining" with progress bar; chip count updates; matched rows hide on inline AND cross-screen rule-add. Required 5 rounds (5, 7, 8, 9 post-test fixes) to converge: Round 5 populated historical EmailMessage `headers` map; Round 7 added re-eval on Scan History re-entry; Round 8 reordered re-eval before first paint; Round 9 decoupled `_hiddenEmailKeys` from scanMode for read-only viewing.
+  - F85 (content-management ADR): ADR-0038 + asset manifest + 20 help/*.md files + loader for >500-char user-facing strings.
+  - Phase 7 retrospective improvements applied this sprint (10 IMPs): IMP-1 new `/sprint-compact` skill + `docs/SPRINT_RESUME_GUIDE.md`; IMP-2 SPRINT_STOPPING_CRITERIA Criterion 9 clarified (400hr threshold); IMP-3 Decision-Class Checkpoint Protocol added to SPRINT_EXECUTION_WORKFLOW.md; IMP-4 canonical "Next Steps" progression codified; IMP-5 WinWright Phase 5.1.5 made mandatory; IMP-6 widget test for `_loadLastCompletedScan` added to Sprint 39 plan; IMP-7 new `feedback_echo_requirements.md` memory; IMP-8 Opus 4.6 vs 4.7 side-by-side eval added to Sprint 39 plan; IMP-9 Sprint 39 carry-ins recorded in this master plan; IMP-10 Decision-Class Taxonomy added to CLAUDE.md "Things Claude Should NOT Do".
+- **Backlog additions** (Sprint 39 carry-ins from Sprint 38 retro Category 13/14): see "Sprint 39 Carry-Ins (Sprint 38 retrospective)" subsection below in "Next Sprint Candidates".
+- **Tests**: 1455 passing / 28 skipped / 0 failed (vs 1437 entering sprint = +18 from this sprint scope); flutter analyze: 0 issues.
+- **Effort**: ~7h main-sprint Phase 4 wall clock + ~14h Phase 5.3 manual testing across 10 rounds of fixes + ~3h Phase 7 retro and IMP application = ~24h total (vs estimate range 16-24h). 400-hr threshold not approached.
+- **Retrospective**: docs/sprints/SPRINT_38_RETROSPECTIVE.md
+- **PR**: #258 (against develop)
+- **Key process changes**: Decision-Class Checkpoint Protocol (Class 1 architecture / Class 2 development / Class 3 sprint execution decisions need Chief signoff at natural breaks -- sprint-plan approval at Phase 3.7 is NOT durable for these). Wall-clock hours are no longer a stop signal below 400-hr estimate. WinWright sweep now mandatory in Phase 5.1.5.
 
 ---
 
@@ -130,6 +137,56 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 **Last Reviewed**: April 16, 2026 (Sprint 33 completion -- removed F53, F54, F55, F65, F66, SEC-1b, SEC-8, SEC-14, SEC-19, SEC-22 and partial SEC-11)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
+
+### Sprint 39 Carry-Ins (Sprint 38 retrospective, 2026-05-18)
+
+These items were filed during Sprint 38 retrospective and are pre-loaded for the Sprint 39 plan. They are listed here because they came from Category 13 (Minor function updates for the next sprint plan) AND from Sprint 38 deferred-scope items. The Sprint 39 Backlog Refinement (Phase 1) confirms what enters the Sprint 39 plan.
+
+**S38-CI-1. Window X-close button fix (~1-3h) Priority 80**
+- Phase: Bug fix
+- Platform: Windows desktop
+- Symptom: The X close button in the Windows 11 title bar of MyEmailSpamFilter does NOT close the application. Other window controls work; only X is broken. (Image attachment pending from Harold.)
+- Investigation hints: check `mobile-app/windows/runner/main.cpp` and `flutter_window.cpp` for WM_CLOSE message handling, and Flutter `WindowListener` / `window_manager` plugin configuration.
+- Source: Sprint 38 retro Category 13.
+
+**S38-CI-2. Settings > Manual Scan + Background: relocate "Default folders are account-specific" info card (~1h) Priority 70**
+- Phase: UX polish
+- Platform: All
+- Today: the info card "Default folders are account-specific. Select an account first, then configure in Account Details > Folders." sits at the top of the Manual Scan tab. The Background tab does not show it.
+- Change: move the info card to immediately BELOW the "Default Folders" section header on Manual Scan tab; ADD the same card in the same new position on the Background tab.
+- Source: Sprint 38 retro Category 13.
+
+**S38-CI-3. F84 Sub-tasks B + C: Shift+Click extend selection + Ctrl+Click-drag disjoint selection (~3-5h) Priority 65**
+- Phase: UX improvement
+- Platform: Windows desktop (primary); macOS + Linux parity
+- Source: Sprint 37 retro -> deferred from Sprint 38 (Sub-task A shipped only). Detail in F84 entry below.
+
+**S38-CI-4. IMAP cursor cap at daysBack-ago-UID (~2-3h) Priority 60**
+- Phase: Refinement of Sprint 38 F6c IMAP extension
+- Platform: All (cursor logic is in EmailScanner + results_display_screen)
+- Today: the per-(account, folder) `oldest_no_rule_uid` cursor advances as the user addresses no-rules and is cleared when zero unaddressed remain. But if no-rules arrive ~every 15 minutes (Harold's 2026-05-17 observation), the cursor never naturally clears -- it stays anchored at the oldest UID ever recorded for the folder.
+- Change: cap the cursor at the UID that corresponds to `now - daysBack` so the no-rule backlog is bounded by the user's configured retention window. Older-than-daysBack no-rules age out of the cursor naturally even if not addressed.
+- Source: Sprint 38 retro Category 13 + Round 4 deferred decision.
+
+**S38-CI-5. F88 IMAP batch equivalent (~research first, ~2-6h if shippable) Priority 40 -- HOLD until research complete**
+- Phase: Performance investigation
+- Platform: IMAP-backed accounts (aol, yahoo, gmail-imap, custom)
+- IMAP has no batch endpoint per RFC 3501 -- F88 in Sprint 38 covered Gmail OAuth only. Investigate whether IMAP `FETCH 1,2,5,7:9 (BODY.PEEK[HEADER] BODY.PEEK[TEXT])` multi-set syntax provides comparable batching savings, and what the optimal set size is.
+- Source: Sprint 38 retro Category 13 + F88 scope decision.
+
+**S38-CI-6. Widget test for `_loadLastCompletedScan` cross-screen reload (~2h) Priority 70 -- testing debt**
+- Phase: Testing
+- Platform: Unit/widget test (Flutter)
+- Add a widget test covering: open historical scan in Scan Results, mutate `RuleSetProvider` rules out-of-band (simulating Settings > Manage Rules > +), re-enter the scan, assert chip count + footer "M of N" + `_hiddenEmailKeys` reflect the new rule on FIRST paint (not after filter toggle).
+- Sprint 38 Rounds 7/8/9 were three iterations of the same regression that a single such test would have caught in one go.
+- Source: Sprint 38 retro Category 2 (Testing Approach) + Category 14 (Claude addition).
+
+**S38-CI-7. Opus 4.6 vs 4.7 side-by-side prompt evaluation (~3-4h, procedural) Priority 50**
+- Phase: Process / model evaluation
+- Pick one representative Sprint 39 task. Run it on Opus 4.6 (record diff, rounds-to-converge, decision-flagging quality, sibling-mirroring discipline). Run the next task on Opus 4.7. Compare on the same dimensions. Document the comparison in the Sprint 39 retro.
+- Source: Sprint 38 retro Category 5 (Model Assignments) + Category 14.
+
+---
 
 ### Core App
 

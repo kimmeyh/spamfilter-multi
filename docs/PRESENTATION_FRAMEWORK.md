@@ -375,7 +375,7 @@ Everything Claude needs to know, read automatically at session start:
 - Coding style (no contractions, no emojis, Logger not print)
 - Development workflow (sprints, not phases)
 - Branch policy (PRs to develop, never main)
-- Co-lead developer philosophy
+- Lead developer philosophy
 - Sprint autonomy rules (do not stop for per-task approval)
 - Platform constraints (Windows primary, PowerShell, no jq/sed/awk)
 
@@ -440,7 +440,7 @@ Everything Claude needs to know, read automatically at session start:
 | Chief Architect | Final architectural decisions, ADR approval |
 | Chief Developer | PR approval, manual testing, merge-to-main authority |
 | Scrum Master | Sprint ceremonies, timeline, scope discipline |
-| Lead Test Engineer | Test strategy, exploratory testing, quality approval |
+| Chief  Test Engineer | Test strategy, exploratory testing, quality approval |
 
 **Claude Code Team Roles**:
 

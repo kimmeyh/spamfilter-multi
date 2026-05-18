@@ -26,6 +26,16 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-05-18 (Sprint 38 Phase 7 close-out: retrospective + 10 IMPs applied)
+- **docs**: Sprint 38 retrospective complete with 4 roles x 14 categories. 10 improvements proposed (IMP-1 through IMP-10); all 10 approved for "Now" application before Sprint 39. (`docs/sprints/SPRINT_38_RETROSPECTIVE.md`, `docs/sprints/SPRINT_38_SUMMARY.md`)
+- **docs**: Master plan updated -- "Last Completed Sprint" set to Sprint 38; "Past Sprint Summary" row added; Sprint 39 carry-ins (S38-CI-1 through S38-CI-7) loaded into "Next Sprint Candidates". (`docs/ALL_SPRINTS_MASTER_PLAN.md`)
+- **chore (IMP-2)**: `docs/SPRINT_STOPPING_CRITERIA.md` Criterion 9 clarified: wall-clock hours are NOT a stop signal by themselves; only stop on time if total sprint estimate exceeds 400 wall-clock hours AND the threshold has been met. New memory `feedback_stopping_400hr.md`.
+- **chore (IMP-3 + IMP-10)**: Decision-Class Checkpoint Protocol added to `docs/SPRINT_EXECUTION_WORKFLOW.md`; companion "Decision-Class Taxonomy: STOP, Surface, Wait" subsection added to `CLAUDE.md` "Things Claude Should NOT Do". Three classes (Class 1 Architecture / Class 2 Development / Class 3 Sprint Execution) require explicit Chief Architect / Chief Developer / Scrum Master signoff at natural breaks. New memory `feedback_decision_class_taxonomy.md`.
+- **chore (IMP-4)**: Canonical "Next Steps" progression codified in `docs/SPRINT_EXECUTION_WORKFLOW.md` and `docs/SPRINT_CHECKLIST.md`: Manual integration testing -> Loop on testing feedback -> Code review -> Sprint retrospective -> Merge -> Begin next sprint. Reordering not permitted.
+- **chore (IMP-5)**: WinWright UI Test Sweep made mandatory in Phase 5.1.5 (`docs/SPRINT_EXECUTION_WORKFLOW.md` + `docs/SPRINT_CHECKLIST.md`). Supersedes prior per-sprint conditional policy in `feedback_winwright_policy.md`.
+- **chore (IMP-7)**: New memory `feedback_echo_requirements.md` -- for multi-surface UI changes/refactors, echo the requirement back in one sentence and wait for confirmation.
+- **feat (IMP-1)**: New `/sprint-compact` skill (`.claude/skills/sprint-compact/SKILL.md`) -- produces a compact resume-string (<2K chars) for use with `/compact`. Replaces `/memory-save` for sprint resume; carries only volatile state (sprint name, phase, last/next steps, HEAD, branch). Companion `docs/SPRINT_RESUME_GUIDE.md` carries durable context (phase definitions, decision-class taxonomy, stopping criteria, file paths, 4-step resume sequence) so the compact-string stays small.
+
 ### 2026-05-18 (Sprint 38 Round 10: Settings per-account header on Account/Manual Scan/Background tabs)
 - **feat**: Settings > Account, Settings > Manual Scan, and Settings > Background tabs now show a single-line per-account header card "Account Settings - <email>" at the top, making it explicit which account these scoped settings apply to. The header is intentionally NOT shown on the General tab (those settings are cross-account). Email is loaded once during `_loadSettings` from SecureCredentialsStore and stored in a `_accountEmail` field so the header renders synchronously without per-tab FutureBuilders. The previous two-line "Account Settings / <email>" layout on the Account tab is replaced by the same single-line header. (Sprint 38 Round 10)
 

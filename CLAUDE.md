@@ -122,6 +122,40 @@ git merge develop
 - Don't assume file content from earlier reads - always re-read before editing after any significant work or context compaction
 - Don't use Linux-only tools on Windows (see Windows Tool Restrictions below)
 
+### [CRITICAL] Decision-Class Taxonomy: STOP, Surface, Wait
+
+**Source**: Sprint 38 retrospective, 2026-05-18 (Harold's PO/SM/LD feedback).
+
+Harold wears three distinct roles -- Chief Architect, Chief Developer, and Scrum Master. Claude is **not** authorized to make unilateral decisions in any of the three classes below. Sprint-plan approval at Phase 3 is durable authorization for tasks AS PLANNED -- it is NOT authorization to change architecture, change prior development decisions, or change the approved sprint scope.
+
+When a candidate change falls into one of these three classes, STOP, surface the decision to the user with the explicit phrasing pattern below, and WAIT for approval before implementing:
+
+**1. Architecture decisions (Chief Architect)**
+- Any change that downgrades, inverts, or replaces a prior architectural decision.
+- Examples: data-model changes, control-flow inversions, persistence semantic shifts, removal of an ADR-documented pattern, changes to the meaning of a stored value (e.g., Sprint 38 Round 4 inverted IMAP cursor from "max UID seen" to "oldest unaddressed UID").
+- Surface phrasing: "This would change a prior architectural decision: [describe the prior decision and the proposed change]. Should I proceed?"
+
+**2. Development decisions (Chief Developer)**
+- Any change to prior development decisions or established patterns.
+- Examples: function signature changes that affect callers, removed abstractions, ordering changes that affect downstream callers, semantic shifts in a field's meaning at runtime (e.g., Sprint 38 Round 8 changed `_initialNoRuleCount` from "snapshot at scan-completion" to "snapshot at re-entry").
+- Surface phrasing: "This would change a prior development decision: [describe the prior decision and the proposed change]. Should I proceed?"
+
+**3. Sprint execution decisions (Scrum Master)**
+- Any decision to shorten the sprint, de-scope an approved task, or defer an approved task to a future sprint -- UNLESS a `SPRINT_STOPPING_CRITERIA.md` criterion (1-9) is genuinely met AND the Scrum Master has approved.
+- Examples: marking a task "deferred to Sprint N+1" without SM approval, drafting "Next Steps" / "ready for retrospective" while approved tasks remain incomplete and no stopping criterion applies.
+- Surface phrasing: "This would change the approved sprint scope: [describe what is being deferred / de-scoped]. Should I proceed?"
+
+**When to surface**: at the next natural break in the interaction. Natural breaks are:
+- Backlog Refinement to Sprint Plan approval (Phase 1 → Phase 3)
+- Manual Testing (Phase 5.3)
+- Sprint Retrospective (Phase 7)
+
+Do NOT bury the decision inside a multi-task code change. Do NOT proceed and "ask in the retrospective." Surface it AT the natural break or BEFORE it if implementation is blocked.
+
+**If you catch yourself thinking** "this is just a small change, the user will be fine with it" -- that is the signal to STOP and surface. Sprint 38 had 10 rounds of fixes; multiple of those rounds contained class-1, class-2, or class-3 decisions that were not surfaced. The 400-hour stopping-criterion clarification in `docs/SPRINT_STOPPING_CRITERIA.md` Criterion 9 specifically addresses class-3 violations.
+
+**Touchpoint**: See `docs/SPRINT_EXECUTION_WORKFLOW.md` "Decision-Class Checkpoint Protocol" for the full surfacing template and the per-phase application matrix.
+
 ## Windows Tool Restrictions
 
 **CRITICAL**: This is a Windows development environment. Many Linux tools are NOT available.
