@@ -440,7 +440,7 @@ Everything Claude needs to know, read automatically at session start:
 | Chief Architect | Final architectural decisions, ADR approval |
 | Chief Developer | PR approval, manual testing, merge-to-main authority |
 | Scrum Master | Sprint ceremonies, timeline, scope discipline |
-| Chief  Test Engineer | Test strategy, exploratory testing, quality approval |
+| Chief Test Engineer | Test strategy, exploratory testing, quality approval |
 
 **Claude Code Team Roles**:
 

@@ -24,6 +24,10 @@ abstract class RuleDatabaseProvider {
 /// v1: Initial schema (Sprint 12)
 /// v2: Add pattern classification columns to rules table (Sprint 20)
 /// v3: Add auth_rate_limit table for failed-auth throttling (SEC-22, Sprint 33)
+/// v4: Add last_history_id column to accounts table (Sprint 37 F6c Phase 2,
+///     Gmail OAuth incremental scans via historyId)
+/// v5: Add account_folder_cursors table (Sprint 38 F6c Phase 2 IMAP extension,
+///     per-(account, folder) cursor for UID-based incremental scans)
 const int databaseVersion = 5;
 
 /// SQLite database helper - singleton pattern
@@ -832,10 +836,14 @@ class DatabaseHelper implements RuleDatabaseProvider {
   /// mailbox-scoped per RFC 3501.
   static const String cursorTypeOldestNoRuleUid = 'oldest_no_rule_uid';
 
-  /// Round 1 cursor type (next-after-max-UID). Retained as a constant so
-  /// the v5 migration's table accepts both kinds while we clean up any
-  /// Round 1 rows on first launch. New code uses
-  /// [cursorTypeOldestNoRuleUid] exclusively.
+  /// Round 1 cursor type (next-after-max-UID). Retained as a constant so the
+  /// v5 migration's table schema continues to accept legacy rows that may
+  /// have been written by Sprint 38 dev builds prior to the Round 4 redesign.
+  /// New code uses [cursorTypeOldestNoRuleUid] exclusively; legacy
+  /// `imap_uid` rows are inert (never read, never written) and have no
+  /// automated cleanup -- they will linger in the table on affected dev
+  /// installs until manually removed. Production builds never wrote Round 1
+  /// rows because the v5 migration shipped with the Round 4 semantics.
   @Deprecated('Round 1 design replaced by cursorTypeOldestNoRuleUid in Round 4')
   static const String cursorTypeImapUid = 'imap_uid';
 

@@ -32,6 +32,13 @@ static void LogBackgroundScanSkip(const std::wstring& reason) {
   //   {AppData}\\MyEmailSpamFilter\\MyEmailSpamFilter[_Dev]\\logs\\[dev_]background_scan_v0.5.3.log
   // We don't know dev-vs-prod from C++ without SPAMFILTER_APP_ENV (defined below),
   // so write to a deterministic startup-skip log that both environments share.
+  //
+  // The "dev" fallback when the macro is undefined is INTENTIONAL per Sprint 37
+  // F52 design: `flutter build windows` invoked directly (without going through
+  // `scripts/build-windows.ps1`) should produce a usable dev binary for
+  // new-developer convenience. Prod builds go through the documented
+  // `build-windows.ps1 -Environment prod` and `docs/STORE_RELEASE_PROCESS.md`
+  // paths, both of which set SPAMFILTER_APP_ENV=prod before CMake configures.
   #ifndef SPAMFILTER_APP_ENV
   #define SPAMFILTER_APP_ENV "dev"
   #endif

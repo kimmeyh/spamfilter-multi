@@ -61,7 +61,16 @@ class CopyAllShortcut extends StatelessWidget {
       },
       // Focus must be in the subtree for shortcuts to fire. Wrapping in
       // a Focus widget with autofocus=true ensures the screen has focus
-      // on entry.
+      // on entry, so Ctrl+A works without requiring the user to click
+      // the list area first.
+      //
+      // Interaction with descendant TextFields (e.g., the search bar on
+      // Manage Rules / Manage Safe Senders): when the user taps into a
+      // TextField, focus moves to the EditableText, which has its own
+      // built-in Ctrl+A handler (lower in the focus tree, higher priority
+      // for shortcut dispatch). Verified Sprint 38 Phase 5.3 manual
+      // testing: Ctrl+A inside the search bar selects the search text;
+      // Ctrl+A on the list area (after click) copies the filtered list.
       child: Focus(
         autofocus: true,
         child: child,

@@ -512,11 +512,26 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware
       );
       // Poll briefly for rule-set readiness (max ~2s). The provider's
       // isLoading flag transitions to false once loadRules() completes.
+      // If the deadline expires while still loading (e.g., slow disk + very
+      // large rule set), surface a warning rather than silently starting
+      // with a stale evaluator -- the user can cancel and retry.
       final deadline = DateTime.now().add(const Duration(seconds: 2));
       while (ruleProvider.isLoading && DateTime.now().isBefore(deadline)) {
         await Future<void>.delayed(const Duration(milliseconds: 50));
       }
-      logger.i('[SCAN_SCREEN] F86: rule-set ready (isLoading=${ruleProvider.isLoading})');
+      if (ruleProvider.isLoading) {
+        logger.w('[SCAN_SCREEN] F86: rule-set still loading after 2s deadline; scan will start with previously-loaded rules');
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('New rules still loading -- scan will use previously-loaded rules. Re-scan when ready to apply the new rules.'),
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+      } else {
+        logger.i('[SCAN_SCREEN] F86: rule-set ready (isLoading=false)');
+      }
     }
 
     // Immediately update UI to show scan is starting (no database record -
