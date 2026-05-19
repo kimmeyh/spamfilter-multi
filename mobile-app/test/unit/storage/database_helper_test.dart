@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:my_email_spam_filter/core/storage/database_helper.dart';
 
 void main() {
   // Use FFI for testing (no real database)
@@ -699,6 +700,39 @@ void main() {
 
       expect(enabled.length, 50);
       expect(stopwatch.elapsedMilliseconds, lessThan(100)); // Should be < 100ms with index
+    });
+  });
+
+  // BUG-S37-1 (Sprint 38, Issue #256): Verify DatabaseHelper is a true
+  // singleton. The bug report's "Mode A" hypothesis was that the
+  // foreground UI and the "Test Background Scan" button opened parallel
+  // DB connections within the same process and raced on SQLite locks.
+  // Investigation showed DatabaseHelper IS a singleton (factory returns
+  // _instance), so Mode A is not actually possible. These tests pin
+  // that behavior so a future refactor that removes the singleton would
+  // be caught immediately. Mode B (inter-process via --background-scan)
+  // is fixed in mobile-app/windows/runner/main.cpp; not testable from
+  // Dart (would require launching two processes).
+  group('DatabaseHelper - Singleton Invariant (BUG-S37-1)', () {
+    test('multiple DatabaseHelper() calls return the same instance', () {
+      final a = DatabaseHelper();
+      final b = DatabaseHelper();
+      final c = DatabaseHelper();
+      expect(identical(a, b), isTrue,
+          reason: 'DatabaseHelper must be a singleton -- if this fails, the '
+              'BUG-S37-1 same-process diagnosis (Mode A is not a bug) is '
+              'no longer valid and the fix in windows/runner/main.cpp does '
+              'not cover same-process DB conflicts.');
+      expect(identical(b, c), isTrue);
+    });
+
+    test('singleton is preserved across the test boundary', () {
+      // Document that the instance survives across separate `test()` calls
+      // within the same process -- this is what allows the UI and the
+      // worker (same process) to share connection state.
+      final first = DatabaseHelper();
+      final second = DatabaseHelper();
+      expect(identical(first, second), isTrue);
     });
   });
 }

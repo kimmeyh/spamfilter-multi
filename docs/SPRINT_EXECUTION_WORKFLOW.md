@@ -72,6 +72,54 @@ One-line-per-phase quick reference. Use this at the start of a sprint and at eve
 - Standing Approval Inventory (Phase 3.7): commits, pushes, PR-description updates, test/analyze runs do NOT need permission.
 - Stop only for the 9 reasons in `docs/SPRINT_STOPPING_CRITERIA.md` -- not for implementation choices, approach uncertainty, or "confirming the next step".
 - If Phase 1 was skipped for a given sprint, STOP and return to Phase 1 before any Phase 4 work (Sprint 36 gate).
+- **Decision-Class Checkpoint Protocol (Sprint 38 retro)**: Architecture, development, and sprint-execution decisions in the three classes below ALWAYS require explicit user approval; sprint-plan approval is NOT durable for these. See "Decision-Class Checkpoint Protocol" section below for the full surfacing template and per-phase application matrix.
+
+---
+
+## Decision-Class Checkpoint Protocol (Sprint 38 retrospective, 2026-05-18)
+
+Harold wears three distinct roles -- Chief Architect, Chief Developer, and Scrum Master. Claude is **not** authorized to make unilateral decisions in any of the three classes below. Sprint-plan approval at Phase 3 is durable authorization for tasks AS PLANNED -- it is NOT authorization to change architecture, change prior development decisions, or change the approved sprint scope.
+
+### The Three Decision Classes
+
+| Class | Role | Examples |
+|-------|------|----------|
+| **1. Architecture** | Chief Architect | Data-model changes; control-flow inversions; persistence semantic shifts; removal of an ADR-documented pattern; semantic changes to a stored value (e.g., Sprint 38 Round 4 inverted IMAP cursor from "max UID seen" to "oldest unaddressed UID") |
+| **2. Development** | Chief Developer | Function signature changes that affect callers; removed abstractions; ordering changes that affect downstream callers; semantic shifts in a field's meaning at runtime (e.g., Sprint 38 Round 8 changed `_initialNoRuleCount` from "snapshot at scan-completion" to "snapshot at re-entry") |
+| **3. Sprint Execution** | Scrum Master | Shortening the sprint; de-scoping an approved task; deferring an approved task to a future sprint -- UNLESS a `SPRINT_STOPPING_CRITERIA.md` criterion (1-9) is genuinely met AND the Scrum Master has approved |
+
+### Surfacing Template
+
+When a candidate change falls into one of these three classes, STOP, surface the decision to the user with the explicit phrasing pattern below, and WAIT for approval before implementing:
+
+- **Class 1**: "This would change a prior architectural decision: [describe the prior decision and the proposed change]. Should I proceed?"
+- **Class 2**: "This would change a prior development decision: [describe the prior decision and the proposed change]. Should I proceed?"
+- **Class 3**: "This would change the approved sprint scope: [describe what is being deferred / de-scoped]. Should I proceed?"
+
+### Per-Phase Application Matrix
+
+Surface decisions AT the natural break or BEFORE it if implementation is blocked. Natural breaks are:
+
+| Phase | What's Happening | What to Surface |
+|-------|------------------|-----------------|
+| Phase 1 → Phase 3 approval | Backlog refinement & sprint planning | Any architecture/development/scope item identified during planning that would change a prior decision |
+| Phase 5.3 Manual Testing | User tests, gives feedback | Any proposed fix that involves changing a prior decision (do NOT just apply it -- surface, get approval, then apply) |
+| Phase 7 Retrospective | Sprint review and improvements | Any decision that was made mid-sprint without surfacing -- declare it in Claude's feedback so it can be reviewed |
+
+### Anti-Pattern Signals
+
+If you catch yourself thinking any of the following, STOP and surface:
+
+- "This is just a small change, the user will be fine with it."
+- "I'll mention this in the retrospective."
+- "The sprint plan said X but Y is clearly better, I'll just do Y."
+- "We're running out of time, I'll defer Z to next sprint."
+
+Sprint 38 had 10 rounds of fixes; multiple rounds contained class-1, class-2, or class-3 decisions that were not surfaced. The 400-hour stopping-criterion clarification in `docs/SPRINT_STOPPING_CRITERIA.md` Criterion 9 specifically addresses class-3 violations rooted in time anxiety.
+
+### Source
+
+CLAUDE.md "Decision-Class Taxonomy: STOP, Surface, Wait" section is the durable trigger; this section is the where-to-apply.
 
 ---
 
@@ -133,7 +181,7 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
 - [ ] **2.2 Verify Previous Sprint is Merged**
   - Confirm previous sprint PR is merged to `develop`
   - Command: `git log develop --oneline -1` should show last sprint commits
-  - Previous feature branch is deleted locally and remote
+  - **Branch retention policy**: Do NOT delete previous feature branches (local or remote). Harold preserves all sprint branches for historical reference. Branches are kept indefinitely. (Sprint 38 policy clarification, 2026-05-05)
 
 - [ ] **2.3 Verify All Sprint Cards Are Closed**
   - Run: `gh issue list --label sprint --state open`
@@ -539,6 +587,19 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
     6. Record findings and disposition in sprint retrospective
   - **Model**: Requires Opus (review analysis -- see SPRINT_PLANNING.md "Activities Requiring Opus")
   - **Learning (Sprint 32)**: Code reviewer focused on sprint diff missed SEC-17 gaps in adjacent files (background scan worker, UI screens). User manual testing of logs surfaced the gap. Step 2 (mechanical grep) and step 3 (two-phase review) were added to prevent recurrence.
+
+- [ ] **5.1.5 WinWright UI Test Sweep** (Sprint 38 retro - MANDATORY)
+  - **Purpose**: Catch UI regressions BEFORE Phase 5.3 manual testing. Sprint 38 had 6+ rounds of post-Phase-5.3 manual UI fixes that WinWright coverage would have caught earlier.
+  - **Trigger**: ALWAYS run this phase before proceeding to Phase 5.2. This supersedes the prior per-sprint conditional policy in `feedback_winwright_policy.md`.
+  - **Steps**:
+    1. Identify existing WinWright scripts under `mobile-app/test/winwright/` (or wherever the project stores them).
+    2. For each script that exercises a screen touched by sprint work, update the script for any selector/title/structure changes.
+    3. Run each updated script via `C:\Tools\WinWright\Civyk.WinWright.Mcp.exe run <script.json>`.
+    4. Fix any breaks IN-SPRINT if the cause is sprint code; document as a known regression and add a backlog item if the cause is unrelated.
+    5. For new screens / new flows added by the sprint that have NO existing script, add one of these to the Sprint N+1 carry-in list: "Add WinWright coverage for [screen/flow]".
+    6. State restoration: every script must restore all state it modifies (Sprint 37 retro policy, retained).
+  - **Exit criteria**: All WinWright scripts that exercise sprint-touched UI are green, OR a backlog entry is filed for any unfixable regressions.
+  - **If no WinWright scripts exist for the sprint's UI surface**: that itself is a finding -- add a Sprint N+1 carry-in for the missing coverage and document in the retrospective.
 
 - [ ] **5.2 Run Complete Test Suite**
   - Execute full test suite: `flutter test`
@@ -1246,13 +1307,28 @@ Brief description of what this sprint delivers.
 - lib/adapters/storage/app_paths.dart
 
 ## Next Steps
+- [ ] Manual integration testing (Phase 5.3 acceptance criteria above)
+- [ ] Loop until Manual integration testing is noted complete by the Lead Developer
+  - [ ] Feedback from Manual integration testing
+  - [ ] Required updates from testing feedback completed in current sprint (not always)
+  - [ ] Required additions to backlog from testing feedback (not always)
 - [ ] Code review
-- [ ] Manual integration testing
+- [ ] Sprint <N> retrospective (Phase 7, mandatory)
 - [ ] Merge to develop when approved
 - [ ] Begin Sprint <N+1>
 
 Generated with [Claude Code](https://claude.com/claude-code)
 ```
+
+> **Canonical "Next Steps" progression (Sprint 38 retrospective, 2026-05-18)**: The order above is the canonical post-development sequence and MUST NOT be reordered. Specifically:
+>
+> 1. **Manual integration testing comes FIRST** -- not code review. The Lead Developer (Harold) must complete testing and explicitly mark it complete before Code Review begins.
+> 2. **Testing is a loop, not a single step** -- testing feedback can produce in-sprint fixes (Round 1, 2, ..., N) or backlog additions for future sprints. Each loop iteration is in-sprint work and does NOT trigger an early stop.
+> 3. **Code Review happens AFTER testing complete** -- reviewing code that still has open testing-feedback fixes wastes review effort.
+> 4. **Retrospective is BEFORE merge** -- the retrospective can surface fixes that must land before merge.
+> 5. **Sprint N+1 begins only AFTER merge to develop** -- starting Sprint N+1 with Sprint N still unmerged risks divergent branch state.
+
+
 
 ---
 
@@ -1351,7 +1427,7 @@ dart format --set-exit-if-changed lib/
 
 ### After Merge (Cleanup Complete)
 - [OK] PR merged to develop
-- [OK] Feature branch deleted (locally and remote)
+- [OK] Feature branch RETAINED (local and remote) -- Harold's policy: never delete sprint branches
 - [OK] All related GitHub issues closed
 - [OK] Sprint retrospective documented (if applicable)
 - [OK] Ready to begin next sprint
@@ -1364,8 +1440,8 @@ Once user approves PR:
 
 1. **Merge to develop**
    - PR approved and merged via GitHub
-   - Branch deleted on remote (automatic or manual)
-   - Local branch deleted: `git branch -d feature/YYYYMMDD_Sprint_N`
+   - **Do NOT delete the remote branch on merge** -- in the GitHub PR merge UI, leave "Delete branch" unchecked, or restore the branch if it was auto-deleted
+   - **Do NOT delete the local feature branch** -- Harold's policy retains all sprint branches indefinitely for historical reference (Sprint 38 policy clarification, 2026-05-05)
 
 2. **Close All Related GitHub Issues**
    - Find all sprint card issues referenced in PR (e.g., #60, #61)
@@ -1408,12 +1484,12 @@ Once user approves PR:
      - Link to PR for code artifacts
      - See `docs/SPRINT_RETROSPECTIVE.md` for template
 
-4. **Clean up feature branch (OPTIONAL - User Managed)**
-   - Branch cleanup is optional and user-managed
-   - Do NOT auto-delete branch after merge
-   - User will manually delete when ready: `git branch -d feature/YYYYMMDD_Sprint_N`
-   - Remote cleanup also user-managed: `git push origin --delete feature/YYYYMMDD_Sprint_N`
-   - Keeps branch available for reference if needed
+4. **Feature branch retention (Harold's policy -- Sprint 38 clarification, 2026-05-05)**
+   - **Sprint feature branches are NEVER deleted** (local or remote). Harold retains them indefinitely for historical reference.
+   - Do NOT auto-delete the branch after merge.
+   - Do NOT suggest `git branch -d` or `git push origin --delete` for sprint branches.
+   - Even when GitHub's PR merge UI offers "Delete branch", leave it unchecked. If a branch is auto-deleted on merge, restore it from the PR's "Restore branch" button.
+   - Stale branches in `git branch` output are expected and intentional.
 
 ---
 

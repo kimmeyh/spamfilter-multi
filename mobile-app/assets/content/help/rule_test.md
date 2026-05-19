@@ -1,0 +1,1 @@
+Previews how a pattern would match against the current unmatched-email pool. Useful when drafting a new rule before committing. Matches highlight the portion of the email (from / header / subject / body) the regex hit.

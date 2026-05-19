@@ -84,7 +84,7 @@ Each sprint is composed of **Cards** (GitHub issues) broken into **Tasks** assig
 | **Lead Developer** | Claude Code Opus (latest) | Complex debugging, performance optimization, critical path features; cross-cutting architectural implementation |
 | **Senior Developers** | Claude Code Sonnet (latest, N instances) | Architectural decisions, complex refactoring, multi-file changes, research spikes |
 | **Developers** | Claude Code Haiku (latest, N instances) | Straightforward implementation, bug fixes, tests, documentation, single-file changes |
-| **Lead Test Engineer** | Harold Kimmey | Defines test strategy; performs manual and exploratory testing; approves test coverage and quality |
+| **Chief Test Engineer** | Harold Kimmey | Defines test strategy; performs manual and exploratory testing; approves test coverage and quality |
 | **Senior Test Engineers** | Claude Code Team | Writes unit and integration tests; runs test suites; analyzes test failures and regressions |
 | **Production Readiness Team** | Harold Kimmey + Claude Code Team | Build verification, store submission prep, deployment checklists, release validation |
 | **User Research** | Harold Kimmey + Claude Code Team | User surveys, testing feedback analysis, competitive research, usability assessment |

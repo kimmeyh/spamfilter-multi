@@ -280,6 +280,44 @@ Sprint 37 F52 Phase 1 layers env-specific persistent run targets on top of the e
 - **Phase 2 (Android flavors)**: ships in same sprint -- adds `dev`/`prod`/`store` `productFlavors` with distinct `applicationIdSuffix`. Each flavor installs as a distinct app on the device, with its own data directory (Android per-applicationId isolation) and launcher icon.
 - **Phase 3 (iOS bundle IDs)**: deferred -- requires macOS + Apple Developer Program enrollment.
 
+## Sprint 38 Update (2026-05-13): Background Scan Mutex Probe (BUG-S37-1, Issue #256)
+
+The original Sprint 35 implementation of this ADR skipped the single-instance mutex entirely when `--background-scan` was on the command line. This was intentional: scheduled background scans should not be blocked by a running foreground UI, and the foreground UI's `FindWindowW + SetForegroundWindow` activate-existing-window behavior is wrong for a headless scheduled task that has no window.
+
+Sprint 37 Phase 5.3 prod-build manual testing surfaced the consequence: `SqfliteFfiException(sqlite_error: 5, "database is locked")`. With the mutex bypassed, the Task Scheduler-launched background-scan process opened its own SQLite connection in parallel with the foreground UI's connection. SQLite (via sqflite_ffi on Windows) is single-writer; the two connections raced and either the UI's read-during-scan or the worker's write hit the locked error.
+
+### Decision (Sprint 38)
+Background-scan mode now performs a **read-only mutex probe** at startup. If the foreground mutex exists, the background scan logs a startup-skip line to `{appdata}/MyEmailSpamFilter/MyEmailSpamFilter[_Dev]/logs/[dev_]background_scan_v0.5.3.log` and exits 0 cleanly. The Task Scheduler will retry on the next configured interval. If the mutex does NOT exist, the background scan proceeds.
+
+### Rationale
+- **Foreground UI wins**: User has the app open and is actively using it. A scheduled scan deferring to the next interval is invisible to the user; a database-locked exception is not.
+- **No mutex acquisition**: The background scan only PROBES the mutex (`OpenMutexW(SYNCHRONIZE, FALSE, ...)`). It does not acquire it. This means a future UI launch DURING an active background scan is still allowed; the UI will see its mutex acquisition succeed, and the background scan's subsequent DB writes can still conflict. This is acceptable because (a) the background scan is brief (seconds to a few minutes), and (b) the foreground UI's read-during-scan tolerates the locked state via sqflite retry. The fix targets the more-common scenario where the UI is *already* running when the scheduled scan starts.
+- **Same mutex name**: The probe uses the same `Global\MyEmailSpamFilter_{pathHash}` name that the foreground UI acquires. No new synchronization primitives.
+- **Test Background Scan button is unaffected**: that path calls `BackgroundScanWindowsWorker.executeBackgroundScan(isTest: true)` from within the foreground UI process. `DatabaseHelper` is already a singleton (`_instance` factory), so both the UI and the worker share the same Dart-side connection. No inter-process locking concern, and intentionally NOT what BUG-S37-1 fixes.
+
+### Files Changed
+- `mobile-app/windows/runner/main.cpp` -- read-only probe + log writer
+- `mobile-app/scripts/test-background-scan-skip.ps1` -- new PowerShell integration test that builds the fix, launches a foreground UI, then launches `--background-scan` and asserts exit-0 + skip-log-line. Not in `flutter test` (would require launching two processes inside a test process). Invoked manually or via `build-windows.ps1 -RunIntegrationTests`.
+- `mobile-app/scripts/build-windows.ps1` -- new `-RunIntegrationTests` switch wires the integration test into the standard build flow.
+
+### Future Considerations (NOT in Sprint 38)
+- A future enhancement could have the background scan re-attempt mid-execution if a UI launch is detected (named-pipe IPC). Currently it just runs to completion; if the UI launches mid-scan, the brief DB contention is tolerated.
+- F83 (per-account background scanning) may invalidate this design if per-account scans need finer-grained coordination. Revisit when F83 lands.
+
+### Integration Test Pattern (Sprint 38, reusable)
+
+`mobile-app/scripts/test-background-scan-skip.ps1` establishes a pattern for testing `main.cpp` startup-logic changes that cannot be expressed in `flutter test` (because they involve launching the real `.exe` and verifying real OS-level state like mutexes, log files, or process lifecycle). The pattern:
+
+1. Resolve the variant `.exe` produced by `build-windows.ps1` (parameterized by `-Environment`).
+2. Kill any leftover instances from prior test runs.
+3. Snapshot pre-test state (log file size, process list).
+4. Launch the foreground process via `Start-Process` (non-blocking) and wait for it to acquire its mutex.
+5. Launch the test scenario (e.g., `--background-scan`) via `Start-Process -Wait` so we get the exit code.
+6. Assert on exit code, log file growth, log file content tail.
+7. Teardown: kill foreground process so the test is repeatable.
+
+Future `main.cpp` changes (new command-line flags, mutex naming changes, environment detection logic, single-instance behavior tweaks) should add similar parameterized PowerShell tests rather than relying solely on Phase 5.3 manual testing.
+
 ## References
 
 - ADR-0012: AppPaths Platform Storage Abstraction (data directory resolution)

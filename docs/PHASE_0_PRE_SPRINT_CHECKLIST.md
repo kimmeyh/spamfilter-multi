@@ -195,8 +195,8 @@ git log --oneline -5
    - If approved: Merge it
    - If under review: Wait for approval
 3. If PR doesn't exist:
-   - Delete the branch: `git branch -d <branch>`
-   - Move to develop
+   - Move to develop: `git checkout develop && git pull origin develop`
+   - **Do NOT delete the branch** -- Harold's policy retains all sprint feature branches indefinitely (Sprint 38 policy clarification, 2026-05-05)
 
 ---
 
@@ -226,7 +226,7 @@ If any item is not complete:
 | Untracked changes in directory | Commit or stash them | 2.3 |
 | On wrong branch | `git checkout develop && git pull origin develop` | 2.4 |
 | Plan document missing | Request sprint plan from user before proceeding | 2.5 |
-| On feature branch from old sprint | Delete branch: `git branch -d <branch>` | 2.6 |
+| On feature branch from old sprint | `git checkout develop && git pull origin develop` (do NOT delete the branch -- Harold's retention policy) | 2.6 |
 
 ---
 

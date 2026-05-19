@@ -89,6 +89,12 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   bool _isTestingScan = false;
   late TextEditingController _retentionDaysController;
 
+  // Sprint 38 Round 10 (2026-05-18): email shown in the per-account header
+  // card at the top of the Account, Manual Scan, and Background tabs.
+  // Loaded once during _loadSettings so the header renders synchronously
+  // without per-tab FutureBuilders. Empty string while loading.
+  String _accountEmail = '';
+
   @override
   void initState() {
     super.initState();
@@ -131,6 +137,17 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     setState(() => _isLoading = true);
 
     try {
+      // Sprint 38 Round 10: load the account email once so the per-account
+      // header card renders on Account/Manual Scan/Background tabs without
+      // per-tab FutureBuilders. Failures fall back to empty string and
+      // the header degrades to "Account Settings -" (no trailing email).
+      try {
+        final creds = await _credStore.getCredentials(widget.accountId);
+        _accountEmail = creds?.email ?? '';
+      } catch (_) {
+        _accountEmail = '';
+      }
+
       // [UPDATED] ISSUE #123: Load per-account settings (with app-wide fallback)
       final accountManualMode = await _settingsStore.getAccountManualScanMode(widget.accountId);
       _manualScanMode = accountManualMode ?? await _settingsStore.getManualScanMode();
@@ -517,6 +534,37 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     ));
   }
 
+  /// Sprint 38 Round 10 (2026-05-18): single-line per-account header card
+  /// "Account Settings - <email>" used at the top of the Account, Manual
+  /// Scan, and Background tabs. NOT used on the General tab (those
+  /// settings are cross-account). Email comes from `_accountEmail` which
+  /// is populated once in `_loadSettings` from SecureCredentialsStore.
+  Widget _buildAccountHeaderCard() {
+    final headerText = _accountEmail.isNotEmpty
+        ? 'Account Settings - $_accountEmail'
+        : 'Account Settings';
+    return Card(
+      color: Colors.blue.shade50,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Icon(Icons.email, color: Colors.blue.shade700),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                headerText,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildAccountTab() {
     // [UPDATED] ISSUE #123: accountId now required, no null check needed
     return SelectionArea(child: FutureBuilder<Credentials?>(
@@ -542,42 +590,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // Account info header
-            Card(
-              color: Colors.blue.shade50,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.email, color: Colors.blue.shade700),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Account Settings',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                email,
-                                style: TextStyle(color: Colors.grey.shade700),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            // Sprint 38 Round 10 (2026-05-18): single-line per-account
+            // header card. Mirrors the same card shown on Manual Scan and
+            // Background tabs.
+            _buildAccountHeaderCard(),
             const SizedBox(height: 24),
 
             // Folder configuration section
@@ -630,6 +646,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     return SelectionArea(child: ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        // Sprint 38 Round 10 (2026-05-18): per-account header so Manual Scan
+        // tab clearly shows which account these settings apply to.
+        _buildAccountHeaderCard(),
+        const SizedBox(height: 16),
         Card(
           color: Colors.blue.shade50,
           child: Padding(
@@ -830,6 +850,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     return SelectionArea(child: ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        // Sprint 38 Round 10 (2026-05-18): per-account header so Background
+        // tab clearly shows which account these settings apply to.
+        _buildAccountHeaderCard(),
+        const SizedBox(height: 16),
         SwitchListTile(
           title: const Text('Enable Background Scanning'),
           subtitle: const Text('Automatically scan for spam periodically'),

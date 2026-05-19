@@ -404,7 +404,19 @@ If `current_usage% + estimated_task_cost% > 95%`, run `/compact` before starting
 4. Proceed to Phase 7 (Sprint Review)
 5. Wrap up and await merge
 
-**Timing**: Respect scheduled sprint boundaries. Better to complete remaining tasks next sprint than to extend indefinitely.
+**Timing**: Wall-clock hours are NOT a stop signal by themselves. Continue working through approved sprint tasks; do NOT defer to the next sprint based on time intuition. See "[CRITICAL CLARIFICATION] Sprint 38 retrospective" immediately below for the binding rule.
+
+**[CRITICAL CLARIFICATION] Sprint 38 retrospective, 2026-05-18 (Harold's PO/SM/LD feedback)**:
+
+Wall-clock hours are **NOT** a stop signal by themselves. Do not initiate Phase 6 or Phase 7 wrap-up based on elapsed time alone. The ONLY time-based stop condition is:
+
+- **Total sprint estimate exceeds 400 wall-clock hours AND that 400-hour threshold has been met during execution.**
+
+If the sprint estimate is below 400 hours, this criterion does NOT apply -- continue working through the sprint until another criterion (1-8) is genuinely met. The user has explicitly clarified that early stops "concerned about total hours" are unnecessary, waste time, and cost money. Do NOT draft "Next Steps" / "ready for retrospective" / "sprint wrap-up" content based on intuition about hours spent.
+
+Do NOT advise "complete remaining tasks next sprint" as a default. The default is: complete the approved sprint scope IN THIS SPRINT. Deferring to a later sprint is a Class-3 sprint-execution decision (see `docs/SPRINT_EXECUTION_WORKFLOW.md` "Decision-Class Checkpoint Protocol") and requires explicit Scrum Master approval -- it is not Claude's call.
+
+If unsure whether the 400-hour threshold applies, the answer is: it does not. Continue.
 
 ---
 

@@ -1,0 +1,27 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"${CLAUDE_PROJECT_DIR}\\.claude\\hooks\\sprint-auto-advance.ps1\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -Command \"if ('$CLAUDE_FILE_PATH' -like '*rules*.yaml') { & scripts/validate-yaml-rules.ps1 -RulesFile '$CLAUDE_FILE_PATH' }\"",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}

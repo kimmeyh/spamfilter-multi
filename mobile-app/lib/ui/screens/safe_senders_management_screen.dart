@@ -18,6 +18,7 @@ import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/safe_sender_database_store.dart';
+import '../widgets/copy_all_shortcut.dart';
 import '../../core/storage/settings_store.dart';
 import '../widgets/app_bar_with_exit.dart';
 import 'help_screen.dart';
@@ -356,8 +357,20 @@ class _SafeSendersManagementScreenState
           ),
         ],
       ),
-      body: SelectionArea(
-        child: Column(
+      // Sprint 38 F84 Sub-task A (Issue #253): Ctrl+A / Cmd+A copies the
+      // ENTIRE filtered safe-sender list to clipboard, not just the
+      // viewport subset. Bypasses Flutter's selection model -- writes
+      // joined row text directly. Sub-tasks B/C deferred.
+      body: CopyAllShortcut(
+        itemLabel: 'safe senders',
+        textBuilder: () {
+          if (_filteredSenders.isEmpty) return '';
+          return _filteredSenders
+              .map((s) => '${s.pattern}\t${s.patternType}')
+              .join('\n');
+        },
+        child: SelectionArea(
+          child: Column(
         children: [
           // Search bar
           Padding(
@@ -515,6 +528,7 @@ class _SafeSendersManagementScreenState
                       ),
           ),
         ],
+      ),
       ),
       ),
     );

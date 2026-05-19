@@ -33,7 +33,12 @@ param(
     [switch]$SkipClean = $false,
     [switch]$AnalyzeSize = $false,
     [ValidateSet('dev', 'prod')]
-    [string]$Environment = 'dev'
+    [string]$Environment = 'dev',
+    # Sprint 38 BUG-S37-1: optional PowerShell integration test for
+    # main.cpp startup logic (currently verifies the background-scan
+    # mutex probe). Default off so normal builds are not slowed; invoke
+    # explicitly via -RunIntegrationTests when validating main.cpp changes.
+    [switch]$RunIntegrationTests = $false
 )
 
 $ErrorActionPreference = 'Stop'
@@ -351,6 +356,27 @@ if (-not $Debug) {
                     -RestartInterval (New-TimeSpan -Minutes 5)
 
                 Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Settings $settings -Force | Out-Null
+
+                # Sprint 38 Round 4 (2026-05-17): Round 3 testing surfaced
+                # that the task was sometimes not actually running after
+                # rebuild. Explicitly verify the task is enabled and start
+                # it once immediately so the user sees the post-rebuild
+                # background scan in the next ~15 minutes (matching the
+                # configured frequency).
+                try {
+                    $task = Get-ScheduledTask -TaskName $taskName -ErrorAction Stop
+                    if ($task.State -eq 'Disabled') {
+                        Enable-ScheduledTask -TaskName $taskName | Out-Null
+                        Write-Host "       Task was Disabled; re-enabled" -ForegroundColor Yellow
+                    }
+                    # Trigger an immediate run so the first scan after build
+                    # is visible (the regular trigger will fire on schedule).
+                    Start-ScheduledTask -TaskName $taskName
+                    Write-Host "       Started one immediate run for verification" -ForegroundColor Gray
+                } catch {
+                    Write-Host "       [WARNING] Task verification failed: $_" -ForegroundColor Yellow
+                }
+
                 Write-Host "       Re-registered '$taskName' with frequency: ${bgFrequency}min" -ForegroundColor Green
                 Write-Host "       Executable: $fullExePath" -ForegroundColor Gray
             } else {
@@ -381,6 +407,27 @@ Write-Host ""
 # producing a prod variant with the dev AOT baked in. Direct launch via
 # Start-Process spawns the variant .exe with no Dart VM attached, so a
 # subsequent build can `flutter clean` cleanly.
+# Sprint 38 BUG-S37-1: optional PowerShell integration test for main.cpp
+# startup logic. Runs against the freshly built variant binary so the
+# test reflects the current source. Debug builds skip this because there
+# is no persistent .exe to test against.
+if ($RunIntegrationTests -and -not $Debug) {
+    Write-Host ""
+    Write-Host "Running PowerShell integration tests..." -ForegroundColor Cyan
+    $integrationTest = Join-Path $PSScriptRoot "test-background-scan-skip.ps1"
+    if (Test-Path $integrationTest) {
+        & $integrationTest -Environment $Environment
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "[FAIL] Integration test failed (exit code $LASTEXITCODE)" -ForegroundColor Red
+            Write-Host "       Build artifact preserved at $variantBuildTarget for diagnosis." -ForegroundColor Yellow
+            exit $LASTEXITCODE
+        }
+        Write-Host "[OK] Integration tests passed" -ForegroundColor Green
+    } else {
+        Write-Host "[WARNING] $integrationTest not found; skipping" -ForegroundColor Yellow
+    }
+}
+
 if ($RunAfterBuild) {
     Write-Host "Launching Windows app..." -ForegroundColor Cyan
 

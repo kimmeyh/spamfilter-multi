@@ -1,0 +1,1 @@
+Back up or share rule sets via YAML files. Export writes rules.yaml and rules_safe_senders.yaml to a timestamped directory. Import merges entries from a YAML file into the current database; existing patterns are skipped (idempotent). Import files are capped at 10 MB and parsed with ReDoS detection -- dangerous patterns are rejected at parse time.
