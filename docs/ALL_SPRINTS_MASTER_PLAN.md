@@ -313,15 +313,33 @@ These items were filed during Sprint 38 retrospective and are pre-loaded for the
     - YELLOW: mixed (e.g., SPF pass + DKIM fail, or DMARC quarantine) -- warning, but not blocking
     - RED: SPF or DKIM fail AND DMARC fail (or DMARC reject) -- the sender failed to prove identity, likely spoofed
     - GREY: no Authentication-Results header present (older mail, internal mail, or provider that didn't sign) -- show as "unknown"
-  - When the user clicks "Save" on a RED state, show a confirmation dialog: "This email failed sender authentication (SPF: fail, DKIM: fail, DMARC: fail). Adding it as a safe sender / rule could let phishing emails bypass your filter. Are you sure? [Cancel] [Add Anyway]". Default focus on Cancel.
-  - On YELLOW: smaller inline caution ("Partial authentication: SPF pass, DKIM fail. Consider exact-email instead of entire-domain.") -- no modal block.
+  - **Confirmation dialog content (RED state) -- explicit "why we are warning you" requirements**: the dialog must explain WHAT failed, WHY it matters, and WHAT the user should consider before proceeding. The user must be able to make an informed decision without external research. Required dialog structure:
+    1. **Title** (one line, plain-English): "This email could not prove it came from `{displayed sender domain}`"
+    2. **What specifically failed** (per-protocol, only show the ones that failed -- skip the ones that passed):
+       - SPF: "The sending server is not on `{domain}`'s authorized list of mail servers."
+       - DKIM: "The email was not cryptographically signed by `{domain}`, or the signature did not verify."
+       - DMARC: "`{domain}` published a policy saying unauthenticated mail should be {rejected|quarantined}, and this email did not meet it."
+       - Show the raw `Authentication-Results` header value in a collapsible "Show technical details" expander for users who want to verify.
+    3. **What this means for whitelisting / rule-creating** (the consequence, customized by quick-add type):
+       - Safe-sender quick-add: "If you whitelist this sender, future emails claiming to be from `{from address}` -- whether real or spoofed -- will bypass all your spam rules. Phishing attempts using the same `From:` will be admitted."
+       - Block-rule quick-add: "If you add a block rule for this sender, it will catch real `{from address}` emails AND any other emails that fail authentication and forge this `From:`. The block is sound regardless of authentication; warning is informational only." (RED state should NOT block on block-rule add, only on safe-sender add and on rules that act as exceptions or whitelists -- adjust per rule action.)
+    4. **What to consider instead** (alternatives that reduce risk):
+       - "Use an exact-email match (`{from address}`) instead of an entire-domain match (`@{domain}`) so this whitelist applies only to this exact local-part."
+       - "Verify with the sender out-of-band (phone, in-person) that this email is legitimate before whitelisting."
+       - "If this looks like a phishing attempt, report it to your provider and delete it -- do not whitelist."
+    5. **Action buttons**: `[Cancel]` (default focus, primary visual weight) and `[Add Anyway]` (secondary visual weight, requires deliberate click; consider a small delay before the button enables, e.g., 1-2s, so users do not click through reflexively).
+  - **Confirmation dialog content (YELLOW state) -- inline caution, not modal**: a single line below the quick-add form's submit button explaining what partially passed and what the practical risk is. Example: "Partial authentication: SPF pass, DKIM fail. The sending server is on the domain's authorized list, but the message was not cryptographically signed -- a server compromise or man-in-the-middle could forge this sender. Consider an exact-email rule rather than entire-domain." No modal block; user can submit directly.
+  - **Confirmation dialog content (GREY state) -- silent**: no dialog, no inline caution. The email has no Authentication-Results header (older mail, internal mail, a provider that does not sign). Treating GREY as a warning would create false-positive friction on legitimate mail; treating it as safe matches existing app behavior.
   - Persist the original auth result snapshot with the rule/safe-sender at creation time (new column `created_with_auth_state` on `rules` + `safe_senders` tables -- DB v6 migration): future audit query "show me all safe senders I added against unauthenticated email" surfaces past misjudgments.
   - 5-8 widget tests covering each badge state, the RED-state confirmation dialog (cancel + add-anyway paths), and the auth-snapshot column round-trip.
 - **Acceptance criteria**:
   - All current quick-add surfaces (RuleQuickAddScreen, SafeSenderQuickAddScreen, email-detail inline affordances, results-display inline affordances) show the auth badge
   - RED state requires explicit confirmation before save; default action is Cancel
+  - RED-state dialog explains, in plain English, **what specifically failed (per protocol), why that matters for this quick-add action, and what alternatives the user should consider** -- the user must not need external research to interpret the warning. Raw `Authentication-Results` header is available in a collapsible "Show technical details" expander but is NOT the primary explanation.
+  - YELLOW state shows inline caution explaining the partial-authentication risk in plain English (not just "DKIM fail"); does not block save
   - GREY state (no auth header) does NOT block; only RED blocks -- avoid false-positive friction on legitimate internal mail
-  - The Sprint 38 Amazon phishing email would, with this feature, have shown RED at safe-sender quick-add and forced explicit confirmation; documenting that scenario as the lead test fixture
+  - RED-state warning is calibrated to the action: safe-sender quick-add warns about phishing admission risk; block-rule quick-add either does not warn (block is sound regardless of auth) or shows informational-only context
+  - The Sprint 38 Amazon phishing email would, with this feature, have shown RED at safe-sender quick-add with a dialog reading approximately: "This email could not prove it came from amazon.com. SPF fail: the sending server is not on amazon.com's authorized list. DKIM fail: the email was not cryptographically signed by amazon.com. DMARC fail: amazon.com publishes a policy saying unauthenticated mail should be rejected. If you whitelist this sender, future emails claiming to be from account_update@amazon.com -- whether real or spoofed -- will bypass all your spam rules. Consider: use exact-email instead of entire-domain; verify with sender out-of-band; or delete and report as phishing." Documenting that scenario as the lead test fixture
   - DB v6 migration ships clean (adds `created_with_auth_state` columns); existing rows get `null` (= "unknown, pre-feature")
   - Telemetry-free per `docs/PRIVACY_POLICY.md` -- the auth result is computed locally from headers and stored locally only
 - **Out of scope**:
