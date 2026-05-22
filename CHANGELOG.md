@@ -26,6 +26,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-05-21 (Sprint 39 backlog refinement: F89 surface auth-failure on quick-add)
+- **docs**: New backlog item **F89** added to `docs/ALL_SPRINTS_MASTER_PLAN.md` -- surface SPF/DKIM/DMARC authentication-failure on every "add rule / add safe sender" quick-add prompt (RuleQuickAddScreen, SafeSenderQuickAddScreen, results_display inline affordances, email_detail inline affordances). Two-phase: Phase 1 adapter side populates `Authentication-Results` into `EmailMessage.headers`; Phase 2 UI side shows a colored auth badge and gates RED-state saves behind a confirmation dialog. New DB v6 migration adds `created_with_auth_state` columns on `rules` + `safe_senders` for post-hoc audit. Sourced from 2026-05-21 manual triage of an Amazon-spoofed phishing email that was admitted by an overly-broad `@amazon.com` safe-sender pattern; AOL had already flagged the email Bulk, but the app overrode that judgment.
+
 ### 2026-05-19 (Sprint 38 Phase 7 follow-up: Copilot final-review nits)
 - **docs**: `database_helper.dart` schema-version doc-comment extended with v4 (`last_history_id`, Sprint 37 F6c Phase 2) and v5 (`account_folder_cursors`, Sprint 38 F6c Phase 2 IMAP extension) entries. The constant `databaseVersion = 5` was correct; only the header comment was stale. (Copilot review on commit `a2dc68c`, comments 4 + 6)
 - **docs**: `database_helper.cursorTypeImapUid` dartdoc corrected -- the prior comment claimed "we clean up any Round 1 rows on first launch" but no such cleanup exists. The constant is retained so the v5 table schema continues to accept legacy `imap_uid` rows that may have been written by Sprint 38 dev builds prior to the Round 4 redesign; new code uses `cursorTypeOldestNoRuleUid` exclusively. Production builds never wrote Round 1 rows. (Copilot review on commit `a2dc68c`, comment 4)

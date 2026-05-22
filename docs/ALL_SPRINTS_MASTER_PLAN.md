@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: April 19, 2026 (Sprint 35 retrospective + 0.5.2.0 store MSIX shipped; F81 added as Sprint 36 carry-in (Issue #242) -- store release process documentation; Sprint 36 will bump dev to 0.5.3.0)
+**Last Updated**: 2026-05-21 (F89 added: surface SPF/DKIM/DMARC authentication failures on rule + safe-sender quick-add prompts; sourced from 2026-05-21 phishing-bypass triage of an Amazon-spoofed safe-sender match)
 
 ## How to Maintain This Document
 
@@ -290,6 +290,47 @@ These items were filed during Sprint 38 retrospective and are pre-loaded for the
   - Tests: existing `_fetchMessagesConcurrent` tests pass with batchGet implementation underneath; add 2-3 new tests with mocked HTTP for the `multipart/mixed` request/response parsing.
 - **Performance expected over Sprint 37 baseline**: One HTTP request per 100 messages instead of 100 (with 8 concurrent), so ~12-13x reduction in HTTP request count. Wall-clock improvement depends on Gmail batchGet latency vs N parallel small calls; expect modest additional speedup (~1.5-2x over Sprint 37) plus much-reduced rate-limit risk for very large mailboxes.
 - **Out of scope**: AOL / IMAP equivalents (no batch endpoint exists for IMAP folder-scoped FETCH); changes to the `_fetchMessagesConcurrent` public-ish signature (callers should not need to change).
+
+**F89. Surface SPF/DKIM/DMARC authentication failures on rule + safe-sender quick-add prompts (~6-10h, two-phase) Priority 75 -- BACKLOG from Sprint 38 phishing-bypass observation (Harold, 2026-05-21)**
+- Phase: Security / UX -- anti-phishing
+- Platform: All
+- Source: Harold, 2026-05-21 manual triage of a phishing email (`account_update@amazon.com`, subject "Account Recovery: Sign-in and Verify your Amazon account") that was admitted by an overly-broad `@amazon.com` safe-sender pattern. AOL's own spam classifier had flagged it Bulk (almost certainly due to authentication failure), but the app then overrode that judgment because the broad safe-sender whitelist matched the spoofed `From:` header. Body analysis confirmed phishing (S3-bucket credential-harvest links + display-vs-href mismatch). The architectural lesson: a safe-sender whitelist should never honor a `From:` that the receiving server already flagged as unauthenticated. Equivalent risk exists when adding NEW rules / safe senders from email triage screens -- the user should see authentication state at the moment they decide to whitelist or rule-create against a sender.
+- **Surfaces to update (all "update email to add a rule / safe-sender" pop-ups)**:
+  - `mobile-app/lib/ui/screens/rule_quick_add_screen.dart` (RuleQuickAddScreen)
+  - `mobile-app/lib/ui/screens/safe_sender_quick_add_screen.dart` (SafeSenderQuickAddScreen)
+  - `mobile-app/lib/ui/screens/email_detail_view.dart` -- inline "Add rule" / "Add safe sender" affordances
+  - `mobile-app/lib/ui/screens/results_display_screen.dart` -- inline-rule-add and inline-safe-sender-add affordances in Scan Results (Live + Historical)
+  - Any future screen that opens a "create rule from this email" / "whitelist this sender" prompt (audit existing call sites; document a `requiresAuthCheck: true` parameter or a shared `EmailAuthBadge` widget so future surfaces inherit the behavior)
+- **Phase 1 -- Adapter side: capture `Authentication-Results` header into `EmailMessage.headers` (~2-4h)**:
+  - `EmailMessage.headers` (`Map<String, String>`) exists on the model but no current adapter populates `Authentication-Results`. Verify and extend:
+    - `mobile-app/lib/adapters/email_providers/gmail_api_adapter.dart`: Gmail's `users.messages.get` returns the full `payload.headers` array; ensure `Authentication-Results` (and `ARC-Authentication-Results`, `Received-SPF`) are propagated into `EmailMessage.headers`. Today the adapter likely drops these to save memory.
+    - `mobile-app/lib/adapters/email_providers/generic_imap_adapter.dart` (and any IMAP variant): when fetching `BODY.PEEK[HEADER]`, ensure the Authentication-Results, Received-SPF, DKIM-Signature, ARC-Authentication-Results, and DMARC headers are kept (today the adapter may strip to a small known-key allow-list).
+  - Add a small parser `lib/core/services/auth_results_parser.dart` (or extend an existing utility) that reads the relevant headers and produces an `EmailAuthResult` struct: `{spf: pass|fail|softfail|neutral|none|temperror|permerror, dkim: pass|fail|none|...,  dmarc: pass|fail|none|..., raw: String}`. Reference: RFC 8601 Authentication-Results syntax; tolerate provider-specific variations (AOL/Yahoo/Gmail format minor differences).
+  - 5-8 unit tests with fixture headers from each provider covering pass/fail/softfail/none.
+- **Phase 2 -- UI side: warn-then-confirm on quick-add when authentication failed (~4-6h)**:
+  - On every "create rule from this email" / "whitelist this sender" affordance: when opened, compute `EmailAuthResult` from the message headers. Display a compact badge near the affordance:
+    - GREEN: all of SPF/DKIM/DMARC pass (sender is authenticated)
+    - YELLOW: mixed (e.g., SPF pass + DKIM fail, or DMARC quarantine) -- warning, but not blocking
+    - RED: SPF or DKIM fail AND DMARC fail (or DMARC reject) -- the sender failed to prove identity, likely spoofed
+    - GREY: no Authentication-Results header present (older mail, internal mail, or provider that didn't sign) -- show as "unknown"
+  - When the user clicks "Save" on a RED state, show a confirmation dialog: "This email failed sender authentication (SPF: fail, DKIM: fail, DMARC: fail). Adding it as a safe sender / rule could let phishing emails bypass your filter. Are you sure? [Cancel] [Add Anyway]". Default focus on Cancel.
+  - On YELLOW: smaller inline caution ("Partial authentication: SPF pass, DKIM fail. Consider exact-email instead of entire-domain.") -- no modal block.
+  - Persist the original auth result snapshot with the rule/safe-sender at creation time (new column `created_with_auth_state` on `rules` + `safe_senders` tables -- DB v6 migration): future audit query "show me all safe senders I added against unauthenticated email" surfaces past misjudgments.
+  - 5-8 widget tests covering each badge state, the RED-state confirmation dialog (cancel + add-anyway paths), and the auth-snapshot column round-trip.
+- **Acceptance criteria**:
+  - All current quick-add surfaces (RuleQuickAddScreen, SafeSenderQuickAddScreen, email-detail inline affordances, results-display inline affordances) show the auth badge
+  - RED state requires explicit confirmation before save; default action is Cancel
+  - GREY state (no auth header) does NOT block; only RED blocks -- avoid false-positive friction on legitimate internal mail
+  - The Sprint 38 Amazon phishing email would, with this feature, have shown RED at safe-sender quick-add and forced explicit confirmation; documenting that scenario as the lead test fixture
+  - DB v6 migration ships clean (adds `created_with_auth_state` columns); existing rows get `null` (= "unknown, pre-feature")
+  - Telemetry-free per `docs/PRIVACY_POLICY.md` -- the auth result is computed locally from headers and stored locally only
+- **Out of scope**:
+  - Re-evaluating EXISTING rules/safe-senders against new mail's auth state (separate F-item if/when needed -- requires touching the scan-evaluation hot path, which is heavier)
+  - Provider-side DKIM key fetching / verification (we trust the receiving server's Authentication-Results header per industry convention; computing DKIM ourselves is significantly more code and CPU)
+  - Per-account override "always trust this domain regardless of auth" -- if requested, add as a follow-up F-item
+- **Related**:
+  - Could subsume / coordinate with the architectural fix mentioned in the 2026-05-21 phishing email triage (auth-aware filtering as a Microsoft Store full-access release credibility marker).
+  - Implementation note: keep the badge widget reusable as `lib/ui/widgets/email_auth_badge.dart` so future surfaces (e.g., the email detail view header) can drop it in without per-screen wiring.
 
 **F87. Settings icon on Scan History pages (~1-2h) Priority 55 -- BACKLOG from Sprint 37**
 - Phase: UX consistency
