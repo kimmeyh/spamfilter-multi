@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-05-21 (F89 added: surface SPF/DKIM/DMARC authentication failures on rule + safe-sender quick-add prompts; sourced from 2026-05-21 phishing-bypass triage of an Amazon-spoofed safe-sender match)
+**Last Updated**: 2026-05-23 (F90 + F91 added: live-scan logging parity with background-scan logs; post-safe-sender-move source-folder dedup to reconcile AOL's "copy-not-move" classifier re-injection. Sourced from 2026-05-23 manual testing of `kimmeyharold@aol.com` live scans showing safe-sender emails landing in INBOX AND being re-copied to Bulk Mail with new UIDs each scan)
 
 ## How to Maintain This Document
 
@@ -290,6 +290,77 @@ These items were filed during Sprint 38 retrospective and are pre-loaded for the
   - Tests: existing `_fetchMessagesConcurrent` tests pass with batchGet implementation underneath; add 2-3 new tests with mocked HTTP for the `multipart/mixed` request/response parsing.
 - **Performance expected over Sprint 37 baseline**: One HTTP request per 100 messages instead of 100 (with 8 concurrent), so ~12-13x reduction in HTTP request count. Wall-clock improvement depends on Gmail batchGet latency vs N parallel small calls; expect modest additional speedup (~1.5-2x over Sprint 37) plus much-reduced rate-limit risk for very large mailboxes.
 - **Out of scope**: AOL / IMAP equivalents (no batch endpoint exists for IMAP folder-scoped FETCH); changes to the `_fetchMessagesConcurrent` public-ish signature (callers should not need to change).
+
+**F91. Post-safe-sender-move source-folder dedup (AOL "copy-not-move" reconciliation) (~4-6h, depends on F90 + new Message-ID capture) Priority 85 -- BACKLOG from Sprint 38 manual testing (Harold, 2026-05-23)**
+- Phase: Bug fix / IMAP move-semantics reconciliation
+- Platform: All IMAP-backed accounts (aol, yahoo, custom); Gmail OAuth path unaffected (Gmail uses labels, not folders)
+- Source: Harold, 2026-05-23 live-scan testing on `kimmeyharold@aol.com`. Across scans 3424/3425/3426 the same logical safe-sender emails (e.g., `patriciamarcin@crm.toyotaclevelandheights.com` original `email_received_date 2026-05-14`) appeared with new UIDs each scan (`142989 -> 143113 -> 143127`) in Bulk Mail. The `UID MOVE` to INBOX was reporting success, and Harold confirmed visually that the email IS landing in INBOX -- AND a duplicate is also appearing in Bulk Mail with a fresh UID. AOL's server-side spam classifier is the most likely cause: when we `UID MOVE` a Bulk-Mail-classified message to INBOX, AOL evaluates the appearance-in-INBOX as a delivery event, re-classifies it as bulk, and copies (effectively) the message back into Bulk Mail with a new UID. The next scan sees the new-UID copy as a fresh safe-sender hit, rescues it again, and the loop repeats indefinitely.
+- **Current behavior (problem)**:
+  - Safe-sender hit in Bulk Mail -> `UID MOVE` to INBOX succeeds -> AOL re-injects a copy back into Bulk Mail with a new UID
+  - Next scan sees the new-UID copy, matches it as safe-sender, rescues it again -- "Safe: N" chip stays non-zero forever, Bulk Mail accumulates fresh-UID copies of every rescued safe-sender email
+  - Cosmetic for the user (the rescued copy IS in INBOX where they want it) but persistent visual clutter in Bulk Mail and persistent rescue-loop work in every scan
+  - Foundational gap: app uses IMAP UID as the email identity (`email_message.id = uid`), so it cannot recognize "this is the same Message-ID I already rescued 30 seconds ago" across scans
+- **Desired behavior**:
+  - After a safe-sender `UID MOVE` to the target folder, capture the RFC 5322 `Message-ID` of the moved message
+  - SELECT the source folder (the one we moved FROM), `UID SEARCH HEADER Message-ID <captured-id>`
+  - If the same Message-ID exists in the source folder, **delete the source-folder copy** (move to the configured `deletedRuleFolder` / Trash, same safety semantics as a normal Delete action -- recoverable). This is the "AOL re-injected a duplicate -- clean it up" path
+  - If the same Message-ID does NOT exist in the source folder (clean move; AOL did not re-inject), no further action
+- **Phase 1 -- Capture RFC 5322 `Message-ID` header on every fetched email (~2h)**:
+  - Extend `EmailMessage` to carry `messageIdHeader: String?` (the `<...@...>` value extracted from the RFC 5322 `Message-ID:` header)
+  - `mobile-app/lib/adapters/email_providers/generic_imap_adapter.dart`: when fetching `BODY.PEEK[HEADER]` (or whatever the current fetch field set is), ensure `Message-ID` is included; parse it into the new field
+  - `mobile-app/lib/adapters/email_providers/gmail_api_adapter.dart`: extract from `payload.headers` (Gmail returns the full RFC 5322 header list)
+  - Persist in a new `email_actions.rfc5322_message_id` column (nullable; DB v6 migration). Existing rows get `null`.
+  - 3-5 unit tests covering: standard `<id@host>` format, missing-header case (set to null), case-insensitive lookup
+- **Phase 2 -- Post-move source-folder dedup (~2-3h)**:
+  - In `EmailScanner` Phase 6b-1 (safe-sender move batch), AFTER `moveToFolderBatch` returns success:
+    - For each successfully-moved message: SELECT source folder, `UID SEARCH HEADER MESSAGE-ID <messageIdHeader>` (case-insensitive per RFC 5322). Be careful with quoting / escaping the `<...>` brackets per IMAP `SEARCH HEADER` syntax (RFC 3501 §6.4.4).
+    - If matches return (one or more UIDs in source folder): move those UIDs to `deletedRuleFolder` (Trash), using the SAME `deletedRuleFolder` setting as a normal Delete action
+    - Increment a new counter `_safeSenderDedupCount` on `EmailScanProvider` (separate from `_deletedCount` -- this is "AOL re-injection cleanup", not a user-intent delete)
+    - Display in the scan summary as a sub-line under "Safe: N" -- e.g., "Safe: 7 (5 source-folder duplicates removed)" -- only when count > 0, so unaffected providers (Gmail) show clean "Safe: N"
+  - Log every dedup with the captured `Message-ID` so the new live-scan log (F90) makes the AOL-copy-not-move pattern visible to future debugging
+  - Skip dedup entirely if: `messageIdHeader` is null (cannot match without it), platform is Gmail OAuth (uses labels, not folders), or source folder == target folder (no dedup possible)
+  - 5-8 widget/integration tests with mocked IMAP responses covering: clean move (no source-folder duplicate -> no dedup), AOL-re-injection case (source-folder duplicate exists -> deleted), Message-ID missing (skip dedup, log warning), Gmail OAuth (skip dedup), source==target (skip dedup)
+- **Acceptance criteria**:
+  - After Sprint-39 build, a manual test on `kimmeyharold@aol.com` with the Toyota and Pocket safe-sender patterns should show: scan 1 rescues N safe-senders + deletes N source-folder duplicates; scan 2 minutes later finds 0 new safe-sender hits in Bulk Mail (assuming no genuinely-new mail from those senders)
+  - The new live-scan log (F90) records every dedup line with the Message-ID so the AOL behavior is documented for future reference
+  - Existing safe-sender behavior for providers that DON'T re-inject (Gmail OAuth, Yahoo with different classifier behavior) is unchanged -- the dedup is a no-op when the source-folder search returns empty
+  - DB v6 migration ships clean (adds `rfc5322_message_id` column; existing rows null)
+  - Trash safety preserved: the source-folder duplicate is moved to the configured `deletedRuleFolder` (default Trash), not hard-deleted. User can recover from Trash within AOL's retention window if anything goes wrong.
+- **Out of scope**:
+  - Cross-session dedup history ("we rescued this Message-ID yesterday too") -- per-scan-session dedup only
+  - Changing the safe-sender move semantics for non-AOL providers (F91 only ADDS post-move cleanup; it does not modify the move itself)
+  - Detecting the AOL re-injection PRE-emptively (e.g., by sniffing AOL's spam-classifier headers before moving) -- deferred; the post-move dedup is simpler and correct regardless of root cause
+- **Related**: depends on F90 (live-scan log) for log-driven verification; standalone otherwise.
+
+**F90. Live-scan logging parity with background-scan logs (~3-4h) Priority 80 -- BACKLOG from Sprint 38 debugging gap (Harold, 2026-05-23)**
+- Phase: Observability / Debugging infrastructure
+- Platform: All
+- Source: Harold, 2026-05-23. While debugging the AOL safe-sender re-injection pattern, we discovered the app captures NO persistent live-scan logs to disk. Background scans write `{logs}/background_scan_v{version}.log` (worker process status) AND per-account `background_scan_{email}_{date}.data.csv` (per-message disposition); live scans write only to stdout/stderr of the running UI process, which is lost when the app closes. The root-cause investigation had to reverse-engineer the scan path from the `spam_filter.db` `email_actions` table alone -- enough to diagnose F91, but missing the IMAP transaction details (UID MOVE response codes, SELECT mailbox counts, SEARCH results) that the runtime would have logged to stdout.
+- **Current behavior (problem)**:
+  - Background-scan logs at `{appDataDir}/logs/background_scan_v{version}.log` and per-day CSVs are written by the `--background-scan` worker process
+  - Live-scan output is `AppLogger.scan(...)` / `_logger.i(...)` which goes to stdout/stderr -- not captured to disk
+  - Debugging a live-scan issue after-the-fact (without the user re-running with a terminal attached) is impossible
+- **Desired behavior**:
+  - Live scans append to a per-account log file analogous to background scans: `{appDataDir}/logs/live_scan_{email_safe}_{YYYY-MM-DD}.log` (or `live_scan_v{version}.log` for cross-account runtime events -- decide in Phase 3 design)
+  - Same content shape as background-scan log: scan start, scan settings, evaluator step-progress, batch-action results, scan-complete summary, errors. Per-message lines optional (could be heavy for large scans -- decide in Phase 3 design)
+  - Use existing `AppLogger` / `Logger` infrastructure -- wire a file `LogOutput` for live scans similar to whatever the background-scan worker uses
+  - Same retention / rotation policy as background-scan logs (whatever that currently is -- audit during Phase 3)
+- **Phase 1 -- Design (~1h)**:
+  - Audit background-scan log writer in `mobile-app/windows/runner/main.cpp` (LogBackgroundScanSkip) + `mobile-app/lib/main.dart` (worker log setup) + `mobile-app/lib/core/services/background_scan_windows_worker.dart` -- understand current file path, rotation, and Logger configuration
+  - Decide naming: `live_scan_v{version}.log` (cross-account, mirrors background_scan log shape) vs. `live_scan_{email}_{date}.log` (per-account, mirrors per-day CSV shape). Recommendation: do BOTH -- a runtime log file (cross-account events: scan start, errors) AND per-account-per-day CSV (per-message disposition). Same shape as background scan -- a developer debugging an issue should be able to use the same grep/jq workflow on either log type.
+  - Decide whether per-message lines (`AppLogger.scan('  Safe sender to move: id=...')`) should be in the runtime log, the CSV, or both. Default proposal: CSV gets one row per email (matches background-scan CSV); runtime log gets the high-level batch transitions only (keeps file size manageable for hour-long scans).
+  - Decide rotation policy: same as background scan (one file per version, append-only) OR more aggressive (rotate at N MB). Default: match background scan exactly for consistency.
+- **Phase 2 -- Implementation (~2-3h)**:
+  - Wire a file `LogOutput` for live scans (look at how background-scan worker does it -- `mobile-app/lib/core/services/background_scan_windows_worker.dart` likely has the pattern)
+  - In `EmailScanner.scanInbox` or its caller, ensure the per-account CSV row writer is invoked at scan-complete (mirroring whatever background-scan worker does for CSV export)
+  - Verify the log path uses the environment-aware `AppPaths` (dev binaries write to `MyEmailSpamFilter_Dev/logs/`, prod to `MyEmailSpamFilter/logs/`) per ADR-0035
+  - Add a CLAUDE.md / `docs/TROUBLESHOOTING.md` note pointing future debugging at the new log path
+- **Acceptance criteria**:
+  - Run a live scan in dev -> a new file appears at `{MyEmailSpamFilter_Dev}/logs/live_scan_v{version}.log` (or chosen name) with scan-lifecycle events
+  - Run a live scan in dev -> a new per-account CSV appears at `{MyEmailSpamFilter_Dev}/logs/live_scan_{email}_{date}.data.csv` (or chosen name) with one row per processed email matching the background-scan CSV shape
+  - Closing and re-opening the dev app preserves the log file; subsequent live scans append (do not truncate)
+  - F91 dedup events (Phase 2 of F91) appear in the live-scan log with the captured Message-ID, providing the debugging visibility we lacked on 2026-05-23
+  - 2-3 widget/integration tests verifying log path + append semantics; one manual-test step in the Sprint 39 plan
 
 **F89. Surface SPF/DKIM/DMARC authentication failures on rule + safe-sender quick-add prompts (~6-10h, two-phase) Priority 75 -- BACKLOG from Sprint 38 phishing-bypass observation (Harold, 2026-05-21)**
 - Phase: Security / UX -- anti-phishing
