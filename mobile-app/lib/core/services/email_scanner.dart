@@ -17,6 +17,7 @@ import '../storage/scan_result_store.dart';
 import '../storage/settings_store.dart';
 import '../storage/unmatched_email_store.dart';
 import '../utils/app_logger.dart';
+import 'live_scan_logger.dart';
 import '../../adapters/email_providers/generic_imap_adapter.dart';
 import '../../adapters/email_providers/gmail_api_adapter.dart';
 import '../../adapters/email_providers/platform_registry.dart';
@@ -85,10 +86,22 @@ class EmailScanner {
     _ruleSetChangeCount = 0;
     ruleSetProvider.addListener(_onRuleSetChanged);
 
+    // F90 (Sprint 39): live-scan runtime log only for `scanType == 'manual'`.
+    // Demo scans use mock data and have no operational value to debug from
+    // disk logs; background scans already write their own log via
+    // `BackgroundScanWindowsWorker._bgLog`. Demo + background both skip.
+    final bool isLiveScan = scanType == 'manual' && platformId != 'demo';
+
     try {
       AppLogger.scan('========== SCAN START ==========');
       AppLogger.scan('platformId=$platformId, accountId=$accountId');
       AppLogger.scan('daysBack=$daysBack, folders=$folderNames, scanType=$scanType');
+      if (isLiveScan) {
+        await LiveScanLogger.log(
+          'SCAN START platformId=$platformId accountId=$accountId '
+          'daysBack=$daysBack folders=$folderNames scanMode=${scanProvider.scanMode}',
+        );
+      }
 
       // [NEW] SPRINT 4: Initialize persistence stores if not already done
       final dbHelper = DatabaseHelper();
@@ -644,9 +657,29 @@ class EmailScanner {
       }
 
       AppLogger.scan('========== SCAN COMPLETE ==========');
+
+      // F90 (Sprint 39): write live-scan summary + per-account CSV/XLSX
+      // export. Mirrors `BackgroundScanWindowsWorker` end-of-scan logging.
+      if (isLiveScan) {
+        await LiveScanLogger.log(
+          'SCAN COMPLETE accountId=$accountId '
+          'found=${scanProvider.totalEmails} processed=${scanProvider.processedCount} '
+          'deleted=${scanProvider.deletedCount} moved=${scanProvider.movedCount} '
+          'safe=${scanProvider.safeSendersCount} noRule=${scanProvider.noRuleCount} '
+          'errors=${scanProvider.errorCount}',
+        );
+        await LiveScanLogger.exportCsvIfEnabled(
+          scanProvider: scanProvider,
+          accountId: accountId,
+          settingsStore: _settingsStore,
+        );
+      }
     } catch (e, st) {
       // Handle scan error
       AppLogger.error('SCAN FAILED with exception', error: e, stackTrace: st);
+      if (isLiveScan) {
+        await LiveScanLogger.log('SCAN FAILED accountId=$accountId error=$e');
+      }
       await scanProvider.errorScan('Scan failed: $e');
       rethrow;
     } finally {

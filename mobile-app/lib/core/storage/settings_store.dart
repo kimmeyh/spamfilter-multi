@@ -48,6 +48,7 @@ class SettingsStore {
   static const String keyBackgroundScanFolders = 'background_scan_folders';
   static const String keyCsvExportDirectory = 'csv_export_directory';
   static const String keyBackgroundScanDebugCsv = 'background_scan_debug_csv';
+  static const String keyLiveScanDebugCsv = 'live_scan_debug_csv';
   static const String keyManualScanDaysBack = 'manual_scan_days_back';
   static const String keyBackgroundScanDaysBack = 'background_scan_days_back';
   static const String keyScanHistoryRetentionDays = 'scan_history_retention_days';
@@ -68,6 +69,11 @@ class SettingsStore {
   static const List<String> defaultBackgroundScanFolders = ['INBOX'];
   static const String? defaultCsvExportDirectory = null; // null means use Downloads folder
   static const bool defaultBackgroundScanDebugCsv = false;
+  /// F90 (Sprint 39): live-scan debug CSV opt-in. Default true in dev
+  /// (since dev users actively debug) and false in prod (to avoid
+  /// surprise disk usage for end users). Runtime log file is always on
+  /// (it is tiny -- scan start/complete events only).
+  static const bool defaultLiveScanDebugCsv = false;
   static const int defaultManualScanDaysBack = 0; // 0 = all emails
   static const int defaultBackgroundScanDaysBack = 0; // 0 = all emails
   static const int defaultScanHistoryRetentionDays = 7; // days to keep scan history
@@ -178,6 +184,24 @@ class SettingsStore {
   /// Set whether debug CSV export is enabled for background scans
   Future<void> setBackgroundScanDebugCsv(bool enabled) async {
     await _setAppSetting(keyBackgroundScanDebugCsv, enabled.toString(), 'bool');
+  }
+
+  /// F90 (Sprint 39): get whether debug CSV/XLSX export is enabled for
+  /// live (manual) scans. When true, every live scan appends to a
+  /// per-account per-day `live_scan_{email}_{date}.data.csv` and
+  /// regenerates the matching `.xlsx` (mirrors background-scan CSV).
+  /// The runtime log file `{logs}/{prefix}live_scan_v0.5.3.log` is
+  /// written regardless of this setting.
+  Future<bool> getLiveScanDebugCsv() async {
+    final value = await _getAppSetting(keyLiveScanDebugCsv);
+    if (value == null) return defaultLiveScanDebugCsv;
+    return value == 'true';
+  }
+
+  /// F90 (Sprint 39): set whether debug CSV/XLSX export is enabled for
+  /// live scans.
+  Future<void> setLiveScanDebugCsv(bool enabled) async {
+    await _setAppSetting(keyLiveScanDebugCsv, enabled.toString(), 'bool');
   }
 
   // ============================================================
