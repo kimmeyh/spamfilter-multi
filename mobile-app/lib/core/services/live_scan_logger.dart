@@ -36,7 +36,12 @@ class LiveScanLogger {
     if (_cachedLogDir != null) return _cachedLogDir!;
     final appSupport = await getApplicationSupportDirectory();
     final envSuffix = AppEnvironment.dataDirSuffix;
-    _cachedLogDir = '${appSupport.path}$envSuffix\\logs';
+    // Use platform-correct separators (path.join). Live scans run on all
+    // platforms (Windows desktop, Android, iOS, macOS, Linux), unlike
+    // `BackgroundScanWindowsWorker` which is Windows-only and hard-codes
+    // backslashes. Concatenating `\\logs` here on Android would create a
+    // literal "files\logs" directory name on the Linux filesystem.
+    _cachedLogDir = path.join('${appSupport.path}$envSuffix', 'logs');
     return _cachedLogDir!;
   }
 
@@ -48,7 +53,7 @@ class LiveScanLogger {
       final logDir = await getLogDir();
       final logPrefix = AppEnvironment.logPrefix;
       final logFile = File(
-        '$logDir\\${logPrefix}live_scan_v0.5.3.log',
+        path.join(logDir, '${logPrefix}live_scan_v0.5.3.log'),
       );
       final timestamp = DateTime.now().toIso8601String();
       await logFile.parent.create(recursive: true);

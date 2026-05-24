@@ -69,10 +69,13 @@ class SettingsStore {
   static const List<String> defaultBackgroundScanFolders = ['INBOX'];
   static const String? defaultCsvExportDirectory = null; // null means use Downloads folder
   static const bool defaultBackgroundScanDebugCsv = false;
-  /// F90 (Sprint 39): live-scan debug CSV opt-in. Default true in dev
-  /// (since dev users actively debug) and false in prod (to avoid
-  /// surprise disk usage for end users). Runtime log file is always on
-  /// (it is tiny -- scan start/complete events only).
+  /// F90 (Sprint 39): live-scan debug CSV opt-in. Default `false` for
+  /// both dev and prod (matches `defaultBackgroundScanDebugCsv`). The
+  /// Settings > Manual Scan tab Debug section exposes a toggle so dev
+  /// users can opt in without a code change. The runtime log file
+  /// (`{logs}/{prefix}live_scan_v0.5.3.log`) is always on regardless
+  /// of this setting -- it captures scan-lifecycle events only and is
+  /// small enough that surprise disk usage is not a concern.
   static const bool defaultLiveScanDebugCsv = false;
   static const int defaultManualScanDaysBack = 0; // 0 = all emails
   static const int defaultBackgroundScanDaysBack = 0; // 0 = all emails

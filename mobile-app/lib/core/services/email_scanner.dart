@@ -17,6 +17,7 @@ import '../storage/scan_result_store.dart';
 import '../storage/settings_store.dart';
 import '../storage/unmatched_email_store.dart';
 import '../utils/app_logger.dart';
+import '../../util/redact.dart';
 import 'live_scan_logger.dart';
 import '../../adapters/email_providers/generic_imap_adapter.dart';
 import '../../adapters/email_providers/gmail_api_adapter.dart';
@@ -97,8 +98,12 @@ class EmailScanner {
       AppLogger.scan('platformId=$platformId, accountId=$accountId');
       AppLogger.scan('daysBack=$daysBack, folders=$folderNames, scanType=$scanType');
       if (isLiveScan) {
+        // PII redaction: live-scan log is persisted to disk and may be
+        // shared in bug reports, so accountId (typically an email) is
+        // always redacted via Redact.accountId (e.g., u***@example.com).
+        // Matches BackgroundScanWindowsWorker._bgLog convention.
         await LiveScanLogger.log(
-          'SCAN START platformId=$platformId accountId=$accountId '
+          'SCAN START platformId=$platformId accountId=${Redact.accountId(accountId)} '
           'daysBack=$daysBack folders=$folderNames scanMode=${scanProvider.scanMode}',
         );
       }
@@ -130,7 +135,7 @@ class EmailScanner {
         }
         AppLogger.scan('Step 2: Credentials loaded for ${credentials.email}');
         if (isLiveScan) {
-          await LiveScanLogger.log('Step 2: Credentials loaded for ${credentials.email}');
+          await LiveScanLogger.log('Step 2: Credentials loaded for ${Redact.email(credentials.email)}');
         }
         await platform.loadCredentials(credentials);
         AppLogger.scan('Step 2: IMAP connected and authenticated');
@@ -737,7 +742,7 @@ class EmailScanner {
       // export. Mirrors `BackgroundScanWindowsWorker` end-of-scan logging.
       if (isLiveScan) {
         await LiveScanLogger.log(
-          'SCAN COMPLETE accountId=$accountId '
+          'SCAN COMPLETE accountId=${Redact.accountId(accountId)} '
           'found=${scanProvider.totalEmails} processed=${scanProvider.processedCount} '
           'deleted=${scanProvider.deletedCount} moved=${scanProvider.movedCount} '
           'safe=${scanProvider.safeSendersCount} noRule=${scanProvider.noRuleCount} '
@@ -753,7 +758,13 @@ class EmailScanner {
       // Handle scan error
       AppLogger.error('SCAN FAILED with exception', error: e, stackTrace: st);
       if (isLiveScan) {
-        await LiveScanLogger.log('SCAN FAILED accountId=$accountId error=$e');
+        // Note: exception text is included as-is. It may transitively
+        // contain identifiers in rare cases (e.g., an IMAP error echoing
+        // a UID search query that included an email-shaped pattern), but
+        // suppressing exception text would make scan failures undebuggable.
+        // If a specific exception type proves to leak PII in practice,
+        // add targeted scrubbing here.
+        await LiveScanLogger.log('SCAN FAILED accountId=${Redact.accountId(accountId)} error=$e');
       }
       await scanProvider.errorScan('Scan failed: $e');
       rethrow;
