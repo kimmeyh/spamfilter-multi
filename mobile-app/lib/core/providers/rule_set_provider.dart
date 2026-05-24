@@ -228,9 +228,22 @@ class RuleSetProvider extends ChangeNotifier {
       _logger.i('Added rule: ${rule.name}');
       notifyListeners();
     } catch (e) {
+      // BUG-S39-2 (Sprint 39): rethrow so UI callers can surface the actual
+      // failure to the user. Pre-fix, this catch silently swallowed
+      // exceptions (UNIQUE-constraint violations, ReDoS rejections, disk
+      // I/O errors) -- only set `_error` on this provider and called
+      // `notifyListeners`. UI callers (e.g., results_display_screen
+      // `_createBlockRule`) saw a successful return and showed a green
+      // "Created rule" snackbar despite no row being inserted. Sourced
+      // from 2026-05-23 bug 2 investigation: Harold added the same
+      // underscore block rule four times and saw four success snackbars
+      // because every insert collided with an earlier hyphen-variant
+      // rule's name (see BUG-S39-1 fix that prevents the collision in
+      // the first place; this rethrow is the second line of defense).
       _setError('Failed to add rule: $e');
       _logger.e('Failed to add rule', error: e);
       notifyListeners();
+      rethrow;
     }
   }
 
@@ -322,9 +335,12 @@ class RuleSetProvider extends ChangeNotifier {
       _logger.i('Added safe sender: $pattern (type: $patternType)');
       notifyListeners();
     } catch (e) {
+      // BUG-S39-2 (Sprint 39): rethrow so UI callers see the failure.
+      // See `addRule` for the full rationale.
       _setError('Failed to add safe sender: $e');
       _logger.e('Failed to add safe sender', error: e);
       notifyListeners();
+      rethrow;
     }
   }
 

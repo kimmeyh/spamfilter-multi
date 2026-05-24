@@ -2501,6 +2501,26 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     }
   }
 
+  /// BUG-S39-1 (Sprint 39): sanitize `input` for use inside a `rules.name`
+  /// or `safe_senders.name` value. Preserves the characters that
+  /// distinguish email-shaped patterns -- `_`, `-`, `@`, `.` -- so distinct
+  /// inputs always yield distinct names. Any other character (whitespace,
+  /// punctuation, non-ASCII) is replaced with `_` so the resulting name is
+  /// readable and shell-safe.
+  ///
+  /// Per Harold (2026-05-24): "should not be collapsing for `<email>@`".
+  /// The pre-fix sanitizer was `replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')`,
+  /// which collapsed all four distinguishing characters into `_` and
+  /// caused `account_update@amazon.com` and `account-update@amazon.com`
+  /// to produce the same rule name `Block_account_update_amazon_com`.
+  /// The DB has `name TEXT NOT NULL UNIQUE` on `rules`, so the second
+  /// insert raised a UNIQUE-constraint violation that `RuleSetProvider.
+  /// addRule` then silently swallowed (see BUG-S39-2). The UI showed
+  /// "Created rule" snackbar despite no row being inserted.
+  String _sanitizeForRuleName(String input) {
+    return input.replaceAll(RegExp(r'[^a-zA-Z0-9._@-]'), '_');
+  }
+
   /// Create a block rule (persists to database and YAML)
   /// Types: 'from' (email), 'exactDomain' (@subdomain.domain.com), 'entireDomain' (@*.domain.com), 'subject'
   Future<void> _createBlockRule(String type, String value, {EmailMessage? email}) async {
@@ -2519,14 +2539,21 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           // Block exact email - escape special chars
           final escaped = value.replaceAll('.', r'\.').replaceAll('@', r'@');
           pattern = '^$escaped\$';
-          ruleName = 'Block_${value.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}';
+          // BUG-S39-1 (Sprint 39): preserve `_`, `-`, `@`, `.` so distinct
+          // email addresses (e.g., `account_update@amazon.com` vs
+          // `account-update@amazon.com`) produce distinct rule names.
+          // The pre-fix sanitizer `[^a-zA-Z0-9]` -> `_` collapsed all four
+          // characters into `_`, causing a UNIQUE-constraint collision on
+          // the `rules.name` column that was then silently swallowed by
+          // `RuleSetProvider.addRule`. See also BUG-S39-2.
+          ruleName = 'Block_${_sanitizeForRuleName(value)}';
           displayMessage = 'Created rule to block email "$value"';
           break;
         case 'exactDomain':
           // Block exact domain (e.g., @subdomain.domain.com)
           final escaped = value.replaceAll('.', r'\.').replaceAll('@', r'@');
           pattern = '$escaped\$';
-          ruleName = 'Block_ExactDomain_${value.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}';
+          ruleName = 'Block_ExactDomain_${_sanitizeForRuleName(value)}';
           displayMessage = 'Created rule to block exact domain "$value"';
           break;
         case 'entireDomain':
@@ -2534,14 +2561,14 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           // Regex: @(?:[a-z0-9-]+\.)*domain\.com$
           final escaped = value.replaceAll('.', r'\.');
           pattern = r'@(?:[a-z0-9-]+\.)*' + escaped + r'$';
-          ruleName = 'Block_EntireDomain_${value.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}';
+          ruleName = 'Block_EntireDomain_${_sanitizeForRuleName(value)}';
           displayMessage = 'Created rule to block entire domain "*.$value"';
           break;
         case 'subject':
           // Block subject containing text - escape special regex chars
           final escaped = value.replaceAll(RegExp(r'[.*+?^${}()|[\]\\]'), r'\$&');
           pattern = escaped;
-          ruleName = 'Block_Subject_${value.substring(0, value.length.clamp(0, 20)).replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}';
+          ruleName = 'Block_Subject_${_sanitizeForRuleName(value.substring(0, value.length.clamp(0, 40)))}';
           displayMessage = 'Created rule to block subject containing "$value"';
           break;
         default:

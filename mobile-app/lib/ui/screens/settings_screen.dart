@@ -68,6 +68,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   ScanMode _backgroundScanMode = SettingsStore.defaultBackgroundScanMode;
   List<String> _backgroundScanFolders = List.from(SettingsStore.defaultBackgroundScanFolders);
   bool _backgroundScanDebugCsv = SettingsStore.defaultBackgroundScanDebugCsv;
+  // F90 (Sprint 39): live-scan debug CSV opt-in (Manual Scan tab Debug section)
+  bool _liveScanDebugCsv = SettingsStore.defaultLiveScanDebugCsv;
   String? _csvExportDirectory;
   // F43: Track current folder selections for display
   String? _safeSenderFolder;
@@ -166,6 +168,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       _backgroundScanFolders = accountBgFolders ?? await _settingsStore.getBackgroundScanFolders();
 
       _backgroundScanDebugCsv = await _settingsStore.getBackgroundScanDebugCsv();
+      _liveScanDebugCsv = await _settingsStore.getLiveScanDebugCsv();
       _csvExportDirectory = await _settingsStore.getCsvExportDirectory();
 
       // F43: Load current folder selections for display
@@ -721,6 +724,17 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         // Import / Export YAML), per Harold's UX feedback 2026-05-04.
         // CSV export dir is now used by Manage Rules + Manage Safe Senders
         // export buttons too, not just Manual Scan results.
+        const SizedBox(height: 24),
+        _buildSectionHeader('Debug'),
+        SwitchListTile(
+          title: const Text('Export CSV After Each Scan'),
+          subtitle: const Text('Write scan results CSV for debugging'),
+          value: _liveScanDebugCsv,
+          onChanged: (value) async {
+            setState(() => _liveScanDebugCsv = value);
+            await _settingsStore.setLiveScanDebugCsv(value);
+          },
+        ),
       ],
     ));
   }

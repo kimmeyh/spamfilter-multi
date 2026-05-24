@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-05-23 (F90 + F91 added: live-scan logging parity with background-scan logs; post-safe-sender-move source-folder dedup to reconcile AOL's "copy-not-move" classifier re-injection. Sourced from 2026-05-23 manual testing of `kimmeyharold@aol.com` live scans showing safe-sender emails landing in INBOX AND being re-copied to Bulk Mail with new UIDs each scan)
+**Last Updated**: 2026-05-24 (F92 added: dedicated tests for `LiveScanLogger`, deferred from PR #259 Copilot review)
 
 ## How to Maintain This Document
 
@@ -290,6 +290,24 @@ These items were filed during Sprint 38 retrospective and are pre-loaded for the
   - Tests: existing `_fetchMessagesConcurrent` tests pass with batchGet implementation underneath; add 2-3 new tests with mocked HTTP for the `multipart/mixed` request/response parsing.
 - **Performance expected over Sprint 37 baseline**: One HTTP request per 100 messages instead of 100 (with 8 concurrent), so ~12-13x reduction in HTTP request count. Wall-clock improvement depends on Gmail batchGet latency vs N parallel small calls; expect modest additional speedup (~1.5-2x over Sprint 37) plus much-reduced rate-limit risk for very large mailboxes.
 - **Out of scope**: AOL / IMAP equivalents (no batch endpoint exists for IMAP folder-scoped FETCH); changes to the `_fetchMessagesConcurrent` public-ish signature (callers should not need to change).
+
+**F92. Dedicated tests for `LiveScanLogger` (~2-3h) Priority 50 -- BACKLOG from Sprint 39 warmup PR #259 Copilot review (2026-05-23)**
+- Phase: Testing
+- Platform: All (unit + integration tests)
+- Source: Copilot review on PR #259 commit `840c6ea`: "New service `LiveScanLogger` adds file path construction plus setting-gated CSV/XLSX export, but there are no dedicated tests. Please add at least minimal unit coverage for the gating behavior (disabled returns 0/no writes) and basic filename/path construction."
+- **Current state**: `mobile-app/lib/core/services/live_scan_logger.dart` shipped in PR #259 with no unit-test coverage. `SettingsStore.getLiveScanDebugCsv` is tested (3 tests in `settings_store_test.dart`) and the per-step log calls in `EmailScanner.scanInbox` are exercised indirectly by the full-suite tests, but the logger's own file IO, path construction, gating behavior, and CSV/XLSX writers are untested.
+- **What to add (minimum bar)**:
+  - `getLogDir()` returns environment-aware path -- verify dev vs prod suffix; verify cross-platform path separator (path.join) on Linux + Windows + macOS
+  - `log(message)` is silent on IO failure (closed file handle, full disk simulation) -- assert no throw
+  - `log(message)` appends a timestamped `[LIVE] <message>\n` line in append mode
+  - `exportCsvIfEnabled` returns 0 and writes no file when the setting is off
+  - `exportCsvIfEnabled` writes both `.data.csv` and `.xlsx` when the setting is on
+  - `exportCsvIfEnabled` regenerates the XLSX from the accumulated CSV correctly (multiple-scan accumulation)
+- **Implementation notes**:
+  - `getApplicationSupportDirectory()` from `path_provider` requires either a test override or running under `PathProviderPlatform.instance` mock. The Flutter test harness's `setMockMethodCallHandler` pattern is the standard approach (see `mobile-app/test/unit/services/background_scan_*` for analogous patterns -- `BackgroundScanWindowsWorker` has similar file IO but is also untested at the file-IO layer, so the test pattern may need to be invented here).
+  - Cross-platform path-separator test specifically requires running on multiple platforms or mocking `path.join` -- acceptable to assert against the `path.join`-produced string in a fixed test environment.
+- **Acceptance criteria**: 5-8 new tests added; full suite remains green (1460+ -> 1465+); flutter analyze 0 issues.
+- **Out of scope**: testing `LiveScanLogger.log` actually writes to the production log path on a live device -- that's manual smoke testing (already done in PR #259 round 1).
 
 **F91. Post-safe-sender-move source-folder dedup (AOL "copy-not-move" reconciliation) (~4-6h, depends on F90 + new Message-ID capture) Priority 85 -- BACKLOG from Sprint 38 manual testing (Harold, 2026-05-23)**
 - Phase: Bug fix / IMAP move-semantics reconciliation
