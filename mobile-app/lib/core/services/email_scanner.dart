@@ -118,6 +118,9 @@ class EmailScanner {
         throw Exception('Platform $platformId not supported');
       }
       AppLogger.scan('Step 1: Platform adapter loaded: ${platform.runtimeType}');
+      if (isLiveScan) {
+        await LiveScanLogger.log('Step 1: Platform adapter loaded: ${platform.runtimeType}');
+      }
 
       // 2. Load credentials (skip for demo platform)
       if (platformId != 'demo') {
@@ -126,13 +129,22 @@ class EmailScanner {
           throw Exception('No credentials found for account $accountId');
         }
         AppLogger.scan('Step 2: Credentials loaded for ${credentials.email}');
+        if (isLiveScan) {
+          await LiveScanLogger.log('Step 2: Credentials loaded for ${credentials.email}');
+        }
         await platform.loadCredentials(credentials);
         AppLogger.scan('Step 2: IMAP connected and authenticated');
+        if (isLiveScan) {
+          await LiveScanLogger.log('Step 2: IMAP/provider connected and authenticated');
+        }
       }
 
       // 2.5. Configure deleted rule folder from account settings
       final deletedRuleFolder = await _settingsStore.getAccountDeletedRuleFolder(accountId);
       platform.setDeletedRuleFolder(deletedRuleFolder);
+      if (isLiveScan) {
+        await LiveScanLogger.log('Step 2.5: deletedRuleFolder=${deletedRuleFolder ?? "(default Trash)"}');
+      }
 
       // 3. [UPDATED] ISSUE #128: Start scan with 0 emails, will increment as found
       AppLogger.scan('Step 3: Calling scanProvider.startScan(totalEmails: 0, scanType: $scanType)');
@@ -176,6 +188,9 @@ class EmailScanner {
             daysBack: daysBack,
           );
           AppLogger.scan('Step 4: Folder "$folderName" returned ${folderMessages.length} messages');
+          if (isLiveScan) {
+            await LiveScanLogger.log('Step 4: Folder "$folderName" returned ${folderMessages.length} messages');
+          }
 
           messages.addAll(folderMessages);
 
@@ -211,10 +226,20 @@ class EmailScanner {
           }
         } catch (e, st) {
           AppLogger.error('Step 4: EXCEPTION fetching folder "$folderName"', error: e, stackTrace: st);
+          if (isLiveScan) {
+            await LiveScanLogger.log('Step 4: EXCEPTION fetching folder "$folderName": $e');
+          }
           // Continue with other folders even if one fails
         }
       }
       AppLogger.scan('Step 4: COMPLETE - Total messages across all folders: ${messages.length}');
+      if (isLiveScan) {
+        await LiveScanLogger.log('Step 4 COMPLETE: total messages across all folders = ${messages.length}');
+        await LiveScanLogger.log(
+          'Step 5: Rules loaded: ${ruleSetProvider.rules.rules.length}, '
+          'Safe senders loaded: ${ruleSetProvider.safeSenders.safeSenders.length}',
+        );
+      }
 
       // 5. Get rule evaluator
       // DIAGNOSTIC: Log rule and safe sender counts for troubleshooting
@@ -332,6 +357,12 @@ class EmailScanner {
       final safeCount = evaluatedEmails.where((e) => e.action == EmailActionType.safeSender).length;
       AppLogger.scan('Step 6a COMPLETE: Evaluated ${evaluatedEmails.length} emails: none=$noneCount, delete=$deleteCount, moveToJunk=$moveCount, safeSender=$safeCount');
       AppLogger.scan('Step 6a: scanProvider counts after eval: processed=${scanProvider.processedCount}, noRule=${scanProvider.noRuleCount}, deleted=${scanProvider.deletedCount}, moved=${scanProvider.movedCount}, safe=${scanProvider.safeSendersCount}');
+      if (isLiveScan) {
+        await LiveScanLogger.log(
+          'Step 6a COMPLETE: evaluated=${evaluatedEmails.length} '
+          'none=$noneCount delete=$deleteCount moveToJunk=$moveCount safeSender=$safeCount',
+        );
+      }
 
       // --- Phase 6b: Batch execute actions ---
       final bool canExecuteRules =
@@ -378,6 +409,14 @@ class EmailScanner {
 
       AppLogger.scan('Step 6b: Batch execution starting. canExecuteRules=$canExecuteRules, canExecuteSafeSenders=$canExecuteSafeSenders');
       AppLogger.scan('Step 6b: Batch sizes: delete=${deleteEmails.length}, moveToJunk=${moveToJunkEmails.length}, safeSender=${safeSenderMoveEmails.length}');
+      if (isLiveScan) {
+        await LiveScanLogger.log(
+          'Step 6b: Batch execution starting. canExecuteRules=$canExecuteRules '
+          'canExecuteSafeSenders=$canExecuteSafeSenders '
+          'sizes: delete=${deleteEmails.length} moveToJunk=${moveToJunkEmails.length} '
+          'safeSender=${safeSenderMoveEmails.length} target="$safeSenderTarget"',
+        );
+      }
 
       // --- Priority 1: Safe sender moves (rescue good emails first) ---
       AppLogger.scan('Step 6b-1: Safe sender move batch: ${safeSenderMoveEmails.length} emails to move (canExecuteSafeSenders=$canExecuteSafeSenders, target="$safeSenderTarget")');
@@ -406,12 +445,24 @@ class EmailScanner {
             safeSenderTarget,
           );
           AppLogger.scan('Step 6b-1: Safe sender move to "$safeSenderTarget": ${moveResult.successCount} succeeded, ${moveResult.failureCount} failed');
+          if (isLiveScan) {
+            await LiveScanLogger.log(
+              'Step 6b-1: Safe sender move to "$safeSenderTarget": '
+              '${moveResult.successCount} succeeded, ${moveResult.failureCount} failed',
+            );
+          }
           if (moveResult.failedIds.isNotEmpty) {
             AppLogger.warning('Safe sender move failures: ${moveResult.failedIds}');
+            if (isLiveScan) {
+              await LiveScanLogger.log('Step 6b-1: failures: ${moveResult.failedIds}');
+            }
           }
           batchErrors.addAll(moveResult.failedIds);
         } catch (e) {
           AppLogger.warning('Batch safe sender move failed entirely: $e');
+          if (isLiveScan) {
+            await LiveScanLogger.log('Step 6b-1: BATCH FAILED ENTIRELY: $e');
+          }
           for (final evaluated in safeSenderMoveEmails) {
             batchErrors[evaluated.message.id] = 'Move safe sender failed: $e';
           }
@@ -487,9 +538,21 @@ class EmailScanner {
             FilterAction.delete,
           );
           AppLogger.scan('Step 6b-2b: takeActionBatch (delete) DONE: ${deleteResult.successCount} succeeded, ${deleteResult.failureCount} failed');
+          if (isLiveScan) {
+            await LiveScanLogger.log(
+              'Step 6b-2: Delete batch DONE: '
+              '${deleteResult.successCount} succeeded, ${deleteResult.failureCount} failed',
+            );
+            if (deleteResult.failedIds.isNotEmpty) {
+              await LiveScanLogger.log('Step 6b-2: failures: ${deleteResult.failedIds}');
+            }
+          }
           batchErrors.addAll(deleteResult.failedIds);
         } catch (e) {
           AppLogger.warning('Batch delete failed entirely: $e');
+          if (isLiveScan) {
+            await LiveScanLogger.log('Step 6b-2: BATCH FAILED ENTIRELY: $e');
+          }
           for (final msg in deleteMessages) {
             batchErrors[msg.id] = 'Delete failed: $e';
           }
@@ -554,9 +617,21 @@ class EmailScanner {
             FilterAction.moveToJunk,
           );
           AppLogger.scan('Step 6b-3: takeActionBatch (moveToJunk) DONE: ${junkResult.successCount} succeeded, ${junkResult.failureCount} failed');
+          if (isLiveScan) {
+            await LiveScanLogger.log(
+              'Step 6b-3: moveToJunk batch DONE: '
+              '${junkResult.successCount} succeeded, ${junkResult.failureCount} failed',
+            );
+            if (junkResult.failedIds.isNotEmpty) {
+              await LiveScanLogger.log('Step 6b-3: failures: ${junkResult.failedIds}');
+            }
+          }
           batchErrors.addAll(junkResult.failedIds);
         } catch (e) {
           AppLogger.warning('Batch moveToJunk failed entirely: $e');
+          if (isLiveScan) {
+            await LiveScanLogger.log('Step 6b-3: BATCH FAILED ENTIRELY: $e');
+          }
           for (final evaluated in moveToJunkEmails) {
             batchErrors[evaluated.message.id] = 'Move to junk failed: $e';
           }

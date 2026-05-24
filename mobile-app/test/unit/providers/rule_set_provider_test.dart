@@ -144,6 +144,46 @@ void main() {
       final dbRules = await ruleStore.loadRules();
       expect(dbRules.rules, isEmpty);
     });
+
+    // BUG-S39-2 (Sprint 39): when the underlying DB insert fails (e.g.,
+    // UNIQUE constraint violation on `name`), the provider must RETHROW
+    // so UI callers can show the error. Pre-fix the catch swallowed
+    // the exception silently and the UI showed a success snackbar.
+    test('rethrows when rule name collides with an existing rule', () async {
+      await provider.loadRules();
+      final first = Rule(
+        name: 'Block_account_update_amazon_com',
+        enabled: true,
+        conditions: RuleConditions(
+            type: 'OR', header: [r'^account_update@amazon\.com$']),
+        actions: RuleActions(delete: true),
+        isLocal: true,
+        executionOrder: 40,
+      );
+      await provider.addRule(first);
+      expect(provider.rules.rules.length, equals(1));
+
+      // Second insert with the SAME name -- must rethrow, not silently
+      // succeed. UI relies on this so it can show a red snackbar.
+      final collision = Rule(
+        name: 'Block_account_update_amazon_com',
+        enabled: true,
+        conditions: RuleConditions(
+            type: 'OR', header: [r'^account-update@amazon\.com$']),
+        actions: RuleActions(delete: true),
+        isLocal: true,
+        executionOrder: 40,
+      );
+      await expectLater(
+        () => provider.addRule(collision),
+        throwsA(isA<Object>()),
+      );
+
+      // Local cache should NOT contain the failed insert
+      expect(provider.rules.rules.length, equals(1));
+      expect(provider.rules.rules.first.conditions.header.first,
+          equals(r'^account_update@amazon\.com$'));
+    });
   });
 
   group('removeRule', () {
@@ -245,6 +285,22 @@ void main() {
 
       final dbSenders = await safeSenderStore.loadSafeSenders();
       expect(dbSenders.first.patternType, equals('subdomain'));
+    });
+
+    // BUG-S39-2 (Sprint 39): parallels the addRule rethrow test. Safe
+    // senders have a UNIQUE constraint on `pattern` -- duplicate inserts
+    // must rethrow so UI callers see the failure.
+    test('rethrows when safe-sender pattern collides with existing', () async {
+      await provider.loadSafeSenders();
+      await provider.addSafeSender(r'^user@example\.com$');
+      expect(provider.safeSenders.safeSenders.length, equals(1));
+
+      await expectLater(
+        () => provider.addSafeSender(r'^user@example\.com$'),
+        throwsA(isA<Object>()),
+      );
+      // Local cache should not double-up
+      expect(provider.safeSenders.safeSenders.length, equals(1));
     });
   });
 
