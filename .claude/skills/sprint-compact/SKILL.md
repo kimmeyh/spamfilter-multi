@@ -10,30 +10,48 @@ model: haiku
 
 Generate a `<compact-string>` (under ~2K characters) that can be passed to `/compact <string>` so the post-compact session resumes the sprint correctly.
 
-**Purpose**: Replaces `/memory-save` for sprint resume. The compact-string carries ONLY volatile state (sprint name, current phase, last/next steps, HEAD, branch). All durable context (phase definitions, decision-class taxonomy, stopping criteria, file paths, resume sequence) lives in `docs/SPRINT_RESUME_GUIDE.md` and is referenced rather than duplicated. This keeps the compact-string small and reduces token usage at every compaction boundary.
+**Purpose**: Replaces `/memory-save` for resume. The compact-string carries ONLY volatile state (process stage, sprint number/branch, current phase, last/next steps, HEAD, PR). All durable context (phase definitions, decision-class taxonomy, stopping criteria, file paths, resume sequence) lives in `docs/SPRINT_RESUME_GUIDE.md` and is referenced rather than duplicated. This keeps the compact-string small and reduces token usage at every compaction boundary.
 
-**Source**: Sprint 38 retrospective IMP-1 (2026-05-18). User feedback: "Want to take a new approach to /memory-save and replace it with a request to produce a text summary that can be given to /compact that will allow the compact but preserve key information about the current status that tend to be missed in /compact with no string ... would like it to effective, but as compact as reasonably possible and take as few tokens as reasonably possible."
+**CRITICAL framing (Sprint 39 retro fix, 2026-05-25)**: do NOT assume "a sprint is in progress." Assume the **sprint-execution-docs PROCESS is in progress** -- which spans the full lifecycle INCLUDING the gaps between sprints. The process has distinct STAGES (see Step 1); detect the current one and write the string for it. A sprint just merged with the next not yet planned is a valid, common state and MUST be representable -- do not force-fit it into an "in progress" template or abort.
 
-## What to Collect
+**Source**: Sprint 38 retrospective IMP-1 (2026-05-18); Sprint 39 retro stage-awareness fix (2026-05-25). User feedback: "effective, but as compact as reasonably possible and take as few tokens as reasonably possible" + "do not assume a sprint is in progress, but the sprint execution docs process is in process."
+
+## Step 1: Detect the Process Stage
+
+Determine which ONE stage the process is in (use git/PR state + conversation):
+
+- **BETWEEN-SPRINTS**: last sprint's PR is MERGED (or no open sprint PR) and no plan exists for the next sprint. NEXT ACTION = start next sprint Phase 1/2. (This was the previously-missing stage.)
+- **REFINEMENT**: Backlog Refinement (Phase 1) underway; no `SPRINT_N_PLAN.md` for the next sprint yet.
+- **PLANNING**: drafting `SPRINT_N_PLAN.md` (Phase 2-3) but Phase 3.7 approval NOT yet granted.
+- **EXECUTION**: Phase 3.7 approved; Phases 4-6 (build/test/PR) in progress.
+- **RETRO**: Phase 7 retrospective in progress (or follow-ups pending before Chief-Developer merge).
+
+If unsure, state the stage as `<unknown -- recheck SPRINT_RESUME_GUIDE.md + git/PR state>`.
+
+## What to Collect (Step 2)
 
 Run these reads in parallel to populate the compact-string fields:
 
 1. **Sprint name + branch**: `git -C "D:\Data\Harold\github\spamfilter-multi" rev-parse --abbrev-ref HEAD`
 2. **HEAD commit**: `git -C "D:\Data\Harold\github\spamfilter-multi" log -1 --oneline`
-3. **Open PR for sprint** (if any): `gh pr list --head <branch> --json number,isDraft,mergeable --jq '.[0]'`
-4. **Current sprint plan**: read top 30 lines of `docs/sprints/SPRINT_N_PLAN.md` (N from branch name)
+3. **PR (open OR merged)**: `gh pr list --head <branch> --state all --json number,isDraft,state --jq '.[0]'` -- capture MERGED vs OPEN(draft/ready). MERGED is a valid, expected value (BETWEEN-SPRINTS).
+4. **Current sprint plan**: read top 30 lines of `docs/sprints/SPRINT_N_PLAN.md` (N from branch). For BETWEEN-SPRINTS/REFINEMENT/PLANNING, note that no plan exists yet for the NEXT sprint (N+1).
 5. **Recent test/analyze state**: from the most recent conversation turn or `flutter test 2>&1 | tail -1`
 
 Do NOT collect: full phase definitions, decision-class examples, stopping-criteria definitions, critical file paths -- those live in `SPRINT_RESUME_GUIDE.md`.
 
 ## Compact-String Format
 
-Output exactly this template, filling in the values. Keep the entire output under 2000 characters. Use plain ASCII.
+Output exactly this template, filling in the values. Keep the entire output under 2000 characters. Use plain ASCII. The FIRST LINE is stage-dependent -- pick the matching variant:
+
+- EXECUTION/RETRO: `/compact Sprint <N> <STAGE> on branch <branch>, HEAD=<short-hash> <commit-subject>.`
+- BETWEEN-SPRINTS: `/compact Sprint <N> COMPLETE/MERGED; Sprint <N+1> not yet started. Branch <branch>, HEAD=<short-hash> <commit-subject>.`
+- REFINEMENT/PLANNING: `/compact Sprint-execution process at <STAGE> for Sprint <N+1>. Branch <branch>, HEAD=<short-hash> <commit-subject>.`
 
 ```
-/compact Sprint <N> in progress on branch <branch>, HEAD=<short-hash> <commit-subject>.
+<stage-dependent first line above>
 
-PHASE: <current phase number> -- <phase name>. Phase 3.7 approval: <granted on YYYY-MM-DD | pending>.
+STAGE: <BETWEEN-SPRINTS | REFINEMENT | PLANNING | EXECUTION | RETRO>. Phase 3.7 approval: <granted YYYY-MM-DD | pending | N/A (no active sprint plan)>.
 
 LAST 2 STEPS COMPLETED:
 - <step>
@@ -43,14 +61,15 @@ NEXT 2 STEPS:
 - <step>
 - <step>
 
-PR: #<pr-number> (<draft|ready>, <MERGEABLE|CONFLICTING>) -- <"awaiting <X>" if applicable>.
+PR: #<n> (<draft|ready|MERGED>, <MERGEABLE|CONFLICTING|n/a>) -- <"awaiting <X>" if applicable>. (or "PR: none")
 
-TESTS: <"+N ~M -P" from last run> | analyze: <0 issues | N issues>.
+TESTS: <"+N ~M -P" from last run> | analyze: <0 issues | N issues | n/a>.
 
 CONTEXT NOTES:
-- This is a sprint, NOT vibe coding. Sprint-plan approval at Phase 3.7 is durable through Phase 7.
-- Resume context: read docs/SPRINT_RESUME_GUIDE.md (carries phase definitions, decision-class taxonomy, stopping criteria, canonical "Next Steps" progression, 4-step resume sequence, critical file paths).
-- Sprint plan: docs/sprints/SPRINT_<N>_PLAN.md.
+- This is the sprint-execution-docs PROCESS, NOT vibe coding. The process is always in progress even between sprints. Phase 3.7 approval (when an active plan exists) is durable through Phase 7.
+- Resume context: read docs/SPRINT_RESUME_GUIDE.md (phase definitions, decision-class taxonomy, stopping criteria, "Next Steps" progression, resume sequence, critical file paths).
+- Sprint plan: docs/sprints/SPRINT_<N>_PLAN.md (note if it does NOT exist yet for the next sprint -> Phase 1 gate applies).
+- <stage-specific note: for BETWEEN-SPRINTS, list the pre-scoped next-sprint items + any open Chief-Architect ratification items>.
 
 KEY GUARDRAILS (full text in memory entries, just listed here):
 - feedback_decision_class_taxonomy.md -- arch/dev/sprint-scope decisions need Chief signoff at natural breaks
@@ -65,13 +84,13 @@ NEXT ACTION: <one sentence verb-first description of the very next action to tak
 
 ## Field Rules
 
-- **Sprint N**: extract from branch name `feature/YYYYMMDD_Sprint_N` -- the N at the end. If branch is non-sprint, abort and tell user the skill applies only on sprint branches.
+- **Sprint N**: from branch name `feature/YYYYMMDD_Sprint_N`. If the branch's sprint is merged/complete, ALSO name the next sprint (N+1) for the BETWEEN-SPRINTS/REFINEMENT/PLANNING first-line variants. A non-sprint branch (e.g. `develop` after a merge) is ALLOWED -- do NOT abort; report the stage as BETWEEN-SPRINTS and derive N from the most recent merged sprint PR.
+- **STAGE**: from Step 1.
 - **Branch**: full branch name as returned by `rev-parse --abbrev-ref HEAD`.
 - **HEAD short-hash**: first 7 chars of commit SHA.
 - **Commit-subject**: subject line only (first line of `--oneline`), strip the SHA prefix.
-- **PHASE**: derive from conversation state. If unsure, say "<unknown -- recheck SPRINT_<N>_PLAN.md and SPRINT_CHECKLIST.md>".
-- **LAST 2 STEPS / NEXT 2 STEPS**: from `SPRINT_CHECKLIST.md` for the current phase, OR from the conversation transcript if more specific.
-- **PR fields**: from `gh pr list --head <branch> --json ...`. If no PR, write "PR: none".
+- **LAST 2 STEPS / NEXT 2 STEPS**: from the conversation transcript (most specific) or `SPRINT_CHECKLIST.md` for the current phase. For BETWEEN-SPRINTS, NEXT steps = sync develop + start next-sprint Phase 1.
+- **PR fields**: from `gh pr list --head <branch> --state all --json ...`. MERGED is a valid value. If no PR, write "PR: none".
 - **TESTS**: from most recent `flutter test` output line in conversation; if not present, leave blank and note "run /full-test before /compact".
 - **NEXT ACTION**: a single imperative sentence. Do not list multiple actions.
 
@@ -99,7 +118,10 @@ After collecting the fields, output ONLY the compact-string (no preamble, no com
 
 ## Anti-Pattern (DO NOT DO)
 
+- Do NOT assume "a sprint is in progress" -- detect the STAGE first (BETWEEN-SPRINTS is common and valid).
+- Do NOT abort on a non-sprint branch -- report BETWEEN-SPRINTS instead.
+- Do NOT run `/compact` yourself -- this skill PRODUCES the string; the USER decides when to compact.
 - Do NOT regenerate the content of `SPRINT_RESUME_GUIDE.md` inline -- that defeats the purpose. The pointer is the value.
 - Do NOT add "I will now produce..." preamble. Output starts with `/compact ...`.
-- Do NOT include past-sprint history. Only the current sprint state.
+- Do NOT include past-sprint history beyond the just-completed sprint's outcome line.
 - Do NOT exceed 2000 characters total -- if the natural output is longer, trim NEXT 2 STEPS bullets and CONTEXT NOTES first.
