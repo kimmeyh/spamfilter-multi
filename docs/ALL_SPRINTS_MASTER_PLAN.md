@@ -327,6 +327,17 @@ These items were filed during Sprint 38 retrospective and are pre-loaded for the
   - Could subsume / coordinate with the architectural fix mentioned in the 2026-05-21 phishing email triage (auth-aware filtering as a Microsoft Store full-access release credibility marker).
   - Implementation note: keep the badge widget reusable as `lib/ui/widgets/email_auth_badge.dart` so future surfaces (e.g., the email detail view header) can drop it in without per-screen wiring.
 
+**F96. F89 auth-state coverage for historical / email-detail quick-add paths (~4-6h, DB + pipeline) Priority 73 -- BACKLOG from Sprint 39 PR #260 Copilot review (2026-05-25)**
+- Phase: Security / UX -- anti-phishing (extends F89)
+- Platform: All
+- Source: Copilot review on PR #260 (comment 3). F89 parses auth headers from `EmailMessage.headers`, which only carry SPF/DKIM/DMARC verdicts on the LIVE-scan path. Quick-add launched from Scan History reload (`results_display_screen.dart` ~L170) and `email_detail_view.dart` (~L569) reconstructs `headers` with only `From`/`Subject`, so from those paths the email always classifies GREY and the RED warning dialog cannot fire -- narrowing F89's coverage to live scans only.
+- **Current behavior (verified 2026-05-25)**: F89 works correctly on the live-scan path (full headers present -- the Sprint 38 Amazon-phishing scenario). Historical and email-detail quick-add always show GREY. Not a regression (F89 never claimed those paths), but its stated anti-phishing goal is only partially met.
+- **Two design options (decide in Phase 3 -- this is a Chief-Architect decision, persist vs re-hydrate)**:
+  - **(a) Persist the classification**: add `email_actions.auth_classification` (and/or the raw `Authentication-Results`) at scan time, alongside the existing `rfc5322_message_id` (DB v7); re-hydrate into the reconstructed `EmailMessage` on the historical / detail paths. Cheaper storage; loses the raw header for future re-parse.
+  - **(b) Persist raw auth headers**: store `Authentication-Results` / `ARC-Authentication-Results` / `Received-SPF` so the parser re-runs identically off-scan. Larger storage; future-proof if classification logic changes.
+- **Acceptance criteria**: quick-add launched from Scan History reload and email-detail evaluates auth identically to a live scan (RED dialog fires when warranted); DB migration ships clean; tests cover the historical-path RED case.
+- **Why backlog not fix-now**: requires a DB schema change (v7) + scanner-capture wiring + read-back across two reconstructed paths (~4-6h), and the persist-classification-vs-raw-headers choice is a Class-1 architecture decision warranting Chief-Architect sign-off (per S39-IMP-2). Not a same-session fix.
+
 **F74. FAQ section in Help (~2-4h) Priority 60 -- MOVED OFF HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
 - Phase: Documentation / UX
 - Platform: All

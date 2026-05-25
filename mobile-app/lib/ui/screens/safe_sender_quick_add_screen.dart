@@ -219,6 +219,9 @@ class _SafeSenderQuickAddScreenState extends State<SafeSenderQuickAddScreen> {
         // User chose Cancel -- do not whitelist. Stay on the screen.
         return;
       }
+      // The RED-state dialog is async; the user may have navigated away while
+      // it was up. Guard against setState / context use on a disposed State.
+      if (!mounted) return;
     }
 
     setState(() => _isSaving = true);

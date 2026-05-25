@@ -403,12 +403,17 @@ class DatabaseHelper implements RuleDatabaseProvider {
       // another guarded `if (!existingColumns.contains(...))` ALTER TABLE
       // below -- do NOT bump the version again for a same-sprint sibling.
       //
-      // F91: rfc5322_message_id holds the RFC 5322 Message-ID captured at
-      // scan time. Existing rows are null (no Message-ID was captured before
-      // this migration). Nullable additive column -> safe migration.
-      //
-      // F89 (pending sibling): add its nullable column here using the same
-      // guarded pattern.
+      // This v6 block carries THREE additive columns across two features plus a
+      // one-time data cleanup; all land in the same schema version:
+      //   - F91: email_actions.rfc5322_message_id (RFC 5322 Message-ID captured
+      //     at scan time; existing rows null).
+      //   - F89: rules.created_with_auth_state + safe_senders.created_with_auth_state
+      //     (SPF/DKIM/DMARC snapshot at rule/safe-sender creation; existing rows null).
+      //   - BUG-S37-2: removes six malformed bundled TLD rules (see below).
+      // To add another column in a future same-sprint sibling, append a guarded
+      // `if (!existingColumns.contains(...))` ALTER TABLE -- do NOT bump the
+      // version again for a same-sprint sibling. All additions are nullable
+      // additive columns -> safe migration.
       _logger.i('Applying v6 migration: adding columns to email_actions');
       final tableInfo = await db.rawQuery('PRAGMA table_info(email_actions)');
       final existingColumns = tableInfo.map((r) => r['name'] as String).toSet();

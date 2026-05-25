@@ -470,9 +470,21 @@ class RuleDatabaseStore {
       'pattern_category': rule.patternCategory,
       'pattern_sub_type': rule.patternSubType,
       'source_domain': rule.sourceDomain,
-      // F89 (Sprint 39): persist the SPF/DKIM/DMARC classification of the
-      // source email at creation time, when the quick-add flow supplied it
-      // via rule.metadata['created_with_auth_state']. Null otherwise.
+      // F89 (Sprint 39): SPF/DKIM/DMARC classification of the source email at
+      // creation time, supplied by the quick-add flow via
+      // rule.metadata['created_with_auth_state']. Null otherwise.
+      //
+      // DESIGN NOTE (Copilot review, PR #260): for Rules this physical column
+      // is a DENORMALIZED copy for SQL audit/query convenience (e.g. "list
+      // safe senders/rules created against authentication-failed mail"). The
+      // AUTHORITATIVE value for application reads is the metadata JSON key
+      // `created_with_auth_state`, which the Rule model already round-trips via
+      // its metadata map -- so there is intentionally no first-class
+      // Rule.createdWithAuthState field (unlike SafeSenderPattern, which has no
+      // metadata map and therefore needs the field for round-trip). Anything
+      // that updates rules.metadata MUST keep this column in sync (this is the
+      // only writer; future migrations/importers should re-derive both from
+      // metadata). Reads never depend on this column.
       'created_with_auth_state':
           rule.metadata?['created_with_auth_state'] as String?,
     };
