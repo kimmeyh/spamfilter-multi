@@ -30,6 +30,13 @@ If unsure, state the stage as `<unknown -- recheck SPRINT_RESUME_GUIDE.md + git/
 
 ## What to Collect (Step 2)
 
+**CRITICAL -- KEEP THIS SKILL LIGHTWEIGHT (Sprint 40 fix, 2026-05-25)**: this skill is invoked when context is often ALREADY HIGH (that is the whole point of compacting). Reading large files here adds tokens and can tip the session OVER the context limit, which makes the Claude Code harness AUTO-FIRE `/compact` before the skill finishes -- the exact failure Harold hit (skill restored + 5 file reads -> "Context limit reached -> /compact" auto-triggered). To avoid that:
+
+- Use ONLY the lightweight git/PR commands below. They cost almost nothing.
+- Do NOT read SPRINT_N_SUMMARY.md, SPRINT_N_RETROSPECTIVE.md, ARCHITECTURE.md, or ANY memory (`feedback_*.md`) file. Those are durable context that lives in `SPRINT_RESUME_GUIDE.md` and is REFERENCED by name, not read.
+- Reading `SPRINT_N_PLAN.md` (item 4) is OPTIONAL and only the TOP 30 LINES, and ONLY if you genuinely lack the phase/task state from the conversation. If the conversation already tells you the stage and next steps, SKIP item 4 entirely.
+- Derive LAST/NEXT steps from the CONVERSATION, not from re-reading docs.
+
 Run these reads in parallel to populate the compact-string fields:
 
 1. **Sprint name + branch**: `git -C "D:\Data\Harold\github\spamfilter-multi" rev-parse --abbrev-ref HEAD`
@@ -41,6 +48,8 @@ Run these reads in parallel to populate the compact-string fields:
 Do NOT collect: full phase definitions, decision-class examples, stopping-criteria definitions, critical file paths -- those live in `SPRINT_RESUME_GUIDE.md`.
 
 ## Compact-String Format
+
+**Emit the resume-string inside a fenced code block** (```), preceded by one short label line (e.g. "Resume-string -- copy into /compact:"). The fence keeps the `/compact ...` text as copyable code rather than a live command, and lets the user copy it cleanly. (Note: the auto-`/compact` Harold observed was the HARNESS hitting its context limit, NOT this skill running a command -- see the Step 2 lightweight rule -- but fencing the output is good hygiene regardless.)
 
 Output exactly this template, filling in the values. Keep the entire output under 2000 characters. Use plain ASCII. The FIRST LINE is stage-dependent -- pick the matching variant:
 
