@@ -1,6 +1,6 @@
 ---
 name: sprint-compact
-description: Produce a compact resume-string for use with /compact that preserves sprint state and points to SPRINT_RESUME_GUIDE.md for durable context
+description: Produce a compact resume-string (for the user to run as the compaction command) that preserves sprint-execution-process state and points to SPRINT_RESUME_GUIDE.md for durable context
 allowed-tools: Bash, Read
 user-invocable: true
 model: haiku
@@ -8,7 +8,7 @@ model: haiku
 
 # Sprint Compact Skill
 
-Generate a `<compact-string>` (under ~2K characters) that can be passed to `/compact <string>` so the post-compact session resumes the sprint correctly.
+Generate a `<compact-string>` (under ~2K characters) that the USER runs as the compaction command (Claude Code's built-in context-compaction command) so the post-compaction session resumes the sprint-execution process correctly. This skill ONLY produces the string; it never runs the compaction command itself.
 
 **Purpose**: Replaces `/memory-save` for resume. The compact-string carries ONLY volatile state (process stage, sprint number/branch, current phase, last/next steps, HEAD, PR). All durable context (phase definitions, decision-class taxonomy, stopping criteria, file paths, resume sequence) lives in `docs/SPRINT_RESUME_GUIDE.md` and is referenced rather than duplicated. This keeps the compact-string small and reduces token usage at every compaction boundary.
 
@@ -30,7 +30,7 @@ If unsure, state the stage as `<unknown -- recheck SPRINT_RESUME_GUIDE.md + git/
 
 ## What to Collect (Step 2)
 
-**CRITICAL -- KEEP THIS SKILL LIGHTWEIGHT (Sprint 40 fix, 2026-05-25)**: this skill is invoked when context is often ALREADY HIGH (that is the whole point of compacting). Reading large files here adds tokens and can tip the session OVER the context limit, which makes the Claude Code harness AUTO-FIRE `/compact` before the skill finishes -- the exact failure Harold hit (skill restored + 5 file reads -> "Context limit reached -> /compact" auto-triggered). To avoid that:
+**CRITICAL -- KEEP THIS SKILL LIGHTWEIGHT (Sprint 40 fix, 2026-05-25)**: this skill is invoked when context may be high. Reading large files here adds tokens for no benefit. Keep it minimal regardless of the compaction-trigger question. To do that:
 
 - Use ONLY the lightweight git/PR commands below. They cost almost nothing.
 - Do NOT read SPRINT_N_SUMMARY.md, SPRINT_N_RETROSPECTIVE.md, ARCHITECTURE.md, or ANY memory (`feedback_*.md`) file. Those are durable context that lives in `SPRINT_RESUME_GUIDE.md` and is REFERENCED by name, not read.
@@ -49,13 +49,13 @@ Do NOT collect: full phase definitions, decision-class examples, stopping-criter
 
 ## Compact-String Format
 
-**Emit the resume-string inside a fenced code block** (```), preceded by one short label line (e.g. "Resume-string -- copy into /compact:"). The fence keeps the `/compact ...` text as copyable code rather than a live command, and lets the user copy it cleanly. (Note: the auto-`/compact` Harold observed was the HARNESS hitting its context limit, NOT this skill running a command -- see the Step 2 lightweight rule -- but fencing the output is good hygiene regardless.)
+**OUTPUT-SAFETY RULE (Sprint 40 fix, 2026-05-25)**: Harold observed that invoking this skill auto-triggered compaction THREE times -- even with ~590K context tokens free (41% used), so it was NOT a real token-limit event. Root cause not fully confirmed, but the one thing unique to this skill is that its body/output literally contains the compaction slash-command token. Theory-independent mitigation: NEVER write the literal compaction slash-command token (slash + "compact") anywhere in the skill body OR your output. In the resume-string template, write the leading token as `<slash>compact` -- the USER replaces `<slash>` with a real `/` when they paste it into the command. Emit the whole resume-string inside a fenced code block (```), preceded by a short label line like "Resume-string -- replace <slash> with / and run as the compaction command:".
 
-Output exactly this template, filling in the values. Keep the entire output under 2000 characters. Use plain ASCII. The FIRST LINE is stage-dependent -- pick the matching variant:
+Output exactly this template, filling in the values. Keep the entire output under 2000 characters. Use plain ASCII. The FIRST LINE is stage-dependent -- pick the matching variant (note the `<slash>` placeholder, NOT a literal slash):
 
-- EXECUTION/RETRO: `/compact Sprint <N> <STAGE> on branch <branch>, HEAD=<short-hash> <commit-subject>.`
-- BETWEEN-SPRINTS: `/compact Sprint <N> COMPLETE/MERGED; Sprint <N+1> not yet started. Branch <branch>, HEAD=<short-hash> <commit-subject>.`
-- REFINEMENT/PLANNING: `/compact Sprint-execution process at <STAGE> for Sprint <N+1>. Branch <branch>, HEAD=<short-hash> <commit-subject>.`
+- EXECUTION/RETRO: `<slash>compact Sprint <N> <STAGE> on branch <branch>, HEAD=<short-hash> <commit-subject>.`
+- BETWEEN-SPRINTS: `<slash>compact Sprint <N> COMPLETE/MERGED; Sprint <N+1> not yet started. Branch <branch>, HEAD=<short-hash> <commit-subject>.`
+- REFINEMENT/PLANNING: `<slash>compact Sprint-execution process at <STAGE> for Sprint <N+1>. Branch <branch>, HEAD=<short-hash> <commit-subject>.`
 
 ```
 <stage-dependent first line above>
@@ -100,7 +100,7 @@ NEXT ACTION: <one sentence verb-first description of the very next action to tak
 - **Commit-subject**: subject line only (first line of `--oneline`), strip the SHA prefix.
 - **LAST 2 STEPS / NEXT 2 STEPS**: from the conversation transcript (most specific) or `SPRINT_CHECKLIST.md` for the current phase. For BETWEEN-SPRINTS, NEXT steps = sync develop + start next-sprint Phase 1.
 - **PR fields**: from `gh pr list --head <branch> --state all --json ...`. MERGED is a valid value. If no PR, write "PR: none".
-- **TESTS**: from most recent `flutter test` output line in conversation; if not present, leave blank and note "run /full-test before /compact".
+- **TESTS**: from most recent `flutter test` output line in conversation; if not present, leave blank and note "run full tests before compacting".
 - **NEXT ACTION**: a single imperative sentence. Do not list multiple actions.
 
 ## What NOT to Include
@@ -117,20 +117,21 @@ The compact-string deliberately omits these (they live in `SPRINT_RESUME_GUIDE.m
 
 ## Output
 
-After collecting the fields, output ONLY the compact-string (no preamble, no commentary). The user copies it into `/compact <string>`. Keep total output under 2000 characters; if you approach 1800, trim the LAST 2 STEPS / NEXT 2 STEPS bullets to be more terse rather than dropping fields.
+After collecting the fields, output ONLY the fenced resume-string block + its one label line (no other preamble or commentary). The user replaces `<slash>` with `/` and runs it as the compaction command. Keep total output under 2000 characters; if you approach 1800, trim the LAST 2 STEPS / NEXT 2 STEPS bullets to be more terse rather than dropping fields.
 
 ## Constraints
 
 - Read-only -- do NOT modify any files in the project. This skill produces text output only.
-- Do NOT save anything to `.claude/memory/current.md` -- that was the old `/memory-save` approach. The compact-string IS the persistence mechanism via `/compact`.
+- Do NOT save anything to `.claude/memory/current.md` -- that was the old `/memory-save` approach. The compact-string IS the persistence mechanism (run by the user as the compaction command).
 - Do NOT include Harold's name, email, or any other PII beyond what is necessary (sprint number, branch, file paths).
 
 ## Anti-Pattern (DO NOT DO)
 
 - Do NOT assume "a sprint is in progress" -- detect the STAGE first (BETWEEN-SPRINTS is common and valid).
 - Do NOT abort on a non-sprint branch -- report BETWEEN-SPRINTS instead.
-- Do NOT run `/compact` yourself -- this skill PRODUCES the string; the USER decides when to compact.
+- Do NOT run the compaction command yourself -- this skill PRODUCES the string; the USER decides when to compact.
+- NEVER write the literal compaction slash-command token (slash + "compact") in the body or output -- use the `<slash>compact` placeholder. This is the theory-independent fix for the auto-trigger Harold observed.
 - Do NOT regenerate the content of `SPRINT_RESUME_GUIDE.md` inline -- that defeats the purpose. The pointer is the value.
-- Do NOT add "I will now produce..." preamble. Output starts with `/compact ...`.
+- Do NOT add "I will now produce..." preamble. Output is the label line + the fenced block only.
 - Do NOT include past-sprint history beyond the just-completed sprint's outcome line.
 - Do NOT exceed 2000 characters total -- if the natural output is longer, trim NEXT 2 STEPS bullets and CONTEXT NOTES first.
