@@ -41,7 +41,8 @@ void main() {
         created_by TEXT DEFAULT 'manual',
         pattern_category TEXT,
         pattern_sub_type TEXT,
-        source_domain TEXT
+        source_domain TEXT,
+        created_with_auth_state TEXT
       )
     ''');
 
@@ -53,7 +54,8 @@ void main() {
         pattern_type TEXT NOT NULL,
         exception_patterns TEXT,
         date_added INTEGER NOT NULL,
-        created_by TEXT DEFAULT 'manual'
+        created_by TEXT DEFAULT 'manual',
+        created_with_auth_state TEXT
       )
     ''');
 

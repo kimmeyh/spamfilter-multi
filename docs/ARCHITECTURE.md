@@ -91,7 +91,7 @@ Immutable data classes representing domain entities.
 
 | Model | Purpose | Key Fields |
 |-------|---------|------------|
-| **EmailMessage** | Normalized email representation | id, from, subject, body, headers, receivedDate, folderName |
+| **EmailMessage** | Normalized email representation | id, from, subject, body, headers, receivedDate, folderName, **messageIdHeader (RFC 5322 Message-ID, F91 Sprint 39)** |
 | **RuleSet** | Collection of spam filtering rules | version, settings, rules |
 | **Rule** | Individual spam filtering rule | name, enabled, conditions, actions, exceptions, executionOrder, metadata |
 | **RuleConditions** | Rule matching criteria | type (AND/OR), from[], header[], subject[], body[] |
@@ -200,7 +200,9 @@ Business logic and domain services.
 | **EmailAvailabilityChecker** | Check if email provider is reachable |
 | **AppLogger** | Keyword-based logging (EMAIL, RULES, EVAL, DB, AUTH, SCAN, ERROR, PERF, UI, DEBUG) |
 | **DataDeletionService** (F66, Sprint 33) | Per-account wipe (`deleteAccountData`) and full-app wipe (`wipeAllData`). Account-level clears credentials + scan results + email actions + unmatched emails + per-account settings + rate-limit state while preserving global rules/safe-senders/other accounts; full wipe calls `DatabaseHelper.deleteAllData` + `SecureCredentialsStore.deleteAllCredentials`. Used by Account Selection "Delete Account" and Settings > General "Delete All App Data" |
-| **DefaultRuleSetService** | Seed bundled rules on first launch; reset to defaults; SEC-1b marks seeded patterns as `bundled` provenance so they skip ReDoS checks. Includes F53 `ensureTldBlockRules` post-seed migration for existing installs |
+| **DefaultRuleSetService** | Seed bundled rules on first launch; reset to defaults; SEC-1b marks seeded patterns as `bundled` provenance so they skip ReDoS checks. Includes F53 `ensureTldBlockRules` post-seed migration for existing installs, plus the BUG-S37-2 (Sprint 39) ccTLD gap-fill reconciling the bundled `top_level_domain` set against the full ISO 3166-1 list (all except `.us`/`.uk`/`.ca`) |
+| **LiveScanLogger** (F90, Sprint 39 warmup) | Persists live-scan runtime log + per-account CSV/XLSX to `{appDataDir}/logs/`, env-aware path (dev/prod), append-mode, setting-gated CSV export. Parity with the background-scan log pipeline |
+| **AuthResultsParser** (F89, Sprint 39) | Parses `Authentication-Results` / `Received-SPF` / DKIM / ARC headers (RFC 8601, tolerant of AOL/Yahoo/Gmail variants) into an `EmailAuthResult {spf, dkim, dmarc, raw}`, and classifies to GREEN/YELLOW/RED/GREY. Drives the auth badge + warn-then-confirm dialog on rule / safe-sender quick-add prompts so a user does not whitelist a sender whose mail failed authentication |
 
 ---
 
@@ -275,6 +277,10 @@ Both `GmailApiAdapter` and `GenericIMAPAdapter` implement `BatchOperationsMixin`
 
 Uses IMAP UID sequence sets to reduce round-trips from 3N to ~3 batch operations.
 
+**Sprint 39 IMAP capability additions** (`GenericIMAPAdapter`, default no-op on non-IMAP platforms via `SpamFilterPlatform`):
+- `searchByMessageId(folder, messageId)` (F91): `UID SEARCH HEADER Message-ID <id>` in a folder; used by the post-safe-sender-move source-folder dedup to find AOL re-injected copies.
+- `firstUidSince(folder, since)` (S38-CI-4): `UID SEARCH SINCE <date>` returning the smallest UID newer than `now - daysBack`; used to cap the `oldest_no_rule_uid` cursor at the retention window (cached once per folder per scan).
+
 #### Auth Adapters
 
 **GoogleAuthService** (ADR-0011):
@@ -312,9 +318,10 @@ SQLite database schema. See [ADR-0010](adr/0010-normalized-database-schema.md) f
 |-------|---------|------------|
 | **accounts** | Account metadata tracking | account_id (PK), platform_id, email, display_name, date_added, last_scanned |
 | **scan_results** | Aggregate scan results per scan | id (PK), account_id (FK), scan_type, scan_mode, started_at, completed_at, total_emails, processed/deleted/moved/safe/no_rule/error counts, status, folders_scanned |
-| **email_actions** | Individual email results within a scan | id (PK), scan_result_id (FK), email_id, email_from, email_subject, email_folder, action_type, matched_rule_name, matched_pattern, is_safe_sender, success |
-| **rules** | Imported rules (dual-write from YAML) | name (UNIQUE), enabled, execution_order, condition_type, condition_from/header/subject/body, action_delete, action_move_to_folder, exception fields, metadata |
-| **safe_senders** | Whitelist patterns (dual-write from YAML) | pattern (UNIQUE), added_date, source, enabled |
+| **email_actions** | Individual email results within a scan | id (PK), scan_result_id (FK), email_id, email_from, email_subject, email_folder, action_type, matched_rule_name, matched_pattern, is_safe_sender, success, **rfc5322_message_id (DB v6, F91)** |
+| **rules** | Imported rules (dual-write from YAML) | name (UNIQUE), enabled, execution_order, condition_type, condition_from/header/subject/body, action_delete, action_move_to_folder, exception fields, metadata, **created_with_auth_state (DB v6, F89)** |
+| **safe_senders** | Whitelist patterns (dual-write from YAML) | pattern (UNIQUE), added_date, source, enabled, **created_with_auth_state (DB v6, F89)** |
+| **account_folder_cursors** (DB v5, Sprint 38) | Per-(account, folder) IMAP incremental-scan cursors, incl. the `oldest_no_rule_uid` cursor capped at the daysBack window (S38-CI-4, Sprint 39) | account_id, folder_name, cursor_type, cursor_value, updated_at (PK: account_id, folder_name, cursor_type) |
 | **app_settings** | Global app settings | key-value pairs |
 | **account_settings** | Per-account setting overrides (ADR-0013) | account_id, setting key-value pairs |
 | **background_scan_log** | Background scan execution logs | timestamp, account_id, status, stats |
@@ -325,6 +332,9 @@ SQLite database schema. See [ADR-0010](adr/0010-normalized-database-schema.md) f
 - v1: Initial schema (Sprint 12)
 - v2: Pattern classification columns on rules (Sprint 20)
 - v3: `auth_rate_limit` table for failed-auth throttling (SEC-22, Sprint 33)
+- v4: `last_history_id` on accounts for Gmail historyId incremental scans (F6c, Sprint 37)
+- v5: `account_folder_cursors` table for IMAP incremental-scan UID cursors (Sprint 38)
+- v6: `email_actions.rfc5322_message_id` (F91 AOL copy-not-move dedup); `created_with_auth_state` on `rules` + `safe_senders` (F89 auth-state snapshot); one-time cleanup removing 6 malformed bundled TLD rules (BUG-S37-2) (Sprint 39)
 
 **Indexes**: 10+ targeted indexes for fast lookups (by platform, account, completion time, scan ID, folder, no-rule matches).
 
@@ -538,6 +548,8 @@ RuleEvaluator.evaluate(EmailMessage)
 | **empty_state.dart** | Empty state placeholder |
 | **error_display.dart** | Error display component |
 | **skeleton_loader.dart** | Loading skeleton UI |
+| **list_selection_controller.dart** (S38-CI-3, Sprint 39) | `ListSelectionController<T>` mixin: multi-row selection model for list screens -- Shift+Click range-extend (anchor preserved), Ctrl/Cmd+Click disjoint toggle, Ctrl-drag swept range. Used by Manage Rules + Manage Safe Senders |
+| **email_auth_badge.dart** + **auth_warning_dialog.dart** (F89, Sprint 39) | GREEN/YELLOW/RED/GREY auth badge computed from `EmailAuthResult`; RED-state warn-then-confirm dialog (per-protocol plain-English explanation + alternatives) gating safe-sender quick-add on authentication-failed mail |
 
 ### UI Standards (ADR-0037)
 

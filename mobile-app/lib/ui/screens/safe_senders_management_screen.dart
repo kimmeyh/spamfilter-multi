@@ -19,6 +19,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/safe_sender_database_store.dart';
 import '../widgets/copy_all_shortcut.dart';
+import '../widgets/list_selection_controller.dart';
 import '../../core/storage/settings_store.dart';
 import '../widgets/app_bar_with_exit.dart';
 import 'help_screen.dart';
@@ -82,7 +83,8 @@ class SafeSendersManagementScreen extends StatefulWidget {
 }
 
 class _SafeSendersManagementScreenState
-    extends State<SafeSendersManagementScreen> {
+    extends State<SafeSendersManagementScreen>
+    with ListSelectionController<SafeSendersManagementScreen> {
   final Logger _logger = Logger();
   late final SafeSenderDatabaseStore _store;
   List<SafeSenderPattern> _safeSenders = [];
@@ -132,6 +134,9 @@ class _SafeSendersManagementScreenState
   }
 
   void _applyFilter() {
+    // S38-CI-3: reset multi-region row selection on every filter / search
+    // / reload rebuild so selection indices cannot point at stale rows.
+    clearRowSelection();
     var results = List<SafeSenderPattern>.from(_safeSenders);
 
     // Apply category filter (if any chips selected)
@@ -360,13 +365,22 @@ class _SafeSendersManagementScreenState
       // Sprint 38 F84 Sub-task A (Issue #253): Ctrl+A / Cmd+A copies the
       // ENTIRE filtered safe-sender list to clipboard, not just the
       // viewport subset. Bypasses Flutter's selection model -- writes
-      // joined row text directly. Sub-tasks B/C deferred.
+      // joined row text directly.
+      //
+      // Sprint 39 S38-CI-3 (Sub-tasks B/C): when a multi-region row
+      // selection exists (Shift+Click extend / Ctrl+Click disjoint),
+      // Ctrl+A copies only the SELECTED rows; otherwise it copies the
+      // whole filtered list (original Sub-task A behavior).
       body: CopyAllShortcut(
         itemLabel: 'safe senders',
         textBuilder: () {
           if (_filteredSenders.isEmpty) return '';
-          return _filteredSenders
-              .map((s) => '${s.pattern}\t${s.patternType}')
+          final indices = hasRowSelection
+              ? selectedRowIndices
+              : List<int>.generate(_filteredSenders.length, (i) => i);
+          return indices
+              .map((i) =>
+                  '${_filteredSenders[i].pattern}\t${_filteredSenders[i].patternType}')
               .join('\n');
         },
         child: SelectionArea(
@@ -522,7 +536,7 @@ class _SafeSendersManagementScreenState
                           padding: const EdgeInsets.symmetric(horizontal: 8),
                           itemBuilder: (context, index) {
                             return _buildSafeSenderTile(
-                                _filteredSenders[index]);
+                                _filteredSenders[index], index);
                           },
                         ),
                       ),
@@ -562,7 +576,7 @@ class _SafeSendersManagementScreenState
     );
   }
 
-  Widget _buildSafeSenderTile(SafeSenderPattern sender) {
+  Widget _buildSafeSenderTile(SafeSenderPattern sender, int index) {
     final hasExceptions = sender.exceptionPatterns != null &&
         sender.exceptionPatterns!.isNotEmpty;
 
@@ -572,16 +586,34 @@ class _SafeSendersManagementScreenState
     // hover info_outline; trailing delete REMOVED (delete remains
     // available inside the details dialog).
     final isRevealed = _hoveredPattern == sender.pattern;
+    // S38-CI-3 (Sub-tasks B/C): multi-region row selection. See
+    // rules_management_screen.dart::_buildRuleTile for the gesture +
+    // drag-extend rationale (GestureDetector.onTap reads modifiers;
+    // onPanStart begins a Ctrl-drag; MouseRegion.onEnter extends it).
+    final isSelected = isRowSelected(index);
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      color: isSelected
+          ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.12)
+          : null,
       child: MouseRegion(
-        onEnter: (_) => setState(() => _hoveredPattern = sender.pattern),
+        onEnter: (_) {
+          setState(() => _hoveredPattern = sender.pattern);
+          handleRowDragTo(index, _filteredSenders.length);
+        },
         onExit: (_) {
           if (_hoveredPattern == sender.pattern) {
             setState(() => _hoveredPattern = null);
           }
         },
-        child: ListTile(
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () => handleRowTap(index, _filteredSenders.length),
+          onPanStart: (_) =>
+              handleRowDragStart(index, _filteredSenders.length),
+          onPanEnd: (_) => handleRowDragEnd(),
+          onPanCancel: handleRowDragEnd,
+          child: ListTile(
           // Sprint 37 round 7: leading icon is now ALSO clickable (Harold
           // feedback 2026-05-04). See rules_management_screen.dart for
           // rationale + the SizedBox constraint that prevents round-5b's
@@ -651,6 +683,7 @@ class _SafeSendersManagementScreenState
                 onPressed: () => _showPatternDetails(sender),
               ),
             ),
+          ),
           ),
         ),
       ),

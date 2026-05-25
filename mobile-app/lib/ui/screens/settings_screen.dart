@@ -653,26 +653,6 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         // tab clearly shows which account these settings apply to.
         _buildAccountHeaderCard(),
         const SizedBox(height: 16),
-        Card(
-          color: Colors.blue.shade50,
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                Icon(Icons.info_outline, color: Colors.blue.shade700),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Default folders are account-specific. Select an account first, '
-                    'then configure in Account Details > Folders.',
-                    style: TextStyle(color: Colors.blue.shade900, fontSize: 13),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 16),
         _buildSectionHeader('Scan Mode'),
         _buildScanModeSelector(
           value: _manualScanMode,
@@ -694,6 +674,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         ),
         const SizedBox(height: 24),
         _buildSectionHeader('Default Folders'),
+        _buildDefaultFoldersInfoCard(),
+        const SizedBox(height: 8),
         _buildFolderSelector(
           folders: _manualScanFolders,
           onChanged: (folders) async {
@@ -923,6 +905,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         ),
         const SizedBox(height: 24),
         _buildSectionHeader('Default Folders'),
+        _buildDefaultFoldersInfoCard(),
+        const SizedBox(height: 8),
         _buildFolderSelector(
           folders: _backgroundScanFolders,
           onChanged: (folders) async {
@@ -1157,6 +1141,31 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         style: Theme.of(context).textTheme.titleSmall?.copyWith(
           color: Theme.of(context).colorScheme.primary,
           fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  /// S38-CI-2: Info card shown directly below the "Default Folders" section
+  /// header on both the Manual Scan and Background tabs. Shared so the two
+  /// call sites do not diverge.
+  Widget _buildDefaultFoldersInfoCard() {
+    return Card(
+      color: Colors.blue.shade50,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Icon(Icons.info_outline, color: Colors.blue.shade700),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Default folders are account-specific. Select an account first, '
+                'then configure in Account Details > Folders.',
+                style: TextStyle(color: Colors.blue.shade900, fontSize: 13),
+              ),
+            ),
+          ],
         ),
       ),
     );

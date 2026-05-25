@@ -31,6 +31,12 @@ import 'ui/theme/app_theme.dart';
 /// Global RouteObserver for tracking navigation events
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
 
+/// Retained for the process lifetime so the Windows system tray icon and its
+/// native callbacks are not garbage-collected while the app runs (BUG-S38-CI-1
+/// latent fragility: a dropped tray service could leave a dangling native
+/// callback). Windows-only; null on other platforms.
+WindowsSystemTrayService? _windowsSystemTrayService;
+
 /// Global NavigatorKey for keyboard shortcuts refresh action
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -164,8 +170,8 @@ void main(List<String> args) async {
 
   // Initialize Windows system tray and notifications (Windows only)
   if (Platform.isWindows) {
-    final systemTrayService = WindowsSystemTrayService();
-    await systemTrayService.initialize();
+    _windowsSystemTrayService = WindowsSystemTrayService();
+    await _windowsSystemTrayService!.initialize();
     Logger().i('Windows system tray initialized');
 
     final notificationService = WindowsNotificationService();

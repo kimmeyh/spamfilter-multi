@@ -53,6 +53,7 @@ void main() {
       'Folder Selection',
       'YAML Import / Export',
       'Other ways to reduce junk email, mail, texts, and phone calls',
+      'Frequently Asked Questions',
     ];
     for (final title in expected) {
       expect(find.text(title), findsOneWidget,
@@ -85,6 +86,7 @@ void main() {
     // the enum is a contract between every AppBar that passes into
     // openHelp() and the HelpScreen that renders the target.
     // Sprint 37: added otherWaysToReduceJunk -> 20.
-    expect(HelpSection.values, hasLength(20));
+    // Sprint 39 F74: added faq -> 21.
+    expect(HelpSection.values, hasLength(21));
   });
 }

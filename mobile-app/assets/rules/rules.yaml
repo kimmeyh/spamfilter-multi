@@ -22082,22 +22082,6 @@ rules:
   patternCategory: header_from
   patternSubType: top_level_domain
   sourceDomain: .*.bz
-- name: tld_1380
-  enabled: 'True'
-  isLocal: 'True'
-  executionOrder: 10
-  conditions:
-    type: OR
-    body: []
-    from: []
-    header:
-    - '@.*\.c$'
-    subject: []
-  actions:
-    delete: 'True'
-  patternCategory: header_from
-  patternSubType: top_level_domain
-  sourceDomain: .*.c
 - name: tld_1381
   enabled: 'True'
   isLocal: 'True'
@@ -22754,22 +22738,6 @@ rules:
   patternCategory: header_from
   patternSubType: top_level_domain
   sourceDomain: .*.giving
-- name: tld_1422
-  enabled: 'True'
-  isLocal: 'True'
-  executionOrder: 10
-  conditions:
-    type: OR
-    body: []
-    from: []
-    header:
-    - '@.*\.giw$'
-    subject: []
-  actions:
-    delete: 'True'
-  patternCategory: header_from
-  patternSubType: top_level_domain
-  sourceDomain: .*.giw
 - name: tld_1423
   enabled: 'True'
   isLocal: 'True'
@@ -24066,22 +24034,6 @@ rules:
   patternCategory: header_from
   patternSubType: top_level_domain
   sourceDomain: .*.nl
-- name: tld_1504
-  enabled: 'True'
-  isLocal: 'True'
-  executionOrder: 10
-  conditions:
-    type: OR
-    body: []
-    from: []
-    header:
-    - '@.*\.nwm$'
-    subject: []
-  actions:
-    delete: 'True'
-  patternCategory: header_from
-  patternSubType: top_level_domain
-  sourceDomain: .*.nwm
 - name: tld_1505
   enabled: 'True'
   isLocal: 'True'
@@ -24594,22 +24546,6 @@ rules:
   patternCategory: header_from
   patternSubType: top_level_domain
   sourceDomain: .*.quest
-- name: exact_1537
-  enabled: 'True'
-  isLocal: 'True'
-  executionOrder: 30
-  conditions:
-    type: OR
-    body: []
-    from: []
-    header:
-    - '@.*\.qzz.io$'
-    subject: []
-  actions:
-    delete: 'True'
-  patternCategory: header_from
-  patternSubType: exact_domain
-  sourceDomain: .*.qzz.io
 - name: tld_1538
   enabled: 'True'
   isLocal: 'True'
@@ -25346,22 +25282,6 @@ rules:
   patternCategory: header_from
   patternSubType: top_level_domain
   sourceDomain: .*.sweeps
-- name: tld_1584
-  enabled: 'True'
-  isLocal: 'True'
-  executionOrder: 10
-  conditions:
-    type: OR
-    body: []
-    from: []
-    header:
-    - '@.*\.sweepss$'
-    subject: []
-  actions:
-    delete: 'True'
-  patternCategory: header_from
-  patternSubType: top_level_domain
-  sourceDomain: .*.sweepss
 - name: tld_1585
   enabled: 'True'
   isLocal: 'True'
@@ -26146,22 +26066,6 @@ rules:
   patternCategory: header_from
   patternSubType: top_level_domain
   sourceDomain: .*.wtf
-- name: tld_1634
-  enabled: 'True'
-  isLocal: 'True'
-  executionOrder: 10
-  conditions:
-    type: OR
-    body: []
-    from: []
-    header:
-    - '@.*\.xd$'
-    subject: []
-  actions:
-    delete: 'True'
-  patternCategory: header_from
-  patternSubType: top_level_domain
-  sourceDomain: .*.xd
 - name: tld_1635
   enabled: 'True'
   isLocal: 'True'
@@ -26210,3 +26114,3107 @@ rules:
   patternCategory: header_from
   patternSubType: top_level_domain
   sourceDomain: .*.xyz
+- name: tld_1638
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.ad$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.ad
+- name: tld_1639
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.ae$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.ae
+- name: tld_1640
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.af$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.af
+- name: tld_1641
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.ag$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.ag
+- name: tld_1642
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.ai$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.ai
+- name: tld_1643
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.al$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.al
+- name: tld_1644
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.am$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.am
+- name: tld_1645
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.ao$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.ao
+- name: tld_1646
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.aq$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.aq
+- name: tld_1647
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.as$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.as
+- name: tld_1648
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.aw$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.aw
+- name: tld_1649
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.ax$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.ax
+- name: tld_1650
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.az$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.az
+- name: tld_1651
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.ba$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.ba
+- name: tld_1652
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.bb$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.bb
+- name: tld_1653
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.bd$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.bd
+- name: tld_1654
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.bf$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.bf
+- name: tld_1655
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.bg$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.bg
+- name: tld_1656
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.bh$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.bh
+- name: tld_1657
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.bi$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.bi
+- name: tld_1658
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.bj$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.bj
+- name: tld_1659
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.bl$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.bl
+- name: tld_1660
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.bm$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.bm
+- name: tld_1661
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.bn$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.bn
+- name: tld_1662
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.bo$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.bo
+- name: tld_1663
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.bq$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.bq
+- name: tld_1664
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.bs$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.bs
+- name: tld_1665
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.bt$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.bt
+- name: tld_1666
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.bv$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.bv
+- name: tld_1667
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.bw$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.bw
+- name: tld_1668
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.by$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.by
+- name: tld_1669
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.cd$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.cd
+- name: tld_1670
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.cf$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.cf
+- name: tld_1671
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.cg$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.cg
+- name: tld_1672
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.ci$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.ci
+- name: tld_1673
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.ck$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.ck
+- name: tld_1674
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.cl$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.cl
+- name: tld_1675
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.cm$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.cm
+- name: tld_1676
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.cr$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.cr
+- name: tld_1677
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.cu$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.cu
+- name: tld_1678
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.cv$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.cv
+- name: tld_1679
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.cw$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.cw
+- name: tld_1680
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.cx$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.cx
+- name: tld_1681
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.cy$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.cy
+- name: tld_1682
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.dj$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.dj
+- name: tld_1683
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.dk$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.dk
+- name: tld_1684
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.dm$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.dm
+- name: tld_1685
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.do$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.do
+- name: tld_1686
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.dz$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.dz
+- name: tld_1687
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.ec$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.ec
+- name: tld_1688
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.eg$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.eg
+- name: tld_1689
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.eh$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.eh
+- name: tld_1690
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.er$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.er
+- name: tld_1691
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.et$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.et
+- name: tld_1692
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.fj$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.fj
+- name: tld_1693
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.fk$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.fk
+- name: tld_1694
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.fm$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.fm
+- name: tld_1695
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.fo$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.fo
+- name: tld_1696
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.gb$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.gb
+- name: tld_1697
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.gd$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.gd
+- name: tld_1698
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.ge$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.ge
+- name: tld_1699
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.gf$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.gf
+- name: tld_1700
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.gg$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.gg
+- name: tld_1701
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.gh$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.gh
+- name: tld_1702
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.gi$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.gi
+- name: tld_1703
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.gl$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.gl
+- name: tld_1704
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.gm$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.gm
+- name: tld_1705
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.gn$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.gn
+- name: tld_1706
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.gp$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.gp
+- name: tld_1707
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.gs$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.gs
+- name: tld_1708
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.gt$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.gt
+- name: tld_1709
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.gu$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.gu
+- name: tld_1710
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.gw$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.gw
+- name: tld_1711
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.gy$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.gy
+- name: tld_1712
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.hm$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.hm
+- name: tld_1713
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.hn$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.hn
+- name: tld_1714
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.ht$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.ht
+- name: tld_1715
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.ie$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.ie
+- name: tld_1716
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.il$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.il
+- name: tld_1717
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.im$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.im
+- name: tld_1718
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.iq$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.iq
+- name: tld_1719
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.is$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.is
+- name: tld_1720
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.je$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.je
+- name: tld_1721
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.jm$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.jm
+- name: tld_1722
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.jo$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.jo
+- name: tld_1723
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.ke$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.ke
+- name: tld_1724
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.kg$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.kg
+- name: tld_1725
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.kh$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.kh
+- name: tld_1726
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.ki$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.ki
+- name: tld_1727
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.km$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.km
+- name: tld_1728
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.kn$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.kn
+- name: tld_1729
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.kp$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.kp
+- name: tld_1730
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.kr$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.kr
+- name: tld_1731
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.kw$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.kw
+- name: tld_1732
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.ky$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.ky
+- name: tld_1733
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.kz$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.kz
+- name: tld_1734
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.la$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.la
+- name: tld_1735
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.lb$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.lb
+- name: tld_1736
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.lc$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.lc
+- name: tld_1737
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.lk$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.lk
+- name: tld_1738
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.lr$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.lr
+- name: tld_1739
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.ls$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.ls
+- name: tld_1740
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.lt$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.lt
+- name: tld_1741
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.lu$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.lu
+- name: tld_1742
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.lv$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.lv
+- name: tld_1743
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.ly$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.ly
+- name: tld_1744
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.ma$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.ma
+- name: tld_1745
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.mc$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.mc
+- name: tld_1746
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.md$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.md
+- name: tld_1747
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.mf$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.mf
+- name: tld_1748
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.mg$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.mg
+- name: tld_1749
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.mh$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.mh
+- name: tld_1750
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.mk$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.mk
+- name: tld_1751
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.mm$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.mm
+- name: tld_1752
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.mn$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.mn
+- name: tld_1753
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.mo$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.mo
+- name: tld_1754
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.mp$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.mp
+- name: tld_1755
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.mq$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.mq
+- name: tld_1756
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.mr$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.mr
+- name: tld_1757
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.ms$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.ms
+- name: tld_1758
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.mt$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.mt
+- name: tld_1759
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.mu$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.mu
+- name: tld_1760
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.mv$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.mv
+- name: tld_1761
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.mw$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.mw
+- name: tld_1762
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.mx$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.mx
+- name: tld_1763
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.my$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.my
+- name: tld_1764
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.mz$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.mz
+- name: tld_1765
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.na$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.na
+- name: tld_1766
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.nc$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.nc
+- name: tld_1767
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.nf$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.nf
+- name: tld_1768
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.ni$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.ni
+- name: tld_1769
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.no$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.no
+- name: tld_1770
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.np$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.np
+- name: tld_1771
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.nr$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.nr
+- name: tld_1772
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.nu$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.nu
+- name: tld_1773
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.om$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.om
+- name: tld_1774
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.pa$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.pa
+- name: tld_1775
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.pe$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.pe
+- name: tld_1776
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.pf$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.pf
+- name: tld_1777
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.pg$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.pg
+- name: tld_1778
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.pk$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.pk
+- name: tld_1779
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.pm$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.pm
+- name: tld_1780
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.pn$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.pn
+- name: tld_1781
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.pr$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.pr
+- name: tld_1782
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.ps$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.ps
+- name: tld_1783
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.pt$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.pt
+- name: tld_1784
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.py$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.py
+- name: tld_1785
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.qa$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.qa
+- name: tld_1786
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.re$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.re
+- name: tld_1787
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.rw$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.rw
+- name: tld_1788
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.sa$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.sa
+- name: tld_1789
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.sb$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.sb
+- name: tld_1790
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.sc$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.sc
+- name: tld_1791
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.sd$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.sd
+- name: tld_1792
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.sg$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.sg
+- name: tld_1793
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.sh$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.sh
+- name: tld_1794
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.si$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.si
+- name: tld_1795
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.sj$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.sj
+- name: tld_1796
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.sk$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.sk
+- name: tld_1797
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.sl$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.sl
+- name: tld_1798
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.sn$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.sn
+- name: tld_1799
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.so$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.so
+- name: tld_1800
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.sr$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.sr
+- name: tld_1801
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.ss$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.ss
+- name: tld_1802
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.st$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.st
+- name: tld_1803
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.sv$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.sv
+- name: tld_1804
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.sy$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.sy
+- name: tld_1805
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.sz$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.sz
+- name: tld_1806
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.tc$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.tc
+- name: tld_1807
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.td$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.td
+- name: tld_1808
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.tf$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.tf
+- name: tld_1809
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.tg$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.tg
+- name: tld_1810
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.th$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.th
+- name: tld_1811
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.tj$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.tj
+- name: tld_1812
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.tl$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.tl
+- name: tld_1813
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.tm$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.tm
+- name: tld_1814
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.tt$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.tt
+- name: tld_1815
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.tv$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.tv
+- name: tld_1816
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.tw$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.tw
+- name: tld_1817
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.ug$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.ug
+- name: tld_1818
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.um$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.um
+- name: tld_1819
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.uy$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.uy
+- name: tld_1820
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.uz$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.uz
+- name: tld_1821
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.va$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.va
+- name: tld_1822
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.ve$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.ve
+- name: tld_1823
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.vg$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.vg
+- name: tld_1824
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.vi$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.vi
+- name: tld_1825
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.vu$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.vu
+- name: tld_1826
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.wf$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.wf
+- name: tld_1827
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.ye$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.ye
+- name: tld_1828
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.yt$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.yt
+- name: tld_1829
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.za$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.za
+- name: tld_1830
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.zm$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.zm
+- name: tld_1831
+  enabled: 'True'
+  isLocal: 'True'
+  executionOrder: 10
+  conditions:
+    type: OR
+    body: []
+    from: []
+    header:
+    - '@.*\.zw$'
+    subject: []
+  actions:
+    delete: 'True'
+  patternCategory: header_from
+  patternSubType: top_level_domain
+  sourceDomain: .*.zw

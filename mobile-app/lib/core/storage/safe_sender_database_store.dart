@@ -28,12 +28,20 @@ class SafeSenderPattern {
   final int dateAdded;
   final String createdBy;
 
+  /// F89 (Sprint 39): the SPF/DKIM/DMARC authentication classification of the
+  /// source email at the moment this safe sender was created from a quick-add
+  /// prompt. One of 'green', 'yellow', 'red', 'grey' (see
+  /// [AuthClassification]). Null for safe senders created before F89 shipped
+  /// or created outside a quick-add flow (manual entry, YAML import).
+  final String? createdWithAuthState;
+
   SafeSenderPattern({
     required this.pattern,
     required this.patternType,
     this.exceptionPatterns,
     required this.dateAdded,
     this.createdBy = 'manual',
+    this.createdWithAuthState,
   });
 
   /// Convert to database row format
@@ -43,6 +51,7 @@ class SafeSenderPattern {
     'exception_patterns': exceptionPatterns != null ? jsonEncode(exceptionPatterns) : null,
     'date_added': dateAdded,
     'created_by': createdBy,
+    'created_with_auth_state': createdWithAuthState,
   };
 
   /// Convert from database row format
@@ -64,6 +73,7 @@ class SafeSenderPattern {
       exceptionPatterns: exceptions,
       dateAdded: row['date_added'] as int,
       createdBy: row['created_by'] as String? ?? 'manual',
+      createdWithAuthState: row['created_with_auth_state'] as String?,
     );
   }
 }
@@ -220,6 +230,7 @@ class SafeSenderDatabaseStore {
             : null,
         'date_added': updatedSender.dateAdded,
         'created_by': updatedSender.createdBy,
+        'created_with_auth_state': updatedSender.createdWithAuthState,
       };
 
       await databaseProvider.updateSafeSender(pattern, updateData);

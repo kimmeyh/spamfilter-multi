@@ -175,6 +175,9 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               (map['email_received_date'] as int?) ?? 0,
             ),
             folderName: map['email_folder'] as String? ?? '',
+            // F91 (Sprint 39): carry the persisted RFC 5322 Message-ID
+            // (nullable; older rows predating the v6 migration are null).
+            messageIdHeader: map['rfc5322_message_id'] as String?,
           );
           final actionStr = map['action_type'] as String? ?? 'none';
           final action = EmailActionType.values.firstWhere(
@@ -997,6 +1000,28 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                     isRulesOnly || isReadOnly ? Colors.black54 : Colors.white,
                     EmailActionType.safeSender,
                   ),
+                  // F91 (Sprint 39): informational chip for source-folder
+                  // duplicates removed during post-safe-sender-move dedup
+                  // (AOL copy-not-move reconciliation). Shown only when the
+                  // count is greater than zero so it does not clutter the
+                  // summary for non-AOL providers.
+                  if (scanProvider.safeSenderDedupCount > 0)
+                    Tooltip(
+                      message: 'Source-folder duplicates removed (AOL re-injected '
+                          'copies of rescued safe-sender emails, moved to Trash).',
+                      child: Chip(
+                        label: Text(
+                          '+${scanProvider.safeSenderDedupCount} dup removed',
+                        ),
+                        backgroundColor: const Color(0xFF2E7D32),
+                        labelStyle: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        side: BorderSide.none,
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      ),
+                    ),
                   _buildStatChip('No rule', noRuleCount, const Color(0xFF757575), Colors.white, EmailActionType.none),
                   _buildSpecialStatChip('Errors', errorCount, const Color(0xFFD32F2F), Colors.white, SpecialFilter.error),
                   _buildFolderFilterChip(allResults),

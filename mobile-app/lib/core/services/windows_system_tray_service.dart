@@ -13,7 +13,13 @@ import 'package:logger/logger.dart';
 /// - Restore from tray
 /// - Show/hide window
 /// - Exit application
-class WindowsSystemTrayService {
+///
+/// Implements [WindowListener] so that the window-close request raised by the
+/// native title-bar X button is handled explicitly. window_manager is
+/// configured with setPreventClose(true), which intercepts the close request
+/// and forwards it to onWindowClose. Without a registered listener that
+/// completes the close, clicking X is a silent no-op (BUG-S38-CI-1).
+class WindowsSystemTrayService with WindowListener {
   static final Logger _logger = Logger();
   final SystemTray _systemTray = SystemTray();
   bool _isInitialized = false;
@@ -31,11 +37,31 @@ class WindowsSystemTrayService {
     }
 
     try {
-      // Initialize window manager for minimize-to-tray support
+      // Initialize window manager (needed for tray show/hide/focus calls).
       await windowManager.ensureInitialized();
 
-      // Set window options
-      await windowManager.setPreventClose(true); // Prevent close, minimize to tray instead
+      // BUG-S38-CI-1 (Sprint 39): do NOT call setPreventClose(true) here.
+      //
+      // History: this app's title-bar X never worked. The cause was
+      // setPreventClose(true): window_manager intercepts WM_CLOSE and returns
+      // -1 from its window proc, so the runner's normal WM_CLOSE -> WM_DESTROY
+      // path is swallowed and the window is never destroyed (X = silent no-op).
+      // Routing the close through window_manager.destroy() instead crashed,
+      // because in window_manager 0.3.9 destroy() only calls PostQuitMessage(0)
+      // (it never calls DestroyWindow), so the message loop exits and the
+      // Flutter engine is torn down during process-exit stack unwind AFTER
+      // CoUninitialize(), with the orphaned system_tray icon -> native crash.
+      //
+      // Fix: leave the close path to the native runner. With preventClose off,
+      // WM_CLOSE flows to DefWindowProc -> WM_DESTROY, and the runner's
+      // SetQuitOnClose(true) (windows/runner/main.cpp) destroys the window
+      // in-loop and posts WM_QUIT cleanly -- the same path every other Windows
+      // app uses. The single-instance mutex (ADR-0035, held for process
+      // lifetime) is released on the clean process exit.
+      //
+      // A future minimize-to-tray feature can re-introduce a WindowListener
+      // whose onWindowClose calls hideWindow() (NOT destroy()); the mixin and
+      // onWindowClose stub below are retained for that, but are not wired up.
 
       // Get icon path from Windows runner resources
       // This is the same icon used for the application window
@@ -146,10 +172,28 @@ class WindowsSystemTrayService {
     await windowManager.hide();
   }
 
-  /// Exit application completely
+  /// Retained stub for a FUTURE minimize-to-tray feature.
+  ///
+  /// This handler is NOT registered as a listener (see initialize: we removed
+  /// addListener + setPreventClose to fix BUG-S38-CI-1). The native runner
+  /// handles the title-bar X via WM_CLOSE -> WM_DESTROY -> SetQuitOnClose, so
+  /// this method does not run today. If minimize-to-tray is implemented later,
+  /// register this listener and have it call hideWindow() (NOT destroy()).
+  @override
+  void onWindowClose() {
+    // Intentionally empty: not wired up. See initialize() BUG-S38-CI-1 note.
+  }
+
+  /// Exit application completely (used by the tray "Exit" menu item).
+  ///
+  /// preventClose is off, so windowManager.close() routes through the native
+  /// runner's normal WM_CLOSE -> WM_DESTROY -> SetQuitOnClose(true) path (the
+  /// same clean teardown the title-bar X now uses). The single-instance kernel
+  /// mutex (ADR-0035, held for process lifetime) is released on process exit.
+  /// Dispose the tray icon first so it is not orphaned during teardown.
   Future<void> _exitApplication() async {
-    await windowManager.destroy();
-    exit(0);
+    await dispose();
+    await windowManager.close();
   }
 
   /// Update tray tooltip (e.g., "Scanning... 50/100")
@@ -159,11 +203,14 @@ class WindowsSystemTrayService {
     }
   }
 
-  /// Dispose system tray
+  /// Dispose system tray (removes the tray icon so it is not orphaned).
+  ///
+  /// No removeListener call: this service no longer registers a WindowListener
+  /// (see initialize() BUG-S38-CI-1 note). Idempotent via _isInitialized.
   Future<void> dispose() async {
     if (_isInitialized) {
-      await _systemTray.destroy();
       _isInitialized = false;
+      await _systemTray.destroy();
     }
   }
 }

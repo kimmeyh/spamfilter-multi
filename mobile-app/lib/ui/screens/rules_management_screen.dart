@@ -19,6 +19,7 @@ import 'package:path_provider/path_provider.dart';
 import '../../core/models/rule_set.dart';
 import '../../core/storage/database_helper.dart';
 import '../widgets/copy_all_shortcut.dart';
+import '../widgets/list_selection_controller.dart';
 import '../../core/storage/rule_database_store.dart';
 import '../../core/storage/settings_store.dart';
 import '../widgets/app_bar_with_exit.dart';
@@ -34,7 +35,8 @@ class RulesManagementScreen extends StatefulWidget {
   State<RulesManagementScreen> createState() => _RulesManagementScreenState();
 }
 
-class _RulesManagementScreenState extends State<RulesManagementScreen> {
+class _RulesManagementScreenState extends State<RulesManagementScreen>
+    with ListSelectionController<RulesManagementScreen> {
   final Logger _logger = Logger();
   late final RuleDatabaseStore _store;
   List<Rule> _rules = [];
@@ -107,6 +109,11 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
   }
 
   void _applyFilter() {
+    // S38-CI-3: the filtered list is about to be rebuilt, so any row
+    // selection indices would point at stale rows. Reset selection on
+    // every filter / search / reload. (This method is the single
+    // funnel for all filtered-list rebuilds on this screen.)
+    clearRowSelection();
     _filteredRules = _rules.where((rule) {
       // Category filter
       if (_selectedCategories.isNotEmpty) {
@@ -466,13 +473,22 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
       // Sprint 38 F84 Sub-task A (Issue #253): Ctrl+A / Cmd+A copies the
       // ENTIRE filtered rule list to clipboard, not just the viewport
       // subset. Bypasses Flutter's selection model -- writes joined row
-      // text directly. Sub-tasks B/C (Shift+Click, Ctrl+Click-drag)
-      // deferred per the issue's prioritization.
+      // text directly.
+      //
+      // Sprint 39 S38-CI-3 (Sub-tasks B/C): when the user has made a
+      // multi-region row selection (Shift+Click extend / Ctrl+Click
+      // disjoint), Ctrl+A copies just the SELECTED rows. With no row
+      // selection it falls back to copying the whole filtered list (the
+      // original Sub-task A behavior).
       body: CopyAllShortcut(
         itemLabel: 'rules',
         textBuilder: () {
           if (_filteredRules.isEmpty) return '';
-          return _filteredRules.map((rule) {
+          final indices = hasRowSelection
+              ? selectedRowIndices
+              : List<int>.generate(_filteredRules.length, (i) => i);
+          return indices.map((i) {
+            final rule = _filteredRules[i];
             final name = rule.sourceDomain ?? rule.name;
             final pattern = (rule.conditions.header.isNotEmpty
                     ? rule.conditions.header.join('; ')
@@ -713,7 +729,8 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
                             itemCount: _filteredRules.length,
                             padding: const EdgeInsets.symmetric(horizontal: 8),
                             itemBuilder: (context, index) {
-                              return _buildRuleTile(_filteredRules[index]);
+                              return _buildRuleTile(
+                                  _filteredRules[index], index);
                             },
                           ),
                         ),
@@ -725,7 +742,7 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
     );
   }
 
-  Widget _buildRuleTile(Rule rule) {
+  Widget _buildRuleTile(Rule rule, int index) {
     final displayName = rule.sourceDomain ?? rule.name;
     final categoryLabel = _categoryLabels[rule.patternCategory] ?? rule.patternCategory ?? '';
     final subTypeLabel = _subTypeLabels[rule.patternSubType] ?? rule.patternSubType ?? '';
@@ -747,16 +764,38 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
     //     hidden until the row is hovered or the IconButton itself receives
     //     keyboard focus (Focus.onFocusChange below).
     final isRevealed = _hoveredRuleName == rule.name;
+    // S38-CI-3 (Sub-tasks B/C): multi-region row selection.
+    //   - GestureDetector.onTap reads the live Shift/Ctrl modifiers and
+    //     dispatches to handleRowTap (Shift = extend from anchor,
+    //     Ctrl/Cmd = toggle disjoint, plain = single select).
+    //   - onPanStart begins a Ctrl-drag (additive range); the per-row
+    //     MouseRegion.onEnter extends that drag as the pointer sweeps over
+    //     other rows (onEnter still fires while a button is held).
+    //   - Selected rows get a theme-tinted highlight so the selection is
+    //     visible.
+    final isSelected = isRowSelected(index);
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      color: isSelected
+          ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.12)
+          : null,
       child: MouseRegion(
-        onEnter: (_) => setState(() => _hoveredRuleName = rule.name),
+        onEnter: (_) {
+          setState(() => _hoveredRuleName = rule.name);
+          handleRowDragTo(index, _filteredRules.length);
+        },
         onExit: (_) {
           if (_hoveredRuleName == rule.name) {
             setState(() => _hoveredRuleName = null);
           }
         },
-        child: ListTile(
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () => handleRowTap(index, _filteredRules.length),
+          onPanStart: (_) => handleRowDragStart(index, _filteredRules.length),
+          onPanEnd: (_) => handleRowDragEnd(),
+          onPanCancel: handleRowDragEnd,
+          child: ListTile(
           dense: true,
           // Sprint 37 round 7: leading category icon is now ALSO clickable
           // (Harold feedback 2026-05-04). Symmetry with trailing info icon
@@ -818,6 +857,7 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
                 onPressed: () => _showRuleDetails(rule),
               ),
             ),
+          ),
           ),
         ),
       ),

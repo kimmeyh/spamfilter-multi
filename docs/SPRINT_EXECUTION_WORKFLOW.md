@@ -72,6 +72,7 @@ One-line-per-phase quick reference. Use this at the start of a sprint and at eve
 - Standing Approval Inventory (Phase 3.7): commits, pushes, PR-description updates, test/analyze runs do NOT need permission.
 - Stop only for the 9 reasons in `docs/SPRINT_STOPPING_CRITERIA.md` -- not for implementation choices, approach uncertainty, or "confirming the next step".
 - If Phase 1 was skipped for a given sprint, STOP and return to Phase 1 before any Phase 4 work (Sprint 36 gate).
+- **Phase-boundary checklist gate (Sprint 39 retro S39-IMP-3)**: before declaring ANY phase complete, run that phase's Phase Cheat Sheet line (top of this doc) and explicitly state which steps were done. Crossing a boundary by "just doing the next work" is how steps get missed -- Sprint 39 skipped the Phase 3.7 draft-PR creation this way. The cheat sheet is a gate to consult, not a reference to skip. (Efficiency-via-speed is not effectiveness-via-process.)
 - **Decision-Class Checkpoint Protocol (Sprint 38 retro)**: Architecture, development, and sprint-execution decisions in the three classes below ALWAYS require explicit user approval; sprint-plan approval is NOT durable for these. See "Decision-Class Checkpoint Protocol" section below for the full surfacing template and per-phase application matrix.
 
 ---
@@ -289,6 +290,13 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
   - **Why**: Sprint 37 retro Effort Accuracy category found 2-4x over-estimation across BUG-S36-1 / F6 / F52 Phase 1 because the original estimates assumed scaffolding that prior sprints had already shipped. The 3.2.2.1 gate caught the scaffolding state but the plan was committed with stale effort numbers. Re-estimating after gate findings is the corrective step.
   - **Cost**: ~5-15 min per sprint, only fires when 3.2.2.1 produces findings.
   - **Skip condition**: If 3.2.2.1 surfaced no scope-changing findings, this step is a no-op. State that explicitly in the commit message ("Phase 3.2.2.2 N/A -- no Phase 3.2.2.1 findings") so future-you can audit.
+
+- [ ] **3.2.2.3 Estimate in MINUTES from velocity history** (MANDATORY -- Sprint 39 retro S39-IMP-1)
+  - **Rule**: Every task estimate is in MINUTES (not hours, no 1-hour floor), matched by step-type against the Estimate Table in `docs/CODING_VELOCITY.md`.
+  - **Why**: Sprint 39 Effort Accuracy -- hour-floored estimates ran 4-14x too high; actuals were single-digit minutes. Estimating from recorded medians (not anchors) is the fix Harold asked for ("use data from this sprint to improve").
+  - **Action**: for each task, pick the step-type(s) from the CODING_VELOCITY taxonomy and set the estimate from that row's current median/range. If a step-type has no history yet, estimate conservatively in minutes and tag `[no-history]`.
+  - **Companion at Phase 7**: record each task's ACTUAL wall-clock in the CODING_VELOCITY Actuals Log on completion, and recompute the Estimate Table medians at the retrospective (Category 3). The loop is: estimate-from-history (here) -> record-actuals (Phase 4-5) -> recompute-medians (Phase 7).
+  - Companion memory: `feedback_estimating_minutes.md`.
 
 - [ ] **3.3 Branch Management**
   - Check if repository is in a PR branch
@@ -650,6 +658,19 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
     - Logs test execution times
     - Useful for debugging test hangs or performance issues
   - When to use: Tests taking > 2 minutes, or investigating test failures
+
+- [ ] **5.2.3 Architecture Documentation Gate** (Sprint 39 retro S39-IMP-2 - MANDATORY, NO DEFERRAL)
+  - **Purpose**: Architecture documentation must NEVER lag the code. Sprint 39 made real architecture changes (DB v5->v6, new auth-results subsystem, new selection-controller widget, new adapter capabilities) -- all approved and applied -- but ARCHITECTURE.md was not updated, drifting behind reality.
+  - **Rule (no deferral)**: If the sprint made ANY architecture change, its documentation (`docs/ARCHITECTURE.md`, ARSD.md, and/or relevant ADRs) MUST be updated **in-process or here at sprint-end, BEFORE Phase 5.3 manual testing**. It CANNOT be deferred to a future "architecture documentation refresh" backlog item.
+  - **What counts as an architecture change** (any one triggers the gate):
+    - DB schema change (new table/column/migration/version bump)
+    - New service / subsystem / cross-cutting capability
+    - New reusable widget added to the UI catalog
+    - New or changed adapter capability (provider-interface method)
+    - Anything that touches or contradicts an existing ADR
+  - **Exception (the ONLY one)**: if documenting the change requires a decision / Q&A with the Chief Architect (Harold), it may be surfaced during Phase 5.3 Manual Testing rather than blocking here -- but it is still NOT deferred to a future sprint.
+  - **Exit criteria**: every architecture change made this sprint is reflected in ARCHITECTURE.md (+ ADR/ARSD if relevant) in this PR, OR a Chief-Architect Q&A item is queued for Phase 5.3. Do NOT start manual testing with stale architecture docs.
+  - Companion memory: `feedback_architecture_docs_no_defer.md`.
 
 ---
 

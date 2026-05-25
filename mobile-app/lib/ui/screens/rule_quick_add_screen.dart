@@ -4,11 +4,13 @@ import 'package:logger/logger.dart';
 import '../../core/models/email_message.dart';
 import '../../core/models/rule_set.dart';
 import '../../core/models/safe_sender_list.dart';
+import '../../core/services/auth_results_parser.dart';
 import '../../core/services/rule_conflict_detector.dart';
 import '../../core/storage/rule_database_store.dart';
 import '../../core/storage/safe_sender_database_store.dart';
 import '../../core/utils/pattern_normalization.dart';
 import '../../core/utils/pattern_generation.dart';
+import '../widgets/email_auth_badge.dart';
 import 'help_screen.dart';
 import 'rule_test_screen.dart';
 
@@ -55,10 +57,19 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
   String _normalizedEmail = '';
   List<String> _extractedUrls = [];
 
+  /// F89 (Sprint 39): parsed SPF/DKIM/DMARC state of the source email. For
+  /// block-rule quick-add this is INFORMATIONAL ONLY -- a block is sound
+  /// regardless of authentication, so RED does not block the save. The state
+  /// is shown as a badge and persisted as the rule's created_with_auth_state.
+  late final EmailAuthResult _authResult;
+  late final AuthClassification _authClassification;
+
   @override
   void initState() {
     super.initState();
     _initializeFromEmail();
+    _authResult = AuthResultsParser.parse(widget.email.headers);
+    _authClassification = AuthResultsParser.classify(_authResult);
   }
 
   @override
@@ -208,6 +219,9 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
         'created_by': 'quick_add',
         'source_email_id': widget.email.id,
         'source_from': widget.email.from,
+        // F89 (Sprint 39): snapshot the source email's auth classification so
+        // RuleDatabaseStore persists it into rules.created_with_auth_state.
+        'created_with_auth_state': _authClassification.name,
       },
       patternCategory: patternCategory,
       patternSubType: patternSubType,
@@ -474,7 +488,15 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Email Context', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            Row(
+              children: [
+                Expanded(
+                  child: Text('Email Context', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                ),
+                // F89: authentication badge (informational for block rules).
+                EmailAuthBadge(authResult: _authResult),
+              ],
+            ),
             const SizedBox(height: 12),
             Row(
               children: [

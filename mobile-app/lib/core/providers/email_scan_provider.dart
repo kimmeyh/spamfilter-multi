@@ -130,6 +130,13 @@ class EmailScanProvider extends ChangeNotifier {
   int _noRuleCount = 0;  // [NEW] PHASE 3.1: Emails with no rule match
   int _errorCount = 0;
 
+  /// F91 (Sprint 39): number of source-folder duplicate messages removed
+  /// during post-safe-sender-move dedup. Separate from [_deletedCount] (which
+  /// counts rule-driven deletes) because these are reconciliation removals of
+  /// AOL copy-not-move re-injections, not spam-rule matches. Surfaced in the
+  /// scan summary only when greater than zero.
+  int _safeSenderDedupCount = 0;
+
   // [NEW] PHASE 2 SPRINT 3: Read-only mode & revert capability
   ScanMode _scanMode = ScanMode.readOnly;  // Default: read-only
   int? _emailTestLimit;  // How many emails to actually modify (for testLimit mode)
@@ -162,6 +169,19 @@ class EmailScanProvider extends ChangeNotifier {
   int get safeSendersCount => _safeSendersCount;
   int get noRuleCount => _noRuleCount;  // [NEW] PHASE 3.1: Emails with no rule match
   int get errorCount => _errorCount;
+
+  /// F91 (Sprint 39): count of source-folder duplicates removed during
+  /// post-safe-sender-move dedup (AOL copy-not-move reconciliation).
+  int get safeSenderDedupCount => _safeSenderDedupCount;
+
+  /// F91 (Sprint 39): record [count] source-folder duplicates removed during
+  /// post-safe-sender-move dedup. Called by EmailScanner after it moves the
+  /// re-injected copies to Trash. Notifies listeners so the summary updates.
+  void recordSafeSenderDedup(int count) {
+    if (count <= 0) return;
+    _safeSenderDedupCount += count;
+    notifyListeners();
+  }
   double get progress => _totalEmails == 0 ? 0 : _processedCount / _totalEmails;
 
   // [NEW] SPRINT 5: Convenience getters for test compatibility
@@ -239,6 +259,7 @@ class EmailScanProvider extends ChangeNotifier {
     _safeSendersCount = 0;
     _noRuleCount = 0;  // [NEW] FIX: Reset no-rule count on new scan
     _errorCount = 0;
+    _safeSenderDedupCount = 0;  // F91 (Sprint 39): reset dedup count on new scan
     _currentEmail = null;
     _statusMessage = 'Starting scan...';
     _scanStartTime = DateTime.now();  // [NEW] SPRINT 11: Record when scan started
@@ -410,6 +431,11 @@ class EmailScanProvider extends ChangeNotifier {
         'is_safe_sender': r.action == EmailActionType.safeSender ? 1 : 0,
         'success': r.success ? 1 : 0,
         'error_message': r.error,
+        // F91 (Sprint 39): persist the captured RFC 5322 Message-ID (null
+        // when the message had no Message-ID header or the provider did not
+        // fetch headers). Used to recognize already-rescued safe-sender
+        // messages re-injected by AOL's copy-not-move behavior.
+        'rfc5322_message_id': r.email.messageIdHeader,
       }).toList();
 
       await _databaseHelper!.insertEmailActionBatch(actions);
@@ -452,7 +478,8 @@ class EmailScanProvider extends ChangeNotifier {
     _safeSendersCount = 0;
     _noRuleCount = 0;  // [NEW] PHASE 3.1: Reset no-rule count
     _errorCount = 0;
-    
+    _safeSenderDedupCount = 0;  // F91 (Sprint 39): reset dedup count
+
     // [NEW] PHASE 3.3: Reset throttling state
     _emailsSinceLastNotification = 0;
     _lastProgressNotification = null;
@@ -470,6 +497,7 @@ class EmailScanProvider extends ChangeNotifier {
       'deleted': _deletedCount,
       'moved': _movedCount,
       'safe_senders': _safeSendersCount,
+      'safe_sender_dedup': _safeSenderDedupCount,  // F91 (Sprint 39)
       'errors': _errorCount,
       'progress': progress,
     };
