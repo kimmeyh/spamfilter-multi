@@ -279,11 +279,18 @@ void main() {
     });
 
     group('ensureTldBlockRules (F53/F73 individual-row migration)', () {
-      test('adds .cc and .ne as individual rows on empty database', () async {
+      // Total post-seed TLD patterns ensured by the migration:
+      //   2 legacy F53 patterns (.cc, .ne)
+      //   + 194 BUG-S37-2 (Sprint 39) ccTLD gap-fill patterns.
+      const expectedPostSeedTldCount = 196;
+      const gapFillCcTldCount = 194;
+
+      test('adds legacy + gap-fill TLD rows as individual rows on empty '
+          'database', () async {
         // Empty database -- no monolithic rule, no individual rows.
-        // ensureTldBlockRules should insert 2 individual TLD rows.
+        // ensureTldBlockRules should insert all post-seed TLD rows.
         final added = await service.ensureTldBlockRules();
-        expect(added, 2);
+        expect(added, expectedPostSeedTldCount);
 
         final db = await testHelper.dbHelper.database;
 
@@ -303,12 +310,19 @@ void main() {
                 "AND condition_header LIKE ?",
             whereArgs: ['header_from', 'top_level_domain', '%\\.ne\$%']);
         expect(neRows, hasLength(1));
+
+        // Verify a representative gap-fill ccTLD row exists (.za, South Africa)
+        final zaRows = await db.query('rules',
+            where: 'pattern_category = ? AND pattern_sub_type = ? '
+                "AND condition_header LIKE ?",
+            whereArgs: ['header_from', 'top_level_domain', '%\\.za\$%']);
+        expect(zaRows, hasLength(1));
       });
 
       test('is idempotent when individual TLD rows already present', () async {
         // First call inserts them
         final first = await service.ensureTldBlockRules();
-        expect(first, 2);
+        expect(first, expectedPostSeedTldCount);
 
         // Second call is a no-op
         final second = await service.ensureTldBlockRules();
@@ -319,7 +333,7 @@ void main() {
         expect(third, 0);
       });
 
-      test('adds only the missing pattern when one already exists', () async {
+      test('adds only the missing patterns when some already exist', () async {
         final db = await testHelper.dbHelper.database;
 
         // Manually insert .ne as an individual row
@@ -338,15 +352,55 @@ void main() {
           'source_domain': '.*..ne',
         });
 
-        // Should add only .cc (not .ne)
+        // Should add all post-seed patterns except the pre-existing .ne.
         final added = await service.ensureTldBlockRules();
-        expect(added, 1);
+        expect(added, expectedPostSeedTldCount - 1);
 
-        // Verify both exist
+        // Verify multiple TLD rows exist
         final tldRows = await db.query('rules',
             where: 'pattern_category = ? AND pattern_sub_type = ?',
             whereArgs: ['header_from', 'top_level_domain']);
-        expect(tldRows.length, greaterThanOrEqualTo(2));
+        expect(tldRows.length, greaterThanOrEqualTo(expectedPostSeedTldCount));
+      });
+
+      test('BUG-S37-2: gap-fill covers every ISO 3166-1 ccTLD except '
+          'us/uk/ca after migration', () async {
+        // Seed from the bundled YAML asset (fresh-install path), then run the
+        // existing-install migration. Together these must yield a
+        // top_level_domain block rule for every ISO 3166-1 alpha-2 ccTLD,
+        // except the three that stay allowed (.us, .uk, .ca).
+        TestWidgetsFlutterBinding.ensureInitialized();
+        await service.seedIfEmpty();
+        await service.splitMonolithicRules();
+        await service.ensureTldBlockRules();
+
+        final db = await testHelper.dbHelper.database;
+        final tldRows = await db.query('rules',
+            columns: ['condition_header'],
+            where: 'pattern_category = ? AND pattern_sub_type = ?',
+            whereArgs: ['header_from', 'top_level_domain']);
+
+        // Extract the TLD token from each '@.*\.<tld>$' pattern.
+        final tldTokenRe = RegExp(r'@\.\*\\\.([a-z0-9.-]+)\$');
+        final coveredTlds = <String>{};
+        for (final row in tldRows) {
+          final headerJson = row['condition_header'] as String?;
+          if (headerJson == null) continue;
+          for (final p in (jsonDecode(headerJson) as List)) {
+            final m = tldTokenRe.firstMatch(p as String);
+            if (m != null) coveredTlds.add(m.group(1)!);
+          }
+        }
+
+        const excluded = {'us', 'uk', 'ca'};
+        final missing = _isoCcTldsForTest
+            .where((cc) => !excluded.contains(cc) && !coveredTlds.contains(cc))
+            .toList();
+        expect(missing, isEmpty,
+            reason: 'ccTLDs missing after gap-fill: ${missing.join(', ')}');
+
+        // Sanity: gap-fill count matches the documented number.
+        expect(gapFillCcTldCount, 194);
       });
 
       test('detects patterns in legacy monolithic SpamAutoDeleteHeader',
@@ -364,10 +418,13 @@ void main() {
           'date_added': DateTime.now().millisecondsSinceEpoch,
         });
 
-        // Should detect both patterns in the monolithic row and skip
+        // The two legacy patterns (.cc, .ne) are found in the monolithic row
+        // and skipped (backwards compat). The remaining gap-fill ccTLD
+        // patterns (BUG-S37-2) are not present and are added.
         final added = await service.ensureTldBlockRules();
-        expect(added, 0,
-            reason: 'patterns exist in monolithic row -- backwards compat');
+        expect(added, gapFillCcTldCount,
+            reason: 'legacy .cc/.ne skipped via monolithic row; gap-fill '
+                'ccTLDs added');
       });
 
       test('TLD pattern @.*\\.cc\$ matches target domains but not near-misses',
@@ -413,6 +470,43 @@ void main() {
         expect(neIndividual.isNotEmpty, isTrue,
             reason: 'assets/rules/rules.yaml should include .ne pattern');
       });
+
+      test('BUG-S37-2: malformed TLD rules are absent after a fresh seed',
+          () async {
+        // The six typo / miscategorized TLD rules were removed from the
+        // bundled rules.yaml. A fresh seed must not contain any of them.
+        // .sweeps (the correct spelling) and .ca (allowlisted) must remain.
+        await service.resetToDefaults();
+        final db = await testHelper.dbHelper.database;
+
+        const badPatterns = <String>[
+          r'@.*\.c$',
+          r'@.*\.giw$',
+          r'@.*\.nwm$',
+          r'@.*\.xd$',
+          r'@.*\.sweepss$',
+          r'@.*\.qzz.io$',
+        ];
+        final tldRules = await db.query('rules',
+            columns: ['condition_header'],
+            where: "pattern_sub_type = 'top_level_domain'");
+        final allHeaders = <String>{};
+        for (final row in tldRules) {
+          final raw = row['condition_header'];
+          if (raw is String) {
+            allHeaders.addAll((jsonDecode(raw) as List).cast<String>());
+          }
+        }
+        for (final bad in badPatterns) {
+          expect(allHeaders.contains(bad), isFalse,
+              reason: 'Malformed TLD pattern "$bad" must not be seeded');
+        }
+        // Positive controls: the correct .sweeps and allowlisted .ca remain.
+        expect(allHeaders.contains(r'@.*\.sweeps$'), isTrue,
+            reason: '.sweeps (correct spelling) must remain');
+        expect(allHeaders.contains(r'@.*\.ca$'), isTrue,
+            reason: '.ca is allowlisted and must remain');
+      });
     });
 
     group('seedIfEmpty and resetToDefaults interaction', () {
@@ -437,3 +531,30 @@ void main() {
     });
   });
 }
+
+/// Canonical ISO 3166-1 alpha-2 ccTLDs (with the `uk` and `eu` DNS aliases),
+/// used by the BUG-S37-2 coverage test. Kept independent of production code so
+/// the test fails loudly if a future edit silently drops a ccTLD.
+const List<String> _isoCcTldsForTest = <String>[
+  'ad', 'ae', 'af', 'ag', 'ai', 'al', 'am', 'ao', 'aq', 'ar', 'as', 'at',
+  'au', 'aw', 'ax', 'az', 'ba', 'bb', 'bd', 'be', 'bf', 'bg', 'bh', 'bi',
+  'bj', 'bl', 'bm', 'bn', 'bo', 'bq', 'br', 'bs', 'bt', 'bv', 'bw', 'by',
+  'bz', 'ca', 'cc', 'cd', 'cf', 'cg', 'ch', 'ci', 'ck', 'cl', 'cm', 'cn',
+  'co', 'cr', 'cu', 'cv', 'cw', 'cx', 'cy', 'cz', 'de', 'dj', 'dk', 'dm',
+  'do', 'dz', 'ec', 'ee', 'eg', 'eh', 'er', 'es', 'et', 'fi', 'fj', 'fk',
+  'fm', 'fo', 'fr', 'ga', 'gb', 'gd', 'ge', 'gf', 'gg', 'gh', 'gi', 'gl',
+  'gm', 'gn', 'gp', 'gq', 'gr', 'gs', 'gt', 'gu', 'gw', 'gy', 'hk', 'hm',
+  'hn', 'hr', 'ht', 'hu', 'id', 'ie', 'il', 'im', 'in', 'io', 'iq', 'ir',
+  'is', 'it', 'je', 'jm', 'jo', 'jp', 'ke', 'kg', 'kh', 'ki', 'km', 'kn',
+  'kp', 'kr', 'kw', 'ky', 'kz', 'la', 'lb', 'lc', 'li', 'lk', 'lr', 'ls',
+  'lt', 'lu', 'lv', 'ly', 'ma', 'mc', 'md', 'me', 'mf', 'mg', 'mh', 'mk',
+  'ml', 'mm', 'mn', 'mo', 'mp', 'mq', 'mr', 'ms', 'mt', 'mu', 'mv', 'mw',
+  'mx', 'my', 'mz', 'na', 'nc', 'ne', 'nf', 'ng', 'ni', 'nl', 'no', 'np',
+  'nr', 'nu', 'nz', 'om', 'pa', 'pe', 'pf', 'pg', 'ph', 'pk', 'pl', 'pm',
+  'pn', 'pr', 'ps', 'pt', 'pw', 'py', 'qa', 're', 'ro', 'rs', 'ru', 'rw',
+  'sa', 'sb', 'sc', 'sd', 'se', 'sg', 'sh', 'si', 'sj', 'sk', 'sl', 'sm',
+  'sn', 'so', 'sr', 'ss', 'st', 'sv', 'sx', 'sy', 'sz', 'tc', 'td', 'tf',
+  'tg', 'th', 'tj', 'tk', 'tl', 'tm', 'tn', 'to', 'tr', 'tt', 'tv', 'tw',
+  'tz', 'ua', 'ug', 'uk', 'um', 'us', 'uy', 'uz', 'va', 'vc', 've', 'vg',
+  'vi', 'vn', 'vu', 'wf', 'ws', 'ye', 'yt', 'za', 'zm', 'zw', 'eu',
+];

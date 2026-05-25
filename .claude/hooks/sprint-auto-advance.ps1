@@ -11,15 +11,17 @@
 
       - ALLOWS the stop (exit 0) if:
           a) branch is not a sprint branch (feature/YYYYMMDD_Sprint_N), OR
-          b) the message does not end in a question, OR
-          c) the message contains a legitimate stopping signal matching
-             SPRINT_STOPPING_CRITERIA.md criterion 1-9 (the §1-9 whitelist)
+          b) no SPRINT_<N>_PLAN.md exists yet (Phase 1 Backlog Refinement), OR
+          c) the message does not end in a question, OR
+          d) the message contains a legitimate stopping signal matching
+             SPRINT_STOPPING_CRITERIA.md criterion 1-9 (the section 1-9 whitelist)
 
       - BLOCKS the stop (exit 2) if:
           all of -
             - branch matches feature/\d+_Sprint_\d+
+            - the sprint plan file exists (Phase 3+ execution)
             - last message ends in a question mark or a question-shaped phrase
-            - no legitimate §1-9 signal present
+            - no legitimate section 1-9 signal present
 
         When blocked, stderr contains a corrective instruction that is fed
         back to Claude as the next turn.
@@ -47,6 +49,26 @@
     Bypass mechanism: if the branch name contains the literal token
     "allow_stop_hook_bypass", the hook unconditionally allows the stop.
     Useful for emergency one-off sessions where the hook misfires.
+
+    Phase 1 (Backlog Refinement) exemption (F93, Sprint 39): if NO
+    docs/sprints/SPRINT_<N>_PLAN.md exists for the sprint number derived from
+    the branch name, the hook unconditionally allows the stop. Rationale: the
+    sprint plan file is created at Phase 3; if it does not exist yet we are in
+    Phase 1 (Backlog Refinement / pre-kickoff) where surfacing Product Owner
+    decisions is REQUIRED, so the auto-advance forcing function must not fire.
+    Once SPRINT_<N>_PLAN.md exists (Phase 3+), normal blocking resumes.
+
+    Test-only override: the JSON payload MAY include a "branch_override" field.
+    When present it replaces the value read from git, allowing test cases to
+    simulate any branch (e.g. a Sprint_<N> whose plan file does not exist)
+    deterministically. Real Claude Code Stop payloads never include this field.
+
+.HOW TO RUN THE TESTS
+    A PowerShell harness lives alongside this hook:
+      powershell -NoProfile -ExecutionPolicy Bypass -File "$PSScriptRoot\run-test-cases.ps1"
+    It pipes each .claude/hooks/test-cases/*.json file into this hook and
+    asserts the exit code against the case-name prefix (allow-* expect 0,
+    violation-* expect 2).
 #>
 
 $ErrorActionPreference = 'Stop'
@@ -70,15 +92,37 @@ if (-not $cwd) { $cwd = (Get-Location).Path }
 
 # ----- Gate 1: Are we on a sprint branch? ---------------------------------
 # Sprint branch = feature/YYYYMMDD_Sprint_N per CLAUDE.md branch policy.
-try {
-    $branch = (& git -C $cwd branch --show-current 2>$null).Trim()
-} catch {
-    $branch = ''
+# Test-only override: payload.branch_override replaces the git-derived branch
+# so test cases can simulate any branch deterministically. Real Stop payloads
+# never include this field.
+$branchOverride = [string]$payload.branch_override
+if ($branchOverride) {
+    $branch = $branchOverride.Trim()
+} else {
+    try {
+        $branch = (& git -C $cwd branch --show-current 2>$null).Trim()
+    } catch {
+        $branch = ''
+    }
 }
 
 if (-not $branch) { exit 0 }
 if ($branch -match 'allow_stop_hook_bypass') { exit 0 }
 if ($branch -notmatch '^feature/\d+_Sprint_\d+$') { exit 0 }
+
+# ----- Gate 1b: Phase 1 (Backlog Refinement) exemption (F93) --------------
+# The sprint plan file (docs/sprints/SPRINT_<N>_PLAN.md) is created at Phase 3.
+# If it does NOT exist for the sprint number in the branch, we are in Phase 1
+# (Backlog Refinement / pre-kickoff). Surfacing Product Owner decisions is
+# REQUIRED then, so the auto-advance forcing function must not fire: allow.
+# Once the plan file exists (Phase 3+), fall through to normal blocking logic.
+if ($branch -match '_Sprint_(\d+)') {
+    $sprintNum = $Matches[1]
+    $planPath  = Join-Path $cwd ("docs/sprints/SPRINT_{0}_PLAN.md" -f $sprintNum)
+    if (-not (Test-Path -LiteralPath $planPath)) {
+        exit 0  # No plan file -> Phase 1 -> allow stop (surfacing PO decisions is required)
+    }
+}
 
 # ----- Gate 2: Did Claude end with a procedural question? -----------------
 if (-not $lastMessage) { exit 0 }
@@ -87,7 +131,7 @@ $trimmed = $lastMessage.TrimEnd()
 $endsWithQuestionMark = $trimmed.EndsWith('?')
 
 # Question-shaped phrases that indicate procedural asking
-# (distinct from legitimate §1-9 stopping signals further down)
+# (distinct from legitimate section 1-9 stopping signals further down)
 $procPatterns = @(
     '(?i)want me to (proceed|continue|start|do|run|apply|execute|go|build|commit|push|create|update|extend|handle|follow|address|run the|skip|try)'
     '(?i)should i (proceed|continue|start|do|run|apply|execute|go|build|commit|push|create|update|extend|handle|follow|address|ask|stop|move on)'
@@ -118,16 +162,16 @@ if (-not ($endsWithQuestionMark -or $matchedProcPhrase)) {
     exit 0
 }
 
-# ----- Gate 3: §1-9 whitelist (legitimate stopping criteria) --------------
+# ----- Gate 3: section 1-9 whitelist (legitimate stopping criteria) -------
 # These signal a real SPRINT_STOPPING_CRITERIA.md reason to stop, not a
 # procedural permission-ask. If any is present, allow the stop.
 $legitimatePatterns = @(
-    '(?i)all (sprint )?tasks (complete|done|finished)'              # §1 Normal completion
-    '(?i)sprint (is )?complete'                                     # §1
-    '(?i)blocked (on|by|waiting for) .{0,80}(external|network|credentials|secrets|api|service|tool|oauth|missing|authorization)'  # §2
-    '(?i)cannot proceed without .{0,80}(external|user input|credentials|secrets|approval|new|additional|authorization)' # §2
-    '(?i)requires? .{0,80}(new|additional|external) (credentials|secrets|approval|api access|authorization)'  # §2
-    '(?i)stopping criterion [1-9]'                              # Explicit §N invocation
+    '(?i)all (sprint )?tasks (complete|done|finished)'              # 1 Normal completion
+    '(?i)sprint (is )?complete'                                     # 1
+    '(?i)blocked (on|by|waiting for) .{0,80}(external|network|credentials|secrets|api|service|tool|oauth|missing|authorization)'  # 2
+    '(?i)cannot proceed without .{0,80}(external|user input|credentials|secrets|approval|new|additional|authorization)' # 2
+    '(?i)requires? .{0,80}(new|additional|external) (credentials|secrets|approval|api access|authorization)'  # 2
+    '(?i)stopping criterion [1-9]'                              # Explicit N invocation
 
     # Phase 1 Backlog Refinement presentation (MANDATORY per SPRINT_EXECUTION_WORKFLOW.md Phase 1)
     # After presenting candidates in BACKLOG_REFINEMENT.md format, the user's selection IS the documented gate.
@@ -135,28 +179,28 @@ $legitimatePatterns = @(
     '(?i)(next sprint candidates|backlog refinement|sprint 3\d candidate list|candidates? in .*sprint refinement format)'
     '(?i)priority \d+ .{0,40}(mandatory|carry-?in|core app|process|bugs?|security|hold)'   # Priority-tier headers used in refinement format
     '(?i)(your call|your selection|which items|select items for sprint|approve the drafted plan|redirect scope)'
-    '(?i)phase 3 .{0,40}(approval|approve|exit gate|scope change)'                 # Plan-approval gate is §3
+    '(?i)phase 3 .{0,40}(approval|approve|exit gate|scope change)'                 # Plan-approval gate is 3
 
     # Phase 7 retrospective 7-Step Protocol Step 1: sending the retro prompt to Harold is a documented required stop
     '(?i)(phase 7|sprint retrospective|retro) .{0,30}(prompt|feedback|awaiting)'
     '(?i)please provide .{0,40}(retrospective|product owner|scrum master|lead developer) feedback'
     '(?i)(14 categories|4 roles|7-step protocol)'
-    '(?i)scope change'                                              # §3
-    '(?i)expanding (beyond|outside) (sprint|task|plan) (scope|definition)'                # §3
-    '(?i)critical bug'                                              # §4
-    '(?i)unexpected bug (found|discovered)'                         # §4
-    '(?i)(would|will) affect (sprint|data|users|production) (integrity|safety)'  # §4
-    '(?i)early (sprint )?review requested'                          # §5
-    '(?i)retrospective (complete|done)'                             # §6
-    '(?i)phase 7 (complete|done)'                                   # §6
-    '(?i)fundamental design (failure|issue|problem)'                # §7
-    '(?i)needs redesign'                                            # §7
-    '(?i)approach (is )?invalid'                                    # §7
-    '(?i)context (is )?(at|above|exceeding) 9[0-9]%'                # §8
-    '(?i)context limit approaching'                                 # §8
-    '(?i)/compact'                                                  # §8
-    '(?i)time limit reached'                                        # §9
-    '(?i)sprint time box (reached|exceeded)'                        # §9
+    '(?i)scope change'                                              # 3
+    '(?i)expanding (beyond|outside) (sprint|task|plan) (scope|definition)'                # 3
+    '(?i)critical bug'                                              # 4
+    '(?i)unexpected bug (found|discovered)'                         # 4
+    '(?i)(would|will) affect (sprint|data|users|production) (integrity|safety)'  # 4
+    '(?i)early (sprint )?review requested'                          # 5
+    '(?i)retrospective (complete|done)'                             # 6
+    '(?i)phase 7 (complete|done)'                                   # 6
+    '(?i)fundamental design (failure|issue|problem)'                # 7
+    '(?i)needs redesign'                                            # 7
+    '(?i)approach (is )?invalid'                                    # 7
+    '(?i)context (is )?(at|above|exceeding) 9[0-9]%'                # 8
+    '(?i)context limit approaching'                                 # 8
+    '(?i)/compact'                                                  # 8
+    '(?i)time limit reached'                                        # 9
+    '(?i)sprint time box (reached|exceeded)'                        # 9
 
     # Also allow genuine clarifying questions on ambiguous plan / scope /
     # architecture decisions that the plan does not specify. The test is

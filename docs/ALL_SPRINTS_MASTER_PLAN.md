@@ -134,9 +134,19 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: April 16, 2026 (Sprint 33 completion -- removed F53, F54, F55, F65, F66, SEC-1b, SEC-8, SEC-14, SEC-19, SEC-22 and partial SEC-11)
+**Last Reviewed**: May 25, 2026 (Sprint 39 Backlog Refinement -- see maintenance log row 5.15)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
+
+### Sprint Assignment (Sprint 39 Backlog Refinement, 2026-05-25)
+
+The active (non-HOLD) backlog is allocated across the next three sprints as follows:
+
+- **Sprint 39** (in planning): S38-CI-1, S38-CI-2, S38-CI-6, S38-CI-3, F91, F89, S38-CI-4, F74, F92, BUG-S37-2, F77, F93
+- **Sprint 40** (target): F75, F25, F35, F37, F78, F79, S38-CI-7
+- **Sprint 41** (target): SEC-11b, F83
+
+F77 + F93 (Claude-harness process items, ~2-3h combined) added to Sprint 39 per the F93 friction observed during this refinement session. S38-CI-7 (Opus 4.6 vs 4.7 head-to-head) moved to Sprint 40 (2026-05-25): its corrected intent -- 4+ tasks run on BOTH models on separate branches, scored on process/instruction/architecture/stopping-criteria/code-quality adherence -- is a ~6-10h experiment best run against the Sprint 40 task set, not bolted onto Sprint 39. Items moved to HOLD this session: F94 (was F52 Phase 2), F95 (was F52 Phase 3+), F63, SEC-15, SEC-8b, F6 -- all in the Android/GP HOLD group.
 
 ### Sprint 39 Carry-Ins (Sprint 38 retrospective, 2026-05-18)
 
@@ -156,23 +166,23 @@ These items were filed during Sprint 38 retrospective and are pre-loaded for the
 - Change: move the info card to immediately BELOW the "Default Folders" section header on Manual Scan tab; ADD the same card in the same new position on the Background tab.
 - Source: Sprint 38 retro Category 13.
 
-**S38-CI-3. F84 Sub-tasks B + C: Shift+Click extend selection + Ctrl+Click-drag disjoint selection (~3-5h) Priority 65**
+**S38-CI-3. F84 Sub-tasks B + C: Shift+Click extend selection + Ctrl+Click-drag disjoint selection (~3-5h) Priority 65** (consolidated 2026-05-25: this is the single entry for F84's remaining work; standalone F84 entry removed to end the double-count)
 - Phase: UX improvement
-- Platform: Windows desktop (primary); macOS + Linux parity
-- Source: Sprint 37 retro -> deferred from Sprint 38 (Sub-task A shipped only). Detail in F84 entry below.
+- Platform: Windows desktop (primary); macOS / Linux desktop (secondary -- adapt platform-specific shortcuts; macOS `Cmd+Click`, Linux uses Ctrl as on Windows)
+- Source: Sprint 37 retrospective Phase 5.3 round-2 manual testing (Harold, 2026-05-01). Three desktop-standard selection gestures were identified on Manage Rules + Manage Safe Senders after the screen-level `SelectionArea` fix. **Sub-task A (Ctrl+A select-all across the full filtered list, not just the viewport) SHIPPED in Sprint 38.** Sub-tasks B and C remain:
+- **Sub-task B**: `Shift+LeftClick` should "extend selection to here" (Windows-standard): preserve the existing selection's start anchor and update its end to the click position. Today an unmodified click resets selection.
+- **Sub-task C**: `Ctrl+LeftClick`-and-drag should "add a new disjoint selection range" without clearing the prior selection (Windows-standard for non-contiguous select). Today this is not supported -- only one contiguous selection at a time.
+- Tests: 3-5 widget tests covering Shift+Click extend-selection and Ctrl+Click disjoint-range. Real keyboard/pointer simulation via `WidgetTester.sendKeyEvent`.
+- Related: applies to any screen with a long virtualized list of selectable text (Scan Results, Scan History detail rows, etc.) -- worth designing as a reusable `SelectableScrollableList` widget rather than duplicating per screen.
 
 **S38-CI-4. IMAP cursor cap at daysBack-ago-UID (~2-3h) Priority 60**
 - Phase: Refinement of Sprint 38 F6c IMAP extension
 - Platform: All (cursor logic is in EmailScanner + results_display_screen)
 - Today: the per-(account, folder) `oldest_no_rule_uid` cursor advances as the user addresses no-rules and is cleared when zero unaddressed remain. But if no-rules arrive ~every 15 minutes (Harold's 2026-05-17 observation), the cursor never naturally clears -- it stays anchored at the oldest UID ever recorded for the folder.
 - Change: cap the cursor at the UID that corresponds to `now - daysBack` so the no-rule backlog is bounded by the user's configured retention window. Older-than-daysBack no-rules age out of the cursor naturally even if not addressed.
+- **Current state (verified 2026-05-25)**: NOT DONE -- the daysBack-cap is entirely unimplemented. The base cursor works: `oldest_no_rule_uid` lives in the `account_folder_cursors` table (`database_helper.dart:107-116`); `EmailScanner._updateOldestNoRuleCursors()` (`email_scanner.dart:1018-1057`) persists the minimum no-rule UID unconditionally (no clamp); read path (`email_scanner.dart:974-999`) uses it as-is. Building blocks: `daysBack` setting exists (`email_scanner.dart:76,193`); cursor infra complete. MISSING: (1) a UID-for-date lookup to convert `now - daysBack` into a UID floor (no such mechanism today -- `generic_imap_adapter.dart:232-234` computes `sinceDate` as a date but never maps it to a UID), and (2) the clamp itself in `_updateOldestNoRuleCursors` (cap persisted cursor at `max(oldestNoRuleUid, daysBackUid)`).
+- **Implementation note**: the UID-for-date lookup needs an IMAP `UID SEARCH SINCE <date>` round-trip; cache the resulting daysBack-UID per (account, folder) for the duration of the scan rather than re-searching on each batch boundary, to avoid an extra round-trip per batch.
 - Source: Sprint 38 retro Category 13 + Round 4 deferred decision.
-
-**S38-CI-5. F88 IMAP batch equivalent (~research first, ~2-6h if shippable) Priority 40 -- HOLD until research complete**
-- Phase: Performance investigation
-- Platform: IMAP-backed accounts (aol, yahoo, gmail-imap, custom)
-- IMAP has no batch endpoint per RFC 3501 -- F88 in Sprint 38 covered Gmail OAuth only. Investigate whether IMAP `FETCH 1,2,5,7:9 (BODY.PEEK[HEADER] BODY.PEEK[TEXT])` multi-set syntax provides comparable batching savings, and what the optimal set size is.
-- Source: Sprint 38 retro Category 13 + F88 scope decision.
 
 **S38-CI-6. Widget test for `_loadLastCompletedScan` cross-screen reload (~2h) Priority 70 -- testing debt**
 - Phase: Testing
@@ -181,115 +191,23 @@ These items were filed during Sprint 38 retrospective and are pre-loaded for the
 - Sprint 38 Rounds 7/8/9 were three iterations of the same regression that a single such test would have caught in one go.
 - Source: Sprint 38 retro Category 2 (Testing Approach) + Category 14 (Claude addition).
 
-**S38-CI-7. Opus 4.6 vs 4.7 side-by-side prompt evaluation (~3-4h, procedural) Priority 50**
+**S38-CI-7. Opus 4.6 vs 4.7 head-to-head model evaluation (~6-10h, procedural) Priority 50 -- MOVED TO SPRINT 40 (intent clarified Harold 2026-05-25)**
 - Phase: Process / model evaluation
-- Pick one representative Sprint 39 task. Run it on Opus 4.6 (record diff, rounds-to-converge, decision-flagging quality, sibling-mirroring discipline). Run the next task on Opus 4.7. Compare on the same dimensions. Document the comparison in the Sprint 39 retro.
-- Source: Sprint 38 retro Category 5 (Model Assignments) + Category 14.
+- **Intent (Harold, 2026-05-25)**: a true head-to-head, NOT two different tasks split across models. Select **at least 4 tasks**. Run EACH task on BOTH Opus 4.6 AND Opus 4.7, on **separate branches** (same task, two independent full runs, one per model), so the two model runs of the same task can be diffed against each other.
+- **Evaluation dimensions** (judge the FULL task run on each, per task, per model):
+  1. **Sprint-execution-doc process adherence** -- which model followed `SPRINT_EXECUTION_WORKFLOW.md` / phase gates / checklists more faithfully?
+  2. **Instruction-following** -- which adhered to the task spec + CLAUDE.md rules + standing instructions better?
+  3. **Architecture discipline** -- which deviated LESS from the current architecture (fewer unsanctioned Class-1/2 changes; respected ADRs)?
+  4. **Stopping-criteria adherence** -- which respected `SPRINT_STOPPING_CRITERIA.md` (stopped only for valid reasons; did not over-stop or under-stop)?
+  5. **Code quality (forward-looking)** -- which produced better code judged for future maintainability/extensibility, not just "passes tests now"?
+- **Method**: pick 4+ representative tasks from the Sprint 40 plan; for each, create two branches (e.g., `...-opus46` / `...-opus47`), run the identical task brief on each model, capture the full transcript + diff + rounds-to-converge + any process deviations; score each dimension per the rubric above.
+- **Output**: a comparison matrix (task x model x dimension) + narrative, documented in `SPRINT_40_RETROSPECTIVE.md`; feed conclusions into `feedback_opus_pitfalls.md` and model-assignment guidance.
+- **Effort raised to ~6-10h**: 4+ tasks x 2 model runs each + scoring is materially larger than the original one-task-each framing.
+- Source: Sprint 38 retro Category 5 (Model Assignments) + Category 14; intent corrected by Harold 2026-05-25.
 
 ---
 
 ### Core App
-
-**F52 Phase 2. Android dev/prod/store flavors (~6-8h) Priority 90 (Issue #248) -- SPRINT 38 CARRY-IN from Sprint 37**
-- Phase: Build and Release Infrastructure
-- Platform: Android
-- Sprint 37 shipped Phase 1 (Windows distinct .exe + dirs); Phase 2 (Android `productFlavors` with `applicationIdSuffix .dev` / `.prod`) was deferred per SPRINT_STOPPING_CRITERIA.md Criterion 2 (external dependency).
-- **Prerequisites (must be done BEFORE this work can produce a runnable Android build):**
-  1. Firebase Console -- register SHA-1 fingerprint for `com.myemailspamfilter.dev` applicationId
-  2. Firebase Console -- register SHA-1 fingerprint for `com.myemailspamfilter.prod` applicationId
-  3. Google Cloud Console -- create OAuth client ID for `.dev` package + matching SHA-1
-  4. Google Cloud Console -- create OAuth client ID for `.prod` package + matching SHA-1
-- **Pre-existing investigation item (surfaced during Sprint 37 Phase 2 dependency check)**: `mobile-app/android/app/google-services.json` has `applicationId="com.example.spamfiltermobile"` while `build.gradle.kts` declares `applicationId="com.myemailspamfilter"`. This mismatch should be diagnosed and fixed BEFORE adding flavor complexity (could be why current Android Gmail OAuth has been intermittent).
-- Memory note: `project_f52_phase2_blockers.md` has full Sprint 37 deferral context.
-- Source: Sprint 37 retrospective Category 11 + Category 13; Issue #248 deferral comment
-
-**F52 Phase 3+. iOS variants + cross-store hardening (remaining ~10-16h) Priority 88**
-- Phase: Build and Release Infrastructure
-- Platform: iOS, plus polish across all 9 variants (3 stores x 3 channels: dev, production, store)
-- All variants must run simultaneously without rebuild on same machine/device
-- [Detail](#f52-multi-variant-side-by-side-install)
-- Source: ADR-0035 dev/prod separation
-
-**F63. Responsive design framework (~8-12h) Priority 70**
-- Phase: UX Improvement
-- Platform: All
-- Implement adaptive breakpoints per ARSD AR-7: phone (<600dp), tablet (600-900dp), desktop (>900dp)
-- LayoutBuilder + breakpoints approach (ARSD A6 recommendation)
-- Priority screens: scan progress, results display, settings
-- Related: F55 (navigation consistency) should be done before or with this
-- Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gap G23)
-
-**F84. Keyboard + multi-region selection enhancements on list screens (~4-6h) Priority 65 -- BACKLOG from Sprint 37**
-- Phase: UX Improvement
-- Platform: Windows desktop (primary); macOS / Linux desktop (secondary -- adapt platform-specific shortcuts)
-- Source: Sprint 37 retrospective Phase 5.3 round-2 manual testing (Harold, 2026-05-01) -- after the screen-level `SelectionArea` fix on Manage Rules + Manage Safe Senders, three desktop-standard selection gestures still do not work as users expect:
-- **Sub-task A**: `Ctrl+A` should select ALL text across the entire filtered list, not just the items currently rendered in the viewport. Today (Flutter `SelectionArea` default behavior on a `ListView.builder`), only items that have been laid out in the viewport are selectable -- items below the visible region are not yet built and are skipped. Fix likely involves: (1) precomputing the row strings into one synthesized `SelectionContainer` with all text content even for off-screen rows, OR (2) switching the list to a non-virtualized layout for the selection scope (acceptable for typical list sizes -- Manage Rules ~200-1500 rows, Manage Safe Senders ~500-1000), OR (3) custom `Ctrl+A` Shortcuts handler that reads `_filteredRules` / `_filteredSenders` and writes the joined text to clipboard directly (skip Flutter's selection model for this case).
-- **Sub-task B**: `Shift+LeftClick` should "extend selection to here" (Windows-standard): preserve the existing selection's start anchor and update its end to the click position. Today an unmodified click resets selection.
-- **Sub-task C**: `Ctrl+LeftClick`-and-drag should "add a new disjoint selection range" without clearing the prior selection (Windows-standard for non-contiguous select). Today this is not supported -- only one contiguous selection at a time.
-- Cross-platform parity: macOS `Cmd+A`, `Shift+Click`, `Cmd+Click` should map equivalently. Linux uses Ctrl as on Windows.
-- Tests: 3-5 widget tests covering Ctrl+A select-all (assert the in-memory list of strings ends up in clipboard, not just the viewport subset), Shift+Click extend-selection, Ctrl+Click disjoint-range. Real keyboard simulation via `WidgetTester.sendKeyEvent`.
-- Related: applies to any screen with a long virtualized list of selectable text (Scan Results, Scan History detail rows, etc.) -- worth designing as a reusable `SelectableScrollableList` widget rather than duplicating per screen.
-
-**F85. Content-management architecture for long inline strings (~6-10h, ADR + Help refactor + Settings audit) Priority 50 -- BACKLOG from Sprint 37**
-- Phase: Architecture / Documentation
-- Platform: All
-- Source: Sprint 37 Phase 5.3 round-2 question from Harold (2026-05-01); scope expanded round-3 (2026-05-02) to be a general content-management architecture rather than Help-only.
-- **Driving threshold**: any Dart string literal **longer than 500 characters** (whether one continuous string or a concatenation across adjacent line-continuation `'...' '...'` literals) is a candidate for extraction. Threshold chosen because at that length the string is content authored for end-users, not a prompt or label, and editing it via Dart-source-edit + rebuild + commit is significantly more friction than editing a plain-text asset.
-- **Phase 1 -- ADR (mandatory first step, ~2-3h)**: Create `docs/adr/0036-content-management-for-long-strings.md` (or next available ADR number). The ADR must:
-  1. State the >500-character threshold rule and the rationale.
-  2. Survey + decide between candidate formats:
-     - **(a) YAML keyed by enum / route key**: structured, build-time-validatable, supports lists-of-bullets without ad-hoc parsing.
-     - **(b) Markdown with H2/H3 anchors**: readable as standalone docs, but requires `flutter_markdown` and richer parsing.
-     - **(c) JSON keyed by enum / route key**: same as YAML; matches Flutter's L10n asset format.
-     - **(d) Per-section .md files** (one file per section): friendliest for non-technical editors and diff review; needs an index registry.
-  3. Decide loader strategy: build-time bake (asset bundle) vs. runtime fetch (fallback for ship-without-rebuild updates -- probably out of scope for V1).
-  4. Decide validation strategy: how does CI verify that every (enum value or route key) has a matching asset entry, and that every asset entry has a matching (enum value or route key)? Failure mode: drift between Dart code and assets.
-  5. Decide on test strategy: existing widget tests must still pass; tests must read from the loaded asset, not hardcoded duplicate strings.
-  6. Decide on i18n posture: leave room for future L10n by structuring asset paths or keys to allow language suffixes (`help_content.en.yaml` vs `help_content.yaml`), even if V1 is English-only.
-- **Phase 2 -- Help screen migration (~2-3h)**: Refactor `mobile-app/lib/ui/screens/help_screen.dart` per the ADR. Today ~250-300 lines of body text across 20 sections (multiple sections >500 chars after concatenation). All migrated in one PR; no mixed state where some sections are inline and others are external.
-- **Phase 3 -- Settings descriptions migration + codebase audit (~2-4h)**: Audit ALL `lib/` for string literals >500 characters that are user-facing content (not prompts, not error messages, not regex patterns). Concrete known candidates as of Sprint 37:
-  - **Settings tabs** -- the descriptive subtitles / explainer paragraphs on the General, Account, Manual Scan, and Background tabs of `lib/ui/screens/settings_screen.dart` (some explainer paragraphs run multi-paragraph and would benefit from external authoring).
-  - Any other screen explainer paragraph the audit surfaces.
-  - **Excluded**: regex pattern strings; SQL DDL strings; YAML rule literals; debug log message templates; string interpolation that needs runtime values (those stay inline).
-- **Acceptance criteria**:
-  - ADR shipped + linked from CLAUDE.md
-  - Harold can edit any of the migrated content by opening one asset file (no Dart code touched) and the change appears in the next build
-  - All pre-existing widget tests pass against asset-loaded content
-  - Build-time validation step in CI/build scripts: drift between enum values and asset keys causes the build to fail (catches "added a section to enum but forgot the asset content")
-  - Codebase audit doc enumerates every >500-char user-facing string found and shows it now lives in an asset
-  - Single-source-of-truth: removing a section removes both the enum/route key AND the asset entry
-- **Out of scope**: localization runtime switching (separate F-item if/when needed); rich content (images, embedded links opened in browser) -- text-only for V1; runtime asset fetching (future enhancement).
-
-**F86. Live reload of rules / safe senders during an active Manual Scan (~2-4h) Priority 60 -- BACKLOG from Sprint 37**
-- Phase: UX / Core App
-- Platform: All
-- Source: Sprint 37 Phase 5.3 round-3 manual testing observation (Harold, 2026-05-02): "adding safe-sender or rules via Settings does not apply in live scan until exit and re-enter."
-- **Current behavior (problem)**: Manual Scan / Live Scan caches the active rule set + safe sender list at scan start. If the user navigates away to Settings, adds a new rule or safe sender, and returns to Manual Scan, the in-flight scan continues using the old cached rule set. The new rule does not apply until the user exits the Manual Scan screen and re-enters it (which restarts the scan from scratch).
-- **Desired behavior**: When a rule or safe sender is added/edited/deleted via Settings (Manage Rules, Manage Safe Senders, or any quick-add affordance), the change propagates to the active scan's rule evaluator without requiring a screen-level restart. The user sees the new rule applied to remaining-to-be-evaluated emails on the next batch boundary.
-- **Acceptance criteria**:
-  - Add/edit/delete a rule from any rule-management surface while a scan is in progress -> the new rule set is observed by the scanner before the next email batch is evaluated
-  - Same for safe senders
-  - Already-evaluated emails in the current scan are NOT re-evaluated (avoid surprise reclassification of completed work)
-  - 3-5 widget tests covering rule-add-during-scan, safe-sender-add-during-scan, rule-delete-during-scan
-- **Implementation sketch**: Subscribe `EmailScanProvider` (or whichever owns the running scan) to the rule + safe-sender database streams (or a `RuleSetProvider.notifyListeners()` signal). On change notification, atomically swap the in-memory `RuleSet` reference at a batch boundary; do not re-evaluate already-completed emails.
-- **Out of scope**: live-reload during Background Scan (the background pipeline is shorter-lived per invocation; user-initiated mid-scan rule additions are less frequent there).
-- **Note**: This unblocks a UX pattern Harold uses heavily on the Live Scan results screen (add a rule for a "no rules" hit, see remaining matches removed) -- today that pattern only works at the per-rule async-delete level, not for newly-added rules being applied to the still-in-progress scan.
-
-**F88. F6a Phase 2: true Gmail batchGet via /batch/gmail/v1 multipart endpoint (~3-4h) Priority 60 -- BACKLOG from Sprint 37 Copilot review**
-- Phase: Performance / Gmail adapter
-- Platform: Gmail (all hosting platforms)
-- Source: Sprint 37 PR #249 Copilot review #4 (2026-05-02). Gap surfaced when comparing implementation against the Issue #247 acceptance criteria.
-- **Current state (Sprint 37 ship)**: `gmail_api_adapter.dart` `fetchMessages` parallelizes individual `users.messages.get` calls via `_fetchMessagesConcurrent` (8-concurrent chunked `Future.wait`). This delivered ~10x speedup over the prior serial loop AND respects Gmail's per-user concurrency cap (Copilot review #5 fix).
-- **Gap vs Issue #247 acceptance criteria**: Issue #247 F6a explicitly required `users.messages.batchGet` via the `/batch/gmail/v1` HTTP endpoint (multipart/mixed body, 100 IDs per call, per-chunk fallback to individual `messages.get` matching the existing `_batchModifyLabels` fallback pattern). Sprint 37 shipped the parallel-fetch optimization but NOT the batchGet endpoint. The PR description and CHANGELOG correctly described the parallel-fetch shipping, but Issue #247's acceptance line "`scanInbox` uses batchGet instead of `Future.wait` of individual `messages.get`" remains unsatisfied.
-- **Acceptance criteria for F6a Phase 2**:
-  - Implement `_batchGetMessages(List<String> messageIds)` using `/batch/gmail/v1` HTTP endpoint with `multipart/mixed` body, 100 IDs per call.
-  - Per-chunk fallback to individual `messages.get` on failure -- match the existing `_batchModifyLabels` fallback pattern in this file (look for `_batchModifyLabels` near lines 752-1100).
-  - Refactor `_fetchMessagesConcurrent` (Sprint 37) to call `_batchGetMessages` instead of N individual `messages.get` calls. Keep the 8-concurrent chunking around the batchGet HTTP calls themselves (a single batchGet HTTP request can wrap up to 100 sub-requests, so concurrency is much less critical post-batchGet -- but still cap at 2-3 concurrent batchGet calls for very large mailboxes).
-  - Apply same change to `fetchMessagesIncremental` so incremental delta scans also use batchGet.
-  - Update Issue #247 acceptance check: re-verify on real Gmail account that scan path produces same `EmailMessage` outputs as the Sprint 37 parallel-fetch path.
-  - Tests: existing `_fetchMessagesConcurrent` tests pass with batchGet implementation underneath; add 2-3 new tests with mocked HTTP for the `multipart/mixed` request/response parsing.
-- **Performance expected over Sprint 37 baseline**: One HTTP request per 100 messages instead of 100 (with 8 concurrent), so ~12-13x reduction in HTTP request count. Wall-clock improvement depends on Gmail batchGet latency vs N parallel small calls; expect modest additional speedup (~1.5-2x over Sprint 37) plus much-reduced rate-limit risk for very large mailboxes.
-- **Out of scope**: AOL / IMAP equivalents (no batch endpoint exists for IMAP folder-scoped FETCH); changes to the `_fetchMessagesConcurrent` public-ish signature (callers should not need to change).
 
 **F92. Dedicated tests for `LiveScanLogger` (~2-3h) Priority 50 -- BACKLOG from Sprint 39 warmup PR #259 Copilot review (2026-05-23)**
 - Phase: Testing
@@ -350,36 +268,6 @@ These items were filed during Sprint 38 retrospective and are pre-loaded for the
   - Detecting the AOL re-injection PRE-emptively (e.g., by sniffing AOL's spam-classifier headers before moving) -- deferred; the post-move dedup is simpler and correct regardless of root cause
 - **Related**: depends on F90 (live-scan log) for log-driven verification; standalone otherwise.
 
-**F90. Live-scan logging parity with background-scan logs (~3-4h) Priority 80 -- BACKLOG from Sprint 38 debugging gap (Harold, 2026-05-23)**
-- Phase: Observability / Debugging infrastructure
-- Platform: All
-- Source: Harold, 2026-05-23. While debugging the AOL safe-sender re-injection pattern, we discovered the app captures NO persistent live-scan logs to disk. Background scans write `{logs}/background_scan_v{version}.log` (worker process status) AND per-account `background_scan_{email}_{date}.data.csv` (per-message disposition); live scans write only to stdout/stderr of the running UI process, which is lost when the app closes. The root-cause investigation had to reverse-engineer the scan path from the `spam_filter.db` `email_actions` table alone -- enough to diagnose F91, but missing the IMAP transaction details (UID MOVE response codes, SELECT mailbox counts, SEARCH results) that the runtime would have logged to stdout.
-- **Current behavior (problem)**:
-  - Background-scan logs at `{appDataDir}/logs/background_scan_v{version}.log` and per-day CSVs are written by the `--background-scan` worker process
-  - Live-scan output is `AppLogger.scan(...)` / `_logger.i(...)` which goes to stdout/stderr -- not captured to disk
-  - Debugging a live-scan issue after-the-fact (without the user re-running with a terminal attached) is impossible
-- **Desired behavior**:
-  - Live scans append to a per-account log file analogous to background scans: `{appDataDir}/logs/live_scan_{email_safe}_{YYYY-MM-DD}.log` (or `live_scan_v{version}.log` for cross-account runtime events -- decide in Phase 3 design)
-  - Same content shape as background-scan log: scan start, scan settings, evaluator step-progress, batch-action results, scan-complete summary, errors. Per-message lines optional (could be heavy for large scans -- decide in Phase 3 design)
-  - Use existing `AppLogger` / `Logger` infrastructure -- wire a file `LogOutput` for live scans similar to whatever the background-scan worker uses
-  - Same retention / rotation policy as background-scan logs (whatever that currently is -- audit during Phase 3)
-- **Phase 1 -- Design (~1h)**:
-  - Audit background-scan log writer in `mobile-app/windows/runner/main.cpp` (LogBackgroundScanSkip) + `mobile-app/lib/main.dart` (worker log setup) + `mobile-app/lib/core/services/background_scan_windows_worker.dart` -- understand current file path, rotation, and Logger configuration
-  - Decide naming: `live_scan_v{version}.log` (cross-account, mirrors background_scan log shape) vs. `live_scan_{email}_{date}.log` (per-account, mirrors per-day CSV shape). Recommendation: do BOTH -- a runtime log file (cross-account events: scan start, errors) AND per-account-per-day CSV (per-message disposition). Same shape as background scan -- a developer debugging an issue should be able to use the same grep/jq workflow on either log type.
-  - Decide whether per-message lines (`AppLogger.scan('  Safe sender to move: id=...')`) should be in the runtime log, the CSV, or both. Default proposal: CSV gets one row per email (matches background-scan CSV); runtime log gets the high-level batch transitions only (keeps file size manageable for hour-long scans).
-  - Decide rotation policy: same as background scan (one file per version, append-only) OR more aggressive (rotate at N MB). Default: match background scan exactly for consistency.
-- **Phase 2 -- Implementation (~2-3h)**:
-  - Wire a file `LogOutput` for live scans (look at how background-scan worker does it -- `mobile-app/lib/core/services/background_scan_windows_worker.dart` likely has the pattern)
-  - In `EmailScanner.scanInbox` or its caller, ensure the per-account CSV row writer is invoked at scan-complete (mirroring whatever background-scan worker does for CSV export)
-  - Verify the log path uses the environment-aware `AppPaths` (dev binaries write to `MyEmailSpamFilter_Dev/logs/`, prod to `MyEmailSpamFilter/logs/`) per ADR-0035
-  - Add a CLAUDE.md / `docs/TROUBLESHOOTING.md` note pointing future debugging at the new log path
-- **Acceptance criteria**:
-  - Run a live scan in dev -> a new file appears at `{MyEmailSpamFilter_Dev}/logs/live_scan_v{version}.log` (or chosen name) with scan-lifecycle events
-  - Run a live scan in dev -> a new per-account CSV appears at `{MyEmailSpamFilter_Dev}/logs/live_scan_{email}_{date}.data.csv` (or chosen name) with one row per processed email matching the background-scan CSV shape
-  - Closing and re-opening the dev app preserves the log file; subsequent live scans append (do not truncate)
-  - F91 dedup events (Phase 2 of F91) appear in the live-scan log with the captured Message-ID, providing the debugging visibility we lacked on 2026-05-23
-  - 2-3 widget/integration tests verifying log path + append semantics; one manual-test step in the Sprint 39 plan
-
 **F89. Surface SPF/DKIM/DMARC authentication failures on rule + safe-sender quick-add prompts (~6-10h, two-phase) Priority 75 -- BACKLOG from Sprint 38 phishing-bypass observation (Harold, 2026-05-21)**
 - Phase: Security / UX -- anti-phishing
 - Platform: All
@@ -439,51 +327,81 @@ These items were filed during Sprint 38 retrospective and are pre-loaded for the
   - Could subsume / coordinate with the architectural fix mentioned in the 2026-05-21 phishing email triage (auth-aware filtering as a Microsoft Store full-access release credibility marker).
   - Implementation note: keep the badge widget reusable as `lib/ui/widgets/email_auth_badge.dart` so future surfaces (e.g., the email detail view header) can drop it in without per-screen wiring.
 
-**F87. Settings icon on Scan History pages (~1-2h) Priority 55 -- BACKLOG from Sprint 37**
-- Phase: UX consistency
+**F74. FAQ section in Help (~2-4h) Priority 60 -- MOVED OFF HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
+- Phase: Documentation / UX
 - Platform: All
-- Source: Sprint 37 Phase 5.3 round-3 manual testing observation (Harold, 2026-05-02): "Setting icon is missing from all Scan history pages, can you add it to all Scan History pages (may only be one)."
-- **Current state**: `mobile-app/lib/ui/screens/scan_history_screen.dart` AppBar (and any sub-screens like a Scan Results detail view reached from a history row) does not include the Settings icon that every other primary screen has. Inconsistent with the rest of the app where Settings is one tap away from any AppBar.
-- **Acceptance criteria**:
-  - Settings IconButton (gear icon) appears in the Scan History AppBar with the same `tooltip: 'Settings'` and `onPressed` behavior as other screens (push `SettingsScreen(accountId: widget.accountId)` route)
-  - If there are sub-screens reached from Scan History (e.g., a Scan Results detail), they get the same icon
-  - Verify against any AppBar widget standardization (Sprint 33+ navigation consistency work) -- if there is a shared AppBar component, fix at the component level rather than per-screen
-  - 1-2 widget tests asserting the Settings icon is present + tappable
-- **Implementation note**: Likely a one-line addition (`IconButton` in `actions:`) per affected AppBar. Investigate first whether there is one Scan History screen or several -- Harold's note ("may only be one") suggests possibly only `scan_history_screen.dart` itself.
+- Add a Frequently Asked Questions section to the in-app Help screen (built on F54 Help infrastructure from Sprint 33). Required topics: TLD concept, IANA TLD list, Entire/Exact Domain vs Exact Email vs TLD distinctions, Safe Sender precedence, why the scanner skips emails, ReDoS rejections, where data is stored, export/re-import rules.
+- Was HOLD (post-Windows-Store); moved to active per Harold direction. Builds directly on the F85 content-management architecture (long Help strings -> assets) -- FAQ content should author as assets per ADR-0038, not inline Dart.
+- [Detail](#f74-faq-section-in-help)
 
-**F82. Scan History > Scan Results "no rules" progress indicator (~4-8h, design + impl) Priority 75 -- SPRINT 38 CARRY-IN from Sprint 37**
-- Phase: UX Improvement
+**F75. Help walkthrough: end-to-end first-use guide (~4-6h) Priority 58 -- MOVED OFF HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
+- Phase: Documentation / UX
 - Platform: All
-- Source: Sprint 37 retrospective Category 13 (Harold) -- "What would you suggest for this screen?"
-- **Problem**: Users frequently use Scan History > Scan Results to add rules for items showing "no rules". When background scanning is enabled, known-rule matches are deleted and safe-sender matches are moved away, so what remains is the "no rules" pool. Users need to see which items have already had rules added (this session) vs. which still need rules so they can quickly process the entire pool.
-- **Reference pattern**: Manual Scan > Live Scan > Results already does this well -- adding a rule removes ALL matching rows from the visible list and async-deletes matching emails. The Scan History > Scan Results screen needs equivalent behavior.
-- **Design phase first** (~1-2h, do in Phase 3): produce 1-2 mock variants for Harold's selection. Three candidate approaches:
-  - **(a) Mirror Live Scan exactly**: re-evaluate the new rule against in-memory result set; remove all matching rows; toast "Rule applied -- N items removed, M 'no rules' items remaining"; footer counter "M no-rules remaining / total".
-  - **(b) Visual badging**: keep all rows but mark addressed rows green/dimmed and remaining "no rules" rows with a yellow flag; "Hide addressed" toggle; counter "[2 addressed / 17 no-rules remaining]".
-  - **(c) Two-tab layout**: split Scan Results into "Addressed (rules created this session)" and "Pending (no rules)" tabs with per-tab counter.
-- **Implementation phase** (~3-6h, Phase 4): wire the chosen design + 3-5 widget/integration tests covering rule-add -> list-update -> counter-update flow. Async background-delete of matching emails (mirroring Live Scan) so future background scans do not re-encounter them.
+- Step-by-step walkthrough on the Help screen guiding a first-time user: install -> Demo scan -> read-only manual scan with move-matched target -> tune safe senders/rules -> switch to move-all and re-scan. Recommendation hierarchy stated: Entire Domain (general best), Exact Email (transactional senders), TLD (last resort).
+- Was HOLD (post-Windows-Store); moved to active per Harold direction. Same ADR-0038 asset-authoring note as F74. Can sprint together with F74 (shared Help-screen surface).
+- [Detail](#f75-help-walkthrough-end-to-end-first-use-guide)
+
+**F76. Visual regression testing for WinWright (~6-10h) Priority 54 -- MOVED OFF HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
+- Phase: Testing infrastructure
+- Platform: Windows desktop (initially)
+- WinWright tests verify presence/clickability via the accessibility tree but cannot detect alignment, centering, or visual layout regressions. Add screenshot diffing or layout-bounds-check assertions to the WinWright suite (7 scripts as of Sprint 35).
+- Was HOLD; moved to active per Harold direction. Source: Sprint 34 retro Category 14.
+
+**F25. Rule Testing UI Enhancements (~6-8h) Priority 48 -- MOVED OFF HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
+- Phase: Core Feature
+- Platform: All
+- Three enhancements to the Rule Testing screen (Settings > Tools > Test Rule Pattern): (1) pre-populate match-against list from Demo Scan data; (2) plain-text-to-regex conversion on Test; (3) open an existing rule in the test tool from Manage Rules.
+- Was HOLD (post-Windows-Store); moved to active per Harold direction. See [Detail](#f25-rule-testing-ui-enhancements) for the verified current-state breakdown (all 3 NOT DONE as of 2026-05-25).
+
+**F35. Rule editing UI with regex generation (~8-12h) Priority 46 -- MOVED OFF HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
+- Phase: Core Feature
+- Platform: All
+- Edit existing rules from Manage Rules: plain-text-to-regex generation, direct-regex editing with validation, pattern preview, edit dialog/button, metadata field editing.
+- Was HOLD (post-Windows-Store); moved to active per Harold direction. The Sprint 34 `ManualRuleCreateScreen` already provides the regex-generation building blocks (create-only), so the edit flow can reuse them. See [Detail](#rule-editing-ui) for the verified per-feature current-state breakdown (PARTIAL create-only; edit UI NOT DONE).
+
+**F37. Folder selectors: two-level listing (~6-8h) Priority 44 -- MOVED OFF HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
+- Phase: Core Feature
+- Platform: All
+- Part A: two-level collapsible folder tree for the Default Folders selector. Part B: provider-default-first flat lists for Safe Sender / Deleted Rule selectors. Per-provider path-separator detection (not hardcoded `/`).
+- Was HOLD (post-Windows-Store); moved to active per Harold direction. See [Detail](#folder-selectors-two-level-listing) for the verified current-state breakdown (Part A NOT DONE; Part B PARTIAL; separator NOT DONE as of 2026-05-25).
+
+**F78. Widget tests for ManualRuleCreateScreen rendering (~3-4h) Priority 42 -- MOVED OFF HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
+- Phase: Testing
+- Platform: All
+- Add widget tests covering radio button selection, input-field validation feedback, pattern preview rendering, and confirmation dialog. From Sprint 34 retro Category 14.
+- Was HOLD; moved to active per Harold direction. **Current state (verified 2026-05-25)**: claim still TRUE -- `mobile-app/test/ui/screens/manual_rule_create_screen_test.dart` (185 lines) is unit-only (no `testWidgets`/`WidgetTester`/`pumpWidget`); all 4 coverage areas NOT DONE (radio `RadioListTile<ManualRuleType>` ~L644-660, validation feedback, pattern preview ~L575-585, confirmation `AlertDialog` ~L566-609). Pairs naturally with F76 (both WinWright/widget testing infra).
+
+**F79. WinWright full-sweep harness + UI-trigger cadence (~4-8h) Priority 50 -- MOVED OFF HOLD + RESCOPED (Sprint 39 Backlog Refinement, 2026-05-25, Issue #240)**
+- Phase: Testing / Quality infrastructure
+- Platform: Windows
+- **Rescope rationale**: F79 was previously an on-demand *manual run* activity on HOLD. Harold's 2026-05-25 decision: build the automation harness first, then make the full sweep a near-every-sprint activity gated by a UI-change trigger. The thing blocking cheap full-sweeps is tooling (no one-command runner, no state-snapshot verification), not policy. This item now BUILDS that tooling; the cadence-policy change is documented in `docs/TESTING_STRATEGY.md` + `feedback_winwright_policy.md`.
+- **Part 1 -- One-command runner (~2-3h)**: harden `mobile-app/scripts/run-winwright-tests.ps1` so all 7 scripts run unattended end-to-end against a fresh dev build. Today the Sprint 35 closeout (README L40-49) drove the scripts *interactively* via MCP primitives because selectors needed live adaptation (off-screen Save button -> `ww_invoke`, dynamic input-field names, `Tab N of 4` selectors). Bake those workarounds into the scripts/runner so no human-in-the-loop is needed. Auto-enable the screen-reader flag + run `doctor` as preflight.
+- **Part 2 -- Pre/post dev-DB state snapshot (~2-3h)**: before the sweep, snapshot the dev `spam_filter.db` (rules, safe_senders, settings tables -- hash or row dump). After the sweep, re-snapshot and assert ZERO net change (every script's create -> verify -> delete -> verify-absent lifecycle left no residue). Fail loudly + name the offending rows if drift is found. This is the guard that prevents the Sprint 35 artifact-leak (`.xyz` rule, `test-trusted-domain.com` sender needing manual SQLite cleanup) from recurring.
+- **Part 3 -- Cadence policy + docs (~1h)**: update `docs/TESTING_STRATEGY.md` "When to Run" table and `feedback_winwright_policy.md` so the new rule is: run the full sweep at the END of any sprint whose diff touched `lib/ui/**` (Phase 5); skip for pure-backend/docs sprints; the prior per-script conditional run remains available mid-sprint for targeted checks. (Policy docs updated 2026-05-25 ahead of the harness; harness implementation makes the policy cheap to honor.)
+- **Acceptance criteria**:
+  - `run-winwright-tests.ps1` runs all 7 scripts unattended on a fresh dev build, exits non-zero on any script failure
+  - Pre/post DB snapshot verification integrated; a deliberately-leaky test script causes the run to FAIL with the leaked rows named
+  - One full unattended sweep completes green with zero net DB change
+  - `docs/TESTING_STRATEGY.md` when-to-run table + `feedback_winwright_policy.md` reflect the `lib/ui/**`-touched -> end-of-sprint-sweep cadence
+  - Runtime target: full sweep completes in <10 min unattended
+- **Out of scope**: adding NEW WinWright scripts for the newly-activated UI items (F25/F35/F37 will add their own scripts when those features ship); visual-regression assertions (that is F76, separate); cross-platform (Windows desktop only -- WinWright is Windows-specific).
+- Source: Issue #240; cadence decision Harold 2026-05-25.
 
 ### Process
 
-**F81. Store release process documentation (~5-6h) Priority 100 -- SPRINT 36 CARRY-IN (Issue #242)**
-- Phase: Documentation / Release Engineering
-- Platform: Windows (Microsoft Store)
-- Mandatory Sprint 36 task -- not backlog. Carry-in from Sprint 35 retrospective Category 13 addendum (post-retro 2026-04-19); scope expanded 2026-04-20 after the prod-worktree rebuild surfaced 3 additional gaps (see Issue #242 comment).
-- New `docs/STORE_RELEASE_PROCESS.md`: end-to-end walkthrough -- pre-release checklist, version bump (5-file checklist), supported rebuild instructions (`flutter pub run msix:create` + the mandatory `build_windows_args` config), MSIX verification, develop -> main merge process, Microsoft Partner Center upload + submit walkthrough, post-submission steps
-- Deprecate or remove `mobile-app/scripts/build-msix.ps1` (had a PowerShell parser bug patched in Sprint 35; the Dart `msix` package path is the supported one and is what's wired in `pubspec.yaml`)
-- Fix `mobile-app/.gitignore` line 120 (`*.manifest` blocks `runner.exe.manifest` which is required by Windows runner CMakeLists -- breaks fresh worktree builds with "No SOURCES given to target")
-- Document `secrets.prod.json` recreation procedure (3 required keys: `WINDOWS_GMAIL_DESKTOP_CLIENT_ID`, `WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET`, `GMAIL_REDIRECT_URI`); update `secrets.prod.json.template` to use the actual key names the code reads (template currently lists wrong key names)
-- Document `build_windows_args` in `msix_config` as a hard requirement (without it, `msix:create` silently produces MSIX with empty OAuth credentials -- Gmail sign-in fails at runtime for every user)
-- Update CLAUDE.md Common Commands and ADR-0035 cross-references
-- Source: Sprint 35 store-prep + 2026-04-20 prod rebuild made all gaps visible
+**F77. Hookify rule: block "want me to proceed?" patterns (~1h) Priority 52 -- MOVED OFF HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
+- Phase: Process automation
+- Platform: N/A (Claude Code harness)
+- Sprint plan approval covers all tasks; Claude has paused mid-sprint for "should I continue?" Hookify rule should reject phrases like "want me to proceed?", "should I continue?", "ready to proceed with X?" with the sprint-plan-approval reminder.
+- Was HOLD; moved to active per Harold direction. Source: Sprint 34 retro Category 14. Companion to the existing Stop-hook auto-advance enforcement (`feedback_auto_advance_hook.md`) and Phase Auto-Advance Rule (CLAUDE.md) -- this extends that enforcement to the prompt/question surface.
 
-**F80. 1-page Phase Cheat Sheet for SPRINT_EXECUTION_WORKFLOW.md (~45min) Priority 80 (Issue #241)**
-- Phase: Process / Documentation
-- Platform: N/A (Claude Code workflow)
-- Add a compact (~30-line) Phase Cheat Sheet at the top of SPRINT_EXECUTION_WORKFLOW.md (currently 1357 lines) so models can identify current phase + next action without reading the full doc
-- Format: 7-row table (Phase | Purpose | Top-3 Actions | Auto-advance trigger) with anchor links to detailed sections
-- Source: Sprint 35 retrospective Process Issues -- proposal P3 (Opus 4.7 phase-boundary overhead)
-- Companion to Sprint 35 fixes already shipped: Phase Auto-Advance Rule (CLAUDE.md), Standing Approval Inventory (Phase 3.7), Model-Version Pitfalls appendix (CLAUDE.md)
+**F93. Auto-advance hook: exempt Backlog Refinement (Phase 1) from procedural-question blocking (~1-2h) Priority 50 -- NEW (Sprint 39 Backlog Refinement, 2026-05-25)**
+- Phase: Process automation
+- Platform: N/A (Claude Code harness)
+- Source: Sprint 39 Backlog Refinement session (2026-05-25). The Stop-hook `.claude/hooks/sprint-auto-advance.ps1` blocks any end-of-turn question on a `feature/\d+_Sprint_\d+` branch. During Backlog Refinement (Phase 1) this produced 5 false positives in one session, because Refinement is PO-driven and surfacing PO decisions (prioritization, item grouping, scope removals) is REQUIRED by `docs/BACKLOG_REFINEMENT.md` Step 3 -- yet there is no SPRINT_N_PLAN.md / TaskList / Phase 3.7 approval to "advance" to. The branch carried the prior warmup-sprint name only because PR #259 shipped from it.
+- **Fix options** (decide in design): (a) exempt when no `docs/sprints/SPRINT_N_PLAN.md` exists for the current sprint number (= not yet in Phase 4 execution); (b) add a Phase-1 sentinel file/flag the hook checks; (c) broaden the whitelist to recognize Backlog-Refinement decision phrasings. Option (a) is the cleanest proxy for "in sprint execution vs not."
+- **Acceptance criteria**: hook allows PO-decision questions during Backlog Refinement (no SPRINT_N_PLAN.md present); hook still blocks procedural stalls during Phase 4-7 execution; add 2-3 test cases to `.claude/hooks/test-cases/*.json` covering the Phase-1-no-plan allow case.
+- Companion memory: `feedback_hook_phase1_gap.md`. Related: F77 (proceed-pattern hookify), `feedback_auto_advance_hook.md`.
 
 **F83. Per-account Background Scanning -- separation of concerns (~2 sprints, design + impl + cross-platform validation) Priority 60 -- SPRINT 38+ from Sprint 37**
 - Phase: Architecture refactor + code
@@ -510,46 +428,6 @@ These items were filed during Sprint 38 retrospective and are pre-loaded for the
 
 ### Bugs
 
-**BUG-S35-1. Manual rule creation allows duplicate TLD entries (~2-3h) Priority 70 (Issue #239) -- SHIPPED Sprint 36**
-- Phase: Bug fix
-- Platform: All (rule logic), Windows (where discovered)
-- File: `mobile-app/lib/core/services/manual_rule_creator.dart` (or equivalent), plus widget validation in `ManualRuleCreateScreen`
-- Failure: Saving a TLD block rule for a TLD already in the bundled rules table (e.g., `.xyz`) silently inserts a duplicate row. Two rules with identical pattern and identical sub-type both run on every scan.
-- Fix: Add a uniqueness check on save -- compare normalized pattern + condition_type + sub_type against existing rules table; reject with validation error if match found. Same logic for safe senders.
-- Discovery: Sprint 35 F69 execution; required direct SQLite cleanup because UI delete path was non-deterministic when two rules shared the same visible label.
-- Source: Sprint 35 F69 manual testing (`docs/sprints/SPRINT_35_PLAN.md` Manual Testing Notes)
-
-**BUG-S36-1. Manual rule creation allows semantic subsumption (~3-5h) Priority 70 (Issue #246) -- NEXT SPRINT (Sprint 37) CARRY-IN**
-- Phase: Bug fix / UX enhancement
-- Platform: All (rule logic), Windows (where discovered)
-- File: `mobile-app/lib/core/services/manual_rule_duplicate_checker.dart` (extend), `mobile-app/lib/ui/screens/manual_rule_create_screen.dart`
-- Failure: Sprint 36 BUG-S35-1 catches EXACT duplicates only (same pattern + same sub-type). It does NOT catch semantic subsumption -- e.g., an `exact_domain` safe sender for `cwru.edu` when an `entire_domain` safe sender for `cwru.edu` already exists (the entire-domain rule covers the exact-domain case including all subdomains). Same applies to block rules. Harold found this during Sprint 36 Phase 5 manual testing.
-- Fix: Extend duplicate checker to also detect coverage relationships. For safe senders and block rules, if a new rule's pattern is a strict subset of an existing rule's pattern (by sub-type semantics, not regex-subset computation), reject with a validation error that names the existing rule. Coverage matrix:
-  - New `exact_email` covered by existing `exact_domain` or `entire_domain` with matching domain
-  - New `exact_domain` covered by existing `entire_domain` with matching base domain
-  - New `entire_domain` NOT covered by `exact_domain` or `exact_email` (broader type)
-  - TLD (block only) has no coverage overlap with domain types -- different comparison space
-- Error message must name the existing covering rule so the user knows what's already in place: "A safe sender already covers this: entire_domain cwru.edu."
-- 5-8 new unit tests covering the coverage matrix plus the null case (no coverage -> insert succeeds).
-- Source: Sprint 36 Phase 5 manual testing feedback (Harold, 2026-04-21)
-- Dependencies: Sprint 36 BUG-S35-1 pre-insert checker infrastructure (already shipped in `manual_rule_duplicate_checker.dart`)
-
-**BUG-S37-1. Background scan SQLite "database is locked" when foreground UI is also running (~2-3h) Priority 65 -- SPRINT 38+ from Sprint 37**
-- Phase: Bug fix / Concurrency / Single-instance enforcement
-- Platform: Windows (where discovered; investigate cross-platform implications)
-- Files (likely): `mobile-app/lib/core/storage/database_helper.dart`, the single-instance mutex code (per ADR-0035), background scan worker code path (`--background-scan` invocation)
-- Failure: During Sprint 37 Phase 5.3 prod-build manual testing, "Test Background Scan" failed with `SqfliteFfiException(sqlite_error: 5, "database is locked")`. Cause confirmed via `tasklist`: a leftover prod variant process (PID 21772) was holding the prod DB open while the foreground UI also queried it. The single-instance mutex was supposed to make this impossible per ADR-0035.
-- **Investigation questions**:
-  1. Is the single-instance mutex correctly preventing duplicate prod processes from launching, OR did the user manage to launch a second prod process despite the mutex?
-  2. Does the background scan path open its own DB connection that conflicts with the UI's connection within the same process?
-  3. Does `--background-scan` run as a separate process from the UI, and if so does it bypass the single-instance mutex (since they would both be valid "first" instances)?
-- **Acceptance criteria**:
-  - Reproduce reliably (start prod variant, leave running, attempt "Test Background Scan" from same UI -- or some equivalent that triggers the lock).
-  - Diagnose whether root cause is mutex bypass, intra-process connection conflict, or inter-process `--background-scan` invocation.
-  - Fix root cause (do not silently suppress the SqfliteFfiException).
-  - Add 2-3 tests covering the diagnosed scenario.
-- Source: Sprint 37 retrospective Category 14 (Phase 5.3 manual testing surfaced this; pre-existing -- not a Sprint 37 regression).
-
 **BUG-S37-2. Bundled-rule TLD data quality + country-TLD blocklist expansion (~3-5h) Priority 50 -- SPRINT 38+ from Sprint 37**
 - Phase: Bug fix / Data quality / Bundled rules
 - Platform: All
@@ -572,43 +450,6 @@ These items were filed during Sprint 38 retrospective and are pre-loaded for the
 
 ### Security Hardening (Sprint 31 Audit)
 
-**SEC-4. Android: Create network_security_config.xml (~1h) Priority 40 -- HIGH**
-- Phase: Security
-- Platform: Android
-- Block cleartext traffic, pin domains for OAuth and IMAP
-- Reference in AndroidManifest.xml
-- Source: Sprint 31 security audit (S11)
-
-
-**SEC-6. Android: Configure release signing (~2h) Priority 40 -- HIGH**
-- Phase: Security
-- Platform: Android
-- Create release keystore, configure in build.gradle.kts
-- Overlaps with GP-2 (release signing)
-- Source: Sprint 31 security audit (S12)
-
-**SEC-7. Android: Enable R8 obfuscation + Dart obfuscation (~2h) Priority 40 -- HIGH**
-- Phase: Security
-- Platform: Android
-- Enable minifyEnabled, create proguard-rules.pro
-- Use --obfuscate --split-debug-info for Dart
-- Overlaps with GP-9 (ProGuard/R8)
-- Source: Sprint 31 security audit (S13)
-
-**SEC-8b. Certificate pinning for IMAP endpoints (~4-6h) Priority 42 -- HIGH**
-- Phase: Security
-- Platform: All
-- OAuth HTTPS pinning shipped Sprint 33 (CertificatePinner + PinnedHttpClient for accounts.google.com, oauth2.googleapis.com, gmail.googleapis.com, www.googleapis.com)
-- Gap: `enough_mail.ImapClient.connectToServer` does not expose a `SecurityContext` or bad-cert callback, so IMAP pinning (imap.gmail.com, imap.aol.com, etc.) was deferred
-- Options: (1) fork `enough_mail` to expose the callback; (2) wrap the socket manually via `SecureSocket.connect` with a custom `SecurityContext` before handing it to the IMAP client; (3) file upstream issue on `enough_mail`
-- Source: Sprint 33 SEC-8 implementation notes (CertificatePinner dartdoc)
-
-**SEC-9. Move hardcoded Android client ID to build-time injection (~1h) Priority 42 -- HIGH**
-- Phase: Security
-- Platform: Android
-- Move _androidClientId to --dart-define or google-services.json
-- Source: Sprint 31 security audit (S5)
-
 **SEC-11b. SQLCipher driver swap + plaintext-to-encrypted migration (~6-10h) Priority 60 -- MEDIUM**
 - Phase: Security
 - Platform: All
@@ -620,32 +461,6 @@ These items were filed during Sprint 38 retrospective and are pre-loaded for the
   - QA on real installs (Windows desktop + Android emulator + physical device)
   - Flip `encrypt_database` default to true after QA
 - Source: Sprint 33 SEC-11 scoping decision (partial completion)
-
-**SEC-15. IMAP host validation for custom servers (~1h) Priority 62 -- MEDIUM**
-- Phase: Security
-- Platform: All
-- Reject internal/private IP ranges when custom IMAP is implemented
-- Dependency: F37 (folder selectors / custom IMAP)
-- Source: Sprint 31 security audit (S19)
-
-**F6. Provider-Specific Optimizations (~10-12h) Priority 100**
-- Phase: Performance
-- Platform: All
-- [Detail](#f6-provider-specific-optimizations)
-
-**F61. Architecture documentation refresh (~4-6h) Priority HOLD**
-- Phase: Documentation
-- Platform: All
-- Update ARCHITECTURE.md: remove Dual-Write pattern (superseded Sprint 20), add missing services (DefaultRuleSetService, RuleConflictDetector, EmailAvailabilityChecker, EmailBodyParser, DevEnvironmentSeeder), add missing screens (yaml_import_export, rule_test), add missing DB tables (unmatched_emails, background_scan_log)
-- Update ARSD.md: remove Dual-Write from design patterns table, update Store certification status to "Passed", update Glossary
-- **Sprint 37 additions** (added 2026-05-01 from Sprint 37 retrospective Imp-10): also add the new types and schema introduced after the original F61 scope was written:
-  - `manual_rule_duplicate_checker.dart` -- new service that owns subsumption + duplicate detection (Sprint 36 BUG-S35-1, Sprint 37 BUG-S36-1).
-  - `SubsumingRuleInfo` class -- carries the "covering rule" details surfaced to the user when a manual rule attempt is rejected (Sprint 37).
-  - `IncrementalFetchResult` class -- Gmail-specific incremental scan result (full / partial / expired) returned by `GmailApiAdapter.fetchIncrementalChanges` (Sprint 37 F6c).
-  - `Gmail batch operations` (Sprint 25) and parallel `messages.get` fetch (Sprint 37 F6a) -- both should appear in the Gmail adapter section of ARCHITECTURE.md.
-  - DB schema v4 migration (`last_history_id` column on the per-account state table, Sprint 37 F6c) -- ARCHITECTURE.md DB schema section should reflect v4.
-- HOLD rationale: Moved to HOLD during Sprint 33 planning (April 14, 2026) per user direction. Sprint 33 includes ARCHITECTURE.md updates for new components (SQLCipher, HelpScreen, DataDeletionService, PatternCompiler revisions) so partial doc refresh happens organically. Full F61 work can be reactivated when next periodic architecture review is scheduled.
-- Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gaps G1-G6, G16-G22) + Sprint 37 retrospective Category 12 + Imp-10
 
 **F64. CI/CD pipeline with GitHub Actions (~4-6h) Priority HOLD**
 - Phase: DevOps
@@ -698,60 +513,71 @@ These items were filed during Sprint 38 retrospective and are pre-loaded for the
 - Post-Windows Store release
 - [Detail](#body-rules-cleanup-script)
 
-**F25. Rule Testing UI Enhancements (~6-8h) Priority HOLD**
-- Phase: Core Feature
-- Platform: All
-- Post-Windows Store release
-- [Detail](#f25-rule-testing-ui-enhancements)
-
-**F35. Rule editing UI with regex generation (~8-12h) Priority HOLD**
-- Phase: Core Feature
-- Platform: All
-- Post-Windows Store release
-- [Detail](#rule-editing-ui)
-
-**F37. Folder selectors: two-level listing (~6-8h) Priority HOLD**
-- Phase: Core Feature
-- Platform: All
-- Post-Windows Store release
-- [Detail](#folder-selectors-two-level-listing)
-
-**F74. FAQ section in Help (~2-4h) Priority HOLD**
-- Phase: Documentation / UX
-- Platform: All
-- Post-Windows Store release
-- [Detail](#f74-faq-section-in-help)
-
-**F75. Help walkthrough: end-to-end first-use guide (~4-6h) Priority HOLD**
-- Phase: Documentation / UX
-- Platform: All
-- Post-Windows Store release
-- [Detail](#f75-help-walkthrough-end-to-end-first-use-guide)
-
-**F76. Visual regression testing for WinWright (~6-10h) Priority HOLD**
-- Phase: Testing infrastructure
-- Platform: Windows desktop (initially)
-- From Sprint 34 retro Category 14: WinWright tests verify presence/clickability via accessibility tree but cannot detect alignment, centering, or visual layout issues. Add screenshot diffing or layout-bounds-check assertions to F69 test suite.
-
-**F77. Hookify rule: block "want me to proceed?" patterns (~1h) Priority HOLD**
-- Phase: Process automation
-- Platform: N/A (Claude Code harness)
-- From Sprint 34 retro Category 14: Sprint plan approval covers all tasks; Claude paused twice for "should I continue?" mid-sprint. Hookify rule should reject phrases like "want me to proceed?", "should I continue?", "ready to proceed with X?" with the sprint-plan-approval reminder.
-
-**F78. Widget tests for ManualRuleCreateScreen rendering (~3-4h) Priority HOLD**
-- Phase: Testing
-- Platform: All
-- From Sprint 34 retro Category 14: Only logic-level tests for F56 exist. Add widget tests covering radio button selection, input field validation feedback, pattern preview rendering, and confirmation dialog.
-
-**F79. Full WinWright E2E test sweep (run entire suite end-to-end) (~4-8h) Priority HOLD (Issue #240)**
-- Phase: Testing / Quality
-- Platform: Windows
-- Run the *entire* WinWright suite (currently 7 scripts) end-to-end against a fresh Windows desktop dev build, with strict pre/post snapshot of DB state to verify zero test artifacts left behind
-- Distinct from per-sprint conditional WinWright runs (which only execute scripts whose tested surface was touched by sprint changes)
-- Triggers: major release prep, large UI refactor (>10 files in `lib/ui/`), accessibility-tree change, or Product Owner request
-- HOLD rationale: On-demand only; not a recurring sprint item. Activate when a trigger condition is met.
-
 ### HOLD Items (Android / Google Play Store)
+
+**F94. Android dev/prod/store flavors (~6-8h) Priority HOLD (Issue #248) -- RENUMBERED from "F52 Phase 2" + MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
+- Phase: Build and Release Infrastructure / Android Google Play Store Readiness
+- Platform: Android
+- Renumbered from the ambiguous "F52 Phase 2" to a distinct F# (was sharing F52 with the iOS phase, now F95). Sprint 37 shipped F52 Phase 1 (Windows distinct .exe + dirs); this Android-flavors work was deferred and is now grouped with the Android/GP HOLD track per Harold (2026-05-25).
+- Android `productFlavors` with `applicationIdSuffix .dev` / `.prod`.
+- **Prerequisites (external -- must be done BEFORE this work can produce a runnable Android build):**
+  1. Firebase Console -- register SHA-1 fingerprint for `com.myemailspamfilter.dev` applicationId
+  2. Firebase Console -- register SHA-1 fingerprint for `com.myemailspamfilter.prod` applicationId
+  3. Google Cloud Console -- create OAuth client ID for `.dev` package + matching SHA-1
+  4. Google Cloud Console -- create OAuth client ID for `.prod` package + matching SHA-1
+- **Pre-existing investigation item**: `mobile-app/android/app/google-services.json` has `applicationId="com.example.spamfiltermobile"` while `build.gradle.kts` declares `applicationId="com.myemailspamfilter"`. Diagnose and fix this mismatch BEFORE adding flavor complexity (may explain intermittent Android Gmail OAuth).
+- Memory note: `project_f52_phase2_blockers.md` has full Sprint 37 deferral context.
+- Source: Sprint 37 retrospective Category 11 + Category 13; Issue #248 deferral comment.
+
+**F95. iOS variants + cross-store hardening (~10-16h) Priority HOLD -- RENUMBERED from "F52 Phase 3+" + MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
+- Phase: Build and Release Infrastructure
+- Platform: iOS, plus polish across all 9 variants (3 stores x 3 channels: dev, production, store)
+- Renumbered from the ambiguous "F52 Phase 3+" to a distinct F# (was sharing F52 with the Android phase, now F94). Moved to HOLD with the multi-variant track per Harold (2026-05-25) -- blocked until iOS development begins (requires macOS + Apple Developer account).
+- All variants must run simultaneously without rebuild on same machine/device.
+- [Detail](#f52-multi-variant-side-by-side-install)
+- Source: ADR-0035 dev/prod separation.
+
+**F63. Responsive design framework (~8-12h) Priority HOLD -- MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
+- Phase: UX Improvement
+- Platform: All
+- Implement adaptive breakpoints per ARSD AR-7: phone (<600dp), tablet (600-900dp), desktop (>900dp); LayoutBuilder + breakpoints (ARSD A6). Priority screens: scan progress, results display, settings.
+- Moved to HOLD per Harold (2026-05-25). Related: F55 (navigation consistency). Source: Sprint 30 gap analysis (gap G23).
+
+**SEC-15. IMAP host validation for custom servers (~1h) Priority HOLD -- MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
+- Phase: Security
+- Platform: All
+- Reject internal/private IP ranges when custom IMAP is implemented. Depends on: F37 (custom IMAP). Moved to HOLD per Harold (2026-05-25). Source: Sprint 31 security audit (S19).
+
+**SEC-8b. Certificate pinning for IMAP endpoints (~4-6h) Priority HOLD -- MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
+- Phase: Security
+- Platform: All
+- OAuth HTTPS pinning shipped Sprint 33; IMAP pinning deferred because `enough_mail.ImapClient.connectToServer` exposes no `SecurityContext`/bad-cert callback. Options: fork enough_mail, wrap socket via `SecureSocket.connect`, or file upstream issue. Moved to HOLD per Harold (2026-05-25). Source: Sprint 33 SEC-8 notes.
+
+**F6. Provider-Specific Optimizations (~10-12h) Priority HOLD -- MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
+- Phase: Performance
+- Platform: All
+- Moved to HOLD per Harold (2026-05-25). [Detail](#f6-provider-specific-optimizations)
+
+**SEC-4. Android: Create network_security_config.xml (~1h) Priority HOLD -- MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
+- Phase: Security / Android Google Play Store Readiness
+- Platform: Android
+- Block cleartext traffic, pin domains for OAuth and IMAP; reference in AndroidManifest.xml
+- Moved to HOLD with the rest of the Android track per Harold (2026-05-25) -- gated by the Google Play release, which is on HOLD. Source: Sprint 31 security audit (S11).
+
+**SEC-6. Android: Configure release signing (~2h) Priority HOLD -- MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
+- Phase: Security / Android Google Play Store Readiness
+- Platform: Android
+- Create release keystore, configure in build.gradle.kts. Overlaps with GP-2 (release signing). Source: Sprint 31 security audit (S12).
+
+**SEC-7. Android: Enable R8 obfuscation + Dart obfuscation (~2h) Priority HOLD -- MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
+- Phase: Security / Android Google Play Store Readiness
+- Platform: Android
+- Enable minifyEnabled, create proguard-rules.pro; use --obfuscate --split-debug-info for Dart. Overlaps with GP-9 (ProGuard/R8). Source: Sprint 31 security audit (S13).
+
+**SEC-9. Move hardcoded Android client ID to build-time injection (~1h) Priority HOLD -- MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
+- Phase: Security / Android Google Play Store Readiness
+- Platform: Android
+- Move _androidClientId to --dart-define or google-services.json. Source: Sprint 31 security audit (S5).
 
 **Issue #163. Android app not tested in several sprints (~2-4h) Priority HOLD**
 - Phase: Android Google Play Store Readiness
@@ -835,6 +661,8 @@ These items were filed during Sprint 38 retrospective and are pre-loaded for the
 - Phase: Post-MVP
 - Platform: All
 - Issue [#140](https://github.com/kimmeyh/spamfilter-multi/issues/140)
+- Ask: standardize the regex pattern conventions across `rules.yaml`/`rules_safe_senders.yaml` -- define a fixed taxonomy (exact-email / exact-domain / domain+subdomains / entire-TLD), add a new "domain + all TLDs" type, enforce the standard in tooling/UI, and refactor the ~3000+ inconsistent legacy patterns to conform.
+- **Current state (verified 2026-05-25)**: PARTIAL. The standardized taxonomy + generators now exist for NEWLY created rules: `mobile-app/lib/core/utils/pattern_generation.dart` (`generateExactEmailPattern`, `generateDomainPattern`, `generateSubdomainPattern`, `detectPatternType`) and the user-facing `ManualRuleType` enum in `manual_rule_create_screen.dart` (entireDomain `@(?:[a-z0-9-]+\.)*domain$`, exactDomain `@domain$`, TLD `@.*\.tld$`), with `pattern_type` persisted to the DB. Subsumption/dedup (Sprints 36-38, `manual_rule_duplicate_checker.dart`) addresses the "consolidate duplicates" goal for new rules. **Remaining**: (1) the requested "domain + all TLDs" type (`@(?:[a-z0-9-]+\.)*spammer\..*$`) does NOT exist (the UI's `topLevelDomain` is the entire-TLD type, a different thing); (2) the ~3000 legacy `rules.yaml` patterns are NOT categorized/refactored/consolidated; (3) no YAML-schema pattern-type metadata field or build-time validation enforcing the standard on the YAML files. Standardization is prospective (manual-create path) only.
 
 **H3. Requirements Documentation System (TBD) Priority HOLD**
 - Phase: Post-MVP
@@ -845,6 +673,8 @@ These items were filed during Sprint 38 retrospective and are pre-loaded for the
 - Phase: Post-MVP
 - Platform: All
 - Issue [#49](https://github.com/kimmeyh/spamfilter-multi/issues/49)
+- Ask: add a "Sent Messages Scan for Safe Senders" flow -- read every message the account owner sent, collect normalized To:/CC: addresses as safe-sender candidates, flag/exclude ones hitting a delete rule or "unsubscribe," dedupe against existing safe senders, persist progress for resume, and give the user a filterable/sortable review UI (with auto-accept option) to approve additions.
+- **Current state (verified 2026-05-25)**: NOT DONE -- entire feature remains. `email_scanner.dart` scans inbox/bulk folders only; no Sent-folder traversal and no safe-sender derivation. `CanonicalFolder.sent` exists as generic folder-classification plumbing in the adapters but nothing consumes it for a sent-scan. No sent-scan service, no resume-state store, no candidate-review UI. Reusable building blocks exist but are unwired: address normalization (`pattern_normalization.dart` `normalizeFromHeader`) and safe-sender storage (`safe_sender_database_store.dart`, `safe_senders_management_screen.dart`). Full scope remains: Sent-folder scan, To/CC candidate collection + normalization, delete-rule/unsubscribe flagging, dedup vs existing safe senders, resumable progress, and the approval UI.
 
 **H5. Outlook.com OAuth Implementation (~16-20h) Priority HOLD**
 - Phase: Post-MVP
@@ -919,6 +749,11 @@ Provider defaults:
 
 **Implementation Note**: The path separator varies by provider and is returned by the IMAP server in `listMailboxes()` response. Use `mailbox.pathSeparator` to split paths into parent/child, do not hardcode `/`.
 
+**Current state (verified 2026-05-25)**: NOT essentially complete -- mostly NOT DONE. The unified `mobile-app/lib/ui/screens/folder_selection_screen.dart` handles both multi-select and single-select modes from a FLAT list.
+- **Part A (two-level collapsible tree)**: NOT DONE. Folders render flat (~L520-606); no `ExpansionTile`/expandable groups, no non-selectable parent containers. A "Recommended" badge for junk/inbox exists (~L572-590) but that is not the auto-highlight-on-open behavior specified.
+- **Part B (provider-default-first, flat, no sub-folders)**: PARTIAL. Single-select via `RadioListTile` exists (~L527-558), and folders are sorted by canonical type (Inbox, Junk) then alphabetically (~L163-175) -- but there is NO provider-specific default-first ordering and NO sub-folder exclusion.
+- **Path-separator detection**: NOT DONE. Uses `mailbox.path` directly (`generic_imap_adapter.dart` ~L870-886); `FolderInfo` does not expose the IMAP separator, so callers cannot split paths per-provider. Hardcoded-`/` risk remains.
+
 **Acceptance Criteria**:
 - [ ] Research and document actual folder hierarchy for each supported provider before implementation
 - [ ] Part A: FolderSelectionScreen groups child folders under their parent (Default Folders only)
@@ -949,6 +784,14 @@ Provider defaults:
 3. **Pattern preview**: Show what the pattern would match against sample text (reuse Rule Testing UI from Sprint 18)
 4. **Edit dialog**: Tap a rule in Manage Rules > Edit button in details dialog
 5. **Field editing**: Edit source_domain (regenerates regex), pattern_category, pattern_sub_type, enabled/disabled
+
+**Current state (verified 2026-05-25)**: NOT essentially complete -- but the landscape has shifted since this item was written (Sprint 20). The Sprint 34 `ManualRuleCreateScreen` (`mobile-app/lib/ui/screens/manual_rule_create_screen.dart`) now provides the plain-text-to-regex generation this item asked for, but ONLY for rule CREATION, not EDITING. Per-feature status:
+- **(1) Plain-text -> regex generation**: PARTIAL (create-only). `_generatePattern` (~L147-249) converts plain-text email/domain/TLD/URL to regex by selected `ManualRuleType` (entire_domain, exact_domain, exact_email, top_level_domain). No edit mode -- the screen constructor (~L44-54) takes only `mode: ManualRuleMode` (blockRule | safeSender), no `initialRule`/`existingRule` param.
+- **(2) Direct regex editing with real-time validation**: NOT DONE. Generated pattern is shown read-only (`SelectableText`, ~L739-766); no editable regex field, no validate-and-suggest-fix.
+- **(3) Pattern preview against sample data (reuse Rule Testing UI)**: NOT DONE. `ManualRuleCreateScreen` does not import or link to `RuleTestScreen`.
+- **(4) Edit button in rule details dialog**: NOT DONE. `rules_management_screen.dart` details dialog (`_showRuleDetails`, ~L248-329) has only Close / Toggle / Delete.
+- **(5) Field editing (source_domain re-regex, category, sub_type, enabled/disabled)**: NOT DONE except enabled/disabled, which is editable via the existing toggle (`_toggleRule`, ~L155-181). source_domain / pattern_category / pattern_sub_type are not editable anywhere -- a rule can only be deleted and recreated.
+- **Net**: the create-side regex-generation building blocks now exist and could be refactored into an edit flow; the actual edit UI (dialog Edit button, edit screen, direct-regex-edit, preview integration, metadata field editing) is all still to build. Revised remaining estimate likely toward the lower end of ~8-12h given the reusable generator.
 
 **Acceptance Criteria**:
 - [ ] Edit button in rule details dialog opens edit screen
@@ -1156,6 +999,11 @@ The Windows dev/prod current implementation requires a rebuild to switch -- only
 2. **Plain Text to Regex Conversion**: When a user enters a plain text pattern (no regex metacharacters) and presses Enter/Test, automatically convert it to the equivalent regex pattern and display both
 3. **Edit Rules with Test Tool**: Add a way to open an existing rule in the test tool from the Manage Rules screen, allowing users to modify and test patterns before saving
 
+**Current state (verified 2026-05-25)**: NOT essentially complete -- all 3 enhancements remain NOT DONE.
+- **(1) Example email addresses from Demo data**: NOT DONE. `mobile-app/lib/ui/screens/rule_test_screen.dart` (`_loadSampleEmails`, ~L62-112) loads match-against samples only from recent scan history (`scanResultStore.getAllScanHistory(limit: 3)`); no Demo Mode / MockEmailProvider fallback.
+- **(2) Plain-text-to-regex in the test tool**: NOT DONE. The screen validates that input is valid regex (~L124-134) but does not detect plain text and auto-convert. (Note: a separate plain-text-to-regex generator DOES exist in `manual_rule_create_screen.dart` for rule *creation* -- it is just not wired into the test screen.)
+- **(3) Open existing rule in test tool from Manage Rules**: NOT DONE. `rules_management_screen.dart` has a toolbar icon that opens a BLANK test screen (~L439-446) and the rule details dialog (`_showRuleDetails`, ~L248-329) has only Close / Toggle / Delete -- no "edit and test" affordance that pre-fills the rule's pattern. (`RuleTestScreen` does accept `initialPattern`/`initialConditionType`, used from `rule_quick_add_screen.dart`, so wiring exists but is not connected from Manage Rules.)
+
 **Dependencies**: None (builds on existing Rule Testing UI from Sprint 18)
 
 ---
@@ -1193,6 +1041,8 @@ The Windows dev/prod current implementation requires a rebuild to switch -- only
 - UI investigation needed before implementation to determine best pattern per platform
 
 **Dependencies**: Scan Results screen (completed Sprint 12), Rule management (completed Sprint 20)
+
+**Current state (verified 2026-05-25)**: NOT essentially complete -- the bulk/multi-select feature remains NOT DONE. `mobile-app/lib/ui/screens/results_display_screen.dart` has NO per-item checkbox/radial selection (`_buildResultTile` ~L1312-1348), no Ctrl+click / Shift+click / long-press selection mode, and no selection state (only `_selectedFolders` exists for the folder filter, ~L74). What DOES exist is the per-item (single-email) version: the email detail sheet (`_showEmailDetailSheet` ~L1367+) offers single-email quick-add safe-sender (exact email / domain / custom) and quick-add block rule (From / domain / body-URL / custom), with inline single-email re-evaluation via `_evaluationOverrides` (~L90, L1914, L2077). F39 is specifically the BULK version of these existing single-email actions; that bulk layer is entirely unbuilt.
 
 **Acceptance Criteria**:
 - [ ] UI investigation completed: document recommended selection and action patterns per platform
@@ -1269,6 +1119,18 @@ The Windows dev/prod current implementation requires a rebuild to switch -- only
    - Verify behavior matches expectations from the dry-run pass
    - If unexpected results: revert via Scan History -> per-email undo (where supported), then refine rules
 
+5. **What ongoing, daily background scanning looks like** (added Sprint 39 refinement, Harold 2026-05-25):
+   - **What it does day-to-day**: once Background Scanning is enabled (Settings > Background), the app scans the configured folders on a schedule (Windows Task Scheduler / Android WorkManager) without the app window being open. Known-rule matches are deleted (or moved per rule action) and safe-sender matches are moved to INBOX automatically -- so the user wakes up to an inbox that has already had the obvious spam cleared.
+   - **What the user still sees / does**: the background scan does NOT auto-create rules. Emails that matched no rule ("no rules") are left in place and surfaced for review. So the steady-state daily loop is: background scan clears known spam overnight -> user opens Scan History > Scan Results periodically to process the "no rules" pool (add block rules / safe senders for senders the rules did not yet cover) -> those new rules apply on the next scan.
+   - **Where to look**: Scan History shows each background run with its counts (deleted / moved / safe / no-rules). The per-account background log + CSV (F90, shipped) records per-message disposition for after-the-fact review.
+   - **Expectation-setting**: the "no rules" count does not go to zero on its own -- it only shrinks as the user adds rules, and it grows as genuinely-new senders arrive. This is normal and expected; the goal is a *manageable* trickle, not zero.
+
+6. **How often do I need to process the "no rules" section?** (added Sprint 39 refinement, Harold 2026-05-25):
+   - **The hard constraint**: the scan only looks back `daysBack` days (the configured scan-range / retention window, Settings > Scan). A "no rules" email older than `daysBack` ages out of the scan window and will no longer appear in results. So the practical rule is: **review the "no rules" section at least once per `daysBack` window** if you want to catch every unaddressed sender before it falls out of range.
+   - **Recommended cadence**: for a typical `daysBack` of 7-14 days, a weekly review of the "no rules" pool keeps the backlog bounded and ensures nothing ages out unreviewed. Heavy-mail accounts may prefer every 2-3 days.
+   - **Why it is not "constant"**: the F82 "no rules" progress indicator (shipped Sprint 38) shows "M of N addressed -- K remaining" so the user can see at a glance whether the pool needs attention. If K is small and stable, the cadence can relax; if K is climbing, review more often or add broader rules (Entire Domain) to cover more senders per rule.
+   - **Cross-reference S38-CI-4** (if shipped): the no-rule cursor is capped at the `daysBack` window, so the backlog is bounded by retention regardless of review cadence -- the walkthrough should state that older-than-`daysBack` no-rules age out automatically and are not lost data, just out of the active scan window.
+
 **Implementation**:
 - New `HelpSection.walkthrough` enum value
 - Numbered step list with screenshots (or text-only initially) per step
@@ -1278,11 +1140,13 @@ The Windows dev/prod current implementation requires a rebuild to switch -- only
 
 **Acceptance Criteria**:
 - [ ] Walkthrough section accessible from Help screen
-- [ ] All 4 numbered steps documented with concrete UI references
+- [ ] All 6 numbered steps documented with concrete UI references
 - [ ] Recommendation hierarchy stated clearly: Entire Domain (general best), Exact Email (provider/transactional senders), TLD (heavy-handed, last resort)
 - [ ] Read-Only -> review -> tune -> move-all loop documented as the recommended adoption pattern
 - [ ] Scan History referenced as the recovery path for unexpected actions
 - [ ] Cross-references from Manual Rule Creation screen ("Need help choosing a rule type? See walkthrough")
+- [ ] Step 5 explains ongoing daily background scanning: what runs automatically (delete known / move safe), what the user still does (process "no rules"), and where to look (Scan History + F90 logs)
+- [ ] Step 6 answers "how often to process 'no rules'": at least once per `daysBack` window; weekly for typical 7-14 day ranges; explains the F82 progress indicator and that older-than-`daysBack` no-rules age out (not lost) per S38-CI-4
 
 ---
 
@@ -1522,6 +1386,9 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 5.16 | 2026-05-25 | Sprint 39 Backlog Refinement (Phase 1, sprint allocation): Assigned active backlog across 3 sprints (summary table added under Next Sprint Candidates). Sprint 39: S38-CI-1, S38-CI-2, S38-CI-6, S38-CI-3, S38-CI-7, F91, F89, S38-CI-4, F74, F92, BUG-S37-2, F77, F93. Sprint 40 target: F75, F25, F35, F37, F78, F79. Sprint 41 target: SEC-11b, F83. Renumbered the ambiguous shared "F52 Phase 2/3+" into distinct F94 (Android flavors) + F95 (iOS variants) and moved both to the Android/GP HOLD group. Additional HOLD moves (supersede row 5.15's "stay active" note for these): F63 (responsive design), SEC-15, SEC-8b, F6 (provider optimizations). F75 expanded with two new walkthrough steps (Step 5 ongoing daily background scanning; Step 6 "how often to process 'no rules'" tied to daysBack window + F82 indicator). Created `docs/sprints/SPRINT_39_PLAN.md` for Phase 3.7 approval. |
+| 5.17 | 2026-05-25 | Sprint 39 execution + scope adjustment: S38-CI-7 (Opus 4.6 vs 4.7 eval) moved Sprint 39 -> Sprint 40 and re-scoped per Harold's clarified intent (4+ tasks run on BOTH models on separate branches; scored on process-doc adherence / instruction-following / architecture discipline / stopping-criteria / forward-looking code quality; ~6-10h). Sprint 39 now 12 tasks (all shipped + tests green 1530/0). BUG-S37-2 corrective: removed 6 malformed bundled TLD rules (.c .giw .nwm .xd .sweepss .qzz.io) from rules.yaml + v6 cleanup migration; .sweeps/.ca retained; all 194 ccTLDs (except .us/.uk/.ca) confirmed kept per Harold. S38-CI-1 X-close fixed round 3 (removed setPreventClose interception; root cause = window_manager 0.3.9 destroy()=PostQuitMessage-only + swallowed WM_CLOSE -> engine teardown during process-exit unwind w/ orphaned tray) -- manually verified working by Harold. |
+| 5.15 | 2026-05-25 | Sprint 39 Backlog Refinement (Phase 1): Removed S38-CI-5 (IMAP batch research) and F61 (architecture doc refresh) from backlog per Harold. Moved OFF HOLD into active candidates: F74 (Help FAQ, P60), F75 (Help walkthrough, P58), F76 (WinWright visual regression, P54), F25 (Rule Testing UI, P48), F35 (Rule editing UI, P46), F37 (Folder selectors two-level, P44), F78 (ManualRuleCreateScreen widget tests, P42), F77 (hookify "proceed?" rule, P52). F79 moved off HOLD AND rescoped from on-demand manual-run to a harness-BUILD task (one-command unattended runner + pre/post dev-DB snapshot guard, P50, Issue #240); new cadence = full sweep at end of any sprint touching `lib/ui/**` once harness ships -- policy written into `docs/TESTING_STRATEGY.md` When-to-Run + `feedback_winwright_policy.md` memory. Verified-against-code current-state notes added to F25, F35, F37, F39, F78, F79, H2, H4 -- all confirmed NOT essentially complete (F35/H2 PARTIAL via Sprint 34-38 ManualRuleCreateScreen + pattern_generation; rest NOT DONE). Non-HOLD review (Step 6.1) removed 6 stale completed items: F90 (live-scan logging, shipped PR #259), F81 (store release docs, shipped Sprint 36 commit 602053e -- `docs/STORE_RELEASE_PROCESS.md` exists), F85 (content-management for long strings -- ALL 3 phases shipped Sprint 38: ADR-0038 Accepted, 21 Help `.md` files + manifest exist, Settings audit found nothing >500 chars per `assets/content/audit-log.md`), F82 (Scan History no-rules progress indicator -- shipped Sprint 38 Rounds 4-9, design option (a); `_buildNoRuleProgressFooter` + `_reEvaluateNoRuleEmails` in results_display_screen.dart, CHANGELOG 2026-05-17), BUG-S35-1 (duplicate TLD check, shipped Sprint 36), BUG-S36-1 (semantic subsumption, shipped Sprint 37 verified CHANGELOG L177). Second-pass CHANGELOG cross-check of all remaining active IDs (2026-05-25) caught 5 more shipped-but-still-listed stragglers, all Sprint 38: F86 (live reload of rules during scan, Task 5 / Round 1 redesign), F88 (true Gmail batchGet endpoint, Task 4), F87 (Settings icon on Scan History, Task 1), F80 (Phase Cheat Sheet, prepended to SPRINT_EXECUTION_WORKFLOW.md), BUG-S37-1 (background-scan DB-locked mutex probe, Task 2). Moved 4 Android security items to the Android/GP HOLD group (gated by the on-HOLD Play release): SEC-4, SEC-6, SEC-7, SEC-9. SEC-8b + SEC-11b stay active (Platform: All); SEC-15 stays active (now unblockable -- its F37 dependency was activated this session). Resolved S38-CI-3 / F84 double-count: both tracked the same Shift+Click / Ctrl+Click-drag selection work at P65 (F84 Sub-task A shipped Sprint 38; only B+C remain). Consolidated into the single S38-CI-3 carry-in entry; removed the redundant standalone F84 entry. |
 | 5.14 | 2026-04-19 | Sprint 35 retro Category 13 addendum: F81 added as Sprint 36 carry-in (mandatory, not backlog -- Issue #242). Store release process documentation -- new `docs/STORE_RELEASE_PROCESS.md`, deprecate faulty `build-msix.ps1`, walk team through Partner Center upload. Triggered by Sprint 35 store-prep gap-finding. |
 | 5.13 | 2026-04-19 | Sprint 35 store release prep: Bumped dev version 0.5.1.0 -> 0.5.2.0 (prod at 0.5.1.0 in store; 0.5.2.0 is next submission). Built signed MSIX (17.4 MB) at `mobile-app/build/windows/x64/runner/Release/my_email_spam_filter.msix`. Sprint 36 to bump dev to 0.5.3.0. |
 | 5.12 | 2026-04-19 | Sprint 35 retrospective complete (Phase 7): Applied four of five proposed process improvements -- P1 Phase Auto-Advance Rule (CLAUDE.md item 7), P2 Standing Approval Inventory (Phase 3.7), P4 Model-Version Pitfalls appendix (CLAUDE.md), P5 Sprint Resume Pattern memory. Backlogged P3 as F80 (Phase Cheat Sheet, Issue #241). Closed Category 2 testing gap by adding Phase 5.1.1 step 2a (test-assertion sibling sweep for structural-data changes). Promoted Sprint 35 to Last Completed Sprint; added Sprint 35 row to Past Sprint Summary. |

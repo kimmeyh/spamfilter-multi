@@ -48,6 +48,17 @@ class EmailScanner {
   /// reset to zero at each `scanInbox` start.
   int get pendingRuleSetChanges => _ruleSetChangeCount;
 
+  /// S38-CI-4 (Sprint 39): per-scan cache of the daysBack "UID floor" per
+  /// folder -- the smallest IMAP UID newer than `now - daysBack`. Populated
+  /// once per folder during the IMAP fetch path (`_fetchFolderMessagesImap`)
+  /// and consumed by `_updateOldestNoRuleCursors` to cap the persisted
+  /// no-rule cursor. Keyed by folder name. A null value means "looked up,
+  /// no floor" (empty window or lookup error); absence of the key means
+  /// "not looked up this scan". Reset to empty at each `scanInbox` start so
+  /// the SEARCH SINCE round-trip happens at most once per folder per scan
+  /// (NOT once per batch boundary).
+  final Map<String, int?> _daysBackUidFloorCache = {};
+
   EmailScanner({
     required this.platformId,
     required this.accountId,
@@ -85,6 +96,9 @@ class EmailScanner {
     // reload of rules + safe senders (after `completeScan()` below)
     // ensures the NEXT scan picks up any changes made during this one.
     _ruleSetChangeCount = 0;
+    // S38-CI-4: clear the per-scan daysBack UID-floor cache so this scan
+    // does its own (at most one per folder) SEARCH SINCE lookups.
+    _daysBackUidFloorCache.clear();
     ruleSetProvider.addListener(_onRuleSetChanged);
 
     // F90 (Sprint 39): live-scan runtime log only for `scanType == 'manual'`.
@@ -486,6 +500,25 @@ class EmailScanner {
             ),
           );
         }
+
+        // --- F91 (Sprint 39): Step 6b-1b -- post-move source-folder dedup ---
+        // AOL's classifier re-injects a COPY (new UID, same Message-ID) of a
+        // safe-sender message back into the source folder after we move it
+        // out. Reconcile by searching the source folder for the captured
+        // Message-ID and moving any matches to the deletedRuleFolder (Trash)
+        // with the same recoverable semantics as a normal Delete.
+        // Only messages that moved successfully are reconciled.
+        final movedSuccessfully = safeSenderMoveEmails
+            .where((e) => !batchErrors.containsKey(e.message.id))
+            .map((e) => e.message)
+            .toList();
+        await dedupSafeSenderSourceFolder(
+          platform: platform,
+          movedMessages: movedSuccessfully,
+          safeSenderTarget: safeSenderTarget,
+          deletedRuleFolder: deletedRuleFolder ?? 'Trash',
+          isLiveScan: isLiveScan,
+        );
       } else {
         // Log why safe sender batch is empty and record results
         final safeSenderEvaluated = evaluatedEmails.where((e) => e.action == EmailActionType.safeSender).toList();
@@ -786,6 +819,143 @@ class EmailScanner {
     }
   }
 
+  /// F91 (Sprint 39): post-safe-sender-move source-folder dedup (AOL
+  /// copy-not-move reconciliation).
+  ///
+  /// After safe-sender messages are moved out of their source folder (for
+  /// example AOL Bulk Mail) into [safeSenderTarget], AOL's classifier
+  /// re-injects a COPY with a NEW UID and the SAME RFC 5322 Message-ID back
+  /// into the source folder. Because the app uses IMAP UID as identity, the
+  /// next scan would treat that copy as a fresh safe-sender hit and rescue
+  /// it again -- an infinite loop plus source-folder clutter.
+  ///
+  /// This step searches each source folder for the captured Message-ID and
+  /// moves any matches to [deletedRuleFolder] (Trash), with the same
+  /// recoverable semantics as a normal Delete. The dedup count is recorded on
+  /// the scan provider via [EmailScanProvider.recordSafeSenderDedup] so the
+  /// summary can surface it.
+  ///
+  /// Skips are intentional and per-message / per-platform:
+  ///   - [messageIdHeader] is null (no stable cross-folder identity).
+  ///   - The platform is Gmail OAuth (uses labels, not folders) or any
+  ///     non-IMAP adapter: searchByMessageId returns empty, but we also
+  ///     short-circuit so no needless work runs.
+  ///   - The source folder equals [safeSenderTarget] (the message was moved
+  ///     within the same folder; there is nothing to reconcile).
+  ///
+  /// Failures degrade to a no-op: a search or move error is logged but never
+  /// breaks the scan, because dedup is a reconciliation enhancement.
+  ///
+  /// Exposed (not private) and marked [visibleForTesting] so the dedup logic
+  /// can be exercised with a fake [SpamFilterPlatform] and mocked IMAP search
+  /// responses without a live server. Production calls it from `scanInbox`
+  /// only.
+  @visibleForTesting
+  Future<void> dedupSafeSenderSourceFolder({
+    required SpamFilterPlatform platform,
+    required List<EmailMessage> movedMessages,
+    required String safeSenderTarget,
+    required String deletedRuleFolder,
+    required bool isLiveScan,
+  }) async {
+    // Gmail OAuth uses labels, not folders -- there is no source folder to
+    // reconcile. Any non-IMAP adapter is also skipped (its searchByMessageId
+    // returns empty via the BatchOperationsMixin default).
+    if (platform is! GenericIMAPAdapter) {
+      AppLogger.scan('Step 6b-1b: dedup skipped (platform ${platform.runtimeType} is not IMAP-backed)');
+      return;
+    }
+
+    // Group the messages to reconcile by their source folder, skipping any
+    // message with no Message-ID or whose source folder is the target.
+    final bySourceFolder = <String, List<EmailMessage>>{};
+    var skippedNoMessageId = 0;
+    var skippedSameFolder = 0;
+    for (final message in movedMessages) {
+      final messageId = message.messageIdHeader;
+      if (messageId == null || messageId.isEmpty) {
+        skippedNoMessageId++;
+        continue;
+      }
+      final sourceFolder = message.folderName;
+      if (sourceFolder.toLowerCase() == safeSenderTarget.toLowerCase()) {
+        skippedSameFolder++;
+        continue;
+      }
+      bySourceFolder.putIfAbsent(sourceFolder, () => []).add(message);
+    }
+
+    AppLogger.scan(
+      'Step 6b-1b: dedup candidates=${movedMessages.length}, '
+      'skippedNoMessageId=$skippedNoMessageId, skippedSameFolder=$skippedSameFolder, '
+      'folders=${bySourceFolder.keys.toList()}',
+    );
+    if (isLiveScan) {
+      await LiveScanLogger.log(
+        'Step 6b-1b: dedup candidates=${movedMessages.length} '
+        'skippedNoMessageId=$skippedNoMessageId skippedSameFolder=$skippedSameFolder '
+        'folders=${bySourceFolder.keys.toList()}',
+      );
+    }
+
+    if (bySourceFolder.isEmpty) return;
+
+    var totalDeduped = 0;
+    for (final entry in bySourceFolder.entries) {
+      final sourceFolder = entry.key;
+      for (final message in entry.value) {
+        final messageId = message.messageIdHeader!;
+        try {
+          final matches = await platform.searchByMessageId(sourceFolder, messageId);
+          if (matches.isEmpty) {
+            // Clean move: no AOL re-injection for this message.
+            continue;
+          }
+
+          final moveResult = await platform.moveToFolderBatch(
+            matches,
+            deletedRuleFolder,
+          );
+          totalDeduped += moveResult.successCount;
+
+          AppLogger.scan(
+            'Step 6b-1b: AOL re-injection reconciled in "$sourceFolder" for '
+            'from="${message.from}" messageId="$messageId": '
+            '${matches.length} found, ${moveResult.successCount} moved to '
+            '"$deletedRuleFolder", ${moveResult.failureCount} failed',
+          );
+          if (isLiveScan) {
+            await LiveScanLogger.log(
+              'Step 6b-1b: AOL re-injection reconciled in "$sourceFolder" '
+              'messageId="$messageId" found=${matches.length} '
+              'moved=${moveResult.successCount} failed=${moveResult.failureCount} '
+              'target="$deletedRuleFolder"',
+            );
+          }
+        } catch (e) {
+          AppLogger.warning(
+            'Step 6b-1b: dedup failed for messageId="$messageId" in '
+            '"$sourceFolder": $e',
+          );
+          if (isLiveScan) {
+            await LiveScanLogger.log(
+              'Step 6b-1b: dedup FAILED messageId="$messageId" '
+              'folder="$sourceFolder": $e',
+            );
+          }
+        }
+      }
+    }
+
+    if (totalDeduped > 0) {
+      scanProvider.recordSafeSenderDedup(totalDeduped);
+      AppLogger.scan('Step 6b-1b: dedup COMPLETE -- removed $totalDeduped source-folder duplicate(s)');
+      if (isLiveScan) {
+        await LiveScanLogger.log('Step 6b-1b: dedup COMPLETE removed=$totalDeduped');
+      }
+    }
+  }
+
   /// Scan specific folders
   Future<void> scanFolders({
     required List<String> folderNames,
@@ -971,6 +1141,13 @@ class EmailScanner {
     final cursorStr = await dbHelper.getFolderCursor(accountId, folderName);
     final oldestNoRuleUid = cursorStr == null ? null : int.tryParse(cursorStr);
 
+    // S38-CI-4: resolve the daysBack UID floor for this folder now, while
+    // the IMAP connection is live and the mailbox is about to be selected.
+    // This populates `_daysBackUidFloorCache` so the post-scan cursor cap in
+    // `_updateOldestNoRuleCursors` can clamp WITHOUT a second SEARCH SINCE
+    // round-trip. One lookup per folder per scan (cached, including null).
+    await _resolveDaysBackUidFloor(imap, folderName, daysBack);
+
     if (oldestNoRuleUid == null) {
       // No unaddressed backlog. Standard time-window scan.
       AppLogger.scan(
@@ -998,6 +1175,70 @@ class EmailScanner {
         'Step 4: IMAP backlog re-scan returned ${result.emails.length} messages (cursor was $oldestNoRuleUid)');
     return result.emails;
   }
+
+  /// S38-CI-4 (Sprint 39): resolve (and cache for the scan duration) the
+  /// daysBack UID floor for [folderName] -- the smallest IMAP UID newer
+  /// than `now - daysBack`. Runs `UID SEARCH SINCE` at most once per folder
+  /// per scan; subsequent calls within the same scan return the cached
+  /// value (including a cached null) without a second IMAP round-trip.
+  ///
+  /// Returns null when [daysBack] <= 0 ("scan all", no time floor), when
+  /// the window is empty, or when the lookup fails -- in all of which
+  /// cases the caller skips the cursor cap and preserves prior behavior.
+  Future<int?> _resolveDaysBackUidFloor(
+    GenericIMAPAdapter imap,
+    String folderName,
+    int daysBack,
+  ) async {
+    // daysBack <= 0 means "scan all" -- there is no time floor, so there is
+    // nothing to clamp against. Do not run a SEARCH; do not cache.
+    if (daysBack <= 0) return null;
+
+    if (_daysBackUidFloorCache.containsKey(folderName)) {
+      return _daysBackUidFloorCache[folderName];
+    }
+
+    final since = DateTime.now().subtract(Duration(days: daysBack));
+    final floor = await imap.firstUidSince(folderName, since);
+    _daysBackUidFloorCache[folderName] = floor;
+    AppLogger.scan(
+        'S38-CI-4: daysBack UID floor for "$folderName" = $floor (daysBack=$daysBack)');
+    return floor;
+  }
+
+  /// S38-CI-4 (Sprint 39): clamp a computed oldest-no-rule UID up to the
+  /// daysBack UID floor so a no-rule UID older than the retention window is
+  /// never persisted as the cursor (it ages out).
+  ///
+  /// Returns `max(computedOldest, daysBackUid)`. When [daysBackUid] is null
+  /// (daysBack=0 / "scan all", empty window, or a failed lookup), the
+  /// computed value passes through unchanged to preserve prior behavior.
+  ///
+  /// Pure function, extracted for unit testing the arithmetic without an
+  /// IMAP connection or DatabaseHelper.
+  @visibleForTesting
+  static int clampNoRuleCursor(int computedOldest, int? daysBackUid) {
+    if (daysBackUid == null) return computedOldest;
+    return computedOldest > daysBackUid ? computedOldest : daysBackUid;
+  }
+
+  /// S38-CI-4: test-only entry point for the per-scan daysBack UID-floor
+  /// cache so unit tests can assert the SEARCH SINCE lookup runs at most
+  /// once per folder per scan. Production callers use the private path via
+  /// `_fetchFolderMessagesImap`.
+  @visibleForTesting
+  Future<int?> resolveDaysBackUidFloorForTesting(
+    GenericIMAPAdapter imap,
+    String folderName,
+    int daysBack,
+  ) =>
+      _resolveDaysBackUidFloor(imap, folderName, daysBack);
+
+  /// S38-CI-4: test-only reset of the per-scan cache (production resets it
+  /// at each `scanInbox` start).
+  @visibleForTesting
+  void resetDaysBackUidFloorCacheForTesting() =>
+      _daysBackUidFloorCache.clear();
 
   /// Sprint 38 Round 4 (2026-05-17): compute the oldest unaddressed
   /// no-rule UID per scanned folder from the just-completed scan results,
@@ -1049,9 +1290,23 @@ class EmailScanner {
         AppLogger.scan(
             'Step 7b: cleared oldest-no-rule cursor for $folder (zero no-rules this scan)');
       } else {
-        await dbHelper.setFolderCursor(accountId, folder, oldest.toString());
-        AppLogger.scan(
-            'Step 7b: persisted oldest-no-rule UID cursor=$oldest for $folder');
+        // S38-CI-4: cap the persisted cursor at the daysBack UID floor so a
+        // no-rule UID older than the retention window is NOT anchored as the
+        // cursor and ages out. The floor was cached during the IMAP fetch
+        // path (`_resolveDaysBackUidFloor`); a null floor (daysBack=0 /
+        // "scan all", empty window, or a failed lookup) skips the clamp and
+        // preserves prior behavior.
+        final daysBackUid = _daysBackUidFloorCache[folder];
+        final capped = clampNoRuleCursor(oldest, daysBackUid);
+        await dbHelper.setFolderCursor(accountId, folder, capped.toString());
+        if (capped != oldest) {
+          AppLogger.scan(
+              'Step 7b: persisted oldest-no-rule UID cursor=$capped for $folder '
+              '(capped up from computed=$oldest to daysBack floor=$daysBackUid)');
+        } else {
+          AppLogger.scan(
+              'Step 7b: persisted oldest-no-rule UID cursor=$capped for $folder');
+        }
       }
     }
   }

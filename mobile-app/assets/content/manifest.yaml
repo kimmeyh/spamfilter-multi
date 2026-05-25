@@ -33,6 +33,7 @@ help:
   folderSelection: help/folder_selection.md
   yamlImportExport: help/yaml_import_export.md
   otherWaysToReduceJunk: help/other_ways_to_reduce_junk.md
+  faq: help/faq.md
 
 # Settings tab descriptions audit (F85 Phase 3, Sprint 38, 2026-05-14):
 # After audit, NO Settings string literal exceeds the 500-character threshold

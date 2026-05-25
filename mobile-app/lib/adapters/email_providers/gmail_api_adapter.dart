@@ -1013,6 +1013,12 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
         parsedDate = DateTime.now();
       }
 
+      // F91 (Sprint 39): capture the RFC 5322 Message-ID header. getHeader is
+      // already case-insensitive. Gmail OAuth dedup is skipped at the scanner
+      // level (labels not folders), but capturing the value keeps the model
+      // consistent across providers and supports any future Gmail-side use.
+      final messageIdHeader = EmailMessage.parseMessageId(getHeader('Message-ID'));
+
       return EmailMessage(
         id: gmailMessage.id ?? '',
         from: _extractEmail(getHeader('From')),
@@ -1023,6 +1029,7 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
         },
         receivedDate: parsedDate,
         folderName: folderName,
+        messageIdHeader: messageIdHeader,
       );
     } catch (e) {
       Redact.logError('Error converting Gmail message', e);

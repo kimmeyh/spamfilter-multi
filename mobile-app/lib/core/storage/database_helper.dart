@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:sqflite/sqflite.dart';
 import 'package:logger/logger.dart';
 
@@ -28,7 +29,16 @@ abstract class RuleDatabaseProvider {
 ///     Gmail OAuth incremental scans via historyId)
 /// v5: Add account_folder_cursors table (Sprint 38 F6c Phase 2 IMAP extension,
 ///     per-(account, folder) cursor for UID-based incremental scans)
-const int databaseVersion = 5;
+/// v6: Add columns to email_actions table (Sprint 39). This single version
+///     intentionally carries MORE THAN ONE additive column so sibling tasks
+///     can land in the same migration:
+///       - F91: rfc5322_message_id (nullable TEXT) -- RFC 5322 Message-ID
+///         captured at scan time for AOL copy-not-move source-folder dedup.
+///       - F89: created_with_auth_state (nullable TEXT) on BOTH the rules and
+///         safe_senders tables -- the GREEN/YELLOW/RED/GREY SPF/DKIM/DMARC
+///         snapshot captured when a rule or safe sender was created via a
+///         quick-add prompt.
+const int databaseVersion = 6;
 
 /// SQLite database helper - singleton pattern
 class DatabaseHelper implements RuleDatabaseProvider {
@@ -157,6 +167,7 @@ class DatabaseHelper implements RuleDatabaseProvider {
         success INTEGER NOT NULL,
         error_message TEXT,
         email_still_exists INTEGER DEFAULT 1,
+        rfc5322_message_id TEXT,
         FOREIGN KEY (scan_result_id) REFERENCES scan_results(id) ON DELETE CASCADE
       );
     ''');
@@ -190,7 +201,8 @@ class DatabaseHelper implements RuleDatabaseProvider {
         created_by TEXT DEFAULT 'manual',
         pattern_category TEXT,
         pattern_sub_type TEXT,
-        source_domain TEXT
+        source_domain TEXT,
+        created_with_auth_state TEXT
       );
     ''');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_rules_enabled ON rules(enabled, execution_order);');
@@ -206,7 +218,8 @@ class DatabaseHelper implements RuleDatabaseProvider {
         exception_patterns TEXT,
         date_added INTEGER NOT NULL,
         date_modified INTEGER,
-        created_by TEXT DEFAULT 'manual'
+        created_by TEXT DEFAULT 'manual',
+        created_with_auth_state TEXT
       );
     ''');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_safe_senders_pattern ON safe_senders(pattern);');
@@ -380,6 +393,95 @@ class DatabaseHelper implements RuleDatabaseProvider {
         );
       ''');
       _logger.i('v5 migration complete');
+    }
+
+    if (oldVersion < 6) {
+      // v6: additive nullable columns on the email_actions table (Sprint 39).
+      //
+      // This block is intentionally written to carry MORE THAN ONE column so
+      // sibling tasks share one schema version. To add a column, append
+      // another guarded `if (!existingColumns.contains(...))` ALTER TABLE
+      // below -- do NOT bump the version again for a same-sprint sibling.
+      //
+      // F91: rfc5322_message_id holds the RFC 5322 Message-ID captured at
+      // scan time. Existing rows are null (no Message-ID was captured before
+      // this migration). Nullable additive column -> safe migration.
+      //
+      // F89 (pending sibling): add its nullable column here using the same
+      // guarded pattern.
+      _logger.i('Applying v6 migration: adding columns to email_actions');
+      final tableInfo = await db.rawQuery('PRAGMA table_info(email_actions)');
+      final existingColumns = tableInfo.map((r) => r['name'] as String).toSet();
+      if (!existingColumns.contains('rfc5322_message_id')) {
+        await db.execute('ALTER TABLE email_actions ADD COLUMN rfc5322_message_id TEXT;');
+      }
+
+      // F89 (Sprint 39): persist the SPF/DKIM/DMARC authentication state at
+      // the moment a rule or safe sender was created from a quick-add prompt.
+      // GREEN/YELLOW/RED/GREY snapshot lets a later audit show "you
+      // whitelisted this sender even though its mail had failed
+      // authentication." Nullable additive columns -> safe migration.
+      // Existing rows are null (created before this feature shipped).
+      final rulesInfo = await db.rawQuery('PRAGMA table_info(rules)');
+      final rulesColumns = rulesInfo.map((r) => r['name'] as String).toSet();
+      if (!rulesColumns.contains('created_with_auth_state')) {
+        await db.execute('ALTER TABLE rules ADD COLUMN created_with_auth_state TEXT;');
+      }
+      final safeSendersInfo = await db.rawQuery('PRAGMA table_info(safe_senders)');
+      final safeSendersColumns =
+          safeSendersInfo.map((r) => r['name'] as String).toSet();
+      if (!safeSendersColumns.contains('created_with_auth_state')) {
+        await db.execute('ALTER TABLE safe_senders ADD COLUMN created_with_auth_state TEXT;');
+      }
+
+      // BUG-S37-2 (Sprint 39): remove six malformed bundled TLD block rules
+      // that were typos or miscategorized second-level domains. They were
+      // removed from the bundled rules.yaml for fresh installs; this cleanup
+      // removes them from existing installs that already seeded them.
+      // .c (single char), .giw, .nwm, .xd (junk), .sweepss (typo of .sweeps,
+      // which is retained), .qzz.io (second-level domain, not a TLD).
+      //
+      // condition_header is a JSON-encoded array (e.g. ["@.*\\.c$"]), so a raw
+      // SQL LIKE is fragile across JSON/SQLite escaping. Instead, read the
+      // top_level_domain rules, JSON-decode each header, and delete by exact
+      // pattern match in Dart. Idempotent: re-running deletes nothing once gone.
+      const badTldPatterns = <String>{
+        r'@.*\.c$',
+        r'@.*\.giw$',
+        r'@.*\.nwm$',
+        r'@.*\.xd$',
+        r'@.*\.sweepss$',
+        r'@.*\.qzz.io$',
+      };
+      final tldRules = await db.query(
+        'rules',
+        columns: ['id', 'condition_header'],
+        where: "pattern_sub_type = 'top_level_domain'",
+      );
+      final idsToDelete = <Object>[];
+      for (final row in tldRules) {
+        final raw = row['condition_header'];
+        if (raw is! String) continue;
+        try {
+          final headers = (jsonDecode(raw) as List).cast<String>();
+          if (headers.any(badTldPatterns.contains)) {
+            idsToDelete.add(row['id'] as Object);
+          }
+        } catch (_) {
+          // Malformed JSON in an existing row: skip rather than fail migration.
+        }
+      }
+      if (idsToDelete.isNotEmpty) {
+        final placeholders = List.filled(idsToDelete.length, '?').join(',');
+        final deleted = await db.delete(
+          'rules',
+          where: 'id IN ($placeholders)',
+          whereArgs: idsToDelete,
+        );
+        _logger.i('v6 migration: removed $deleted malformed TLD rule(s) (BUG-S37-2)');
+      }
+
+      _logger.i('v6 migration complete');
     }
   }
 

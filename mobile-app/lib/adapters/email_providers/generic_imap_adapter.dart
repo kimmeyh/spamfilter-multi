@@ -381,6 +381,117 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     }
   }
 
+  /// S38-CI-4 (Sprint 39): return the SMALLEST UID in [folderName] whose
+  /// message arrived on or after [since] -- the "UID floor" for the
+  /// configured `daysBack` retention window.
+  ///
+  /// EmailScanner uses this floor to CAP the oldest-no-rule cursor so a
+  /// no-rule UID older than `now - daysBack` is not persisted as the
+  /// cursor and therefore ages out of the backlog (see
+  /// EmailScanner._updateOldestNoRuleCursors). One lookup per folder per
+  /// scan: the result is cached by the caller for the scan duration.
+  ///
+  /// Mirrors [getCurrentMaxUid] but searches `UID SEARCH SINCE <date>`
+  /// (RFC 3501 section 6.4.4) and takes the minimum matching UID instead
+  /// of the maximum. The IMAP `SINCE` key matches the message internal
+  /// date (server receipt date) with date granularity, consistent with
+  /// how [fetchMessages] applies the same `daysBack` window.
+  ///
+  /// Returns null when no message matches (the window is empty) or on any
+  /// error, so the caller degrades gracefully and skips the cap rather
+  /// than clamping against a bogus floor.
+  Future<int?> firstUidSince(String folderName, DateTime since) async {
+    if (_imapClient == null) {
+      _logger.e('[IMAP] firstUidSince called but _imapClient is NULL');
+      return null;
+    }
+    try {
+      await _selectMailbox(folderName);
+      final searchCriteria = 'SINCE ${_formatImapDate(since)}';
+      _logger.i('[IMAP] firstUidSince: UID SEARCH criteria="$searchCriteria" in "$folderName"');
+      final searchResult = await _imapClient!.uidSearchMessages(
+        searchCriteria: searchCriteria,
+      );
+      final seq = searchResult.matchingSequence;
+      if (seq == null || seq.isEmpty) {
+        _logger.i('[IMAP] firstUidSince: no messages since $since in $folderName');
+        return null;
+      }
+      int? minUid;
+      for (final id in seq.toList()) {
+        if (minUid == null || id < minUid) minUid = id;
+      }
+      _logger.i('[IMAP] firstUidSince: $folderName floor UID=$minUid (since=$since)');
+      return minUid;
+    } catch (e) {
+      _logger.e('[IMAP] firstUidSince ERROR for $folderName: $e');
+      return null;
+    }
+  }
+
+  /// F91 (Sprint 39): find messages in [folderName] whose RFC 5322
+  /// `Message-ID` header equals [messageId].
+  ///
+  /// Implements post-safe-sender-move source-folder dedup for AOL's
+  /// copy-not-move behavior (see SpamFilterPlatform.searchByMessageId).
+  ///
+  /// IMAP `SEARCH HEADER` quoting (RFC 3501 section 6.4.4): the header field
+  /// name and the substring are both IMAP strings. We quote both as IMAP
+  /// quoted-strings. The value [messageId] is expected to include the angle
+  /// brackets (for example `<abc@host>`). Any embedded double quotes or
+  /// backslashes are escaped per RFC 3501 quoted-string rules so a malformed
+  /// Message-ID cannot break out of the quoted string. Matching is
+  /// case-insensitive per RFC 3501 (`SEARCH HEADER` does a case-insensitive
+  /// substring match on the header value).
+  ///
+  /// Returns the matching messages (empty when none). Returns empty on any
+  /// search error rather than throwing, so the caller's dedup step degrades
+  /// to a no-op instead of failing the scan.
+  @override
+  Future<List<EmailMessage>> searchByMessageId(
+    String folderName,
+    String messageId,
+  ) async {
+    if (_imapClient == null) {
+      _logger.e('[IMAP] searchByMessageId called but _imapClient is NULL');
+      throw ConnectionException('Not connected - call loadCredentials first');
+    }
+
+    final trimmed = messageId.trim();
+    if (trimmed.isEmpty) {
+      _logger.w('[IMAP] searchByMessageId: empty messageId, skipping');
+      return const [];
+    }
+
+    try {
+      await _checkAndReconnect();
+      await _selectMailbox(folderName);
+
+      // Escape per RFC 3501 quoted-string: backslash and double quote.
+      final escaped = trimmed.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
+      final searchCriteria = 'HEADER "Message-ID" "$escaped"';
+      _logger.i('[IMAP] searchByMessageId: UID SEARCH $searchCriteria in "$folderName"');
+
+      final searchResult = await _imapClient!.uidSearchMessages(
+        searchCriteria: searchCriteria,
+      );
+      _operationCount++;
+
+      final sequence = searchResult.matchingSequence;
+      if (sequence == null || sequence.isEmpty) {
+        _logger.i('[IMAP] searchByMessageId: no match in "$folderName"');
+        return const [];
+      }
+
+      _logger.i('[IMAP] searchByMessageId: ${sequence.length} match(es) in "$folderName"');
+      return _fetchMessageDetails(sequence, folderName);
+    } catch (e, st) {
+      _logger.e('[IMAP] searchByMessageId ERROR in "$folderName": $e\n$st');
+      // Degrade to no-op: dedup must never break the scan.
+      return const [];
+    }
+  }
+
   @override
   Future<List<EvaluationResult>> applyRules({
     required List<EmailMessage> messages,
@@ -1049,6 +1160,18 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       _logger.w('[IMAP] Message has no UID, falling back to sequenceId: ${mimeMessage.sequenceId}');
     }
 
+    // F91 (Sprint 39): capture the RFC 5322 Message-ID header for
+    // post-safe-sender-move source-folder dedup. headersMap keys are the
+    // raw header names; look up case-insensitively because servers vary
+    // ("Message-ID", "Message-Id", "message-id").
+    String? messageIdHeader;
+    for (final entry in headersMap.entries) {
+      if (entry.key.toLowerCase() == 'message-id') {
+        messageIdHeader = EmailMessage.parseMessageId(entry.value);
+        break;
+      }
+    }
+
     return EmailMessage(
       id: messageId,
       from: mimeMessage.from?.first.email ?? '',
@@ -1057,6 +1180,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       headers: headersMap,
       receivedDate: mimeMessage.decodeDate() ?? DateTime.now(),
       folderName: folderName,
+      messageIdHeader: messageIdHeader,
     );
   }
 

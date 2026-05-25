@@ -25,6 +25,7 @@ import '../../core/services/pattern_compiler.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/utils/domain_validation.dart';
 import '../utils/accessibility_helper.dart';
+import 'help_screen.dart';
 
 /// Whether we are creating a block rule or a safe sender
 enum ManualRuleMode { blockRule, safeSender }
@@ -658,6 +659,18 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
                       },
                     ),
                   )),
+
+              // F74 (Sprint 39): cross-reference to the Help FAQ, which
+              // explains TLD rules, the IANA list, and the difference between
+              // the four rule types in plain language.
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  icon: const Icon(Icons.help_outline, size: 18),
+                  label: const Text('Learn more about rule types and TLDs'),
+                  onPressed: () => openHelp(context, HelpSection.faq),
+                ),
+              ),
 
               const SizedBox(height: 16),
               const Divider(),

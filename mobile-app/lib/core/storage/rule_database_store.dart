@@ -470,6 +470,11 @@ class RuleDatabaseStore {
       'pattern_category': rule.patternCategory,
       'pattern_sub_type': rule.patternSubType,
       'source_domain': rule.sourceDomain,
+      // F89 (Sprint 39): persist the SPF/DKIM/DMARC classification of the
+      // source email at creation time, when the quick-add flow supplied it
+      // via rule.metadata['created_with_auth_state']. Null otherwise.
+      'created_with_auth_state':
+          rule.metadata?['created_with_auth_state'] as String?,
     };
 
     await db.insert('rules', dbRule);

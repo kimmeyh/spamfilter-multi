@@ -46,6 +46,11 @@ enum HelpSection {
   // Sprint 37 Phase 7 Imp-2: terminal "see also" section pointing users to
   // outside-the-app channels for unwanted email/text/mail/calls.
   otherWaysToReduceJunk,
+  // Sprint 39 F74: frequently-asked-questions section. General concept and
+  // privacy questions (TLDs, the IANA list, rule types, safe senders, scan
+  // skips, ReDoS, data storage, rule import/export) that are not tied to one
+  // screen. Rendered last so screen-anchored sections appear first.
+  faq,
 }
 
 class HelpScreen extends StatefulWidget {
@@ -219,6 +224,8 @@ class _HelpScreenState extends State<HelpScreen> {
                 _section(HelpSection.otherWaysToReduceJunk,
                     title:
                         'Other ways to reduce junk email, mail, texts, and phone calls'),
+                _section(HelpSection.faq,
+                    title: 'Frequently Asked Questions'),
                 const SizedBox(height: 24),
                 Text(
                   'Last updated: Sprint 37 (May 2026). Report issues at '
@@ -350,6 +357,8 @@ class _HelpScreenState extends State<HelpScreen> {
         return 'yamlImportExport';
       case HelpSection.otherWaysToReduceJunk:
         return 'otherWaysToReduceJunk';
+      case HelpSection.faq:
+        return 'faq';
     }
   }
 }

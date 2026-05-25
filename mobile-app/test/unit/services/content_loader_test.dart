@@ -48,6 +48,7 @@ void main() {
         HelpSection.folderSelection: 'folderSelection',
         HelpSection.yamlImportExport: 'yamlImportExport',
         HelpSection.otherWaysToReduceJunk: 'otherWaysToReduceJunk',
+        HelpSection.faq: 'faq',
       };
 
       // The test mapping must cover every enum case (compile-time drift

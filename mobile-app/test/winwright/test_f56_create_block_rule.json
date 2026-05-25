@@ -6,7 +6,7 @@
   "prerequisites": [
     "Windows desktop dev build running",
     "SPI_SETSCREENREADER flag enabled",
-    "F73 bundled YAML loaded (1638 individual rules expected)",
+    "F73 bundled YAML loaded (1832 individual rules expected after BUG-S37-2 ccTLD gap-fill, Sprint 39)",
     "Test TLD (.museum) is NOT pre-existing in bundled rules (verified during Sprint 35 F69 execution)"
   ],
   "test_data": {

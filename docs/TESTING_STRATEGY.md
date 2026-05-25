@@ -285,9 +285,11 @@ void main() {
 - Best for testing navigation flow, form inputs, and button interactions
 - Not suitable for pixel-perfect visual regression testing
 
-**When to Run** (Sprint 35 policy):
+**When to Run** (Sprint 39 policy -- supersedes Sprint 35 conditional-only policy):
 
-WinWright is **conditional** -- it does NOT run every sprint. Run only the scripts whose tested surface is touched by the current sprint's changes:
+Two complementary modes:
+
+**1. Mid-sprint targeted runs (conditional).** During sprint development, run only the scripts whose tested surface is touched by the change you are working on -- useful for fast feedback without the full sweep:
 
 | Sprint changes touch... | Run these WinWright scripts |
 |-------------------------|-----------------------------|
@@ -298,9 +300,15 @@ WinWright is **conditional** -- it does NOT run every sprint. Run only the scrip
 | Manage Rules / ManualRuleCreateScreen (block side) | `test_f56_create_block_rule.json` |
 | Manage Safe Senders / ManualRuleCreateScreen (safe sender side) | `test_f56_create_safe_sender.json` |
 | Scan History screen / aggregate stats | `test_scan_history.json` |
-| **No UI changes in sprint** | **Skip all WinWright scripts** |
 
-If a sprint touches multiple surfaces, run the union of applicable scripts. The full suite is not required every sprint -- F79 (HOLD) tracks the on-demand "full sweep" run for major releases or large refactors.
+**2. End-of-sprint full sweep (UI-triggered).** At sprint close (Phase 5), if the sprint diff touched **any file under `lib/ui/**`**, run the FULL 7-script sweep via the F79 harness (`run-winwright-tests.ps1`, unattended, with pre/post dev-DB snapshot verification). If the sprint touched no `lib/ui/**` files (pure backend / docs / tests), **skip the full sweep**.
+
+| Sprint touched `lib/ui/**`? | End-of-sprint action |
+|------------------------------|----------------------|
+| Yes | Run full 7-script sweep via F79 harness (Phase 5) |
+| No | Skip -- no UI surface changed |
+
+Rationale for the change (Harold, 2026-05-25): the previous "conditional-only, full sweep on-demand" policy left regressions to surface at release prep. Once the F79 harness makes the full sweep cheap (~5-10 min unattended, self-cleaning via DB snapshot), running it at the end of every UI-touching sprint is low-cost insurance. **Dependency**: this end-of-sprint cadence becomes mandatory only once the F79 harness ships; until then, the full sweep remains the manual/on-demand activity tracked by F79.
 
 **State-restore rule (mandatory for every WinWright script)**: Any rule, safe sender, setting, or other persistent state that a script creates or modifies must be reverted before the script ends. If a script adds a rule, it must delete that rule. If a script changes a setting, it must restore the original value. The dev DB / settings file at script end must be byte-identical (or semantically equivalent) to its state at script start. Sprint 35 added create-verify-delete-verify lifecycle to both F56 scripts as the first application of this rule.
 
