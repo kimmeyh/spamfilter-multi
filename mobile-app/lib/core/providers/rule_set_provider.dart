@@ -277,7 +277,11 @@ class RuleSetProvider extends ChangeNotifier {
 
   /// Update a rule
   ///
-  /// Updates database first, then exports to YAML for version control.
+  /// Updates database first, then refreshes the in-memory cache.
+  ///
+  /// BUG-S39-2 discipline: rethrows on failure so UI callers see the
+  /// actual error (e.g., ReDoS rejection, rule-not-found) instead of
+  /// receiving a silent success. Mirrors `addRule`'s rethrow semantics.
   Future<void> updateRule(String ruleName, Rule updatedRule) async {
     if (_rules == null) return;
 
@@ -304,9 +308,13 @@ class RuleSetProvider extends ChangeNotifier {
       _logger.i('Updated rule: $ruleName');
       notifyListeners();
     } catch (e) {
+      // BUG-S39-2 (Sprint 39): rethrow so UI callers see the actual failure.
+      // Pre-fix, updateRule silently swallowed exceptions like addRule did.
+      // See addRule docstring for full rationale.
       _setError('Failed to update rule: $e');
       _logger.e('Failed to update rule', error: e);
       notifyListeners();
+      rethrow;
     }
   }
 
