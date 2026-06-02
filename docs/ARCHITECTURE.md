@@ -203,6 +203,7 @@ Business logic and domain services.
 | **DefaultRuleSetService** | Seed bundled rules on first launch; reset to defaults; SEC-1b marks seeded patterns as `bundled` provenance so they skip ReDoS checks. Includes F53 `ensureTldBlockRules` post-seed migration for existing installs, plus the BUG-S37-2 (Sprint 39) ccTLD gap-fill reconciling the bundled `top_level_domain` set against the full ISO 3166-1 list (all except `.us`/`.uk`/`.ca`) |
 | **LiveScanLogger** (F90, Sprint 39 warmup) | Persists live-scan runtime log + per-account CSV/XLSX to `{appDataDir}/logs/`, env-aware path (dev/prod), append-mode, setting-gated CSV export. Parity with the background-scan log pipeline |
 | **AuthResultsParser** (F89, Sprint 39) | Parses `Authentication-Results` / `Received-SPF` / DKIM / ARC headers (RFC 8601, tolerant of AOL/Yahoo/Gmail variants) into an `EmailAuthResult {spf, dkim, dmarc, raw}`, and classifies to GREEN/YELLOW/RED/GREY. Drives the auth badge + warn-then-confirm dialog on rule / safe-sender quick-add prompts so a user does not whitelist a sender whose mail failed authentication |
+| **ManualRulePatternGenerator** (F25, Sprint 40) | Public utility (`lib/core/utils/manual_rule_pattern_generator.dart`) with 5 static methods: `generateTopLevelDomain`, `generateEntireDomain`, `generateExactDomain`, `generateExactEmail`, `generateFromPlaintext` (auto-detect). Extracted from `ManualRuleCreateScreen`'s previously-private generators so create-flow, edit-flow (F35 `RuleEditScreen`), and rule-test plaintext->regex conversion (F25) all share the same source of truth |
 
 ---
 
@@ -538,7 +539,9 @@ RuleEvaluator.evaluate(EmailMessage)
 | **email_detail_view.dart** | Full email details display |
 | **settings_screen.dart** | App configuration (General, Account, Manual Scan, Background tabs). General tab hosts Privacy & Logging toggles (auth logging, unmatched retention, cert pinning) and the "Delete All App Data" action (F66) |
 | **gmail_oauth_screen.dart** | Gmail OAuth flow (legacy WebView) |
-| **help_screen.dart** (F54, Sprint 33) | Scrollable single-page Help screen with one anchored section per primary screen. `HelpSection` enum + `openHelp(context, section)` helper; every primary AppBar has a Help icon that deep-links to that screen's section |
+| **help_screen.dart** (F54, Sprint 33) | Scrollable single-page Help screen with one anchored section per primary screen. `HelpSection` enum + `openHelp(context, section)` helper; every primary AppBar has a Help icon that deep-links to that screen's section. F75 (Sprint 40) added the `walkthrough` section: end-to-end first-use guide as Markdown asset per ADR-0038 (6 steps + recommendation hierarchy Entire Domain > Exact Email > TLD) |
+| **rule_edit_screen.dart** (F35, Sprint 40) | Full-screen rule editor mirroring `ManualRuleCreateScreen`'s structure but pre-populating from an existing `Rule` and calling `RuleSetProvider.updateRule()` instead of insert. Dual-mode: guided plaintext-to-regex (via `ManualRulePatternGenerator`) OR direct-regex with ReDoS + IANA validation. Reached via the "Edit" button in the Manage Rules `_showRuleDetails` AlertDialog, alongside F25's "Test" button. `updateRule` rethrows on UNIQUE-violation per BUG-S39-2 discipline |
+| **folder_selection_screen.dart** (F37, Sprint 40 enhancement) | Two-level folder presentation: in multi-select mode (Default Folders), folders are grouped into depth-2 `ExpansionTile`s by parent path using each folder's `FolderInfo.hierarchyDelimiter` (`groupFoldersForTree` pure fn); parent rows are expand-only (no checkbox -- IMAP `\NoSelect` rationale). In single-select mode (Safe Sender / Deleted Rule target), `reorderForSingleSelect` places `CanonicalFolder.inbox` first, `CanonicalFolder.trash` second, rest alphabetical |
 
 ### Widgets (`lib/ui/widgets/`)
 
@@ -550,6 +553,23 @@ RuleEvaluator.evaluate(EmailMessage)
 | **skeleton_loader.dart** | Loading skeleton UI |
 | **list_selection_controller.dart** (S38-CI-3, Sprint 39) | `ListSelectionController<T>` mixin: multi-row selection model for list screens -- Shift+Click range-extend (anchor preserved), Ctrl/Cmd+Click disjoint toggle, Ctrl-drag swept range. Used by Manage Rules + Manage Safe Senders |
 | **email_auth_badge.dart** + **auth_warning_dialog.dart** (F89, Sprint 39) | GREEN/YELLOW/RED/GREY auth badge computed from `EmailAuthResult`; RED-state warn-then-confirm dialog (per-protocol plain-English explanation + alternatives) gating safe-sender quick-add on authentication-failed mail |
+
+### Adapter Model Extensions (Sprint 40)
+
+`FolderInfo.hierarchyDelimiter` (String, default `'/'`) added to `lib/adapters/email_providers/spam_filter_platform.dart` for F37. Populated per adapter:
+- **GenericIMAPAdapter**: live from `enough_mail` `Mailbox.pathSeparator` (the IMAP LIST response delimiter; e.g., AOL returns `'/'`, some providers return `'.'`)
+- **GmailApiAdapter**: hardcoded `'/'` (Gmail labels use `/` for nesting; no delimiter exposed by the Labels API)
+- **MockEmailProvider**: hardcoded `'/'` for test consistency
+- **OutlookAdapter**: unset (listFolders is UnimplementedError; default `'/'` will apply when implemented)
+
+Consumed by `folder_selection_screen.dart`'s `groupFoldersForTree(folders)` -- no hardcoded `/` in the tree-grouping logic.
+
+### Test Tooling (Sprint 40)
+
+| Tool | Purpose |
+|------|---------|
+| **scripts/run-winwright-tests.ps1** (F79, Sprint 40 enhancement) | Unattended WinWright sweep runner. Extends Sprint 34's runner with `-SnapshotDb` / `-DryRun` / `-TestSnapshotOnly` / `-FailOnDrift` params and a pre/post dev-DB snapshot guard. Exits non-zero on either WinWright script failure OR detected DB drift |
+| **scripts/winwright-db-snapshot.ps1** (F79, Sprint 40) | DB-snapshot helper (dot-sourced into the runner). Snapshots `rules`, `safe_senders`, `settings` tables via `sqlite3` (uses Android SDK's `sqlite3.exe`; no new dep). `Compare-DbSnapshots` reports any row added/removed/modified as `[LEAK] table '<t>' added/removed row: <row>`. `-SelfTest` mode injects a synthetic bogus row, verifies drift detection, then cleans up -- no running app or WinWright required for self-verification |
 
 ### UI Standards (ADR-0037)
 

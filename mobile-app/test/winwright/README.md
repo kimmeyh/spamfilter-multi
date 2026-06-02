@@ -55,11 +55,27 @@ All 7 scripts validated against a fresh Windows desktop dev build on 2026-04-19,
 C:\Tools\WinWright\Civyk.WinWright.Mcp.exe run mobile-app/test/winwright/test_navigation.json
 ```
 
-**All tests** (via wrapper):
+**All tests -- F79 harness (Sprint 40)** (recommended for sprint close):
 ```powershell
 cd mobile-app/scripts
+
+# Full unattended sweep with pre/post DB snapshot guard (<10 min)
 .\run-winwright-tests.ps1
+
+# Only F56 lifecycle tests
+.\run-winwright-tests.ps1 -TestName f56
+
+# Snapshot self-test (no running app needed -- proves FAIL path logic)
+.\run-winwright-tests.ps1 -TestSnapshotOnly
+
+# DryRun: preflight + snapshot only, no sweep
+.\run-winwright-tests.ps1 -DryRun
 ```
+
+The runner exits non-zero if any script fails OR if any row drifts in the `rules`,
+`safe_senders`, or `settings` tables of the dev DB (enforces the state-restore rule).
+See `mobile-app/scripts/winwright-db-snapshot.ps1` for the snapshot helper and
+`docs/TESTING_STRATEGY.md` for the full cadence policy.
 
 ## Test Recording (for adding new tests)
 
