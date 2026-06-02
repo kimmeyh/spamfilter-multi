@@ -23,7 +23,7 @@ import 'package:sqflite/sqflite.dart';
 import '../../core/services/manual_rule_duplicate_checker.dart';
 import '../../core/services/pattern_compiler.dart';
 import '../../core/storage/database_helper.dart';
-import '../../core/utils/domain_validation.dart';
+import '../../core/utils/manual_rule_pattern_generator.dart';
 import '../utils/accessibility_helper.dart';
 import 'help_screen.dart';
 
@@ -125,27 +125,18 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
     }
   }
 
-  /// Parse input and extract domain/email based on what the user entered
-  String _extractDomainFromInput(String input) {
-    input = input.trim().toLowerCase();
+  /// Parse input and extract domain/email based on what the user entered.
+  ///
+  /// Delegates to [ManualRulePatternGenerator.extractDomainFromInput] so the
+  /// parsing logic has a single source of truth shared with RuleTestScreen.
+  String _extractDomainFromInput(String input) =>
+      ManualRulePatternGenerator.extractDomainFromInput(input);
 
-    // Remove protocol if present
-    if (input.startsWith('http://')) input = input.substring(7);
-    if (input.startsWith('https://')) input = input.substring(8);
-
-    // Remove path, query string, fragment
-    final slashIndex = input.indexOf('/');
-    if (slashIndex > 0) input = input.substring(0, slashIndex);
-
-    // Remove port
-    final colonIndex = input.indexOf(':');
-    if (colonIndex > 0) input = input.substring(0, colonIndex);
-
-    return input;
-  }
-
-
-  /// Generate the regex pattern from user input
+  /// Generate the regex pattern from user input.
+  ///
+  /// Delegates to [ManualRulePatternGenerator] for the actual generation so
+  /// that RuleTestScreen (Sub-feature 2, F25) and future F35 (rule editing)
+  /// can reuse the same logic without duplication.
   void _generatePattern() {
     final input = _inputController.text.trim();
     if (input.isEmpty) {
@@ -157,72 +148,42 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
       return;
     }
 
-    String pattern = '';
-    String sourceDomain = '';
-    String? error;
-
+    PatternGenerationResult result;
     switch (_selectedType) {
       case ManualRuleType.topLevelDomain:
-        // Strip leading dot if present
-        var tld = input.toLowerCase().trim();
-        if (tld.startsWith('.')) tld = tld.substring(1);
-        final tldError = DomainValidation.validateTld(tld);
-        if (tldError != null) {
-          error = tldError;
-          break;
-        }
-        pattern = '@.*\\.$tld\$';
-        sourceDomain = '.*.$tld';
+        result = ManualRulePatternGenerator.generateTopLevelDomain(input);
         break;
-
       case ManualRuleType.entireDomain:
-        final cleaned = _extractDomainFromInput(input);
-        // If it looks like an email, extract just the domain part
-        String domain;
-        if (cleaned.contains('@')) {
-          domain = cleaned.split('@').last;
-        } else {
-          domain = cleaned;
-        }
-        final domainError = DomainValidation.validateDomain(domain);
-        if (domainError != null) {
-          error = domainError;
-          break;
-        }
-        final escapedDomain = RegExp.escape(domain);
-        pattern = '@(?:[a-z0-9-]+\\.)*$escapedDomain\$';
-        sourceDomain = domain;
+        result = ManualRulePatternGenerator.generateEntireDomain(input);
         break;
-
       case ManualRuleType.exactDomain:
-        final cleaned = _extractDomainFromInput(input);
-        String domain;
-        if (cleaned.contains('@')) {
-          domain = cleaned.split('@').last;
-        } else {
-          domain = cleaned;
-        }
-        final domainError = DomainValidation.validateDomain(domain);
-        if (domainError != null) {
-          error = domainError;
-          break;
-        }
-        final escapedDomain = RegExp.escape(domain);
-        pattern = '@$escapedDomain\$';
-        sourceDomain = domain;
+        result = ManualRulePatternGenerator.generateExactDomain(input);
         break;
-
       case ManualRuleType.exactEmail:
-        final cleaned = _extractDomainFromInput(input);
-        final emailError = DomainValidation.validateEmail(cleaned);
-        if (emailError != null) {
-          error = emailError;
-          break;
-        }
-        final escaped = RegExp.escape(cleaned);
-        pattern = '^$escaped\$';
-        sourceDomain = cleaned;
+        result = ManualRulePatternGenerator.generateExactEmail(input);
         break;
+    }
+
+    String pattern = result.pattern;
+    String? error = result.error;
+    // Derive sourceDomain from the cleaned input (mirrors original logic).
+    String sourceDomain = '';
+    if (result.isSuccess) {
+      final cleaned = _extractDomainFromInput(input);
+      switch (_selectedType) {
+        case ManualRuleType.topLevelDomain:
+          var tld = input.toLowerCase().trim();
+          if (tld.startsWith('.')) tld = tld.substring(1);
+          sourceDomain = '*.$tld';
+          break;
+        case ManualRuleType.entireDomain:
+        case ManualRuleType.exactDomain:
+          sourceDomain = cleaned.contains('@') ? cleaned.split('@').last : cleaned;
+          break;
+        case ManualRuleType.exactEmail:
+          sourceDomain = cleaned;
+          break;
+      }
     }
 
     // Validate pattern with ReDoS check
@@ -230,6 +191,7 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
       final redosWarnings = PatternCompiler.detectReDoS(pattern);
       if (redosWarnings.isNotEmpty) {
         error = 'Pattern rejected: ${redosWarnings.first}';
+        pattern = '';
       }
     }
 
@@ -239,6 +201,7 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
         RegExp(pattern, caseSensitive: false);
       } catch (e) {
         error = 'Invalid regex pattern: $e';
+        pattern = '';
       }
     }
 

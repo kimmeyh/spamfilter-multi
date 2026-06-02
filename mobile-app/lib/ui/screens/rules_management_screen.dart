@@ -25,6 +25,7 @@ import '../../core/storage/settings_store.dart';
 import '../widgets/app_bar_with_exit.dart';
 import 'help_screen.dart';
 import 'manual_rule_create_screen.dart';
+import 'rule_edit_screen.dart';
 import 'rule_test_screen.dart';
 
 /// Screen for managing spam filtering rules
@@ -315,6 +316,26 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Close'),
           ),
+          // F35 (Sprint 40): navigate to RuleEditScreen pre-populated with
+          // this rule's current values.
+          OutlinedButton.icon(
+            icon: const Icon(Icons.edit, size: 16),
+            label: const Text('Edit'),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _openRuleInEditScreen(rule);
+            },
+          ),
+          // Sub-feature 3 (F25): navigate to RuleTestScreen pre-filled with
+          // this rule's first condition pattern and condition type.
+          OutlinedButton.icon(
+            icon: const Icon(Icons.science, size: 16),
+            label: const Text('Test'),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _openRuleInTestTool(rule);
+            },
+          ),
           OutlinedButton(
             onPressed: () {
               Navigator.pop(ctx);
@@ -333,6 +354,67 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
         ],
       ),
     );
+  }
+
+  /// Navigate to RuleTestScreen pre-filled with [rule]'s first condition.
+  ///
+  /// Maps the rule's [patternCategory] to a RuleTestScreen condition type:
+  /// - `header_from` -> `'from'`  (header patterns match the From address)
+  /// - `subject`     -> `'subject'`
+  /// - `body`        -> `'body'`
+  ///
+  /// The first pattern from the matching condition list is used as
+  /// [initialPattern]. If no patterns are available the screen opens without
+  /// a pre-filled pattern.
+  void _openRuleInTestTool(Rule rule) {
+    // Pick the condition type and extract the first pattern.
+    final category = rule.patternCategory ?? '';
+    String conditionType;
+    String? firstPattern;
+
+    if (category == 'subject' && rule.conditions.subject.isNotEmpty) {
+      conditionType = 'subject';
+      firstPattern = rule.conditions.subject.first;
+    } else if (category == 'body' && rule.conditions.body.isNotEmpty) {
+      conditionType = 'body';
+      firstPattern = rule.conditions.body.first;
+    } else if (rule.conditions.header.isNotEmpty) {
+      conditionType = 'from';
+      firstPattern = rule.conditions.header.first;
+    } else if (rule.conditions.from.isNotEmpty) {
+      conditionType = 'from';
+      firstPattern = rule.conditions.from.first;
+    } else {
+      conditionType = 'from';
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RuleTestScreen(
+          initialPattern: firstPattern,
+          initialConditionType: conditionType,
+        ),
+      ),
+    );
+  }
+
+  /// F35 (Sprint 40): navigate to RuleEditScreen pre-populated with [rule].
+  ///
+  /// On return, refreshes the rule list when the edit was saved (result == true).
+  Future<void> _openRuleInEditScreen(Rule rule) async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RuleEditScreen(
+          rule: rule,
+          store: _store,
+        ),
+      ),
+    );
+    if (result == true) {
+      await _loadRules();
+    }
   }
 
   Widget _detailSection(String label, String value) {
