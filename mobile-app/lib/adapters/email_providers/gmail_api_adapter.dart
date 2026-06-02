@@ -861,6 +861,7 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
             canonicalName: canonical,
             messageCount: label.messagesTotal,
             isWritable: true,
+            hierarchyDelimiter: '/',  // Gmail labels use '/' for nested label paths
           ));
         }
       }

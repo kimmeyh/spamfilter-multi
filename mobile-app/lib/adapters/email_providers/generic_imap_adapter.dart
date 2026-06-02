@@ -987,12 +987,17 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
         // Use path as display name for clarity (e.g., [Gmail]/Trash instead of Trash)
         // but use leaf name for canonical folder detection
         final displayName = mailbox.path.isNotEmpty ? mailbox.path : mailbox.name;
+        // enough_mail populates pathSeparator from the IMAP LIST response delimiter
+        // field (second token after "LIST (flags)"), e.g. '/' or '.' or ':'.
+        // This is the live server value, not a hardcoded default.
+        final delimiter = mailbox.pathSeparator;
         return FolderInfo(
           id: mailbox.path,
           displayName: displayName,
           canonicalName: _getCanonicalFolder(mailbox.name),
           messageCount: mailbox.messagesExists,
           isWritable: true,
+          hierarchyDelimiter: delimiter,
         );
       }).toList();
     } catch (e) {

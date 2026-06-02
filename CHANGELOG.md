@@ -26,6 +26,27 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-05-30 (Sprint 40: F37 -- Folder selectors two-level listing + per-provider path separator)
+- **feat**: Default Folders selector now renders a two-level collapsible tree (ExpansionTile, depth-2) so nested IMAP mailboxes group under their parent. Parent container rows are expand-only (no selection checkbox): IMAP parent containers are commonly `\NoSelect` on the server, so allowing parent selection would produce silent scan failures. (F37 Part A)
+- **feat**: Safe Sender and Deleted-Rule single-select folder pickers now order the provider's canonical default first (`reorderForSingleSelect`: INBOX, then Trash, then alphabetical), so the most common target is the top choice. (F37 Part B)
+- **feat**: Folder path-separator is detected per provider instead of being hardcoded to `/`. New `FolderInfo.hierarchyDelimiter` field (defaults to `/` for backward compatibility) is populated from the `enough_mail` `Mailbox.pathSeparator` returned by the IMAP LIST response for `GenericIMAPAdapter`; Gmail and mock adapters keep `/`. No new dependency. (F37 Part C)
+
+### 2026-05-30 (Sprint 40: F35 -- Rule editing UI with regex generation)
+- **feat**: Existing rules can now be edited from Manage Rules via a new "Edit" action (`RuleEditScreen`), next to the F25 "Test" action. The editor is dual-mode: guided plaintext-to-regex generation (reusing `ManualRulePatternGenerator`) or direct-regex editing with ReDoS and syntax validation, plus live pattern preview and metadata editing. Save preserves the rule name (database primary key). (F35)
+- **fix**: `RuleSetProvider.updateRule` now rethrows on a UNIQUE-constraint violation instead of silently swallowing it, mirroring the BUG-S39-2 `addRule`/`addSafeSender` discipline. (F35)
+
+### 2026-05-30 (Sprint 40: F25 -- Rule testing UI enhancements)
+- **feat**: The Test Rule Pattern tool (Settings > Tools) pre-populates its match-against list from Demo Scan data, with a fallback when the database result is empty or unavailable (amber banner indicates demo data). (F25)
+- **feat**: The Test tool can convert plain text to a regex pattern on Test via a checkbox above the input field, reusing the shared pattern generator; the generated regex is surfaced below the field. (F25)
+- **feat**: Manage Rules can open an existing rule directly in the Test tool (new "Test" action in the rule-details dialog), mapping the rule's pattern category to the test tool's condition type. (F25)
+- **chore**: Extracted the regex-generation building blocks out of `ManualRuleCreateScreen` into a new public `ManualRulePatternGenerator` utility (`generateTopLevelDomain`, `generateEntireDomain`, `generateExactDomain`, `generateExactEmail`, `generateFromPlaintext`) so the create flow, edit flow (F35), and test tool share one implementation. (F25)
+
+### 2026-05-30 (Sprint 40: F75 -- Help walkthrough: end-to-end first-use guide)
+- **feat**: Added an end-to-end first-use walkthrough reachable from the Help screen, authored as a Markdown asset (`assets/content/help/walkthrough.md`) loaded via the content manifest per ADR-0038 (not inline Dart). Covers install -> Demo scan -> read-only manual scan -> tuning safe senders/rules -> switch to move-all and re-scan -> ongoing daily background scanning -> how often to process "no rules", including the pattern recommendation hierarchy (Entire Domain / Exact Email / TLD-last-resort). (F75)
+
+### 2026-05-30 (Sprint 40: F78 -- Widget tests for ManualRuleCreateScreen rendering)
+- **test**: Added 11 `testWidgets` cases covering `ManualRuleCreateScreen` rendering: rule-type radio selection, input-field validation feedback, pattern-preview rendering, and the confirmation dialog. Reuses the Sprint 39 S38-CI-6 `runAsync` sqflite_ffi workaround. (F78)
+
 ### 2026-05-25 (Sprint 39: F91 -- AOL copy-not-move source-folder dedup)
 - **feat**: Post-safe-sender-move source-folder dedup ("AOL copy-not-move" reconciliation). When a safe-sender email is rescued out of a source folder (for example AOL Bulk Mail) into INBOX, AOL's classifier re-injects a COPY with a new IMAP UID but the same RFC 5322 Message-ID. The scanner now searches the source folder for that Message-ID after the move and removes the re-injected copy to Trash (recoverable), preventing the rescue-loop and source-folder clutter. Dedup is skipped when the Message-ID was not captured, on Gmail OAuth (label-based, not folder-based), and when the source folder equals the target. A new "+N dup removed" summary chip surfaces the count only when greater than zero. (F91)
 - **feat**: Capture the RFC 5322 `Message-ID` header into `EmailMessage.messageIdHeader` for IMAP (`GenericIMAPAdapter`) and Gmail (`GmailApiAdapter`) fetches; persisted on the `email_actions` table via a new DB v6 migration (`rfc5322_message_id`, nullable TEXT; existing rows null). (F91)

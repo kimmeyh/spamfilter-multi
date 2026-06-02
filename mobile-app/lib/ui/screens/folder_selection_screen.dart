@@ -1,10 +1,16 @@
 /// Folder Selection Screen for multi-folder email scanning
-/// 
+///
 /// [NEW] PHASE 3.3: Dynamic folder discovery (Issue #37)
 /// - Dynamically fetches all folders/labels from email account
 /// - Multi-select picker with search/filter
 /// - Pre-selects typical junk folders (inbox, spam, trash)
 /// - Persists selections per account
+///
+/// [UPDATED] Sprint 40 F37:
+/// - Part A: Multi-select mode renders two-level collapsible folder tree
+///   (ExpansionTile for parent folders; flat CheckboxListTile for root-level)
+/// - Part B: Single-select mode reorders list so canonical default appears first
+/// - Part C: Uses FolderInfo.hierarchyDelimiter for path splitting (not hardcoded '/')
 library;
 
 import 'package:flutter/material.dart';
@@ -20,8 +26,60 @@ import '../../adapters/auth/google_auth_service.dart';
 import 'help_screen.dart';
 import 'settings_screen.dart';
 
+/// Groups folders into a two-level tree structure for multi-select display.
+///
+/// Returns a map from parent-key (the portion before the first delimiter) to
+/// the list of [FolderInfo] entries that share that parent.  Root-level folders
+/// (no delimiter in [FolderInfo.displayName]) are stored under the empty-string
+/// key '' to indicate they render as flat rows, not inside an ExpansionTile.
+///
+/// The delimiter is read from each folder's [FolderInfo.hierarchyDelimiter]
+/// field; the delimiter of the FIRST folder in a group is used for the group
+/// (all siblings share the same provider delimiter).
+///
+/// Public for unit-testing.
+Map<String, List<FolderInfo>> groupFoldersForTree(List<FolderInfo> folders) {
+  final result = <String, List<FolderInfo>>{};
+  for (final folder in folders) {
+    final delimiter = folder.hierarchyDelimiter;
+    final idx = folder.displayName.indexOf(delimiter);
+    if (idx == -1) {
+      // Root-level folder -- no parent group
+      result.putIfAbsent('', () => []).add(folder);
+    } else {
+      final parent = folder.displayName.substring(0, idx);
+      result.putIfAbsent(parent, () => []).add(folder);
+    }
+  }
+  return result;
+}
+
+/// Returns a reordered folder list for single-select mode.
+///
+/// The canonical default folder for the current operation appears first:
+/// - [CanonicalFolder.inbox] is placed at position 0 (Safe Sender default)
+/// - [CanonicalFolder.trash] is placed next (Deleted Rule default)
+/// - All remaining folders are sorted alphabetically by display name.
+///
+/// Public for unit-testing.
+List<FolderInfo> reorderForSingleSelect(List<FolderInfo> folders) {
+  final inbox = folders
+      .where((f) => f.canonicalName == CanonicalFolder.inbox)
+      .toList();
+  final trash = folders
+      .where((f) => f.canonicalName == CanonicalFolder.trash)
+      .toList();
+  final rest = folders
+      .where((f) =>
+          f.canonicalName != CanonicalFolder.inbox &&
+          f.canonicalName != CanonicalFolder.trash)
+      .toList()
+    ..sort((a, b) => a.displayName.compareTo(b.displayName));
+  return [...inbox, ...trash, ...rest];
+}
+
 /// Folder selection screen for email account
-/// 
+///
 /// Displays available folders for the email account and allows user
 /// to select which ones to scan. Supports multi-selection with "Select All" option.
 class FolderSelectionScreen extends StatefulWidget {
@@ -69,30 +127,30 @@ class FolderSelectionScreen extends StatefulWidget {
 
 class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
   final Logger _logger = Logger();
-  
+
   // [NEW] PHASE 3.3: Dynamic folder discovery state (Issue #37)
   bool _isLoading = true;
   String? _errorMessage;
   List<FolderInfo> _allFolders = [];
   Map<String, bool> _selectedFolders = {};
   bool _selectAllChecked = false;
-  
+
   // [NEW] PHASE 3.3: Search/filter functionality
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  
+
   /// [NEW] PHASE 3.3: Canonical folder types to pre-select
   static const Set<CanonicalFolder> PRESELECT_FOLDER_TYPES = {
     CanonicalFolder.inbox,
     CanonicalFolder.junk,
-    // Note: NOT trash - users typically don't want to scan deleted items
+    // Note: NOT trash - users typically do not want to scan deleted items
   };
 
   @override
   void initState() {
     super.initState();
     _fetchFoldersDynamically();  // [NEW] PHASE 3.3: Dynamic discovery
-    
+
     // Listen for search query changes
     _searchController.addListener(() {
       setState(() {
@@ -100,7 +158,7 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
       });
     });
   }
-  
+
   @override
   void dispose() {
     _searchController.dispose();
@@ -117,28 +175,28 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
     try {
       final credStore = SecureCredentialsStore();
       List<FolderInfo> folders;
-      
+
       if (widget.platformId == 'gmail') {
         // [NEW] Gmail: Use GoogleAuthService to get valid token (handles expiration & refresh)
         _logger.i('[INVESTIGATION] Fetching Gmail folders for accountId: ${widget.accountId}');
-        
+
         final authService = GoogleAuthService();
-        
+
         // getValidAccessToken() handles:
         // - Token expiration checking
         // - Automatic refresh if expired
         // - Re-authentication if refresh fails
         final accessToken = await authService.getValidAccessToken();
-        
+
         if (accessToken == null || accessToken.isEmpty) {
           throw Exception('Unable to get valid Gmail access token for account ${widget.accountId}. Please sign in again.');
         }
-        
+
         _logger.i('[OK] Got valid access token (${accessToken.length} chars)');
-        
+
         final authClient = _GoogleAuthClient({'Authorization': 'Bearer $accessToken'});
         final gmailApi = gmail.GmailApi(authClient);
-        
+
         folders = await _fetchGmailLabels(gmailApi);
       } else {
         // IMAP providers (AOL, Gmail IMAP, Yahoo, iCloud, custom)
@@ -147,33 +205,40 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
         if (provider == null) {
           throw Exception('Unsupported platform: ${widget.platformId}');
         }
-        
+
         // Load credentials and fetch folders
         final credentials = await credStore.getCredentials(widget.accountId);
         if (credentials == null) {
           throw Exception('No credentials found for account ${widget.accountId}');
         }
-        
+
         await provider.loadCredentials(credentials);
         folders = await provider.listFolders();
         await provider.disconnect();
       }
-      
-      // Sort folders: Inbox first, then junk folders, then others
-      folders.sort((a, b) {
-        if (a.canonicalName == CanonicalFolder.inbox) return -1;
-        if (b.canonicalName == CanonicalFolder.inbox) return 1;
-        if (PRESELECT_FOLDER_TYPES.contains(a.canonicalName) &&
-            !PRESELECT_FOLDER_TYPES.contains(b.canonicalName)) {
-          return -1;
-        }
-        if (!PRESELECT_FOLDER_TYPES.contains(a.canonicalName) &&
-            PRESELECT_FOLDER_TYPES.contains(b.canonicalName)) {
-          return 1;
-        }
-        return a.displayName.compareTo(b.displayName);
-      });
-      
+
+      if (widget.singleSelect) {
+        // [NEW] Sprint 40 F37 Part B: Single-select mode -- canonical default first
+        // INBOX appears first (Safe Sender default), TRASH next (Deleted Rule default),
+        // remaining folders sorted alphabetically.
+        folders = reorderForSingleSelect(folders);
+      } else {
+        // Multi-select mode: existing sort -- Inbox first, then junk, then alphabetical
+        folders.sort((a, b) {
+          if (a.canonicalName == CanonicalFolder.inbox) return -1;
+          if (b.canonicalName == CanonicalFolder.inbox) return 1;
+          if (PRESELECT_FOLDER_TYPES.contains(a.canonicalName) &&
+              !PRESELECT_FOLDER_TYPES.contains(b.canonicalName)) {
+            return -1;
+          }
+          if (!PRESELECT_FOLDER_TYPES.contains(a.canonicalName) &&
+              PRESELECT_FOLDER_TYPES.contains(b.canonicalName)) {
+            return 1;
+          }
+          return a.displayName.compareTo(b.displayName);
+        });
+      }
+
       // [UPDATED] ISSUE #123+#124: Pre-select folders based on initial selection or canonical type
       final selections = <String, bool>{};
       for (var folder in folders) {
@@ -184,14 +249,14 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
           selections[folder.id] = PRESELECT_FOLDER_TYPES.contains(folder.canonicalName);
         }
       }
-      
+
       setState(() {
         _allFolders = folders;
         _selectedFolders = selections;
         _selectAllChecked = selections.values.every((v) => v);
         _isLoading = false;
       });
-      
+
       _logger.i('[OK] Fetched ${folders.length} folders for ${widget.platformId}');
     } catch (e) {
       _logger.e('[FAIL] Failed to fetch folders: $e');
@@ -308,7 +373,7 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
   Future<List<FolderInfo>> _fetchGmailLabels(gmail.GmailApi gmailApi) async {
     try {
       final labelsResponse = await gmailApi.users.labels.list('me');
-      
+
       final folders = <FolderInfo>[];
       if (labelsResponse.labels != null) {
         for (var label in labelsResponse.labels!) {
@@ -347,16 +412,127 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
             canonicalName: canonical,
             messageCount: label.messagesTotal,
             isWritable: true,
+            hierarchyDelimiter: '/',  // Gmail labels use '/' for nesting
           ));
         }
       }
-      
+
       _logger.i('[OK] Fetched ${folders.length} Gmail labels');
       return folders;
     } catch (e) {
       _logger.e('[FAIL] Failed to list Gmail labels: $e');
       throw Exception('Failed to list Gmail labels: $e');
     }
+  }
+
+  /// [NEW] Sprint 40 F37 Part A: Build a CheckboxListTile for a single folder
+  /// Used for root-level folders and child folders inside an ExpansionTile.
+  Widget _buildFolderCheckbox(FolderInfo folder) {
+    final isSelected = _selectedFolders[folder.id] ?? false;
+    return CheckboxListTile(
+      title: Row(
+        children: [
+          Icon(
+            _getFolderIcon(folder),
+            size: 20,
+            color: isSelected ? Colors.blue : Colors.grey,
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Text(folder.displayName)),
+          // [NEW] PHASE 3.3: Show pre-selected badge
+          if (PRESELECT_FOLDER_TYPES.contains(folder.canonicalName))
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 6,
+                vertical: 2,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade100,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                'Recommended',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.blue.shade700,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+        ],
+      ),
+      subtitle: _getFolderDescription(folder) != null
+          ? Text(
+              _getFolderDescription(folder)!,
+              style: const TextStyle(fontSize: 11),
+            )
+          : null,
+      value: isSelected,
+      onChanged: (value) => _toggleFolder(folder.id, value ?? false),
+      activeColor: Colors.blue,
+    );
+  }
+
+  /// [NEW] Sprint 40 F37 Part A: Build the two-level collapsible folder tree
+  /// for multi-select mode.
+  ///
+  /// Algorithm:
+  /// 1. Group folders into parent buckets using [groupFoldersForTree].
+  /// 2. Root-level folders (bucket key == '') render as flat CheckboxListTiles.
+  /// 3. Each non-root bucket renders as an ExpansionTile (expand-only; the
+  ///    parent header is NOT independently selectable -- it is a navigation
+  ///    affordance only). Children inside the tile are CheckboxListTiles.
+  ///
+  /// Parent folders are expand-only by design: IMAP parent containers such as
+  /// [Gmail] or Work are often non-selectable on the server (isNotSelectable
+  /// flag); making them expand-only prevents the user from selecting a folder
+  /// that cannot be scanned.
+  List<Widget> _buildTreeItems(List<FolderInfo> folders) {
+    final groups = groupFoldersForTree(folders);
+    final widgets = <Widget>[];
+
+    // Determine iteration order: root-level first, then parent groups alphabetically
+    final parentKeys = groups.keys.toList()
+      ..sort((a, b) {
+        if (a == '') return -1;  // root-level rows first
+        if (b == '') return 1;
+        return a.compareTo(b);
+      });
+
+    for (final key in parentKeys) {
+      final members = groups[key]!;
+      if (key == '') {
+        // Root-level folders -- flat CheckboxListTile rows
+        for (final folder in members) {
+          widgets.add(_buildFolderCheckbox(folder));
+        }
+      } else {
+        // Parent group -- ExpansionTile with children
+        // Determine whether any child is selected for the subtitle count
+        final selectedCount =
+            members.where((f) => _selectedFolders[f.id] == true).length;
+        widgets.add(
+          ExpansionTile(
+            leading: const Icon(Icons.folder_open, size: 20),
+            title: Text(
+              key,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: selectedCount > 0
+                ? Text(
+                    '$selectedCount of ${members.length} selected',
+                    style: const TextStyle(fontSize: 11),
+                  )
+                : Text(
+                    '${members.length} sub-folders',
+                    style: const TextStyle(fontSize: 11),
+                  ),
+            children: members.map(_buildFolderCheckbox).toList(),
+          ),
+        );
+      }
+    }
+    return widgets;
   }
 
   @override
@@ -515,94 +691,51 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
                 const Divider(),
               ],
 
-              // Individual folder list with dynamic folders
+              // [UPDATED] Sprint 40 F37:
+              // - Single-select: flat list (RadioListTile), canonical default first (Part B)
+              // - Multi-select: two-level collapsible tree (ExpansionTile, Part A)
               Expanded(
-                child: ListView.builder(
-                  itemCount: _filteredFolders.length,
-                  itemBuilder: (context, index) {
-                    final folder = _filteredFolders[index];
-                    final isSelected = _selectedFolders[folder.id] ?? false;
-
-                    // [NEW] Sprint 14: Use RadioListTile for single select mode
-                    if (widget.singleSelect) {
-                      return RadioListTile<String>(
-                        title: Row(
-                          children: [
-                            Icon(
-                              _getFolderIcon(folder),
-                              size: 20,
-                              color: isSelected ? Colors.blue : Colors.grey,
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(child: Text(folder.displayName)),
-                          ],
-                        ),
-                        subtitle: _getFolderDescription(folder) != null
-                            ? Text(
-                                _getFolderDescription(folder)!,
-                                style: const TextStyle(fontSize: 11),
-                              )
-                            : null,
-                        value: folder.id,
-                        groupValue: _selectedFolders.entries
-                            .where((e) => e.value)
-                            .map((e) => e.key)
-                            .firstOrNull,
-                        onChanged: (value) {
-                          if (value != null) {
-                            _toggleFolder(value, true);
-                          }
-                        },
-                        activeColor: Colors.blue,
-                      );
-                    }
-
-                    // Multi-select mode: use CheckboxListTile
-                    return CheckboxListTile(
-                      title: Row(
-                        children: [
-                          Icon(
-                            _getFolderIcon(folder),
-                            size: 20,
-                            color: isSelected ? Colors.blue : Colors.grey,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(child: Text(folder.displayName)),
-                          // [NEW] PHASE 3.3: Show pre-selected badge
-                          if (PRESELECT_FOLDER_TYPES.contains(folder.canonicalName))
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.blue.shade100,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                'Recommended',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.blue.shade700,
-                                  fontWeight: FontWeight.bold,
+                child: widget.singleSelect
+                    ? ListView.builder(
+                        itemCount: _filteredFolders.length,
+                        itemBuilder: (context, index) {
+                          final folder = _filteredFolders[index];
+                          final isSelected = _selectedFolders[folder.id] ?? false;
+                          return RadioListTile<String>(
+                            title: Row(
+                              children: [
+                                Icon(
+                                  _getFolderIcon(folder),
+                                  size: 20,
+                                  color: isSelected ? Colors.blue : Colors.grey,
                                 ),
-                              ),
+                                const SizedBox(width: 12),
+                                Expanded(child: Text(folder.displayName)),
+                              ],
                             ),
-                        ],
+                            subtitle: _getFolderDescription(folder) != null
+                                ? Text(
+                                    _getFolderDescription(folder)!,
+                                    style: const TextStyle(fontSize: 11),
+                                  )
+                                : null,
+                            value: folder.id,
+                            groupValue: _selectedFolders.entries
+                                .where((e) => e.value)
+                                .map((e) => e.key)
+                                .firstOrNull,
+                            onChanged: (value) {
+                              if (value != null) {
+                                _toggleFolder(value, true);
+                              }
+                            },
+                            activeColor: Colors.blue,
+                          );
+                        },
+                      )
+                    : ListView(
+                        children: _buildTreeItems(_filteredFolders),
                       ),
-                      subtitle: _getFolderDescription(folder) != null
-                          ? Text(
-                              _getFolderDescription(folder)!,
-                              style: const TextStyle(fontSize: 11),
-                            )
-                          : null,
-                      value: isSelected,
-                      onChanged: (value) =>
-                          _toggleFolder(folder.id, value ?? false),
-                      activeColor: Colors.blue,
-                    );
-                  },
-                ),
               ),
             ],
 
