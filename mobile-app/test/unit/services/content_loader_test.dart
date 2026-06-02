@@ -49,6 +49,7 @@ void main() {
         HelpSection.yamlImportExport: 'yamlImportExport',
         HelpSection.otherWaysToReduceJunk: 'otherWaysToReduceJunk',
         HelpSection.faq: 'faq',
+        HelpSection.walkthrough: 'walkthrough',
       };
 
       // The test mapping must cover every enum case (compile-time drift

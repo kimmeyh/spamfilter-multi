@@ -51,6 +51,11 @@ enum HelpSection {
   // skips, ReDoS, data storage, rule import/export) that are not tied to one
   // screen. Rendered last so screen-anchored sections appear first.
   faq,
+  // Sprint 40 F75: first-use walkthrough section. Step-by-step guide covering
+  // install and sign-in, demo scan, read-only manual scan, safe senders and
+  // rules tuning, daily background scanning, and ongoing no-rule processing.
+  // Rendered after FAQ so all general sections appear at the end.
+  walkthrough,
 }
 
 class HelpScreen extends StatefulWidget {
@@ -226,6 +231,8 @@ class _HelpScreenState extends State<HelpScreen> {
                         'Other ways to reduce junk email, mail, texts, and phone calls'),
                 _section(HelpSection.faq,
                     title: 'Frequently Asked Questions'),
+                _section(HelpSection.walkthrough,
+                    title: 'First-Use Walkthrough'),
                 const SizedBox(height: 24),
                 Text(
                   'Last updated: Sprint 37 (May 2026). Report issues at '
@@ -359,6 +366,8 @@ class _HelpScreenState extends State<HelpScreen> {
         return 'otherWaysToReduceJunk';
       case HelpSection.faq:
         return 'faq';
+      case HelpSection.walkthrough:
+        return 'walkthrough';
     }
   }
 }
