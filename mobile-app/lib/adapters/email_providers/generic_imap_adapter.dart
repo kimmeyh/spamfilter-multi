@@ -878,8 +878,47 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
           targetMailboxPath: targetFolder,
         );
         _operationCount++;
-        _logger.i('[IMAP] BATCH UID MOVE completed successfully');
-        succeeded.addAll(entry.value.map((m) => m.id));
+        _logger.i('[IMAP] BATCH UID MOVE returned OK');
+
+        // [BUG-S40-1] AOL (and some non-standard IMAP servers) acknowledge a
+        // UID MOVE with OK but silently retain spam-classified messages in the
+        // source folder, so a non-throwing uidMove() does NOT prove the move
+        // landed. Verify by re-searching the source folder for the moved UIDs;
+        // any that remain are retried once, and any that still remain after the
+        // retry are recorded as genuine failures rather than false successes.
+        // Without this check the scanner reported deletes that did not happen
+        // and the same messages reappeared on every subsequent scan (a
+        // delete-loop). This mirrors the F91 copy-not-move reconciliation but
+        // for the move/delete path's true survivors (same UID), not re-injected
+        // copies (new UID).
+        List<int> survivors = await _uidsStillPresent(entry.key, uids);
+        if (survivors.isNotEmpty) {
+          _logger.w(
+            '[IMAP] BATCH UID MOVE silent partial failure: ${survivors.length} '
+            'of ${uids.length} UIDs still in "${entry.key}" after OK; retrying once',
+          );
+          await _selectMailbox(entry.key);
+          await _imapClient!.uidMove(
+            MessageSequence.fromIds(survivors, isUid: true),
+            targetMailboxPath: targetFolder,
+          );
+          _operationCount++;
+          survivors = await _uidsStillPresent(entry.key, survivors);
+        }
+
+        partitionByMoveSurvival(
+          messages: entry.value,
+          survivingUids: survivors,
+          sourceFolder: entry.key,
+          targetFolder: targetFolder,
+          onSucceeded: succeeded.add,
+          onFailed: (id, reason) => failed[id] = reason,
+        );
+        if (survivors.isEmpty) {
+          _logger.i('[IMAP] BATCH UID MOVE verified: all ${uids.length} UIDs left "${entry.key}"');
+        } else {
+          _logger.e('[IMAP] BATCH UID MOVE: ${survivors.length} UIDs unremovable from "${entry.key}" (recorded as failures)');
+        }
       } catch (e) {
         _logger.e('[IMAP] Batch move failed for folder ${entry.key}: $e');
         // Fall back to single-message processing for this folder
@@ -967,6 +1006,83 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       }
     }
     return uids;
+  }
+
+  /// [BUG-S40-1] Partition a moved batch into succeeded / failed based on which
+  /// UIDs actually left the source folder.
+  ///
+  /// A message is a SUCCESS only if its UID is NOT in [survivingUids] (the set
+  /// the server still reports in [sourceFolder] after the move + retry). A
+  /// message whose UID survived is a real FAILURE -- the server acknowledged
+  /// the move but did not perform it (the AOL copy-not-move pathology). A
+  /// message with an unparseable UID is treated as a success (it could not have
+  /// been part of the UID-keyed survivor set, and the legacy behavior counted
+  /// it as moved).
+  ///
+  /// Pure and side-effect-free apart from the two callbacks, so it can be unit
+  /// tested without an IMAP client.
+  static void partitionByMoveSurvival({
+    required List<EmailMessage> messages,
+    required List<int> survivingUids,
+    required String sourceFolder,
+    required String targetFolder,
+    required void Function(String id) onSucceeded,
+    required void Function(String id, String reason) onFailed,
+  }) {
+    final survivorSet = survivingUids.toSet();
+    for (final message in messages) {
+      final uid = int.tryParse(message.id);
+      if (uid != null && survivorSet.contains(uid)) {
+        onFailed(
+          message.id,
+          'Server acknowledged move to "$targetFolder" but message remained '
+          'in "$sourceFolder" after retry (AOL copy-not-move)',
+        );
+      } else {
+        onSucceeded(message.id);
+      }
+    }
+  }
+
+  /// [BUG-S40-1] Return the subset of [candidateUids] that are STILL present in
+  /// [folderName], used to verify a UID MOVE actually removed messages from the
+  /// source folder (AOL acknowledges moves it does not perform).
+  ///
+  /// Selects [folderName] and issues a single `UID SEARCH UID <set>`. The
+  /// intersection of the requested UIDs and the server's match set is what
+  /// remains. On any error the candidates are treated as "still present" (the
+  /// conservative choice: a failed verification must not be reported as a
+  /// successful move).
+  Future<List<int>> _uidsStillPresent(
+    String folderName,
+    List<int> candidateUids,
+  ) async {
+    if (candidateUids.isEmpty || _imapClient == null) {
+      return const [];
+    }
+    try {
+      await _selectMailbox(folderName);
+      // Build an explicit UID set (e.g. "143312,143313,143315") rather than
+      // relying on MessageSequence.toString() formatting inside the criterion.
+      final uidSet = candidateUids.join(',');
+      final searchResult = await _imapClient!.uidSearchMessages(
+        searchCriteria: 'UID $uidSet',
+      );
+      _operationCount++;
+      final matched = searchResult.matchingSequence;
+      if (matched == null || matched.isEmpty) {
+        return const [];
+      }
+      final present = matched.toList().toSet();
+      return candidateUids.where(present.contains).toList();
+    } catch (e) {
+      _logger.w(
+        '[IMAP] _uidsStillPresent: verification search failed in '
+        '"$folderName": $e; treating ${candidateUids.length} UIDs as unverified '
+        '(still present)',
+      );
+      return List<int>.from(candidateUids);
+    }
   }
 
   @override
