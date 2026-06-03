@@ -88,4 +88,50 @@ void main() {
       expect(failed, isEmpty);
     });
   });
+
+  group('BUG-S40-1 chunkUids (bulk UID MOVE chunking)', () {
+    test('splits into chunks of at most chunkSize, order preserved', () {
+      final chunks = GenericIMAPAdapter.chunkUids([1, 2, 3, 4, 5], 2);
+      expect(chunks, [
+        [1, 2],
+        [3, 4],
+        [5],
+      ]);
+    });
+
+    test('exact multiple -> no trailing empty chunk', () {
+      final chunks = GenericIMAPAdapter.chunkUids([1, 2, 3, 4], 2);
+      expect(chunks, [
+        [1, 2],
+        [3, 4],
+      ]);
+    });
+
+    test('chunkSize larger than list -> single chunk', () {
+      final chunks = GenericIMAPAdapter.chunkUids([1, 2, 3], 50);
+      expect(chunks, [
+        [1, 2, 3],
+      ]);
+    });
+
+    test('empty input -> no chunks', () {
+      expect(GenericIMAPAdapter.chunkUids(const [], 50), isEmpty);
+    });
+
+    test('no UID dropped or duplicated across chunks (482-message case)', () {
+      final uids = List<int>.generate(482, (i) => 143312 + i);
+      final chunks = GenericIMAPAdapter.chunkUids(uids, 50);
+      expect(chunks.length, 10); // 9 x 50 + 1 x 32
+      expect(chunks.last.length, 32);
+      final flattened = chunks.expand((c) => c).toList();
+      expect(flattened, uids); // order + completeness
+      expect(flattened.toSet().length, 482); // no duplicates
+    });
+
+    test('non-positive chunkSize -> single chunk (defensive)', () {
+      expect(GenericIMAPAdapter.chunkUids([1, 2, 3], 0), [
+        [1, 2, 3],
+      ]);
+    });
+  });
 }

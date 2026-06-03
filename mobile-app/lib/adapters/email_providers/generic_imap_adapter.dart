@@ -53,6 +53,28 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
   int _operationCount = 0;
   static const int _reconnectThreshold = 50; // Reconnect every 50 operations to prevent server disconnects
 
+  // [BUG-S40-1] Bulk UID MOVE tuning for AOL/Yahoo servers.
+  //
+  // AOL/Yahoo implement the IMAP MESSAGELIMIT extension (RFC 9738): a UID MOVE
+  // that exceeds the server's per-command message limit moves only a SUBSET,
+  // returns a tagged OK (not NO), and reports the unprocessed remainder via a
+  // [MESSAGELIMIT n lowestUid] response code. enough_mail 2.1.7 does not parse
+  // that response code, so a single large UID MOVE silently leaves the tail
+  // behind. The fix is to send small chunks, verify each chunk actually left
+  // the source folder, and loop the folder until no targeted UIDs remain.
+  //
+  // Chunk size is held well below AOL's advertised MESSAGELIMIT (1000) because
+  // field reports show the EFFECTIVE per-command cap on the spam/Bulk folder is
+  // far lower and variable (~19-211 observed). 50 balances throughput against
+  // that cap; smaller is safer but slower.
+  static const int _moveChunkSize = 50;
+  // Delay between UID MOVE chunks on the same connection to stay under
+  // command-frequency rate limits (Yahoo/AOL throttle rapid commands).
+  static const Duration _moveChunkDelay = Duration(milliseconds: 250);
+  // Max full passes over a source folder. Each pass re-moves any survivors.
+  // Guards against an infinite loop if the server refuses a message outright.
+  static const int _moveMaxPasses = 6;
+
   /// Create a generic IMAP adapter with custom settings
   GenericIMAPAdapter({
     required String imapHost,
@@ -862,79 +884,124 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     final failed = <String, String>{};
 
     for (final entry in byFolder.entries) {
-      try {
-        _logger.i('[IMAP] moveToFolderBatch: selecting source folder "${entry.key}" for ${entry.value.length} messages');
-        await _selectMailbox(entry.key);
-        final uids = _parseUids(entry.value);
-        if (uids.isEmpty) {
-          _logger.w('[IMAP] moveToFolderBatch: no valid UIDs parsed, skipping');
-          continue;
-        }
-
-        final sequence = MessageSequence.fromIds(uids, isUid: true);
-        _logger.i('[IMAP] BATCH UID MOVE ${uids.length} messages (UIDs: $uids) from "${entry.key}" to "$targetFolder" (op #$_operationCount)');
-        await _imapClient!.uidMove(
-          sequence,
-          targetMailboxPath: targetFolder,
-        );
-        _operationCount++;
-        _logger.i('[IMAP] BATCH UID MOVE returned OK');
-
-        // [BUG-S40-1] AOL (and some non-standard IMAP servers) acknowledge a
-        // UID MOVE with OK but silently retain spam-classified messages in the
-        // source folder, so a non-throwing uidMove() does NOT prove the move
-        // landed. Verify by re-searching the source folder for the moved UIDs;
-        // any that remain are retried once, and any that still remain after the
-        // retry are recorded as genuine failures rather than false successes.
-        // Without this check the scanner reported deletes that did not happen
-        // and the same messages reappeared on every subsequent scan (a
-        // delete-loop). This mirrors the F91 copy-not-move reconciliation but
-        // for the move/delete path's true survivors (same UID), not re-injected
-        // copies (new UID).
-        List<int> survivors = await _uidsStillPresent(entry.key, uids);
-        if (survivors.isNotEmpty) {
-          _logger.w(
-            '[IMAP] BATCH UID MOVE silent partial failure: ${survivors.length} '
-            'of ${uids.length} UIDs still in "${entry.key}" after OK; retrying once',
-          );
-          await _selectMailbox(entry.key);
-          await _imapClient!.uidMove(
-            MessageSequence.fromIds(survivors, isUid: true),
-            targetMailboxPath: targetFolder,
-          );
-          _operationCount++;
-          survivors = await _uidsStillPresent(entry.key, survivors);
-        }
-
-        partitionByMoveSurvival(
-          messages: entry.value,
-          survivingUids: survivors,
-          sourceFolder: entry.key,
-          targetFolder: targetFolder,
-          onSucceeded: succeeded.add,
-          onFailed: (id, reason) => failed[id] = reason,
-        );
-        if (survivors.isEmpty) {
-          _logger.i('[IMAP] BATCH UID MOVE verified: all ${uids.length} UIDs left "${entry.key}"');
-        } else {
-          _logger.e('[IMAP] BATCH UID MOVE: ${survivors.length} UIDs unremovable from "${entry.key}" (recorded as failures)');
-        }
-      } catch (e) {
-        _logger.e('[IMAP] Batch move failed for folder ${entry.key}: $e');
-        // Fall back to single-message processing for this folder
-        for (final message in entry.value) {
-          try {
-            await moveToFolder(message: message, targetFolder: targetFolder);
-            succeeded.add(message.id);
-          } catch (e2) {
-            failed[message.id] = e2.toString();
-          }
-        }
+      final uids = _parseUids(entry.value);
+      if (uids.isEmpty) {
+        _logger.w('[IMAP] moveToFolderBatch: no valid UIDs parsed for "${entry.key}", skipping');
+        continue;
       }
+
+      // [BUG-S40-1] Chunk + verify + loop-until-empty. A single large UID MOVE
+      // against AOL/Yahoo silently moves only a subset (RFC 9738 MESSAGELIMIT),
+      // so we move in small chunks, verify each chunk left the source folder,
+      // and repeat over any survivors for up to _moveMaxPasses passes.
+      final survivingUids = await _moveFolderChunkedWithRetry(
+        sourceFolder: entry.key,
+        uids: uids,
+        targetFolder: targetFolder,
+      );
+
+      partitionByMoveSurvival(
+        messages: entry.value,
+        survivingUids: survivingUids,
+        sourceFolder: entry.key,
+        targetFolder: targetFolder,
+        onSucceeded: succeeded.add,
+        onFailed: (id, reason) => failed[id] = reason,
+      );
     }
 
     _logger.i('[IMAP] moveToFolderBatch result: ${succeeded.length} succeeded, ${failed.length} failed');
     return BatchActionResult(succeededIds: succeeded, failedIds: failed);
+  }
+
+  /// [BUG-S40-1] Move [uids] out of [sourceFolder] into [targetFolder]
+  /// reliably against servers that perform partial UID MOVE (AOL/Yahoo).
+  ///
+  /// Strategy: split the UID set into [_moveChunkSize] chunks; for each chunk
+  /// issue a UID MOVE, pause [_moveChunkDelay], then verify which of that
+  /// chunk's UIDs actually left the source folder. UIDs that remain are carried
+  /// into the next pass. The folder is swept up to [_moveMaxPasses] times until
+  /// no targeted UIDs remain. Returns the UIDs that STILL remain after all
+  /// passes (genuine failures). On a per-chunk MOVE exception the chunk falls
+  /// back to single-message moves before verification, so one bad message does
+  /// not poison a whole chunk.
+  ///
+  /// This is bounded and deterministic: each pass either reduces the survivor
+  /// set or the loop exits, so the historical "reappears on every scan" delete
+  /// loop is resolved within a single scan instead of across many.
+  Future<List<int>> _moveFolderChunkedWithRetry({
+    required String sourceFolder,
+    required List<int> uids,
+    required String targetFolder,
+  }) async {
+    var remaining = List<int>.from(uids);
+
+    for (var pass = 1; pass <= _moveMaxPasses && remaining.isNotEmpty; pass++) {
+      _logger.i(
+        '[IMAP] move pass $pass/$_moveMaxPasses: ${remaining.length} UIDs from '
+        '"$sourceFolder" -> "$targetFolder" (chunk=$_moveChunkSize)',
+      );
+      final stillRemaining = <int>[];
+
+      for (final chunk in chunkUids(remaining, _moveChunkSize)) {
+        try {
+          await _checkAndReconnect();
+          await _selectMailbox(sourceFolder);
+          _logger.i(
+            '[IMAP] UID MOVE chunk ${chunk.length} UIDs from "$sourceFolder" '
+            '-> "$targetFolder" (pass $pass, op #$_operationCount)',
+          );
+          await _imapClient!.uidMove(
+            MessageSequence.fromIds(chunk, isUid: true),
+            targetMailboxPath: targetFolder,
+          );
+          _operationCount++;
+        } catch (e) {
+          // A chunk-level MOVE failure must not abort the whole batch.
+          // Verification below re-checks the chunk regardless, so a transient
+          // failure here simply leaves the chunk's UIDs in the survivor set to
+          // be retried on the next pass.
+          _logger.w(
+            '[IMAP] UID MOVE chunk failed (pass $pass) for "$sourceFolder": $e; '
+            'chunk will be re-verified and retried',
+          );
+        }
+
+        // Pace requests to stay under AOL/Yahoo command-rate limits.
+        await Future<void>.delayed(_moveChunkDelay);
+
+        // Verify which of this chunk's UIDs actually left the source folder.
+        final survivors = await _uidsStillPresent(sourceFolder, chunk);
+        if (survivors.isNotEmpty) {
+          _logger.w(
+            '[IMAP] move pass $pass: ${survivors.length}/${chunk.length} UIDs '
+            'still in "$sourceFolder" after chunk MOVE',
+          );
+          stillRemaining.addAll(survivors);
+        }
+      }
+
+      if (stillRemaining.length == remaining.length) {
+        // No forward progress this pass: the server is refusing these UIDs.
+        // Stop early rather than spin through the remaining passes.
+        _logger.e(
+          '[IMAP] move pass $pass made no progress (${stillRemaining.length} '
+          'UIDs unmovable from "$sourceFolder"); aborting further passes',
+        );
+        return stillRemaining;
+      }
+      remaining = stillRemaining;
+    }
+
+    if (remaining.isEmpty) {
+      _logger.i('[IMAP] all UIDs successfully moved out of "$sourceFolder"');
+    } else {
+      _logger.e(
+        '[IMAP] ${remaining.length} UIDs still in "$sourceFolder" after '
+        '$_moveMaxPasses passes (recorded as failures)',
+      );
+    }
+    return remaining;
   }
 
   @override
@@ -1006,6 +1073,23 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       }
     }
     return uids;
+  }
+
+  /// [BUG-S40-1] Split [uids] into consecutive chunks of at most [chunkSize].
+  ///
+  /// Pure helper extracted so the chunk boundaries (the off-by-one-prone part
+  /// of the bulk-move loop) can be unit tested. Order is preserved and no UID
+  /// is dropped or duplicated. A non-positive [chunkSize] yields a single chunk
+  /// containing all UIDs (defensive; callers always pass a positive constant).
+  static List<List<int>> chunkUids(List<int> uids, int chunkSize) {
+    if (uids.isEmpty) return const [];
+    if (chunkSize <= 0) return [List<int>.from(uids)];
+    final chunks = <List<int>>[];
+    for (var i = 0; i < uids.length; i += chunkSize) {
+      final end = (i + chunkSize < uids.length) ? i + chunkSize : uids.length;
+      chunks.add(uids.sublist(i, end));
+    }
+    return chunks;
   }
 
   /// [BUG-S40-1] Partition a moved batch into succeeded / failed based on which
