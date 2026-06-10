@@ -143,7 +143,7 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 The active (non-HOLD) backlog is allocated across the next three sprints as follows:
 
 - **Sprint 39** (in planning): S38-CI-1, S38-CI-2, S38-CI-6, S38-CI-3, F91, F89, S38-CI-4, F74, F92, BUG-S37-2, F77, F93
-- **Sprint 40** (target): F75, F25, F35, F37, F78, F79, S38-CI-7
+- **Sprint 40** (target): F75, F25, F35, F37, F78, F79 (+ S38-CI-7 prep-only, eval-run CANCELLED 2026-06-04)
 - **Sprint 41** (target): SEC-11b, F83
 
 F77 + F93 (Claude-harness process items, ~2-3h combined) added to Sprint 39 per the F93 friction observed during this refinement session. S38-CI-7 (Opus 4.6 vs 4.7 head-to-head) moved to Sprint 40 (2026-05-25): its corrected intent -- 4+ tasks run on BOTH models on separate branches, scored on process/instruction/architecture/stopping-criteria/code-quality adherence -- is a ~6-10h experiment best run against the Sprint 40 task set, not bolted onto Sprint 39. Items moved to HOLD this session: F94 (was F52 Phase 2), F95 (was F52 Phase 3+), F63, SEC-15, SEC-8b, F6 -- all in the Android/GP HOLD group.
@@ -191,7 +191,8 @@ These items were filed during Sprint 38 retrospective and are pre-loaded for the
 - Sprint 38 Rounds 7/8/9 were three iterations of the same regression that a single such test would have caught in one go.
 - Source: Sprint 38 retro Category 2 (Testing Approach) + Category 14 (Claude addition).
 
-**S38-CI-7. Opus 4.6 vs 4.7 head-to-head model evaluation (~6-10h, procedural) Priority 50 -- MOVED TO SPRINT 40 (intent clarified Harold 2026-05-25)**
+**S38-CI-7. Opus 4.6 vs 4.7 head-to-head model evaluation (~6-10h, procedural) Priority 50 -- CANCELLED (Harold 2026-06-04)**
+- **[CANCELLED] Status (Harold, 2026-06-04)**: No longer reasonably possible. The active model is now Opus 4.8, so a 4.6-vs-4.7 head-to-head is moot -- neither model under comparison is in current use, and the in-session Agent model selector exposes only sonnet/opus/haiku with no version pin (so a faithful version-pinned re-run cannot be dispatched anyway). Sprint 40 produced prep-only artifacts (briefs/rubric/matrix template under `docs/sprints/s38-ci-7-eval-briefs/`); the eval-run is cancelled, not deferred. The eval-brief artifacts are retained as a record of the intended method but require no further action.
 - Phase: Process / model evaluation
 - **Intent (Harold, 2026-05-25)**: a true head-to-head, NOT two different tasks split across models. Select **at least 4 tasks**. Run EACH task on BOTH Opus 4.6 AND Opus 4.7, on **separate branches** (same task, two independent full runs, one per model), so the two model runs of the same task can be diffed against each other.
 - **Evaluation dimensions** (judge the FULL task run on each, per task, per model):
@@ -226,6 +227,19 @@ These items were filed during Sprint 38 retrospective and are pre-loaded for the
   - Cross-platform path-separator test specifically requires running on multiple platforms or mocking `path.join` -- acceptable to assert against the `path.join`-produced string in a fixed test environment.
 - **Acceptance criteria**: 5-8 new tests added; full suite remains green (1460+ -> 1465+); flutter analyze 0 issues.
 - **Out of scope**: testing `LiveScanLogger.log` actually writes to the production log path on a live device -- that's manual smoke testing (already done in PR #259 round 1).
+
+**F97. WinWright F56 create+delete lifecycle scripts -- re-port + Add-Block-Rule input-format confirmation (~2-4h) Priority 55 -- BACKLOG from Sprint 40 F79 WinWright re-port (2026-06-09)**
+- Phase: Test tooling / E2E
+- Platform: Windows Desktop (WinWright E2E)
+- Source: Sprint 40 F79 follow-up. The 7-script WinWright sweep was re-authored to the current `testCases` schema and runs green unattended with zero DB drift, BUT the 2 F56 create+delete lifecycle scripts (`test_f56_create_block_rule.json`, `test_f56_create_safe_sender.json`) were removed during the port and deferred (Harold decision, 2026-06-09).
+- **Why deferred**: the Sprint 40 rule-creation rework (F25/F35 shared `ManualRulePatternGenerator`) changed the Add-Block-Rule create-screen input validation. The old TLD-rule input no longer validates: `museum` -> "Domain must include a TLD (e.g., example.com)"; `.museum` -> "Domain cannot start with a dot". The accepted TLD-rule input format could not be inferred by experiment during the port, and creating real DB rows while guessing risks orphaned-rule drift.
+- **Two sub-questions to resolve first (Chief Developer / Architect)**:
+  1. **Is the TLD-input validation change intended?** Confirm the canonical accepted input for each rule type (TLD / Entire Domain / Exact Domain / Exact Email) on the current create screen, and whether the old `museum`-style TLD input SHOULD still work (possible regression vs intended stricter validation). If it is an unintended regression, that is a separate BUG, not just a test-porting task.
+  2. **`ww_type clearFirst:true` does not reliably clear the Flutter create-screen Edit** (observed concatenation `.museum` + `test.museum` -> `.museumtest.museum`). Need a reliable clear (field clear-button, select-all+delete, or a `ww_clear` that replays) for any create/edit script that types into a field.
+- **What to add**: re-author both F56 scripts in the `testCases` schema with create -> verify-in-list -> open-details -> delete -> verify-absent, ending at home, leaving zero net DB drift. Use a rule type whose input is unambiguous if TLD remains awkward (e.g. Exact Email `winwright-e2e-test@example.invalid`, Entire Domain `winwright-e2e-test.invalid`). These are the only WinWright scripts that intentionally write to the DB, so they are the real exercise of the F79 drift guard's create/delete round-trip.
+- **Also candidate (separate, optional)**: a `test_manual_scan_flow` smoke test driven against Demo data or read-only mode (the original ran a real network scan against the live AOL inbox -- unsuitable for an unattended sweep).
+- **Reference**: `mobile-app/test/winwright/README.md` (Deferred section) and `_SELECTOR_MAP_2026-06-05.md` (Add-Block-Rule create screen selectors are mapped; only the accepted input VALUES are open).
+- **Acceptance criteria**: both F56 scripts pass in the full `run-winwright-tests.ps1` sweep with `DB Drift: none`; create-screen input format documented in the README selector map.
 
 **F91. Post-safe-sender-move source-folder dedup (AOL "copy-not-move" reconciliation) (~4-6h, depends on F90 + new Message-ID capture) Priority 85 -- BACKLOG from Sprint 38 manual testing (Harold, 2026-05-23)**
 - Phase: Bug fix / IMAP move-semantics reconciliation

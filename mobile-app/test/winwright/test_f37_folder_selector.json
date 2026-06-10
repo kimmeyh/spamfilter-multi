@@ -1,0 +1,32 @@
+{
+  "version": "1",
+  "appId": "",
+  "mode": "test",
+  "attachTitle": "MyEmailSpamFilter",
+  "description": "F37 Folder Selectors (new coverage, Sprint 40, authored 2026-06-05). From Settings > Account tab (Folder Settings), opens the Safe Sender Folder picker and the Deleted Rule Folder picker, exercising the per-provider folder list + search box. CRITICAL state-restore: folder selection auto-saves, so this script NEVER clicks a folder RadioButton -- it only opens each picker, types in the search box (non-persisting), and backs out, leaving the saved selection unchanged. Selectors verified against live UI 2026-06-05.",
+  "runConfig": {
+    "captureScreenshots": false,
+    "screenshotFormat": "png",
+    "screenshotOnFailureOnly": false,
+    "continueOnFailure": false,
+    "stepTimeoutMs": 15000,
+    "maxFailures": 0
+  },
+  "testCases": [
+    {
+      "id": "F37-1",
+      "title": "Open Safe Sender + Deleted Rule folder pickers (no selection change)",
+      "steps": [
+        { "tool": "ww_click", "selector": "type=Button[name='Settings']" },
+        { "tool": "ww_click", "selector": "type=Button[name*='kimmeyharold@aol.com']" },
+        { "tool": "ww_click", "selector": "type=Text[name*='Account']" },
+        { "tool": "ww_click", "selector": "type=Button[name*='Safe Sender Folder']" },
+        { "tool": "ww_type", "selector": "type=Edit[name='Search folders...']", "text": "Inbox" },
+        { "tool": "ww_invoke", "selector": "type=Button[name='Back']" },
+        { "tool": "ww_click", "selector": "type=Button[name*='Deleted Rule Folder']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name='Back']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name='Back']" }
+      ]
+    }
+  ]
+}

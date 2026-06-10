@@ -76,6 +76,54 @@ $winwrightExe = "C:\Tools\WinWright\Civyk.WinWright.Mcp.exe"
 $testDir      = Join-Path $PSScriptRoot "..\test\winwright"
 $snapshotScript = Join-Path $PSScriptRoot "winwright-db-snapshot.ps1"
 
+# Dev app under test. Each WinWright script runs against a FRESH launch of this
+# exe (see Ensure-FreshAppAtHome below for why per-script relaunch is required).
+$devAppExe   = Join-Path $PSScriptRoot "..\dist\dev\MyEmailSpamFilter-Dev.exe"
+$appProcName = "MyEmailSpamFilter-Dev"
+$appWindowTitle = "MyEmailSpamFilter"   # matches the scripts' attachTitle
+
+# ---------------------------------------------------------------------------
+# Per-script app lifecycle (Sprint 40 F79 follow-up, 2026-06-06)
+#
+# WHY THIS EXISTS: `winwright run <script>` CLOSES the app under test when the
+# run finishes -- on BOTH pass and fail (empirically confirmed 2026-06-06; the
+# installed WinWright build owns the attached process lifecycle and there is no
+# --keep-alive flag). The original F79 design assumed one long-lived app shared
+# across all 7 scripts; that is impossible with this WinWright build because
+# script #1 would close the app and scripts #2-#7 would fail "no process".
+#
+# DESIGN: each script is INDEPENDENT. Before every script we (1) defensively
+# kill any stray dev-app instance (so a hung/dirty app never poisons the next
+# script), then (2) launch a fresh instance and wait for its window to appear
+# (known home-screen start state). WinWright then attaches by title and closes
+# it at end-of-run. Cost ~6s/script x 7 ~= 45s, well within the <10 min target.
+# ---------------------------------------------------------------------------
+
+function Ensure-FreshAppAtHome {
+    param([int]$WaitForWindowSec = 12)
+
+    # (1) Defensive teardown of any existing dev-app instance.
+    Get-Process $appProcName -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+    Start-Sleep -Seconds 1
+
+    if (-not (Test-Path $devAppExe)) {
+        Write-Error "Dev app exe not found at $devAppExe. Build a dev build first (build-windows.ps1)."
+        return $false
+    }
+
+    # (2) Fresh launch and wait for the main window (home screen) to appear.
+    Start-Process -FilePath $devAppExe | Out-Null
+    $deadline = (Get-Date).AddSeconds($WaitForWindowSec)
+    while ((Get-Date) -lt $deadline) {
+        $p = Get-Process $appProcName -ErrorAction SilentlyContinue |
+             Where-Object { $_.MainWindowTitle -like "*$appWindowTitle*" }
+        if ($p) { Start-Sleep -Seconds 2; return $true }   # small settle after window appears
+        Start-Sleep -Milliseconds 500
+    }
+    Write-Warning "Dev app window '$appWindowTitle' did not appear within ${WaitForWindowSec}s."
+    return $false
+}
+
 # ---------------------------------------------------------------------------
 # DryRun skips the actual sweep but still does preflight and snapshot.
 # ---------------------------------------------------------------------------
@@ -182,6 +230,17 @@ $results = @()
 foreach ($test in $tests) {
     Write-Host "[TEST] $($test.Name)" -ForegroundColor Yellow
 
+    # Launch a fresh app instance at the home screen for THIS script.
+    # (winwright run closes the app at end-of-run, so every script needs its own.)
+    Write-Host "  [app] Launching fresh dev instance..." -ForegroundColor DarkGray
+    if (-not (Ensure-FreshAppAtHome)) {
+        Write-Host "[FAIL] $($test.Name) (could not launch dev app at home)" -ForegroundColor Red
+        $failed++
+        $results += [PSCustomObject]@{Name=$test.Name; Status="FAIL"; Duration=([TimeSpan]::Zero)}
+        Write-Host ""
+        continue
+    }
+
     $startTime = Get-Date
     & $winwrightExe run $test.FullName
     $exitCode = $LASTEXITCODE
@@ -199,6 +258,11 @@ foreach ($test in $tests) {
 
     Write-Host ""
 }
+
+# Defensive: ensure no stray dev-app instance survives the sweep (winwright run
+# normally closes it, but a hung script could leave one). Keeps the machine clean
+# and prevents a leftover instance from interfering with the post-sweep snapshot.
+Get-Process $appProcName -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 
 # ---------------------------------------------------------------------------
 # Post-sweep DB snapshot + drift check
