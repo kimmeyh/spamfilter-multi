@@ -3,7 +3,7 @@
 **Sprint**: 40
 **Date**: 2026-05-26 (Backlog Refinement / Phase 1-3)
 **Branch**: `feature/20260525_Sprint_40`
-**Status**: AWAITING PHASE 3.7 APPROVAL
+**Status**: EXECUTION COMPLETE (Phase 3.7 approved 2026-06-04). F75/F78/F25/F35/F37/F79 done; S38-CI-7 CANCELLED (Harold, 2026-06-04 -- model eval no longer reasonable with Opus 4.8). F79 WinWright suite re-ported + harness app-lifecycle fix 2026-06-09; full sweep green, zero DB drift. F56 create+delete + manual_scan_flow deferred to F97. Ready for Phase 6.3 PR + Phase 7 retro.
 **Type**: Mixed -- Docs/UX (F75), Core Feature UI (F25, F35, F37), Testing (F78), Test tooling (F79), Process/model evaluation (S38-CI-7)
 **Estimated Effort (coding)**: ~3.0-5.0h pure coding + ~1.5-2.5h eval orchestration = **~4.5-7.5h total**
 **Estimating method**: MINUTE-based per `docs/CODING_VELOCITY.md` (Sprint 39 actuals; hour-based estimates ran 4-14x high). Per-task basis cited inline.
@@ -21,6 +21,8 @@ Ship the first end-to-end Help walkthrough (F75), the deferred rule/folder UI cl
 ## Sprint Scope (7 items, confirmed at 2026-05-26 Backlog Refinement)
 
 F75, F25, F35, F37, F78, F79, S38-CI-7.
+
+> **[SCOPE UPDATE 2026-06-04]** S38-CI-7 eval-RUN was CANCELLED by Harold (active model is now Opus 4.8; the 4.6-vs-4.7 head-to-head is moot). Only the prep artifacts shipped. Delivered scope = F75, F25, F35, F37, F78, F79 + BUG-S40-1 (in-sprint manual-testing find) + S38-CI-7 prep-only.
 
 **Harold decisions (2026-05-26)**:
 - **Scope = all 7 candidates** (option 2a). No deferral.
@@ -139,7 +141,10 @@ Where no close historical analogue exists (F79 unattended runner, S38-CI-7 orche
 **Risk**: Medium-High. No close historical analogue; native MCP-driven interactive workarounds to automate.
 **Note**: Sprint 40 touches `lib/ui/**` (F25/F35/F37) -- so once F79 ships, an end-of-sprint full sweep is the new cadence trigger (Phase 5).
 
-### Task 7: S38-CI-7 -- Opus 4.6 vs 4.7 head-to-head evaluation (~90-150 min, Opus) [META-TASK]
+### Task 7: S38-CI-7 -- Opus 4.6 vs 4.7 head-to-head evaluation (~90-150 min, Opus) [META-TASK] -- EVAL-RUN CANCELLED (Harold 2026-06-04)
+
+> **[CANCELLED 2026-06-04]** The eval-RUN is cancelled (not deferred). Active model is now Opus 4.8, so a 4.6-vs-4.7 head-to-head is moot, and the in-session Agent selector has no version pin to dispatch a faithful re-run. Prep-only artifacts (4 task briefs + rubric + comparison-matrix template) were produced under `docs/sprints/s38-ci-7-eval-briefs/` and are retained as a record of the intended method. No comparison matrix or 4.6 re-run branches will be produced. Acceptance criteria below are VOID. See ALL_SPRINTS_MASTER_PLAN.md S38-CI-7 (CANCELLED).
+
 **Execution order**: 7 (last; depends on F25/F35/F37/F78 being fully specified as eval subjects)
 **Step-type**: procedural meta-task `[no-history; intentionally NOT minimized]`
 **Eval subjects (Harold 2026-05-26, option 1a)**: F25, F35, F37, F78 -- the real Sprint 40 tasks.
