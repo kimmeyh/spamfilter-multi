@@ -922,9 +922,11 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
   /// chunk's UIDs actually left the source folder. UIDs that remain are carried
   /// into the next pass. The folder is swept up to [_moveMaxPasses] times until
   /// no targeted UIDs remain. Returns the UIDs that STILL remain after all
-  /// passes (genuine failures). On a per-chunk MOVE exception the chunk falls
-  /// back to single-message moves before verification, so one bad message does
-  /// not poison a whole chunk.
+  /// passes (genuine failures). A per-chunk MOVE exception is logged but does
+  /// NOT abort the batch: the same post-move verification re-checks that chunk's
+  /// UIDs regardless, so any that did not move are simply carried into the next
+  /// pass's survivor set and retried. One failing chunk therefore cannot poison
+  /// the rest of the batch.
   ///
   /// This is bounded and deterministic: each pass either reduces the survivor
   /// set or the loop exits, so the historical "reappears on every scan" delete

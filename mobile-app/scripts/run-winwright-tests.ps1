@@ -42,14 +42,27 @@ param(
 $ErrorActionPreference = "Stop"
 
 # ---------------------------------------------------------------------------
-# Resolve default switch values:
-#   -SnapshotDb defaults to $true (omit the switch to keep it on).
-#   -FailOnDrift defaults to $true (omit the switch to keep it on).
-#   Explicit -NoSnapshotDb / -NoFailOnDrift override the defaults.
+# Resolve default switch values. Both features default to ON. Precedence:
+#   1. Explicit positive switch when provided -- -SnapshotDb / -SnapshotDb:$false
+#      (and -FailOnDrift / -FailOnDrift:$false) -- is honored as given.
+#   2. Otherwise the negative switch (-NoSnapshotDb / -NoFailOnDrift) turns it off.
+#   3. Otherwise the default (ON) applies.
+# The negative switches are retained for backward compatibility; if both the
+# positive and negative are passed, the negative wins (fail safe: drift guard off
+# only when explicitly requested off, never silently).
 # ---------------------------------------------------------------------------
 
-$doSnapshot   = (-not $NoSnapshotDb)
-$doFailOnDrift = (-not $NoFailOnDrift)
+if ($PSBoundParameters.ContainsKey('SnapshotDb')) {
+    $doSnapshot = [bool]$SnapshotDb -and (-not $NoSnapshotDb)
+} else {
+    $doSnapshot = (-not $NoSnapshotDb)
+}
+
+if ($PSBoundParameters.ContainsKey('FailOnDrift')) {
+    $doFailOnDrift = [bool]$FailOnDrift -and (-not $NoFailOnDrift)
+} else {
+    $doFailOnDrift = (-not $NoFailOnDrift)
+}
 
 # ---------------------------------------------------------------------------
 # Mode: -TestSnapshotOnly

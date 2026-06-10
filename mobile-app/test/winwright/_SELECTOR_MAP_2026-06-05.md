@@ -18,7 +18,7 @@ Top-level metadata MUST include `attachTitle` (or `launchPath`) or run reports 0
 Each testCase has `id`, `title`, `steps[]`. Each step is `{ "tool": "<ww_toolname>", ...params, "testCaseId": "<id>" }`.
 `tool` = the MCP tool name; params = that tool's params. `timestamp`/`testCaseId` optional.
 Example step: `{ "tool": "ww_click", "selector": "type=Button[name='Back']" }`.
-Useful step tools: ww_click (selector), ww_type (selector,text), ww_set_checked (selector,checked),
+Useful step tools: ww_click (selector), ww_type (selector,text), ww_set_checked (selector,check),
 ww_wait (mode,selector/state/stableForMs/timeoutMs), ww_assert (selector,assertion,expected),
 ww_clear (selector). Asserts are NOT auto-recorded -- hand-write them.
 Assertions: exists, not_exists, is_visible, is_hidden, is_enabled, is_checked, value_equals,

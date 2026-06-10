@@ -235,7 +235,7 @@ class _HelpScreenState extends State<HelpScreen> {
                     title: 'First-Use Walkthrough'),
                 const SizedBox(height: 24),
                 Text(
-                  'Last updated: Sprint 37 (May 2026). Report issues at '
+                  'Last updated: Sprint 40 (June 2026). Report issues at '
                   'github.com/kimmeyh/spamfilter-multi/issues.',
                   style: TextStyle(
                     color: Colors.grey.shade600,
