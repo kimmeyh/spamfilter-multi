@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import '../../core/services/mock_email_data.dart';
 import '../../core/services/pattern_compiler.dart';
+import '../../core/utils/manual_rule_pattern_generator.dart';
 import 'help_screen.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/scan_result_store.dart';
@@ -36,10 +38,15 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
 
   String _conditionType = 'from';
   bool _isLoading = true;
+  bool _isDemoData = false;
   List<_TestableEmail> _sampleEmails = [];
   List<_TestResult> _testResults = [];
   String? _patternError;
   bool _hasTestedOnce = false;
+
+  // Sub-feature 2: plaintext-to-regex auto-conversion state
+  bool _treatAsPlaintext = false;
+  String? _generatedRegex;
 
   @override
   void initState() {
@@ -97,28 +104,80 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
         if (deduplicated.length >= 50) break;
       }
 
+      // Sub-feature 1: if no real scan data is available, fall back to the
+      // demo dataset so a brand-new user can test rules immediately.
+      bool isDemoData = false;
+      List<_TestableEmail> finalEmails = deduplicated;
+      if (deduplicated.isEmpty) {
+        isDemoData = true;
+        final mockEmails = MockEmailData.generateSampleEmails();
+        finalEmails = mockEmails.map((e) => _TestableEmail(
+          from: e.from,
+          subject: e.subject,
+          bodyPreview: e.body.length > 200 ? e.body.substring(0, 200) : e.body,
+          folderName: e.folderName,
+          emailDate: e.receivedDate,
+        )).toList();
+        _logger.i('No real scan data found; loaded ${finalEmails.length} demo emails for rule testing');
+      }
+
       if (mounted) {
         setState(() {
-          _sampleEmails = deduplicated;
+          _sampleEmails = finalEmails;
+          _isDemoData = isDemoData;
           _isLoading = false;
         });
       }
     } catch (e) {
+      // DB unavailable (first install, test environment, or corrupted DB).
+      // Fall back to demo data so the screen remains useful immediately.
       _logger.e('Failed to load sample emails: $e');
+      final mockEmails = MockEmailData.generateSampleEmails();
+      final demoEmails = mockEmails.map((m) => _TestableEmail(
+        from: m.from,
+        subject: m.subject,
+        bodyPreview: m.body.length > 200 ? m.body.substring(0, 200) : m.body,
+        folderName: m.folderName,
+        emailDate: m.receivedDate,
+      )).toList();
+      _logger.i('DB unavailable; loaded ${demoEmails.length} demo emails for rule testing');
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() {
+          _sampleEmails = demoEmails;
+          _isDemoData = true;
+          _isLoading = false;
+        });
       }
     }
   }
 
   void _runTest() {
-    final pattern = _patternController.text.trim();
-    if (pattern.isEmpty) {
+    final rawInput = _patternController.text.trim();
+    if (rawInput.isEmpty) {
       setState(() {
         _patternError = 'Enter a pattern to test';
+        _generatedRegex = null;
         _testResults = [];
       });
       return;
+    }
+
+    // Sub-feature 2: if "treat as plain text" is checked, auto-generate a
+    // regex from the raw input before testing.
+    String pattern = rawInput;
+    String? newGeneratedRegex;
+    if (_treatAsPlaintext) {
+      final genResult = ManualRulePatternGenerator.generateFromPlaintext(rawInput);
+      if (!genResult.isSuccess) {
+        setState(() {
+          _patternError = genResult.error ?? 'Could not generate a pattern from this input';
+          _generatedRegex = null;
+          _testResults = [];
+        });
+        return;
+      }
+      pattern = genResult.pattern;
+      newGeneratedRegex = pattern;
     }
 
     // Validate pattern
@@ -128,6 +187,7 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
     } catch (e) {
       setState(() {
         _patternError = 'Invalid regex: ${e.toString().replaceAll('FormatException: ', '')}';
+        _generatedRegex = null;
         _testResults = [];
       });
       return;
@@ -135,6 +195,7 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
 
     setState(() {
       _patternError = warnings.isNotEmpty ? warnings.first : null;
+      _generatedRegex = newGeneratedRegex;
       _hasTestedOnce = true;
     });
 
@@ -241,6 +302,29 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
             },
           ),
           const SizedBox(height: 12),
+          // Sub-feature 2: plaintext-to-regex toggle
+          Row(
+            children: [
+              Checkbox(
+                value: _treatAsPlaintext,
+                visualDensity: VisualDensity.compact,
+                onChanged: (value) {
+                  setState(() {
+                    _treatAsPlaintext = value ?? false;
+                    _generatedRegex = null;
+                  });
+                },
+              ),
+              const SizedBox(width: 4),
+              const Flexible(
+                child: Text(
+                  'Treat input as plain text (auto-generate regex)',
+                  style: TextStyle(fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
           // Pattern text field
           Row(
             children: [
@@ -248,8 +332,8 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
                 child: TextField(
                   controller: _patternController,
                   decoration: InputDecoration(
-                    labelText: 'Regex pattern',
-                    hintText: _getHintForType(),
+                    labelText: _treatAsPlaintext ? 'Plain text input' : 'Regex pattern',
+                    hintText: _treatAsPlaintext ? _getPlaintextHintForType() : _getHintForType(),
                     border: const OutlineInputBorder(),
                     errorText: _patternError,
                     suffixIcon: _patternController.text.isNotEmpty
@@ -261,6 +345,7 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
                                 _testResults = [];
                                 _patternError = null;
                                 _hasTestedOnce = false;
+                                _generatedRegex = null;
                               });
                             },
                           )
@@ -277,6 +362,27 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
               ),
             ],
           ),
+          // Sub-feature 2: show the auto-generated regex to the user
+          if (_treatAsPlaintext && _generatedRegex != null) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Icon(Icons.auto_fix_high, size: 14, color: Colors.grey[600]),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    'Generated regex: $_generatedRegex',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontFamily: 'monospace',
+                      color: Colors.grey[700],
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ],
           if (_hasTestedOnce) ...[
             const SizedBox(height: 8),
             Text(
@@ -290,6 +396,22 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
         ],
       ),
     );
+  }
+
+  /// Hint text shown in the input field when "treat as plain text" is active.
+  String _getPlaintextHintForType() {
+    switch (_conditionType) {
+      case 'from':
+        return 'e.g., spam@example.com or example.com or .xyz';
+      case 'subject':
+        return 'e.g., free offer or win prize';
+      case 'body':
+        return 'e.g., click here or unsubscribe';
+      case 'header':
+        return 'e.g., spam@example.com or example.com';
+      default:
+        return 'Enter plain text to convert to regex';
+    }
   }
 
   String _getHintForType() {
@@ -337,6 +459,32 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.grey[600]),
               ),
+              // Sub-feature 1: indicate when demo data is in use
+              if (_isDemoData) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.amber.shade200),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.info_outline, size: 14, color: Colors.amber.shade800),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          'Using demo emails. Run a real scan to test against your inbox.',
+                          style: TextStyle(fontSize: 11, color: Colors.amber.shade900),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),

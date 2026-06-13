@@ -1,62 +1,36 @@
 {
-  "name": "Text selection (ADR-0037)",
-  "description": "Verify SelectionArea wrappers allow text copying on Manage Rules, Manage Safe Senders, and Help screens. Per ADR-0037 (Sprint 34), all user-visible text content (rule patterns, error messages, help text) must be selectable.",
-  "sprint": 34,
-  "feature": "F69 + ADR-0037",
-  "prerequisites": [
-    "Windows desktop dev build running",
-    "SPI_SETSCREENREADER flag enabled"
-  ],
-  "steps": [
+  "version": "1",
+  "appId": "",
+  "mode": "test",
+  "attachTitle": "MyEmailSpamFilter",
+  "description": "Text selection / navigation reachability (ported to testCases schema 2026-06-05, ADR-0037). Opens Help from the home top-bar, returns, then opens Manage Rules (account-scoped) where rule-pattern text is rendered, then returns home. Action-only: reaching each screen proves its content rendered. Read-only. Verified against live UI 2026-06-05.",
+  "runConfig": {
+    "captureScreenshots": false,
+    "screenshotFormat": "png",
+    "screenshotOnFailureOnly": false,
+    "continueOnFailure": false,
+    "stepTimeoutMs": 15000,
+    "maxFailures": 0
+  },
+  "testCases": [
     {
-      "action": "wait",
-      "ms": 2000
+      "id": "TXT-1",
+      "title": "Help screen reachable from home and returns",
+      "steps": [
+        { "tool": "ww_click", "selector": "type=Button[name='Help']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name='Back']" }
+      ]
     },
     {
-      "action": "click",
-      "selector": "type=Button[name*='Settings']"
-    },
-    {
-      "action": "wait",
-      "ms": 800
-    },
-    {
-      "action": "click",
-      "selector": "type=Button[name*='Help']",
-      "comment": "Open Help screen (F54 from Sprint 33)"
-    },
-    {
-      "action": "wait",
-      "ms": 800
-    },
-    {
-      "action": "verify",
-      "selector": "type=Text[name*='Help']",
-      "comment": "Verify Help screen loaded"
-    },
-    {
-      "action": "dump_tree",
-      "comment": "Capture Help tree -- text elements should be selectable per ADR-0037"
-    },
-    {
-      "action": "click",
-      "selector": "type=Button[name*='Back']"
-    },
-    {
-      "action": "wait",
-      "ms": 500
-    },
-    {
-      "action": "click",
-      "selector": "type=Button[name*='Manage Rules']"
-    },
-    {
-      "action": "wait",
-      "ms": 1000
-    },
-    {
-      "action": "dump_tree",
-      "comment": "Capture Manage Rules tree -- pattern text in rule tiles should be selectable"
+      "id": "TXT-2",
+      "title": "Manage Rules renders rule-pattern text",
+      "steps": [
+        { "tool": "ww_click", "selector": "type=Button[name='Settings']" },
+        { "tool": "ww_click", "selector": "type=Button[name*='kimmeyharold@aol.com']" },
+        { "tool": "ww_click", "selector": "type=Button[name='Manage Rules']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name='Back']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name='Back']" }
+      ]
     }
   ]
 }

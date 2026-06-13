@@ -57,7 +57,7 @@ void main() {
   );
 
   testWidgets(
-    'Help screen footer timestamp is updated to Sprint 37 / May 2026',
+    'Help screen footer timestamp is updated to Sprint 40 / June 2026',
     (tester) async {
       await tester.pumpWidget(const MaterialApp(home: HelpScreen()));
       await tester.pump();
@@ -65,8 +65,8 @@ void main() {
       final footer = find.byWidgetPredicate(
         (w) =>
             w is Text &&
-            (w.data ?? '').contains('Sprint 37') &&
-            (w.data ?? '').contains('May 2026'),
+            (w.data ?? '').contains('Sprint 40') &&
+            (w.data ?? '').contains('June 2026'),
       );
       expect(footer, findsOneWidget);
     },

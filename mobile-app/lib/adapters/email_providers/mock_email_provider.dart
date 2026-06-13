@@ -188,6 +188,7 @@ class MockEmailProvider with BatchOperationsMixin implements SpamFilterPlatform 
         canonicalName: canonical,
         messageCount: _getMessageCountForFolder(folderName),
         isWritable: true,
+        hierarchyDelimiter: '/',  // Mock provider uses '/' for test consistency
       );
     }).toList();
   }

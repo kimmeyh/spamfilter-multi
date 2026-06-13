@@ -102,6 +102,7 @@ flutter:
     - assets/content/help/yaml_import_export.md
     - assets/content/help/other_ways_to_reduce_junk.md
     - assets/content/help/faq.md
+    - assets/content/help/walkthrough.md
 
 # MSIX Configuration for Windows Desktop
 msix_config:

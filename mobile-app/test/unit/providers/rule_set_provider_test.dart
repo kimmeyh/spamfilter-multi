@@ -238,7 +238,10 @@ void main() {
       expect(provider.rules.rules.first.enabled, isFalse);
     });
 
-    test('throws for non-existent rule', () async {
+    // BUG-S39-2 discipline (Sprint 40 F35): updateRule now rethrows so UI
+    // callers see the failure instead of a silent success. Mirrors addRule
+    // rethrow semantics added in Sprint 39.
+    test('rethrows when rule does not exist in database', () async {
       await provider.loadRules();
       final rule = Rule(
         name: 'NonExistent',
@@ -249,9 +252,33 @@ void main() {
         executionOrder: 50,
       );
 
-      await provider.updateRule('NonExistent', rule);
-      // Should set error state
+      await expectLater(
+        () => provider.updateRule('NonExistent', rule),
+        throwsA(isA<Object>()),
+      );
+      // Error state is also set on the provider
       expect(provider.error, isNotNull);
+    });
+
+    test('rethrows when rule name not found in local cache', () async {
+      // Load rules but do NOT add the rule to the DB -- the cache lookup
+      // at provider level fires before the DB call.
+      await provider.loadRules();
+      expect(provider.rules.rules, isEmpty);
+
+      final rule = Rule(
+        name: 'CacheMiss',
+        enabled: false,
+        conditions: RuleConditions(type: 'OR', header: [r'@test\.com$']),
+        actions: RuleActions(delete: true),
+        isLocal: true,
+        executionOrder: 20,
+      );
+
+      await expectLater(
+        () => provider.updateRule('CacheMiss', rule),
+        throwsA(isA<Object>()),
+      );
     });
   });
 

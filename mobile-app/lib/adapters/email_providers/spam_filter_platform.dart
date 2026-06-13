@@ -317,12 +317,22 @@ class FolderInfo {
   /// Whether this folder can be written to
   final bool isWritable;
 
+  /// Character used by this provider to separate folder path components.
+  ///
+  /// For most IMAP servers and Gmail labels this is '/'. Some IMAP servers
+  /// (notably early Cyrus and some Dovecot configurations) use '.' or ':'.
+  /// The value is sourced from the provider's LIST response where available
+  /// (enough_mail exposes it as [Mailbox.pathSeparator]) or defaulted to '/'
+  /// for providers where the delimiter is fixed or not yet implemented.
+  final String hierarchyDelimiter;
+
   const FolderInfo({
     required this.id,
     required this.displayName,
     required this.canonicalName,
     this.messageCount,
     this.isWritable = true,
+    this.hierarchyDelimiter = '/',
   });
 
   @override

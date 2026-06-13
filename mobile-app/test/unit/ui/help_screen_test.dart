@@ -54,6 +54,7 @@ void main() {
       'YAML Import / Export',
       'Other ways to reduce junk email, mail, texts, and phone calls',
       'Frequently Asked Questions',
+      'First-Use Walkthrough',
     ];
     for (final title in expected) {
       expect(find.text(title), findsOneWidget,
@@ -87,6 +88,7 @@ void main() {
     // openHelp() and the HelpScreen that renders the target.
     // Sprint 37: added otherWaysToReduceJunk -> 20.
     // Sprint 39 F74: added faq -> 21.
-    expect(HelpSection.values, hasLength(21));
+    // Sprint 40 F75: added walkthrough -> 22.
+    expect(HelpSection.values, hasLength(22));
   });
 }

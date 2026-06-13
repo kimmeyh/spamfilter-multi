@@ -342,16 +342,43 @@ C:\Tools\WinWright\Civyk.WinWright.Mcp.exe run <script.json>
 | `test_f56_create_block_rule.json` | F56: Create TLD block rule, verify, then delete and verify removal (full lifecycle, Sprint 35 update) |
 | `test_f56_create_safe_sender.json` | F56: Create entire-domain safe sender, verify, then delete and verify removal (full lifecycle, Sprint 35 update) |
 
-**Run all tests**:
+**Run all tests (F79 harness -- Sprint 40)**:
 ```powershell
 cd mobile-app/scripts
-.\run-winwright-tests.ps1                       # All tests
-.\run-winwright-tests.ps1 -TestName f56         # Only F56 tests
+
+# Full unattended sweep (all 7 scripts + DB snapshot guard, <10 min)
+.\run-winwright-tests.ps1
+
+# Only F56 lifecycle tests
+.\run-winwright-tests.ps1 -TestName f56
+
+# Snapshot self-test only -- no running app or WinWright required
+# Proves the FAIL path: injects a synthetic row, verifies drift is detected
+.\run-winwright-tests.ps1 -TestSnapshotOnly
+
+# DryRun: preflight + pre/post snapshot only, no sweep (verifies app DB is accessible)
+.\run-winwright-tests.ps1 -DryRun
+
+# Run sweep without DB snapshot guard (diagnostic only -- not recommended for sprint close)
+.\run-winwright-tests.ps1 -NoSnapshotDb
 ```
 
-The runner automatically enables `SPI_SETSCREENREADER` (required for Flutter Semantics tree) and runs `winwright doctor` before executing tests.
+The runner automatically:
+1. Enables `SPI_SETSCREENREADER` (required for Flutter Semantics tree)
+2. Runs `winwright doctor` (preflight check)
+3. Takes a pre-sweep snapshot of `rules`, `safe_senders`, and `settings` tables in the dev DB
+4. Runs all matching test scripts; exits non-zero on any script failure
+5. Takes a post-sweep snapshot; compares with pre-snapshot
+6. Prints `[LEAK] table '...' added/removed row: ...` for each row that drifted
+7. Exits non-zero if drift is detected (enforces the state-restore rule)
 
-See `mobile-app/test/winwright/README.md` for details and selector patterns.
+**DB snapshot helper**: `mobile-app/scripts/winwright-db-snapshot.ps1`
+- Dot-sourced by the runner; can also be run standalone with `-SelfTest`
+- Uses `sqlite3.exe` from `C:\Android\android-sdk\platform-tools\` (or PATH)
+- Handles WAL-mode DBs -- concurrent read is safe while the app is running
+- Runtime target: <10 minutes unattended for all 7 scripts
+
+See `mobile-app/test/winwright/README.md` for script details and selector patterns.
 
 ---
 

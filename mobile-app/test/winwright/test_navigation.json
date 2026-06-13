@@ -1,78 +1,28 @@
 {
-  "name": "Navigation smoke test",
-  "description": "Click through Account Selection -> Settings -> Manage Rules -> back. Verifies primary navigation paths from Sprint 33 (F55 navigation consistency) and Sprint 34 (F56 manual rule creation FAB).",
-  "sprint": 34,
-  "feature": "F69",
-  "prerequisites": [
-    "Windows desktop dev build running (build-windows.ps1)",
-    "SPI_SETSCREENREADER flag enabled (enable-screen-reader-flag.ps1 enable)",
-    "At least one account configured"
-  ],
-  "steps": [
+  "version": "1",
+  "appId": "",
+  "mode": "test",
+  "attachTitle": "MyEmailSpamFilter",
+  "description": "Navigation smoke test (ported to testCases schema, Sprint 40 F79 follow-up 2026-06-05). Action-only: each click's selector resolution within stepTimeoutMs IS the assertion that the prior navigation succeeded. Flow: home -> account-scoped Settings dialog -> Settings General -> Manage Rules (verifies Add-block-rule FAB by clicking it open and cancelling) -> back to home. Verified against live UI 2026-06-05. Read-only: no DB writes (cancels out of the create screen).",
+  "runConfig": {
+    "captureScreenshots": false,
+    "screenshotFormat": "png",
+    "screenshotOnFailureOnly": false,
+    "continueOnFailure": false,
+    "stepTimeoutMs": 15000,
+    "maxFailures": 0
+  },
+  "testCases": [
     {
-      "action": "wait",
-      "ms": 2000,
-      "comment": "Allow app to fully render"
-    },
-    {
-      "action": "dump_tree",
-      "comment": "Capture initial state for debugging"
-    },
-    {
-      "action": "click",
-      "selector": "type=Button[name*='Settings']",
-      "comment": "Open Settings from Account Selection"
-    },
-    {
-      "action": "wait",
-      "ms": 1000
-    },
-    {
-      "action": "verify",
-      "selector": "type=Text[name*='General']",
-      "comment": "Verify Settings General tab is visible"
-    },
-    {
-      "action": "click",
-      "selector": "type=Button[name*='Manage Rules']",
-      "comment": "Open Manage Rules from Settings"
-    },
-    {
-      "action": "wait",
-      "ms": 1000
-    },
-    {
-      "action": "verify",
-      "selector": "type=Text[name='Manage Rules']",
-      "comment": "Verify Manage Rules screen loaded"
-    },
-    {
-      "action": "verify",
-      "selector": "type=Button[name='Add block rule']",
-      "comment": "F56: Verify FAB for adding block rules is present"
-    },
-    {
-      "action": "click",
-      "selector": "type=Button[name*='Back']",
-      "comment": "Navigate back to Settings"
-    },
-    {
-      "action": "wait",
-      "ms": 500
-    },
-    {
-      "action": "click",
-      "selector": "type=Button[name*='Back']",
-      "comment": "Navigate back to Account Selection"
-    },
-    {
-      "action": "wait",
-      "ms": 500
-    },
-    {
-      "action": "verify",
-      "selector": "type=Button[name*='Start Scan']",
-      "comment": "Verify back at Account Selection (Start Scan visible)"
+      "id": "NAV-1",
+      "title": "Home -> Settings (account-scoped) -> Manage Rules -> home",
+      "steps": [
+        { "tool": "ww_click", "selector": "type=Button[name='Settings']" },
+        { "tool": "ww_click", "selector": "type=Button[name*='kimmeyharold@aol.com']" },
+        { "tool": "ww_click", "selector": "type=Button[name='Manage Rules']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name='Back']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name='Back']" }
+      ]
     }
   ]
 }

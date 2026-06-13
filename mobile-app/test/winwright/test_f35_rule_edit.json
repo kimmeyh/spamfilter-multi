@@ -1,0 +1,33 @@
+{
+  "version": "1",
+  "appId": "",
+  "mode": "test",
+  "attachTitle": "MyEmailSpamFilter",
+  "description": "F35 Rule Editing UI (new coverage, Sprint 40, authored 2026-06-05). Opens the first rule's details from Manage Rules, taps Edit to open RuleEditScreen, exercises the dual-mode Guided/Direct-regex toggle, then leaves WITHOUT saving (returns via the screen back button), so the rule is unchanged. Read-only: no Save Changes; DB unchanged. Selectors verified against live UI 2026-06-05.",
+  "runConfig": {
+    "captureScreenshots": false,
+    "screenshotFormat": "png",
+    "screenshotOnFailureOnly": false,
+    "continueOnFailure": false,
+    "stepTimeoutMs": 15000,
+    "maxFailures": 0
+  },
+  "testCases": [
+    {
+      "id": "F35-1",
+      "title": "Open rule Edit, toggle pattern mode, leave without saving",
+      "steps": [
+        { "tool": "ww_click", "selector": "type=Button[name='Settings']" },
+        { "tool": "ww_click", "selector": "type=Button[name*='kimmeyharold@aol.com']" },
+        { "tool": "ww_click", "selector": "type=Button[name='Manage Rules']" },
+        { "tool": "ww_click", "selector": "type=Button[name*='View rule details']" },
+        { "tool": "ww_click", "selector": "type=Button[name='Edit']" },
+        { "tool": "ww_click", "selector": "type=Button[name='Guided (plaintext)']" },
+        { "tool": "ww_click", "selector": "type=Button[name='Direct regex']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name='Go back to previous screen']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name='Back']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name='Back']" }
+      ]
+    }
+  ]
+}
