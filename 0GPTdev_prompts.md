@@ -1,6 +1,15 @@
 ***BELOW IS NOT FOR CLAUDE CODE USE***
 ***BELOW IS NOT FOR Github Copilot USE***
 
+Github Copilot Review Requests:
+I have requested a github copilot review.
+Please wait 5 minutes for it to complete.
+Then check to see if it has completed and wait until completed.
+Address any comments provided by github copilot review and:
+- address them now (preferred) OR add them to the backlog targeted for the next sprint
+- Then update the comment with how it was/will be fixed and mark the comment as resolved.
+Let me know when completed so I can review and merge the PR
+
 
 Next:----------------------------------------
 Copy testing context before next prompt

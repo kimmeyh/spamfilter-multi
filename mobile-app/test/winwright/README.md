@@ -82,7 +82,7 @@ title and closes it at end-of-run. Consequences for script authors:
    C:\Tools\WinWright\Civyk.WinWright.Mcp.exe doctor
    ```
 
-## Test Scripts (current set -- all PASS, Sprint 40 sweep 2026-06-09, zero DB drift)
+## Test Scripts (current set -- S40 scripts all PASS sweep 2026-06-09; F56 scripts authored S41 F97, pending sweep verification)
 
 | Script | Purpose | Origin |
 |--------|--------|--------|
@@ -93,18 +93,20 @@ title and closes it at end-of-run. Consequences for script authors:
 | `test_f25_rule_test_tool.json` | F25: open Test-pattern tool from Manage Rules, plaintext->regex toggle, run Test | S40 (new) |
 | `test_f35_rule_edit.json` | F35: open a rule's Edit screen, toggle Guided/Direct-regex mode, leave without saving | S40 (new) |
 | `test_f37_folder_selector.json` | F37: open Safe Sender + Deleted Rule folder pickers (no selection change) | S40 (new) |
+| `test_f56_create_block_rule.json` | F56: create TLD block rule ('xyz'), delete it (net zero DB drift) | S41 F97 (new) |
+| `test_f56_create_safe_sender.json` | F56: create Entire Domain safe sender ('winwright-test.com'), delete it (net zero DB drift) | S41 F97 (new) |
 
-All scripts are **read-only** -- they navigate, open dialogs/screens, and back out without persisting
+The first 7 scripts are **read-only** -- they navigate, open dialogs/screens, and back out without persisting
 changes, so the pre/post DB-snapshot guard reports zero drift.
+
+The 2 F56 scripts **write then delete**: each testCase creates one row and a second testCase deletes it,
+leaving net DB drift of zero. The DB-snapshot guard will report green if both testCases complete.
+If the script fails mid-run (after create, before delete) a row will remain in the DB and the snapshot
+guard will report drift -- Harold should delete the `*.xyz` / `winwright-test.com` row manually from
+the app and re-run.
 
 ### Deferred (NOT in the current set)
 
-- **`test_f56_create_block_rule.json` / `test_f56_create_safe_sender.json`** (create+delete lifecycle):
-  removed during the S40 port. The Sprint 40 rule-creation rework changed the Add-Block-Rule input
-  validation; the old `museum` / `.museum` TLD inputs are now both rejected ("Domain must include a TLD"
-  / "Domain cannot start with a dot"), so the accepted TLD-rule input format could not be inferred.
-  Deferred to a follow-up (see ALL_SPRINTS_MASTER_PLAN.md). Also flagged: `ww_type clearFirst:true` does
-  not reliably clear the Flutter create-screen Edit field.
 - **`test_manual_scan_flow.json`**: removed -- it ran a real network scan against the live AOL inbox
   (slow, network-dependent, and mutating in non-read-only mode), unsuitable for an unattended UI sweep.
   A demo-data / read-only-mode scan smoke test is a candidate follow-up.
@@ -180,6 +182,106 @@ Then: keep only action steps (`ww_click`/`ww_invoke`/`ww_type`/`ww_set_checked`)
 `ww_assert`, use `ww_invoke` for Back/animating buttons, ensure the script starts and ends at home, and
 make it read-only (back out of anything that persists) so the DB-drift guard stays green.
 
+## Visual Regression Testing (Sprint 41, F76)
+
+WinWright tests verify element presence and clickability via the accessibility tree but cannot
+detect alignment, centering, or layout changes. F76 adds **layout-bounds assertions** as an
+opt-in visual regression check on the primary screens.
+
+### Approach: Layout-Bounds (Not Pixel-Diff)
+
+Bounding rectangles are read from the UIA accessibility tree via `ww_get_attribute BoundingRectangle`.
+This approach is chosen over pixel-diff screenshots because:
+- Flutter Windows renders via DirectX with sub-pixel anti-aliasing, producing per-run PNG
+  differences even with zero code changes (unacceptable false-positive rate).
+- The WinWright README already notes it is "not suitable for pixel-perfect visual regression testing."
+- Layout-bounds are immune to font rendering, DPI scaling, and AA noise.
+- Real regressions (element moved, misaligned, resized) change bounds by at least one logical pixel,
+  which the tolerance threshold reliably catches.
+
+### Baseline Files
+
+Stored under `mobile-app/test/winwright/baselines/` as JSON:
+
+| File | Screen |
+|------|--------|
+| `baseline_home.json` | Home (Account Selection) -- top-bar buttons + Add Account FAB |
+| `baseline_manage_rules.json` | Manage Rules -- Back, Test-pattern button, Search field, FAB |
+| `baseline_settings_general.json` | Settings General tab -- Back, Manage Rules, Manage Safe Senders |
+
+Each file contains an array of `{ "selector", "name", "bounds": {X, Y, Width, Height}, "capturedAt" }`.
+
+**Status**: Baselines are [PENDING CAPTURE] during the first post-F76 manual testing session.
+The mechanism is fully implemented and self-tested. See "Capturing Baselines" below.
+
+### Tolerance
+
+Default: **8 logical pixels** per dimension (X, Y, Width, Height independently).
+This absorbs window-position variance and minor OS chrome differences while catching real
+regressions, which shift elements by 16-20px or more in practice.
+
+Override: `-VisualTolerancePx 4` (tighter) or `-VisualTolerancePx 16` (looser).
+
+False-positive risk: LOW. The 8px tolerance is well above DPI jitter (0-2px) and
+sub-pixel AA (0px, since bounds are integer logical coordinates, not pixels). The main
+residual risk is window-position variance when the OS moves the window between runs;
+mitigated by the 8px threshold (OS typically moves by 0-1px on repositioning).
+
+### Running the Visual Check
+
+```powershell
+cd mobile-app/scripts
+
+# Full sweep + visual check (opt-in; adds ~15s for bounds capture after sweep)
+.\run-winwright-tests.ps1 -VisualCheck
+
+# Visual self-test only (no app or WinWright needed -- proves FAIL + PASS paths)
+.\run-winwright-tests.ps1 -TestVisualOnly
+
+# Standalone visual self-test (equivalent)
+.\winwright-visual-check.ps1 -SelfTest
+
+# Override tolerance
+.\run-winwright-tests.ps1 -VisualCheck -VisualTolerancePx 4
+```
+
+### Capturing Baselines
+
+Baselines must be captured against the live app after any intentional UI layout change.
+The app must be at the home screen before starting; the script will prompt you to navigate
+to each subsequent screen.
+
+```powershell
+cd mobile-app/scripts
+
+# 1. Build and launch the dev app
+.\build-windows.ps1
+
+# 2. With the app at the home screen, capture baselines
+.\winwright-visual-check.ps1 -CaptureBaseline
+
+# 3. Follow the prompts to navigate to each screen when asked
+# 4. Commit the new baseline files
+git add mobile-app/test/winwright/baselines/
+git commit -m "test: update WinWright visual-regression baselines"
+```
+
+When to recapture:
+- After any intentional UI layout change (new screen, repositioned element, resized widget)
+- After a Flutter version upgrade that changes default widget sizes
+- After a Windows DPI/scaling setting change on the development machine
+- Never recapture just because the check failed -- investigate the regression first
+
+### Companion Script
+
+`mobile-app/scripts/winwright-visual-check.ps1` -- the full helper. Provides:
+- `-CaptureBaseline` -- captures and writes all baseline JSON files
+- `-Compare` -- runs comparison standalone (requires running app)
+- `-SelfTest` -- offline self-test on static data (no app/WinWright needed)
+- `-TolerancePx N` -- override tolerance
+
+See `docs/TESTING_STRATEGY.md` for cadence policy.
+
 ## F69 / F79 Acceptance Criteria
 
 - [x] WinWright scripts for navigation, settings tabs, scan history, text selection
@@ -187,7 +289,18 @@ make it read-only (back out of anything that persists) so the DB-drift guard sta
 - [x] One-command runner launches the dev app per script and runs all unattended (F79 Part 1)
 - [x] Pre/post DB-snapshot drift guard integrated; full sweep green with zero net DB change (F79 Part 2)
 - [x] Tests documented here + cadence in TESTING_STRATEGY.md
-- [ ] F56 create+delete lifecycle scripts (deferred -- create-screen input format change, see above)
+- [x] F56 create+delete lifecycle scripts (authored S41 F97 -- pending sweep verification; see test_f56_*.json)
+
+## F76 Acceptance Criteria (Sprint 41)
+
+- [x] Layout-bounds visual regression approach selected and justified (not pixel-diff)
+- [x] `winwright-visual-check.ps1` companion script implemented
+- [x] `-VisualCheck` and `-TestVisualOnly` params added to `run-winwright-tests.ps1`
+- [x] Baselines directory created (`mobile-app/test/winwright/baselines/`)
+- [x] Anchors defined for Home, Manage Rules, and Settings General screens
+- [x] Offline self-test passes (5 steps: clean pair, drift detection, false-positive isolation, missing-element detection)
+- [x] README and TESTING_STRATEGY.md updated with visual regression documentation
+- [ ] Real baselines captured during manual testing [PENDING CAPTURE -- first post-F76 session]
 
 ## Known Limitations (from Sprint 27 evaluation)
 

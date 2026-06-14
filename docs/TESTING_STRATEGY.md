@@ -283,7 +283,7 @@ void main() {
 - Element discoverability depends on Flutter Semantics widget usage
 - Custom-rendered Flutter widgets may not appear in the accessibility tree
 - Best for testing navigation flow, form inputs, and button interactions
-- Not suitable for pixel-perfect visual regression testing
+- Not suitable for pixel-perfect visual regression testing (use layout-bounds instead -- see Visual Regression section below)
 
 **When to Run** (Sprint 39 policy -- supersedes Sprint 35 conditional-only policy):
 
@@ -377,6 +377,58 @@ The runner automatically:
 - Uses `sqlite3.exe` from `C:\Android\android-sdk\platform-tools\` (or PATH)
 - Handles WAL-mode DBs -- concurrent read is safe while the app is running
 - Runtime target: <10 minutes unattended for all 7 scripts
+
+**Visual regression check (Sprint 41, F76 -- opt-in)**:
+
+WinWright tests verify element presence but cannot detect layout changes (alignment, centering,
+element repositioning). The F76 visual regression check adds **layout-bounds assertions** as an
+opt-in layer that runs after the main sweep.
+
+**Approach**: Layout-bounds (not pixel-diff). Bounding rectangles are read from the UIA
+accessibility tree via `ww_get_attribute BoundingRectangle`. Pixel-diff was rejected because
+Flutter Windows sub-pixel anti-aliasing produces per-run PNG differences with zero code changes
+(unacceptable false-positive rate). Bounds are integer logical coordinates -- immune to AA,
+DPI scaling, and font rendering noise.
+
+**Tolerance**: Default 8 logical pixels per dimension. Absorbs window-position variance while
+catching real regressions (which shift elements 16-20px or more).
+
+**Baseline files**: `mobile-app/test/winwright/baselines/baseline_*.json`. One file per tracked
+screen. If a baseline file is absent, the check prints [PENDING CAPTURE] and does not fail the run.
+
+**When to recapture baselines**: After any intentional UI layout change, Flutter version upgrade,
+or DPI setting change. Run `.\winwright-visual-check.ps1 -CaptureBaseline` with the app at home.
+
+```powershell
+cd mobile-app/scripts
+
+# Full sweep + visual check (opt-in)
+.\run-winwright-tests.ps1 -VisualCheck
+
+# Override tolerance
+.\run-winwright-tests.ps1 -VisualCheck -VisualTolerancePx 4
+
+# Visual check self-test (no app or WinWright needed)
+.\run-winwright-tests.ps1 -TestVisualOnly
+
+# Capture new baselines (app must be running at home screen)
+.\winwright-visual-check.ps1 -CaptureBaseline
+
+# Standalone comparison (app must be running at each screen)
+.\winwright-visual-check.ps1 -Compare
+```
+
+**Visual cadence policy (Sprint 41+)**:
+
+| Scenario | Action |
+|----------|--------|
+| Sprint closes, `lib/ui/**` touched | Run `.\run-winwright-tests.ps1 -VisualCheck` (visual check included in full sweep) |
+| Sprint closes, no `lib/ui/**` changes | Visual check optional (no layout surface changed) |
+| Intentional UI layout change ships | Recapture baselines + commit before PR |
+| Visual check fails | Investigate regression before recapturing; do not blindly update baselines |
+
+**Visual regression helper**: `mobile-app/scripts/winwright-visual-check.ps1`
+See `mobile-app/test/winwright/README.md` for anchor maps, baseline format, and full docs.
 
 See `mobile-app/test/winwright/README.md` for script details and selector patterns.
 

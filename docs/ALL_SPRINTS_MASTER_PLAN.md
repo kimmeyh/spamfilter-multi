@@ -142,9 +142,10 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 
 The active (non-HOLD) backlog is allocated across the next three sprints as follows:
 
-- **Sprint 39** (in planning): S38-CI-1, S38-CI-2, S38-CI-6, S38-CI-3, F91, F89, S38-CI-4, F74, F92, BUG-S37-2, F77, F93
-- **Sprint 40** (target): F75, F25, F35, F37, F78, F79 (+ S38-CI-7 prep-only, eval-run CANCELLED 2026-06-04)
-- **Sprint 41** (target): SEC-11b, F83
+- **Sprint 39** (COMPLETE -- merged): S38-CI-1, S38-CI-2, S38-CI-6, S38-CI-3, F91, F89, S38-CI-4, F74, F92, BUG-S37-2, F77, F93 (+ F90, BUG-S39-1, BUG-S39-2 in warmup)
+- **Sprint 40** (COMPLETE -- merged PR #261, 2026-06-13): F75, F25, F35, F37, F78, F79, BUG-S40-1 (S38-CI-7 CANCELLED; F56 create+delete + manual_scan_flow deferred to F97)
+- **Sprint 41** (APPROVED 2026-06-13): F83 Phase 1 (research + ADR only), F97, F76
+- **Sprint 42** (candidates): F98 (F83 Phase 2 impl -- gated on F83 Phase 1 ADR approval), F96, SEC-11b, BUG-S37-2
 
 F77 + F93 (Claude-harness process items, ~2-3h combined) added to Sprint 39 per the F93 friction observed during this refinement session. S38-CI-7 (Opus 4.6 vs 4.7 head-to-head) moved to Sprint 40 (2026-05-25): its corrected intent -- 4+ tasks run on BOTH models on separate branches, scored on process/instruction/architecture/stopping-criteria/code-quality adherence -- is a ~6-10h experiment best run against the Sprint 40 task set, not bolted onto Sprint 39. Items moved to HOLD this session: F94 (was F52 Phase 2), F95 (was F52 Phase 3+), F63, SEC-15, SEC-8b, F6 -- all in the Android/GP HOLD group.
 
@@ -447,9 +448,17 @@ These items were filed during Sprint 38 retrospective and are pre-loaded for the
   - Background-scan invocation: `--background-scan` CLI arg currently scans all accounts; change to `--background-scan --account-id=<id>`
   - Help text updates -- explain per-account toggle and what it controls
   - Cross-cutting variant correctness: must work correctly across {Windows Store, Android, iOS} x {dev, prod}
-- **Phase 2 -- Implementation (~1 sprint)**: against approved Phase 1 design.
-- **Phase 3 -- Cross-platform validation**: Windows dev + prod + Store, Android dev + prod, iOS (when available) dev + prod.
+- **Phase 2 -- Implementation**: split out as **F98** (see below) -- targeted at Sprint 42. **Phase 3 -- Cross-platform validation**: folded into F98.
 - **Out of scope**: per-account scan-history retention (already handled per-account); per-account safe-sender list (already per-account via accountId).
+- **Status (2026-06-13)**: Phase 1 (research + ADR) assigned to **Sprint 41**. Phase 2 (implementation) split to **F98**, high-priority, Sprint 42 candidate. The split was Harold's direction so the ADR can be reviewed/approved before any implementation begins (Class-1 architecture decision).
+
+**F98. Per-account Background Scanning -- IMPLEMENTATION (Phase 2 + cross-platform validation) (Est-Effort TBD post-ADR) Priority 78 -- HIGH, NEW (2026-06-13, split from F83)**
+- Phase: Architecture implementation + cross-platform validation
+- Platform: All (Windows, Android, iOS) x (dev, prod, store)
+- **Depends on**: F83 Phase 1 ADR (Sprint 41) being APPROVED by Harold (Chief Architect). Do NOT begin F98 until the ADR is signed off.
+- **Scope**: implement the approved F83 Phase 1 design -- per-account `background_scan_enabled` DB schema, Settings per-account toggle UI, Windows Task Scheduler per-account entries, Android WorkManager equivalent, per-account log/CSV path separation, `--background-scan --account-id=<id>` CLI change, Help text. Then Phase 3 cross-platform validation (Windows dev/prod/Store, Android dev/prod, iOS when available).
+- **Estimate**: deliberately TBD -- to be estimated from the F83 Phase 1 ADR's enumerated change-sites, per CODING_VELOCITY.md (multi-surface: DB-MIGRATE + UI-NEW + NATIVE-WIN + SVC-EDIT). Sprint 42 Backlog Refinement sets the minute estimate once the ADR exists.
+- **Priority 78**: high -- it is the implementation half of an architecture improvement Harold flagged as important for separation of concerns + future debugging (Sprint 37 retro Category 14).
 
 ### Bugs
 

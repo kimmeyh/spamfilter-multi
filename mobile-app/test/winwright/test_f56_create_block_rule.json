@@ -1,0 +1,43 @@
+{
+  "version": "1",
+  "appId": "",
+  "mode": "test",
+  "attachTitle": "MyEmailSpamFilter",
+  "description": "F56 create+delete block rule lifecycle (Sprint 41 F97, authored 2026-06-13). Creates a Top-Level-Domain block rule for TLD 'xyz' (IANA-registered), confirms the save dialog, then uses the Manage Rules search box to locate and delete the created rule in a teardown testCase -- net DB change is zero. Accepted TLD input format confirmed from DomainValidation.validateTld (domain_validation.dart:66-84): bare TLD without leading dot (e.g. 'xyz', 'cc') OR with leading dot (e.g. '.xyz') -- ManualRulePatternGenerator.generateTopLevelDomain strips a leading dot before validating. TLD must be in kIanaTlds Set (iana_tlds.dart). 'museum' and '.museum' were rejected in the S40 port because 'museum' is NOT in kIanaTlds (validateTld line 81: 'TLD not a registered IANA TLD'); '.museum' strips to 'museum' and hits the same error. 'xyz' IS in kIanaTlds. Generated pattern: @.*\\.xyz$ , source_domain: *.xyz. Selectors verified against selector map _SELECTOR_MAP_2026-06-05.md. STATUS: authored, pending sweep verification.",
+  "runConfig": {
+    "captureScreenshots": false,
+    "screenshotFormat": "png",
+    "screenshotOnFailureOnly": false,
+    "continueOnFailure": false,
+    "stepTimeoutMs": 15000,
+    "maxFailures": 0
+  },
+  "testCases": [
+    {
+      "id": "F56-BR-1",
+      "title": "Create TLD block rule for xyz",
+      "steps": [
+        { "tool": "ww_click", "selector": "type=Button[name='Settings']" },
+        { "tool": "ww_click", "selector": "type=Button[name*='kimmeyharold@aol.com']" },
+        { "tool": "ww_click", "selector": "type=Button[name='Manage Rules']" },
+        { "tool": "ww_click", "selector": "type=Button[name='Add block rule']" },
+        { "tool": "ww_click", "selector": "type=RadioButton[name*='Top-Level Domain']" },
+        { "tool": "ww_type", "selector": "type=Edit", "text": "xyz" },
+        { "tool": "ww_invoke", "selector": "type=Button[name='Save block rule']" },
+        { "tool": "ww_click", "selector": "type=Button[name='Save']" }
+      ]
+    },
+    {
+      "id": "F56-BR-2",
+      "title": "Delete the xyz block rule (teardown -- restores DB state)",
+      "steps": [
+        { "tool": "ww_type", "selector": "type=Edit[name*='Search by domain']", "text": "*.xyz" },
+        { "tool": "ww_click", "selector": "type=Button[name*='View rule details']" },
+        { "tool": "ww_click", "selector": "type=Button[name='Delete']" },
+        { "tool": "ww_click", "selector": "type=Button[name='Delete']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name='Back']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name='Back']" }
+      ]
+    }
+  ]
+}

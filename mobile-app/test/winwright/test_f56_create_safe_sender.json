@@ -1,0 +1,42 @@
+{
+  "version": "1",
+  "appId": "",
+  "mode": "test",
+  "attachTitle": "MyEmailSpamFilter",
+  "description": "F56 create+delete safe sender lifecycle (Sprint 41 F97, authored 2026-06-13). Creates an Entire-Domain safe sender for 'winwright-test.com' (a non-existent domain chosen to avoid duplicate-check collision with production safe senders), confirms the save dialog, then uses the Manage Safe Senders search box to locate and delete the created pattern in a teardown testCase -- net DB change is zero. Accepted domain input format confirmed from DomainValidation.validateDomain (domain_validation.dart:21-63): bare domain with at least one dot and a TLD in kIanaTlds (e.g. 'winwright-test.com'). Domain must not start or end with a dot, must not contain consecutive dots, all labels must match [a-z0-9-]+, and the TLD must be in kIanaTlds Set. Generated pattern: @(?:[a-z0-9-]+\\.)*winwright-test\\.com$ , source_domain: winwright-test.com. The Entire Domain type is the default selection on the create screen (ManualRuleCreateScreen initState sets _selectedType = ManualRuleType.entireDomain). TLD type is not available for safe senders (only Entire Domain, Exact Domain, Exact Email). Selectors verified against selector map _SELECTOR_MAP_2026-06-05.md. STATUS: authored, pending sweep verification.",
+  "runConfig": {
+    "captureScreenshots": false,
+    "screenshotFormat": "png",
+    "screenshotOnFailureOnly": false,
+    "continueOnFailure": false,
+    "stepTimeoutMs": 15000,
+    "maxFailures": 0
+  },
+  "testCases": [
+    {
+      "id": "F56-SS-1",
+      "title": "Create Entire Domain safe sender for winwright-test.com",
+      "steps": [
+        { "tool": "ww_click", "selector": "type=Button[name='Settings']" },
+        { "tool": "ww_click", "selector": "type=Button[name*='kimmeyharold@aol.com']" },
+        { "tool": "ww_click", "selector": "type=Button[name='Manage Safe Senders']" },
+        { "tool": "ww_click", "selector": "type=Button[name*='Add safe sender']" },
+        { "tool": "ww_type", "selector": "type=Edit", "text": "winwright-test.com" },
+        { "tool": "ww_invoke", "selector": "type=Button[name='Save safe sender']" },
+        { "tool": "ww_click", "selector": "type=Button[name='Save']" }
+      ]
+    },
+    {
+      "id": "F56-SS-2",
+      "title": "Delete the winwright-test.com safe sender (teardown -- restores DB state)",
+      "steps": [
+        { "tool": "ww_type", "selector": "type=Edit[name*='Search patterns']", "text": "winwright-test" },
+        { "tool": "ww_click", "selector": "type=Button[name*='View safe sender details']" },
+        { "tool": "ww_click", "selector": "type=Button[name='Delete']" },
+        { "tool": "ww_click", "selector": "type=Button[name='Delete']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name='Back']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name='Back']" }
+      ]
+    }
+  ]
+}
