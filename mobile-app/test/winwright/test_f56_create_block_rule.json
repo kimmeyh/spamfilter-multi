@@ -3,7 +3,7 @@
   "appId": "",
   "mode": "test",
   "attachTitle": "MyEmailSpamFilter",
-  "description": "F56 create+delete block rule lifecycle (Sprint 41 F97, authored 2026-06-13). Creates a Top-Level-Domain block rule for TLD 'xyz' (IANA-registered), confirms the save dialog, then uses the Manage Rules search box to locate and delete the created rule in a teardown testCase -- net DB change is zero. Accepted TLD input format confirmed from DomainValidation.validateTld (domain_validation.dart:66-84): bare TLD without leading dot (e.g. 'xyz', 'cc') OR with leading dot (e.g. '.xyz') -- ManualRulePatternGenerator.generateTopLevelDomain strips a leading dot before validating. TLD must be in kIanaTlds Set (iana_tlds.dart). 'museum' and '.museum' were rejected in the S40 port because 'museum' is NOT in kIanaTlds (validateTld line 81: 'TLD not a registered IANA TLD'); '.museum' strips to 'museum' and hits the same error. 'xyz' IS in kIanaTlds. Generated pattern: @.*\\.xyz$ , source_domain: *.xyz. Selectors verified against selector map _SELECTOR_MAP_2026-06-05.md. STATUS: authored, pending sweep verification.",
+  "description": "F56 create+delete block rule lifecycle (Sprint 41 F97, round 2 fix 2026-06-14). Creates a Top-Level-Domain block rule for TLD 'museum' (IANA-registered, verified absent from dev DB at authoring time), confirms the save dialog, then uses the Manage Rules search box to locate and delete the created rule in a teardown testCase -- net DB change is zero. TEST DATA: 'museum' chosen because 'xyz' (prior candidate) was already in the dev DB as source_domain='*.xyz'. 'museum' is in kIanaTlds (iana_tlds.dart) and had count=0 in the top_level_domain rules at time of authoring. Generated pattern: @.*\\.museum$ , source_domain: *.museum. FIX 1 -- RADIO SELECTOR: ww_click on type=RadioButton[name*='Top-Level Domain'] returned success but did NOT select the radio (form stayed on Entire Domain default). Fix: click the PARENT GROUP instead -- type=Group[name*='Top-Level Domain']. Verified live: after clicking the Group, SelectionItemPattern IsSelected=True on the RadioButton. FIX 2 -- INPUT FIELD NAME IS MODE-DEPENDENT: in Top-Level-Domain mode the input is type=Edit[name*='Enter TLD'] (full name 'Enter TLD (e.g., .cc, .xyz, .store)'). In Entire-Domain mode (default) the input is type=Edit[name='Enter email, domain, or URL']. The prior script used the Entire-Domain field name in TLD mode, so input was silently ignored. FIX 3 -- SAVE BUTTON OFF-SCREEN + INVOKE->CLICK: ww_window_state maximize added as first step. Verified live: after maximize, Save Rule is IsOffscreen=False at y=734 (window 1020px+ tall), so no ww_scroll step is needed. ww_click (not ww_invoke) used for Save Rule. SCROLL FALLBACK: ww_scroll mode=into_view was initially included but caused a race condition -- the scroll repositioned the Flutter scroll container just before ww_click Save Rule, and the confirm dialog did not appear. Removed. Maximize alone is sufficient on this machine (1920x1080). CONFIRMATION DIALOG: 'Confirm Block Rule' Alert with Button[name='Save'] -- verified live via ww_dump_tree immediately after Save Rule click. TEARDOWN: search '*.museum', click Button[name*='View rule details'], Delete x2 (first Delete opens 'Delete Rule' confirm, second confirms), Back x2 to home -- all selectors verified live.",
   "runConfig": {
     "captureScreenshots": false,
     "screenshotFormat": "png",
@@ -15,23 +15,24 @@
   "testCases": [
     {
       "id": "F56-BR-1",
-      "title": "Create TLD block rule for xyz",
+      "title": "Create TLD block rule for museum",
       "steps": [
+        { "tool": "ww_window_state", "state": "maximize" },
         { "tool": "ww_click", "selector": "type=Button[name='Settings']" },
         { "tool": "ww_click", "selector": "type=Button[name*='kimmeyharold@aol.com']" },
         { "tool": "ww_click", "selector": "type=Button[name='Manage Rules']" },
         { "tool": "ww_click", "selector": "type=Button[name='Add block rule']" },
-        { "tool": "ww_click", "selector": "type=RadioButton[name*='Top-Level Domain']" },
-        { "tool": "ww_type", "selector": "type=Edit", "text": "xyz" },
-        { "tool": "ww_invoke", "selector": "type=Button[name='Save block rule']" },
+        { "tool": "ww_click", "selector": "type=Group[name*='Top-Level Domain']" },
+        { "tool": "ww_type", "selector": "type=Edit[name*='Enter TLD']", "text": "museum" },
+        { "tool": "ww_click", "selector": "type=Button[name='Save Rule']" },
         { "tool": "ww_click", "selector": "type=Button[name='Save']" }
       ]
     },
     {
       "id": "F56-BR-2",
-      "title": "Delete the xyz block rule (teardown -- restores DB state)",
+      "title": "Delete the museum block rule (teardown -- restores DB state)",
       "steps": [
-        { "tool": "ww_type", "selector": "type=Edit[name*='Search by domain']", "text": "*.xyz" },
+        { "tool": "ww_type", "selector": "type=Edit[name*='Search by domain']", "text": "*.museum" },
         { "tool": "ww_click", "selector": "type=Button[name*='View rule details']" },
         { "tool": "ww_click", "selector": "type=Button[name='Delete']" },
         { "tool": "ww_click", "selector": "type=Button[name='Delete']" },
