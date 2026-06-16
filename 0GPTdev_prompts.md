@@ -10,6 +10,7 @@ Address any comments provided by github copilot review and:
 - Then update the comment with how it was/will be fixed and mark the comment as resolved.
 Let me know when completed so I can review and merge the PR
 
+Please review the "Sprint Execution Docs", Sprint plan and sprint checklist to determine what steps in the current sprint have been completed and not completed, then the next steps.
 
 Next:----------------------------------------
 Copy testing context before next prompt

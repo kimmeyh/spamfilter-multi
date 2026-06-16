@@ -1,0 +1,26 @@
+[
+  {
+    "Selector": "type=Button[name='Back']",
+    "Name": "Back button (top-bar)",
+    "Bounds": null,
+    "CapturedAt": "2026-06-14T23:21:16"
+  },
+  {
+    "Selector": "type=Button[name='Test a pattern against sample emails']",
+    "Name": "Test-pattern button (top-bar)",
+    "Bounds": null,
+    "CapturedAt": "2026-06-14T23:21:16"
+  },
+  {
+    "Selector": "type=Button[name*='Add block rule']",
+    "Name": "Add block rule FAB",
+    "Bounds": null,
+    "CapturedAt": "2026-06-14T23:21:16"
+  },
+  {
+    "Selector": "type=Edit[name*='Search by domain']",
+    "Name": "Search field",
+    "Bounds": null,
+    "CapturedAt": "2026-06-14T23:21:16"
+  }
+]

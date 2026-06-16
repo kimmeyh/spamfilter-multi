@@ -6,6 +6,10 @@
 .DS_Store
 .atom/
 .buildlog/
+
+# WinWright transient outputs (selector-probe scratch + per-step failure screenshots)
+test/winwright/_probe_*.json
+step_*_fail.png
 .history
 .svn/
 migrate_working_dir/

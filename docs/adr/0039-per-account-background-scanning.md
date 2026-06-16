@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Accepted (2026-06-15, Harold -- Chief Architect, Sprint 41 Class-1 signoff). F98 (implementation) is now eligible for Sprint 42 planning.
 
 ## Date
 
