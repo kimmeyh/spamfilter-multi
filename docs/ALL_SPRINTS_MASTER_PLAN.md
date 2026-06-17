@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-05-24 (F92 added: dedicated tests for `LiveScanLogger`, deferred from PR #259 Copilot review)
+**Last Updated**: 2026-06-17 (F99 added: parallel Flutter `integration_test` E2E harness, PRE-MVP -- from Sprint 41 tooling investigation)
 
 ## How to Maintain This Document
 
@@ -145,7 +145,7 @@ The active (non-HOLD) backlog is allocated across the next three sprints as foll
 - **Sprint 39** (COMPLETE -- merged): S38-CI-1, S38-CI-2, S38-CI-6, S38-CI-3, F91, F89, S38-CI-4, F74, F92, BUG-S37-2, F77, F93 (+ F90, BUG-S39-1, BUG-S39-2 in warmup)
 - **Sprint 40** (COMPLETE -- merged PR #261, 2026-06-13): F75, F25, F35, F37, F78, F79, BUG-S40-1 (S38-CI-7 CANCELLED; F56 create+delete + manual_scan_flow deferred to F97)
 - **Sprint 41** (APPROVED 2026-06-13): F83 Phase 1 (research + ADR only), F97, F76
-- **Sprint 42** (candidates): F98 (F83 Phase 2 impl -- gated on F83 Phase 1 ADR approval), F96, SEC-11b, BUG-S37-2
+- **Sprint 42** (candidates): F98 (F83 Phase 2 impl -- gated on F83 Phase 1 ADR approval), F99 (parallel `integration_test` E2E harness -- PRE-MVP), F96, SEC-11b, BUG-S37-2
 
 F77 + F93 (Claude-harness process items, ~2-3h combined) added to Sprint 39 per the F93 friction observed during this refinement session. S38-CI-7 (Opus 4.6 vs 4.7 head-to-head) moved to Sprint 40 (2026-05-25): its corrected intent -- 4+ tasks run on BOTH models on separate branches, scored on process/instruction/architecture/stopping-criteria/code-quality adherence -- is a ~6-10h experiment best run against the Sprint 40 task set, not bolted onto Sprint 39. Items moved to HOLD this session: F94 (was F52 Phase 2), F95 (was F52 Phase 3+), F63, SEC-15, SEC-8b, F6 -- all in the Android/GP HOLD group.
 
@@ -367,11 +367,9 @@ These items were filed during Sprint 38 retrospective and are pre-loaded for the
 - Was HOLD (post-Windows-Store); moved to active per Harold direction. Same ADR-0038 asset-authoring note as F74. Can sprint together with F74 (shared Help-screen surface).
 - [Detail](#f75-help-walkthrough-end-to-end-first-use-guide)
 
-**F76. Visual regression testing for WinWright (~6-10h) Priority 54 -- MOVED OFF HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
-- Phase: Testing infrastructure
-- Platform: Windows desktop (initially)
-- WinWright tests verify presence/clickability via the accessibility tree but cannot detect alignment, centering, or visual layout regressions. Add screenshot diffing or layout-bounds-check assertions to the WinWright suite (7 scripts as of Sprint 35).
-- Was HOLD; moved to active per Harold direction. Source: Sprint 34 retro Category 14.
+**F76. Visual regression testing -- FOLDED INTO F99 (2026-06-17, Harold direction) -- was Priority 54**
+- **Status: SUPERSEDED / folded into [F99].** Originally scoped (Sprint 41) as layout-bounds visual-regression assertions bolted onto the WinWright sweep. During Sprint 41 implementation a tooling investigation (2026-06-17) proved this is NOT implementable via the standalone WinWright CLI: the CLI exposes only `mcp | serve | run | heal | inspect | doctor` -- there is no `get_attribute` command (the script invented one -> `exit 1` on every call, baselines captured as `null`); `inspect <pid>` JSON carries NO bounds fields; and the `run` script-runner refuses `ww_get_attribute` / `ww_assert*` ("not supported by the script runner"). Element bounds are reachable ONLY through the MCP interface, which a standalone runner `.ps1` has no session for. Rather than force a fragile workaround, F76's goal (catch alignment / layout regressions the accessibility-tree sweep cannot) is folded into the more robust **F99** `integration_test` harness, which supports golden-image and layout assertions natively. The non-working Sprint-41 visual-check artifacts (`winwright-visual-check.ps1`, `-VisualCheck` flag, null baselines) are reverted.
+- Original phase: Testing infrastructure. Platform: Windows desktop (initially). Source: Sprint 34 retro Category 14. See [F99] for the delivery vehicle.
 
 **F25. Rule Testing UI Enhancements (~6-8h) Priority 48 -- MOVED OFF HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
 - Phase: Core Feature
@@ -459,6 +457,21 @@ These items were filed during Sprint 38 retrospective and are pre-loaded for the
 - **Scope**: implement the approved F83 Phase 1 design -- per-account `background_scan_enabled` DB schema, Settings per-account toggle UI, Windows Task Scheduler per-account entries, Android WorkManager equivalent, per-account log/CSV path separation, `--background-scan --account-id=<id>` CLI change, Help text. Then Phase 3 cross-platform validation (Windows dev/prod/Store, Android dev/prod, iOS when available).
 - **Estimate**: deliberately TBD -- to be estimated from the F83 Phase 1 ADR's enumerated change-sites, per CODING_VELOCITY.md (multi-surface: DB-MIGRATE + UI-NEW + NATIVE-WIN + SVC-EDIT). Sprint 42 Backlog Refinement sets the minute estimate once the ADR exists.
 - **Priority 78**: high -- it is the implementation half of an architecture improvement Harold flagged as important for separation of concerns + future debugging (Sprint 37 retro Category 14).
+
+**F99. Parallel desktop E2E harness using Flutter `integration_test` (Est-Effort TBD) Priority 76 -- PRE-MVP, NEW (2026-06-17, Harold direction)**
+- Phase: Testing infrastructure (architecture-adjacent -- Class-1 tool-strategy decision)
+- Platform: Windows desktop (primary E2E target); harness is cross-platform (Flutter `integration_test` runs on all platforms)
+- **Pre-MVP priority**: Harold flagged this as pre-MVP (must land before MVP / Google Play Store readiness work resumes).
+- **Goal**: build a SECOND, parallel UI-testing harness based on Flutter's own `integration_test` framework, to run alongside (not replace) the existing WinWright UIA-tree harness. The two harnesses are complementary: WinWright drives the live Windows UIA accessibility tree out-of-process (good for true end-to-end + accessibility coverage); `integration_test` drives widgets in-VM by `Key`/`Finder` (more robust -- immune to the UIA-exposure, DPI/scaling, and `SetCursorPos`/cursor-positioning flakiness that bit the WinWright F56 create/save scripts in Sprint 41).
+- **Why (investigation, 2026-06-17)**: during Sprint 41 F97/F76 work, the WinWright create/save scripts (F56) and bounds-capture (F76) hit intermittent UIA/cursor/DPI failures. A tool-fit investigation confirmed (a) Playwright is NOT a candidate -- it drives the browser DOM and cannot see a native Flutter desktop widget tree at all; (b) the legitimate alternative/complement is Flutter `integration_test`, which drives widgets from inside the Dart VM and sidesteps the entire UIA-tree fragility class. Recommendation was: keep WinWright, AND stand up an `integration_test` harness as a more robust second lane. This item is that second lane.
+- **Scope (to refine at Backlog Refinement)**:
+  - Add `integration_test` dev-dependency + `integration_test/` directory; wire `flutter test integration_test/` (and/or `flutter drive`) into a runner script paralleling `run-winwright-tests.ps1`.
+  - Add `Key`s to the key widgets the WinWright scripts target (Settings/Help/nav buttons, Add-Block-Rule radios + input + Save dialog, folder pickers, Manage Rules search) so finders are stable.
+  - Port the core flows already covered by WinWright (navigation, settings tabs, scan history, rule create+delete lifecycle, folder selectors) to `integration_test` test cases with the same zero-DB-drift teardown discipline.
+  - Document the two-harness strategy in `docs/TESTING_STRATEGY.md` (when to use which; both run in the sweep cadence).
+  - **Absorbs [F76] (visual regression)**: deliver layout/alignment-regression detection here via `integration_test` golden-image and/or layout-bounds (widget `RenderBox` geometry) assertions -- the robust path that WinWright's CLI could not provide (see F76 for why the WinWright approach was abandoned 2026-06-17).
+- **Class-1 note**: standing up a second E2E framework is a testing-architecture decision. The decision to ADD (not replace) is already Harold's direction (2026-06-17); the detailed design (which flows port first, runner integration, CI implications) is set at Backlog Refinement when this item is scheduled.
+- **Estimate**: TBD -- to be minute-estimated at Backlog Refinement per CODING_VELOCITY.md (TEST-INFRA + per-flow port count).
 
 ### Bugs
 

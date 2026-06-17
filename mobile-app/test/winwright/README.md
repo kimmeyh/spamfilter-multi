@@ -182,105 +182,20 @@ Then: keep only action steps (`ww_click`/`ww_invoke`/`ww_type`/`ww_set_checked`)
 `ww_assert`, use `ww_invoke` for Back/animating buttons, ensure the script starts and ends at home, and
 make it read-only (back out of anything that persists) so the DB-drift guard stays green.
 
-## Visual Regression Testing (Sprint 41, F76)
+## Visual Regression Testing -- moved to F99 (Flutter integration_test)
 
-WinWright tests verify element presence and clickability via the accessibility tree but cannot
-detect alignment, centering, or layout changes. F76 adds **layout-bounds assertions** as an
-opt-in visual regression check on the primary screens.
+The Sprint 41 F76 attempt to add layout-bounds visual-regression assertions to this WinWright
+sweep was **abandoned and reverted** (2026-06-17). Root cause: the standalone WinWright CLI
+(`Civyk.WinWright.Mcp.exe`) cannot read element bounds. Its only commands are
+`mcp | serve | run | heal | inspect | doctor`; there is no `get_attribute` command (the F76
+helper invented one, so every call returned `exit 1` and baselines captured as `null`),
+`inspect <pid>` JSON carries no bounds fields, and the `run` script-runner rejects
+`ww_get_attribute` / `ww_assert*` ("not supported by the script runner"). `BoundingRectangle`
+is reachable only via the MCP interface, which a standalone runner `.ps1` has no session for.
 
-### Approach: Layout-Bounds (Not Pixel-Diff)
-
-Bounding rectangles are read from the UIA accessibility tree via `ww_get_attribute BoundingRectangle`.
-This approach is chosen over pixel-diff screenshots because:
-- Flutter Windows renders via DirectX with sub-pixel anti-aliasing, producing per-run PNG
-  differences even with zero code changes (unacceptable false-positive rate).
-- The WinWright README already notes it is "not suitable for pixel-perfect visual regression testing."
-- Layout-bounds are immune to font rendering, DPI scaling, and AA noise.
-- Real regressions (element moved, misaligned, resized) change bounds by at least one logical pixel,
-  which the tolerance threshold reliably catches.
-
-### Baseline Files
-
-Stored under `mobile-app/test/winwright/baselines/` as JSON:
-
-| File | Screen |
-|------|--------|
-| `baseline_home.json` | Home (Account Selection) -- top-bar buttons + Add Account FAB |
-| `baseline_manage_rules.json` | Manage Rules -- Back, Test-pattern button, Search field, FAB |
-| `baseline_settings_general.json` | Settings General tab -- Back, Manage Rules, Manage Safe Senders |
-
-Each file contains an array of `{ "selector", "name", "bounds": {X, Y, Width, Height}, "capturedAt" }`.
-
-**Status**: Baselines are [PENDING CAPTURE] during the first post-F76 manual testing session.
-The mechanism is fully implemented and self-tested. See "Capturing Baselines" below.
-
-### Tolerance
-
-Default: **8 logical pixels** per dimension (X, Y, Width, Height independently).
-This absorbs window-position variance and minor OS chrome differences while catching real
-regressions, which shift elements by 16-20px or more in practice.
-
-Override: `-VisualTolerancePx 4` (tighter) or `-VisualTolerancePx 16` (looser).
-
-False-positive risk: LOW. The 8px tolerance is well above DPI jitter (0-2px) and
-sub-pixel AA (0px, since bounds are integer logical coordinates, not pixels). The main
-residual risk is window-position variance when the OS moves the window between runs;
-mitigated by the 8px threshold (OS typically moves by 0-1px on repositioning).
-
-### Running the Visual Check
-
-```powershell
-cd mobile-app/scripts
-
-# Full sweep + visual check (opt-in; adds ~15s for bounds capture after sweep)
-.\run-winwright-tests.ps1 -VisualCheck
-
-# Visual self-test only (no app or WinWright needed -- proves FAIL + PASS paths)
-.\run-winwright-tests.ps1 -TestVisualOnly
-
-# Standalone visual self-test (equivalent)
-.\winwright-visual-check.ps1 -SelfTest
-
-# Override tolerance
-.\run-winwright-tests.ps1 -VisualCheck -VisualTolerancePx 4
-```
-
-### Capturing Baselines
-
-Baselines must be captured against the live app after any intentional UI layout change.
-The app must be at the home screen before starting; the script will prompt you to navigate
-to each subsequent screen.
-
-```powershell
-cd mobile-app/scripts
-
-# 1. Build and launch the dev app
-.\build-windows.ps1
-
-# 2. With the app at the home screen, capture baselines
-.\winwright-visual-check.ps1 -CaptureBaseline
-
-# 3. Follow the prompts to navigate to each screen when asked
-# 4. Commit the new baseline files
-git add mobile-app/test/winwright/baselines/
-git commit -m "test: update WinWright visual-regression baselines"
-```
-
-When to recapture:
-- After any intentional UI layout change (new screen, repositioned element, resized widget)
-- After a Flutter version upgrade that changes default widget sizes
-- After a Windows DPI/scaling setting change on the development machine
-- Never recapture just because the check failed -- investigate the regression first
-
-### Companion Script
-
-`mobile-app/scripts/winwright-visual-check.ps1` -- the full helper. Provides:
-- `-CaptureBaseline` -- captures and writes all baseline JSON files
-- `-Compare` -- runs comparison standalone (requires running app)
-- `-SelfTest` -- offline self-test on static data (no app/WinWright needed)
-- `-TolerancePx N` -- override tolerance
-
-See `docs/TESTING_STRATEGY.md` for cadence policy.
+Visual / layout-regression detection is folded into **F99** (parallel Flutter `integration_test`
+harness, pre-MVP), which provides golden-image and `RenderBox` layout assertions natively and
+robustly. See `docs/ALL_SPRINTS_MASTER_PLAN.md` items F76 (why abandoned) and F99 (delivery vehicle).
 
 ## F69 / F79 Acceptance Criteria
 

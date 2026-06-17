@@ -20,10 +20,10 @@
         { "tool": "ww_click", "selector": "type=Button[name='Settings']" },
         { "tool": "ww_click", "selector": "type=Button[name*='kimmeyharold@aol.com']" },
         { "tool": "ww_click", "selector": "type=Text[name*='Account']" },
-        { "tool": "ww_click", "selector": "type=Button[name*='Safe Sender Folder']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name*='Safe Sender Folder']" },
         { "tool": "ww_type", "selector": "type=Edit[name='Search folders...']", "text": "Inbox" },
         { "tool": "ww_invoke", "selector": "type=Button[name='Back']" },
-        { "tool": "ww_click", "selector": "type=Button[name*='Deleted Rule Folder']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name*='Deleted Rule Folder']" },
         { "tool": "ww_invoke", "selector": "type=Button[name='Back']" },
         { "tool": "ww_invoke", "selector": "type=Button[name='Back']" }
       ]

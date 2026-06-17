@@ -1,6 +1,5 @@
 # Run all WinWright E2E tests for the Windows Desktop app
 # Sprint 34, F69 -- harness extended Sprint 40, F79 (Issue #240)
-#                   visual-regression check added Sprint 41, F76
 #
 # Prerequisites:
 # - Windows desktop dev build running (build-windows.ps1)
@@ -11,9 +10,6 @@
 #   .\run-winwright-tests.ps1 -TestName f56            # Run tests matching pattern
 #   .\run-winwright-tests.ps1 -DryRun                  # Preflight + snapshot only, no sweep
 #   .\run-winwright-tests.ps1 -DryRun -TestSnapshotOnly # Snapshot self-test only (no WinWright needed)
-#   .\run-winwright-tests.ps1 -VisualCheck             # Full sweep + layout-bounds visual regression check
-#   .\run-winwright-tests.ps1 -VisualCheck -VisualTolerancePx 4  # Override visual tolerance (default: 8px)
-#   .\run-winwright-tests.ps1 -TestVisualOnly          # Visual check self-test only (no app/WinWright needed)
 #
 # DB snapshot guard (-SnapshotDb, default true):
 #   Captures a snapshot of the dev DB (rules, safe_senders, settings tables) before the
@@ -22,16 +18,12 @@
 #   "State-restore rule" documented in docs/TESTING_STRATEGY.md: every WinWright script
 #   must leave the dev DB in the same state it found it.
 #
-# Visual-regression check (-VisualCheck, opt-in, Sprint 41 F76):
-#   After the DB snapshot comparison, captures bounding-rectangle positions of key UI
-#   elements on the primary screens (Home, Manage Rules, Settings) and compares them
-#   against committed baseline JSON files under mobile-app/test/winwright/baselines/.
-#   Uses layout-bounds assertions (not pixel diff) -- immune to anti-aliasing and
-#   sub-pixel font-rendering noise. Fails the run if any element deviates beyond the
-#   tolerance threshold. If a baseline file is absent, the check prints [PENDING CAPTURE]
-#   and does NOT fail the run. See winwright-visual-check.ps1 and README.md for details.
+# Visual-regression checking: NOT handled here. The Sprint 41 F76 attempt to add
+# layout-bounds visual regression via the WinWright CLI was abandoned (the standalone
+# CLI cannot read element BoundingRectangle -- see ALL_SPRINTS_MASTER_PLAN.md F76).
+# Visual/layout regression is folded into F99 (Flutter integration_test harness).
 #
-# Runtime target: <10 min unattended for all 7 scripts on a local dev build.
+# Runtime target: <10 min unattended for all scripts on a local dev build.
 # (Measured manually; do not run this script as part of the automated Flutter test suite.)
 #
 # See docs/TESTING_STRATEGY.md for full cadence policy (end-of-sprint full sweep when
@@ -49,37 +41,10 @@ param(
 
     # Execution modes (Sprint 40, F79)
     [switch]$DryRun,                # Skip the actual WinWright sweep; do preflight + snapshot only
-    [switch]$TestSnapshotOnly,      # Run winwright-db-snapshot.ps1 -SelfTest and exit (no app needed)
-
-    # Visual-regression check (Sprint 41, F76) -- opt-in
-    [switch]$VisualCheck,           # Enable layout-bounds visual regression check after sweep
-    [int]$VisualTolerancePx = 8,    # Allowed deviation per bounds dimension (default: 8px)
-    [switch]$TestVisualOnly         # Run winwright-visual-check.ps1 -SelfTest and exit (no app needed)
+    [switch]$TestSnapshotOnly       # Run winwright-db-snapshot.ps1 -SelfTest and exit (no app needed)
 )
 
 $ErrorActionPreference = "Stop"
-
-# ---------------------------------------------------------------------------
-# Paths (declared early so early-exit modes can reference them)
-# ---------------------------------------------------------------------------
-
-$visualCheckScript = Join-Path $PSScriptRoot "winwright-visual-check.ps1"
-
-# ---------------------------------------------------------------------------
-# Mode: -TestVisualOnly
-# Runs the winwright-visual-check.ps1 self-test and exits.
-# Does NOT require a running app or WinWright installation.
-# ---------------------------------------------------------------------------
-
-if ($TestVisualOnly) {
-    Write-Host "[Runner] -TestVisualOnly: delegating to winwright-visual-check.ps1 -SelfTest" -ForegroundColor Cyan
-    if (-not (Test-Path $visualCheckScript)) {
-        Write-Error "Visual check helper not found at $visualCheckScript"
-        exit 1
-    }
-    & powershell -NoProfile -ExecutionPolicy Bypass -File $visualCheckScript -SelfTest -TolerancePx $VisualTolerancePx
-    exit $LASTEXITCODE
-}
 
 # ---------------------------------------------------------------------------
 # Resolve default switch values. Both features default to ON. Precedence:
@@ -340,40 +305,6 @@ if ($doSnapshot -and $snapshotBefore) {
 }
 
 # ---------------------------------------------------------------------------
-# Visual-regression check (Sprint 41, F76) -- runs after DB snapshot, opt-in
-# The check requires the app to be at the home screen. After the sweep each
-# script has closed its own app instance (WinWright lifecycle); the defensive
-# kill above ensures no stray instance. We launch a fresh instance here for
-# the visual check and kill it when done.
-# ---------------------------------------------------------------------------
-
-$visualRegressionFailed = $false
-
-if ($VisualCheck) {
-    if (-not (Test-Path $visualCheckScript)) {
-        Write-Host "[VISUAL-CHECK] WARNING: winwright-visual-check.ps1 not found at $visualCheckScript -- skipping." -ForegroundColor Yellow
-    } else {
-        Write-Host ""
-        Write-Host "[VISUAL-CHECK] Launching fresh app instance for visual bounds capture..." -ForegroundColor Cyan
-        $visualAppLaunched = Ensure-FreshAppAtHome
-        if (-not $visualAppLaunched) {
-            Write-Host "[VISUAL-CHECK] WARNING: Could not launch dev app for visual check -- skipping." -ForegroundColor Yellow
-        } else {
-            # Dot-source the visual check helper to load Invoke-VisualCheck into this scope
-            . $visualCheckScript
-
-            $visualPassed = Invoke-VisualCheck -Tolerance $VisualTolerancePx
-            if (-not $visualPassed) {
-                $visualRegressionFailed = $true
-            }
-
-            # Defensive cleanup: kill app instance used for visual capture
-            Get-Process $appProcName -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-        }
-    }
-}
-
-# ---------------------------------------------------------------------------
 # Summary
 # ---------------------------------------------------------------------------
 
@@ -390,18 +321,10 @@ if ($driftDetected) {
     Write-Host "DB Drift: none" -ForegroundColor Green
 }
 
-if ($VisualCheck) {
-    if ($visualRegressionFailed) {
-        Write-Host "Visual Check: REGRESSION DETECTED -- see [FAIL] lines above" -ForegroundColor Red
-    } else {
-        Write-Host "Visual Check: [OK] (or baselines pending capture)" -ForegroundColor Green
-    }
-}
-
 Write-Host ""
 
 $results | Format-Table -AutoSize
 
-if ($failed -gt 0 -or $driftDetected -or $visualRegressionFailed) {
+if ($failed -gt 0 -or $driftDetected) {
     exit 1
 }
