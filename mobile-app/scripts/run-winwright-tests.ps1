@@ -232,6 +232,21 @@ if ($DryRun) {
 $pattern = "test_*$TestName*.json"
 $tests = Get-ChildItem -Path $testDir -Filter $pattern | Sort-Object Name
 
+# F56 create/save/delete lifecycle scripts are EXCLUDED from the default sweep
+# (Sprint 41, Harold Class-3 decision 2026-06-17). They are authored (F97) but
+# fail intermittently under WinWright out-of-process UIA (Save resolves 0 elements
+# pre-settle; no ww_wait/ww_assert in the script-runner to bridge the settle).
+# Reliable execution is moved to F99 (Flutter integration_test, in-VM). The .json
+# files remain as the F99 reference flow and stay runnable explicitly via
+# -TestName f56. The default sweep ships green with the 6 read-only scripts.
+if ($TestName -eq "*") {
+    $excludedCount = ($tests | Where-Object { $_.Name -like "*f56*" }).Count
+    if ($excludedCount -gt 0) {
+        Write-Host "[Runner] Excluding $excludedCount F56 create/delete script(s) from default sweep -- reliable execution moved to F99 (integration_test). Run explicitly with -TestName f56." -ForegroundColor DarkYellow
+        $tests = $tests | Where-Object { $_.Name -notlike "*f56*" }
+    }
+}
+
 if ($tests.Count -eq 0) {
     Write-Warning "No tests matched pattern: $pattern"
     exit 0

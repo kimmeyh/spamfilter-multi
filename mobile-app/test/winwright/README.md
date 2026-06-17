@@ -204,18 +204,15 @@ robustly. See `docs/ALL_SPRINTS_MASTER_PLAN.md` items F76 (why abandoned) and F9
 - [x] One-command runner launches the dev app per script and runs all unattended (F79 Part 1)
 - [x] Pre/post DB-snapshot drift guard integrated; full sweep green with zero net DB change (F79 Part 2)
 - [x] Tests documented here + cadence in TESTING_STRATEGY.md
-- [x] F56 create+delete lifecycle scripts (authored S41 F97 -- pending sweep verification; see test_f56_*.json)
+- [x] F56 create+delete lifecycle scripts AUTHORED (S41 F97); input format confirmed live (`test_f56_*.json`). Reliable unattended EXECUTION moved to F99 (`integration_test`) -- these scripts are excluded from the default sweep (`-TestName f56` to run explicitly); see ALL_SPRINTS_MASTER_PLAN.md F97/F99.
 
-## F76 Acceptance Criteria (Sprint 41)
+## F76 (visual regression) -- ABANDONED, folded into F99
 
-- [x] Layout-bounds visual regression approach selected and justified (not pixel-diff)
-- [x] `winwright-visual-check.ps1` companion script implemented
-- [x] `-VisualCheck` and `-TestVisualOnly` params added to `run-winwright-tests.ps1`
-- [x] Baselines directory created (`mobile-app/test/winwright/baselines/`)
-- [x] Anchors defined for Home, Manage Rules, and Settings General screens
-- [x] Offline self-test passes (5 steps: clean pair, drift detection, false-positive isolation, missing-element detection)
-- [x] README and TESTING_STRATEGY.md updated with visual regression documentation
-- [ ] Real baselines captured during manual testing [PENDING CAPTURE -- first post-F76 session]
+The Sprint 41 F76 layout-bounds visual-check was reverted (2026-06-17): the standalone WinWright
+CLI cannot read element `BoundingRectangle` (no `get_attribute` command; `inspect` has no bounds;
+the `run` script-runner rejects `ww_get_attribute`/`ww_assert*`). Visual/layout-regression detection
+is delivered in F99 via Flutter `integration_test` golden-image + `RenderBox` assertions. See the
+"Visual Regression Testing -- moved to F99" section above and ALL_SPRINTS_MASTER_PLAN.md F76/F99.
 
 ## Known Limitations (from Sprint 27 evaluation)
 

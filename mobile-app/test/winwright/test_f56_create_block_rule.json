@@ -25,7 +25,7 @@
         { "tool": "ww_click", "selector": "type=Group[name*='Top-Level Domain']" },
         { "tool": "ww_type", "selector": "type=Edit[name*='Enter TLD']", "text": "museum" },
         { "tool": "ww_click", "selector": "type=Button[name='Save Rule']" },
-        { "tool": "ww_invoke", "selector": "type=Button[name='Save']" }
+        { "tool": "ww_click", "selector": "type=Button[name='Save']" }
       ]
     },
     {
@@ -34,8 +34,8 @@
       "steps": [
         { "tool": "ww_type", "selector": "type=Edit[name*='Search by domain']", "text": "*.museum" },
         { "tool": "ww_click", "selector": "type=Button[name*='View rule details']" },
-        { "tool": "ww_invoke", "selector": "type=Button[name='Delete']" },
-        { "tool": "ww_invoke", "selector": "type=Button[name='Delete']" },
+        { "tool": "ww_click", "selector": "type=Button[name='Delete']" },
+        { "tool": "ww_click", "selector": "type=Button[name='Delete']" },
         { "tool": "ww_invoke", "selector": "type=Button[name='Back']" },
         { "tool": "ww_invoke", "selector": "type=Button[name='Back']" }
       ]

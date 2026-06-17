@@ -24,7 +24,7 @@
         { "tool": "ww_click", "selector": "type=Button[name*='Add safe sender']" },
         { "tool": "ww_type", "selector": "type=Edit[name='Enter email, domain, or URL']", "text": "winwright-test.com" },
         { "tool": "ww_click", "selector": "type=Button[name='Save Rule']" },
-        { "tool": "ww_invoke", "selector": "type=Button[name='Save']" }
+        { "tool": "ww_click", "selector": "type=Button[name='Save']" }
       ]
     },
     {
@@ -33,8 +33,8 @@
       "steps": [
         { "tool": "ww_type", "selector": "type=Edit[name*='Search patterns']", "text": "winwright-test" },
         { "tool": "ww_click", "selector": "type=Button[name*='View safe sender details']" },
-        { "tool": "ww_invoke", "selector": "type=Button[name='Delete']" },
-        { "tool": "ww_invoke", "selector": "type=Button[name='Delete']" },
+        { "tool": "ww_click", "selector": "type=Button[name='Delete']" },
+        { "tool": "ww_click", "selector": "type=Button[name='Delete']" },
         { "tool": "ww_invoke", "selector": "type=Button[name='Back']" },
         { "tool": "ww_invoke", "selector": "type=Button[name='Back']" }
       ]
