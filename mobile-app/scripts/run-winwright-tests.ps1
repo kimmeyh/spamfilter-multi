@@ -245,15 +245,18 @@ $tests = Get-ChildItem -Path $testDir -Filter $pattern | Sort-Object Name
 # read-only scripts that do not cross a dialog-settle boundary.
 $excludedFromSweep = @("f56", "f37")
 if ($TestName -eq "*") {
-    $excluded = $tests | Where-Object { $n = $_.Name; ($excludedFromSweep | Where-Object { $n -like "*$_*" }) }
+    # @(...) forces an array: a single Where-Object match returns a bare FileInfo
+    # whose .Count is $null, which would silently skip the exclusion (Copilot
+    # review, PR #262). Wrapping guarantees .Count is always an integer.
+    $excluded = @($tests | Where-Object { $n = $_.Name; ($excludedFromSweep | Where-Object { $n -like "*$_*" }) })
     if ($excluded.Count -gt 0) {
         $names = ($excluded.Name -join ", ")
         Write-Host "[Runner] Excluding $($excluded.Count) dialog-settle script(s) from default sweep ($names) -- reliable execution moved to F99 (integration_test). Run explicitly with -TestName f56 / -TestName f37." -ForegroundColor DarkYellow
-        $tests = $tests | Where-Object { $n = $_.Name; -not ($excludedFromSweep | Where-Object { $n -like "*$_*" }) }
+        $tests = @($tests | Where-Object { $n = $_.Name; -not ($excludedFromSweep | Where-Object { $n -like "*$_*" }) })
     }
 }
 
-if ($tests.Count -eq 0) {
+if (@($tests).Count -eq 0) {
     Write-Warning "No tests matched pattern: $pattern"
     exit 0
 }

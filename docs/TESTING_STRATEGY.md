@@ -283,7 +283,7 @@ void main() {
 - Element discoverability depends on Flutter Semantics widget usage
 - Custom-rendered Flutter widgets may not appear in the accessibility tree
 - Best for testing navigation flow, form inputs, and button interactions
-- Not suitable for pixel-perfect visual regression testing (use layout-bounds instead -- see Visual Regression section below)
+- Not suitable for visual/layout regression testing -- the standalone WinWright CLI cannot read element bounds (see "Visual Regression -> F99" below); layout-regression detection is delivered by the Flutter `integration_test` harness (F99, pre-MVP)
 
 **When to Run** (Sprint 39 policy -- supersedes Sprint 35 conditional-only policy):
 
@@ -301,11 +301,13 @@ Two complementary modes:
 | Manage Safe Senders / ManualRuleCreateScreen (safe sender side) | `test_f56_create_safe_sender.json` |
 | Scan History screen / aggregate stats | `test_scan_history.json` |
 
-**2. End-of-sprint full sweep (UI-triggered).** At sprint close (Phase 5), if the sprint diff touched **any file under `lib/ui/**`**, run the FULL 7-script sweep via the F79 harness (`run-winwright-tests.ps1`, unattended, with pre/post dev-DB snapshot verification). If the sprint touched no `lib/ui/**` files (pure backend / docs / tests), **skip the full sweep**.
+**2. End-of-sprint full sweep (UI-triggered).** At sprint close (Phase 5), if the sprint diff touched **any file under `lib/ui/**`**, run the default sweep via the F79 harness (`run-winwright-tests.ps1`, unattended, with pre/post dev-DB snapshot verification). If the sprint touched no `lib/ui/**` files (pure backend / docs / tests), **skip the full sweep**.
+
+The default sweep runs the **6 read-only scripts** (navigation, settings_tabs, scan_history, text_selection, f25_rule_test_tool, f35_rule_edit). The scripts that cross a Flutter dialog/picker-settle boundary -- `test_f56_*` (create/save/delete) and `test_f37_folder_selector` -- are EXCLUDED from the default sweep (Sprint 41) because the WinWright `run` script-runner has no wait/assert primitive to bridge the settle; their reliable execution is delivered by F99 (`integration_test`). They remain runnable explicitly via `-TestName f56` / `-TestName f37` and serve as the F99 reference flows.
 
 | Sprint touched `lib/ui/**`? | End-of-sprint action |
 |------------------------------|----------------------|
-| Yes | Run full 7-script sweep via F79 harness (Phase 5) |
+| Yes | Run default sweep (6 read-only scripts) via F79 harness (Phase 5) |
 | No | Skip -- no UI surface changed |
 
 Rationale for the change (Harold, 2026-05-25): the previous "conditional-only, full sweep on-demand" policy left regressions to surface at release prep. Once the F79 harness makes the full sweep cheap (~5-10 min unattended, self-cleaning via DB snapshot), running it at the end of every UI-touching sprint is low-cost insurance. **Dependency**: this end-of-sprint cadence becomes mandatory only once the F79 harness ships; until then, the full sweep remains the manual/on-demand activity tracked by F79.
@@ -346,7 +348,8 @@ C:\Tools\WinWright\Civyk.WinWright.Mcp.exe run <script.json>
 ```powershell
 cd mobile-app/scripts
 
-# Full unattended sweep (all 7 scripts + DB snapshot guard, <10 min)
+# Full unattended sweep (6 read-only scripts + DB snapshot guard, <10 min;
+# f56/f37 dialog-settle scripts are excluded by default -- see F99)
 .\run-winwright-tests.ps1
 
 # Only F56 lifecycle tests
@@ -378,57 +381,21 @@ The runner automatically:
 - Handles WAL-mode DBs -- concurrent read is safe while the app is running
 - Runtime target: <10 minutes unattended for all 7 scripts
 
-**Visual regression check (Sprint 41, F76 -- opt-in)**:
+**Visual / layout regression -> delivered by F99 (Flutter `integration_test`), NOT WinWright**:
 
 WinWright tests verify element presence but cannot detect layout changes (alignment, centering,
-element repositioning). The F76 visual regression check adds **layout-bounds assertions** as an
-opt-in layer that runs after the main sweep.
+element repositioning). A Sprint 41 attempt (F76) to add layout-bounds visual-regression checking
+to this WinWright sweep was **abandoned and reverted**: the standalone WinWright CLI
+(`Civyk.WinWright.Mcp.exe`) cannot read element bounds -- its commands are only
+`mcp | serve | run | heal | inspect | doctor` (no `get_attribute`); `inspect <pid>` JSON carries no
+bounds fields; and the `run` script-runner rejects `ww_get_attribute` / `ww_assert*`
+("not supported by the script runner"). `BoundingRectangle` is reachable only via the MCP
+interface, which a standalone runner `.ps1` has no session for.
 
-**Approach**: Layout-bounds (not pixel-diff). Bounding rectangles are read from the UIA
-accessibility tree via `ww_get_attribute BoundingRectangle`. Pixel-diff was rejected because
-Flutter Windows sub-pixel anti-aliasing produces per-run PNG differences with zero code changes
-(unacceptable false-positive rate). Bounds are integer logical coordinates -- immune to AA,
-DPI scaling, and font rendering noise.
-
-**Tolerance**: Default 8 logical pixels per dimension. Absorbs window-position variance while
-catching real regressions (which shift elements 16-20px or more).
-
-**Baseline files**: `mobile-app/test/winwright/baselines/baseline_*.json`. One file per tracked
-screen. If a baseline file is absent, the check prints [PENDING CAPTURE] and does not fail the run.
-
-**When to recapture baselines**: After any intentional UI layout change, Flutter version upgrade,
-or DPI setting change. Run `.\winwright-visual-check.ps1 -CaptureBaseline` with the app at home.
-
-```powershell
-cd mobile-app/scripts
-
-# Full sweep + visual check (opt-in)
-.\run-winwright-tests.ps1 -VisualCheck
-
-# Override tolerance
-.\run-winwright-tests.ps1 -VisualCheck -VisualTolerancePx 4
-
-# Visual check self-test (no app or WinWright needed)
-.\run-winwright-tests.ps1 -TestVisualOnly
-
-# Capture new baselines (app must be running at home screen)
-.\winwright-visual-check.ps1 -CaptureBaseline
-
-# Standalone comparison (app must be running at each screen)
-.\winwright-visual-check.ps1 -Compare
-```
-
-**Visual cadence policy (Sprint 41+)**:
-
-| Scenario | Action |
-|----------|--------|
-| Sprint closes, `lib/ui/**` touched | Run `.\run-winwright-tests.ps1 -VisualCheck` (visual check included in full sweep) |
-| Sprint closes, no `lib/ui/**` changes | Visual check optional (no layout surface changed) |
-| Intentional UI layout change ships | Recapture baselines + commit before PR |
-| Visual check fails | Investigate regression before recapturing; do not blindly update baselines |
-
-**Visual regression helper**: `mobile-app/scripts/winwright-visual-check.ps1`
-See `mobile-app/test/winwright/README.md` for anchor maps, baseline format, and full docs.
+Visual / layout-regression detection is folded into **F99** (parallel Flutter `integration_test`
+harness, pre-MVP), which provides golden-image and `RenderBox` layout assertions natively and
+robustly. There is no `-VisualCheck` flag and no `winwright-visual-check.ps1` in this branch.
+See `docs/ALL_SPRINTS_MASTER_PLAN.md` items F76 (why abandoned) and F99 (delivery vehicle).
 
 See `mobile-app/test/winwright/README.md` for script details and selector patterns.
 

@@ -93,17 +93,19 @@ title and closes it at end-of-run. Consequences for script authors:
 | `test_f25_rule_test_tool.json` | F25: open Test-pattern tool from Manage Rules, plaintext->regex toggle, run Test | S40 (new) |
 | `test_f35_rule_edit.json` | F35: open a rule's Edit screen, toggle Guided/Direct-regex mode, leave without saving | S40 (new) |
 | `test_f37_folder_selector.json` | F37: open Safe Sender + Deleted Rule folder pickers (no selection change) | S40 (new) |
-| `test_f56_create_block_rule.json` | F56: create TLD block rule ('xyz'), delete it (net zero DB drift) | S41 F97 (new) |
-| `test_f56_create_safe_sender.json` | F56: create Entire Domain safe sender ('winwright-test.com'), delete it (net zero DB drift) | S41 F97 (new) |
+| `test_f56_create_block_rule.json` | F56: create TLD block rule (`museum`), delete it (net zero DB drift) -- EXCLUDED from default sweep (F99) | S41 F97 (new) |
+| `test_f56_create_safe_sender.json` | F56: create Entire Domain safe sender (`winwright-test.com`), delete it (net zero DB drift) -- EXCLUDED from default sweep (F99) | S41 F97 (new) |
 
-The first 7 scripts are **read-only** -- they navigate, open dialogs/screens, and back out without persisting
-changes, so the pre/post DB-snapshot guard reports zero drift.
+The **6 default-sweep scripts** (navigation, settings_tabs, scan_history, text_selection, f25, f35) are
+**read-only** -- they navigate, open dialogs/screens, and back out without persisting changes, so the
+pre/post DB-snapshot guard reports zero drift. `test_f37_folder_selector` is also read-only but is
+EXCLUDED from the default sweep (dialog-settle race -> F99); see the exclusion note above.
 
 The 2 F56 scripts **write then delete**: each testCase creates one row and a second testCase deletes it,
-leaving net DB drift of zero. The DB-snapshot guard will report green if both testCases complete.
-If the script fails mid-run (after create, before delete) a row will remain in the DB and the snapshot
-guard will report drift -- Harold should delete the `*.xyz` / `winwright-test.com` row manually from
-the app and re-run.
+leaving net DB drift of zero. They are EXCLUDED from the default sweep and run explicitly via
+`-TestName f56`. If a script fails mid-run (after create, before delete) a row will remain in the DB and
+the snapshot guard will report drift -- delete the `*.museum` (block rule) / `winwright-test.com`
+(safe sender) row manually from the app and re-run.
 
 ### Deferred (NOT in the current set)
 

@@ -324,5 +324,3 @@ The design must hold across {Windows Store (MSIX), Android, iOS} x {dev, prod}:
   239-248), orphaned `background_scan_schedule` table (lines 252-262), `background_scan_log`
   (lines 290-303).
 - `mobile-app/assets/content/help/background_scanning.md` -- user-facing help text.
-</content>
-</invoke>
