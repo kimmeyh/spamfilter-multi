@@ -211,6 +211,18 @@ $legitimatePatterns = @(
     '(?i)two equally (valid|good|reasonable) approaches'
     '(?i)architectural (choice|decision|tradeoff) (not|is not) covered by (the )?(plan|spec)'
     '(?i)breaks (existing|downstream|api|contract)'
+
+    # Decision-Class Taxonomy escalations (CLAUDE.md "STOP, Surface, Wait").
+    # Sprint-plan approval is explicitly NOT durable for class-1/2/3 decisions,
+    # so surfacing one and waiting is REQUIRED, not a procedural permission-ask.
+    # Added 2026-06-17 (Sprint 41 retro IMP-4) after a legitimate Class-3 scope
+    # question false-positived as a procedural "want me to proceed?".
+    '(?i)would change (a )?prior (architectural|architecture|development|design) (decision|pattern)'
+    '(?i)would change the approved sprint scope'
+    '(?i)class[- ]?[123] (architecture|development|sprint|scope|decision)'
+    '(?i)(chief architect|chief developer|scrum master) (sign-?off|approval|decision)'
+    '(?i)(de-?scope|de-?scoping|defer(ring)?|fold(ing)?) .{0,60}(approved|deliverable|task|scope|to (a )?(future|next) sprint|into f\d+)'
+    '(?i)decision (is )?yours'
 )
 
 foreach ($pat in $legitimatePatterns) {
