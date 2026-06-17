@@ -232,18 +232,24 @@ if ($DryRun) {
 $pattern = "test_*$TestName*.json"
 $tests = Get-ChildItem -Path $testDir -Filter $pattern | Sort-Object Name
 
-# F56 create/save/delete lifecycle scripts are EXCLUDED from the default sweep
-# (Sprint 41, Harold Class-3 decision 2026-06-17). They are authored (F97) but
-# fail intermittently under WinWright out-of-process UIA (Save resolves 0 elements
-# pre-settle; no ww_wait/ww_assert in the script-runner to bridge the settle).
-# Reliable execution is moved to F99 (Flutter integration_test, in-VM). The .json
-# files remain as the F99 reference flow and stay runnable explicitly via
-# -TestName f56. The default sweep ships green with the 6 read-only scripts.
+# Scripts that depend on a Flutter dialog/picker animating in are EXCLUDED from
+# the default sweep (Sprint 41, Harold Class-3 decisions 2026-06-17):
+#   - f56 (create/save/delete lifecycle): Save resolves 0 elements pre-settle.
+#   - f37 (folder pickers): the picker's "Search folders..." Edit is not in the
+#     UIA tree yet when the next step fires (resolves fine once settled).
+# Both hit the same WinWright limitation: the `run` script-runner has no
+# ww_wait/ww_assert primitive to wait for an animating element. Reliable
+# execution is moved to F99 (Flutter integration_test, in-VM, pumpAndSettle).
+# The .json files remain as the F99 reference flow and stay runnable explicitly
+# via -TestName f56 / -TestName f37. The default sweep ships green with the 6
+# read-only scripts that do not cross a dialog-settle boundary.
+$excludedFromSweep = @("f56", "f37")
 if ($TestName -eq "*") {
-    $excludedCount = ($tests | Where-Object { $_.Name -like "*f56*" }).Count
-    if ($excludedCount -gt 0) {
-        Write-Host "[Runner] Excluding $excludedCount F56 create/delete script(s) from default sweep -- reliable execution moved to F99 (integration_test). Run explicitly with -TestName f56." -ForegroundColor DarkYellow
-        $tests = $tests | Where-Object { $_.Name -notlike "*f56*" }
+    $excluded = $tests | Where-Object { $n = $_.Name; ($excludedFromSweep | Where-Object { $n -like "*$_*" }) }
+    if ($excluded.Count -gt 0) {
+        $names = ($excluded.Name -join ", ")
+        Write-Host "[Runner] Excluding $($excluded.Count) dialog-settle script(s) from default sweep ($names) -- reliable execution moved to F99 (integration_test). Run explicitly with -TestName f56 / -TestName f37." -ForegroundColor DarkYellow
+        $tests = $tests | Where-Object { $n = $_.Name; -not ($excludedFromSweep | Where-Object { $n -like "*$_*" }) }
     }
 }
 

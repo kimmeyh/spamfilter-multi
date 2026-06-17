@@ -200,11 +200,13 @@ robustly. See `docs/ALL_SPRINTS_MASTER_PLAN.md` items F76 (why abandoned) and F9
 ## F69 / F79 Acceptance Criteria
 
 - [x] WinWright scripts for navigation, settings tabs, scan history, text selection
-- [x] F25/F35/F37 new-UI coverage scripts (Sprint 40)
+- [x] F25/F35 new-UI coverage scripts (Sprint 40)
 - [x] One-command runner launches the dev app per script and runs all unattended (F79 Part 1)
-- [x] Pre/post DB-snapshot drift guard integrated; full sweep green with zero net DB change (F79 Part 2)
+- [x] Pre/post DB-snapshot drift guard integrated; default sweep green with zero net DB change (F79 Part 2)
 - [x] Tests documented here + cadence in TESTING_STRATEGY.md
-- [x] F56 create+delete lifecycle scripts AUTHORED (S41 F97); input format confirmed live (`test_f56_*.json`). Reliable unattended EXECUTION moved to F99 (`integration_test`) -- these scripts are excluded from the default sweep (`-TestName f56` to run explicitly); see ALL_SPRINTS_MASTER_PLAN.md F97/F99.
+- [x] F56 create+delete lifecycle scripts AUTHORED (S41 F97); input format confirmed live (`test_f56_*.json`). Reliable unattended EXECUTION moved to F99 (`integration_test`) -- excluded from the default sweep (`-TestName f56` to run explicitly); see ALL_SPRINTS_MASTER_PLAN.md F97/F99.
+
+**Default sweep = 6 read-only scripts** (navigation, settings_tabs, scan_history, text_selection, f25_rule_test_tool, f35_rule_edit), all green with `DB Drift: none`. Two scripts that cross a Flutter dialog/picker-settle boundary are EXCLUDED from the default sweep and moved to F99 (`integration_test`, in-VM `pumpAndSettle`): `test_f56_*` (create/save/delete) and `test_f37_folder_selector` (folder picker's `Edit "Search folders..."` not in the UIA tree pre-settle). The WinWright `run` script-runner has no `ww_wait`/`ww_assert` primitive to bridge the settle. Both remain runnable explicitly (`-TestName f56` / `-TestName f37`) as the F99 reference flows.
 
 ## F76 (visual regression) -- ABANDONED, folded into F99
 
