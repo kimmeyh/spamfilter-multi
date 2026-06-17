@@ -103,6 +103,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 36 | docs/sprints/SPRINT_36_RETROSPECTIVE.md | [OK] Complete | Apr 20-25, 2026 |
 | 37 | docs/sprints/SPRINT_37_RETROSPECTIVE.md | [OK] Complete | Apr 27 - May 1, 2026 |
 | 38 | docs/sprints/SPRINT_38_RETROSPECTIVE.md | [OK] Complete | May 5-18, 2026 |
+| 41 | docs/sprints/SPRINT_41_RETROSPECTIVE.md | [OK] Complete | Jun 13-17, 2026 (PR #262) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
