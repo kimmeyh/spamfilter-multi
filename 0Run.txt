@@ -1,5 +1,4 @@
-***BELOW IS NOT FOR CLAUDE CODE USE***
-***BELOW IS NOT FOR Github Copilot USE***
+***BELOW IS NOT FOR CLAUDE CODE, GITHUB COPILOT, CHATGPT OR COPILOT PULL REQUEST (PR) REVIEW USE***
 
 # WINDOWS APP
 # *** build + launch DEV variant (creates Release-dev/MyEmailSpamFilter-Dev.exe, runs it)

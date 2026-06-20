@@ -24,14 +24,25 @@
 //                         The real dev DB is never opened.
 //
 // Both delete the temp dir and clear the override in HarnessSession.dispose().
+//
+// NO APP SHUTDOWN BETWEEN TESTS (Harold steering 2026-06-20):
+// The WinWright lane relaunches the whole app process before every script
+// (~6s each) ONLY because `winwright run` force-closes the attached app at
+// end-of-run with no keep-alive. integration_test has NO such constraint: all
+// testWidgets cases run in ONE process, and bootApp() does an in-VM fresh
+// pumpWidget + isolated temp DB -- a fast widget-tree reset, not an app
+// shutdown/relaunch. Do NOT port the WinWright per-test process-kill pattern
+// here; back-to-back cases are cheap (multiple boots ran in ~1s total).
 
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:my_email_spam_filter/main.dart' show SpamFilterApp;
 import 'package:my_email_spam_filter/adapters/storage/app_paths.dart';
 import 'package:my_email_spam_filter/core/services/app_environment.dart';
+import 'package:my_email_spam_filter/core/services/default_rule_set_service.dart';
 import 'package:my_email_spam_filter/core/storage/database_helper.dart';
 
 /// Boots [SpamFilterApp] against a FRESH empty isolated temp dir (the app seeds
@@ -63,7 +74,34 @@ Future<HarnessSession?> bootAppWithDevDbCopy(WidgetTester tester) async {
   return HarnessSession._(tempDir);
 }
 
+/// Initializes an isolated temp DB (FFI + override + bundled-rule seed) WITHOUT
+/// pumping the full SpamFilterApp. Use this when a test pumps a SINGLE screen
+/// directly (e.g. ManualRuleCreateScreen) and does not want the SpamFilterApp
+/// MultiProvider / RuleSetProvider.initialize() running concurrently -- that
+/// async init races with the test's own DB access and can close the DB mid-seed.
+Future<HarnessSession> bootDbOnly(WidgetTester tester) async {
+  final tempDir = await Directory.systemTemp.createTemp('spamfilter_it_');
+  AppPaths.testOverrideBaseDir = tempDir.path;
+
+  sqfliteFfiInit();
+  databaseFactory = databaseFactoryFfi;
+
+  final db = DatabaseHelper();
+  // Seed the bundled rule set deterministically (same as a clean install) so
+  // single-screen tests run against realistic seeded data.
+  await DefaultRuleSetService(db).seedIfEmpty();
+
+  return HarnessSession._(tempDir);
+}
+
 Future<void> _pumpBootedApp(WidgetTester tester) async {
+  // The harness pumps SpamFilterApp WITHOUT running main(), so it must do the
+  // desktop DB bootstrap main() normally does: initialize the FFI SQLite factory.
+  // Without this the app hits "databaseFactory not initialized" on first query.
+  // Idempotent -- safe to call once per boot.
+  sqfliteFfiInit();
+  databaseFactory = databaseFactoryFfi;
+
   await tester.pumpWidget(const SpamFilterApp());
   // _AppInitializer kicks RuleSetProvider.initialize() off a microtask; settle
   // until the loading spinner is replaced by the home screen.

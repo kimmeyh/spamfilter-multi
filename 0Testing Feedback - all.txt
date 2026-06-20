@@ -1,0 +1,1449 @@
+***BELOW IS NOT FOR CLAUDE CODE, GITHUB COPILOT, CHATGPT OR COPILOT PULL REQUEST (PR) REVIEW USE***
+
+can you write a effective but compact /compact string I can use to compact where we are, but let the Claude Code team know where we left off and can pick it up correctly.  Use all the tokens needed, but a few as reasonably possible.
+
+TBD---------------------------------------------------------------------------------------------------------
+
+Test 5: passed | Test 3 can you provide the detials on how to check this. | Test 4 - passed | Background scan task - no.
+  Last run was last night, May17 at 6:16pm. Can you investigate. | Can you add the Account - email address to the settings >
+  Manual Scan and Background - see image [Image #27].  can you update to all 1 line "Account Settings - <email address>" -
+  not to the General Tab as it is across all email addresses.
+
+------------------------------------------------------------------------------------------------------------
+Done
+
+Testing F82 - working as expected
+
+Test 5: subsequent scan finds previously-no-rule emails (cursor-based re-fetch)
+Test 3: sqlite query of account_folder_cursors shows oldest_no_rule_uid rows (cmd in CHANGELOG Round 4)
+Test 4: F88 batchGet for Gmail OAuth account (was deferred; gmail-imap path doesn't use it)
+Background scan task running after build (Round 4 script fix; Round 5 image 13 shows continued activity)
+
+------------------------------------------------------------------------------------------------------------
+Done
+
+Testing F82 - can it reprocess the list before displaying the initial list.  It is displaying correctly if "No rule" filter is selected, but not before and not if it is de-selected.
+
+------------------------------------------------------------------------------------------------------------
+Done
+
+Testing F82
+kimmeyharold@aol.com
+Settings > Background
+Go to Scan history 
+Selected kimmeyharold@aol.com Background May 17, 2026 02:43 PM EDT
+Started with 12 "no rules" > selected "No rules" filter
+Copied email address reply@reynolds.cemeterms.com 
+Setting > General > Manage Rules > + added new entire domain rule for reply@reynolds.cemeterms.com > Saved
+Returned to Scan History > Selected kimmeyharold@aol.com Background May 17, 2026 02:43 PM EDT
+Doesn't seem to have updated on entry to current rules: mark new matching items as deleted, if rule now exists don't include in the list, Show updated numbers
+
+
+------------------------------------------------------------------------------------------------------------
+Done
+
+Updated first rule to add entire domain rule - did not update number of no rules remaining, did not update list to remove all emails matching new rule.
+Note there are no lines in PowerShell window 
+Created a new rule that matched 2 items, it update to 3 or 12 and removed the two items from the list.
+
+
+------------------------------------------------------------------------------------------------------------
+Done
+Testing Feedback Sprint 38 - round 6
+Re-test of Scan History > Scan Results processing:
+ran app via in Powershell:
+& 'D:\Data\Harold\github\spamfilter-multi\mobile-app\dist\dev\MyEmailSpamFilter-Dev.exe'
+
+kimmeyharold@aol.com
+Settings > Background
+Test background scan
+Go to Scan history 
+Selected kimmeyharold@aol.com Background May 17, 2026 02:43 PM EDT
+Started with 12 "no rules"
+Updated first rule to add entire domain rule - did not update number of no rules remaining, did not update list to remove all emails matching new rule.
+Note there are no lines in PowerShell window 
+Created a new rule that matched 2 items, it update to 3 or 12 and removed the two items from the list.
+
+
+------------------------------------------------------------------------------------------------------------
+Done
+Testing Feedback Sprint 38 - round 5
+
+Re-test of Scan History > Scan Results processing:
+kimmeyharold@aol.com
+Settings > Background
+Test background scan
+Go to Scan history 
+see [Image #10]
+Selected kimmeyharold@aol.com Background May 17, 2026 02:43 PM EDT
+Started with 12 "no rules"
+Updated first rule to add entire domain rule - did not update number of no rules remaining, did not update list to remove all emails matching new rule.
+
+
+------------------------------------------------------------------------------------------------------------
+Done
+Testing Feedback Sprint 38 - round 4
+
+Interpretation 1, A: if UID's are per folder, then will need to track per folder UIC. 3. yes
+
+------------------------------------------------------------------------------------------------------------
+Done
+
+Testing Feedback Sprint 38 - round 4
+Update on Test 5:
+I did not realize the design choice you made and the underlying impact or we would have stopped earlier and made a change.  
+The app is designed for the user to pick how often background scanning is done and how many days of emails to select (there may be future updates to this, but this is the design for now).  
+Generally the user will select background scanning every 15 minutes and days to 1.  That way only emails from the last 24 hours are evaluated in each background scan.  
+Also it is designed so that the user can select the last live/background scan for each email address and all the "no rules" should populate.  This way the user only needs to review the last live/background scan for each email and can take care of all "no rules" in one scan history view.
+So select only new UID's is not even valid for background scanning.
+Update your understanding and re-present options to address
+
+Test3 - can you have it write something even if it does nothing - so it is never "empty"
+
+F82 - footer looks OK, it is the line under the header that is not updating
+
+------------------------------------------------------------------------------------------------------------
+Done
+
+Testing Feedback Sprint 38 - round 3
+Test F82 - I filtered by "no rule" and addressed the first 4 "no rule" items in the attached image [Image #5]
+1)  The "0 or 45 "no rule" emails addressed has not changed"
+this needs to be updated after every additional rule (rule or safe sender).  
+It should have updated to "6 of 45 "no rule" emails addressed as I created entire domain rules for annoyedunpack.net, bestcreditsettlement.com and blucicks.com.  
+Note that blucicks.com rule would address 3 "no rule" emails.
+The list (filtered) should have updated to hide the 6 "No rules" items and repainted the list as is done in Manual/Live Scan.
+
+Test 3: 
+copy and past of this command did not work because it had extra spaces in the command and wrapped to a second line.  Can you help?
+& 'C:\Android\android-sdk\platform-tools\sqlite3.exe' "$env:APPDATA\MyEmailSpamFilter\MyEmailSpamFilter_Dev\spam_filter.db"
+  "SELECT account_id, folder_name, cursor_type, cursor_value FROM account_folder_cursors;"
+I fixed it to the command below, but returned no results and showed the powershell prompt again.
+& 'C:\Android\android-sdk\platform-tools\sqlite3.exe' "$env:APPDATA\MyEmailSpamFilter\MyEmailSpamFilter_Dev\spam_filter.db"   "SELECT account_id, folder_name, cursor_type, cursor_value FROM account_folder_cursors;"
+
+Test 7: worked as expected and can be closed.
+
+Test 5: 
+Added rule for entire domain of news_162676@kiehn.tennesburg.com
+Re-ran Live Scan
+Only the email with this new entire domain rule was listed as "no rule": news_162676@kiehn.tennesburg.com
+Something does not seem right - can you do a deep dive on how this works to ensure it only marks the new rule and a delete rule
+I did not even find the other emails it found on the prior Live Scan [Image #6]
+Better to figure this out first before continue with additional tests
+
+Test 
+- Minor bug - background scan stopped and was not restarted with the new image (both gmail and aol.com email address background scans should be running).  If configured for Background scan for any email address, then any re-compile of the application should ensure the background scans are running at the end, before Manual Test Plan execution.
+
+------------------------------------------------------------------------------------------------------------
+Done
+Testing Feedback Sprint 38 - round 2
+Test 3 - note this was meant for IMAP and gmail (OAuth), so IMAP should be done now.  Also updated docs as needed;
+
+------------------------------------------------------------------------------------------------------------
+Done
+Testing Feedback Sprint 38 - round 1
+
+Test 1 - passed
+Test 2 - passed
+Test 2b - passed
+Test 3: 
+- Ran manual scan
+- SQLite command resulting in no response
+- rest of test worked as expected
+- 
+Test 4:
+- searched log for batchGet with no results, 
+
+Test 5:
+- passed
+- note: the reason for this change was not updated rules during a live scan - rather: live scan, live scan complete, update rule, live scan and it did not account for the new rule (had to exit and re-start app to get new rule recognized). However, this is better.
+
+Test 6 - passed
+
+Test 7:
+- Note that this item was primarily for the non-live/manual Scan Results page and it did not work for this page
+- Manual Scan page - passed
+- please apply same changes for F82 to the Scan History > Scan Results pages.
+
+Test 8:
+- passed
+- Edit without rebuild did not work however, is working as desired.  It should take a rebuild to change to documents and the documents allow the development team to successfully update the text without changing code. FYI: Hot restart did not work (and does not need to). Exit and re-launch app did not work and does not need to.
+
+
+------------------------------------------------------------------------------------------------------------
+Done
+Round 2 testing 
+  - F55 — On Results screen, confirm back arrow goes back (not replace); confirm Select Account icon (person icon) appears in AppBar
+    - My mistake. For Select Account > Manual Scan > Start Live Scan > Scan Results screen back button should return, in all cases, to the Manual Scan screen.  Also Demo Scan > Scan Results page should return to the Manual Scan screen
+    - Icon order - If they appear on a screen they should appear in left to right order: download, search, history, accounts, help, settings, X
+  - Help
+    - Can you add a section on Demo Scan (before Manual Scan) - Help icon on Demo Scan Results screen should pin to this new Demo scan section
+    - Can you make the help scroll bar always visible (current not visible unless hovering over the scroll bar)
+    - Can you allow the user to scroll past the bottom (so that the pinned section always appears at the top) - see [Image #2] where settings is not at the top.
+    - Settings > Account tab - Help should go to a Folder Settings section that explains the purpose of the Safe Sender Folder and Deleted Rule Folder with suggestions per email provider.
+    - Settings > Manual Scan tab - please add section for Manual Scan tab:
+      - General, Scan Mode, Scan Range, Default Folders, Confirmation, Export Settings
+    - Background Scanning section is good.  Please add
+      - Explain Enable, Test, Frequency and Debug.  No need to duplicate Scan Mode, Scan Range or Default Folders (they are explained under Manual Scan tab section)
+  - Rule/safe-sender dialogs: Open Manage Rules, tap a rule, try selecting/copying pattern text in the popup.
+    - working as expected, can be closed
+
+
+------------------------------------
+Done
+  Sprint 33 Manual test checklist for Sprint 33 (12 features to verify)
+
+  - F55 — On Results screen, confirm back arrow goes back (not replace); confirm Select Account icon (person icon) appears in
+  AppBar
+    - I did a live scan on kimmeyharold@aol.com
+      - clicked on the safe buttong to review the safe senders found, then clicked on no rules to add rules, clicked on back button and it returned to Safe button selected but should have returned to Manual Scan Screen. Clicked on back button again and it returned to the Manual Scan screen, but had a partial list of the scan results on the screen (this function of returning with results on the Manual scan screen was abandoned many sprints ago -- it should be the blank Manual Scan screen.
+    - I did a second live scan on kimmeyharold@aol.com
+      - after scan completed, clicked on the back button and it refreshed the Scan Results screen (should have returned to the Manual Scan Screen).  Second click on the back button returned to the Manual Scan Screen.      - 
+    - I did a manual live scan on the kimmeyh@gmail.com account
+      - after scan completed, clicked on the back button and it refreshed the Scan Results screen (should have returned to the Manual Scan Screen).  Second click on the back button returned to the Manual Scan Screen.
+  - F54 — Help icon (?) appears on every primary screen; tap it from any screen, confirm Help screen opens to the correct
+  section
+    - Good
+    - Can you add section on Background scanning 
+      1) Generally what Background scanning is
+      2) Include sub-sections for these:
+       - Testing background scans and purpose for initial testing, normally left on all the time, if running all the time then setting range to 1 day makes the most sense (runs  the fastest, but fully effective, 
+       - Might be useful for testing after upgrades, for your curiosity or if desired, 
+       - export after each scan - typically off, but for the curious of if there are issues and want to see details.
+  - F55? - Accounts icon
+    - like the icon
+    - Accounts icon is missing from the Scan History page, Settings page, 
+    - Is there a best practices order for the icons - believe X should be the right-most, next should be Settings or Help or Accounts, then download (if appears on the screen).
+    - Select Email Provider - please add icons: exit, help, accounts, settings
+  - Window title — Confirm [DEV] suffix appears (dev build sanity check)
+    - working as expected, can be closed
+
+  - F53 — Open Manage Rules, confirm @.*\.cc$ and @.*\.ne$ rules are present after first launch
+    - no .cc TLD - did see a .c TLD which I believe is incorrect and don't know if it was there before this sprint
+    - no .ne TLD - did see a .new, but don't know if it was there before this sprint or not
+    - BUG - additionally, the rule pop-up for rules is not selectable text (so I couldn't copy and paste the text here). Can you make all the rule and safe-sender pop-ups with selectable text.
+  - SEC-1b — Add a rule with catastrophic regex like (a+)+$, confirm rule save throws (rejected at storage boundary)
+    - no method to currently add a rule.  Can you add this to the testing list for the backlog item to add a UI for adding/updating rules
+  - F65 — Open Account Setup → Gmail, confirm screen recommends app passwords (ADR-0034 Dual Path)
+    - working as expected, can be closed
+  - SEC-19 — Settings → Privacy & Logging, toggle "Disable auth logging", confirm it persists
+   - working as expected, can be closed
+  - SEC-14 — Settings → Privacy & Logging, change "Unmatched email retention" dropdown; run a scan and confirm body previews
+  are truncated to 100 chars
+    - working as expected, can be closed
+  - SEC-22 — Add an IMAP account with wrong password, try >10 times in an hour, confirm subsequent attempts are blocked for 1h
+    - working as expected, can be closed
+  - SEC-8 — Settings → Privacy & Logging, toggle "Certificate pinning", confirm Gmail OAuth still works when enabled
+    - working as expected, can be closed
+  - SEC-11 — Settings shows "Encrypt database" toggle (infrastructure only; default off — just confirm UI is there)
+    - not seeing. Upon rebuild (after other changes), can you give additional details on where to find this.
+  - F66 — Settings → red "Delete All App Data" button, confirm two-step confirmation dialog appears
+    - working as expected, can be closed
+
+------------------------------------
+Post descriptions of # and items covered in Sprint
+
+Common comments:
+working as expected, can be closed
+
+Manual Testing is complete.
+Move on to the next step in the process. Review the sprint 18 checklist for next step or review detailed process in docs\ALL_SPRINTS_MASTER_PLAN.md
+
+
+
+Spike card - deep dive on Security Vulnerabilities
+Add backlog item for next sprint.  Deep dive on security: review for security vulnerabilities, review CVE's
+  related to any packages and software used, SQL injections, is regex injection a security issue when we get to adding new rules... Review all
+  security best practices before starting review.  Sprint 31 will just be this Security backlog item and any suggested improvements that are
+  critical.  Result should be a set of security related backlog items.  Should include level of severity so they can be prioritized.
+
+Spike card - deep dive on architecture match to current code base
+Lets start next sprint, but need to start with a spike card backlog item:  deep dive on current /docs/adr and /docs/architecture.md and
+/docs/arsd.md to ensure that the current code base matches the architecture or will be once backlog items are complete.  Basically a gap analysis
+between the current code base and backlog items to the documented architecture.  List gaps and suggest backlog item updates or new to address them.
+
+Sprint 29 Testing Feedback
+F50: Try selecting and copying text on any screen (Ctrl+C after selecting)
+- Live Scan Results page
+  - nothing on the page appears to be selectable for copy and paste (title "Results...", "Summary - ...", bullets (Found, Processed...), none of the items listed no matter how they were filtered, nothing in the item pop-up for rule selection (email address, folder line, date/time, domain, rule, or rule selection buttons)
+- Manual Scan Screen
+  - Could select everything except for title, "Manual Scan - AOL Mail)
+  - Can you replace "Manual Scan - AOL Mail" with "Manual Scan - <account email address>)
+- Select Account Screen
+  - Could select everything except for "Select Account" title
+- Create Account Screen
+  - Could select everything except for "Select Email Provider" title
+  - AOL Mail pop-up - could not select anything on this pop-up, but a user may wish to copy them for reference.
+  - AOL Mail - Account Setup
+    - nothing here could be selected
+  - Gmail Setup pop-up Screen - could not select anything on this pop-up, but a user may wish to copy them for reference.
+  - Gmail - Sign In Method screen - nothing could be selected
+    - Gmail (IMAP) Email Setup - nothing could be selected
+  - Gmail Sign-in - Choose Authentication Method - nothing could be selected
+- Settings - General, Account, Manual Scan and Background settings screen allowed selection as expected.
+F48: Navigate to Scan History -- should show all accounts, filter chips, totals with tooltips, retention days in title
+- Not seeing an Account(s) row.
+F46: Check Settings > General > "Reset Rules to Defaults" button is present
+- See the button. Have not tested it.
+F48 from Settings: Navigate via Settings > "Go to View Scan History" -- should pre-select account filter
+- Not showing the Account(s) row. Tried from all 4 Settings pages, Manual Scan Page, Select Account Page (asked to select account, but did now show account selectors on Scan History page), Live Scan Results page - View Results icon went to Scan History with no email account selector for the results.
+
+
+Please explain these back to me, determine recommended approach, recommended order for implementation in current sprint (except for minor bugs and future feature requests), and then I'll approve the recommendations and/or give additional feedback.  Then create a checklist for implementation of these tasks for approval.
+
+
+Done
+Sprint 26 Testing Feedback
+  - F43 Folder settings radio button selection - auto-save on click, shows current folder
+    - working as expected, can be closed
+  - F44 "Go to View Scan History" link on Manual Scan settings + Account tab style update
+  - F45 Background scan Excel export with daily grouping, updated field order, "No rule" label
+    - Noticed that the dev and prod scan are using the same file.  Dev file should use <name>_dev.xlsx
+  - F47 Email provider domain warning popup for domain-level rules on provider domains
+    - do not have any to test on.  Can you add to testing for next spring
+  - F36 Settings General tab - moved Rules Management, Scan History, About from Account tab
+    working as expected, can be closed
+  - F7 Multi-Account Scanning - "Scan All Accounts" button for sequential scanning
+    - Could not really tell if it worked as expected.
+    - Add backlog feature for as follow-up to F7 Multi-Account Scanning:
+    - Scan History
+        - Update title from Scan History" to "Scan History (<Keep Scan History for> days)"
+        - combine all accounts on one screen
+        - add a filter button for each account with the name of the email address - also implement the functionality needed to implement the filter.
+        - add totals buttons for Deleted, Moved, Safe, No rule, and Errors (same order as shown in Scan History and Live Scan Results)
+        - remove totals button for Completed
+        - add "tool tips" for:
+          - "Total: <n>": "Total unique emails found"
+          - "Emails Processed <n>: Total emails processed"
+          - "Deleted: <n>": "Total unique emails deleted"
+          - "Moved: <n>": "Total unique emails moved"
+          - "Safe: <n>": "Total unique emails marked safe (not including Safe Folder)"
+          - "No Rule: <n>": "Total unique emails currently with no rules assigned" (this should match the "No Rule" count from the most recent scan - note that this is different from the others)
+          - "Errors <n>": "Total unique emails not processed due to errors"
+        - Update link from Email Account specific Settings > Manual > "Go to View Scan History" (and Background) and Manual Scan > View Scan History, the filter for this email account should be selected (while the others, if any, should be off). Ask if you have questions or need clarification.
+
+  - Other
+    - Can you update the location of the background scan excel file (ex. background_scan_kimmeyharold_at_aol_com_2026-03-23.xlsx) be in the users appdata location - per environment (dev, prod) per device and platform (ex. for windows %APPDATA%\MyEmailSpamFilter (prod) or %APPDATA%\MyEmailSpamFilter_dev (dev))
+    - Can you add the "View Scan History" icon that appears on the "Manual Scan" page on all these pages:
+      - Live Scan Results
+      - Demo Scan Results
+      - All settings pages (General, Account, Manual, Background)
+      - Select Account page
+    - Live Scan Results > adding block rules
+      - Added Entire Domain rule to 3 emails: 
+        - good: Deleted filter button updated from 0 to 3, all 3 emails were deleted from the email account folder
+        - bad: none were removed from the Live Scan Results list
+
+Please explain these back to me, determine recommended approach, recommended order for implementation in current sprint (except for minor bugs and future feature requests), and then I'll approve the recommendations and/or give additional feedback.  Then create a checklist for implementation of these tasks for approval.
+
+------------------------------------
+Post descriptions of # and items covered in Sprint
+
+Common comments:
+working as expected, can be closed
+
+Manual Testing is complete.
+Move on to the next step in the process. Review the sprint 18 checklist for next step or review detailed process in docs\ALL_SPRINTS_MASTER_PLAN.md
+
+
+
+
+
+- F32 Coverage: 
+ - Evaluate risk of all not-covered test cases. Implement top 5-10 lowest covered critical files.  Add all the
+remaining medium and above, not-covered tests, to a new backlog item - on hold.
+- Settings Not Preserved
+  - Move all user application setting to live in the SQLite database so they are not affected in the future.
+  - Make a case for any that are not in the database and if they should be moved to the database or not and why.
+
+
+Sprint 25 Testing Feedback
+- A / Enum rename
+ - appears to have worked as expected, can be closed
+- F40 Safe sender INBOX skip fix - removed broken null check, use safeSenderTarget default
+ - working as expected, can be closed
+- F41 Safe sender move diagnostic logging for debugging
+ - working as expected, can be closed
+- F30 Exact domain filter fix - determinePatternType and categorize priority reordered
+ - working as expected, can be closed
+- F31 Post-build Task Scheduler re-registration in build-windows.ps1
+ - Background scan continues to run.  Believe this worked as expected.
+- F34 Scan status indicator (progress bar, completion badge, error state)
+ - working as expected, can be closed
+- F38 Re-process emails via IMAP after inline rule changes
+ - Can the re-process be done async (in the background) so that no pop-up is needed and it can update the list (minimal user interruption)
+- F32 Test coverage - 14 new tests (ScanMode backwards compat + determinePatternType)
+ - I had meant for this to have been an all W11 app test coverage evaluation, not constrained to this sprint.
+- Other
+  - Prior setting do not appear to have been saved from last dev run - Safe Sender folder, delete rules folder, manual scan folders, background scan folders...
+    - If it was necessary, I understand but then the "Sprint 25 - Complete Summary" should have mentioned this.
+    - This is more of an FYI - no need to attempt to restore prior settings.
+  - Need to be able to run in Prod (off main branch) and Run in Dev (off current/develop branch at the same time)
+    - This is true for the Developer (Harold) so I can test Production and Development at the same time - able to compare between the two
+    - it appears that they are using the same image for another reason, the prod run was terminated before the develop/current branch executable could be generated
+    - This is also important for having 2 different Task Scheduler jobs - one for Prod and the other for Dev
+
+Please explain these back to me, determine recommended approach, recommended order for implementation in current sprint (except for minor bugs and future feature requests), and then I'll approve the recommendations and/or give additional feedback.  Then create a checklist for implementation of these tasks for approval.
+
+------------------------------------
+Post descriptions of # and items covered in Sprint
+
+Common comments:
+working as expected, can be closed
+
+Manual Testing is complete.
+Move on to the next step in the process. Review the sprint 18 checklist for next step or review detailed process in docs\ALL_SPRINTS_MASTER_PLAN.md
+
+------------------------------------
+Done
+Sprint 21 Testing Feedback
+Task A: Version
+- working as expected, can be closed
+
+Task B: Environment Indicators
+- Window title bar shows MyEmailSpamFilter [DEV]
+  - No. It shows "MyEmailSpamFilter"
+- App data is in MyEmailSpamFilter_Dev\ directory (check %APPDATA%\MyEmailSpamFilter\)
+  - working as expected, can be closed
+
+Task C: First-Run Data Seeding
+- Dev data directory MyEmailSpamFilter_Dev\ was auto-created on first launch
+  - working as expected, can be closed
+- spam_filter.db exists in dev directory (copied from production)
+  - working as expected, can be closed- .dev_seeded marker file exists in dev directory
+- Email accounts from production are visible in the dev app
+  - working as expected, can be closed
+- Rules from production are visible in Settings > Manage Rules
+  - working as expected, can be closed
+
+Task D: Build Script
+- App was built successfully with default dev environment
+  - working as expected, can be closed
+
+Task E: Single-Instance Mutex
+- Try launching the app a second time (same executable) -- should bring existing window to front, not open a new instance
+  - working as expected, can be closed
+- Background scan should still work (not blocked by mutex)
+  - working as expected, can be closed
+
+Functional Regression
+- Demo scan works (run a demo scan, verify safe/deleted/no-rule distribution)
+  - working as expected, can be closed
+- Live scan works (scan an account, verify results display correctly)
+  - working as expected, can be closed
+- Manage Rules works (Settings > Manage Rules, verify filter chips and search)
+  - working as expected, can be closed
+  - add to backlog a cleanup of Body rules - a one-time script that should not be needed for the "app", but to help me out.
+    - appears that there are many rules that are trying to find URL's in the rules.  We need to find a better way to find URL rules similar to Exact Domain and Entire Domain Regex, but appropriate for the body of an email.
+    - there are many duplicates that can then be consolidated.  Example:  ".adamshetzner.com" and "adamshetzner.com"
+    - Regex needs to ensure they are URL's and not potential body content.
+- Safe senders display correctly in scan results
+  - working as expected, can be closed
+  - add bug investigation to backlog - Manage Safe Senders did not find any "Exact Domain" results, but believe there is at least one, maybe a few.- Add Rule from scan results creates rule with classification fields
+
+Data Isolation Verification
+- Changes made in dev app do NOT appear in production data directory
+  - working as expected, can be closed
+- Production database (MyEmailSpamFilter\spam_filter.db) is unchanged after dev testing
+  - working as expected, can be closed
+
+
+Please explain these back to me, determine recommended approach, recommended order for implementation in current sprint (except for minor bugs and future feature requests), and then I'll approve the recommendations and/or give additional feedback.  Then create a checklist for implementation of these tasks for approval.
+
+------------------------------------
+Post descriptions of # and items covered in Sprint
+
+Common comments:
+working as expected, can be closed
+
+Manual Testing is complete.
+Move on to the next step in the process. Review the sprint 18 checklist for next step or review detailed process in docs\ALL_SPRINTS_MASTER_PLAN.md
+
+
+
+------------------------------------
+Done
+Task C - Manage Rules: Settings > Manage Rules
+- Test sub-type chips: Entire Domain, Exact Domain, Exact Email, TLD
+  - Exact Domain
+    - The rule names do not match pattern for Entire domain, but they look like entire domain regex patterns, example: """@(?:[a-z0-9-]+\.)*\-offers\.[a-z0-9.-]+$""" as all of the rules with regex pattern ending in """\.[a-z0-9.-]+$""" should have been converted to ending with ""\.com$"""  When making this update it could introduce duplicate rules - no need for duplicates.  Will need to build a new, one-time, script to convert the current rules (if not duplicate).  backup, convert,
+  test and verify that count matches expectation, build app for testing, confirm working as expected)
+- Tap a rule to see details dialog
+  - Add feature to backlog for editing rules. Since they are regex patters there will need to be a way for users request a pattern and the app generate the correct regex or if the user edits the regex to validate the regex and if incorrect suggest a valid correction.
+
+Done
+Task C - Manage Rules: Settings > Manage Rules
+- Verify individual rules display (sourceDomain in monospace)
+  - working as expected
+- Test filter chips: Header/From, Subject, Body
+  - working as expected
+- Test search by domain name
+  - working as expected
+- Test Clear filters
+  - working as expected
+- Test sub-type chips: Entire Domain, Exact Domain, Exact Email, TLD
+  - Top-Level Domain - filter button says there are 3, but when filtered by, none are listed. The prior YAML file had all of the following as top-level domains. Some are in the rules but as Header / From > Exact Domain, but should be Top-Level Domains:
+"""
+    - '@.*\.ac$'
+    - '@.*\.ar$'
+    - '@.*\.art$'
+    - '@.*\.at$'
+    - '@.*\.au$'
+    - '@.*\.be$'
+    - '@.*\.biz$'
+    - '@.*\.br$'
+    - '@.*\.buzz$'
+    - '@.*\.bz$'
+    - '@.*\.c$'
+    - '@.*\.ca$'
+    - '@.*\.cfd$'
+    - '@.*\.ch$'
+    - '@.*\.click$'
+    - '@.*\.club$'
+    - '@.*\.cn$'
+    - '@.*\.co$'
+    - '@.*\.cz$'
+    - '@.*\.de$'
+    - '@.*\.dev$'
+    - '@.*\.ee$'
+    - '@.*\.es$'
+    - '@.*\.eu$'
+    - '@.*\.fan$'
+    - '@.*\.fashion$'
+    - '@.*\.fi$'
+    - '@.*\.finance$'
+    - '@.*\.financial$'
+    - '@.*\.fishing$'
+    - '@.*\.fit$'
+    - '@.*\.fitness$'
+    - '@.*\.florist$'
+    - '@.*\.foo$'
+    - '@.*\.forex$'
+    - '@.*\.forsale$'
+    - '@.*\.foundation$'
+    - '@.*\.fr$'
+    - '@.*\.fun$'
+    - '@.*\.fund$'
+    - '@.*\.futbol$'
+    - '@.*\.fyi$'
+    - '@.*\.ga$'
+    - '@.*\.games$'
+    - '@.*\.gdn$'
+    - '@.*\.gent$'
+    - '@.*\.gift$'
+    - '@.*\.gives$'
+    - '@.*\.giving$'
+    - '@.*\.giw$'
+    - '@.*\.glass$'
+    - '@.*\.gold$'
+    - '@.*\.golf$'
+    - '@.*\.gq$'
+    - '@.*\.gr$'
+    - '@.*\.gratis$'
+    - '@.*\.green$'
+    - '@.*\.guide$'
+    - '@.*\.guru$'
+    - '@.*\.hair$'
+    - '@.*\.haus$'
+    - '@.*\.health$'
+    - '@.*\.healthcare$'
+    - '@.*\.help$'
+    - '@.*\.hk$'
+    - '@.*\.homes$'
+    - '@.*\.hot$'
+    - '@.*\.house$'
+    - '@.*\.how$'
+    - '@.*\.hr$'
+    - '@.*\.hu$'
+    - '@.*\.icu$'
+    - '@.*\.id$'
+    - '@.*\.in$'
+    - '@.*\.in\.net$'
+    - '@.*\.info$'
+    - '@.*\.ink$'
+    - '@.*\.international$'
+    - '@.*\.io$'
+    - '@.*\.ir$'
+    - '@.*\.irish$'
+    - '@.*\.it$'
+    - '@.*\.jewelry$'
+    - '@.*\.joburg$'
+    - '@.*\.jp$'
+    - '@.*\.kim$'
+    - '@.*\.lat$'
+    - '@.*\.legal$'
+    - '@.*\.lgbt$'
+    - '@.*\.li$'
+    - '@.*\.life$'
+    - '@.*\.lifestyle$'
+    - '@.*\.link$'
+    - '@.*\.live$'
+    - '@.*\.llc$'
+    - '@.*\.llp$'
+    - '@.*\.loan$'
+    - '@.*\.loans$'
+    - '@.*\.locker$'
+    - '@.*\.lol$'
+    - '@.*\.london$'
+    - '@.*\.love$'
+    - '@.*\.ltd$'
+    - '@.*\.luxe$'
+    - '@.*\.makeup$'
+    - '@.*\.management$'
+    - '@.*\.market$'
+    - '@.*\.markets$'
+    - '@.*\.mba$'
+    - '@.*\.me$'
+    - '@.*\.media$'
+    - '@.*\.men$'
+    - '@.*\.menu$'
+    - '@.*\.miami$'
+    - '@.*\.ml$'
+    - '@.*\.moda$'
+    - '@.*\.moe$'
+    - '@.*\.mom$'
+    - '@.*\.money$'
+    - '@.*\.monster$'
+    - '@.*\.motorcycles$'
+    - '@.*\.mov$'
+    - '@.*\.name$'
+    - '@.*\.navy$'
+    - '@.*\.new$'
+    - '@.*\.ng$'
+    - '@.*\.ninja$'
+    - '@.*\.nl$'
+    - '@.*\.nwm$'
+    - '@.*\.nz$'
+    - '@.*\.observer$'
+    - '@.*\.okinawa$'
+    - '@.*\.one$'
+    - '@.*\.ong$'
+    - '@.*\.onl$'
+    - '@.*\.online$'
+    - '@.*\.ooo$'
+    - '@.*\.partners$'
+    - '@.*\.parts$'
+    - '@.*\.party$'
+    - '@.*\.pet$'
+    - '@.*\.ph$'
+    - '@.*\.pharmacy$'
+    - '@.*\.phd$'
+    - '@.*\.photo$'
+    - '@.*\.photos$'
+    - '@.*\.pics$'
+    - '@.*\.pictures$'
+    - '@.*\.pink$'
+    - '@.*\.pizza$'
+    - '@.*\.pl$'
+    - '@.*\.place$'
+    - '@.*\.plus$'
+    - '@.*\.poker$'
+    - '@.*\.post$'
+    - '@.*\.prof$'
+    - '@.*\.promo$'
+    - '@.*\.pub$'
+    - '@.*\.pw$'
+    - '@.*\.qpon$'
+    - '@.*\.quest$'
+    - '@.*\.qzz.io$'
+    - '@.*\.realtor$'
+    - '@.*\.realty$'
+    - '@.*\.recipes$'
+    - '@.*\.red$'
+    - '@.*\.rehab$'
+    - '@.*\.ren$'
+    - '@.*\.rent$'
+    - '@.*\.repair$'
+    - '@.*\.rest$'
+    - '@.*\.restaurant$'
+    - '@.*\.review$'
+    - '@.*\.reviews$'
+    - '@.*\.rich$'
+    - '@.*\.rip$'
+    - '@.*\.ro$'
+    - '@.*\.rodeo$'
+    - '@.*\.rs$'
+    - '@.*\.ru$'
+    - '@.*\.ryukyu$'
+    - '@.*\.sa\.com$'
+    - '@.*\.sale$'
+    - '@.*\.sbs$'
+    - '@.*\.schule$'
+    - '@.*\.science$'
+    - '@.*\.se$'
+    - '@.*\.sew$'
+    - '@.*\.sexy$'
+    - '@.*\.sho$'
+    - '@.*\.shop$'
+    - '@.*\.shopping$'
+    - '@.*\.show$'
+    - '@.*\.site$'
+    - '@.*\.skin$'
+    - '@.*\.sm$'
+    - '@.*\.solar$'
+    - '@.*\.soy$'
+    - '@.*\.space$'
+    - '@.*\.sport$'
+    - '@.*\.srl$'
+    - '@.*\.store$'
+    - '@.*\.studio$'
+    - '@.*\.style$'
+    - '@.*\.su$'
+    - '@.*\.support$'
+    - '@.*\.surf$'
+    - '@.*\.sweeps$'
+    - '@.*\.sweepss$'
+    - '@.*\.sx$'
+    - '@.*\.sydney$'
+    - '@.*\.tattoo$'
+    - '@.*\.tax$'
+    - '@.*\.taxi$'
+    - '@.*\.tech$'
+    - '@.*\.tel$'
+    - '@.*\.tennis$'
+    - '@.*\.tienda$'
+    - '@.*\.tires$'
+    - '@.*\.tk$'
+    - '@.*\.tn$'
+    - '@.*\.to$'
+    - '@.*\.today$'
+    - '@.*\.tokyo$'
+    - '@.*\.top$'
+    - '@.*\.town$'
+    - '@.*\.tr$'
+    - '@.*\.trade$'
+    - '@.*\.trading$'
+    - '@.*\.tube$'
+    - '@.*\.tz$'
+    - '@.*\.ua$'
+    - '@.*\.uk$'
+    - '@.*\.uk\.com$'
+    - '@.*\.uno$'
+    - '@.*\.us\.kg$'
+    - '@.*\.vacations$'
+    - '@.*\.vc$'
+    - '@.*\.vegas$'
+    - '@.*\.ventures$'
+    - '@.*\.vin$'
+    - '@.*\.vip$'
+    - '@.*\.vision$'
+    - '@.*\.vlaanderen$'
+    - '@.*\.vn$'
+    - '@.*\.vote$'
+    - '@.*\.voto$'
+    - '@.*\.wang$'
+    - '@.*\.webcam$'
+    - '@.*\.website$'
+    - '@.*\.wedding$'
+    - '@.*\.wiki$'
+    - '@.*\.win$'
+    - '@.*\.wine$'
+    - '@.*\.work$'
+    - '@.*\.world$'
+    - '@.*\.ws$'
+    - '@.*\.wtf$'
+    - '@.*\.xd$'
+    - '@.*\.xin$'
+    - '@.*\.xn-*$'
+    - '@.*\.xyz$'
+"""
+
+
+
+
+
+
+Done
+Live Scan and Background Scan Update
+- If the folder being scanned is the same as the Settings > Account > Safe Sender Folder (case-insensitive), then no need to list the email as a Safe Sender match in any of the Scan Results.  It should continue to list them in all other folders as they will also be moved to the Safe Sender Folder.
+Deleted Rules Folder
+- kimmeyh@gmail.com > Settings > Select Deleted Rule Folder - does not list a Trash folder. There is an email in the Trash folder and would like to be able to select the Trash folder - can you help me understand?  Also, what is the "[Gmail]" folder that shows as a folder to select.
+
+Done
+Sprint 20 Testing Feedback
+Task A - Gmail folder scan: If you have a Gmail IMAP (App Password) account, verify folder selection loads correctly
+- working as expected, can be closed
+Task B - Demo Scan: Run a Demo Scan and verify the new sample emails appear:
+- out of the 59 tests, 5 are safe and 7 were deleted.  Can you update to about 20 safe (add rules as needed), 30 deleted and 9 with no rules
+- out of the new one's mentioned below. for each 3, one should be safe, one deleted and one no rule
+    - 3 Safe Sender Exact Email (Gmail, Yahoo, Outlook)
+    - 3 Safe Sender Exact Domain (irs.gov, allstate.com, venmo.com)
+    - 3 Block Email (AOL, Hotmail, ProtonMail)
+    - 3 Block Entire Domain (americasurveys.com, activepipe.com, affmarketer.net)
+Task D - Add Rule performance: From scan results, add a rule and verify it feels faster
+- kimmeyharold@aol.com Live Scan - Scan Results Page - Above Live Scan it says, "Summary - Process Safe Senders + Rules - Folder(s): INBOX - however, three folders are selected for this account in Manual Scan:  Inbox, Bulk, Bulk Mail.  FYI, prior scan was for kimmeyh@gmail.com - Live Scan with INBOX as selected folder. 
+
+Please explain these back to me, determine recommended approach, recommended order for implementation in current sprint (except for minor bugs and future feature requests), and then I'll approve the recommendations and/or give additional feedback.  Then create a checklist for implementation of these tasks for approval.
+
+------------------------------------
+Done
+Sprint 19 Testing Feedback - Round 3
+#1 Fix safe sender pattern - Converted bare @insightfinancialassociates.com to proper Entire Domain regex 
+- working as expected, can be closed
+#2 Safe Senders export bug - AppPaths was not initialized in YamlImportExportScreen, causing StateError 
+- working as expected, can be closed
+#4 Reorder Gmail auth methods - App Password first as "(Recommended)", Google Sign-In second with re-auth note 
+- working as expected, can be closed
+#5 App Password instructions - SelectionArea for copy/paste, tappable URL links, "Security & Sign-in" text, removed IMAP box
+- working as expected, can be closed
+#7 Live re-evaluation - After adding rule/safe sender, all "No rule" emails are re-evaluated and moved to correct categories
+- working as expected, can be closed
+#6 Scan Results folders in title - "Summary - Read-Only - Folder(s): Bulk, Bulk Mail" 
+- Did not show up until all folders had been read.  They are known when the page loads.  Can the folders be shown before any emails are processed?
+
+Done
+Sprint 19 Testing Feedback - Round 2
+Task A: Version Numbering (GP-15, Issue #181)
+- working as expected, can be closed
+Bug 2 - Show Demo Mode
+- working as expected, can be closed
+Bug 3 - Background scan log path
+ Bug 4 - Background scan log missing detail
+Task D: Safe Senders Filter Chips (F26, Issue #180)
+- Can you confirm that there are no Exact Domain Rules, there are 128 Exact email rules and 355 Entire Domain Rules and no rules other rules that don't match those 3 patterns.
+- working as expected, can be closed
+Task E: YAML Import/Export UI (F22, Issue #179)
+- Export Rules - worked as expected
+- Export Safe Senders - unexpected error ***
+  - can you add an integration test on a "temp"/"test" account to test:
+    - export rules to yaml to temp file
+    - import the exported yaml temp file
+    - verify that each imported rule is a valid rule and matches the exported rule
+    - Will some sort of rule unique identifier be needed to make this process easier?
+    - make a copy of my current rules for the initial testing.
+Task F: Gmail Dual-Auth (F12B, Issue #178)
+- F1 - working as expected, can be closed
+- F2 and F3
+  - Please list "App Password (IMAP)" first and list it as "(Recommended) as this is the case for the app for now. List "Google Sign-In" second. Note that for now, "Google Sign-In" requires more frequent authentication/logins.  This may be resolved in a future update.
+- F4 - working as expected, can be closed
+- F6, F9, F11
+  - Can you make the "How to create a Gmail App Password" copy/paste enabled
+  - Update #1 to make myaccount.google.com an active html link
+  - Update #2 to say: Select "Security & Sign-in"...
+  - Update #4 make myaccount.google.com/apppasswords an active html link
+  - Per https://support.google.com/mail/answer/7126229?visit_id=639091316807559951-4133579582&hl=en&rd=1
+    the comment "IMAP must be enabled in Gmail settings..." is no longer applicable since it says "Starting January 2025, the option to choose “Enable IMAP” or “Disable IMAP” won't be available. IMAP access is always turned on in Gmail, and your current connections to other email clients aren’t affected. You don’t need to take any action."  If so, can this informational message be removed?
+- F13 - working as expected, can be closed
+
+Other
+- In all the Scan Results screens
+  - Can you add to "..." example: "Summary - Read-Only" another dash, Folder(s): <list of folders being scanned>, Resulting Example: "Summary - Read-Only - Folder(s): Bulk, Bulk Mail"
+  - Adding an rule is slower.  Anything that can be done to speed this up a little.
+  - If the users adds a rule, can all remaining items that have "No rule" be updated to apply this new rule to those items (Block Exact Email, Block Exact Domain, Safe Exact Email, Safe Exact Domain and Safe Entire Domain)
+    - For example if there are 4 emails in the No rule filter that are from @deal.apredo.com and the user adds a rule to block the entire domain, then apply this new rule to any others currently displayed and remove them from the No rule filter.  Does that make sense?  
+
+Please explain these back to me, determine recommended approach, recommended order for implementation in current sprint (except for minor bugs and future feature requests), and then I'll approve the recommendations and/or give additional feedback.  Then create a checklist for implementation of these tasks for approval.
+
+------------------------------------
+
+Done
+ Sprint 19 Manual Test Plan
+
+Task F: Gmail Dual-Auth (F12B, Issue #178)
+  #: F1
+  Test: Auth method selector
+  Steps: Add Account > Gmail
+  Expected Result: Screen shows "How would you like to sign in?" with two options
+  Pass/Fail:
+  Notes:
+  #: F2
+  Test: OAuth option card
+  Steps: Check first option
+  Expected Result: "Google Sign-In (Recommended)" with benefits listed
+  Pass/Fail:
+  Notes:
+  #: F3
+  Test: App Password option card
+  Steps: Check second option
+  Expected Result: "App Password (IMAP)" with benefits listed
+  Pass/Fail:
+  Notes:
+  #: F4
+  Test: Info box present
+  Steps: Check bottom of selector screen
+  Expected Result: Blue info box explaining both methods are secure
+  Pass/Fail:
+  Notes:
+  #: F5
+  Test: OAuth flow works
+  Steps: Tap "Google Sign-In"
+  Expected Result: Redirects to Gmail OAuth screen (existing flow)
+  Pass/Fail:
+  Notes:
+  #: F6
+  Test: App Password flow
+  Steps: Tap "App Password (IMAP)"
+  Expected Result: Shows email + password fields with auth method badge
+  Pass/Fail:
+  Notes:
+  #: F7
+  Test: Auth method badge
+  Steps: In App Password mode, check below title
+  Expected Result: Orange badge showing "App Password (IMAP)"
+  Pass/Fail:
+  Notes:
+  #: F8
+  Test: Back to selector
+  Steps: In App Password mode, tap back arrow
+  Expected Result: Returns to auth method selector
+  Pass/Fail:
+  Notes:
+  #: F9
+  Test: Setup instructions
+  Steps: In App Password mode, tap "How to create a Gmail App Password"
+  Expected Result: Expandable section shows 8 numbered steps
+  Pass/Fail:
+  Notes:
+  #: F10
+  Test: Instructions accuracy
+  Steps: Read the 8 steps
+  Expected Result: Steps match actual Google Account flow (verify at myaccount.google.com/apppasswords)
+  Pass/Fail:
+  Notes:
+  #: F11
+  Test: IMAP note shown
+  Steps: Check below instructions
+  Expected Result: Note about enabling IMAP in Gmail settings
+  Pass/Fail:
+  Notes:
+  #: F12
+  Test: Platform display
+  Steps: In App Password mode, check bottom footer
+  Expected Result: Shows "Gmail (IMAP) (gmail-imap)"
+  Pass/Fail:
+  Notes:
+  #: F13
+  Test: Non-Gmail unchanged
+  Steps: Add Account > AOL
+  Expected Result: Standard email/password form, NO auth method selector
+  Pass/Fail:
+  Notes:
+  Note for F10: This is the critical verification item. Please walk through the steps at myaccount.google.com to confirm accuracy.
+
+Task A: Version Numbering (GP-15, Issue #181)
+ #  │          Test           │                Steps                │         Expected Result          │ Pass/Fail │ Notes │
+  │ A1  │ App version displayed   │ Settings > About (or app title bar) │ Shows version 0.5.0 or 0.5.0+1   │           │       │
+  │ A2  │ pubspec version correct │ (Already verified in code)          │ version: 0.5.0+1 in pubspec.yaml │           │       │
+Task B: Application Identity (GP-1, Issue #182)
+  │  #  │          Test           │                  Steps                  │                   Expected Result                    │ Pass/Fail │ Notes │
+  │ B1  │ App title bar           │ Launch app, check window title          │ Shows "MyEmailSpamFilter" (not "spam_filter_mobile") │           │       │
+  │ B2  │ App name in UI          │ Check any screens showing app name      │ Shows "MyEmailSpamFilter"                            │           │       │
+  │ B3  │ About/Settings branding │ Settings > look for app name references │ All references say "MyEmailSpamFilter"               │           │       │
+Task C: Folder Selection Save-on-Selection (F27, Issue #172)
+  │  #  │           Test           │                Steps                 │                        Expected Result                        │ Pass/Fail │ Notes │
+  │ C1  │ No Cancel/Scan buttons   │ Settings > Manual Scan > Select      │ No "Cancel" or "Scan Selected Folder" buttons visible         │           │       │
+  │     │                          │ Folders                              │                                                               │           │       │
+  │ C2  │ Toggle saves instantly   │ Toggle a folder checkbox on/off      │ Saves immediately (no confirmation needed)                    │           │       │
+  │ C3  │ Select All works         │ Check "Select All Folders"           │ All folders checked instantly, selection persists after       │           │       │
+  │     │                          │                                      │ closing                                                       │           │       │
+  │ C4  │ Deselect All works       │ Uncheck "Select All Folders"         │ All folders unchecked instantly, selection persists after     │           │       │
+  │     │                          │                                      │ closing                                                       │           │       │
+  │ C5  │ Individual toggle        │ Toggle one folder, close dialog,     │ The toggled state persists                                    │           │       │
+  │     │ persists                 │ reopen                               │                                                               │           │       │
+  Note: Requires an account with folders loaded to test. Can use Demo mode if no live account.
+Task D: Safe Senders Filter Chips (F26, Issue #180)
+  │ D1  │ Filter chips      │ Settings > Account > Manage Safe  │ Filter chips shown: "Exact Email", "Exact Domain", "Entire Domain",     │           │       │
+  │     │ visible           │ Senders                           │ "Other" with counts                                                     │           │       │
+  │ D2  │ Chip counts       │ Check chip labels                 │ Each chip shows count in parentheses, counts sum to total               │           │       │
+  │     │ correct           │                                   │                                                                         │           │       │
+  │ D3  │ Single chip       │ Tap "Exact Email" chip            │ List filters to show only exact email patterns                          │           │       │
+  │     │ filter            │                                   │                                                                         │           │       │
+  │ D4  │ Multi-chip filter │ Tap "Exact Email" then "Exact     │ List shows patterns matching either category                            │           │       │
+  │     │                   │ Domain"                           │                                                                         │           │       │
+  │ D5  │ Clear filters     │ Tap "Clear" action chip           │ All filters removed, full list shown                                    │           │       │
+  │ D6  │ Combined with     │ Select a chip, then type in       │ Both filters apply (category AND text search)                           │           │       │
+  │     │ search            │ search box                        │                                                                         │           │       │
+  │ D7  │ Empty state       │ Select a chip with 0 patterns (if │ Shows "No patterns match current filters"                               │           │       │
+  │     │ message           │  any)                             │                                                                         │           │       │
+  Note: Requires safe senders loaded. If starting fresh, import the repo's rules_safe_senders.yaml via Task E's import feature first.
+Task E: YAML Import/Export UI (F22, Issue #179)
+  │ E1  │ Menu item visible  │ Settings > scroll to Data Management      │ "Import / Export YAML" button visible                          │           │       │
+  │     │                    │ section                                   │                                                                │           │       │
+  │ E2  │ Screen loads       │ Tap "Import / Export YAML"                │ Screen shows Export section (2 buttons) and Import section (2  │           │       │
+  │     │                    │                                           │ buttons)                                                       │           │       │
+  │ E3  │ Info card shown    │ Check top of screen                       │ Blue info card explains the feature                            │           │       │
+  │ E4  │ Export Rules       │ Tap "Export Rules" > pick save location   │ File saved, success message shown with rule count              │           │       │
+  │ E5  │ Export Safe        │ Tap "Export Safe Senders" > pick save     │ File saved, success message shown with count                   │           │       │
+  │     │ Senders            │ location                                  │                                                                │           │       │
+  │ E6  │ Export cancel      │ Tap "Export Rules" > cancel file picker   │ "Export cancelled" message shown                               │           │       │
+  │ E7  │ Import Rules       │ Tap "Import Rules" > select a valid YAML  │ Confirmation dialog shows count, tap Import                    │           │       │
+  │ E8  │ Import             │ During import, check confirmation dialog  │ Shows item count, file path, warning about replace             │           │       │
+  │     │ confirmation       │                                           │                                                                │           │       │
+  │ E9  │ Import cancel      │ Start import > cancel at confirmation     │ "Import cancelled" message shown                               │           │       │
+  │ E10 │ Import invalid     │ Select a non-YAML or malformed file       │ Error message shown ("Invalid YAML file: ...")                 │           │       │
+  │     │ file               │                                           │                                                                │           │       │
+  │ E11 │ Round-trip test    │ Export rules > Import the exported file   │ No errors, rule count matches                                  │           │       │
+  Suggested round-trip test: Export rules, note the count. Then import the exported file and verify the count matches.
+
+Task A: Version Numbering (GP-15, Issue #181)
+- Cannot see a Settings > About section in "Settings > Account", "Settings > Manual", or "Settings > Background"
+Task B: Application Identity (GP-1, Issue #182)
+- working as expected, can be closed
+Task C: Folder Selection Save-on-Selection (F27, Issue #172)
+- working as expected, can be closed
+Other
+- Select Email Provider screen
+  - Show Demo Mode - when turned on, cannot run a Live Scan or the Demo Scan.
+  - It doesn't need a switch, just clicking on it should take it to the Scan screen Demo page (as no account is needed)
+- Would it be possible to add _develop if it is in the main branch or would that be too extensive for a simple fix?
+- Background Scan
+  - Ran a "Test Background Scan".  It ran and showed results, but did not show in the log (as it had previously).
+- Change in log content for Background Scan
+  - now missing prior valuable information, including, 
+"""
+[<date/time>] [WORKER] Initializing AppPaths...
+[<date/time>] [WORKER] AppPaths initialized: C:\Users\kimme\AppData\Roaming\com.example\spam_filter_mobile
+[<date/time>] [WORKER] Initializing DatabaseHelper...
+[<date/time>] [WORKER] Stores initialized
+[<date/time>] [WORKER] Initializing RuleSetProvider...
+[<date/time>] [WORKER] RuleSetProvider initialized: 303 rules
+[<date/time>] [WORKER] Loading accounts from SecureCredentialsStore...
+[<date/time>] [WORKER] Found 1 total accounts: [kimmeyharold@aol.com]
+[<date/time>] [WORKER] Processing account: kimmeyharold@aol.com
+[<date/time>] [WORKER] Account kimmeyharold@aol.com -> platform: aol
+[<date/time>] [WORKER] Executing scan for kimmeyharold@aol.com (platform: aol)
+[<date/time>] [WORKER] Scan settings for kimmeyharold@aol.com: mode=fullScan, folders=[Inbox, Bulk, Bulk Mail], daysBack=0
+[<date/time>] [WORKER] Account kimmeyharold@aol.com scan SUCCESS: Processed: 108, Deleted: 0, Moved: 0, Safe: 108, No Rule: 0, Errors: 0
+[<date/time>] [WORKER] Debug CSV exported: D:\Data\Harold\spamfilter-multi\background_scan_kimmeyharold_at_aol_com_2026-02-27T18-00-40.csv (109 rows)
+[2026-02-27T18:00:40.077323] [WORKER] Worker completed: 1 succeeded, 0 failed
+
+------------------------------------
+Sprint 18 Testing Feedback - Round 2
+Bug 2 - Re-evaluation Counts: After adding a block rule or safe sender from the email detail popup, the filter counts (Deleted:, Safe:, No Rule:) and
+working as expected, can be closed
+Bug 3+5 - Scan History Rules: Go to View Scan History and tap a past scan - emails should now show their matched rule info instead of "No rule".
+working as expected, can be closed
+Bug 6 - Settings Navigation: Settings > Account > View Scan History and Settings > Background > Go to View Scan History now pass account context,
+working as expected, can be closed
+
+Done
+see items directly related to the sprint tasks below:
+A: Fix Safe Sender / Block Rule Conflict Detection │ #154 
+- Does not appear to have worked for the example provided when creatin the issue
+"""- There is a safe sender rule related to email ID *** email address: no-reply@notification.circle.so
+  I have tried to change it several times to "Block Entire Domain", but app is still seeing it as Safe Sender Entire Domain
+  Has the "Block Entire Domain" been added to the rules and has Safe Sender "Entire Domain" been removed?
+  Can you debug why it isn't changing it and devise a solution so that similar rules can be removed from Safe Senders."""
+  - Viewed email, selected "Block Entire Domain".  No conflict shown, exited email and re-selected - still showing Safe Sender "Entire Domain" highlighted
+  - when I picked "Block Exact Domain" it did work and switched it on next view to "Block Entire Domain" - not sure how unless "Block Exact Domain" helped resolve the conflict with the Safe Sender rule.
+D: Inline Rule Assignment Re-Evaluation            │ #168, F21
+- picked email. added "Block Entire Domain" and it did remove it from the "No Rule" filtered list.
+  - was not added to the Deleted filtered list or update the Deleted: count).  did not process the email for deletion
+  - did not process other emails that match the rule for deletion (and add them to the Deleted filtered list or update the Deleted: count)
+Task E: Rule Testing and Simulation UI (Issue #169, F8)
+  - Add a feature to enhance this in the future:
+    - Need to add example email addresses - use the list from Demo Scan
+    - If the user does not enter regex, when they press enter switch to equivalent regex
+    - Add a way to edit each rule and use this Science Icon tool to test the rule on the email address
+Other to be fixed in this sprint:
+- Background scan is not working (not running every 15 minutes per settings)
+  - Settings > Background > disable, wait 1 minute, enable did not trigger re-starting.
+- Settings > Account > Manage Safe Senders
+  - Please add filter buttons for "Exact Email" "Exact Domain" "Entire Domain" "Top Level Domains" and "Other" (includes all rules not in the other 3 sets).  The rules listed should use these distinctions instead of "Domain" "Domain + Subdomains"...
+- Settings > Account tab > View Scan History
+  - Should re-direct to Ready to Scan screen > View Scan History
+- Settings > Background > Go to View Scan History
+  - Should re-direct to Ready to Scan screen > View Scan History
+- Ready to Scan screen > View Scan History 
+  - email listings are not showing the rule matched - all are showing "No rule" even if icon shows deleted or Safe.
+    - noting that these are listed correctly during Start Live Scan > Results
+  - click to view email details
+    - Should highlight the matching "Add to Safe Senders" or "Block Rule" if it matched at the time OR should it show current match? provide pros/cons and ask for confirmation. noting that these show as highlighted during Start Live Scan > Results > view email details
+    - all are showing "No rule" even if icon shows deleted or Safe.
+    - noting that these are listed correctly during Start Live Scan > Results
+
+
+
+Done
+B: Subject and Body Content Rule Pattern Standards │ #141
+- What were the results of this?
+C: Common Email Provider Domain Reference Table    │ #167, F20 
+- What were the results of this?
+E: Rule Testing and Simulation UI                  │ #169, F8
+- What were the results of this?
+Can we add wire up " Task B: Subject and Body Content Rule Pattern Standards (Issue #141)". If the email is a "No rule" match, include the
+  suggestion in the email detail pop-up right above the "Add to Safe Senders" block 
+
+
+Add a feature card:
+- Rules update to split rules
+  - Dependency on features to export to YAML and import from YAML
+  - This is a one-time effort and does not need permeant code for the splitting of rules into more specific rules
+  - Split all Rules categorized as "SpamAutoDeleteHeader"
+    - if the rule matches "Block Entire Domain", then create a Block_EntireDomain_<> rule and remove it from "SpamAutoDeleteHeader"
+    - if the rule matches "Block Exact Domain", then create a <> rule and remove it from "SpamAutoDeleteHeader"
+    - if the rule matches "Block Exact Email", then create a Block_EntireDomain_<> rule and remove it from "SpamAutoDeleteHeader"
+    - if the rule matches a "Top Level Domains" (examples: *.nl, *.ru, *.info) then create a Block_TopLevelDomain_<> rule and remove it from "SpamAutoDeleteHeader"
+    - NOTE: if the rule to be created already exists then no need to add another rule for the same thing
+  - Split all Rules categorized as "SpamAutoDeleteFrom"
+    - These should all be first adjusted so that they are matching Header From field as the Block_ExactDomain* or Block_EntireDomain_* are done
+    - if the rule matches "Block Entire Domain", then create a Block_EntireDomain_<> rule and remove it from "SpamAutoDeleteHeader"
+    - if the rule matches "Block Exact Domain", then create a <> rule and remove it from "SpamAutoDeleteHeader"
+    - if the rule matches "Block Exact Email", then create a Block_EntireDomain_<> rule and remove it from "SpamAutoDeleteHeader"
+    - NOTE: if the rule to be created already exists then no need to add another rule for the same thing
+  - Split all Rules categorized as "SpamAutoDeleteBody"
+    - Create a specific rule name BlockBody_<pick a short description> for each entry and remove it from "SpamAutoDeleteBody".  Example is SpamAutoDeleteBody-imgur.com
+    - NOTE: if the rule to be created already exists then no need to add another rule for the same thing
+  - Split all Rules categorized as "SpamAutoDeleteSubjet"
+    - Create a specific rule name BlockSubject_<pick a short description> for each entry and remove it from "SpamAutoDeleteSubject"
+    - NOTE: if the rule to be created already exists then no need to add another rule for the same thing
+- Update to Settings > Manage Rules
+  - Dependency on features to export to YAML and import from YAML
+  - Dependency on feature to "Rules update to split rules"
+  - Please add filter buttons for "Block Email" "Block Exact Domain" "Block Entire Domain" "Block Top Level Domains" "Block Body" "Block Subject" and "Other" (includes all rules not in the other 5 sets).  The rules listed should use these distinctions instead of "Header" "Body" "Subject"
+
+Please explain these back to me, determine recommended approach, recommended order for implementation in current sprint (except for minor bugs and future feature requests), and then I'll approve the recommendations and/or give additional feedback.  Then create a checklist for implementation of these tasks for approval.
+
+------------------------------------
+Commonly used feedback:
+working as expected, can be closed
+
+Post descriptions of # and items covered in Sprint
+ │                        Task                        │   Issue   │  Status  │ Tests Added  │
+  ├────────────────────────────────────────────────────┼───────────┼──────────┼──────────────┤
+  │ A: Fix Safe Sender / Block Rule Conflict Detection │ #154      │ Complete │ +16          │
+  ├────────────────────────────────────────────────────┼───────────┼──────────┼──────────────┤
+  │ B: Subject and Body Content Rule Pattern Standards │ #141      │ Complete │ +48          │
+  ├────────────────────────────────────────────────────┼───────────┼──────────┼──────────────┤
+  │ C: Common Email Provider Domain Reference Table    │ #167, F20 │ Complete │ +30          │
+  ├────────────────────────────────────────────────────┼───────────┼──────────┼──────────────┤
+  │ D: Inline Rule Assignment Re-Evaluation            │ #168, F21 │ Complete │ +0 (UI only) │
+  ├────────────────────────────────────────────────────┼───────────┼──────────┼──────────────┤
+  │ E: Rule Testing and Simulation UI                  │ #169, F8  │ Complete │ +17          │
+  └────────────────────────────────────────────────────┴───────────┴──────────┴──────────────┘
+
+  Test totals: 1088 passing (+111 new), 28 skipped, 0 failures.
+
+  What to manually test:
+
+  1. Conflict Detection (Task A): From Results screen, tap an email -> try adding as safe sender when a conflicting block rule exists (or vice versa).
+  Should auto-resolve conflicts.
+  2. Re-Evaluation (Task D): From Results screen, add a safe sender or block rule inline. The email's status should update immediately in the list and
+  popup without needing to re-scan.
+  3. Rule Test Screen (Task E):
+    - From Rule Quick Add screen, tap the science icon in the AppBar -> opens Rule Test Screen with pre-filled pattern
+    - From Manage Rules screen, tap the science icon in the AppBar -> opens empty Rule Test Screen
+    - Enter a regex pattern, select condition type (From/Subject/Body/Header), press Test
+    - See which sample emails from recent scans match the pattern
+
+------------------------------------
+
+Done
+Live Scan > Scan Results > Updating Rules
+- There is a safe sender rule related to email ID *** email address: no-reply@notification.circle.so
+  I have tried to change it several times to "Block Entire Domain", but app is still seeing it as Safe Sender Entire Domain
+  Has the "Block Entire Domain" been added to the rules and has Safe Sender "Entire Domain" been removed?
+  Can you debug why it isn't changing it and devise a solution so that similar rules can be removed from Safe Senders.
+------------------------------------
+Done
+Background scan test
+FB-1 working as expected, can be closed
+FB-3 working as expected, can be closed
+FB-2b working as expected, can be closed 
+FB-2a Historical scan results use same interactive filter chips as live scan - clickable filters + folder dropdown 
+- Buttons are now working
+- For 2/21/26 9:38am scan, the buttons are showing "... Deleted (not process): 152, Moved (not processed): 0, Safe (not processed): 204" however since the scan was done with Scan Mode "Process Safe Senders, Process all other Rules" they were processed (and I confirmed they were processed).
+Also:
+- "Scan History" should be updated to reflect Scan Mode "Process Safe Senders, Process all other Rules", "Read-Only Mode", "Process Safe Senders" or "Process all other Rules", second line should be updated to "<duration> | <days/Full Scan>| <scan mode> | Folders: <folders> | <duration"
+example second line for 2/21/26 9:38am scan: "1m 33s | Full Scan>| Process Safe Senders, Process all other Rules | Folders: Inbox, Bulk, Bulk Mail"
+"Tap to view details" can be removed as this UI style is used throughout the app.
+
+Done
+1) There is a disconnect between the log (C:\Users\kimme\AppData\Roaming\com.example\spam_filter_mobile\logs\background_scan.log) """
+[2026-02-21T09:38:52.856252] [WORKER] executeBackgroundScan() started
+[2026-02-21T09:38:52.865409] [WORKER] Initializing AppPaths...
+[2026-02-21T09:38:52.873409] [WORKER] AppPaths initialized: C:\Users\kimme\AppData\Roaming\com.example\spam_filter_mobile
+[2026-02-21T09:38:52.876409] [WORKER] Initializing DatabaseHelper...
+[2026-02-21T09:38:52.878407] [WORKER] Stores initialized
+[2026-02-21T09:38:52.879408] [WORKER] Initializing RuleSetProvider...
+[2026-02-21T09:38:52.899414] [WORKER] RuleSetProvider initialized: 196 rules
+[2026-02-21T09:38:52.900414] [WORKER] Loading accounts from SecureCredentialsStore...
+[2026-02-21T09:38:52.907926] [WORKER] Found 1 total accounts: [kimmeyharold@aol.com]
+[2026-02-21T09:38:52.908927] [WORKER] Processing account: kimmeyharold@aol.com
+[2026-02-21T09:38:52.914434] [WORKER] Account kimmeyharold@aol.com -> platform: aol
+[2026-02-21T09:38:52.928510] [WORKER] Executing scan for kimmeyharold@aol.com (platform: aol)
+[2026-02-21T09:38:52.933519] [WORKER] Scan settings for kimmeyharold@aol.com: mode=fullScan, folders=[Inbox, Bulk, Bulk Mail], daysBack=0
+[2026-02-21T09:40:35.755702] [WORKER] Account kimmeyharold@aol.com scan SUCCESS: 419 processed, 63 unmatched
+[2026-02-21T09:40:35.779122] [WORKER] Debug CSV exported: D:\Data\Harold\spamfilter-multi\background_scan_kimmeyharold_at_aol_com_2026-02-21T09-40-35.csv (420 rows)
+[2026-02-21T09:40:35.782123] [WORKER] Worker completed: 1 succeeded, 0 failed"""
+and what the "View Scan History" shows for this background scan: Processed 419, Deleted 142, Moved 0, Safe 204, No Rule 63, Errors 0
+Can this line in the log be updated to include all of these, i.e. change """Account kimmeyharold@aol.com scan SUCCESS: 419 processed, 63 unmatched""" to show 
+"""Account kimmeyharold@aol.com scan SUCCESS: Processed: 419, Deleted: 152, Moved: 0, Safe: 204, NO rule: 63, Errors: 0"""
+2) Items not working like "Start Live Scan" Scan results:
+- Buttons are not working for filtering Found, Processed, Deleted, Moved..., please provide them as active buttons for filtering
+- Not showing button for Folders, please provide Folders button and drop-down for choosing between folders in scan.
+- Change "Last Scan Results" to "Scan Results" as the display may not be from the Last Scan.
+
+Done
+Sprint 17 Testing Feedback
+Settings > Background > Retention - 3/7/14/30/90 day selector
+- Either needs to be an integer field where the user can enter the number of days, up to 999 OR There needs to be an additional entry in the drop-down for Other and if the user selects Other, they need to be able to enter an integer field where the user can enter the number of days, up to 999
+  - both the integer field and field next to it show "days". Integer field should not  include "days". Ensure integer field is large enough to clearly show 999.
+
+
+1. Manual Scan > View Scan History - unified history with filter chips
+- When viewing scan details, need a way to return to the View Scan History (in addition to returning back button that returns to the Manual Scan page). Should there be separate buttons for each?
+3. Settings > Background > Retention - 3/7/14/30/90 day selector
+- Either needs to be an integer field where the user can enter the number of days, up to 999 OR There needs to be an additional entry in the drop-down for Other and if the user selects Other, they need to be able to enter an integer field where the user can enter the number of days, up to 999
+2. Settings > Background > History - same screen, alternate entry point
+- The Settings > Background > History section should be moved to the Account section
+- Rename "Keep History for" to "Keep Scan History for"
+4. Settings > Background > Test - "Test Background Scan" button
+- Can you move the Test Section, just after the Enable Background Scanning and before Frequency section.
+5. Manual Scan idle state - shows Mode and Folders text
+- Working as expected - can be considered closed
+6. Start new scan - Results screen should clear stale data
+- working as expected - can be considered closed
+7. Add safe sender from unmatched email - should auto-remove conflicting rules
+- Looks like it worked, but will need to test again in the next sprint
+Bug #1 - Bulk Mail Testing file had approximately 670 email message before starting Manual Scan on 2/16/26 13:13. Second run 2/17/26 22:58 of Bulk Mail Testing folder that had 234 emails, Scan said it processed 234, deleted 234, but folder still showing 34 messages - was there an error
+Bug #2 - Scan History is showing a Manual Scans of the INBOX that I did not trigger:  2/16/26 at 13:13, 2/16/26 13:06, 2/16/26 12:52. Are they false logs or can you determine what happened. 
+Bug #3 - Background scan appears to only be running when triggering via Test Background Scan (works as expected). It is not running every 15 minutes per Background Settings
+
+Please explain these back to me, determine recommended approach, recommended order for implementation in current sprint (except for minor bugs and future feature requests), and then I'll approve the recommendations and/or give additional feedback.  Then create a checklist for implementation of these tasks for approval.
+
+Post descriptions of # and items covered in Sprint for viewing, but don't copy/paste into Testing Feedback.txt
+#158 - Consolidated Scan History          │ Committed (c77463e) │
+#156 - Manual Scan status text formatting │ Committed (31c0ecd) │
+#157 - Clear Results before new Live Scan │ Committed (297d735) │
+#161 - Fix Task Scheduler not running     │ Committed (7d180af) │
+#159 - Test Background Scan button        │ Committed (531f6cf) │
+#154 - Auto-remove safe sender conflicts  │ Committed (e495df2)
+------------------------------------
+Done
+Sprint 16 Testing Feedback
+#153 Verify Manual Scan screen title changed from "Scan Progress"
+- working as expected - can be considered closed
+#153 Verify Scan Options dialog defaults to "Scan all emails"
+- Background setting for Scan Range should also default to Scan all emails
+- For Manual Scan and Background setting tabs:
+  - Scan Range should show "scan days" slider if Scan all emails is checked or not checked.
+  - If user checks on "scan days" slider then Scan all emails should become unchecked.
+- Start Live Scan - no longer should pop-up Scan Options, just start scan using Settings > Manual > Scan Range should be used
+Verify days-back settings persist across app restarts
+- working as expected - can be considered closed
+Verify Background scan uses configured days-back
+- working as expected - can be considered closed
+Verify Settings > Background > View Scan History navigates correctly
+- working as expected - can be considered closed
+Verify rule conflict warning appears when creating a rule that conflicts with existing rules
+Verify "Save Anyway" proceeds with saving despite conflicts
+Other items to be fixed as part of Sprint 16
+  - Background scan stopped yesterday after running at 02/14/26 19:44 and has not run since. Was that due to updating the executable that runs.  Did it change the executable name?  Although it is desirable when new executables are available, they get updated, the scheduler task for Windows 11 should continue to work as expected.
+  - Manual Scan screen
+    - no longer needs buttons for found, processed, deleted, moved, safe, no rule and errors
+    - pause button no longer needed
+    - Complete indicator no longer needed
+  - View Results screen
+    - After Start Live Scan, this page should continue to show the results of the live scan as it processes
+    - If Manual Scan screen "View Results" is selected then it should show the last completed Live or Background Scan results
+      - It should indicate if it was a live scan or a background scan
+      - It should show the Scan Type appropriate for the last scan and accurate tab results for Found, Processed, Deleted...
+      - It should show the date and time the scan was completed
+      - It should no longer have logic to show "No Results Yet / Run a scan to see email processing results here." unless no scan has every been run (new user, new email account)
+
+
+------------------------------------
+Sprint 15 Testing Feedback
+- Toggle background scanning on/off (Windows Task Scheduler)
+  - 
+- CSV export directory picker (native dialog)
+  - Works as expected - this can be closed
+- Manage Safe Senders / Manage Rules screens
+  - Safe Senders looks and works as expected
+  - Add feature for future sprint to update UI for Manage Rules
+    - All the AutoDeleteHeader rule were combined and need to split (1,742) so the user can find and change individual rules. Example the "From in Header" rules.
+    - All the SpamAutoDeleteBody rules were combined and need to split so the user can find and change individual rules (1,113)
+    - need to do deep analysis of how users might want to see the list, use the list, what they want to remove, would they want to convert a delete rule to a safe sender rule (and then give same UI same or similar to the Scan Results page)
+    - need to be able to search by all email address contents in filters
+      - search for "offer" should show all rules that would include "offer" anywhere in the rule
+      - need to be able to filter by types of rules:  header from, header (all other), body, subject AND header from sub-types: Entire Domain, Exact Domain, Exact Email, Top-Level Domain (examples: *.nl or *.ru or *.info)
+- Select multiple folders and observe 
+  1) processes one folder then the second folder: could not visually tell
+  2) processes items in batches of 10: could not visually tell 
+  3) provides updates as it goes - could not tell: found 48, did not see any results until processed was 50 and appears that all items had been processed.
+- Run scan with >100 emails (batch processing verification)
+  - Was able to process > 100 email deletions without stopping - success
+  - Add "minor" bug - scan results show found 200, processed 202 (can't be > found) (see "D:\Data\Harold\spamfilter-multi\ScanResults.png")
+  - All 200 were done correctly:  196 deleted, 4 safe senders
+- Add minor enhancement for Scan screen (manual scan) > Start Live Scan > Scan Options pop-up (see "D:\Data\Harold\spamfilter-multi\ScanOptions.png")
+  - Default should be set to "Scan all emails". 
+  - should still show Scan Days slider (which should default to 7 days).  If user clicks on Slider or slides slider then Scan all emails is unchecked and scan days is used if user then selects Start Scan.
+- Bug - Ran scan with only Safe Sender matches < 10 emails. None were moved to the users Safe Sender Folder - tried several times.  Prior scans had moved Safe Senders to the inbox.
+- Scan Screen updates to be added as feature for future spring
+  - rename from "Scan Progress" to "Manual Scan"
+  - Remove "Select Folders to Scan" as the Settings > Manual Tab > Selected folders is now used for all Manual Scans
+- Please add a minor bug for emails that I have changed from Safe Senders to Delete rules.
+  - appears that the safe sender rules were not removed when change to a delete rule as they are still being processed as SafeSender rules per the CSV export see "D:\Data\Harold\spamfilter-multi\scan_results_2026-02-14T12-27-52.csv" - these three email addresses 13cxlcy2302206@live.com, hello@mail.thewealthminded.com, no-reply@notification.circle.so
+- Please add a minor bug:  When AOL delete rules match a tag/category is not being added as expected to the email based on the rule. Can you investigate why and if they can be added, then implement a strategy to add them.
+
+
+------------------------------------
+Sprint 14 Testing Feedback - 2nd round
+#123+#124: 
+- Manual Scan Tab
+  - "Default Folders" - UI looks correct - thank you
+    - Clicked on Select Folders
+      - Selected my folders and pressed "Scan Selected Folders"
+      - clicked on Select folders again - did not show my saved folders
+      - Same is occurring on Background Tab (both need to be corrected to load the saved defaults in the application)
+  - "Scan Mode"
+    - Was not able to deselect "Process Safe Senders" if "Process Rules" was selected.
+    - Can you change "Process Rules" to "Process all other Rules"
+- Background Scan Tab
+  - UI for "Default Folders" section should appear even if Background Scan is turned off.
+  - UI for "Scan Mode" section should appear even if Background Scan is turned off.
+- Scan Page > Select Folders to Scan 
+  - should load with the Account Manual Tab "Default Folders" that have been saved in the application.
+  - If a Live scan is run and Select Folders to Scan is never used, the scan should use the "Manual Scan Tab saved "Default Folders"
+
+#128: Progressive Folder Updates
+- Found is not >= Processed (several times)
+- Account Settings > Manual Scan > Scan Mode > Process Safe Senders checkmarked
+  - looks like it processed both Safe Senders and Rules (the Deleted items were deleted, the Safe Sender item was move to the users  "Move Safe Senders to Folder"
+  - By my manual count, there were 6 emails in the Bulk folder, 5 to be deleted and one Safe Sender
+    - Summary showed, "Found:6", "Processed: 8", "Deleted: 5", "Safe: 1", "No Rule: 0"
+    - see image in file D:\Data\Harold\spamfilter-multi\ScanResults.png
+    - Looking at my email application:  the Safe Sender file was moved to Inbox, the 5 "Deleted" were moved to the my (the user) ""Move Deleted by Rule to Folder", but were  not marked as read and did not have a tag/category attached
+  - Note on screen shows that "6 actions(s) can be undone. Use Revert button above)
+    - There message is no longer valid as the revert action is no longer needed.  No revert button is show as it should not appear.
+- Reset my email Bulk folder to have 1 safe sender email and 5 that should match rules (to delete)
+  - Account Settings > Manual Scan > Scan Mode > Process Safe Senders and Process Rules checkmarked
+  - Started live scan
+  - By my manual count, there were 6 emails in the Bulk folder, 5 to be deleted and one Safe Sender
+    - Summary showed, "Found:6", "Processed: 8", "Deleted: 5", "Safe: 1", "No Rule: 0"
+    - This is correct behavior - Looking at my email application:  the Safe Sender file was moved to Inbox, the 5 "Deleted" were moved to the my (the user) ""Move Deleted by Rule to Folder"
+    - This needs to be fixed - deleted messages were not marked as "read" (still showing unread) and no tag/category was assigned for the rule that matched.  Example of what it might look like when viewing the email for an AOL account in Outlook - see image file with email having "SpamHeader" category D:\Data\Harold\spamfilter-multi\Email with Category SpamHeader.png
+#125: Enhanced Demo Scan - 50+ Sample Emails
+- Not seeing any changes, still only showing demo of 10 emails (should be 50+).  From you description of what you are doing it appears that the 50+ exist just not being used when the ""Start Demo Scan (Testing) is selected.
+
+------------------------------------
+Done
+Sprint 14 Testing Feedback:
+#128: Progressive Folder-by-Folder Scan Updates
+- The "Processed" was updated, but no update to "Found".  Found should never be < Processed.  Can you check what is happening
+  - Processed: 3 while Found: 0
+
+#123+#124: Settings Screen Restructure + Default Folders UI
+- Changed pre-account selection settings to select account first - working as expected.
+- Manual Scan Tab
+  - Select "Default Folders" UI that looks like Select Folders on Scan screen
+    - This is what it looks like in test and is incorrect: D:\Data\Harold\spamfilter-multi\Account - Settings - Manual Scan - Default Folders OLD.png
+    - "Default Folders" section should be a replaced by a button "Select Folders" that then allows the user to select them by pulling all the folders from the account and allowing a selection (looks generally like):  see D:\Data\Harold\spamfilter-multi\select folders.png
+      - if the folder has sub-fodders 
+        - allow it to expand the sub-folders
+        - allow the user to select the folders and then it will select the folder and all the sub-folders 
+        - allow the user to deselect the folder and it will deselect the folder and all the sub-folders
+        - allow the user to select / deselect each of the sub-folders individually
+  - Scan Mode
+    - Changes needed for UI
+      - Read Only - user can select and it implies that NO Changes will be made to emails, but rules will be added/changed
+      - Process Safe Senders need to be checkboxes - user can select one, both or neither
+        - If not Read-only and Safe Senders is checked, then process all safe sender emails found in the selected folders (move to user "Move Safe Senders to Folder")
+        - If not Read-only and Rules is checked, then process all Rules (only repeating for clarity: move to users "Move Deleted by Rule to Folder", mark as read, add tag for rule matched)
+      - New user Provider/email defaults to Read-Only
+- Background Tab
+  - Not seeing the Select "Default Folders" UI that looks like Select Folders on Scan screen
+    - This is what it looks like in test and is incorrect: D:\Data\Harold\spamfilter-multi\Account - Settings - Manual Scan - Default Folders OLD.png
+    - "Default Folders" section should be a added with a button "Select Folders" that then allows the user to select them by pulling all the folders from the account and allowing a selection (same business logic and UI as Manual Scan"):  see D:\Data\Harold\spamfilter-multi\select folders.png
+  - Scan Mode is not being shown, but needs to match functionality and UI (updated above) of Manual Tab
+
+#125: Enhanced Demo Scan - 50+ Sample Emails
+- Not seeing any changes, only 10 emails in the demo (not 50+)
+
+#138: Enhanced Deleted Email Processing (mark-as-read + flagging)
+- Setting was Process Rules, but nothing was moved to Trash folder - can you check errors during the run.
+
+#130: Reduce Analyzer Warnings to <50
+= Successful, this can be marked as closed/completed
+
+------------------------------------
+
+Done
+Issue 5: Unify Email Popup - Show All 7 Buttons (90 mins)
+  - working as expected.  Thank you. Can be closed.
+Issue 3: Cache Folders for Performance (30 mins)
+  - working as expected.  Thank you. Can be closed.
+Issue 6: CSS-like Popup Positioning (2-3 hours)
+  - worked as expected. Thank you. Can be closed.
+
+Issue 1: Back Arrow Navigation Bug (15 mins)
+  - return to Select Accounts screen instead of "Scan Progress" screen.  It should return to the "Scan Progress" screen.  Since it is unlikely to be an intermediate screen, it is OK to pop-to "Scan Progress" screen or just transfer directly to the "Scan Progress" screen.
+Issue 2: Add Ctrl+F Keyboard Shortcut (30 mins)
+  - what worked: popped open the search box
+  - what is still needed
+    - After control-F can you transfer control to inside the box so that the user can hit control-f and immediately start typing as opposed to having to click in the box.
+    - lettering is in white with a gray background, can you change the lettering color to black
+Issue 4: Visual Indicators Not Showing (60 mins)
+  - For deleted item pop-up and safe item pop-up
+    - regressed.  Would it be easier to identify the type of delete during the scan process, while it is evaluating each email during the scan process.  Then when it determines the delete rule it also has the regex pattern it found it matched with.  Based on the actual regex pattern the match was against, can we determine if it is most-like email, exact domain entire domain. 
+  - please escalate this to be completed by Opus 4.5
+
+These are all needed now in Sprint 13 before full manual testing is complete.
+Please explain these back to me, determine recommended approach, recommended order for implementation, and then I'll approve the recommendations or give additional feedback.
+
+------------------------------------
+Done
+Follow-up feedback for Sprint 13 Testing Feedback.  Please complete in the sprint 13.
+- Scan Results/View Results page: back arrow does the same that the Scan Again button used to do.  Can you use the same solution for the back arrow as you did for the Scan Again button.
+- Item 8: Ctrl-F Search (Issue #127)
+  - Control-F key did not trigger Magnifying glass/search box.
+  - Magnifying glass and search Worked as expected.  Thank you.
+- Item 6: Folders Multi-Select Filter
+  - Added "Folders" chip next to Errors button
+    - As the list of unique folders to be displayed in the "Folders:" pop-up is determinable during processing, can it be cached for first and later use (seemed very slow the first time).
+    - Everything else was as expected.  Thank you.
+- Item 2: Visual Indicators for Matched Rules
+  - checked several Safe emails with rule matches, but when clicking on them none show the green checkmark indicating the rule it matched on (Exact Email, Exact Domain, Entire Domain.  
+  - Deleted emails also did not show the current rule indicator
+- Scan Results/View Results screen > Email pop-up for emails
+  - change to that the pop-up for all emails, regardless of current rule match
+    - should look like current No rule pop-up (7 buttons)
+      - exceptions on pop-up
+        - rule match icon in the header
+        - rule match type in the header
+    - why? so that users can change the rule that applies for each mail selected.
+    - Please change the email selection pop-up (for changing the rules)
+      - instead of anchored to the bottom of the screen, can you have it pop up just below the email (if there is room between the email and the bottom) or just above the email (so the email being edited can be seen while the pop-up is displayed) if there is no room below.  If there is not room above or below, then the top of the pop-up can align with the top of the first email in the list.
+
+These are all needed now in Sprint 13 before full manual testing is complete.
+Please explain these back to me, determine recommended approach, recommended order for implementation, and then I'll approve the recommendations or give additional feedback.
+
+------------------------------------
+Done
+Sprint 13 Testing Feedback:
+- F16A: accepted
+- F15: accepted
+- F14: Cannot find this setting anywhere
+  - Select account kimmeyharold@aol.com > settings > NO "Deleted Rule Folder" button (see D:\Data\Harold\spamfilter-multi\Email specific Settings - Manual and Background.png)
+- F13: Cannot find this setting anywhere
+  - Select account kimmeyharold@aol.com > settings > NO "Safe Sender Folder" button (see D:\Data\Harold\spamfilter-multi\Email specific Settings - Manual and Background.png)
+- Scan Results Screen (aka View Results Screen) - these are needed eventually and will make testing easier
+  - Pop-up for email tagged as Deleted, Safe Sender
+    - Determine if the current user rule matched for the email, then that button in a discernably darker shade of the current color (color A), place a green checkmark in the top-right corner of that button with checkmark of Color A.
+  - Can you make the Found, Processed, Moved and Error buttons match the filtering functionally of Deleted, Safe and No Rule
+  - Processed button/filter should be on by default when Scan Results Screen (aka View Results Screen) is initially shon
+  - Can you set the sort order of the results listed as: email folder, <domain>.<top-level-domain>, email address
+    - Same sort for all filter and folder filter (see next item)
+  - Can you add an additional dynamic filter, multi-selection filter, to the right of the Errors button, called Folders:
+    - Should include one folder for each of the folders represented in the Filtered list.
+    - Initially collapsed, initially All, shows selected is All
+    - User can select drop-down and select All, or any of the folders.
+    - I think this is fast enough to update the list on the screen after each click (check/uncheck of All, or folder)
+    - Examples:
+      - If Processed button is selected, and All folders is selected it will list emails in all the folders where Processed is true.
+      - If No Rules button is selected and a folder is selected then filter the emails by No Rule and that folder. If 2 folders are selected, then filter by No Rule and emails from those 2 folders
+  - This is showing an invalid domain, copelandbrockle@xn----8sbfgfc1bhsb1ax6i.xn--p1ai, Can you debug from the logs what the actual domain is or check the email by email #305
+  - To make re-testing easier, can you pull in and do Issue #127 Add Ctrl-F search on Scan Results page
+
+
+
+
+
+
+
+
+
+
+
+
+

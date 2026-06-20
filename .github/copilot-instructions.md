@@ -2,6 +2,8 @@
 
 Scope: flag real issues in PR diffs. Out of scope: formatting handled by `flutter analyze` and `dart format`.
 
+Ignore repository root files matching `0*.md` and `0*.txt` during review. Do not include those files in findings or comments.
+
 ## Repository Layout
 
 This repository is a monorepo. The Flutter/Dart app lives under `mobile-app/` (code in `mobile-app/lib/`, tests in `mobile-app/test/`). Sibling top-level directories (`docs/`, `scripts/`, `.github/`, `rules.yaml`) are not Flutter code. Flutter-specific rules below apply only to files under `mobile-app/`.
