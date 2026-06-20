@@ -6,15 +6,35 @@ import 'package:path/path.dart' as path;
 import 'app_environment.dart';
 import 'background_scan_manager.dart';
 import 'powershell_script_generator.dart';
+import '../utils/account_id_sanitizer.dart';
 
 /// Service for managing Windows Task Scheduler integration
 ///
 /// Provides methods to create, update, delete, and monitor scheduled
 /// tasks for background email scanning on Windows desktop.
+///
+/// Per-account model (Sprint 42, F98 / ADR-0039 Decision 2): there is ONE
+/// Task Scheduler task per enabled account, named
+/// `SpamFilterBackgroundScan_<sanitizedAccountId><suffix>`, whose action
+/// launches the app with `--background-scan --account-id=<accountId>`. The
+/// public methods accept an optional [accountId]; when null they target the
+/// legacy global task name for backward compatibility during migration.
 class WindowsTaskSchedulerService {
   static final Logger _logger = Logger();
-  /// Task name includes environment suffix per ADR-0035
-  static String get taskName => 'SpamFilterBackgroundScan${AppEnvironment.taskNameSuffix}';
+
+  /// Base task name prefix (without the per-account token).
+  static const String _taskNameBase = 'SpamFilterBackgroundScan';
+
+  /// Legacy global task name (no account token). Retained so an un-migrated
+  /// installation's single task can still be found and deleted.
+  static String get taskName => '$_taskNameBase${AppEnvironment.taskNameSuffix}';
+
+  /// Per-account task name: `SpamFilterBackgroundScan_<sanitizedAccountId><suffix>`.
+  /// When [accountId] is null, returns the legacy global [taskName].
+  static String taskNameFor(String? accountId) {
+    if (accountId == null) return taskName;
+    return '${_taskNameBase}_${sanitizeAccountId(accountId)}${AppEnvironment.taskNameSuffix}';
+  }
 
   /// Create a scheduled task for background scanning
   ///
@@ -22,6 +42,7 @@ class WindowsTaskSchedulerService {
   /// with `--background-scan` flag at the specified frequency.
   static Future<bool> createScheduledTask({
     required ScanFrequency frequency,
+    String? accountId,
   }) async {
     if (frequency == ScanFrequency.disabled) {
       _logger.w('Cannot create task with disabled frequency');
@@ -29,7 +50,9 @@ class WindowsTaskSchedulerService {
     }
 
     try {
-      _logger.i('Creating scheduled task with frequency: ${frequency.label}');
+      final name = taskNameFor(accountId);
+      _logger.i('Creating scheduled task "$name" with frequency: ${frequency.label}'
+          '${accountId != null ? ' (account: $accountId)' : ''}');
 
       // Get executable path (current running app)
       final executablePath = await _getExecutablePath();
@@ -40,10 +63,11 @@ class WindowsTaskSchedulerService {
 
       // Generate PowerShell script
       final scriptPath = await PowerShellScriptGenerator.generateCreateTaskScript(
-        taskName: taskName,
+        taskName: name,
         executablePath: executablePath,
         frequency: frequency,
         workingDirectory: workingDirectory,
+        accountId: accountId,
       );
 
       // Execute script
@@ -70,18 +94,19 @@ class WindowsTaskSchedulerService {
   /// Modifies the trigger of the existing task without recreating it
   static Future<bool> updateScheduledTask({
     required ScanFrequency frequency,
+    String? accountId,
   }) async {
     if (frequency == ScanFrequency.disabled) {
       // Disabled means delete the task
-      return await deleteScheduledTask();
+      return await deleteScheduledTask(accountId: accountId);
     }
 
     try {
-      _logger.i('Updating scheduled task frequency to: ${frequency.label}');
+      _logger.i('Updating scheduled task "${taskNameFor(accountId)}" frequency to: ${frequency.label}');
 
       // Generate PowerShell script
       final scriptPath = await PowerShellScriptGenerator.generateUpdateTaskScript(
-        taskName: taskName,
+        taskName: taskNameFor(accountId),
         frequency: frequency,
       );
 
@@ -106,9 +131,15 @@ class WindowsTaskSchedulerService {
   /// Delete the scheduled task
   ///
   /// Removes the task from Windows Task Scheduler completely
-  static Future<bool> deleteScheduledTask() async {
+  static Future<bool> deleteScheduledTask({String? accountId}) async {
+    return deleteScheduledTaskByName(taskNameFor(accountId));
+  }
+
+  /// Delete a scheduled task by its RAW task name (Sprint 42, F98). Used for
+  /// orphan cleanup where only the enumerated task name is known.
+  static Future<bool> deleteScheduledTaskByName(String taskName) async {
     try {
-      _logger.i('Deleting scheduled task');
+      _logger.i('Deleting scheduled task "$taskName"');
 
       // Generate PowerShell script
       final scriptPath = await PowerShellScriptGenerator.generateDeleteTaskScript(
@@ -143,13 +174,13 @@ class WindowsTaskSchedulerService {
   /// - nextRunTime: Next scheduled execution (ISO 8601 string)
   /// - lastResult: Exit code of last run (0 = success)
   /// - triggerFrequency: Trigger interval
-  static Future<Map<String, dynamic>> getScheduleStatus() async {
+  static Future<Map<String, dynamic>> getScheduleStatus({String? accountId}) async {
     try {
-      _logger.d('Getting scheduled task status');
+      _logger.d('Getting scheduled task status for "${taskNameFor(accountId)}"');
 
       // Generate PowerShell script
       final scriptPath = await PowerShellScriptGenerator.generateGetStatusScript(
-        taskName: taskName,
+        taskName: taskNameFor(accountId),
       );
 
       // Execute script
@@ -180,9 +211,9 @@ class WindowsTaskSchedulerService {
   /// Get the next scheduled execution time
   ///
   /// Returns null if task does not exist or has no next run time
-  static Future<DateTime?> getNextScheduledTime() async {
+  static Future<DateTime?> getNextScheduledTime({String? accountId}) async {
     try {
-      final status = await getScheduleStatus();
+      final status = await getScheduleStatus(accountId: accountId);
 
       if (status['exists'] == true && status['nextRunTime'] != null) {
         return DateTime.parse(status['nextRunTime'] as String);
@@ -196,8 +227,8 @@ class WindowsTaskSchedulerService {
   }
 
   /// Check if the scheduled task exists
-  static Future<bool> taskExists() async {
-    final status = await getScheduleStatus();
+  static Future<bool> taskExists({String? accountId}) async {
+    final status = await getScheduleStatus(accountId: accountId);
     return status['exists'] == true;
   }
 
@@ -211,19 +242,20 @@ class WindowsTaskSchedulerService {
   /// or recreation is not needed.
   static Future<bool> ensureTaskExists({
     required ScanFrequency frequency,
+    String? accountId,
   }) async {
     try {
       if (!Platform.isWindows) return false;
       if (frequency == ScanFrequency.disabled) return false;
 
-      final status = await getScheduleStatus();
+      final status = await getScheduleStatus(accountId: accountId);
       if (status['exists'] == true) {
-        _logger.d('Scheduled task already exists, no recreation needed');
+        _logger.d('Scheduled task "${taskNameFor(accountId)}" already exists, no recreation needed');
         return false;
       }
 
-      _logger.i('Scheduled task is missing - recreating with frequency: ${frequency.label}');
-      final success = await createScheduledTask(frequency: frequency);
+      _logger.i('Scheduled task "${taskNameFor(accountId)}" is missing - recreating with frequency: ${frequency.label}');
+      final success = await createScheduledTask(frequency: frequency, accountId: accountId);
 
       if (success) {
         _logger.i('Scheduled task recreated successfully');
@@ -245,13 +277,13 @@ class WindowsTaskSchedulerService {
   /// recreates the task with the correct path and same frequency.
   ///
   /// Returns true if repair was needed and performed, false otherwise.
-  static Future<bool> verifyAndRepairTaskPath() async {
+  static Future<bool> verifyAndRepairTaskPath({String? accountId}) async {
     try {
       if (!Platform.isWindows) return false;
 
-      final status = await getScheduleStatus();
+      final status = await getScheduleStatus(accountId: accountId);
       if (status['exists'] != true) {
-        _logger.d('No scheduled task exists, nothing to repair');
+        _logger.d('No scheduled task "${taskNameFor(accountId)}" exists, nothing to repair');
         return false;
       }
 
@@ -288,9 +320,9 @@ class WindowsTaskSchedulerService {
       }
 
       // Delete old task and recreate with current path
-      _logger.i('Repairing task with frequency: ${frequency.label}');
-      await deleteScheduledTask();
-      final success = await createScheduledTask(frequency: frequency);
+      _logger.i('Repairing task "${taskNameFor(accountId)}" with frequency: ${frequency.label}');
+      await deleteScheduledTask(accountId: accountId);
+      final success = await createScheduledTask(frequency: frequency, accountId: accountId);
 
       if (success) {
         _logger.i('Task path repaired successfully');
@@ -302,6 +334,44 @@ class WindowsTaskSchedulerService {
     } catch (e) {
       _logger.e('Exception during task path verification', error: e);
       return false;
+    }
+  }
+
+  /// Enumerate all per-account background-scan task names currently registered
+  /// in Task Scheduler for this environment (Sprint 42, F98). Used to clean up
+  /// orphaned per-account tasks (accounts removed since the task was created)
+  /// and to find the legacy global task for deletion after migration.
+  ///
+  /// Returns the list of task names matching `SpamFilterBackgroundScan*<suffix>`.
+  static Future<List<String>> enumerateAccountTasks() async {
+    try {
+      if (!Platform.isWindows) return const [];
+      final suffix = AppEnvironment.taskNameSuffix;
+      // Match the base prefix; the suffix (if any) is environment-specific so a
+      // dev build never enumerates prod tasks and vice-versa.
+      final pattern = suffix.isEmpty
+          ? '$_taskNameBase*'
+          : '$_taskNameBase*$suffix';
+      final script = '''
+\$ErrorActionPreference = 'SilentlyContinue'
+\$tasks = Get-ScheduledTask | Where-Object { \$_.TaskName -like '$pattern' }
+\$names = \$tasks | ForEach-Object { \$_.TaskName }
+\$names | ConvertTo-Json -Compress
+''';
+      final scriptPath = await PowerShellScriptGenerator.writeAdHocScript(script);
+      final result = await _executePowerShellScript(scriptPath);
+      if (!result.success || result.output.isEmpty) return const [];
+      final decoded = jsonDecode(result.output);
+      if (decoded is String) return [decoded];
+      if (decoded is List) {
+        return decoded.map((e) => e.toString()).toList();
+      }
+      return const [];
+    } catch (e) {
+      _logger.w('Failed to enumerate account tasks: $e');
+      return const [];
+    } finally {
+      await PowerShellScriptGenerator.cleanupScripts();
     }
   }
 

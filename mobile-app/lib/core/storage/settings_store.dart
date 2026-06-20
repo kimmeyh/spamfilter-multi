@@ -396,6 +396,43 @@ class SettingsStore {
     }
   }
 
+  /// Get account-specific background scan frequency (minutes) override.
+  /// Returns null if no override set (use global default). (Sprint 42, F98.)
+  Future<int?> getAccountBackgroundFrequency(String accountId) async {
+    final value = await _getAccountSetting(accountId, 'background_frequency');
+    if (value == null) return null;
+    return int.tryParse(value);
+  }
+
+  /// Set account-specific background scan frequency (minutes) override.
+  /// Pass null to clear the override. (Sprint 42, F98.)
+  Future<void> setAccountBackgroundFrequency(String accountId, int? minutes) async {
+    if (minutes == null) {
+      await _deleteAccountSetting(accountId, 'background_frequency');
+    } else {
+      await _setAccountSetting(accountId, 'background_frequency', minutes.toString(), 'int');
+    }
+  }
+
+  /// Get effective background frequency for an account: per-account override,
+  /// then the global frequency as fallback. (Sprint 42, F98.)
+  Future<int> getEffectiveBackgroundFrequency(String? accountId) async {
+    if (accountId != null) {
+      final override = await getAccountBackgroundFrequency(accountId);
+      if (override != null) return override;
+    }
+    return await getBackgroundScanFrequency();
+  }
+
+  /// Read an arbitrary app_settings value by [key], or null if absent.
+  /// (Sprint 42, F98 -- used by the per-account migration sentinel.)
+  Future<String?> getRawAppSetting(String key) => _getAppSetting(key);
+
+  /// Write an arbitrary app_settings [key]=[value] with [type].
+  /// (Sprint 42, F98 -- used by the per-account migration sentinel.)
+  Future<void> setRawAppSetting(String key, String value, String type) =>
+      _setAppSetting(key, value, type);
+
   /// Get account-specific deleted rule folder
   /// Returns null if not set (will default to provider-specific Trash folder)
   Future<String?> getAccountDeletedRuleFolder(String accountId) async {

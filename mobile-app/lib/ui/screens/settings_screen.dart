@@ -158,8 +158,12 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       _manualScanFolders = accountManualFolders ?? await _settingsStore.getManualScanFolders();
 
       _confirmDialogsEnabled = await _settingsStore.getConfirmDialogsEnabled();
-      _backgroundScanEnabled = await _settingsStore.getBackgroundScanEnabled();
-      _backgroundScanFrequency = await _settingsStore.getBackgroundScanFrequency();
+      // F98 (ADR-0039): the Background tab is account-scoped -- load the
+      // per-account effective enable/frequency, not the global flag.
+      _backgroundScanEnabled =
+          await _settingsStore.getEffectiveBackgroundEnabled(widget.accountId);
+      _backgroundScanFrequency =
+          await _settingsStore.getEffectiveBackgroundFrequency(widget.accountId);
 
       final accountBgMode = await _settingsStore.getAccountBackgroundScanMode(widget.accountId);
       _backgroundScanMode = accountBgMode ?? await _settingsStore.getBackgroundScanMode();
@@ -789,21 +793,24 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     }
   }
 
-  /// Create, update, or delete the Windows Task Scheduler task
+  /// Create, update, or delete the Windows Task Scheduler task for THIS account
+  /// (F98 / ADR-0039 -- one task per enabled account).
   Future<void> _updateWindowsScheduledTask({required bool enabled}) async {
     try {
+      final accountId = widget.accountId;
       bool success;
       if (enabled) {
         final frequency = ScanFrequency.fromMinutes(_backgroundScanFrequency);
         if (frequency == ScanFrequency.disabled) return;
 
-        final exists = await WindowsTaskSchedulerService.taskExists();
+        final exists =
+            await WindowsTaskSchedulerService.taskExists(accountId: accountId);
         if (exists) {
           success = await WindowsTaskSchedulerService.updateScheduledTask(
-              frequency: frequency);
+              frequency: frequency, accountId: accountId);
         } else {
           success = await WindowsTaskSchedulerService.createScheduledTask(
-              frequency: frequency);
+              frequency: frequency, accountId: accountId);
         }
 
         if (success) {
@@ -825,9 +832,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           }
         }
       } else {
-        success = await WindowsTaskSchedulerService.deleteScheduledTask();
+        success = await WindowsTaskSchedulerService.deleteScheduledTask(
+            accountId: accountId);
         if (success) {
-          _logger.i('Windows scheduled task deleted');
+          _logger.i('Windows scheduled task deleted for this account');
         }
       }
     } catch (e) {
@@ -856,8 +864,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           value: _backgroundScanEnabled,
           onChanged: (value) async {
             setState(() => _backgroundScanEnabled = value);
-            await _settingsStore.setBackgroundScanEnabled(value);
-            // On Windows, create or delete the Task Scheduler task
+            // F98 (ADR-0039): write the PER-ACCOUNT override, not the global flag.
+            await _settingsStore
+                .setAccountBackgroundEnabled(widget.accountId, value);
+            // On Windows, create or delete THIS account's Task Scheduler task.
             if (Platform.isWindows) {
               await _updateWindowsScheduledTask(enabled: value);
             }
@@ -874,8 +884,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           value: _backgroundScanFrequency,
           onChanged: (freq) async {
             setState(() => _backgroundScanFrequency = freq);
-            await _settingsStore.setBackgroundScanFrequency(freq);
-            // On Windows, update the Task Scheduler frequency if enabled
+            // F98 (ADR-0039): write the PER-ACCOUNT frequency override.
+            await _settingsStore
+                .setAccountBackgroundFrequency(widget.accountId, freq);
+            // On Windows, update THIS account's Task Scheduler frequency if enabled
             if (Platform.isWindows && _backgroundScanEnabled) {
               await _updateWindowsScheduledTask(enabled: true);
             }

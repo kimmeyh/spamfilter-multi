@@ -14,6 +14,7 @@ import 'core/services/background_scan_windows_worker.dart';
 import 'core/services/windows_system_tray_service.dart';
 import 'core/services/windows_notification_service.dart';
 import 'core/services/windows_task_scheduler_service.dart';
+import 'core/services/per_account_bg_migration.dart';
 import 'core/services/app_environment.dart';
 import 'core/services/dev_environment_seeder.dart';
 import 'core/services/background_scan_manager.dart' show ScanFrequency;
@@ -81,8 +82,14 @@ void main(List<String> args) async {
     await bgLog('Executable: ${Platform.resolvedExecutable}');
 
     try {
-      await bgLog('Calling executeBackgroundScan...');
-      final success = await BackgroundScanWindowsWorker.executeBackgroundScan();
+      // F98 (ADR-0039): pass the per-account id parsed from --account-id so the
+      // worker scans only that account. Null -> legacy all-accounts behavior.
+      final bgAccountId = BackgroundModeService.backgroundAccountId;
+      await bgLog('Calling executeBackgroundScan'
+          '${bgAccountId != null ? ' for account $bgAccountId' : ' (all accounts)'}...');
+      final success = await BackgroundScanWindowsWorker.executeBackgroundScan(
+        accountId: bgAccountId,
+      );
       await bgLog('Background scan completed: ${success ? "SUCCESS" : "FAILURE"}');
 
       // Exit after background scan completes
@@ -183,36 +190,67 @@ void main(List<String> args) async {
     // In MSIX: The exe is in read-only WindowsApps dir; Task Scheduler cannot work.
     // [UPDATED] Issue #218: Skip Task Scheduler in MSIX context.
     if (kReleaseMode && !AppEnvironment.isMsixInstall) {
-      // Verify and repair task scheduler executable path after rebuild
-      try {
-        final repaired = await WindowsTaskSchedulerService.verifyAndRepairTaskPath();
-        if (repaired) {
-          Logger().i('Task scheduler path repaired after app rebuild');
-        }
-      } catch (e) {
-        Logger().w('Task scheduler path verification failed: $e');
-      }
-
-      // [FIX] ISSUE #161: Ensure scheduled task exists if background scanning is enabled
-      // The task may be missing after reboot, system cleanup, or failed recreation
+      // F98 (ADR-0039): per-account background-scan startup reconciliation.
       try {
         final settingsStore = SettingsStore();
-        final bgEnabled = await settingsStore.getBackgroundScanEnabled();
-        if (bgEnabled) {
-          final freqMinutes = await settingsStore.getBackgroundScanFrequency();
+        final credStore = SecureCredentialsStore();
+
+        // 1) One-time migration from the global flag to per-account overrides.
+        await PerAccountBgMigration(
+          settingsStore: settingsStore,
+          getAccountIds: credStore.getSavedAccounts,
+        ).runIfNeeded();
+
+        // 2) For each saved account whose effective enable is true, ensure its
+        //    per-account task exists (repair path if present) with its effective
+        //    frequency. For accounts that are disabled, ensure no stale task.
+        final accountIds = await credStore.getSavedAccounts();
+        final desiredTaskNames = <String>{};
+        for (final accountId in accountIds) {
+          final enabled =
+              await settingsStore.getEffectiveBackgroundEnabled(accountId);
+          if (!enabled) {
+            // Remove any stale per-account task for a now-disabled account.
+            await WindowsTaskSchedulerService.deleteScheduledTask(
+                accountId: accountId);
+            continue;
+          }
+          desiredTaskNames
+              .add(WindowsTaskSchedulerService.taskNameFor(accountId));
+          final freqMinutes =
+              await settingsStore.getEffectiveBackgroundFrequency(accountId);
           final frequency = ScanFrequency.values.firstWhere(
             (f) => f.minutes == freqMinutes,
             orElse: () => ScanFrequency.every15min,
           );
+          await WindowsTaskSchedulerService.verifyAndRepairTaskPath(
+              accountId: accountId);
           final recreated = await WindowsTaskSchedulerService.ensureTaskExists(
             frequency: frequency,
+            accountId: accountId,
           );
           if (recreated) {
-            Logger().i('Background scan task recreated (was missing from Task Scheduler)');
+            Logger().i('Per-account bg task ensured for an enabled account');
+          }
+        }
+
+        // 3) Clean up the legacy global task and any orphaned per-account tasks
+        //    (accounts removed since their task was created).
+        final existingTasks =
+            await WindowsTaskSchedulerService.enumerateAccountTasks();
+        for (final taskName in existingTasks) {
+          if (taskName == WindowsTaskSchedulerService.taskName) {
+            // Legacy global task -- delete once per-account tasks exist.
+            await WindowsTaskSchedulerService.deleteScheduledTask();
+            continue;
+          }
+          if (!desiredTaskNames.contains(taskName)) {
+            // Orphaned per-account task -- delete by raw name.
+            await WindowsTaskSchedulerService.deleteScheduledTaskByName(taskName);
           }
         }
       } catch (e) {
-        Logger().w('Background scan task verification failed: $e');
+        Logger().w('Per-account background scan startup reconciliation failed: $e');
       }
     } else {
       if (AppEnvironment.isMsixInstall) {
