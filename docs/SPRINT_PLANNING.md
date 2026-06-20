@@ -119,6 +119,15 @@ For sprints involving major architectural changes, use an **ADR-first approach**
 - Implementation sprint has a clear specification to follow
 - Learned from Sprint 21 (ADR-0035): thorough ADR design in Sprint 20 led to minimal rework during implementation
 
+### Tooling-Capability Pre-Flight (MANDATORY for "bolt X onto tool Y" items)
+
+For any sprint item that adds a capability **X** on top of an external tool **Y** (test harness, CLI, MCP server, plugin, third-party library), the FIRST sub-task is a ~5-minute **capability spike** proving tool Y can actually do X *before* any feature is built. Do not author the feature, then discover the tool cannot support it.
+
+- **What to prove**: the single primitive the feature depends on. Run it once against the real tool and confirm a real result, not a doc claim.
+- **Example spike questions**: "Can the WinWright CLI return an element's `BoundingRectangle`?" / "Does this MCP server expose a write tool, or read-only?" / "Does this CLI subcommand exist and accept these flags?"
+- **If the spike fails**: the item is re-scoped or moved to a tool that can do X -- BEFORE estimating or coding.
+- **Learned from Sprint 41 (F76)**: a full WinWright layout-bounds visual-regression check (696-line script + runner wiring + baselines) was built and then entirely reverted after discovering the standalone WinWright CLI cannot read element bounds at all (no `get_attribute`; `inspect` has no bounds; `run` rejects attribute/assert steps). A 5-minute spike would have caught this on day one and routed the work straight to F99 (`integration_test`).
+
 ### Sprint Phases
 
 #### Phase 1: Planning (Kickoff)

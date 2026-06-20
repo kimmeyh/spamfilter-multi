@@ -82,7 +82,7 @@ title and closes it at end-of-run. Consequences for script authors:
    C:\Tools\WinWright\Civyk.WinWright.Mcp.exe doctor
    ```
 
-## Test Scripts (current set -- all PASS, Sprint 40 sweep 2026-06-09, zero DB drift)
+## Test Scripts (current set -- S40 scripts all PASS sweep 2026-06-09; F56 scripts authored S41 F97, pending sweep verification)
 
 | Script | Purpose | Origin |
 |--------|--------|--------|
@@ -93,18 +93,22 @@ title and closes it at end-of-run. Consequences for script authors:
 | `test_f25_rule_test_tool.json` | F25: open Test-pattern tool from Manage Rules, plaintext->regex toggle, run Test | S40 (new) |
 | `test_f35_rule_edit.json` | F35: open a rule's Edit screen, toggle Guided/Direct-regex mode, leave without saving | S40 (new) |
 | `test_f37_folder_selector.json` | F37: open Safe Sender + Deleted Rule folder pickers (no selection change) | S40 (new) |
+| `test_f56_create_block_rule.json` | F56: create TLD block rule (`museum`), delete it (net zero DB drift) -- EXCLUDED from default sweep (F99) | S41 F97 (new) |
+| `test_f56_create_safe_sender.json` | F56: create Entire Domain safe sender (`winwright-test.com`), delete it (net zero DB drift) -- EXCLUDED from default sweep (F99) | S41 F97 (new) |
 
-All scripts are **read-only** -- they navigate, open dialogs/screens, and back out without persisting
-changes, so the pre/post DB-snapshot guard reports zero drift.
+The **6 default-sweep scripts** (navigation, settings_tabs, scan_history, text_selection, f25, f35) are
+**read-only** -- they navigate, open dialogs/screens, and back out without persisting changes, so the
+pre/post DB-snapshot guard reports zero drift. `test_f37_folder_selector` is also read-only but is
+EXCLUDED from the default sweep (dialog-settle race -> F99); see the exclusion note above.
+
+The 2 F56 scripts **write then delete**: each testCase creates one row and a second testCase deletes it,
+leaving net DB drift of zero. They are EXCLUDED from the default sweep and run explicitly via
+`-TestName f56`. If a script fails mid-run (after create, before delete) a row will remain in the DB and
+the snapshot guard will report drift -- delete the `*.museum` (block rule) / `winwright-test.com`
+(safe sender) row manually from the app and re-run.
 
 ### Deferred (NOT in the current set)
 
-- **`test_f56_create_block_rule.json` / `test_f56_create_safe_sender.json`** (create+delete lifecycle):
-  removed during the S40 port. The Sprint 40 rule-creation rework changed the Add-Block-Rule input
-  validation; the old `museum` / `.museum` TLD inputs are now both rejected ("Domain must include a TLD"
-  / "Domain cannot start with a dot"), so the accepted TLD-rule input format could not be inferred.
-  Deferred to a follow-up (see ALL_SPRINTS_MASTER_PLAN.md). Also flagged: `ww_type clearFirst:true` does
-  not reliably clear the Flutter create-screen Edit field.
 - **`test_manual_scan_flow.json`**: removed -- it ran a real network scan against the live AOL inbox
   (slow, network-dependent, and mutating in non-read-only mode), unsuitable for an unattended UI sweep.
   A demo-data / read-only-mode scan smoke test is a candidate follow-up.
@@ -180,14 +184,39 @@ Then: keep only action steps (`ww_click`/`ww_invoke`/`ww_type`/`ww_set_checked`)
 `ww_assert`, use `ww_invoke` for Back/animating buttons, ensure the script starts and ends at home, and
 make it read-only (back out of anything that persists) so the DB-drift guard stays green.
 
+## Visual Regression Testing -- moved to F99 (Flutter integration_test)
+
+The Sprint 41 F76 attempt to add layout-bounds visual-regression assertions to this WinWright
+sweep was **abandoned and reverted** (2026-06-17). Root cause: the standalone WinWright CLI
+(`Civyk.WinWright.Mcp.exe`) cannot read element bounds. Its only commands are
+`mcp | serve | run | heal | inspect | doctor`; there is no `get_attribute` command (the F76
+helper invented one, so every call returned `exit 1` and baselines captured as `null`),
+`inspect <pid>` JSON carries no bounds fields, and the `run` script-runner rejects
+`ww_get_attribute` / `ww_assert*` ("not supported by the script runner"). `BoundingRectangle`
+is reachable only via the MCP interface, which a standalone runner `.ps1` has no session for.
+
+Visual / layout-regression detection is folded into **F99** (parallel Flutter `integration_test`
+harness, pre-MVP), which provides golden-image and `RenderBox` layout assertions natively and
+robustly. See `docs/ALL_SPRINTS_MASTER_PLAN.md` items F76 (why abandoned) and F99 (delivery vehicle).
+
 ## F69 / F79 Acceptance Criteria
 
 - [x] WinWright scripts for navigation, settings tabs, scan history, text selection
-- [x] F25/F35/F37 new-UI coverage scripts (Sprint 40)
+- [x] F25/F35 new-UI coverage scripts (Sprint 40)
 - [x] One-command runner launches the dev app per script and runs all unattended (F79 Part 1)
-- [x] Pre/post DB-snapshot drift guard integrated; full sweep green with zero net DB change (F79 Part 2)
+- [x] Pre/post DB-snapshot drift guard integrated; default sweep green with zero net DB change (F79 Part 2)
 - [x] Tests documented here + cadence in TESTING_STRATEGY.md
-- [ ] F56 create+delete lifecycle scripts (deferred -- create-screen input format change, see above)
+- [x] F56 create+delete lifecycle scripts AUTHORED (S41 F97); input format confirmed live (`test_f56_*.json`). Reliable unattended EXECUTION moved to F99 (`integration_test`) -- excluded from the default sweep (`-TestName f56` to run explicitly); see ALL_SPRINTS_MASTER_PLAN.md F97/F99.
+
+**Default sweep = 6 read-only scripts** (navigation, settings_tabs, scan_history, text_selection, f25_rule_test_tool, f35_rule_edit), all green with `DB Drift: none`. Two scripts that cross a Flutter dialog/picker-settle boundary are EXCLUDED from the default sweep and moved to F99 (`integration_test`, in-VM `pumpAndSettle`): `test_f56_*` (create/save/delete) and `test_f37_folder_selector` (folder picker's `Edit "Search folders..."` not in the UIA tree pre-settle). The WinWright `run` script-runner has no `ww_wait`/`ww_assert` primitive to bridge the settle. Both remain runnable explicitly (`-TestName f56` / `-TestName f37`) as the F99 reference flows.
+
+## F76 (visual regression) -- ABANDONED, folded into F99
+
+The Sprint 41 F76 layout-bounds visual-check was reverted (2026-06-17): the standalone WinWright
+CLI cannot read element `BoundingRectangle` (no `get_attribute` command; `inspect` has no bounds;
+the `run` script-runner rejects `ww_get_attribute`/`ww_assert*`). Visual/layout-regression detection
+is delivered in F99 via Flutter `integration_test` golden-image + `RenderBox` assertions. See the
+"Visual Regression Testing -- moved to F99" section above and ALL_SPRINTS_MASTER_PLAN.md F76/F99.
 
 ## Known Limitations (from Sprint 27 evaluation)
 

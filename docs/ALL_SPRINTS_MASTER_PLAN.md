@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-05-24 (F92 added: dedicated tests for `LiveScanLogger`, deferred from PR #259 Copilot review)
+**Last Updated**: 2026-06-17 (F99 added: parallel Flutter `integration_test` E2E harness, PRE-MVP -- from Sprint 41 tooling investigation)
 
 ## How to Maintain This Document
 
@@ -103,6 +103,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 36 | docs/sprints/SPRINT_36_RETROSPECTIVE.md | [OK] Complete | Apr 20-25, 2026 |
 | 37 | docs/sprints/SPRINT_37_RETROSPECTIVE.md | [OK] Complete | Apr 27 - May 1, 2026 |
 | 38 | docs/sprints/SPRINT_38_RETROSPECTIVE.md | [OK] Complete | May 5-18, 2026 |
+| 41 | docs/sprints/SPRINT_41_RETROSPECTIVE.md | [OK] Complete | Jun 13-17, 2026 (PR #262) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -142,9 +143,10 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 
 The active (non-HOLD) backlog is allocated across the next three sprints as follows:
 
-- **Sprint 39** (in planning): S38-CI-1, S38-CI-2, S38-CI-6, S38-CI-3, F91, F89, S38-CI-4, F74, F92, BUG-S37-2, F77, F93
-- **Sprint 40** (target): F75, F25, F35, F37, F78, F79 (+ S38-CI-7 prep-only, eval-run CANCELLED 2026-06-04)
-- **Sprint 41** (target): SEC-11b, F83
+- **Sprint 39** (COMPLETE -- merged): S38-CI-1, S38-CI-2, S38-CI-6, S38-CI-3, F91, F89, S38-CI-4, F74, F92, BUG-S37-2, F77, F93 (+ F90, BUG-S39-1, BUG-S39-2 in warmup)
+- **Sprint 40** (COMPLETE -- merged PR #261, 2026-06-13): F75, F25, F35, F37, F78, F79, BUG-S40-1 (S38-CI-7 CANCELLED; F56 create+delete + manual_scan_flow deferred to F97)
+- **Sprint 41** (APPROVED 2026-06-13): F83 Phase 1 (research + ADR only), F97, F76
+- **Sprint 42** (candidates): F98 (F83 Phase 2 impl -- gated on F83 Phase 1 ADR approval), F99 (parallel `integration_test` E2E harness -- PRE-MVP), F96, SEC-11b, BUG-S37-2
 
 F77 + F93 (Claude-harness process items, ~2-3h combined) added to Sprint 39 per the F93 friction observed during this refinement session. S38-CI-7 (Opus 4.6 vs 4.7 head-to-head) moved to Sprint 40 (2026-05-25): its corrected intent -- 4+ tasks run on BOTH models on separate branches, scored on process/instruction/architecture/stopping-criteria/code-quality adherence -- is a ~6-10h experiment best run against the Sprint 40 task set, not bolted onto Sprint 39. Items moved to HOLD this session: F94 (was F52 Phase 2), F95 (was F52 Phase 3+), F63, SEC-15, SEC-8b, F6 -- all in the Android/GP HOLD group.
 
@@ -239,7 +241,7 @@ These items were filed during Sprint 38 retrospective and are pre-loaded for the
 - **What to add**: re-author both F56 scripts in the `testCases` schema with create -> verify-in-list -> open-details -> delete -> verify-absent, ending at home, leaving zero net DB drift. Use a rule type whose input is unambiguous if TLD remains awkward (e.g. Exact Email `winwright-e2e-test@example.invalid`, Entire Domain `winwright-e2e-test.invalid`). These are the only WinWright scripts that intentionally write to the DB, so they are the real exercise of the F79 drift guard's create/delete round-trip.
 - **Also candidate (separate, optional)**: a `test_manual_scan_flow` smoke test driven against Demo data or read-only mode (the original ran a real network scan against the live AOL inbox -- unsuitable for an unattended sweep).
 - **Reference**: `mobile-app/test/winwright/README.md` (Deferred section) and `_SELECTOR_MAP_2026-06-05.md` (Add-Block-Rule create screen selectors are mapped; only the accepted input VALUES are open).
-- **Acceptance criteria**: both F56 scripts pass in the full `run-winwright-tests.ps1` sweep with `DB Drift: none`; create-screen input format documented in the README selector map.
+- **Acceptance criteria (REVISED 2026-06-17, Harold -- Class-3 scope decision)**: F97 delivers the two F56 lifecycle scripts **authored** to the current `testCases` schema with the create-screen input format confirmed live (Add-Block-Rule TLD = `museum` typed into `Edit[name*='Enter TLD']` after selecting the Top-Level-Domain radio Group; confirm dialog `Button[name='Save']`; teardown via search -> details -> Delete x2). **Reliable UNATTENDED execution of these create/save/delete scripts is moved to [F99]** -- they fail intermittently under WinWright's out-of-process UIA on this DPI/animation setup (`Save` resolves 0 elements pre-settle; the `run` script-runner supports no `ww_wait`/`ww_assert` step to bridge the settle), which is exactly the flake class F99's in-VM `integration_test` harness eliminates. The authored `.json` scripts remain in `mobile-app/test/winwright/` as the reference flow for the F99 port. WinWright sweep ships with its 6 green read-only scripts.
 
 **F91. Post-safe-sender-move source-folder dedup (AOL "copy-not-move" reconciliation) (~4-6h, depends on F90 + new Message-ID capture) Priority 85 -- BACKLOG from Sprint 38 manual testing (Harold, 2026-05-23)**
 - Phase: Bug fix / IMAP move-semantics reconciliation
@@ -366,11 +368,9 @@ These items were filed during Sprint 38 retrospective and are pre-loaded for the
 - Was HOLD (post-Windows-Store); moved to active per Harold direction. Same ADR-0038 asset-authoring note as F74. Can sprint together with F74 (shared Help-screen surface).
 - [Detail](#f75-help-walkthrough-end-to-end-first-use-guide)
 
-**F76. Visual regression testing for WinWright (~6-10h) Priority 54 -- MOVED OFF HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
-- Phase: Testing infrastructure
-- Platform: Windows desktop (initially)
-- WinWright tests verify presence/clickability via the accessibility tree but cannot detect alignment, centering, or visual layout regressions. Add screenshot diffing or layout-bounds-check assertions to the WinWright suite (7 scripts as of Sprint 35).
-- Was HOLD; moved to active per Harold direction. Source: Sprint 34 retro Category 14.
+**F76. Visual regression testing -- FOLDED INTO F99 (2026-06-17, Harold direction) -- was Priority 54**
+- **Status: SUPERSEDED / folded into [F99].** Originally scoped (Sprint 41) as layout-bounds visual-regression assertions bolted onto the WinWright sweep. During Sprint 41 implementation a tooling investigation (2026-06-17) proved this is NOT implementable via the standalone WinWright CLI: the CLI exposes only `mcp | serve | run | heal | inspect | doctor` -- there is no `get_attribute` command (the script invented one -> `exit 1` on every call, baselines captured as `null`); `inspect <pid>` JSON carries NO bounds fields; and the `run` script-runner refuses `ww_get_attribute` / `ww_assert*` ("not supported by the script runner"). Element bounds are reachable ONLY through the MCP interface, which a standalone runner `.ps1` has no session for. Rather than force a fragile workaround, F76's goal (catch alignment / layout regressions the accessibility-tree sweep cannot) is folded into the more robust **F99** `integration_test` harness, which supports golden-image and layout assertions natively. The non-working Sprint-41 visual-check artifacts (`winwright-visual-check.ps1`, `-VisualCheck` flag, null baselines) are reverted.
+- Original phase: Testing infrastructure. Platform: Windows desktop (initially). Source: Sprint 34 retro Category 14. See [F99] for the delivery vehicle.
 
 **F25. Rule Testing UI Enhancements (~6-8h) Priority 48 -- MOVED OFF HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
 - Phase: Core Feature
@@ -447,9 +447,39 @@ These items were filed during Sprint 38 retrospective and are pre-loaded for the
   - Background-scan invocation: `--background-scan` CLI arg currently scans all accounts; change to `--background-scan --account-id=<id>`
   - Help text updates -- explain per-account toggle and what it controls
   - Cross-cutting variant correctness: must work correctly across {Windows Store, Android, iOS} x {dev, prod}
-- **Phase 2 -- Implementation (~1 sprint)**: against approved Phase 1 design.
-- **Phase 3 -- Cross-platform validation**: Windows dev + prod + Store, Android dev + prod, iOS (when available) dev + prod.
+- **Phase 2 -- Implementation**: split out as **F98** (see below) -- targeted at Sprint 42. **Phase 3 -- Cross-platform validation**: folded into F98.
 - **Out of scope**: per-account scan-history retention (already handled per-account); per-account safe-sender list (already per-account via accountId).
+- **Status (2026-06-13)**: Phase 1 (research + ADR) assigned to **Sprint 41**. Phase 2 (implementation) split to **F98**, high-priority, Sprint 42 candidate. The split was Harold's direction so the ADR can be reviewed/approved before any implementation begins (Class-1 architecture decision).
+
+**F98. Per-account Background Scanning -- IMPLEMENTATION (Phase 2 + cross-platform validation) (Est-Effort TBD post-ADR) Priority 78 -- HIGH, NEW (2026-06-13, split from F83)**
+- Phase: Architecture implementation + cross-platform validation
+- Platform: All (Windows, Android, iOS) x (dev, prod, store)
+- **Depends on**: F83 Phase 1 ADR (Sprint 41) being APPROVED by Harold (Chief Architect). Do NOT begin F98 until the ADR is signed off.
+- **Scope**: implement the approved F83 Phase 1 design -- per-account `background_scan_enabled` DB schema, Settings per-account toggle UI, Windows Task Scheduler per-account entries, Android WorkManager equivalent, per-account log/CSV path separation, `--background-scan --account-id=<id>` CLI change, Help text. Then Phase 3 cross-platform validation (Windows dev/prod/Store, Android dev/prod, iOS when available).
+- **Estimate**: deliberately TBD -- to be estimated from the F83 Phase 1 ADR's enumerated change-sites, per CODING_VELOCITY.md (multi-surface: DB-MIGRATE + UI-NEW + NATIVE-WIN + SVC-EDIT). Sprint 42 Backlog Refinement sets the minute estimate once the ADR exists.
+- **Priority 78**: high -- it is the implementation half of an architecture improvement Harold flagged as important for separation of concerns + future debugging (Sprint 37 retro Category 14).
+
+**F99. Parallel desktop E2E harness using Flutter `integration_test` (Est-Effort TBD) Priority 76 -- PRE-MVP, NEW (2026-06-17, Harold direction)**
+- Phase: Testing infrastructure (architecture-adjacent -- Class-1 tool-strategy decision)
+- Platform: Windows desktop (primary E2E target); harness is cross-platform (Flutter `integration_test` runs on all platforms)
+- **Pre-MVP priority**: Harold flagged this as pre-MVP (must land before MVP / Google Play Store readiness work resumes).
+- **Goal**: build a SECOND, parallel UI-testing harness based on Flutter's own `integration_test` framework, to run alongside (not replace) the existing WinWright UIA-tree harness. The two harnesses are complementary: WinWright drives the live Windows UIA accessibility tree out-of-process (good for true end-to-end + accessibility coverage); `integration_test` drives widgets in-VM by `Key`/`Finder` (more robust -- immune to the UIA-exposure, DPI/scaling, and `SetCursorPos`/cursor-positioning flakiness that bit the WinWright F56 create/save scripts in Sprint 41).
+- **Why (investigation, 2026-06-17)**: during Sprint 41 F97/F76 work, the WinWright create/save scripts (F56) and bounds-capture (F76) hit intermittent UIA/cursor/DPI failures. A tool-fit investigation confirmed (a) Playwright is NOT a candidate -- it drives the browser DOM and cannot see a native Flutter desktop widget tree at all; (b) the legitimate alternative/complement is Flutter `integration_test`, which drives widgets from inside the Dart VM and sidesteps the entire UIA-tree fragility class. Recommendation was: keep WinWright, AND stand up an `integration_test` harness as a more robust second lane. This item is that second lane.
+- **Scope (to refine at Backlog Refinement)**:
+  - Add `integration_test` dev-dependency + `integration_test/` directory; wire `flutter test integration_test/` (and/or `flutter drive`) into a runner script paralleling `run-winwright-tests.ps1`.
+  - Add `Key`s to the key widgets the WinWright scripts target (Settings/Help/nav buttons, Add-Block-Rule radios + input + Save dialog, folder pickers, Manage Rules search) so finders are stable.
+  - Port the core flows already covered by WinWright (navigation, settings tabs, scan history, rule create+delete lifecycle, folder selectors) to `integration_test` test cases with the same zero-DB-drift teardown discipline.
+  - Document the two-harness strategy in `docs/TESTING_STRATEGY.md` (when to use which; both run in the sweep cadence).
+  - **Absorbs [F76] (visual regression)**: deliver layout/alignment-regression detection here via `integration_test` golden-image and/or layout-bounds (widget `RenderBox` geometry) assertions -- the robust path that WinWright's CLI could not provide (see F76 for why the WinWright approach was abandoned 2026-06-17).
+  - **Absorbs [F56] reliable create/save/delete execution (from F97, 2026-06-17 Harold direction)**: the rule-create-block, safe-sender-create, and their delete-teardown lifecycle flows port here. They fail intermittently under WinWright out-of-process UIA (`Save` resolves 0 elements pre-settle; cursor/`SetCursorPos` + animation race on 4K/DPI). In-VM `integration_test` drives the create form, confirm dialog, and delete by `Key`/`Finder` with explicit `pumpAndSettle()` -- no settle race, no cursor dependency. F97 leaves the authored `.json` scripts as the reference flow; F99 reimplements them as the reliable lane.
+  - **Absorbs [F37] folder-picker check (2026-06-17 Harold direction)**: `test_f37_folder_selector` (a Sprint-40 read-only script) hits the SAME dialog-settle race -- the folder picker's `Edit "Search folders..."` is not in the UIA tree yet when the next step fires (resolves fine once settled). No WinWright `run` wait/assert primitive bridges it. Ports here; `pumpAndSettle()` after opening each picker removes the race. Excluded from the default WinWright sweep alongside F56; the `.json` remains the F99 reference.
+- **Class-1 note**: standing up a second E2E framework is a testing-architecture decision. The decision to ADD (not replace) is already Harold's direction (2026-06-17); the detailed design (which flows port first, runner integration, CI implications) is set at Backlog Refinement when this item is scheduled.
+- **Sprint 42 refinement starting point (IMP-1, 2026-06-17)** -- decide these three at refinement, do not re-derive from scratch:
+  1. **First flows to port** (highest value, references ready): (a) the F56 rule-create-block + safe-sender-create + delete-teardown lifecycle (the `test_f56_*.json` files are the reference; this is the flow that most needs the in-VM reliability), then (b) the F37 folder-picker open/search/back flow. Read-only navigation flows are LOWER priority -- WinWright already covers them green.
+  2. **Runner integration**: a `flutter test integration_test/` (or `flutter drive`) runner script paralleling `run-winwright-tests.ps1`, with the same DB-snapshot drift discipline; decide whether the two harnesses share one sweep entry point or run as two.
+  3. **CI implications**: `integration_test` on Windows desktop needs a display/session; note whether it runs in the current local-only cadence or gates a future GitHub-Actions runner (ties to F64, HOLD).
+- **Prerequisite for the ported flows**: add `Key`s to the targeted widgets (Settings/Help/nav buttons, Add-Block-Rule radios + input + Save dialog, folder pickers, Manage Rules/Safe Senders search) so `find.byKey` is stable.
+- **Estimate**: TBD -- to be minute-estimated at Backlog Refinement per CODING_VELOCITY.md (TEST-INFRA + per-flow port count).
 
 ### Bugs
 

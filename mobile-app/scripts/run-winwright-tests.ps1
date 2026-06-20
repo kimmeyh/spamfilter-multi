@@ -18,7 +18,12 @@
 #   "State-restore rule" documented in docs/TESTING_STRATEGY.md: every WinWright script
 #   must leave the dev DB in the same state it found it.
 #
-# Runtime target: <10 min unattended for all 7 scripts on a local dev build.
+# Visual-regression checking: NOT handled here. The Sprint 41 F76 attempt to add
+# layout-bounds visual regression via the WinWright CLI was abandoned (the standalone
+# CLI cannot read element BoundingRectangle -- see ALL_SPRINTS_MASTER_PLAN.md F76).
+# Visual/layout regression is folded into F99 (Flutter integration_test harness).
+#
+# Runtime target: <10 min unattended for all scripts on a local dev build.
 # (Measured manually; do not run this script as part of the automated Flutter test suite.)
 #
 # See docs/TESTING_STRATEGY.md for full cadence policy (end-of-sprint full sweep when
@@ -227,7 +232,31 @@ if ($DryRun) {
 $pattern = "test_*$TestName*.json"
 $tests = Get-ChildItem -Path $testDir -Filter $pattern | Sort-Object Name
 
-if ($tests.Count -eq 0) {
+# Scripts that depend on a Flutter dialog/picker animating in are EXCLUDED from
+# the default sweep (Sprint 41, Harold Class-3 decisions 2026-06-17):
+#   - f56 (create/save/delete lifecycle): Save resolves 0 elements pre-settle.
+#   - f37 (folder pickers): the picker's "Search folders..." Edit is not in the
+#     UIA tree yet when the next step fires (resolves fine once settled).
+# Both hit the same WinWright limitation: the `run` script-runner has no
+# ww_wait/ww_assert primitive to wait for an animating element. Reliable
+# execution is moved to F99 (Flutter integration_test, in-VM, pumpAndSettle).
+# The .json files remain as the F99 reference flow and stay runnable explicitly
+# via -TestName f56 / -TestName f37. The default sweep ships green with the 6
+# read-only scripts that do not cross a dialog-settle boundary.
+$excludedFromSweep = @("f56", "f37")
+if ($TestName -eq "*") {
+    # @(...) forces an array: a single Where-Object match returns a bare FileInfo
+    # whose .Count is $null, which would silently skip the exclusion (Copilot
+    # review, PR #262). Wrapping guarantees .Count is always an integer.
+    $excluded = @($tests | Where-Object { $n = $_.Name; ($excludedFromSweep | Where-Object { $n -like "*$_*" }) })
+    if ($excluded.Count -gt 0) {
+        $names = ($excluded.Name -join ", ")
+        Write-Host "[Runner] Excluding $($excluded.Count) dialog-settle script(s) from default sweep ($names) -- reliable execution moved to F99 (integration_test). Run explicitly with -TestName f56 / -TestName f37." -ForegroundColor DarkYellow
+        $tests = @($tests | Where-Object { $n = $_.Name; -not ($excludedFromSweep | Where-Object { $n -like "*$_*" }) })
+    }
+}
+
+if (@($tests).Count -eq 0) {
     Write-Warning "No tests matched pattern: $pattern"
     exit 0
 }

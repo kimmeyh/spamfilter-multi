@@ -6,6 +6,13 @@
 .DS_Store
 .atom/
 .buildlog/
+
+# WinWright transient outputs (selector-probe scratch + per-step failure screenshots).
+# Scoped to the winwright test dir and the scripts dir (where the runner writes
+# step_*_fail.png) so unrelated assets with similar names are not ignored.
+test/winwright/_probe_*.json
+test/winwright/step_*_fail.png
+scripts/step_*_fail.png
 .history
 .svn/
 migrate_working_dir/

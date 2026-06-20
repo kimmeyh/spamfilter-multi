@@ -1,14 +1,30 @@
 # Coding Velocity Tracker
 
-**Purpose**: Record ACTUAL wall-clock coding time per task/step so future sprint estimates are grounded in history, not anchored guesses. Established Sprint 39 (2026-05-25) after Harold flagged that hour-based estimates ran ~10x too high (actuals ~10% of estimate; no single task had exceeded ~1h, yet every estimate used a 1-hour floor).
+**Purpose**: Record ACTUAL development time per Item so future estimates are grounded in history, not anchored guesses. Established Sprint 39 (2026-05-25) after Harold flagged that hour-based estimates ran ~10x too high. Extended Sprint 41 (2026-06-13) to track TWO metrics (effort vs. wall-clock) and to GUARANTEE every Item is covered.
+
+## The Two Metrics (Sprint 41, Harold's definition)
+
+Every Item carries **two estimates and two actuals**, all in **minutes**:
+
+- **Effort** = the sum of every sub-agent's individual elapsed run time. "How much development happened."
+- **Wall-clock** = (completion timestamp of the LAST sub-agent to finish) minus T_start. "How long Harold was away." Always <= Effort when sub-agents run in parallel; the gap IS the parallelism benefit.
+- **T_start** = sprint-approval time (Phase 3.7) for sprint tasks; work-start time for mid-sprint / between-sprint Items.
+- **Measurement method (no stopwatch needed)**: log a clock reading at T_start; log a clock reading when the last sub-agent reports complete (sort sub-agent completion times, take the max) = T_end. Wall-clock = T_end - T_start. Effort = sum of per-agent durations.
+- Both metrics EXCLUDE: time waiting on Harold (decisions, manual testing), and build/launch time.
+
+### The number Harold cares about: "when can I come back?"
+
+= the **wall-clock sum of every Item scheduled before the Manual Testing handoff (Phase 5.3)**, accounting for parallel sub-agent execution (critical path, not effort sum). Give Harold ONE window at sprint approval (e.g. "~20-35 min"); refine to a single number when execution starts; flag immediately if it slips.
 
 ## Rules (MANDATORY for all future estimating)
 
-1. **Estimate in MINUTES, not hours.** No 1-hour floor. A 1-line UI move is ~5-15 min, not "1h".
-2. **Base every estimate on the historical actuals table below**, matched by step-type. If no matching history exists, estimate conservatively in minutes and flag it as `[no-history]`.
-3. **Record the actual immediately on task completion** -- append a row to the Actuals Log. Do not batch at sprint end (memory decays).
-4. **Wall clock = elapsed coding time** from starting the task to tests-green/analyze-clean. Excludes time waiting on Harold (manual testing, decisions) and excludes build/launch time.
-5. **Recompute the Estimate Table each sprint retro** (Phase 7) from the accumulated Actuals Log: per step-type, use the median of recorded actuals as the next estimate, and note the range.
+1. **Estimate in MINUTES, not hours.** No 1-hour floor. (Calibration note, Sprint 41: 400 HOURS is large; 400 MINUTES is small. A multi-surface feature is tens of minutes, not hundreds.)
+2. **Base every estimate on the Estimate Table below**, matched by step-type. If no matching history exists, estimate conservatively and flag `[no-history]`.
+3. **Record both actuals immediately on Item completion** -- append a row to the Actuals Log. Do not batch at sprint end (memory decays).
+4. **COVERAGE GUARANTEE**: EVERY Item that gets implemented gets a row -- sprint tasks AND mid-sprint scope from testing feedback AND retro IMPs AND between-sprint work (e.g. issue cleanup, bug reports, tooling fixes). The moment an Item is picked up, it gets a Coverage Ledger row. No Item is ever missed.
+5. **Recompute the Estimate Table each sprint retro** (Phase 7) from the accumulated Actuals Log: per step-type, median of recorded Act-Effort = next estimate; note the range and sample count.
+6. **Phase 7 EXIT GATE**: every Item touched this sprint has a Coverage Ledger row with both estimates and both actuals, OR the retrospective is INCOMPLETE. Enforced like the 14-category rule.
+7. **Update the Accuracy Trend table each retro** so the estimate-vs-actual error ratio is visible sprint-over-sprint (the whole point: estimates must get more accurate over time).
 
 ## Step-Type Taxonomy
 
@@ -33,24 +49,55 @@ Classify each task by its dominant step-type so estimates aggregate meaningfully
 
 ## Estimate Table (current best estimates, in minutes)
 
-**Seeded 2026-05-25 with NO historical actuals yet** -- these are first-pass minute-based guesses to replace the old hour anchors. They will be replaced by medians from the Actuals Log after Sprint 39. All marked `[no-history]` until then.
+**Recomputed 2026-06-13 (Sprint 41) from the Sprint 39+40 Actuals Log** -- replaces the 2026-05-25 `[no-history]` seed, which ran ~6x high (median error-ratio ~0.15 across Sprint 39). Effort and wall-clock are equal here because almost every recorded Item so far ran as a single agent (solo Item -> Effort == Wall-clock). Per-type samples are still thin (n=1-3); precision firms up over Sprint 41+. The DIRECTION (~6x lower than the old hour-anchored table) is solid.
 
-| Step-type | Estimate (min) | Basis |
-|-----------|----------------|-------|
-| UI-MOVE | 10-20 | [no-history] |
-| UI-NEW | 30-60 | [no-history] |
-| UI-GESTURE | 40-75 | [no-history] |
-| TEST-UNIT | 15-30 | [no-history] |
-| TEST-WIDGET | 20-40 | [no-history] |
-| SVC-NEW | 30-50 | [no-history] |
-| SVC-EDIT | 20-40 | [no-history] |
-| DB-MIGRATE | 25-45 | [no-history] |
-| IMAP | 40-70 | [no-history] |
-| NATIVE-WIN | 30-90 | [no-history] (high variance; native debugging) |
-| CONTENT | 20-40 | [no-history] |
-| HOOK | 15-30 | [no-history] |
-| DATA | 30-60 | [no-history] |
-| DOCS | 15-40 | [no-history] |
+| Step-type | Est-Effort (min) | Basis |
+|-----------|------------------|-------|
+| UI-MOVE | 3-6 | median 3, n=1 (S38-CI-2) |
+| UI-NEW | 30-40 | median 35, n=3 (F25/F35/F37) -- the one type that was ~right |
+| UI-GESTURE | 7-15 | median 7, n=1 (S38-CI-3) |
+| TEST-UNIT | 4-10 | median 4, n=1 (F92) |
+| TEST-WIDGET | 20-25 | median 22, n=2 (F78/S38-CI-6) -- harness setup is the real cost |
+| SVC-NEW | 5-18 | n=1 (F89 bundle) |
+| SVC-EDIT | 5-18 | n=2 (S38-CI-4 ~5, mixed) |
+| DB-MIGRATE | 13-20 | median 13, n=1 (F91) |
+| IMAP | 13-40 | bundled w/ SVC (F91/S38-CI-4) |
+| NATIVE-WIN | 10-15 | median 10, n=3 incl retries (S38-CI-1) -- high variance |
+| CONTENT | 5-18 | median ~11, n=2 (F74 ~5 / F75 ~18) |
+| HOOK | 5-8 | median 6, n=3 (F77/F93/F79-tooling) |
+| DATA | 15-19 | median 17, n=2 (BUG-S37-2) |
+| DOCS | 15-20 | n=1 (S38-CI-7 prep ~18) |
+
+## Coverage Ledger (no Item missed)
+
+Every Item that is implemented gets ONE row here the moment it is picked up -- sprint tasks, mid-sprint scope (testing feedback / retro IMPs), and between-sprint work. This is the master per-Item table (Harold's "Velocity log only" choice -- single source of truth). The Actuals Log below holds the detailed per-step notes; this ledger is the audit that NOTHING slipped.
+
+`Status`: PLANNED -> IN-PROGRESS -> DONE. An Item is not "done" for retro purposes until both actuals are filled.
+
+| Item | Sprint | Status | Est-Effort | Est-Wall | Act-Effort | Act-Wall | Notes |
+|------|--------|--------|-----------|----------|-----------|----------|-------|
+| BETWEEN-S40/41: MCP npx Windows fix + Anthropic bug report | 40->41 | DONE | [no-est, reactive] | -- | ~8 | ~8 | Diagnosed `spawn EINVAL` on `.cmd` shims; fixed 4 plugin `.mcp.json` (later reverted by user); wrote ANTHROPIC_BUG_REPORT_npx_mcp_windows.md. Between-sprint Item logged per coverage guarantee. |
+| BETWEEN-S40/41: Completed-issue cleanup (16 issues closed) | 40->41 | DONE | [no-est, reactive] | -- | ~12 | ~12 | Verified 16 open issues against CHANGELOG + Sprint 36-40 summaries; closed with explanatory comments. Between-sprint Item logged per coverage guarantee. |
+| F97: WinWright F56 create+delete scripts re-port | 41 | DONE (pending sweep) | 6-10 | 6-10 | ~25 | (parallel) | Est 2.5-4x LOW. Agent confirmed accepted TLD input by source (radio-select-before-type was the S40 blocker, not the input string); authored 2 self-cleaning scripts w/ `xyz`. Scripts authored, JSON valid; live sweep pending manual testing. |
+| F76: WinWright visual regression testing | 41 | DONE (baselines pending) | 8-14 | 8-14 | ~38 | (serial after F97) | Est 2.7-4.75x LOW. Chose layout-bounds (not pixel-diff -- AA noise); new winwright-visual-check.ps1 + runner -VisualCheck param; self-test PASSED (exit 0, 5 steps). Real baselines pending capture in manual testing. |
+| F83 Phase 1: Per-account bg-scan research + ADR | 41 | DONE | 10-16 | 10-16 | ~22 | (parallel) | Est 1.4-2.2x LOW. ADR-0039 (Proposed), 24 change-sites inventoried, 3 locked decisions baked in. Surfaced latent Android key-mismatch bug + orphaned bg_scan_schedule table (both -> F98). Awaiting Chief-Architect ADR approval. |
+| --- BATCH WALL-CLOCK (Sprint 41 Phase 4) | 41 | DONE | -- | 24-40 | Effort sum: ~85 | Wall: ~16.5 | T_start 2026-06-13 21:47 EDT, T_end 22:03:30 (last agent). 3 agents (F83+F97 parallel, F76 serial). Effort 85m vs Wall 16.5m = 5.1x parallelism benefit. Est-Effort total 24-40m ran ~2-3.5x LOW -- estimates now UNDER for the first time (prior sprints were over); flag for retro Category 3. |
+| F97 FIX r1 (manual-testing feedback): F56 save-button selectors | 41 | SUPERSEDED | 3-6 | 3-6 | ~6 | ~6 | Round-1 fix (`Save block rule`->`Save Rule`) was correct but INSUFFICIENT -- sweep round 2 still failed. The save selector was only 1 of 3 bugs. Superseded by FIX r2. |
+| F97 FIX r2 (manual-testing feedback round 2): 3 root causes | 41 | DONE (re-run pending) | 8-15 | 8-15 | ~30 (agent) + ~25 (my live inspect) = ~55 | ~30 | Harold's screenshot exposed the real chain. 3 LIVE-VERIFIED root causes: (1) radio select must click `Group[name*='Top-Level Domain']` not the inner `RadioButton` (ww_click on RadioButton no-ops; Group click -> IsSelected=True); (2) input field is mode-dependent: TLD mode = `Edit[name*='Enter TLD']`, Entire-Domain = `Edit[name='Enter email, domain, or URL']`; (3) Save Rule is off-screen at default window size -> `ww_invoke` no-ops on off-screen Flutter buttons -> must `ww_window_state maximize` then `ww_click`. Also test data: `xyz` was already in DB (source_domain='*.xyz') -> switched to `museum`. DB verified clean post-test (rules=4037/safe=578, zero leftover). LESSON: I reasoned from SOURCE twice (duplicate-check, dialog) and was wrong both times; the live UIA tree + Harold's screenshot were the truth. Re-run sweep pending Harold. |
+| F97 FIX r3 (manual-testing round 3): ww_click->ww_invoke (FAILED) | 41 | SUPERSEDED | 2-4 | 2-4 | ~10 | ~10 | Changed F56 Save/Delete + F37 picker buttons to ww_invoke. Sweep round 3 STILL failed: Save resolves 0 elements (timing, not click verb); F37 step #5 moved failure forward; Group radio cannot be invoked (no InvokePattern). LESSON (2nd partial-fix-as-done miss this sprint, after r1): changing the click VERB never addressed the dialog-settle ROOT CAUSE. Should have diagnosed before patching. Superseded by the F99 fold decision. |
+| TOOLING INVESTIGATION: WinWright CLI bounds + Playwright vs integration_test | 41 | DONE | [no-est, reactive] | -- | ~45 (live CLI probing + web research) | ~45 | Proved standalone WinWright CLI cannot read BoundingRectangle (commands = mcp|serve|run|heal|inspect|doctor; no get_attribute; inspect JSON has no bounds; run rejects ww_get_attribute/ww_assert*). Researched Playwright (drives browser DOM only -- cannot see native Flutter desktop widget tree) -> recommended keep WinWright + add Flutter integration_test as 2nd lane. Outcome: F99 created (pre-MVP). High-value reactive investigation; no estimate (unplanned). |
+| F76 RETIRE + F99 create + F56/F37 fold-to-F99 | 41 | DONE | [no-est, reactive] | -- | ~35 (reverts + 3 doc surfaces x 3 commits) | ~35 | Reverted non-working F76 artifacts (deleted winwright-visual-check.ps1 696 lines + -VisualCheck wiring + null baselines); generalized sweep exclusion to {f56,f37}; restored both to as-authored; F99 backlog item authored (absorbs F76+F56+F37); README/CHANGELOG/master-plan updated across 3 commits. Default sweep verified green 6/6, DB drift none, no orphans. 3 Class-2/3 decisions surfaced + approved before acting. |
+| TOOLING SIDEBAR: Norton HTTPS-interception git-push fix | 41 | DONE | [no-est, reactive] | -- | ~20 (diagnosis) | ~20 | git push failed "SSL peer certificate not OK". Root cause: Norton-360 LiveUpdate (~23:46) re-asserted TLS interception, presenting a "Norton Web/Mail Shield" cert the openssl git backend rejects. Confirmed via openssl s_client (issuer=Norton). Fix: Harold disabled Norton "Encrypted connections scanning" (verified issuer flipped to Sectigo). Researched current Norton-360 v26.4 UI steps. Unplanned but blocking; logged per coverage guarantee. |
+
+## Accuracy Trend (estimates must improve sprint-over-sprint)
+
+One row per sprint. `Median Error-ratio` = median(Act-Effort / Est-Effort); 1.0 = perfect, <1 = over-estimated, >1 = under-estimated. `MAPE` = mean absolute percentage error. Goal: error-ratio -> 1.0 and MAPE shrinks each sprint.
+
+| Sprint | Items (n) | Median Est-Effort | Median Act-Effort | Median Error-ratio | MAPE | Notes |
+|--------|-----------|-------------------|-------------------|--------------------|------|-------|
+| 39 | 11 | ~40 (old seed) | ~6 | ~0.15 | ~85% | Baseline. Old hour-anchored seed ran ~6-7x high. Confirmed Harold's "10x too large". |
+| 40 | 7 | ~45 (seed, partial) | ~28 | ~0.6 | ~45% | UI-NEW estimates (F25/F35/F37) were close; CONTENT/TEST near. Improvement from S39 as seed got partial correction mid-table. |
+| 41 | 3 planned (+7 reactive) | ~10 | ~25 | ~2.4 | ~140% | First sprint estimated from the recomputed (S39+40) table -- estimates ran UNDER for the first time (prior sprints ran over). Planned items (F83/F97/F76) each ~2-3.5x LOW on effort. MISSED the 0.7-1.3 target in the OPPOSITE direction. BUT the 7 reactive items (F97 fix rounds, tooling investigation, F76 retire/F99 fold, Norton fix) dominated actual wall-clock and were entirely unestimated -- the real lesson is not "estimates too low" but "this sprint was mostly unplanned discovery/rework, which the estimate model does not capture." See retro Category 3. |
 
 ## Actuals Log
 
@@ -83,6 +130,8 @@ Append one row per completed task. `Est` = pre-task estimate (min). `Actual` = r
 
 ## How This Improves Over Time
 
-- After each task: append actual -> the gap (Est vs Actual) is visible immediately.
-- At each sprint retro (Phase 7): recompute the Estimate Table medians from the log; update the `Basis` column from `[no-history]` to `median of N samples (range X-Y)`.
-- Cross-reference: Sprint retro Category 3 (Effort Accuracy) reads from this file; ALL_SPRINTS_MASTER_PLAN.md item estimates should cite step-types so they map to this table.
+- After each Item: append both actuals -> the gap (Est vs Act, effort AND wall-clock) is visible immediately.
+- At each sprint retro (Phase 7): recompute the Estimate Table medians from the Actuals Log; update the `Basis` column sample counts; add the sprint's row to the Accuracy Trend table.
+- The Accuracy Trend table is the proof Harold asked for: the median error-ratio should march toward 1.0 and MAPE should shrink each sprint. If it does not, the estimating method needs revision (raise it in retro Category 3).
+- Cross-reference: Sprint retro Category 3 (Effort Accuracy) reads from this file; the Phase 7 EXIT GATE (Rule 6) blocks retro completion until every touched Item has a Coverage Ledger row with both actuals.
+- ALL_SPRINTS_MASTER_PLAN.md item estimates should cite step-types so they map to the Estimate Table.

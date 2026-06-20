@@ -1,0 +1,43 @@
+{
+  "version": "1",
+  "appId": "",
+  "mode": "test",
+  "attachTitle": "MyEmailSpamFilter",
+  "description": "F56 create+delete safe sender lifecycle (Sprint 41 F97, round 2 fix 2026-06-14). Creates an Entire-Domain safe sender for 'winwright-test.com' (a non-existent domain chosen to avoid duplicate-check collision), confirms the save dialog, then uses the Manage Safe Senders search box to locate and delete the created pattern in a teardown testCase -- net DB change is zero. TEST DATA: 'winwright-test.com' verified absent from safe_senders table (count=0) at authoring time. Domain has TLD 'com' which is in kIanaTlds. Generated pattern: @(?:[a-z0-9-]+\\.)*winwright-test\\.com$ , type: entire_domain. DEFAULT TYPE: Entire Domain is the default selection on the Add Safe Sender screen (ManualRuleCreateScreen initState); SelectionItemPattern IsSelected=True confirmed via live UIA inspect -- no radio click needed. TLD type is not available for safe senders (only Entire Domain, Exact Domain, Exact Email). FIX 1 -- MAXIMIZE: ww_window_state maximize added as first step. Verified live: after maximize, Save Rule is IsOffscreen=False at y=654 (window 1020px+ tall). No ww_scroll step needed -- scroll caused a race condition in the runner (see block-rule script description). FIX 2 -- SAVE BUTTON INVOKE->CLICK: ww_invoke replaced with ww_click for Save Rule. CONFIRMATION DIALOG: 'Confirm Safe Sender' Alert with Button[name='Save'] -- verified live (NOT 'Save Rule', just 'Save'). TEARDOWN: search 'winwright-test' in Edit[name*='Search patterns'], click Button[name*='View safe sender details'], Delete x2 (first Delete opens 'Delete Safe Sender' confirm, second confirms), Back x2 to home -- all selectors verified live. INPUT FIELD: type=Edit[name='Enter email, domain, or URL'] -- same name in Entire-Domain mode on both block-rule and safe-sender create screens.",
+  "runConfig": {
+    "captureScreenshots": false,
+    "screenshotFormat": "png",
+    "screenshotOnFailureOnly": false,
+    "continueOnFailure": false,
+    "stepTimeoutMs": 15000,
+    "maxFailures": 0
+  },
+  "testCases": [
+    {
+      "id": "F56-SS-1",
+      "title": "Create Entire Domain safe sender for winwright-test.com",
+      "steps": [
+        { "tool": "ww_window_state", "state": "maximize" },
+        { "tool": "ww_click", "selector": "type=Button[name='Settings']" },
+        { "tool": "ww_click", "selector": "type=Button[name*='kimmeyharold@aol.com']" },
+        { "tool": "ww_click", "selector": "type=Button[name='Manage Safe Senders']" },
+        { "tool": "ww_click", "selector": "type=Button[name*='Add safe sender']" },
+        { "tool": "ww_type", "selector": "type=Edit[name='Enter email, domain, or URL']", "text": "winwright-test.com" },
+        { "tool": "ww_click", "selector": "type=Button[name='Save Rule']" },
+        { "tool": "ww_click", "selector": "type=Button[name='Save']" }
+      ]
+    },
+    {
+      "id": "F56-SS-2",
+      "title": "Delete the winwright-test.com safe sender (teardown -- restores DB state)",
+      "steps": [
+        { "tool": "ww_type", "selector": "type=Edit[name*='Search patterns']", "text": "winwright-test" },
+        { "tool": "ww_click", "selector": "type=Button[name*='View safe sender details']" },
+        { "tool": "ww_click", "selector": "type=Button[name='Delete']" },
+        { "tool": "ww_click", "selector": "type=Button[name='Delete']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name='Back']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name='Back']" }
+      ]
+    }
+  ]
+}
