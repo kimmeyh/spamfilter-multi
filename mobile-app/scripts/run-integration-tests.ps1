@@ -49,37 +49,54 @@ Write-Host "App dir: $mobileApp"
 Write-Host "Isolation: per-test temp DB (dev DB never touched)" -ForegroundColor DarkGray
 Write-Host ""
 
-# Resolve the target: a single matching file when -TestName is given, else the
-# whole integration_test/ directory.
-$target = $itDir
+# Collect the test files. One process PER FILE (Harold direction 2026-06-20):
+# the app's process-wide singletons (DatabaseHelper, the fire-and-forget
+# RuleSetProvider.initialize() async tail) bleed across files when many run in a
+# single `flutter test integration_test/` process. Running each file in its own
+# `flutter test <file>` process is the standard Flutter pattern for stateful
+# apps and isolates cleanly at the file boundary. WITHIN a file, multiple
+# testWidgets share one process and reset via the harness (no app shutdown).
+$files = Get-ChildItem -Path $itDir -Recurse -Filter "*_test.dart" | Sort-Object FullName
 if ($TestName) {
-    $matches = Get-ChildItem -Path $itDir -Recurse -Filter "*$TestName**_test.dart" | Sort-Object FullName
-    if ($matches.Count -eq 0) {
-        Write-Warning "No integration_test files matched '*$TestName*'. Nothing to run."
-        exit 0
-    }
-    Write-Host "Matched $($matches.Count) file(s) for '$TestName':" -ForegroundColor DarkYellow
-    $matches | ForEach-Object { Write-Host "  $($_.Name)" }
-    Write-Host ""
-    # flutter test accepts multiple file paths.
-    $target = $matches.FullName
+    $files = $files | Where-Object { $_.Name -like "*$TestName*" }
+}
+if (@($files).Count -eq 0) {
+    Write-Warning "No integration_test *_test.dart files matched. Nothing to run."
+    exit 0
 }
 
+Write-Host "Running $(@($files).Count) integration_test file(s), one process each:" -ForegroundColor DarkYellow
+$files | ForEach-Object { Write-Host "  $($_.Name)" }
+Write-Host ""
+
+$failed = @()
 Push-Location $mobileApp
 try {
-    # integration_test runs headless via `flutter test` (the harness mocks no
-    # device; AppPaths.testOverrideBaseDir provides DB isolation). This keeps the
-    # lane fast and CI-friendly and avoids opening a real window.
-    & flutter test $target
-    $code = $LASTEXITCODE
+    foreach ($f in $files) {
+        Write-Host "------------------------------------------" -ForegroundColor DarkGray
+        Write-Host "[RUN] $($f.Name)" -ForegroundColor Cyan
+        & flutter test $f.FullName
+        if ($LASTEXITCODE -ne 0) {
+            $failed += $f.Name
+            Write-Host "[FAIL] $($f.Name) (exit $LASTEXITCODE)" -ForegroundColor Red
+        } else {
+            Write-Host "[PASS] $($f.Name)" -ForegroundColor Green
+        }
+    }
 } finally {
     Pop-Location
 }
 
 Write-Host ""
-if ($code -eq 0) {
-    Write-Host "[OK] integration_test suite passed." -ForegroundColor Green
-} else {
-    Write-Host "[FAIL] integration_test suite failed (exit $code)." -ForegroundColor Red
+Write-Host "==========================================" -ForegroundColor Cyan
+Write-Host "integration_test summary" -ForegroundColor Cyan
+Write-Host "==========================================" -ForegroundColor Cyan
+Write-Host "Total files: $(@($files).Count)"
+Write-Host "Passed: $(@($files).Count - $failed.Count)" -ForegroundColor Green
+Write-Host "Failed: $($failed.Count)" -ForegroundColor $(if ($failed.Count -gt 0) { 'Red' } else { 'Green' })
+if ($failed.Count -gt 0) {
+    $failed | ForEach-Object { Write-Host "  - $_" -ForegroundColor Red }
+    exit 1
 }
-exit $code
+Write-Host "[OK] all integration_test files passed." -ForegroundColor Green
+exit 0

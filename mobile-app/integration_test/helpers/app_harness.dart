@@ -45,67 +45,77 @@ import 'package:my_email_spam_filter/core/services/app_environment.dart';
 import 'package:my_email_spam_filter/core/services/default_rule_set_service.dart';
 import 'package:my_email_spam_filter/core/storage/database_helper.dart';
 
-/// Boots [SpamFilterApp] against a FRESH empty isolated temp dir (the app seeds
-/// the bundled rule set). Use for tests that do not need pre-existing user data.
-Future<HarnessSession> bootApp(WidgetTester tester) async {
-  final tempDir = await Directory.systemTemp.createTemp('spamfilter_it_');
-  AppPaths.testOverrideBaseDir = tempDir.path;
-  await _pumpBootedApp(tester);
-  return HarnessSession._(tempDir);
+// EXECUTION MODEL (Harold direction 2026-06-20): the F99 runner invokes each
+// integration_test/*_test.dart in its OWN `flutter test` process (see
+// scripts/run-integration-tests.ps1). This is the standard Flutter pattern for
+// stateful apps and gives clean isolation at the FILE boundary -- the app's
+// process-wide singletons (DatabaseHelper, the fire-and-forget
+// RuleSetProvider.initialize() async tail) cannot bleed across files. WITHIN a
+// file, multiple testWidgets share one process and reset cleanly via bootDbOnly
+// + HarnessSession.dispose() (no app shutdown between tests).
+//
+// PREFER bootDbOnly: it seeds an isolated temp DB and lets the test pump the
+// SPECIFIC screen(s) it exercises. This is deterministic and fully awaited.
+// bootAppWithDevDbCopy boots the WHOLE SpamFilterApp (whose RuleSetProvider.
+// initialize() has an un-awaitable async tail) -- use it sparingly and ideally
+// as the SOLE test in its file.
+
+/// Seeds an isolated temp DB (FFI + AppPaths override + bundled-rule seed) and
+/// returns a session. The test pumps the screen(s) it needs. Fully awaited and
+/// deterministic -- the preferred boot for F99 lifecycle / picker / visual tests.
+Future<HarnessSession> bootDbOnly(WidgetTester tester) async {
+  final session = await _newSessionWithSeededDb();
+  return session;
 }
 
-/// Boots [SpamFilterApp] against a COPY of the dev DB placed in an isolated temp
-/// dir. Use for UI tests that need realistic existing rules/safe-senders. The
-/// real dev DB is copied once and never opened by the app.
+/// Boots the FULL [SpamFilterApp] against a COPY of the dev DB in an isolated
+/// temp dir (Harold's "copy the DB, test on the copy, delete the copy" pattern),
+/// for UI tests that need realistic existing data. The real dev DB is copied
+/// once and never opened. Returns null (skip the test) if the dev DB is absent
+/// so the suite still runs on a clean checkout / CI.
 ///
-/// Returns null (and the test should skip) if the dev DB is not present, so the
-/// suite still runs on a clean checkout / CI without dev data.
+/// Because this boots the full app (un-awaitable provider init tail), keep such
+/// a test as the only test in its file -- the per-file runner isolates it.
 Future<HarnessSession?> bootAppWithDevDbCopy(WidgetTester tester) async {
   final devDb = _devDbFile();
   if (!devDb.existsSync()) {
     return null;
   }
   final tempDir = await Directory.systemTemp.createTemp('spamfilter_it_');
-  // Place the copy at <temp>/spam_filter.db so AppPaths.databaseFilePath
-  // (which is <appSupportDir>/spam_filter.db) resolves to the copy.
   await devDb.copy('${tempDir.path}/spam_filter.db');
   AppPaths.testOverrideBaseDir = tempDir.path;
-  await _pumpBootedApp(tester);
+
+  sqfliteFfiInit();
+  databaseFactory = databaseFactoryFfi;
+
+  await tester.pumpWidget(const SpamFilterApp());
+  // _AppInitializer kicks RuleSetProvider.initialize() (async DB I/O) off a
+  // microtask; settle until the loading spinner clears (= init complete).
+  await tester.pumpAndSettle(const Duration(milliseconds: 200));
+  await tester.pumpAndSettle();
+
   return HarnessSession._(tempDir);
 }
 
-/// Initializes an isolated temp DB (FFI + override + bundled-rule seed) WITHOUT
-/// pumping the full SpamFilterApp. Use this when a test pumps a SINGLE screen
-/// directly (e.g. ManualRuleCreateScreen) and does not want the SpamFilterApp
-/// MultiProvider / RuleSetProvider.initialize() running concurrently -- that
-/// async init races with the test's own DB access and can close the DB mid-seed.
-Future<HarnessSession> bootDbOnly(WidgetTester tester) async {
+/// Shared: create temp dir, point AppPaths + DatabaseHelper at it, seed bundled
+/// rules. Awaited end-to-end.
+Future<HarnessSession> _newSessionWithSeededDb() async {
   final tempDir = await Directory.systemTemp.createTemp('spamfilter_it_');
   AppPaths.testOverrideBaseDir = tempDir.path;
 
   sqfliteFfiInit();
   databaseFactory = databaseFactoryFfi;
 
+  // bootDbOnly does not pump the full app, so it must set the DatabaseHelper
+  // instance's AppPaths explicitly (the full-app path gets this via
+  // RuleSetProvider.initialize()). The AppPaths honors testOverrideBaseDir.
+  final appPaths = AppPaths();
+  await appPaths.initialize();
   final db = DatabaseHelper();
-  // Seed the bundled rule set deterministically (same as a clean install) so
-  // single-screen tests run against realistic seeded data.
+  db.setAppPaths(appPaths);
+
   await DefaultRuleSetService(db).seedIfEmpty();
-
   return HarnessSession._(tempDir);
-}
-
-Future<void> _pumpBootedApp(WidgetTester tester) async {
-  // The harness pumps SpamFilterApp WITHOUT running main(), so it must do the
-  // desktop DB bootstrap main() normally does: initialize the FFI SQLite factory.
-  // Without this the app hits "databaseFactory not initialized" on first query.
-  // Idempotent -- safe to call once per boot.
-  sqfliteFfiInit();
-  databaseFactory = databaseFactoryFfi;
-
-  await tester.pumpWidget(const SpamFilterApp());
-  // _AppInitializer kicks RuleSetProvider.initialize() off a microtask; settle
-  // until the loading spinner is replaced by the home screen.
-  await tester.pumpAndSettle();
 }
 
 /// Resolves the real dev DB path (read-only source for the copy mode):
@@ -125,21 +135,21 @@ class HarnessSession {
   final Directory _tempDir;
 
   Future<void> dispose() async {
-    AppPaths.testOverrideBaseDir = null;
-    // Close the cached singleton DB connection so the next test re-opens against
-    // its OWN override dir (DatabaseHelper caches _database across tests).
+    // Close the cached singleton DB connection so the next testWidgets in this
+    // file re-opens against its own fresh override dir, then clear the override.
     try {
       await DatabaseHelper().close();
     } catch (_) {
       // ignore -- nothing open
     }
+    AppPaths.testOverrideBaseDir = null;
     try {
       if (await _tempDir.exists()) {
         await _tempDir.delete(recursive: true);
       }
     } catch (_) {
-      // Best-effort cleanup; a leftover temp dir under the OS temp root is
-      // harmless and never touches the dev DB.
+      // Best-effort; a leftover temp dir under the OS temp root is harmless and
+      // never touches the dev DB.
     }
   }
 }
