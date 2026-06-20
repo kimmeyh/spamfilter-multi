@@ -2,10 +2,8 @@
   "_comment": "Project-level Claude Code settings shared across the team. Machine-specific overrides go in .claude/settings.local.json (gitignored).",
   "permissions": {
     "deny": [
-      "Read(//0*.txt)",
-      "Read(//0*.md)",
-      "Read(0*.txt)",
-      "Read(0*.md)"
+      "Read(//0[!0-9]*.md)",
+      "Read(//0[!0-9]*.txt)"
     ]
   },
   "hooks": {
