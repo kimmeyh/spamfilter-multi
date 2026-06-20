@@ -3,7 +3,11 @@
 **Sprint**: 42
 **Date**: 2026-06-20 (Planning / Phase 1-3)
 **Branch**: `feature/20260620_Sprint_42` (created off merged `develop`)
-**Status**: PLANNING -- awaiting Harold Phase 3.7 approval
+**Status**: APPROVED 2026-06-20 (Harold, Phase 3.7). Execution started -- F99 first.
+
+**Harold decisions at approval (2026-06-20)**:
+- **F98 scheduling (Class-1) -- RESOLVED**: **one scheduled task per enabled account** (true per-account isolation). No mid-sprint Class-1 stop needed for this; F98-design now only confirms the task-naming string.
+- **BUG-S37-2 ccTLD strategy -- DIRECTION GIVEN, exact list TBC**: the bundled block/allow list is only an INITIAL LOAD, user-overridable anytime (remove a TLD, or add safe-sender rules). Leaning **US/UK allowed + high-spam TLDs blocked + the user's existing account-configured set**. Harold said "OK to ask about TLD" -> surface the exact ccTLD list for confirmation when BUG-S37-2 starts (third item).
 **Type**: Mixed -- Testing infrastructure (F99, pre-MVP), Architecture implementation (F98), Data quality (BUG-S37-2)
 **Estimating method**: TWO-metric MINUTE-based per `docs/CODING_VELOCITY.md` (effort = sum of sub-agents; wall-clock = parallel critical path).
 
