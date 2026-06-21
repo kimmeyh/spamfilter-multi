@@ -981,7 +981,15 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
     try {
       if (Platform.isWindows) {
-        final success = await BackgroundScanWindowsWorker.executeBackgroundScan(isTest: true);
+        // F98 (ADR-0039): scope the Test scan to THIS account (the Background
+        // tab is account-specific). Without accountId it fell through to the
+        // legacy all-accounts path and scanned every account + wrote the shared
+        // log. isTest still bypasses the enable check so a disabled-but-current
+        // account can be tested.
+        final success = await BackgroundScanWindowsWorker.executeBackgroundScan(
+          isTest: true,
+          accountId: widget.accountId,
+        );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
