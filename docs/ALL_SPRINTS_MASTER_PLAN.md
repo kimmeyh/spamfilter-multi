@@ -104,6 +104,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 37 | docs/sprints/SPRINT_37_RETROSPECTIVE.md | [OK] Complete | Apr 27 - May 1, 2026 |
 | 38 | docs/sprints/SPRINT_38_RETROSPECTIVE.md | [OK] Complete | May 5-18, 2026 |
 | 41 | docs/sprints/SPRINT_41_RETROSPECTIVE.md | [OK] Complete | Jun 13-17, 2026 (PR #262) |
+| 42 | docs/sprints/SPRINT_42_RETROSPECTIVE.md | [OK] Complete | Jun 20, 2026 (PR #263) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -146,7 +147,8 @@ The active (non-HOLD) backlog is allocated across the next three sprints as foll
 - **Sprint 39** (COMPLETE -- merged): S38-CI-1, S38-CI-2, S38-CI-6, S38-CI-3, F91, F89, S38-CI-4, F74, F92, BUG-S37-2, F77, F93 (+ F90, BUG-S39-1, BUG-S39-2 in warmup)
 - **Sprint 40** (COMPLETE -- merged PR #261, 2026-06-13): F75, F25, F35, F37, F78, F79, BUG-S40-1 (S38-CI-7 CANCELLED; F56 create+delete + manual_scan_flow deferred to F97)
 - **Sprint 41** (COMPLETE -- merged PR #262, 2026-06-20): F83 Phase 1 (ADR-0039 Accepted), F97 (F56 scripts authored -> reliable exec folded to F99), F76 (visual regression -> proven unimplementable on WinWright CLI, folded to F99), F37 (folder-picker script -> folded to F99). F99 created (pre-MVP)
-- **Sprint 42** (PLANNING 2026-06-20): F98 (F83 Phase 2 impl -- UNBLOCKED, ADR-0039 Accepted), F99 (parallel `integration_test` E2E harness -- PRE-MVP), F96, SEC-11b, BUG-S37-2
+- **Sprint 42** (COMPLETE -- merged-pending PR #263, 2026-06-20): F99 (integration_test harness, absorbs F76/F56/F37), F98 (per-account bg-scan, ADR-0039), BUG-S37-2 (TLD typo cleanup). F96 + SEC-11b NOT taken -> Sprint 43 candidates.
+- **Sprint 43** (candidates): F96 (F89 auth coverage for historical/detail paths), SEC-11b (SQLCipher), plus any retro IMPs.
 
 F77 + F93 (Claude-harness process items, ~2-3h combined) added to Sprint 39 per the F93 friction observed during this refinement session. S38-CI-7 (Opus 4.6 vs 4.7 head-to-head) moved to Sprint 40 (2026-05-25): its corrected intent -- 4+ tasks run on BOTH models on separate branches, scored on process/instruction/architecture/stopping-criteria/code-quality adherence -- is a ~6-10h experiment best run against the Sprint 40 task set, not bolted onto Sprint 39. Items moved to HOLD this session: F94 (was F52 Phase 2), F95 (was F52 Phase 3+), F63, SEC-15, SEC-8b, F6 -- all in the Android/GP HOLD group.
 
