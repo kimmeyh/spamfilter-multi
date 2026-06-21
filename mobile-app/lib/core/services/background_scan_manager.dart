@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:workmanager/workmanager.dart';
 import 'package:logger/logger.dart';
 import 'background_scan_worker.dart';
@@ -52,6 +54,9 @@ class ScanScheduleStatus {
 class BackgroundScanManager {
   static final Logger _logger = Logger();
 
+  /// Source of first-run jitter so per-account tasks do not fire simultaneously.
+  static final Random _random = Random();
+
   /// Unique WorkManager task name for an account (F98 / ADR-0039):
   /// `background_scan_task::<accountId>`. Null -> the legacy global name.
   static String taskNameFor(String? accountId) =>
@@ -80,15 +85,23 @@ class BackgroundScanManager {
       );
 
       final taskName = taskNameFor(accountId);
+      // F98 (Sprint 42): randomize the first-run delay between 1 and N minutes
+      // (the frequency) so multiple accounts' tasks do not all fire at once and
+      // contend for the single DB ("database is locked"). WorkManager has no
+      // per-firing random delay like Windows -RandomDelay, so we jitter the
+      // initialDelay; the DB busy_timeout + worker lock-retry cover later cycles.
+      final maxDelay = frequency.minutes < 2 ? 1 : frequency.minutes;
+      final initialDelayMinutes = 1 + _random.nextInt(maxDelay); // [1, N]
       _logger.i('Scheduling background scans every ${frequency.minutes} minutes'
-          '${accountId != null ? ' for account $accountId' : ''}');
+          '${accountId != null ? ' for account $accountId' : ''}'
+          ' (first run in $initialDelayMinutes min)');
 
       // Register periodic task with WorkManager
       await Workmanager().registerPeriodicTask(
         taskName,
         backgroundScanTaskId,
         frequency: Duration(minutes: frequency.minutes),
-        initialDelay: Duration(minutes: 1), // Start after 1 minute
+        initialDelay: Duration(minutes: initialDelayMinutes),
         backoffPolicy: BackoffPolicy.exponential,
         inputData: accountId != null ? {'account_id': accountId} : null,
         constraints: Constraints(

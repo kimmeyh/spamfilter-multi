@@ -213,18 +213,25 @@ try {
   /// [FIX] ISSUE #161: -Once with past start time does not persist across
   /// reboots. Using -At "12:00AM" with repetition ensures consistent runs.
   static String _getTriggerForFrequency(ScanFrequency frequency) {
+    // F98 (Sprint 42): each per-account task uses a -RandomDelay sized to its
+    // interval so multiple accounts' tasks do NOT all fire at the same instant
+    // and contend for the single SQLite DB ("database is locked"). Task
+    // Scheduler applies a fresh random 0..delay offset on EVERY firing, so this
+    // de-synchronizes the first run and all subsequent runs (broader than a
+    // first-run-only jitter). Combined with the DB busy_timeout/WAL and the
+    // worker's lock retry, this makes concurrent per-account scans robust.
     switch (frequency) {
       case ScanFrequency.every15min:
-        return r'$trigger = New-ScheduledTaskTrigger -Once -At "12:00AM" -RepetitionInterval (New-TimeSpan -Minutes 15) -RepetitionDuration (New-TimeSpan -Days 365)';
+        return r'$trigger = New-ScheduledTaskTrigger -Once -At "12:00AM" -RepetitionInterval (New-TimeSpan -Minutes 15) -RepetitionDuration (New-TimeSpan -Days 365) -RandomDelay (New-TimeSpan -Minutes 14)';
 
       case ScanFrequency.every30min:
-        return r'$trigger = New-ScheduledTaskTrigger -Once -At "12:00AM" -RepetitionInterval (New-TimeSpan -Minutes 30) -RepetitionDuration (New-TimeSpan -Days 365)';
+        return r'$trigger = New-ScheduledTaskTrigger -Once -At "12:00AM" -RepetitionInterval (New-TimeSpan -Minutes 30) -RepetitionDuration (New-TimeSpan -Days 365) -RandomDelay (New-TimeSpan -Minutes 29)';
 
       case ScanFrequency.every1hour:
-        return r'$trigger = New-ScheduledTaskTrigger -Once -At "12:00AM" -RepetitionInterval (New-TimeSpan -Hours 1) -RepetitionDuration (New-TimeSpan -Days 365)';
+        return r'$trigger = New-ScheduledTaskTrigger -Once -At "12:00AM" -RepetitionInterval (New-TimeSpan -Hours 1) -RepetitionDuration (New-TimeSpan -Days 365) -RandomDelay (New-TimeSpan -Minutes 59)';
 
       case ScanFrequency.daily:
-        return r'$trigger = New-ScheduledTaskTrigger -Daily -At "09:00AM"';
+        return r'$trigger = New-ScheduledTaskTrigger -Daily -At "09:00AM" -RandomDelay (New-TimeSpan -Minutes 59)';
 
       case ScanFrequency.disabled:
         // Should not happen, but provide fallback

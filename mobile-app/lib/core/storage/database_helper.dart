@@ -81,6 +81,19 @@ class DatabaseHelper implements RuleDatabaseProvider {
       onConfigure: (db) async {
         // Ensure SQLite foreign key constraints are enforced
         await db.execute('PRAGMA foreign_keys = ON');
+        // F98 (Sprint 42): concurrent per-account background-scan processes can
+        // contend for this single DB file ("database is locked", code 5). WAL
+        // journaling lets readers and a single writer proceed concurrently, and
+        // a busy_timeout makes a blocked writer WAIT (up to 30s) for the lock to
+        // free instead of failing immediately. This is the first line of defense;
+        // the worker also retries the whole scan on a persistent lock.
+        await db.execute('PRAGMA busy_timeout = 30000');
+        try {
+          await db.execute('PRAGMA journal_mode = WAL');
+        } catch (_) {
+          // WAL is unavailable on some platforms/filesystems; busy_timeout still
+          // applies. Non-fatal.
+        }
       },
       onCreate: _createTables,
       onUpgrade: _upgradeTables,
