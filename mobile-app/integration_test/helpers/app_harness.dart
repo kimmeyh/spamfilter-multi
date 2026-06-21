@@ -88,6 +88,12 @@ Future<HarnessSession?> bootAppWithDevDbCopy(WidgetTester tester) async {
   sqfliteFfiInit();
   databaseFactory = databaseFactoryFfi;
 
+  // IMP-1 (Sprint 42 retro): verify the override resolves under the OS temp root
+  // BEFORE pumping the full app (which will open + write the DB).
+  final guardPaths = AppPaths();
+  await guardPaths.initialize();
+  _assertTempDataPath(guardPaths.databaseFilePath);
+
   await tester.pumpWidget(const SpamFilterApp());
   // _AppInitializer kicks RuleSetProvider.initialize() (async DB I/O) off a
   // microtask; settle until the loading spinner clears (= init complete).
@@ -111,11 +117,31 @@ Future<HarnessSession> _newSessionWithSeededDb() async {
   // RuleSetProvider.initialize()). The AppPaths honors testOverrideBaseDir.
   final appPaths = AppPaths();
   await appPaths.initialize();
+  // IMP-1 (Sprint 42 retro): hard-assert the resolved DB path is under the OS
+  // temp root BEFORE any write/seed. This is the guard that would have caught
+  // the F99 dev-DB contamination: if isolation ever silently fails, fail loudly
+  // here instead of writing to the real dev DB.
+  _assertTempDataPath(appPaths.databaseFilePath);
   final db = DatabaseHelper();
   db.setAppPaths(appPaths);
 
   await DefaultRuleSetService(db).seedIfEmpty();
   return HarnessSession._(tempDir);
+}
+
+/// Fails the test immediately if [dbPath] is NOT under the OS temp root -- the
+/// safety guard against ever writing to the real dev/prod DB from a test.
+void _assertTempDataPath(String dbPath) {
+  final tempRoot = Directory.systemTemp.path.toLowerCase();
+  final resolved = dbPath.toLowerCase();
+  if (!resolved.startsWith(tempRoot)) {
+    throw StateError(
+      'HARNESS ISOLATION FAILURE: resolved DB path is NOT under the OS temp '
+      'root.\n  DB path:   $dbPath\n  temp root: ${Directory.systemTemp.path}\n'
+      'Refusing to run -- a test must never write to the real dev/prod DB. '
+      '(AppPaths.testOverrideBaseDir likely did not take effect.)',
+    );
+  }
 }
 
 /// Resolves the real dev DB path (read-only source for the copy mode):

@@ -483,6 +483,18 @@ These items were filed during Sprint 38 retrospective and are pre-loaded for the
 - **Prerequisite for the ported flows**: add `Key`s to the targeted widgets (Settings/Help/nav buttons, Add-Block-Rule radios + input + Save dialog, folder pickers, Manage Rules/Safe Senders search) so `find.byKey` is stable.
 - **Estimate**: TBD -- to be minute-estimated at Backlog Refinement per CODING_VELOCITY.md (TEST-INFRA + per-flow port count).
 
+**F100. Port WinWright read-only flows to `integration_test` (incremental) Priority 40 -- BACKLOG (Sprint 42 retro IMP-3)**
+- Phase: Testing infrastructure
+- Platform: Windows desktop (harness cross-platform)
+- Incrementally port the 6 read-only WinWright flows (navigation, settings tabs, scan history, text selection, f25 rule-test, f35 rule-edit) to the F99 `integration_test` lane so the robust in-VM harness becomes primary; retire each WinWright script as its coverage is replaced. Per-file process model + existing harness/seams already in place (F99). Low priority -- WinWright currently covers these green; this is consolidation, not new coverage.
+- Source: Sprint 42 retrospective Category 14 / IMP-3.
+
+**F101. Configurable/shorter F98 background-scan DB-lock retry bound Priority 35 -- BACKLOG (Sprint 42 retro IMP-2)**
+- Phase: Tuning / background scanning
+- Platform: All
+- The F98 worker retries on "database is locked" 1 minute x 20 (Harold's spec), so a genuinely stuck lock can hang a scan up to ~20 minutes before failing. Make the retry count/interval configurable (or shorten the worst-case) IF Harold observes long hangs in practice. Constants live in `background_scan_windows_worker.dart` (`_dbLockMaxAttempts`, `_dbLockRetryDelay`). Revisit only if observed -- the WAL + busy_timeout + jitter layers should make the retry rarely fire.
+- Source: Sprint 42 retrospective Category 13 / IMP-2.
+
 ### Bugs
 
 **BUG-S37-2. Bundled-rule TLD data quality + country-TLD blocklist expansion (~3-5h) Priority 50 -- SPRINT 38+ from Sprint 37**
