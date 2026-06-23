@@ -63,7 +63,7 @@ One-line-per-phase quick reference. Use this at the start of a sprint and at eve
 | [**3. Sprint Kickoff & Planning**](#phase-3-sprint-kickoff--planning) | Draft `docs/sprints/SPRINT_N_PLAN.md`; open Issue #N + create draft PR (3.3.1); **get explicit Phase 3.7 approval** | User says "plan approved" (or equivalent) -- this authorizes Phases 4-7 (durable) |
 | [**4. Sprint Execution (Development)**](#phase-4-sprint-execution-development) | Implement tasks in plan order; run tests + analyze after each; commit with issue number | All acceptance criteria in plan met; test suite green |
 | [**5. Code Review & Testing**](#phase-5-code-review--testing) | Test-assertion sibling sweep (5.1.1); full test suite; build + launch Windows app for manual test | Manual test golden-path + edge cases verified; no regressions |
-| [**6. Push to Remote & Create PR**](#phase-6-push-to-remote--create-pr) | Push branch; update PR description; **convert draft to ready (6.4.5)** after Copilot pass (or after CODEOWNER review if Copilot is unavailable) | PR is `isDraft: false`, `mergeable: MERGEABLE`; Copilot review received IF Copilot is configured as a collaborator on the repo (otherwise skipped per Sprint 37 retro Imp-6) |
+| [**6. Push to Remote & Create PR**](#phase-6-push-to-remote--create-pr) | Push branch; update PR description; **convert draft to ready (6.4.5)** after Copilot pass (or after CODEOWNER review if Copilot is unavailable); **on merge, immediately open the NEXT sprint branch off develop (6.6)** | PR is `isDraft: false`, `mergeable: MERGEABLE`; Copilot review received IF Copilot configured; **next sprint branch created off updated develop as soon as the PR merges (no post-merge commits stranded on the merged branch)** |
 | [**7. Sprint Review & Retrospective**](#phase-7-sprint-review--retrospective-after-pr-submitted---mandatory-for-all-sprints) | Send retro prompt; draft Claude feedback in parallel; combine + apply now-vs-backlog decisions | Retrospective doc committed with 4 roles x 14 categories; Cat 13 -> Sprint N+1 plan; Cat 14 -> master plan backlog |
 
 **Invariants** (apply to all phases):
@@ -935,6 +935,21 @@ After Phase 5.2 all tests pass, context can be compacted for efficiency:
   - Provide summary of sprint results
   - Ask for approval or feedback
   - Note any follow-up items
+
+- [ ] **6.6 Open the NEXT sprint branch immediately after merge** [WARNING] MANDATORY (Sprint 42 retro -- this was missed)
+  - **Trigger**: the moment you are notified the sprint PR is **merged/approved** (e.g. user says "PR merged", or `gh pr view <N> --json state` shows `MERGED`). Do this **very soon** after the notice -- before ANY further commits.
+  - **Why**: once the PR merges, the sprint feature branch is "done." Any further work (Phase 7 retro fixes that land post-merge, backlog refinement, GitHub issue cleanup, follow-up IMPs) must NOT be committed onto the merged branch -- those commits get stranded (not on `develop`). They belong on a fresh branch off the updated `develop`.
+  - **Steps** (run as soon as merge is confirmed):
+    ```bash
+    git fetch origin develop
+    git checkout develop && git pull origin develop          # updated develop (now has the merged sprint)
+    git checkout -b feature/<YYYYMMDD>_Sprint_<N+1>           # next sprint branch off develop
+    git push -u origin feature/<YYYYMMDD>_Sprint_<N+1>
+    ```
+    (If a `0*.txt`/`0*.md` personal-doc edit is dirty and blocks `checkout`, `git stash push -- <that file>` first, then `git stash pop` on the new branch.)
+  - **Result**: all post-merge work (retro fixes, backlog refinement, issue reconciliation, next-sprint planning) is committed on the NEXT sprint branch and reaches `develop` via that branch's PR -- nothing is stranded on a merged branch.
+  - **Naming note**: this is the same branch Phase 3.4 would create. If Phase 6.6 already created it, Phase 3.4 just verifies it exists (do not create a duplicate).
+  - **Recovery (if work was already committed to the merged branch)**: create the next branch off `develop`, `git cherry-pick` the stranded commits onto it, reset the merged branch back to its pushed head, then PR the next branch. (Sprint 42 used exactly this recovery for PR #265.)
 
 **[CHECKPOINT]** [WARNING] Phase 7 is MANDATORY. Re-read Phase 7 items in `docs/SPRINT_CHECKLIST.md` before proceeding. DO NOT declare sprint complete until Phase 7 is finished.
 

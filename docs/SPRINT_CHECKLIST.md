@@ -105,6 +105,7 @@ These documents MUST be created/updated during each sprint:
 - [ ] PR references issues: `Closes #XX, #YY, #ZZ`
 - [ ] **GitHub Copilot review responded to** (if Copilot enabled): draft Fix/Backlog/NA recommendations per comment, get user approval, implement approved items (see SPRINT_EXECUTION_WORKFLOW.md § 6.4.1)
 - [ ] User notified PR is ready
+- [ ] **6.6 ON MERGE: open the NEXT sprint branch off updated develop IMMEDIATELY** (MANDATORY, Sprint 42 retro) -- the moment the PR is merged/approved, `git checkout develop && git pull` then `git checkout -b feature/<date>_Sprint_<N+1>` and push it, BEFORE any further commits (retro fixes, backlog refinement, issue cleanup). Post-merge commits on the merged branch get stranded off `develop`. See SPRINT_EXECUTION_WORKFLOW.md § 6.6 (incl. cherry-pick recovery if work already landed on the merged branch).
 
 **[CHECKPOINT]** Review Phase 7 checklist before proceeding. Phase 7 is MANDATORY. **[CONTEXT CHECK]** Verify context < 85% before starting Phase 7.
 
