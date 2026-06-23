@@ -7,6 +7,7 @@ import 'app_environment.dart';
 import 'background_scan_manager.dart';
 import 'powershell_script_generator.dart';
 import '../utils/account_id_sanitizer.dart';
+import '../../util/redact.dart';
 
 /// Service for managing Windows Task Scheduler integration
 ///
@@ -36,6 +37,14 @@ class WindowsTaskSchedulerService {
     return '${_taskNameBase}_${sanitizeAccountId(accountId)}${AppEnvironment.taskNameSuffix}';
   }
 
+  /// Log-safe task label. The real per-account task name embeds the
+  /// email-derived token (PII), so logs use the base + redacted account id
+  /// instead of the raw task name (Copilot review PR #263).
+  static String _logTaskLabel(String? accountId) {
+    if (accountId == null) return taskName;
+    return '${_taskNameBase}_${Redact.accountId(accountId)}${AppEnvironment.taskNameSuffix}';
+  }
+
   /// Create a scheduled task for background scanning
   ///
   /// Creates a Windows Task Scheduler task that launches the app
@@ -51,8 +60,8 @@ class WindowsTaskSchedulerService {
 
     try {
       final name = taskNameFor(accountId);
-      _logger.i('Creating scheduled task "$name" with frequency: ${frequency.label}'
-          '${accountId != null ? ' (account: $accountId)' : ''}');
+      _logger.i('Creating scheduled task "${_logTaskLabel(accountId)}" with frequency: ${frequency.label}'
+          '${accountId != null ? ' (account: ${Redact.accountId(accountId)})' : ''}');
 
       // Get executable path (current running app)
       final executablePath = await _getExecutablePath();
@@ -102,7 +111,7 @@ class WindowsTaskSchedulerService {
     }
 
     try {
-      _logger.i('Updating scheduled task "${taskNameFor(accountId)}" frequency to: ${frequency.label}');
+      _logger.i('Updating scheduled task "${_logTaskLabel(accountId)}" frequency to: ${frequency.label}');
 
       // Generate PowerShell script
       final scriptPath = await PowerShellScriptGenerator.generateUpdateTaskScript(
@@ -139,7 +148,13 @@ class WindowsTaskSchedulerService {
   /// orphan cleanup where only the enumerated task name is known.
   static Future<bool> deleteScheduledTaskByName(String taskName) async {
     try {
-      _logger.i('Deleting scheduled task "$taskName"');
+      // The raw task name embeds the email-derived token (PII). Log a redacted
+      // label: the global task name as-is, a per-account task as
+      // "<base>_[redacted]<suffix>" (Copilot review PR #263).
+      final logLabel = taskName == WindowsTaskSchedulerService.taskName
+          ? taskName
+          : '${_taskNameBase}_[redacted]${AppEnvironment.taskNameSuffix}';
+      _logger.i('Deleting scheduled task "$logLabel"');
 
       // Generate PowerShell script
       final scriptPath = await PowerShellScriptGenerator.generateDeleteTaskScript(
@@ -176,7 +191,7 @@ class WindowsTaskSchedulerService {
   /// - triggerFrequency: Trigger interval
   static Future<Map<String, dynamic>> getScheduleStatus({String? accountId}) async {
     try {
-      _logger.d('Getting scheduled task status for "${taskNameFor(accountId)}"');
+      _logger.d('Getting scheduled task status for "${_logTaskLabel(accountId)}"');
 
       // Generate PowerShell script
       final scriptPath = await PowerShellScriptGenerator.generateGetStatusScript(
@@ -250,11 +265,11 @@ class WindowsTaskSchedulerService {
 
       final status = await getScheduleStatus(accountId: accountId);
       if (status['exists'] == true) {
-        _logger.d('Scheduled task "${taskNameFor(accountId)}" already exists, no recreation needed');
+        _logger.d('Scheduled task "${_logTaskLabel(accountId)}" already exists, no recreation needed');
         return false;
       }
 
-      _logger.i('Scheduled task "${taskNameFor(accountId)}" is missing - recreating with frequency: ${frequency.label}');
+      _logger.i('Scheduled task "${_logTaskLabel(accountId)}" is missing - recreating with frequency: ${frequency.label}');
       final success = await createScheduledTask(frequency: frequency, accountId: accountId);
 
       if (success) {
@@ -283,7 +298,7 @@ class WindowsTaskSchedulerService {
 
       final status = await getScheduleStatus(accountId: accountId);
       if (status['exists'] != true) {
-        _logger.d('No scheduled task "${taskNameFor(accountId)}" exists, nothing to repair');
+        _logger.d('No scheduled task "${_logTaskLabel(accountId)}" exists, nothing to repair');
         return false;
       }
 
@@ -320,7 +335,7 @@ class WindowsTaskSchedulerService {
       }
 
       // Delete old task and recreate with current path
-      _logger.i('Repairing task "${taskNameFor(accountId)}" with frequency: ${frequency.label}');
+      _logger.i('Repairing task "${_logTaskLabel(accountId)}" with frequency: ${frequency.label}');
       await deleteScheduledTask(accountId: accountId);
       final success = await createScheduledTask(frequency: frequency, accountId: accountId);
 

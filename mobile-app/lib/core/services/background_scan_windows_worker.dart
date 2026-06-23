@@ -51,9 +51,8 @@ class BackgroundScanWindowsWorker {
       // interleave into one file. Null token -> shared legacy filename.
       final accountPart =
           _logAccountToken != null ? '${_logAccountToken}_' : '';
-      final logFile = File(
-        '$logDir\\${logPrefix}background_scan_$accountPart''v0.5.3.log',
-      );
+      final fileName = '${logPrefix}background_scan_${accountPart}v0.5.3.log';
+      final logFile = File('$logDir\\$fileName');
       final timestamp = DateTime.now().toIso8601String();
       await logFile.parent.create(recursive: true);
       await logFile.writeAsString(
@@ -123,7 +122,7 @@ class BackgroundScanWindowsWorker {
     _logAccountToken = accountId != null ? sanitizeAccountId(accountId) : null;
 
     _logger.i('Starting Windows background scan worker execution'
-        '${accountId != null ? ' for account $accountId' : ' (all accounts)'}');
+        '${accountId != null ? ' for account ${Redact.accountId(accountId)}' : ' (all accounts)'}');
     await _bgLog('executeBackgroundScan() started'
         '${accountId != null ? ' (account-scoped: ${Redact.accountId(accountId)})' : ' (all accounts)'}');
 
@@ -167,7 +166,7 @@ class BackgroundScanWindowsWorker {
         accountIds = accountIds.where((id) => id == accountId).toList();
         await _bgLog('Account-scoped run -> ${accountIds.length} matching account(s)');
         if (accountIds.isEmpty) {
-          await _bgLog('Account $accountId not found among saved accounts; nothing to scan');
+          await _bgLog('Account ${Redact.accountId(accountId)} not found among saved accounts; nothing to scan');
         }
       }
 

@@ -1,5 +1,7 @@
 import 'package:logger/logger.dart';
 
+import '../../util/redact.dart';
+
 /// Service for detecting and managing background execution mode
 ///
 /// Handles parsing of command-line arguments to detect if the app
@@ -47,7 +49,7 @@ class BackgroundModeService {
 
     if (_isBackgroundMode) {
       _logger.i('*** BACKGROUND MODE DETECTED ***'
-          '${_backgroundAccountId != null ? ' (account: $_backgroundAccountId)' : ' (all accounts -- legacy)'}');
+          '${_backgroundAccountId != null ? ' (account: ${Redact.accountId(_backgroundAccountId)})' : ' (all accounts -- legacy)'}');
     } else {
       _logger.i('Running in normal (foreground) mode');
     }

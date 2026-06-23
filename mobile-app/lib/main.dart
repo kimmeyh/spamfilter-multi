@@ -78,7 +78,14 @@ void main(List<String> args) async {
     }
 
     await bgLog('=== Background scan started ===');
-    await bgLog('Args: $args');
+    // F98: argv can contain --account-id=<email-derived id>; redact the id token
+    // so the email is not written to the background-scan log (Copilot review #263).
+    final redactedArgs = args
+        .map((a) => a.startsWith('--account-id=')
+            ? '--account-id=${Redact.accountId(a.substring('--account-id='.length))}'
+            : a)
+        .toList();
+    await bgLog('Args: $redactedArgs');
     await bgLog('Executable: ${Platform.resolvedExecutable}');
 
     try {
@@ -86,7 +93,7 @@ void main(List<String> args) async {
       // worker scans only that account. Null -> legacy all-accounts behavior.
       final bgAccountId = BackgroundModeService.backgroundAccountId;
       await bgLog('Calling executeBackgroundScan'
-          '${bgAccountId != null ? ' for account $bgAccountId' : ' (all accounts)'}...');
+          '${bgAccountId != null ? ' for account ${Redact.accountId(bgAccountId)}' : ' (all accounts)'}...');
       final success = await BackgroundScanWindowsWorker.executeBackgroundScan(
         accountId: bgAccountId,
       );

@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:workmanager/workmanager.dart';
 import 'package:logger/logger.dart';
 import 'background_scan_worker.dart';
+import '../../util/redact.dart';
 
 /// Frequency options for background scanning
 enum ScanFrequency {
@@ -93,7 +94,7 @@ class BackgroundScanManager {
       final maxDelay = frequency.minutes < 2 ? 1 : frequency.minutes;
       final initialDelayMinutes = 1 + _random.nextInt(maxDelay); // [1, N]
       _logger.i('Scheduling background scans every ${frequency.minutes} minutes'
-          '${accountId != null ? ' for account $accountId' : ''}'
+          '${accountId != null ? ' for account ${Redact.accountId(accountId)}' : ''}'
           ' (first run in $initialDelayMinutes min)');
 
       // Register periodic task with WorkManager
@@ -128,7 +129,7 @@ class BackgroundScanManager {
     try {
       final taskName = taskNameFor(accountId);
       _logger.i('Cancelling background scans'
-          '${accountId != null ? ' for account $accountId' : ''}');
+          '${accountId != null ? ' for account ${Redact.accountId(accountId)}' : ''}');
 
       // Initialize WorkManager if needed
       await Workmanager().initialize(

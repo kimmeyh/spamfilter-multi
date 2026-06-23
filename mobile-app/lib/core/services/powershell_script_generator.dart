@@ -3,6 +3,7 @@ import 'package:path/path.dart' as path;
 import 'package:logger/logger.dart';
 
 import 'background_scan_manager.dart';
+import '../../util/redact.dart';
 
 /// Generates PowerShell scripts for Windows Task Scheduler operations
 ///
@@ -28,7 +29,7 @@ class PowerShellScriptGenerator {
     String? accountId,
   }) async {
     _logger.i('Generating create task script for frequency: ${frequency.label}'
-        '${accountId != null ? ' (account: $accountId)' : ''}');
+        '${accountId != null ? ' (account: ${Redact.accountId(accountId)})' : ''}');
 
     final trigger = _getTriggerForFrequency(frequency);
     // F98 (ADR-0039): the action is account-scoped via --account-id when an

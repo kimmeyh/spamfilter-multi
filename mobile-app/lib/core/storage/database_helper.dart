@@ -90,9 +90,12 @@ class DatabaseHelper implements RuleDatabaseProvider {
         await db.execute('PRAGMA busy_timeout = 30000');
         try {
           await db.execute('PRAGMA journal_mode = WAL');
-        } catch (_) {
+        } catch (e) {
           // WAL is unavailable on some platforms/filesystems; busy_timeout still
-          // applies. Non-fatal.
+          // applies. Non-fatal, but log it (Copilot review PR #263) since losing
+          // WAL increases lock contention for concurrent per-account scans.
+          _logger.w('Could not enable WAL journal mode (using default); '
+              'busy_timeout still applies. Error: $e');
         }
       },
       onCreate: _createTables,
