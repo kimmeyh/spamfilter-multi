@@ -1,5 +1,7 @@
 import 'package:logger/logger.dart';
 
+import '../../util/redact.dart';
+
 /// Service for detecting and managing background execution mode
 ///
 /// Handles parsing of command-line arguments to detect if the app
@@ -10,8 +12,17 @@ class BackgroundModeService {
   /// Flag indicating if app is running in background mode
   static bool _isBackgroundMode = false;
 
+  /// The account id to scan in background mode, parsed from
+  /// `--account-id=<id>` (Sprint 42, F98 / ADR-0039). Null means the legacy
+  /// iterate-all-accounts behavior (backward compatibility for un-migrated
+  /// Task Scheduler entries during the transition).
+  static String? _backgroundAccountId;
+
   /// Launch flag for background scanning
   static const String backgroundScanFlag = '--background-scan';
+
+  /// Launch flag carrying the per-account id, e.g. `--account-id=gmail-a@b.com`.
+  static const String accountIdFlagPrefix = '--account-id=';
 
   /// Initialize background mode detection
   ///
@@ -23,12 +34,30 @@ class BackgroundModeService {
     // Check if background scan flag is present
     _isBackgroundMode = args.contains(backgroundScanFlag);
 
+    // F98: parse optional --account-id=<id> so the scheduled launch is
+    // account-scoped. Absent -> null -> legacy all-accounts behavior.
+    _backgroundAccountId = null;
+    for (final arg in args) {
+      if (arg.startsWith(accountIdFlagPrefix)) {
+        final value = arg.substring(accountIdFlagPrefix.length).trim();
+        if (value.isNotEmpty) {
+          _backgroundAccountId = value;
+        }
+        break;
+      }
+    }
+
     if (_isBackgroundMode) {
-      _logger.i('*** BACKGROUND MODE DETECTED ***');
+      _logger.i('*** BACKGROUND MODE DETECTED ***'
+          '${_backgroundAccountId != null ? ' (account: ${Redact.accountId(_backgroundAccountId)})' : ' (all accounts -- legacy)'}');
     } else {
       _logger.i('Running in normal (foreground) mode');
     }
   }
+
+  /// The per-account id parsed from `--account-id=<id>`, or null for the legacy
+  /// all-accounts background scan. Only meaningful when [isBackgroundMode].
+  static String? get backgroundAccountId => _backgroundAccountId;
 
   /// Check if app is running in background mode
   static bool get isBackgroundMode => _isBackgroundMode;
@@ -44,6 +73,7 @@ class BackgroundModeService {
   /// Reset mode (for testing)
   static void resetForTesting() {
     _isBackgroundMode = false;
+    _backgroundAccountId = null;
   }
 
   /// Set mode manually (for testing)

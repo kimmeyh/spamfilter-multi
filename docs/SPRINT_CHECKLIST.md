@@ -87,6 +87,7 @@ These documents MUST be created/updated during each sprint:
 - [ ] Full test suite passing (`flutter test`)
 - [ ] Code analysis clean (`flutter analyze` - target <50 warnings)
 - [ ] Risk mitigations validated
+- [ ] **5.1.6 Architecture docs current BEFORE manual-testing handoff** (Sprint 42 retro IMP-5; `feedback_architecture_docs_no_defer`): for every flow, table, ADR, or platform-status line in `ARCHITECTURE.md` / `ARSD.md` touched by this sprint, update it NOW -- do NOT defer to Phase 7. Quick check: `grep -niE "<sprint-touched-feature>" docs/ARCHITECTURE.md docs/ARSD.md` and reconcile each hit. Verify the ADR index (`docs/adr/README.md`) status/date for any ADR touched. (Sprint 42 surfaced a stale ARCHITECTURE.md bg-scan flow at retro -- this line prevents recurrence.)
 - [ ] **App built for user testing** (Windows: `build-windows.ps1`)
 - [ ] **Platform-specific UI verified** at native level (Win32 window title, system tray, notifications) -- Flutter UI layer may not control platform-level behavior (learned Sprint 21)
 - [ ] **Manual integration testing complete (Lead Developer)** -- this is a LOOP, not a single step. Each round of testing feedback can produce in-sprint fixes OR backlog additions; do not move to Code Review until the Lead Developer explicitly notes testing complete (see SPRINT_EXECUTION_WORKFLOW.md "Canonical Next Steps progression")

@@ -38,7 +38,7 @@ abstract class RuleDatabaseProvider {
 ///         safe_senders tables -- the GREEN/YELLOW/RED/GREY SPF/DKIM/DMARC
 ///         snapshot captured when a rule or safe sender was created via a
 ///         quick-add prompt.
-const int databaseVersion = 6;
+const int databaseVersion = 7;
 
 /// SQLite database helper - singleton pattern
 class DatabaseHelper implements RuleDatabaseProvider {
@@ -81,6 +81,22 @@ class DatabaseHelper implements RuleDatabaseProvider {
       onConfigure: (db) async {
         // Ensure SQLite foreign key constraints are enforced
         await db.execute('PRAGMA foreign_keys = ON');
+        // F98 (Sprint 42): concurrent per-account background-scan processes can
+        // contend for this single DB file ("database is locked", code 5). WAL
+        // journaling lets readers and a single writer proceed concurrently, and
+        // a busy_timeout makes a blocked writer WAIT (up to 30s) for the lock to
+        // free instead of failing immediately. This is the first line of defense;
+        // the worker also retries the whole scan on a persistent lock.
+        await db.execute('PRAGMA busy_timeout = 30000');
+        try {
+          await db.execute('PRAGMA journal_mode = WAL');
+        } catch (e) {
+          // WAL is unavailable on some platforms/filesystems; busy_timeout still
+          // applies. Non-fatal, but log it (Copilot review PR #263) since losing
+          // WAL increases lock contention for concurrent per-account scans.
+          _logger.w('Could not enable WAL journal mode (using default); '
+              'busy_timeout still applies. Error: $e');
+        }
       },
       onCreate: _createTables,
       onUpgrade: _upgradeTables,
@@ -487,6 +503,48 @@ class DatabaseHelper implements RuleDatabaseProvider {
       }
 
       _logger.i('v6 migration complete');
+    }
+
+    if (oldVersion < 7) {
+      _logger.i('Running v7 migration');
+
+      // BUG-S37-2 (Sprint 42): remove two more malformed bundled TLD block
+      // rules that are typos, not real TLDs: .sho and .sweeps. Removed from the
+      // bundled rules.yaml for fresh installs; this cleanup removes them from
+      // existing installs. Same JSON-decode-then-delete approach as v6.
+      const badTldPatternsV7 = <String>{
+        r'@.*\.sho$',
+        r'@.*\.sweeps$',
+      };
+      final tldRulesV7 = await db.query(
+        'rules',
+        columns: ['id', 'condition_header'],
+        where: "pattern_sub_type = 'top_level_domain'",
+      );
+      final idsToDeleteV7 = <Object>[];
+      for (final row in tldRulesV7) {
+        final raw = row['condition_header'];
+        if (raw is! String) continue;
+        try {
+          final headers = (jsonDecode(raw) as List).cast<String>();
+          if (headers.any(badTldPatternsV7.contains)) {
+            idsToDeleteV7.add(row['id'] as Object);
+          }
+        } catch (_) {
+          // Malformed JSON: skip rather than fail migration.
+        }
+      }
+      if (idsToDeleteV7.isNotEmpty) {
+        final placeholders = List.filled(idsToDeleteV7.length, '?').join(',');
+        final deleted = await db.delete(
+          'rules',
+          where: 'id IN ($placeholders)',
+          whereArgs: idsToDeleteV7,
+        );
+        _logger.i('v7 migration: removed $deleted malformed TLD rule(s) (BUG-S37-2: .sho, .sweeps)');
+      }
+
+      _logger.i('v7 migration complete');
     }
   }
 

@@ -109,6 +109,12 @@ class FolderSelectionScreen extends StatefulWidget {
   /// [NEW] Sprint 14: Custom button label
   final String? buttonLabel;
 
+  /// TEST-ONLY (Sprint 42, F99-d): when provided, the screen uses these folders
+  /// directly instead of fetching them from the account's credentials/IMAP. Lets
+  /// the integration_test harness drive the picker UI (search box, two-level
+  /// tree, back) in-VM without a live email account. Null in production.
+  final List<FolderInfo>? debugFoldersOverride;
+
   const FolderSelectionScreen({
     super.key,
     required this.platformId,
@@ -119,6 +125,7 @@ class FolderSelectionScreen extends StatefulWidget {
     this.singleSelect = false,
     this.title,
     this.buttonLabel,
+    this.debugFoldersOverride,
   });
 
   @override
@@ -171,6 +178,24 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
       _isLoading = true;
       _errorMessage = null;
     });
+
+    // TEST-ONLY (F99-d): bypass the live credential/IMAP fetch when the harness
+    // injects folders directly. Mirrors the success path's canonical pre-select.
+    if (widget.debugFoldersOverride != null) {
+      final folders = widget.debugFoldersOverride!;
+      final selections = <String, bool>{
+        for (final folder in folders)
+          folder.id: widget.initialSelectedFolders != null
+              ? widget.initialSelectedFolders!.contains(folder.displayName)
+              : PRESELECT_FOLDER_TYPES.contains(folder.canonicalName),
+      };
+      setState(() {
+        _allFolders = folders;
+        _selectedFolders = selections;
+        _isLoading = false;
+      });
+      return;
+    }
 
     try {
       final credStore = SecureCredentialsStore();

@@ -1,0 +1,475 @@
+***BELOW IS NOT FOR CLAUDE CODE, GITHUB COPILOT, CHATGPT OR COPILOT PULL REQUEST (PR) REVIEW USE***
+
+TBD---------------------------------------------------------------------------------------------------------
+
+Sprint 39 Backlog Refinement — Candidate List
+
+---------------------------------------------------------------------------------------------------------
+Done
+Sprint 39 Backlog Refinement — Candidate List
+
+Place on hold with Android items:  F52 Phase 2 , F52 Phase 3+. - can you give them new F numbers so that they are not the same number.
+Place on hold with Android items: F63, SEC-15, SEC-8b, F6
+
+Include in Sprint 39:  S38-CI-1, S38-CI-2, S38-CI-6, S38-CI-3, S38-CI-7, F91, F89, S38-CI-4, F74, F92, BUG-S37-2
+Target for Sprint 40: F75. F25, F35, F37, F78, F79
+Target for Sprint 41: SEC-11b, F83
+Can you ad to F75 a section for ongoing, daily background scanning look like.  Also How often do I need to update "no rules" section.
+
+Remove from backlog: 
+
+
+Sprint 39 Carry-Ins (6)
+
+- S38-CI-1. Window X-close button fix (~1-3h) — P80
+- S38-CI-2. Relocate "default folders account-specific" info card (~1h) — P70
+- S38-CI-6. Widget test for _loadLastCompletedScan cross-screen reload (~2h) — P70
+- S38-CI-3. F84 Sub-tasks B+C: Shift/Ctrl-click selection (~3-5h) — P65
+- S38-CI-4. IMAP cursor cap at daysBack-ago-UID (~2-3h) — P60
+- S38-CI-7. Opus 4.6 vs 4.7 side-by-side eval (~3-4h) — P50
+
+Core App (12)
+
+- F52 Phase 2. Android dev/prod/store flavors (~6-8h) — P90 (Issue #248)
+- F52 Phase 3+. iOS variants + cross-store hardening (~10-16h) — P88
+- F91. AOL copy-not-move source-folder dedup (~4-6h) — P85
+- F89. Surface SPF/DKIM/DMARC auth failures on quick-add (~6-10h) — P75
+- F63. Responsive design framework (~8-12h) — P70
+- F74. FAQ section in Help (~2-4h) — P60
+- F75. Help walkthrough: first-use guide (~4-6h) — P58
+- F76. Visual regression testing for WinWright (~6-10h) — P54
+- F92. Dedicated tests for LiveScanLogger (~2-3h) — P50
+- F25. Rule Testing UI enhancements (~6-8h) — P48
+- F35. Rule editing UI with regex generation (~8-12h) — P46
+- F37. Folder selectors: two-level listing (~6-8h) — P44
+- F78. Widget tests for ManualRuleCreateScreen (~3-4h) — P42
+
+(That's 13 — F78 makes Core App 13. Recount below.)
+
+Testing / Quality (1)
+
+- F79. WinWright full-sweep harness + UI-trigger cadence (~4-8h) — P50 (Issue #240)
+
+Process (3)
+
+- F83. Per-account Background Scanning — separation of concerns (~2 sprints) — P60
+- F77. Hookify rule: block "want me to proceed?" patterns (~1h) — P52
+- F93. Auto-advance hook: exempt Backlog Refinement Phase 1 (~1-2h) — P50
+
+Bugs (1)
+
+- BUG-S37-2. Bundled-rule TLD data quality + ccTLD expansion (~3-5h) — P50
+
+Security Hardening (3)
+
+- SEC-15. IMAP host validation for custom servers (~1h) — P62 (depends on F37)
+- SEC-11b. SQLCipher driver swap + migration (~6-10h) — P60
+- SEC-8b. Certificate pinning for IMAP endpoints (~4-6h) — P42
+
+Performance (1)
+
+- F6. Provider-specific optimizations (~10-12h) — P100
+
+
+---------------------------------------------------------------------------------------------------------
+Done
+For F79, do """1. Build the F79 harness first, then UI-trigger (my recommendation) — make F79's one-command runner + pre/post dev-DB snapshot a real sprint task; once it exists, run the full sweep at the end of any sprint that touched lib/ui/**. ~5–10 min unattended, only on UI-touching sprints."""
+Next in backlog_refinement.md should be a review of all items not on HOLD.
+
+---------------------------------------------------------------------------------------------------------
+Done
+Also remove from HOLD F25, F35, F37, F78
+
+Could F79, full sweep 7 scripts be dome as part of every sprint - what would be the impacts
+
+Per Claude Code - None of these has been completed:  F25, F35 ,F37, F78, F79, H2, H4, F39
+
+Done
+These items on hold can be removed from the backlog:
+S38-CI-5
+F61
+
+Are these essentially complete? or what is left that has not already been done? Update these backlog items as needed so they are current.
+F25, F35 ,F37, F78, F79, H2, H4, F39
+
+Move off HOLD
+F74, F75, F76, F77
+
+Reconsider On HOLD items
+
+Backlog Refinement — All Items on HOLD
+
+
+Conditional HOLD (in active candidates list)
+
+- S38-CI-5. F88 IMAP batch equivalent (~research first, 2–6h if shippable) — Priority 40, HOLD until research complete. Investigate whether IMAP multi-set FETCH syntax gives Gmail-style batching savings for AOL/Yahoo/IMAP accounts.
+
+Standalone HOLD
+
+- F61. Architecture documentation refresh (~4–6h) — ARCHITECTURE.md/ARSD.md drift cleanup; partial refresh happens organically per-sprint, so full pass deferred.
+- F64. CI/CD pipeline with GitHub Actions (~4–6h) — Equivalent currently handled by Claude sprint workflow; only needed if PO wants formal CI.
+
+Periodic Review Templates (duplicate-when-needed)
+
+- F70. Periodic Security Deep Dive (~4–8h/review) — OWASP Mobile Top 10 + app-specific audit. Reusable template.
+- F71. Periodic Architecture Deep Dive (~4–8h/review) — ADR drift, ARCHITECTURE.md alignment, dead-code detection. Reusable template.
+
+Post-Windows-Store (Core features / UX / testing)
+
+- F33. Body rules cleanup script (~4–6h)
+- F25. Rule Testing UI Enhancements (~6–8h)
+- F35. Rule editing UI with regex generation (~8–12h)
+- F37. Folder selectors: two-level listing (~6–8h)
+- F74. FAQ section in Help (~2–4h)
+- F75. Help walkthrough: end-to-end first-use guide (~4–6h)
+- F76. Visual regression testing for WinWright (~6–10h) — screenshot/layout-bounds diffing; tree-based tests can't catch alignment.
+- F77. Hookify rule: block "want me to proceed?" patterns (~1h) — process automation.
+- F78. Widget tests for ManualRuleCreateScreen (~3–4h)
+- F79. Full WinWright E2E test sweep (~4–8h, Issue #240) — on-demand; trigger: major release prep / large UI refactor / PO request.
+
+Android / Google Play Store
+
+- Issue #163. Android app not tested in several sprints (~2–4h) — validation sprint.
+- F4. Background Scanning – Android (~14–16h)
+- GP-2. Release Signing and Play App Signing (~4–6h) — BLOCKING for GP release.
+- GP-3. Android Manifest Permissions (~4–6h) — BLOCKING.
+- GP-4. Gmail API OAuth Verification / CASA (~40–80h) — BLOCKING; trigger: 2,500+ users or $5K/yr revenue.
+- GP-5. Privacy Policy and Legal Documents (~8–16h) — BLOCKING.
+- GP-6. Play Store Listing and Assets (~8–12h)
+- GP-7. Adaptive Icons and App Branding (~4–6h)
+- GP-8. Android Target SDK + 16 KB Page Size (~4–8h)
+- GP-9. ProGuard/R8 Code Optimization (~4–6h)
+- GP-10. Data Safety Form Declarations (~2–4h) — BLOCKING.
+- GP-12. Firebase Analytics Decision (~2–4h)
+- GP-16. Google Play Developer Account Setup (~2–4h) — BLOCKING.
+- (GP-11 Account/Data Deletion was moved off HOLD → F66, already shipped.)
+
+Multi-Platform
+
+- F67. Platform validation – iOS, Linux, macOS (~4–6h per platform) — no current business need.
+
+Post-MVP
+
+- H1. GenAI Pattern Suggestions – Crowdsourced Spam Intelligence (TBD, Issue #142)
+- H2. Rule Pattern Consistency – Domain Matching Standards (~4–6h, Issue #140)
+- H3. Requirements Documentation System (TBD, Issue #137)
+- H4. Sent Messages Scan for Safe Senders (~12–16h, Issue #49)
+- H5. Outlook.com OAuth Implementation (~16–20h, Issue #44)
+- F39. Scan Results: Multi-Select and Bulk Rule Application (~12–16h)
+
+
+NOTE: Nonse of these were addressed - did F90 sprint instead.
+  Theme: Drive toward Microsoft Store full-access (public discoverability) release
+
+  Current Store State (from docs/STORE_LISTING_ASSETS.md): v0.5.1.0 submitted 2026-03-21 as direct-link only / soft launch, US
+  market, free. To graduate to public-discoverable requires: app quality at "no known critical bugs", store-relevant UX polish,
+   and store-listing assets verified against the current build.
+
+  Develop branch: develop (PR #258 merged 2026-05-19, Sprint 38 complete)
+  Tests entering Sprint 39: 1455 passing / 28 skipped / 0 failed
+  Active model: Opus 4.7 (Sprint 39 IMP-8 will side-by-side Opus 4.6)
+
+  ---
+  TIER A — Store-Release-Critical (recommend INCLUDE in Sprint 39)
+
+  - S38-CI-1. Window X-close button fix (~1-3h, P80)
+    - Windows-desktop bug: the X title-bar button does not close the app. Other window controls work; only X is broken. Direct
+  user-visible defect; store reviewers WILL try this.
+    - File hints: mobile-app/windows/runner/main.cpp, flutter_window.cpp WM_CLOSE handling, or window_manager plugin config.
+    - Source: Sprint 38 retro Category 13.
+  - BUG-S37-2. Bundled-rule TLD data quality cleanup + country-TLD blocklist expansion (~3-5h, P50)
+    - Sub-task (a) — typo cleanup: *.c, *.giw, *.nwm, *.sweepss, *.xd, *.xn-* and miscategorized 2LDs (*.de.com, *.in.net,
+  *.jp.com, etc.). Script-driven sweep with manual review.
+    - Sub-task (b) — design + populate ccTLD blocklist (4 candidate scoping strategies). Public-store users will see what's
+  bundled out-of-the-box.
+    - Source: Sprint 37 retro Category 14.
+  - F87. Settings icon on Scan History pages (~1-2h, P55) — partially shipped Sprint 38
+    - Verify the Sprint 38 fix covers all Scan History sub-screens (Harold's note "may only be one" — confirm).
+    - Source: Sprint 37 retro round-3 manual testing.
+  - S38-CI-6. Widget test for _loadLastCompletedScan cross-screen reload (~2h, P70) — testing debt
+    - The single test that would have caught Sprint 38 Rounds 7/8/9 (three iterations of the same regression). High
+  value-per-hour.
+    - Source: Sprint 38 retro Category 2 (Testing Approach).
+  - F76. Visual regression testing for WinWright (~6-10h, off HOLD if Sprint 39 includes UI work)
+    - WinWright currently verifies presence/clickability but cannot detect alignment/centering/layout. Add screenshot diffing
+  or layout-bounds assertions. Recommend off-HOLD for store readiness — visual regressions are a top reviewer complaint.
+
+  ---
+  TIER B — Store-Polish (recommend INCLUDE if room)
+
+  - S38-CI-2. Relocate "Default folders are account-specific" info card (~1h, P70)
+    - Move from top of Manual Scan to immediately below the "Default Folders" section header; add same card to Background tab.
+  UX polish, low risk.
+    - Source: Sprint 38 retro Category 13.
+  - S38-CI-3. F84 Sub-tasks B + C: Shift+Click extend + Ctrl+Click-drag disjoint selection (~3-5h, P65)
+    - Sub-A shipped Sprint 38. Sub-B and Sub-C complete the Windows-standard selection model on Manage Rules / Manage Safe
+  Senders.
+    - Source: Sprint 37 retro → deferred from Sprint 38.
+  - F86. Live reload of rules / safe senders during active Manual Scan — shipped Sprint 38 post-scan variant; backlog-as-spec
+  only. Recommend REMOVE from candidates (close the item).
+  - F82. Scan Results "no rules" progress indicator — shipped Sprint 38 in full. Recommend REMOVE from candidates (close the
+  item).
+  - S38-CI-7. Opus 4.6 vs 4.7 side-by-side prompt evaluation (~3-4h, P50, procedural)
+    - Run one representative Sprint 39 task on each model; document the comparison in Sprint 39 retro. Process improvement, not
+   feature work.
+    - Source: Sprint 38 retro IMP-8.
+
+  ---
+  TIER C — Hardening / Performance (consider for Sprint 39 or defer)
+
+  - S38-CI-4. IMAP cursor cap at daysBack-ago-UID (~2-3h, P60)
+    - Refinement of Sprint 38 IMAP cursor: cap the oldest_no_rule_uid cursor at the UID corresponding to now - daysBack so the
+  backlog is bounded by the retention window. Without this, a folder with continuous arrivals never naturally clears its
+  cursor.
+    - Source: Sprint 38 retro Category 13 + Round 4 deferred decision.
+  - S38-CI-5. F88 IMAP batch equivalent (~research first, P40, HOLD pending feasibility)
+    - Investigate whether IMAP FETCH 1,2,5,7:9 multi-set syntax provides comparable batching to Gmail batchGet. Research-only
+  first, then implementation if shippable.
+    - Source: Sprint 38 retro.
+  - BUG-S36-1. Manual rule creation allows semantic subsumption (~3-5h, P70, Issue #246)
+    - Sprint 36's BUG-S35-1 caught exact duplicates only. Semantic subsumption (e.g., exact_domain cwru.edu when entire_domain
+  cwru.edu already exists) is not caught. Quality-of-life fix.
+    - Source: Sprint 36 Phase 5 manual testing.
+  - F63. Responsive design framework (~8-12h, P70)
+    - Implement adaptive breakpoints (phone <600dp, tablet 600-900dp, desktop >900dp) per ARSD AR-7. Not store-critical for
+  desktop-only Microsoft Store release.
+  - F83. Per-account Background Scanning — separation of concerns (~2 sprints, P60)
+    - Current: enabling BG scan on any account enables for ALL. Desired: per-(provider, email) toggle. Phase 1 deep code
+  research = ~1 sprint solo. Too large to include with other Sprint 39 work; consider its own sprint.
+
+  ---
+  TIER D — Security Hardening (HIGH priority but optional for store)
+
+  - SEC-8b. Certificate pinning for IMAP endpoints (~4-6h, P42)
+    - OAuth HTTPS pinning shipped Sprint 33; IMAP-side gap remains. Options: fork enough_mail, manual socket wrap, or upstream
+  issue.
+  - SEC-11b. SQLCipher driver swap + plaintext→encrypted migration (~6-10h, P60)
+    - Infrastructure shipped Sprint 33; flipping the actual driver remains. Risky migration; needs QA on real installs.
+
+  ---
+  TIER HOLD (recommend stay-on-HOLD for Sprint 39)
+
+  - F35 (rule editing UI with regex generation), F37 (folder selectors two-level listing), F25 (rule testing UI enhancements),
+  F33 (body rules cleanup script), F39 (scan results multi-select + bulk rule application), F74 (FAQ section), F75 (Help
+  walkthrough), F77 (Hookify rule), F78 (widget tests for ManualRuleCreateScreen), F79 (Full WinWright E2E test sweep,
+  on-demand)
+  - F4 / GP-2..16 (Android Google Play Store readiness — out of scope for Windows Store)
+  - F67 (iOS/Linux/macOS validation)
+  - F61 (architecture doc refresh), F64 (CI/CD GitHub Actions)
+  - F70 (periodic security deep dive), F71 (periodic architecture deep dive)
+
+  ---
+  TIER REMOVE (recommend CLOSE these items — work complete)
+
+  - F82 (Scan Results "no rules" progress) — Sprint 38 shipped in full
+  - F86 (Live rule reload) — Sprint 38 shipped post-scan reload variant
+  - F88 (Gmail batchGet) — Sprint 38 shipped Gmail OAuth path
+  - F87 (Settings icon Scan History) — Sprint 38 shipped, may need verification only
+  - F84 Sub-task A (Ctrl+A select-all) — Sprint 38 shipped
+  - F85 (Content-management ADR) — Sprint 38 shipped
+  - F6c Phase 2 (Issue #250 + IMAP extension) — Sprint 38 shipped
+  - BUG-S37-1 (Background scan DB locked) — Sprint 38 shipped
+
+  ---
+  Recommended Sprint 39 Scope (my proposal)
+  ---
+  TIER C — Hardening / Performance (consider for Sprint 39 or defer)
+  - S38-CI-4. IMAP cursor cap at daysBack-ago-UID (~2-3h, P60)
+    - Refinement of Sprint 38 IMAP cursor: cap the oldest_no_rule_uid cursor at the UID corresponding to now - daysBack so the
+  backlog is bounded by the retention window. Without this, a folder with continuous arrivals never naturally clears its
+  cursor.
+    - Source: Sprint 38 retro Category 13 + Round 4 deferred decision.
+  - S38-CI-5. F88 IMAP batch equivalent (~research first, P40, HOLD pending feasibility)
+    - Investigate whether IMAP FETCH 1,2,5,7:9 multi-set syntax provides comparable batching to Gmail batchGet. Research-only
+  first, then implementation if shippable.
+    - Source: Sprint 38 retro.
+  - BUG-S36-1. Manual rule creation allows semantic subsumption (~3-5h, P70, Issue #246)
+    - Sprint 36's BUG-S35-1 caught exact duplicates only. Semantic subsumption (e.g., exact_domain cwru.edu when entire_domain
+  cwru.edu already exists) is not caught. Quality-of-life fix.
+    - Source: Sprint 36 Phase 5 manual testing.
+  - F63. Responsive design framework (~8-12h, P70)
+    - Implement adaptive breakpoints (phone <600dp, tablet 600-900dp, desktop >900dp) per ARSD AR-7. Not store-critical for
+  desktop-only Microsoft Store release.
+  - F83. Per-account Background Scanning — separation of concerns (~2 sprints, P60)
+    - Current: enabling BG scan on any account enables for ALL. Desired: per-(provider, email) toggle. Phase 1 deep code
+  research = ~1 sprint solo. Too large to include with other Sprint 39 work; consider its own sprint.
+
+  ---
+  TIER D — Security Hardening (HIGH priority but optional for store)
+
+  - SEC-8b. Certificate pinning for IMAP endpoints (~4-6h, P42)
+    - OAuth HTTPS pinning shipped Sprint 33; IMAP-side gap remains. Options: fork enough_mail, manual socket wrap, or upstream
+  issue.
+  - SEC-11b. SQLCipher driver swap + plaintext→encrypted migration (~6-10h, P60)
+    - Infrastructure shipped Sprint 33; flipping the actual driver remains. Risky migration; needs QA on real installs.
+
+  ---
+  TIER HOLD (recommend stay-on-HOLD for Sprint 39)
+
+  - F35 (rule editing UI with regex generation), F37 (folder selectors two-level listing), F25 (rule testing UI enhancements),
+  F33 (body rules cleanup script), F39 (scan results multi-select + bulk rule application), F74 (FAQ section), F75 (Help
+  walkthrough), F77 (Hookify rule), F78 (widget tests for ManualRuleCreateScreen), F79 (Full WinWright E2E test sweep,
+  on-demand)
+  - F4 / GP-2..16 (Android Google Play Store readiness — out of scope for Windows Store)
+  - F67 (iOS/Linux/macOS validation)
+  - F61 (architecture doc refresh), F64 (CI/CD GitHub Actions)
+  - F70 (periodic security deep dive), F71 (periodic architecture deep dive)
+
+  ---
+  TIER REMOVE (recommend CLOSE these items — work complete)
+
+  - F82 (Scan Results "no rules" progress) — Sprint 38 shipped in full
+  - F86 (Live rule reload) — Sprint 38 shipped post-scan reload variant
+  - F88 (Gmail batchGet) — Sprint 38 shipped Gmail OAuth path
+  - F87 (Settings icon Scan History) — Sprint 38 shipped, may need verification only
+  - F84 Sub-task A (Ctrl+A select-all) — Sprint 38 shipped
+  - F85 (Content-management ADR) — Sprint 38 shipped
+  - F6c Phase 2 (Issue #250 + IMAP extension) — Sprint 38 shipped
+  - BUG-S37-1 (Background scan DB locked) — Sprint 38 shipped
+
+------------------------------------------------------------------------------------------------------------
+  Recommended Sprint 39 Scope (my proposal)
+
+  Total estimate: ~14-22h (within typical sprint envelope; matches Sprint 38 actual ~24h)
+
+  Must include (Tier A, store-critical, ~7-10h):
+  1. S38-CI-1 — Window X-close button fix
+  2. BUG-S37-2 — TLD cleanup + ccTLD expansion
+  3. F87 verification (close-out)
+  4. S38-CI-6 — Widget test for _loadLastCompletedScan
+
+  Should include (Tier B, polish, ~5-8h):
+  5. S38-CI-2 — Settings info-card relocate
+  6. S38-CI-3 — F84 Sub-B + Sub-C selection gestures
+
+  Process (~3-4h):
+  7. S38-CI-7 — Opus 4.6 vs 4.7 side-by-side eval
+
+  Defer to Sprint 40 (would push estimate past 22h):
+  - S38-CI-4 (IMAP cursor cap)
+  - S38-CI-5 (F88 IMAP batch — needs research first)
+  - BUG-S36-1 (semantic subsumption)
+  - F76 (visual regression for WinWright — bigger lift)
+  - SEC-8b / SEC-11b
+  - F83 (per-account BG scan — own sprint)
+  - F63 (responsive design — not store-critical for desktop)
+
+------------------------------------------------------------------------------------------------------------
+  Sprint 37 carry-ins (highest priority)
+
+  - F52 Phase 2 — Android dev/prod/store flavors (~6-8h, P90, Issue #248)
+    - Blocked on external setup: Firebase Console (2 SHA-1 registrations) + Google Cloud Console (2 OAuth client IDs) for
+  com.myemailspamfilter.dev and com.myemailspamfilter.prod
+    - Pre-existing investigation: google-services.json has applicationId="com.example.spamfiltermobile" mismatch with
+  build.gradle.kts (com.myemailspamfilter) — diagnose first
+    - Memory note: project_f52_phase2_blockers.md
+  - F6c Phase 2 — Wire EmailScanProvider to historyId incremental scans (~3-5h, Issue #250)
+    - Sprint 37 shipped the Gmail adapter (fetchMessagesIncremental); EmailScanProvider still uses full fetchMessages path
+    - Acceptance: incremental scan path uses last_history_id from accounts table, falls back to full scan on expired result
+  - F82 — Scan History > Scan Results "no rules" progress indicator (~4-8h, P75, design + impl)
+    - Mirror Live Scan rule-add behavior on Scan History results
+    - Phase 3 design picks 1 of 3 candidates: (a) mirror Live Scan, (b) visual badging, (c) two-tab layout
+
+  High-priority new backlog from Sprint 37
+
+  - F87 — Settings icon on Scan History pages (~1-2h, P55) — pure UX consistency, likely 1-line per AppBar
+  - F86 — Live reload of rules / safe senders during active Manual Scan (~2-4h, P60)
+    - Today: scan caches rule set at start; new rules don't apply until exit/re-enter
+    - Subscribe scan provider to rule DB stream; atomic swap at batch boundary
+  - F84 — Keyboard + multi-region selection enhancements (~4-6h, P65)
+    - Ctrl+A (entire filtered list, not viewport), Shift+Click (extend), Ctrl+Click drag (disjoint)
+    - Cross-platform: Cmd-mappings on macOS
+  - F88 — F6a Phase 2: true Gmail batchGet via /batch/gmail/v1 (~3-4h, P60)
+    - Sprint 37 Copilot-review gap: shipped parallel Future.wait instead of multipart batchGet; Issue #247 acceptance line
+  still unsatisfied
+    - ~12-13x reduction in HTTP request count over Sprint 37
+  - F85 — Content-management architecture (ADR + Help refactor + Settings audit) (~6-10h, P50)
+    - Phase 1 ADR mandatory first (~2-3h): pick format (YAML/Markdown/JSON/per-file), loader, validation, i18n posture
+    - Phase 2 Help screen migration (~2-3h)
+    - Phase 3 Settings tabs + codebase audit for >500-char strings (~2-4h)
+
+  Bugs from Sprint 37
+
+  - BUG-S37-1 — Background scan SQLite "database is locked" (~2-3h, P65)
+    - Repro: leftover prod variant process held DB open while UI also queried it
+    - Investigate single-instance mutex bypass vs intra-process connection conflict
+  - BUG-S37-2 — Bundled-rule TLD data quality + ccTLD blocklist expansion (~3-5h, P50)
+    - Sub-task (a): script-driven sweep of TLD typos (*.c, *.giw, *.nwm, etc.) and miscategorized SLDs
+    - Sub-task (b): ccTLD expansion. Your stated scope: "all country TLDs except US and UK". Phase 3 picks 1 of 4 design
+  options
+
+  Other near-term backlog
+
+  - F81 — Store release process documentation (~5-6h, P100, Issue #242 — Sprint 36 carry-in still open)
+  - F80 — 1-page Phase Cheat Sheet for SPRINT_EXECUTION_WORKFLOW.md (~45min, P80, Issue #241)
+  - F63 — Responsive design framework (~8-12h, P70) — adaptive breakpoints per ARSD AR-7
+
+  Multi-sprint architecture
+
+  - F83 — Per-account Background Scanning (separation of concerns) (~2 sprints, P60) — design ADR sprint + impl sprint +
+  cross-platform validation
+
+  HOLD items (not for selection)
+
+  - All GP-* items, F4, F33, F35, F37, F39, F61, F64, F67, F70, F71, F74, F75, F76, F77, F78, F79, H1-H5, F52 Phase 3+, SEC-*
+  items, Issue #163 — all HOLD per master plan
+
+  ---
+  Suggested Sprint 38 themes (pick one or mix)
+
+  - Theme A — UX polish day (~10-15h): F87 + F86 + F82 + F84 → high user-visible value, all surface-level, no external
+  dependencies
+  - Theme B — Sprint 37 closeout (~10-15h): F6c Phase 2 (Issue #250) + F88 (Copilot-review gap) + F87 → finishes Sprint 37's
+  Gmail-adapter line
+  - Theme C — Architecture investment (~8-12h): F85 Phase 1 ADR + F85 Phase 2 Help migration → unblocks all future content
+  edits without Dart rebuilds
+  - Theme D — Process docs (~6-8h): F81 + F80 → ships the missing store-release runbook + the cheat sheet that addresses the
+  Opus 4.7 phase-boundary cost
+  - Theme E — Bug burn-down (~5-8h): BUG-S37-1 + BUG-S37-2 sub-task (a) cleanup → fixes the database-lock and the TLD typos
+  - Custom mix: pick any combination
+
+
+------------------------------------------------------------------------------------------------------------
+Done
+My preferred order
+  - F69 (Priority 58, ~6-8h) — E2E WinWright desktop tests (manual scan, background scan, settings)
+  - SEC-15 (Priority 62, ~1h) — IMAP host validation (blocked by F37)
+    Includes F35
+  - F56 (Priority 68, ~10-14h) — Manual rule creation UI (block + safe sender from user input). Blocked by SEC-1b.
+  - F6 (Priority 100, ~10-12h) — Provider-specific optimizations
+    - is there anything in F6 that can be pulled out for Windows app and be done now.
+
+  - F62 (Priority 55, ~2h) — Dead code cleanup (deprecated classes)
+  - F72 (Priority 72, ~1-2h) — Code hygiene cleanup (emoji, MSVC guard, email msg softening)
+
+Wait for android push
+  - SEC-4 (Priority 40, ~1h) — Android network_security_config.xml
+  - SEC-6 (Priority 40, ~2h) — Android release signing (overlaps GP-2)
+  - SEC-7 (Priority 40, ~2h) — R8 + Dart obfuscation (overlaps GP-9)
+  - SEC-9 (Priority 42, ~1h) — Move hardcoded Android client ID to build-time
+  - F63 (Priority 70, ~8-12h) — Responsive design framework (breakpoints)
+  - F52 (Priority 90, ~16-24h) — Multi-variant side-by-side install across all stores
+
+
+------------------------------------
+Done
+Selected for Sprint 33
+  - SEC-1b (Priority 35, ~6-10h, CRITICAL) — ReDoS runtime protection: integrate safeHasMatch into evaluator hot path. Design work needed (isolate pool
+   vs. batch timeout vs. opt-in). Blocks F35, F56.
+  - SEC-8 (Priority 42, ~4-6h) — Cert pinning for OAuth + IMAP (all platforms)
+  - SEC-11 (Priority 60, ~4-8h) — SQLite database encryption (SQLCipher)
+  - SEC-14 (Priority 62, ~2h) — Unmatched emails retention + body preview truncation
+  - SEC-19 (Priority 65, ~1-2h) — Log level control: runtime disable for auth logging
+  - SEC-22 (Priority 80, ~2h) — Rate limiting on failed auth attempts
+    - note it should be rate limited to 10 attempts, with 1 hour delay after 10
+  - F53 (Priority 60, ~1h) — Add .cc and .ne TLD block rules
+  - F54 (Priority 64, ~1-2h) — Add icon to Select Account screen icon row (design decision needed)
+  - F55 (Priority 66, ~4-6h) — Screen navigation consistency (linear flow + push/pop)
+  - F65 (Priority 45, ~1-2h) — Update Gmail onboarding to recommend app passwords as primary
+    - I thought this was already in place, but if not, please do this one.
+  - F66 (Priority 50, ~4-6h) — User data deletion feature (per-account + full wipe)
+
+Is f61 the one that is on hold or was recently completed and should be on HOLD?
+
+
+

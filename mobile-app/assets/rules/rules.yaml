@@ -24978,22 +24978,6 @@ rules:
   patternCategory: header_from
   patternSubType: top_level_domain
   sourceDomain: .*.sexy
-- name: tld_1565
-  enabled: 'True'
-  isLocal: 'True'
-  executionOrder: 10
-  conditions:
-    type: OR
-    body: []
-    from: []
-    header:
-    - '@.*\.sho$'
-    subject: []
-  actions:
-    delete: 'True'
-  patternCategory: header_from
-  patternSubType: top_level_domain
-  sourceDomain: .*.sho
 - name: tld_1566
   enabled: 'True'
   isLocal: 'True'
@@ -25266,22 +25250,6 @@ rules:
   patternCategory: header_from
   patternSubType: top_level_domain
   sourceDomain: .*.surf
-- name: tld_1583
-  enabled: 'True'
-  isLocal: 'True'
-  executionOrder: 10
-  conditions:
-    type: OR
-    body: []
-    from: []
-    header:
-    - '@.*\.sweeps$'
-    subject: []
-  actions:
-    delete: 'True'
-  patternCategory: header_from
-  patternSubType: top_level_domain
-  sourceDomain: .*.sweeps
 - name: tld_1585
   enabled: 'True'
   isLocal: 'True'

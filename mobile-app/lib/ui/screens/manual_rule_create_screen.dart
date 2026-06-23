@@ -24,6 +24,7 @@ import '../../core/services/manual_rule_duplicate_checker.dart';
 import '../../core/services/pattern_compiler.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/utils/manual_rule_pattern_generator.dart';
+import '../testing/widget_keys.dart';
 import '../utils/accessibility_helper.dart';
 import 'help_screen.dart';
 
@@ -565,6 +566,7 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
             child: const Text('Cancel'),
           ),
           FilledButton(
+            key: WidgetKeys.confirmDialogSaveButton,
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Save'),
           ),
@@ -748,6 +750,7 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
               Semantics(
                 label: 'Save ${widget.mode == ManualRuleMode.blockRule ? "block rule" : "safe sender"}',
                 child: FilledButton.icon(
+                  key: WidgetKeys.saveRuleButton,
                   onPressed: _isSaving ||
                           _generatedPattern.isEmpty ||
                           _patternError != null

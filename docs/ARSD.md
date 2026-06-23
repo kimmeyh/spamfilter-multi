@@ -578,7 +578,7 @@ graph LR
 | BR-3 | Safe sender whitelist | Safe senders evaluated before rules, pattern type detection | [ADR-0005](adr/0005-safe-senders-evaluated-before-rules.md) |
 | BR-4 | Multi-account support | Per-account settings with 3-tier inheritance | [ADR-0013](adr/0013-per-account-settings-with-inheritance.md) |
 | BR-5 | Demo mode | Synthetic emails across multiple categories, no live account needed | [ADR-0020](adr/0020-demo-mode-synthetic-emails.md) |
-| BR-6 | Background scanning | Platform-native scheduling (Windows: Task Scheduler) | [ADR-0014](adr/0014-windows-background-scanning-task-scheduler.md) |
+| BR-6 | Background scanning | Platform-native, **per-account** scheduling -- one OS task per enabled account (Windows: Task Scheduler; Android: WorkManager) | [ADR-0014](adr/0014-windows-background-scanning-task-scheduler.md), [ADR-0039](adr/0039-per-account-background-scanning.md) |
 | BR-7 | Move-to-trash safety | All "delete" actions move to trash (recoverable), not permanent delete | [ADR-0007](adr/0007-move-to-trash-not-permanent-delete.md) |
 | BR-8 | Scan history | Persistent scan results with retention settings | [ADR-0010](adr/0010-normalized-database-schema.md) |
 | BR-9 | YAML import/export | Rules and safe senders exportable to YAML for version control | [ADR-0004](adr/0004-dual-write-sqlite-yaml.md) |

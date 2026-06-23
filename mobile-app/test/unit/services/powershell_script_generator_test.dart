@@ -38,6 +38,33 @@ void main() {
         expect(content, contains('Minutes 15'));
       });
 
+      test('F98: includes -RandomDelay jitter to de-sync per-account tasks',
+          () async {
+        final scriptPath =
+            await PowerShellScriptGenerator.generateCreateTaskScript(
+          taskName: taskName,
+          executablePath: executablePath,
+          frequency: ScanFrequency.every15min,
+          workingDirectory: workingDirectory,
+        );
+        final content = await File(scriptPath).readAsString();
+        expect(content, contains('RandomDelay'),
+            reason: 'per-account tasks must jitter their start to avoid DB lock');
+      });
+
+      test('F98: injects --account-id when accountId is provided', () async {
+        final scriptPath =
+            await PowerShellScriptGenerator.generateCreateTaskScript(
+          taskName: taskName,
+          executablePath: executablePath,
+          frequency: ScanFrequency.every15min,
+          workingDirectory: workingDirectory,
+          accountId: 'aol-a@b.com',
+        );
+        final content = await File(scriptPath).readAsString();
+        expect(content, contains('--account-id=aol-a@b.com'));
+      });
+
       test('generates script file for 30-minute frequency', () async {
         // Act
         final scriptPath = await PowerShellScriptGenerator.generateCreateTaskScript(

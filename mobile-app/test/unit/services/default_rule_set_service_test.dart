@@ -473,9 +473,11 @@ void main() {
 
       test('BUG-S37-2: malformed TLD rules are absent after a fresh seed',
           () async {
-        // The six typo / miscategorized TLD rules were removed from the
-        // bundled rules.yaml. A fresh seed must not contain any of them.
-        // .sweeps (the correct spelling) and .ca (allowlisted) must remain.
+        // The typo / miscategorized TLD rules were removed from the bundled
+        // rules.yaml. A fresh seed must not contain any of them. Sprint 42
+        // (BUG-S37-2, decision 2a) additionally removes .sho and .sweeps --
+        // neither is a real IANA TLD (the Sprint-39 note that .sweeps was the
+        // "correct spelling" was wrong; it is not registered).
         await service.resetToDefaults();
         final db = await testHelper.dbHelper.database;
 
@@ -486,6 +488,8 @@ void main() {
           r'@.*\.xd$',
           r'@.*\.sweepss$',
           r'@.*\.qzz.io$',
+          r'@.*\.sho$', // Sprint 42 BUG-S37-2
+          r'@.*\.sweeps$', // Sprint 42 BUG-S37-2 (not a real IANA TLD)
         ];
         final tldRules = await db.query('rules',
             columns: ['condition_header'],
@@ -501,11 +505,9 @@ void main() {
           expect(allHeaders.contains(bad), isFalse,
               reason: 'Malformed TLD pattern "$bad" must not be seeded');
         }
-        // Positive controls: the correct .sweeps and allowlisted .ca remain.
-        expect(allHeaders.contains(r'@.*\.sweeps$'), isTrue,
-            reason: '.sweeps (correct spelling) must remain');
+        // Positive control: an allowlisted real ccTLD remains.
         expect(allHeaders.contains(r'@.*\.ca$'), isTrue,
-            reason: '.ca is allowlisted and must remain');
+            reason: '.ca is a real ccTLD and must remain');
       });
     });
 
