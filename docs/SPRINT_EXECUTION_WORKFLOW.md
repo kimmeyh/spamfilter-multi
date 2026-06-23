@@ -63,8 +63,8 @@ One-line-per-phase quick reference. Use this at the start of a sprint and at eve
 | [**3. Sprint Kickoff & Planning**](#phase-3-sprint-kickoff--planning) | Draft `docs/sprints/SPRINT_N_PLAN.md`; open Issue #N + create draft PR (3.3.1); **get explicit Phase 3.7 approval** | User says "plan approved" (or equivalent) -- this authorizes Phases 4-7 (durable) |
 | [**4. Sprint Execution (Development)**](#phase-4-sprint-execution-development) | Implement tasks in plan order; run tests + analyze after each; commit with issue number | All acceptance criteria in plan met; test suite green |
 | [**5. Code Review & Testing**](#phase-5-code-review--testing) | Test-assertion sibling sweep (5.1.1); full test suite; build + launch Windows app for manual test | Manual test golden-path + edge cases verified; no regressions |
-| [**6. Push to Remote & Finalize PR**](#phase-6-push-to-remote--create-pr) | Push branch; **UPDATE** the existing sprint PR (created 3.3.1, kept DRAFT); interim status to user -- NOT "ready" (6.5); **on merge, immediately open the NEXT sprint branch off develop (6.6)**. The draft->ready conversion + readiness announcement happen later, at the Phase 7 final gate (7.7.5). | PR updated + still DRAFT; Copilot review requested IF configured; next sprint branch created off updated develop as soon as the PR merges (no post-merge commits stranded) |
-| [**7. Sprint Review & Retrospective**](#phase-7-sprint-review--retrospective-after-pr-submitted---mandatory-for-all-sprints) | Send retro prompt; draft Claude feedback in parallel; combine + apply now-vs-backlog decisions; **FINAL PR GATE (7.7.5)**: after manual-testing + retro + IMPs + Copilot all complete, final PR update if needed -> draft->ready -> announce ready for final approval | Retrospective doc committed (4 roles x 14 categories); Cat 13 -> Sprint N+1 plan; Cat 14 -> backlog; **PR readied + PO/SM notified for final approval (the one readiness announcement)** |
+| [**6. Push to Remote & Finalize PR**](#phase-6-push-to-remote--create-pr) | Push branch; **UPDATE** the existing sprint PR (created 3.3.1, kept DRAFT); interim status to user -- NOT "ready" (6.5); **on merge, immediately open the NEXT sprint branch off develop (6.6)**. The draft->ready conversion happens at end of Phase 7.7 (retro improvements done); the PO/SM readiness announcement happens at 7.7.5. | PR updated + still DRAFT; Copilot review requested IF configured; next sprint branch created off updated develop as soon as the PR merges (no post-merge commits stranded) |
+| [**7. Sprint Review & Retrospective**](#phase-7-sprint-review--retrospective-after-pr-submitted---mandatory-for-all-sprints) | Send retro prompt; draft Claude feedback in parallel; combine + apply now-vs-backlog decisions; **when "apply now" IMPs done -> set PR "Ready for Review" (end 7.7)**; **FINAL GATE (7.7.5)** after manual-testing + retro + IMPs + Copilot all complete -> final PR update if needed -> notify PO/SM ready for final approval | Retrospective doc committed (4 roles x 14 categories); Cat 13 -> Sprint N+1 plan; Cat 14 -> backlog; **PR set Ready-for-Review when retro improvements done; PO/SM notified for final approval at the gate (the one readiness announcement)** |
 
 **Invariants** (apply to all phases):
 
@@ -311,7 +311,7 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
     1. **3.3.1 (here)** -- CREATE the PR as a **draft**, body = the drafted sprint plan.
     2. **3.7 (plan approved)** -- UPDATE the PR body to reflect the **approved** plan (if for some reason the PR does not exist yet, create it now).
     3. **End of sprint-plan development** (Phase 5, when all planned + manual-testing-feedback dev is complete) -- UPDATE the PR for anything that changed during the sprint (if it does not exist yet, create it).
-    4. **Final update gate (Phase 7 close, step 7.x)** -- ONLY after ALL of: manual testing complete AND retrospective complete AND retro improvements complete AND any GitHub Copilot review complete AND Copilot comments addressed -- give the PR a **final update if anything needs updating** (no-op if nothing changed), convert draft->ready, THEN notify the Product Owner / Scrum Master that the PR is ready for **final approval**. (See Phase 7 step 7.7.)
+    4. **End of Phase 7.7 (retro improvements done)** -- once ALL "apply now" retrospective suggestions are implemented + committed, set the PR to **"Ready for Review"** on GitHub (`gh pr ready` -- the draft->ready STATE change). THEN at the **7.7.5 final gate** (after manual testing AND retro AND retro improvements AND any Copilot review AND Copilot comments addressed are all complete): a final update if anything needs it (no-op if nothing changed), and the **notify Product Owner / Scrum Master ready for final approval** (the human signal). (See Phase 7 steps 7.7 and 7.7.5.)
   - **Important**: create a NEW draft PR for each sprint (do not reuse planning/architecture PRs).
   - **How**:
     ```powershell
@@ -1156,6 +1156,11 @@ Before conducting sprint review, build and test the Windows desktop app:
   For each proposal Harold marked "skip":
   - Note in the retrospective "Improvement Decisions" section that it was reviewed and declined; no further action.
 
+  **>>> Set the PR to "Ready for Review" once ALL "apply now" retro improvements are complete (Sprint 42, Harold's spec):**
+  - The moment every retrospective suggestion marked for implementation is implemented + committed + pushed (and analyzer/tests are green), convert the PR from draft to ready: `gh pr ready <PR#>`.
+  - Verify: `gh pr view <PR#> --json isDraft,mergeable` shows `isDraft:false`, `mergeable:MERGEABLE`.
+  - This is the GitHub STATE change (draft -> Ready for Review). It is distinct from the PO/SM readiness NOTIFICATION, which happens at 7.7.5 after the full final-gate checklist passes. (If there are no "apply now" improvements, set the PR ready here once the retrospective itself is complete.)
+
   After all approved improvements are applied and committed, proceed to the remaining Phase 7.7 mandatory completion updates (CHANGELOG entry for sprint summary if not already present, ALL_SPRINTS_MASTER_PLAN.md Last Completed Sprint update, Past Sprint Summary table row, etc.) and then to Phase 7.8.
 
   ---
@@ -1258,8 +1263,8 @@ Before conducting sprint review, build and test the Windows desktop app:
     - [ ] Any GitHub Copilot review complete (or confirmed unavailable on this repo)
     - [ ] Any Copilot review comments addressed (fix-now done, replies posted, threads resolved) -- or none existed
   - **Action**: give the PR a **final update IF anything needs updating** (description reflects final scope/IMPs/Copilot fixes). **If nothing changed since the last update, NO update is required** -- do not churn the PR for its own sake.
-  - Convert the PR from **draft -> ready** (`gh pr ready <PR#>`); verify `gh pr view <PR#> --json isDraft,mergeable` shows `isDraft:false`, `mergeable:MERGEABLE`.
-  - **THEN notify the Product Owner / Scrum Master that the PR is ready for FINAL APPROVAL.** This is the ONE readiness announcement of the sprint -- it does not happen earlier (not at 6.5, not at "Phase 6 done").
+  - **Verify the PR is already "Ready for Review"** -- it was converted draft -> ready at the end of Phase 7.7 (when the "apply now" retro improvements completed). Confirm `gh pr view <PR#> --json isDraft,mergeable` shows `isDraft:false`, `mergeable:MERGEABLE`. (If for any reason it is still draft -- e.g. there were no "apply now" IMPs and 7.7 was skipped -- `gh pr ready <PR#>` now.)
+  - **THEN notify the Product Owner / Scrum Master that the PR is ready for FINAL APPROVAL.** This is the ONE readiness announcement of the sprint -- it does not happen earlier (not at 6.5, not at "Phase 6 done"). NOTE: setting the PR to "Ready for Review" (the GitHub state) happens at end-of-7.7; this PO/SM notification (the human signal) happens here after the full gate passes.
   - On merge, Phase 6.6 fires (open the next sprint branch immediately).
 
 - [ ] **7.8 Summarize Review Results**

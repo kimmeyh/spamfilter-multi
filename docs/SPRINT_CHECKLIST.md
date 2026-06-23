@@ -132,6 +132,7 @@ These documents MUST be created/updated during each sprint:
 - [ ] **Step 5 (7.5)**: Propose improvements from combined feedback. Any type (process, code, tests, architecture, docs, tooling). Format: Title / Source / Type / Effort / Recommendation. Display in chat -- do NOT auto-apply.
 - [ ] **Step 6 (7.6)**: Ask Harold for explicit decision per proposal: (a) apply now, (b) add to backlog, (c) skip. Default expectation: most improvements faster to do now before next sprint. Record decisions in retrospective "Improvement Decisions" section.
 - [ ] **Step 7 (7.7)**: Apply "apply now" improvements as additional commits on the existing sprint branch. Add "backlog" items to `ALL_SPRINTS_MASTER_PLAN.md`. Note "skip" items in retrospective.
+- [ ] **7.7 end: set PR to "Ready for Review"** (`gh pr ready <PR#>`) -- the moment ALL "apply now" retro suggestions are implemented + committed + pushed (analyzer/tests green). This is the draft->ready STATE change (the PO/SM notification is the separate 7.7.5 step). If there were no "apply now" IMPs, set ready once the retrospective is complete.
 
 **Mandatory sprint completion updates (Phase 7.7 continued)**:
   - [ ] CHANGELOG.md updated (all sprint entries present, including any Step 7 improvements)
@@ -141,7 +142,7 @@ These documents MUST be created/updated during each sprint:
   - [ ] `docs/sprints/SPRINT_N_SUMMARY.md` created (MANDATORY - do not defer)
   - [ ] ARCHITECTURE.md updated (if architecture changed)
   - [ ] .claude/sprint_status.json updated
-- [ ] **7.7.5 FINAL PR GATE + announce readiness** (PR lifecycle checkpoint #4, MANDATORY): ONLY after manual testing AND retrospective AND retro improvements AND any Copilot review AND Copilot comments addressed are ALL complete -- final PR update IF anything needs it (no-op if nothing changed), convert draft->ready (`gh pr ready <PR#>`, verify `isDraft:false`/`mergeable:MERGEABLE`), THEN notify Product Owner / Scrum Master the PR is ready for FINAL APPROVAL. This is the ONE readiness announcement of the sprint.
+- [ ] **7.7.5 FINAL GATE + announce readiness** (PR lifecycle checkpoint #4, MANDATORY): ONLY after manual testing AND retrospective AND retro improvements AND any Copilot review AND Copilot comments addressed are ALL complete -- final PR update IF anything needs it (no-op if nothing changed); verify PR is already Ready-for-Review (set at end of 7.7; `gh pr ready` now if somehow still draft); THEN notify Product Owner / Scrum Master the PR is ready for FINAL APPROVAL. This PO/SM notification is the ONE readiness announcement of the sprint.
 - [ ] **7.8** Review results summarized
 - [ ] **7.9** Next steps offered to user
 
