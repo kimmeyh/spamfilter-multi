@@ -204,6 +204,13 @@ Recent sprints complete -- detail blocks removed per the Maintenance Guide (hist
 - Depends on: none (the `Redact` utility already exists).
 - Source: Sprint 42 PR #263 Copilot review (PII-in-logs theme) + Harold steering 2026-06-23.
 
+**F107. ADR-0037 status review (Proposed -> Accepted?) + ARSD draft promotion (~30m) Priority 45 -- NEW (Sprint 43 F103 architecture deep dive, 2026-06-23)**
+- Phase: Architecture maintenance
+- Platform: All
+- F103 deep dive found ADR-0037 (UI/Accessibility Standards) is still status **"Proposed (pending user review)"**, but the accessibility standards ARE implemented (`AccessibilityHelper` + `Semantics(` in 3+ UI files). Status change is a **Class-1 Chief-Architect decision** -- surfaced to Harold, not auto-changed. Also: ARSD.md is marked "1.0 (Draft)" -- consider promoting once the requirement set stabilizes.
+- **Action**: Harold reviews ADR-0037 -> Accepted (or notes what still pends); promote ARSD if appropriate.
+- Source: Sprint 43 F103 architecture deep dive.
+
 **F106. SEC-11b verification-window cleanup (~30m) Priority 30 -- DEFERRED (~Sprint 45, spawned by SEC-11b dual-DB design)**
 - Phase: Security / cleanup
 - Platform: All
