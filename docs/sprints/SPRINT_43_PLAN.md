@@ -4,7 +4,12 @@
 **Date**: 2026-06-23 (Planning / Phase 1-3)
 **Branch**: `feature/20260623_Sprint_43` (already created off `develop` per Phase 6.6)
 **PR**: #265 (the sprint PR -- created during pre-kickoff; will be updated per the PR lifecycle)
-**Status**: PLANNING -- awaiting Harold Phase 3.7 approval
+**Status**: APPROVED 2026-06-23 (Harold, Phase 3.7). Execution started -- F102 first.
+
+**Harold decisions at approval (2026-06-23)**:
+- **F102 home (Class-1) -- LOCKED**: extend ADR-0030 with a "Logging & Redaction" section.
+- **F96 persist strategy (Class-1) -- LOCKED**: **(a) persist the `AuthClassification` enum** (Harold: no retroactive re-scoring needed). Add `email_actions.auth_classification` TEXT (DB v8); re-hydrate on the history/detail quick-add paths.
+- **SEC-11b dual-DB (Class-1) -- LOCKED**: Dev = encrypted primary + plaintext mirror (dual-write for ~2 sprints); Prod = encrypted-only after the one-time plaintext->encrypted migration, original plaintext file retained read-only as rollback backup. Default-flip still surfaced after QA before flipping. Cleanup deferred to F106 (~Sprint 45).
 **Type**: Mixed -- Security/Privacy policy + enforcement (F102), Architecture + Security deep dives (F103/F104), DB-encryption (SEC-11b), anti-phishing coverage (F96), test-infra consolidation (F100), tuning (F101), release housekeeping (F105)
 **Estimating method**: TWO-metric MINUTE-based per `docs/CODING_VELOCITY.md`.
 
