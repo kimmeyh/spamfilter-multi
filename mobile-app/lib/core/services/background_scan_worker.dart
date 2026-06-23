@@ -55,7 +55,7 @@ class BackgroundScanWorker {
               .getEffectiveBackgroundEnabled(account['account_id'] as String);
 
           if (!isBackgroundEnabled) {
-            _logger.d('Background scans disabled for account ${account['account_id']}');
+            _logger.d('Background scans disabled for account ${Redact.accountId(account['account_id'] as String?)}');
             continue;
           }
 

@@ -217,7 +217,8 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
           throw Exception('Unable to get valid Gmail access token for account ${widget.accountId}. Please sign in again.');
         }
 
-        _logger.i('[OK] Got valid access token (${accessToken.length} chars)');
+        final tokenLen = accessToken.length;
+        _logger.i('[OK] Got valid access token ($tokenLen chars)');
 
         final authClient = _GoogleAuthClient({'Authorization': 'Bearer $accessToken'});
         final gmailApi = gmail.GmailApi(authClient);

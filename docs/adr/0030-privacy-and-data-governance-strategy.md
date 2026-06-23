@@ -117,6 +117,30 @@ Scan results retained on-device indefinitely until the user deletes them. No aut
 
 **Rationale**: Since there is no backend server, there is no server-side data to delete. The web page satisfies the Google Play requirement for an external deletion mechanism while being honest about the local-only architecture.
 
+### 5. Logging & Redaction (F102, Sprint 43)
+
+**INVARIANT: never write user-identifying data in clear text to any log or generated artifact.** This is a documented, enforced rule -- not a convention.
+
+**What must never be logged in the clear**:
+- **Account ids** -- they embed the email address (`{platform}-{email}`, e.g. `gmail-user@gmail.com`).
+- **Email addresses** (To / From / CC / sender / account email).
+- **OAuth tokens, client secrets, app passwords, the DB encryption key.**
+- **Email content** (subject, body, headers beyond redacted form).
+- **Tokens derived from the above** -- e.g. the Windows Task Scheduler task name `SpamFilterBackgroundScan_<sanitizedAccountId>` is email-derived and therefore PII; do not log the raw task name.
+
+**How to comply** -- use the `Redact` utility (`mobile-app/lib/util/redact.dart`) for any identifier that must appear in a log/diagnostic:
+- `Redact.accountId(id)` -- keeps the platform prefix, redacts the email portion.
+- `Redact.email(e)`, `Redact.token(t)`, `Redact.clientId(c)`.
+- `Redact.logSafe(msg)` -- the gated log sink (also suppressible at runtime via the SEC-19 auth-logging toggle).
+
+**Scope**: applies to ALL log sinks -- `Logger` calls, the headless file-based diagnostic log (`_bgLog`), and generated artifacts (PowerShell scripts, Task Scheduler task names, exported filenames). It is **not** limited to debug builds (an email in a release log is still a leak).
+
+**Enforcement** (the durable part):
+- **Static gate**: an automated check (`mobile-app/scripts/check-log-redaction.ps1`, runnable in tests/CI) FAILS the build when a `Logger.*`/`_bgLog(...)` call interpolates a raw `$accountId` / `$email` / token without a `Redact.*` wrapper. Catches new leaks at author time -- not at code review (Sprint 42 F98 introduced ~19 such leaks that only Copilot caught on PR #263).
+- **Process gate**: the Phase 5 sprint checklist greps new log lines for raw identifiers before the manual-testing handoff (SPRINT_CHECKLIST.md Phase 5).
+
+**Rationale**: the local-only / zero-telemetry model (above) protects data in transit and at rest, but logs are written to disk (`{appDataDir}/logs/`) and can be shared in support tickets. An un-redacted account id or email in a log file is a privacy leak even though it never leaves the device by network. Codifying the rule + an enforcement gate prevents recurrence. See ARCHITECTURE.md "Sprint 33 Security Layers" for the cross-reference.
+
 ### Legal Review: Template-Based Approach
 
 Use an open-source privacy policy generator as the starting template, then customize for:

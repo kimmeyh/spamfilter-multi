@@ -13,6 +13,8 @@ import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 
+import '../../util/redact.dart';
+
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/providers/email_scan_provider.dart';
 import '../../core/storage/settings_store.dart';
@@ -93,7 +95,7 @@ class _AccountMaintenanceScreenState extends State<AccountMaintenanceScreen> {
     );
 
     if (folders != null && mounted) {
-      _logger.i('[OK] Selected folders for ${account.email}: $folders');
+      _logger.i('[OK] Selected folders for ${Redact.email(account.email)}: $folders');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Selected: ${folders.join(", ")}'),
@@ -138,7 +140,7 @@ class _AccountMaintenanceScreenState extends State<AccountMaintenanceScreen> {
     if (confirm == true) {
       try {
         await _credStore.deleteCredentials(account.accountId);
-        _logger.i('[OK] Removed account: ${account.email}');
+        _logger.i('[OK] Removed account: ${Redact.email(account.email)}');
 
         setState(() {
           _accounts.removeWhere((a) => a.accountId == account.accountId);
@@ -244,7 +246,7 @@ class _AccountMaintenanceScreenState extends State<AccountMaintenanceScreen> {
           );
         }
 
-        _logger.i('Set safe sender folder for ${account.email} to: $folderName');
+        _logger.i('Set safe sender folder for ${Redact.email(account.email)} to: $folderName');
       } catch (e) {
         _logger.e('Failed to set safe sender folder: $e');
         if (mounted) {
@@ -334,7 +336,7 @@ class _AccountMaintenanceScreenState extends State<AccountMaintenanceScreen> {
           );
         }
 
-        _logger.i('Set deleted rule folder for ${account.email} to: $folderName');
+        _logger.i('Set deleted rule folder for ${Redact.email(account.email)} to: $folderName');
       } catch (e) {
         _logger.e('Failed to set deleted rule folder: $e');
         if (mounted) {
@@ -355,7 +357,7 @@ class _AccountMaintenanceScreenState extends State<AccountMaintenanceScreen> {
     final manualScanMode = await settingsStore.getManualScanMode();
     scanProvider.initializeScanMode(mode: manualScanMode);
 
-    _logger.i('[INVESTIGATION] Initiating one-time scan for ${account.email}');
+    _logger.i('[INVESTIGATION] Initiating one-time scan for ${Redact.email(account.email)}');
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

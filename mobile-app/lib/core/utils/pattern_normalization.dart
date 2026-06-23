@@ -1,5 +1,7 @@
 import 'package:logger/logger.dart';
 
+import '../../util/redact.dart';
+
 /// Utility class for normalizing email, subject, and body text for pattern matching.
 /// All normalization follows the principle of lowercase conversion and removal of
 /// special characters that do not affect pattern matching logic.
@@ -355,7 +357,7 @@ class PatternNormalization {
 
       return '$localPart@$decodedDomain';
     } catch (e) {
-      _logger.w('Error normalizing and decoding email "$email": $e');
+      _logger.w('Error normalizing and decoding email "${Redact.email(email)}": $e');
       return email;
     }
   }

@@ -87,6 +87,7 @@ These documents MUST be created/updated during each sprint:
 - [ ] **5.1.5 WinWright UI Test Sweep** (MANDATORY -- Sprint 38 retro): update WinWright scripts for sprint UI changes; run all scripts that exercise sprint-touched screens; fix in-sprint or backlog (see SPRINT_EXECUTION_WORKFLOW.md § 5.1.5). If no WinWright coverage exists for sprint's UI surface, file a Sprint N+1 carry-in.
 - [ ] Full test suite passing (`flutter test`)
 - [ ] Code analysis clean (`flutter analyze` - target <50 warnings)
+- [ ] **5.1.7 Logging-redaction gate clean** (F102, ADR-0030 "Logging & Redaction"): run `mobile-app/scripts/check-log-redaction.ps1` (or it runs as part of the suite) -- no `Logger`/`_bgLog` call may interpolate a raw account id / email / token without `Redact.*`. Fix any violation before the manual-testing handoff.
 - [ ] Risk mitigations validated
 - [ ] **5.1.6 Architecture docs current BEFORE manual-testing handoff** (Sprint 42 retro IMP-5; `feedback_architecture_docs_no_defer`): for every flow, table, ADR, or platform-status line in `ARCHITECTURE.md` / `ARSD.md` touched by this sprint, update it NOW -- do NOT defer to Phase 7. Quick check: `grep -niE "<sprint-touched-feature>" docs/ARCHITECTURE.md docs/ARSD.md` and reconcile each hit. Verify the ADR index (`docs/adr/README.md`) status/date for any ADR touched. (Sprint 42 surfaced a stale ARCHITECTURE.md bg-scan flow at retro -- this line prevents recurrence.)
 - [ ] **App built for user testing** (Windows: `build-windows.ps1`)

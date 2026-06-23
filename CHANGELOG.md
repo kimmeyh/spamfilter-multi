@@ -26,6 +26,11 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-06-23 (Sprint 43: F102 -- logging redaction policy + enforcement gate)
+- **docs**: F102 -- codified the logging-redaction invariant as ADR-0030 "Logging & Redaction": never log raw account ids / email / tokens / email content; use the `Redact` utility. Applies to `Logger`, the headless `_bgLog`, and generated artifacts (PowerShell scripts, Task Scheduler task names). Cross-referenced in ARCHITECTURE.md "Sprint 33 Security Layers". (F102)
+- **chore**: F102 -- enforcement gate. New `mobile-app/scripts/check-log-redaction.ps1` (build-failing CLI, `-SelfTest` 8/8) AND a Dart test `test/policy/log_redaction_test.dart` that fails `flutter test` when any `lib/` log call interpolates a raw account id / email / token without `Redact.*` (excludes non-PII like `$emailId` row ids and counts). Added a Phase 5 checklist line (5.1.7). (F102)
+- **fix**: F102 -- the new gate caught + fixed 13 pre-existing PII-in-log leaks the Sprint-42 review missed: sender email in `safe_sender_evaluator` (x4), `${account.email}` in `account_maintenance_screen` (x5), raw account id in `background_scan_worker`, `$email` in `pattern_normalization`, `${email.fromEmail}` in `process_results_screen`, and an access-token reference in `folder_selection_screen` -- all now redacted. (F102)
+
 ### 2026-06-20 (Sprint 42: BUG-S37-2 -- bundled-rule TLD data quality)
 - **fix**: BUG-S37-2 -- removed two more malformed bundled TLD block rules (`.sho`, `.sweeps`); neither is a registered IANA TLD (the Sprint-39 note that `.sweeps` was a "correct spelling" was wrong). Removed from the bundled `rules.yaml` for fresh installs and via a DB v7 migration for existing installs (same JSON-decode-then-delete approach as the v6 BUG-S37-2 cleanup). **ccTLD audit (Harold decisions 1c + 2a)**: the bundled list already blocks 247 of 248 IANA ccTLDs (only `.us` is unblocked), so NO ccTLD expansion or allow-list change was needed -- the bundled blocklist is an initial load the user overrides per-account via safe-sender rules. Updated the fresh-seed cleanliness test to assert `.sho`/`.sweeps` absence. (BUG-S37-2)
 

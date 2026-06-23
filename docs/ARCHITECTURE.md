@@ -721,6 +721,7 @@ mobile-app/
 - **Failed-auth rate limit** (SEC-22): `AuthRateLimiter` blocks an account for 1h after 10 failed IMAP sign-ins in a rolling 1h window; state persists in the `auth_rate_limit` table so blocks survive app restart. UI surfaces a "Try again at HH:MM" message in place of the generic auth error.
 - **Certificate pinning** (SEC-8): `PinnedHttpClient` enforces SPKI pins for Google OAuth endpoints. Runtime kill switch in Settings > General > Privacy & Logging. IMAP is not pinned (enough_mail limitation, tracked as future work).
 - **Auth logging suppression** (SEC-19): Settings toggle makes `Redact.logSafe` a no-op even in debug builds.
+- **Logging & Redaction invariant** (F102, Sprint 43): never log account ids / email / tokens / email content in the clear -- use the `Redact` utility (`Redact.accountId/email/token`). Applies to `Logger`, the headless `_bgLog`, and generated artifacts (PowerShell scripts, Task Scheduler task names). Enforced by `scripts/check-log-redaction.ps1` (build-failing) + a Phase 5 checklist grep. Policy: ADR-0030 "Logging & Redaction".
 - **Unmatched email retention** (SEC-14): rows pruned on startup + after each scan; body previews capped at 100 chars at insert.
 - **User data deletion** (F66): per-account wipe + full-app reset via `DataDeletionService`.
 - **SQLCipher infrastructure** (SEC-11, opt-in): `DatabaseEncryptionKeyService` ships enabled; actual driver swap deferred until dedicated QA pass.
