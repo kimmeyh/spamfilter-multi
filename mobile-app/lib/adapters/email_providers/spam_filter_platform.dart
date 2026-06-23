@@ -153,6 +153,27 @@ abstract class SpamFilterPlatform {
 
   /// Execute an action on multiple messages in a single batch operation.
   Future<BatchActionResult> takeActionBatch(List<EmailMessage> messages, FilterAction action);
+
+  /// F91 (Sprint 39): find messages in [folderName] whose RFC 5322
+  /// `Message-ID` header equals [messageId].
+  ///
+  /// Used for post-safe-sender-move source-folder dedup: after a
+  /// safe-sender message is moved out of (for example) AOL Bulk Mail, AOL's
+  /// classifier re-injects a COPY with a NEW UID and the SAME Message-ID.
+  /// This search locates that copy so it can be moved to Trash.
+  ///
+  /// Returns the list of [EmailMessage] in [folderName] that match (empty
+  /// when none match). Providers that use labels rather than folders (Gmail
+  /// OAuth) or have no concept of header search return an empty list via the
+  /// [BatchOperationsMixin] default.
+  ///
+  /// [messageId] must include the angle brackets as captured from the header
+  /// (for example `<abc@host>`). Matching is case-insensitive per the IMAP
+  /// `SEARCH HEADER` semantics in RFC 3501.
+  Future<List<EmailMessage>> searchByMessageId(
+    String folderName,
+    String messageId,
+  );
 }
 
 /// Mixin providing default single-message fallback implementations for batch operations.
@@ -229,6 +250,18 @@ mixin BatchOperationsMixin implements SpamFilterPlatform {
     }
     return BatchActionResult(succeededIds: succeeded, failedIds: failed);
   }
+
+  /// F91 (Sprint 39): default no-op for providers without folder-scoped
+  /// header search (Gmail OAuth uses labels, demo has no server). Returns an
+  /// empty list so the scanner's dedup step is a safe no-op. The IMAP adapter
+  /// overrides this with a real `UID SEARCH HEADER Message-ID` query.
+  @override
+  Future<List<EmailMessage>> searchByMessageId(
+    String folderName,
+    String messageId,
+  ) async {
+    return const [];
+  }
 }
 
 /// Authentication methods supported by various platforms
@@ -284,12 +317,22 @@ class FolderInfo {
   /// Whether this folder can be written to
   final bool isWritable;
 
+  /// Character used by this provider to separate folder path components.
+  ///
+  /// For most IMAP servers and Gmail labels this is '/'. Some IMAP servers
+  /// (notably early Cyrus and some Dovecot configurations) use '.' or ':'.
+  /// The value is sourced from the provider's LIST response where available
+  /// (enough_mail exposes it as [Mailbox.pathSeparator]) or defaulted to '/'
+  /// for providers where the delimiter is fixed or not yet implemented.
+  final String hierarchyDelimiter;
+
   const FolderInfo({
     required this.id,
     required this.displayName,
     required this.canonicalName,
     this.messageCount,
     this.isWritable = true,
+    this.hierarchyDelimiter = '/',
   });
 
   @override

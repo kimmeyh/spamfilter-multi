@@ -42,7 +42,7 @@ This document describes the step-by-step process for executing sprints in the sp
 
 | Phase | Name | Purpose |
 |-------|------|---------|
-| **Phase 1** | Backlog Refinement | Optional, on-demand backlog grooming |
+| **Phase 1** | Backlog Refinement | **MANDATORY** -- every sprint; no PO request needed (Sprint 36 policy change) |
 | **Phase 2** | Sprint Pre-Kickoff | Verify prerequisites before starting |
 | **Phase 3** | Sprint Kickoff & Planning | Plan sprint, create branch and issues |
 | **Phase 4** | Sprint Execution (Development) | Implement tasks, test, commit |
@@ -52,33 +52,110 @@ This document describes the step-by-step process for executing sprints in the sp
 
 ---
 
+## Phase Cheat Sheet (F80)
+
+One-line-per-phase quick reference. Use this at the start of a sprint and at every phase boundary instead of re-reading the detail sections below. Click a phase name to jump to its detail.
+
+| Phase | Top-3 Actions | Auto-Advance Trigger (when phase is "done") |
+|-------|---------------|---------------------------------------------|
+| [**1. Backlog Refinement**](#phase-1-backlog-refinement-mandatory----every-sprint-no-po-request-needed) | Read master plan + ISSUE_BACKLOG; present candidates as bullet list (not grid) grouped by priority; capture user selections | User has picked items for the sprint (can be "same as proposed"), no scope questions open |
+| [**2. Sprint Pre-Kickoff**](#phase-2-sprint-pre-kickoff-warning-critical-prerequisite) | Verify develop green (tests, analyze); verify previous retro done; check dependency vulnerabilities | All prerequisite gates green; no blockers to planning |
+| [**3. Sprint Kickoff & Planning**](#phase-3-sprint-kickoff--planning) | Draft `docs/sprints/SPRINT_N_PLAN.md`; open Issue #N + create draft PR (3.3.1); **get explicit Phase 3.7 approval** | User says "plan approved" (or equivalent) -- this authorizes Phases 4-7 (durable) |
+| [**4. Sprint Execution (Development)**](#phase-4-sprint-execution-development) | Implement tasks in plan order; run tests + analyze after each; commit with issue number | All acceptance criteria in plan met; test suite green |
+| [**5. Code Review & Testing**](#phase-5-code-review--testing) | Test-assertion sibling sweep (5.1.1); full test suite; build + launch Windows app for manual test | Manual test golden-path + edge cases verified; no regressions |
+| [**6. Push to Remote & Create PR**](#phase-6-push-to-remote--create-pr) | Push branch; update PR description; **convert draft to ready (6.4.5)** after Copilot pass (or after CODEOWNER review if Copilot is unavailable) | PR is `isDraft: false`, `mergeable: MERGEABLE`; Copilot review received IF Copilot is configured as a collaborator on the repo (otherwise skipped per Sprint 37 retro Imp-6) |
+| [**7. Sprint Review & Retrospective**](#phase-7-sprint-review--retrospective-after-pr-submitted---mandatory-for-all-sprints) | Send retro prompt; draft Claude feedback in parallel; combine + apply now-vs-backlog decisions | Retrospective doc committed with 4 roles x 14 categories; Cat 13 -> Sprint N+1 plan; Cat 14 -> master plan backlog |
+
+**Invariants** (apply to all phases):
+
+- Phase 3.7 approval is durable through Phase 7 -- do not re-ask permission at phase boundaries (Phase Auto-Advance Rule, CLAUDE.md §7).
+- Standing Approval Inventory (Phase 3.7): commits, pushes, PR-description updates, test/analyze runs do NOT need permission.
+- Stop only for the 9 reasons in `docs/SPRINT_STOPPING_CRITERIA.md` -- not for implementation choices, approach uncertainty, or "confirming the next step".
+- If Phase 1 was skipped for a given sprint, STOP and return to Phase 1 before any Phase 4 work (Sprint 36 gate).
+- **Phase-boundary checklist gate (Sprint 39 retro S39-IMP-3)**: before declaring ANY phase complete, run that phase's Phase Cheat Sheet line (top of this doc) and explicitly state which steps were done. Crossing a boundary by "just doing the next work" is how steps get missed -- Sprint 39 skipped the Phase 3.7 draft-PR creation this way. The cheat sheet is a gate to consult, not a reference to skip. (Efficiency-via-speed is not effectiveness-via-process.)
+- **Decision-Class Checkpoint Protocol (Sprint 38 retro)**: Architecture, development, and sprint-execution decisions in the three classes below ALWAYS require explicit user approval; sprint-plan approval is NOT durable for these. See "Decision-Class Checkpoint Protocol" section below for the full surfacing template and per-phase application matrix.
+
+---
+
+## Decision-Class Checkpoint Protocol (Sprint 38 retrospective, 2026-05-18)
+
+Harold wears three distinct roles -- Chief Architect, Chief Developer, and Scrum Master. Claude is **not** authorized to make unilateral decisions in any of the three classes below. Sprint-plan approval at Phase 3 is durable authorization for tasks AS PLANNED -- it is NOT authorization to change architecture, change prior development decisions, or change the approved sprint scope.
+
+### The Three Decision Classes
+
+| Class | Role | Examples |
+|-------|------|----------|
+| **1. Architecture** | Chief Architect | Data-model changes; control-flow inversions; persistence semantic shifts; removal of an ADR-documented pattern; semantic changes to a stored value (e.g., Sprint 38 Round 4 inverted IMAP cursor from "max UID seen" to "oldest unaddressed UID") |
+| **2. Development** | Chief Developer | Function signature changes that affect callers; removed abstractions; ordering changes that affect downstream callers; semantic shifts in a field's meaning at runtime (e.g., Sprint 38 Round 8 changed `_initialNoRuleCount` from "snapshot at scan-completion" to "snapshot at re-entry") |
+| **3. Sprint Execution** | Scrum Master | Shortening the sprint; de-scoping an approved task; deferring an approved task to a future sprint -- UNLESS a `SPRINT_STOPPING_CRITERIA.md` criterion (1-9) is genuinely met AND the Scrum Master has approved |
+
+### Surfacing Template
+
+When a candidate change falls into one of these three classes, STOP, surface the decision to the user with the explicit phrasing pattern below, and WAIT for approval before implementing:
+
+- **Class 1**: "This would change a prior architectural decision: [describe the prior decision and the proposed change]. Should I proceed?"
+- **Class 2**: "This would change a prior development decision: [describe the prior decision and the proposed change]. Should I proceed?"
+- **Class 3**: "This would change the approved sprint scope: [describe what is being deferred / de-scoped]. Should I proceed?"
+
+### Per-Phase Application Matrix
+
+Surface decisions AT the natural break or BEFORE it if implementation is blocked. Natural breaks are:
+
+| Phase | What's Happening | What to Surface |
+|-------|------------------|-----------------|
+| Phase 1 → Phase 3 approval | Backlog refinement & sprint planning | Any architecture/development/scope item identified during planning that would change a prior decision |
+| Phase 5.3 Manual Testing | User tests, gives feedback | Any proposed fix that involves changing a prior decision (do NOT just apply it -- surface, get approval, then apply) |
+| Phase 7 Retrospective | Sprint review and improvements | Any decision that was made mid-sprint without surfacing -- declare it in Claude's feedback so it can be reviewed |
+
+### Anti-Pattern Signals
+
+If you catch yourself thinking any of the following, STOP and surface:
+
+- "This is just a small change, the user will be fine with it."
+- "I'll mention this in the retrospective."
+- "The sprint plan said X but Y is clearly better, I'll just do Y."
+- "We're running out of time, I'll defer Z to next sprint."
+
+Sprint 38 had 10 rounds of fixes; multiple rounds contained class-1, class-2, or class-3 decisions that were not surfaced. The 400-hour stopping-criterion clarification in `docs/SPRINT_STOPPING_CRITERIA.md` Criterion 9 specifically addresses class-3 violations rooted in time anxiety.
+
+### Source
+
+CLAUDE.md "Decision-Class Taxonomy: STOP, Surface, Wait" section is the durable trigger; this section is the where-to-apply.
+
+---
+
 ## Sprint Execution Checklist
 
-### **Phase 1: Backlog Refinement** (OPTIONAL - On-Demand)
+### **Phase 1: Backlog Refinement** (MANDATORY -- every sprint, no PO request needed)
 
-Backlog refinement is conducted **when requested by Product Owner**, not before every sprint.
+**Policy change (Sprint 36, 2026-04-20)**: Phase 1 Backlog Refinement is now **MANDATORY** for every sprint. It does NOT require an explicit Product Owner request. Do NOT ask the user "should we do backlog refinement?" -- just run it. Skipping or asking is a process violation.
 
-- [ ] **1.1 Check if Refinement is Requested**
-  - Product Owner explicitly requests backlog refinement
-  - Skip to Phase 2 if refinement not requested
-  - Quick priority changes can be handled during Phase 3 without full refinement
+This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIONAL - On-Demand" language) and also skipped the Phase 3 sub-step that presents candidates in BACKLOG_REFINEMENT.md format. The user did not get a chance to redirect scope before the plan doc was drafted. Making Phase 1 mandatory forces the candidate-presentation step every sprint.
 
-- [ ] **1.2 Conduct Refinement Session** (30-60 minutes, timeboxed)
-  - **Prepare**: Read current backlog state from ALL_SPRINTS_MASTER_PLAN.md and ISSUE_BACKLOG.md
+- [ ] **1.1 Refinement Session** (30-60 minutes, timeboxed)
+  - **Prepare**: Read current backlog state from ALL_SPRINTS_MASTER_PLAN.md and ISSUE_BACKLOG.md (if present)
   - **Review**: Scan all items, identify stale entries (over 3 sprints old)
   - **Prioritize**: Re-order based on value, effort, and risk
   - **Estimate**: Update estimates with velocity calibration from recent sprints
   - **Add**: Capture newly identified work items
   - **Cleanup**: Remove obsolete items, update dependencies
 
+- [ ] **1.2 Present Candidates to User in BACKLOG_REFINEMENT.md Format**
+  - Required format: bullet-list per item with `**<ID>. <Title> (~<effort>) Priority <N>**` header + bullet details
+  - Do NOT use grid tables (explicit convention violation)
+  - Grouped by priority tier, HOLD items at bottom
+  - Include observations/alternative composition options when scope is tight
+  - Record user's selection for Phase 3 plan doc
+  - **This step is what Phase 3.2.1 used to reference ambiguously. It is now clearly owned by Phase 1.2.**
+
 - [ ] **1.3 Document Refinement Results**
-  - Update ALL_SPRINTS_MASTER_PLAN.md "Future Features" section
+  - Update ALL_SPRINTS_MASTER_PLAN.md "Next Sprint Candidates" section per the Maintenance Guide at top of that document
   - Update ISSUE_BACKLOG.md if issues changed
   - Commit changes: `git commit -m "docs: Backlog refinement - [date] - [summary]"`
 
 **Detailed Process**: See `BACKLOG_REFINEMENT.md` for complete step-by-step guide.
 
-**When to Request Refinement**:
+**Triggers that expand refinement scope beyond the baseline** (still mandatory baseline regardless):
 - Significant new features need scoping
 - Priorities have shifted due to business changes
 - Backlog items over 3 sprints old without review
@@ -105,7 +182,7 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
 - [ ] **2.2 Verify Previous Sprint is Merged**
   - Confirm previous sprint PR is merged to `develop`
   - Command: `git log develop --oneline -1` should show last sprint commits
-  - Previous feature branch is deleted locally and remote
+  - **Branch retention policy**: Do NOT delete previous feature branches (local or remote). Harold preserves all sprint branches for historical reference. Branches are kept indefinitely. (Sprint 38 policy clarification, 2026-05-05)
 
 - [ ] **2.3 Verify All Sprint Cards Are Closed**
   - Run: `gh issue list --label sprint --state open`
@@ -191,6 +268,35 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
   - **Source**: Copy from ALL_SPRINTS_MASTER_PLAN.md Sprint N section and expand with implementation details
   - **Why**: Provides a durable, self-contained record of what was planned for this sprint
   - **Naming Convention**: Uppercase `SPRINT_N_PLAN.md` (e.g., `SPRINT_17_PLAN.md`)
+
+- [ ] **3.2.2.1 Plan-to-Branch-State Verification Gate** (MANDATORY -- Sprint 36 retro IMP-1)
+  - **Before committing** `SPRINT_N_PLAN.md`, verify each task in the plan against current branch state. The plan describes work to be done; if any task has already shipped (sprint kickoff commits, prior-session work, or upstream merges), the plan must be corrected.
+  - **For each task in the plan**:
+    1. **Identify the task's tangible artifact**: file path, function name, config key, doc section, etc.
+    2. **Check repo state**: `git log --oneline -20`, `Read` the referenced file, or `Grep` for the acceptance-criteria keyword.
+    3. **If the work is already done** (file exists, function has expected body, config key is present, etc.): mark the task as DONE in the plan, attribute to the prior commit (e.g., "Already shipped in 46e7b6d"), and remove from active scope.
+    4. **If the plan cites a specific file path or line number** (e.g., "fix mobile-app/.gitignore line 120"), verify the path/line still exists and matches the description. Plans that cite stale line numbers slow execution.
+  - **Why**: Sprint 36 escape -- Task 1.3 (`build_windows_args` in dev pubspec) was listed as pending but had already shipped in kickoff commit `46e7b6d`. Sprint 36 plan also cited `mobile-app/.gitignore line 120` for the `*.manifest` rule, but the actual rule was in root `.gitignore` line 120 (PyInstaller legacy). Both surfaced at Phase 4 execution and cost inspection time. Catching them at plan-write time is cheaper.
+  - **Cost**: ~30-45 min added to Phase 3.2.2 per sprint.
+  - **Enforcement**: A plan that has not been verified against branch state should not be committed. If you find this step skipped at session resume, return to it before any Phase 4 work (same gate as Phase 1).
+
+- [ ] **3.2.2.2 Re-Estimate After Dependency Findings** (MANDATORY -- Sprint 37 retro Imp-7)
+  - **Trigger**: 3.2.2.1 produced findings that change task scope. Examples:
+    - Task is partially or fully already shipped (subtract that effort from the estimate).
+    - Task scaffolding turned out to be already in place from a prior sprint (subtract setup effort).
+    - Task target file/function has been refactored or renamed since the master-plan entry was written (re-scope the task).
+    - Task depends on an external precondition discovered during 3.2.2.1 (Firebase Console SHA-1, OAuth client setup, vendor config) that must move to "deferred / blocked" with a new owner action item.
+  - **Action**: Update the per-task effort line in `SPRINT_N_PLAN.md` BEFORE committing the plan. Each affected task gets a one-line rationale: `Estimate: X-Yh -> A-Bh (Phase 3.2.2.1 found <fact>)`. Update the sprint-total line at the top of the plan.
+  - **Why**: Sprint 37 retro Effort Accuracy category found 2-4x over-estimation across BUG-S36-1 / F6 / F52 Phase 1 because the original estimates assumed scaffolding that prior sprints had already shipped. The 3.2.2.1 gate caught the scaffolding state but the plan was committed with stale effort numbers. Re-estimating after gate findings is the corrective step.
+  - **Cost**: ~5-15 min per sprint, only fires when 3.2.2.1 produces findings.
+  - **Skip condition**: If 3.2.2.1 surfaced no scope-changing findings, this step is a no-op. State that explicitly in the commit message ("Phase 3.2.2.2 N/A -- no Phase 3.2.2.1 findings") so future-you can audit.
+
+- [ ] **3.2.2.3 Estimate in MINUTES from velocity history** (MANDATORY -- Sprint 39 retro S39-IMP-1)
+  - **Rule**: Every task estimate is in MINUTES (not hours, no 1-hour floor), matched by step-type against the Estimate Table in `docs/CODING_VELOCITY.md`.
+  - **Why**: Sprint 39 Effort Accuracy -- hour-floored estimates ran 4-14x too high; actuals were single-digit minutes. Estimating from recorded medians (not anchors) is the fix Harold asked for ("use data from this sprint to improve").
+  - **Action**: for each task, pick the step-type(s) from the CODING_VELOCITY taxonomy and set the estimate from that row's current median/range. If a step-type has no history yet, estimate conservatively in minutes and tag `[no-history]`.
+  - **Companion at Phase 7**: record each task's ACTUAL wall-clock in the CODING_VELOCITY Actuals Log on completion, and recompute the Estimate Table medians at the retrospective (Category 3). The loop is: estimate-from-history (here) -> record-actuals (Phase 4-5) -> recompute-medians (Phase 7).
+  - Companion memory: `feedback_estimating_minutes.md`.
 
 - [ ] **3.3 Branch Management**
   - Check if repository is in a PR branch
@@ -490,6 +596,19 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
   - **Model**: Requires Opus (review analysis -- see SPRINT_PLANNING.md "Activities Requiring Opus")
   - **Learning (Sprint 32)**: Code reviewer focused on sprint diff missed SEC-17 gaps in adjacent files (background scan worker, UI screens). User manual testing of logs surfaced the gap. Step 2 (mechanical grep) and step 3 (two-phase review) were added to prevent recurrence.
 
+- [ ] **5.1.5 WinWright UI Test Sweep** (Sprint 38 retro - MANDATORY)
+  - **Purpose**: Catch UI regressions BEFORE Phase 5.3 manual testing. Sprint 38 had 6+ rounds of post-Phase-5.3 manual UI fixes that WinWright coverage would have caught earlier.
+  - **Trigger**: ALWAYS run this phase before proceeding to Phase 5.2. This supersedes the prior per-sprint conditional policy in `feedback_winwright_policy.md`.
+  - **Steps**:
+    1. Identify existing WinWright scripts under `mobile-app/test/winwright/` (or wherever the project stores them).
+    2. For each script that exercises a screen touched by sprint work, update the script for any selector/title/structure changes.
+    3. Run each updated script via `C:\Tools\WinWright\Civyk.WinWright.Mcp.exe run <script.json>`.
+    4. Fix any breaks IN-SPRINT if the cause is sprint code; document as a known regression and add a backlog item if the cause is unrelated.
+    5. For new screens / new flows added by the sprint that have NO existing script, add one of these to the Sprint N+1 carry-in list: "Add WinWright coverage for [screen/flow]".
+    6. State restoration: every script must restore all state it modifies (Sprint 37 retro policy, retained).
+  - **Exit criteria**: All WinWright scripts that exercise sprint-touched UI are green, OR a backlog entry is filed for any unfixable regressions.
+  - **If no WinWright scripts exist for the sprint's UI surface**: that itself is a finding -- add a Sprint N+1 carry-in for the missing coverage and document in the retrospective.
+
 - [ ] **5.2 Run Complete Test Suite**
   - Execute full test suite: `flutter test`
   - Verify all tests pass (not just new ones)
@@ -539,6 +658,19 @@ Backlog refinement is conducted **when requested by Product Owner**, not before 
     - Logs test execution times
     - Useful for debugging test hangs or performance issues
   - When to use: Tests taking > 2 minutes, or investigating test failures
+
+- [ ] **5.2.3 Architecture Documentation Gate** (Sprint 39 retro S39-IMP-2 - MANDATORY, NO DEFERRAL)
+  - **Purpose**: Architecture documentation must NEVER lag the code. Sprint 39 made real architecture changes (DB v5->v6, new auth-results subsystem, new selection-controller widget, new adapter capabilities) -- all approved and applied -- but ARCHITECTURE.md was not updated, drifting behind reality.
+  - **Rule (no deferral)**: If the sprint made ANY architecture change, its documentation (`docs/ARCHITECTURE.md`, ARSD.md, and/or relevant ADRs) MUST be updated **in-process or here at sprint-end, BEFORE Phase 5.3 manual testing**. It CANNOT be deferred to a future "architecture documentation refresh" backlog item.
+  - **What counts as an architecture change** (any one triggers the gate):
+    - DB schema change (new table/column/migration/version bump)
+    - New service / subsystem / cross-cutting capability
+    - New reusable widget added to the UI catalog
+    - New or changed adapter capability (provider-interface method)
+    - Anything that touches or contradicts an existing ADR
+  - **Exception (the ONLY one)**: if documenting the change requires a decision / Q&A with the Chief Architect (Harold), it may be surfaced during Phase 5.3 Manual Testing rather than blocking here -- but it is still NOT deferred to a future sprint.
+  - **Exit criteria**: every architecture change made this sprint is reflected in ARCHITECTURE.md (+ ADR/ARSD if relevant) in this PR, OR a Chief-Architect Q&A item is queued for Phase 5.3. Do NOT start manual testing with stale architecture docs.
+  - Companion memory: `feedback_architecture_docs_no_defer.md`.
 
 ---
 
@@ -765,9 +897,13 @@ After Phase 5.2 all tests pass, context can be compacted for efficiency:
 
 - [ ] **6.4 Assign Code Review**
   - **@kimmeyh** is auto-assigned via `.github/CODEOWNERS`.
-  - **Copilot** is auto-assigned via Repository Ruleset (Settings -> Rules -> Rulesets -> enable "Automatically request Copilot code review"). Note: CODEOWNERS does NOT support the Copilot bot; the Ruleset is the only supported mechanism.
-  - Fallback if Ruleset is not configured and Copilot review is desired: `gh pr edit <PR#> --add-reviewer "@copilot"` (requires gh CLI v2.88.0+).
+  - **Copilot review is OPTIONAL** (Sprint 37 retrospective Imp-6, Phase 7.6 decision). Copilot is auto-assigned via Repository Ruleset (Settings -> Rules -> Rulesets -> enable "Automatically request Copilot code review") IF the Copilot reviewer is configured as a collaborator on the repository. Note: CODEOWNERS does NOT support the Copilot bot; the Ruleset is the only supported mechanism.
+  - **Quick availability check before requesting Copilot**:
+    `gh pr edit <PR#> --add-reviewer copilot-pull-request-reviewer 2>&1`
+    A `422` response (validation failed: reviewer is not a collaborator) means Copilot is not wired up on this repo -- proceed without Copilot review and skip Phase 6.4.1. A `0` exit means Copilot was successfully requested.
+  - Fallback if Ruleset is not configured and Copilot review IS available: `gh pr edit <PR#> --add-reviewer "@copilot"` (requires gh CLI v2.88.0+).
   - Copilot instructions come from `.github/copilot-instructions.md` on the PR base branch (develop).
+  - **Sprint 35-37 history note**: Copilot reviewer was NOT a collaborator on this repo across Sprints 35, 36, and 37; the auto-assignment + manual fallback both returned 422. Treat Copilot review as "if available" rather than mandatory; document its absence in the retrospective Process Issues category if it remains unavailable.
 
 - [ ] **6.4.1 GitHub Copilot Review Response** (Sprint 32 improvement - if Copilot enabled)
   - **Purpose**: External review layer independent of Claude Code. Catches language-specific issues, convention violations, best-practice gaps.
@@ -1192,13 +1328,28 @@ Brief description of what this sprint delivers.
 - lib/adapters/storage/app_paths.dart
 
 ## Next Steps
+- [ ] Manual integration testing (Phase 5.3 acceptance criteria above)
+- [ ] Loop until Manual integration testing is noted complete by the Lead Developer
+  - [ ] Feedback from Manual integration testing
+  - [ ] Required updates from testing feedback completed in current sprint (not always)
+  - [ ] Required additions to backlog from testing feedback (not always)
 - [ ] Code review
-- [ ] Manual integration testing
+- [ ] Sprint <N> retrospective (Phase 7, mandatory)
 - [ ] Merge to develop when approved
 - [ ] Begin Sprint <N+1>
 
 Generated with [Claude Code](https://claude.com/claude-code)
 ```
+
+> **Canonical "Next Steps" progression (Sprint 38 retrospective, 2026-05-18)**: The order above is the canonical post-development sequence and MUST NOT be reordered. Specifically:
+>
+> 1. **Manual integration testing comes FIRST** -- not code review. The Lead Developer (Harold) must complete testing and explicitly mark it complete before Code Review begins.
+> 2. **Testing is a loop, not a single step** -- testing feedback can produce in-sprint fixes (Round 1, 2, ..., N) or backlog additions for future sprints. Each loop iteration is in-sprint work and does NOT trigger an early stop.
+> 3. **Code Review happens AFTER testing complete** -- reviewing code that still has open testing-feedback fixes wastes review effort.
+> 4. **Retrospective is BEFORE merge** -- the retrospective can surface fixes that must land before merge.
+> 5. **Sprint N+1 begins only AFTER merge to develop** -- starting Sprint N+1 with Sprint N still unmerged risks divergent branch state.
+
+
 
 ---
 
@@ -1297,7 +1448,7 @@ dart format --set-exit-if-changed lib/
 
 ### After Merge (Cleanup Complete)
 - [OK] PR merged to develop
-- [OK] Feature branch deleted (locally and remote)
+- [OK] Feature branch RETAINED (local and remote) -- Harold's policy: never delete sprint branches
 - [OK] All related GitHub issues closed
 - [OK] Sprint retrospective documented (if applicable)
 - [OK] Ready to begin next sprint
@@ -1310,8 +1461,8 @@ Once user approves PR:
 
 1. **Merge to develop**
    - PR approved and merged via GitHub
-   - Branch deleted on remote (automatic or manual)
-   - Local branch deleted: `git branch -d feature/YYYYMMDD_Sprint_N`
+   - **Do NOT delete the remote branch on merge** -- in the GitHub PR merge UI, leave "Delete branch" unchecked, or restore the branch if it was auto-deleted
+   - **Do NOT delete the local feature branch** -- Harold's policy retains all sprint branches indefinitely for historical reference (Sprint 38 policy clarification, 2026-05-05)
 
 2. **Close All Related GitHub Issues**
    - Find all sprint card issues referenced in PR (e.g., #60, #61)
@@ -1354,12 +1505,12 @@ Once user approves PR:
      - Link to PR for code artifacts
      - See `docs/SPRINT_RETROSPECTIVE.md` for template
 
-4. **Clean up feature branch (OPTIONAL - User Managed)**
-   - Branch cleanup is optional and user-managed
-   - Do NOT auto-delete branch after merge
-   - User will manually delete when ready: `git branch -d feature/YYYYMMDD_Sprint_N`
-   - Remote cleanup also user-managed: `git push origin --delete feature/YYYYMMDD_Sprint_N`
-   - Keeps branch available for reference if needed
+4. **Feature branch retention (Harold's policy -- Sprint 38 clarification, 2026-05-05)**
+   - **Sprint feature branches are NEVER deleted** (local or remote). Harold retains them indefinitely for historical reference.
+   - Do NOT auto-delete the branch after merge.
+   - Do NOT suggest `git branch -d` or `git push origin --delete` for sprint branches.
+   - Even when GitHub's PR merge UI offers "Delete branch", leave it unchecked. If a branch is auto-deleted on merge, restore it from the PR's "Restore branch" button.
+   - Stale branches in `git branch` output are expected and intentional.
 
 ---
 

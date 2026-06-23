@@ -1,0 +1,3 @@
+[mcp_servers.winwright]
+args = ["mcp"]
+command = 'C:\Tools\WinWright\Civyk.WinWright.Mcp.exe'

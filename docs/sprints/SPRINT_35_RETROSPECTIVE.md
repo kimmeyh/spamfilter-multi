@@ -145,6 +145,21 @@ What 4.7 may do differently by default:
 
 ---
 
+## Store Submission Outcome (post-merge, 2026-04-20)
+
+After PR #238 merged to develop and develop merged to main, the prod-worktree (`D:\Data\Harold\github\spamfilter-multi-prod`) was used to rebuild the MSIX with `APP_ENV=prod` and prod secrets:
+
+- **MSIX**: `D:\Data\Harold\github\spamfilter-multi-prod\mobile-app\build\windows\x64\runner\Release\my_email_spam_filter.msix` (16.56 MB, version `0.5.2.0`, identity `KimmeyConsulting-Ohio.MyEmailSpamFilter`)
+- **Status**: Submitted to Microsoft Store Partner Center on 2026-04-20
+
+The rebuild surfaced 3 additional gaps (now scope-extended into F81 -- see Issue #242 comment dated 2026-04-20):
+
+1. **`secrets.prod.json` was missing entirely** (Sprint 28 must have created it ad-hoc and lost it). Recreated by copying `secrets.dev.json` since the project uses a single shared OAuth client.
+2. **`mobile-app/.gitignore` line 120 (`*.manifest`)** caught `runner.exe.manifest` which is required by the Windows runner CMakeLists. Prod worktree build failed with "No SOURCES given to target: MyEmailSpamFilter" until the manifest was hand-copied from the dev worktree.
+3. **`msix:create` silently strips dart-defines** when it triggers its internal `flutter build windows`. Without `build_windows_args` in `msix_config` (added to prod worktree's pubspec.yaml during the rebuild), the MSIX would have shipped with empty OAuth credentials. The build succeeds, the manifest looks correct, but Gmail sign-in fails for every user at runtime. **Silent-failure category** -- worst kind.
+
+These are all in F81 scope for Sprint 36.
+
 ## Sprint Metrics
 
 | Metric | Value |

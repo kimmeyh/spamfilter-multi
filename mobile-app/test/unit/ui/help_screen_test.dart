@@ -52,6 +52,9 @@ void main() {
       'Manage Safe Senders',
       'Folder Selection',
       'YAML Import / Export',
+      'Other ways to reduce junk email, mail, texts, and phone calls',
+      'Frequently Asked Questions',
+      'First-Use Walkthrough',
     ];
     for (final title in expected) {
       expect(find.text(title), findsOneWidget,
@@ -83,6 +86,9 @@ void main() {
     // If anyone removes a HelpSection we want the test suite to shout:
     // the enum is a contract between every AppBar that passes into
     // openHelp() and the HelpScreen that renders the target.
-    expect(HelpSection.values, hasLength(19));
+    // Sprint 37: added otherWaysToReduceJunk -> 20.
+    // Sprint 39 F74: added faq -> 21.
+    // Sprint 40 F75: added walkthrough -> 22.
+    expect(HelpSection.values, hasLength(22));
   });
 }

@@ -102,6 +102,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   int _reProcessTotal = 0;
   int _reProcessCompleted = 0;
 
+  // Sprint 38 F82 (Issue #252): the "no-rules" count at first display of
+  // this screen for this scan. Captured once via _captureInitialNoRuleCount
+  // and unchanged for the session, so the footer can show
+  // "M addressed / N initial no-rules" cumulatively.
+  int? _initialNoRuleCount;
+
   @override
   void initState() {
     super.initState();
@@ -137,16 +143,41 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           scanResultId: lastScan.id,
         );
         historicalResults = actionMaps.map((map) {
+          final emailFrom = map['email_from'] as String? ?? '';
+          final emailSubject = map['email_subject'] as String? ?? '';
+          // Sprint 38 Round 5 fix (2026-05-17): populate a minimal headers
+          // map so header-based block rules ('header' conditions targeting
+          // the From: header, which is what the entire_domain /
+          // exact_domain inline-add types generate) match historical
+          // emails. Round 4 had headers={} which made
+          // RuleEvaluator._matchesHeaderList iterate an empty entries
+          // list and return no match -- this caused the F82 footer
+          // counter to stay at 0 and rows not to hide after inline
+          // rule-add on the Scan History > Scan Results path (Image 9
+          // from Round 4 testing). Subject header included for parity
+          // with subject-targeting rules.
+          // Use 'From' / 'Subject' case to match what the IMAP and Gmail
+          // adapters populate (raw RFC822 header names). The evaluator's
+          // _matchesHeaderList compares keys case-insensitively, so this
+          // is just for parity, but if any future code does a case-
+          // sensitive header lookup it should see the same shape that
+          // live scans produce.
           final email = EmailMessage(
             id: map['email_id'] as String? ?? '',
-            from: map['email_from'] as String? ?? '',
-            subject: map['email_subject'] as String? ?? '',
+            from: emailFrom,
+            subject: emailSubject,
             body: '',
-            headers: {},
+            headers: {
+              'From': emailFrom,
+              'Subject': emailSubject,
+            },
             receivedDate: DateTime.fromMillisecondsSinceEpoch(
               (map['email_received_date'] as int?) ?? 0,
             ),
             folderName: map['email_folder'] as String? ?? '',
+            // F91 (Sprint 39): carry the persisted RFC 5322 Message-ID
+            // (nullable; older rows predating the v6 migration are null).
+            messageIdHeader: map['rfc5322_message_id'] as String?,
           );
           final actionStr = map['action_type'] as String? ?? 'none';
           final action = EmailActionType.values.firstWhere(
@@ -179,11 +210,72 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         }).toList();
       }
 
+      // Stage historical results into the field before re-evaluation so
+      // _reEvaluateNoRuleEmails / _updateOldestNoRuleCursorsFromResults /
+      // _reProcessAffectedEmails all see the freshly-loaded set. We
+      // intentionally do NOT call setState yet -- we want the FIRST paint
+      // of this screen to already reflect any cross-screen rule-adds.
+      _lastCompletedScan = lastScan;
+      _hasEverScanned = lastScan != null;
+      _historicalResults = historicalResults;
+
+      // Sprint 38 Round 7 fix (2026-05-17, revised Round 8 same day): when
+      // re-entering Scan History > Scan Results for a historical scan,
+      // mirror the inline-rule-add sibling sequence so rules added/changed
+      // via Settings > Manage Rules (or any other cross-screen path) are
+      // reflected on the FIRST paint, before _initialNoRuleCount is
+      // captured and before the user toggles any filter.
+      //
+      // Round 7's mistake: this block ran AFTER setState({_historicalLoaded
+      // = true}), so the first paint cached _initialNoRuleCount and
+      // populated the chip count from the pre-eval state; only the
+      // subsequent rebuild (triggered by the user selecting the "No rule"
+      // filter) saw the post-eval overrides.
+      //
+      // Round 8 corrects ordering: run the full reload + re-eval +
+      // re-process sequence FIRST, then commit _historicalLoaded = true
+      // in a single setState so the initial paint shows the correct
+      // chip count, hidden rows, and footer denominator.
+      //
+      // Gated on historicalScanId != null so the live-scan-open path is
+      // untouched.
+      if (widget.historicalScanId != null && historicalResults.isNotEmpty) {
+        try {
+          final ruleProvider =
+              Provider.of<RuleSetProvider>(context, listen: false);
+          await ruleProvider.loadRules();
+          await ruleProvider.loadSafeSenders();
+          await _reEvaluateNoRuleEmails();
+          await _updateOldestNoRuleCursorsFromResults();
+          await _reProcessAffectedEmails();
+          // Sprint 38 Round 9 fix (2026-05-17): _reProcessAffectedEmails
+          // returns early when scanProvider.scanMode == readOnly, which is
+          // the default state on app launch when no scan has been
+          // initiated in the current session. That leaves _hiddenEmailKeys
+          // empty even though _evaluationOverrides now contains
+          // newly-matched cross-screen rule entries -- the user sees the
+          // chip count and footer update (those read from overrides) but
+          // the matched rows still appear in the unfiltered list. The
+          // visual hiding is purely UI cleanup of addressed no-rules and
+          // is safe regardless of scanMode (no IMAP side effects). Apply
+          // it here as an unconditional pass so the unfiltered list shows
+          // the same final state the "No rule" filter would show.
+          for (final result in historicalResults) {
+            final key = _getEmailKey(result.email);
+            final override = _evaluationOverrides[key];
+            if (override == null) continue;
+            if (result.action != EmailActionType.none) continue;
+            if (override.matchedRule.isEmpty && !override.isSafeSender) continue;
+            _hiddenEmailKeys.add(key);
+          }
+        } catch (_) {
+          // Non-fatal: stale view falls back to last-known evaluation.
+          // Inline rule-adds on this screen still pick up correctly.
+        }
+      }
+
       if (mounted) {
         setState(() {
-          _lastCompletedScan = lastScan;
-          _hasEverScanned = lastScan != null;
-          _historicalResults = historicalResults;
           _historicalLoaded = true;
         });
       }
@@ -601,6 +693,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               _buildFilterStatus(filteredResults.length, allResults.length),
               const SizedBox(height: 8),
             ],
+            // Sprint 38 F82 (Issue #252): "M of N no-rules addressed" indicator
+            // when there were any no-rule emails to triage. Hidden when the
+            // initial count was zero (clean scan, nothing for the user to do).
+            _buildNoRuleProgressFooter(),
             Expanded(
               child: RefreshIndicator(
                 onRefresh: () async {
@@ -904,6 +1000,28 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                     isRulesOnly || isReadOnly ? Colors.black54 : Colors.white,
                     EmailActionType.safeSender,
                   ),
+                  // F91 (Sprint 39): informational chip for source-folder
+                  // duplicates removed during post-safe-sender-move dedup
+                  // (AOL copy-not-move reconciliation). Shown only when the
+                  // count is greater than zero so it does not clutter the
+                  // summary for non-AOL providers.
+                  if (scanProvider.safeSenderDedupCount > 0)
+                    Tooltip(
+                      message: 'Source-folder duplicates removed (AOL re-injected '
+                          'copies of rescued safe-sender emails, moved to Trash).',
+                      child: Chip(
+                        label: Text(
+                          '+${scanProvider.safeSenderDedupCount} dup removed',
+                        ),
+                        backgroundColor: const Color(0xFF2E7D32),
+                        labelStyle: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        side: BorderSide.none,
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      ),
+                    ),
                   _buildStatChip('No rule', noRuleCount, const Color(0xFF757575), Colors.white, EmailActionType.none),
                   _buildSpecialStatChip('Errors', errorCount, const Color(0xFFD32F2F), Colors.white, SpecialFilter.error),
                   _buildFolderFilterChip(allResults),
@@ -1822,12 +1940,137 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     return result;
   }
 
+  /// Sprint 38 F82 (Issue #252): compute current "no-rule" and addressed
+  /// counts for the F82 progress indicator footer and snackbar wording.
+  ///
+  /// `remaining` is the count of emails whose effective action (override
+  /// or original) is still `EmailActionType.none`. `addressed` is the
+  /// count of emails that originally had `none` but now have an override
+  /// to a non-none action -- i.e., the user-progress in this session.
+  ///
+  /// Operates over the same `allResults` set the rest of the screen uses,
+  /// so live scans and historical-scan reviews both work.
+  ({int remaining, int addressed, int initial}) _computeNoRuleStats() {
+    // Sprint 38 Round 4 fix (2026-05-17): historical-scan views must
+    // always use _historicalResults, even when a prior Live Scan left
+    // stale results in EmailScanProvider. Matches the build() resolver
+    // and _reEvaluateNoRuleEmails.
+    final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
+    final liveResults = scanProvider.results;
+    final isLiveScanActive = scanProvider.status == ScanStatus.scanning ||
+        scanProvider.status == ScanStatus.paused;
+    final allResults = (widget.historicalScanId != null)
+        ? _historicalResults
+        : ((liveResults.isNotEmpty || isLiveScanActive)
+            ? liveResults
+            : _historicalResults);
+
+    var remaining = 0;
+    var addressed = 0;
+    for (final result in allResults) {
+      final originalAction = result.action;
+      final effectiveAction = _getEffectiveAction(result);
+      if (effectiveAction == EmailActionType.none) {
+        remaining++;
+      } else if (originalAction == EmailActionType.none &&
+          effectiveAction != EmailActionType.none) {
+        addressed++;
+      }
+    }
+    final initial = _initialNoRuleCount ?? (remaining + addressed);
+    return (remaining: remaining, addressed: addressed, initial: initial);
+  }
+
+  /// Sprint 38 Round 4 (2026-05-17): after the user adds a rule or safe
+  /// sender that makes a previously-no-rule email match (its override is
+  /// set and effective action != none), recompute the oldest UID that is
+  /// still unaddressed-no-rule per folder, and write the per-folder
+  /// cursor so the next IMAP scan re-fetches from that point forward.
+  ///
+  /// Walks the current `allResults` set (live or historical) plus the
+  /// in-memory `_evaluationOverrides`. For each folder, finds the
+  /// smallest UID whose effective action is still `none`. If a folder
+  /// has zero unaddressed no-rules, the cursor is cleared so the next
+  /// scan falls back to the configured `daysBack` window.
+  ///
+  /// Only IMAP UIDs (parseable as int) are eligible. Gmail OAuth message
+  /// IDs are opaque strings; they're skipped here (Gmail uses a separate
+  /// historyId cursor, not yet redesigned in Round 4).
+  ///
+  /// Caller invokes this after every rule-add and safe-sender-add in
+  /// Scan Results, so the cursor stays current as the user works
+  /// through the backlog.
+  Future<void> _updateOldestNoRuleCursorsFromResults() async {
+    final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
+    final liveResults = scanProvider.results;
+    final isLiveScanActive = scanProvider.status == ScanStatus.scanning ||
+        scanProvider.status == ScanStatus.paused;
+    final allResults = (widget.historicalScanId != null)
+        ? _historicalResults
+        : ((liveResults.isNotEmpty || isLiveScanActive)
+            ? liveResults
+            : _historicalResults);
+    if (allResults.isEmpty) return;
+
+    final dbHelper = DatabaseHelper();
+    final foldersTouched = <String>{};
+    final oldestPerFolder = <String, int>{};
+    for (final result in allResults) {
+      foldersTouched.add(result.email.folderName);
+      if (_getEffectiveAction(result) != EmailActionType.none) continue;
+      final uid = int.tryParse(result.email.id);
+      if (uid == null) continue; // non-IMAP id (Gmail OAuth opaque)
+      final current = oldestPerFolder[result.email.folderName];
+      if (current == null || uid < current) {
+        oldestPerFolder[result.email.folderName] = uid;
+      }
+    }
+
+    for (final folder in foldersTouched) {
+      final oldest = oldestPerFolder[folder];
+      // Pass null to clear when the folder has zero unaddressed no-rules.
+      await dbHelper.setFolderCursor(
+        widget.accountId,
+        folder,
+        oldest?.toString(),
+      );
+    }
+  }
+
+  /// Sprint 38 F82: capture the initial no-rule count once per scan view so
+  /// the F82 footer can show cumulative progress ("M of N addressed") rather
+  /// than just the current remaining count.
+  ///
+  /// Sprint 38 Round 1 fix (post-retro 2026-05-16): only capture once
+  /// `allResults` is non-empty. On historical-scan navigation, the first
+  /// render fires BEFORE `_loadLastCompletedScan` completes (async), so
+  /// `_historicalResults` is briefly empty and a naive capture would cache
+  /// `_initialNoRuleCount = 0`, which then hides the footer permanently
+  /// (footer's `initial <= 0` returns SizedBox.shrink). Skipping the empty
+  /// case lets the capture fire on the next rebuild after the async load.
+  void _captureInitialNoRuleCount() {
+    if (_initialNoRuleCount != null) return;
+    final stats = _computeNoRuleStats();
+    final total = stats.remaining + stats.addressed;
+    if (total == 0) return; // wait for async load (or genuinely empty scan)
+    _initialNoRuleCount = total;
+  }
+
   /// Re-evaluate all emails that currently have no matching rule.
   ///
   /// Called after adding a new block rule or safe sender so that
   /// remaining "No rule" items are updated if the new rule matches them.
   /// Uses [_sharedCompiler] so patterns are compiled once and cached
   /// for all subsequent email evaluations.
+  ///
+  /// Sprint 38 Round 4 fix (2026-05-17): now uses the same result-set
+  /// resolution as the build method (preferring `_historicalResults`
+  /// when `widget.historicalScanId != null`). The previous logic
+  /// skipped historical-scan emails when a prior Live Scan left stale
+  /// results in EmailScanProvider, causing inline rule-adds on the Scan
+  /// History > Scan Results page to silently fail to update the
+  /// `_evaluationOverrides` map -- which in turn made the F82 footer
+  /// counter stay at 0 and the addressed rows never hide.
   Future<void> _reEvaluateNoRuleEmails() async {
     final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
     final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
@@ -1837,13 +2080,17 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       compiler: _sharedCompiler,
     );
 
-    // Get current results (live or historical)
+    // Match build()'s resolution: historical-scan views always use
+    // _historicalResults, regardless of any stale liveResults in the
+    // provider.
     final liveResults = scanProvider.results;
     final isLiveScanActive = scanProvider.status == ScanStatus.scanning ||
         scanProvider.status == ScanStatus.paused;
-    final allResults = (liveResults.isNotEmpty || isLiveScanActive)
-        ? liveResults
-        : _historicalResults;
+    final allResults = (widget.historicalScanId != null)
+        ? _historicalResults
+        : ((liveResults.isNotEmpty || isLiveScanActive)
+            ? liveResults
+            : _historicalResults);
 
     // Find all emails with effective action "none" (No rule)
     for (final result in allResults) {
@@ -1856,6 +2103,80 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         }
       }
     }
+  }
+
+  /// Sprint 38 F82 (Issue #252): "M of N no-rules addressed" progress footer.
+  /// Shows under the chip strip when the scan had any no-rule emails. Renders
+  /// nothing if the user has nothing to triage (clean scan). Updates as the
+  /// user adds rules / safe senders inline -- `addressed` increments and
+  /// `remaining` decrements at the same time.
+  Widget _buildNoRuleProgressFooter() {
+    // Capture the initial no-rule count on the first render where any
+    // results are available. Subsequent renders use the cached value so
+    // the "addressed" count climbs as the user adds rules.
+    _captureInitialNoRuleCount();
+    final stats = _computeNoRuleStats();
+    if (stats.initial <= 0) return const SizedBox.shrink();
+
+    final addressed = stats.addressed;
+    final initial = stats.initial;
+    final remaining = stats.remaining;
+    final isComplete = remaining == 0 && initial > 0;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isComplete
+              ? Colors.green.shade50
+              : Colors.amber.shade50,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isComplete ? Colors.green.shade300 : Colors.amber.shade300,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isComplete ? Icons.check_circle : Icons.flag_outlined,
+              size: 18,
+              color: isComplete ? Colors.green.shade700 : Colors.amber.shade800,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                isComplete
+                    ? 'All $initial "No rule" emails addressed.'
+                    : '$addressed of $initial "No rule" emails addressed -- $remaining remaining.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: isComplete
+                      ? Colors.green.shade900
+                      : Colors.amber.shade900,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            if (initial > 0)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: SizedBox(
+                  width: 80,
+                  height: 6,
+                  child: LinearProgressIndicator(
+                    value: addressed / initial,
+                    backgroundColor: Colors.grey.shade300,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      isComplete ? Colors.green.shade600 : Colors.amber.shade700,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 
   /// F38: Non-blocking re-processing banner widget
@@ -1909,13 +2230,17 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       return;
     }
 
-    // Collect emails whose effective action changed and have not been re-processed yet
+    // Sprint 38 Round 4 fix (2026-05-17): historical-scan views must
+    // always use _historicalResults. See _reEvaluateNoRuleEmails for
+    // the matching fix and rationale.
     final liveResults = scanProvider.results;
     final isLiveScanActive = scanProvider.status == ScanStatus.scanning ||
         scanProvider.status == ScanStatus.paused;
-    final allResults = (liveResults.isNotEmpty || isLiveScanActive)
-        ? liveResults
-        : _historicalResults;
+    final allResults = (widget.historicalScanId != null)
+        ? _historicalResults
+        : ((liveResults.isNotEmpty || isLiveScanActive)
+            ? liveResults
+            : _historicalResults);
 
     final toDelete = <EmailMessage>[];
     final toMoveSafe = <EmailMessage>[];
@@ -2134,6 +2459,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       // Add to safe senders via provider (persists to database and YAML)
       await ruleProvider.addSafeSender(pattern);
 
+      // Sprint 38 Round 1 F86: reload from DB so any conflict-resolved
+      // changes or safe-sender list normalization are reflected in
+      // ruleProvider before subsequent re-evaluation runs.
+      await ruleProvider.loadSafeSenders();
+      await ruleProvider.loadRules();
+
       // Include conflict removal info in display message
       if (conflicts.conflictsRemoved > 0) {
         displayMessage += ' (removed ${conflicts.conflictsRemoved} conflicting rule${conflicts.conflictsRemoved > 1 ? "s" : ""})';
@@ -2147,16 +2478,31 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       }
 
       // Re-evaluate all remaining "No rule" emails against the new safe sender
+      final preStats = _computeNoRuleStats();
       await _reEvaluateNoRuleEmails();
+      final postStats = _computeNoRuleStats();
+
+      // Sprint 38 Round 4 (2026-05-17): advance the oldest-unaddressed-no-rule
+      // UID cursor per folder so the next IMAP scan resumes from the
+      // remaining backlog (or clears the cursor and falls back to daysBack
+      // if all are addressed). Non-IMAP rows are skipped inside the helper.
+      await _updateOldestNoRuleCursorsFromResults();
 
       // F38: Execute IMAP actions for affected emails
       await _reProcessAffectedEmails();
 
       if (mounted) {
         setState(() {}); // Refresh list to show updated rule assignment
+        // Sprint 38 F82 (Issue #252): append "N removed, M remaining" so the
+        // user sees concrete progress against the no-rules pool.
+        final removedNow = preStats.remaining - postStats.remaining;
+        final remaining = postStats.remaining;
+        final progressSuffix = removedNow > 0
+            ? ' -- $removedNow removed, $remaining "No rule" remaining'
+            : (remaining > 0 ? ' -- $remaining "No rule" remaining' : '');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(displayMessage),
+            content: Text('$displayMessage$progressSuffix'),
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 3),
             behavior: SnackBarBehavior.floating,
@@ -2180,6 +2526,26 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     }
   }
 
+  /// BUG-S39-1 (Sprint 39): sanitize `input` for use inside a `rules.name`
+  /// or `safe_senders.name` value. Preserves the characters that
+  /// distinguish email-shaped patterns -- `_`, `-`, `@`, `.` -- so distinct
+  /// inputs always yield distinct names. Any other character (whitespace,
+  /// punctuation, non-ASCII) is replaced with `_` so the resulting name is
+  /// readable and shell-safe.
+  ///
+  /// Per Harold (2026-05-24): "should not be collapsing for `<email>@`".
+  /// The pre-fix sanitizer was `replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')`,
+  /// which collapsed all four distinguishing characters into `_` and
+  /// caused `account_update@amazon.com` and `account-update@amazon.com`
+  /// to produce the same rule name `Block_account_update_amazon_com`.
+  /// The DB has `name TEXT NOT NULL UNIQUE` on `rules`, so the second
+  /// insert raised a UNIQUE-constraint violation that `RuleSetProvider.
+  /// addRule` then silently swallowed (see BUG-S39-2). The UI showed
+  /// "Created rule" snackbar despite no row being inserted.
+  String _sanitizeForRuleName(String input) {
+    return input.replaceAll(RegExp(r'[^a-zA-Z0-9._@-]'), '_');
+  }
+
   /// Create a block rule (persists to database and YAML)
   /// Types: 'from' (email), 'exactDomain' (@subdomain.domain.com), 'entireDomain' (@*.domain.com), 'subject'
   Future<void> _createBlockRule(String type, String value, {EmailMessage? email}) async {
@@ -2198,14 +2564,21 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           // Block exact email - escape special chars
           final escaped = value.replaceAll('.', r'\.').replaceAll('@', r'@');
           pattern = '^$escaped\$';
-          ruleName = 'Block_${value.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}';
+          // BUG-S39-1 (Sprint 39): preserve `_`, `-`, `@`, `.` so distinct
+          // email addresses (e.g., `account_update@amazon.com` vs
+          // `account-update@amazon.com`) produce distinct rule names.
+          // The pre-fix sanitizer `[^a-zA-Z0-9]` -> `_` collapsed all four
+          // characters into `_`, causing a UNIQUE-constraint collision on
+          // the `rules.name` column that was then silently swallowed by
+          // `RuleSetProvider.addRule`. See also BUG-S39-2.
+          ruleName = 'Block_${_sanitizeForRuleName(value)}';
           displayMessage = 'Created rule to block email "$value"';
           break;
         case 'exactDomain':
           // Block exact domain (e.g., @subdomain.domain.com)
           final escaped = value.replaceAll('.', r'\.').replaceAll('@', r'@');
           pattern = '$escaped\$';
-          ruleName = 'Block_ExactDomain_${value.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}';
+          ruleName = 'Block_ExactDomain_${_sanitizeForRuleName(value)}';
           displayMessage = 'Created rule to block exact domain "$value"';
           break;
         case 'entireDomain':
@@ -2213,14 +2586,14 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           // Regex: @(?:[a-z0-9-]+\.)*domain\.com$
           final escaped = value.replaceAll('.', r'\.');
           pattern = r'@(?:[a-z0-9-]+\.)*' + escaped + r'$';
-          ruleName = 'Block_EntireDomain_${value.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}';
+          ruleName = 'Block_EntireDomain_${_sanitizeForRuleName(value)}';
           displayMessage = 'Created rule to block entire domain "*.$value"';
           break;
         case 'subject':
           // Block subject containing text - escape special regex chars
           final escaped = value.replaceAll(RegExp(r'[.*+?^${}()|[\]\\]'), r'\$&');
           pattern = escaped;
-          ruleName = 'Block_Subject_${value.substring(0, value.length.clamp(0, 20)).replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}';
+          ruleName = 'Block_Subject_${_sanitizeForRuleName(value.substring(0, value.length.clamp(0, 40)))}';
           displayMessage = 'Created rule to block subject containing "$value"';
           break;
         default:
@@ -2301,6 +2674,13 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       // Add rule via provider (persists to database and YAML)
       await ruleProvider.addRule(rule);
 
+      // Sprint 38 Round 1 F86: reload from DB so any conflict-resolved
+      // changes or rule-list normalization are reflected in ruleProvider
+      // before subsequent re-evaluation runs (and so the next scan sees
+      // the rule even if it was added during an active scan).
+      await ruleProvider.loadRules();
+      await ruleProvider.loadSafeSenders();
+
       // Include conflict removal info in display message
       if (conflicts.conflictsRemoved > 0) {
         displayMessage += ' (removed ${conflicts.conflictsRemoved} conflicting safe sender${conflicts.conflictsRemoved > 1 ? "s" : ""})';
@@ -2314,16 +2694,31 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       }
 
       // Re-evaluate all remaining "No rule" emails against the new rule
+      final preStats = _computeNoRuleStats();
       await _reEvaluateNoRuleEmails();
+      final postStats = _computeNoRuleStats();
+
+      // Sprint 38 Round 4 (2026-05-17): advance the oldest-unaddressed-no-rule
+      // UID cursor per folder so the next IMAP scan resumes from the
+      // remaining backlog. See companion call site in safe-sender-add
+      // handler above.
+      await _updateOldestNoRuleCursorsFromResults();
 
       // F38: Execute IMAP actions for affected emails
       await _reProcessAffectedEmails();
 
       if (mounted) {
         setState(() {}); // Refresh list to show updated rule assignment
+        // Sprint 38 F82 (Issue #252): append "N removed, M remaining" so the
+        // user sees concrete progress against the no-rules pool.
+        final removedNow = preStats.remaining - postStats.remaining;
+        final remaining = postStats.remaining;
+        final progressSuffix = removedNow > 0
+            ? ' -- $removedNow removed, $remaining "No rule" remaining'
+            : (remaining > 0 ? ' -- $remaining "No rule" remaining' : '');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(displayMessage),
+            content: Text('$displayMessage$progressSuffix'),
             backgroundColor: Colors.blue,
             duration: const Duration(seconds: 3),
             behavior: SnackBarBehavior.floating,

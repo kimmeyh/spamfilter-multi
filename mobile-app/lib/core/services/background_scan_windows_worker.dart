@@ -7,6 +7,7 @@ import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
 import '../storage/database_helper.dart';
 import '../storage/background_scan_log_store.dart';
 import '../storage/settings_store.dart';
+import '../utils/account_id_sanitizer.dart';
 import '../providers/email_scan_provider.dart';
 import '../providers/rule_set_provider.dart';
 import '../services/app_environment.dart';
@@ -26,6 +27,11 @@ class BackgroundScanWindowsWorker {
   /// Cached log directory path (resolved once via path_provider)
   static String? _cachedLogDir;
 
+  /// Sanitized account id for the per-account log filename (Sprint 42, F98).
+  /// Set at the start of an account-scoped [executeBackgroundScan]; null for a
+  /// legacy all-accounts run (which keeps the shared log filename).
+  static String? _logAccountToken;
+
   /// Get log directory path using path_provider (MSIX-safe).
   /// [UPDATED] Issue #218: Replaces Platform.environment['APPDATA'] usage.
   static Future<String> _getLogDir() async {
@@ -41,9 +47,12 @@ class BackgroundScanWindowsWorker {
     try {
       final logDir = await _getLogDir();
       final logPrefix = AppEnvironment.logPrefix;
-      final logFile = File(
-        '$logDir\\${logPrefix}background_scan_v0.5.2.log',
-      );
+      // F98: per-account log filename so concurrent per-account runs do not
+      // interleave into one file. Null token -> shared legacy filename.
+      final accountPart =
+          _logAccountToken != null ? '${_logAccountToken}_' : '';
+      final fileName = '${logPrefix}background_scan_${accountPart}v0.5.3.log';
+      final logFile = File('$logDir\\$fileName');
       final timestamp = DateTime.now().toIso8601String();
       await logFile.parent.create(recursive: true);
       await logFile.writeAsString(
@@ -53,6 +62,45 @@ class BackgroundScanWindowsWorker {
     } catch (_) {}
   }
 
+  /// Maximum attempts when the DB is locked by a concurrent process.
+  static const int _dbLockMaxAttempts = 20;
+
+  /// Delay between DB-lock retries.
+  static const Duration _dbLockRetryDelay = Duration(minutes: 1);
+
+  /// Returns true if [error] is (or wraps) a SQLite "database is locked" error.
+  static bool _isDatabaseLocked(Object error) {
+    final s = error.toString().toLowerCase();
+    return s.contains('database is locked') || s.contains('(code 5)');
+  }
+
+  /// Runs [action], retrying on a SQLite "database is locked" error (caused by a
+  /// concurrent per-account background-scan process). Waits
+  /// [_dbLockRetryDelay] between attempts, up to [_dbLockMaxAttempts] times
+  /// (F98, Sprint 42). Non-lock errors are rethrown immediately. After the final
+  /// attempt the lock error is rethrown so the caller records the failure.
+  static Future<T> _withDbLockRetry<T>({
+    required String accountId,
+    required Future<T> Function() action,
+  }) async {
+    for (var attempt = 1; attempt <= _dbLockMaxAttempts; attempt++) {
+      try {
+        return await action();
+      } catch (e) {
+        if (!_isDatabaseLocked(e) || attempt == _dbLockMaxAttempts) {
+          rethrow;
+        }
+        await _bgLog(
+            'DB locked scanning ${Redact.accountId(accountId)} (attempt '
+            '$attempt/$_dbLockMaxAttempts); waiting '
+            '${_dbLockRetryDelay.inMinutes}m before retry');
+        await Future<void>.delayed(_dbLockRetryDelay);
+      }
+    }
+    // Unreachable: the loop either returns or rethrows.
+    throw StateError('DB lock retry loop exited unexpectedly');
+  }
+
   /// Execute background scan for accounts.
   ///
   /// When [isTest] is false (default): Only scans accounts with background
@@ -60,9 +108,23 @@ class BackgroundScanWindowsWorker {
   ///
   /// When [isTest] is true: Scans ALL accounts regardless of the enable flag.
   /// Called by the "Test Background Scan" button in Settings.
-  static Future<bool> executeBackgroundScan({bool isTest = false}) async {
-    _logger.i('Starting Windows background scan worker execution');
-    await _bgLog('executeBackgroundScan() started');
+  ///
+  /// When [accountId] is non-null (Sprint 42, F98 / ADR-0039): scans ONLY that
+  /// account -- the per-account Task Scheduler entry passes
+  /// `--account-id=<id>`. When null, retains the legacy iterate-all-accounts
+  /// behavior (backward compatibility for an un-migrated global task).
+  static Future<bool> executeBackgroundScan({
+    bool isTest = false,
+    String? accountId,
+  }) async {
+    // F98: set the per-account log token BEFORE the first _bgLog so the whole
+    // run logs to the account-specific file.
+    _logAccountToken = accountId != null ? sanitizeAccountId(accountId) : null;
+
+    _logger.i('Starting Windows background scan worker execution'
+        '${accountId != null ? ' for account ${Redact.accountId(accountId)}' : ' (all accounts)'}');
+    await _bgLog('executeBackgroundScan() started'
+        '${accountId != null ? ' (account-scoped: ${Redact.accountId(accountId)})' : ' (all accounts)'}');
 
     try {
       // Initialize app paths first
@@ -92,9 +154,21 @@ class BackgroundScanWindowsWorker {
       // Get all accounts from SecureCredentialsStore (not SQLite - accounts are stored
       // in flutter_secure_storage / Windows Credential Manager)
       await _bgLog('Loading accounts from SecureCredentialsStore...');
-      final accountIds = await credStore.getSavedAccounts();
+      var accountIds = await credStore.getSavedAccounts();
       _logger.d('Found ${accountIds.length} total accounts');
       await _bgLog('Found ${accountIds.length} total accounts: ${accountIds.map(Redact.accountId).toList()}');
+
+      // F98: when account-scoped, narrow to exactly the named account. If it is
+      // not among the saved accounts (e.g. removed since the task was created),
+      // there is nothing to scan -- the orphaned task should be cleaned up on
+      // the next foreground startup pass.
+      if (accountId != null) {
+        accountIds = accountIds.where((id) => id == accountId).toList();
+        await _bgLog('Account-scoped run -> ${accountIds.length} matching account(s)');
+        if (accountIds.isEmpty) {
+          await _bgLog('Account ${Redact.accountId(accountId)} not found among saved accounts; nothing to scan');
+        }
+      }
 
       int successCount = 0;
       int failureCount = 0;
@@ -154,12 +228,18 @@ class BackgroundScanWindowsWorker {
           // Execute scan for this account
           await _bgLog('Executing scan for ${Redact.accountId(accountId)} (platform: $platformId)');
           try {
-            final result = await _scanAccount(
+            // F98 (Sprint 42): concurrent per-account processes can hit
+            // "database is locked" (code 5). Retry the whole scan on a lock,
+            // waiting 1 minute between attempts, up to 20 times.
+            final result = await _withDbLockRetry(
               accountId: accountId,
-              platformId: platformId,
-              dbHelper: dbHelper,
-              ruleSetProvider: ruleSetProvider,
-              settingsStore: settingsStore,
+              action: () => _scanAccount(
+                accountId: accountId,
+                platformId: platformId!,
+                dbHelper: dbHelper,
+                ruleSetProvider: ruleSetProvider,
+                settingsStore: settingsStore,
+              ),
             );
 
             // Update log with success
@@ -304,10 +384,10 @@ class BackgroundScanWindowsWorker {
         await dir.create(recursive: true);
       }
 
-      // F45: Daily filename (no time component), with _dev suffix per ADR-0035
-      final safeAccountId = accountId
-          .replaceAll('@', '_at_')
-          .replaceAll('.', '_');
+      // F45: Daily filename (no time component), with _dev suffix per ADR-0035.
+      // F98: use the shared sanitizer so the CSV/XLSX token matches the log and
+      // Task Scheduler tokens exactly.
+      final safeAccountId = sanitizeAccountId(accountId);
       final dateStr = DateTime.now().toIso8601String().split('T')[0];
       final devSuffix = AppEnvironment.isDev ? '_dev' : '';
       final xlsxFilename = 'background_scan_${safeAccountId}_$dateStr$devSuffix.xlsx';

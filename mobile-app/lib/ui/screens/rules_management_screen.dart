@@ -12,14 +12,20 @@
 /// - View rule details (conditions, pattern, action)
 library;
 
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../core/models/rule_set.dart';
 import '../../core/storage/database_helper.dart';
+import '../widgets/copy_all_shortcut.dart';
+import '../widgets/list_selection_controller.dart';
 import '../../core/storage/rule_database_store.dart';
+import '../../core/storage/settings_store.dart';
 import '../widgets/app_bar_with_exit.dart';
 import 'help_screen.dart';
 import 'manual_rule_create_screen.dart';
+import 'rule_edit_screen.dart';
 import 'rule_test_screen.dart';
 
 /// Screen for managing spam filtering rules
@@ -30,7 +36,8 @@ class RulesManagementScreen extends StatefulWidget {
   State<RulesManagementScreen> createState() => _RulesManagementScreenState();
 }
 
-class _RulesManagementScreenState extends State<RulesManagementScreen> {
+class _RulesManagementScreenState extends State<RulesManagementScreen>
+    with ListSelectionController<RulesManagementScreen> {
   final Logger _logger = Logger();
   late final RuleDatabaseStore _store;
   List<Rule> _rules = [];
@@ -42,6 +49,11 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
   // Filter state
   final Set<String> _selectedCategories = {};
   final Set<String> _selectedSubTypes = {};
+
+  // Sprint 37 round 6 (Alt-2 UX): tracks the currently-hovered or
+  // keyboard-focused row. The hover-revealed info_outline button is
+  // visible only for the row whose name matches this field.
+  String? _hoveredRuleName;
 
   // Category display labels
   static const Map<String, String> _categoryLabels = {
@@ -98,6 +110,11 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
   }
 
   void _applyFilter() {
+    // S38-CI-3: the filtered list is about to be rebuilt, so any row
+    // selection indices would point at stale rows. Reset selection on
+    // every filter / search / reload. (This method is the single
+    // funnel for all filtered-list rebuilds on this screen.)
+    clearRowSelection();
     _filteredRules = _rules.where((rule) {
       // Category filter
       if (_selectedCategories.isNotEmpty) {
@@ -299,6 +316,26 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Close'),
           ),
+          // F35 (Sprint 40): navigate to RuleEditScreen pre-populated with
+          // this rule's current values.
+          OutlinedButton.icon(
+            icon: const Icon(Icons.edit, size: 16),
+            label: const Text('Edit'),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _openRuleInEditScreen(rule);
+            },
+          ),
+          // Sub-feature 3 (F25): navigate to RuleTestScreen pre-filled with
+          // this rule's first condition pattern and condition type.
+          OutlinedButton.icon(
+            icon: const Icon(Icons.science, size: 16),
+            label: const Text('Test'),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _openRuleInTestTool(rule);
+            },
+          ),
           OutlinedButton(
             onPressed: () {
               Navigator.pop(ctx);
@@ -317,6 +354,67 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
         ],
       ),
     );
+  }
+
+  /// Navigate to RuleTestScreen pre-filled with [rule]'s first condition.
+  ///
+  /// Maps the rule's [patternCategory] to a RuleTestScreen condition type:
+  /// - `header_from` -> `'from'`  (header patterns match the From address)
+  /// - `subject`     -> `'subject'`
+  /// - `body`        -> `'body'`
+  ///
+  /// The first pattern from the matching condition list is used as
+  /// [initialPattern]. If no patterns are available the screen opens without
+  /// a pre-filled pattern.
+  void _openRuleInTestTool(Rule rule) {
+    // Pick the condition type and extract the first pattern.
+    final category = rule.patternCategory ?? '';
+    String conditionType;
+    String? firstPattern;
+
+    if (category == 'subject' && rule.conditions.subject.isNotEmpty) {
+      conditionType = 'subject';
+      firstPattern = rule.conditions.subject.first;
+    } else if (category == 'body' && rule.conditions.body.isNotEmpty) {
+      conditionType = 'body';
+      firstPattern = rule.conditions.body.first;
+    } else if (rule.conditions.header.isNotEmpty) {
+      conditionType = 'from';
+      firstPattern = rule.conditions.header.first;
+    } else if (rule.conditions.from.isNotEmpty) {
+      conditionType = 'from';
+      firstPattern = rule.conditions.from.first;
+    } else {
+      conditionType = 'from';
+    }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RuleTestScreen(
+          initialPattern: firstPattern,
+          initialConditionType: conditionType,
+        ),
+      ),
+    );
+  }
+
+  /// F35 (Sprint 40): navigate to RuleEditScreen pre-populated with [rule].
+  ///
+  /// On return, refreshes the rule list when the edit was saved (result == true).
+  Future<void> _openRuleInEditScreen(Rule rule) async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RuleEditScreen(
+          rule: rule,
+          store: _store,
+        ),
+      ),
+    );
+    if (result == true) {
+      await _loadRules();
+    }
   }
 
   Widget _detailSection(String label, String value) {
@@ -441,9 +539,50 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
             tooltip: 'Refresh',
             onPressed: _loadRules,
           ),
+          // Sprint 37 round 6: filter-aware bulk export. Exports the
+          // currently-shown subset (search + filter chips applied) as CSV.
+          // Respects the "filter is the selection" UX -- power users
+          // narrow the list to what they want, then export.
+          IconButton(
+            icon: const Icon(Icons.file_download_outlined),
+            tooltip: _filteredRules.isEmpty
+                ? 'Nothing to export'
+                : 'Export ${_filteredRules.length} shown rule${_filteredRules.length == 1 ? '' : 's'} as CSV',
+            onPressed: _filteredRules.isEmpty ? null : _exportFilteredRules,
+          ),
         ],
       ),
-      body: Column(
+      // Sprint 38 F84 Sub-task A (Issue #253): Ctrl+A / Cmd+A copies the
+      // ENTIRE filtered rule list to clipboard, not just the viewport
+      // subset. Bypasses Flutter's selection model -- writes joined row
+      // text directly.
+      //
+      // Sprint 39 S38-CI-3 (Sub-tasks B/C): when the user has made a
+      // multi-region row selection (Shift+Click extend / Ctrl+Click
+      // disjoint), Ctrl+A copies just the SELECTED rows. With no row
+      // selection it falls back to copying the whole filtered list (the
+      // original Sub-task A behavior).
+      body: CopyAllShortcut(
+        itemLabel: 'rules',
+        textBuilder: () {
+          if (_filteredRules.isEmpty) return '';
+          final indices = hasRowSelection
+              ? selectedRowIndices
+              : List<int>.generate(_filteredRules.length, (i) => i);
+          return indices.map((i) {
+            final rule = _filteredRules[i];
+            final name = rule.sourceDomain ?? rule.name;
+            final pattern = (rule.conditions.header.isNotEmpty
+                    ? rule.conditions.header.join('; ')
+                    : (rule.conditions.from.isNotEmpty
+                        ? rule.conditions.from.join('; ')
+                        : (rule.conditions.subject.isNotEmpty
+                            ? rule.conditions.subject.join('; ')
+                            : rule.conditions.body.join('; '))));
+            return '$name\t$pattern';
+          }).join('\n');
+        },
+        child: Column(
         children: [
           // Search bar
           Padding(
@@ -631,6 +770,12 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
           const SizedBox(height: 8),
 
           // Rules list
+          // Sprint 37 Phase 7 Imp-1 (round 2): wrap the list in a single
+          // SelectionArea so a drag selection can span MULTIPLE rows and
+          // both fields per row. Per-row SelectableText creates isolated
+          // selection scopes (Round 1 issue: only one field selectable
+          // at a time). SelectionArea + plain Text widgets share one
+          // selection so users can sweep-select N rules at once.
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
@@ -659,62 +804,258 @@ class _RulesManagementScreenState extends State<RulesManagementScreen> {
                           ],
                         ),
                       )
-                    : RefreshIndicator(
-                        onRefresh: _loadRules,
-                        child: ListView.builder(
-                          itemCount: _filteredRules.length,
-                          padding: const EdgeInsets.symmetric(horizontal: 8),
-                          itemBuilder: (context, index) {
-                            return _buildRuleTile(_filteredRules[index]);
-                          },
+                    : SelectionArea(
+                        child: RefreshIndicator(
+                          onRefresh: _loadRules,
+                          child: ListView.builder(
+                            itemCount: _filteredRules.length,
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            itemBuilder: (context, index) {
+                              return _buildRuleTile(
+                                  _filteredRules[index], index);
+                            },
+                          ),
                         ),
                       ),
           ),
         ],
       ),
+      ),
     );
   }
 
-  Widget _buildRuleTile(Rule rule) {
+  Widget _buildRuleTile(Rule rule, int index) {
     final displayName = rule.sourceDomain ?? rule.name;
     final categoryLabel = _categoryLabels[rule.patternCategory] ?? rule.patternCategory ?? '';
     final subTypeLabel = _subTypeLabels[rule.patternSubType] ?? rule.patternSubType ?? '';
 
+    // Sprint 37 Phase 7 Imp-1 round 6 (Alt-2 final UX, supersedes rounds
+    // 1-5b). Design rationale:
+    //   - Leading icon is purely decorative (category badge). NOT clickable.
+    //     Lower opacity (0.85) so it reads as a label, not a button.
+    //   - Trailing affordance is a hover/focus-revealed `info_outline`
+    //     IconButton. Hidden by default via AnimatedOpacity so the row body
+    //     stays visually clean and the screen-level SelectionArea (round 2)
+    //     gets unobstructed access to title/subtitle text for cross-row
+    //     drag-select.
+    //   - Trailing delete IconButton REMOVED from the row. Delete remains
+    //     reachable inside the details dialog (existing button at line ~309
+    //     of this file). Net: one fewer accidental-click footgun.
+    //   - The IconButton is always present in the widget tree (so layout is
+    //     stable + screen readers find it + Tab can focus it) but visually
+    //     hidden until the row is hovered or the IconButton itself receives
+    //     keyboard focus (Focus.onFocusChange below).
+    final isRevealed = _hoveredRuleName == rule.name;
+    // S38-CI-3 (Sub-tasks B/C): multi-region row selection.
+    //   - GestureDetector.onTap reads the live Shift/Ctrl modifiers and
+    //     dispatches to handleRowTap (Shift = extend from anchor,
+    //     Ctrl/Cmd = toggle disjoint, plain = single select).
+    //   - onPanStart begins a Ctrl-drag (additive range); the per-row
+    //     MouseRegion.onEnter extends that drag as the pointer sweeps over
+    //     other rows (onEnter still fires while a button is held).
+    //   - Selected rows get a theme-tinted highlight so the selection is
+    //     visible.
+    final isSelected = isRowSelected(index);
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      child: ListTile(
-        dense: true,
-        leading: Icon(
-          _getCategoryIcon(rule.patternCategory),
-          color: rule.enabled ? _getSubTypeColor(rule.patternSubType) : Colors.grey.shade400,
-          size: 22,
-        ),
-        title: Text(
-          displayName,
-          style: TextStyle(
-            fontFamily: 'monospace',
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: rule.enabled ? null : Colors.grey.shade500,
-            decoration: rule.enabled ? null : TextDecoration.lineThrough,
+      color: isSelected
+          ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.12)
+          : null,
+      child: MouseRegion(
+        onEnter: (_) {
+          setState(() => _hoveredRuleName = rule.name);
+          handleRowDragTo(index, _filteredRules.length);
+        },
+        onExit: (_) {
+          if (_hoveredRuleName == rule.name) {
+            setState(() => _hoveredRuleName = null);
+          }
+        },
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () => handleRowTap(index, _filteredRules.length),
+          onPanStart: (_) => handleRowDragStart(index, _filteredRules.length),
+          onPanEnd: (_) => handleRowDragEnd(),
+          onPanCancel: handleRowDragEnd,
+          child: ListTile(
+          dense: true,
+          // Sprint 37 round 7: leading category icon is now ALSO clickable
+          // (Harold feedback 2026-05-04). Symmetry with trailing info icon
+          // -- both icons open the details dialog with the same hover ring,
+          // tooltip, and tap behavior. Wrapped in IconButton with explicit
+          // 36x36 SizedBox constraints so the round-5b "tight ListTile.
+          // leading constraints collapse the IconButton hit region" failure
+          // does not recur.
+          leading: SizedBox(
+            width: 36,
+            height: 36,
+            child: IconButton(
+              icon: Icon(
+                _getCategoryIcon(rule.patternCategory),
+                color: rule.enabled
+                    ? _getSubTypeColor(rule.patternSubType).withValues(alpha: 0.85)
+                    : Colors.grey.shade400,
+                size: 20,
+                semanticLabel: '$categoryLabel category, $subTypeLabel sub-type',
+              ),
+              tooltip: 'View rule details',
+              padding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+              onPressed: () => _showRuleDetails(rule),
+            ),
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Text(
-          '$categoryLabel - $subTypeLabel',
-          style: TextStyle(
-            fontSize: 11,
-            color: rule.enabled ? _getSubTypeColor(rule.patternSubType) : Colors.grey.shade400,
+          title: Text(
+            displayName,
+            style: TextStyle(
+              fontFamily: 'monospace',
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              color: rule.enabled ? null : Colors.grey.shade500,
+              decoration: rule.enabled ? null : TextDecoration.lineThrough,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: Text(
+            '$categoryLabel - $subTypeLabel',
+            style: TextStyle(
+              fontSize: 11,
+              color: rule.enabled ? _getSubTypeColor(rule.patternSubType) : Colors.grey.shade400,
+            ),
+          ),
+          trailing: Focus(
+            onFocusChange: (hasFocus) {
+              if (hasFocus) {
+                setState(() => _hoveredRuleName = rule.name);
+              }
+            },
+            child: AnimatedOpacity(
+              opacity: isRevealed ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 120),
+              child: IconButton(
+                icon: const Icon(Icons.info_outline, size: 18),
+                tooltip: 'View rule details (Enter)',
+                visualDensity: VisualDensity.compact,
+                onPressed: () => _showRuleDetails(rule),
+              ),
+            ),
+          ),
           ),
         ),
-        trailing: IconButton(
-          icon: Icon(Icons.delete_outline, color: Colors.red.shade400, size: 20),
-          tooltip: 'Delete',
-          onPressed: () => _deleteRule(rule),
-        ),
-        onTap: () => _showRuleDetails(rule),
       ),
     );
+  }
+
+  /// Sprint 37 round 6: export the currently-filtered rule list as a CSV
+  /// file. Respects the search query and any active filter chips -- the
+  /// "filter is the selection" pattern (Harold's framing). Uses the same
+  /// settings-driven export directory + path normalization as
+  /// `results_display_screen.dart::_exportResults`.
+  Future<void> _exportFilteredRules() async {
+    if (_filteredRules.isEmpty) return;
+    try {
+      final settingsStore = SettingsStore();
+      final configuredDir = await settingsStore.getCsvExportDirectory();
+
+      String exportPath;
+      if (configuredDir != null && configuredDir.isNotEmpty) {
+        final dir = Directory(configuredDir);
+        if (!await dir.exists()) {
+          await dir.create(recursive: true);
+        }
+        exportPath = configuredDir;
+      } else {
+        final directory = Platform.isAndroid || Platform.isIOS
+            ? await getExternalStorageDirectory()
+            : await getApplicationDocumentsDirectory();
+        if (directory == null) {
+          throw Exception('Could not access storage directory');
+        }
+        exportPath = directory.path;
+      }
+
+      String normalizedPath = exportPath;
+      while (normalizedPath.endsWith('/') || normalizedPath.endsWith('\\')) {
+        normalizedPath = normalizedPath.substring(0, normalizedPath.length - 1);
+      }
+      final separator = Platform.isWindows ? '\\' : '/';
+      final timestamp =
+          DateTime.now().toIso8601String().replaceAll(':', '-').split('.')[0];
+      final filename = 'manage_rules_filtered_$timestamp.csv';
+      final filePath = '$normalizedPath$separator$filename';
+
+      final buffer = StringBuffer();
+      // Sprint 37 round 7: added Pattern column. Pattern joins all the
+      // rule's condition lists (header / from / subject / body) with `; `
+      // since CSV uses comma as field delimiter and a rule can target
+      // multiple condition buckets.
+      buffer.writeln('Source Domain,Rule Name,Pattern,Category,Sub-Type,Action,Enabled,Execution Order');
+      for (final r in _filteredRules) {
+        final domain = _csvEscape(r.sourceDomain ?? '');
+        final name = _csvEscape(r.name);
+        final pattern = _csvEscape(_collectPatternsForCsv(r));
+        final cat = _csvEscape(_categoryLabels[r.patternCategory] ?? r.patternCategory ?? '');
+        final sub = _csvEscape(_subTypeLabels[r.patternSubType] ?? r.patternSubType ?? '');
+        final action = _csvEscape(_getActionLabel(r));
+        final enabled = r.enabled ? 'true' : 'false';
+        buffer.writeln('$domain,$name,$pattern,$cat,$sub,$action,$enabled,${r.executionOrder}');
+      }
+      final file = File(filePath);
+      await file.writeAsString(buffer.toString());
+      _logger.i('[OK] Exported ${_filteredRules.length} filtered rules to $filePath');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Exported ${_filteredRules.length} rule${_filteredRules.length == 1 ? '' : 's'} to $filename'),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      _logger.e('Failed to export filtered rules', error: e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Export failed: $e')),
+        );
+      }
+    }
+  }
+
+  /// Joins all of a rule's condition patterns (header / from / subject /
+  /// body) into a single string for the CSV "Pattern" column. Multiple
+  /// patterns are separated with `; ` because CSV already uses `,` as the
+  /// field delimiter. The cell will be quoted by `_csvEscape` when needed.
+  String _collectPatternsForCsv(Rule r) {
+    final parts = <String>[
+      ...r.conditions.header,
+      ...r.conditions.from,
+      ...r.conditions.subject,
+      ...r.conditions.body,
+    ];
+    return parts.join('; ');
+  }
+
+  /// Sprint 37 round 7: CSV-injection-safe escape (OWASP guidance, Bug
+  /// observed by Harold 2026-05-04: rules whose source domain starts with
+  /// `-` showed `#NAME?` in Excel because Excel/LibreOffice/Sheets all
+  /// interpret cells starting with `=`, `+`, `-`, `@`, tab (`\t`), or CR
+  /// (`\r`) as formulas. The fix is to prefix such cells with a single
+  /// quote `'` -- spreadsheet apps treat that as a "literal text" hint and
+  /// strip it on display, leaving the actual content intact).
+  String _csvEscape(String s) {
+    if (s.isEmpty) return s;
+    final first = s.codeUnitAt(0);
+    final isFormulaTrigger = first == 0x3D /* = */ ||
+        first == 0x2B /* + */ ||
+        first == 0x2D /* - */ ||
+        first == 0x40 /* @ */ ||
+        first == 0x09 /* TAB */ ||
+        first == 0x0D /* CR */;
+    final escaped = isFormulaTrigger ? "'$s" : s;
+    if (escaped.contains(',') || escaped.contains('"') || escaped.contains('\n')) {
+      return '"${escaped.replaceAll('"', '""')}"';
+    }
+    return escaped;
   }
 }

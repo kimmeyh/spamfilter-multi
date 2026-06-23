@@ -16,20 +16,31 @@ class BackgroundScanWorker {
   static final Logger _logger = Logger();
   static const int maxRetries = 3;
 
-  /// Execute background scan for enabled accounts
-  /// This method is called by WorkManager at configured intervals
-  static Future<bool> executeBackgroundScan() async {
-    _logger.i('Starting background scan worker execution');
+  /// Execute background scan for enabled accounts.
+  /// This method is called by WorkManager at configured intervals.
+  ///
+  /// F98 (ADR-0039): when [accountId] is non-null, scans ONLY that account (the
+  /// per-account WorkManager task passes it via inputData). When null, retains
+  /// the legacy iterate-all-enabled-accounts behavior.
+  static Future<bool> executeBackgroundScan({String? accountId}) async {
+    _logger.i('Starting background scan worker execution'
+        '${accountId != null ? ' for account ${Redact.accountId(accountId)}' : ' (all accounts)'}');
 
     try {
       // Initialize services
       final dbHelper = DatabaseHelper();
       final logStore = BackgroundScanLogStore(dbHelper);
       final accountStore = AccountStore(dbHelper);
+      final settingsStore = SettingsStore(dbHelper);
 
-      // Get all enabled accounts
-      final accounts = await accountStore.getAllAccounts();
-      _logger.d('Found ${accounts.length} total accounts');
+      // Get accounts: all, or just the named account when account-scoped.
+      var accounts = await accountStore.getAllAccounts();
+      if (accountId != null) {
+        accounts = accounts
+            .where((a) => (a['account_id'] as String) == accountId)
+            .toList();
+      }
+      _logger.d('Scanning ${accounts.length} account(s)');
 
       int successCount = 0;
       int failureCount = 0;
@@ -37,11 +48,11 @@ class BackgroundScanWorker {
       // Scan each enabled account
       for (final account in accounts) {
         try {
-          // Check if background scans enabled for this account
-          final isBackgroundEnabled = await _isBackgroundScanEnabled(
-            accountId: account['account_id'] as String,
-            dbHelper: dbHelper,
-          );
+          // F98: use the canonical effective-enable resolver (fixes the latent
+          // wrong-key bug where the worker queried 'background_scan_enabled'
+          // but the writer stores 'background_enabled').
+          final isBackgroundEnabled = await settingsStore
+              .getEffectiveBackgroundEnabled(account['account_id'] as String);
 
           if (!isBackgroundEnabled) {
             _logger.d('Background scans disabled for account ${account['account_id']}');
@@ -113,31 +124,6 @@ class BackgroundScanWorker {
   }
 
   /// Check if background scanning is enabled for an account
-  static Future<bool> _isBackgroundScanEnabled({
-    required String accountId,
-    required DatabaseHelper dbHelper,
-  }) async {
-    try {
-      final db = await dbHelper.database;
-      final result = await db.query(
-        'account_settings',
-        where: 'account_id = ? AND setting_key = ?',
-        whereArgs: [accountId, 'background_scan_enabled'],
-        limit: 1,
-      );
-
-      if (result.isEmpty) {
-        return false;
-      }
-
-      final value = result.first['setting_value'] as String;
-      return value.toLowerCase() == 'true';
-    } catch (e) {
-      _logger.e('Failed to check background scan enabled status', error: e);
-      return false;
-    }
-  }
-
   /// Scan a single account
   static Future<void> _scanAccount({
     required String accountId,
@@ -238,8 +224,14 @@ Future<void> initializeBackgroundScanning() async {
 /// Must be a top-level function
 void callbackDispatcher() {
   Workmanager().executeTask((taskName, inputData) async {
-    if (taskName == backgroundScanTaskId) {
-      return await BackgroundScanWorker.executeBackgroundScan();
+    // F98 (ADR-0039): per-account unique task names are
+    // `background_scan_task::<accountId>` and carry the accountId in inputData.
+    // The legacy `background_scan_task` (no accountId) still runs all accounts.
+    if (taskName == backgroundScanTaskId ||
+        taskName.startsWith('$backgroundScanTaskId::')) {
+      final accountId = inputData?['account_id'] as String?;
+      return await BackgroundScanWorker.executeBackgroundScan(
+          accountId: accountId);
     }
     return false;
   });

@@ -37,6 +37,21 @@ class AppPaths {
 
   bool _initialized = false;
 
+  /// TEST-ONLY data-directory override (Sprint 42, F99).
+  ///
+  /// When set to a non-null absolute path, [initialize] uses it verbatim as the
+  /// app-support directory instead of `getApplicationSupportDirectory()` and
+  /// does NOT append the ADR-0035 `_Dev` suffix (the override is expected to be
+  /// a complete, isolated test directory). This is the seam that lets the
+  /// integration_test harness point the WHOLE app -- including the
+  /// `RuleSetProvider`-constructed `AppPaths` that would otherwise overwrite a
+  /// per-instance override -- at an isolated temp dir (or a throwaway copy of
+  /// the dev DB), so tests never read or write the real dev/prod data dir.
+  ///
+  /// Defaults to null: in production this field is never set, so behavior is
+  /// unchanged. Tests must reset it to null in tearDown.
+  static String? testOverrideBaseDir;
+
   /// Initialize application directories (must call before accessing paths)
   ///
   /// For development builds (APP_ENV=dev), the data directory is suffixed
@@ -44,16 +59,23 @@ class AppPaths {
   Future<void> initialize() async {
     if (_initialized) return;
 
-    // Get base app support directory
-    final baseDir = await getApplicationSupportDirectory();
-
-    // Apply environment suffix for dev builds (ADR-0035)
-    final suffix = AppEnvironment.dataDirSuffix;
-    if (suffix.isNotEmpty) {
-      _appSupportDir = Directory('${baseDir.path}$suffix');
+    final override = testOverrideBaseDir;
+    if (override != null) {
+      // TEST-ONLY (F99): use the override dir verbatim, no _Dev suffix.
+      _appSupportDir = Directory(override);
       await _appSupportDir.create(recursive: true);
     } else {
-      _appSupportDir = baseDir;
+      // Get base app support directory
+      final baseDir = await getApplicationSupportDirectory();
+
+      // Apply environment suffix for dev builds (ADR-0035)
+      final suffix = AppEnvironment.dataDirSuffix;
+      if (suffix.isNotEmpty) {
+        _appSupportDir = Directory('${baseDir.path}$suffix');
+        await _appSupportDir.create(recursive: true);
+      } else {
+        _appSupportDir = baseDir;
+      }
     }
 
     // Create subdirectories if they don't exist

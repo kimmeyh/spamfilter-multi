@@ -1,0 +1,21 @@
+***BELOW IS NOT FOR CLAUDE CODE, GITHUB COPILOT, CHATGPT OR COPILOT PULL REQUEST (PR) REVIEW USE***
+
+TBD------------------------------------
+Sprint n Testing Feedback
+# description
+- feedback
+
+Please explain these back to me, determine recommended approach, recommended order for implementation in current sprint (except for minor bugs and future feature requests), and then I'll approve the recommendations and/or give additional feedback.  Then create a checklist for implementation of these tasks for approval.
+
+------------------------------------
+Post descriptions of # and items covered in Sprint
+
+Common comments:
+working as expected, can be closed
+
+Manual Testing is complete.
+Move on to the next step in the process. Review the sprint 18 checklist for next step or review detailed process in docs\ALL_SPRINTS_MASTER_PLAN.md
+
+
+
+

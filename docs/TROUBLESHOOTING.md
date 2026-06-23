@@ -336,6 +336,26 @@ python -c "import socket, ssl; ctx = ssl.create_default_context(); s = ctx.wrap_
 
 ---
 
+### Norton Antivirus Breaks `git push` ("SSL peer certificate ... was not OK")
+
+**Symptom**: `git push`/`git fetch` over HTTPS fails with `fatal: unable to access '...': SSL peer certificate or SSH remote key was not OK`. It often works one day and breaks the next with no config change.
+
+**Root Cause**: Norton's "Encrypted connections scanning" (HTTPS interception, the same engine as the IMAP issue above) MITMs the GitHub TLS connection and re-signs it with a "Norton Web/Mail Shield" certificate. Git-for-Windows is configured (system gitconfig) with `http.sslBackend=openssl`, which validates against a bundled CA file that does NOT contain Norton's root -- so validation fails. Browsers/`schannel` trust it because Norton installs its root in the Windows cert store. A **Norton LiveUpdate** can silently re-enable interception, which is why it breaks unpredictably.
+
+**Diagnose** (issuer reveals the interception):
+```bash
+echo | openssl s_client -connect github.com:443 -servername github.com 2>/dev/null | openssl x509 -noout -issuer
+# Intercepting   -> issuer=...CN=Norton Web/Mail Shield Root
+# Clean (fixed)  -> issuer=...O=Sectigo Limited... (or DigiCert) -- GitHub's real CA
+```
+
+**Fix (choose one)**:
+- **Durable for git (recommended)**: `git config --global http.sslBackend schannel` -- git then trusts Norton's cert via the Windows store, so it keeps working even after a LiveUpdate re-asserts interception.
+- **Clean certs end-to-end**: turn OFF Norton "Encrypted connections scanning" (Norton 360 v26.x: Settings -> Features -> **Safe Web** -> toggle **HTTPS Scanning** Off; choose "Until I turn it back on"), or add `github.com` to its Exclusions. Caveat: a future LiveUpdate may re-enable it.
+- Do NOT `git config http.sslVerify false` -- that disables the very protection that flags real interception.
+
+---
+
 ## Scanning Issues
 
 ### Phase 3.2 Folder Selection Fixes (Issue #35)

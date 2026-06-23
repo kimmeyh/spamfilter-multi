@@ -1,0 +1,46 @@
+# Sprint 38 F85 (ADR-0038): asset manifest mapping content keys to .md files.
+#
+# Maintained by hand. The validator at scripts/validate-content-manifest.ps1
+# asserts:
+#   1. Every key resolves to an existing .md file under assets/content/
+#   2. Every .md file under assets/content/ is referenced by exactly one key
+#      (drift detection)
+#   3. For the help: namespace, every HelpSection enum value in
+#      help_screen.dart has a corresponding manifest entry
+#
+# Add a new section: declare a new HelpSection enum case, write the .md, add
+# the entry here. The validator will fail the build if any of those three
+# steps is missing.
+
+help:
+  selectAccount: help/select_account.md
+  accountSetup: help/account_setup.md
+  demoScan: help/demo_scan.md
+  manualScan: help/manual_scan.md
+  resultsDisplay: help/results_display.md
+  scanHistory: help/scan_history.md
+  settings: help/settings.md
+  generalRulesManagement: help/general_rules_management.md
+  generalScanHistoryRetention: help/general_scan_history_retention.md
+  generalPrivacyLogging: help/general_privacy_logging.md
+  folderSettings: help/folder_settings.md
+  manualScanSettings: help/manual_scan_settings.md
+  backgroundScanning: help/background_scanning.md
+  manageRules: help/manage_rules.md
+  ruleQuickAdd: help/rule_quick_add.md
+  ruleTest: help/rule_test.md
+  safeSenders: help/safe_senders.md
+  folderSelection: help/folder_selection.md
+  yamlImportExport: help/yaml_import_export.md
+  otherWaysToReduceJunk: help/other_ways_to_reduce_junk.md
+  faq: help/faq.md
+  walkthrough: help/walkthrough.md
+
+# Settings tab descriptions audit (F85 Phase 3, Sprint 38, 2026-05-14):
+# After audit, NO Settings string literal exceeds the 500-character threshold
+# defined in ADR-0038. All Settings subtitles are short (single-sentence)
+# explainer text, well under the migration threshold. Phase 3 of F85 is
+# therefore a no-op for Settings; nothing migrated. See
+# `assets/content/audit-log.md` for the full audit findings.
+#
+# settings: namespace intentionally omitted -- nothing to migrate.

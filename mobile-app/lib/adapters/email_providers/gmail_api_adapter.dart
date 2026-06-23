@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:convert' show jsonDecode;
 import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:googleapis/gmail/v1.dart' as gmail;
 import 'package:http/http.dart' as http;
 import '../../adapters/auth/google_auth_service.dart';
@@ -25,6 +27,29 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
   bool _isConnected = false;
   String? _deletedRuleFolder; // Gmail label to move deleted emails to (null = use 'TRASH')
 
+  /// Sprint 37 F6b: Gmail label IDs to exclude server-side from `fetchMessages`.
+  /// Common case: `['CATEGORY_PROMOTIONS', 'CATEGORY_SOCIAL']` so the scan
+  /// skips Gmail's automatic Promotions/Social tab content. Set to null to
+  /// disable label-based filtering. Gmail-specific feature; not part of
+  /// the SpamFilterPlatform interface.
+  List<String>? _excludedLabels;
+
+  /// Sprint 38 F88 (Issue #255): cached Bearer-token headers, captured every
+  /// time we (re-)build `_gmailApi`. Used by `_batchGetMessages` to POST a
+  /// `multipart/mixed` body to the `/batch/gmail/v1` endpoint, which the
+  /// `googleapis` package does not expose directly.
+  Map<String, String>? _authHeaders;
+
+  /// Sprint 38 F88: single helper that rebuilds `_gmailApi` from the given
+  /// auth `headers` and caches them for the raw-HTTP batch endpoint.
+  /// Every previous call site that did
+  /// `_gmailApi = gmail.GmailApi(_GoogleAuthClient(headers))` now goes
+  /// through this method so the cached headers stay in sync.
+  void _setGmailApi(Map<String, String> headers) {
+    _authHeaders = headers;
+    _gmailApi = gmail.GmailApi(_GoogleAuthClient(headers));
+  }
+
   @override
   String get platformId => 'gmail';
 
@@ -41,6 +66,18 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
   void setDeletedRuleFolder(String? folderName) {
     _deletedRuleFolder = folderName;
     Redact.logSafe('Set deleted rule folder to: ${folderName ?? "TRASH (default)"}');
+  }
+
+  /// Sprint 37 F6b: configure Gmail labels to exclude from scan via the
+  /// `q:` query string. Pass null or empty to disable filtering.
+  void setExcludedLabels(List<String>? labels) {
+    if (labels == null || labels.isEmpty) {
+      _excludedLabels = null;
+      Redact.logSafe('Gmail excluded labels cleared');
+      return;
+    }
+    _excludedLabels = List.unmodifiable(labels);
+    Redact.logSafe('Gmail excluded labels set: $_excludedLabels');
   }
 
   /// Initialize Gmail OAuth flow
@@ -70,7 +107,7 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
 
       _userEmail = result.email;
       final headers = {'Authorization': 'Bearer ${result.accessToken}'};
-      _gmailApi = gmail.GmailApi(_GoogleAuthClient(headers));
+      _setGmailApi(headers);
       _isConnected = true;
 
       Redact.logSafe('========================================');
@@ -108,7 +145,7 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
       final headers = {
         'Authorization': 'Bearer ${credentials.accessToken}',
       };
-      _gmailApi = gmail.GmailApi(_GoogleAuthClient(headers));
+      _setGmailApi(headers);
       _userEmail = credentials.email;
       _isConnected = true;
 
@@ -137,7 +174,7 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
           final reAuthHeaders = {
             'Authorization': 'Bearer ${result.accessToken}',
           };
-          _gmailApi = gmail.GmailApi(_GoogleAuthClient(reAuthHeaders));
+          _setGmailApi(reAuthHeaders);
           _userEmail = result.email;
           Redact.logSafe('Re-authentication successful: ${Redact.email(_userEmail ?? "")}');
           return;
@@ -147,7 +184,7 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
         final refreshedHeaders = {
           'Authorization': 'Bearer $newAccessToken',
         };
-        _gmailApi = gmail.GmailApi(_GoogleAuthClient(refreshedHeaders));
+        _setGmailApi(refreshedHeaders);
         Redact.logSafe('Access token refreshed successfully via GoogleAuthService');
       }
       return;
@@ -166,7 +203,7 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
         }
 
         final headers = {'Authorization': 'Bearer ${result.accessToken}'};
-        _gmailApi = gmail.GmailApi(_GoogleAuthClient(headers));
+        _setGmailApi(headers);
         _userEmail = result.email;
         _isConnected = true;
       } catch (e) {
@@ -207,8 +244,12 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
       List<EmailMessage> emails = [];
 
       for (String folder in folderNames) {
-        // Build Gmail query
-        String query = _buildGmailQuery(folder: folder, daysBack: daysBack);
+        // Build Gmail query (Sprint 37 F6b: include configured label exclusions)
+        String query = _buildGmailQuery(
+          folder: folder,
+          daysBack: daysBack,
+          excludeLabels: _excludedLabels,
+        );
         Redact.logSafe('Gmail query for $folder: $query');
         gmail.ListMessagesResponse messagesResponse;
         Future<gmail.ListMessagesResponse> listMessages() {
@@ -240,7 +281,7 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
               final refreshedHeaders = {
                 'Authorization': 'Bearer $newAccess',
               };
-              _gmailApi = gmail.GmailApi(_GoogleAuthClient(refreshedHeaders));
+              _setGmailApi(refreshedHeaders);
               Redact.logSafe('Re-authentication successful; retrying message list...');
               messagesResponse = await listMessages();
             } catch (reauthErr) {
@@ -259,29 +300,458 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
 
         Redact.logSafe('Found ${messagesResponse.messages!.length} messages in $folder');
 
-        // Fetch full message details in batch
-        for (var message in messagesResponse.messages!) {
-          try {
-            final fullMessage = await _gmailApi!.users.messages.get(
-              'me',
-              message.id!,
-              format: 'full',
-            );
-
-            final emailMessage = _convertGmailMessage(fullMessage, folder);
-            if (emailMessage != null) {
-              emails.add(emailMessage);
-            }
-          } catch (e) {
-            Redact.logError('Error fetching Gmail message ${message.id}', e);
-          }
-        }
+        // Sprint 37 F6a: parallel fetch instead of serial loop, BUT with a
+        // concurrency cap. Each messages.get is an independent HTTP call;
+        // await-in-loop forces them sequential and dominates scan
+        // wall-clock time. Unbounded Future.wait of 100 calls bursts past
+        // Gmail's per-user concurrency limit (~10 concurrent) and triggers
+        // 429s that the catch-and-return-null path silently drops as
+        // missing messages (Copilot review #5). Cap at 8 concurrent via
+        // _fetchMessagesConcurrent.
+        final fetched = await _fetchMessagesConcurrent(
+          messagesResponse.messages!.map((m) => m.id!).toList(),
+          folder,
+        );
+        emails.addAll(fetched);
       }
 
       Redact.logSafe('Successfully fetched ${emails.length} Gmail messages');
       return emails;
     } catch (e) {
       Redact.logError('Error fetching Gmail messages', e);
+      rethrow;
+    }
+  }
+
+  /// Sprint 37 F6a (Copilot review #5/#6): concurrency-capped parallel
+  /// fetch of Gmail messages by ID.
+  ///
+  /// Gmail's per-user concurrency cap is roughly 10 simultaneous requests.
+  /// Unbounded `Future.wait` over a 100-message page bursts past that and
+  /// triggers 429s that the per-message try/catch silently swallows --
+  /// resulting in dropped messages with no surface error. Cap is 8 to
+  /// stay comfortably below the limit while still pipelining.
+  ///
+  /// [folderForLabel] is forwarded to `_convertGmailMessage` so the
+  /// resulting `EmailMessage.folder` field matches the caller's expected
+  /// folder. [applyExcludedLabelFilter] (default false) post-filters the
+  /// fetched messages against `_excludedLabels` -- used by
+  /// `fetchMessagesIncremental` because `users.history.list` accepts
+  /// only an inclusion `labelId` filter, not an exclusion list, so
+  /// Promotions/Social filtering must happen client-side after fetch.
+  /// The full-scan path uses the `q:` query string (see `_buildGmailQuery`)
+  /// for exclusion at list time, so it does not need client-side filtering.
+  ///
+  /// Sprint 38 F88 (Issue #255): refactored to call `_batchGetMessages`
+  /// instead of N parallel `users.messages.get` calls. Each chunk of 100
+  /// message IDs is now a single HTTP request to `/batch/gmail/v1` with a
+  /// `multipart/mixed` body, reducing HTTP request count by ~100x. The
+  /// 8-concurrent chunking is preserved but now wraps 100-ID batchGet
+  /// calls (so the effective concurrency is "8 batches in flight, each
+  /// containing 100 sub-requests" = up to 800 effective in flight).
+  ///
+  /// Per-chunk fallback: if the batchGet HTTP call fails for any reason
+  /// (network, auth, partial outage), the chunk falls back to per-ID
+  /// individual `users.messages.get` calls (the Sprint 37 path). This
+  /// matches the `_batchModifyLabels` fallback pattern in this file.
+  static const int _gmailFetchConcurrency = 8;
+  static const int _gmailBatchGetSize = 100;
+
+  Future<List<EmailMessage>> _fetchMessagesConcurrent(
+    List<String> messageIds,
+    String folderForLabel, {
+    bool applyExcludedLabelFilter = false,
+  }) async {
+    if (messageIds.isEmpty) return const [];
+
+    // Split into 100-ID chunks for batchGet, then run up to 8 chunks
+    // concurrently. With 1000 IDs this is 10 chunks of 100, processed
+    // in two parallel waves of 8 + 2.
+    final chunks = <List<String>>[];
+    for (var i = 0; i < messageIds.length; i += _gmailBatchGetSize) {
+      final end = (i + _gmailBatchGetSize < messageIds.length)
+          ? i + _gmailBatchGetSize
+          : messageIds.length;
+      chunks.add(messageIds.sublist(i, end));
+    }
+
+    final results = <EmailMessage>[];
+    for (var c = 0; c < chunks.length; c += _gmailFetchConcurrency) {
+      final waveEnd = (c + _gmailFetchConcurrency < chunks.length)
+          ? c + _gmailFetchConcurrency
+          : chunks.length;
+      final wave = chunks.sublist(c, waveEnd);
+      final batchResults = await Future.wait(
+        wave.map((chunk) => _batchGetMessages(
+              chunk,
+              folderForLabel,
+              applyExcludedLabelFilter: applyExcludedLabelFilter,
+            )),
+        eagerError: false,
+      );
+      for (final batchResult in batchResults) {
+        results.addAll(batchResult);
+      }
+    }
+    return results;
+  }
+
+  /// Sprint 38 F88 (Issue #255): batchGet up to 100 Gmail message IDs in a
+  /// single HTTP request via `/batch/gmail/v1` (multipart/mixed).
+  ///
+  /// Returns the converted `EmailMessage` list for successful sub-requests.
+  /// Sub-requests that fail (404, label-excluded, parse error) are dropped
+  /// silently -- matching the per-ID try/catch behavior of the Sprint 37
+  /// parallel-fetch path.
+  ///
+  /// On batch-level failure (HTTP error, auth issue, parse failure of the
+  /// outer response), falls back to N individual `users.messages.get` calls
+  /// for the chunk -- matches the `_batchModifyLabels` fallback pattern at
+  /// line ~1216.
+  Future<List<EmailMessage>> _batchGetMessages(
+    List<String> messageIds,
+    String folderForLabel, {
+    bool applyExcludedLabelFilter = false,
+  }) async {
+    if (messageIds.isEmpty) return const [];
+    if (_authHeaders == null) {
+      Redact.logError(
+        'batchGet: _authHeaders not set; falling back to individual fetches',
+        StateError('No auth headers cached'),
+      );
+      return _fetchMessagesIndividually(
+        messageIds,
+        folderForLabel,
+        applyExcludedLabelFilter: applyExcludedLabelFilter,
+      );
+    }
+
+    final boundary = 'batch_${DateTime.now().microsecondsSinceEpoch}';
+    final bodyBuf = StringBuffer();
+    for (var i = 0; i < messageIds.length; i++) {
+      final id = messageIds[i];
+      bodyBuf.write('--$boundary\r\n');
+      bodyBuf.write('Content-Type: application/http\r\n');
+      bodyBuf.write('Content-ID: <item-$i>\r\n');
+      bodyBuf.write('\r\n');
+      bodyBuf.write('GET /gmail/v1/users/me/messages/$id?format=full\r\n');
+      bodyBuf.write('\r\n');
+    }
+    bodyBuf.write('--$boundary--\r\n');
+
+    try {
+      final response = await http.post(
+        Uri.parse('https://gmail.googleapis.com/batch/gmail/v1'),
+        headers: {
+          ..._authHeaders!,
+          'Content-Type': 'multipart/mixed; boundary=$boundary',
+        },
+        body: bodyBuf.toString(),
+      );
+
+      if (response.statusCode != 200) {
+        Redact.logError(
+          'batchGet HTTP ${response.statusCode}; falling back to individual fetches',
+          StateError('status ${response.statusCode}'),
+        );
+        return _fetchMessagesIndividually(
+          messageIds,
+          folderForLabel,
+          applyExcludedLabelFilter: applyExcludedLabelFilter,
+        );
+      }
+
+      // The response is multipart/mixed with the boundary echoed in the
+      // Content-Type header. We parse the body, find each sub-response's
+      // JSON payload, and convert it.
+      final responseBoundary = _extractBoundary(
+        response.headers['content-type'] ?? '',
+      );
+      if (responseBoundary == null) {
+        Redact.logError(
+          'batchGet response missing boundary; falling back to individual',
+          StateError('no boundary in Content-Type'),
+        );
+        return _fetchMessagesIndividually(
+          messageIds,
+          folderForLabel,
+          applyExcludedLabelFilter: applyExcludedLabelFilter,
+        );
+      }
+
+      final subResponses = _parseMultipartMixed(response.body, responseBoundary);
+      final emails = <EmailMessage>[];
+      for (final subBody in subResponses) {
+        final json = _extractJsonFromHttpResponse(subBody);
+        if (json == null) continue;
+        try {
+          final decoded = jsonDecode(json);
+          if (decoded is! Map<String, dynamic>) continue;
+          // Gmail returns {"error": {...}} for failed sub-requests; skip.
+          if (decoded.containsKey('error')) continue;
+          final gmailMsg = gmail.Message.fromJson(decoded);
+          if (applyExcludedLabelFilter && _excludedLabels != null) {
+            final labels = gmailMsg.labelIds ?? const <String>[];
+            if (labels.any(_excludedLabels!.contains)) continue;
+          }
+          final converted = _convertGmailMessage(gmailMsg, folderForLabel);
+          if (converted != null) emails.add(converted);
+        } catch (e) {
+          Redact.logError('batchGet sub-response parse failed', e);
+        }
+      }
+      Redact.logSafe(
+          'batchGet: ${emails.length} of ${messageIds.length} messages converted from $folderForLabel');
+      return emails;
+    } catch (e) {
+      Redact.logError(
+          'batchGet exception; falling back to individual fetches', e);
+      return _fetchMessagesIndividually(
+        messageIds,
+        folderForLabel,
+        applyExcludedLabelFilter: applyExcludedLabelFilter,
+      );
+    }
+  }
+
+  /// Sprint 38 F88: per-ID fallback when batchGet fails. Preserves the
+  /// Sprint 37 parallel-fetch behavior exactly (8-concurrent
+  /// `users.messages.get` calls with per-ID try/catch) so a batchGet
+  /// outage degrades to "same speed as Sprint 37" rather than to
+  /// "scan fails entirely."
+  Future<List<EmailMessage>> _fetchMessagesIndividually(
+    List<String> messageIds,
+    String folderForLabel, {
+    bool applyExcludedLabelFilter = false,
+  }) async {
+    final results = <EmailMessage>[];
+    for (var i = 0; i < messageIds.length; i += _gmailFetchConcurrency) {
+      final end = (i + _gmailFetchConcurrency < messageIds.length)
+          ? i + _gmailFetchConcurrency
+          : messageIds.length;
+      final chunk = messageIds.sublist(i, end);
+      final fetched = await Future.wait(
+        chunk.map((id) async {
+          try {
+            final fullMessage = await _gmailApi!.users.messages.get(
+              'me',
+              id,
+              format: 'full',
+            );
+            if (applyExcludedLabelFilter && _excludedLabels != null) {
+              final labels = fullMessage.labelIds ?? const <String>[];
+              if (labels.any(_excludedLabels!.contains)) {
+                return null;
+              }
+            }
+            return _convertGmailMessage(fullMessage, folderForLabel);
+          } catch (e) {
+            Redact.logError('Error fetching Gmail message $id', e);
+            return null;
+          }
+        }),
+        eagerError: false,
+      );
+      results.addAll(fetched.whereType<EmailMessage>());
+    }
+    return results;
+  }
+
+  /// Sprint 38 F88: extract the `boundary=...` parameter from a
+  /// `multipart/mixed; boundary=batch_xxx` Content-Type header.
+  /// Visible for testing.
+  @visibleForTesting
+  static String? extractBoundaryForTesting(String contentType) =>
+      _extractBoundary(contentType);
+
+  static String? _extractBoundary(String contentType) {
+    final match = RegExp(r'boundary=([^;]+)').firstMatch(contentType);
+    if (match == null) return null;
+    var boundary = match.group(1)!.trim();
+    // Strip surrounding quotes if present.
+    if (boundary.startsWith('"') && boundary.endsWith('"')) {
+      boundary = boundary.substring(1, boundary.length - 1);
+    }
+    return boundary;
+  }
+
+  /// Sprint 38 F88: split a multipart/mixed body into individual
+  /// sub-response chunks (each chunk is the full sub-response including
+  /// HTTP headers + JSON body).
+  /// Visible for testing.
+  @visibleForTesting
+  static List<String> parseMultipartMixedForTesting(
+    String body,
+    String boundary,
+  ) =>
+      _parseMultipartMixed(body, boundary);
+
+  static List<String> _parseMultipartMixed(String body, String boundary) {
+    final delimiter = '--$boundary';
+    final closing = '--$boundary--';
+    // Walk the body, split on delimiter, drop the empty preamble and the
+    // closing marker.
+    final parts = <String>[];
+    final lines = body.split('\r\n');
+    final buf = StringBuffer();
+    var inPart = false;
+    for (final line in lines) {
+      if (line == delimiter || line == closing) {
+        if (inPart && buf.isNotEmpty) {
+          parts.add(buf.toString());
+        }
+        buf.clear();
+        inPart = line == delimiter;
+        continue;
+      }
+      if (inPart) {
+        buf.write(line);
+        buf.write('\r\n');
+      }
+    }
+    if (inPart && buf.isNotEmpty) parts.add(buf.toString());
+    return parts;
+  }
+
+  /// Sprint 38 F88: extract the JSON body from a single sub-response.
+  /// Sub-response shape:
+  ///   Content-Type: application/http
+  ///   Content-ID: response-item-N
+  ///   (blank line)
+  ///   HTTP/1.1 200 OK
+  ///   Content-Type: application/json; charset=UTF-8
+  ///   (blank line)
+  ///   {"id":"...", ...}
+  /// We need just the trailing JSON object.
+  /// Visible for testing.
+  @visibleForTesting
+  static String? extractJsonForTesting(String subResponse) =>
+      _extractJsonFromHttpResponse(subResponse);
+
+  static String? _extractJsonFromHttpResponse(String subResponse) {
+    // Find the second blank-line boundary (after HTTP headers).
+    final firstBlank = subResponse.indexOf('\r\n\r\n');
+    if (firstBlank == -1) return null;
+    final afterFirst = subResponse.substring(firstBlank + 4);
+    final secondBlank = afterFirst.indexOf('\r\n\r\n');
+    if (secondBlank == -1) {
+      // No HTTP body at all (e.g., 204).
+      return null;
+    }
+    final json = afterFirst.substring(secondBlank + 4).trim();
+    if (json.isEmpty) return null;
+    // Sometimes the json is followed by a stray CRLF before the next
+    // boundary; the surrounding parser handles that. Just return what we
+    // have here and let jsonDecode handle whitespace.
+    return json;
+  }
+
+  /// Sprint 37 F6c: Read the current Gmail account's `historyId` from
+  /// `users.getProfile`. The caller (EmailScanProvider) persists this to
+  /// `accounts.last_history_id` after the first full scan so subsequent
+  /// scans can use `fetchMessagesIncremental` instead of full-folder
+  /// fetches.
+  ///
+  /// Returns null if not connected or the API call fails.
+  Future<String?> getCurrentHistoryId() async {
+    if (_gmailApi == null) return null;
+    try {
+      final profile = await _gmailApi!.users.getProfile('me');
+      return profile.historyId;
+    } catch (e) {
+      Redact.logError('Failed to get Gmail historyId', e);
+      return null;
+    }
+  }
+
+  /// Sprint 37 F6c: Incremental delta scan. Calls `users.history.list`
+  /// starting from [startHistoryId] and returns the messages that have
+  /// been added or modified since that point, plus the new historyId
+  /// for the caller to persist.
+  ///
+  /// [folderForLabel] doubles as the Gmail labelId filter passed to
+  /// `users.history.list` -- without it the API returns mailbox-wide
+  /// history (Sent, Trash, Promotions, etc.) and the returned changes
+  /// would be incorrectly attributed to the caller's single folder
+  /// (Copilot review #7). The label is also reapplied as a post-filter
+  /// against the configured `_excludedLabels` set so Promotions/Social
+  /// changes never reach the caller.
+  ///
+  /// Returns `IncrementalFetchResult.expired()` if the API returns
+  /// `historyNotFound` (Gmail history records expire after roughly 7 days).
+  /// The caller must respond by triggering a full scan and then calling
+  /// [getCurrentHistoryId] to capture the new starting point.
+  ///
+  /// Throws `StateError` if not connected.
+  Future<IncrementalFetchResult> fetchMessagesIncremental({
+    required String startHistoryId,
+    String folderForLabel = 'INBOX',
+  }) async {
+    if (_gmailApi == null) {
+      throw StateError('Not connected. Call signIn() first.');
+    }
+
+    Redact.logSafe('Gmail incremental fetch: startHistoryId=$startHistoryId folder=$folderForLabel');
+
+    try {
+      // Copilot review #7: scope history.list to the calling folder's
+      // label so we do not get Sent/Trash/Drafts/Promotions changes
+      // attributed to this folder. labelId is documented as a server-side
+      // filter on users.history.list.
+      final historyResponse = await _gmailApi!.users.history.list(
+        'me',
+        startHistoryId: startHistoryId,
+        historyTypes: ['messageAdded', 'labelAdded', 'labelRemoved'],
+        labelId: folderForLabel,
+      );
+
+      final messageIds = <String>{};
+      if (historyResponse.history != null) {
+        for (final entry in historyResponse.history!) {
+          for (final added in entry.messagesAdded ?? const []) {
+            final id = added.message?.id;
+            if (id != null) messageIds.add(id);
+          }
+          for (final modified in entry.messages ?? const []) {
+            final id = modified.id;
+            if (id != null) messageIds.add(id);
+          }
+        }
+      }
+
+      if (messageIds.isEmpty) {
+        Redact.logSafe('Gmail incremental fetch: no changes since $startHistoryId');
+        return IncrementalFetchResult.empty(
+          newHistoryId: historyResponse.historyId ?? startHistoryId,
+        );
+      }
+
+      Redact.logSafe('Gmail incremental fetch: ${messageIds.length} changed messages');
+
+      // Copilot review #6 + #7: chunked concurrent fetch (matches the full-
+      // scan path). _fetchMessagesConcurrent reapplies _excludedLabels so
+      // Promotions/Social changes are dropped post-fetch (history.list does
+      // not let us pass an exclude-label filter; only an include-label).
+      final emails = await _fetchMessagesConcurrent(
+        messageIds.toList(),
+        folderForLabel,
+        applyExcludedLabelFilter: true,
+      );
+
+      return IncrementalFetchResult(
+        emails: emails,
+        newHistoryId: historyResponse.historyId ?? startHistoryId,
+      );
+    } on gmail.DetailedApiRequestError catch (apiErr) {
+      // Gmail returns 404 with reason `notFound` when historyId is too old.
+      // The startHistoryId is valid for ~7 days; after that the caller
+      // must do a full scan and re-capture historyId.
+      final isExpired = apiErr.status == 404 ||
+          (apiErr.message?.toLowerCase().contains('history') ?? false);
+      if (isExpired) {
+        Redact.logSafe('Gmail historyId expired (status=${apiErr.status}); caller should full-scan');
+        return IncrementalFetchResult.expired();
+      }
       rethrow;
     }
   }
@@ -391,6 +861,7 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
             canonicalName: canonical,
             messageCount: label.messagesTotal,
             isWritable: true,
+            hierarchyDelimiter: '/',  // Gmail labels use '/' for nested label paths
           ));
         }
       }
@@ -425,10 +896,16 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
     }
   }
 
-  /// Build Gmail API query string
+  /// Build Gmail API query string.
+  ///
+  /// Sprint 37 F6b: callers can pass [excludeLabels] to push category-tab
+  /// filtering server-side. Common case: exclude `CATEGORY_PROMOTIONS` and
+  /// `CATEGORY_SOCIAL` so the scan does not waste round-trips fetching
+  /// messages that the user has already chosen to ignore.
   String _buildGmailQuery({
     required String folder,
     int daysBack = 365,
+    List<String>? excludeLabels,
   }) {
     List<String> queryParts = [];
 
@@ -455,8 +932,33 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
       queryParts.add('after:$dateStr');
     }
 
+    // Sprint 37 F6b: exclude Gmail category labels server-side. Each
+    // exclusion is added as a separate `-label:NAME` clause -- Gmail
+    // treats the parts as ANDed, so all excluded labels are filtered out.
+    if (excludeLabels != null && excludeLabels.isNotEmpty) {
+      for (final label in excludeLabels) {
+        if (label.trim().isEmpty) continue;
+        queryParts.add('-label:${label.trim()}');
+      }
+    }
+
     return queryParts.join(' ');
   }
+
+  /// Sprint 37 F6b: visible-for-testing wrapper around the private
+  /// `_buildGmailQuery` so unit tests can verify the query string shape
+  /// without authenticating against Gmail.
+  @visibleForTesting
+  String buildGmailQueryForTest({
+    required String folder,
+    int daysBack = 365,
+    List<String>? excludeLabels,
+  }) =>
+      _buildGmailQuery(
+        folder: folder,
+        daysBack: daysBack,
+        excludeLabels: excludeLabels,
+      );
 
   /// Extract email address from "Name <email@domain.com>" format
   /// Returns just the email address for consistency with IMAP behavior
@@ -512,6 +1014,12 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
         parsedDate = DateTime.now();
       }
 
+      // F91 (Sprint 39): capture the RFC 5322 Message-ID header. getHeader is
+      // already case-insensitive. Gmail OAuth dedup is skipped at the scanner
+      // level (labels not folders), but capturing the value keeps the model
+      // consistent across providers and supports any future Gmail-side use.
+      final messageIdHeader = EmailMessage.parseMessageId(getHeader('Message-ID'));
+
       return EmailMessage(
         id: gmailMessage.id ?? '',
         from: _extractEmail(getHeader('From')),
@@ -522,6 +1030,7 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
         },
         receivedDate: parsedDate,
         folderName: folderName,
+        messageIdHeader: messageIdHeader,
       );
     } catch (e) {
       Redact.logError('Error converting Gmail message', e);
@@ -1074,6 +1583,37 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
       return false;
     }
   }
+}
+
+/// Sprint 37 F6c: result of an incremental Gmail history.list scan.
+/// Three states:
+/// - normal: emails populated, newHistoryId valid -> caller persists
+///   newHistoryId for the next scan
+/// - empty: no changes since the prior historyId; caller still persists
+///   newHistoryId because Gmail advances it on every account event
+///   (some changes are not delivered as message events)
+/// - expired: prior historyId is older than the Gmail history window
+///   (~7 days); caller MUST do a full scan and call getCurrentHistoryId
+///   to capture a fresh starting point
+class IncrementalFetchResult {
+  final List<EmailMessage> emails;
+  final String? newHistoryId;
+  final bool isExpired;
+
+  const IncrementalFetchResult({
+    required this.emails,
+    required this.newHistoryId,
+    this.isExpired = false,
+  });
+
+  factory IncrementalFetchResult.empty({required String newHistoryId}) =>
+      IncrementalFetchResult(emails: const [], newHistoryId: newHistoryId);
+
+  factory IncrementalFetchResult.expired() => const IncrementalFetchResult(
+        emails: [],
+        newHistoryId: null,
+        isExpired: true,
+      );
 }
 
 /// HTTP client with Google auth headers

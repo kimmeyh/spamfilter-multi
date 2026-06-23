@@ -48,6 +48,7 @@ class SettingsStore {
   static const String keyBackgroundScanFolders = 'background_scan_folders';
   static const String keyCsvExportDirectory = 'csv_export_directory';
   static const String keyBackgroundScanDebugCsv = 'background_scan_debug_csv';
+  static const String keyLiveScanDebugCsv = 'live_scan_debug_csv';
   static const String keyManualScanDaysBack = 'manual_scan_days_back';
   static const String keyBackgroundScanDaysBack = 'background_scan_days_back';
   static const String keyScanHistoryRetentionDays = 'scan_history_retention_days';
@@ -68,6 +69,14 @@ class SettingsStore {
   static const List<String> defaultBackgroundScanFolders = ['INBOX'];
   static const String? defaultCsvExportDirectory = null; // null means use Downloads folder
   static const bool defaultBackgroundScanDebugCsv = false;
+  /// F90 (Sprint 39): live-scan debug CSV opt-in. Default `false` for
+  /// both dev and prod (matches `defaultBackgroundScanDebugCsv`). The
+  /// Settings > Manual Scan tab Debug section exposes a toggle so dev
+  /// users can opt in without a code change. The runtime log file
+  /// (`{logs}/{prefix}live_scan_v0.5.3.log`) is always on regardless
+  /// of this setting -- it captures scan-lifecycle events only and is
+  /// small enough that surprise disk usage is not a concern.
+  static const bool defaultLiveScanDebugCsv = false;
   static const int defaultManualScanDaysBack = 0; // 0 = all emails
   static const int defaultBackgroundScanDaysBack = 0; // 0 = all emails
   static const int defaultScanHistoryRetentionDays = 7; // days to keep scan history
@@ -178,6 +187,24 @@ class SettingsStore {
   /// Set whether debug CSV export is enabled for background scans
   Future<void> setBackgroundScanDebugCsv(bool enabled) async {
     await _setAppSetting(keyBackgroundScanDebugCsv, enabled.toString(), 'bool');
+  }
+
+  /// F90 (Sprint 39): get whether debug CSV/XLSX export is enabled for
+  /// live (manual) scans. When true, every live scan appends to a
+  /// per-account per-day `live_scan_{email}_{date}.data.csv` and
+  /// regenerates the matching `.xlsx` (mirrors background-scan CSV).
+  /// The runtime log file `{logs}/{prefix}live_scan_v0.5.3.log` is
+  /// written regardless of this setting.
+  Future<bool> getLiveScanDebugCsv() async {
+    final value = await _getAppSetting(keyLiveScanDebugCsv);
+    if (value == null) return defaultLiveScanDebugCsv;
+    return value == 'true';
+  }
+
+  /// F90 (Sprint 39): set whether debug CSV/XLSX export is enabled for
+  /// live scans.
+  Future<void> setLiveScanDebugCsv(bool enabled) async {
+    await _setAppSetting(keyLiveScanDebugCsv, enabled.toString(), 'bool');
   }
 
   // ============================================================
@@ -368,6 +395,43 @@ class SettingsStore {
       await _setAccountSetting(accountId, 'background_enabled', enabled.toString(), 'bool');
     }
   }
+
+  /// Get account-specific background scan frequency (minutes) override.
+  /// Returns null if no override set (use global default). (Sprint 42, F98.)
+  Future<int?> getAccountBackgroundFrequency(String accountId) async {
+    final value = await _getAccountSetting(accountId, 'background_frequency');
+    if (value == null) return null;
+    return int.tryParse(value);
+  }
+
+  /// Set account-specific background scan frequency (minutes) override.
+  /// Pass null to clear the override. (Sprint 42, F98.)
+  Future<void> setAccountBackgroundFrequency(String accountId, int? minutes) async {
+    if (minutes == null) {
+      await _deleteAccountSetting(accountId, 'background_frequency');
+    } else {
+      await _setAccountSetting(accountId, 'background_frequency', minutes.toString(), 'int');
+    }
+  }
+
+  /// Get effective background frequency for an account: per-account override,
+  /// then the global frequency as fallback. (Sprint 42, F98.)
+  Future<int> getEffectiveBackgroundFrequency(String? accountId) async {
+    if (accountId != null) {
+      final override = await getAccountBackgroundFrequency(accountId);
+      if (override != null) return override;
+    }
+    return await getBackgroundScanFrequency();
+  }
+
+  /// Read an arbitrary app_settings value by [key], or null if absent.
+  /// (Sprint 42, F98 -- used by the per-account migration sentinel.)
+  Future<String?> getRawAppSetting(String key) => _getAppSetting(key);
+
+  /// Write an arbitrary app_settings [key]=[value] with [type].
+  /// (Sprint 42, F98 -- used by the per-account migration sentinel.)
+  Future<void> setRawAppSetting(String key, String value, String type) =>
+      _setAppSetting(key, value, type);
 
   /// Get account-specific deleted rule folder
   /// Returns null if not set (will default to provider-specific Trash folder)

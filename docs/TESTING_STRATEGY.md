@@ -201,6 +201,20 @@ void main() {
 - Navigation (screen transitions)
 - State-driven UI updates (Provider changes)
 
+**MANDATORY for UX Flow Changes** (Sprint 36 retro IMP-2):
+
+When a fix or feature changes **dialog flow or screen flow** (a dialog newly appears, a dialog is now skipped, a navigation step is added/removed/reordered), a widget test that exercises the flow is **required** before the change ships. Pure-data changes (validator returns a different message, DB column added) do NOT require a widget test if the data-path tests cover them.
+
+Examples of changes that require a widget test:
+
+- A duplicate-detection check that prevents the Confirm dialog from appearing for duplicates -> widget test confirms `expect(find.byType(AlertDialog), findsNothing)` after entering duplicate input.
+- A Save button that should be disabled while async work is in flight -> widget test pumps the future and confirms the button's `enabled` property.
+- A new tab/screen appearing only when a feature flag is on -> widget test under both flag states.
+
+**Why**: Sprint 36 BUG-S35-1 fix shipped 15 unit tests on the duplicate-checker service but NO widget test for the dialog-skip behavior. The initial fix placed the duplicate check after the Confirm dialog (wrong UX) and the defect was caught only at Phase 5 manual testing. A widget test asserting the dialog is skipped on duplicate would have caught it during Phase 4.
+
+**Cost**: ~20-30 min per UX-flow fix to write the widget test. Saves the equivalent or more in Phase 5 manual-testing iteration time.
+
 **Template**:
 ```dart
 import 'package:flutter_test/flutter_test.dart';
@@ -269,11 +283,13 @@ void main() {
 - Element discoverability depends on Flutter Semantics widget usage
 - Custom-rendered Flutter widgets may not appear in the accessibility tree
 - Best for testing navigation flow, form inputs, and button interactions
-- Not suitable for pixel-perfect visual regression testing
+- Not suitable for visual/layout regression testing -- the standalone WinWright CLI cannot read element bounds (see "Visual Regression -> F99" below); layout-regression detection is delivered by the Flutter `integration_test` harness (F99, pre-MVP)
 
-**When to Run** (Sprint 35 policy):
+**When to Run** (Sprint 39 policy -- supersedes Sprint 35 conditional-only policy):
 
-WinWright is **conditional** -- it does NOT run every sprint. Run only the scripts whose tested surface is touched by the current sprint's changes:
+Two complementary modes:
+
+**1. Mid-sprint targeted runs (conditional).** During sprint development, run only the scripts whose tested surface is touched by the change you are working on -- useful for fast feedback without the full sweep:
 
 | Sprint changes touch... | Run these WinWright scripts |
 |-------------------------|-----------------------------|
@@ -284,9 +300,17 @@ WinWright is **conditional** -- it does NOT run every sprint. Run only the scrip
 | Manage Rules / ManualRuleCreateScreen (block side) | `test_f56_create_block_rule.json` |
 | Manage Safe Senders / ManualRuleCreateScreen (safe sender side) | `test_f56_create_safe_sender.json` |
 | Scan History screen / aggregate stats | `test_scan_history.json` |
-| **No UI changes in sprint** | **Skip all WinWright scripts** |
 
-If a sprint touches multiple surfaces, run the union of applicable scripts. The full suite is not required every sprint -- F79 (HOLD) tracks the on-demand "full sweep" run for major releases or large refactors.
+**2. End-of-sprint full sweep (UI-triggered).** At sprint close (Phase 5), if the sprint diff touched **any file under `lib/ui/**`**, run the default sweep via the F79 harness (`run-winwright-tests.ps1`, unattended, with pre/post dev-DB snapshot verification). If the sprint touched no `lib/ui/**` files (pure backend / docs / tests), **skip the full sweep**.
+
+The default sweep runs the **6 read-only scripts** (navigation, settings_tabs, scan_history, text_selection, f25_rule_test_tool, f35_rule_edit). The scripts that cross a Flutter dialog/picker-settle boundary -- `test_f56_*` (create/save/delete) and `test_f37_folder_selector` -- are EXCLUDED from the default sweep (Sprint 41) because the WinWright `run` script-runner has no wait/assert primitive to bridge the settle; their reliable execution is delivered by F99 (`integration_test`). They remain runnable explicitly via `-TestName f56` / `-TestName f37` and serve as the F99 reference flows.
+
+| Sprint touched `lib/ui/**`? | End-of-sprint action |
+|------------------------------|----------------------|
+| Yes | Run default sweep (6 read-only scripts) via F79 harness (Phase 5) |
+| No | Skip -- no UI surface changed |
+
+Rationale for the change (Harold, 2026-05-25): the previous "conditional-only, full sweep on-demand" policy left regressions to surface at release prep. Once the F79 harness makes the full sweep cheap (~5-10 min unattended, self-cleaning via DB snapshot), running it at the end of every UI-touching sprint is low-cost insurance. **Dependency**: this end-of-sprint cadence becomes mandatory only once the F79 harness ships; until then, the full sweep remains the manual/on-demand activity tracked by F79.
 
 **State-restore rule (mandatory for every WinWright script)**: Any rule, safe sender, setting, or other persistent state that a script creates or modifies must be reverted before the script ends. If a script adds a rule, it must delete that rule. If a script changes a setting, it must restore the original value. The dev DB / settings file at script end must be byte-identical (or semantically equivalent) to its state at script start. Sprint 35 added create-verify-delete-verify lifecycle to both F56 scripts as the first application of this rule.
 
@@ -320,16 +344,94 @@ C:\Tools\WinWright\Civyk.WinWright.Mcp.exe run <script.json>
 | `test_f56_create_block_rule.json` | F56: Create TLD block rule, verify, then delete and verify removal (full lifecycle, Sprint 35 update) |
 | `test_f56_create_safe_sender.json` | F56: Create entire-domain safe sender, verify, then delete and verify removal (full lifecycle, Sprint 35 update) |
 
-**Run all tests**:
+**Run all tests (F79 harness -- Sprint 40)**:
 ```powershell
 cd mobile-app/scripts
-.\run-winwright-tests.ps1                       # All tests
-.\run-winwright-tests.ps1 -TestName f56         # Only F56 tests
+
+# Full unattended sweep (6 read-only scripts + DB snapshot guard, <10 min;
+# f56/f37 dialog-settle scripts are excluded by default -- see F99)
+.\run-winwright-tests.ps1
+
+# Only F56 lifecycle tests
+.\run-winwright-tests.ps1 -TestName f56
+
+# Snapshot self-test only -- no running app or WinWright required
+# Proves the FAIL path: injects a synthetic row, verifies drift is detected
+.\run-winwright-tests.ps1 -TestSnapshotOnly
+
+# DryRun: preflight + pre/post snapshot only, no sweep (verifies app DB is accessible)
+.\run-winwright-tests.ps1 -DryRun
+
+# Run sweep without DB snapshot guard (diagnostic only -- not recommended for sprint close)
+.\run-winwright-tests.ps1 -NoSnapshotDb
 ```
 
-The runner automatically enables `SPI_SETSCREENREADER` (required for Flutter Semantics tree) and runs `winwright doctor` before executing tests.
+The runner automatically:
+1. Enables `SPI_SETSCREENREADER` (required for Flutter Semantics tree)
+2. Runs `winwright doctor` (preflight check)
+3. Takes a pre-sweep snapshot of `rules`, `safe_senders`, and `settings` tables in the dev DB
+4. Runs all matching test scripts; exits non-zero on any script failure
+5. Takes a post-sweep snapshot; compares with pre-snapshot
+6. Prints `[LEAK] table '...' added/removed row: ...` for each row that drifted
+7. Exits non-zero if drift is detected (enforces the state-restore rule)
 
-See `mobile-app/test/winwright/README.md` for details and selector patterns.
+**DB snapshot helper**: `mobile-app/scripts/winwright-db-snapshot.ps1`
+- Dot-sourced by the runner; can also be run standalone with `-SelfTest`
+- Uses `sqlite3.exe` from `C:\Android\android-sdk\platform-tools\` (or PATH)
+- Handles WAL-mode DBs -- concurrent read is safe while the app is running
+- Runtime target: <10 minutes unattended for all 7 scripts
+
+**Visual / layout regression -> delivered by F99 (Flutter `integration_test`), NOT WinWright**:
+
+WinWright tests verify element presence but cannot detect layout changes (alignment, centering,
+element repositioning). A Sprint 41 attempt (F76) to add layout-bounds visual-regression checking
+to this WinWright sweep was **abandoned and reverted**: the standalone WinWright CLI
+(`Civyk.WinWright.Mcp.exe`) cannot read element bounds -- its commands are only
+`mcp | serve | run | heal | inspect | doctor` (no `get_attribute`); `inspect <pid>` JSON carries no
+bounds fields; and the `run` script-runner rejects `ww_get_attribute` / `ww_assert*`
+("not supported by the script runner"). `BoundingRectangle` is reachable only via the MCP
+interface, which a standalone runner `.ps1` has no session for.
+
+Visual / layout-regression detection is folded into **F99** (parallel Flutter `integration_test`
+harness, pre-MVP), which provides golden-image and `RenderBox` layout assertions natively and
+robustly. There is no `-VisualCheck` flag and no `winwright-visual-check.ps1` in this branch.
+See `docs/ALL_SPRINTS_MASTER_PLAN.md` items F76 (why abandoned) and F99 (delivery vehicle).
+
+See `mobile-app/test/winwright/README.md` for script details and selector patterns.
+
+---
+
+## Two E2E Harnesses: WinWright + Flutter `integration_test` (Sprint 42, F99)
+
+The desktop app has **two complementary E2E harnesses**. They are not redundant -- each covers what the other cannot.
+
+| | **WinWright** (`mobile-app/test/winwright/`) | **Flutter `integration_test`** (`mobile-app/integration_test/`) |
+|---|---|---|
+| Drives | the live Windows **UIA accessibility tree**, out-of-process | the real **widget tree in the Dart VM**, in-process |
+| Finders | `type=`/`name=` selectors against UIA | `find.byKey` / `find.text` / `find.byType` |
+| Strength | true end-to-end + accessibility coverage; real window | deterministic; immune to UIA-exposure / DPI / cursor / dialog-settle flakiness |
+| Weakness | flaky on Flutter dialog/picker-**settle** boundaries (no wait/assert primitive in the `run` runner) -> F56 create/save + F37 picker excluded | not a real window; needs a test seam to bypass live IMAP/credential fetch |
+| DB safety | create-then-delete + pre/post DB-snapshot drift guard | isolated temp DB per test (`AppPaths.testOverrideBaseDir`); never touches dev DB |
+| Runner | `scripts/run-winwright-tests.ps1` (6 read-only scripts) | `scripts/run-integration-tests.ps1` (one `flutter test` **process per file**) |
+
+**Which to use:**
+- **WinWright** -- read-only navigation / accessibility-tree coverage on the real window (the 6 green scripts).
+- **`integration_test`** -- anything that crosses a Flutter dialog/picker-**settle** boundary or writes to the DB: the rule + safe-sender **create/save/delete lifecycle** (absorbs F56), the **folder-picker** search/render (absorbs F37), and **layout-regression** bounds assertions (absorbs F76).
+
+**Execution model (Harold direction 2026-06-20):** `run-integration-tests.ps1` runs **each `*_test.dart` file in its own `flutter test` process.** The app's process-wide singletons (`DatabaseHelper`, the fire-and-forget `RuleSetProvider.initialize()` async tail) bleed across files in a single shared `flutter test integration_test/` process; per-file processes are the standard Flutter isolation pattern for stateful apps. **WITHIN a file, multiple `testWidgets` share one process and reset via the harness -- there is NO app shutdown between tests** (the WinWright lane relaunches the app per script ONLY because `winwright run` force-closes it; `integration_test` has no such constraint).
+
+**DB isolation:** every `integration_test` boots against an isolated temp dir via `AppPaths.testOverrideBaseDir` (a test-only static seam, null in production). Two helper modes in `integration_test/helpers/app_harness.dart`:
+- `bootDbOnly` (preferred) -- seeds a fresh temp DB with the bundled rules (awaited, deterministic); the test pumps the specific screen(s) it exercises.
+- `bootAppWithDevDbCopy` -- COPIES the dev DB into a temp dir and boots the full app against the copy (realistic data; the dev DB is never opened); deleted on teardown. Use as the sole test in its file.
+
+**Test seams (test-only, null/absent in production):** `AppPaths.testOverrideBaseDir` (data-dir isolation) and `FolderSelectionScreen.debugFoldersOverride` (inject folders so the picker runs headless without a live account).
+
+**Run:**
+```powershell
+cd mobile-app/scripts
+.\run-integration-tests.ps1                 # all integration_test files, one process each
+.\run-integration-tests.ps1 -TestName lifecycle   # only files matching *lifecycle*
+```
 
 ---
 

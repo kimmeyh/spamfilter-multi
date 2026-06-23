@@ -845,6 +845,40 @@ void main() {
       final deleted = await dbHelper.getAccount('delete-account');
       expect(deleted, isNull);
     });
+
+    test('Sprint 37 F6c: accounts table has last_history_id column', () async {
+      final db = await dbHelper.database;
+      final tableInfo = await db.rawQuery('PRAGMA table_info(accounts)');
+      final columns = tableInfo.map((r) => r['name'] as String).toSet();
+      expect(columns, contains('last_history_id'));
+    });
+
+    test('Sprint 37 F6c: last_history_id is nullable and round-trips', () async {
+      // Insert without history id; field should be null
+      await dbHelper.insertAccount({
+        'account_id': 'history-account',
+        'platform_id': 'gmail',
+        'email': 'history@gmail.com',
+        'display_name': 'History User',
+        'date_added': DateTime.now().millisecondsSinceEpoch,
+      });
+      var account = await dbHelper.getAccount('history-account');
+      expect(account!['last_history_id'], isNull);
+
+      // Update with a history id
+      await dbHelper.updateAccount('history-account', {
+        'last_history_id': '987654321',
+      });
+      account = await dbHelper.getAccount('history-account');
+      expect(account!['last_history_id'], equals('987654321'));
+
+      // Clear the history id (e.g. after expiration -> full rescan)
+      await dbHelper.updateAccount('history-account', {
+        'last_history_id': null,
+      });
+      account = await dbHelper.getAccount('history-account');
+      expect(account!['last_history_id'], isNull);
+    });
   });
 }
 

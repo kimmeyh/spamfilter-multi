@@ -168,10 +168,48 @@ class DefaultRuleSetService {
   ///
   /// If new TLD patterns are added in future sprints, append them here --
   /// the migration will add only the missing ones.
-  static const List<String> _postSeedTldBlockPatterns = <String>[
+  static final List<String> _postSeedTldBlockPatterns = <String>[
     r'@.*\.cc$', // Cocos Islands (F53, Sprint 33)
     r'@.*\.ne$', // Niger (F53, Sprint 33)
+    // BUG-S37-2 (Sprint 39): ccTLD gap-fill. The bundled rule set was
+    // gTLD-heavy and missing most ISO 3166-1 alpha-2 ccTLDs. The codes below
+    // are the ccTLDs absent from the bundled rules.yaml, excluding .us, .uk,
+    // and .ca which remain allowed by Harold's decision (2026-05-25).
+    // Generated into '@.*\.<cc>$' patterns by [_gapFillCcTldPatterns].
+    ..._gapFillCcTldPatterns,
   ];
+
+  /// ISO 3166-1 alpha-2 ccTLDs added by the BUG-S37-2 gap-fill (Sprint 39).
+  ///
+  /// These were missing from the bundled rules.yaml asset. They exclude the
+  /// three ccTLDs that stay allowed by Harold's decision (us, uk, ca). The
+  /// migration converts each into the standard top_level_domain block pattern
+  /// '@.*\.<cc>$' and inserts it as an individual rule row on existing installs
+  /// (idempotent). Fresh installs already receive these via the bundled
+  /// rules.yaml asset.
+  static const List<String> _gapFillCcTldCodes = <String>[
+    'ad', 'ae', 'af', 'ag', 'ai', 'al', 'am', 'ao', 'aq', 'as', 'aw', 'ax',
+    'az', 'ba', 'bb', 'bd', 'bf', 'bg', 'bh', 'bi', 'bj', 'bl', 'bm', 'bn',
+    'bo', 'bq', 'bs', 'bt', 'bv', 'bw', 'by', 'cd', 'cf', 'cg', 'ci', 'ck',
+    'cl', 'cm', 'cr', 'cu', 'cv', 'cw', 'cx', 'cy', 'dj', 'dk', 'dm', 'do',
+    'dz', 'ec', 'eg', 'eh', 'er', 'et', 'fj', 'fk', 'fm', 'fo', 'gb', 'gd',
+    'ge', 'gf', 'gg', 'gh', 'gi', 'gl', 'gm', 'gn', 'gp', 'gs', 'gt', 'gu',
+    'gw', 'gy', 'hm', 'hn', 'ht', 'ie', 'il', 'im', 'iq', 'is', 'je', 'jm',
+    'jo', 'ke', 'kg', 'kh', 'ki', 'km', 'kn', 'kp', 'kr', 'kw', 'ky', 'kz',
+    'la', 'lb', 'lc', 'lk', 'lr', 'ls', 'lt', 'lu', 'lv', 'ly', 'ma', 'mc',
+    'md', 'mf', 'mg', 'mh', 'mk', 'mm', 'mn', 'mo', 'mp', 'mq', 'mr', 'ms',
+    'mt', 'mu', 'mv', 'mw', 'mx', 'my', 'mz', 'na', 'nc', 'nf', 'ni', 'no',
+    'np', 'nr', 'nu', 'om', 'pa', 'pe', 'pf', 'pg', 'pk', 'pm', 'pn', 'pr',
+    'ps', 'pt', 'py', 'qa', 're', 'rw', 'sa', 'sb', 'sc', 'sd', 'sg', 'sh',
+    'si', 'sj', 'sk', 'sl', 'sn', 'so', 'sr', 'ss', 'st', 'sv', 'sy', 'sz',
+    'tc', 'td', 'tf', 'tg', 'th', 'tj', 'tl', 'tm', 'tt', 'tv', 'tw', 'ug',
+    'um', 'uy', 'uz', 'va', 've', 'vg', 'vi', 'vu', 'wf', 'ye', 'yt', 'za',
+    'zm', 'zw',
+  ];
+
+  /// Build the '@.*\.<cc>$' block patterns for the gap-fill ccTLD codes.
+  static List<String> get _gapFillCcTldPatterns =>
+      _gapFillCcTldCodes.map((cc) => '@.*\\.$cc\$').toList();
 
   /// Name of the legacy monolithic rule that previously held TLD block
   /// patterns in its condition_header array. Retained for backwards-compat

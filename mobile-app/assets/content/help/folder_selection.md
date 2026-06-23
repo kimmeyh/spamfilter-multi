@@ -1,0 +1,1 @@
+Pick which folders the scanner reads. Most providers list INBOX plus a spam folder (Bulk, Junk, Spam, etc.); select only the folders you want acted on. The move-to folder for block rules is configured in Settings > Account.

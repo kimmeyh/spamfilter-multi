@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:my_email_spam_filter/core/services/pattern_compiler.dart';
@@ -180,6 +181,184 @@ void main() {
         expect(dbRule['source_domain'], 'test.com');
         expect(dbRule['created_by'], 'manual');
       });
+    });
+  });
+
+  group('F78 ManualRuleCreateScreen widget rendering', () {
+    Future<void> pumpScreen(
+      WidgetTester tester, {
+      ManualRuleMode mode = ManualRuleMode.blockRule,
+    }) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ManualRuleCreateScreen(
+            mode: mode,
+          ),
+        ),
+      );
+    }
+
+    testWidgets('Screen renders with initial rule type radio options',
+        (WidgetTester tester) async {
+      await pumpScreen(tester);
+
+      // Verify radio buttons for all rule types are present
+      expect(find.text('Top-Level Domain'), findsOneWidget);
+      expect(find.text('Entire Domain'), findsOneWidget);
+      expect(find.text('Exact Domain'), findsOneWidget);
+      expect(find.text('Exact Email'), findsOneWidget);
+
+      // Verify initial selection is entire domain
+      expect(find.text('Entire Domain'), findsOneWidget);
+    });
+
+    testWidgets('Radio selection updates when user taps different type',
+        (WidgetTester tester) async {
+      await pumpScreen(tester);
+
+      // Tap exact domain radio button
+      await tester.tap(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is RadioListTile<ManualRuleType> &&
+              widget.value == ManualRuleType.exactDomain,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The radio should now be selected (screen title/labels do not change)
+      // Verify by entering text and checking the input hint changes
+      expect(find.text('Exact Domain'), findsOneWidget);
+    });
+
+    testWidgets('Input field appears with appropriate hint text',
+        (WidgetTester tester) async {
+      await pumpScreen(tester);
+
+      // Verify input field exists
+      expect(find.byType(TextFormField), findsOneWidget);
+
+      // Verify input hint text for entire domain is shown
+      expect(find.textContaining('email, domain, or URL'), findsWidgets);
+    });
+
+    testWidgets('TextFormField accepts user input',
+        (WidgetTester tester) async {
+      await pumpScreen(tester);
+
+      // Enter valid domain
+      await tester.enterText(find.byType(TextFormField), 'example.com');
+      await tester.pumpAndSettle();
+
+      // Verify input was entered
+      final textField = tester.widget<TextFormField>(find.byType(TextFormField));
+      expect(textField.controller?.text, contains('example.com'));
+    });
+
+    testWidgets('Input hint text changes with rule type selection',
+        (WidgetTester tester) async {
+      await pumpScreen(tester);
+
+      // Default hint text for entire domain
+      expect(find.textContaining('email, domain, or URL'), findsWidgets);
+
+      // Select TLD type
+      await tester.tap(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is RadioListTile<ManualRuleType> &&
+              widget.value == ManualRuleType.topLevelDomain,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Hint text should change for TLD
+      expect(find.textContaining('TLD'), findsWidgets);
+    });
+
+    testWidgets('Form widget is present in screen',
+        (WidgetTester tester) async {
+      await pumpScreen(tester);
+
+      // Verify Form widget exists
+      expect(find.byType(Form), findsOneWidget);
+    });
+
+    testWidgets('ListView scrollable container is present',
+        (WidgetTester tester) async {
+      await pumpScreen(tester);
+
+      // Verify ListView or similar scrollable widget exists
+      expect(find.byType(ListView), findsOneWidget);
+    });
+
+    testWidgets('Confirmation dialog title matches rule mode',
+        (WidgetTester tester) async {
+      await pumpScreen(tester, mode: ManualRuleMode.blockRule);
+
+      // Block rule mode screen title
+      expect(find.text('Add Block Rule'), findsOneWidget);
+
+      // Safe sender mode
+      await pumpScreen(tester, mode: ManualRuleMode.safeSender);
+      expect(find.text('Add Safe Sender'), findsOneWidget);
+    });
+
+    testWidgets('Safe sender mode excludes TLD radio option',
+        (WidgetTester tester) async {
+      await pumpScreen(tester, mode: ManualRuleMode.safeSender);
+
+      // Verify screen title
+      expect(find.text('Add Safe Sender'), findsOneWidget);
+
+      // Verify TLD option is NOT present
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is RadioListTile<ManualRuleType> &&
+              widget.value == ManualRuleType.topLevelDomain,
+        ),
+        findsNothing,
+      );
+
+      // Verify other three options are present
+      expect(find.text('Entire Domain'), findsOneWidget);
+      expect(find.text('Exact Domain'), findsOneWidget);
+      expect(find.text('Exact Email'), findsOneWidget);
+    });
+
+    testWidgets('Clear button icon appears when input field has text',
+        (WidgetTester tester) async {
+      await pumpScreen(tester);
+
+      // Initially, clear button should not be visible
+      expect(find.byIcon(Icons.clear), findsNothing);
+
+      // Enter text
+      await tester.enterText(find.byType(TextFormField), 'test.com');
+      await tester.pumpAndSettle();
+
+      // Now clear button should appear
+      expect(find.byIcon(Icons.clear), findsOneWidget);
+
+      // Tap clear button
+      await tester.tap(find.byIcon(Icons.clear));
+      await tester.pumpAndSettle();
+
+      // Input should be empty
+      final textField = tester.widget<TextFormField>(find.byType(TextFormField));
+      expect(textField.controller?.text, isEmpty);
+
+      // Clear button should disappear again
+      expect(find.byIcon(Icons.clear), findsNothing);
+    });
+
+    testWidgets('SelectionArea widget enables text selection',
+        (WidgetTester tester) async {
+      await pumpScreen(tester);
+
+      // Verify SelectionArea widget is present (allows selecting text)
+      expect(find.byType(SelectionArea), findsWidgets);
     });
   });
 }

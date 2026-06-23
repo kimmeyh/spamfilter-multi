@@ -43,6 +43,9 @@ This directory contains Architectural Decision Records for the spamfilter-multi 
 | [0035](0035-production-development-side-by-side.md) | Production and Development Builds Side-by-Side on Windows | Accepted | 2026-03-18 |
 | [0036](0036-msix-signing-strategy.md) | MSIX Signing Strategy for Windows Store Submission | Accepted | 2026-03-19 |
 | [0037](0037-ui-accessibility-standards.md) | UI/Accessibility Standards and Cross-Platform Compatibility | Proposed | 2026-04-18 |
+| [0038](0038-content-management-for-long-strings.md) | Content Management for Long User-Facing Strings | Accepted | 2026-05-18 |
+| [0039](0039-per-account-background-scanning.md) | Per-Account Background Scanning | Accepted | 2026-06-15 |
+| [0040](0040-two-e2e-test-harnesses.md) | Two E2E Test Harnesses (WinWright + Flutter integration_test) | Accepted | 2026-06-21 |
 
 ## Creating a New ADR
 

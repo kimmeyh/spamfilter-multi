@@ -12,10 +12,15 @@
 /// - View pattern details and exceptions
 library;
 
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/safe_sender_database_store.dart';
+import '../widgets/copy_all_shortcut.dart';
+import '../widgets/list_selection_controller.dart';
+import '../../core/storage/settings_store.dart';
 import '../widgets/app_bar_with_exit.dart';
 import 'help_screen.dart';
 import 'manual_rule_create_screen.dart';
@@ -78,7 +83,8 @@ class SafeSendersManagementScreen extends StatefulWidget {
 }
 
 class _SafeSendersManagementScreenState
-    extends State<SafeSendersManagementScreen> {
+    extends State<SafeSendersManagementScreen>
+    with ListSelectionController<SafeSendersManagementScreen> {
   final Logger _logger = Logger();
   late final SafeSenderDatabaseStore _store;
   List<SafeSenderPattern> _safeSenders = [];
@@ -87,6 +93,11 @@ class _SafeSendersManagementScreenState
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
   final Set<SafeSenderCategory> _selectedCategories = {};
+
+  /// Sprint 37 round 6 (Alt-2 UX): tracks the currently-hovered or
+  /// keyboard-focused row. The hover-revealed info_outline button is
+  /// visible only for the row whose pattern matches this field.
+  String? _hoveredPattern;
 
   bool get _hasActiveFilters =>
       _searchQuery.isNotEmpty || _selectedCategories.isNotEmpty;
@@ -123,6 +134,9 @@ class _SafeSendersManagementScreenState
   }
 
   void _applyFilter() {
+    // S38-CI-3: reset multi-region row selection on every filter / search
+    // / reload rebuild so selection indices cannot point at stale rows.
+    clearRowSelection();
     var results = List<SafeSenderPattern>.from(_safeSenders);
 
     // Apply category filter (if any chips selected)
@@ -338,10 +352,39 @@ class _SafeSendersManagementScreenState
             tooltip: 'Refresh',
             onPressed: _loadSafeSenders,
           ),
+          // Sprint 37 round 6: filter-aware bulk export.
+          IconButton(
+            icon: const Icon(Icons.file_download_outlined),
+            tooltip: _filteredSenders.isEmpty
+                ? 'Nothing to export'
+                : 'Export ${_filteredSenders.length} shown safe sender${_filteredSenders.length == 1 ? '' : 's'} as CSV',
+            onPressed: _filteredSenders.isEmpty ? null : _exportFilteredSafeSenders,
+          ),
         ],
       ),
-      body: SelectionArea(
-        child: Column(
+      // Sprint 38 F84 Sub-task A (Issue #253): Ctrl+A / Cmd+A copies the
+      // ENTIRE filtered safe-sender list to clipboard, not just the
+      // viewport subset. Bypasses Flutter's selection model -- writes
+      // joined row text directly.
+      //
+      // Sprint 39 S38-CI-3 (Sub-tasks B/C): when a multi-region row
+      // selection exists (Shift+Click extend / Ctrl+Click disjoint),
+      // Ctrl+A copies only the SELECTED rows; otherwise it copies the
+      // whole filtered list (original Sub-task A behavior).
+      body: CopyAllShortcut(
+        itemLabel: 'safe senders',
+        textBuilder: () {
+          if (_filteredSenders.isEmpty) return '';
+          final indices = hasRowSelection
+              ? selectedRowIndices
+              : List<int>.generate(_filteredSenders.length, (i) => i);
+          return indices
+              .map((i) =>
+                  '${_filteredSenders[i].pattern}\t${_filteredSenders[i].patternType}')
+              .join('\n');
+        },
+        child: SelectionArea(
+          child: Column(
         children: [
           // Search bar
           Padding(
@@ -493,12 +536,13 @@ class _SafeSendersManagementScreenState
                           padding: const EdgeInsets.symmetric(horizontal: 8),
                           itemBuilder: (context, index) {
                             return _buildSafeSenderTile(
-                                _filteredSenders[index]);
+                                _filteredSenders[index], index);
                           },
                         ),
                       ),
           ),
         ],
+      ),
       ),
       ),
     );
@@ -532,57 +576,307 @@ class _SafeSendersManagementScreenState
     );
   }
 
-  Widget _buildSafeSenderTile(SafeSenderPattern sender) {
+  Widget _buildSafeSenderTile(SafeSenderPattern sender, int index) {
     final hasExceptions = sender.exceptionPatterns != null &&
         sender.exceptionPatterns!.isNotEmpty;
 
+    // Sprint 37 Phase 7 Imp-1 round 6 (Alt-2 final UX, supersedes rounds
+    // 1-5b on this screen). See rules_management_screen.dart for the same
+    // design rationale: leading icon decorative-only; trailing reveal-on-
+    // hover info_outline; trailing delete REMOVED (delete remains
+    // available inside the details dialog).
+    final isRevealed = _hoveredPattern == sender.pattern;
+    // S38-CI-3 (Sub-tasks B/C): multi-region row selection. See
+    // rules_management_screen.dart::_buildRuleTile for the gesture +
+    // drag-extend rationale (GestureDetector.onTap reads modifiers;
+    // onPanStart begins a Ctrl-drag; MouseRegion.onEnter extends it).
+    final isSelected = isRowSelected(index);
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      child: ListTile(
-        leading: Icon(
-          _getPatternTypeIcon(sender),
-          color: Colors.green.shade700,
-        ),
-        title: Text(
-          sender.pattern,
-          style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        subtitle: Row(
-          children: [
-            Text(
-              _formatPatternType(sender),
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+      color: isSelected
+          ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.12)
+          : null,
+      child: MouseRegion(
+        onEnter: (_) {
+          setState(() => _hoveredPattern = sender.pattern);
+          handleRowDragTo(index, _filteredSenders.length);
+        },
+        onExit: (_) {
+          if (_hoveredPattern == sender.pattern) {
+            setState(() => _hoveredPattern = null);
+          }
+        },
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () => handleRowTap(index, _filteredSenders.length),
+          onPanStart: (_) =>
+              handleRowDragStart(index, _filteredSenders.length),
+          onPanEnd: (_) => handleRowDragEnd(),
+          onPanCancel: handleRowDragEnd,
+          child: ListTile(
+          // Sprint 37 round 7: leading icon is now ALSO clickable (Harold
+          // feedback 2026-05-04). See rules_management_screen.dart for
+          // rationale + the SizedBox constraint that prevents round-5b's
+          // collapsed-hit-region failure.
+          leading: SizedBox(
+            width: 36,
+            height: 36,
+            child: IconButton(
+              icon: Icon(
+                _getPatternTypeIcon(sender),
+                color: Colors.green.shade700.withValues(alpha: 0.85),
+                size: 20,
+                semanticLabel: '${_formatPatternType(sender)} category',
+              ),
+              tooltip: 'View safe sender details',
+              padding: EdgeInsets.zero,
+              visualDensity: VisualDensity.compact,
+              onPressed: () => _showPatternDetails(sender),
             ),
-            if (hasExceptions) ...[
-              const SizedBox(width: 8),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade50,
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: Colors.orange.shade200),
-                ),
-                child: Text(
-                  '${sender.exceptionPatterns!.length} exception${sender.exceptionPatterns!.length == 1 ? '' : 's'}',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.orange.shade800,
+          ),
+          title: Text(
+            sender.pattern,
+            style: const TextStyle(fontFamily: 'monospace', fontSize: 13),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: Row(
+            children: [
+              Text(
+                _formatPatternType(sender),
+                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+              ),
+              if (hasExceptions) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade50,
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: Colors.orange.shade200),
+                  ),
+                  child: Text(
+                    '${sender.exceptionPatterns!.length} exception${sender.exceptionPatterns!.length == 1 ? '' : 's'}',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.orange.shade800,
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
-          ],
+          ),
+          trailing: Focus(
+            onFocusChange: (hasFocus) {
+              if (hasFocus) {
+                setState(() => _hoveredPattern = sender.pattern);
+              }
+            },
+            child: AnimatedOpacity(
+              opacity: isRevealed ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 120),
+              child: IconButton(
+                icon: const Icon(Icons.info_outline, size: 18),
+                tooltip: 'View safe sender details (Enter)',
+                visualDensity: VisualDensity.compact,
+                onPressed: () => _showPatternDetails(sender),
+              ),
+            ),
+          ),
+          ),
         ),
-        trailing: IconButton(
-          icon: Icon(Icons.delete_outline, color: Colors.red.shade400),
-          tooltip: 'Delete',
-          onPressed: () => _deleteSafeSender(sender),
-        ),
-        onTap: () => _showPatternDetails(sender),
       ),
     );
+  }
+
+  /// Sprint 37 round 6: export the currently-filtered safe sender list as
+  /// a CSV file. Respects search query + filter chips. Mirrors
+  /// `_exportFilteredRules` on the rules screen.
+  Future<void> _exportFilteredSafeSenders() async {
+    if (_filteredSenders.isEmpty) return;
+    try {
+      final settingsStore = SettingsStore();
+      final configuredDir = await settingsStore.getCsvExportDirectory();
+
+      String exportPath;
+      if (configuredDir != null && configuredDir.isNotEmpty) {
+        final dir = Directory(configuredDir);
+        if (!await dir.exists()) {
+          await dir.create(recursive: true);
+        }
+        exportPath = configuredDir;
+      } else {
+        final directory = Platform.isAndroid || Platform.isIOS
+            ? await getExternalStorageDirectory()
+            : await getApplicationDocumentsDirectory();
+        if (directory == null) {
+          throw Exception('Could not access storage directory');
+        }
+        exportPath = directory.path;
+      }
+
+      String normalizedPath = exportPath;
+      while (normalizedPath.endsWith('/') || normalizedPath.endsWith('\\')) {
+        normalizedPath = normalizedPath.substring(0, normalizedPath.length - 1);
+      }
+      final separator = Platform.isWindows ? '\\' : '/';
+      final timestamp =
+          DateTime.now().toIso8601String().replaceAll(':', '-').split('.')[0];
+      final filename = 'manage_safe_senders_filtered_$timestamp.csv';
+      final filePath = '$normalizedPath$separator$filename';
+
+      // Sprint 37 round 8: align column order with the rules CSV export
+      // for the columns that make sense on both sides:
+      //   Source Domain | Rule Name | Pattern | Category | Sub-Type
+      // Columns that do not apply to safe senders are intentionally
+      // omitted (Action -- safe senders just bypass block rules with no
+      // per-row action; Enabled -- safe senders have no disable flag;
+      // Execution Order -- safe senders have no order). Safe-sender-
+      // specific extras (Date Added, Source, Exceptions) are kept as
+      // trailing columns so users do not lose information they had in
+      // earlier exports.
+      final buffer = StringBuffer();
+      buffer.writeln('Source Domain,Rule Name,Pattern,Category,Sub-Type,Date Added,Source,Exceptions');
+      for (final s in _filteredSenders) {
+        final subTypeKey = _safeSenderSubTypeKey(s);
+        final extracted =
+            _extractBaseFromSafeSenderPattern(s.pattern, subTypeKey);
+        final sourceDomain = _csvEscape(extracted ?? '');
+        // Rule Name parity with the rules screen: rules use either the
+        // explicit `name` field or `sourceDomain` for the displayed
+        // identifier; safe senders fall back to the pattern when no
+        // structural extraction is possible.
+        final ruleName = _csvEscape(extracted ?? s.pattern);
+        final pattern = _csvEscape(s.pattern);
+        // Safe senders only ever match the From / Header field.
+        final category = _csvEscape('Header / From');
+        final subType = _csvEscape(_formatPatternType(s));
+        final dateAdded = DateTime.fromMillisecondsSinceEpoch(s.dateAdded);
+        final dateStr =
+            '${dateAdded.year}-${dateAdded.month.toString().padLeft(2, '0')}-${dateAdded.day.toString().padLeft(2, '0')}';
+        final sourceField = _csvEscape(_formatCreatedBy(s.createdBy));
+        final exceptions = (s.exceptionPatterns?.length ?? 0).toString();
+        buffer.writeln('$sourceDomain,$ruleName,$pattern,$category,$subType,$dateStr,$sourceField,$exceptions');
+      }
+      final file = File(filePath);
+      await file.writeAsString(buffer.toString());
+      _logger.i('[OK] Exported ${_filteredSenders.length} filtered safe senders to $filePath');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Exported ${_filteredSenders.length} safe sender${_filteredSenders.length == 1 ? '' : 's'} to $filename'),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      _logger.e('Failed to export filtered safe senders', error: e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Export failed: $e')),
+        );
+      }
+    }
+  }
+
+  /// Sprint 37 round 8: maps a SafeSenderPattern's category to the
+  /// sub-type vocabulary used by `_extractBaseFromSafeSenderPattern`.
+  /// Mirrors `manual_rule_duplicate_checker.dart::_extractBaseFromPattern`
+  /// keys (`exact_email` / `exact_domain` / `entire_domain`).
+  String _safeSenderSubTypeKey(SafeSenderPattern sender) {
+    switch (SafeSenderCategory.categorize(sender)) {
+      case SafeSenderCategory.exactEmail:
+        return 'exact_email';
+      case SafeSenderCategory.exactDomain:
+        return 'exact_domain';
+      case SafeSenderCategory.entireDomain:
+        return 'entire_domain';
+      case SafeSenderCategory.other:
+        return 'other';
+    }
+  }
+
+  /// Sprint 37 round 8: extract the human-readable domain (or
+  /// user@domain for exact_email) from a safe-sender regex pattern.
+  /// Mirrors the regex-shape recognition in
+  /// `manual_rule_duplicate_checker.dart::_extractBaseFromPattern` so the
+  /// CSV `Source Domain` column shows the same identifier the user sees
+  /// when adding the rule (e.g. `cwru.edu`, not the raw regex). Returns
+  /// null when the pattern does not match a known shape -- the export
+  /// then falls back to using the pattern itself for the Rule Name
+  /// column and leaves Source Domain blank.
+  String? _extractBaseFromSafeSenderPattern(String pattern, String subType) {
+    final trimmed = pattern.trim();
+    switch (subType) {
+      case 'entire_domain':
+        final match =
+            RegExp(r'^\^\[\^@\\s\]\+@\(\?:\[a-z0-9-\]\+\\\.\)\*(.+)\$$')
+                .firstMatch(trimmed);
+        if (match == null) return null;
+        return _unescapeRegexLiteral(match.group(1)!);
+      case 'exact_domain':
+        // Two shapes seen on this screen:
+        //   `@example.com` (unanchored)
+        //   `^[^@\s]+@example\.com$` (anchored)
+        // Either way the visible identifier is `example.com`.
+        if (trimmed.startsWith('@') && !trimmed.startsWith('@(')) {
+          return _unescapeRegexLiteral(trimmed.substring(1));
+        }
+        if (trimmed.startsWith('^') && trimmed.endsWith(r'$')) {
+          final body = trimmed.substring(1, trimmed.length - 1);
+          final atIdx = body.lastIndexOf('@');
+          if (atIdx == -1) return null;
+          return _unescapeRegexLiteral(body.substring(atIdx + 1));
+        }
+        return null;
+      case 'exact_email':
+        if (!trimmed.startsWith('^') || !trimmed.endsWith(r'$')) return null;
+        final body = trimmed.substring(1, trimmed.length - 1);
+        final unescaped = _unescapeRegexLiteral(body);
+        return unescaped.contains('@') ? unescaped : null;
+      default:
+        return null;
+    }
+  }
+
+  /// Reverse `RegExp.escape` for the limited set of characters used in
+  /// domain/email patterns. Mirrors the helper in
+  /// `manual_rule_duplicate_checker.dart`. NOT a general regex unescape.
+  String _unescapeRegexLiteral(String escaped) {
+    final buf = StringBuffer();
+    var i = 0;
+    while (i < escaped.length) {
+      final c = escaped[i];
+      if (c == r'\' && i + 1 < escaped.length) {
+        buf.write(escaped[i + 1]);
+        i += 2;
+      } else {
+        buf.write(c);
+        i++;
+      }
+    }
+    return buf.toString().toLowerCase();
+  }
+
+  /// Sprint 37 round 7: CSV-injection-safe escape (OWASP guidance). See
+  /// rules_management_screen.dart::_csvEscape for full rationale -- regex
+  /// patterns starting with `@(?:...)` would otherwise be read by Excel
+  /// as a formula and produce `#NAME?` errors.
+  String _csvEscape(String s) {
+    if (s.isEmpty) return s;
+    final first = s.codeUnitAt(0);
+    final isFormulaTrigger = first == 0x3D /* = */ ||
+        first == 0x2B /* + */ ||
+        first == 0x2D /* - */ ||
+        first == 0x40 /* @ */ ||
+        first == 0x09 /* TAB */ ||
+        first == 0x0D /* CR */;
+    final escaped = isFormulaTrigger ? "'$s" : s;
+    if (escaped.contains(',') || escaped.contains('"') || escaped.contains('\n')) {
+      return '"${escaped.replaceAll('"', '""')}"';
+    }
+    return escaped;
   }
 }

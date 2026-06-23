@@ -68,6 +68,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   ScanMode _backgroundScanMode = SettingsStore.defaultBackgroundScanMode;
   List<String> _backgroundScanFolders = List.from(SettingsStore.defaultBackgroundScanFolders);
   bool _backgroundScanDebugCsv = SettingsStore.defaultBackgroundScanDebugCsv;
+  // F90 (Sprint 39): live-scan debug CSV opt-in (Manual Scan tab Debug section)
+  bool _liveScanDebugCsv = SettingsStore.defaultLiveScanDebugCsv;
   String? _csvExportDirectory;
   // F43: Track current folder selections for display
   String? _safeSenderFolder;
@@ -88,6 +90,12 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   bool _isLoading = true;
   bool _isTestingScan = false;
   late TextEditingController _retentionDaysController;
+
+  // Sprint 38 Round 10 (2026-05-18): email shown in the per-account header
+  // card at the top of the Account, Manual Scan, and Background tabs.
+  // Loaded once during _loadSettings so the header renders synchronously
+  // without per-tab FutureBuilders. Empty string while loading.
+  String _accountEmail = '';
 
   @override
   void initState() {
@@ -131,6 +139,17 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     setState(() => _isLoading = true);
 
     try {
+      // Sprint 38 Round 10: load the account email once so the per-account
+      // header card renders on Account/Manual Scan/Background tabs without
+      // per-tab FutureBuilders. Failures fall back to empty string and
+      // the header degrades to "Account Settings -" (no trailing email).
+      try {
+        final creds = await _credStore.getCredentials(widget.accountId);
+        _accountEmail = creds?.email ?? '';
+      } catch (_) {
+        _accountEmail = '';
+      }
+
       // [UPDATED] ISSUE #123: Load per-account settings (with app-wide fallback)
       final accountManualMode = await _settingsStore.getAccountManualScanMode(widget.accountId);
       _manualScanMode = accountManualMode ?? await _settingsStore.getManualScanMode();
@@ -139,8 +158,12 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       _manualScanFolders = accountManualFolders ?? await _settingsStore.getManualScanFolders();
 
       _confirmDialogsEnabled = await _settingsStore.getConfirmDialogsEnabled();
-      _backgroundScanEnabled = await _settingsStore.getBackgroundScanEnabled();
-      _backgroundScanFrequency = await _settingsStore.getBackgroundScanFrequency();
+      // F98 (ADR-0039): the Background tab is account-scoped -- load the
+      // per-account effective enable/frequency, not the global flag.
+      _backgroundScanEnabled =
+          await _settingsStore.getEffectiveBackgroundEnabled(widget.accountId);
+      _backgroundScanFrequency =
+          await _settingsStore.getEffectiveBackgroundFrequency(widget.accountId);
 
       final accountBgMode = await _settingsStore.getAccountBackgroundScanMode(widget.accountId);
       _backgroundScanMode = accountBgMode ?? await _settingsStore.getBackgroundScanMode();
@@ -149,6 +172,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       _backgroundScanFolders = accountBgFolders ?? await _settingsStore.getBackgroundScanFolders();
 
       _backgroundScanDebugCsv = await _settingsStore.getBackgroundScanDebugCsv();
+      _liveScanDebugCsv = await _settingsStore.getLiveScanDebugCsv();
       _csvExportDirectory = await _settingsStore.getCsvExportDirectory();
 
       // F43: Load current folder selections for display
@@ -300,6 +324,15 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         ),
         const SizedBox(height: 8),
 
+        // Sprint 37 round 7: Export Settings moved here from Manual Scan
+        // tab (Harold's UX feedback 2026-05-04). The CSV export directory
+        // is used by Manage Rules + Manage Safe Senders + Manual Scan
+        // results -- general-purpose enough to live on the General tab.
+        // Positioned just above Import / Export YAML to group all
+        // import/export-related controls together.
+        _buildCsvExportDirectorySelector(),
+        const SizedBox(height: 8),
+
         OutlinedButton.icon(
           icon: const Icon(Icons.swap_vert_outlined),
           label: const Text('Import / Export YAML'),
@@ -316,31 +349,11 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             alignment: Alignment.centerLeft,
           ),
         ),
-        const SizedBox(height: 8),
-
-        OutlinedButton.icon(
-          icon: const Icon(Icons.restore),
-          label: const Text('Reset Rules to Defaults'),
-          onPressed: _resetRulesToDefaults,
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            alignment: Alignment.centerLeft,
-            foregroundColor: Colors.orange.shade700,
-          ),
-        ),
-        const SizedBox(height: 8),
-
-        // F66 (Sprint 33): full-app data wipe
-        OutlinedButton.icon(
-          icon: const Icon(Icons.delete_forever),
-          label: const Text('Delete All App Data...'),
-          onPressed: _confirmDeleteAllData,
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            alignment: Alignment.centerLeft,
-            foregroundColor: Colors.red.shade700,
-          ),
-        ),
+        // Sprint 37 round 7: Reset Rules to Defaults + Delete All App
+        // Data... moved to BOTTOM of the General tab (just above About,
+        // see end of this method) per Harold's UX feedback 2026-05-04.
+        // Destructive actions belong below regular controls so users do
+        // not accidentally tap them while scrolling.
 
         const SizedBox(height: 24),
 
@@ -440,6 +453,48 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
         const SizedBox(height: 24),
 
+        // Sprint 37 round 7: destructive actions (Reset Rules to Defaults,
+        // Delete All App Data) moved to bottom of General tab per Harold's
+        // UX feedback 2026-05-04. Originally lived under Rules Management
+        // at the top; moving them down avoids accidental taps during
+        // scrolling and keeps the irreversible-action pair grouped.
+        Text(
+          'Danger Zone',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Colors.red.shade700,
+              ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Irreversible operations. Each requires explicit confirmation.',
+          style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+        ),
+        const SizedBox(height: 16),
+        OutlinedButton.icon(
+          icon: const Icon(Icons.restore),
+          label: const Text('Reset Rules to Defaults'),
+          onPressed: _resetRulesToDefaults,
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            alignment: Alignment.centerLeft,
+            foregroundColor: Colors.orange.shade700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          icon: const Icon(Icons.delete_forever),
+          label: const Text('Delete All App Data...'),
+          onPressed: _confirmDeleteAllData,
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            alignment: Alignment.centerLeft,
+            foregroundColor: Colors.red.shade700,
+          ),
+        ),
+
+        const SizedBox(height: 24),
+
         // About section (moved from Account tab)
         Text(
           'About',
@@ -470,7 +525,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Version 0.5.2${AppEnvironment.displaySuffix}',
+                            'Version 0.5.3${AppEnvironment.displaySuffix}',
                             style: TextStyle(color: Colors.grey.shade700),
                           ),
                         ],
@@ -484,6 +539,37 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         ),
       ],
     ));
+  }
+
+  /// Sprint 38 Round 10 (2026-05-18): single-line per-account header card
+  /// "Account Settings - <email>" used at the top of the Account, Manual
+  /// Scan, and Background tabs. NOT used on the General tab (those
+  /// settings are cross-account). Email comes from `_accountEmail` which
+  /// is populated once in `_loadSettings` from SecureCredentialsStore.
+  Widget _buildAccountHeaderCard() {
+    final headerText = _accountEmail.isNotEmpty
+        ? 'Account Settings - $_accountEmail'
+        : 'Account Settings';
+    return Card(
+      color: Colors.blue.shade50,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Icon(Icons.email, color: Colors.blue.shade700),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                headerText,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildAccountTab() {
@@ -511,42 +597,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // Account info header
-            Card(
-              color: Colors.blue.shade50,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.email, color: Colors.blue.shade700),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Account Settings',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                email,
-                                style: TextStyle(color: Colors.grey.shade700),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            // Sprint 38 Round 10 (2026-05-18): single-line per-account
+            // header card. Mirrors the same card shown on Manual Scan and
+            // Background tabs.
+            _buildAccountHeaderCard(),
             const SizedBox(height: 24),
 
             // Folder configuration section
@@ -599,25 +653,9 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     return SelectionArea(child: ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Card(
-          color: Colors.blue.shade50,
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              children: [
-                Icon(Icons.info_outline, color: Colors.blue.shade700),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Default folders are account-specific. Select an account first, '
-                    'then configure in Account Details > Folders.',
-                    style: TextStyle(color: Colors.blue.shade900, fontSize: 13),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+        // Sprint 38 Round 10 (2026-05-18): per-account header so Manual Scan
+        // tab clearly shows which account these settings apply to.
+        _buildAccountHeaderCard(),
         const SizedBox(height: 16),
         _buildSectionHeader('Scan Mode'),
         _buildScanModeSelector(
@@ -640,6 +678,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         ),
         const SizedBox(height: 24),
         _buildSectionHeader('Default Folders'),
+        _buildDefaultFoldersInfoCard(),
+        const SizedBox(height: 8),
         _buildFolderSelector(
           folders: _manualScanFolders,
           onChanged: (folders) async {
@@ -666,9 +706,21 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             await _settingsStore.setConfirmDialogsEnabled(value);
           },
         ),
+        // Sprint 37 round 7: Export Settings moved to General tab (above
+        // Import / Export YAML), per Harold's UX feedback 2026-05-04.
+        // CSV export dir is now used by Manage Rules + Manage Safe Senders
+        // export buttons too, not just Manual Scan results.
         const SizedBox(height: 24),
-        _buildSectionHeader('Export Settings'),
-        _buildCsvExportDirectorySelector(),
+        _buildSectionHeader('Debug'),
+        SwitchListTile(
+          title: const Text('Export CSV After Each Scan'),
+          subtitle: const Text('Write scan results CSV for debugging'),
+          value: _liveScanDebugCsv,
+          onChanged: (value) async {
+            setState(() => _liveScanDebugCsv = value);
+            await _settingsStore.setLiveScanDebugCsv(value);
+          },
+        ),
       ],
     ));
   }
@@ -741,21 +793,24 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     }
   }
 
-  /// Create, update, or delete the Windows Task Scheduler task
+  /// Create, update, or delete the Windows Task Scheduler task for THIS account
+  /// (F98 / ADR-0039 -- one task per enabled account).
   Future<void> _updateWindowsScheduledTask({required bool enabled}) async {
     try {
+      final accountId = widget.accountId;
       bool success;
       if (enabled) {
         final frequency = ScanFrequency.fromMinutes(_backgroundScanFrequency);
         if (frequency == ScanFrequency.disabled) return;
 
-        final exists = await WindowsTaskSchedulerService.taskExists();
+        final exists =
+            await WindowsTaskSchedulerService.taskExists(accountId: accountId);
         if (exists) {
           success = await WindowsTaskSchedulerService.updateScheduledTask(
-              frequency: frequency);
+              frequency: frequency, accountId: accountId);
         } else {
           success = await WindowsTaskSchedulerService.createScheduledTask(
-              frequency: frequency);
+              frequency: frequency, accountId: accountId);
         }
 
         if (success) {
@@ -777,9 +832,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           }
         }
       } else {
-        success = await WindowsTaskSchedulerService.deleteScheduledTask();
+        success = await WindowsTaskSchedulerService.deleteScheduledTask(
+            accountId: accountId);
         if (success) {
-          _logger.i('Windows scheduled task deleted');
+          _logger.i('Windows scheduled task deleted for this account');
         }
       }
     } catch (e) {
@@ -798,14 +854,20 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     return SelectionArea(child: ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        // Sprint 38 Round 10 (2026-05-18): per-account header so Background
+        // tab clearly shows which account these settings apply to.
+        _buildAccountHeaderCard(),
+        const SizedBox(height: 16),
         SwitchListTile(
           title: const Text('Enable Background Scanning'),
           subtitle: const Text('Automatically scan for spam periodically'),
           value: _backgroundScanEnabled,
           onChanged: (value) async {
             setState(() => _backgroundScanEnabled = value);
-            await _settingsStore.setBackgroundScanEnabled(value);
-            // On Windows, create or delete the Task Scheduler task
+            // F98 (ADR-0039): write the PER-ACCOUNT override, not the global flag.
+            await _settingsStore
+                .setAccountBackgroundEnabled(widget.accountId, value);
+            // On Windows, create or delete THIS account's Task Scheduler task.
             if (Platform.isWindows) {
               await _updateWindowsScheduledTask(enabled: value);
             }
@@ -822,8 +884,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           value: _backgroundScanFrequency,
           onChanged: (freq) async {
             setState(() => _backgroundScanFrequency = freq);
-            await _settingsStore.setBackgroundScanFrequency(freq);
-            // On Windows, update the Task Scheduler frequency if enabled
+            // F98 (ADR-0039): write the PER-ACCOUNT frequency override.
+            await _settingsStore
+                .setAccountBackgroundFrequency(widget.accountId, freq);
+            // On Windows, update THIS account's Task Scheduler frequency if enabled
             if (Platform.isWindows && _backgroundScanEnabled) {
               await _updateWindowsScheduledTask(enabled: true);
             }
@@ -853,6 +917,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         ),
         const SizedBox(height: 24),
         _buildSectionHeader('Default Folders'),
+        _buildDefaultFoldersInfoCard(),
+        const SizedBox(height: 8),
         _buildFolderSelector(
           folders: _backgroundScanFolders,
           onChanged: (folders) async {
@@ -915,7 +981,15 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
     try {
       if (Platform.isWindows) {
-        final success = await BackgroundScanWindowsWorker.executeBackgroundScan(isTest: true);
+        // F98 (ADR-0039): scope the Test scan to THIS account (the Background
+        // tab is account-specific). Without accountId it fell through to the
+        // legacy all-accounts path and scanned every account + wrote the shared
+        // log. isTest still bypasses the enable check so a disabled-but-current
+        // account can be tested.
+        final success = await BackgroundScanWindowsWorker.executeBackgroundScan(
+          isTest: true,
+          accountId: widget.accountId,
+        );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -1087,6 +1161,31 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         style: Theme.of(context).textTheme.titleSmall?.copyWith(
           color: Theme.of(context).colorScheme.primary,
           fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  /// S38-CI-2: Info card shown directly below the "Default Folders" section
+  /// header on both the Manual Scan and Background tabs. Shared so the two
+  /// call sites do not diverge.
+  Widget _buildDefaultFoldersInfoCard() {
+    return Card(
+      color: Colors.blue.shade50,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Icon(Icons.info_outline, color: Colors.blue.shade700),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Default folders are account-specific. Select an account first, '
+                'then configure in Account Details > Folders.',
+                style: TextStyle(color: Colors.blue.shade900, fontSize: 13),
+              ),
+            ),
+          ],
         ),
       ),
     );

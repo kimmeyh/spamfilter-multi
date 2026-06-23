@@ -1,6 +1,8 @@
 /// Email scanning service that connects IMAP adapters with rule evaluation
 library;
 
+import 'package:flutter/foundation.dart' show visibleForTesting;
+
 import '../models/email_message.dart';
 import '../models/rule_set.dart';
 import '../models/safe_sender_list.dart';
@@ -15,6 +17,10 @@ import '../storage/scan_result_store.dart';
 import '../storage/settings_store.dart';
 import '../storage/unmatched_email_store.dart';
 import '../utils/app_logger.dart';
+import '../../util/redact.dart';
+import 'live_scan_logger.dart';
+import '../../adapters/email_providers/generic_imap_adapter.dart';
+import '../../adapters/email_providers/gmail_api_adapter.dart';
 import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/email_providers/spam_filter_platform.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
@@ -28,12 +34,52 @@ class EmailScanner {
   final SecureCredentialsStore _credStore = SecureCredentialsStore();
   final SettingsStore _settingsStore = SettingsStore();
 
+  /// Sprint 38 F86 (Issue #254), revised in Sprint 38 Round 1 (post-retro):
+  /// number of rule-set-change notifications received during the most
+  /// recent scan. The mid-scan evaluator rebuild was removed -- rule
+  /// reloads now happen AFTER `completeScan()` so the NEXT scan picks
+  /// them up. This counter is kept (and incremented by the listener)
+  /// for diagnostic purposes; the `pendingRuleSetChanges` getter is
+  /// retained for any future pre-scan sync-pending UI affordance.
+  int _ruleSetChangeCount = 0;
+
+  /// Sprint 38 F86: number of rule-set-change notifications received during
+  /// the most recent scan (or in progress now). Zero before the first scan,
+  /// reset to zero at each `scanInbox` start.
+  int get pendingRuleSetChanges => _ruleSetChangeCount;
+
+  /// S38-CI-4 (Sprint 39): per-scan cache of the daysBack "UID floor" per
+  /// folder -- the smallest IMAP UID newer than `now - daysBack`. Populated
+  /// once per folder during the IMAP fetch path (`_fetchFolderMessagesImap`)
+  /// and consumed by `_updateOldestNoRuleCursors` to cap the persisted
+  /// no-rule cursor. Keyed by folder name. A null value means "looked up,
+  /// no floor" (empty window or lookup error); absence of the key means
+  /// "not looked up this scan". Reset to empty at each `scanInbox` start so
+  /// the SEARCH SINCE round-trip happens at most once per folder per scan
+  /// (NOT once per batch boundary).
+  final Map<String, int?> _daysBackUidFloorCache = {};
+
   EmailScanner({
     required this.platformId,
     required this.accountId,
     required this.ruleSetProvider,
     required this.scanProvider,
   });
+
+  /// Sprint 38 F86: increments the pending-change counter as if the user
+  /// added/edited/deleted a rule during the scan. Visible for testing.
+  /// Production code does not call this directly -- the listener does.
+  @visibleForTesting
+  void markRulesDirtyForTesting() {
+    _ruleSetChangeCount++;
+  }
+
+  void _onRuleSetChanged() {
+    _ruleSetChangeCount++;
+    AppLogger.scan(
+        'F86: rule-set change detected during scan; rules will be reloaded '
+        'after scan completes (pending count=$_ruleSetChangeCount)');
+  }
 
   /// Scan inbox with live IMAP connection
   /// [NEW] SPRINT 4: Includes scan result persistence
@@ -44,10 +90,37 @@ class EmailScanner {
   }) async {
     SpamFilterPlatform? platform;
 
+    // Sprint 38 F86 (Issue #254), revised Round 1: subscribe to rule-set
+    // changes for the duration of this scan for diagnostic counting. The
+    // mid-scan evaluator rebuild was removed in Round 1; the post-scan
+    // reload of rules + safe senders (after `completeScan()` below)
+    // ensures the NEXT scan picks up any changes made during this one.
+    _ruleSetChangeCount = 0;
+    // S38-CI-4: clear the per-scan daysBack UID-floor cache so this scan
+    // does its own (at most one per folder) SEARCH SINCE lookups.
+    _daysBackUidFloorCache.clear();
+    ruleSetProvider.addListener(_onRuleSetChanged);
+
+    // F90 (Sprint 39): live-scan runtime log only for `scanType == 'manual'`.
+    // Demo scans use mock data and have no operational value to debug from
+    // disk logs; background scans already write their own log via
+    // `BackgroundScanWindowsWorker._bgLog`. Demo + background both skip.
+    final bool isLiveScan = scanType == 'manual' && platformId != 'demo';
+
     try {
       AppLogger.scan('========== SCAN START ==========');
       AppLogger.scan('platformId=$platformId, accountId=$accountId');
       AppLogger.scan('daysBack=$daysBack, folders=$folderNames, scanType=$scanType');
+      if (isLiveScan) {
+        // PII redaction: live-scan log is persisted to disk and may be
+        // shared in bug reports, so accountId (typically an email) is
+        // always redacted via Redact.accountId (e.g., u***@example.com).
+        // Matches BackgroundScanWindowsWorker._bgLog convention.
+        await LiveScanLogger.log(
+          'SCAN START platformId=$platformId accountId=${Redact.accountId(accountId)} '
+          'daysBack=$daysBack folders=$folderNames scanMode=${scanProvider.scanMode}',
+        );
+      }
 
       // [NEW] SPRINT 4: Initialize persistence stores if not already done
       final dbHelper = DatabaseHelper();
@@ -64,6 +137,9 @@ class EmailScanner {
         throw Exception('Platform $platformId not supported');
       }
       AppLogger.scan('Step 1: Platform adapter loaded: ${platform.runtimeType}');
+      if (isLiveScan) {
+        await LiveScanLogger.log('Step 1: Platform adapter loaded: ${platform.runtimeType}');
+      }
 
       // 2. Load credentials (skip for demo platform)
       if (platformId != 'demo') {
@@ -72,13 +148,22 @@ class EmailScanner {
           throw Exception('No credentials found for account $accountId');
         }
         AppLogger.scan('Step 2: Credentials loaded for ${credentials.email}');
+        if (isLiveScan) {
+          await LiveScanLogger.log('Step 2: Credentials loaded for ${Redact.email(credentials.email)}');
+        }
         await platform.loadCredentials(credentials);
         AppLogger.scan('Step 2: IMAP connected and authenticated');
+        if (isLiveScan) {
+          await LiveScanLogger.log('Step 2: IMAP/provider connected and authenticated');
+        }
       }
 
       // 2.5. Configure deleted rule folder from account settings
       final deletedRuleFolder = await _settingsStore.getAccountDeletedRuleFolder(accountId);
       platform.setDeletedRuleFolder(deletedRuleFolder);
+      if (isLiveScan) {
+        await LiveScanLogger.log('Step 2.5: deletedRuleFolder=${deletedRuleFolder ?? "(default Trash)"}');
+      }
 
       // 3. [UPDATED] ISSUE #128: Start scan with 0 emails, will increment as found
       AppLogger.scan('Step 3: Calling scanProvider.startScan(totalEmails: 0, scanType: $scanType)');
@@ -112,11 +197,19 @@ class EmailScanner {
 
         // Fetch messages from this folder
         try {
-          final folderMessages = await platform.fetchMessages(
+          // Sprint 38 F6c Phase 2 (Issue #250): Gmail-specific incremental
+          // delta scan via historyId, falling back to the provider-agnostic
+          // full-folder fetch on first-ever scan, historyId expiry, or any
+          // non-Gmail platform.
+          final folderMessages = await _fetchFolderMessages(
+            platform: platform,
+            folderName: folderName,
             daysBack: daysBack,
-            folderNames: [folderName],  // Fetch one folder at a time
           );
           AppLogger.scan('Step 4: Folder "$folderName" returned ${folderMessages.length} messages');
+          if (isLiveScan) {
+            await LiveScanLogger.log('Step 4: Folder "$folderName" returned ${folderMessages.length} messages');
+          }
 
           messages.addAll(folderMessages);
 
@@ -152,10 +245,20 @@ class EmailScanner {
           }
         } catch (e, st) {
           AppLogger.error('Step 4: EXCEPTION fetching folder "$folderName"', error: e, stackTrace: st);
+          if (isLiveScan) {
+            await LiveScanLogger.log('Step 4: EXCEPTION fetching folder "$folderName": $e');
+          }
           // Continue with other folders even if one fails
         }
       }
       AppLogger.scan('Step 4: COMPLETE - Total messages across all folders: ${messages.length}');
+      if (isLiveScan) {
+        await LiveScanLogger.log('Step 4 COMPLETE: total messages across all folders = ${messages.length}');
+        await LiveScanLogger.log(
+          'Step 5: Rules loaded: ${ruleSetProvider.rules.rules.length}, '
+          'Safe senders loaded: ${ruleSetProvider.safeSenders.safeSenders.length}',
+        );
+      }
 
       // 5. Get rule evaluator
       // DIAGNOSTIC: Log rule and safe sender counts for troubleshooting
@@ -180,6 +283,9 @@ class EmailScanner {
         effectiveSafeSenders = ruleSetProvider.safeSenders;
       }
 
+      // Sprint 38 F86 (revised in Sprint 38 Round 1): per-scan evaluator
+      // is final again. Mid-scan rule changes are NOT applied; reload
+      // happens after `completeScan()` below so the NEXT scan sees them.
       final evaluator = RuleEvaluator(
         ruleSet: effectiveRules,
         safeSenderList: effectiveSafeSenders,
@@ -204,6 +310,15 @@ class EmailScanner {
       AppLogger.scan('Safe sender target folder: "$safeSenderTarget" (raw: "$rawTarget")');
 
       for (final message in messages) {
+        // Sprint 38 F86 mid-scan evaluator rebuild was removed in
+        // Sprint 38 Round 1 (post-retro 2026-05-16). Per Harold's clarified
+        // requirement, rules should reload AFTER each scan completes and
+        // AFTER rule-add in Scan Results -- not mid-scan. The post-scan
+        // reload happens after `await scanProvider.completeScan()` below.
+        // The `_rulesDirty` listener is still registered so the diagnostic
+        // counter `pendingRuleSetChanges` keeps working for any future
+        // pre-scan sync-pending message.
+
         scanProvider.updateProgress(
           email: message,
           message: 'Evaluating: ${message.subject}',
@@ -261,6 +376,12 @@ class EmailScanner {
       final safeCount = evaluatedEmails.where((e) => e.action == EmailActionType.safeSender).length;
       AppLogger.scan('Step 6a COMPLETE: Evaluated ${evaluatedEmails.length} emails: none=$noneCount, delete=$deleteCount, moveToJunk=$moveCount, safeSender=$safeCount');
       AppLogger.scan('Step 6a: scanProvider counts after eval: processed=${scanProvider.processedCount}, noRule=${scanProvider.noRuleCount}, deleted=${scanProvider.deletedCount}, moved=${scanProvider.movedCount}, safe=${scanProvider.safeSendersCount}');
+      if (isLiveScan) {
+        await LiveScanLogger.log(
+          'Step 6a COMPLETE: evaluated=${evaluatedEmails.length} '
+          'none=$noneCount delete=$deleteCount moveToJunk=$moveCount safeSender=$safeCount',
+        );
+      }
 
       // --- Phase 6b: Batch execute actions ---
       final bool canExecuteRules =
@@ -307,6 +428,14 @@ class EmailScanner {
 
       AppLogger.scan('Step 6b: Batch execution starting. canExecuteRules=$canExecuteRules, canExecuteSafeSenders=$canExecuteSafeSenders');
       AppLogger.scan('Step 6b: Batch sizes: delete=${deleteEmails.length}, moveToJunk=${moveToJunkEmails.length}, safeSender=${safeSenderMoveEmails.length}');
+      if (isLiveScan) {
+        await LiveScanLogger.log(
+          'Step 6b: Batch execution starting. canExecuteRules=$canExecuteRules '
+          'canExecuteSafeSenders=$canExecuteSafeSenders '
+          'sizes: delete=${deleteEmails.length} moveToJunk=${moveToJunkEmails.length} '
+          'safeSender=${safeSenderMoveEmails.length} target="$safeSenderTarget"',
+        );
+      }
 
       // --- Priority 1: Safe sender moves (rescue good emails first) ---
       AppLogger.scan('Step 6b-1: Safe sender move batch: ${safeSenderMoveEmails.length} emails to move (canExecuteSafeSenders=$canExecuteSafeSenders, target="$safeSenderTarget")');
@@ -335,12 +464,24 @@ class EmailScanner {
             safeSenderTarget,
           );
           AppLogger.scan('Step 6b-1: Safe sender move to "$safeSenderTarget": ${moveResult.successCount} succeeded, ${moveResult.failureCount} failed');
+          if (isLiveScan) {
+            await LiveScanLogger.log(
+              'Step 6b-1: Safe sender move to "$safeSenderTarget": '
+              '${moveResult.successCount} succeeded, ${moveResult.failureCount} failed',
+            );
+          }
           if (moveResult.failedIds.isNotEmpty) {
             AppLogger.warning('Safe sender move failures: ${moveResult.failedIds}');
+            if (isLiveScan) {
+              await LiveScanLogger.log('Step 6b-1: failures: ${moveResult.failedIds}');
+            }
           }
           batchErrors.addAll(moveResult.failedIds);
         } catch (e) {
           AppLogger.warning('Batch safe sender move failed entirely: $e');
+          if (isLiveScan) {
+            await LiveScanLogger.log('Step 6b-1: BATCH FAILED ENTIRELY: $e');
+          }
           for (final evaluated in safeSenderMoveEmails) {
             batchErrors[evaluated.message.id] = 'Move safe sender failed: $e';
           }
@@ -359,6 +500,25 @@ class EmailScanner {
             ),
           );
         }
+
+        // --- F91 (Sprint 39): Step 6b-1b -- post-move source-folder dedup ---
+        // AOL's classifier re-injects a COPY (new UID, same Message-ID) of a
+        // safe-sender message back into the source folder after we move it
+        // out. Reconcile by searching the source folder for the captured
+        // Message-ID and moving any matches to the deletedRuleFolder (Trash)
+        // with the same recoverable semantics as a normal Delete.
+        // Only messages that moved successfully are reconciled.
+        final movedSuccessfully = safeSenderMoveEmails
+            .where((e) => !batchErrors.containsKey(e.message.id))
+            .map((e) => e.message)
+            .toList();
+        await dedupSafeSenderSourceFolder(
+          platform: platform,
+          movedMessages: movedSuccessfully,
+          safeSenderTarget: safeSenderTarget,
+          deletedRuleFolder: deletedRuleFolder ?? 'Trash',
+          isLiveScan: isLiveScan,
+        );
       } else {
         // Log why safe sender batch is empty and record results
         final safeSenderEvaluated = evaluatedEmails.where((e) => e.action == EmailActionType.safeSender).toList();
@@ -416,9 +576,21 @@ class EmailScanner {
             FilterAction.delete,
           );
           AppLogger.scan('Step 6b-2b: takeActionBatch (delete) DONE: ${deleteResult.successCount} succeeded, ${deleteResult.failureCount} failed');
+          if (isLiveScan) {
+            await LiveScanLogger.log(
+              'Step 6b-2: Delete batch DONE: '
+              '${deleteResult.successCount} succeeded, ${deleteResult.failureCount} failed',
+            );
+            if (deleteResult.failedIds.isNotEmpty) {
+              await LiveScanLogger.log('Step 6b-2: failures: ${deleteResult.failedIds}');
+            }
+          }
           batchErrors.addAll(deleteResult.failedIds);
         } catch (e) {
           AppLogger.warning('Batch delete failed entirely: $e');
+          if (isLiveScan) {
+            await LiveScanLogger.log('Step 6b-2: BATCH FAILED ENTIRELY: $e');
+          }
           for (final msg in deleteMessages) {
             batchErrors[msg.id] = 'Delete failed: $e';
           }
@@ -483,9 +655,21 @@ class EmailScanner {
             FilterAction.moveToJunk,
           );
           AppLogger.scan('Step 6b-3: takeActionBatch (moveToJunk) DONE: ${junkResult.successCount} succeeded, ${junkResult.failureCount} failed');
+          if (isLiveScan) {
+            await LiveScanLogger.log(
+              'Step 6b-3: moveToJunk batch DONE: '
+              '${junkResult.successCount} succeeded, ${junkResult.failureCount} failed',
+            );
+            if (junkResult.failedIds.isNotEmpty) {
+              await LiveScanLogger.log('Step 6b-3: failures: ${junkResult.failedIds}');
+            }
+          }
           batchErrors.addAll(junkResult.failedIds);
         } catch (e) {
           AppLogger.warning('Batch moveToJunk failed entirely: $e');
+          if (isLiveScan) {
+            await LiveScanLogger.log('Step 6b-3: BATCH FAILED ENTIRELY: $e');
+          }
           for (final evaluated in moveToJunkEmails) {
             batchErrors[evaluated.message.id] = 'Move to junk failed: $e';
           }
@@ -554,13 +738,74 @@ class EmailScanner {
       // 7. Complete scan ([NEW] SPRINT 4: Now async to persist final state)
       AppLogger.scan('Step 7: Completing scan. Final counts: found=${scanProvider.totalEmails}, processed=${scanProvider.processedCount}, deleted=${scanProvider.deletedCount}, moved=${scanProvider.movedCount}, safe=${scanProvider.safeSendersCount}, noRule=${scanProvider.noRuleCount}, errors=${scanProvider.errorCount}');
       await scanProvider.completeScan();
+
+      // Sprint 38 Round 1 (F86 revised, post-retro 2026-05-16): reload
+      // rules + safe senders from the DB so the NEXT scan picks up any
+      // rule changes the user made during this scan or while reviewing
+      // results. Demo platform exempt (uses MockEmailData, not DB).
+      if (platformId != 'demo') {
+        try {
+          await ruleSetProvider.loadRules();
+          await ruleSetProvider.loadSafeSenders();
+          AppLogger.scan(
+              'F86: reloaded rules + safe senders after scan complete '
+              '(rules=${ruleSetProvider.rules.rules.length}, '
+              'safe=${ruleSetProvider.safeSenders.safeSenders.length})');
+        } catch (e) {
+          AppLogger.warning('F86: post-scan rule reload failed (non-fatal): $e');
+        }
+      }
+
+      // Sprint 38 Round 4 (2026-05-17): write the oldest-unaddressed-no-rule
+      // UID cursor per folder so the next scan re-evaluates the still-
+      // unaddressed backlog against any newly-added rules. IMAP-only;
+      // Gmail OAuth and demo are no-ops. See _updateOldestNoRuleCursors
+      // dartdoc for the algorithm.
+      // platform is guaranteed non-null at this point (throws earlier
+      // if PlatformRegistry.getPlatform returned null), so no nullcheck.
+      try {
+        await _updateOldestNoRuleCursors(evaluatedEmails, platform);
+      } catch (e) {
+        AppLogger.warning('Round 4: oldest-no-rule cursor update failed (non-fatal): $e');
+      }
+
       AppLogger.scan('========== SCAN COMPLETE ==========');
+
+      // F90 (Sprint 39): write live-scan summary + per-account CSV/XLSX
+      // export. Mirrors `BackgroundScanWindowsWorker` end-of-scan logging.
+      if (isLiveScan) {
+        await LiveScanLogger.log(
+          'SCAN COMPLETE accountId=${Redact.accountId(accountId)} '
+          'found=${scanProvider.totalEmails} processed=${scanProvider.processedCount} '
+          'deleted=${scanProvider.deletedCount} moved=${scanProvider.movedCount} '
+          'safe=${scanProvider.safeSendersCount} noRule=${scanProvider.noRuleCount} '
+          'errors=${scanProvider.errorCount}',
+        );
+        await LiveScanLogger.exportCsvIfEnabled(
+          scanProvider: scanProvider,
+          accountId: accountId,
+          settingsStore: _settingsStore,
+        );
+      }
     } catch (e, st) {
       // Handle scan error
       AppLogger.error('SCAN FAILED with exception', error: e, stackTrace: st);
+      if (isLiveScan) {
+        // Note: exception text is included as-is. It may transitively
+        // contain identifiers in rare cases (e.g., an IMAP error echoing
+        // a UID search query that included an email-shaped pattern), but
+        // suppressing exception text would make scan failures undebuggable.
+        // If a specific exception type proves to leak PII in practice,
+        // add targeted scrubbing here.
+        await LiveScanLogger.log('SCAN FAILED accountId=${Redact.accountId(accountId)} error=$e');
+      }
       await scanProvider.errorScan('Scan failed: $e');
       rethrow;
     } finally {
+      // Sprint 38 F86: always deregister the rule-set listener, including
+      // on error paths, to avoid leaking listeners across scans.
+      ruleSetProvider.removeListener(_onRuleSetChanged);
+
       // 8. Disconnect
       if (platform != null) {
         try {
@@ -570,6 +815,143 @@ class EmailScanner {
           // Log but do not throw
           AppLogger.warning('Disconnect error: $e');
         }
+      }
+    }
+  }
+
+  /// F91 (Sprint 39): post-safe-sender-move source-folder dedup (AOL
+  /// copy-not-move reconciliation).
+  ///
+  /// After safe-sender messages are moved out of their source folder (for
+  /// example AOL Bulk Mail) into [safeSenderTarget], AOL's classifier
+  /// re-injects a COPY with a NEW UID and the SAME RFC 5322 Message-ID back
+  /// into the source folder. Because the app uses IMAP UID as identity, the
+  /// next scan would treat that copy as a fresh safe-sender hit and rescue
+  /// it again -- an infinite loop plus source-folder clutter.
+  ///
+  /// This step searches each source folder for the captured Message-ID and
+  /// moves any matches to [deletedRuleFolder] (Trash), with the same
+  /// recoverable semantics as a normal Delete. The dedup count is recorded on
+  /// the scan provider via [EmailScanProvider.recordSafeSenderDedup] so the
+  /// summary can surface it.
+  ///
+  /// Skips are intentional and per-message / per-platform:
+  ///   - [messageIdHeader] is null (no stable cross-folder identity).
+  ///   - The platform is Gmail OAuth (uses labels, not folders) or any
+  ///     non-IMAP adapter: searchByMessageId returns empty, but we also
+  ///     short-circuit so no needless work runs.
+  ///   - The source folder equals [safeSenderTarget] (the message was moved
+  ///     within the same folder; there is nothing to reconcile).
+  ///
+  /// Failures degrade to a no-op: a search or move error is logged but never
+  /// breaks the scan, because dedup is a reconciliation enhancement.
+  ///
+  /// Exposed (not private) and marked [visibleForTesting] so the dedup logic
+  /// can be exercised with a fake [SpamFilterPlatform] and mocked IMAP search
+  /// responses without a live server. Production calls it from `scanInbox`
+  /// only.
+  @visibleForTesting
+  Future<void> dedupSafeSenderSourceFolder({
+    required SpamFilterPlatform platform,
+    required List<EmailMessage> movedMessages,
+    required String safeSenderTarget,
+    required String deletedRuleFolder,
+    required bool isLiveScan,
+  }) async {
+    // Gmail OAuth uses labels, not folders -- there is no source folder to
+    // reconcile. Any non-IMAP adapter is also skipped (its searchByMessageId
+    // returns empty via the BatchOperationsMixin default).
+    if (platform is! GenericIMAPAdapter) {
+      AppLogger.scan('Step 6b-1b: dedup skipped (platform ${platform.runtimeType} is not IMAP-backed)');
+      return;
+    }
+
+    // Group the messages to reconcile by their source folder, skipping any
+    // message with no Message-ID or whose source folder is the target.
+    final bySourceFolder = <String, List<EmailMessage>>{};
+    var skippedNoMessageId = 0;
+    var skippedSameFolder = 0;
+    for (final message in movedMessages) {
+      final messageId = message.messageIdHeader;
+      if (messageId == null || messageId.isEmpty) {
+        skippedNoMessageId++;
+        continue;
+      }
+      final sourceFolder = message.folderName;
+      if (sourceFolder.toLowerCase() == safeSenderTarget.toLowerCase()) {
+        skippedSameFolder++;
+        continue;
+      }
+      bySourceFolder.putIfAbsent(sourceFolder, () => []).add(message);
+    }
+
+    AppLogger.scan(
+      'Step 6b-1b: dedup candidates=${movedMessages.length}, '
+      'skippedNoMessageId=$skippedNoMessageId, skippedSameFolder=$skippedSameFolder, '
+      'folders=${bySourceFolder.keys.toList()}',
+    );
+    if (isLiveScan) {
+      await LiveScanLogger.log(
+        'Step 6b-1b: dedup candidates=${movedMessages.length} '
+        'skippedNoMessageId=$skippedNoMessageId skippedSameFolder=$skippedSameFolder '
+        'folders=${bySourceFolder.keys.toList()}',
+      );
+    }
+
+    if (bySourceFolder.isEmpty) return;
+
+    var totalDeduped = 0;
+    for (final entry in bySourceFolder.entries) {
+      final sourceFolder = entry.key;
+      for (final message in entry.value) {
+        final messageId = message.messageIdHeader!;
+        try {
+          final matches = await platform.searchByMessageId(sourceFolder, messageId);
+          if (matches.isEmpty) {
+            // Clean move: no AOL re-injection for this message.
+            continue;
+          }
+
+          final moveResult = await platform.moveToFolderBatch(
+            matches,
+            deletedRuleFolder,
+          );
+          totalDeduped += moveResult.successCount;
+
+          AppLogger.scan(
+            'Step 6b-1b: AOL re-injection reconciled in "$sourceFolder" for '
+            'from="${message.from}" messageId="$messageId": '
+            '${matches.length} found, ${moveResult.successCount} moved to '
+            '"$deletedRuleFolder", ${moveResult.failureCount} failed',
+          );
+          if (isLiveScan) {
+            await LiveScanLogger.log(
+              'Step 6b-1b: AOL re-injection reconciled in "$sourceFolder" '
+              'messageId="$messageId" found=${matches.length} '
+              'moved=${moveResult.successCount} failed=${moveResult.failureCount} '
+              'target="$deletedRuleFolder"',
+            );
+          }
+        } catch (e) {
+          AppLogger.warning(
+            'Step 6b-1b: dedup failed for messageId="$messageId" in '
+            '"$sourceFolder": $e',
+          );
+          if (isLiveScan) {
+            await LiveScanLogger.log(
+              'Step 6b-1b: dedup FAILED messageId="$messageId" '
+              'folder="$sourceFolder": $e',
+            );
+          }
+        }
+      }
+    }
+
+    if (totalDeduped > 0) {
+      scanProvider.recordSafeSenderDedup(totalDeduped);
+      AppLogger.scan('Step 6b-1b: dedup COMPLETE -- removed $totalDeduped source-folder duplicate(s)');
+      if (isLiveScan) {
+        await LiveScanLogger.log('Step 6b-1b: dedup COMPLETE removed=$totalDeduped');
       }
     }
   }
@@ -628,6 +1010,304 @@ class EmailScanner {
         } catch (_) {}
       }
       rethrow;
+    }
+  }
+
+  /// Sprint 38 F6c Phase 2 (Issue #250) + Sprint 38 Round 1 IMAP extension
+  /// (post-retro): Fetch messages for a single folder using whichever
+  /// incremental-scan capability the platform exposes, falling back to the
+  /// provider-agnostic full-folder fetch on first scan or unsupported
+  /// platforms.
+  ///
+  /// Three paths:
+  ///
+  ///   1. **Gmail OAuth** (`GmailApiAdapter`, platformId='gmail'):
+  ///      account-wide historyId cursor stored in `accounts.last_history_id`.
+  ///      First scan -> full fetch + capture historyId. Subsequent scans ->
+  ///      `users.history.list` from cursor. On expiry -> fall back to full
+  ///      fetch + re-capture.
+  ///
+  ///   2. **IMAP-backed providers** (`GenericIMAPAdapter`, platformId
+  ///      in {'aol', 'gmail-imap', 'yahoo', 'imap', ...}): per-folder UID
+  ///      cursor stored in `account_folder_cursors` keyed by
+  ///      (accountId, folderName, 'imap_uid'). First scan -> full fetch +
+  ///      capture max UID. Subsequent scans -> `UID SEARCH UID lastUid+1:*`.
+  ///      No "expired" state (UIDs are monotonically increasing).
+  ///
+  ///   3. **Other** (demo, etc.): provider-agnostic full-folder fetch via
+  ///      `platform.fetchMessages` -- no cursor, no incremental.
+  ///
+  /// All three paths persist the new cursor after a successful scan so the
+  /// next scan resumes correctly. After a Gmail-expiry fallback or an IMAP
+  /// first scan, the cursor is captured for the next run.
+  Future<List<EmailMessage>> _fetchFolderMessages({
+    required SpamFilterPlatform platform,
+    required String folderName,
+    required int daysBack,
+  }) async {
+    if (platform is GmailApiAdapter) {
+      return _fetchFolderMessagesGmail(platform, folderName, daysBack);
+    }
+    if (platform is GenericIMAPAdapter) {
+      return _fetchFolderMessagesImap(platform, folderName, daysBack);
+    }
+    // Other (demo, etc.) -- no incremental, full fetch.
+    return platform.fetchMessages(
+      daysBack: daysBack,
+      folderNames: [folderName],
+    );
+  }
+
+  Future<List<EmailMessage>> _fetchFolderMessagesGmail(
+    GmailApiAdapter gmail,
+    String folderName,
+    int daysBack,
+  ) async {
+    final dbHelper = DatabaseHelper();
+    final lastHistoryId = await dbHelper.getLastHistoryId(accountId);
+
+    if (lastHistoryId == null) {
+      // First-ever Gmail scan for this account. Full-fetch, then capture
+      // historyId so the next scan can run incrementally.
+      AppLogger.scan('Step 4: Gmail first-scan for $folderName -- full fetch');
+      final messages = await gmail.fetchMessages(
+        daysBack: daysBack,
+        folderNames: [folderName],
+      );
+      final newHistoryId = await gmail.getCurrentHistoryId();
+      if (newHistoryId != null) {
+        await dbHelper.setLastHistoryId(accountId, newHistoryId);
+        AppLogger.scan('Step 4: Persisted initial historyId=$newHistoryId for $accountId');
+      }
+      return messages;
+    }
+
+    // Subsequent Gmail scan: incremental delta from persisted historyId.
+    AppLogger.scan(
+        'Step 4: Gmail incremental scan for $folderName from historyId=$lastHistoryId');
+    final result = await gmail.fetchMessagesIncremental(
+      startHistoryId: lastHistoryId,
+      folderForLabel: folderName,
+    );
+
+    if (result.isExpired) {
+      // Gmail rotated the history window; we have to start over with a full
+      // fetch and re-capture historyId.
+      AppLogger.scan('Step 4: Gmail historyId expired -- falling back to full scan');
+      await dbHelper.setLastHistoryId(accountId, null);
+      final messages = await gmail.fetchMessages(
+        daysBack: daysBack,
+        folderNames: [folderName],
+      );
+      final newHistoryId = await gmail.getCurrentHistoryId();
+      if (newHistoryId != null) {
+        await dbHelper.setLastHistoryId(accountId, newHistoryId);
+        AppLogger.scan('Step 4: Re-captured historyId=$newHistoryId after expiry');
+      }
+      return messages;
+    }
+
+    // Incremental scan succeeded. Persist the new historyId for next time.
+    if (result.newHistoryId != null) {
+      await dbHelper.setLastHistoryId(accountId, result.newHistoryId);
+      AppLogger.scan(
+          'Step 4: Persisted new historyId=${result.newHistoryId} after incremental scan');
+    }
+    return result.emails;
+  }
+
+  Future<List<EmailMessage>> _fetchFolderMessagesImap(
+    GenericIMAPAdapter imap,
+    String folderName,
+    int daysBack,
+  ) async {
+    // Sprint 38 Round 4 redesign (2026-05-17): cursor semantics inverted.
+    //
+    // The cursor (cursorTypeOldestNoRuleUid) now points at the OLDEST UID
+    // still tagged as no-rule from a prior scan. When set, this scan
+    // re-fetches the backlog from cursor forward via `UID SEARCH UID
+    // cursor:*` PLUS anything newer that arrived since the last scan.
+    // The user expects to keep seeing the same no-rules pool until they
+    // address it; new rules get a chance to match the backlog this way.
+    //
+    // When the cursor is null (no unaddressed backlog OR first-ever scan
+    // for this account+folder), the scan falls back to the configured
+    // `daysBack` time window -- the existing baseline.
+    //
+    // The cursor is written by the post-scan computation in
+    // `scanInbox()` and by the post-rule-add handlers in
+    // `results_display_screen.dart`. This method only READS the cursor.
+    final dbHelper = DatabaseHelper();
+    final cursorStr = await dbHelper.getFolderCursor(accountId, folderName);
+    final oldestNoRuleUid = cursorStr == null ? null : int.tryParse(cursorStr);
+
+    // S38-CI-4: resolve the daysBack UID floor for this folder now, while
+    // the IMAP connection is live and the mailbox is about to be selected.
+    // This populates `_daysBackUidFloorCache` so the post-scan cursor cap in
+    // `_updateOldestNoRuleCursors` can clamp WITHOUT a second SEARCH SINCE
+    // round-trip. One lookup per folder per scan (cached, including null).
+    await _resolveDaysBackUidFloor(imap, folderName, daysBack);
+
+    if (oldestNoRuleUid == null) {
+      // No unaddressed backlog. Standard time-window scan.
+      AppLogger.scan(
+          'Step 4: IMAP full-fetch for $folderName (daysBack=$daysBack, no no-rule backlog cursor)');
+      return imap.fetchMessages(
+        daysBack: daysBack,
+        folderNames: [folderName],
+      );
+    }
+
+    // Backlog cursor set -- re-scan from the oldest unaddressed no-rule
+    // UID forward. This re-evaluates the still-unaddressed pool against
+    // any rules / safe senders the user has added since the last scan,
+    // and also picks up anything newer that arrived in the meantime.
+    //
+    // Use startUid = cursor - 1 so the cursor itself is INCLUDED in the
+    // result (fetchMessagesIncremental does `UID startUid+1:*`).
+    AppLogger.scan(
+        'Step 4: IMAP backlog re-scan for $folderName from oldest no-rule UID=$oldestNoRuleUid');
+    final result = await imap.fetchMessagesIncremental(
+      startUid: oldestNoRuleUid - 1,
+      folderName: folderName,
+    );
+    AppLogger.scan(
+        'Step 4: IMAP backlog re-scan returned ${result.emails.length} messages (cursor was $oldestNoRuleUid)');
+    return result.emails;
+  }
+
+  /// S38-CI-4 (Sprint 39): resolve (and cache for the scan duration) the
+  /// daysBack UID floor for [folderName] -- the smallest IMAP UID newer
+  /// than `now - daysBack`. Runs `UID SEARCH SINCE` at most once per folder
+  /// per scan; subsequent calls within the same scan return the cached
+  /// value (including a cached null) without a second IMAP round-trip.
+  ///
+  /// Returns null when [daysBack] <= 0 ("scan all", no time floor), when
+  /// the window is empty, or when the lookup fails -- in all of which
+  /// cases the caller skips the cursor cap and preserves prior behavior.
+  Future<int?> _resolveDaysBackUidFloor(
+    GenericIMAPAdapter imap,
+    String folderName,
+    int daysBack,
+  ) async {
+    // daysBack <= 0 means "scan all" -- there is no time floor, so there is
+    // nothing to clamp against. Do not run a SEARCH; do not cache.
+    if (daysBack <= 0) return null;
+
+    if (_daysBackUidFloorCache.containsKey(folderName)) {
+      return _daysBackUidFloorCache[folderName];
+    }
+
+    final since = DateTime.now().subtract(Duration(days: daysBack));
+    final floor = await imap.firstUidSince(folderName, since);
+    _daysBackUidFloorCache[folderName] = floor;
+    AppLogger.scan(
+        'S38-CI-4: daysBack UID floor for "$folderName" = $floor (daysBack=$daysBack)');
+    return floor;
+  }
+
+  /// S38-CI-4 (Sprint 39): clamp a computed oldest-no-rule UID up to the
+  /// daysBack UID floor so a no-rule UID older than the retention window is
+  /// never persisted as the cursor (it ages out).
+  ///
+  /// Returns `max(computedOldest, daysBackUid)`. When [daysBackUid] is null
+  /// (daysBack=0 / "scan all", empty window, or a failed lookup), the
+  /// computed value passes through unchanged to preserve prior behavior.
+  ///
+  /// Pure function, extracted for unit testing the arithmetic without an
+  /// IMAP connection or DatabaseHelper.
+  @visibleForTesting
+  static int clampNoRuleCursor(int computedOldest, int? daysBackUid) {
+    if (daysBackUid == null) return computedOldest;
+    return computedOldest > daysBackUid ? computedOldest : daysBackUid;
+  }
+
+  /// S38-CI-4: test-only entry point for the per-scan daysBack UID-floor
+  /// cache so unit tests can assert the SEARCH SINCE lookup runs at most
+  /// once per folder per scan. Production callers use the private path via
+  /// `_fetchFolderMessagesImap`.
+  @visibleForTesting
+  Future<int?> resolveDaysBackUidFloorForTesting(
+    GenericIMAPAdapter imap,
+    String folderName,
+    int daysBack,
+  ) =>
+      _resolveDaysBackUidFloor(imap, folderName, daysBack);
+
+  /// S38-CI-4: test-only reset of the per-scan cache (production resets it
+  /// at each `scanInbox` start).
+  @visibleForTesting
+  void resetDaysBackUidFloorCacheForTesting() =>
+      _daysBackUidFloorCache.clear();
+
+  /// Sprint 38 Round 4 (2026-05-17): compute the oldest unaddressed
+  /// no-rule UID per scanned folder from the just-completed scan results,
+  /// and persist it as the cursor for the next scan.
+  ///
+  /// Walks the `evaluatedEmails` set, groups by folder, and for each
+  /// folder finds the smallest UID whose action is still
+  /// `EmailActionType.none`. Writes that UID to
+  /// `account_folder_cursors` with type `oldest_no_rule_uid`. If a folder
+  /// has zero no-rule emails this scan, the cursor for that folder is
+  /// cleared (the next scan falls back to `daysBack`).
+  ///
+  /// Called by `scanInbox()` after `completeScan()`. Idempotent: re-running
+  /// with the same data produces the same cursor.
+  ///
+  /// Non-IMAP platforms (Gmail OAuth, demo): no-op. Cursor table is
+  /// IMAP-scoped because UIDs are IMAP-specific.
+  Future<void> _updateOldestNoRuleCursors(
+    List<_EvaluatedEmail> evaluatedEmails,
+    SpamFilterPlatform platform,
+  ) async {
+    if (platform is! GenericIMAPAdapter) return;
+    if (evaluatedEmails.isEmpty) return;
+
+    final dbHelper = DatabaseHelper();
+
+    // Group no-rule UIDs by folder. Note: evaluated.email.id is a string
+    // (IMAP UIDs are persisted as strings via fromMap parsing), so parse
+    // back to int and skip anything that doesn't look like a UID.
+    final foldersTouched = <String>{};
+    final oldestPerFolder = <String, int>{};
+    for (final ev in evaluatedEmails) {
+      foldersTouched.add(ev.message.folderName);
+      if (ev.action != EmailActionType.none) continue;
+      final uid = int.tryParse(ev.message.id);
+      if (uid == null) continue;
+      final current = oldestPerFolder[ev.message.folderName];
+      if (current == null || uid < current) {
+        oldestPerFolder[ev.message.folderName] = uid;
+      }
+    }
+
+    for (final folder in foldersTouched) {
+      final oldest = oldestPerFolder[folder];
+      if (oldest == null) {
+        // No unaddressed no-rules in this folder this scan. Clear the
+        // cursor so the next scan reverts to the daysBack window.
+        await dbHelper.setFolderCursor(accountId, folder, null);
+        AppLogger.scan(
+            'Step 7b: cleared oldest-no-rule cursor for $folder (zero no-rules this scan)');
+      } else {
+        // S38-CI-4: cap the persisted cursor at the daysBack UID floor so a
+        // no-rule UID older than the retention window is NOT anchored as the
+        // cursor and ages out. The floor was cached during the IMAP fetch
+        // path (`_resolveDaysBackUidFloor`); a null floor (daysBack=0 /
+        // "scan all", empty window, or a failed lookup) skips the clamp and
+        // preserves prior behavior.
+        final daysBackUid = _daysBackUidFloorCache[folder];
+        final capped = clampNoRuleCursor(oldest, daysBackUid);
+        await dbHelper.setFolderCursor(accountId, folder, capped.toString());
+        if (capped != oldest) {
+          AppLogger.scan(
+              'Step 7b: persisted oldest-no-rule UID cursor=$capped for $folder '
+              '(capped up from computed=$oldest to daysBack floor=$daysBackUid)');
+        } else {
+          AppLogger.scan(
+              'Step 7b: persisted oldest-no-rule UID cursor=$capped for $folder');
+        }
+      }
     }
   }
 }

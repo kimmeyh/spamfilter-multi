@@ -2,7 +2,7 @@
 
 **Purpose**: Detailed architectural documentation for the spamfilter-multi Flutter application
 
-**Last Updated**: February 24, 2026
+**Last Updated**: June 20, 2026 (Sprint 42: F98 per-account background scanning per ADR-0039; F99 two-harness E2E testing; BUG-S37-2 ccTLD audit)
 
 ## SPRINT EXECUTION Documentation
 
@@ -91,7 +91,7 @@ Immutable data classes representing domain entities.
 
 | Model | Purpose | Key Fields |
 |-------|---------|------------|
-| **EmailMessage** | Normalized email representation | id, from, subject, body, headers, receivedDate, folderName |
+| **EmailMessage** | Normalized email representation | id, from, subject, body, headers, receivedDate, folderName, **messageIdHeader (RFC 5322 Message-ID, F91 Sprint 39)** |
 | **RuleSet** | Collection of spam filtering rules | version, settings, rules |
 | **Rule** | Individual spam filtering rule | name, enabled, conditions, actions, exceptions, executionOrder, metadata |
 | **RuleConditions** | Rule matching criteria | type (AND/OR), from[], header[], subject[], body[] |
@@ -184,7 +184,7 @@ Business logic and domain services.
 | **BackgroundScanWindowsWorker** | Headless worker for Windows Task Scheduler scans |
 | **BackgroundScanWorker** | Android WorkManager callback dispatcher |
 | **BackgroundScanManager** | Schedule/cancel background scans |
-| **WindowsTaskSchedulerService** | Create/manage Windows Task Scheduler tasks (ADR-0014) |
+| **WindowsTaskSchedulerService** | Create/manage Windows Task Scheduler tasks; per-account tasks (ADR-0014, ADR-0039 F98) -- `taskNameFor(accountId)`, enumerate/orphan cleanup |
 | **WindowsNotificationService** | Windows toast notifications via PowerShell WinRT (ADR-0018) |
 | **WindowsSystemTrayService** | System tray icon with context menu (ADR-0019) |
 | **PowershellScriptGenerator** | Generates PowerShell scripts for Task Scheduler and notifications |
@@ -200,7 +200,10 @@ Business logic and domain services.
 | **EmailAvailabilityChecker** | Check if email provider is reachable |
 | **AppLogger** | Keyword-based logging (EMAIL, RULES, EVAL, DB, AUTH, SCAN, ERROR, PERF, UI, DEBUG) |
 | **DataDeletionService** (F66, Sprint 33) | Per-account wipe (`deleteAccountData`) and full-app wipe (`wipeAllData`). Account-level clears credentials + scan results + email actions + unmatched emails + per-account settings + rate-limit state while preserving global rules/safe-senders/other accounts; full wipe calls `DatabaseHelper.deleteAllData` + `SecureCredentialsStore.deleteAllCredentials`. Used by Account Selection "Delete Account" and Settings > General "Delete All App Data" |
-| **DefaultRuleSetService** | Seed bundled rules on first launch; reset to defaults; SEC-1b marks seeded patterns as `bundled` provenance so they skip ReDoS checks. Includes F53 `ensureTldBlockRules` post-seed migration for existing installs |
+| **DefaultRuleSetService** | Seed bundled rules on first launch; reset to defaults; SEC-1b marks seeded patterns as `bundled` provenance so they skip ReDoS checks. Includes F53 `ensureTldBlockRules` post-seed migration for existing installs, plus the BUG-S37-2 ccTLD gap-fill reconciling the bundled `top_level_domain` set against the ISO 3166-1 list. **Current bundled coverage (BUG-S37-2 audit, Sprint 42): 247 of 248 IANA ccTLDs blocked -- only `.us` is unblocked** (`.uk`/`.ca` ARE blocked; the bundled list is an initial load the user overrides per-account via safe-sender rules). DB v6/v7 migrations remove malformed TLD typos (`.c`, `.giw`, `.sweepss`, ... and Sprint-42 `.sho`/`.sweeps`) |
+| **LiveScanLogger** (F90, Sprint 39 warmup) | Persists live-scan runtime log + per-account CSV/XLSX to `{appDataDir}/logs/`, env-aware path (dev/prod), append-mode, setting-gated CSV export. Parity with the background-scan log pipeline |
+| **AuthResultsParser** (F89, Sprint 39) | Parses `Authentication-Results` / `Received-SPF` / DKIM / ARC headers (RFC 8601, tolerant of AOL/Yahoo/Gmail variants) into an `EmailAuthResult {spf, dkim, dmarc, raw}`, and classifies to GREEN/YELLOW/RED/GREY. Drives the auth badge + warn-then-confirm dialog on rule / safe-sender quick-add prompts so a user does not whitelist a sender whose mail failed authentication |
+| **ManualRulePatternGenerator** (F25, Sprint 40) | Public utility (`lib/core/utils/manual_rule_pattern_generator.dart`) with 5 static methods: `generateTopLevelDomain`, `generateEntireDomain`, `generateExactDomain`, `generateExactEmail`, `generateFromPlaintext` (auto-detect). Extracted from `ManualRuleCreateScreen`'s previously-private generators so create-flow, edit-flow (F35 `RuleEditScreen`), and rule-test plaintext->regex conversion (F25) all share the same source of truth |
 
 ---
 
@@ -275,6 +278,10 @@ Both `GmailApiAdapter` and `GenericIMAPAdapter` implement `BatchOperationsMixin`
 
 Uses IMAP UID sequence sets to reduce round-trips from 3N to ~3 batch operations.
 
+**Sprint 39 IMAP capability additions** (`GenericIMAPAdapter`, default no-op on non-IMAP platforms via `SpamFilterPlatform`):
+- `searchByMessageId(folder, messageId)` (F91): `UID SEARCH HEADER Message-ID <id>` in a folder; used by the post-safe-sender-move source-folder dedup to find AOL re-injected copies.
+- `firstUidSince(folder, since)` (S38-CI-4): `UID SEARCH SINCE <date>` returning the smallest UID newer than `now - daysBack`; used to cap the `oldest_no_rule_uid` cursor at the retention window (cached once per folder per scan).
+
 #### Auth Adapters
 
 **GoogleAuthService** (ADR-0011):
@@ -312,9 +319,10 @@ SQLite database schema. See [ADR-0010](adr/0010-normalized-database-schema.md) f
 |-------|---------|------------|
 | **accounts** | Account metadata tracking | account_id (PK), platform_id, email, display_name, date_added, last_scanned |
 | **scan_results** | Aggregate scan results per scan | id (PK), account_id (FK), scan_type, scan_mode, started_at, completed_at, total_emails, processed/deleted/moved/safe/no_rule/error counts, status, folders_scanned |
-| **email_actions** | Individual email results within a scan | id (PK), scan_result_id (FK), email_id, email_from, email_subject, email_folder, action_type, matched_rule_name, matched_pattern, is_safe_sender, success |
-| **rules** | Imported rules (dual-write from YAML) | name (UNIQUE), enabled, execution_order, condition_type, condition_from/header/subject/body, action_delete, action_move_to_folder, exception fields, metadata |
-| **safe_senders** | Whitelist patterns (dual-write from YAML) | pattern (UNIQUE), added_date, source, enabled |
+| **email_actions** | Individual email results within a scan | id (PK), scan_result_id (FK), email_id, email_from, email_subject, email_folder, action_type, matched_rule_name, matched_pattern, is_safe_sender, success, **rfc5322_message_id (DB v6, F91)** |
+| **rules** | Imported rules (dual-write from YAML) | name (UNIQUE), enabled, execution_order, condition_type, condition_from/header/subject/body, action_delete, action_move_to_folder, exception fields, metadata, **created_with_auth_state (DB v6, F89)** |
+| **safe_senders** | Whitelist patterns (dual-write from YAML) | pattern (UNIQUE), added_date, source, enabled, **created_with_auth_state (DB v6, F89)** |
+| **account_folder_cursors** (DB v5, Sprint 38) | Per-(account, folder) IMAP incremental-scan cursors, incl. the `oldest_no_rule_uid` cursor capped at the daysBack window (S38-CI-4, Sprint 39) | account_id, folder_name, cursor_type, cursor_value, updated_at (PK: account_id, folder_name, cursor_type) |
 | **app_settings** | Global app settings | key-value pairs |
 | **account_settings** | Per-account setting overrides (ADR-0013) | account_id, setting key-value pairs |
 | **background_scan_log** | Background scan execution logs | timestamp, account_id, status, stats |
@@ -325,6 +333,9 @@ SQLite database schema. See [ADR-0010](adr/0010-normalized-database-schema.md) f
 - v1: Initial schema (Sprint 12)
 - v2: Pattern classification columns on rules (Sprint 20)
 - v3: `auth_rate_limit` table for failed-auth throttling (SEC-22, Sprint 33)
+- v4: `last_history_id` on accounts for Gmail historyId incremental scans (F6c, Sprint 37)
+- v5: `account_folder_cursors` table for IMAP incremental-scan UID cursors (Sprint 38)
+- v6: `email_actions.rfc5322_message_id` (F91 AOL copy-not-move dedup); `created_with_auth_state` on `rules` + `safe_senders` (F89 auth-state snapshot); one-time cleanup removing 6 malformed bundled TLD rules (BUG-S37-2) (Sprint 39)
 
 **Indexes**: 10+ targeted indexes for fast lookups (by platform, account, completion time, scan ID, folder, no-rule matches).
 
@@ -461,26 +472,44 @@ ScanProgressScreen
 Navigate to ResultsDisplayScreen
 ```
 
-### Background Scanning Flow (Windows, ADR-0014)
+### Background Scanning Flow (Windows, ADR-0014 + ADR-0039 per-account, F98 Sprint 42)
+
+Background scanning is **per account** (ADR-0039): there is one Windows Task
+Scheduler task per enabled account, named
+`SpamFilterBackgroundScan_<sanitizedAccountId><envSuffix>`, whose action launches
+the executable with `--background-scan --account-id=<accountId>`. Each task uses a
+`-RandomDelay` (sized to its interval) so multiple accounts' tasks do not fire
+simultaneously and contend for the single SQLite DB. A one-time migration
+(`PerAccountBgMigration`) seeds per-account `background_enabled` / `background_frequency`
+overrides from the legacy global flag on first launch; `main.dart` startup
+reconciles per-account tasks and cleans up the legacy global + orphaned tasks.
 
 ```
-Windows Task Scheduler triggers executable with --background-scan flag
+Windows Task Scheduler fires the PER-ACCOUNT task
+  --background-scan --account-id=<accountId>
   |
   v
-main.dart detects BackgroundModeService.isBackgroundMode
+main.dart detects BackgroundModeService.isBackgroundMode +
+  reads BackgroundModeService.backgroundAccountId
   |
   v
-BackgroundScanWindowsWorker.executeBackgroundScan()
-  |- Initialize AppPaths, DatabaseHelper, RuleSetProvider
-  |- Get all saved account IDs from SecureCredentialsStore
-  |- FOR EACH account with background scanning enabled:
+BackgroundScanWindowsWorker.executeBackgroundScan(accountId: <id>)
+  |- Initialize AppPaths, DatabaseHelper (WAL + busy_timeout=30s), RuleSetProvider
+  |- Get saved account IDs; narrow to the ONE named account (legacy: all accounts
+  |    when accountId is null -- backward compatibility for un-migrated tasks)
+  |- For that account (retry-on-DB-lock: 1 min x 20):
   |    |- Load per-account settings (folders, scan mode, frequency)
-  |    |- Create EmailScanner
   |    |- scanInbox(daysBack, folders, scanType='background')
-  |    |- Log results to BackgroundScanLogStore
+  |    |- Log results to BackgroundScanLogStore + per-account log file
+  |       ({prefix}background_scan_<sanitizedAccountId>_v{VERSION}.log)
   |    |- Send Windows toast notification
   |- Exit with code 0 (success) or 1 (failure)
 ```
+
+**Android** (ADR-0039): one WorkManager unique periodic task per enabled account
+(`background_scan_task::<accountId>`) carrying the accountId in `inputData`;
+`callbackDispatcher` routes it to a single-account scan. First-run `initialDelay`
+is randomized (1..N min) for the same anti-collision reason.
 
 ### Rule Evaluation Flow (ADR-0005)
 
@@ -528,7 +557,9 @@ RuleEvaluator.evaluate(EmailMessage)
 | **email_detail_view.dart** | Full email details display |
 | **settings_screen.dart** | App configuration (General, Account, Manual Scan, Background tabs). General tab hosts Privacy & Logging toggles (auth logging, unmatched retention, cert pinning) and the "Delete All App Data" action (F66) |
 | **gmail_oauth_screen.dart** | Gmail OAuth flow (legacy WebView) |
-| **help_screen.dart** (F54, Sprint 33) | Scrollable single-page Help screen with one anchored section per primary screen. `HelpSection` enum + `openHelp(context, section)` helper; every primary AppBar has a Help icon that deep-links to that screen's section |
+| **help_screen.dart** (F54, Sprint 33) | Scrollable single-page Help screen with one anchored section per primary screen. `HelpSection` enum + `openHelp(context, section)` helper; every primary AppBar has a Help icon that deep-links to that screen's section. F75 (Sprint 40) added the `walkthrough` section: end-to-end first-use guide as Markdown asset per ADR-0038 (6 steps + recommendation hierarchy Entire Domain > Exact Email > TLD) |
+| **rule_edit_screen.dart** (F35, Sprint 40) | Full-screen rule editor mirroring `ManualRuleCreateScreen`'s structure but pre-populating from an existing `Rule` and calling `RuleSetProvider.updateRule()` instead of insert. Dual-mode: guided plaintext-to-regex (via `ManualRulePatternGenerator`) OR direct-regex with ReDoS + IANA validation. Reached via the "Edit" button in the Manage Rules `_showRuleDetails` AlertDialog, alongside F25's "Test" button. `updateRule` rethrows on UNIQUE-violation per BUG-S39-2 discipline |
+| **folder_selection_screen.dart** (F37, Sprint 40 enhancement) | Two-level folder presentation: in multi-select mode (Default Folders), folders are grouped into depth-2 `ExpansionTile`s by parent path using each folder's `FolderInfo.hierarchyDelimiter` (`groupFoldersForTree` pure fn); parent rows are expand-only (no checkbox -- IMAP `\NoSelect` rationale). In single-select mode (Safe Sender / Deleted Rule target), `reorderForSingleSelect` places `CanonicalFolder.inbox` first, `CanonicalFolder.trash` second, rest alphabetical |
 
 ### Widgets (`lib/ui/widgets/`)
 
@@ -538,6 +569,25 @@ RuleEvaluator.evaluate(EmailMessage)
 | **empty_state.dart** | Empty state placeholder |
 | **error_display.dart** | Error display component |
 | **skeleton_loader.dart** | Loading skeleton UI |
+| **list_selection_controller.dart** (S38-CI-3, Sprint 39) | `ListSelectionController<T>` mixin: multi-row selection model for list screens -- Shift+Click range-extend (anchor preserved), Ctrl/Cmd+Click disjoint toggle, Ctrl-drag swept range. Used by Manage Rules + Manage Safe Senders |
+| **email_auth_badge.dart** + **auth_warning_dialog.dart** (F89, Sprint 39) | GREEN/YELLOW/RED/GREY auth badge computed from `EmailAuthResult`; RED-state warn-then-confirm dialog (per-protocol plain-English explanation + alternatives) gating safe-sender quick-add on authentication-failed mail |
+
+### Adapter Model Extensions (Sprint 40)
+
+`FolderInfo.hierarchyDelimiter` (String, default `'/'`) added to `lib/adapters/email_providers/spam_filter_platform.dart` for F37. Populated per adapter:
+- **GenericIMAPAdapter**: live from `enough_mail` `Mailbox.pathSeparator` (the IMAP LIST response delimiter; e.g., AOL returns `'/'`, some providers return `'.'`)
+- **GmailApiAdapter**: hardcoded `'/'` (Gmail labels use `/` for nesting; no delimiter exposed by the Labels API)
+- **MockEmailProvider**: hardcoded `'/'` for test consistency
+- **OutlookAdapter**: unset (listFolders is UnimplementedError; default `'/'` will apply when implemented)
+
+Consumed by `folder_selection_screen.dart`'s `groupFoldersForTree(folders)` -- no hardcoded `/` in the tree-grouping logic.
+
+### Test Tooling (Sprint 40)
+
+| Tool | Purpose |
+|------|---------|
+| **scripts/run-winwright-tests.ps1** (F79, Sprint 40 enhancement) | Unattended WinWright sweep runner. Extends Sprint 34's runner with `-SnapshotDb` / `-DryRun` / `-TestSnapshotOnly` / `-FailOnDrift` params and a pre/post dev-DB snapshot guard. Exits non-zero on either WinWright script failure OR detected DB drift |
+| **scripts/winwright-db-snapshot.ps1** (F79, Sprint 40) | DB-snapshot helper (dot-sourced into the runner). Snapshots `rules`, `safe_senders`, `settings` tables via `sqlite3` (uses Android SDK's `sqlite3.exe`; no new dep). `Compare-DbSnapshots` reports any row added/removed/modified as `[LEAK] table '<t>' added/removed row: <row>`. `-SelfTest` mode injects a synthetic bogus row, verifies drift detection, then cleans up -- no running app or WinWright required for self-verification |
 
 ### UI Standards (ADR-0037)
 
@@ -629,7 +679,7 @@ mobile-app/
 - Requires Firebase configuration (`google-services.json`) for Google Sign-In
 - Emulator must use "Google APIs" image (NOT AOSP) for Google Sign-In
 - Multi-account support via unique accountId (`{platformId}-{email}`)
-- Background scanning via WorkManager (implementation in progress)
+- Background scanning via WorkManager -- per-account unique tasks (ADR-0039 / F98, Sprint 42)
 
 ### Windows (Primary Development Platform)
 - Browser-based OAuth with PKCE + loopback redirect (localhost:8080)
@@ -709,13 +759,21 @@ mobile-app/
 - Email operations on real accounts (AOL, Gmail)
 - UI workflows on target devices (Windows desktop, Android emulator)
 
-### Automated Desktop E2E Tests (Sprint 27+)
+### Automated Desktop E2E Tests -- TWO complementary harnesses (Sprint 27+; F99 Sprint 42)
+
+**1. WinWright (out-of-process UIA).**
 - **Tool**: civyk-winwright MCP server (v2.0.0) at `C:\Tools\WinWright\`
-- **Method**: Windows UI Automation (UIA3/MSAA) — reads accessibility tree to interact with running Flutter Desktop app
-- **Scope**: Screen navigation, button clicks, form inputs, visual verification via screenshots
-- **Limitation**: Flutter Windows exposes MSAA (not full UIA); element discoverability depends on Semantics widget usage
-- **Script replay**: Recorded interaction sessions replayed deterministically via `winwright run`
-- **Reference**: See TESTING_STRATEGY.md for detailed usage and commands
+- **Method**: Windows UI Automation (UIA3/MSAA) — reads the accessibility tree of the running Flutter Desktop app
+- **Scope**: Read-only screen navigation, accessibility-tree coverage on the real window (the 6 green scripts)
+- **Limitation**: Flutter Windows exposes MSAA (not full UIA); flaky on Flutter dialog/picker-**settle** boundaries (the `run` runner has no wait/assert primitive) -- create/save (F56) and folder-picker (F37) scripts were therefore moved to the integration_test lane
+- **Runner**: `scripts/run-winwright-tests.ps1` (6 read-only scripts + pre/post DB-snapshot drift guard)
+
+**2. Flutter `integration_test` (in-VM) -- F99, Sprint 42, pre-MVP.**
+- **Method**: drives the real widget tree in the Dart VM by `Key`/`Finder` with `pumpAndSettle()` -- deterministic; immune to UIA-exposure / DPI / cursor / dialog-settle flakiness
+- **Scope**: create/delete lifecycle (rules + safe senders), folder picker, layout-bounds regression (the F76 goal WinWright's CLI could not deliver)
+- **DB isolation**: isolated temp DB per test via the `AppPaths.testOverrideBaseDir` test seam (null in production); never touches the dev DB. Modes: `bootDbOnly` (seeded temp DB) / `bootAppWithDevDbCopy` (copy dev DB, delete on teardown)
+- **Runner**: `scripts/run-integration-tests.ps1` -- **one `flutter test` process per file** (isolates process-wide singletons); within a file, multiple `testWidgets` share one process with no app shutdown between them
+- **Reference**: See TESTING_STRATEGY.md "Two E2E Harnesses" for which to use when, the per-file execution model, and the test seams
 
 **Target Coverage**: 95%+ for core business logic
 

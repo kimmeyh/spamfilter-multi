@@ -20,10 +20,13 @@ import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:sqflite/sqflite.dart';
 
+import '../../core/services/manual_rule_duplicate_checker.dart';
 import '../../core/services/pattern_compiler.dart';
 import '../../core/storage/database_helper.dart';
-import '../../core/utils/domain_validation.dart';
+import '../../core/utils/manual_rule_pattern_generator.dart';
+import '../testing/widget_keys.dart';
 import '../utils/accessibility_helper.dart';
+import 'help_screen.dart';
 
 /// Whether we are creating a block rule or a safe sender
 enum ManualRuleMode { blockRule, safeSender }
@@ -123,27 +126,18 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
     }
   }
 
-  /// Parse input and extract domain/email based on what the user entered
-  String _extractDomainFromInput(String input) {
-    input = input.trim().toLowerCase();
+  /// Parse input and extract domain/email based on what the user entered.
+  ///
+  /// Delegates to [ManualRulePatternGenerator.extractDomainFromInput] so the
+  /// parsing logic has a single source of truth shared with RuleTestScreen.
+  String _extractDomainFromInput(String input) =>
+      ManualRulePatternGenerator.extractDomainFromInput(input);
 
-    // Remove protocol if present
-    if (input.startsWith('http://')) input = input.substring(7);
-    if (input.startsWith('https://')) input = input.substring(8);
-
-    // Remove path, query string, fragment
-    final slashIndex = input.indexOf('/');
-    if (slashIndex > 0) input = input.substring(0, slashIndex);
-
-    // Remove port
-    final colonIndex = input.indexOf(':');
-    if (colonIndex > 0) input = input.substring(0, colonIndex);
-
-    return input;
-  }
-
-
-  /// Generate the regex pattern from user input
+  /// Generate the regex pattern from user input.
+  ///
+  /// Delegates to [ManualRulePatternGenerator] for the actual generation so
+  /// that RuleTestScreen (Sub-feature 2, F25) and future F35 (rule editing)
+  /// can reuse the same logic without duplication.
   void _generatePattern() {
     final input = _inputController.text.trim();
     if (input.isEmpty) {
@@ -155,72 +149,42 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
       return;
     }
 
-    String pattern = '';
-    String sourceDomain = '';
-    String? error;
-
+    PatternGenerationResult result;
     switch (_selectedType) {
       case ManualRuleType.topLevelDomain:
-        // Strip leading dot if present
-        var tld = input.toLowerCase().trim();
-        if (tld.startsWith('.')) tld = tld.substring(1);
-        final tldError = DomainValidation.validateTld(tld);
-        if (tldError != null) {
-          error = tldError;
-          break;
-        }
-        pattern = '@.*\\.$tld\$';
-        sourceDomain = '.*.$tld';
+        result = ManualRulePatternGenerator.generateTopLevelDomain(input);
         break;
-
       case ManualRuleType.entireDomain:
-        final cleaned = _extractDomainFromInput(input);
-        // If it looks like an email, extract just the domain part
-        String domain;
-        if (cleaned.contains('@')) {
-          domain = cleaned.split('@').last;
-        } else {
-          domain = cleaned;
-        }
-        final domainError = DomainValidation.validateDomain(domain);
-        if (domainError != null) {
-          error = domainError;
-          break;
-        }
-        final escapedDomain = RegExp.escape(domain);
-        pattern = '@(?:[a-z0-9-]+\\.)*$escapedDomain\$';
-        sourceDomain = domain;
+        result = ManualRulePatternGenerator.generateEntireDomain(input);
         break;
-
       case ManualRuleType.exactDomain:
-        final cleaned = _extractDomainFromInput(input);
-        String domain;
-        if (cleaned.contains('@')) {
-          domain = cleaned.split('@').last;
-        } else {
-          domain = cleaned;
-        }
-        final domainError = DomainValidation.validateDomain(domain);
-        if (domainError != null) {
-          error = domainError;
-          break;
-        }
-        final escapedDomain = RegExp.escape(domain);
-        pattern = '@$escapedDomain\$';
-        sourceDomain = domain;
+        result = ManualRulePatternGenerator.generateExactDomain(input);
         break;
-
       case ManualRuleType.exactEmail:
-        final cleaned = _extractDomainFromInput(input);
-        final emailError = DomainValidation.validateEmail(cleaned);
-        if (emailError != null) {
-          error = emailError;
-          break;
-        }
-        final escaped = RegExp.escape(cleaned);
-        pattern = '^$escaped\$';
-        sourceDomain = cleaned;
+        result = ManualRulePatternGenerator.generateExactEmail(input);
         break;
+    }
+
+    String pattern = result.pattern;
+    String? error = result.error;
+    // Derive sourceDomain from the cleaned input (mirrors original logic).
+    String sourceDomain = '';
+    if (result.isSuccess) {
+      final cleaned = _extractDomainFromInput(input);
+      switch (_selectedType) {
+        case ManualRuleType.topLevelDomain:
+          var tld = input.toLowerCase().trim();
+          if (tld.startsWith('.')) tld = tld.substring(1);
+          sourceDomain = '*.$tld';
+          break;
+        case ManualRuleType.entireDomain:
+        case ManualRuleType.exactDomain:
+          sourceDomain = cleaned.contains('@') ? cleaned.split('@').last : cleaned;
+          break;
+        case ManualRuleType.exactEmail:
+          sourceDomain = cleaned;
+          break;
+      }
     }
 
     // Validate pattern with ReDoS check
@@ -228,6 +192,7 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
       final redosWarnings = PatternCompiler.detectReDoS(pattern);
       if (redosWarnings.isNotEmpty) {
         error = 'Pattern rejected: ${redosWarnings.first}';
+        pattern = '';
       }
     }
 
@@ -237,6 +202,7 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
         RegExp(pattern, caseSensitive: false);
       } catch (e) {
         error = 'Invalid regex pattern: $e';
+        pattern = '';
       }
     }
 
@@ -290,10 +256,35 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
     }
   }
 
+  /// Render the user-facing message for a `_DuplicateOutcome`. Subsumption
+  /// outcomes name the existing covering rule so the user knows what is
+  /// already in place.
+  String _duplicateMessage(_DuplicateOutcome outcome) {
+    final kind = widget.mode == ManualRuleMode.blockRule
+        ? 'block rule'
+        : 'safe sender';
+    if (outcome.subsumingRule != null) {
+      return 'A $kind already covers this: ${outcome.subsumingRule!.displayLabel}.';
+    }
+    return widget.mode == ManualRuleMode.blockRule
+        ? 'A block rule with this pattern already exists.'
+        : 'A safe sender with this pattern already exists.';
+  }
+
   /// Map an exception to a user-facing message that does not leak internal
   /// detail. Logs already capture the full exception via _logger.e.
   String _userFriendlyErrorMessage(Object error) {
+    if (error is _DuplicateRuleException) {
+      return widget.mode == ManualRuleMode.blockRule
+          ? 'A block rule with this pattern already exists.'
+          : 'A safe sender with this pattern already exists.';
+    }
     if (error is DatabaseException) {
+      // Safe-sender UNIQUE constraint fallback: safe_senders.pattern has a
+      // schema-level UNIQUE index, so the pre-insert check in
+      // ManualRuleDuplicateChecker is primary but the DB is the belt-and-braces
+      // second line of defense. Block rules have no such constraint -- the
+      // pre-insert check is the only line of defense there.
       if (error.isUniqueConstraintError()) {
         return widget.mode == ManualRuleMode.blockRule
             ? 'A block rule with this pattern already exists.'
@@ -302,6 +293,86 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
       return 'Could not save -- a database error occurred. See logs for details.';
     }
     return 'Could not save. See logs for details.';
+  }
+
+  /// Pre-confirm duplicate check. Called from _confirmAndSave BEFORE the
+  /// Confirm dialog so duplicates are surfaced with an error instead of a
+  /// misleading confirmation step.
+  ///
+  /// Returns a non-null `_DuplicateOutcome` if the rule cannot be saved, or
+  /// `null` if it is unique. Sprint 37 BUG-S36-1 extends the original
+  /// boolean return shape to also report semantic subsumption (an existing
+  /// broader rule that already covers this one) so the error message can
+  /// name the covering rule.
+  Future<_DuplicateOutcome?> _isDuplicate() async {
+    final dbHelper = DatabaseHelper();
+    final db = await dbHelper.database;
+    final checker = ManualRuleDuplicateChecker(db);
+
+    if (widget.mode == ManualRuleMode.blockRule) {
+      final subType = _blockRuleSubType();
+
+      // Subsumption check first -- if a broader rule already covers this,
+      // surface that with a more informative error than the exact-duplicate
+      // path would give.
+      final subsuming = await checker.findSubsumingBlockRule(
+        sourceDomain: _sourceDomain,
+        patternSubType: subType,
+        patternCategory: 'header_from',
+      );
+      if (subsuming != null) {
+        return _DuplicateOutcome.subsumed(subsuming);
+      }
+
+      final exact = await checker.blockRuleExists(
+        pattern: _generatedPattern,
+        patternCategory: 'header_from',
+        patternSubType: subType,
+      );
+      return exact ? _DuplicateOutcome.exact() : null;
+    } else {
+      final patternType = _safeSenderPatternType();
+
+      final subsuming = await checker.findSubsumingSafeSender(
+        sourceDomain: _sourceDomain,
+        patternType: patternType,
+      );
+      if (subsuming != null) {
+        return _DuplicateOutcome.subsumed(subsuming);
+      }
+
+      final exact = await checker.safeSenderExists(
+        pattern: _generatedPattern,
+        patternType: patternType,
+      );
+      return exact ? _DuplicateOutcome.exact() : null;
+    }
+  }
+
+  String _blockRuleSubType() {
+    switch (_selectedType) {
+      case ManualRuleType.topLevelDomain:
+        return 'top_level_domain';
+      case ManualRuleType.entireDomain:
+        return 'entire_domain';
+      case ManualRuleType.exactDomain:
+        return 'exact_domain';
+      case ManualRuleType.exactEmail:
+        return 'exact_email';
+    }
+  }
+
+  String _safeSenderPatternType() {
+    switch (_selectedType) {
+      case ManualRuleType.entireDomain:
+        return 'entire_domain';
+      case ManualRuleType.exactDomain:
+        return 'exact_domain';
+      case ManualRuleType.exactEmail:
+        return 'exact_email';
+      case ManualRuleType.topLevelDomain:
+        return 'top_level_domain';
+    }
   }
 
   Future<void> _saveBlockRule(DatabaseHelper dbHelper) async {
@@ -327,10 +398,39 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
         break;
     }
 
+    final db = await dbHelper.database;
+
+    // BUG-S35-1 pre-insert duplicate check. `rules` has no schema-level UNIQUE
+    // constraint on pattern+sub_type, so without this the user could silently
+    // create a second copy of a bundled rule (e.g., `.xyz` duplicating the
+    // bundled `._.xyz` split).
+    final checker = ManualRuleDuplicateChecker(db);
+
+    // Sprint 37 BUG-S36-1: subsumption check is the primary path; exact-dup
+    // is the fallback. _confirmAndSave already runs both before showing the
+    // Confirm dialog, so reaching this code with a duplicate would only
+    // happen via a race between dialog open and Save tap.
+    final subsuming = await checker.findSubsumingBlockRule(
+      sourceDomain: _sourceDomain,
+      patternSubType: patternSubType,
+      patternCategory: 'header_from',
+    );
+    if (subsuming != null) {
+      throw _DuplicateRuleException();
+    }
+
+    final isDuplicate = await checker.blockRuleExists(
+      pattern: _generatedPattern,
+      patternCategory: 'header_from',
+      patternSubType: patternSubType,
+    );
+    if (isDuplicate) {
+      throw _DuplicateRuleException();
+    }
+
     // Generate a unique name
     final name = 'manual_${_sourceDomain.replaceAll(RegExp(r'[^\w.-]'), '_')}_${DateTime.now().millisecondsSinceEpoch}';
 
-    final db = await dbHelper.database;
     await db.insert('rules', {
       'name': name,
       'enabled': 1,
@@ -367,6 +467,30 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
     }
 
     final db = await dbHelper.database;
+
+    // BUG-S35-1 pre-insert duplicate check. safe_senders.pattern has a
+    // schema-level UNIQUE index that would also catch this, but running the
+    // check before the insert keeps the error path symmetric with block rules
+    // and avoids relying on DB error text for UX.
+    final checker = ManualRuleDuplicateChecker(db);
+
+    // Sprint 37 BUG-S36-1: subsumption check parallel to block-rule path.
+    final subsuming = await checker.findSubsumingSafeSender(
+      sourceDomain: _sourceDomain,
+      patternType: patternType,
+    );
+    if (subsuming != null) {
+      throw _DuplicateRuleException();
+    }
+
+    final isDuplicate = await checker.safeSenderExists(
+      pattern: _generatedPattern,
+      patternType: patternType,
+    );
+    if (isDuplicate) {
+      throw _DuplicateRuleException();
+    }
+
     await db.insert('safe_senders', {
       'pattern': _generatedPattern,
       'pattern_type': patternType,
@@ -382,6 +506,24 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
     if (!_formKey.currentState!.validate()) return;
     _generatePattern();
     if (_generatedPattern.isEmpty || _patternError != null) return;
+
+    // BUG-S35-1: run the duplicate check BEFORE the Confirm dialog so the
+    // user sees the "already exists" error directly instead of a misleading
+    // confirmation step that fails silently. The insert-path check in
+    // _saveBlockRule / _saveSafeSender remains as a second line of defense
+    // against a race where a duplicate is created between the dialog open
+    // and the user tapping Save.
+    final duplicateOutcome = await _isDuplicate();
+    if (duplicateOutcome != null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_duplicateMessage(duplicateOutcome)),
+          ),
+        );
+      }
+      return;
+    }
 
     final actionLabel = widget.mode == ManualRuleMode.blockRule ? 'block' : 'allow';
     final confirmed = await showDialog<bool>(
@@ -424,6 +566,7 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
             child: const Text('Cancel'),
           ),
           FilledButton(
+            key: WidgetKeys.confirmDialogSaveButton,
             onPressed: () => Navigator.pop(ctx, true),
             child: const Text('Save'),
           ),
@@ -481,6 +624,18 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
                       },
                     ),
                   )),
+
+              // F74 (Sprint 39): cross-reference to the Help FAQ, which
+              // explains TLD rules, the IANA list, and the difference between
+              // the four rule types in plain language.
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  icon: const Icon(Icons.help_outline, size: 18),
+                  label: const Text('Learn more about rule types and TLDs'),
+                  onPressed: () => openHelp(context, HelpSection.faq),
+                ),
+              ),
 
               const SizedBox(height: 16),
               const Divider(),
@@ -595,6 +750,7 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
               Semantics(
                 label: 'Save ${widget.mode == ManualRuleMode.blockRule ? "block rule" : "safe sender"}',
                 child: FilledButton.icon(
+                  key: WidgetKeys.saveRuleButton,
                   onPressed: _isSaving ||
                           _generatedPattern.isEmpty ||
                           _patternError != null
@@ -617,3 +773,24 @@ class _ManualRuleCreateScreenState extends State<ManualRuleCreateScreen> {
     );
   }
 }
+
+/// Thrown when the pre-insert duplicate check finds an existing block rule
+/// or safe sender with the same normalized pattern. Caught in
+/// `_saveRule` -> `_userFriendlyErrorMessage` to show the user a clear
+/// "already exists" message instead of silently creating a duplicate.
+class _DuplicateRuleException implements Exception {}
+
+/// Outcome of the pre-confirm duplicate check. Either reports an exact
+/// duplicate (same pattern + sub-type) or a semantic subsumption (a broader
+/// existing rule already covers the candidate). Sprint 37 BUG-S36-1 added
+/// the subsumption case; the exact case is the original BUG-S35-1 behavior.
+class _DuplicateOutcome {
+  final SubsumingRuleInfo? subsumingRule;
+
+  const _DuplicateOutcome._({this.subsumingRule});
+
+  factory _DuplicateOutcome.exact() => const _DuplicateOutcome._();
+  factory _DuplicateOutcome.subsumed(SubsumingRuleInfo info) =>
+      _DuplicateOutcome._(subsumingRule: info);
+}
+

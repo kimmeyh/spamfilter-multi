@@ -1,0 +1,1 @@
+Streamlined flow for creating a block rule from a sample email. Pick the condition bucket(s) that should match, the action to take, and the execution order. Conflict detection warns if a new rule overlaps or contradicts existing ones; use "Test pattern" (flask icon) to preview matches against your recent unmatched emails.

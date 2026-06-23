@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 
 import '../../core/models/email_message.dart';
+import '../../core/services/auth_results_parser.dart';
 import '../../core/storage/rule_database_store.dart';
 import '../../core/storage/safe_sender_database_store.dart';
 import '../../core/utils/pattern_normalization.dart';
 import '../../core/utils/pattern_generation.dart';
+import '../widgets/auth_warning_dialog.dart';
+import '../widgets/email_auth_badge.dart';
 
 /// Pattern type enumeration
 enum PatternType {
@@ -48,10 +51,19 @@ class _SafeSenderQuickAddScreenState extends State<SafeSenderQuickAddScreen> {
   String _normalizedEmail = '';
   String _generatedPattern = '';
 
+  /// F89 (Sprint 39): parsed SPF/DKIM/DMARC state of the source email,
+  /// computed once at init from the email headers. Drives the auth badge,
+  /// the YELLOW inline caution, the RED warn-then-confirm dialog, and the
+  /// persisted created_with_auth_state snapshot.
+  late final EmailAuthResult _authResult;
+  late final AuthClassification _authClassification;
+
   @override
   void initState() {
     super.initState();
     _normalizedEmail = PatternNormalization.normalizeFromHeader(widget.email.from);
+    _authResult = AuthResultsParser.parse(widget.email.headers);
+    _authClassification = AuthResultsParser.classify(_authResult);
     _updateGeneratedPattern();
   }
 
@@ -192,6 +204,26 @@ class _SafeSenderQuickAddScreenState extends State<SafeSenderQuickAddScreen> {
       return;
     }
 
+    // F89 (Sprint 39): if the source email failed authentication (RED), warn
+    // the user before whitelisting -- whitelisting a spoofable sender lets
+    // future spoofed mail bypass all rules. YELLOW shows a non-blocking inline
+    // caution (rendered in the build); GREY is silent. RED is the only state
+    // that blocks the save behind a confirmation.
+    if (_authClassification == AuthClassification.red) {
+      final proceed = await AuthWarningDialog.showSafeSenderWarning(
+        context,
+        senderEmail: _normalizedEmail,
+        authResult: _authResult,
+      );
+      if (!proceed) {
+        // User chose Cancel -- do not whitelist. Stay on the screen.
+        return;
+      }
+      // The RED-state dialog is async; the user may have navigated away while
+      // it was up. Guard against setState / context use on a disposed State.
+      if (!mounted) return;
+    }
+
     setState(() => _isSaving = true);
 
     try {
@@ -203,6 +235,7 @@ class _SafeSenderQuickAddScreenState extends State<SafeSenderQuickAddScreen> {
             : null,
         dateAdded: DateTime.now().millisecondsSinceEpoch,
         createdBy: 'quick_add',
+        createdWithAuthState: _authClassification.name,
       );
 
       await widget.safeSenderStore.addSafeSender(safeSender);
@@ -359,6 +392,34 @@ class _SafeSenderQuickAddScreenState extends State<SafeSenderQuickAddScreen> {
     );
   }
 
+  /// F89 (Sprint 39): non-blocking caution shown when the source email is
+  /// only partly authenticated (YELLOW). Does not block the save.
+  Widget _buildAuthCautionLine() {
+    return Container(
+      key: const Key('safe_sender_auth_yellow_caution'),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.amber.shade50,
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(color: Colors.amber.shade300),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.gpp_maybe, size: 16, color: Colors.amber.shade800),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Some authentication checks for this sender did not pass. '
+              'Verify the sender before whitelisting.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildEmailContextCard() {
     return Card(
       child: Padding(
@@ -366,13 +427,29 @@ class _SafeSenderQuickAddScreenState extends State<SafeSenderQuickAddScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Email Context',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Email Context',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                // F89: authentication badge (GREEN/YELLOW/RED/GREY).
+                EmailAuthBadge(authResult: _authResult),
+              ],
             ),
             const SizedBox(height: 12),
+
+            // F89: non-blocking caution for YELLOW (partly authenticated).
+            // GREY and GREEN show no inline caution; RED is handled by the
+            // confirmation dialog at save time.
+            if (_authClassification == AuthClassification.yellow) ...[
+              _buildAuthCautionLine(),
+              const SizedBox(height: 12),
+            ],
 
             // From
             Row(

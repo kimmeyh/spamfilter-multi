@@ -332,5 +332,35 @@ void main() {
       await settingsStore.setUnmatchedRetentionDays(0);
       expect(await settingsStore.getUnmatchedRetentionDays(), 0);
     });
+
+    // F90 (Sprint 39): live-scan debug CSV setting parity with
+    // background-scan debug CSV setting
+    test('getLiveScanDebugCsv returns false by default', () async {
+      final enabled = await settingsStore.getLiveScanDebugCsv();
+      expect(enabled, isFalse);
+      expect(enabled, SettingsStore.defaultLiveScanDebugCsv);
+    });
+
+    test('setLiveScanDebugCsv persists and retrieves correctly', () async {
+      await settingsStore.setLiveScanDebugCsv(true);
+      expect(await settingsStore.getLiveScanDebugCsv(), isTrue);
+
+      await settingsStore.setLiveScanDebugCsv(false);
+      expect(await settingsStore.getLiveScanDebugCsv(), isFalse);
+    });
+
+    test('live-scan and background-scan debug CSV settings are independent',
+        () async {
+      // Confirm the new setting is not aliased to the existing one
+      await settingsStore.setBackgroundScanDebugCsv(true);
+      await settingsStore.setLiveScanDebugCsv(false);
+      expect(await settingsStore.getBackgroundScanDebugCsv(), isTrue);
+      expect(await settingsStore.getLiveScanDebugCsv(), isFalse);
+
+      await settingsStore.setBackgroundScanDebugCsv(false);
+      await settingsStore.setLiveScanDebugCsv(true);
+      expect(await settingsStore.getBackgroundScanDebugCsv(), isFalse);
+      expect(await settingsStore.getLiveScanDebugCsv(), isTrue);
+    });
   });
 }

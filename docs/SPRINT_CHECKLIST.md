@@ -23,6 +23,24 @@ These documents MUST be created/updated during each sprint:
 
 ---
 
+## Phase 1: Backlog Refinement (MANDATORY -- every sprint, no PO request needed)
+
+**Sprint 36 policy change (2026-04-20)**: Phase 1 is MANDATORY on every sprint. Do NOT ask the user "should we do backlog refinement?" -- just run it. Skipping or asking is a process violation.
+
+- [ ] Read current `docs/ALL_SPRINTS_MASTER_PLAN.md` "Next Sprint Candidates" section
+- [ ] Scan for stale items (>3 sprints old without review)
+- [ ] Re-prioritize if needed (value, effort, risk)
+- [ ] Update estimates with velocity from recent sprints
+- [ ] Capture newly identified work items
+- [ ] Remove obsolete items
+- [ ] **Present candidates to user in BACKLOG_REFINEMENT.md bullet-list format** (NOT grid tables). Required format: `**<ID>. <Title> (~<effort>) Priority <N>**` with bullet details per item, grouped by priority tier, HOLD items at bottom, include observations/alternative composition options when scope is tight
+- [ ] User selects items for Sprint N; record selection for Phase 3 plan doc
+- [ ] Commit refinement changes if ALL_SPRINTS_MASTER_PLAN.md was updated: `git commit -m "docs: Backlog refinement - [date] - [summary]"`
+
+**Detailed Process**: See `BACKLOG_REFINEMENT.md`.
+
+**[CHECKPOINT]** Review Phase 2 checklist before proceeding.
+
 ## Phase 2: Pre-Kickoff
 
 - [ ] Previous sprint PR merged to `develop`
@@ -37,10 +55,9 @@ These documents MUST be created/updated during each sprint:
 
 - [ ] **Verify active model is Opus** (sprint planning requires Opus per SPRINT_PLANNING.md "Activities Requiring Opus")
 - [ ] Sprint number determined (N = previous + 1)
-- [ ] Read ALL_SPRINTS_MASTER_PLAN.md "Next Sprint Candidates" table
-- [ ] **Present candidates in sprint refinement format** (BACKLOG_REFINEMENT.md format, not grid tables)
+- [ ] **Phase 1 Backlog Refinement complete** (candidates presented in BACKLOG_REFINEMENT.md format, user selected items) -- if Phase 1 was skipped, STOP and return to Phase 1 first
 - [ ] **Verify** `docs/sprints/SPRINT_(N-1)_SUMMARY.md` exists for previous sprint (created in Phase 7)
-- [ ] **Created `docs/sprints/SPRINT_N_PLAN.md`** for current sprint (3.2.2 - MANDATORY)
+- [ ] **Created `docs/sprints/SPRINT_N_PLAN.md`** for current sprint (3.2.2 - MANDATORY) using items selected in Phase 1.2
 - [ ] Created feature branch: `feature/YYYYMMDD_Sprint_N`
 - [ ] Created GitHub issues for all tasks
 - [ ] Verified all issues are OPEN
@@ -66,14 +83,15 @@ These documents MUST be created/updated during each sprint:
 
 - [ ] Local code review complete
 - [ ] **Automated code review**: Run `pr-review-toolkit:code-reviewer` agent on sprint diff (always include related-patterns grep step); for cross-cutting policy sprints, run a second feature-sweep pass; address HIGH/CRITICAL findings (see SPRINT_EXECUTION_WORKFLOW.md § 5.1.1)
+- [ ] **5.1.5 WinWright UI Test Sweep** (MANDATORY -- Sprint 38 retro): update WinWright scripts for sprint UI changes; run all scripts that exercise sprint-touched screens; fix in-sprint or backlog (see SPRINT_EXECUTION_WORKFLOW.md § 5.1.5). If no WinWright coverage exists for sprint's UI surface, file a Sprint N+1 carry-in.
 - [ ] Full test suite passing (`flutter test`)
 - [ ] Code analysis clean (`flutter analyze` - target <50 warnings)
 - [ ] Risk mitigations validated
-- [ ] **Desktop E2E tests** (if UI changes): Run winwright accessibility tests on affected screens (see `docs/WINWRIGHT_SELECTORS.md`)
+- [ ] **5.1.6 Architecture docs current BEFORE manual-testing handoff** (Sprint 42 retro IMP-5; `feedback_architecture_docs_no_defer`): for every flow, table, ADR, or platform-status line in `ARCHITECTURE.md` / `ARSD.md` touched by this sprint, update it NOW -- do NOT defer to Phase 7. Quick check: `grep -niE "<sprint-touched-feature>" docs/ARCHITECTURE.md docs/ARSD.md` and reconcile each hit. Verify the ADR index (`docs/adr/README.md`) status/date for any ADR touched. (Sprint 42 surfaced a stale ARCHITECTURE.md bg-scan flow at retro -- this line prevents recurrence.)
 - [ ] **App built for user testing** (Windows: `build-windows.ps1`)
 - [ ] **Platform-specific UI verified** at native level (Win32 window title, system tray, notifications) -- Flutter UI layer may not control platform-level behavior (learned Sprint 21)
-- [ ] Manual testing complete (user)
-- [ ] Issues from testing fixed
+- [ ] **Manual integration testing complete (Lead Developer)** -- this is a LOOP, not a single step. Each round of testing feedback can produce in-sprint fixes OR backlog additions; do not move to Code Review until the Lead Developer explicitly notes testing complete (see SPRINT_EXECUTION_WORKFLOW.md "Canonical Next Steps progression")
+- [ ] Issues from testing fixed (in-sprint) or filed (backlog)
 
 **[CHECKPOINT]** Review Phase 6 checklist before proceeding. **[CONTEXT CHECK]** Verify context < 85% before starting Phase 6.
 

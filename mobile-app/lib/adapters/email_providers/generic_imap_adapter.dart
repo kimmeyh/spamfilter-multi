@@ -53,6 +53,28 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
   int _operationCount = 0;
   static const int _reconnectThreshold = 50; // Reconnect every 50 operations to prevent server disconnects
 
+  // [BUG-S40-1] Bulk UID MOVE tuning for AOL/Yahoo servers.
+  //
+  // AOL/Yahoo implement the IMAP MESSAGELIMIT extension (RFC 9738): a UID MOVE
+  // that exceeds the server's per-command message limit moves only a SUBSET,
+  // returns a tagged OK (not NO), and reports the unprocessed remainder via a
+  // [MESSAGELIMIT n lowestUid] response code. enough_mail 2.1.7 does not parse
+  // that response code, so a single large UID MOVE silently leaves the tail
+  // behind. The fix is to send small chunks, verify each chunk actually left
+  // the source folder, and loop the folder until no targeted UIDs remain.
+  //
+  // Chunk size is held well below AOL's advertised MESSAGELIMIT (1000) because
+  // field reports show the EFFECTIVE per-command cap on the spam/Bulk folder is
+  // far lower and variable (~19-211 observed). 50 balances throughput against
+  // that cap; smaller is safer but slower.
+  static const int _moveChunkSize = 50;
+  // Delay between UID MOVE chunks on the same connection to stay under
+  // command-frequency rate limits (Yahoo/AOL throttle rapid commands).
+  static const Duration _moveChunkDelay = Duration(milliseconds: 250);
+  // Max full passes over a source folder. Each pass re-moves any survivors.
+  // Guards against an infinite loop if the server refuses a message outright.
+  static const int _moveMaxPasses = 6;
+
   /// Create a generic IMAP adapter with custom settings
   GenericIMAPAdapter({
     required String imapHost,
@@ -278,6 +300,218 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
 
     _logger.i('[IMAP] fetchMessages: COMPLETE - Total messages fetched across all folders: ${messages.length}');
     return messages;
+  }
+
+  /// Sprint 38 Round 1 (extending F6c Phase 2 to IMAP): fetch only messages
+  /// with a UID strictly greater than [startUid] in [folderName]. Returns
+  /// the list of new emails plus the new highest-UID-seen for the caller
+  /// to persist as the next scan's cursor.
+  ///
+  /// Used by EmailScanner._fetchFolderMessages for the per-folder
+  /// incremental scan path. Unlike Gmail's history.list (which is
+  /// account-wide and has a ~7-day expiry window), IMAP UID cursors are
+  /// per-mailbox and never "expire" -- UIDs are monotonically increasing
+  /// per RFC 3501 (subject to UIDVALIDITY changes; not handled in V1
+  /// because UIDVALIDITY changes are rare for established mailboxes).
+  ///
+  /// Returns ImapIncrementalFetchResult.empty() when no new UIDs exist
+  /// (caller still persists the cursor, which advances on every server
+  /// state change). Throws on connection errors.
+  Future<ImapIncrementalFetchResult> fetchMessagesIncremental({
+    required int startUid,
+    required String folderName,
+  }) async {
+    if (_imapClient == null) {
+      _logger.e('[IMAP] fetchMessagesIncremental called but _imapClient is NULL');
+      throw ConnectionException('Not connected - call loadCredentials first');
+    }
+
+    _logger.i('[IMAP] fetchMessagesIncremental: startUid=$startUid, folder=$folderName');
+
+    try {
+      await _selectMailbox(folderName);
+
+      // UID lastUid+1:* = "every UID strictly greater than lastUid up
+      // through the end of the mailbox". Standard RFC 3501 syntax.
+      final lowerBound = startUid + 1;
+      final searchCriteria = 'UID $lowerBound:*';
+      _logger.i('[IMAP] fetchMessagesIncremental: UID SEARCH criteria="$searchCriteria"');
+
+      final searchResult = await _imapClient!.uidSearchMessages(
+        searchCriteria: searchCriteria,
+      );
+
+      final sequence = searchResult.matchingSequence;
+      if (sequence == null || sequence.isEmpty) {
+        _logger.i('[IMAP] fetchMessagesIncremental: no new UIDs since $startUid');
+        return ImapIncrementalFetchResult.empty(newCursor: startUid);
+      }
+
+      // Compute the new cursor BEFORE the per-message fetch in case any
+      // individual message fetch fails -- we still want to advance the
+      // cursor past the IDs we successfully discovered, since rerunning
+      // the search next time would just discover them again.
+      var maxUid = startUid;
+      for (final id in sequence.toList()) {
+        if (id > maxUid) maxUid = id;
+      }
+
+      _logger.i('[IMAP] fetchMessagesIncremental: found ${sequence.length} new UIDs in $folderName (new cursor=$maxUid)');
+
+      final fetched = await _fetchMessageDetails(sequence, folderName);
+      _logger.i('[IMAP] fetchMessagesIncremental: fetched ${fetched.length} message details');
+
+      return ImapIncrementalFetchResult(
+        emails: fetched,
+        newCursor: maxUid,
+      );
+    } catch (e, st) {
+      _logger.e('[IMAP] fetchMessagesIncremental ERROR for $folderName: $e\n$st');
+      rethrow;
+    }
+  }
+
+  /// Sprint 38 Round 1: returns the current highest UID in [folderName],
+  /// or null if the folder is empty / not selectable. Used by
+  /// EmailScanner._fetchFolderMessages to capture an initial cursor
+  /// AFTER a full first-scan so subsequent scans can run incrementally.
+  Future<int?> getCurrentMaxUid(String folderName) async {
+    if (_imapClient == null) {
+      _logger.e('[IMAP] getCurrentMaxUid called but _imapClient is NULL');
+      throw ConnectionException('Not connected - call loadCredentials first');
+    }
+    try {
+      await _selectMailbox(folderName);
+      // UID 1:* matches every existing UID; we then take the max.
+      final searchResult = await _imapClient!.uidSearchMessages(
+        searchCriteria: 'UID 1:*',
+      );
+      final seq = searchResult.matchingSequence;
+      if (seq == null || seq.isEmpty) {
+        _logger.i('[IMAP] getCurrentMaxUid: $folderName is empty');
+        return 0; // cursor of 0 means "next scan picks up everything from UID 1"
+      }
+      var maxUid = 0;
+      for (final id in seq.toList()) {
+        if (id > maxUid) maxUid = id;
+      }
+      _logger.i('[IMAP] getCurrentMaxUid: $folderName -> $maxUid');
+      return maxUid;
+    } catch (e) {
+      _logger.e('[IMAP] getCurrentMaxUid ERROR for $folderName: $e');
+      return null;
+    }
+  }
+
+  /// S38-CI-4 (Sprint 39): return the SMALLEST UID in [folderName] whose
+  /// message arrived on or after [since] -- the "UID floor" for the
+  /// configured `daysBack` retention window.
+  ///
+  /// EmailScanner uses this floor to CAP the oldest-no-rule cursor so a
+  /// no-rule UID older than `now - daysBack` is not persisted as the
+  /// cursor and therefore ages out of the backlog (see
+  /// EmailScanner._updateOldestNoRuleCursors). One lookup per folder per
+  /// scan: the result is cached by the caller for the scan duration.
+  ///
+  /// Mirrors [getCurrentMaxUid] but searches `UID SEARCH SINCE <date>`
+  /// (RFC 3501 section 6.4.4) and takes the minimum matching UID instead
+  /// of the maximum. The IMAP `SINCE` key matches the message internal
+  /// date (server receipt date) with date granularity, consistent with
+  /// how [fetchMessages] applies the same `daysBack` window.
+  ///
+  /// Returns null when no message matches (the window is empty) or on any
+  /// error, so the caller degrades gracefully and skips the cap rather
+  /// than clamping against a bogus floor.
+  Future<int?> firstUidSince(String folderName, DateTime since) async {
+    if (_imapClient == null) {
+      _logger.e('[IMAP] firstUidSince called but _imapClient is NULL');
+      return null;
+    }
+    try {
+      await _selectMailbox(folderName);
+      final searchCriteria = 'SINCE ${_formatImapDate(since)}';
+      _logger.i('[IMAP] firstUidSince: UID SEARCH criteria="$searchCriteria" in "$folderName"');
+      final searchResult = await _imapClient!.uidSearchMessages(
+        searchCriteria: searchCriteria,
+      );
+      final seq = searchResult.matchingSequence;
+      if (seq == null || seq.isEmpty) {
+        _logger.i('[IMAP] firstUidSince: no messages since $since in $folderName');
+        return null;
+      }
+      int? minUid;
+      for (final id in seq.toList()) {
+        if (minUid == null || id < minUid) minUid = id;
+      }
+      _logger.i('[IMAP] firstUidSince: $folderName floor UID=$minUid (since=$since)');
+      return minUid;
+    } catch (e) {
+      _logger.e('[IMAP] firstUidSince ERROR for $folderName: $e');
+      return null;
+    }
+  }
+
+  /// F91 (Sprint 39): find messages in [folderName] whose RFC 5322
+  /// `Message-ID` header equals [messageId].
+  ///
+  /// Implements post-safe-sender-move source-folder dedup for AOL's
+  /// copy-not-move behavior (see SpamFilterPlatform.searchByMessageId).
+  ///
+  /// IMAP `SEARCH HEADER` quoting (RFC 3501 section 6.4.4): the header field
+  /// name and the substring are both IMAP strings. We quote both as IMAP
+  /// quoted-strings. The value [messageId] is expected to include the angle
+  /// brackets (for example `<abc@host>`). Any embedded double quotes or
+  /// backslashes are escaped per RFC 3501 quoted-string rules so a malformed
+  /// Message-ID cannot break out of the quoted string. Matching is
+  /// case-insensitive per RFC 3501 (`SEARCH HEADER` does a case-insensitive
+  /// substring match on the header value).
+  ///
+  /// Returns the matching messages (empty when none). Returns empty on any
+  /// search error rather than throwing, so the caller's dedup step degrades
+  /// to a no-op instead of failing the scan.
+  @override
+  Future<List<EmailMessage>> searchByMessageId(
+    String folderName,
+    String messageId,
+  ) async {
+    if (_imapClient == null) {
+      _logger.e('[IMAP] searchByMessageId called but _imapClient is NULL');
+      throw ConnectionException('Not connected - call loadCredentials first');
+    }
+
+    final trimmed = messageId.trim();
+    if (trimmed.isEmpty) {
+      _logger.w('[IMAP] searchByMessageId: empty messageId, skipping');
+      return const [];
+    }
+
+    try {
+      await _checkAndReconnect();
+      await _selectMailbox(folderName);
+
+      // Escape per RFC 3501 quoted-string: backslash and double quote.
+      final escaped = trimmed.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
+      final searchCriteria = 'HEADER "Message-ID" "$escaped"';
+      _logger.i('[IMAP] searchByMessageId: UID SEARCH $searchCriteria in "$folderName"');
+
+      final searchResult = await _imapClient!.uidSearchMessages(
+        searchCriteria: searchCriteria,
+      );
+      _operationCount++;
+
+      final sequence = searchResult.matchingSequence;
+      if (sequence == null || sequence.isEmpty) {
+        _logger.i('[IMAP] searchByMessageId: no match in "$folderName"');
+        return const [];
+      }
+
+      _logger.i('[IMAP] searchByMessageId: ${sequence.length} match(es) in "$folderName"');
+      return _fetchMessageDetails(sequence, folderName);
+    } catch (e, st) {
+      _logger.e('[IMAP] searchByMessageId ERROR in "$folderName": $e\n$st');
+      // Degrade to no-op: dedup must never break the scan.
+      return const [];
+    }
   }
 
   @override
@@ -650,40 +884,126 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     final failed = <String, String>{};
 
     for (final entry in byFolder.entries) {
-      try {
-        _logger.i('[IMAP] moveToFolderBatch: selecting source folder "${entry.key}" for ${entry.value.length} messages');
-        await _selectMailbox(entry.key);
-        final uids = _parseUids(entry.value);
-        if (uids.isEmpty) {
-          _logger.w('[IMAP] moveToFolderBatch: no valid UIDs parsed, skipping');
-          continue;
-        }
-
-        final sequence = MessageSequence.fromIds(uids, isUid: true);
-        _logger.i('[IMAP] BATCH UID MOVE ${uids.length} messages (UIDs: $uids) from "${entry.key}" to "$targetFolder" (op #$_operationCount)');
-        await _imapClient!.uidMove(
-          sequence,
-          targetMailboxPath: targetFolder,
-        );
-        _operationCount++;
-        _logger.i('[IMAP] BATCH UID MOVE completed successfully');
-        succeeded.addAll(entry.value.map((m) => m.id));
-      } catch (e) {
-        _logger.e('[IMAP] Batch move failed for folder ${entry.key}: $e');
-        // Fall back to single-message processing for this folder
-        for (final message in entry.value) {
-          try {
-            await moveToFolder(message: message, targetFolder: targetFolder);
-            succeeded.add(message.id);
-          } catch (e2) {
-            failed[message.id] = e2.toString();
-          }
-        }
+      final uids = _parseUids(entry.value);
+      if (uids.isEmpty) {
+        _logger.w('[IMAP] moveToFolderBatch: no valid UIDs parsed for "${entry.key}", skipping');
+        continue;
       }
+
+      // [BUG-S40-1] Chunk + verify + loop-until-empty. A single large UID MOVE
+      // against AOL/Yahoo silently moves only a subset (RFC 9738 MESSAGELIMIT),
+      // so we move in small chunks, verify each chunk left the source folder,
+      // and repeat over any survivors for up to _moveMaxPasses passes.
+      final survivingUids = await _moveFolderChunkedWithRetry(
+        sourceFolder: entry.key,
+        uids: uids,
+        targetFolder: targetFolder,
+      );
+
+      partitionByMoveSurvival(
+        messages: entry.value,
+        survivingUids: survivingUids,
+        sourceFolder: entry.key,
+        targetFolder: targetFolder,
+        onSucceeded: succeeded.add,
+        onFailed: (id, reason) => failed[id] = reason,
+      );
     }
 
     _logger.i('[IMAP] moveToFolderBatch result: ${succeeded.length} succeeded, ${failed.length} failed');
     return BatchActionResult(succeededIds: succeeded, failedIds: failed);
+  }
+
+  /// [BUG-S40-1] Move [uids] out of [sourceFolder] into [targetFolder]
+  /// reliably against servers that perform partial UID MOVE (AOL/Yahoo).
+  ///
+  /// Strategy: split the UID set into [_moveChunkSize] chunks; for each chunk
+  /// issue a UID MOVE, pause [_moveChunkDelay], then verify which of that
+  /// chunk's UIDs actually left the source folder. UIDs that remain are carried
+  /// into the next pass. The folder is swept up to [_moveMaxPasses] times until
+  /// no targeted UIDs remain. Returns the UIDs that STILL remain after all
+  /// passes (genuine failures). A per-chunk MOVE exception is logged but does
+  /// NOT abort the batch: the same post-move verification re-checks that chunk's
+  /// UIDs regardless, so any that did not move are simply carried into the next
+  /// pass's survivor set and retried. One failing chunk therefore cannot poison
+  /// the rest of the batch.
+  ///
+  /// This is bounded and deterministic: each pass either reduces the survivor
+  /// set or the loop exits, so the historical "reappears on every scan" delete
+  /// loop is resolved within a single scan instead of across many.
+  Future<List<int>> _moveFolderChunkedWithRetry({
+    required String sourceFolder,
+    required List<int> uids,
+    required String targetFolder,
+  }) async {
+    var remaining = List<int>.from(uids);
+
+    for (var pass = 1; pass <= _moveMaxPasses && remaining.isNotEmpty; pass++) {
+      _logger.i(
+        '[IMAP] move pass $pass/$_moveMaxPasses: ${remaining.length} UIDs from '
+        '"$sourceFolder" -> "$targetFolder" (chunk=$_moveChunkSize)',
+      );
+      final stillRemaining = <int>[];
+
+      for (final chunk in chunkUids(remaining, _moveChunkSize)) {
+        try {
+          await _checkAndReconnect();
+          await _selectMailbox(sourceFolder);
+          _logger.i(
+            '[IMAP] UID MOVE chunk ${chunk.length} UIDs from "$sourceFolder" '
+            '-> "$targetFolder" (pass $pass, op #$_operationCount)',
+          );
+          await _imapClient!.uidMove(
+            MessageSequence.fromIds(chunk, isUid: true),
+            targetMailboxPath: targetFolder,
+          );
+          _operationCount++;
+        } catch (e) {
+          // A chunk-level MOVE failure must not abort the whole batch.
+          // Verification below re-checks the chunk regardless, so a transient
+          // failure here simply leaves the chunk's UIDs in the survivor set to
+          // be retried on the next pass.
+          _logger.w(
+            '[IMAP] UID MOVE chunk failed (pass $pass) for "$sourceFolder": $e; '
+            'chunk will be re-verified and retried',
+          );
+        }
+
+        // Pace requests to stay under AOL/Yahoo command-rate limits.
+        await Future<void>.delayed(_moveChunkDelay);
+
+        // Verify which of this chunk's UIDs actually left the source folder.
+        final survivors = await _uidsStillPresent(sourceFolder, chunk);
+        if (survivors.isNotEmpty) {
+          _logger.w(
+            '[IMAP] move pass $pass: ${survivors.length}/${chunk.length} UIDs '
+            'still in "$sourceFolder" after chunk MOVE',
+          );
+          stillRemaining.addAll(survivors);
+        }
+      }
+
+      if (stillRemaining.length == remaining.length) {
+        // No forward progress this pass: the server is refusing these UIDs.
+        // Stop early rather than spin through the remaining passes.
+        _logger.e(
+          '[IMAP] move pass $pass made no progress (${stillRemaining.length} '
+          'UIDs unmovable from "$sourceFolder"); aborting further passes',
+        );
+        return stillRemaining;
+      }
+      remaining = stillRemaining;
+    }
+
+    if (remaining.isEmpty) {
+      _logger.i('[IMAP] all UIDs successfully moved out of "$sourceFolder"');
+    } else {
+      _logger.e(
+        '[IMAP] ${remaining.length} UIDs still in "$sourceFolder" after '
+        '$_moveMaxPasses passes (recorded as failures)',
+      );
+    }
+    return remaining;
   }
 
   @override
@@ -757,6 +1077,100 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     return uids;
   }
 
+  /// [BUG-S40-1] Split [uids] into consecutive chunks of at most [chunkSize].
+  ///
+  /// Pure helper extracted so the chunk boundaries (the off-by-one-prone part
+  /// of the bulk-move loop) can be unit tested. Order is preserved and no UID
+  /// is dropped or duplicated. A non-positive [chunkSize] yields a single chunk
+  /// containing all UIDs (defensive; callers always pass a positive constant).
+  static List<List<int>> chunkUids(List<int> uids, int chunkSize) {
+    if (uids.isEmpty) return const [];
+    if (chunkSize <= 0) return [List<int>.from(uids)];
+    final chunks = <List<int>>[];
+    for (var i = 0; i < uids.length; i += chunkSize) {
+      final end = (i + chunkSize < uids.length) ? i + chunkSize : uids.length;
+      chunks.add(uids.sublist(i, end));
+    }
+    return chunks;
+  }
+
+  /// [BUG-S40-1] Partition a moved batch into succeeded / failed based on which
+  /// UIDs actually left the source folder.
+  ///
+  /// A message is a SUCCESS only if its UID is NOT in [survivingUids] (the set
+  /// the server still reports in [sourceFolder] after the move + retry). A
+  /// message whose UID survived is a real FAILURE -- the server acknowledged
+  /// the move but did not perform it (the AOL copy-not-move pathology). A
+  /// message with an unparseable UID is treated as a success (it could not have
+  /// been part of the UID-keyed survivor set, and the legacy behavior counted
+  /// it as moved).
+  ///
+  /// Pure and side-effect-free apart from the two callbacks, so it can be unit
+  /// tested without an IMAP client.
+  static void partitionByMoveSurvival({
+    required List<EmailMessage> messages,
+    required List<int> survivingUids,
+    required String sourceFolder,
+    required String targetFolder,
+    required void Function(String id) onSucceeded,
+    required void Function(String id, String reason) onFailed,
+  }) {
+    final survivorSet = survivingUids.toSet();
+    for (final message in messages) {
+      final uid = int.tryParse(message.id);
+      if (uid != null && survivorSet.contains(uid)) {
+        onFailed(
+          message.id,
+          'Server acknowledged move to "$targetFolder" but message remained '
+          'in "$sourceFolder" after retry (AOL copy-not-move)',
+        );
+      } else {
+        onSucceeded(message.id);
+      }
+    }
+  }
+
+  /// [BUG-S40-1] Return the subset of [candidateUids] that are STILL present in
+  /// [folderName], used to verify a UID MOVE actually removed messages from the
+  /// source folder (AOL acknowledges moves it does not perform).
+  ///
+  /// Selects [folderName] and issues a single `UID SEARCH UID <set>`. The
+  /// intersection of the requested UIDs and the server's match set is what
+  /// remains. On any error the candidates are treated as "still present" (the
+  /// conservative choice: a failed verification must not be reported as a
+  /// successful move).
+  Future<List<int>> _uidsStillPresent(
+    String folderName,
+    List<int> candidateUids,
+  ) async {
+    if (candidateUids.isEmpty || _imapClient == null) {
+      return const [];
+    }
+    try {
+      await _selectMailbox(folderName);
+      // Build an explicit UID set (e.g. "143312,143313,143315") rather than
+      // relying on MessageSequence.toString() formatting inside the criterion.
+      final uidSet = candidateUids.join(',');
+      final searchResult = await _imapClient!.uidSearchMessages(
+        searchCriteria: 'UID $uidSet',
+      );
+      _operationCount++;
+      final matched = searchResult.matchingSequence;
+      if (matched == null || matched.isEmpty) {
+        return const [];
+      }
+      final present = matched.toList().toSet();
+      return candidateUids.where(present.contains).toList();
+    } catch (e) {
+      _logger.w(
+        '[IMAP] _uidsStillPresent: verification search failed in '
+        '"$folderName": $e; treating ${candidateUids.length} UIDs as unverified '
+        '(still present)',
+      );
+      return List<int>.from(candidateUids);
+    }
+  }
+
   @override
   Future<List<FolderInfo>> listFolders() async {
     if (_imapClient == null) {
@@ -775,12 +1189,17 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
         // Use path as display name for clarity (e.g., [Gmail]/Trash instead of Trash)
         // but use leaf name for canonical folder detection
         final displayName = mailbox.path.isNotEmpty ? mailbox.path : mailbox.name;
+        // enough_mail populates pathSeparator from the IMAP LIST response delimiter
+        // field (second token after "LIST (flags)"), e.g. '/' or '.' or ':'.
+        // This is the live server value, not a hardcoded default.
+        final delimiter = mailbox.pathSeparator;
         return FolderInfo(
           id: mailbox.path,
           displayName: displayName,
           canonicalName: _getCanonicalFolder(mailbox.name),
           messageCount: mailbox.messagesExists,
           isWritable: true,
+          hierarchyDelimiter: delimiter,
         );
       }).toList();
     } catch (e) {
@@ -948,6 +1367,18 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       _logger.w('[IMAP] Message has no UID, falling back to sequenceId: ${mimeMessage.sequenceId}');
     }
 
+    // F91 (Sprint 39): capture the RFC 5322 Message-ID header for
+    // post-safe-sender-move source-folder dedup. headersMap keys are the
+    // raw header names; look up case-insensitively because servers vary
+    // ("Message-ID", "Message-Id", "message-id").
+    String? messageIdHeader;
+    for (final entry in headersMap.entries) {
+      if (entry.key.toLowerCase() == 'message-id') {
+        messageIdHeader = EmailMessage.parseMessageId(entry.value);
+        break;
+      }
+    }
+
     return EmailMessage(
       id: messageId,
       from: mimeMessage.from?.first.email ?? '',
@@ -956,6 +1387,7 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
       headers: headersMap,
       receivedDate: mimeMessage.decodeDate() ?? DateTime.now(),
       folderName: folderName,
+      messageIdHeader: messageIdHeader,
     );
   }
 
@@ -983,4 +1415,31 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
     if (lowerName.contains('archive')) return CanonicalFolder.archive;
     return CanonicalFolder.custom;
   }
+}
+
+/// Sprint 38 Round 1 (extending F6c Phase 2 to IMAP): result of an
+/// incremental IMAP UID-since fetch.
+///
+/// `emails` is the list of messages with UID > startUid (empty if no new
+/// messages exist). `newCursor` is the highest UID seen during this scan
+/// -- caller persists it as `account_folder_cursors.cursor_value` so the
+/// next scan resumes from `newCursor + 1`.
+///
+/// Unlike Gmail's IncrementalFetchResult there is no `expired` state for
+/// IMAP. UIDs are monotonically increasing per RFC 3501 (subject to
+/// UIDVALIDITY changes; if UIDVALIDITY changes mid-mailbox, the
+/// `UID startUid+1:*` search returns zero results and the scan
+/// silently picks up from the new UIDVALIDITY -- a rare edge case
+/// acceptable for V1).
+class ImapIncrementalFetchResult {
+  final List<EmailMessage> emails;
+  final int newCursor;
+
+  const ImapIncrementalFetchResult({
+    required this.emails,
+    required this.newCursor,
+  });
+
+  factory ImapIncrementalFetchResult.empty({required int newCursor}) =>
+      ImapIncrementalFetchResult(emails: const [], newCursor: newCursor);
 }

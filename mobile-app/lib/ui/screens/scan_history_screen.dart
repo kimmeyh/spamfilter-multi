@@ -9,6 +9,7 @@ import '../../core/storage/settings_store.dart';
 import '../widgets/app_bar_with_exit.dart';
 import 'help_screen.dart';
 import 'results_display_screen.dart';
+import 'settings_screen.dart';
 
 /// Unified scan history screen showing both manual and background scans
 ///
@@ -59,6 +60,19 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
       _accountFilter = widget.preSelectedAccountId!;
     }
     _loadHistory();
+  }
+
+  /// F87 (Sprint 38): resolve a non-null accountId for the Settings push.
+  /// SettingsScreen requires a non-null accountId, but ScanHistoryScreen
+  /// may be opened in "all accounts" mode (widget.accountId == null,
+  /// _accountFilter == 'all'). Resolution order: (1) widget.accountId,
+  /// (2) current account filter if specific, (3) first known account,
+  /// (4) null -> disable the Settings IconButton.
+  String? _resolveAccountIdForSettings() {
+    if (widget.accountId != null) return widget.accountId;
+    if (_accountFilter != 'all') return _accountFilter;
+    if (_distinctAccounts.isNotEmpty) return _distinctAccounts.first;
+    return null;
   }
 
   Future<void> _loadHistory() async {
@@ -134,7 +148,9 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
       appBar: AppBarWithExit(
         title: Text('Scan History ($_retentionDays days)'),
         // F55 (Sprint 33, v3): icon order --
-        // <screen-specific> (Refresh), Accounts, Help, [X auto].
+        // <screen-specific> (Refresh), Accounts, Settings, Help, [X auto].
+        // F87 (Sprint 38, Issue #251): Settings icon added so user can reach
+        // Settings from sub-screens with one tap rather than back-navigating.
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -147,6 +163,20 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
             onPressed: () {
               Navigator.popUntil(context, (route) => route.isFirst);
             },
+          ),
+          IconButton(
+            tooltip: 'Settings',
+            icon: const Icon(Icons.settings),
+            onPressed: _resolveAccountIdForSettings() == null
+                ? null
+                : () {
+                    final accountId = _resolveAccountIdForSettings()!;
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => SettingsScreen(accountId: accountId),
+                      ),
+                    );
+                  },
           ),
           IconButton(
             tooltip: 'Help',
