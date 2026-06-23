@@ -30,13 +30,25 @@ Close the Sprint-42 privacy gap by making log redaction a documented, enforced i
 - Run the F71 scope vs the current codebase: ADR drift (esp. new ADR-0039/0040), ARCHITECTURE.md/ARSD.md alignment, platform-architecture, dead-code/deprecated-class detection, test-coverage-vs-architecture gaps. Produce a findings list; fix-now trivial items, backlog the rest.
 - **Step-types**: DOCS/audit (read-only analysis + findings doc). **Est-Effort: 30-50m | Est-Wall: 30-50m.** (Spike -- depth-bounded.)
 
-### 3. SEC-11b -- SQLCipher driver swap + plaintext-to-encrypted migration (THIRD)
-- Add `sqflite_sqlcipher` + `sqlcipher_flutter_libs`; Windows + Android plugin registration; atomic plaintext->encrypted migration on first opt-in (backup -> reopen-with-key -> copy -> swap -> verify -> delete backup); QA on real installs; flip `encrypt_database` default to true after QA.
-- **Step-types**: DB-MIGRATE + SVC-EDIT + deps + native registration. **Est-Effort: 60-110m | Est-Wall: 50-90m.** Largest item; highest risk (native plugin + migration).
+### 3. SEC-11b -- SQLCipher driver swap + plaintext->encrypted migration + verification dual-DB (THIRD) -- RESCOPED per Harold 2026-06-23
+- Add `sqflite_sqlcipher` + `sqlcipher_flutter_libs`; Windows + Android plugin registration.
+- **Prod upgrade path (<=0.5.3 unencrypted -> 0.5.4 encrypted)** -- the key requirement Harold raised:
+  - On first 0.5.4 launch, detect "encrypted DB does not exist but plaintext `spam_filter.db` does" (= a pre-0.5.4 install).
+  - Open the PLAINTEXT DB with the plaintext driver (SQLCipher cannot open a plaintext file with a key), generate/fetch the 256-bit key, create the ENCRYPTED DB with the SQLCipher driver, and copy all data (`sqlcipher_export()` or table-by-table). Verify row counts match.
+  - Per Harold's dual-write requirement: **RETAIN the original plaintext file** (do NOT delete it) for a ~2-sprint verification window; cleanup is a deferred item (see F106).
+- **Verification dual-write (Harold 2026-06-23): keep a pre- AND post-encrypted DB in sync for ~2 sprints, plaintext copy DEV-ONLY**:
+  - **Dev**: write to BOTH the encrypted DB (primary) and a plaintext mirror so the two can be diffed/verified each sprint.
+  - **Prod**: write to the encrypted DB ONLY after migration (a plaintext mirror in prod would defeat encryption-at-rest). The original pre-migration plaintext file is retained read-only as a rollback backup for the window.
+- **Default flip**: flipping `encrypt_database` default to true is a Class-1/2 behavior change -- surface after QA before flipping (do not flip unilaterally this sprint unless Harold approves at the QA point).
+- **Step-types**: DB-MIGRATE + SVC-EDIT + deps + native registration + dual-write infra. **Est-Effort: 90-150m | Est-Wall: 75-120m** (rescoped UP from 60-110 for the dual-write + prod-migration design). Largest + highest-risk item.
+- **Spawns F106** (deferred cleanup): after the ~2-sprint verification window, remove the dual-write + delete the retained plaintext file (Sprint 45 candidate).
+
+### 3b. F106 -- SEC-11b verification-window cleanup (~30m) -- DEFERRED to ~Sprint 45 (NOT in Sprint 43)
+- After ~2 sprints of verified dual-DB operation: remove the Dev plaintext mirror + dual-write code path; delete the retained pre-migration plaintext file in prod. Listed here for traceability; added to the backlog, not executed this sprint.
 
 ### 4. F96 -- F89 auth-state coverage for historical / email-detail quick-add paths (FOURTH)
 - Persist the auth classification (or raw auth headers) at scan time so quick-add from Scan History reload + email-detail evaluates SPF/DKIM/DMARC identically to a live scan (RED dialog fires when warranted). DB migration + scanner-capture wiring + read-back across the two reconstructed paths.
-- **CLASS-1 decision (surface at Phase 3)**: persist-classification (cheaper) vs persist-raw-headers (future-proof). Recommend (a) persist-classification unless Harold prefers re-parse flexibility.
+- **CLASS-1 decision (PENDING Harold -- "need more info" 2026-06-23)**: (a) persist the `AuthClassification` enum (GREEN/YELLOW/RED/GREY) -- ~4 bytes/row, simplest, cannot re-score old emails if the classification rules change later; vs (b) persist the raw `Authentication-Results`/`Received-SPF`/`ARC` headers -- larger + more sensitive at rest, but re-parses identically and re-scores correctly if rules change. **Deciding question for Harold**: do you ever expect to change the SPF/DKIM/DMARC classification rules AND want historical emails re-scored under the new rules? No -> (a) [recommended]; Yes/maybe -> (b). Confirm before F96 starts.
 - **Step-types**: DB-MIGRATE + SVC-EDIT + tests. **Est-Effort: 45-75m | Est-Wall: 40-65m.**
 
 ### 5. F100 -- Port WinWright read-only flows to `integration_test` (FIFTH)

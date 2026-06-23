@@ -204,6 +204,13 @@ Recent sprints complete -- detail blocks removed per the Maintenance Guide (hist
 - Depends on: none (the `Redact` utility already exists).
 - Source: Sprint 42 PR #263 Copilot review (PII-in-logs theme) + Harold steering 2026-06-23.
 
+**F106. SEC-11b verification-window cleanup (~30m) Priority 30 -- DEFERRED (~Sprint 45, spawned by SEC-11b dual-DB design)**
+- Phase: Security / cleanup
+- Platform: All
+- After ~2 sprints of verified encrypted+plaintext dual-DB operation (SEC-11b, Harold 2026-06-23): remove the Dev plaintext-mirror dual-write code path, and delete the retained pre-migration plaintext `spam_filter.db` file in prod (kept as a rollback backup during the verification window). Gated on Harold confirming the encrypted DB has been verified working across the window.
+- Depends on: SEC-11b shipped + ~2 sprints of verification.
+- Source: Harold direction 2026-06-23 (SEC-11b dual-DB verification requirement).
+
 **F103. Periodic Architecture Deep Dive -- Sprint 43 instance (~4-8h) Priority 54 -- SPRINT 43 (copy of F71 template, Harold 2026-06-23)**
 - Phase: Architecture Spike (this is the Sprint 43 RUN of the reusable F71 template; F71 itself stays HOLD for the next run)
 - Platform: All
