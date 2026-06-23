@@ -38,9 +38,11 @@ void main() {
     testWidgets('seeds an isolated temp DB and pumps a widget', (tester) async {
       session = await bootDbOnly(tester);
 
-      // The bundled rule set was seeded into the isolated temp DB.
+      // The bundled rule set was seeded into the isolated temp DB. Use COUNT(*)
+      // rather than loading every row to count it (Copilot review PR #263).
       final db = await DatabaseHelper().database;
-      final ruleCount = (await db.query('rules')).length;
+      final countResult = await db.rawQuery('SELECT COUNT(*) AS n FROM rules');
+      final ruleCount = countResult.first['n'] as int;
       expect(ruleCount, greaterThan(0),
           reason: 'bundled rules should have seeded into the temp DB');
 
