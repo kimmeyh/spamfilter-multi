@@ -171,11 +171,11 @@ Recent sprints complete -- detail blocks removed per the Maintenance Guide (hist
 - Incrementally port the 6 read-only WinWright flows (navigation, settings tabs, scan history, text selection, f25 rule-test, f35 rule-edit) to the F99 `integration_test` lane so the robust in-VM harness becomes primary; retire each WinWright script as its coverage is replaced. Per-file process model + existing harness/seams already in place (F99). Low priority -- WinWright currently covers these green; this is consolidation, not new coverage.
 - Source: Sprint 42 retrospective Category 14 / IMP-3.
 
-**F101. Configurable/shorter F98 background-scan DB-lock retry bound Priority 35 -- BACKLOG (Sprint 42 retro IMP-2)**
+**F101. Shorten F98 background-scan DB-lock retry bound to ~15 min (~15m) Priority 35 -- SPRINT 43 (Harold direction 2026-06-23)**
 - Phase: Tuning / background scanning
 - Platform: All
-- The F98 worker retries on "database is locked" 1 minute x 20 (Harold's spec), so a genuinely stuck lock can hang a scan up to ~20 minutes before failing. Make the retry count/interval configurable (or shorten the worst-case) IF Harold observes long hangs in practice. Constants live in `background_scan_windows_worker.dart` (`_dbLockMaxAttempts`, `_dbLockRetryDelay`). Revisit only if observed -- the WAL + busy_timeout + jitter layers should make the retry rarely fire.
-- Source: Sprint 42 retrospective Category 13 / IMP-2.
+- The F98 worker retries on "database is locked" 1 minute x 20 = ~20 min worst case. **Harold (2026-06-23): cap the worst case at ~15 minutes** -- change `_dbLockMaxAttempts` from 20 to 15 (keeping `_dbLockRetryDelay = 1 min`), so a genuinely stuck lock fails after ~15 min instead of ~20. Constants live in `background_scan_windows_worker.dart`. Update the F101-related comment + the unit-test expectation if any references the count.
+- Source: Sprint 42 retrospective Category 13 / IMP-2; Harold direction 2026-06-23.
 
 ### Security Hardening (Sprint 31 Audit)
 
@@ -203,6 +203,29 @@ Recent sprints complete -- detail blocks removed per the Maintenance Guide (hist
 - Acceptance criteria: policy documented + discoverable; the enforcement gate fails on a deliberately-introduced un-redacted log line and passes on the redacted form.
 - Depends on: none (the `Redact` utility already exists).
 - Source: Sprint 42 PR #263 Copilot review (PII-in-logs theme) + Harold steering 2026-06-23.
+
+**F103. Periodic Architecture Deep Dive -- Sprint 43 instance (~4-8h) Priority 54 -- SPRINT 43 (copy of F71 template, Harold 2026-06-23)**
+- Phase: Architecture Spike (this is the Sprint 43 RUN of the reusable F71 template; F71 itself stays HOLD for the next run)
+- Platform: All
+- **Run the F71 deep-dive scope against the current codebase**: ADR drift detection (compare all 40 ADRs vs implementation -- esp. the new ADR-0039 per-account bg-scan + ADR-0040 two-harness testing); ARCHITECTURE.md / ARSD.md alignment (already refreshed Sprint 42 -- verify still current); platform-specific architecture (Windows MSIX/mutex/app-paths, Android WorkManager/flavors); dead-code + deprecated-class detection; test-coverage gaps relative to architecture. Output a findings list; fix-now small items, backlog the rest.
+- Depends on: F102 (run after the redaction policy lands so the deep-dive can confirm the new invariant is documented).
+- Source: F71 template (Sprint 31 retro); Harold direction 2026-06-23.
+
+**F104. Periodic Security Deep Dive -- Sprint 43 instance (~4-8h) Priority 20 -- SPRINT 43 (copy of F70 template, Harold 2026-06-23)**
+- Phase: Security Spike (this is the Sprint 43 RUN of the reusable F70 template; F70 itself stays HOLD for the next run)
+- Platform: All
+- **Run the F70 deep-dive scope against the current codebase**: dependency CVEs (`flutter pub outdated` + known-vuln check); SQL injection / parameterization audit; regex injection / ReDoS review; **credential-storage + LOGGING audit** (verifies the F102 redaction invariant is actually enforced -- this sprint introduced the policy + gate, so confirm no PII leaks remain); platform security (MSIX sandbox, Android signing/permissions); app-store compliance. Output a findings list; fix-now small items, backlog the rest.
+- **Ordering**: second-to-last sprint item -- runs AFTER all feature/tuning items (F102, F103, SEC-11b, F96, F100, F101) so the audit covers the final sprint state. Only the version bump comes after it.
+- Depends on: all other Sprint 43 dev items complete.
+- Source: F70 template (Sprint 31 retro); Harold direction 2026-06-23.
+
+**F105. Version bump to 0.5.4 (dev) (~10m) Priority 10 -- SPRINT 43 (Harold 2026-06-23)**
+- Phase: Release housekeeping
+- Platform: All
+- Bump the dev version `0.5.3 -> 0.5.4` (prod stays `0.5.2` until a Store release, per ADR-0035 dev = patch+1 each sprint). Update the 5-file version checklist (`pubspec.yaml`, the background-scan log filename version token in `background_scan_windows_worker.dart` + `main.dart`, and any other version references per `docs/STORE_RELEASE_PROCESS.md` / CLAUDE.md version checklist).
+- **Ordering**: LAST item in the sprint (so the version reflects all sprint work).
+- Depends on: all other Sprint 43 items complete.
+- Source: Harold direction 2026-06-23.
 
 **F64. CI/CD pipeline with GitHub Actions (~4-6h) Priority HOLD**
 - Phase: DevOps
