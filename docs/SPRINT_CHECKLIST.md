@@ -62,8 +62,9 @@ These documents MUST be created/updated during each sprint:
 - [ ] Created GitHub issues for all tasks
 - [ ] Verified all issues are OPEN
 - [ ] **Architecture Impact Check** (3.6.1): Review planned changes against ARCHITECTURE.md, ARSD.md, and ADRs. Include doc updates in sprint scope if needed.
+- [ ] **3.3.1 Sprint PR created as DRAFT after the plan is drafted** (MANDATORY) -- one PR per sprint, updated at 4 checkpoints (3.3.1 create / 3.7.1 approved-plan / Phase 5 end-of-dev / 7.7.5 final). Stays DRAFT until 7.7.5.
 - [ ] Sprint plan reviewed and approved by user
-- [ ] **Draft PR created immediately** (optional but recommended)
+- [ ] **3.7.1 PR updated to the APPROVED plan** (create if missing); keep DRAFT.
 
 **[CHECKPOINT]** Review Phase 4 checklist before proceeding. **[CONTEXT CHECK]** Verify context < 85% before starting Phase 4.
 
@@ -92,19 +93,18 @@ These documents MUST be created/updated during each sprint:
 - [ ] **Platform-specific UI verified** at native level (Win32 window title, system tray, notifications) -- Flutter UI layer may not control platform-level behavior (learned Sprint 21)
 - [ ] **Manual integration testing complete (Lead Developer)** -- this is a LOOP, not a single step. Each round of testing feedback can produce in-sprint fixes OR backlog additions; do not move to Code Review until the Lead Developer explicitly notes testing complete (see SPRINT_EXECUTION_WORKFLOW.md "Canonical Next Steps progression")
 - [ ] Issues from testing fixed (in-sprint) or filed (backlog)
+- [ ] **PR lifecycle checkpoint #3**: UPDATE the existing draft sprint PR for anything that changed during development (create if missing). Keep DRAFT -- do NOT announce "ready" yet.
 
 **[CHECKPOINT]** Review Phase 6 checklist before proceeding. **[CONTEXT CHECK]** Verify context < 85% before starting Phase 6.
 
-## Phase 6: Push & PR
+## Phase 6: Push & Finalize PR (still DRAFT)
 
 - [ ] All changes committed and clean
 - [ ] Risk review gate passed
 - [ ] Pushed to remote: `git push origin feature/YYYYMMDD_Sprint_N`
-- [ ] PR created: `feature/...` -> `develop` (NOT main)
-- [ ] PR description complete with task summary
-- [ ] PR references issues: `Closes #XX, #YY, #ZZ`
-- [ ] **GitHub Copilot review responded to** (if Copilot enabled): draft Fix/Backlog/NA recommendations per comment, get user approval, implement approved items (see SPRINT_EXECUTION_WORKFLOW.md § 6.4.1)
-- [ ] User notified PR is ready
+- [ ] **PR UPDATED** (the sprint PR already exists from 3.3.1): `feature/...` -> `develop` (NOT main), description complete with task summary, references issues `Closes #XX, #YY, #ZZ`. **Kept DRAFT.**
+- [ ] **GitHub Copilot review requested + responded to** (if Copilot enabled): draft Fix/Backlog/NA recommendations per comment, get user approval, implement approved items (see SPRINT_EXECUTION_WORKFLOW.md § 6.4.1)
+- [ ] **6.5 Interim status to user -- NOT "ready for approval"** (the readiness announcement is Phase 7 step 7.7.5, after retro + Copilot all complete)
 - [ ] **6.6 ON MERGE: open the NEXT sprint branch off updated develop IMMEDIATELY** (MANDATORY, Sprint 42 retro) -- the moment the PR is merged/approved, `git checkout develop && git pull` then `git checkout -b feature/<date>_Sprint_<N+1>` and push it, BEFORE any further commits (retro fixes, backlog refinement, issue cleanup). Post-merge commits on the merged branch get stranded off `develop`. See SPRINT_EXECUTION_WORKFLOW.md § 6.6 (incl. cherry-pick recovery if work already landed on the merged branch).
 
 **[CHECKPOINT]** Review Phase 7 checklist before proceeding. Phase 7 is MANDATORY. **[CONTEXT CHECK]** Verify context < 85% before starting Phase 7.
@@ -141,15 +141,17 @@ These documents MUST be created/updated during each sprint:
   - [ ] `docs/sprints/SPRINT_N_SUMMARY.md` created (MANDATORY - do not defer)
   - [ ] ARCHITECTURE.md updated (if architecture changed)
   - [ ] .claude/sprint_status.json updated
+- [ ] **7.7.5 FINAL PR GATE + announce readiness** (PR lifecycle checkpoint #4, MANDATORY): ONLY after manual testing AND retrospective AND retro improvements AND any Copilot review AND Copilot comments addressed are ALL complete -- final PR update IF anything needs it (no-op if nothing changed), convert draft->ready (`gh pr ready <PR#>`, verify `isDraft:false`/`mergeable:MERGEABLE`), THEN notify Product Owner / Scrum Master the PR is ready for FINAL APPROVAL. This is the ONE readiness announcement of the sprint.
 - [ ] **7.8** Review results summarized
 - [ ] **7.9** Next steps offered to user
 
 ## Post-Merge Cleanup
 
 - [ ] PR merged to develop
+- [ ] **6.6 NEXT sprint branch opened off updated develop IMMEDIATELY on merge** (see Phase 6.6 -- before any post-merge commits)
 - [ ] **Review and close all resolved GitHub issues** (`gh issue list --state open` - close any resolved by this sprint)
 - [ ] GitHub issues auto-closed (verify Closes #N references worked)
-- [ ] Feature branch deleted (optional, user-managed)
+- [ ] **Feature branch NEVER deleted** (sprint branches are retained permanently, local + remote -- `feedback_branch_retention`; do not offer to clean up)
 
 ## Post-Merge: Store Submission (if applicable)
 
