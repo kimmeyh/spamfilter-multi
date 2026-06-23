@@ -28,8 +28,10 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   group('F99-e layout regression (in-VM bounds)', () {
-    late HarnessSession session;
-    tearDown(() async => session.dispose());
+    HarnessSession? session;
+    // Null-safe dispose: a boot failure before assignment must not mask the real
+    // error with a LateInitializationError (Copilot review PR #263).
+    tearDown(() async => session?.dispose());
 
     testWidgets('Add-Block-Rule: Save Rule button has real, on-screen bounds',
         (tester) async {

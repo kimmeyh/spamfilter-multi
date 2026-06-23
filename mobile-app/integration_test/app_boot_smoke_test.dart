@@ -27,10 +27,12 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   group('F99 harness smoke', () {
-    late HarnessSession session;
+    HarnessSession? session;
 
     tearDown(() async {
-      await session.dispose();
+      // Null-safe: if bootDbOnly throws before assignment, do not mask the real
+      // failure with a LateInitializationError (Copilot review PR #263).
+      await session?.dispose();
     });
 
     testWidgets('seeds an isolated temp DB and pumps a widget', (tester) async {

@@ -21,10 +21,12 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   group('F99-c safe-sender create+delete lifecycle (in-VM)', () {
-    late HarnessSession session;
+    HarnessSession? session;
 
     tearDown(() async {
-      await session.dispose();
+      // Null-safe: if bootDbOnly throws before assignment, do not mask the real
+      // failure with a LateInitializationError (Copilot review PR #263).
+      await session?.dispose();
     });
 
     testWidgets('create an Entire-Domain safe sender, verify, then delete',

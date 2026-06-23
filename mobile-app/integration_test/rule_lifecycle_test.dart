@@ -31,10 +31,12 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   group('F99-c rule create+delete lifecycle (in-VM)', () {
-    late HarnessSession session;
+    HarnessSession? session;
 
     tearDown(() async {
-      await session.dispose();
+      // Null-safe: if bootDbOnly throws before assignment, do not mask the real
+      // failure with a LateInitializationError (Copilot review PR #263).
+      await session?.dispose();
     });
 
     testWidgets('create a TLD block rule, verify it persists, then delete it',

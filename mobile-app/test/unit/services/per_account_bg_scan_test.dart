@@ -73,6 +73,7 @@ void main() {
   group('F98 settings store per-account frequency', () {
     late DatabaseHelper db;
     late SettingsStore store;
+    late Directory tempDir;
 
     setUpAll(() {
       sqfliteFfiInit();
@@ -80,14 +81,17 @@ void main() {
     });
 
     setUp(() async {
-      final tempDir = await Directory.systemTemp.createTemp('f98_settings_');
+      tempDir = await Directory.systemTemp.createTemp('f98_settings_');
       db = DatabaseHelper();
       db.setAppPaths(_TestAppPaths('${tempDir.path}/t.db'));
       await db.deleteAllData();
       store = SettingsStore(db);
     });
 
-    tearDown(() async => db.close());
+    tearDown(() async {
+      await db.close();
+      if (await tempDir.exists()) await tempDir.delete(recursive: true);
+    });
 
     test('per-account frequency override resolves before global', () async {
       await store.setBackgroundScanFrequency(60); // global
@@ -106,6 +110,7 @@ void main() {
   group('F98 migration (Locked Decision 1: preserve behavior)', () {
     late DatabaseHelper db;
     late SettingsStore store;
+    late Directory tempDir;
 
     setUpAll(() {
       sqfliteFfiInit();
@@ -113,14 +118,17 @@ void main() {
     });
 
     setUp(() async {
-      final tempDir = await Directory.systemTemp.createTemp('f98_migrate_');
+      tempDir = await Directory.systemTemp.createTemp('f98_migrate_');
       db = DatabaseHelper();
       db.setAppPaths(_TestAppPaths('${tempDir.path}/t.db'));
       await db.deleteAllData();
       store = SettingsStore(db);
     });
 
-    tearDown(() async => db.close());
+    tearDown(() async {
+      await db.close();
+      if (await tempDir.exists()) await tempDir.delete(recursive: true);
+    });
 
     PerAccountBgMigration migrationFor(List<String> accounts) =>
         PerAccountBgMigration(
