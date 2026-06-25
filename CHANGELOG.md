@@ -26,6 +26,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-06-24 (Sprint 43: F101 -- shorten background-scan DB-lock retry cap)
+- **fix**: F101 (Harold direction 2026-06-23) -- the F98 Windows background-scan worker retried a "database is locked" error 1 min x 20 = ~20 min worst case. Capped `_dbLockMaxAttempts` to 15 (delay unchanged at 1 min between attempts, no trailing delay after the final attempt), so a genuinely stuck lock now fails in ~15 min instead of ~20. Constant + comment in `background_scan_windows_worker.dart`. (F101)
+
 ### 2026-06-24 (Sprint 43: F100 -- port WinWright read-only flows to integration_test)
 - **test**: F100 -- ported the 6 read-only WinWright flows (navigation, settings-tabs, scan-history, text-selection, F25 rule-test, F35 rule-edit) to the in-VM `integration_test` lane as `integration_test/read_only_flows_test.dart`. Each pumps the screen directly against the F99 seeded temp DB and asserts its key content/behavior with `pumpAndSettle()` -- no out-of-process selector-settle flakiness, no live-window dependency. (F100)
 - **chore**: F100 -- RETIRED the 6 ported WinWright scripts (`test_navigation`, `test_settings_tabs`, `test_scan_history`, `test_text_selection`, `test_f25_rule_test_tool`, `test_f35_rule_edit`); their coverage now lives in the integration_test lane. The WinWright default sweep is now empty; only the create/lifecycle reference scripts (`test_f56_*`, `test_f37_folder_selector`, already excluded from the sweep) remain. Updated `test/winwright/README.md`. (F100)

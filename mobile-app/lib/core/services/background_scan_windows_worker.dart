@@ -63,7 +63,14 @@ class BackgroundScanWindowsWorker {
   }
 
   /// Maximum attempts when the DB is locked by a concurrent process.
-  static const int _dbLockMaxAttempts = 20;
+  ///
+  /// F101 (Sprint 43, Harold direction 2026-06-23): capped at 15 (was 20) so a
+  /// genuinely stuck lock fails in ~15 min instead of ~20. With
+  /// [_dbLockRetryDelay] = 1 min BETWEEN attempts (no trailing delay after the
+  /// final attempt), 15 attempts means at most 14 one-minute waits + the scan
+  /// work itself -- a worst case of ~15 min before the lock error is rethrown
+  /// and the failure recorded.
+  static const int _dbLockMaxAttempts = 15;
 
   /// Delay between DB-lock retries.
   static const Duration _dbLockRetryDelay = Duration(minutes: 1);
