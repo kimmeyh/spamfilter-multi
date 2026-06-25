@@ -26,6 +26,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-06-24 (Sprint 43: build fix -- remove failing sqlite3 native-asset hook)
+- **fix**: pinned `sqlite3` to the 2.x line (prebuilt DLL, no build hook) via `dependency_overrides` (`sqflite_common_ffi: 2.3.3`, `sqlite3: ^2.4.0`). The Windows release build failed in "Building native assets" -- `sqflite_common_ffi` 2.4.x requires `sqlite3 >=3.1.2`, whose build hook compiles SQLite from source via MSVC and failed to build in this environment. Nothing in the app needs the hook (SEC-11b's custom-cipher SQLite is deferred Post-MVP); the 3.x + `hooks` packages entered transitively via Sprint 42 version drift, not deliberate prep. Drops `hooks`/`code_assets`/`native_toolchain_c`; full suite green (+1669 ~28) and the Windows build succeeds. Remove the overrides when SEC-11b adopts SQLite3MultipleCiphers.
+
 ### 2026-06-24 (Sprint 43: F105 -- dev version bump 0.5.3 -> 0.5.4)
 - **chore**: F105 -- bumped the dev version `0.5.3 -> 0.5.4` (prod stays `0.5.2` until a Store release; dev = patch+1 each sprint per ADR-0035). Updated the 5-file version checklist (`pubspec.yaml` top-level + `msix_version`, `main.dart` + `background_scan_windows_worker.dart` background-scan log filename token, `settings_screen.dart` version display) plus the `live_scan_v*.log` filename token in `live_scan_logger.dart` (and its doc references in `settings_store.dart`), the `test-background-scan-skip.ps1` expectation, and the CLAUDE.md version/log-filename references. (F105)
 
