@@ -192,6 +192,17 @@ Recent sprints complete -- detail blocks removed per the Maintenance Guide (hist
 - Depends on: none (the `Redact` utility already exists).
 - Source: Sprint 42 PR #263 Copilot review (PII-in-logs theme) + Harold steering 2026-06-23.
 
+**F108. Security-relevant dependency major-version upgrades (~2-4h) Priority 35 -- NEW (Sprint 43 F104 security deep dive, 2026-06-24)**
+- Phase: Security / maintenance
+- Platform: All
+- F104 security deep dive found several security-relevant deps are a major version behind (no known-exploited CVE blocking, but freshness/hardening hygiene). Evaluate + upgrade DELIBERATELY, each with a targeted retest (each is a Class-2 development decision -- not a silent mid-sprint bump):
+  - `flutter_secure_storage` 9.2.4 -> 10.3.1 (credential store -- retest Windows + Android secure storage round-trip).
+  - `flutter_appauth` 8.0.3 -> 12.0.1 (OAuth -- retest the full Gmail + AOL sign-in flows).
+  - `workmanager` 0.5.2 -> 0.9.0+3 (Android background scan F98 -- retest per-account WorkManager scheduling).
+  - Also fold in the low-risk minor/patch drift (`logger`, `path_provider`, `sqflite`, `archive`) in a routine `pub upgrade` pass.
+- **Note**: the transitive `js` 0.6.7 is discontinued upstream; no direct action (track for when a dependent drops it).
+- Source: Sprint 43 F104 security deep dive (2026-06-24).
+
 **F107. ADR-0037 status review (Proposed -> Accepted?) + ARSD draft promotion (~30m) Priority 45 -- NEW (Sprint 43 F103 architecture deep dive, 2026-06-23)**
 - Phase: Architecture maintenance
 - Platform: All

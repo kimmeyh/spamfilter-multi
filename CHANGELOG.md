@@ -26,6 +26,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-06-24 (Sprint 43: F104 -- periodic security deep dive)
+- **docs**: F104 -- ran the F70 security-deep-dive template against the Sprint 43 codebase (`docs/sprints/SPRINT_43_F104_SECURITY_DEEP_DIVE.md`). Headline: the F102 redaction gate is GREEN (zero violations) -- the credential-logging audit that previously found leaks now passes mechanically. Also verified: no SQL string-interpolation (all parameterized), ReDoS-guarded scan path (SEC-1 isolate timeout + heuristics), centralized secure credential storage, certificate pinning, minimal MSIX/Android permissions. Surfaced one backlog item (F108: deliberate security-relevant dependency major bumps); no blocking CVE. (F104)
+
 ### 2026-06-24 (Sprint 43: F101 -- shorten background-scan DB-lock retry cap)
 - **fix**: F101 (Harold direction 2026-06-23) -- the F98 Windows background-scan worker retried a "database is locked" error 1 min x 20 = ~20 min worst case. Capped `_dbLockMaxAttempts` to 15 (delay unchanged at 1 min between attempts, no trailing delay after the final attempt), so a genuinely stuck lock now fails in ~15 min instead of ~20. Constant + comment in `background_scan_windows_worker.dart`. (F101)
 
