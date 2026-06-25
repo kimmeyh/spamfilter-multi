@@ -183,6 +183,47 @@ class AuthResultsParser {
   static AuthClassification classifyHeaders(Map<String, String> headers) =>
       classify(parse(headers));
 
+  /// Map an [AuthClassification] back to its persisted string name
+  /// (`green`/`yellow`/`red`/`grey`). Inverse of [classificationFromName].
+  static String classificationToName(AuthClassification c) => c.name;
+
+  /// Parse a persisted classification name back into an [AuthClassification].
+  ///
+  /// F96 (Sprint 43): used on the off-scan quick-add paths to re-hydrate the
+  /// classification snapshot stored at scan time (`email_actions` /
+  /// `unmatched_emails` `auth_classification` column). Returns null when
+  /// [name] is null, empty, or unrecognized -- callers treat that as "no
+  /// snapshot available; fall back to parsing the live headers".
+  static AuthClassification? classificationFromName(String? name) {
+    if (name == null || name.isEmpty) return null;
+    for (final c in AuthClassification.values) {
+      if (c.name == name) return c;
+    }
+    return null;
+  }
+
+  /// Synthesize a minimal [EmailAuthResult] consistent with a re-hydrated
+  /// [classification], for paths that persisted only the classification enum
+  /// (Sprint 43 Class-1 decision -- the raw `Authentication-Results` header is
+  /// NOT stored). The result has no raw text and approximates per-protocol
+  /// verdicts so the RED warning dialog renders coherently:
+  ///   - RED:    spf/dkim/dmarc = fail (the dialog explains "what failed").
+  ///   - others: all `none` (the dialog is only shown for RED).
+  ///
+  /// This is intentionally lossy: a re-hydrated RED warning fires (the
+  /// anti-phishing goal) but cannot reproduce the original header breakdown.
+  static EmailAuthResult syntheticResultFor(AuthClassification classification) {
+    final failed = classification == AuthClassification.red;
+    final verdict =
+        failed ? AuthMethodResult.fail : AuthMethodResult.none;
+    return EmailAuthResult(
+      spf: verdict,
+      dkim: verdict,
+      dmarc: verdict,
+      raw: '',
+    );
+  }
+
   // --- Internal helpers ---
 
   /// Case-insensitive header lookup. Returns null when absent or blank.

@@ -68,8 +68,20 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
   void initState() {
     super.initState();
     _initializeFromEmail();
-    _authResult = AuthResultsParser.parse(widget.email.headers);
-    _authClassification = AuthResultsParser.classify(_authResult);
+    // F96 (Sprint 43): prefer a re-hydrated classification snapshot for
+    // off-scan reconstructed emails (see safe_sender_quick_add_screen for the
+    // full rationale). For block-rule quick-add the classification is purely
+    // informational (a block is sound regardless of authentication), so this
+    // only affects the badge / persisted created_with_auth_state.
+    final override = AuthResultsParser.classificationFromName(
+        widget.email.authClassificationOverride);
+    if (override != null) {
+      _authClassification = override;
+      _authResult = AuthResultsParser.syntheticResultFor(override);
+    } else {
+      _authResult = AuthResultsParser.parse(widget.email.headers);
+      _authClassification = AuthResultsParser.classify(_authResult);
+    }
   }
 
   @override

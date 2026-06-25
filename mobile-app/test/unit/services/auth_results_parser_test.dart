@@ -180,4 +180,46 @@ void main() {
       );
     });
   });
+
+  // F96 (Sprint 43): re-hydration helpers used by the off-scan quick-add paths.
+  group('F96 -- classification name round-trip', () {
+    test('classificationToName / classificationFromName round-trip', () {
+      for (final c in AuthClassification.values) {
+        final name = AuthResultsParser.classificationToName(c);
+        expect(AuthResultsParser.classificationFromName(name), c);
+      }
+    });
+
+    test('classificationFromName returns null for null/empty/unknown', () {
+      expect(AuthResultsParser.classificationFromName(null), isNull);
+      expect(AuthResultsParser.classificationFromName(''), isNull);
+      expect(AuthResultsParser.classificationFromName('purple'), isNull);
+    });
+  });
+
+  group('F96 -- syntheticResultFor', () {
+    test('RED synthesizes failing verdicts so the warning renders', () {
+      final r = AuthResultsParser.syntheticResultFor(AuthClassification.red);
+      expect(r.spf, AuthMethodResult.fail);
+      expect(r.dkim, AuthMethodResult.fail);
+      expect(r.dmarc, AuthMethodResult.fail);
+      expect(r.raw, isEmpty);
+      // A synthetic RED must itself re-classify as RED for consistency.
+      expect(AuthResultsParser.classify(r), AuthClassification.red);
+    });
+
+    test('non-RED synthesizes neutral verdicts (no warning is shown)', () {
+      for (final c in [
+        AuthClassification.green,
+        AuthClassification.yellow,
+        AuthClassification.grey,
+      ]) {
+        final r = AuthResultsParser.syntheticResultFor(c);
+        expect(r.spf, AuthMethodResult.none);
+        expect(r.dkim, AuthMethodResult.none);
+        expect(r.dmarc, AuthMethodResult.none);
+        expect(r.raw, isEmpty);
+      }
+    });
+  });
 }

@@ -9,6 +9,7 @@ import 'package:logger/logger.dart';
 
 import '../../core/models/email_message.dart';
 import '../../core/models/evaluation_result.dart';
+import '../../core/services/auth_results_parser.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/settings_store.dart';
@@ -436,6 +437,14 @@ class EmailScanProvider extends ChangeNotifier {
         // fetch headers). Used to recognize already-rescued safe-sender
         // messages re-injected by AOL's copy-not-move behavior.
         'rfc5322_message_id': r.email.messageIdHeader,
+        // F96 (Sprint 43): persist the SPF/DKIM/DMARC classification computed
+        // from the LIVE-scan headers (full Authentication-Results present here)
+        // so the off-scan quick-add paths can re-hydrate it and fire the RED
+        // anti-phishing warning. classifyHeaders returns GREY when no auth
+        // headers were present; we store that name as-is (re-hydration treats a
+        // stored GREY identically to "no snapshot").
+        'auth_classification':
+            AuthResultsParser.classifyHeaders(r.email.headers).name,
       }).toList();
 
       await _databaseHelper!.insertEmailActionBatch(actions);
