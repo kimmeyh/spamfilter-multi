@@ -26,6 +26,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-06-24 (Sprint 43: F105 -- dev version bump 0.5.3 -> 0.5.4)
+- **chore**: F105 -- bumped the dev version `0.5.3 -> 0.5.4` (prod stays `0.5.2` until a Store release; dev = patch+1 each sprint per ADR-0035). Updated the 5-file version checklist (`pubspec.yaml` top-level + `msix_version`, `main.dart` + `background_scan_windows_worker.dart` background-scan log filename token, `settings_screen.dart` version display) plus the `live_scan_v*.log` filename token in `live_scan_logger.dart` (and its doc references in `settings_store.dart`), the `test-background-scan-skip.ps1` expectation, and the CLAUDE.md version/log-filename references. (F105)
+
 ### 2026-06-24 (Sprint 43: F104 -- periodic security deep dive)
 - **docs**: F104 -- ran the F70 security-deep-dive template against the Sprint 43 codebase (`docs/sprints/SPRINT_43_F104_SECURITY_DEEP_DIVE.md`). Headline: the F102 redaction gate is GREEN (zero violations) -- the credential-logging audit that previously found leaks now passes mechanically. Also verified: no SQL string-interpolation (all parameterized), ReDoS-guarded scan path (SEC-1 isolate timeout + heuristics), centralized secure credential storage, certificate pinning, minimal MSIX/Android permissions. Surfaced one backlog item (F108: deliberate security-relevant dependency major bumps); no blocking CVE. (F104)
 

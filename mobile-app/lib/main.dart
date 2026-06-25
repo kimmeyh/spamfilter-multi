@@ -63,7 +63,7 @@ void main(List<String> args) async {
     final logPrefix = AppEnvironment.logPrefix;
     final logDir = Directory('${appSupport.path}$envSuffix\\logs');
     await logDir.create(recursive: true);
-    final logFile = File('${logDir.path}\\${logPrefix}background_scan_v0.5.3.log');
+    final logFile = File('${logDir.path}\\${logPrefix}background_scan_v0.5.4.log');
     Future<void> bgLog(String message) async {
       try {
         final timestamp = DateTime.now().toIso8601String();
