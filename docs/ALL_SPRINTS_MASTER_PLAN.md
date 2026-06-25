@@ -148,7 +148,7 @@ Recent sprints complete -- detail blocks removed per the Maintenance Guide (hist
 - **Sprint 41** (merged PR #262): F83 Phase 1 (ADR-0039 Accepted), F97, F76
 - **Sprint 42** (merged PR #263, 2026-06-23): F99 (integration_test harness), F98 (per-account bg-scan, ADR-0039 + ADR-0040), BUG-S37-2
 
-**Sprint 43 candidates** (active backlog below, priority order): F96 (P73), SEC-11b (P60), **F102 (P55, logging-redaction policy -- NEW this refinement)**, F100 (P40), F101 (P35). HOLD items enter when their gates clear.
+**Sprint 43 candidates** (active backlog below, priority order): F96 (P73), **F102 (P55, logging-redaction policy -- NEW this refinement)**, F100 (P40), F101 (P35). HOLD items enter when their gates clear. **(SEC-11b removed from Sprint 43 and deferred to Post-MVP, Harold 2026-06-24 -- cipher switched to SQLite3MultipleCiphers; see HOLD Items (Post-MVP).)**
 
 ### Core App
 
@@ -179,18 +179,6 @@ Recent sprints complete -- detail blocks removed per the Maintenance Guide (hist
 
 ### Security Hardening (Sprint 31 Audit)
 
-**SEC-11b. SQLCipher driver swap + plaintext-to-encrypted migration (~6-10h) Priority 60 -- MEDIUM**
-- Phase: Security
-- Platform: All
-- Sprint 33 shipped the infrastructure: DatabaseEncryptionKeyService (256-bit key in flutter_secure_storage), opt-in `encrypt_database` settings toggle (default off)
-- Gap: DatabaseHelper still uses the plaintext sqflite driver. Flipping requires:
-  - Add deps: `sqflite_sqlcipher` + `sqlcipher_flutter_libs`
-  - Platform plugin registration for Windows + Android
-  - Atomic plaintext-to-encrypted migration on first opt-in (backup, re-open with key, copy, swap, verify, delete backup)
-  - QA on real installs (Windows desktop + Android emulator + physical device)
-  - Flip `encrypt_database` default to true after QA
-- Source: Sprint 33 SEC-11 scoping decision (partial completion)
-
 **F102. Logging redaction policy: documented invariant + enforcement gate (~2-4h) Priority 55 -- NEW (Sprint 42 Backlog Refinement, 2026-06-23)**
 - Phase: Security / Privacy / Process
 - Platform: All
@@ -211,11 +199,11 @@ Recent sprints complete -- detail blocks removed per the Maintenance Guide (hist
 - **Action**: Harold reviews ADR-0037 -> Accepted (or notes what still pends); promote ARSD if appropriate.
 - Source: Sprint 43 F103 architecture deep dive.
 
-**F106. SEC-11b verification-window cleanup (~30m) Priority 30 -- DEFERRED (~Sprint 45, spawned by SEC-11b dual-DB design)**
+**F106. SEC-11b verification-window cleanup (~30m) Priority 30 -- DEFERRED (gated on SEC-11b, now Post-MVP)**
 - Phase: Security / cleanup
 - Platform: All
 - After ~2 sprints of verified encrypted+plaintext dual-DB operation (SEC-11b, Harold 2026-06-23): remove the Dev plaintext-mirror dual-write code path, and delete the retained pre-migration plaintext `spam_filter.db` file in prod (kept as a rollback backup during the verification window). Gated on Harold confirming the encrypted DB has been verified working across the window.
-- Depends on: SEC-11b shipped + ~2 sprints of verification.
+- Depends on: SEC-11b shipped + ~2 sprints of verification. **SEC-11b is now Post-MVP (Harold 2026-06-24), so F106 follows it -- no longer ~Sprint 45.**
 - Source: Harold direction 2026-06-23 (SEC-11b dual-DB verification requirement).
 
 **F103. Periodic Architecture Deep Dive -- Sprint 43 instance (~4-8h) Priority 54 -- SPRINT 43 (copy of F71 template, Harold 2026-06-23)**
@@ -229,7 +217,7 @@ Recent sprints complete -- detail blocks removed per the Maintenance Guide (hist
 - Phase: Security Spike (this is the Sprint 43 RUN of the reusable F70 template; F70 itself stays HOLD for the next run)
 - Platform: All
 - **Run the F70 deep-dive scope against the current codebase**: dependency CVEs (`flutter pub outdated` + known-vuln check); SQL injection / parameterization audit; regex injection / ReDoS review; **credential-storage + LOGGING audit** (verifies the F102 redaction invariant is actually enforced -- this sprint introduced the policy + gate, so confirm no PII leaks remain); platform security (MSIX sandbox, Android signing/permissions); app-store compliance. Output a findings list; fix-now small items, backlog the rest.
-- **Ordering**: second-to-last sprint item -- runs AFTER all feature/tuning items (F102, F103, SEC-11b, F96, F100, F101) so the audit covers the final sprint state. Only the version bump comes after it.
+- **Ordering**: second-to-last sprint item -- runs AFTER all feature/tuning items (F102, F103, F96, F100, F101) so the audit covers the final sprint state. Only the version bump comes after it. (SEC-11b removed from Sprint 43, deferred Post-MVP -- Harold 2026-06-24.)
 - Depends on: all other Sprint 43 dev items complete.
 - Source: F70 template (Sprint 31 retro); Harold direction 2026-06-23.
 
@@ -431,6 +419,29 @@ Recent sprints complete -- detail blocks removed per the Maintenance Guide (hist
 - Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gap G25)
 
 ### HOLD Items (Post-MVP)
+
+**SEC-11b. Database-at-rest encryption via SQLite3MultipleCiphers (sqlite3mc) + plaintext-to-encrypted migration (~8-12h) Priority HOLD (Post-MVP)**
+- Phase: Security
+- Platform: All (Windows desktop + Android + iOS)
+- **Moved to Post-MVP, removed from Sprint 43** (Harold direction 2026-06-24): the original `sqflite_sqlcipher` approach is mobile-only (no Windows desktop support), which blocked SEC-11b on the app's primary platform. After research, the cipher was switched to **SQLite3MultipleCiphers (sqlite3mc)** -- the modern cross-platform answer -- and the item was re-scoped and deferred rather than attempted with a half-working driver.
+- **What Sprint 33 already shipped (infrastructure, reusable as-is)**: `DatabaseEncryptionKeyService` (`lib/core/security/database_encryption_key_service.dart`) -- 256-bit key in `flutter_secure_storage` under `db_encryption_key_v1`, base64-returned for `PRAGMA key`; `getOrCreateKey()` / `hasKey()` / `deleteKey()`. Opt-in `encrypt_database` settings toggle (default off). These do NOT change.
+- **Cipher decision (Harold 2026-06-24): use SQLite3MultipleCiphers (sqlite3mc), NOT SQLCipher.** Rationale:
+  - Truly cross-platform from one prebuilt source: Android (armv7a/aarch64/x86/x64), iOS, and **Windows desktop** all covered -- SQLCipher's `sqflite_sqlcipher` has no Windows desktop support.
+  - Per the drift/sqlite3 maintainers, as of drift 2.32.0 / sqlite3 v3.x, sqlite3mc is the supported/easy path and `sqlcipher_flutter_libs` is being deprecated. SQLCipher is now the harder route.
+  - sqlite3mc can still read SQLCipher-format DBs if ever needed (`PRAGMA cipher='sqlcipher'; PRAGMA legacy=4`), so it is not a dead end.
+- **Key integration caveat -- this app uses `sqflite` / `sqflite_common_ffi`, NOT drift / the `sqlite3` package binding.** sqlite3mc is wired most cleanly through the `sqlite3` package; to use it with the existing `sqflite_common_ffi` driver on Windows desktop you must:
+  - Provide a custom `ffiInit` to `createDatabaseFactoryFfi(ffiInit: ...)` that loads the sqlite3mc native library via `open.overrideFor(OperatingSystem.windows, ...)` (and for `OperatingSystem.android`/`iOS` as needed). Reference: [sqflite_common_ffi encryption_support.md](https://github.com/tekartik/sqflite/blob/master/sqflite_common_ffi/doc/encryption_support.md).
+  - Set the key + cipher via `PRAGMA key='<base64>'` in `DatabaseHelper._initializeDatabase()`'s `onConfigure` (alongside the existing `foreign_keys`, `busy_timeout=30000`, WAL setup at `lib/core/storage/database_helper.dart`).
+  - Bundle/ship the sqlite3mc native lib per platform (Windows: lib in the same folder as the executable for release; debug bundles automatically). Confirm prebuilt-binary availability vs the `hooks: user_defines: sqlite3: source: sqlite3mc` pubspec mechanism, and whether that mechanism is reachable from a sqflite-based (non-`sqlite3`-package) access layer -- if not, evaluate either (a) a thin `sqlite3`-package shim just for the native-lib resolution, or (b) shipping the sqlite3mc binaries directly.
+- **Recommended approach when picked up: spike first.** A focused spike ("wire sqlite3mc through `ffiInit` and prove the Windows DB file on disk is encrypted, with the existing sqflite access layer intact") de-risks the whole feature before the migration work. Far more tractable than compiling/linking SQLCipher for Windows.
+- **Migration logic (cipher-independent, unchanged by the cipher switch)**:
+  - Atomic plaintext-to-encrypted migration on first opt-in: backup -> re-open with key -> copy -> swap -> verify -> retain backup.
+  - **Dual-DB verification window (Harold 2026-06-23)**: Dev keeps an encrypted + plaintext dual-write for ~2 sprints; Prod is encrypted-only after migration with the original plaintext `spam_filter.db` retained as a rollback backup. Cleanup tracked separately as **F106** (spawned by this design).
+  - **Existing prod-user upgrade path (Harold question 2026-06-23)**: users on <= 0.5.3 have a plaintext DB; on upgrade to the version that ships SEC-11b, the first launch detects the plaintext DB (no key set / `hasKey()` false but DB exists), runs the one-time migration, and retains the original as the rollback backup.
+- **QA on real installs**: Windows desktop + Android emulator + physical device; verify the on-disk DB is unreadable without the key.
+- **Flip `encrypt_database` default to true after QA (Class-1 -- surface to Chief Architect before flipping).**
+- **Estimate revised to ~8-12h** (was ~6-10h) to cover the custom-`ffiInit` native-lib wiring + the spike.
+- Source: Sprint 33 SEC-11 scoping decision (partial completion); driver switch + Post-MVP deferral Harold direction 2026-06-24. Research sources: [drift encryption docs](https://drift.simonbinder.eu/platforms/encryption/), [sqlite3.dart UPGRADING_TO_V3.md](https://github.com/simolus3/sqlite3.dart/blob/main/UPGRADING_TO_V3.md), [sqlite3 hook topic](https://pub.dev/documentation/sqlite3/latest/topics/hook-topic.html), [sqflite_common_ffi encryption_support.md](https://github.com/tekartik/sqflite/blob/master/sqflite_common_ffi/doc/encryption_support.md).
 
 **H1. GenAI Pattern Suggestions - Crowdsourced Spam Intelligence (TBD) Priority HOLD**
 - Phase: Post-MVP

@@ -9,8 +9,8 @@
 **Harold decisions at approval (2026-06-23)**:
 - **F102 home (Class-1) -- LOCKED**: extend ADR-0030 with a "Logging & Redaction" section.
 - **F96 persist strategy (Class-1) -- LOCKED**: **(a) persist the `AuthClassification` enum** (Harold: no retroactive re-scoring needed). Add `email_actions.auth_classification` TEXT (DB v8); re-hydrate on the history/detail quick-add paths.
-- **SEC-11b dual-DB (Class-1) -- LOCKED**: Dev = encrypted primary + plaintext mirror (dual-write for ~2 sprints); Prod = encrypted-only after the one-time plaintext->encrypted migration, original plaintext file retained read-only as rollback backup. Default-flip still surfaced after QA before flipping. Cleanup deferred to F106 (~Sprint 45).
-**Type**: Mixed -- Security/Privacy policy + enforcement (F102), Architecture + Security deep dives (F103/F104), DB-encryption (SEC-11b), anti-phishing coverage (F96), test-infra consolidation (F100), tuning (F101), release housekeeping (F105)
+- **SEC-11b -- REMOVED FROM SPRINT 43, DEFERRED TO POST-MVP (Harold 2026-06-24)**: research found the originally-planned `sqflite_sqlcipher` driver is mobile-only (no Windows desktop -- the primary platform). Cipher switched to **SQLite3MultipleCiphers (sqlite3mc)** and the item was re-scoped + deferred to the Post-MVP backlog rather than attempted with a half-working driver. The dual-DB design + prod upgrade path below are PRESERVED in the backlog item for when it is picked up. See `docs/ALL_SPRINTS_MASTER_PLAN.md` -> HOLD Items (Post-MVP) -> SEC-11b.
+**Type**: Mixed -- Security/Privacy policy + enforcement (F102), Architecture + Security deep dives (F103/F104), anti-phishing coverage (F96), test-infra consolidation (F100), tuning (F101), release housekeeping (F105). (SEC-11b removed -- see above.)
 **Estimating method**: TWO-metric MINUTE-based per `docs/CODING_VELOCITY.md`.
 
 > **Scope + order confirmed by Harold (2026-06-23).** Items execute in the order below. F103 = copy of the F71 Architecture-Deep-Dive template; F104 = copy of the F70 Security-Deep-Dive template (templates F70/F71 are retained for future runs). F101 is the confirmed "cap retry at ~15 min" change. F105 (version bump) is last.
@@ -23,7 +23,7 @@ Close the Sprint-42 privacy gap by making log redaction a documented, enforced i
 
 ---
 
-## Sprint Scope (8 items, IN EXECUTION ORDER)
+## Sprint Scope (7 items, IN EXECUTION ORDER -- was 8; SEC-11b removed/deferred Post-MVP 2026-06-24)
 
 ### 1. F102 -- Logging redaction policy: documented invariant + enforcement gate (FIRST)
 - **Why first**: it establishes the invariant that F104's security deep dive will later verify, and prevents new PII-in-logs leaks during the rest of the sprint.
@@ -35,21 +35,14 @@ Close the Sprint-42 privacy gap by making log redaction a documented, enforced i
 - Run the F71 scope vs the current codebase: ADR drift (esp. new ADR-0039/0040), ARCHITECTURE.md/ARSD.md alignment, platform-architecture, dead-code/deprecated-class detection, test-coverage-vs-architecture gaps. Produce a findings list; fix-now trivial items, backlog the rest.
 - **Step-types**: DOCS/audit (read-only analysis + findings doc). **Est-Effort: 30-50m | Est-Wall: 30-50m.** (Spike -- depth-bounded.)
 
-### 3. SEC-11b -- SQLCipher driver swap + plaintext->encrypted migration + verification dual-DB (THIRD) -- RESCOPED per Harold 2026-06-23
-- Add `sqflite_sqlcipher` + `sqlcipher_flutter_libs`; Windows + Android plugin registration.
-- **Prod upgrade path (<=0.5.3 unencrypted -> 0.5.4 encrypted)** -- the key requirement Harold raised:
-  - On first 0.5.4 launch, detect "encrypted DB does not exist but plaintext `spam_filter.db` does" (= a pre-0.5.4 install).
-  - Open the PLAINTEXT DB with the plaintext driver (SQLCipher cannot open a plaintext file with a key), generate/fetch the 256-bit key, create the ENCRYPTED DB with the SQLCipher driver, and copy all data (`sqlcipher_export()` or table-by-table). Verify row counts match.
-  - Per Harold's dual-write requirement: **RETAIN the original plaintext file** (do NOT delete it) for a ~2-sprint verification window; cleanup is a deferred item (see F106).
-- **Verification dual-write (Harold 2026-06-23): keep a pre- AND post-encrypted DB in sync for ~2 sprints, plaintext copy DEV-ONLY**:
-  - **Dev**: write to BOTH the encrypted DB (primary) and a plaintext mirror so the two can be diffed/verified each sprint.
-  - **Prod**: write to the encrypted DB ONLY after migration (a plaintext mirror in prod would defeat encryption-at-rest). The original pre-migration plaintext file is retained read-only as a rollback backup for the window.
-- **Default flip**: flipping `encrypt_database` default to true is a Class-1/2 behavior change -- surface after QA before flipping (do not flip unilaterally this sprint unless Harold approves at the QA point).
-- **Step-types**: DB-MIGRATE + SVC-EDIT + deps + native registration + dual-write infra. **Est-Effort: 90-150m | Est-Wall: 75-120m** (rescoped UP from 60-110 for the dual-write + prod-migration design). Largest + highest-risk item.
-- **Spawns F106** (deferred cleanup): after the ~2-sprint verification window, remove the dual-write + delete the retained plaintext file (Sprint 45 candidate).
+### 3. SEC-11b -- DB-at-rest encryption (THIRD) -- ~~RESCOPED~~ **REMOVED FROM SPRINT 43, DEFERRED TO POST-MVP (Harold 2026-06-24)**
+- **Why removed**: the originally-planned `sqflite_sqlcipher` + `sqlcipher_flutter_libs` driver is **mobile-only (no Windows desktop support)** -- it cannot encrypt the DB on the app's primary platform. Surfaced to Harold as a Class-1/2 blocker; Harold directed research into a cross-platform alternative.
+- **Cipher decision (Harold 2026-06-24)**: switch to **SQLite3MultipleCiphers (sqlite3mc)** -- cross-platform (Windows + Android + iOS), the supported modern path (SQLCipher being deprecated in the drift/sqlite3 ecosystem). Integration caveat: this app uses `sqflite_common_ffi`, so sqlite3mc must be wired via a custom `ffiInit` + native-lib bundling, not the simple `sqlite3`-package/drift path. A spike-first approach is recommended.
+- **Disposition**: full re-scope + the preserved dual-DB design, prod upgrade path, and QA/default-flip steps now live in the **Post-MVP backlog item** (`docs/ALL_SPRINTS_MASTER_PLAN.md` -> HOLD Items (Post-MVP) -> SEC-11b, est. ~8-12h). NOT executed in Sprint 43.
+- **F106** (cleanup) remains gated on SEC-11b and therefore also moves out past Post-MVP SEC-11b.
 
-### 3b. F106 -- SEC-11b verification-window cleanup (~30m) -- DEFERRED to ~Sprint 45 (NOT in Sprint 43)
-- After ~2 sprints of verified dual-DB operation: remove the Dev plaintext mirror + dual-write code path; delete the retained pre-migration plaintext file in prod. Listed here for traceability; added to the backlog, not executed this sprint.
+### 3b. F106 -- SEC-11b verification-window cleanup (~30m) -- DEFERRED (gated on SEC-11b, now Post-MVP) (NOT in Sprint 43)
+- After ~2 sprints of verified dual-DB operation: remove the Dev plaintext mirror + dual-write code path; delete the retained pre-migration plaintext file in prod. Listed here for traceability; added to the backlog, not executed this sprint. Now follows SEC-11b's Post-MVP timeline (2026-06-24), no longer ~Sprint 45.
 
 ### 4. F96 -- F89 auth-state coverage for historical / email-detail quick-add paths (FOURTH)
 - Persist the auth classification (or raw auth headers) at scan time so quick-add from Scan History reload + email-detail evaluates SPF/DKIM/DMARC identically to a live scan (RED dialog fires when warranted). DB migration + scanner-capture wiring + read-back across the two reconstructed paths.
@@ -76,13 +69,13 @@ Close the Sprint-42 privacy gap by making log redaction a documented, enforced i
 
 ## Sprint total
 
-**Est-Effort ~255-420m | Est-Wall ~240-390m** (items run largely in the specified sequence; within-item work parallelizes where independent). SEC-11b dominates and carries the most risk. Well under the 400-HOUR stopping threshold.
+**Est-Effort ~165-270m | Est-Wall ~165-270m** (revised down from ~255-420m after SEC-11b -- the dominant ~90-150m item -- was removed/deferred Post-MVP 2026-06-24). Items run largely in the specified sequence; within-item work parallelizes where independent. Well under the 400-HOUR stopping threshold.
 
 ---
 
 ## Model assignments
 
-- **F102 (policy/gate design), F103 + F104 (deep-dive analysis), F96 Class-1 decision, SEC-11b (native + migration)**: **Opus** -- judgment/architecture/security.
+- **F102 (policy/gate design), F103 + F104 (deep-dive analysis), F96 Class-1 decision**: **Opus** -- judgment/architecture/security. (SEC-11b removed/deferred Post-MVP 2026-06-24.)
 - **F100 (test port), F101 (constant change), F105 (version bump)**: **Sonnet** -- mechanical with clear spec.
 
 ---
@@ -90,8 +83,8 @@ Close the Sprint-42 privacy gap by making log redaction a documented, enforced i
 ## Decision-Class interrupts (NOT pre-authorized -- surface + wait)
 
 - **F102 policy home** (Class-1): confirm extend-ADR-0030 vs standalone ADR at Phase 3.
-- **F96 persist-classification vs raw-headers** (Class-1): surface at Phase 3 / F96 start.
-- **SEC-11b default flip** (Class-1/2): flipping `encrypt_database` default to true is a behavior change -- surface after QA before flipping.
+- **F96 persist-classification vs raw-headers** (Class-1): RESOLVED at approval -- (a) persist the `AuthClassification` enum.
+- ~~**SEC-11b default flip** (Class-1/2)~~: N/A this sprint -- SEC-11b removed/deferred Post-MVP (2026-06-24); the default-flip decision moves with it.
 - Any deep-dive (F103/F104) finding that implies an architecture/scope change -> surface, don't unilaterally fix large items.
 
 ---
