@@ -26,6 +26,12 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-06-25 (Sprint 43: F110 -- phishing auth-failure visibility + narrowed redaction)
+- **feat**: F110 -- the debug scan exports (background + live CSV/XLSX, gated by the existing debug-CSV setting) now carry a **`Phishing SPF/DKIM/DMARC`** column: a comma-separated list of the authentication checks each email HARD-FAILED (e.g. `SPF,DMARC`), blank when none failed. Every scanned email keeps its row; the column flags the failures. New `AuthResultsParser.failedChecks` / `failedChecksFromHeaders`. (F110)
+- **feat**: F110 -- the per-account scan log (`dev_background_scan_<email>_v0.5.4.log`) now writes one line per email that failed at least one auth check, naming the sender and which check(s) failed (`Phishing SPF/DKIM/DMARC: spammer@x.com -> SPF,DMARC failed`). Failures-only; no line for clean emails; not in the shared startup log. New `EmailScanProvider.getAuthFailures()`. (F110)
+- **fix**: F110 (Class-1, amends ADR-0030 / F102) -- NARROWED the logging-redaction invariant. "Raw email addresses must not be logged" now applies ONLY to the app user's OWN configured-account addresses; third-party sender/recipient addresses are logged in the clear (they are the security signal). New `Redact.senderForLog(addr, userAccountEmails)` masks only the user's-own-address case (incl. self-spoofs). Account ids / tokens / secrets stay strict. Reworked the enforcement gate (`check-log-redaction.ps1` + `log_redaction_test.dart`) to drop the email-address family; updated ADR-0030 §5. (F110)
+- **test**: F110 -- coverage for `senderForLog`, `failedChecks`, the CSV Auth column, and `getAuthFailures` (full suite +1684 ~28). (F110)
+
 ### 2026-06-25 (Sprint 43: hide deferred DB-encryption toggle)
 - **fix**: hid the "Encrypt database (experimental)" toggle in Settings > General (Harold, manual testing 2026-06-25). The full feature (SEC-11b) is deferred to Post-MVP and the toggle's copy referenced SQLCipher, which the deferred plan has replaced with SQLite3MultipleCiphers -- exposing a non-functional control with stale copy. Wrapped in `Visibility(visible: false)`; all wiring (`_encryptDatabase`, the store getter/setter, `DatabaseEncryptionKeyService`) is retained so the toggle can be restored when SEC-11b ships. Also genericized the remaining copy ("an encrypting cipher" instead of "SQLCipher").
 

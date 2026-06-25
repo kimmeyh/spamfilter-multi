@@ -1,24 +1,38 @@
 # F102 (Sprint 43) -- Logging redaction enforcement gate.
+# F110 (Sprint 43) -- NARROWED: only the app user's OWN account address is PII.
 #
-# Fails (exit 1) when a log call in lib/ interpolates a raw PII identifier
-# (account id, email address, token) WITHOUT a Redact.* wrapper. This codifies
-# the ADR-0030 "Logging & Redaction" invariant as an automated check so new
-# leaks are caught at author/CI time -- not at code review (Sprint 42 F98
-# introduced ~19 such leaks that only Copilot caught on PR #263).
+# Fails (exit 1) when a log call in lib/ interpolates a raw SENSITIVE identifier
+# (ACCOUNT ID, token, or secret) WITHOUT a Redact.* wrapper. This codifies the
+# narrowed ADR-0030 "Logging & Redaction" invariant as an automated check so new
+# leaks are caught at author/CI time -- not at code review.
+#
+# NARROWED RULE (F110, Harold 2026-06-25): the redaction invariant protects the
+# APP USER'S OWN identity, NOT arbitrary correspondents. So:
+#   - ACCOUNT IDs stay STRICT -- they embed the user's email; always redact
+#     ($accountId, $bgAccountId, $_backgroundAccountId, bare $account).
+#   - TOKENS / SECRETS stay STRICT ($token, $accessToken, $refreshToken,
+#     $appPassword, $clientSecret).
+#   - SENDER / recipient EMAIL ADDRESSES are now ALLOWED in the clear -- a
+#     spammer's / phisher's address IS the security signal a reviewer needs.
+#     The user's-OWN-address case (a self-spoof) is masked at the call site via
+#     Redact.senderForLog(addr, userAccountEmails); logging a bare $fromEmail /
+#     $senderEmail is NO LONGER a violation.
 #
 # Scope: lib/**/*.dart. Log sinks matched: `_logger.i/d/w/e(...)`,
 # `Logger().i/d/w/e(...)`, and the headless file logs `_bgLog(...)` / `bgLog(...)`.
 #
-# A line is a VIOLATION when it is a log call that contains a raw PII variable
-# interpolation and does NOT contain `Redact.` (the redaction is applied inline,
-# so a redacted line always mentions Redact).
+# A line is a VIOLATION when it is a log call that contains a raw SENSITIVE
+# variable interpolation and does NOT contain `Redact.` (redaction is applied
+# inline, so a redacted line always mentions Redact).
 #
-# PII variable patterns (the email-address / account-id / token family):
-#   $email, $emailAddress, $fromEmail, $senderEmail, $userEmail, $toEmail
+# SENSITIVE variable patterns (account-id / token / secret family):
 #   $accountId, $bgAccountId, $_backgroundAccountId, $account  (bare account id)
 #   $token, $accessToken, $refreshToken, $appPassword, $clientSecret
-# Deliberately EXCLUDED (not PII -- counts / row ids):
-#   $emailId, $emailIds, $emails, $emailCount, $accountIds (list), $accountCount
+# Deliberately NOT flagged:
+#   - email-address family ($email, $fromEmail, $senderEmail, $toEmail, ...) --
+#     allowed in the clear per the F110 narrowing (use Redact.senderForLog for
+#     the user's own address).
+#   - counts / row ids ($emailId, $emails, $accountIds list, $accountCount).
 #
 # Usage:
 #   .\check-log-redaction.ps1            # scan lib/, exit 1 on any violation
@@ -33,9 +47,10 @@ $ErrorActionPreference = 'Stop'
 # A log-sink call on the line.
 $logCallRe = '(_logger\.(i|d|w|e)|Logger\(\)\.(i|d|w|e)|_bgLog|[^A-Za-z]bgLog)\s*\('
 
-# Raw PII identifier interpolations. \b-anchored and with negative lookahead so
-# $emailId / $emails / $accountIds / $accountCount do NOT match.
-$piiRe = '\$\{?(email(?!Id|Ids|Count|s\b)|emailAddress|fromEmail|senderEmail|userEmail|toEmail|accountId(?!s)|bgAccountId|_backgroundAccountId|account(?!Id|Ids|Count|s\b)|accessToken|refreshToken|token|appPassword|clientSecret)\b'
+# Raw SENSITIVE identifier interpolations (account id / token / secret only --
+# F110 dropped the email-address family). \b-anchored with negative lookahead so
+# $accountIds (list) / $accountCount do NOT match.
+$piiRe = '\$\{?(accountId(?!s)|bgAccountId|_backgroundAccountId|account(?!Id|Ids|Count|s\b)|accessToken|refreshToken|token|appPassword|clientSecret)\b'
 
 function Test-Line {
     param([string]$Line)
@@ -48,10 +63,12 @@ function Test-Line {
 if ($SelfTest) {
     Write-Host "[SELF-TEST] check-log-redaction.ps1" -ForegroundColor Cyan
     $cases = @(
-        @{ line = '_logger.d(x $emailAddress y)';                  expect = $true  ; name = 'raw email in logger' },
         @{ line = '_logger.i(for account $accountId)';             expect = $true  ; name = 'raw accountId in logger' },
         @{ line = 'await _bgLog(account $accountId missing)';      expect = $true  ; name = 'raw accountId in bgLog' },
-        @{ line = '_logger.d(x ${Redact.email(emailAddress)} y)'; expect = $false ; name = 'redacted email ok' },
+        @{ line = '_logger.w(token=$accessToken)';                 expect = $true  ; name = 'raw token in logger' },
+        @{ line = '_logger.d(x $emailAddress y)';                  expect = $false ; name = 'sender email now allowed (F110)' },
+        @{ line = 'await _bgLog(Phishing: $fromEmail failed)';     expect = $false ; name = 'sender fromEmail now allowed (F110)' },
+        @{ line = 'await _bgLog(${Redact.senderForLog(from, u)})'; expect = $false ; name = 'senderForLog ok' },
         @{ line = '_logger.i(${Redact.accountId(accountId)})';     expect = $false ; name = 'redacted accountId ok' },
         @{ line = '_logger.d(Deleted email $emailId)';            expect = $false ; name = 'emailId row id ok' },
         @{ line = '_logger.i(scans=$scans emails=$emails)';        expect = $false ; name = 'counts ok' },

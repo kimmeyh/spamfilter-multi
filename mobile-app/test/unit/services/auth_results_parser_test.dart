@@ -222,4 +222,51 @@ void main() {
       }
     });
   });
+
+  // F110 (Sprint 43): the "Phishing SPF/DKIM/DMARC" failed-checks list.
+  group('F110 -- failedChecks', () {
+    test('lists only hard-failed checks in SPF,DKIM,DMARC order', () {
+      const r = EmailAuthResult(
+        spf: AuthMethodResult.fail,
+        dkim: AuthMethodResult.pass,
+        dmarc: AuthMethodResult.fail,
+        raw: 'x',
+      );
+      expect(AuthResultsParser.failedChecks(r), ['SPF', 'DMARC']);
+    });
+
+    test('all three failed', () {
+      const r = EmailAuthResult(
+        spf: AuthMethodResult.fail,
+        dkim: AuthMethodResult.fail,
+        dmarc: AuthMethodResult.fail,
+        raw: 'x',
+      );
+      expect(AuthResultsParser.failedChecks(r), ['SPF', 'DKIM', 'DMARC']);
+    });
+
+    test('softfail / neutral / none / temperror are NOT failures', () {
+      const r = EmailAuthResult(
+        spf: AuthMethodResult.softfail,
+        dkim: AuthMethodResult.none,
+        dmarc: AuthMethodResult.neutral,
+        raw: 'x',
+      );
+      expect(AuthResultsParser.failedChecks(r), isEmpty);
+    });
+
+    test('failedChecksFromHeaders parses then lists failures', () {
+      final headers = {
+        'Authentication-Results':
+            'spf=fail; dkim=pass; dmarc=fail header.from=x.com',
+      };
+      expect(AuthResultsParser.failedChecksFromHeaders(headers),
+          ['SPF', 'DMARC']);
+    });
+
+    test('no headers -> no failures (GREY, not a failure)', () {
+      expect(AuthResultsParser.failedChecksFromHeaders({'From': 'a@b.com'}),
+          isEmpty);
+    });
+  });
 }

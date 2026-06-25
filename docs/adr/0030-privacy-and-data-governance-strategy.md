@@ -117,29 +117,36 @@ Scan results retained on-device indefinitely until the user deletes them. No aut
 
 **Rationale**: Since there is no backend server, there is no server-side data to delete. The web page satisfies the Google Play requirement for an external deletion mechanism while being honest about the local-only architecture.
 
-### 5. Logging & Redaction (F102, Sprint 43)
+### 5. Logging & Redaction (F102, Sprint 43; NARROWED by F110, Sprint 43)
 
-**INVARIANT: never write user-identifying data in clear text to any log or generated artifact.** This is a documented, enforced rule -- not a convention.
+**INVARIANT: never write the APP USER'S OWN identifying data in clear text to any log or generated artifact.** This is a documented, enforced rule -- not a convention.
+
+**F110 narrowing (Harold, 2026-06-25)**: the invariant protects the **app user's own identity**, NOT arbitrary correspondents. A third-party SENDER address (a spammer's / phisher's email) is **not** the user's PII and **is** the security signal a reviewer needs -- so sender/recipient addresses are now logged **in the clear**. Only the user's own configured-account addresses are masked. (The original F102 rule redacted all email addresses; that over-redacted the very data needed to triage phishing -- see decision 6 below / F110.)
 
 **What must never be logged in the clear**:
-- **Account ids** -- they embed the email address (`{platform}-{email}`, e.g. `gmail-user@gmail.com`).
-- **Email addresses** (To / From / CC / sender / account email).
+- **Account ids** -- they embed the user's own email address (`{platform}-{email}`, e.g. `gmail-user@gmail.com`). Always redact.
+- **The app user's own configured-account email addresses** (the addresses in the `accounts` / SecureCredentialsStore list). A SELF-spoof (a scanned email whose `From` matches the user's own account) is still masked because it matches a configured address.
 - **OAuth tokens, client secrets, app passwords, the DB encryption key.**
 - **Email content** (subject, body, headers beyond redacted form).
-- **Tokens derived from the above** -- e.g. the Windows Task Scheduler task name `SpamFilterBackgroundScan_<sanitizedAccountId>` is email-derived and therefore PII; do not log the raw task name.
+- **Tokens derived from the user's identity** -- e.g. the Windows Task Scheduler task name `SpamFilterBackgroundScan_<sanitizedAccountId>` is email-derived and therefore PII; do not log the raw task name.
 
-**How to comply** -- use the `Redact` utility (`mobile-app/lib/util/redact.dart`) for any identifier that must appear in a log/diagnostic:
-- `Redact.accountId(id)` -- keeps the platform prefix, redacts the email portion.
-- `Redact.email(e)`, `Redact.token(t)`, `Redact.clientId(c)`.
+**What is now ALLOWED in the clear (F110)**:
+- **Third-party sender / recipient email addresses** found in scanned mail. Logging a spammer's / phisher's address is the point -- it lets a reviewer see who failed authentication. Use `Redact.senderForLog(address, userAccountEmails)`, which logs the address in the clear UNLESS it matches one of the user's own configured addresses (then it masks it). The debug CSV/XLSX exports likewise carry sender addresses in the clear (and always have).
+
+**How to comply** -- use the `Redact` utility (`mobile-app/lib/util/redact.dart`):
+- `Redact.accountId(id)` -- keeps the platform prefix, redacts the email portion (ALWAYS for account ids).
+- `Redact.senderForLog(addr, userAccountEmails)` -- logs a sender/recipient in the clear, masking only the user's-own-address case (F110).
+- `Redact.email(e)` -- unconditional mask (use for the user's own address when you do not have the account-list set handy).
+- `Redact.token(t)`, `Redact.clientId(c)`.
 - `Redact.logSafe(msg)` -- the gated log sink (also suppressible at runtime via the SEC-19 auth-logging toggle).
 
-**Scope**: applies to ALL log sinks -- `Logger` calls, the headless file-based diagnostic log (`_bgLog`), and generated artifacts (PowerShell scripts, Task Scheduler task names, exported filenames). It is **not** limited to debug builds (an email in a release log is still a leak).
+**Scope**: applies to ALL log sinks -- `Logger` calls, the headless file-based diagnostic log (`_bgLog`), and generated artifacts (PowerShell scripts, Task Scheduler task names, exported filenames). It is **not** limited to debug builds (a user's-own-identifier in a release log is still a leak).
 
 **Enforcement** (the durable part):
-- **Static gate**: an automated check (`mobile-app/scripts/check-log-redaction.ps1`, runnable in tests/CI) FAILS the build when a `Logger.*`/`_bgLog(...)` call interpolates a raw `$accountId` / `$email` / token without a `Redact.*` wrapper. Catches new leaks at author time -- not at code review (Sprint 42 F98 introduced ~19 such leaks that only Copilot caught on PR #263).
-- **Process gate**: the Phase 5 sprint checklist greps new log lines for raw identifiers before the manual-testing handoff (SPRINT_CHECKLIST.md Phase 5).
+- **Static gate**: an automated check (`mobile-app/scripts/check-log-redaction.ps1`, runnable in tests/CI, mirrored by `test/policy/log_redaction_test.dart`) FAILS the build when a `Logger.*`/`_bgLog(...)` call interpolates a raw `$accountId` / token / secret without a `Redact.*` wrapper. **Post-F110 the gate no longer flags sender email-address interpolation** (that is now allowed); it stays strict for account ids, tokens, and secrets.
+- **Process gate**: the Phase 5 sprint checklist greps new log lines for raw account ids / tokens before the manual-testing handoff (SPRINT_CHECKLIST.md Phase 5).
 
-**Rationale**: the local-only / zero-telemetry model (above) protects data in transit and at rest, but logs are written to disk (`{appDataDir}/logs/`) and can be shared in support tickets. An un-redacted account id or email in a log file is a privacy leak even though it never leaves the device by network. Codifying the rule + an enforcement gate prevents recurrence. See ARCHITECTURE.md "Sprint 33 Security Layers" for the cross-reference.
+**Rationale**: the local-only / zero-telemetry model (above) protects data in transit and at rest, but logs are written to disk (`{appDataDir}/logs/`) and can be shared in support tickets. An un-redacted **user** account id or **the user's own** email in a log file is a privacy leak; a spammer's address is not -- it is operational security data. Codifying the narrowed rule + the enforcement gate prevents both over- and under-redaction. See ARCHITECTURE.md "Sprint 33 Security Layers" for the cross-reference.
 
 ### Legal Review: Template-Based Approach
 

@@ -104,6 +104,39 @@ class Redact {
     return '[redacted]';
   }
 
+  /// F110 (Sprint 43): redact a SENDER/recipient address for logging under the
+  /// NARROWED ADR-0030 rule -- only the APP USER'S OWN configured account
+  /// addresses are PII that must be masked; any other address (a spammer /
+  /// phisher / arbitrary correspondent) is logged in the clear because it IS
+  /// the security signal a reviewer needs.
+  ///
+  /// Returns [Redact.email] (masked) when [address] case-insensitively matches
+  /// any address in [userAccountEmails] (the configured-account list, e.g.
+  /// {"kimmeyharold@aol.com", "kimmeyh@gmail.com"}); otherwise returns the
+  /// address unchanged. This keeps a spoof of the user's OWN address redacted
+  /// (it matches a configured account) while exposing third-party senders.
+  ///
+  /// [address] may be a bare address or a `Name <addr@host>` header form; the
+  /// match compares the bare address portion case-insensitively.
+  static String senderForLog(String? address, Set<String> userAccountEmails) {
+    if (address == null || address.isEmpty) return '[empty]';
+    final bare = _bareAddress(address);
+    final lowered = bare.toLowerCase();
+    final isUserOwn =
+        userAccountEmails.any((e) => e.toLowerCase() == lowered);
+    return isUserOwn ? email(bare) : address;
+  }
+
+  /// Extract the bare `addr@host` from a possible `Name <addr@host>` form.
+  static String _bareAddress(String raw) {
+    final lt = raw.lastIndexOf('<');
+    final gt = raw.lastIndexOf('>');
+    if (lt != -1 && gt > lt) {
+      return raw.substring(lt + 1, gt).trim();
+    }
+    return raw.trim();
+  }
+
   /// Redact a client ID, showing only the numeric prefix.
   ///
   /// Example: "123456789.apps.googleusercontent.com" → "1234***"

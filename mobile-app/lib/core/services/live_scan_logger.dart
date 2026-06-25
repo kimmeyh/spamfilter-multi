@@ -107,7 +107,8 @@ class LiveScanLogger {
 
       if (newRows.isEmpty) {
         final scanDate = DateTime.now().toIso8601String();
-        buffer.writeln('$scanDate\t$scanDate\t\t\t\t\t<no records to process>\t\t\t');
+        // 11 columns incl. the Sprint 43 Auth column (see headers below).
+        buffer.writeln('$scanDate\t$scanDate\t\t\t\t\t<no records to process>\t\t\t\t');
       } else {
         for (final row in newRows) {
           buffer.writeln(row.join('\t'));
@@ -135,6 +136,9 @@ class LiveScanLogger {
         'Subject',
         'Match Condition',
         'Email ID',
+        // F110 (Sprint 43): comma-separated list of the SPF/DKIM/DMARC checks
+        // this email HARD-FAILED (e.g. "SPF,DMARC"); blank when none failed.
+        'Phishing SPF/DKIM/DMARC',
       ];
 
       final workbook = xlsio.Workbook();

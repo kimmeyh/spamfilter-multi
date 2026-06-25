@@ -183,6 +183,26 @@ class AuthResultsParser {
   static AuthClassification classifyHeaders(Map<String, String> headers) =>
       classify(parse(headers));
 
+  /// F110 (Sprint 43): the list of authentication checks that FAILED in
+  /// [result], in SPF, DKIM, DMARC order. Used for the debug-CSV
+  /// "Phishing SPF/DKIM/DMARC" column and the per-account scan-log
+  /// phishing line. A check is "failed" only on an explicit
+  /// [AuthMethodResult.fail] (a hard fail) -- softfail / neutral / none /
+  /// temperror / permerror are NOT counted as failures (they are not a
+  /// confident spoof signal and would create noise on legitimately-forwarded
+  /// mail). Returns an empty list when nothing hard-failed.
+  static List<String> failedChecks(EmailAuthResult result) {
+    final failed = <String>[];
+    if (result.spf == AuthMethodResult.fail) failed.add('SPF');
+    if (result.dkim == AuthMethodResult.fail) failed.add('DKIM');
+    if (result.dmarc == AuthMethodResult.fail) failed.add('DMARC');
+    return failed;
+  }
+
+  /// Convenience: [failedChecks] computed straight from raw [headers].
+  static List<String> failedChecksFromHeaders(Map<String, String> headers) =>
+      failedChecks(parse(headers));
+
   /// Map an [AuthClassification] back to its persisted string name
   /// (`green`/`yellow`/`red`/`grey`). Inverse of [classificationFromName].
   static String classificationToName(AuthClassification c) => c.name;
