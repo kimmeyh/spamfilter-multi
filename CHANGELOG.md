@@ -26,6 +26,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-06-25 (Sprint 43: hide deferred DB-encryption toggle)
+- **fix**: hid the "Encrypt database (experimental)" toggle in Settings > General (Harold, manual testing 2026-06-25). The full feature (SEC-11b) is deferred to Post-MVP and the toggle's copy referenced SQLCipher, which the deferred plan has replaced with SQLite3MultipleCiphers -- exposing a non-functional control with stale copy. Wrapped in `Visibility(visible: false)`; all wiring (`_encryptDatabase`, the store getter/setter, `DatabaseEncryptionKeyService`) is retained so the toggle can be restored when SEC-11b ships. Also genericized the remaining copy ("an encrypting cipher" instead of "SQLCipher").
+
 ### 2026-06-24 (Sprint 43: build-cache hygiene note -- no dependency change)
 - **chore**: a transient Windows build failure in "Building native assets" (the `sqlite3` 3.x build hook) was traced to a POLLUTED BUILD CACHE left by repeatedly-killed test/build runs, NOT a dependency problem. Resolved by a clean rebuild (`rm -rf build/windows .dart_tool/hooks_runner .dart_tool/flutter_build`). An interim attempt to pin `sqlite3` to 2.x was reverted -- downgrading the SQLite library makes it unable to read a DB written by the newer engine ("malformed database schema ... code 11" -- a false-corruption error on a healthy DB). No dependency versions changed; `sqlite3` 3.x retained.
 
