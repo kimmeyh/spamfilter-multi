@@ -67,6 +67,18 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
+
+# F105 / Sprint 43 (2026-06-24): pin sqlite3 to the 2.x line (prebuilt DLL, NO
+# native-asset build hook). sqflite_common_ffi 2.4.x requires sqlite3 >=3.1.2,
+# whose hook compiles SQLite from source via MSVC at Windows build time -- that
+# native-assets hook fails to build in this environment and nothing in the app
+# needs it (SEC-11b's custom-cipher SQLite is deferred to Post-MVP). Pinning
+# sqflite_common_ffi back to 2.3.3 (which depends on sqlite3 ^2.4.0, prebuilt,
+# hook-free) restores the pre-hook build. Remove these overrides when SEC-11b
+# adopts SQLite3MultipleCiphers and deliberately re-enables the build hook.
+dependency_overrides:
+  sqflite_common_ffi: 2.3.3
+  sqlite3: ^2.4.0
   msix: ^3.16.8
 
 flutter:
