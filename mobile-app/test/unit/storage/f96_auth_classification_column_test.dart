@@ -134,8 +134,19 @@ void main() {
   group('F96 -- v7 -> v8 migration adds the columns to an existing DB', () {
     test('ALTER adds auth_classification to both tables on upgrade', () async {
       // Build a minimal v7 database directly (only the two tables F96 touches,
-      // WITHOUT auth_classification), close it, then open it through the real
-      // DatabaseHelper so _upgradeTables runs the v8 ALTER.
+      // WITHOUT auth_classification), close it, then re-open at v8 with an
+      // onUpgrade callback that MIRRORS the v8 ALTER statements from
+      // DatabaseHelper._upgradeTables.
+      //
+      // NOTE (PR #265 Copilot review): this test validates the v8 ALTER *SQL*
+      // (the migration statements run and add the columns), NOT the dispatch
+      // inside the real DatabaseHelper. Driving the real _upgradeTables would
+      // require seeding ALL prior-version tables to let DatabaseHelper open the
+      // file -- heavy and brittle. The real _upgradeTables IS exercised whenever
+      // any DatabaseTestHelper-backed test opens a fresh DB (it runs onCreate at
+      // the current version, which includes these columns -- see the fresh-DB
+      // tests above). If the v8 ALTER block in database_helper.dart is edited,
+      // mirror the change here so the two stay in sync.
       final dbPath = '${testHelper.testDbPath}.v7';
 
       final v7 = await databaseFactory.openDatabase(

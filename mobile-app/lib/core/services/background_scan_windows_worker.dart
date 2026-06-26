@@ -165,18 +165,15 @@ class BackgroundScanWindowsWorker {
       _logger.d('Found ${accountIds.length} total accounts');
       await _bgLog('Found ${accountIds.length} total accounts: ${accountIds.map(Redact.accountId).toList()}');
 
-      // F110 (Sprint 43): the set of the APP USER'S OWN configured account
-      // addresses. Under the narrowed ADR-0030 redaction rule, ONLY these
-      // addresses are masked in logs; third-party senders (spammers/phishers)
-      // are logged in the clear because they are the security signal. Account
-      // IDs are either a bare email or "{platform}-{email}", so strip an
-      // optional "{platform}-" prefix to get the address.
-      final userAccountEmails = accountIds
-          .map((id) => id.contains('-') && id.contains('@')
-              ? id.substring(id.indexOf('-') + 1)
-              : id)
-          .where((e) => e.contains('@'))
-          .toSet();
+      // F110 (Sprint 43): the APP USER'S OWN configured accounts. Under the
+      // narrowed ADR-0030 redaction rule, ONLY the user's own address is masked
+      // in logs; third-party senders (spammers/phishers) are logged in the clear
+      // because they are the security signal. Pass the RAW account ids straight
+      // through -- Redact.senderForLog matches by equality-or-suffix on the bare
+      // address, so it correctly handles both bare-email and "{platform}-{email}"
+      // ids without mis-parsing a hyphenated platform prefix (PR #265 Copilot
+      // review). No string-splitting here.
+      final userAccounts = accountIds.toSet();
 
       // F98: when account-scoped, narrow to exactly the named account. If it is
       // not among the saved accounts (e.g. removed since the task was created),
@@ -284,7 +281,7 @@ class BackgroundScanWindowsWorker {
             // Emails with no auth failure get no line (failures-only view).
             for (final f in result.scanProvider.getAuthFailures()) {
               await _bgLog(
-                  'Phishing SPF/DKIM/DMARC: ${Redact.senderForLog(f.from, userAccountEmails)} -> ${f.failedChecks} failed');
+                  'Phishing SPF/DKIM/DMARC: ${Redact.senderForLog(f.from, userAccounts)} -> ${f.failedChecks} failed');
             }
 
             // Export debug CSV if enabled

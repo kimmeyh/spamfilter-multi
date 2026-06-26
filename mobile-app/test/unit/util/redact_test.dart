@@ -111,5 +111,33 @@ void main() {
       expect(Redact.senderForLog(null, userEmails), '[empty]');
       expect(Redact.senderForLog('', userEmails), '[empty]');
     });
+
+    // PR #265 Copilot review: account ids of the form {platform}-{email} must
+    // match by suffix, even when the platform id itself contains '-'
+    // (e.g. "gmail-imap"). A naive first-'-' split mis-parsed these and failed
+    // to mask the user's own address.
+    test('masks the user own address when accounts are full account ids', () {
+      const accounts = {
+        'aol-kimmeyharold@aol.com',
+        'gmail-imap-kimmeyh@gmail.com', // hyphenated platform id
+      };
+      expect(Redact.senderForLog('kimmeyharold@aol.com', accounts),
+          'k***@aol.com');
+      expect(Redact.senderForLog('kimmeyh@gmail.com', accounts),
+          'k***@gmail.com');
+      // a third-party sender is still logged in the clear
+      expect(Redact.senderForLog('spammer@evil.com', accounts),
+          'spammer@evil.com');
+    });
+
+    test('suffix match does not over-mask a different local-part', () {
+      const accounts = {'gmail-imap-kimmeyh@gmail.com'};
+      // "h@gmail.com" is a suffix of "...kimmeyh@gmail.com" as a STRING but the
+      // bare-address compare requires the '-<bare>' boundary, so a genuinely
+      // different address is NOT masked.
+      expect(
+          Redact.senderForLog('otheruser@gmail.com', accounts),
+          'otheruser@gmail.com');
+    });
   });
 }
