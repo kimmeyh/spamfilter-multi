@@ -4,7 +4,7 @@
 **Date**: 2026-06-26 (Planning / Phase 1-3)
 **Branch**: `feature/20260626_Sprint_44` (created off merged `develop` per Phase 6.6)
 **PR**: created at Phase 3.3.1 (draft) -- stays DRAFT until end of Phase 7.7 (IMP-2)
-**Status**: DRAFT -- pending Harold Phase 3.7 approval
+**Status**: DRAFT -- pending Harold Phase 3.7 approval (design decisions below CONFIRMED 2026-06-26; awaiting plan approval to execute)
 
 **Scope (Harold-selected, 2026-06-26)**: F107, F109, F108.
 
@@ -12,6 +12,11 @@
 - **F107**: (a)+(b) -- Accept ADR-0037 (Proposed -> Accepted) AND promote ARSD.md from "1.0 (Draft)" to a stable version.
 - **F109**: (a)+(b)+(c) -- all three surfaces: Settings/Background status line, Scan History hint, AND a logged skip row in `background_scan_log`.
 - **F108**: (c) -- spike-first; assess each major bump's breaking changes + retest cost (~30 min), then decide which to actually adopt this sprint (the adopt step is gated on the spike + a Class-2 go/no-go).
+
+**Harold design confirmations (2026-06-26, pre-approval)**:
+- **F109c design -- CONFIRMED**: the **handoff-file** design (C++ `main.cpp` appends the skip to a small file; Dart ingests it into a `status='deferred'` row in `background_scan_log` on next launch -- NO DB migration). NOT the move-detection-to-Dart alternative.
+- **main.cpp v0.5.4 fix -- CONFIRMED**: bump the stale `v0.5.3` log-filename hardcode in `windows/runner/main.cpp` to v0.5.4, and add `main.cpp` to the version-bump checklist.
+- **Model assignments -- CONFIRMED** (cheapest-first per IMP-1, see Model Assignments section).
 
 **Estimating method**: TWO-metric MINUTE-based per `docs/CODING_VELOCITY.md`.
 
@@ -39,10 +44,7 @@ The per-account scheduled task launches with `--background-scan`; `main.cpp` doe
   - **Model**: **Haiku** -- a static helper/info line on an existing tab, following existing Settings widgets. **Est-Effort: 20-30m.**
 - **F109b (Scan History hint)** -- a hint on the Scan History screen explaining why no recent *background* scan appears while the app is open.
   - **Model**: **Haiku** -- a conditional info banner on an existing screen. **Est-Effort: 20-30m.**
-- **F109c (logged skip row in `background_scan_log`)** -- record each deferral so it appears in history. **Class-1/2 architecture note (surface at Phase 3 / before coding F109c)**: the deferral is detected in **C++ (`main.cpp`) before any Dart/DB access exists**, so there is NO clean way to write a `background_scan_log` row from the current native probe. Two designs:
-  - **(i)** Have `main.cpp` append the skip to a small **handoff file** (it already writes the file log); on the NEXT foreground launch (or next successful worker run), Dart reads the handoff file and inserts a `status='deferred'` row into `background_scan_log` (the table already has a `status` column -- **no DB migration needed**). Lowest-risk, keeps DB access in Dart.
-  - **(ii)** Move the mutex-deferral detection into the Dart worker (the worker would start, check the mutex, write the row, and exit) -- a control-flow change to the F98/BUG-S37-1 native probe (Class-1, inverts where the skip decision lives). NOT recommended -- it reintroduces DB access under contention, the exact thing the native probe avoids.
-  - **Plan recommendation**: design **(i)** (handoff-file -> Dart-side insert), confirmed at Phase 3. Then F109a's status line can read the latest `deferred` row to show "last run deferred at HH:MM."
+- **F109c (logged skip row in `background_scan_log`)** -- record each deferral so it appears in history. The deferral is detected in **C++ (`main.cpp`) before any Dart/DB access exists**, so there is no clean way to write a `background_scan_log` row from the native probe directly. **APPROVED design (Harold 2026-06-26): the handoff-file approach** -- `main.cpp` appends the skip event to a small handoff file (it already writes the file log); on the NEXT foreground launch (or next successful worker run), Dart reads the handoff file and inserts a `status='deferred'` row into `background_scan_log` (the table already has a `status` column -- **NO DB migration**), then clears/rotates the handoff file. F109a's status line reads the latest `deferred` row to show "last run deferred at HH:MM." (The rejected alternative was moving the mutex-deferral detection into the Dart worker -- that reintroduces DB access under contention, the exact thing the native probe avoids.)
   - **Model**: **Sonnet** -- spans the C++ native probe + a Dart-side ingest + a new persisted status value across the worker/startup boundary; cross-layer, beyond Haiku's single-file heuristic. **Est-Effort: 60-90m.**
 - **Acceptance**: Settings + Scan History both explain the deferral; a deferral produces a `background_scan_log` row visible in history; no DB migration; tests cover the deferral-row ingest.
 - **Step-types**: UI-EDIT (x2) + native/Dart cross-layer + tests.
@@ -79,8 +81,8 @@ The per-account scheduled task launches with `--background-scan`; `main.cpp` doe
 ## Decision-Class interrupts (NOT pre-authorized -- surface + wait)
 
 - **F107** (Class-1): RESOLVED at refinement -- Accept ADR-0037 + promote ARSD (Harold 2026-06-26).
-- **F109c design** (Class-1/2): the handoff-file vs move-detection-to-Dart choice -- recommend the handoff-file design; confirm at Phase 3 before coding F109c.
-- **F108-adopt** (Class-2): surface the spike's per-dep findings + get go/no-go before upgrading each dep.
+- **F109c design** (Class-1/2): RESOLVED pre-approval -- handoff-file design confirmed (Harold 2026-06-26).
+- **F108-adopt** (Class-2): STILL OPEN -- surface the spike's per-dep findings + get go/no-go before upgrading each dep (the spike is in-plan; the adopt go/no-go is the live interrupt).
 
 ---
 
