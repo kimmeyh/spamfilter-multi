@@ -57,8 +57,12 @@ Target version fields (example: bumping dev from `0.5.2.0` to `0.5.3.0`):
 | 3 | `mobile-app/lib/main.dart` | `background_scan_v0.5.2.log` -> `background_scan_v0.5.3.log` in the log path |
 | 4 | `mobile-app/lib/ui/screens/settings_screen.dart` | `'Version 0.5.2${AppEnvironment.displaySuffix}'` -> `'Version 0.5.3${AppEnvironment.displaySuffix}'` |
 | 5 | `mobile-app/lib/core/services/background_scan_windows_worker.dart` | `background_scan_v0.5.2.log` -> `background_scan_v0.5.3.log` |
+| 6 | `mobile-app/windows/runner/main.cpp` | `background_scan_v0.5.2.log` (both dev + prod log-filename literals in `LogBackgroundScanSkip`) -> `background_scan_v0.5.3.log`. **(Added Sprint 44 -- this native file was MISSED by the F105 bump; the v0.5.3 hardcode shipped one version stale.)** |
+| 7 | `mobile-app/lib/core/services/live_scan_logger.dart` | `live_scan_v0.5.2.log` -> `live_scan_v0.5.3.log` (runtime log filename + the doc-comment refs in `settings_store.dart`) |
 
 Plus `CLAUDE.md` (Windows App Data Directory section + Version line) if the comment examples mention the old version.
+
+**Quick audit** to catch any stragglers before committing a version bump: `grep -rn "v0\.5\." mobile-app/lib mobile-app/windows/runner mobile-app/scripts` and reconcile every hit to the new version.
 
 **Note**: The dev worktree version is always `patch+1` relative to the last prod release. At release time the prod worktree's `pubspec.yaml` gets bumped to the dev version *minus 1* -- for example, when dev is at `0.5.3`, the release itself ships from prod at `0.5.3.0` and immediately after, dev bumps to `0.5.4`.
 

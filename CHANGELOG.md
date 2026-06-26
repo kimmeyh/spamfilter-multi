@@ -26,6 +26,12 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-06-26 (Sprint 44: F109 -- surface the background-scan deferral state)
+- **feat**: F109 -- background scans correctly pause while the foreground app is open (F98 DB-contention protection), but that was invisible. Now surfaced three ways: (a) a Settings > Background status line ("Background scans pause while this app is open; ... Last run deferred at HH:MM"), (b) a Scan History info hint, and (c) a logged `status='deferred'` row in `background_scan_log`. (F109)
+- **feat**: F109c -- the deferral is detected in the native Windows runner (`main.cpp`) before any Dart/DB exists, so it appends each deferral to a handoff file (`{logs}/background_scan_deferrals.tsv`); the new `BackgroundDeferralIngest` reads + clears it on the next foreground launch and inserts the `deferred` row (NO DB migration -- the table already has a `status` column). (F109)
+- **fix**: bumped the stale `v0.5.3` background-scan log-filename hardcode in `windows/runner/main.cpp` to `v0.5.4` -- this native file was missed by the F105 version bump (the 5-file checklist did not include `main.cpp`). Added `main.cpp` (+ `live_scan_logger.dart`) to the `docs/STORE_RELEASE_PROCESS.md` version checklist with a grep audit step so it is not missed again. (F105 follow-up)
+- **test**: F109c -- `background_deferral_ingest_test.dart` (handoff parse, per-record `deferred` rows, file consumed, malformed-line tolerance, latest-deferral lookup). (F109)
+
 ### 2026-06-26 (Sprint 44: F107 -- ADR-0037 + ARSD status promotion)
 - **docs**: F107 -- accepted **ADR-0037** (UI/Accessibility Standards), Proposed -> Accepted (the standards are implemented + in active use; verified in the Sprint 43 F103 deep dive), and updated the ADR index row. Promoted **ARSD.md** from "1.0 (Draft)" / Status Draft to **1.0 / Accepted** (the requirement set has stabilized across Sprints 38-43). No code change. (F107)
 
