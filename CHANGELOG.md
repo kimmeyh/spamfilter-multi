@@ -26,6 +26,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-06-26 (Sprint 44: F107 -- ADR-0037 + ARSD status promotion)
+- **docs**: F107 -- accepted **ADR-0037** (UI/Accessibility Standards), Proposed -> Accepted (the standards are implemented + in active use; verified in the Sprint 43 F103 deep dive), and updated the ADR index row. Promoted **ARSD.md** from "1.0 (Draft)" / Status Draft to **1.0 / Accepted** (the requirement set has stabilized across Sprints 38-43). No code change. (F107)
+
 ### 2026-06-25 (Sprint 43: retrospective improvements)
 - **docs**: Sprint 43 retrospective (`docs/sprints/SPRINT_43_RETROSPECTIVE.md`, 4 roles x 14 categories). Two approved improvements implemented in-sprint: **IMP-1** -- cheapest-first model-assignment process (design each task for Haiku first, escalate to Sonnet then Opus only when heuristics demand; record a "why not the cheaper tier" note for any Sonnet/Opus assignment) in `SPRINT_PLANNING.md` + the `plan-sprint` skill; **IMP-2** -- the sprint PR stays DRAFT through Phases 3-7 and is marked Ready-for-Review at exactly one point (end of 7.7), with `[keep DRAFT]` guards on every PR-touch step and a note that marking ready early triggers Copilot-per-commit, in `SPRINT_EXECUTION_WORKFLOW.md` + `SPRINT_CHECKLIST.md`. (Sprint 43 retro)
 
