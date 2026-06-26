@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
 import '../widgets/app_bar_with_exit.dart';
+import '../widgets/auth_warning_dialog.dart';
 import 'help_screen.dart';
 import 'scan_history_screen.dart';
 import 'scan_progress_screen.dart';
@@ -15,6 +16,7 @@ import '../../core/providers/rule_set_provider.dart';
 import '../../core/models/email_message.dart';
 import '../../core/models/evaluation_result.dart';
 import '../../core/models/rule_set.dart' show Rule, RuleConditions, RuleActions;
+import '../../core/services/auth_results_parser.dart';
 import '../../core/services/email_body_parser.dart';
 import '../../core/services/pattern_compiler.dart';
 import '../../core/services/rule_conflict_resolver.dart';
@@ -178,6 +180,14 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
             // F91 (Sprint 39): carry the persisted RFC 5322 Message-ID
             // (nullable; older rows predating the v6 migration are null).
             messageIdHeader: map['rfc5322_message_id'] as String?,
+            // F96 (Sprint 43): re-hydrate the SPF/DKIM/DMARC classification
+            // captured at scan time. The reconstructed headers above carry only
+            // From/Subject, so a fresh parse would always classify GREY; this
+            // override lets the inline safe-sender add fire the RED
+            // anti-phishing warning. Nullable: rows scanned before v8 are null
+            // and fall back to GREY (pre-F96 behavior).
+            authClassificationOverride:
+                map['auth_classification'] as String?,
           );
           final actionStr = map['action_type'] as String? ?? 'none';
           final action = EmailActionType.values.firstWhere(
@@ -2415,6 +2425,34 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
     final logger = Logger();
     final conflictResolver = RuleConflictResolver();
+
+    // F96 (Sprint 43): on the Scan History reload path the source email is
+    // reconstructed from the database, so we re-hydrate the SPF/DKIM/DMARC
+    // classification captured at scan time (authClassificationOverride) rather
+    // than parsing the now-absent Authentication-Results headers. When that
+    // snapshot is RED (a confident spoof signal), warn before whitelisting --
+    // matching the quick-add screen's behavior. This closes the F89 gap where
+    // historical adds could never surface the warning. Older rows (pre-v8) and
+    // GREEN/YELLOW/GREY snapshots do not gate the add.
+    if (email != null) {
+      final classification =
+          AuthResultsParser.classificationFromName(email.authClassificationOverride);
+      if (classification == AuthClassification.red) {
+        final senderEmail =
+            PatternNormalization.normalizeFromHeader(email.from);
+        final proceed = await AuthWarningDialog.showSafeSenderWarning(
+          context,
+          senderEmail: senderEmail,
+          authResult:
+              AuthResultsParser.syntheticResultFor(AuthClassification.red),
+        );
+        if (!proceed) {
+          // User chose Cancel -- do not whitelist.
+          return;
+        }
+        if (!mounted) return;
+      }
+    }
 
     try {
       // Create regex pattern based on type

@@ -104,6 +104,50 @@ class Redact {
     return '[redacted]';
   }
 
+  /// F110 (Sprint 43): redact a SENDER/recipient address for logging under the
+  /// NARROWED ADR-0030 rule -- only the APP USER'S OWN configured account
+  /// addresses are PII that must be masked; any other address (a spammer /
+  /// phisher / arbitrary correspondent) is logged in the clear because it IS
+  /// the security signal a reviewer needs.
+  ///
+  /// Returns [Redact.email] (masked) when [address] is the user's own, else the
+  /// address unchanged. This keeps a spoof of the user's OWN address redacted
+  /// (it matches a configured account) while exposing third-party senders.
+  ///
+  /// [userAccounts] is the configured-account list. Each entry may be a bare
+  /// email (`kimmeyh@gmail.com`) OR a full account id of the form
+  /// `{platform}-{email}` (`gmail-imap-kimmeyh@gmail.com`). Because the platform
+  /// id itself can contain `-` (e.g. `gmail-imap`), matching is done by
+  /// **equality OR suffix** on the bare address: [address] is treated as the
+  /// user's own when its bare `local@domain` equals an entry, or an entry ENDS
+  /// WITH `<bare>` (i.e. the entry is `...-<bare>`). This is format-agnostic --
+  /// it does not try to string-split the platform prefix off (PR #265 Copilot
+  /// review: a first-`-` split mis-parsed `gmail-imap-user@x` and failed to mask
+  /// the user's own address). Case-insensitive.
+  ///
+  /// [address] may be a bare address or a `Name <addr@host>` header form; the
+  /// match compares the bare address portion.
+  static String senderForLog(String? address, Set<String> userAccounts) {
+    if (address == null || address.isEmpty) return '[empty]';
+    final bare = _bareAddress(address);
+    final lowered = bare.toLowerCase();
+    final isUserOwn = userAccounts.any((acct) {
+      final a = acct.toLowerCase();
+      return a == lowered || a.endsWith('-$lowered');
+    });
+    return isUserOwn ? email(bare) : address;
+  }
+
+  /// Extract the bare `addr@host` from a possible `Name <addr@host>` form.
+  static String _bareAddress(String raw) {
+    final lt = raw.lastIndexOf('<');
+    final gt = raw.lastIndexOf('>');
+    if (lt != -1 && gt > lt) {
+      return raw.substring(lt + 1, gt).trim();
+    }
+    return raw.trim();
+  }
+
   /// Redact a client ID, showing only the numeric prefix.
   ///
   /// Example: "123456789.apps.googleusercontent.com" → "1234***"

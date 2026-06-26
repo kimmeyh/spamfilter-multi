@@ -73,7 +73,7 @@ class SettingsStore {
   /// both dev and prod (matches `defaultBackgroundScanDebugCsv`). The
   /// Settings > Manual Scan tab Debug section exposes a toggle so dev
   /// users can opt in without a code change. The runtime log file
-  /// (`{logs}/{prefix}live_scan_v0.5.3.log`) is always on regardless
+  /// (`{logs}/{prefix}live_scan_v0.5.4.log`) is always on regardless
   /// of this setting -- it captures scan-lifecycle events only and is
   /// small enough that surprise disk usage is not a concern.
   static const bool defaultLiveScanDebugCsv = false;
@@ -193,7 +193,7 @@ class SettingsStore {
   /// live (manual) scans. When true, every live scan appends to a
   /// per-account per-day `live_scan_{email}_{date}.data.csv` and
   /// regenerates the matching `.xlsx` (mirrors background-scan CSV).
-  /// The runtime log file `{logs}/{prefix}live_scan_v0.5.3.log` is
+  /// The runtime log file `{logs}/{prefix}live_scan_v0.5.4.log` is
   /// written regardless of this setting.
   Future<bool> getLiveScanDebugCsv() async {
     final value = await _getAppSetting(keyLiveScanDebugCsv);

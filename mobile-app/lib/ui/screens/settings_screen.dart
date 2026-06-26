@@ -430,25 +430,40 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             }
           },
         ),
-        const SizedBox(height: 12),
-        // SEC-11 (Sprint 33): opt-in database encryption (infrastructure only)
-        SwitchListTile(
-          contentPadding: EdgeInsets.zero,
-          title: const Text('Encrypt database (experimental)'),
-          subtitle: const Text(
-            'When on, a 256-bit encryption key is generated and stored '
-            'in your system keychain for future use. The database driver '
-            'is not yet swapped to SQLCipher, so existing data stays '
-            'unencrypted until a future release completes the migration. '
-            'Turn on early to provision the key.',
+        // SEC-11 (Sprint 33): opt-in database encryption (infrastructure only).
+        // HIDDEN (Sprint 43, Harold 2026-06-25): the full feature (SEC-11b) is
+        // deferred to Post-MVP, and the copy referenced SQLCipher, which the
+        // deferred plan has since replaced with SQLite3MultipleCiphers. Hiding
+        // the toggle avoids exposing a non-functional experimental control with
+        // stale copy. The wiring (_encryptDatabase, the store getter/setter, and
+        // DatabaseEncryptionKeyService) is intentionally retained -- flip
+        // `visible` back to true (and refresh the copy) when SEC-11b ships.
+        Visibility(
+          visible: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: const Text('Encrypt database (experimental)'),
+                subtitle: const Text(
+                  'When on, a 256-bit encryption key is generated and stored '
+                  'in your system keychain for future use. The database driver '
+                  'is not yet swapped to an encrypting cipher, so existing data '
+                  'stays unencrypted until a future release completes the '
+                  'migration. Turn on early to provision the key.',
+                ),
+                value: _encryptDatabase,
+                onChanged: (value) async {
+                  await _settingsStore.setEncryptDatabase(value);
+                  if (mounted) {
+                    setState(() => _encryptDatabase = value);
+                  }
+                },
+              ),
+            ],
           ),
-          value: _encryptDatabase,
-          onChanged: (value) async {
-            await _settingsStore.setEncryptDatabase(value);
-            if (mounted) {
-              setState(() => _encryptDatabase = value);
-            }
-          },
         ),
 
         const SizedBox(height: 24),
@@ -525,7 +540,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Version 0.5.3${AppEnvironment.displaySuffix}',
+                            'Version 0.5.4${AppEnvironment.displaySuffix}',
                             style: TextStyle(color: Colors.grey.shade700),
                           ),
                         ],

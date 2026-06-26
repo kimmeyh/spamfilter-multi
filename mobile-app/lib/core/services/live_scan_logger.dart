@@ -19,7 +19,7 @@ import '../../util/redact.dart';
 /// table alone because live scans were not capturing logs to disk.
 ///
 /// File layout (mirrors background-scan with `live_scan_` prefix):
-///   - Runtime log:    `{logs}/{prefix}live_scan_v0.5.3.log`
+///   - Runtime log:    `{logs}/{prefix}live_scan_v0.5.4.log`
 ///   - Per-account CSV: `{logs}/live_scan_{safe_email}_{date}{_dev}.data.csv`
 ///   - Per-account XLSX: `{logs}/live_scan_{safe_email}_{date}{_dev}.xlsx`
 ///
@@ -53,7 +53,7 @@ class LiveScanLogger {
       final logDir = await getLogDir();
       final logPrefix = AppEnvironment.logPrefix;
       final logFile = File(
-        path.join(logDir, '${logPrefix}live_scan_v0.5.3.log'),
+        path.join(logDir, '${logPrefix}live_scan_v0.5.4.log'),
       );
       final timestamp = DateTime.now().toIso8601String();
       await logFile.parent.create(recursive: true);
@@ -107,7 +107,8 @@ class LiveScanLogger {
 
       if (newRows.isEmpty) {
         final scanDate = DateTime.now().toIso8601String();
-        buffer.writeln('$scanDate\t$scanDate\t\t\t\t\t<no records to process>\t\t\t');
+        // 11 columns incl. the Sprint 43 Auth column (see headers below).
+        buffer.writeln('$scanDate\t$scanDate\t\t\t\t\t<no records to process>\t\t\t\t');
       } else {
         for (final row in newRows) {
           buffer.writeln(row.join('\t'));
@@ -135,6 +136,9 @@ class LiveScanLogger {
         'Subject',
         'Match Condition',
         'Email ID',
+        // F110 (Sprint 43): comma-separated list of the SPF/DKIM/DMARC checks
+        // this email HARD-FAILED (e.g. "SPF,DMARC"); blank when none failed.
+        'Phishing SPF/DKIM/DMARC',
       ];
 
       final workbook = xlsio.Workbook();

@@ -1,6 +1,7 @@
 import 'package:logger/logger.dart';
 
 import '../storage/safe_sender_database_store.dart';
+import '../../util/redact.dart';
 import 'pattern_compiler.dart';
 
 /// Exception thrown when safe sender evaluation fails
@@ -99,7 +100,7 @@ class SafeSenderEvaluator {
         // Try to match email against safe sender pattern
         if (_matchesPattern(normalized, sender.pattern)) {
           // Email matches safe sender pattern
-          _logger.d('Email "$emailAddress" matches safe sender pattern: "${sender.pattern}"');
+          _logger.d('Email "${Redact.email(emailAddress)}" matches safe sender pattern: "${sender.pattern}"');
 
           // Check exceptions
           if (sender.exceptionPatterns != null && sender.exceptionPatterns!.isNotEmpty) {
@@ -107,7 +108,7 @@ class SafeSenderEvaluator {
               if (_matchesPattern(normalized, exceptionPattern)) {
                 // Email matches exception pattern - NOT a safe sender
                 _logger.d(
-                  'Email "$emailAddress" matches exception to pattern "${sender.pattern}": '
+                  'Email "${Redact.email(emailAddress)}" matches exception to pattern "${sender.pattern}": '
                   '"$exceptionPattern"',
                 );
 
@@ -123,7 +124,7 @@ class SafeSenderEvaluator {
           }
 
           // Email matches safe sender pattern and no exceptions apply
-          _logger.d('Email "$emailAddress" is safe sender (pattern: "${sender.pattern}")');
+          _logger.d('Email "${Redact.email(emailAddress)}" is safe sender (pattern: "${sender.pattern}")');
 
           return SafeSenderEvaluationResult(
             isSafe: true,
@@ -136,7 +137,7 @@ class SafeSenderEvaluator {
       }
 
       // Email did not match any safe sender pattern
-      _logger.d('Email "$emailAddress" does not match any safe sender patterns');
+      _logger.d('Email "${Redact.email(emailAddress)}" does not match any safe sender patterns');
 
       return SafeSenderEvaluationResult(
         isSafe: false,

@@ -19,11 +19,21 @@ Analyzes GitHub issues (Cards) and automatically generates task breakdowns with 
 
 1. **Analyzes** the Card description to understand scope and complexity
 2. **Breaks down** the Card into granular tasks
-3. **Assigns models** based on complexity heuristics (Haiku/Sonnet/Opus)
+3. **Assigns models CHEAPEST-FIRST** (see below) -- design each task for Haiku first, escalate to Sonnet then Opus only when the heuristics say the cheaper tier does not fit
 4. **Calculates confidence** (High/Medium/Low) based on pattern matching
-5. **Provides rationale** explaining each assignment decision
+5. **Provides rationale** -- including, for any Sonnet/Opus assignment, a one-line **"why not the cheaper tier"** justification
 6. **Suggests labels** for consistent GitHub organization
 7. **References learning** from prior similar tasks in heuristic database
+
+## CHEAPEST-FIRST assignment rule (Sprint 43 retro IMP-1)
+
+Model assignment is **bottom-up**: do NOT score complexity and then pick a tier. For EVERY task, walk the ladder from cheapest up and stop at the first tier the task design fits:
+
+1. **Design the task for Haiku first** (this pressure keeps the solution simple and cheap). Fits Haiku per the heuristics -> assign **Haiku**.
+2. **Else design for Sonnet.** Fits Sonnet -> assign **Sonnet**.
+3. **Else design for Opus** -> assign **Opus**.
+
+For any **Sonnet or Opus** assignment, emit a one-line **"why not the cheaper tier"** note (e.g. `Opus -- Class-1 redaction-policy change across 5 files, beyond Sonnet heuristics`). An all-Opus sprint must be a visible, justified choice -- never a silent default. This rule governs the per-task IMPLEMENTER model only; the planner/analyst model (this skill, sprint planning, retros, deep dives) stays Opus regardless per SPRINT_PLANNING.md "Activities Requiring Opus".
 
 ## Usage Examples
 

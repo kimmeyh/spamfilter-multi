@@ -62,8 +62,10 @@ These documents MUST be created/updated during each sprint:
 - [ ] Created GitHub issues for all tasks
 - [ ] Verified all issues are OPEN
 - [ ] **Architecture Impact Check** (3.6.1): Review planned changes against ARCHITECTURE.md, ARSD.md, and ADRs. Include doc updates in sprint scope if needed.
+- [ ] **3.3.1 Sprint PR created as DRAFT after the plan is drafted** (MANDATORY) -- one PR per sprint, updated at 4 checkpoints (3.3.1 create / 3.7.1 approved-plan / Phase 5 end-of-dev / 7.7.5 final). Stays DRAFT until 7.7.5.
+  - **[CRITICAL] NEVER mark the PR "Ready for Review" except at the single end-of-7.7 step** (after "apply now" retro improvements are committed). Do not run `gh pr ready` at create / approval / end-of-dev / Phase 6. Marking ready early triggers a GitHub **Copilot review on every commit** (Sprint 43 retro IMP-2). If you find it not-draft before 7.7, set it back (`gh pr ready --undo`).
 - [ ] Sprint plan reviewed and approved by user
-- [ ] **Draft PR created immediately** (optional but recommended)
+- [ ] **3.7.1 PR updated to the APPROVED plan** (create if missing); **[keep DRAFT -- do not mark ready]**.
 
 **[CHECKPOINT]** Review Phase 4 checklist before proceeding. **[CONTEXT CHECK]** Verify context < 85% before starting Phase 4.
 
@@ -86,25 +88,26 @@ These documents MUST be created/updated during each sprint:
 - [ ] **5.1.5 WinWright UI Test Sweep** (MANDATORY -- Sprint 38 retro): update WinWright scripts for sprint UI changes; run all scripts that exercise sprint-touched screens; fix in-sprint or backlog (see SPRINT_EXECUTION_WORKFLOW.md § 5.1.5). If no WinWright coverage exists for sprint's UI surface, file a Sprint N+1 carry-in.
 - [ ] Full test suite passing (`flutter test`)
 - [ ] Code analysis clean (`flutter analyze` - target <50 warnings)
+- [ ] **5.1.7 Logging-redaction gate clean** (F102, narrowed by F110, ADR-0030 §5): run `mobile-app/scripts/check-log-redaction.ps1` (or it runs as part of the suite via `test/policy/log_redaction_test.dart`) -- no `Logger`/`_bgLog` call may interpolate a raw **account id / token / secret** without `Redact.*`. **Post-F110**: third-party sender/recipient email addresses ARE allowed in the clear (the gate no longer flags the email-address family); use `Redact.senderForLog` for the user's own address. Fix any violation before the manual-testing handoff.
 - [ ] Risk mitigations validated
 - [ ] **5.1.6 Architecture docs current BEFORE manual-testing handoff** (Sprint 42 retro IMP-5; `feedback_architecture_docs_no_defer`): for every flow, table, ADR, or platform-status line in `ARCHITECTURE.md` / `ARSD.md` touched by this sprint, update it NOW -- do NOT defer to Phase 7. Quick check: `grep -niE "<sprint-touched-feature>" docs/ARCHITECTURE.md docs/ARSD.md` and reconcile each hit. Verify the ADR index (`docs/adr/README.md`) status/date for any ADR touched. (Sprint 42 surfaced a stale ARCHITECTURE.md bg-scan flow at retro -- this line prevents recurrence.)
 - [ ] **App built for user testing** (Windows: `build-windows.ps1`)
 - [ ] **Platform-specific UI verified** at native level (Win32 window title, system tray, notifications) -- Flutter UI layer may not control platform-level behavior (learned Sprint 21)
 - [ ] **Manual integration testing complete (Lead Developer)** -- this is a LOOP, not a single step. Each round of testing feedback can produce in-sprint fixes OR backlog additions; do not move to Code Review until the Lead Developer explicitly notes testing complete (see SPRINT_EXECUTION_WORKFLOW.md "Canonical Next Steps progression")
 - [ ] Issues from testing fixed (in-sprint) or filed (backlog)
+- [ ] **PR lifecycle checkpoint #3**: UPDATE the existing draft sprint PR for anything that changed during development (create if missing). **[keep DRAFT -- do NOT run `gh pr ready`]** -- the draft->ready conversion is the single end-of-7.7 step (IMP-2).
 
 **[CHECKPOINT]** Review Phase 6 checklist before proceeding. **[CONTEXT CHECK]** Verify context < 85% before starting Phase 6.
 
-## Phase 6: Push & PR
+## Phase 6: Push & Finalize PR (still DRAFT)
 
 - [ ] All changes committed and clean
 - [ ] Risk review gate passed
 - [ ] Pushed to remote: `git push origin feature/YYYYMMDD_Sprint_N`
-- [ ] PR created: `feature/...` -> `develop` (NOT main)
-- [ ] PR description complete with task summary
-- [ ] PR references issues: `Closes #XX, #YY, #ZZ`
-- [ ] **GitHub Copilot review responded to** (if Copilot enabled): draft Fix/Backlog/NA recommendations per comment, get user approval, implement approved items (see SPRINT_EXECUTION_WORKFLOW.md § 6.4.1)
-- [ ] User notified PR is ready
+- [ ] **PR UPDATED** (the sprint PR already exists from 3.3.1): `feature/...` -> `develop` (NOT main), description complete with task summary, references issues `Closes #XX, #YY, #ZZ`. **Kept DRAFT.**
+- [ ] **GitHub Copilot review requested + responded to** (if Copilot enabled): draft Fix/Backlog/NA recommendations per comment, get user approval, implement approved items (see SPRINT_EXECUTION_WORKFLOW.md § 6.4.1)
+- [ ] **6.5 Interim status to user -- NOT "ready for approval"** (the readiness announcement is Phase 7 step 7.7.5, after retro + Copilot all complete)
+- [ ] **6.6 ON MERGE: open the NEXT sprint branch off updated develop IMMEDIATELY** (MANDATORY, Sprint 42 retro) -- the moment the PR is merged/approved, run (PowerShell): `git checkout develop`, `git pull origin develop`, `git checkout -b feature/<date>_Sprint_<N+1>`, then push it, BEFORE any further commits (next-sprint backlog refinement, issue cleanup, deferred IMPs). Phase 7 (incl. retro improvements) completes before merge, so post-merge work belongs to the NEXT sprint; commits on the merged branch get stranded off `develop`. See SPRINT_EXECUTION_WORKFLOW.md § 6.6 (incl. cherry-pick recovery if work already landed on the merged branch).
 
 **[CHECKPOINT]** Review Phase 7 checklist before proceeding. Phase 7 is MANDATORY. **[CONTEXT CHECK]** Verify context < 85% before starting Phase 7.
 
@@ -131,6 +134,7 @@ These documents MUST be created/updated during each sprint:
 - [ ] **Step 5 (7.5)**: Propose improvements from combined feedback. Any type (process, code, tests, architecture, docs, tooling). Format: Title / Source / Type / Effort / Recommendation. Display in chat -- do NOT auto-apply.
 - [ ] **Step 6 (7.6)**: Ask Harold for explicit decision per proposal: (a) apply now, (b) add to backlog, (c) skip. Default expectation: most improvements faster to do now before next sprint. Record decisions in retrospective "Improvement Decisions" section.
 - [ ] **Step 7 (7.7)**: Apply "apply now" improvements as additional commits on the existing sprint branch. Add "backlog" items to `ALL_SPRINTS_MASTER_PLAN.md`. Note "skip" items in retrospective.
+- [ ] **7.7 end: set PR to "Ready for Review"** (`gh pr ready <PR#>`) -- the moment ALL "apply now" retro suggestions are implemented + committed + pushed (analyzer/tests green). This is the draft->ready STATE change (the PO/SM notification is the separate 7.7.5 step). If there were no "apply now" IMPs, set ready once the retrospective is complete.
 
 **Mandatory sprint completion updates (Phase 7.7 continued)**:
   - [ ] CHANGELOG.md updated (all sprint entries present, including any Step 7 improvements)
@@ -140,15 +144,17 @@ These documents MUST be created/updated during each sprint:
   - [ ] `docs/sprints/SPRINT_N_SUMMARY.md` created (MANDATORY - do not defer)
   - [ ] ARCHITECTURE.md updated (if architecture changed)
   - [ ] .claude/sprint_status.json updated
+- [ ] **7.7.5 FINAL GATE + announce readiness** (PR lifecycle checkpoint #4, MANDATORY): ONLY after manual testing AND retrospective AND retro improvements AND any Copilot review AND Copilot comments addressed are ALL complete -- final PR update IF anything needs it (no-op if nothing changed); verify PR is already Ready-for-Review (set at end of 7.7; `gh pr ready` now if somehow still draft); THEN notify Product Owner / Scrum Master the PR is ready for FINAL APPROVAL. This PO/SM notification is the ONE readiness announcement of the sprint.
 - [ ] **7.8** Review results summarized
 - [ ] **7.9** Next steps offered to user
 
 ## Post-Merge Cleanup
 
 - [ ] PR merged to develop
+- [ ] **6.6 NEXT sprint branch opened off updated develop IMMEDIATELY on merge** (see Phase 6.6 -- before any post-merge commits)
 - [ ] **Review and close all resolved GitHub issues** (`gh issue list --state open` - close any resolved by this sprint)
 - [ ] GitHub issues auto-closed (verify Closes #N references worked)
-- [ ] Feature branch deleted (optional, user-managed)
+- [ ] **Feature branch NEVER deleted** (sprint branches are retained permanently, local + remote -- see SPRINT_EXECUTION_WORKFLOW.md "Feature branch retention"; do not offer to clean up)
 
 ## Post-Merge: Store Submission (if applicable)
 

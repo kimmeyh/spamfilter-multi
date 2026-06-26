@@ -21,6 +21,23 @@ class EmailMessage {
   /// during post-safe-sender-move source-folder deduplication.
   final String? messageIdHeader;
 
+  /// F96 (Sprint 43): the SPF/DKIM/DMARC classification name
+  /// (`green`/`yellow`/`red`/`grey`) persisted at scan time and re-hydrated on
+  /// the off-scan quick-add paths (Scan History reload, email-detail view).
+  ///
+  /// Live-scan `EmailMessage` objects leave this null and carry the full
+  /// authentication headers instead -- the quick-add screens parse those
+  /// directly. The historical / email-detail paths reconstruct the message
+  /// from the database with only `From`/`Subject` headers (no
+  /// `Authentication-Results`), so a fresh parse would always classify GREY
+  /// and the RED anti-phishing warning could never fire (F89's coverage gap,
+  /// PR #260 review). When this override is present, consumers use it instead
+  /// of re-parsing the (now-absent) headers. Per ADR / Sprint 43 Class-1
+  /// decision, only the classification ENUM is persisted (not the raw headers),
+  /// so a re-hydrated RED warning fires but cannot show the original
+  /// per-protocol breakdown.
+  final String? authClassificationOverride;
+
   EmailMessage({
     required this.id,
     required this.from,
@@ -30,6 +47,7 @@ class EmailMessage {
     required this.receivedDate,
     required this.folderName,
     this.messageIdHeader,
+    this.authClassificationOverride,
   });
 
   /// Extract sender email from 'From' header

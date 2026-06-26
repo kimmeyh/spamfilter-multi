@@ -38,7 +38,17 @@ abstract class RuleDatabaseProvider {
 ///         safe_senders tables -- the GREEN/YELLOW/RED/GREY SPF/DKIM/DMARC
 ///         snapshot captured when a rule or safe sender was created via a
 ///         quick-add prompt.
-const int databaseVersion = 7;
+/// v7: Remove two more malformed bundled TLD block rules (.sho, .sweeps) from
+///     existing installs (BUG-S37-2, Sprint 42). Data-only migration.
+/// v8: Add auth_classification (nullable TEXT) to BOTH email_actions and
+///     unmatched_emails (F96, Sprint 43) -- the GREEN/YELLOW/RED/GREY
+///     SPF/DKIM/DMARC snapshot captured at SCAN time, so the off-scan quick-add
+///     paths (Scan History reload, email-detail view) can re-hydrate the
+///     classification and fire the RED anti-phishing warning. Without this,
+///     those reconstructed paths re-parse headers that carry only From/Subject
+///     and always classify GREY (F89 coverage gap). Per the Sprint 43 Class-1
+///     decision, only the classification enum is persisted, not the raw headers.
+const int databaseVersion = 8;
 
 /// SQLite database helper - singleton pattern
 class DatabaseHelper implements RuleDatabaseProvider {
@@ -184,6 +194,7 @@ class DatabaseHelper implements RuleDatabaseProvider {
         error_message TEXT,
         email_still_exists INTEGER DEFAULT 1,
         rfc5322_message_id TEXT,
+        auth_classification TEXT,
         FOREIGN KEY (scan_result_id) REFERENCES scan_results(id) ON DELETE CASCADE
       );
     ''');
@@ -294,6 +305,7 @@ class DatabaseHelper implements RuleDatabaseProvider {
         availability_checked_at INTEGER,
         processed INTEGER DEFAULT 0,
         created_at INTEGER NOT NULL,
+        auth_classification TEXT,
         FOREIGN KEY (scan_result_id) REFERENCES scan_results(id) ON DELETE CASCADE
       );
     ''');
@@ -545,6 +557,34 @@ class DatabaseHelper implements RuleDatabaseProvider {
       }
 
       _logger.i('v7 migration complete');
+    }
+
+    if (oldVersion < 8) {
+      // v8: F96 (Sprint 43) -- persist the SPF/DKIM/DMARC classification at
+      // SCAN time so the off-scan quick-add paths (Scan History reload,
+      // email-detail view) can re-hydrate it and fire the RED anti-phishing
+      // warning. Nullable additive columns on two tables; existing rows are
+      // null (scanned before this feature shipped -> those rows re-hydrate as
+      // "no snapshot" and fall back to GREY, the pre-F96 behavior). Guarded so
+      // a fresh-install table (which already has the column) is not re-altered.
+      _logger.i('Applying v8 migration: adding auth_classification columns');
+      final emailActionsInfo =
+          await db.rawQuery('PRAGMA table_info(email_actions)');
+      final emailActionsColumns =
+          emailActionsInfo.map((r) => r['name'] as String).toSet();
+      if (!emailActionsColumns.contains('auth_classification')) {
+        await db.execute(
+            'ALTER TABLE email_actions ADD COLUMN auth_classification TEXT;');
+      }
+      final unmatchedInfo =
+          await db.rawQuery('PRAGMA table_info(unmatched_emails)');
+      final unmatchedColumns =
+          unmatchedInfo.map((r) => r['name'] as String).toSet();
+      if (!unmatchedColumns.contains('auth_classification')) {
+        await db.execute(
+            'ALTER TABLE unmatched_emails ADD COLUMN auth_classification TEXT;');
+      }
+      _logger.i('v8 migration complete');
     }
   }
 

@@ -9,6 +9,7 @@ import 'package:logger/logger.dart';
 
 import '../../core/models/email_message.dart';
 import '../../core/models/evaluation_result.dart';
+import '../../core/services/auth_results_parser.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/settings_store.dart';
@@ -436,6 +437,14 @@ class EmailScanProvider extends ChangeNotifier {
         // fetch headers). Used to recognize already-rescued safe-sender
         // messages re-injected by AOL's copy-not-move behavior.
         'rfc5322_message_id': r.email.messageIdHeader,
+        // F96 (Sprint 43): persist the SPF/DKIM/DMARC classification computed
+        // from the LIVE-scan headers (full Authentication-Results present here)
+        // so the off-scan quick-add paths can re-hydrate it and fire the RED
+        // anti-phishing warning. classifyHeaders returns GREY when no auth
+        // headers were present; we store that name as-is (re-hydration treats a
+        // stored GREY identically to "no snapshot").
+        'auth_classification':
+            AuthResultsParser.classifyHeaders(r.email.headers).name,
       }).toList();
 
       await _databaseHelper!.insertEmailActionBatch(actions);
@@ -849,6 +858,27 @@ class EmailScanProvider extends ChangeNotifier {
   /// Returns list of row data (each row is a list of cell values).
   /// The caller is responsible for writing to the Excel file.
   /// Returns empty list if no results.
+  /// F110 (Sprint 43): the emails in this scan that FAILED at least one
+  /// authentication check (SPF/DKIM/DMARC hard-fail), each paired with the
+  /// comma-separated list of failed checks -- e.g. `(from, 'SPF,DMARC')`.
+  ///
+  /// Used by the per-account scan log to write one phishing line per failed
+  /// email naming the SENDER (sender addresses are permitted in logs per the
+  /// narrowed ADR-0030 -- only the app user's own configured account addresses
+  /// are redacted). Emails with no auth failure are omitted. Returns empty when
+  /// no email failed.
+  List<({String from, String failedChecks})> getAuthFailures() {
+    final failures = <({String from, String failedChecks})>[];
+    for (final result in _results) {
+      final failed =
+          AuthResultsParser.failedChecksFromHeaders(result.email.headers);
+      if (failed.isNotEmpty) {
+        failures.add((from: result.email.from, failedChecks: failed.join(',')));
+      }
+    }
+    return failures;
+  }
+
   List<List<String>> getExcelRows() {
     if (_results.isEmpty) return [];
 
@@ -868,6 +898,13 @@ class EmailScanProvider extends ChangeNotifier {
       final subject = PatternNormalization.cleanSubjectForDisplay(result.email.subject);
       final matchCondition = result.evaluationResult?.matchedPattern ?? 'N/A';
       final emailId = result.email.id;
+      // F110 (Sprint 43): "Phishing SPF/DKIM/DMARC" -- the comma-separated list
+      // of authentication checks this email HARD-FAILED (e.g. "SPF,DMARC").
+      // Blank when nothing failed. Every scanned email keeps its row; this
+      // column just flags the failures so a reviewer can spot likely spoofs.
+      final phishing =
+          AuthResultsParser.failedChecksFromHeaders(result.email.headers)
+              .join(',');
 
       rows.add([
         scanDate,
@@ -880,6 +917,7 @@ class EmailScanProvider extends ChangeNotifier {
         subject,
         matchCondition,
         emailId,
+        phishing,
       ]);
     }
 

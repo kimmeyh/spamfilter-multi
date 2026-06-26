@@ -62,8 +62,21 @@ class _SafeSenderQuickAddScreenState extends State<SafeSenderQuickAddScreen> {
   void initState() {
     super.initState();
     _normalizedEmail = PatternNormalization.normalizeFromHeader(widget.email.from);
-    _authResult = AuthResultsParser.parse(widget.email.headers);
-    _authClassification = AuthResultsParser.classify(_authResult);
+    // F96 (Sprint 43): prefer a re-hydrated classification snapshot when the
+    // source email was reconstructed off-scan (email-detail / history paths),
+    // whose headers carry only From/Subject and would otherwise always parse
+    // GREY. Live-scan emails leave the override null and parse their full
+    // Authentication-Results headers as before. When the override is RED but no
+    // raw header is available, a synthetic result drives the warning dialog.
+    final override = AuthResultsParser.classificationFromName(
+        widget.email.authClassificationOverride);
+    if (override != null) {
+      _authClassification = override;
+      _authResult = AuthResultsParser.syntheticResultFor(override);
+    } else {
+      _authResult = AuthResultsParser.parse(widget.email.headers);
+      _authClassification = AuthResultsParser.classify(_authResult);
+    }
     _updateGeneratedPattern();
   }
 

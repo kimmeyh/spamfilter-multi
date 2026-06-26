@@ -51,7 +51,7 @@ class BackgroundScanWindowsWorker {
       // interleave into one file. Null token -> shared legacy filename.
       final accountPart =
           _logAccountToken != null ? '${_logAccountToken}_' : '';
-      final fileName = '${logPrefix}background_scan_${accountPart}v0.5.3.log';
+      final fileName = '${logPrefix}background_scan_${accountPart}v0.5.4.log';
       final logFile = File('$logDir\\$fileName');
       final timestamp = DateTime.now().toIso8601String();
       await logFile.parent.create(recursive: true);
@@ -63,7 +63,14 @@ class BackgroundScanWindowsWorker {
   }
 
   /// Maximum attempts when the DB is locked by a concurrent process.
-  static const int _dbLockMaxAttempts = 20;
+  ///
+  /// F101 (Sprint 43, Harold direction 2026-06-23): capped at 15 (was 20) so a
+  /// genuinely stuck lock fails in ~15 min instead of ~20. With
+  /// [_dbLockRetryDelay] = 1 min BETWEEN attempts (no trailing delay after the
+  /// final attempt), 15 attempts means at most 14 one-minute waits + the scan
+  /// work itself -- a worst case of ~15 min before the lock error is rethrown
+  /// and the failure recorded.
+  static const int _dbLockMaxAttempts = 15;
 
   /// Delay between DB-lock retries.
   static const Duration _dbLockRetryDelay = Duration(minutes: 1);
@@ -157,6 +164,16 @@ class BackgroundScanWindowsWorker {
       var accountIds = await credStore.getSavedAccounts();
       _logger.d('Found ${accountIds.length} total accounts');
       await _bgLog('Found ${accountIds.length} total accounts: ${accountIds.map(Redact.accountId).toList()}');
+
+      // F110 (Sprint 43): the APP USER'S OWN configured accounts. Under the
+      // narrowed ADR-0030 redaction rule, ONLY the user's own address is masked
+      // in logs; third-party senders (spammers/phishers) are logged in the clear
+      // because they are the security signal. Pass the RAW account ids straight
+      // through -- Redact.senderForLog matches by equality-or-suffix on the bare
+      // address, so it correctly handles both bare-email and "{platform}-{email}"
+      // ids without mis-parsing a hyphenated platform prefix (PR #265 Copilot
+      // review). No string-splitting here.
+      final userAccounts = accountIds.toSet();
 
       // F98: when account-scoped, narrow to exactly the named account. If it is
       // not among the saved accounts (e.g. removed since the task was created),
@@ -255,6 +272,17 @@ class BackgroundScanWindowsWorker {
             );
             await logStore.updateLog(successLog);
             await _bgLog('Account ${Redact.accountId(accountId)} scan SUCCESS: Processed: ${result.emailsProcessed}, Deleted: ${result.deletedCount}, Moved: ${result.movedCount}, Safe: ${result.safeCount}, No Rule: ${result.unmatchedCount}, Errors: ${result.errorCount}');
+
+            // F110 (Sprint 43): one phishing line per email that HARD-FAILED at
+            // least one of SPF/DKIM/DMARC, naming the sender and which check(s)
+            // failed. The sender is logged in the clear per the narrowed
+            // ADR-0030 rule -- UNLESS it matches one of the user's own
+            // configured account addresses (a self-spoof), which Redact masks.
+            // Emails with no auth failure get no line (failures-only view).
+            for (final f in result.scanProvider.getAuthFailures()) {
+              await _bgLog(
+                  'Phishing SPF/DKIM/DMARC: ${Redact.senderForLog(f.from, userAccounts)} -> ${f.failedChecks} failed');
+            }
 
             // Export debug CSV if enabled
             await _exportDebugCsvIfEnabled(
@@ -405,7 +433,10 @@ class BackgroundScanWindowsWorker {
       if (newRows.isEmpty) {
         // Placeholder row for empty scan runs
         final scanDate = DateTime.now().toIso8601String();
-        buffer.writeln('$scanDate\t$scanDate\t\t\t\t\t<no records to process>\t\t\t');
+        // 11 columns: Scan, Received, Status, Folder, Action, Rule, From,
+        // Subject, Match Condition, Email ID, Auth (Sprint 43). The
+        // "<no records>" marker sits in the From column for visibility.
+        buffer.writeln('$scanDate\t$scanDate\t\t\t\t\t<no records to process>\t\t\t\t');
       } else {
         for (final row in newRows) {
           buffer.writeln(row.join('\t'));
@@ -435,6 +466,9 @@ class BackgroundScanWindowsWorker {
         'Subject',
         'Match Condition',
         'Email ID',
+        // F110 (Sprint 43): comma-separated list of the SPF/DKIM/DMARC checks
+        // this email HARD-FAILED (e.g. "SPF,DMARC"); blank when none failed.
+        'Phishing SPF/DKIM/DMARC',
       ];
 
       final workbook = xlsio.Workbook();
