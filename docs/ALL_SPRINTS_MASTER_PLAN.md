@@ -210,6 +210,14 @@ Recent sprints complete -- detail blocks removed per the Maintenance Guide (hist
 - **Action**: Harold reviews ADR-0037 -> Accepted (or notes what still pends); promote ARSD if appropriate.
 - Source: Sprint 43 F103 architecture deep dive.
 
+**F109. Surface "background run deferred (UI open)" status in Settings/History (~2-3h) Priority 40 -- NEW (Sprint 43 manual testing, 2026-06-25)**
+- Phase: UX / background scanning
+- Platform: All (Windows desktop first)
+- During Sprint 43 manual testing, the two background scans appeared "stuck" -- Settings showed them enabled/running but no new scan had landed in history for ~8h. Root cause was NOT a bug: the per-account scheduled tasks fired every interval and exited 0, but each DEFERRED because the foreground app was open and held the single-instance mutex (F98 DB-contention protection), logging `[STARTUP] Background scan skipped: Foreground UI is running (mutex held); scan deferred to next interval.` (65 skips that session). The behavior is correct, but it is INVISIBLE in the UI -- Settings says "running" with no hint that runs are being deferred because the app is open, and the deferral is only traceable in the shared `dev_background_scan_v{ver}.log` startup log (not the per-account log or history).
+- **Ask**: surface the deferral so a user does not read "enabled" as "actively scanning while I have the app open." Options to weigh at Phase 3: a Settings/Background status line ("Last run deferred -- background scans pause while the app is open"), a Scan History hint, and/or recording the skip in the per-account background_scan_log table so it appears in history. Decide scope with the PO.
+- **Why backlog not fix-now**: a UX surface across Settings + History (and possibly a new logged skip row) is multi-surface work, and "what exactly to show + where" is a Product-Owner decision, not a same-session fix.
+- Source: Sprint 43 manual testing (2026-06-25).
+
 **F106. SEC-11b verification-window cleanup (~30m) Priority 30 -- DEFERRED (gated on SEC-11b, now Post-MVP)**
 - Phase: Security / cleanup
 - Platform: All

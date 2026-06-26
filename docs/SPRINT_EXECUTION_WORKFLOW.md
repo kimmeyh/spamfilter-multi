@@ -307,11 +307,15 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
 
 - [ ] **3.3.1 Create the sprint PR (DRAFT) immediately after the plan is drafted** (MANDATORY)
   - **When**: as soon as `SPRINT_N_PLAN.md` is **drafted** -- this is BEFORE Phase 3.7 approval. (Do not wait for approval to create the PR.)
+  - **[CRITICAL] THE PR STAYS DRAFT THROUGH PHASES 3-7. It is converted to "Ready for Review" at EXACTLY ONE point: end of Phase 7.7, after all "apply now" retrospective improvements are implemented + committed.** (Sprint 43 retro IMP-2, Harold 2026-06-25.)
+    - **NEVER** run `gh pr ready`, nor click "Ready for review" in the GitHub UI, at ANY other step -- not at create, not at plan-approval, not at end-of-dev, not during Phase 6.
+    - **Why this matters (the concrete failure)**: in Sprint 43 the PR was marked "Ready for Review" early (before the plan was even approved), which triggered a **GitHub Copilot review on every subsequent commit** -- dozens of unwanted reviews. Draft status SUPPRESSES Copilot-per-commit until the work is genuinely ready. Marking ready early = Copilot noise on every push.
+    - Every PR-touch step below carries a `[keep DRAFT]` reminder. If you ever find the PR is not in draft before Phase 7.7, set it back to draft (`gh pr ready --undo`) and note it.
   - **THE PR LIFECYCLE** (one PR per sprint, updated at four checkpoints -- Sprint 42 retro, Harold's spec):
-    1. **3.3.1 (here)** -- CREATE the PR as a **draft**, body = the drafted sprint plan.
-    2. **3.7 (plan approved)** -- UPDATE the PR body to reflect the **approved** plan (if for some reason the PR does not exist yet, create it now).
-    3. **End of sprint-plan development** (Phase 5, when all planned + manual-testing-feedback dev is complete) -- UPDATE the PR for anything that changed during the sprint (if it does not exist yet, create it).
-    4. **End of Phase 7.7 (retro improvements done)** -- once ALL "apply now" retrospective suggestions are implemented + committed, set the PR to **"Ready for Review"** on GitHub (`gh pr ready` -- the draft->ready STATE change). THEN at the **7.7.5 final gate** (after manual testing AND retro AND retro improvements AND any Copilot review AND Copilot comments addressed are all complete): a final update if anything needs it (no-op if nothing changed), and the **notify Product Owner / Scrum Master ready for final approval** (the human signal). (See Phase 7 steps 7.7 and 7.7.5.)
+    1. **3.3.1 (here)** -- CREATE the PR as a **draft**, body = the drafted sprint plan. **[keep DRAFT -- do not mark ready (see 7.7)]**
+    2. **3.7 (plan approved)** -- UPDATE the PR body to reflect the **approved** plan (if for some reason the PR does not exist yet, create it now). **[keep DRAFT -- do not mark ready (see 7.7)]**
+    3. **End of sprint-plan development** (Phase 5, when all planned + manual-testing-feedback dev is complete) -- UPDATE the PR for anything that changed during the sprint (if it does not exist yet, create it). **[keep DRAFT -- do not mark ready (see 7.7)]**
+    4. **End of Phase 7.7 (retro improvements done)** -- once ALL "apply now" retrospective suggestions are implemented + committed, set the PR to **"Ready for Review"** on GitHub (`gh pr ready` -- the draft->ready STATE change; **this is the ONE and ONLY place the PR is marked ready**). THEN at the **7.7.5 final gate** (after manual testing AND retro AND retro improvements AND any Copilot review AND Copilot comments addressed are all complete): a final update if anything needs it (no-op if nothing changed), and the **notify Product Owner / Scrum Master ready for final approval** (the human signal). (See Phase 7 steps 7.7 and 7.7.5.)
   - **Important**: create a NEW draft PR for each sprint (do not reuse planning/architecture PRs).
   - **How**:
     ```powershell
@@ -703,7 +707,7 @@ After Phase 5.2 all tests pass, context can be compacted for efficiency:
    - While user tests in VSCode, Claude:
      - **UPDATES the existing sprint PR (PR lifecycle checkpoint #3)** - **REQUIRED, DO NOT SKIP**
        - The PR already exists (created at 3.3.1, updated to the approved plan at 3.7.1). Here, UPDATE its body/description for anything that changed during development. (If for some reason it does not exist yet, create it now -- draft, target `develop` NOT main, title "Sprint N: <summary>".)
-       - Keep it in DRAFT -- it is NOT marked ready / announced for approval yet (that is the Phase 7 final gate, after retro + Copilot).
+       - **[keep DRAFT -- do not mark ready (see 7.7)]** Do NOT run `gh pr ready` here. The PR stays DRAFT; it is converted to ready ONLY at the end-of-7.7 step (after retro improvements), never during Phase 6 (marking ready early triggers Copilot-per-commit -- Sprint 43 retro IMP-2).
      - Writes documentation
      - Conducts code review analysis
      - Prepares Phase 7 review

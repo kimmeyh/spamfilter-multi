@@ -63,8 +63,9 @@ These documents MUST be created/updated during each sprint:
 - [ ] Verified all issues are OPEN
 - [ ] **Architecture Impact Check** (3.6.1): Review planned changes against ARCHITECTURE.md, ARSD.md, and ADRs. Include doc updates in sprint scope if needed.
 - [ ] **3.3.1 Sprint PR created as DRAFT after the plan is drafted** (MANDATORY) -- one PR per sprint, updated at 4 checkpoints (3.3.1 create / 3.7.1 approved-plan / Phase 5 end-of-dev / 7.7.5 final). Stays DRAFT until 7.7.5.
+  - **[CRITICAL] NEVER mark the PR "Ready for Review" except at the single end-of-7.7 step** (after "apply now" retro improvements are committed). Do not run `gh pr ready` at create / approval / end-of-dev / Phase 6. Marking ready early triggers a GitHub **Copilot review on every commit** (Sprint 43 retro IMP-2). If you find it not-draft before 7.7, set it back (`gh pr ready --undo`).
 - [ ] Sprint plan reviewed and approved by user
-- [ ] **3.7.1 PR updated to the APPROVED plan** (create if missing); keep DRAFT.
+- [ ] **3.7.1 PR updated to the APPROVED plan** (create if missing); **[keep DRAFT -- do not mark ready]**.
 
 **[CHECKPOINT]** Review Phase 4 checklist before proceeding. **[CONTEXT CHECK]** Verify context < 85% before starting Phase 4.
 
@@ -94,7 +95,7 @@ These documents MUST be created/updated during each sprint:
 - [ ] **Platform-specific UI verified** at native level (Win32 window title, system tray, notifications) -- Flutter UI layer may not control platform-level behavior (learned Sprint 21)
 - [ ] **Manual integration testing complete (Lead Developer)** -- this is a LOOP, not a single step. Each round of testing feedback can produce in-sprint fixes OR backlog additions; do not move to Code Review until the Lead Developer explicitly notes testing complete (see SPRINT_EXECUTION_WORKFLOW.md "Canonical Next Steps progression")
 - [ ] Issues from testing fixed (in-sprint) or filed (backlog)
-- [ ] **PR lifecycle checkpoint #3**: UPDATE the existing draft sprint PR for anything that changed during development (create if missing). Keep DRAFT -- do NOT announce "ready" yet.
+- [ ] **PR lifecycle checkpoint #3**: UPDATE the existing draft sprint PR for anything that changed during development (create if missing). **[keep DRAFT -- do NOT run `gh pr ready`]** -- the draft->ready conversion is the single end-of-7.7 step (IMP-2).
 
 **[CHECKPOINT]** Review Phase 6 checklist before proceeding. **[CONTEXT CHECK]** Verify context < 85% before starting Phase 6.
 

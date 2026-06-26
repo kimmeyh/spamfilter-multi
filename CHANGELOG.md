@@ -26,6 +26,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-06-25 (Sprint 43: retrospective improvements)
+- **docs**: Sprint 43 retrospective (`docs/sprints/SPRINT_43_RETROSPECTIVE.md`, 4 roles x 14 categories). Two approved improvements implemented in-sprint: **IMP-1** -- cheapest-first model-assignment process (design each task for Haiku first, escalate to Sonnet then Opus only when heuristics demand; record a "why not the cheaper tier" note for any Sonnet/Opus assignment) in `SPRINT_PLANNING.md` + the `plan-sprint` skill; **IMP-2** -- the sprint PR stays DRAFT through Phases 3-7 and is marked Ready-for-Review at exactly one point (end of 7.7), with `[keep DRAFT]` guards on every PR-touch step and a note that marking ready early triggers Copilot-per-commit, in `SPRINT_EXECUTION_WORKFLOW.md` + `SPRINT_CHECKLIST.md`. (Sprint 43 retro)
+
 ### 2026-06-25 (Sprint 43: F110 -- phishing auth-failure visibility + narrowed redaction)
 - **feat**: F110 -- the debug scan exports (background + live CSV/XLSX, gated by the existing debug-CSV setting) now carry a **`Phishing SPF/DKIM/DMARC`** column: a comma-separated list of the authentication checks each email HARD-FAILED (e.g. `SPF,DMARC`), blank when none failed. Every scanned email keeps its row; the column flags the failures. New `AuthResultsParser.failedChecks` / `failedChecksFromHeaders`. (F110)
 - **feat**: F110 -- the per-account scan log (`dev_background_scan_<email>_v0.5.4.log`) now writes one line per email that failed at least one auth check, naming the sender and which check(s) failed (`Phishing SPF/DKIM/DMARC: spammer@x.com -> SPF,DMARC failed`). Failures-only; no line for clean emails; not in the shared startup log. New `EmailScanProvider.getAuthFailures()`. (F110)
