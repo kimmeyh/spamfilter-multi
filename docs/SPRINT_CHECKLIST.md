@@ -107,7 +107,7 @@ These documents MUST be created/updated during each sprint:
 - [ ] **PR UPDATED** (the sprint PR already exists from 3.3.1): `feature/...` -> `develop` (NOT main), description complete with task summary, references issues `Closes #XX, #YY, #ZZ`. **Kept DRAFT.**
 - [ ] **GitHub Copilot review requested + responded to** (if Copilot enabled): draft Fix/Backlog/NA recommendations per comment, get user approval, implement approved items (see SPRINT_EXECUTION_WORKFLOW.md § 6.4.1)
 - [ ] **6.5 Interim status to user -- NOT "ready for approval"** (the readiness announcement is Phase 7 step 7.7.5, after retro + Copilot all complete)
-- [ ] **6.6 ON MERGE: open the NEXT sprint branch off updated develop IMMEDIATELY** (MANDATORY, Sprint 42 retro) -- the moment the PR is merged/approved, `git checkout develop && git pull` then `git checkout -b feature/<date>_Sprint_<N+1>` and push it, BEFORE any further commits (retro fixes, backlog refinement, issue cleanup). Post-merge commits on the merged branch get stranded off `develop`. See SPRINT_EXECUTION_WORKFLOW.md § 6.6 (incl. cherry-pick recovery if work already landed on the merged branch).
+- [ ] **6.6 ON MERGE: open the NEXT sprint branch off updated develop IMMEDIATELY** (MANDATORY, Sprint 42 retro) -- the moment the PR is merged/approved, run (PowerShell): `git checkout develop`, `git pull origin develop`, `git checkout -b feature/<date>_Sprint_<N+1>`, then push it, BEFORE any further commits (next-sprint backlog refinement, issue cleanup, deferred IMPs). Phase 7 (incl. retro improvements) completes before merge, so post-merge work belongs to the NEXT sprint; commits on the merged branch get stranded off `develop`. See SPRINT_EXECUTION_WORKFLOW.md § 6.6 (incl. cherry-pick recovery if work already landed on the merged branch).
 
 **[CHECKPOINT]** Review Phase 7 checklist before proceeding. Phase 7 is MANDATORY. **[CONTEXT CHECK]** Verify context < 85% before starting Phase 7.
 
@@ -154,7 +154,7 @@ These documents MUST be created/updated during each sprint:
 - [ ] **6.6 NEXT sprint branch opened off updated develop IMMEDIATELY on merge** (see Phase 6.6 -- before any post-merge commits)
 - [ ] **Review and close all resolved GitHub issues** (`gh issue list --state open` - close any resolved by this sprint)
 - [ ] GitHub issues auto-closed (verify Closes #N references worked)
-- [ ] **Feature branch NEVER deleted** (sprint branches are retained permanently, local + remote -- `feedback_branch_retention`; do not offer to clean up)
+- [ ] **Feature branch NEVER deleted** (sprint branches are retained permanently, local + remote -- see SPRINT_EXECUTION_WORKFLOW.md "Feature branch retention"; do not offer to clean up)
 
 ## Post-Merge: Store Submission (if applicable)
 

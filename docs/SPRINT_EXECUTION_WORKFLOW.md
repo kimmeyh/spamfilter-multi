@@ -941,11 +941,12 @@ After Phase 5.2 all tests pass, context can be compacted for efficiency:
 
 - [ ] **6.6 Open the NEXT sprint branch immediately after merge** [WARNING] MANDATORY (Sprint 42 retro -- this was missed)
   - **Trigger**: the moment you are notified the sprint PR is **merged/approved** (e.g. user says "PR merged", or `gh pr view <N> --json state` shows `MERGED`). Do this **very soon** after the notice -- before ANY further commits.
-  - **Why**: once the PR merges, the sprint feature branch is "done." Any further work (Phase 7 retro fixes that land post-merge, backlog refinement, GitHub issue cleanup, follow-up IMPs) must NOT be committed onto the merged branch -- those commits get stranded (not on `develop`). They belong on a fresh branch off the updated `develop`.
-  - **Steps** (run as soon as merge is confirmed):
-    ```bash
+  - **Why**: once the PR merges, the sprint feature branch is "done." Phase 7 (including retro improvements) completes BEFORE the merge -- so post-merge work is the NEXT sprint's: backlog refinement, GitHub issue cleanup, next-sprint planning, and any follow-up IMPs deferred to Sprint N+1. None of it may be committed onto the merged branch -- those commits get stranded (not on `develop`). They belong on a fresh branch off the updated `develop`.
+  - **Steps** (run as soon as merge is confirmed; PowerShell -- the project's primary shell):
+    ```powershell
     git fetch origin develop
-    git checkout develop && git pull origin develop          # updated develop (now has the merged sprint)
+    git checkout develop
+    git pull origin develop                                   # updated develop (now has the merged sprint)
     git checkout -b feature/<YYYYMMDD>_Sprint_<N+1>           # next sprint branch off develop
     git push -u origin feature/<YYYYMMDD>_Sprint_<N+1>
     ```
