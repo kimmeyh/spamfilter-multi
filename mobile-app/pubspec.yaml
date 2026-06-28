@@ -21,7 +21,7 @@ dependencies:
   enough_mail: ^2.1.7
   
   # Storage & Security (Phase 1)
-  flutter_secure_storage: ^9.0.0
+  flutter_secure_storage: ^10.0.0  # (F108, Sprint 44: 9->10; encryptedSharedPreferences deprecated -> dropped; Android minSdk raised to 23)
   path_provider: ^2.1.0
   path: ^1.8.0
 

@@ -62,9 +62,10 @@ class SecureCredentialsStore {
   SecureCredentialsStore({FlutterSecureStorage? storage})
       : _storage = storage ??
             const FlutterSecureStorage(
-              aOptions: AndroidOptions(
-                encryptedSharedPreferences: true,
-              ),
+              // F108 (Sprint 44): flutter_secure_storage 10 deprecated
+              // `encryptedSharedPreferences`; the default AndroidOptions are now
+              // the encrypted ones (RSA/AES-GCM) with automatic data migration.
+              aOptions: AndroidOptions(),
               iOptions: IOSOptions(
                 accessibility: KeychainAccessibility.first_unlock_this_device,
               ),
