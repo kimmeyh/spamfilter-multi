@@ -38,7 +38,7 @@ dependencies:
   webview_flutter: ^4.4.0  # For WebView OAuth backup
   crypto: ^3.0.3  # For PKCE S256 (sha256)
   app_links: ^6.3.3  # For deep link handling on mobile OAuth
-  flutter_appauth: ^8.0.1  # For proper OAuth on Android/iOS
+  flutter_appauth: ^12.0.1  # OAuth for Android/iOS (F108, Sprint 44: 8->12; we do not use preferEphemeralSession; Flutter 3.38.1+ satisfied)
   
   # Phase 3.5 - Database & Settings
   sqflite: ^2.3.0  # SQLite for scan results, rules, settings
