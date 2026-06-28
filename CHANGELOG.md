@@ -26,6 +26,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-06-28 (Sprint 44: F108 -- security-relevant dependency upgrades)
+- **chore**: F108 (spike-first; Harold go/no-go: GO on all 3) -- upgraded three security-relevant deps, **each in its own revertable commit**: `flutter_appauth` 8.0.3 -> 12.0.2 (no code change -- we do not use `preferEphemeralSession`), `workmanager` 0.5.2 -> 0.9.0+3 (no code change -- we use `NetworkType.connected` + a simple inputData map), `flutter_secure_storage` 9.2.4 -> 10.3.1 (dropped the deprecated `AndroidOptions(encryptedSharedPreferences: true)` in 2 files; raised Android `minSdk` 21 -> 23 as v10 requires API 23+). Plus minor drift (logger 2.7.0, path_provider 2.1.6, archive 4.0.9). lib/ analyze clean; full suite green; Windows build verified. **Android-device retest (Gmail sign-in, secure-storage round-trip, per-account WorkManager) is a manual-testing item** (no emulator in this session). A per-dependency revert runbook ships at `docs/sprints/SPRINT_44_F108_REVERT_RUNBOOK.md`. (F108)
+
 ### 2026-06-26 (Sprint 44: F109 -- surface the background-scan deferral state)
 - **feat**: F109 -- background scans correctly pause while the foreground app is open (F98 DB-contention protection), but that was invisible. Now surfaced three ways: (a) a Settings > Background status line ("Background scans pause while this app is open; ... Last run deferred at HH:MM"), (b) a Scan History info hint, and (c) a logged `status='deferred'` row in `background_scan_log`. (F109)
 - **feat**: F109c -- the deferral is detected in the native Windows runner (`main.cpp`) before any Dart/DB exists, so it appends each deferral to a handoff file (`{logs}/background_scan_deferrals.tsv`); the new `BackgroundDeferralIngest` reads + clears it on the next foreground launch and inserts the `deferred` row (NO DB migration -- the table already has a `status` column). (F109)
