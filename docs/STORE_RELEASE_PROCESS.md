@@ -62,7 +62,15 @@ Target version fields (example: bumping dev from `0.5.2.0` to `0.5.3.0`):
 
 Plus `CLAUDE.md` (Windows App Data Directory section + Version line) if the comment examples mention the old version.
 
-**Quick audit** to catch any stragglers before committing a version bump: `grep -rn "v0\.5\." mobile-app/lib mobile-app/windows/runner mobile-app/scripts` and reconcile every hit to the new version.
+**ENFORCED (Sprint 44 retro IMP-1)**: the items above are now backstopped by an automated **version-consistency gate** -- you no longer rely on remembering every file. After a bump, run it; it FAILS on any stale literal:
+
+```powershell
+cd mobile-app
+flutter test test/policy/version_consistency_test.dart   # the authoritative gate (runs in the full suite)
+.\scripts\check-version-consistency.ps1                   # equivalent CLI (-SelfTest for offline self-check)
+```
+
+The gate greps `lib/` + `windows/runner/` + `scripts/` for app-version literals (`_v<X.Y.Z>.log` log tokens and `Version <X.Y.Z>` display strings) and asserts every one matches `pubspec.yaml`. It ignores dependency-version references in comments. This is what caught (and now prevents) the F105/main.cpp miss. The manual `grep -rn "v0\.5\." ...` audit remains a quick sanity check, but the gate is the real backstop.
 
 **Note**: The dev worktree version is always `patch+1` relative to the last prod release. At release time the prod worktree's `pubspec.yaml` gets bumped to the dev version *minus 1* -- for example, when dev is at `0.5.3`, the release itself ships from prod at `0.5.3.0` and immediately after, dev bumps to `0.5.4`.
 
