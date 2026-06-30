@@ -66,11 +66,16 @@ static void LogBackgroundScanSkip(const std::wstring& reason) {
 // FILE so the Dart side can later insert a `status='deferred'` row into the
 // `background_scan_log` table (the deferral is detected here in C++ BEFORE any
 // Dart/DB access exists, so we cannot write the DB row directly). The Dart
-// ingest (BackgroundDeferralStore) reads + clears this file on the next
+// ingest (`BackgroundDeferralIngest`) reads + clears this file on the next
 // foreground launch. One line per deferral: `<epochMillis>\t<accountId>`.
 // Best-effort: any failure is silently ignored (the file log above is the
-// human-readable fallback). The handoff file shares the logs dir + dev/prod
-// split with the skip log.
+// human-readable fallback).
+//
+// PRIVACY (PR #266 Copilot review): the account id is email-derived (PII), so
+// the handoff file is written to the app-support ROOT, NOT the `logs/` dir --
+// keeping the PII out of the shareable log area that may end up in support
+// bundles. It is consumed + deleted on the next foreground ingest (minimal
+// retention). dev/prod split via the data-dir suffix as elsewhere.
 static void RecordBackgroundScanDeferral(const std::wstring& accountId) {
   wchar_t appDataPath[MAX_PATH];
   if (FAILED(SHGetFolderPathW(nullptr, CSIDL_APPDATA, nullptr, 0, appDataPath))) {
@@ -80,10 +85,11 @@ static void RecordBackgroundScanDeferral(const std::wstring& accountId) {
   #define SPAMFILTER_APP_ENV "dev"
   #endif
   const bool isDevEnv = (std::string(SPAMFILTER_APP_ENV) != "prod");
+  // App-support ROOT (NOT logs/) -- keeps the email-derived account id out of
+  // the shareable log area (PR #266 Copilot review). Dart ingests + deletes it.
   std::wstring dataDir = std::wstring(appDataPath)
       + L"\\MyEmailSpamFilter\\MyEmailSpamFilter"
-      + (isDevEnv ? L"_Dev" : L"")
-      + L"\\logs";
+      + (isDevEnv ? L"_Dev" : L"");
   CreateDirectoryW(dataDir.c_str(), nullptr);
   // Shared filename across environments (the dir already encodes dev/prod).
   std::wstring handoffPath = dataDir + L"\\background_scan_deferrals.tsv";

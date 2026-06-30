@@ -6,10 +6,13 @@
 /// exits BEFORE any Flutter/Dart/DB code runs (F98 / BUG-S37-1 DB-contention
 /// protection). So the deferral cannot write a `background_scan_log` row
 /// directly. Instead `main.cpp` appends one line per deferral to a handoff
-/// TSV file (`{logs}/background_scan_deferrals.tsv`), and this service -- run
-/// on the next FOREGROUND launch -- reads the file, inserts a
-/// `status='deferred'` row per line into `background_scan_log` (no DB
-/// migration; the table already has a `status` column), then deletes the file.
+/// TSV file in the app-support ROOT (`{appSupport}{suffix}/
+/// background_scan_deferrals.tsv`) -- deliberately NOT under `logs/`, so the
+/// email-derived account id stays out of the shareable log area (PR #266
+/// Copilot review). This service -- run on the next FOREGROUND launch -- reads
+/// the file, inserts a `status='deferred'` row per line into
+/// `background_scan_log` (no DB migration; the table already has a `status`
+/// column), then deletes the file (minimal retention).
 ///
 /// Idempotent + best-effort: if the file is absent there is nothing to do; a
 /// malformed line is skipped; ingest failure is logged and swallowed so it can
@@ -35,19 +38,21 @@ class BackgroundDeferralIngest {
   final BackgroundScanLogStore _logStore;
   final Logger _logger = Logger();
 
-  /// Optional override for the logs directory (the handoff file's parent).
-  /// Production leaves this null and resolves via [LiveScanLogger.getLogDir]
-  /// (path_provider). Tests inject a temp dir so the ingest is exercisable
+  /// Optional override for the handoff file's parent directory.
+  /// Production leaves this null and resolves the app-support ROOT (the parent
+  /// of the logs dir). Tests inject a temp dir so the ingest is exercisable
   /// without the path_provider plugin.
-  final String? logDirOverride;
+  final String? dirOverride;
 
-  BackgroundDeferralIngest(this._logStore, {this.logDirOverride});
+  BackgroundDeferralIngest(this._logStore, {this.dirOverride});
 
-  /// Resolve the handoff file path (shares the env-aware logs dir with the
-  /// scan logs). Returns the absolute path.
+  /// Resolve the handoff file path. The native runner writes it to the
+  /// app-support ROOT (NOT logs/) so the email-derived account id stays out of
+  /// the shareable log area (PR #266 Copilot review). [LiveScanLogger.getLogDir]
+  /// returns `{appSupport}{suffix}/logs`, so the handoff dir is its PARENT.
   Future<String> _handoffPath() async {
-    final logDir = logDirOverride ?? await LiveScanLogger.getLogDir();
-    return path.join(logDir, kDeferralHandoffFilename);
+    final dir = dirOverride ?? path.dirname(await LiveScanLogger.getLogDir());
+    return path.join(dir, kDeferralHandoffFilename);
   }
 
   /// Read the handoff file, insert a `deferred` row per record, then delete the

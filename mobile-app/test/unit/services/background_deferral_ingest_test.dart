@@ -31,7 +31,7 @@ void main() {
     logStore = BackgroundScanLogStore(testHelper.dbHelper);
     // Inject a temp logs dir so the ingest runs without the path_provider plugin.
     logDir = await Directory.systemTemp.createTemp('deferral_test_');
-    ingest = BackgroundDeferralIngest(logStore, logDirOverride: logDir.path);
+    ingest = BackgroundDeferralIngest(logStore, dirOverride: logDir.path);
     handoffPath = p.join(logDir.path, kDeferralHandoffFilename);
     // FK: background_scan_log.account_id -> accounts.account_id.
     await testHelper.createTestAccount('acct-1');

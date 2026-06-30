@@ -6,6 +6,7 @@ import '../../core/services/data_deletion_service.dart';
 import '../../core/services/default_rule_set_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 import '../../core/services/background_scan_manager.dart' show ScanFrequency;
 import '../../core/services/background_scan_windows_worker.dart';
@@ -196,8 +197,11 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           _lastBackgroundDeferral = DateTime.fromMillisecondsSinceEpoch(
               forAccount.first.scheduledTime);
         }
-      } catch (_) {
-        // Non-fatal: the status line just omits the timestamp.
+      } catch (e) {
+        // Non-fatal: the status line just omits the timestamp. Log so a failed
+        // deferral ingest / DB-availability issue is diagnosable (PR #266
+        // Copilot review).
+        Logger().w('Failed to load last background-scan deferral: $e');
       }
 
       // F43: Load current folder selections for display
@@ -895,8 +899,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   /// the last deferral time when one has been recorded.
   Widget _buildBackgroundDeferralStatusLine() {
     final when = _lastBackgroundDeferral;
+    // Use intl for a stable, locale-appropriate date/time (PR #266 Copilot
+    // review: toString().substring(0,16) is brittle and locale-blind).
     final suffix = when != null
-        ? ' Last run deferred at ${when.toString().substring(0, 16)}.'
+        ? ' Last run deferred at ${DateFormat.yMd().add_jm().format(when)}.'
         : '';
     return Padding(
       key: const Key('background_deferral_status_line'),
