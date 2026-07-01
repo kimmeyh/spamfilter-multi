@@ -21,6 +21,8 @@ import 'core/services/background_scan_manager.dart' show ScanFrequency;
 import 'core/storage/settings_store.dart';
 import 'core/storage/unmatched_email_store.dart';
 import 'core/storage/database_helper.dart';
+import 'core/storage/background_scan_log_store.dart';
+import 'core/services/background_deferral_ingest.dart';
 import 'adapters/storage/app_paths.dart';
 import 'adapters/storage/secure_credentials_store.dart';
 import 'core/security/certificate_pinner.dart';
@@ -184,6 +186,17 @@ void main(List<String> args) async {
 
   // Initialize Windows system tray and notifications (Windows only)
   if (Platform.isWindows) {
+    // F109c (Sprint 44): ingest any background-scan deferrals the native runner
+    // recorded to the handoff file while this foreground app was open, into the
+    // background_scan_log table (status='deferred') so they surface in Settings
+    // + Scan History. Best-effort; never blocks startup.
+    try {
+      await BackgroundDeferralIngest(BackgroundScanLogStore(DatabaseHelper()))
+          .ingest();
+    } catch (e) {
+      Logger().w('Background deferral ingest failed: $e');
+    }
+
     _windowsSystemTrayService = WindowsSystemTrayService();
     await _windowsSystemTrayService!.initialize();
     Logger().i('Windows system tray initialized');

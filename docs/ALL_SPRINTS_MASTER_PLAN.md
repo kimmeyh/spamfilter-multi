@@ -134,57 +134,26 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
-### Sprint Assignment (Sprint 42 Backlog Refinement, 2026-06-23)
+### Sprint Assignment (Sprint 44 Backlog Refinement, 2026-06-26)
 
 Recent sprints complete -- detail blocks removed per the Maintenance Guide (history lives in `docs/sprints/` + CHANGELOG.md):
 - **Sprint 39** (merged): S38-CI-1/2/3/4/6, F91, F89, F74, F92, F77, F93 (+ F90, BUG-S39-1/2 warmup)
 - **Sprint 40** (merged PR #261): F75, F25, F35, F37, F78, F79, BUG-S40-1
 - **Sprint 41** (merged PR #262): F83 Phase 1 (ADR-0039 Accepted), F97, F76
 - **Sprint 42** (merged PR #263, 2026-06-23): F99 (integration_test harness), F98 (per-account bg-scan, ADR-0039 + ADR-0040), BUG-S37-2
+- **Sprint 43** (merged PR #265, 2026-06-26): F102 (logging-redaction policy + gate), F103 (architecture deep dive), F96 (auth coverage off-scan, DB v8), F100 (WinWright read-only flows ported to integration_test), F101 (DB-lock retry cap 15), F104 (security deep dive), F105 (version bump 0.5.4), F110 (phishing SPF/DKIM/DMARC visibility + narrowed redaction); SEC-11b deferred to Post-MVP (cipher -> SQLite3MultipleCiphers)
 
-**Sprint 43 candidates** (active backlog below, priority order): F96 (P73), **F102 (P55, logging-redaction policy -- NEW this refinement)**, F100 (P40), F101 (P35). HOLD items enter when their gates clear. **(SEC-11b removed from Sprint 43 and deferred to Post-MVP, Harold 2026-06-24 -- cipher switched to SQLite3MultipleCiphers; see HOLD Items (Post-MVP).)**
+**Sprint 44 candidate pool** (active backlog below, priority order): **F107 (P45, ADR-0037 status review -- Class-1)**, **F108 (P35, security-relevant dep major bumps)**, **F109 (P40, surface background-run-deferred status)**. HOLD/template items (F70/F71/F64) and Post-MVP items (SEC-11b, F106) enter when their gates clear. Harold selects Sprint 44 scope in Phase 1.2.
 
 ### Core App
 
-**F96. F89 auth-state coverage for historical / email-detail quick-add paths (~4-6h, DB + pipeline) Priority 73 -- BACKLOG from Sprint 39 PR #260 Copilot review (2026-05-25)**
-- Phase: Security / UX -- anti-phishing (extends F89)
-- Platform: All
-- Source: Copilot review on PR #260 (comment 3). F89 parses auth headers from `EmailMessage.headers`, which only carry SPF/DKIM/DMARC verdicts on the LIVE-scan path. Quick-add launched from Scan History reload (`results_display_screen.dart` ~L170) and `email_detail_view.dart` (~L569) reconstructs `headers` with only `From`/`Subject`, so from those paths the email always classifies GREY and the RED warning dialog cannot fire -- narrowing F89's coverage to live scans only.
-- **Current behavior (verified 2026-05-25)**: F89 works correctly on the live-scan path (full headers present -- the Sprint 38 Amazon-phishing scenario). Historical and email-detail quick-add always show GREY. Not a regression (F89 never claimed those paths), but its stated anti-phishing goal is only partially met.
-- **Two design options (decide in Phase 3 -- this is a Chief-Architect decision, persist vs re-hydrate)**:
-  - **(a) Persist the classification**: add `email_actions.auth_classification` (and/or the raw `Authentication-Results`) at scan time, alongside the existing `rfc5322_message_id` (DB v7); re-hydrate into the reconstructed `EmailMessage` on the historical / detail paths. Cheaper storage; loses the raw header for future re-parse.
-  - **(b) Persist raw auth headers**: store `Authentication-Results` / `ARC-Authentication-Results` / `Received-SPF` so the parser re-runs identically off-scan. Larger storage; future-proof if classification logic changes.
-- **Acceptance criteria**: quick-add launched from Scan History reload and email-detail evaluates auth identically to a live scan (RED dialog fires when warranted); DB migration ships clean; tests cover the historical-path RED case.
-- **Why backlog not fix-now**: requires a DB schema change (v7) + scanner-capture wiring + read-back across two reconstructed paths (~4-6h), and the persist-classification-vs-raw-headers choice is a Class-1 architecture decision warranting Chief-Architect sign-off (per S39-IMP-2). Not a same-session fix.
+_(No active Core App candidates -- F96 shipped in Sprint 43.)_
 
 ### Process
 
-**F100. Port WinWright read-only flows to `integration_test` (incremental) Priority 40 -- BACKLOG (Sprint 42 retro IMP-3)**
-- Phase: Testing infrastructure
-- Platform: Windows desktop (harness cross-platform)
-- Incrementally port the 6 read-only WinWright flows (navigation, settings tabs, scan history, text selection, f25 rule-test, f35 rule-edit) to the F99 `integration_test` lane so the robust in-VM harness becomes primary; retire each WinWright script as its coverage is replaced. Per-file process model + existing harness/seams already in place (F99). Low priority -- WinWright currently covers these green; this is consolidation, not new coverage.
-- Source: Sprint 42 retrospective Category 14 / IMP-3.
-
-**F101. Shorten F98 background-scan DB-lock retry bound to ~15 min (~15m) Priority 35 -- SPRINT 43 (Harold direction 2026-06-23)**
-- Phase: Tuning / background scanning
-- Platform: All
-- The F98 worker retries on "database is locked" 1 minute x 20 = ~20 min worst case. **Harold (2026-06-23): cap the worst case at ~15 minutes** -- change `_dbLockMaxAttempts` from 20 to 15 (keeping `_dbLockRetryDelay = 1 min`), so a genuinely stuck lock fails after ~15 min instead of ~20. Constants live in `background_scan_windows_worker.dart`. Update the F101-related comment + the unit-test expectation if any references the count.
-- Source: Sprint 42 retrospective Category 13 / IMP-2; Harold direction 2026-06-23.
+_(F100 shipped in Sprint 43.)_
 
 ### Security Hardening (Sprint 31 Audit)
-
-**F102. Logging redaction policy: documented invariant + enforcement gate (~2-4h) Priority 55 -- NEW (Sprint 42 Backlog Refinement, 2026-06-23)**
-- Phase: Security / Privacy / Process
-- Platform: All
-- Value: This PREVENTS re-introducing PII (account ids embed email addresses; the email-derived Task Scheduler task name is also PII) into logs. Sprint 42 F98 introduced ~19 such leaks across 6 files, caught only by Copilot review (PR #263) -- the redaction rule exists in code (`Redact` utility, SEC-19) but is NOT documented as a discoverable architectural invariant, so new log lines are written without a rule to check against.
-- Scope (Harold-approved direction 2026-06-23 -- Chief-Architect to confirm exact home at Phase 3):
-  - **Document the invariant**: extend ADR-0030 (Privacy & Data Governance) with a "Logging & Redaction" section -- never log raw account ids / email / tokens / email content; use `Redact.accountId()` / `Redact.email()` / `Redact.token()`; applies to `Logger` calls, file diagnostic logs (`_bgLog`), and generated artifacts (PowerShell scripts, Task Scheduler task names). (Alternative homes considered: standalone ADR vs ARCHITECTURE.md-only -- decide at Phase 3.)
-  - **Cross-reference**: one line in ARCHITECTURE.md "Sprint 33 Security Layers" pointing to the policy.
-  - **Process gate**: a Phase 5 checklist line to grep new log lines for raw `$accountId`/`$email`.
-  - **Enforcement mechanism (the durable fix)**: a lightweight grep-based test (or analyzer rule) that FAILS when a `Logger`/`_bgLog` call interpolates a raw account id / email without `Redact.*`. This is what mechanically prevents recurrence beyond docs + checklist.
-- Acceptance criteria: policy documented + discoverable; the enforcement gate fails on a deliberately-introduced un-redacted log line and passes on the redacted form.
-- Depends on: none (the `Redact` utility already exists).
-- Source: Sprint 42 PR #263 Copilot review (PII-in-logs theme) + Harold steering 2026-06-23.
 
 **F108. Security-relevant dependency major-version upgrades (~2-4h) Priority 35 -- NEW (Sprint 43 F104 security deep dive, 2026-06-24)**
 - Phase: Security / maintenance
@@ -219,28 +188,7 @@ Recent sprints complete -- detail blocks removed per the Maintenance Guide (hist
 - Depends on: SEC-11b shipped + ~2 sprints of verification. **SEC-11b is now Post-MVP (Harold 2026-06-24), so F106 follows it -- no longer ~Sprint 45.**
 - Source: Harold direction 2026-06-23 (SEC-11b dual-DB verification requirement).
 
-**F103. Periodic Architecture Deep Dive -- Sprint 43 instance (~4-8h) Priority 54 -- SPRINT 43 (copy of F71 template, Harold 2026-06-23)**
-- Phase: Architecture Spike (this is the Sprint 43 RUN of the reusable F71 template; F71 itself stays HOLD for the next run)
-- Platform: All
-- **Run the F71 deep-dive scope against the current codebase**: ADR drift detection (compare all 40 ADRs vs implementation -- esp. the new ADR-0039 per-account bg-scan + ADR-0040 two-harness testing); ARCHITECTURE.md / ARSD.md alignment (already refreshed Sprint 42 -- verify still current); platform-specific architecture (Windows MSIX/mutex/app-paths, Android WorkManager/flavors); dead-code + deprecated-class detection; test-coverage gaps relative to architecture. Output a findings list; fix-now small items, backlog the rest.
-- Depends on: F102 (run after the redaction policy lands so the deep-dive can confirm the new invariant is documented).
-- Source: F71 template (Sprint 31 retro); Harold direction 2026-06-23.
-
-**F104. Periodic Security Deep Dive -- Sprint 43 instance (~4-8h) Priority 20 -- SPRINT 43 (copy of F70 template, Harold 2026-06-23)**
-- Phase: Security Spike (this is the Sprint 43 RUN of the reusable F70 template; F70 itself stays HOLD for the next run)
-- Platform: All
-- **Run the F70 deep-dive scope against the current codebase**: dependency CVEs (`flutter pub outdated` + known-vuln check); SQL injection / parameterization audit; regex injection / ReDoS review; **credential-storage + LOGGING audit** (verifies the F102 redaction invariant is actually enforced -- this sprint introduced the policy + gate, so confirm no PII leaks remain); platform security (MSIX sandbox, Android signing/permissions); app-store compliance. Output a findings list; fix-now small items, backlog the rest.
-- **Ordering**: second-to-last sprint item -- runs AFTER all feature/tuning items (F102, F103, F96, F100, F101) so the audit covers the final sprint state. Only the version bump comes after it. (SEC-11b removed from Sprint 43, deferred Post-MVP -- Harold 2026-06-24.)
-- Depends on: all other Sprint 43 dev items complete.
-- Source: F70 template (Sprint 31 retro); Harold direction 2026-06-23.
-
-**F105. Version bump to 0.5.4 (dev) (~10m) Priority 10 -- SPRINT 43 (Harold 2026-06-23)**
-- Phase: Release housekeeping
-- Platform: All
-- Bump the dev version `0.5.3 -> 0.5.4` (prod stays `0.5.2` until a Store release, per ADR-0035 dev = patch+1 each sprint). Update the 5-file version checklist (`pubspec.yaml`, the background-scan log filename version token in `background_scan_windows_worker.dart` + `main.dart`, and any other version references per `docs/STORE_RELEASE_PROCESS.md` / CLAUDE.md version checklist).
-- **Ordering**: LAST item in the sprint (so the version reflects all sprint work).
-- Depends on: all other Sprint 43 items complete.
-- Source: Harold direction 2026-06-23.
+_(F103 Architecture Deep Dive and F104 Security Deep Dive ran in Sprint 43 -- see `docs/sprints/SPRINT_43_F103_ARCHITECTURE_DEEP_DIVE.md` and `SPRINT_43_F104_SECURITY_DEEP_DIVE.md`; their reusable templates F71 / F70 remain HOLD below. F105 version bump shipped.)_
 
 **F64. CI/CD pipeline with GitHub Actions (~4-6h) Priority HOLD**
 - Phase: DevOps

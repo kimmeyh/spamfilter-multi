@@ -2,11 +2,11 @@
 
 ## Status
 
-Proposed (pending user review)
+Accepted (Harold, 2026-06-26 -- Sprint 44 F107). The UI/accessibility standards described here are implemented and in active use (`AccessibilityHelper` + `Semantics(` across multiple UI screens; verified in the Sprint 43 F103 architecture deep dive).
 
 ## Date
 
-2026-04-18
+2026-04-18 (proposed); 2026-06-26 (accepted)
 
 ## Context
 

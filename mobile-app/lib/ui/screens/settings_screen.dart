@@ -6,12 +6,15 @@ import '../../core/services/data_deletion_service.dart';
 import '../../core/services/default_rule_set_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 import '../../core/services/background_scan_manager.dart' show ScanFrequency;
 import '../../core/services/background_scan_windows_worker.dart';
 import '../../core/services/windows_task_scheduler_service.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/settings_store.dart';
+import '../../core/storage/background_scan_log_store.dart';
+import '../../core/services/background_deferral_ingest.dart' show kDeferredStatus;
 import '../../core/storage/unmatched_email_store.dart'
     show kBodyPreviewMaxLength;
 import '../../core/providers/email_scan_provider.dart';
@@ -65,6 +68,11 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   bool _confirmDialogsEnabled = SettingsStore.defaultConfirmDialogsEnabled;
   bool _backgroundScanEnabled = SettingsStore.defaultBackgroundScanEnabled;
   int _backgroundScanFrequency = SettingsStore.defaultBackgroundScanFrequency;
+  // F109a (Sprint 44): timestamp of the most recent background-scan deferral
+  // (a scheduled run that was skipped because the foreground app was open).
+  // Null when none recorded. Surfaced as an explanatory status line so the user
+  // does not read "enabled" as "scanning while I have the app open".
+  DateTime? _lastBackgroundDeferral;
   ScanMode _backgroundScanMode = SettingsStore.defaultBackgroundScanMode;
   List<String> _backgroundScanFolders = List.from(SettingsStore.defaultBackgroundScanFolders);
   bool _backgroundScanDebugCsv = SettingsStore.defaultBackgroundScanDebugCsv;
@@ -174,6 +182,27 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       _backgroundScanDebugCsv = await _settingsStore.getBackgroundScanDebugCsv();
       _liveScanDebugCsv = await _settingsStore.getLiveScanDebugCsv();
       _csvExportDirectory = await _settingsStore.getCsvExportDirectory();
+
+      // F109a (Sprint 44): load the most recent deferral for this account so the
+      // Background tab can show "last run deferred at ...". Best-effort.
+      try {
+        final latestDeferral =
+            await BackgroundScanLogStore(DatabaseHelper()).getLogsByStatus(
+          kDeferredStatus,
+        );
+        final forAccount = latestDeferral
+            .where((e) => e.accountId == widget.accountId)
+            .toList();
+        if (forAccount.isNotEmpty) {
+          _lastBackgroundDeferral = DateTime.fromMillisecondsSinceEpoch(
+              forAccount.first.scheduledTime);
+        }
+      } catch (e) {
+        // Non-fatal: the status line just omits the timestamp. Log so a failed
+        // deferral ingest / DB-availability issue is diagnosable (PR #266
+        // Copilot review).
+        Logger().w('Failed to load last background-scan deferral: $e');
+      }
 
       // F43: Load current folder selections for display
       _safeSenderFolder = await _settingsStore.getAccountSafeSenderFolder(widget.accountId);
@@ -865,6 +894,37 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     }
   }
 
+  /// F109a (Sprint 44): a non-blocking info line explaining that background
+  /// scans pause while the foreground app is open (correct F98 behavior), with
+  /// the last deferral time when one has been recorded.
+  Widget _buildBackgroundDeferralStatusLine() {
+    final when = _lastBackgroundDeferral;
+    // Use intl for a stable, locale-appropriate date/time (PR #266 Copilot
+    // review: toString().substring(0,16) is brittle and locale-blind).
+    final suffix = when != null
+        ? ' Last run deferred at ${DateFormat.yMd().add_jm().format(when)}.'
+        : '';
+    return Padding(
+      key: const Key('background_deferral_status_line'),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline, size: 16, color: Colors.blueGrey.shade400),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Background scans pause while this app is open (to avoid database '
+              'conflicts); they resume on the next interval after you close it.'
+              '$suffix',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBackgroundScanTab() {
     return SelectionArea(child: ListView(
       padding: const EdgeInsets.all(16),
@@ -888,6 +948,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             }
           },
         ),
+        // F109a (Sprint 44): explain the deferral-while-app-open behavior so an
+        // enabled account that shows no recent scans is not read as "broken".
+        if (Platform.isWindows && _backgroundScanEnabled)
+          _buildBackgroundDeferralStatusLine(),
         const Divider(),
         // [UPDATED] FB-4: Test section moved before Frequency
         _buildSectionHeader('Test'),
