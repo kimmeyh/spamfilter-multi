@@ -114,7 +114,7 @@ void main() {
         'logs',
       );
       return File(
-        p.join(logDir, '${AppEnvironment.logPrefix}live_scan_v0.5.3.log'),
+        p.join(logDir, '${AppEnvironment.logPrefix}live_scan_v0.5.4.log'),
       );
     }
 

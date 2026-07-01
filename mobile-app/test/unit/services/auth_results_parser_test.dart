@@ -180,4 +180,93 @@ void main() {
       );
     });
   });
+
+  // F96 (Sprint 43): re-hydration helpers used by the off-scan quick-add paths.
+  group('F96 -- classification name round-trip', () {
+    test('classificationToName / classificationFromName round-trip', () {
+      for (final c in AuthClassification.values) {
+        final name = AuthResultsParser.classificationToName(c);
+        expect(AuthResultsParser.classificationFromName(name), c);
+      }
+    });
+
+    test('classificationFromName returns null for null/empty/unknown', () {
+      expect(AuthResultsParser.classificationFromName(null), isNull);
+      expect(AuthResultsParser.classificationFromName(''), isNull);
+      expect(AuthResultsParser.classificationFromName('purple'), isNull);
+    });
+  });
+
+  group('F96 -- syntheticResultFor', () {
+    test('RED synthesizes failing verdicts so the warning renders', () {
+      final r = AuthResultsParser.syntheticResultFor(AuthClassification.red);
+      expect(r.spf, AuthMethodResult.fail);
+      expect(r.dkim, AuthMethodResult.fail);
+      expect(r.dmarc, AuthMethodResult.fail);
+      expect(r.raw, isEmpty);
+      // A synthetic RED must itself re-classify as RED for consistency.
+      expect(AuthResultsParser.classify(r), AuthClassification.red);
+    });
+
+    test('non-RED synthesizes neutral verdicts (no warning is shown)', () {
+      for (final c in [
+        AuthClassification.green,
+        AuthClassification.yellow,
+        AuthClassification.grey,
+      ]) {
+        final r = AuthResultsParser.syntheticResultFor(c);
+        expect(r.spf, AuthMethodResult.none);
+        expect(r.dkim, AuthMethodResult.none);
+        expect(r.dmarc, AuthMethodResult.none);
+        expect(r.raw, isEmpty);
+      }
+    });
+  });
+
+  // F110 (Sprint 43): the "Phishing SPF/DKIM/DMARC" failed-checks list.
+  group('F110 -- failedChecks', () {
+    test('lists only hard-failed checks in SPF,DKIM,DMARC order', () {
+      const r = EmailAuthResult(
+        spf: AuthMethodResult.fail,
+        dkim: AuthMethodResult.pass,
+        dmarc: AuthMethodResult.fail,
+        raw: 'x',
+      );
+      expect(AuthResultsParser.failedChecks(r), ['SPF', 'DMARC']);
+    });
+
+    test('all three failed', () {
+      const r = EmailAuthResult(
+        spf: AuthMethodResult.fail,
+        dkim: AuthMethodResult.fail,
+        dmarc: AuthMethodResult.fail,
+        raw: 'x',
+      );
+      expect(AuthResultsParser.failedChecks(r), ['SPF', 'DKIM', 'DMARC']);
+    });
+
+    test('softfail / neutral / none / temperror are NOT failures', () {
+      const r = EmailAuthResult(
+        spf: AuthMethodResult.softfail,
+        dkim: AuthMethodResult.none,
+        dmarc: AuthMethodResult.neutral,
+        raw: 'x',
+      );
+      expect(AuthResultsParser.failedChecks(r), isEmpty);
+    });
+
+    test('failedChecksFromHeaders parses then lists failures', () {
+      final headers = {
+        'Authentication-Results':
+            'spf=fail; dkim=pass; dmarc=fail header.from=x.com',
+      };
+      expect(AuthResultsParser.failedChecksFromHeaders(headers),
+          ['SPF', 'DMARC']);
+    });
+
+    test('no headers -> no failures (GREY, not a failure)', () {
+      expect(AuthResultsParser.failedChecksFromHeaders({'From': 'a@b.com'}),
+          isEmpty);
+    });
+  });
 }

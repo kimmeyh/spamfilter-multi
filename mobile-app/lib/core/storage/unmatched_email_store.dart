@@ -47,6 +47,13 @@ class UnmatchedEmail {
   final bool processed;
   final DateTime createdAt;
 
+  /// F96 (Sprint 43): the SPF/DKIM/DMARC classification name
+  /// (`green`/`yellow`/`red`/`grey`) captured at scan time, so the
+  /// email-detail quick-add path can re-hydrate it and fire the RED
+  /// anti-phishing warning instead of always classifying GREY off-scan.
+  /// Null for rows written before v8.
+  final String? authClassification;
+
   UnmatchedEmail({
     this.id,
     required this.scanResultId,
@@ -62,6 +69,7 @@ class UnmatchedEmail {
     this.availabilityCheckedAt,
     this.processed = false,
     required this.createdAt,
+    this.authClassification,
   });
 
   /// Convert model to database map
@@ -82,6 +90,7 @@ class UnmatchedEmail {
         'availability_checked_at': availabilityCheckedAt?.millisecondsSinceEpoch,
         'processed': processed ? 1 : 0,
         'created_at': createdAt.millisecondsSinceEpoch,
+        'auth_classification': authClassification,
       };
 
   /// Create model from database map
@@ -106,6 +115,7 @@ class UnmatchedEmail {
         processed: (map['processed'] as int?) == 1,
         createdAt: DateTime.fromMillisecondsSinceEpoch(
             map['created_at'] as int? ?? 0),
+        authClassification: map['auth_classification'] as String?,
       );
 
   /// Create copy with optional field updates
@@ -124,6 +134,7 @@ class UnmatchedEmail {
     DateTime? availabilityCheckedAt,
     bool? processed,
     DateTime? createdAt,
+    String? authClassification,
   }) =>
       UnmatchedEmail(
         id: id ?? this.id,
@@ -143,6 +154,7 @@ class UnmatchedEmail {
             availabilityCheckedAt ?? this.availabilityCheckedAt,
         processed: processed ?? this.processed,
         createdAt: createdAt ?? this.createdAt,
+        authClassification: authClassification ?? this.authClassification,
       );
 
   @override

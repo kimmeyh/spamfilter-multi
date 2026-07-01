@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
@@ -201,6 +203,9 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
   Widget _buildBody() {
     return Column(
       children: [
+        // F109b (Sprint 44): explain why recent BACKGROUND scans may be absent
+        // while the app is open -- they defer until the app is closed (F98).
+        _buildBackgroundDeferralHint(),
         // Account filter chips (show when multiple configured accounts)
         if (_distinctAccounts.length > 1) _buildAccountFilter(),
         // Type filter chips
@@ -354,6 +359,34 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
           fontSize: 12,
         ),
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      ),
+    );
+  }
+
+  /// F109b (Sprint 44): a dismissable-feeling info hint (Windows only)
+  /// clarifying that background scans pause while the app is open, so the
+  /// absence of recent background entries is expected, not a failure.
+  Widget _buildBackgroundDeferralHint() {
+    if (!Platform.isWindows) return const SizedBox.shrink();
+    return Container(
+      key: const Key('scan_history_deferral_hint'),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      color: Colors.blueGrey.shade50,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline, size: 16, color: Colors.blueGrey.shade400),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Background scans pause while this app is open; they resume on the '
+              'next interval after you close it. Deferred runs appear here as '
+              '"deferred".',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+        ],
       ),
     );
   }

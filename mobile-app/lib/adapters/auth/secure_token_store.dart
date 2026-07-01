@@ -34,9 +34,12 @@ class SecureTokenStore implements TokenStore {
   SecureTokenStore({FlutterSecureStorage? storage})
       : _storage = storage ??
             const FlutterSecureStorage(
-              aOptions: AndroidOptions(
-                encryptedSharedPreferences: true,
-              ),
+              // F108 (Sprint 44): flutter_secure_storage 10 deprecated
+              // `encryptedSharedPreferences` (Jetpack Crypto deprecation) and
+              // now uses RSA/AES-GCM by default with automatic migration of
+              // existing data. The explicit flag is removed; the default
+              // AndroidOptions are the encrypted ones.
+              aOptions: AndroidOptions(),
               iOptions: IOSOptions(
                 accessibility: KeychainAccessibility.first_unlock_this_device,
               ),

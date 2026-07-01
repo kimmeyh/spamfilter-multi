@@ -29,7 +29,7 @@ static void LogBackgroundScanSkip(const std::wstring& reason) {
     return;
   }
   // Match Dart-side path:
-  //   {AppData}\\MyEmailSpamFilter\\MyEmailSpamFilter[_Dev]\\logs\\[dev_]background_scan_v0.5.3.log
+  //   {AppData}\\MyEmailSpamFilter\\MyEmailSpamFilter[_Dev]\\logs\\[dev_]background_scan_v0.5.4.log
   // We don't know dev-vs-prod from C++ without SPAMFILTER_APP_ENV (defined below),
   // so write to a deterministic startup-skip log that both environments share.
   //
@@ -49,7 +49,7 @@ static void LogBackgroundScanSkip(const std::wstring& reason) {
       + L"\\logs";
   CreateDirectoryW(dataDir.c_str(), nullptr);
   std::wstring logPath = dataDir
-      + (isDevEnv ? L"\\dev_background_scan_v0.5.3.log" : L"\\background_scan_v0.5.3.log");
+      + (isDevEnv ? L"\\dev_background_scan_v0.5.4.log" : L"\\background_scan_v0.5.4.log");
 
   std::wofstream log(logPath, std::ios::app);
   if (!log.is_open()) return;
@@ -60,6 +60,58 @@ static void LogBackgroundScanSkip(const std::wstring& reason) {
   std::wstringstream ts;
   ts << std::put_time(&tm_local, L"%Y-%m-%dT%H:%M:%S");
   log << L"[" << ts.str() << L"] [STARTUP] Background scan skipped: " << reason << L"\n";
+}
+
+// F109c (Sprint 44): record a deferral event to a machine-readable HANDOFF
+// FILE so the Dart side can later insert a `status='deferred'` row into the
+// `background_scan_log` table (the deferral is detected here in C++ BEFORE any
+// Dart/DB access exists, so we cannot write the DB row directly). The Dart
+// ingest (`BackgroundDeferralIngest`) reads + clears this file on the next
+// foreground launch. One line per deferral: `<epochMillis>\t<accountId>`.
+// Best-effort: any failure is silently ignored (the file log above is the
+// human-readable fallback).
+//
+// PRIVACY (PR #266 Copilot review): the account id is email-derived (PII), so
+// the handoff file is written to the app-support ROOT, NOT the `logs/` dir --
+// keeping the PII out of the shareable log area that may end up in support
+// bundles. It is consumed + deleted on the next foreground ingest (minimal
+// retention). dev/prod split via the data-dir suffix as elsewhere.
+static void RecordBackgroundScanDeferral(const std::wstring& accountId) {
+  wchar_t appDataPath[MAX_PATH];
+  if (FAILED(SHGetFolderPathW(nullptr, CSIDL_APPDATA, nullptr, 0, appDataPath))) {
+    return;
+  }
+  #ifndef SPAMFILTER_APP_ENV
+  #define SPAMFILTER_APP_ENV "dev"
+  #endif
+  const bool isDevEnv = (std::string(SPAMFILTER_APP_ENV) != "prod");
+  // App-support ROOT (NOT logs/) -- keeps the email-derived account id out of
+  // the shareable log area (PR #266 Copilot review). Dart ingests + deletes it.
+  std::wstring dataDir = std::wstring(appDataPath)
+      + L"\\MyEmailSpamFilter\\MyEmailSpamFilter"
+      + (isDevEnv ? L"_Dev" : L"");
+  CreateDirectoryW(dataDir.c_str(), nullptr);
+  // Shared filename across environments (the dir already encodes dev/prod).
+  std::wstring handoffPath = dataDir + L"\\background_scan_deferrals.tsv";
+
+  std::wofstream handoff(handoffPath, std::ios::app);
+  if (!handoff.is_open()) return;
+  auto now = std::chrono::system_clock::now();
+  long long epochMillis = std::chrono::duration_cast<std::chrono::milliseconds>(
+      now.time_since_epoch()).count();
+  handoff << epochMillis << L"\t" << accountId << L"\n";
+}
+
+// F109c: extract the value of `--account-id=<id>` from the command line, or an
+// empty string if absent (a non-account-scoped run).
+static std::wstring ExtractAccountId(const std::wstring& cmdLine) {
+  const std::wstring key = L"--account-id=";
+  size_t pos = cmdLine.find(key);
+  if (pos == std::wstring::npos) return L"";
+  size_t valStart = pos + key.length();
+  size_t valEnd = cmdLine.find(L' ', valStart);
+  if (valEnd == std::wstring::npos) valEnd = cmdLine.length();
+  return cmdLine.substr(valStart, valEnd - valStart);
 }
 
 int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
@@ -88,6 +140,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
     if (hExisting != nullptr) {
       CloseHandle(hExisting);
       LogBackgroundScanSkip(L"Foreground UI is running (mutex held); scan deferred to next interval.");
+      // F109c (Sprint 44): also record the deferral to the handoff file so the
+      // Dart side can surface it (a background_scan_log 'deferred' row + the
+      // Settings status line). Best-effort; never blocks the clean exit.
+      RecordBackgroundScanDeferral(ExtractAccountId(cmdLine));
       return EXIT_SUCCESS;
     }
     // No foreground UI -> proceed with background scan. Do NOT acquire the

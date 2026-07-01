@@ -416,14 +416,24 @@ Use consistent labels for organization:
 
 ## Model Assignment Methodology
 
-### Core Principles
+### Core Principle: CHEAPEST-FIRST DESIGN (Sprint 43 retro IMP-1, Harold 2026-06-25)
 
-The goal is to maximize efficiency by:
-1. **Haiku handles 70%+ of work** (straightforward tasks where speed and cost matter)
-2. **Sonnet handles 20-25% of work** (architectural, complex refactoring)
-3. **Opus handles 5-10% of work** (deep debugging, critical path)
+**Assign the cheapest model that can do the task -- and design the task FOR that model.** Model assignment is bottom-up, not top-down: do not "score the complexity, then pick a tier." Instead, for EVERY task, walk the escalation ladder from the cheapest model up, and stop at the first tier whose heuristics the task design fits:
 
-Tasks are assigned based on **complexity**, **risk**, and **cognitive load** - not by effort estimate.
+1. **Design the task for Haiku FIRST.** Designing for the cheapest model exerts useful pressure to keep the solution simple and reduce development cost. If the resulting design fits Haiku per the heuristics below -> **assign Haiku**.
+2. **Else, design the task for Sonnet** (again favoring the simplest design that works). If it fits Sonnet per the heuristics -> **assign Sonnet**.
+3. **Else, design the task for Opus** -> **assign Opus**.
+
+**Mandatory justification**: in `SPRINT_N_PLAN.md`, record each task's assigned tier AND a one-line **"why not the cheaper tier"** note whenever the assignment is Sonnet or Opus (e.g. "Opus -- touches auth-header parsing + a Class-1 redaction policy change, beyond Haiku/Sonnet heuristics"). This makes an all-Opus (or all-Sonnet) sprint a **visible, justified choice** rather than a silent default. (Sprint 43 ran entirely on Opus with no per-task justification -- the gap this rule closes.)
+
+**Important scope note**: this cheapest-first ladder governs the per-task IMPLEMENTER model. It does NOT lower the planner/analyst model -- the "Activities Requiring Opus (MANDATORY)" list above (sprint planning, retrospectives, deep dives, ADR authoring, etc.) still runs on Opus regardless, because those are reasoning/synthesis activities, not implementation tasks.
+
+The healthy steady-state distribution this produces:
+1. **Haiku handles the majority of work** (straightforward tasks where speed and cost matter)
+2. **Sonnet handles the architectural / complex-refactoring minority**
+3. **Opus handles only deep debugging / critical-path / cross-cutting work**
+
+Tasks are assigned based on **complexity**, **risk**, and **cognitive load** -- not by effort estimate -- but always resolved cheapest-capable-tier-first per the ladder above.
 
 ### Model Capability Matrix
 

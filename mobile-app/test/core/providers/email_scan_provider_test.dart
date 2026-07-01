@@ -521,4 +521,67 @@ void main() {
       expect(provider.scanMode, ScanMode.readOnly);
     });
   });
+
+  // F110 (Sprint 43): "Phishing SPF/DKIM/DMARC" -- the auth-failure CSV column
+  // + per-account-log failures list.
+  group('F110 phishing auth-failure reporting', () {
+    EmailActionResult resultWithHeaders(
+        String from, Map<String, String> headers) {
+      return EmailActionResult(
+        email: EmailMessage(
+          id: 'id-$from',
+          from: from,
+          subject: 'subj',
+          body: '',
+          headers: headers,
+          receivedDate: DateTime.now(),
+          folderName: 'INBOX',
+        ),
+        evaluationResult: EvaluationResult.noMatch(),
+        action: EmailActionType.none,
+        success: true,
+      );
+    }
+
+    setUp(() => provider.initializeScanMode(mode: ScanMode.readOnly));
+
+    test('getExcelRows last column lists failed checks, blank when none', () {
+      provider.recordResult(resultWithHeaders('spoof@evil.com', {
+        'Authentication-Results':
+            'spf=fail; dkim=pass; dmarc=fail header.from=evil.com',
+      }));
+      provider.recordResult(resultWithHeaders('legit@good.com', {
+        'Authentication-Results':
+            'spf=pass; dkim=pass; dmarc=pass header.from=good.com',
+      }));
+
+      final rows = provider.getExcelRows();
+      expect(rows, hasLength(2));
+      // The Auth column is the LAST cell (index 10 of 11).
+      expect(rows[0].last, 'SPF,DMARC');
+      expect(rows[1].last, '');
+    });
+
+    test('getAuthFailures returns only failed emails with their checks', () {
+      provider.recordResult(resultWithHeaders('spoof@evil.com', {
+        'Authentication-Results':
+            'spf=fail; dkim=fail; dmarc=fail header.from=evil.com',
+      }));
+      provider.recordResult(resultWithHeaders('legit@good.com', {
+        'Authentication-Results': 'spf=pass; dkim=pass; dmarc=pass',
+      }));
+
+      final failures = provider.getAuthFailures();
+      expect(failures, hasLength(1));
+      expect(failures.first.from, 'spoof@evil.com');
+      expect(failures.first.failedChecks, 'SPF,DKIM,DMARC');
+    });
+
+    test('no failures when no email failed auth', () {
+      provider.recordResult(resultWithHeaders('a@b.com', {
+        'Authentication-Results': 'spf=pass; dkim=pass; dmarc=pass',
+      }));
+      expect(provider.getAuthFailures(), isEmpty);
+    });
+  });
 }

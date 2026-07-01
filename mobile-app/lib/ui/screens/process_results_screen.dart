@@ -11,6 +11,8 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 
+import '../../util/redact.dart';
+
 import '../../core/storage/rule_database_store.dart';
 import '../../core/storage/safe_sender_database_store.dart';
 import '../../core/storage/scan_result_store.dart';
@@ -269,7 +271,7 @@ class _ProcessResultsScreenState extends State<ProcessResultsScreen> {
                         return UnmatchedEmailCard(
                           email: email,
                           onTap: () {
-                            _logger.d('Tapped email: ${email.fromEmail}');
+                            _logger.d('Tapped email: ${Redact.email(email.fromEmail)}');
                             Navigator.push(
                               context,
                               MaterialPageRoute(

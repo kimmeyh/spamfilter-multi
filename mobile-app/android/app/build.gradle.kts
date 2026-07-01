@@ -27,7 +27,10 @@ android {
         applicationId = "com.myemailspamfilter"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        // F108 (Sprint 44): flutter_secure_storage 10 requires Android API 23+
+        // (was 19; Flutter default = 21). Raise the floor to 23. Drops Android
+        // 5.0-5.1 (API 21-22) -- negligible user base.
+        minSdk = 23
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

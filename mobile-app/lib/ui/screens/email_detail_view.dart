@@ -569,6 +569,11 @@ class _EmailDetailViewState extends State<EmailDetailView>
       headers: {'from': widget.email.fromEmail},
       receivedDate: widget.email.emailDate ?? DateTime.now(),
       folderName: widget.email.folderName,
+      // F96 (Sprint 43): carry the scan-time SPF/DKIM/DMARC classification
+      // snapshot so the quick-add screens re-hydrate it instead of parsing the
+      // From-only headers above (which would always classify GREY and suppress
+      // the RED anti-phishing warning). Null for rows written before v8.
+      authClassificationOverride: widget.email.authClassification,
     );
   }
 

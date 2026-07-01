@@ -82,24 +82,24 @@ title and closes it at end-of-run. Consequences for script authors:
    C:\Tools\WinWright\Civyk.WinWright.Mcp.exe doctor
    ```
 
-## Test Scripts (current set -- S40 scripts all PASS sweep 2026-06-09; F56 scripts authored S41 F97, pending sweep verification)
+## Test Scripts (current set)
+
+> **F100 (Sprint 43): the 6 read-only scripts were RETIRED.** Their coverage now lives in the in-VM
+> `integration_test` lane at `mobile-app/integration_test/read_only_flows_test.dart` (navigation /
+> settings-tabs / scan-history / text-selection / F25 rule-test / F35 rule-edit), which drives the real
+> widget tree with `pumpAndSettle()` -- no out-of-process selector-settle flakiness, no live-window
+> dependency. The retired scripts were `test_navigation`, `test_settings_tabs`, `test_scan_history`,
+> `test_text_selection`, `test_f25_rule_test_tool`, and `test_f35_rule_edit`. See ALL_SPRINTS_MASTER_PLAN.md
+> F100 and docs/TESTING_STRATEGY.md (two-harness section).
+
+The only WinWright scripts that remain are the create/lifecycle flows kept as the F99 reference (already
+EXCLUDED from any default sweep -- their reliable unattended execution lives in `integration_test`):
 
 | Script | Purpose | Origin |
 |--------|--------|--------|
-| `test_navigation.json` | Home -> account-scoped Settings -> Manage Rules -> back to home | S34 (ported S40) |
-| `test_settings_tabs.json` | Cycle all 4 Settings tabs (General, Account, Manual Scan, Background) | S34 (ported S40) |
-| `test_scan_history.json` | Open Scan History from home top-bar and return | S34 (ported S40) |
-| `test_text_selection.json` | Help screen reachable; Manage Rules renders rule-pattern text (ADR-0037) | S34 (ported S40) |
-| `test_f25_rule_test_tool.json` | F25: open Test-pattern tool from Manage Rules, plaintext->regex toggle, run Test | S40 (new) |
-| `test_f35_rule_edit.json` | F35: open a rule's Edit screen, toggle Guided/Direct-regex mode, leave without saving | S40 (new) |
-| `test_f37_folder_selector.json` | F37: open Safe Sender + Deleted Rule folder pickers (no selection change) | S40 (new) |
+| `test_f37_folder_selector.json` | F37: open Safe Sender + Deleted Rule folder pickers (no selection change) -- EXCLUDED from default sweep (dialog-settle race -> F99) | S40 (new) |
 | `test_f56_create_block_rule.json` | F56: create TLD block rule (`museum`), delete it (net zero DB drift) -- EXCLUDED from default sweep (F99) | S41 F97 (new) |
 | `test_f56_create_safe_sender.json` | F56: create Entire Domain safe sender (`winwright-test.com`), delete it (net zero DB drift) -- EXCLUDED from default sweep (F99) | S41 F97 (new) |
-
-The **6 default-sweep scripts** (navigation, settings_tabs, scan_history, text_selection, f25, f35) are
-**read-only** -- they navigate, open dialogs/screens, and back out without persisting changes, so the
-pre/post DB-snapshot guard reports zero drift. `test_f37_folder_selector` is also read-only but is
-EXCLUDED from the default sweep (dialog-settle race -> F99); see the exclusion note above.
 
 The 2 F56 scripts **write then delete**: each testCase creates one row and a second testCase deletes it,
 leaving net DB drift of zero. They are EXCLUDED from the default sweep and run explicitly via
@@ -208,7 +208,14 @@ robustly. See `docs/ALL_SPRINTS_MASTER_PLAN.md` items F76 (why abandoned) and F9
 - [x] Tests documented here + cadence in TESTING_STRATEGY.md
 - [x] F56 create+delete lifecycle scripts AUTHORED (S41 F97); input format confirmed live (`test_f56_*.json`). Reliable unattended EXECUTION moved to F99 (`integration_test`) -- excluded from the default sweep (`-TestName f56` to run explicitly); see ALL_SPRINTS_MASTER_PLAN.md F97/F99.
 
-**Default sweep = 6 read-only scripts** (navigation, settings_tabs, scan_history, text_selection, f25_rule_test_tool, f35_rule_edit), all green with `DB Drift: none`. Two scripts that cross a Flutter dialog/picker-settle boundary are EXCLUDED from the default sweep and moved to F99 (`integration_test`, in-VM `pumpAndSettle`): `test_f56_*` (create/save/delete) and `test_f37_folder_selector` (folder picker's `Edit "Search folders..."` not in the UIA tree pre-settle). The WinWright `run` script-runner has no `ww_wait`/`ww_assert` primitive to bridge the settle. Both remain runnable explicitly (`-TestName f56` / `-TestName f37`) as the F99 reference flows.
+**Default sweep (post-F100): empty.** The 6 read-only scripts that formed the default sweep
+(navigation, settings_tabs, scan_history, text_selection, f25_rule_test_tool, f35_rule_edit) were
+RETIRED in Sprint 43 (F100) -- their coverage moved to `integration_test/read_only_flows_test.dart`
+(in-VM `pumpAndSettle`, run via `.\scripts\run-integration-tests.ps1`). The remaining WinWright scripts
+(`test_f56_*`, `test_f37_folder_selector`) cross a Flutter dialog/picker-settle boundary the WinWright
+`run` script-runner cannot bridge (no `ww_wait`/`ww_assert`), so they were already EXCLUDED from the
+sweep and their reliable execution lives in F99; they remain runnable explicitly (`-TestName f56` /
+`-TestName f37`) as the UIA reference flows.
 
 ## F76 (visual regression) -- ABANDONED, folded into F99
 

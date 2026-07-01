@@ -9,10 +9,10 @@
 | Field | Value |
 |-------|-------|
 | **Document ID** | ARS&D-2026-001 |
-| **Version** | 1.0 (Draft) |
-| **Date** | 2026-04-03 |
+| **Version** | 1.0 |
+| **Date** | 2026-04-03 (drafted); 2026-06-26 (accepted) |
 | **Authors** | Harold Kimmey (Product Owner), Claude Code (AI Development Partner) |
-| **Status** | Draft |
+| **Status** | Accepted (Harold, 2026-06-26 -- Sprint 44 F107; the requirement set has stabilized across Sprints 38-43) |
 | **TOGAF Alignment** | Tailored per ADR-2026-04-003 (Combined ADD + ARS with Structured Separation) |
 | **Governing ADRs** | See [ADR Index](adr/README.md) for current count and status |
 
