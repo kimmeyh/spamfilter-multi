@@ -107,6 +107,8 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 40 | docs/sprints/SPRINT_40_PLAN.md | [OK] Complete | ~Jun 2026 (PR #261) |
 | 41 | docs/sprints/SPRINT_41_RETROSPECTIVE.md | [OK] Complete | Jun 13-17, 2026 (PR #262) |
 | 42 | docs/sprints/SPRINT_42_RETROSPECTIVE.md | [OK] Complete | Jun 20, 2026 (PR #263) |
+| 43 | docs/sprints/SPRINT_43_RETROSPECTIVE.md | [OK] Complete | Jun 23-26, 2026 (PR #265) |
+| 44 | docs/sprints/SPRINT_44_RETROSPECTIVE.md | [OK] Complete | Jun 26 - Jul 1, 2026 (PR #266) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -114,36 +116,37 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 42** (Jun 20, 2026 -- merged PR #263)
-- **Type**: Testing infrastructure + background-scanning architecture + bug fix
+**Sprint 44** (Jun 26 -- Jul 1, 2026 -- merged PR #266)
+- **Type**: Docs/architecture ratification + UX visibility + dependency hardening
 - **Delivered**:
-  - **F99** -- Flutter `integration_test` E2E harness (the in-VM second lane alongside WinWright): `AppPaths.testOverrideBaseDir` isolation seam, `bootDbOnly`/`bootAppWithDevDbCopy`, per-file process runner, lifecycle/picker/visual tests.
-  - **F98** (ADR-0039) -- per-account background scanning: one OS scheduled entry per enabled account (Windows Task Scheduler / Android WorkManager), per-account enable/frequency, one-time migration from the global switch, WAL + busy_timeout + retry/jitter for DB-lock resilience. ADR-0040 (two E2E harnesses) authored.
-  - **BUG-S37-2** -- removed malformed bundled TLD block rules (`.sho`, `.sweeps`) via DB v7 migration; ccTLD audit (247/248 blocked).
-- **Tests**: 1658 passing / ~28 skipped at sprint end; flutter analyze clean.
-- **Retrospective**: docs/sprints/SPRINT_42_RETROSPECTIVE.md
-- **PR**: #263 (merged to develop, 2026-06-23)
-- **Note**: Sprint 43 (this PR #265 -- redaction policy F102, deep dives F103/F104, auth coverage F96, integration_test port F100, retry-cap F101, version bump F105, phishing-visibility F110) is pending Chief-Developer merge; it will become "Last Completed Sprint" at Sprint 44 pre-kickoff (Phase 3.2.1) once merged.
-- **Earlier sprints (39-41)**: Sprint 39 (PR #260 -- F89/F91/F74/F92/F77/F93), Sprint 40 (PR #261 -- F75/F25/F35/F37/F78/F79), Sprint 41 (PR #262 -- F83 Phase 1/ADR-0039 Accepted, F97, F76). See `docs/sprints/` + the Past Sprint Summary table above.
+  - **F107** -- Accepted ADR-0037 (UI/Accessibility Standards) + promoted ARSD.md to 1.0/Accepted (docs only).
+  - **F109** -- surfaced the background-scan deferral state (scheduled scans pause while the foreground app is open, F98) across Settings/Background status line + Scan History hint + a `status='deferred'` `background_scan_log` row (handoff-file design; `main.cpp` writes to app-support root, `BackgroundDeferralIngest` ingests on next launch; no DB migration). Incidental: fixed the stale `main.cpp` v0.5.3 log filename -> v0.5.4.
+  - **F108** -- upgraded 3 security-relevant deps, each in its own revertable commit: `flutter_appauth` 8->12, `workmanager` 0.5->0.9, `flutter_secure_storage` 9->10 (drops `encryptedSharedPreferences`; Android minSdk 21->23) + minor drift. Revert runbook: `docs/sprints/SPRINT_44_F108_REVERT_RUNBOOK.md`.
+- **Retro IMP-1**: build-failing version-consistency gate (`test/policy/version_consistency_test.dart` + `scripts/check-version-consistency.ps1`).
+- **Tests**: 1692 passing / ~28 skipped; flutter analyze clean; Windows build green.
+- **Summary**: docs/sprints/SPRINT_44_SUMMARY.md · **Retrospective**: docs/sprints/SPRINT_44_RETROSPECTIVE.md
+- **PR**: #266 (merged to develop, 2026-07-01)
+- **Open follow-up**: Android-device retest of the F108 dep bumps (Gmail sign-in, secure-storage round-trip, WorkManager) -- no emulator in the dev session; F108 revert runbook covers per-dep rollback.
+- **Earlier sprints (39-43)**: 39 (PR #260), 40 (PR #261), 41 (PR #262), 42 (PR #263 -- F99/F98/BUG-S37-2), 43 (PR #265 -- F102/F103/F96/F100/F101/F104/F105/F110; SEC-11b deferred Post-MVP). See `docs/sprints/` + the Past Sprint Summary table above.
 
 ---
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: June 23, 2026 (Sprint 42 Backlog Refinement -- see the "Sprint Assignment (Sprint 42 Backlog Refinement, 2026-06-23)" subsection below; prior full review May 25, 2026 / row 5.15)
+**Last Reviewed**: July 1, 2026 (Sprint 45 Backlog Refinement -- see the "Sprint Assignment" subsection below; prior full review June 23, 2026)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
-### Sprint Assignment (Sprint 44 Backlog Refinement, 2026-06-26)
+### Sprint Assignment (Sprint 45 Backlog Refinement, 2026-07-01)
 
 Recent sprints complete -- detail blocks removed per the Maintenance Guide (history lives in `docs/sprints/` + CHANGELOG.md):
-- **Sprint 39** (merged): S38-CI-1/2/3/4/6, F91, F89, F74, F92, F77, F93 (+ F90, BUG-S39-1/2 warmup)
 - **Sprint 40** (merged PR #261): F75, F25, F35, F37, F78, F79, BUG-S40-1
 - **Sprint 41** (merged PR #262): F83 Phase 1 (ADR-0039 Accepted), F97, F76
-- **Sprint 42** (merged PR #263, 2026-06-23): F99 (integration_test harness), F98 (per-account bg-scan, ADR-0039 + ADR-0040), BUG-S37-2
-- **Sprint 43** (merged PR #265, 2026-06-26): F102 (logging-redaction policy + gate), F103 (architecture deep dive), F96 (auth coverage off-scan, DB v8), F100 (WinWright read-only flows ported to integration_test), F101 (DB-lock retry cap 15), F104 (security deep dive), F105 (version bump 0.5.4), F110 (phishing SPF/DKIM/DMARC visibility + narrowed redaction); SEC-11b deferred to Post-MVP (cipher -> SQLite3MultipleCiphers)
+- **Sprint 42** (merged PR #263): F99 (integration_test harness), F98 (per-account bg-scan, ADR-0039 + ADR-0040), BUG-S37-2
+- **Sprint 43** (merged PR #265): F102, F103, F96 (DB v8), F100, F101, F104, F105, F110; SEC-11b deferred Post-MVP (cipher -> SQLite3MultipleCiphers)
+- **Sprint 44** (merged PR #266, 2026-07-01): F107 (Accept ADR-0037 + promote ARSD), F109 (surface background-deferral state), F108 (dep bumps: flutter_appauth 8->12, workmanager 0.5->0.9, flutter_secure_storage 9->10 + Android minSdk 23); retro IMP-1 version-consistency gate
 
-**Sprint 44 candidate pool** (active backlog below, priority order): **F107 (P45, ADR-0037 status review -- Class-1)**, **F108 (P35, security-relevant dep major bumps)**, **F109 (P40, surface background-run-deferred status)**. HOLD/template items (F70/F71/F64) and Post-MVP items (SEC-11b, F106) enter when their gates clear. Harold selects Sprint 44 scope in Phase 1.2.
+**Sprint 45 candidate pool** (active backlog below): the near-term active items shipped in Sprints 43-44. Remaining candidates are **template deep dives (F70 Security / F71 Architecture, run periodically)**, **F64 (CI/CD, HOLD)**, **Post-MVP** items (SEC-11b DB encryption + F106 cleanup), and the **HOLD platform/UX tracks** (F94/F95 flavors, F63 responsive, SEC-8b/SEC-15, F6, H1-H5). Harold selects Sprint 45 scope in Phase 1.2. **Note**: an Android-device retest of the Sprint 44 F108 dep bumps is an open post-merge verification item (see Last Completed Sprint).
 
 ### Core App
 
@@ -155,31 +158,7 @@ _(F100 shipped in Sprint 43.)_
 
 ### Security Hardening (Sprint 31 Audit)
 
-**F108. Security-relevant dependency major-version upgrades (~2-4h) Priority 35 -- NEW (Sprint 43 F104 security deep dive, 2026-06-24)**
-- Phase: Security / maintenance
-- Platform: All
-- F104 security deep dive found several security-relevant deps are a major version behind (no known-exploited CVE blocking, but freshness/hardening hygiene). Evaluate + upgrade DELIBERATELY, each with a targeted retest (each is a Class-2 development decision -- not a silent mid-sprint bump):
-  - `flutter_secure_storage` 9.2.4 -> 10.3.1 (credential store -- retest Windows + Android secure storage round-trip).
-  - `flutter_appauth` 8.0.3 -> 12.0.1 (OAuth -- retest the full Gmail + AOL sign-in flows).
-  - `workmanager` 0.5.2 -> 0.9.0+3 (Android background scan F98 -- retest per-account WorkManager scheduling).
-  - Also fold in the low-risk minor/patch drift (`logger`, `path_provider`, `sqflite`, `archive`) in a routine `pub upgrade` pass.
-- **Note**: the transitive `js` 0.6.7 is discontinued upstream; no direct action (track for when a dependent drops it).
-- Source: Sprint 43 F104 security deep dive (2026-06-24).
-
-**F107. ADR-0037 status review (Proposed -> Accepted?) + ARSD draft promotion (~30m) Priority 45 -- NEW (Sprint 43 F103 architecture deep dive, 2026-06-23)**
-- Phase: Architecture maintenance
-- Platform: All
-- F103 deep dive found ADR-0037 (UI/Accessibility Standards) is still status **"Proposed (pending user review)"**, but the accessibility standards ARE implemented (`AccessibilityHelper` + `Semantics(` in 3+ UI files). Status change is a **Class-1 Chief-Architect decision** -- surfaced to Harold, not auto-changed. Also: ARSD.md is marked "1.0 (Draft)" -- consider promoting once the requirement set stabilizes.
-- **Action**: Harold reviews ADR-0037 -> Accepted (or notes what still pends); promote ARSD if appropriate.
-- Source: Sprint 43 F103 architecture deep dive.
-
-**F109. Surface "background run deferred (UI open)" status in Settings/History (~2-3h) Priority 40 -- NEW (Sprint 43 manual testing, 2026-06-25)**
-- Phase: UX / background scanning
-- Platform: All (Windows desktop first)
-- During Sprint 43 manual testing, the two background scans appeared "stuck" -- Settings showed them enabled/running but no new scan had landed in history for ~8h. Root cause was NOT a bug: the per-account scheduled tasks fired every interval and exited 0, but each DEFERRED because the foreground app was open and held the single-instance mutex (F98 DB-contention protection), logging `[STARTUP] Background scan skipped: Foreground UI is running (mutex held); scan deferred to next interval.` (65 skips that session). The behavior is correct, but it is INVISIBLE in the UI -- Settings says "running" with no hint that runs are being deferred because the app is open, and the deferral is only traceable in the shared `dev_background_scan_v{ver}.log` startup log (not the per-account log or history).
-- **Ask**: surface the deferral so a user does not read "enabled" as "actively scanning while I have the app open." Options to weigh at Phase 3: a Settings/Background status line ("Last run deferred -- background scans pause while the app is open"), a Scan History hint, and/or recording the skip in the per-account background_scan_log table so it appears in history. Decide scope with the PO.
-- **Why backlog not fix-now**: a UX surface across Settings + History (and possibly a new logged skip row) is multi-surface work, and "what exactly to show + where" is a Product-Owner decision, not a same-session fix.
-- Source: Sprint 43 manual testing (2026-06-25).
+_(F107, F108, F109 shipped in Sprint 44 -- see docs/sprints/SPRINT_44_SUMMARY.md.)_
 
 **F106. SEC-11b verification-window cleanup (~30m) Priority 30 -- DEFERRED (gated on SEC-11b, now Post-MVP)**
 - Phase: Security / cleanup
@@ -1144,6 +1123,7 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 6.1 | 2026-07-01 | Sprint 44 completion + Sprint 45 pre-kickoff (Phase 3.2.1 + Phase 1 backlog refinement): rolled **Last Completed Sprint** Sprint 42 -> Sprint 44 (43 + 44 both merged, PR #265 + #266); created `docs/sprints/SPRINT_44_SUMMARY.md`; added Sprint 43 (PR #265) + Sprint 44 (PR #266) rows to the Past Sprint Summary table. Pruned the 3 Sprint-44 shipped items (F107, F108, F109) from Next Sprint Candidates -- active near-term backlog is now empty; remaining candidates are the deep-dive templates (F70/F71), F64 (HOLD), Post-MVP (SEC-11b/F106), and the HOLD platform/UX tracks. Refreshed "Last Reviewed" -> July 1, 2026. Open follow-up recorded: Android-device retest of the Sprint 44 F108 dependency bumps. |
 | 6.0 | 2026-06-25 | Sprint 43 Phase 7 currency pass (rolled into PR #265 before merge, per Harold): updated **Last Completed Sprint** Sprint 38 -> Sprint 42 (the last MERGED sprint; Sprint 43 becomes Last-Completed at Sprint 44 pre-kickoff once PR #265 merges). Filled the **Past Sprint Summary** gap -- added the missing Sprint 39 (PR #260) and Sprint 40 (PR #261) rows (table had jumped 38 -> 41). Refreshed the stale **"Last Reviewed: May 25, 2026"** marker to June 23, 2026 (Sprint 42 Backlog Refinement). Backlog items F107/F108/F109 added during Sprint 43; SEC-11b moved to Post-MVP (cipher -> SQLite3MultipleCiphers). Addresses the master-plan staleness flagged in the PR #265 Copilot review. |
 | 5.16 | 2026-05-25 | Sprint 39 Backlog Refinement (Phase 1, sprint allocation): Assigned active backlog across 3 sprints (summary table added under Next Sprint Candidates). Sprint 39: S38-CI-1, S38-CI-2, S38-CI-6, S38-CI-3, S38-CI-7, F91, F89, S38-CI-4, F74, F92, BUG-S37-2, F77, F93. Sprint 40 target: F75, F25, F35, F37, F78, F79. Sprint 41 target: SEC-11b, F83. Renumbered the ambiguous shared "F52 Phase 2/3+" into distinct F94 (Android flavors) + F95 (iOS variants) and moved both to the Android/GP HOLD group. Additional HOLD moves (supersede row 5.15's "stay active" note for these): F63 (responsive design), SEC-15, SEC-8b, F6 (provider optimizations). F75 expanded with two new walkthrough steps (Step 5 ongoing daily background scanning; Step 6 "how often to process 'no rules'" tied to daysBack window + F82 indicator). Created `docs/sprints/SPRINT_39_PLAN.md` for Phase 3.7 approval. |
 | 5.17 | 2026-05-25 | Sprint 39 execution + scope adjustment: S38-CI-7 (Opus 4.6 vs 4.7 eval) moved Sprint 39 -> Sprint 40 and re-scoped per Harold's clarified intent (4+ tasks run on BOTH models on separate branches; scored on process-doc adherence / instruction-following / architecture discipline / stopping-criteria / forward-looking code quality; ~6-10h). Sprint 39 now 12 tasks (all shipped + tests green 1530/0). BUG-S37-2 corrective: removed 6 malformed bundled TLD rules (.c .giw .nwm .xd .sweepss .qzz.io) from rules.yaml + v6 cleanup migration; .sweeps/.ca retained; all 194 ccTLDs (except .us/.uk/.ca) confirmed kept per Harold. S38-CI-1 X-close fixed round 3 (removed setPreventClose interception; root cause = window_manager 0.3.9 destroy()=PostQuitMessage-only + swallowed WM_CLOSE -> engine teardown during process-exit unwind w/ orphaned tray) -- manually verified working by Harold. Phase 5.3 manual testing complete 2026-05-25 (Harold): X-close, F91 (AOL dedup), F89 (auth warnings) all verified. Sprint 39 committed as a2bb75e. |
