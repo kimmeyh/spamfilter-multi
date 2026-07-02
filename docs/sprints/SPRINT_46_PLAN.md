@@ -79,35 +79,42 @@ Deliver three previously-HOLD backlog items now activated by Harold: a CI/CD pip
 - **Model**: **Sonnet** -- *why not Haiku*: grouping/classifying body rules by structural shape and generating correct per-group URL-matching regex requires judgment (ReDoS-safety, false-positive risk on live production rule data), not mechanical transformation.
 - **Step-types**: DATA (grouping analysis + regex generation) + TEST-UNIT. **Est-Effort: 55-85m** (DATA median ~17m per the Estimate Table's BUG-S37-2 basis, but that was a fixed TLD list; this is a data-driven group-then-convert pass over ~thousands of live rules.yaml body patterns, closer in kind to F91's DB-MIGRATE+regex work at 13-20m -- padded up for the two-step group-then-convert structure and no prior basis at this shape; +10m over the original single-pass estimate for the grouping step).
 
-### Task 3 -- F39: Scan Results multi-select and bulk rule application (Priority 30, THIRD)
+### Task 3 -- F39: Cross-account "No rule" review screen with multi-select bulk rule application (Priority 30, THIRD)
 
-**Scope decision (Harold 2026-07-02)**: **reduced to Windows desktop only.** Android/iOS touch-selection (long-press, floating action bar) is explicitly OUT of scope this sprint -- not a "if time permits" stretch, a firm exclusion. `ALL_SPRINTS_MASTER_PLAN.md` F39 acceptance criteria updated to reflect Windows-only for Sprint 46; mobile selection remains a future backlog candidate if/when prioritized.
+**Scope RESTRUCTURED at Phase 4 (Harold 2026-07-02)** -- materially different from the original master-plan ask. Original F39 was "add multi-select to the existing per-account Results Display screen." The real user need, surfaced when I asked a clarifying question during implementation: **a single aggregated list of "No rule" items across ALL configured accounts by default** (account-filterable down to one), scoped to **each account's most recent scan/live run only** (not full history -- a user reviewing weekly wants this week's unaddressed items, not a re-scan of history). Realistic weekly volume: **<50 "No rule" items across all accounts** -- this caps the bulk-action batch size the UX needs to handle well; it is not a bulk-import-scale feature.
 
-- Add multi-select to the Scan Results screen (live + history): per-item checkbox/radial, Ctrl+click and Shift+click range-select on Windows desktop, selection scoped to the currently filtered list.
-- Add a bulk-action surface (right-click context menu, Windows desktop) offering the 7 actions: Add Safe Sender (Exact Email / Exact Domain / Entire Domain), Add Block Rule (Exact Email / Exact Domain / Entire Domain), Remove Current Rule.
-- Reuse the existing single-email quick-add safe-sender/block-rule logic already in `results_display_screen.dart`'s email detail sheet (~L1367+) as the per-item action to fan out over the selection, rather than reimplementing rule-creation logic.
-- **Acceptance criteria** (Windows-only, reduced from `ALL_SPRINTS_MASTER_PLAN.md` F39 original multi-platform detail per Harold 2026-07-02):
+**Structural decision (Harold 2026-07-02)**: **new screen**, not a mode grafted onto the existing `results_display_screen.dart` (2812 lines, constructed with a required single `accountId`/`accountEmail` -- does not naturally support a cross-account data source). New screen reuses the existing single-item rule-creation logic via extraction into a shared, non-UI-coupled path (see batching decision below) rather than duplicating it.
+
+**Batching decision (Harold 2026-07-02)**: refactor so the expensive re-evaluate/re-process/notify tail (`_reEvaluateNoRuleEmails()`, `_reProcessAffectedEmails()`, SnackBar) runs **once per bulk operation**, not once per selected item. Given the <50-item realistic volume this is about UX cleanliness (one summary notification instead of up to 50 stacked SnackBars) more than raw performance, but it is still the right shape -- extract the rule-creation core out of `_addSafeSender`/`_createBlockRule` into a shared method callable per-item without the per-call re-evaluate/notify tail, then run the tail once after the loop.
+
+- **New screen** (entry point from the dashboard, name TBD during implementation, e.g. "Review No-Rule Items"): queries the latest scan result set per configured account (live results if a scan is in-progress/just completed for that account, else that account's most recent completed scan from history), filters to `EmailActionType.none` ("No rule") items only, and combines into one list. Default view = all accounts; an account filter (chips or dropdown, mirroring the existing folder-filter chip pattern in `results_display_screen.dart`) narrows to one.
+- **Multi-select**: per-item checkbox/radial, Ctrl+click and Shift+click range-select (Windows desktop), selection scoped to the current account filter.
+- **Bulk-action surface**: right-click context menu with the 7 actions (Add Safe Sender: Exact Email / Exact Domain / Entire Domain; Add Block Rule: Exact Email / Exact Domain / Entire Domain; Remove Current Rule).
+- **Rule-creation reuse**: extract the pattern-generation + DB-persist core of `_addSafeSender`/`_createBlockRule` (results_display_screen.dart ~L2424, ~L2589) into a shared, screen-agnostic method; both the existing per-account detail-sheet single-item flow and the new bulk screen call it, so behavior does not drift between the two entry points.
+- **Acceptance criteria** (restructured scope, Windows-only per the earlier platform decision):
+  - [ ] New screen aggregates the latest "No rule" items across all accounts by default
+  - [ ] Account filter narrows the list to a single account
+  - [ ] Only each account's latest scan/live run is included (not full history)
   - [ ] Multi-select works with Ctrl+click and Shift+click on desktop
   - [ ] Radial/checkbox per item for direct select/unselect
-  - [ ] Selection scoped to current filter results only
   - [ ] Right-click context menu shows the 7 bulk action options
-  - [ ] Bulk action applies the chosen rule to all selected emails
-  - [ ] Works in both live scan results and scan history views
+  - [ ] Bulk action applies the chosen rule to all selected emails, with re-evaluate/re-process/notify run ONCE per bulk operation (not once per item)
+  - [ ] Rule-creation logic is shared (not duplicated) between the existing single-item detail-sheet flow and the new bulk screen
   - [ ] Android/iOS multi-select explicitly deferred (not attempted this sprint)
-- **Model**: **Sonnet** -- *why not Haiku*: new selection-state architecture (range-select math, filter-scoping interaction) across a large existing screen (`results_display_screen.dart`) with reuse of existing single-item logic is multi-file/architectural, not mechanical.
-- **Step-types**: UI-GESTURE (selection mechanics) + UI-NEW (bulk action menu) + SVC-EDIT (fan-out over existing single-item rule-add path) + TEST-WIDGET. **Est-Effort: 70-115m** (reduced from the original 90-150m estimate now that mobile touch-selection is out of scope -- UI-GESTURE ~7-15m + UI-NEW ~30-40m + SVC-EDIT ~5-18m + TEST-WIDGET ~20-25m per-type medians, summed and padded for desktop-only scope, the largest/most novel item this sprint).
+- **Model**: **Sonnet** -- *why not Haiku*: new screen + cross-account data aggregation + a shared-logic extraction refactor touching existing single-item call sites is architectural, not mechanical.
+- **Step-types**: UI-NEW (new screen) + UI-GESTURE (selection mechanics) + SVC-EDIT (extract shared rule-creation core; cross-account query) + TEST-WIDGET. **Est-Effort: 90-140m** (increased from the 70-115m desktop-only-scope estimate -- a new screen + cross-account aggregation query + the shared-logic extraction refactor is more work than "add multi-select to an existing screen"; UI-NEW ~30-40m x2 (new screen + bulk action menu) + UI-GESTURE ~7-15m + SVC-EDIT ~5-18m x2 (extraction + cross-account query) + TEST-WIDGET ~20-25m, summed and padded).
 
 ---
 
 ## Estimated Effort
 
-**Est-Effort ~150-240m | Est-Wall ~150-240m** (assume serial; F64 has no dependency on F33/F39 and could run in parallel if useful, but each item is a distinct model/agent and independently PR-reviewable). Well under the 400-hour stopping threshold.
+**Est-Effort ~170-265m | Est-Wall ~170-265m** (revised up from 150-240m after F39's Phase-4 scope restructure to a new cross-account screen; assume serial -- F64 has no dependency on F33/F39 and could run in parallel if useful, but each item is a distinct model/agent and independently PR-reviewable). Well under the 400-hour stopping threshold.
 
 ## Model Assignments (cheapest-first per Sprint 43 retro IMP-1)
 
 - **Task 1 (F64)**: **Haiku** -- mechanical GitHub Actions config against a well-documented pattern.
 - **Task 2 (F33)**: **Sonnet** -- *why not Haiku*: URL-vs-non-URL classification + regex generation over live production rule data requires judgment (ReDoS safety, false-positive risk).
-- **Task 3 (F39)**: **Sonnet** -- *why not Haiku*: new multi-select architecture across a large existing screen, range-select math, filter-scoping.
+- **Task 3 (F39)**: **Sonnet** -- *why not Haiku*: new cross-account aggregation screen + shared-logic extraction refactor + multi-select architecture is architectural, not mechanical.
 - **Planning / this plan / retro**: **Opus** (per `SPRINT_PLANNING.md` "Activities Requiring Opus").
 
 ---
@@ -117,6 +124,9 @@ Deliver three previously-HOLD backlog items now activated by Harold: a CI/CD pip
 **Resolved at Phase 3.7 (Harold 2026-07-02) -- no longer open**:
 - ~~F39 platform scope~~ -- RESOLVED: reduced to Windows-only, firm exclusion (see Task 3).
 - ~~F64 CI/CD path~~ -- RESOLVED: GitHub Actions confirmed after alternatives review (see Task 1 comparison table).
+
+**Resolved during Phase 4 execution (Harold 2026-07-02)**:
+- ~~F39 real requirement~~ -- RESOLVED: cross-account aggregated "No rule" list (latest scan per account only), account-filterable, new screen (not a mode on the existing per-account screen), batched-once bulk-action refactor. Surfaced by asking rather than building the originally-scoped "add multi-select to existing screen" version, which would not have matched the actual need. See restructured Task 3 above.
 
 **Still open -- surface + wait if triggered** (relaxed stopping rules apply this sprint per Harold's standing authorization above; group related questions, surface as early as possible):
 - **F33 G5-ambiguous patterns**: any body-rule pattern that does not cleanly fit groups G1-G4 is flagged and left unchanged, not guessed. If G5 turns out to be a nontrivial fraction of the total (rough threshold: >10% of body rules), surface the G5 examples + proposed handling for Harold's review before finalizing the report, rather than silently leaving a large chunk of the backlog untouched.

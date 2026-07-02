@@ -228,11 +228,11 @@ _(F103 Architecture Deep Dive and F104 Security Deep Dive ran in Sprint 43 -- se
 - Taken off HOLD for Sprint 46 (Harold 2026-07-02). Held for now on major changes until the 0.5.4 Store rollout completes -- scope this task accordingly.
 - [Detail](#body-rules-cleanup-script)
 
-**F39. Scan Results: Multi-Select and Bulk Rule Application (~12-16h) Priority 30**
+**F39. Cross-Account "No Rule" Review Screen with Multi-Select Bulk Rule Application (~90-140m, Sprint 46 scope) Priority 30**
 - Phase: Core App Quality
-- Platform: All (may need platform-specific UI)
-- Taken off HOLD for Sprint 46 (Harold 2026-07-02). Held for now on major changes until the 0.5.4 Store rollout completes -- scope this task accordingly.
-- [Detail](#f39-scan-results-multi-select-and-bulk-rule-application)
+- Platform: Windows Desktop (Sprint 46 scope; Android/iOS deferred)
+- Taken off HOLD for Sprint 46 (Harold 2026-07-02); scope restructured during Phase 4 execution to a new cross-account aggregation screen (see Detail). Held for now on major changes until the 0.5.4 Store rollout completes -- scope this task accordingly.
+- [Detail](#f39-cross-account-no-rule-review-screen-with-multi-select-bulk-rule-application)
 
 ### HOLD Items (Android / Google Play Store)
 
@@ -761,23 +761,24 @@ The Windows dev/prod current implementation requires a rebuild to switch -- only
 
 ---
 
-### F39: Scan Results Multi-Select and Bulk Rule Application
+### F39: Cross-Account "No Rule" Review Screen with Multi-Select Bulk Rule Application
 
-**Status**: Active, Sprint 46 (taken off HOLD 2026-07-02)
-**Estimated Effort**: ~12-16h (legacy); Sprint 46 scope ~70-115m (Windows-only, see below)
+**Status**: Active, Sprint 46 (taken off HOLD 2026-07-02; scope RESTRUCTURED during Phase 4 execution 2026-07-02 -- see below)
+**Estimated Effort**: ~12-16h (legacy, original scope); Sprint 46 scope ~90-140m (Windows-only, new cross-account screen, see below)
 **Phase**: Core App Quality
-**Platform**: Sprint 46 scope = **Windows Desktop only** (Harold 2026-07-02: Android/iOS multi-select explicitly deferred, not attempted this sprint -- may return to backlog as a separate future item if prioritized). Original ask was "All"; see `docs/sprints/SPRINT_46_PLAN.md` Task 3 for the scope-reduction rationale.
+**Platform**: Sprint 46 scope = **Windows Desktop only** (Harold 2026-07-02: Android/iOS multi-select explicitly deferred, not attempted this sprint -- may return to backlog as a separate future item if prioritized).
 
-**Overview**: Allow users to select multiple emails in Scan Results (live and history) and apply a rule action to all selected items at once, rather than one at a time.
+**Scope restructure (Harold 2026-07-02, surfaced during Phase 4 implementation)**: the original ask ("add multi-select to the existing per-account Scan Results screen") was NOT the real need. Clarifying question during execution surfaced the actual requirement: **a single aggregated list of "No rule" items across ALL configured accounts by default** (account-filterable down to one), scoped to **each account's most recent scan/live run only** (not full history -- a user reviewing weekly wants this week's unaddressed items, not a re-scan of history). Realistic weekly volume: **<50 "No rule" items across all accounts**. Structural decision: **new screen** (not a mode grafted onto the existing 2812-line `results_display_screen.dart`, which is constructed with a required single account per instance). See `docs/sprints/SPRINT_46_PLAN.md` Task 3 for full detail.
 
-**Selection Mechanics**:
+**Overview**: New screen aggregating unaddressed ("No rule") scan results across all accounts, with multi-select and bulk rule-application actions -- replaces one-at-a-time triage with a batched weekly-review workflow.
+
+**Selection Mechanics** (Windows desktop):
 - Radial button (checkbox) to the left of each item for select/unselect
-- Ctrl+click to add individual items to selection (Windows/desktop)
-- Shift+click to select a range of items between two clicked items (Windows/desktop)
-- Selection applies only to the currently filtered list (respects active filter chips)
-- Touch-friendly selection for mobile (long-press to enter selection mode, tap to toggle)
+- Ctrl+click to add individual items to selection
+- Shift+click to select a range of items between two clicked items
+- Selection scoped to the current account filter
 
-**Bulk Actions (right-click context menu / action bar)**:
+**Bulk Actions (right-click context menu)**:
 7 options:
 1. Add Safe Sender - Exact Email
 2. Add Safe Sender - Exact Domain
@@ -787,23 +788,19 @@ The Windows dev/prod current implementation requires a rebuild to switch -- only
 6. Add Block Rule - Entire Domain
 7. Remove Current Rule
 
-**Platform-Specific UI Considerations**:
-- **Windows Desktop**: Right-click context menu, Ctrl+click and Shift+click selection, radial buttons
-- **Android/iOS**: Long-press to enter selection mode, floating action bar for bulk actions, tap to toggle selection
-- **Display size**: Compact layouts may need bottom sheet instead of context menu
-- UI investigation needed before implementation to determine best pattern per platform
+**Batching**: the expensive re-evaluate/re-process/notify tail (`_reEvaluateNoRuleEmails()`, `_reProcessAffectedEmails()`, SnackBar) runs ONCE per bulk operation, not once per selected item -- one summary notification instead of up to 50 stacked SnackBars. Rule-creation logic itself is extracted from `_addSafeSender`/`_createBlockRule` into a shared, screen-agnostic method so behavior does not drift between the existing single-item detail-sheet flow and this new bulk screen.
 
-**Dependencies**: Scan Results screen (completed Sprint 12), Rule management (completed Sprint 20)
+**Dependencies**: Scan Results screen (completed Sprint 12), Rule management (completed Sprint 20), existing single-item quick-add logic (`_addSafeSender` ~L2424, `_createBlockRule` ~L2589 in `results_display_screen.dart`) as the extraction source for shared rule-creation logic.
 
-**Current state (verified 2026-05-25)**: NOT essentially complete -- the bulk/multi-select feature remains NOT DONE. `mobile-app/lib/ui/screens/results_display_screen.dart` has NO per-item checkbox/radial selection (`_buildResultTile` ~L1312-1348), no Ctrl+click / Shift+click / long-press selection mode, and no selection state (only `_selectedFolders` exists for the folder filter, ~L74). What DOES exist is the per-item (single-email) version: the email detail sheet (`_showEmailDetailSheet` ~L1367+) offers single-email quick-add safe-sender (exact email / domain / custom) and quick-add block rule (From / domain / body-URL / custom), with inline single-email re-evaluation via `_evaluationOverrides` (~L90, L1914, L2077). F39 is specifically the BULK version of these existing single-email actions; that bulk layer is entirely unbuilt.
-
-**Acceptance Criteria (Sprint 46, Windows-only per Harold 2026-07-02)**:
+**Acceptance Criteria (Sprint 46, restructured scope, Windows-only per Harold 2026-07-02)**:
+- [ ] New screen aggregates the latest "No rule" items across all accounts by default
+- [ ] Account filter narrows the list to a single account
+- [ ] Only each account's latest scan/live run is included (not full history)
 - [ ] Multi-select works with Ctrl+click and Shift+click on desktop
-- [ ] Radial button per item for direct select/unselect
-- [ ] Selection scoped to current filter results only
+- [ ] Radial/checkbox per item for direct select/unselect
 - [ ] Right-click context menu shows 7 bulk action options
-- [ ] Bulk action applies chosen rule to all selected emails
-- [ ] Works in both live scan results and scan history views
+- [ ] Bulk action applies chosen rule to all selected emails, with re-evaluate/re-process/notify run ONCE per bulk operation
+- [ ] Rule-creation logic is shared (not duplicated) between the existing single-item detail-sheet flow and the new bulk screen
 - [ ] Android/iOS multi-select explicitly deferred (not attempted this sprint)
 
 ### F74: FAQ Section in Help
