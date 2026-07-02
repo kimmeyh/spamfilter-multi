@@ -4,7 +4,7 @@ Single-page reference for sprint execution. Copy to sprint plan and check off du
 
 **[WARNING] PHASE TRANSITION PROTOCOL**: Before starting ANY new phase, re-read this checklist to verify all items for the current phase are complete and review the next phase requirements. This prevents skipping steps.
 
-**[CRITICAL -- Sprint 45 retro IMP-1] Read the format doc before producing its output**: whenever a step is governed by a named doc containing an authoritative format/template (`BACKLOG_REFINEMENT.md`'s presentation format, `SPRINT_RETROSPECTIVE.md`'s feedback template, `STORE_RELEASE_PROCESS.md`'s checklists, the ADR template, etc.), Read that doc's format/template section FIRST and match it verbatim. Never generate the format from memory or paraphrase, even if confident you remember it.
+**[CRITICAL -- Sprint 45 retro IMP-1] Read the format doc before producing its output**: whenever a step is governed by a named doc containing an authoritative format/template (`BACKLOG_REFINEMENT.md`'s presentation format, `SPRINT_RETROSPECTIVE.md`'s feedback template, `STORE_RELEASE_PROCESS.md`'s checklists, the ADR template, etc.), read that doc's format/template section FIRST and match it verbatim. Never generate the format from memory or paraphrase, even if confident you remember it.
 
 ---
 
