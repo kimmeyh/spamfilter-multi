@@ -440,7 +440,7 @@ Production (main branch) and development (feature/develop) builds coexist on the
 
 - **Dev builds**: data in `MyEmailSpamFilter_Dev\`, window title shows `[DEV]`
 - **Prod builds**: data in `MyEmailSpamFilter\`, no suffix
-- **Version**: dev = `0.5.4`, prod = `0.5.2` after Sprint 35 store release / Sprint 43 dev bump (dev always patch+1)
+- **Version**: dev = `0.5.4` (bumps to `0.5.5` in Sprint 46); **currently PUBLISHED to the Store = `0.5.3`**; the Sprint 45 (F111) release ships `0.5.4` (Harold 2026-07-01). Prod worktree bumps `0.5.2 -> 0.5.4` at release Step 1. (Dev is always patch+1 vs the next release.)
 - **Secrets**: dev uses `secrets.dev.json`, prod uses `secrets.prod.json`
 - **Single-instance**: mutex prevents duplicate same-environment instances
 
