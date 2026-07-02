@@ -134,20 +134,20 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: July 1, 2026 (Sprint 45 Backlog Refinement -- see the "Sprint Assignment" subsection below; prior full review June 23, 2026)
+**Last Reviewed**: July 2, 2026 (Sprint 46 Backlog Refinement -- see the "Sprint Assignment" subsection below; prior full review July 1, 2026)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
-### Sprint Assignment (Sprint 45 Backlog Refinement, 2026-07-01)
+### Sprint Assignment (Sprint 46 Backlog Refinement, 2026-07-02)
 
 Recent sprints complete -- detail blocks removed per the Maintenance Guide (history lives in `docs/sprints/` + CHANGELOG.md):
-- **Sprint 40** (merged PR #261): F75, F25, F35, F37, F78, F79, BUG-S40-1
 - **Sprint 41** (merged PR #262): F83 Phase 1 (ADR-0039 Accepted), F97, F76
 - **Sprint 42** (merged PR #263): F99 (integration_test harness), F98 (per-account bg-scan, ADR-0039 + ADR-0040), BUG-S37-2
 - **Sprint 43** (merged PR #265): F102, F103, F96 (DB v8), F100, F101, F104, F105, F110; SEC-11b deferred Post-MVP (cipher -> SQLite3MultipleCiphers)
-- **Sprint 44** (merged PR #266, 2026-07-01): F107 (Accept ADR-0037 + promote ARSD), F109 (surface background-deferral state), F108 (dep bumps: flutter_appauth 8->12, workmanager 0.5->0.9, flutter_secure_storage 9->10 + Android minSdk 23); retro IMP-1 version-consistency gate
+- **Sprint 44** (merged PR #266): F107 (Accept ADR-0037 + promote ARSD), F109 (surface background-deferral state), F108 (dep bumps: flutter_appauth 8->12, workmanager 0.5->0.9, flutter_secure_storage 9->10 + Android minSdk 23); retro IMP-1 version-consistency gate
+- **Sprint 45** (merged PR #268, 2026-07-02): F111 (Windows App Store upload readiness verification -- GO for 0.5.4); **develop -> main released**; retro IMP-1 read-format-doc-first rule
 
-**Sprint 45 scope (Harold-selected 2026-07-01)**: **F111 -- Windows App Store upload readiness verification (P40)**. Backlog changes this refinement: F106 moved Priority 30 -> HOLD/Post-MVP (gated on the SEC-11b DB-encryption item, paired under it). Remaining candidates stay HOLD: template deep dives (F70/F71), F64 (CI/CD), Post-MVP (SEC-11b + F106), HOLD platform/UX tracks (F94/F95, F63, SEC-8b/SEC-15, F6, H1-H5). **Open follow-up**: Android-device retest of the Sprint 44 F108 dep bumps (see Last Completed Sprint).
+**Sprint 46 candidate pool**: the active near-term queue is empty (F111 was Sprint 45's only active item, now shipped). Remaining candidates are HOLD: template deep dives (F70 Security / F71 Architecture, run periodically -- last run F104/F103 in Sprint 43), F64 (CI/CD), Post-MVP (SEC-11b DB encryption + F106 cleanup, paired), HOLD platform/UX tracks (F94/F95 flavors, F63 responsive, SEC-8b/SEC-15, F6, H1-H5, F67, F33, F39, GP-*). **Open follow-up (Sprint 44 carry-in)**: Android-device retest of the Sprint 44 F108 dep bumps (Gmail sign-in, secure-storage round-trip, WorkManager). Harold selects Sprint 46 scope in Phase 1.2.
 
 ### Core App
 
@@ -163,19 +163,7 @@ _(F107, F108, F109 shipped in Sprint 44 -- see docs/sprints/SPRINT_44_SUMMARY.md
 
 ### Release Readiness
 
-**F111. Windows App Store upload readiness verification (~3-5h) Priority 40 -- NEW (Harold 2026-07-01) -- SPRINT 45**
-- Phase: Release / Windows Store
-- Platform: Windows Desktop
-- **Value**: This PREVENTS a broken/mismatched Store upload -- confirms the codebase is release-ready and everything is in order BEFORE we build+upload a new version to the Microsoft Store.
-- **Scope** (verification + a checklist doc; NO feature code -- decide any needed fixes at Phase 3):
-  - **develop == main parity**: `main` (the last released code) and `develop` (current) must be reconciled -- diff them, confirm develop is a clean superset of main (no divergent/stranded commits), and identify exactly what a new release would ship. Flag any drift for Harold.
-  - **Version compatibility**: verify the version bump is correct and consistent across all files (run the new Sprint 44 version-consistency gate `test/policy/version_consistency_test.dart`); confirm `pubspec.yaml` `version` + `msix_config.msix_version` are set to the intended Store version and are > the currently-published Store version.
-  - **MSIX build integrity**: confirm the supported build path (`flutter pub run msix:create` honoring `build_windows_args` for OAuth credential injection, per `docs/STORE_RELEASE_PROCESS.md`) -- NOT the deprecated `build-msix.ps1`; verify the produced MSIX has the correct `Identity`/`Version` and non-empty credentials.
-  - **Store-submission preconditions**: walk `docs/STORE_RELEASE_PROCESS.md` and confirm each precondition is satisfied (secrets.prod.json present/recreated, publisher identity, capabilities, privacy policy current, `store: true`); produce a go/no-go checklist.
-  - **Full verification**: `flutter analyze` clean, full `flutter test` green, Windows prod build succeeds, both redaction + version gates green.
-- **Acceptance criteria**: a completed readiness checklist (develop/main reconciled, version verified compatible + > published, MSIX path confirmed, all Store preconditions checked, tests+build green) with an explicit GO / NO-GO recommendation for Harold; any blocker surfaced (not silently fixed).
-- **Depends on**: none (verification of existing state). Note: `main` is user-controlled (release branch) -- reconciling develop->main is a Chief-Developer decision; F111 REPORTS the parity state, it does not merge to main.
-- **Why this sprint**: Harold-selected as the Sprint 45 scope (2026-07-01).
+_(F111 shipped in Sprint 45 -- GO recommendation delivered; see docs/sprints/SPRINT_45_F111_STORE_READINESS.md and SPRINT_45_SUMMARY.md. Store upload of 0.5.4 is a pending Harold action, targeted Sat/Sun on a stable network -- not a backlog item.)_
 
 _(F103 Architecture Deep Dive and F104 Security Deep Dive ran in Sprint 43 -- see `docs/sprints/SPRINT_43_F103_ARCHITECTURE_DEEP_DIVE.md` and `SPRINT_43_F104_SECURITY_DEEP_DIVE.md`; their reusable templates F71 / F70 remain HOLD below. F105 version bump shipped.)_
 
@@ -1140,6 +1128,7 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 6.4 | 2026-07-02 | Sprint 46 Phase 1 backlog refinement: pruned the shipped **F111** from Next Sprint Candidates (Release Readiness section now empty -- GO delivered Sprint 45); refreshed Sprint Assignment header to Sprint 46 + "Last Reviewed" -> July 2, 2026; near-term active queue is now empty (all HOLD/Post-MVP/template candidates remain). GitHub issues: 0 open. |
 | 6.3 | 2026-07-02 | Sprint 45 completion + Sprint 46 pre-kickoff (Phase 3.2.1): created `docs/sprints/SPRINT_45_SUMMARY.md`; rolled **Last Completed Sprint** 44 -> 45; added the Sprint 45 row (PR #268) to the Past Sprint Summary table. Recorded the **develop -> main RELEASE MERGE** (Harold, 2026-07-02) -- F111-verified `0.5.4` codebase is now on `main`; Store upload targeted Sat/Sun on a stable network. F111 was Sprint 45's only item (Release Readiness), so Next Sprint Candidates is otherwise unchanged from the 6.2 refinement -- awaiting Sprint 46 scope selection. |
 | 6.2 | 2026-07-01 | Sprint 45 backlog refinement (Harold direction): moved **F106** Priority 30 -> HOLD/Post-MVP and paired it under SEC-11b (F106 cannot start until the SEC-11b DB-encryption item ships + ~2 verification sprints). Added **F111** (Windows App Store upload readiness verification, P40) as a NEW active item under a new "Release Readiness" section -- selected as the Sprint 45 scope. |
 | 6.1 | 2026-07-01 | Sprint 44 completion + Sprint 45 pre-kickoff (Phase 3.2.1 + Phase 1 backlog refinement): rolled **Last Completed Sprint** Sprint 42 -> Sprint 44 (43 + 44 both merged, PR #265 + #266); created `docs/sprints/SPRINT_44_SUMMARY.md`; added Sprint 43 (PR #265) + Sprint 44 (PR #266) rows to the Past Sprint Summary table. Pruned the 3 Sprint-44 shipped items (F107, F108, F109) from Next Sprint Candidates -- active near-term backlog is now empty; remaining candidates are the deep-dive templates (F70/F71), F64 (HOLD), Post-MVP (SEC-11b/F106), and the HOLD platform/UX tracks. Refreshed "Last Reviewed" -> July 1, 2026. Open follow-up recorded: Android-device retest of the Sprint 44 F108 dependency bumps. |
