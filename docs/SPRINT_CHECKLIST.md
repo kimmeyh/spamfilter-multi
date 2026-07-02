@@ -4,6 +4,8 @@ Single-page reference for sprint execution. Copy to sprint plan and check off du
 
 **[WARNING] PHASE TRANSITION PROTOCOL**: Before starting ANY new phase, re-read this checklist to verify all items for the current phase are complete and review the next phase requirements. This prevents skipping steps.
 
+**[CRITICAL -- Sprint 45 retro IMP-1] Read the format doc before producing its output**: whenever a step is governed by a named doc containing an authoritative format/template (`BACKLOG_REFINEMENT.md`'s presentation format, `SPRINT_RETROSPECTIVE.md`'s feedback template, `STORE_RELEASE_PROCESS.md`'s checklists, the ADR template, etc.), Read that doc's format/template section FIRST and match it verbatim. Never generate the format from memory or paraphrase, even if confident you remember it.
+
 ---
 
 ## Sprint Documents (Required)
@@ -33,7 +35,7 @@ These documents MUST be created/updated during each sprint:
 - [ ] Update estimates with velocity from recent sprints
 - [ ] Capture newly identified work items
 - [ ] Remove obsolete items
-- [ ] **Present candidates to user in BACKLOG_REFINEMENT.md bullet-list format** (NOT grid tables). Required format: `**<ID>. <Title> (~<effort>) Priority <N>**` with bullet details per item, grouped by priority tier, HOLD items at bottom, include observations/alternative composition options when scope is tight
+- [ ] **[CRITICAL -- Sprint 45 retro IMP-1] Read `BACKLOG_REFINEMENT.md` "Backlog Presentation Format" section RIGHT BEFORE presenting candidates -- do not paraphrase from memory.** Required format verbatim: `**<ID>. <Title> (~<effort>) Priority <N>**` with `- Phase:` / `- Platform:` / bullet details per item, grouped under phase-name section headers, HOLD items in a separate `### HOLD Items (<reason>)` section, NOT grid tables, no invented separators/editorializing. Sprint 45 lost a round-trip generating this from memory instead of reading the doc first.
 - [ ] User selects items for Sprint N; record selection for Phase 3 plan doc
 - [ ] Commit refinement changes if ALL_SPRINTS_MASTER_PLAN.md was updated: `git commit -m "docs: Backlog refinement - [date] - [summary]"`
 

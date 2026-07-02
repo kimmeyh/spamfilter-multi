@@ -26,6 +26,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-07-02 (Sprint 45: retrospective improvement -- read format docs first)
+- **docs**: Sprint 45 retrospective (`docs/sprints/SPRINT_45_RETROSPECTIVE.md`, 4 roles x 14 categories, all "Very Good", no carry-ins). One approved improvement implemented: **IMP-1** -- a phase-boundary rule requiring the authoritative format/template section of a named process doc (e.g. `BACKLOG_REFINEMENT.md`'s presentation format, `SPRINT_RETROSPECTIVE.md`'s feedback template) be read immediately before producing that deliverable, never paraphrased from memory. Added to `SPRINT_EXECUTION_WORKFLOW.md` Invariants + `SPRINT_CHECKLIST.md` banner and Phase 1 checklist line. (Sprint 45 retro)
+
 ### 2026-07-01 (Sprint 45: F111 -- Windows App Store upload readiness)
 - **docs**: F111 -- verified Store-upload readiness (`docs/sprints/SPRINT_45_F111_STORE_READINESS.md`): **GO** to build+upload `0.5.4`. develop/main parity is CLEAN (identical content; the "15 commits ahead" is merge/CNAME topology, not drift); release version `0.5.4` > published `0.5.3` (Harold: publish 0.5.4 this sprint, dev -> 0.5.5 next); MSIX `msix:create` path + `build_windows_args` OAuth injection + `secrets.prod.json` all present in the prod worktree; analyze clean, full suite +1692 ~28, prod build succeeds. Corrected the stale CLAUDE.md version note (published = 0.5.3, release = 0.5.4). (F111)
 - **fix**: made the live-network test `domain_dns_verification_test.dart` (`.net -> .com` redirect) resilient to transient network failures -- it now `markTestSkipped` on a connection error (with 10s timeouts) while keeping the redirect assertions when the request connects, so a genuinely broken redirect still fails but a DNS/timing blip under the concurrent suite does not. (F111)
