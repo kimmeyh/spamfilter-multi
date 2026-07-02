@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-06-23 (Sprint 42 Backlog Refinement: removed 24 completed detail blocks from Sprints 39-42; added F102 logging-redaction policy for Sprint 43)
+**Last Updated**: 2026-07-02 (Sprint 45 completion: Sprint 45 -> Last Completed Sprint; develop->main release merge recorded; Sprint 46 pre-kickoff)
 
 ## How to Maintain This Document
 
@@ -109,6 +109,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 42 | docs/sprints/SPRINT_42_RETROSPECTIVE.md | [OK] Complete | Jun 20, 2026 (PR #263) |
 | 43 | docs/sprints/SPRINT_43_RETROSPECTIVE.md | [OK] Complete | Jun 23-26, 2026 (PR #265) |
 | 44 | docs/sprints/SPRINT_44_RETROSPECTIVE.md | [OK] Complete | Jun 26 - Jul 1, 2026 (PR #266) |
+| 45 | docs/sprints/SPRINT_45_RETROSPECTIVE.md | [OK] Complete | Jul 1-2, 2026 (PR #268) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -116,18 +117,18 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 44** (Jun 26 -- Jul 1, 2026 -- merged PR #266)
-- **Type**: Docs/architecture ratification + UX visibility + dependency hardening
+**Sprint 45** (Jul 1-2, 2026 -- merged PR #268)
+- **Type**: Release-readiness verification (F111, single item, no feature code)
 - **Delivered**:
-  - **F107** -- Accepted ADR-0037 (UI/Accessibility Standards) + promoted ARSD.md to 1.0/Accepted (docs only).
-  - **F109** -- surfaced the background-scan deferral state (scheduled scans pause while the foreground app is open, F98) across Settings/Background status line + Scan History hint + a `status='deferred'` `background_scan_log` row (handoff-file design; `main.cpp` writes to app-support root, `BackgroundDeferralIngest` ingests on next launch; no DB migration). Incidental: fixed the stale `main.cpp` v0.5.3 log filename -> v0.5.4.
-  - **F108** -- upgraded 3 security-relevant deps, each in its own revertable commit: `flutter_appauth` 8->12, `workmanager` 0.5->0.9, `flutter_secure_storage` 9->10 (drops `encryptedSharedPreferences`; Android minSdk 21->23) + minor drift. Revert runbook: `docs/sprints/SPRINT_44_F108_REVERT_RUNBOOK.md`.
-- **Retro IMP-1**: build-failing version-consistency gate (`test/policy/version_consistency_test.dart` + `scripts/check-version-consistency.ps1`).
-- **Tests**: 1692 passing / ~28 skipped; flutter analyze clean; Windows build green.
-- **Summary**: docs/sprints/SPRINT_44_SUMMARY.md · **Retrospective**: docs/sprints/SPRINT_44_RETROSPECTIVE.md
-- **PR**: #266 (merged to develop, 2026-07-01)
-- **Open follow-up**: Android-device retest of the F108 dep bumps (Gmail sign-in, secure-storage round-trip, WorkManager) -- no emulator in the dev session; F108 revert runbook covers per-dep rollback.
-- **Earlier sprints (39-43)**: 39 (PR #260), 40 (PR #261), 41 (PR #262), 42 (PR #263 -- F99/F98/BUG-S37-2), 43 (PR #265 -- F102/F103/F96/F100/F101/F104/F105/F110; SEC-11b deferred Post-MVP). See `docs/sprints/` + the Past Sprint Summary table above.
+  - **F111** -- Windows App Store upload readiness verification. **Result: GO** to build+upload `0.5.4`. Verified: develop/main parity CLEAN (identical content; "15 ahead" was merge/CNAME topology, not drift), version `0.5.4` > published `0.5.3`, MSIX `msix:create` path + `build_windows_args` OAuth injection + `secrets.prod.json` present in prod worktree, Store preconditions, full verification (analyze clean, tests +1692 ~28, prod build green). Findings: `docs/sprints/SPRINT_45_F111_STORE_READINESS.md`.
+  - Fixed as found: `domain_dns_verification_test.dart` made network-resilient (skip on connection error, keep the assertion when connected).
+- **Retro IMP-1**: read-the-format-doc-first phase-boundary rule (`SPRINT_EXECUTION_WORKFLOW.md` Invariants + `SPRINT_CHECKLIST.md`).
+- **Tests**: 1692 passing / ~28 skipped; flutter analyze clean; Windows prod build green.
+- **Summary**: docs/sprints/SPRINT_45_SUMMARY.md · **Retrospective**: docs/sprints/SPRINT_45_RETROSPECTIVE.md
+- **PR**: #268 (merged to develop, 2026-07-02)
+- **RELEASE**: `develop` -> `main` merged (Harold, 2026-07-02) -- Sprint 45's F111-verified codebase is on `main`. Store upload of the MSIX (`0.5.4`) is a separate Harold action targeted for **Saturday/Sunday on a stable network** (`docs/STORE_RELEASE_PROCESS.md`). Once uploaded + live, published version becomes `0.5.3 -> 0.5.4`.
+- **Open follow-up (carried from Sprint 44)**: Android-device retest of the F108 dep bumps (Gmail sign-in, secure-storage round-trip, WorkManager) -- no emulator in the dev session; F108 revert runbook covers per-dep rollback if needed.
+- **Earlier sprints (39-44)**: 39 (PR #260), 40 (PR #261), 41 (PR #262), 42 (PR #263 -- F99/F98/BUG-S37-2), 43 (PR #265 -- F102/F103/F96/F100/F101/F104/F105/F110; SEC-11b deferred Post-MVP), 44 (PR #266 -- F107/F109/F108, retro IMP-1 version-consistency gate). See `docs/sprints/` + the Past Sprint Summary table above.
 
 ---
 
@@ -1139,6 +1140,7 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 6.3 | 2026-07-02 | Sprint 45 completion + Sprint 46 pre-kickoff (Phase 3.2.1): created `docs/sprints/SPRINT_45_SUMMARY.md`; rolled **Last Completed Sprint** 44 -> 45; added the Sprint 45 row (PR #268) to the Past Sprint Summary table. Recorded the **develop -> main RELEASE MERGE** (Harold, 2026-07-02) -- F111-verified `0.5.4` codebase is now on `main`; Store upload targeted Sat/Sun on a stable network. F111 was Sprint 45's only item (Release Readiness), so Next Sprint Candidates is otherwise unchanged from the 6.2 refinement -- awaiting Sprint 46 scope selection. |
 | 6.2 | 2026-07-01 | Sprint 45 backlog refinement (Harold direction): moved **F106** Priority 30 -> HOLD/Post-MVP and paired it under SEC-11b (F106 cannot start until the SEC-11b DB-encryption item ships + ~2 verification sprints). Added **F111** (Windows App Store upload readiness verification, P40) as a NEW active item under a new "Release Readiness" section -- selected as the Sprint 45 scope. |
 | 6.1 | 2026-07-01 | Sprint 44 completion + Sprint 45 pre-kickoff (Phase 3.2.1 + Phase 1 backlog refinement): rolled **Last Completed Sprint** Sprint 42 -> Sprint 44 (43 + 44 both merged, PR #265 + #266); created `docs/sprints/SPRINT_44_SUMMARY.md`; added Sprint 43 (PR #265) + Sprint 44 (PR #266) rows to the Past Sprint Summary table. Pruned the 3 Sprint-44 shipped items (F107, F108, F109) from Next Sprint Candidates -- active near-term backlog is now empty; remaining candidates are the deep-dive templates (F70/F71), F64 (HOLD), Post-MVP (SEC-11b/F106), and the HOLD platform/UX tracks. Refreshed "Last Reviewed" -> July 1, 2026. Open follow-up recorded: Android-device retest of the Sprint 44 F108 dependency bumps. |
 | 6.0 | 2026-06-25 | Sprint 43 Phase 7 currency pass (rolled into PR #265 before merge, per Harold): updated **Last Completed Sprint** Sprint 38 -> Sprint 42 (the last MERGED sprint; Sprint 43 becomes Last-Completed at Sprint 44 pre-kickoff once PR #265 merges). Filled the **Past Sprint Summary** gap -- added the missing Sprint 39 (PR #260) and Sprint 40 (PR #261) rows (table had jumped 38 -> 41). Refreshed the stale **"Last Reviewed: May 25, 2026"** marker to June 23, 2026 (Sprint 42 Backlog Refinement). Backlog items F107/F108/F109 added during Sprint 43; SEC-11b moved to Post-MVP (cipher -> SQLite3MultipleCiphers). Addresses the master-plan staleness flagged in the PR #265 Copilot review. |
