@@ -436,5 +436,43 @@ void main() {
         );
       });
     });
+
+    // F39 (Sprint 46): extracted from ResultsDisplayScreen._extractRootDomain
+    // so the per-account results screen and the cross-account "No rule"
+    // review screen share one implementation.
+    group('extractRootDomain', () {
+      test('strips a single subdomain', () {
+        expect(
+          PatternNormalization.extractRootDomain('subdomain.example.com'),
+          'example.com',
+        );
+      });
+
+      test('strips multiple subdomain levels', () {
+        expect(
+          PatternNormalization.extractRootDomain('pptwvrnbdho.atlantaoffre.com'),
+          'atlantaoffre.com',
+        );
+      });
+
+      test('returns an already-root domain unchanged', () {
+        expect(
+          PatternNormalization.extractRootDomain('example.com'),
+          'example.com',
+        );
+      });
+
+      test('returns input unchanged when fewer than 2 labels', () {
+        expect(PatternNormalization.extractRootDomain('localhost'), 'localhost');
+      });
+
+      test('returns null for null input', () {
+        expect(PatternNormalization.extractRootDomain(null), isNull);
+      });
+
+      test('returns null for empty input', () {
+        expect(PatternNormalization.extractRootDomain(''), isNull);
+      });
+    });
   });
 }

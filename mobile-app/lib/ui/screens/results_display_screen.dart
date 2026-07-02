@@ -1381,21 +1381,6 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     );
   }
 
-  /// Extract the root domain from a full domain (e.g., "subdomain.example.com" -> "example.com")
-  /// For domains like "pptwvrnbdho.atlantaoffre.com", returns "atlantaoffre.com"
-  String? _extractRootDomain(String? fullDomain) {
-    if (fullDomain == null || fullDomain.isEmpty) return null;
-
-    final parts = fullDomain.split('.');
-    // Need at least 2 parts for a valid domain (e.g., example.com)
-    if (parts.length < 2) return fullDomain;
-
-    // For most domains, return last 2 parts (example.com)
-    // For known TLDs like .co.uk, .com.au, etc., would need more logic
-    // For now, use simple heuristic: last 2 parts
-    return '${parts[parts.length - 2]}.${parts[parts.length - 1]}';
-  }
-
   /// Show positioned popup with email details and inline quick actions
   /// Issue 6: CSS-like positioning - show popup below/above email item
   void _showEmailDetailSheet(EmailActionResult result, {GlobalKey? itemKey}) {
@@ -1413,7 +1398,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         ? PatternNormalization.decodePunycodeDomain(rawSenderDomain)
         : null;
     // Extract root domain from RAW domain (for rule creation)
-    final rawRootDomain = _extractRootDomain(rawSenderDomain);
+    final rawRootDomain = PatternNormalization.extractRootDomain(rawSenderDomain);
     // Decode root domain for display
     final displayRootDomain = rawRootDomain != null
         ? PatternNormalization.decodePunycodeDomain(rawRootDomain)

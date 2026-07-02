@@ -8,6 +8,30 @@ import '../../util/redact.dart';
 class PatternNormalization {
   static final Logger _logger = Logger();
 
+  /// Extracts the root (registrable) domain from a full domain.
+  ///
+  /// Examples:
+  /// - "subdomain.example.com" -> "example.com"
+  /// - "pptwvrnbdho.atlantaoffre.com" -> "atlantaoffre.com"
+  /// - "example.com" -> "example.com" (already root)
+  ///
+  /// Uses a simple last-2-labels heuristic; does not special-case
+  /// multi-part TLDs like ".co.uk" or ".com.au". F39 (Sprint 46):
+  /// extracted from ResultsDisplayScreen._extractRootDomain so both the
+  /// per-account results screen and the cross-account "No rule" review
+  /// screen share one implementation.
+  ///
+  /// Returns null if [fullDomain] is null or empty; returns the input
+  /// unchanged if it has fewer than 2 dot-separated labels.
+  static String? extractRootDomain(String? fullDomain) {
+    if (fullDomain == null || fullDomain.isEmpty) return null;
+
+    final parts = fullDomain.split('.');
+    if (parts.length < 2) return fullDomain;
+
+    return '${parts[parts.length - 2]}.${parts[parts.length - 1]}';
+  }
+
   /// Normalizes an email address from a "Name <email@domain.com>" format to lowercase.
   ///
   /// Handles three input formats:
