@@ -763,10 +763,10 @@ The Windows dev/prod current implementation requires a rebuild to switch -- only
 
 ### F39: Scan Results Multi-Select and Bulk Rule Application
 
-**Status**: HOLD (Post-MVP, Post-Windows Store)
-**Estimated Effort**: ~12-16h
-**Phase**: Post-MVP, Post-Windows Store
-**Platform**: All (may need platform-specific UI patterns)
+**Status**: Active, Sprint 46 (taken off HOLD 2026-07-02)
+**Estimated Effort**: ~12-16h (legacy); Sprint 46 scope ~70-115m (Windows-only, see below)
+**Phase**: Core App Quality
+**Platform**: Sprint 46 scope = **Windows Desktop only** (Harold 2026-07-02: Android/iOS multi-select explicitly deferred, not attempted this sprint -- may return to backlog as a separate future item if prioritized). Original ask was "All"; see `docs/sprints/SPRINT_46_PLAN.md` Task 3 for the scope-reduction rationale.
 
 **Overview**: Allow users to select multiple emails in Scan Results (live and history) and apply a rule action to all selected items at once, rather than one at a time.
 
@@ -797,15 +797,14 @@ The Windows dev/prod current implementation requires a rebuild to switch -- only
 
 **Current state (verified 2026-05-25)**: NOT essentially complete -- the bulk/multi-select feature remains NOT DONE. `mobile-app/lib/ui/screens/results_display_screen.dart` has NO per-item checkbox/radial selection (`_buildResultTile` ~L1312-1348), no Ctrl+click / Shift+click / long-press selection mode, and no selection state (only `_selectedFolders` exists for the folder filter, ~L74). What DOES exist is the per-item (single-email) version: the email detail sheet (`_showEmailDetailSheet` ~L1367+) offers single-email quick-add safe-sender (exact email / domain / custom) and quick-add block rule (From / domain / body-URL / custom), with inline single-email re-evaluation via `_evaluationOverrides` (~L90, L1914, L2077). F39 is specifically the BULK version of these existing single-email actions; that bulk layer is entirely unbuilt.
 
-**Acceptance Criteria**:
-- [ ] UI investigation completed: document recommended selection and action patterns per platform
+**Acceptance Criteria (Sprint 46, Windows-only per Harold 2026-07-02)**:
 - [ ] Multi-select works with Ctrl+click and Shift+click on desktop
 - [ ] Radial button per item for direct select/unselect
 - [ ] Selection scoped to current filter results only
-- [ ] Right-click (desktop) or action bar (mobile) shows 7 bulk action options
+- [ ] Right-click context menu shows 7 bulk action options
 - [ ] Bulk action applies chosen rule to all selected emails
 - [ ] Works in both live scan results and scan history views
-- [ ] Platform-appropriate UI for Windows, Android, and iOS
+- [ ] Android/iOS multi-select explicitly deferred (not attempted this sprint)
 
 ### F74: FAQ Section in Help
 
