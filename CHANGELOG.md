@@ -26,6 +26,10 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-07-01 (Sprint 45: F111 -- Windows App Store upload readiness)
+- **docs**: F111 -- verified Store-upload readiness (`docs/sprints/SPRINT_45_F111_STORE_READINESS.md`): **GO** to build+upload `0.5.4`. develop/main parity is CLEAN (identical content; the "15 commits ahead" is merge/CNAME topology, not drift); release version `0.5.4` > published `0.5.3` (Harold: publish 0.5.4 this sprint, dev -> 0.5.5 next); MSIX `msix:create` path + `build_windows_args` OAuth injection + `secrets.prod.json` all present in the prod worktree; analyze clean, full suite +1692 ~28, prod build succeeds. Corrected the stale CLAUDE.md version note (published = 0.5.3, release = 0.5.4). (F111)
+- **fix**: made the live-network test `domain_dns_verification_test.dart` (`.net -> .com` redirect) resilient to transient network failures -- it now `markTestSkipped` on a connection error (with 10s timeouts) while keeping the redirect assertions when the request connects, so a genuinely broken redirect still fails but a DNS/timing blip under the concurrent suite does not. (F111)
+
 ### 2026-06-30 (Sprint 44: retrospective improvement -- version-consistency gate)
 - **test**: Sprint 44 retro IMP-1 -- added a build-failing **version-consistency gate** (`test/policy/version_consistency_test.dart` + `scripts/check-version-consistency.ps1`) that asserts every app-version literal (`_v<X.Y.Z>.log` log-filename tokens and `Version <X.Y.Z>` display strings) in `lib/` + `windows/runner/` + `scripts/` matches `pubspec.yaml`, ignoring dependency-version references in comments. This catches a stale version literal (the silent F105/main.cpp drift class) that the build cannot. Wired into the `STORE_RELEASE_PROCESS.md` checklist + Phase 5 checklist line 5.1.8. (Sprint 44 retro)
 
