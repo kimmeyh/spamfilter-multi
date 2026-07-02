@@ -15,12 +15,11 @@ import '../../core/providers/email_scan_provider.dart' show EmailScanProvider, E
 import '../../core/providers/rule_set_provider.dart';
 import '../../core/models/email_message.dart';
 import '../../core/models/evaluation_result.dart';
-import '../../core/models/rule_set.dart' show Rule, RuleConditions, RuleActions;
 import '../../core/services/auth_results_parser.dart';
 import '../../core/services/email_body_parser.dart';
 import '../../core/services/pattern_compiler.dart';
-import '../../core/services/rule_conflict_resolver.dart';
 import '../../core/services/rule_evaluator.dart';
+import '../../core/services/rule_quick_action_service.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/settings_store.dart';
@@ -2424,7 +2423,6 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   Future<void> _addSafeSender(String value, String type, {EmailMessage? email}) async {
     final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
     final logger = Logger();
-    final conflictResolver = RuleConflictResolver();
 
     // F96 (Sprint 43): on the Scan History reload path the source email is
     // reconstructed from the database, so we re-hydrate the SPF/DKIM/DMARC
@@ -2454,106 +2452,26 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       }
     }
 
-    try {
-      // Create regex pattern based on type
-      String pattern;
-      String displayMessage;
+    // F39 (Sprint 46): rule-persistence core is shared with the
+    // cross-account "No rule" review screen via RuleQuickActionService.
+    // The re-evaluate/re-process/notify tail below stays here -- it is
+    // specific to this screen's in-memory scan-session state.
+    final service = RuleQuickActionService(ruleProvider: ruleProvider);
+    final senderEmail = email != null
+        ? EmailBodyParser().extractEmailAddress(email.from).toLowerCase().trim()
+        : value;
+    final result = await service.addSafeSender(
+      value: value,
+      type: type,
+      senderEmailForConflictCheck: senderEmail,
+    );
 
-      switch (type) {
-        case 'exact':
-          // Exact email match - escape special chars
-          final escaped = value.replaceAll('.', r'\.').replaceAll('@', r'@');
-          pattern = '^$escaped\$';
-          displayMessage = 'Added "$value" to Safe Senders';
-          break;
-        case 'exactDomain':
-          // Exact domain match (e.g., @subdomain.domain.com)
-          final escaped = value.replaceAll('.', r'\.').replaceAll('@', r'@');
-          pattern = '^[^@\\s]+$escaped\$';
-          displayMessage = 'Added exact domain "$value" to Safe Senders';
-          break;
-        case 'entireDomain':
-          // Entire domain pattern (e.g., @*.domain.com matches any subdomain)
-          // Regex: ^[^@\s]+@(?:[a-z0-9-]+\.)*domain\.com$
-          final escaped = value.replaceAll('.', r'\.');
-          pattern = r'^[^@\s]+@(?:[a-z0-9-]+\.)*' + escaped + r'$';
-          displayMessage = 'Added entire domain "*.$value" to Safe Senders';
-          break;
-        default:
-          logger.w('Unknown safe sender type: $type');
-          return;
-      }
-
-      // Remove conflicting block rules before adding safe sender (Issue #154)
-      // Use full email address for conflict matching (domain-only values do not match rule patterns)
-      final senderEmail = email != null
-          ? EmailBodyParser().extractEmailAddress(email.from).toLowerCase().trim()
-          : value;
-      final conflicts = await conflictResolver.removeConflictingRules(
-        emailAddress: senderEmail,
-        ruleProvider: ruleProvider,
-      );
-
-      // Add to safe senders via provider (persists to database and YAML)
-      await ruleProvider.addSafeSender(pattern);
-
-      // Sprint 38 Round 1 F86: reload from DB so any conflict-resolved
-      // changes or safe-sender list normalization are reflected in
-      // ruleProvider before subsequent re-evaluation runs.
-      await ruleProvider.loadSafeSenders();
-      await ruleProvider.loadRules();
-
-      // Include conflict removal info in display message
-      if (conflicts.conflictsRemoved > 0) {
-        displayMessage += ' (removed ${conflicts.conflictsRemoved} conflicting rule${conflicts.conflictsRemoved > 1 ? "s" : ""})';
-      }
-
-      logger.i('[OK] Added safe sender: $pattern');
-
-      // F21: Re-evaluate email against updated rules and refresh list
-      if (email != null) {
-        await _reEvaluateEmail(email);
-      }
-
-      // Re-evaluate all remaining "No rule" emails against the new safe sender
-      final preStats = _computeNoRuleStats();
-      await _reEvaluateNoRuleEmails();
-      final postStats = _computeNoRuleStats();
-
-      // Sprint 38 Round 4 (2026-05-17): advance the oldest-unaddressed-no-rule
-      // UID cursor per folder so the next IMAP scan resumes from the
-      // remaining backlog (or clears the cursor and falls back to daysBack
-      // if all are addressed). Non-IMAP rows are skipped inside the helper.
-      await _updateOldestNoRuleCursorsFromResults();
-
-      // F38: Execute IMAP actions for affected emails
-      await _reProcessAffectedEmails();
-
-      if (mounted) {
-        setState(() {}); // Refresh list to show updated rule assignment
-        // Sprint 38 F82 (Issue #252): append "N removed, M remaining" so the
-        // user sees concrete progress against the no-rules pool.
-        final removedNow = preStats.remaining - postStats.remaining;
-        final remaining = postStats.remaining;
-        final progressSuffix = removedNow > 0
-            ? ' -- $removedNow removed, $remaining "No rule" remaining'
-            : (remaining > 0 ? ' -- $remaining "No rule" remaining' : '');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('$displayMessage$progressSuffix'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
-          ),
-        );
-      }
-    } catch (e) {
-      logger.e('[FAIL] Failed to add safe sender: $e');
+    if (!result.success) {
+      logger.e('[FAIL] Failed to add safe sender: ${result.error}');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to add safe sender: $e'),
+            content: Text(result.displayMessage),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 3),
             behavior: SnackBarBehavior.floating,
@@ -2561,27 +2479,47 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           ),
         );
       }
+      return;
     }
-  }
 
-  /// BUG-S39-1 (Sprint 39): sanitize `input` for use inside a `rules.name`
-  /// or `safe_senders.name` value. Preserves the characters that
-  /// distinguish email-shaped patterns -- `_`, `-`, `@`, `.` -- so distinct
-  /// inputs always yield distinct names. Any other character (whitespace,
-  /// punctuation, non-ASCII) is replaced with `_` so the resulting name is
-  /// readable and shell-safe.
-  ///
-  /// Per Harold (2026-05-24): "should not be collapsing for `<email>@`".
-  /// The pre-fix sanitizer was `replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')`,
-  /// which collapsed all four distinguishing characters into `_` and
-  /// caused `account_update@amazon.com` and `account-update@amazon.com`
-  /// to produce the same rule name `Block_account_update_amazon_com`.
-  /// The DB has `name TEXT NOT NULL UNIQUE` on `rules`, so the second
-  /// insert raised a UNIQUE-constraint violation that `RuleSetProvider.
-  /// addRule` then silently swallowed (see BUG-S39-2). The UI showed
-  /// "Created rule" snackbar despite no row being inserted.
-  String _sanitizeForRuleName(String input) {
-    return input.replaceAll(RegExp(r'[^a-zA-Z0-9._@-]'), '_');
+    // F21: Re-evaluate email against updated rules and refresh list
+    if (email != null) {
+      await _reEvaluateEmail(email);
+    }
+
+    // Re-evaluate all remaining "No rule" emails against the new safe sender
+    final preStats = _computeNoRuleStats();
+    await _reEvaluateNoRuleEmails();
+    final postStats = _computeNoRuleStats();
+
+    // Sprint 38 Round 4 (2026-05-17): advance the oldest-unaddressed-no-rule
+    // UID cursor per folder so the next IMAP scan resumes from the
+    // remaining backlog (or clears the cursor and falls back to daysBack
+    // if all are addressed). Non-IMAP rows are skipped inside the helper.
+    await _updateOldestNoRuleCursorsFromResults();
+
+    // F38: Execute IMAP actions for affected emails
+    await _reProcessAffectedEmails();
+
+    if (mounted) {
+      setState(() {}); // Refresh list to show updated rule assignment
+      // Sprint 38 F82 (Issue #252): append "N removed, M remaining" so the
+      // user sees concrete progress against the no-rules pool.
+      final removedNow = preStats.remaining - postStats.remaining;
+      final remaining = postStats.remaining;
+      final progressSuffix = removedNow > 0
+          ? ' -- $removedNow removed, $remaining "No rule" remaining'
+          : (remaining > 0 ? ' -- $remaining "No rule" remaining' : '');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${result.displayMessage}$progressSuffix'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
+        ),
+      );
+    }
   }
 
   /// Create a block rule (persists to database and YAML)
@@ -2589,187 +2527,25 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   Future<void> _createBlockRule(String type, String value, {EmailMessage? email}) async {
     final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
     final logger = Logger();
-    final conflictResolver = RuleConflictResolver();
 
-    try {
-      // Create rule based on type
-      String pattern;
-      String ruleName;
-      String displayMessage;
+    // F39 (Sprint 46): rule-persistence core is shared with the
+    // cross-account "No rule" review screen via RuleQuickActionService.
+    final service = RuleQuickActionService(ruleProvider: ruleProvider);
+    final senderEmailForConflictCheck = type != 'subject' && email != null
+        ? EmailBodyParser().extractEmailAddress(email.from).toLowerCase().trim()
+        : null;
+    final result = await service.createBlockRule(
+      type: type,
+      value: value,
+      senderEmailForConflictCheck: senderEmailForConflictCheck,
+    );
 
-      switch (type) {
-        case 'from':
-          // Block exact email - escape special chars
-          final escaped = value.replaceAll('.', r'\.').replaceAll('@', r'@');
-          pattern = '^$escaped\$';
-          // BUG-S39-1 (Sprint 39): preserve `_`, `-`, `@`, `.` so distinct
-          // email addresses (e.g., `account_update@amazon.com` vs
-          // `account-update@amazon.com`) produce distinct rule names.
-          // The pre-fix sanitizer `[^a-zA-Z0-9]` -> `_` collapsed all four
-          // characters into `_`, causing a UNIQUE-constraint collision on
-          // the `rules.name` column that was then silently swallowed by
-          // `RuleSetProvider.addRule`. See also BUG-S39-2.
-          ruleName = 'Block_${_sanitizeForRuleName(value)}';
-          displayMessage = 'Created rule to block email "$value"';
-          break;
-        case 'exactDomain':
-          // Block exact domain (e.g., @subdomain.domain.com)
-          final escaped = value.replaceAll('.', r'\.').replaceAll('@', r'@');
-          pattern = '$escaped\$';
-          ruleName = 'Block_ExactDomain_${_sanitizeForRuleName(value)}';
-          displayMessage = 'Created rule to block exact domain "$value"';
-          break;
-        case 'entireDomain':
-          // Block entire domain pattern (e.g., @*.domain.com matches any subdomain)
-          // Regex: @(?:[a-z0-9-]+\.)*domain\.com$
-          final escaped = value.replaceAll('.', r'\.');
-          pattern = r'@(?:[a-z0-9-]+\.)*' + escaped + r'$';
-          ruleName = 'Block_EntireDomain_${_sanitizeForRuleName(value)}';
-          displayMessage = 'Created rule to block entire domain "*.$value"';
-          break;
-        case 'subject':
-          // Block subject containing text - escape special regex chars
-          final escaped = value.replaceAll(RegExp(r'[.*+?^${}()|[\]\\]'), r'\$&');
-          pattern = escaped;
-          ruleName = 'Block_Subject_${_sanitizeForRuleName(value.substring(0, value.length.clamp(0, 40)))}';
-          displayMessage = 'Created rule to block subject containing "$value"';
-          break;
-        default:
-          logger.w('Unknown block rule type: $type');
-          return;
-      }
-
-      // Remove conflicting safe senders before adding block rule (Issue #154)
-      // Subject-based rules do not conflict with safe senders (which match on from address)
-      // Use full email address for conflict matching (domain-only values do not match safe sender patterns)
-      ConflictResolutionResult conflicts = ConflictResolutionResult.empty;
-      if (type != 'subject' && email != null) {
-        final senderEmail = EmailBodyParser().extractEmailAddress(email.from).toLowerCase().trim();
-        conflicts = await conflictResolver.removeConflictingSafeSenders(
-          emailAddress: senderEmail,
-          ruleProvider: ruleProvider,
-        );
-      }
-
-      // Determine pattern classification fields
-      String patternCategory;
-      String patternSubType;
-      String sourceDomain;
-      int executionOrder;
-
-      switch (type) {
-        case 'from':
-          patternCategory = 'header_from';
-          patternSubType = 'exact_email';
-          sourceDomain = value;
-          executionOrder = 40;
-          break;
-        case 'exactDomain':
-          patternCategory = 'header_from';
-          patternSubType = 'exact_domain';
-          sourceDomain = value.startsWith('@') ? value.substring(1) : value;
-          executionOrder = 30;
-          break;
-        case 'entireDomain':
-          patternCategory = 'header_from';
-          patternSubType = 'entire_domain';
-          sourceDomain = value;
-          executionOrder = 20;
-          break;
-        case 'subject':
-          patternCategory = 'subject';
-          patternSubType = 'exact_domain';
-          sourceDomain = value;
-          executionOrder = 60;
-          break;
-        default:
-          patternCategory = 'header_from';
-          patternSubType = 'exact_domain';
-          sourceDomain = value;
-          executionOrder = 30;
-      }
-
-      // Create the rule with proper types and classification
-      final conditions = type == 'subject'
-          ? RuleConditions(type: 'OR', subject: [pattern])
-          : RuleConditions(type: 'OR', header: [pattern]);
-
-      final rule = Rule(
-        name: ruleName,
-        enabled: true,
-        isLocal: true,
-        executionOrder: executionOrder,
-        conditions: conditions,
-        actions: RuleActions(delete: true),
-        metadata: {
-          'comment': 'Created from Results screen on ${DateTime.now().toIso8601String().substring(0, 10)}',
-        },
-        patternCategory: patternCategory,
-        patternSubType: patternSubType,
-        sourceDomain: sourceDomain,
-      );
-
-      // Add rule via provider (persists to database and YAML)
-      await ruleProvider.addRule(rule);
-
-      // Sprint 38 Round 1 F86: reload from DB so any conflict-resolved
-      // changes or rule-list normalization are reflected in ruleProvider
-      // before subsequent re-evaluation runs (and so the next scan sees
-      // the rule even if it was added during an active scan).
-      await ruleProvider.loadRules();
-      await ruleProvider.loadSafeSenders();
-
-      // Include conflict removal info in display message
-      if (conflicts.conflictsRemoved > 0) {
-        displayMessage += ' (removed ${conflicts.conflictsRemoved} conflicting safe sender${conflicts.conflictsRemoved > 1 ? "s" : ""})';
-      }
-
-      logger.i('[OK] Created block rule: $ruleName with pattern: $pattern');
-
-      // F21: Re-evaluate email against updated rules and refresh list
-      if (email != null) {
-        await _reEvaluateEmail(email);
-      }
-
-      // Re-evaluate all remaining "No rule" emails against the new rule
-      final preStats = _computeNoRuleStats();
-      await _reEvaluateNoRuleEmails();
-      final postStats = _computeNoRuleStats();
-
-      // Sprint 38 Round 4 (2026-05-17): advance the oldest-unaddressed-no-rule
-      // UID cursor per folder so the next IMAP scan resumes from the
-      // remaining backlog. See companion call site in safe-sender-add
-      // handler above.
-      await _updateOldestNoRuleCursorsFromResults();
-
-      // F38: Execute IMAP actions for affected emails
-      await _reProcessAffectedEmails();
-
-      if (mounted) {
-        setState(() {}); // Refresh list to show updated rule assignment
-        // Sprint 38 F82 (Issue #252): append "N removed, M remaining" so the
-        // user sees concrete progress against the no-rules pool.
-        final removedNow = preStats.remaining - postStats.remaining;
-        final remaining = postStats.remaining;
-        final progressSuffix = removedNow > 0
-            ? ' -- $removedNow removed, $remaining "No rule" remaining'
-            : (remaining > 0 ? ' -- $remaining "No rule" remaining' : '');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('$displayMessage$progressSuffix'),
-            backgroundColor: Colors.blue,
-            duration: const Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
-          ),
-        );
-      }
-    } catch (e) {
-      logger.e('[FAIL] Failed to create block rule: $e');
+    if (!result.success) {
+      logger.e('[FAIL] Failed to create block rule: ${result.error}');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to create rule: $e'),
+            content: Text(result.displayMessage),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 3),
             behavior: SnackBarBehavior.floating,
@@ -2777,6 +2553,46 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           ),
         );
       }
+      return;
+    }
+
+    // F21: Re-evaluate email against updated rules and refresh list
+    if (email != null) {
+      await _reEvaluateEmail(email);
+    }
+
+    // Re-evaluate all remaining "No rule" emails against the new rule
+    final preStats = _computeNoRuleStats();
+    await _reEvaluateNoRuleEmails();
+    final postStats = _computeNoRuleStats();
+
+    // Sprint 38 Round 4 (2026-05-17): advance the oldest-unaddressed-no-rule
+    // UID cursor per folder so the next IMAP scan resumes from the
+    // remaining backlog. See companion call site in safe-sender-add
+    // handler above.
+    await _updateOldestNoRuleCursorsFromResults();
+
+    // F38: Execute IMAP actions for affected emails
+    await _reProcessAffectedEmails();
+
+    if (mounted) {
+      setState(() {}); // Refresh list to show updated rule assignment
+      // Sprint 38 F82 (Issue #252): append "N removed, M remaining" so the
+      // user sees concrete progress against the no-rules pool.
+      final removedNow = preStats.remaining - postStats.remaining;
+      final remaining = postStats.remaining;
+      final progressSuffix = removedNow > 0
+          ? ' -- $removedNow removed, $remaining "No rule" remaining'
+          : (remaining > 0 ? ' -- $remaining "No rule" remaining' : '');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${result.displayMessage}$progressSuffix'),
+          backgroundColor: Colors.blue,
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
+        ),
+      );
     }
   }
 
