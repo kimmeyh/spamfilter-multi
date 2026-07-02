@@ -147,7 +147,7 @@ Recent sprints complete -- detail blocks removed per the Maintenance Guide (hist
 - **Sprint 44** (merged PR #266): F107 (Accept ADR-0037 + promote ARSD), F109 (surface background-deferral state), F108 (dep bumps: flutter_appauth 8->12, workmanager 0.5->0.9, flutter_secure_storage 9->10 + Android minSdk 23); retro IMP-1 version-consistency gate
 - **Sprint 45** (merged PR #268, 2026-07-02): F111 (Windows App Store upload readiness verification -- GO for 0.5.4); **develop -> main released**; retro IMP-1 read-format-doc-first rule
 
-**Sprint 46 candidate pool**: the active near-term queue is empty (F111 was Sprint 45's only active item, now shipped). Remaining candidates are HOLD: template deep dives (F70 Security / F71 Architecture, run periodically -- last run F104/F103 in Sprint 43), F64 (CI/CD), Post-MVP (SEC-11b DB encryption + F106 cleanup, paired), HOLD platform/UX tracks (F94/F95 flavors, F63 responsive, SEC-8b/SEC-15, F6, H1-H5, F67, F33, F39, GP-*). **Open follow-up (Sprint 44 carry-in)**: Android-device retest of the Sprint 44 F108 dep bumps (Gmail sign-in, secure-storage round-trip, WorkManager). Harold selects Sprint 46 scope in Phase 1.2.
+**Sprint 46 scope (Harold 2026-07-02)**: F64 (CI/CD pipeline), F33 (body rules cleanup script), F39 (scan results multi-select + bulk rule application) -- all three taken off HOLD for this sprint. **Standing constraint**: hold on major changes elsewhere until the 0.5.4 Windows Store rollout completes (Harold targeting Sat/Sun 2026-07-04/05 on a stable network). Remaining candidates stay HOLD: template deep dives (F70 Security / F71 Architecture, run periodically -- last run F104/F103 in Sprint 43; F111 Store-readiness verification added as a new periodic-review template, first run Sprint 45), Post-MVP (SEC-11b DB encryption + F106 cleanup, paired), HOLD platform/UX tracks (F94/F95 flavors, F63 responsive, SEC-8b/SEC-15, F6, H1-H5, F67, GP-*). **Open follow-up (Sprint 44 carry-in)**: Android-device retest of the Sprint 44 F108 dep bumps (Gmail sign-in, secure-storage round-trip, WorkManager) -- not yet scheduled.
 
 ### Core App
 
@@ -167,15 +167,25 @@ _(F111 shipped in Sprint 45 -- GO recommendation delivered; see docs/sprints/SPR
 
 _(F103 Architecture Deep Dive and F104 Security Deep Dive ran in Sprint 43 -- see `docs/sprints/SPRINT_43_F103_ARCHITECTURE_DEEP_DIVE.md` and `SPRINT_43_F104_SECURITY_DEEP_DIVE.md`; their reusable templates F71 / F70 remain HOLD below. F105 version bump shipped.)_
 
-**F64. CI/CD pipeline with GitHub Actions (~4-6h) Priority HOLD**
+### DevOps
+
+**F64. CI/CD pipeline with GitHub Actions (~4-6h) Priority 10**
 - Phase: DevOps
 - Platform: All
 - GitHub Actions workflow for: flutter analyze, flutter test, build verification
 - Trigger on PR to develop
-- HOLD rationale: Current CI/CD equivalent is handled by Claude Code sprint execution workflow (flutter analyze, flutter test, Windows build in Phase 5). Could be implemented later if beneficial to dev team, maintenance team, or instructed by Product Owner.
+- Taken off HOLD for Sprint 46 (Harold 2026-07-02): prior HOLD rationale was that Claude Code's sprint workflow (flutter analyze, flutter test, Windows build in Phase 5) already covers this. Held for now on major changes until the 0.5.4 Store rollout completes -- scope this task accordingly.
 - Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gap G24)
 
 ### HOLD Items (Periodic Reviews)
+
+**F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD**
+- Phase: Release Readiness (reusable template)
+- Platform: Windows Desktop
+- **Generic scope**: verify develop/main parity, version compatibility vs the currently-published Store version, MSIX build-path integrity (`msix_config.build_windows_args` OAuth-credential injection), and Store-submission preconditions (`docs/STORE_RELEASE_PROCESS.md` checklist) BEFORE any Store build/upload. Produces a GO/NO-GO readiness finding; does not build or upload.
+- **How to use**: Duplicate this item, assign a sprint, and remove HOLD. After completion, keep this template for the next review.
+- HOLD rationale: Template item, reusable each time a new Windows Store release is planned. First run: Sprint 45 (see `docs/sprints/SPRINT_45_F111_STORE_READINESS.md`).
+- Source: Sprint 45 backlog refinement (2026-07-02) -- captured as a recurring template since Store readiness verification will be needed for every future release.
 
 **F70. Periodic Security Deep Dive (~4-8h per review) Priority HOLD**
 - Phase: Security Spike (reusable template)
@@ -210,13 +220,19 @@ _(F103 Architecture Deep Dive and F104 Security Deep Dive ran in Sprint 43 -- se
 - HOLD rationale: Template item. Duplicate when periodic architecture review is needed.
 - Source: Sprint 31 retrospective feedback (based on Sprint 30 architecture deep dive experience)
 
-### HOLD Items (Post-Windows Store)
+### Core App Quality
 
-**F33. Body rules cleanup script (~4-6h) Priority HOLD**
+**F33. Body rules cleanup script (~4-6h) Priority 20**
 - Phase: Core App Quality
 - Platform: All
-- Post-Windows Store release
+- Taken off HOLD for Sprint 46 (Harold 2026-07-02). Held for now on major changes until the 0.5.4 Store rollout completes -- scope this task accordingly.
 - [Detail](#body-rules-cleanup-script)
+
+**F39. Scan Results: Multi-Select and Bulk Rule Application (~12-16h) Priority 30**
+- Phase: Core App Quality
+- Platform: All (may need platform-specific UI)
+- Taken off HOLD for Sprint 46 (Harold 2026-07-02). Held for now on major changes until the 0.5.4 Store rollout completes -- scope this task accordingly.
+- [Detail](#f39-scan-results-multi-select-and-bulk-rule-application)
 
 ### HOLD Items (Android / Google Play Store)
 
@@ -422,11 +438,6 @@ _(F103 Architecture Deep Dive and F104 Security Deep Dive ran in Sprint 43 -- se
   - **Core methods** via Microsoft Graph API: `loadCredentials()` (init OAuth), `fetchMessages()` (OData `$filter=receivedDateTime ge {date}`, `$top` pagination), plus the rest of the `EmailProvider`/`SpamFilterPlatform` interface (move/delete/folder-list) mapped to Graph endpoints.
   - Register the platform in `PlatformRegistry`; folder/canonical-folder mapping for Outlook's well-known folders.
 - **Why HOLD**: post-MVP provider expansion; large (~16-20h) and gated behind a Microsoft app registration. The existing AOL/Gmail/IMAP providers cover current users.
-
-**F39. Scan Results: Multi-Select and Bulk Rule Application (~12-16h) Priority HOLD**
-- Phase: Post-MVP, Post-Windows Store
-- Platform: All (may need platform-specific UI)
-- [Detail](#f39-scan-results-multi-select-and-bulk-rule-application)
 
 ---
 
@@ -1128,7 +1139,7 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | Version | Date | Summary |
 |---------|------|---------|
-| 6.4 | 2026-07-02 | Sprint 46 Phase 1 backlog refinement: pruned the shipped **F111** from Next Sprint Candidates (Release Readiness section now empty -- GO delivered Sprint 45); refreshed Sprint Assignment header to Sprint 46 + "Last Reviewed" -> July 2, 2026; near-term active queue is now empty (all HOLD/Post-MVP/template candidates remain). GitHub issues: 0 open. |
+| 6.4 | 2026-07-02 | Sprint 46 Phase 1 backlog refinement: pruned the shipped **F111** from Next Sprint Candidates (Release Readiness section now empty -- GO delivered Sprint 45); refreshed Sprint Assignment header to Sprint 46 + "Last Reviewed" -> July 2, 2026. Added **F111** as a new reusable HOLD template under Periodic Reviews (Windows Store readiness verification will recur each release). Harold took **F64, F33, F39** off HOLD and selected them as Sprint 46 scope (Priority 10/20/30); standing constraint -- hold on other major changes until the 0.5.4 Store rollout completes. GitHub issues: 0 open. |
 | 6.3 | 2026-07-02 | Sprint 45 completion + Sprint 46 pre-kickoff (Phase 3.2.1): created `docs/sprints/SPRINT_45_SUMMARY.md`; rolled **Last Completed Sprint** 44 -> 45; added the Sprint 45 row (PR #268) to the Past Sprint Summary table. Recorded the **develop -> main RELEASE MERGE** (Harold, 2026-07-02) -- F111-verified `0.5.4` codebase is now on `main`; Store upload targeted Sat/Sun on a stable network. F111 was Sprint 45's only item (Release Readiness), so Next Sprint Candidates is otherwise unchanged from the 6.2 refinement -- awaiting Sprint 46 scope selection. |
 | 6.2 | 2026-07-01 | Sprint 45 backlog refinement (Harold direction): moved **F106** Priority 30 -> HOLD/Post-MVP and paired it under SEC-11b (F106 cannot start until the SEC-11b DB-encryption item ships + ~2 verification sprints). Added **F111** (Windows App Store upload readiness verification, P40) as a NEW active item under a new "Release Readiness" section -- selected as the Sprint 45 scope. |
 | 6.1 | 2026-07-01 | Sprint 44 completion + Sprint 45 pre-kickoff (Phase 3.2.1 + Phase 1 backlog refinement): rolled **Last Completed Sprint** Sprint 42 -> Sprint 44 (43 + 44 both merged, PR #265 + #266); created `docs/sprints/SPRINT_44_SUMMARY.md`; added Sprint 43 (PR #265) + Sprint 44 (PR #266) rows to the Past Sprint Summary table. Pruned the 3 Sprint-44 shipped items (F107, F108, F109) from Next Sprint Candidates -- active near-term backlog is now empty; remaining candidates are the deep-dive templates (F70/F71), F64 (HOLD), Post-MVP (SEC-11b/F106), and the HOLD platform/UX tracks. Refreshed "Last Reviewed" -> July 1, 2026. Open follow-up recorded: Android-device retest of the Sprint 44 F108 dependency bumps. |
