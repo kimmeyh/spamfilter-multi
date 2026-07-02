@@ -3,7 +3,16 @@
 can you write a effective but compact /compact string I can use to compact where we are, but let the Claude Code team know where we left off and can pick it up correctly.  Use all the tokens needed, but a few as reasonably possible.
 
 TBD---------------------------------------------------------------------------------------------------------
+Sprint 44 Manual Testing Feedback:
 
+
+
+
+---------------------------------------------------------------------------------------------------------
+Sprint 43 Manual Testing Feedback:
+None
+------------------------------------------------------------------------------------------------------------
+Done
 Test 5: passed | Test 3 can you provide the detials on how to check this. | Test 4 - passed | Background scan task - no.
   Last run was last night, May17 at 6:16pm. Can you investigate. | Can you add the Account - email address to the settings >
   Manual Scan and Background - see image [Image #27].  can you update to all 1 line "Account Settings - <email address>" -
