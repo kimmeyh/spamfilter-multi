@@ -10,6 +10,7 @@ import '../widgets/skeleton_loader.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/error_display.dart';
 import '../widgets/app_bar_with_exit.dart';
+import 'no_rule_review_screen.dart';
 import 'platform_selection_screen.dart';
 import 'scan_history_screen.dart';
 import 'scan_progress_screen.dart';
@@ -485,6 +486,27 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
     );
   }
 
+  /// F39 (Sprint 46): "Review No Rule Items" icon button for AppBar --
+  /// opens the cross-account aggregated review screen directly (all
+  /// accounts by default, account-filterable), mirroring the History
+  /// button's no-account-selection-needed convention.
+  Widget _buildNoRuleReviewButton() {
+    return IconButton(
+      icon: const Icon(Icons.rule_folder_outlined),
+      tooltip: 'Review "No Rule" Items',
+      onPressed: _openNoRuleReview,
+    );
+  }
+
+  void _openNoRuleReview() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const NoRuleReviewScreen(),
+      ),
+    );
+  }
+
   /// F54 (Sprint 33): Help icon button for AppBar -> Select Account section.
   Widget _buildHelpButton() {
     return IconButton(
@@ -589,7 +611,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       return Scaffold(
         appBar: AppBarWithExit(
           title: const Text('Select Account'),
-          actions: [_buildHelpButton(), _buildHistoryButton(), _buildSettingsButton()],
+          actions: [_buildHelpButton(), _buildNoRuleReviewButton(), _buildHistoryButton(), _buildSettingsButton()],
         ),
         body: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -624,7 +646,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
         appBar: AppBarWithExit(
           title: const Text('Select Account'),
           elevation: 2,
-          actions: [_buildHelpButton(), _buildHistoryButton(), _buildSettingsButton()],
+          actions: [_buildHelpButton(), _buildNoRuleReviewButton(), _buildHistoryButton(), _buildSettingsButton()],
         ),
         body: NoAccountsEmptyState(onAddAccount: _addNewAccount),
       );
@@ -635,7 +657,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       appBar: AppBarWithExit(
         title: const Text('Select Account'),
         elevation: 2,
-        actions: [_buildHelpButton(), _buildHistoryButton(), _buildSettingsButton()],
+        actions: [_buildHelpButton(), _buildNoRuleReviewButton(), _buildHistoryButton(), _buildSettingsButton()],
       ),
       body: SelectionArea(
         child: Column(
