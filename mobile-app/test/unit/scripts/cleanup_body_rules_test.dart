@@ -147,13 +147,28 @@ void main() {
       expect(a.g1.map((r) => r.id), isNot(contains(11)));
     });
 
-    test('non-domain body (phone number) stays ambiguous, untouched', () {
+    test('SPECIAL: phone number is rewritten to a format-tolerant regex', () {
       final a = analyzeBodyRules([
         row(1, 'phone', r'800\-571\-7438', src: '800-571-7438com'),
       ]);
-      expect(a.ambiguous, hasLength(1));
-      expect(a.toRemove, isEmpty);
-      expect(a.g1Conversions, isEmpty);
+      expect(a.specialConversions, hasLength(1));
+      expect(a.ambiguous, isEmpty);
+      final rx = RegExp(a.specialConversions[1]!);
+      expect(rx.hasMatch('800-571-7438'), isTrue);
+      expect(rx.hasMatch('(800) 571-7438'), isTrue);
+      expect(rx.hasMatch('800.571.7438'), isTrue);
+      expect(rx.hasMatch('(800)571-7438'), isTrue);
+      expect(rx.hasMatch('800-571-7439'), isFalse);
+    });
+
+    test('SPECIAL: hand-decided ambiguous rows are removed', () {
+      final a = analyzeBodyRules([
+        row(1, 'nl', r'\.nl/', src: '.nl'),
+        row(2, 'syspath', r'sys\-confg\.co\.uk/cl/', src: 'sys-confg.co.ukcl'),
+      ]);
+      expect(a.specialRemovals, hasLength(2));
+      expect(a.ambiguous, isEmpty);
+      expect(a.toRemove.map((r) => r.id), containsAll([1, 2]));
     });
   });
 }

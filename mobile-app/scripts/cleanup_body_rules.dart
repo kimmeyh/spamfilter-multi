@@ -155,8 +155,9 @@ void main(List<String> args) async {
       await txn.delete('rules', where: 'id = ?', whereArgs: [r.id]);
       removed++;
     }
-    // G1: convert /-prefixed URL-fragment rules to URL-anchored regex.
-    for (final entry in analysis.g1Conversions.entries) {
+    // G1 + SPECIAL: rewrite condition_body (URL-anchored domains + the
+    // hand-decided phone-number regex).
+    for (final entry in analysis.allConversions.entries) {
       await txn.update(
         'rules',
         {'condition_body': jsonEncode([entry.value])},
@@ -201,10 +202,12 @@ class BodyRuleAnalysis {
   final List<BodyRule> orphans; // G5
   final List<BodyRule> truncated; // G6 -- truncated/bare /-prefixed, no tld
   final List<BodyRule> duplicateRemovals; // DUP
+  final List<BodyRule> specialRemovals; // SPECIAL -- Harold hand-decided removals
   final List<BodyRule> ambiguous; // reported, untouched
   final Map<int, String> g1Conversions; // rule id -> new URL-anchored regex
+  final Map<int, String> specialConversions; // SPECIAL -- hand-decided rewrites
 
-  /// Everything to delete (G4 + G5 + G6 + DUP), deduplicated by id.
+  /// Everything to delete (G4 + G5 + G6 + DUP + SPECIAL), deduplicated by id.
   List<BodyRule> get toRemove {
     final seen = <int>{};
     final out = <BodyRule>[];
@@ -213,11 +216,15 @@ class BodyRuleAnalysis {
       ...orphans,
       ...truncated,
       ...duplicateRemovals,
+      ...specialRemovals,
     ]) {
       if (seen.add(r.id)) out.add(r);
     }
     return out;
   }
+
+  /// All condition_body rewrites (G1 URL-anchoring + SPECIAL hand-decided).
+  Map<int, String> get allConversions => {...g1Conversions, ...specialConversions};
 
   BodyRuleAnalysis({
     required this.all,
@@ -227,8 +234,10 @@ class BodyRuleAnalysis {
     required this.orphans,
     required this.truncated,
     required this.duplicateRemovals,
+    required this.specialRemovals,
     required this.ambiguous,
     required this.g1Conversions,
+    required this.specialConversions,
   });
 }
 
@@ -267,6 +276,23 @@ String buildUrlAnchoredRegex(String domainRoot) {
   return '(?:://|[/.])$escaped';
 }
 
+/// SPECIAL cases (Harold hand-decided 2026-07-07) for the 3 rows the generic
+/// classifier flagged ambiguous. Keys are the decoded condition_body pattern.
+///
+/// The phone-number rule `800\-571\-7438` is rewritten to a
+/// format-tolerant regex matching 800-571-7438, (800) 571-7438,
+/// 800.571.7438, (800)571-7438, "800 571 7438", and 8005717438.
+const Map<String, String> kSpecialConversions = {
+  r'800\-571\-7438': r'\(?800\)?[-. ]?571[-. ]?7438',
+};
+
+/// SPECIAL removals (Harold 2026-07-07): a bare-TLD rule and a
+/// domain-with-path rule he chose to delete rather than convert.
+const Set<String> kSpecialRemovals = {
+  r'\.nl/',
+  r'sys\-confg\.co\.uk/cl/',
+};
+
 
 BodyRuleAnalysis analyzeBodyRules(List<Map<String, Object?>> rows) {
   final all = <BodyRule>[];
@@ -275,6 +301,8 @@ BodyRuleAnalysis analyzeBodyRules(List<Map<String, Object?>> rows) {
   final adamshetzner = <BodyRule>[];
   final orphans = <BodyRule>[];
   final truncated = <BodyRule>[];
+  final specialRemovals = <BodyRule>[];
+  final specialConversions = <int, String>{};
   final ambiguous = <BodyRule>[];
   final g1Conversions = <int, String>{};
 
@@ -311,6 +339,16 @@ BodyRuleAnalysis analyzeBodyRules(List<Map<String, Object?>> rows) {
     }
 
     final single = patterns.length == 1 ? patterns.first : null;
+
+    // SPECIAL: the 3 ambiguous rows Harold hand-decided (2026-07-07).
+    if (single != null && kSpecialConversions.containsKey(single)) {
+      specialConversions[id] = kSpecialConversions[single]!;
+      continue;
+    }
+    if (single != null && kSpecialRemovals.contains(single)) {
+      specialRemovals.add(rule);
+      continue;
+    }
 
     // G4: adamshetzner without a full .tld -> remove.
     if (patterns.any((p) =>
@@ -398,6 +436,7 @@ BodyRuleAnalysis analyzeBodyRules(List<Map<String, Object?>> rows) {
     ...adamshetzner.map((r) => r.id),
     ...orphans.map((r) => r.id),
     ...truncated.map((r) => r.id),
+    ...specialRemovals.map((r) => r.id),
   };
   for (final r in all) {
     if (removalIds.contains(r.id)) continue;
@@ -429,8 +468,10 @@ BodyRuleAnalysis analyzeBodyRules(List<Map<String, Object?>> rows) {
     orphans: orphans,
     truncated: truncated,
     duplicateRemovals: duplicateRemovals,
+    specialRemovals: specialRemovals,
     ambiguous: ambiguous,
     g1Conversions: g1Conversions,
+    specialConversions: specialConversions,
   );
 }
 
@@ -452,12 +493,26 @@ String buildReport(BodyRuleAnalysis a, {required String env, required bool apply
   b.writeln('| G5 | orphan / empty condition_body | Remove | ${a.orphans.length} |');
   b.writeln('| G6 | truncated/bare `/label\\.` or `/label`, no full tld | Remove | ${a.truncated.length} |');
   b.writeln('| DUP | same-domain-root duplicates | Remove all but first | ${a.duplicateRemovals.length} |');
+  b.writeln('| SPECIAL | Harold hand-decided (phone-number rewrite + 2 removals) | Convert ${a.specialConversions.length} / Remove ${a.specialRemovals.length} | ${a.specialConversions.length + a.specialRemovals.length} |');
   b.writeln('| ? | ambiguous (does not fit) | Report only, untouched | ${a.ambiguous.length} |');
   b.writeln();
   b.writeln('**Net removals**: ${a.toRemove.length}. '
       '**Reclassified**: ${a.keyword.length}. '
-      '**Converted**: ${a.g1Conversions.length}.');
+      '**Converted**: ${a.allConversions.length} '
+      '(G1 ${a.g1Conversions.length} + SPECIAL ${a.specialConversions.length}).');
   b.writeln();
+  if (a.specialConversions.isNotEmpty || a.specialRemovals.isNotEmpty) {
+    b.writeln('## SPECIAL (Harold hand-decided 2026-07-07)');
+    b.writeln();
+    final byId = {for (final r in a.all) r.id: r};
+    for (final e in a.specialConversions.entries) {
+      b.writeln('- CONVERT id=${e.key}: `${byId[e.key]?.rawBody}` -> `["${e.value}"]`');
+    }
+    for (final r in a.specialRemovals) {
+      b.writeln('- REMOVE `${r.name}` body=`${r.rawBody}`');
+    }
+    b.writeln();
+  }
 
   void sample(String title, List<BodyRule> rules, {int n = 15}) {
     b.writeln('## $title (${rules.length})');

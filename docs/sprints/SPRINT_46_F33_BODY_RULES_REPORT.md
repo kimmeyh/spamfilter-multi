@@ -1,7 +1,7 @@
 # Sprint 46 F33 -- Body Rules Cleanup Report
 
 **Environment**: dev
-**Mode**: DRY-RUN (no changes)
+**Mode**: APPLY (changes written)
 **Total body-condition rules**: 1109
 
 ## Group counts
@@ -14,9 +14,16 @@
 | G5 | orphan / empty condition_body | Remove | 0 |
 | G6 | truncated/bare `/label\.` or `/label`, no full tld | Remove | 371 |
 | DUP | same-domain-root duplicates | Remove all but first | 2 |
-| ? | ambiguous (does not fit) | Report only, untouched | 3 |
+| SPECIAL | Harold hand-decided (phone-number rewrite + 2 removals) | Convert 1 / Remove 2 | 3 |
+| ? | ambiguous (does not fit) | Report only, untouched | 0 |
 
-**Net removals**: 375. **Reclassified**: 84. **Converted**: 647.
+**Net removals**: 377. **Reclassified**: 84. **Converted**: 648 (G1 647 + SPECIAL 1).
+
+## SPECIAL (Harold hand-decided 2026-07-07)
+
+- CONVERT id=2511: `["800\\-571\\-7438"]` -> `["\(?800\)?[-. ]?571[-. ]?7438"]`
+- REMOVE `body_.nl` body=`["\\.nl/"]`
+- REMOVE `body_sys-confg.co.ukcl` body=`["sys\\-confg\\.co\\.uk/cl/"]`
 
 ## G1 conversions (sample)
 
@@ -89,9 +96,7 @@ _None._
 - `body_cahamsonsmakj.art_2` body=`["cahamsonsmakj\\.art/"]` subType=`entire_domain` src=`cahamsonsmakj.art`
 - `body_mcdatoto.com_2` body=`["mcdatoto\\.com"]` subType=`entire_domain` src=`mcdatoto.com`
 
-## Ambiguous (untouched -- review) (3)
+## Ambiguous (untouched -- review) (0)
 
-- `body_800-571-7438com` body=`["800\\-571\\-7438"]` subType=`entire_domain` src=`800-571-7438com`
-- `body_.nl` body=`["\\.nl/"]` subType=`entire_domain` src=`.nl`
-- `body_sys-confg.co.ukcl` body=`["sys\\-confg\\.co\\.uk/cl/"]` subType=`entire_domain` src=`sys-confg.co.ukcl`
+_None._
 
