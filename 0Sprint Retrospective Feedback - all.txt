@@ -3,7 +3,10 @@
 Copilot review completed. Can you review all the comments and either: fix now (preferred), create a backlog items (if it will take hours, change architecture, 
 change development strategy...) or explain why it is not relevant.  Then commit any changes, resolve all the comments and report back.
 TBD---------------------------------------------------------------------------------------------------------
-Sprint 44 Review/Retrospective - Combined Product Owner, Scrum Master and Lead Developer feedback
+
+done
+sprint 44
+Sprint Review/Retrospective - Combined Product Owner, Scrum Master and Lead Developer feedback
 - Effective while as Efficient as Reasonably Possible
   - Very Good
 - Testing Approach
@@ -21,8 +24,7 @@ Sprint 44 Review/Retrospective - Combined Product Owner, Scrum Master and Lead D
 - Documentation
   - Very Good
 - Process Issues
-  - Need to understand how main was 18 commits ahead of develop and how to ensure it does not happen again.
-    - all new sprint PR's are from a feature/<branch> to develop - NO EXCEPTIONS.
+  - Very Good
 - Risk Management
   - Very Good
 - Next Sprint Readiness

@@ -4,6 +4,14 @@ can you write a effective but compact /compact string I can use to compact where
 
 TBD---------------------------------------------------------------------------------------------------------
 Sprint 44 Manual Testing Feedback:
+3) Can you check if this s in the backlog, update or add - When "No Rule" is selected (this true in all Live Scan and Scan History) screens, 
+- sort the items with all "email provider" (i.e. <name>@gmail.com) items at the top.  If there are any, then provide an indicator of when they end (use best practices).  This is because they should be processed first.  
+- For all the emails that are not via an "email provider".  can you provide a mechanism with checkboxes to he left of each item where the user can select/unselect a series of items and do then have a pop-up that applies to all of the selected items them. At the top of s section there should be a "select all".  Then if the user selects any of the "selected" items, the pop-up button selected will apply to all the selected items.
+
+Done
+1) when there is space available on the screen (see image [Image #16]), can you have the pop-up show about 1 email lower so that after clicking on one of the buttons, I can immediately click on the next item in the list (currently covered by the pop-up).
+[Image #16]
+ 2) When "No Rule" is selected as a filter, and a pop-up is shown, can you have the selection of a button (after processing) show the next item in the list as a pop-up)
 
 
 
