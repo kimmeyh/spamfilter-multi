@@ -12,7 +12,9 @@ import '../../core/storage/database_helper.dart';
 import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/unmatched_email_store.dart';
 import '../../core/utils/pattern_normalization.dart';
+import '../../core/utils/provider_sender_grouping.dart';
 import '../widgets/app_bar_with_exit.dart';
+import '../widgets/provider_group_markers.dart';
 import '../widgets/auth_warning_dialog.dart';
 import '../widgets/empty_state.dart';
 
@@ -135,10 +137,20 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
   }
 
   void _applyFilter() {
-    _filteredItems = _accountFilter == 'all'
+    final filtered = _accountFilter == 'all'
         ? List<_NoRuleItem>.from(_allItems)
         : _allItems.where((i) => i.accountId == _accountFilter).toList();
+    // Sprint 46 retro IMP-1 (Harold): email-provider senders group at the
+    // top (stable partition -- newest-first order kept within both groups);
+    // heading/end indicator rendered by _buildList when non-empty.
+    final partitioned = ProviderSenderGrouping.partitionProviderFirst(
+        filtered, (i) => i.email.fromEmail);
+    _filteredItems = partitioned.items;
+    _providerGroupCount = partitioned.providerCount;
   }
+
+  /// Provider-sender group size within the current filtered list (IMP-1).
+  int _providerGroupCount = 0;
 
   // --- Selection ---
 
@@ -519,11 +531,21 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
   }
 
   Widget _buildList() {
+    final n = _providerGroupCount;
     return ListView.separated(
       padding: const EdgeInsets.all(8),
-      itemCount: _filteredItems.length,
+      itemCount: _filteredItems.length + (n > 0 ? 2 : 0),
       separatorBuilder: (_, __) => const SizedBox(height: 2),
-      itemBuilder: (context, index) => _buildItemTile(index),
+      itemBuilder: (context, index) {
+        // IMP-1 (Sprint 46 retro): provider-group heading + end indicator
+        // wrap the first n tiles; without provider senders the list renders
+        // exactly as before.
+        if (n <= 0) return _buildItemTile(index);
+        if (index == 0) return ProviderGroupHeader(count: n);
+        if (index <= n) return _buildItemTile(index - 1);
+        if (index == n + 1) return const ProviderGroupEnd();
+        return _buildItemTile(index - 2);
+      },
     );
   }
 

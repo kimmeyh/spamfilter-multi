@@ -26,6 +26,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-07-11 (Sprint 46: retrospective improvement -- provider-sender grouping)
+- **feat**: in every presentation of scan results (Results screen live + Scan History > scan results, and the "Review No Rule Items" screen), emails from known email-provider domains (gmail.com, aol.com, yahoo.com, outlook.com, ... per the CommonEmailProviders reference table) now group at the TOP of the list under a heading ("Email provider senders (N) -- process these together first") with a labeled end divider; when none exist the list renders exactly as before. Applies under every filter; the stable partition preserves each group's existing sort order. Rationale (Harold, Sprint 46 retro): provider senders need per-address rules rather than domain rules, so they should be processed together and first. (Sprint 46 retro IMP-1)
+
 ### 2026-07-11 (Sprint 46: manual-testing fixes -- results-screen triage flow)
 - **fix**: the email detail popup on the Results screen now opens one email-height lower when the screen has room, keeping the NEXT list item visible and clickable instead of covered by the popup. (S46-MT-1)
 - **feat**: with the "No rule" filter active, clicking a quick-action button in the detail popup auto-advances to the next remaining item's popup at the same screen position -- triage becomes click-action -> next email appears -> click-action. The next target is chosen BEFORE processing starts and the pipeline (rule persist, re-evaluation, IMAP re-process) runs in the background, so the next popup appears immediately; per-action coverage predicates skip emails the new rule also addresses (same sender / exact domain / root domain / subject-contains). Works identically on live scan results and Scan History > scan results (same screen), pinned by a historical-mode regression test. (S46-MT-2/3)

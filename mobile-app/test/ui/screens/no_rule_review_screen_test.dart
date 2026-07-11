@@ -230,6 +230,79 @@ void main() {
     expect(find.text('Apply Rule'), findsOneWidget);
   });
 
+  // Sprint 46 retro IMP-1 (Harold): provider senders group at the top with a
+  // heading and end indicator; lists without provider senders are unchanged.
+  testWidgets(
+      'provider senders group at top with heading and end indicator',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.runAsync(() async {
+      const accountId = 'gmail-a@example.com';
+      await testHelper.createTestAccount(accountId);
+      registerSavedAccount(accountId);
+      final scanId = await insertCompletedScan(accountId,
+          completedAtMs: 1000, noRuleCount: 0);
+
+      final unmatchedStore = UnmatchedEmailStore(testHelper.dbHelper);
+      // One business-domain sender and one PROVIDER sender (gmail.com),
+      // inserted business-first so the grouping (not insertion order) is
+      // what puts the provider sender on top.
+      await unmatchedStore.addUnmatchedEmail(UnmatchedEmail(
+        scanResultId: scanId,
+        providerIdentifierType: 'imap_uid',
+        providerIdentifierValue: 'uid-biz',
+        fromEmail: 'seller@bizcorp.example',
+        folderName: 'INBOX',
+        createdAt: DateTime.fromMillisecondsSinceEpoch(2000),
+      ));
+      await unmatchedStore.addUnmatchedEmail(UnmatchedEmail(
+        scanResultId: scanId,
+        providerIdentifierType: 'imap_uid',
+        providerIdentifierValue: 'uid-gmail',
+        fromEmail: 'scammer@gmail.com',
+        folderName: 'INBOX',
+        createdAt: DateTime.fromMillisecondsSinceEpoch(1000),
+      ));
+
+      await mountAndLoad(tester);
+    });
+
+    expect(find.byKey(const Key('provider_group_header')), findsOneWidget);
+    expect(find.byKey(const Key('provider_group_end')), findsOneWidget);
+    expect(
+        find.text('Email provider senders (1) -- process these together first'),
+        findsOneWidget);
+    // Provider sender renders ABOVE the business sender.
+    final gmailY = tester.getTopLeft(find.text('scammer@gmail.com')).dy;
+    final bizY = tester.getTopLeft(find.text('seller@bizcorp.example')).dy;
+    expect(gmailY, lessThan(bizY),
+        reason: 'provider sender must be grouped at the top');
+  });
+
+  testWidgets(
+      'no provider senders -> no heading and no end indicator',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.runAsync(() async {
+      await testHelper.createTestAccount('gmail-a@example.com');
+      registerSavedAccount('gmail-a@example.com');
+      await insertCompletedScan('gmail-a@example.com',
+          completedAtMs: 1000, noRuleCount: 2); // sender*@spam.example
+      await mountAndLoad(tester);
+    });
+
+    expect(find.byKey(const Key('provider_group_header')), findsNothing);
+    expect(find.byKey(const Key('provider_group_end')), findsNothing);
+  });
+
   testWidgets(
       'only the latest completed scan per account is included, not an older one',
       (tester) async {

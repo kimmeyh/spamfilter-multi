@@ -25,7 +25,9 @@ import '../../core/storage/database_helper.dart';
 import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/utils/pattern_normalization.dart';
+import '../../core/utils/provider_sender_grouping.dart';
 import '../../core/data/common_email_providers.dart';
+import '../widgets/provider_group_markers.dart';
 import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/email_providers/spam_filter_platform.dart' show SpamFilterPlatform, FilterAction;
 import '../../adapters/storage/secure_credentials_store.dart';
@@ -478,22 +480,35 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       // First sort by folder
       final folderCompare = a.email.folderName.compareTo(b.email.folderName);
       if (folderCompare != 0) return folderCompare;
-      
+
       // Then sort by domain
       final bodyParser = EmailBodyParser();
       final domainA = bodyParser.extractDomainFromEmail(a.email.from) ?? '';
       final domainB = bodyParser.extractDomainFromEmail(b.email.from) ?? '';
       final domainCompare = domainA.compareTo(domainB);
       if (domainCompare != 0) return domainCompare;
-      
+
       // Finally sort by email
       final emailA = bodyParser.extractEmailAddress(a.email.from);
       final emailB = bodyParser.extractEmailAddress(b.email.from);
       return emailA.compareTo(emailB);
     });
-    
-    return results;
+
+    // Sprint 46 retro IMP-1 (Harold): email-provider senders group at the
+    // TOP (stable partition -- the folder/domain/email sort above is kept
+    // within both groups). Applies under every filter; the heading / end
+    // indicator are rendered by the list builder only when the group is
+    // non-empty. Boundary index is exposed via _providerGroupCount.
+    final partitioned = ProviderSenderGrouping.partitionProviderFirst(
+        results, (r) => r.email.from);
+    _providerGroupCount = partitioned.providerCount;
+    return partitioned.items;
   }
+
+  /// Provider-sender group size within the CURRENT filtered list -- set by
+  /// _getFilteredResults on every recompute; consumed by the list builder to
+  /// place the group heading and end indicator (IMP-1, Sprint 46 retro).
+  int _providerGroupCount = 0;
 
   /// Toggle filter when stat chip is clicked
   void _toggleFilter(EmailActionType? filterType) {
@@ -736,9 +751,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                         ],
                       )
                     : ListView.separated(
-                        itemCount: filteredResults.length,
+                        itemCount: filteredResults.length +
+                            (_providerGroupCount > 0 ? 2 : 0),
                         separatorBuilder: (_, __) => const Divider(height: 1),
-                        itemBuilder: (_, index) => _buildResultTile(filteredResults[index]),
+                        itemBuilder: (_, index) =>
+                            _buildGroupedRow(filteredResults, index),
                       ),
               ),
             ),
@@ -1342,6 +1359,19 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         );
       },
     );
+  }
+
+  /// IMP-1 (Sprint 46 retro): maps ListView indices to rows, inserting the
+  /// provider-group heading before and the end indicator after the first
+  /// [_providerGroupCount] tiles. When the group is empty the list renders
+  /// exactly as before (no heading, no indicator).
+  Widget _buildGroupedRow(List<EmailActionResult> results, int index) {
+    final n = _providerGroupCount;
+    if (n <= 0) return _buildResultTile(results[index]);
+    if (index == 0) return ProviderGroupHeader(count: n);
+    if (index <= n) return _buildResultTile(results[index - 1]);
+    if (index == n + 1) return const ProviderGroupEnd();
+    return _buildResultTile(results[index - 2]);
   }
 
   Widget _buildResultTile(EmailActionResult result) {
