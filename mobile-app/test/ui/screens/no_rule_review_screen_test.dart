@@ -11,6 +11,7 @@ import 'package:my_email_spam_filter/core/storage/unmatched_email_store.dart';
 import 'package:my_email_spam_filter/ui/screens/no_rule_review_screen.dart';
 
 import '../../helpers/database_test_helper.dart';
+import '../../helpers/db_widget_test_harness.dart';
 
 /// F39 (Sprint 46): widget tests for the cross-account "No rule" review
 /// screen.
@@ -136,14 +137,11 @@ void main() {
 
   /// Mounts the screen and lets its async initState load (getSavedAccounts
   /// -> per-account getLatestCompletedScan -> getUnmatchedEmailsByScanFiltered
-  /// -> setState) resolve, then flushes into rendered frames. Must be
-  /// called from inside tester.runAsync().
-  Future<void> mountAndLoad(WidgetTester tester) async {
-    await tester.pumpWidget(buildTestWidget());
-    await Future<void>.delayed(const Duration(milliseconds: 500));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 50));
-  }
+  /// -> setState) resolve. Must be called from inside tester.runAsync().
+  /// Delegates to the shared harness (Sprint 46 retro IMP-2).
+  Future<void> mountAndLoad(WidgetTester tester) => mountAndLoadDbWidget(
+      tester, buildTestWidget(),
+      settleDelay: const Duration(milliseconds: 500));
 
   testWidgets('shows empty state when no accounts have No rule items',
       (tester) async {

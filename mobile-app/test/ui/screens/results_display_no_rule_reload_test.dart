@@ -38,6 +38,7 @@ import 'package:my_email_spam_filter/core/storage/rule_database_store.dart';
 import 'package:my_email_spam_filter/core/storage/safe_sender_database_store.dart';
 
 import '../../helpers/database_test_helper.dart';
+import '../../helpers/db_widget_test_harness.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -180,14 +181,10 @@ void main() {
 
         /// Render a fresh screen instance and let its async initState DB load
         /// (getScanResultById -> queryEmailActions -> loadRules/loadSafeSenders
-        /// -> re-evaluate -> setState) complete, then flush the resulting
-        /// setState into rendered frames.
-        Future<void> mountAndLoad(Widget app) async {
-          await tester.pumpWidget(app);
-          await Future<void>.delayed(const Duration(milliseconds: 800));
-          await tester.pump(); // flush the load's setState
-          await tester.pump(const Duration(milliseconds: 50));
-        }
+        /// -> re-evaluate -> setState) complete. Delegates to the shared
+        /// harness (Sprint 46 retro IMP-2).
+        Future<void> mountAndLoad(Widget app) =>
+            mountAndLoadDbWidget(tester, app);
 
         // --- First mount: NO matching rule yet -----------------------------
         await mountAndLoad(wrapScreen(ruleProvider, scanProvider,
@@ -297,11 +294,10 @@ void main() {
         final ruleProvider = await buildRuleProvider();
         final scanProvider = EmailScanProvider(); // readOnly / idle
 
-        await tester.pumpWidget(wrapScreen(ruleProvider, scanProvider,
-            instanceKey: const ValueKey('advanceMount')));
-        await Future<void>.delayed(const Duration(milliseconds: 800));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 50));
+        await mountAndLoadDbWidget(
+            tester,
+            wrapScreen(ruleProvider, scanProvider,
+                instanceKey: const ValueKey('advanceMount')));
 
         // Activate the "No rule" filter (the advance is scoped to it).
         expect(find.text('No rule: 3'), findsOneWidget);
