@@ -26,6 +26,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-07-11 (Sprint 46: F39 fix -- unmatched_emails was never written)
+- **fix**: the cross-account Review "No Rule" Items screen always showed 0 items in production because NO scan pipeline ever wrote `unmatched_emails` -- a Sprint 4 placeholder only logged "will persist in Task D" and Task D never happened (found in Sprint 46 manual testing; the F39 widget tests seeded the table directly, masking the gap). `EmailScanProvider._persistEmailActions` now batch-writes the "No rule" subset at scan completion (both manual and background scans flow through it), including the F96 SPF/DKIM/DMARC snapshot; body content deliberately not persisted (SEC-14). Regression test pins the write path. (F39)
+
 ### 2026-07-11 (Sprint 46: retrospective improvement -- provider-sender grouping)
 - **feat**: in every presentation of scan results (Results screen live + Scan History > scan results, and the "Review No Rule Items" screen), emails from known email-provider domains (gmail.com, aol.com, yahoo.com, outlook.com, ... per the CommonEmailProviders reference table) now group at the TOP of the list under a heading ("Email provider senders (N) -- process these together first") with a labeled end divider; when none exist the list renders exactly as before. Applies under every filter; the stable partition preserves each group's existing sort order. Rationale (Harold, Sprint 46 retro): provider senders need per-address rules rather than domain rules, so they should be processed together and first. (Sprint 46 retro IMP-1)
 

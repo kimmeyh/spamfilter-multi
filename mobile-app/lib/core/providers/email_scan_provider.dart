@@ -449,6 +449,40 @@ class EmailScanProvider extends ChangeNotifier {
 
       await _databaseHelper!.insertEmailActionBatch(actions);
       _logger.i('Persisted ${actions.length} email actions for scan $_currentScanResultId');
+
+      // F39 (Sprint 46): persist the "No rule" subset to unmatched_emails --
+      // the data source for the cross-account Review "No Rule" Items screen
+      // and the SEC-14 retention pipeline. Manual testing found this table
+      // had NO production writer: a Sprint 4 placeholder ("will persist in
+      // Task D") only logged, so the review screen always showed 0 items
+      // while scan_results.no_rule_count said otherwise.
+      if (_unmatchedEmailStore != null) {
+        final unmatched = _results
+            .where((r) => r.action == EmailActionType.none)
+            .map((r) => UnmatchedEmail(
+                  scanResultId: _currentScanResultId!,
+                  providerIdentifierType: 'email_id',
+                  providerIdentifierValue: r.email.id,
+                  fromEmail: r.email.from,
+                  subject: r.email.subject,
+                  // SEC-14: body content deliberately NOT persisted here; the
+                  // review screen shows sender + subject only.
+                  folderName: r.email.folderName,
+                  emailDate: r.email.receivedDate,
+                  createdAt: DateTime.now(),
+                  // F96: same scan-time SPF/DKIM/DMARC snapshot as the
+                  // email_actions row, so the review screen's safe-sender
+                  // bulk action can fire the RED anti-phishing warning.
+                  authClassification:
+                      AuthResultsParser.classifyHeaders(r.email.headers).name,
+                ))
+            .toList();
+        if (unmatched.isNotEmpty) {
+          await _unmatchedEmailStore!.addUnmatchedEmailBatch(unmatched);
+          _logger.i('Persisted ${unmatched.length} unmatched ("No rule") '
+              'emails for scan $_currentScanResultId');
+        }
+      }
     } catch (e) {
       _logger.e('Failed to persist email actions: $e');
     }
@@ -680,14 +714,9 @@ class EmailScanProvider extends ChangeNotifier {
       _errorCount++;
     }
 
-    // [NEW] SPRINT 4: Persist unmatched emails to database
-    if (result.action == EmailActionType.none &&
-        _unmatchedEmailStore != null &&
-        _currentScanResultId != null) {
-      // Create provider identifier based on email platform (deferred for integration)
-      // For now, use placeholder implementation
-      _logger.d('Unmatched email identified: ${result.email.from} - will persist in Task D');
-    }
+    // Unmatched ("No rule") emails are persisted in batch at scan completion
+    // by _persistEmailActions (F39, Sprint 46) -- the Sprint 4 per-email
+    // placeholder that used to live here never wrote anything.
 
     // [NEW] SPRINT 12: Notify listeners with 2-second throttling
     // This ensures Results page updates during scan in real-time
