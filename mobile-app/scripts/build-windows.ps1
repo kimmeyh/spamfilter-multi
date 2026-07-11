@@ -128,6 +128,21 @@ $taskName = if ($Environment -eq 'prod') { "SpamFilterBackgroundScan" } else { "
 # AOT. Concretely: building -Environment dev then -Environment prod
 # back-to-back without this step ships a prod variant containing the
 # previous dev AOT (window title reads [DEV] despite APP_ENV=prod).
+# Sprint 46 retro IMP-5: -SkipClean is INCOMPATIBLE with the mandatory
+# pre-build native_assets deletion below (step 4's PathExistsException
+# workaround deletes build\native_assets on every run). A full-clean build
+# regenerates the directory; an incremental (-SkipClean) build does NOT,
+# so the compile succeeds but the CMake INSTALL step fails with
+#   "file INSTALL cannot find .../build/native_assets/windows"
+# (two failed rebuilds in Sprint 46 before diagnosis). Until the upstream
+# Flutter double-copy bug is gone (see docs/TROUBLESHOOTING.md
+# "MSB8066 / PathExistsException"), -SkipClean falls back to a full clean.
+if ($SkipClean) {
+    Write-Host "[WARNING] -SkipClean is incompatible with the native_assets PathExistsException workaround (the pre-build deletion breaks incremental builds)." -ForegroundColor Yellow
+    Write-Host "          Falling back to a FULL CLEAN build. See docs/TROUBLESHOOTING.md." -ForegroundColor Yellow
+    $SkipClean = $false
+}
+
 if (-not $SkipClean) {
     Write-Host "[1/6] Cleaning previous build..." -ForegroundColor Cyan
 
@@ -187,6 +202,9 @@ Write-Host ""
 # Pre-build cleanup: Remove native_assets to prevent PathExistsException (sqlite3.dll)
 # Flutter SDK bug: install_code_assets runs twice, second copy fails if file exists.
 # See docs/TROUBLESHOOTING.md "Windows build: MSB8066 / PathExistsException"
+# NOTE (Sprint 46 IMP-5): this deletion is why -SkipClean is forced to a full
+# clean above -- an incremental build does not regenerate the deleted
+# directory and the CMake INSTALL step then fails.
 $nativeAssetsDir = Join-Path $projectRoot "build\native_assets"
 if (Test-Path $nativeAssetsDir) {
     Remove-Item -Path $nativeAssetsDir -Recurse -Force -ErrorAction SilentlyContinue
