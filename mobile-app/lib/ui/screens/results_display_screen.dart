@@ -1,3 +1,4 @@
+import 'dart:async' show unawaited;
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -1423,6 +1424,28 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     // Format date/time
     final dateStr = email.receivedDate.toString().substring(0, 16);
 
+    // Sprint 46 (Harold speed follow-up): predicates predicting which OTHER
+    // "No rule" items the quick action about to be taken will ALSO address,
+    // so the auto-advance skips them up front instead of popping up an email
+    // that is about to be resolved by the same rule.
+    bool coversSameEmail(EmailActionResult o) =>
+        bodyParser.extractEmailAddress(o.email.from).toLowerCase().trim() ==
+        rawSenderEmail.toLowerCase().trim();
+    bool coversExactDomain(EmailActionResult o) =>
+        rawSenderDomain != null &&
+        bodyParser.extractDomainFromEmail(o.email.from) == rawSenderDomain;
+    bool coversEntireDomain(EmailActionResult o) {
+      final target = rawRootDomain ?? rawSenderDomain;
+      if (target == null) return false;
+      final otherDomain = bodyParser.extractDomainFromEmail(o.email.from);
+      return PatternNormalization.extractRootDomain(otherDomain) == target;
+    }
+
+    bool coversSubject(EmailActionResult o) =>
+        PatternNormalization.cleanSubjectForDisplay(o.email.subject)
+            .toLowerCase()
+            .contains(cleanedSubject.toLowerCase());
+
     // Issue 6: Calculate position for CSS-like popup positioning
     Offset? itemPosition = anchorPosition;
     Size? itemSize = anchorSize;
@@ -1627,6 +1650,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                             anchorPosition: itemPosition,
                             anchorSize: itemSize,
                             action: () => _addSafeSender(normalizedSenderEmail, 'exact', email: email),
+                            coveredByAction: coversSameEmail,
                           );
                         },
                       ),
@@ -1646,6 +1670,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                               anchorPosition: itemPosition,
                               anchorSize: itemSize,
                               action: () => _addSafeSender('@$rawSenderDomain', 'exactDomain', email: email),
+                              coveredByAction: coversExactDomain,
                             );
                           },
                         ),
@@ -1666,6 +1691,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                               anchorPosition: itemPosition,
                               anchorSize: itemSize,
                               action: () => _addSafeSender(rawRootDomain ?? rawSenderDomain, 'entireDomain', email: email),
+                              coveredByAction: coversEntireDomain,
                             );
                           },
                         ),
@@ -1697,6 +1723,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                             anchorPosition: itemPosition,
                             anchorSize: itemSize,
                             action: () => _createBlockRule('from', rawSenderEmail, email: email),
+                            coveredByAction: coversSameEmail,
                           );
                         },
                       ),
@@ -1716,6 +1743,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                               anchorPosition: itemPosition,
                               anchorSize: itemSize,
                               action: () => _createBlockRule('exactDomain', '@$rawSenderDomain', email: email),
+                              coveredByAction: coversExactDomain,
                             );
                           },
                         ),
@@ -1736,6 +1764,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                               anchorPosition: itemPosition,
                               anchorSize: itemSize,
                               action: () => _createBlockRule('entireDomain', rawRootDomain ?? rawSenderDomain, email: email),
+                              coveredByAction: coversEntireDomain,
                             );
                           },
                         ),
@@ -1755,6 +1784,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                               anchorPosition: itemPosition,
                               anchorSize: itemSize,
                               action: () => _createBlockRule('subject', cleanedSubject, email: email),
+                              coveredByAction: coversSubject,
                             );
                           },
                         ),
@@ -1980,51 +2010,61 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
             : _historicalResults);
   }
 
-  /// Sprint 46 manual-testing feedback (Harold 2026-07-11, item 2): when the
-  /// "No rule" filter is active, acting on an email from the detail popup
-  /// auto-advances to the NEXT remaining item in the filtered list -- its
-  /// popup opens at the same screen position, so triage becomes
+  /// Sprint 46 manual-testing feedback (Harold 2026-07-11, item 2 + speed
+  /// follow-up): when the "No rule" filter is active, acting on an email from
+  /// the detail popup auto-advances to the NEXT remaining item -- its popup
+  /// opens IMMEDIATELY at the same screen position, so triage becomes
   /// click-action -> next email appears -> click-action -> ...
   ///
-  /// The keys of the items FOLLOWING the current one are captured BEFORE the
-  /// action runs, because the actioned email (and possibly several others,
-  /// e.g. when a domain rule matches multiple senders) drop out of the
-  /// filtered list during re-evaluation. After the action, the first
-  /// still-present key wins. No-op when the "No rule" filter is not active,
-  /// when the user changed filters mid-action, or when nothing remains.
-  Future<void> _quickActionThenAdvance({
+  /// Ordering, per Harold's follow-up ("the auto-advance ... was very slow"):
+  /// 1. Pick the next item FIRST -- the first following item in the filtered
+  ///    list NOT covered by the action just taken ([coveredByAction] predicts
+  ///    which items the new rule/safe-sender also addresses, e.g. every email
+  ///    from the same domain when a domain rule is created).
+  /// 2. Fire the processing pipeline WITHOUT awaiting it -- the rule persist,
+  ///    re-evaluation, IMAP re-processing, and snackbar all complete in the
+  ///    background (they refresh the list via setState when done).
+  /// 3. Open the next item's popup immediately.
+  ///
+  /// The prediction can rarely under-skip (a rule that also matches a later
+  /// email by a signal the predicate does not model); the consequence is just
+  /// that the popup shows an email that gets addressed moments later -- the
+  /// user sees it resolve and clicks on. No-op advance when the "No rule"
+  /// filter is not active or nothing remains.
+  void _quickActionThenAdvance({
     required EmailActionResult current,
     required Offset? anchorPosition,
     required Size? anchorSize,
     required Future<void> Function() action,
-  }) async {
+    required bool Function(EmailActionResult other) coveredByAction,
+  }) {
     final noRuleFilterActive = _filter == EmailActionType.none;
-    var followingKeys = const <String>[];
+
+    // Step 1: choose the next popup target BEFORE the slow pipeline runs.
+    EmailActionResult? next;
     if (noRuleFilterActive) {
       final visible = _getFilteredResults(_currentResults());
       final currentKey = _getEmailKey(current.email);
       final idx =
           visible.indexWhere((r) => _getEmailKey(r.email) == currentKey);
       if (idx >= 0) {
-        followingKeys =
-            visible.skip(idx + 1).map((r) => _getEmailKey(r.email)).toList();
+        for (final candidate in visible.skip(idx + 1)) {
+          if (!coveredByAction(candidate)) {
+            next = candidate;
+            break;
+          }
+        }
       }
     }
 
-    await action();
+    // Step 2: process the current email in the background (matches the
+    // original fire-and-forget behavior of these buttons pre-auto-advance).
+    unawaited(action());
 
-    if (!mounted || !noRuleFilterActive || followingKeys.isEmpty) return;
-    if (_filter != EmailActionType.none) return; // filter changed mid-action
-
-    final refreshed = _getFilteredResults(_currentResults());
-    final byKey = {for (final r in refreshed) _getEmailKey(r.email): r};
-    for (final key in followingKeys) {
-      final next = byKey[key];
-      if (next != null) {
-        _showEmailDetailSheet(next,
-            anchorPosition: anchorPosition, anchorSize: anchorSize);
-        return;
-      }
+    // Step 3: show the next item's popup right away.
+    if (next != null && mounted) {
+      _showEmailDetailSheet(next,
+          anchorPosition: anchorPosition, anchorSize: anchorSize);
     }
   }
 
