@@ -1444,9 +1444,19 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           final itemBottom = itemPosition.dy + itemSize.height;
           final spaceBelow = screenHeight - itemBottom;
           final spaceAbove = itemPosition.dy;
+          // Sprint 46 manual-testing feedback (Harold 2026-07-11): when the
+          // screen has room, drop the popup one additional email-height lower
+          // (the clicked tile's own height is the best available estimate of
+          // one list item) so the NEXT item in the list stays visible above
+          // the popup -- after acting on this email the user can immediately
+          // click the next one instead of it being covered.
+          final oneItemGap = itemSize.height;
 
-          if (spaceBelow >= popupHeight) {
-            // Show below email
+          if (spaceBelow >= popupHeight + oneItemGap) {
+            // Show one email lower, keeping the next list item clickable
+            top = itemBottom + oneItemGap + 8; // 8px gap
+          } else if (spaceBelow >= popupHeight) {
+            // Show directly below email (no room to also expose the next item)
             top = itemBottom + 8; // 8px gap
           } else if (spaceAbove >= popupHeight) {
             // Show above email
