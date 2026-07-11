@@ -451,14 +451,18 @@ BodyRuleAnalysis analyzeBodyRules(List<Map<String, Object?>> rows) {
   }
 
   // Only consider dedup among rules NOT already slated for removal/keyword.
-  // Excludes G4/G5/G6 removals so a valid G1 rule is never dropped as a
-  // "duplicate" of an already-removed truncated/orphan row sharing a
-  // source_domain.
+  // Excludes G4/G5/G6/SPECIAL removals so a valid G1 rule is never dropped
+  // as a "duplicate" of an already-removed row sharing a source_domain, and
+  // excludes G2 keyword rules (Copilot round 4): their source_domain is a
+  // known-bogus artifact (e.g. `camp\ lejeunecom`), so letting them into
+  // the dedup candidate set could silently drop a keyword rule whose bogus
+  // source_domain happens to collide.
   final removalIds = {
     ...adamshetzner.map((r) => r.id),
     ...orphans.map((r) => r.id),
     ...truncated.map((r) => r.id),
     ...specialRemovals.map((r) => r.id),
+    ...keyword.map((r) => r.id),
   };
   for (final r in all) {
     if (removalIds.contains(r.id)) continue;

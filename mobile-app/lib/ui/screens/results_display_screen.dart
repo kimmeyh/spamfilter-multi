@@ -2094,7 +2094,8 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     // so a background exception is logged instead of becoming an unhandled
     // async error (Copilot review, Sprint 46).
     unawaited(action().catchError((Object e, StackTrace s) {
-      Logger().e('Background quick-action pipeline failed: $e');
+      Logger().e('Background quick-action pipeline failed',
+          error: e, stackTrace: s);
     }));
 
     // Step 3: show the next item's popup right away.

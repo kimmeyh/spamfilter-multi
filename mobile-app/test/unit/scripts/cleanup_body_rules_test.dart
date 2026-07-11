@@ -165,6 +165,20 @@ void main() {
       expect(a.g1.map((r) => r.id), isNot(contains(11)));
     });
 
+    test('DUP: keyword rules are excluded from dedup (bogus source_domain) '
+        '-- Copilot round 4', () {
+      // Two keyword rules whose MANGLED source_domain artifacts collide must
+      // BOTH survive (reclassified, not deduped away).
+      final a = analyzeBodyRules([
+        row(1, 'k1', r'camp\ lejeune', src: r'camp\ lejeunecom'),
+        row(2, 'k2', r'camp\ sites', src: r'camp\ lejeunecom'),
+      ]);
+      expect(a.keyword, hasLength(2));
+      expect(a.duplicateRemovals, isEmpty,
+          reason: 'keyword rules must never be dedup candidates');
+      expect(a.toRemove, isEmpty);
+    });
+
     test('SPECIAL: phone number is rewritten to a format-tolerant regex', () {
       final a = analyzeBodyRules([
         row(1, 'phone', r'800\-571\-7438', src: '800-571-7438com'),
