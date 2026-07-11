@@ -8,26 +8,60 @@ import '../../util/redact.dart';
 class PatternNormalization {
   static final Logger _logger = Logger();
 
+  /// Common multi-part public suffixes (ccTLD second-level registrations).
+  /// When a domain ends in one of these, the registrable domain is the
+  /// LAST THREE labels, not two -- e.g. `sub.example.co.uk` -> `example.co.uk`
+  /// (never `co.uk`, which would make an "Entire Domain" rule/safe-sender
+  /// match every co.uk address -- Copilot review, Sprint 46). Minimal
+  /// hand-picked list, not the full Public Suffix List.
+  static const Set<String> _multiPartPublicSuffixes = {
+    'co.uk', 'org.uk', 'ac.uk', 'gov.uk', 'me.uk', 'net.uk', 'ltd.uk',
+    'plc.uk',
+    'com.au', 'net.au', 'org.au', 'edu.au', 'gov.au', 'id.au',
+    'co.jp', 'ne.jp', 'or.jp', 'ac.jp', 'go.jp',
+    'co.nz', 'net.nz', 'org.nz',
+    'co.in', 'net.in', 'org.in', 'firm.in', 'gen.in', 'ind.in',
+    'com.br', 'net.br', 'org.br',
+    'com.mx', 'com.ar', 'com.co', 'com.pe', 'com.ve',
+    'co.za', 'org.za', 'web.za',
+    'com.sg', 'com.hk', 'com.tw', 'com.cn', 'net.cn', 'org.cn',
+    'com.tr', 'com.ua', 'com.pl', 'com.ru',
+    'co.kr', 'or.kr', 'co.id', 'co.th', 'co.il', 'org.il',
+  };
+
   /// Extracts the root (registrable) domain from a full domain.
   ///
   /// Examples:
   /// - "subdomain.example.com" -> "example.com"
   /// - "pptwvrnbdho.atlantaoffre.com" -> "atlantaoffre.com"
+  /// - "sub.example.co.uk" -> "example.co.uk" (multi-part suffix aware)
   /// - "example.com" -> "example.com" (already root)
   ///
-  /// Uses a simple last-2-labels heuristic; does not special-case
-  /// multi-part TLDs like ".co.uk" or ".com.au". F39 (Sprint 46):
-  /// extracted from ResultsDisplayScreen._extractRootDomain so both the
-  /// per-account results screen and the cross-account "No rule" review
-  /// screen share one implementation.
+  /// Last-2-labels heuristic, extended with [_multiPartPublicSuffixes] so
+  /// common ccTLD second-level registrations resolve to the registrable
+  /// domain instead of the bare suffix. F39 (Sprint 46): extracted from
+  /// ResultsDisplayScreen._extractRootDomain so both the per-account
+  /// results screen and the cross-account "No rule" review screen share
+  /// one implementation.
   ///
   /// Returns null if [fullDomain] is null or empty; returns the input
-  /// unchanged if it has fewer than 2 dot-separated labels.
+  /// unchanged if it has fewer than 2 dot-separated labels (or exactly a
+  /// bare multi-part suffix like "co.uk").
   static String? extractRootDomain(String? fullDomain) {
     if (fullDomain == null || fullDomain.isEmpty) return null;
 
     final parts = fullDomain.split('.');
     if (parts.length < 2) return fullDomain;
+
+    if (parts.length >= 3) {
+      final lastTwo =
+          '${parts[parts.length - 2]}.${parts[parts.length - 1]}'
+              .toLowerCase();
+      if (_multiPartPublicSuffixes.contains(lastTwo)) {
+        return '${parts[parts.length - 3]}.'
+            '${parts[parts.length - 2]}.${parts[parts.length - 1]}';
+      }
+    }
 
     return '${parts[parts.length - 2]}.${parts[parts.length - 1]}';
   }

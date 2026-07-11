@@ -106,13 +106,21 @@ void main(List<String> args) async {
       'pattern_sub_type',
       'source_domain',
     ],
-    // Copilot review (Sprint 46): body-category rows with a NULL/empty
-    // condition_body must ALSO be selected so G5 (orphan removal) can see
-    // them -- the original filter excluded exactly the rows G5 exists for
-    // (which is why G5 reported 0 on the dev run). Non-body-category rows
-    // with empty bodies (e.g. header rules) are still excluded.
-    where: "(condition_body IS NOT NULL AND condition_body != '') "
-        "OR pattern_category = 'body'",
+    // Copilot review (Sprint 46), two rounds: the selection must be
+    // (a) ALL body-category rows, INCLUDING those with a NULL/empty
+    //     condition_body, so G5 (orphan removal) can see them -- the
+    //     original filter excluded exactly the rows G5 exists for; and
+    // (b) ONLY body-category rows -- a rule categorized under
+    //     header_from/subject that also carries a body condition must NOT
+    //     be reclassified/converted/removed by this body-cleanup script.
+    // Legacy uncategorized rows (NULL/empty pattern_category) with a
+    // non-empty body condition are still included, since pre-categorization
+    // body rules had no pattern_category. (Dev-run evidence: every
+    // body-condition rule carried pattern_category='body', so (b) is
+    // defensive, not corrective.)
+    where: "pattern_category = 'body' "
+        "OR ((pattern_category IS NULL OR pattern_category = '') "
+        "AND condition_body IS NOT NULL AND condition_body != '')",
   );
 
   final analysis = analyzeBodyRules(rows);
