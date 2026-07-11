@@ -1383,7 +1383,14 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
 
   /// Show positioned popup with email details and inline quick actions
   /// Issue 6: CSS-like positioning - show popup below/above email item
-  void _showEmailDetailSheet(EmailActionResult result, {GlobalKey? itemKey}) {
+  ///
+  /// [anchorPosition]/[anchorSize] (Sprint 46, Harold item 2): explicit
+  /// anchor override used by the "No rule" auto-advance flow, where the next
+  /// email's popup reuses the previous popup's anchor so it appears at the
+  /// same screen position (list tiles get fresh GlobalKeys every rebuild, so
+  /// the next item's own key is not addressable from here).
+  void _showEmailDetailSheet(EmailActionResult result,
+      {GlobalKey? itemKey, Offset? anchorPosition, Size? anchorSize}) {
     final email = result.email;
     final bodyParser = EmailBodyParser();
     // Extract raw email and domain (Punycode format) - used for block rule creation
@@ -1417,8 +1424,8 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     final dateStr = email.receivedDate.toString().substring(0, 16);
 
     // Issue 6: Calculate position for CSS-like popup positioning
-    Offset? itemPosition;
-    Size? itemSize;
+    Offset? itemPosition = anchorPosition;
+    Size? itemSize = anchorSize;
     if (itemKey != null) {
       final RenderBox? renderBox = itemKey.currentContext?.findRenderObject() as RenderBox?;
       if (renderBox != null) {
@@ -1615,7 +1622,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                         onTap: () {
                           Navigator.pop(dialogContext);
                           // Use normalized email (plus-signs stripped) to match SafeSenderList evaluation
-                          _addSafeSender(normalizedSenderEmail, 'exact', email: email);
+                          _quickActionThenAdvance(
+                            current: result,
+                            anchorPosition: itemPosition,
+                            anchorSize: itemSize,
+                            action: () => _addSafeSender(normalizedSenderEmail, 'exact', email: email),
+                          );
                         },
                       ),
                       if (rawSenderDomain != null)
@@ -1629,7 +1641,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                             Navigator.pop(dialogContext);
                             // F47: Check for email provider domain
                             if (!await _checkProviderDomainWarning(domain: rawSenderDomain, isBlockRule: false)) return;
-                            _addSafeSender('@$rawSenderDomain', 'exactDomain', email: email);
+                            _quickActionThenAdvance(
+                              current: result,
+                              anchorPosition: itemPosition,
+                              anchorSize: itemSize,
+                              action: () => _addSafeSender('@$rawSenderDomain', 'exactDomain', email: email),
+                            );
                           },
                         ),
                       // Always show Entire Domain option (uses root domain or full domain if no subdomain)
@@ -1644,7 +1661,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                             Navigator.pop(dialogContext);
                             // F47: Check for email provider domain
                             if (!await _checkProviderDomainWarning(domain: rawRootDomain ?? rawSenderDomain, isBlockRule: false)) return;
-                            _addSafeSender(rawRootDomain ?? rawSenderDomain, 'entireDomain', email: email);
+                            _quickActionThenAdvance(
+                              current: result,
+                              anchorPosition: itemPosition,
+                              anchorSize: itemSize,
+                              action: () => _addSafeSender(rawRootDomain ?? rawSenderDomain, 'entireDomain', email: email),
+                            );
                           },
                         ),
                     ],
@@ -1670,7 +1692,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                         isMatched: isDeleted && effectiveEval?.matchedPatternType == 'exact_email',
                         onTap: () {
                           Navigator.pop(dialogContext);
-                          _createBlockRule('from', rawSenderEmail, email: email);
+                          _quickActionThenAdvance(
+                            current: result,
+                            anchorPosition: itemPosition,
+                            anchorSize: itemSize,
+                            action: () => _createBlockRule('from', rawSenderEmail, email: email),
+                          );
                         },
                       ),
                       if (rawSenderDomain != null)
@@ -1684,7 +1711,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                             Navigator.pop(dialogContext);
                             // F47: Check for email provider domain
                             if (!await _checkProviderDomainWarning(domain: rawSenderDomain, isBlockRule: true)) return;
-                            _createBlockRule('exactDomain', '@$rawSenderDomain', email: email);
+                            _quickActionThenAdvance(
+                              current: result,
+                              anchorPosition: itemPosition,
+                              anchorSize: itemSize,
+                              action: () => _createBlockRule('exactDomain', '@$rawSenderDomain', email: email),
+                            );
                           },
                         ),
                       // Always show Block Entire Domain option (uses root domain or full domain if no subdomain)
@@ -1699,7 +1731,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                             Navigator.pop(dialogContext);
                             // F47: Check for email provider domain
                             if (!await _checkProviderDomainWarning(domain: rawRootDomain ?? rawSenderDomain, isBlockRule: true)) return;
-                            _createBlockRule('entireDomain', rawRootDomain ?? rawSenderDomain, email: email);
+                            _quickActionThenAdvance(
+                              current: result,
+                              anchorPosition: itemPosition,
+                              anchorSize: itemSize,
+                              action: () => _createBlockRule('entireDomain', rawRootDomain ?? rawSenderDomain, email: email),
+                            );
                           },
                         ),
                       if (cleanedSubject.isNotEmpty && cleanedSubject != '(No subject)')
@@ -1713,7 +1750,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                           isMatched: isDeleted && effectiveEval?.matchedPatternType == 'subject',
                           onTap: () {
                             Navigator.pop(dialogContext);
-                            _createBlockRule('subject', cleanedSubject, email: email);
+                            _quickActionThenAdvance(
+                              current: result,
+                              anchorPosition: itemPosition,
+                              anchorSize: itemSize,
+                              action: () => _createBlockRule('subject', cleanedSubject, email: email),
+                            );
                           },
                         ),
                     ],
@@ -1919,6 +1961,71 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     if (eval.shouldMove) return EmailActionType.moveToJunk;
     if (eval.matchedRule.isEmpty) return EmailActionType.none;
     return result.action;
+  }
+
+  /// Resolve the result list the screen is currently displaying -- the same
+  /// live-vs-historical resolution used by build/_reEvaluateNoRuleEmails/
+  /// _reProcessAffectedEmails (historical-scan views always use
+  /// _historicalResults; otherwise live results when present or a scan is
+  /// active, else the reloaded historical results).
+  List<EmailActionResult> _currentResults() {
+    final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
+    final liveResults = scanProvider.results;
+    final isLiveScanActive = scanProvider.status == ScanStatus.scanning ||
+        scanProvider.status == ScanStatus.paused;
+    return (widget.historicalScanId != null)
+        ? _historicalResults
+        : ((liveResults.isNotEmpty || isLiveScanActive)
+            ? liveResults
+            : _historicalResults);
+  }
+
+  /// Sprint 46 manual-testing feedback (Harold 2026-07-11, item 2): when the
+  /// "No rule" filter is active, acting on an email from the detail popup
+  /// auto-advances to the NEXT remaining item in the filtered list -- its
+  /// popup opens at the same screen position, so triage becomes
+  /// click-action -> next email appears -> click-action -> ...
+  ///
+  /// The keys of the items FOLLOWING the current one are captured BEFORE the
+  /// action runs, because the actioned email (and possibly several others,
+  /// e.g. when a domain rule matches multiple senders) drop out of the
+  /// filtered list during re-evaluation. After the action, the first
+  /// still-present key wins. No-op when the "No rule" filter is not active,
+  /// when the user changed filters mid-action, or when nothing remains.
+  Future<void> _quickActionThenAdvance({
+    required EmailActionResult current,
+    required Offset? anchorPosition,
+    required Size? anchorSize,
+    required Future<void> Function() action,
+  }) async {
+    final noRuleFilterActive = _filter == EmailActionType.none;
+    var followingKeys = const <String>[];
+    if (noRuleFilterActive) {
+      final visible = _getFilteredResults(_currentResults());
+      final currentKey = _getEmailKey(current.email);
+      final idx =
+          visible.indexWhere((r) => _getEmailKey(r.email) == currentKey);
+      if (idx >= 0) {
+        followingKeys =
+            visible.skip(idx + 1).map((r) => _getEmailKey(r.email)).toList();
+      }
+    }
+
+    await action();
+
+    if (!mounted || !noRuleFilterActive || followingKeys.isEmpty) return;
+    if (_filter != EmailActionType.none) return; // filter changed mid-action
+
+    final refreshed = _getFilteredResults(_currentResults());
+    final byKey = {for (final r in refreshed) _getEmailKey(r.email): r};
+    for (final key in followingKeys) {
+      final next = byKey[key];
+      if (next != null) {
+        _showEmailDetailSheet(next,
+            anchorPosition: anchorPosition, anchorSize: anchorSize);
+        return;
+      }
+    }
   }
 
   /// Shared PatternCompiler for re-evaluation.
