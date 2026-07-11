@@ -84,6 +84,33 @@ void main() {
       expect(provider.safeSenders.safeSenders, isEmpty);
     });
 
+    test('empty value is rejected (would match every address) -- Copilot',
+        () async {
+      final result = await service.addSafeSender(
+        value: '  ',
+        type: 'entireDomain',
+        senderEmailForConflictCheck: 'x@y.com',
+      );
+      expect(result.success, isFalse);
+      expect(provider.safeSenders.safeSenders, isEmpty);
+    });
+
+    test('regex metacharacters in the address are escaped literally -- Copilot',
+        () async {
+      final result = await service.addSafeSender(
+        value: 'bob+tag@x.com',
+        type: 'exact',
+        senderEmailForConflictCheck: 'bob+tag@x.com',
+      );
+      expect(result.success, isTrue);
+      final pattern = provider.safeSenders.safeSenders.first;
+      expect(pattern, r'^bob\+tag@x\.com$');
+      final rx = RegExp(pattern);
+      expect(rx.hasMatch('bob+tag@x.com'), isTrue);
+      expect(rx.hasMatch('bobbbtag@x.com'), isFalse,
+          reason: 'unescaped + would have made the b repeatable');
+    });
+
     test('removes conflicting block rule when adding a safe sender (Issue #154)',
         () async {
       await service.createBlockRule(type: 'from', value: 'friend@trusted.com');
@@ -154,6 +181,15 @@ void main() {
       final result = await service.createBlockRule(type: 'bogus', value: 'x');
 
       expect(result.success, isFalse);
+      expect(provider.rules.rules, isEmpty);
+    });
+
+    test('empty and degenerate values are rejected -- Copilot', () async {
+      for (final bad in ['', '  ', '@', '@null']) {
+        final result =
+            await service.createBlockRule(type: 'entireDomain', value: bad);
+        expect(result.success, isFalse, reason: 'value "$bad" must be rejected');
+      }
       expect(provider.rules.rules, isEmpty);
     });
 

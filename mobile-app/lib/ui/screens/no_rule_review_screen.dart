@@ -303,10 +303,23 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
       final rootDomain = PatternNormalization.extractRootDomain(rawSenderDomain);
       final normalizedEmail = PatternNormalization.normalizeFromHeader(item.email.fromEmail);
 
+      // Copilot review (Sprint 46): a malformed From header can leave the
+      // domain null/empty -- the domain-based actions must fail this item
+      // (counted in the batch summary) rather than pass ''/@null through,
+      // which would generate a match-everything safe-sender pattern.
+      if ((type == 'exactDomain' || type == 'entireDomain') &&
+          (rawSenderDomain == null || rawSenderDomain.isEmpty)) {
+        return Future.value(RuleQuickActionResult(
+          success: false,
+          displayMessage: 'No sender domain available',
+          error: 'malformed From header',
+        ));
+      }
+
       final value = switch (type) {
         'exact' => normalizedEmail,
         'exactDomain' => '@$rawSenderDomain',
-        'entireDomain' => rootDomain ?? rawSenderDomain ?? '',
+        'entireDomain' => rootDomain ?? rawSenderDomain!,
         _ => '',
       };
 
@@ -335,10 +348,21 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
       final rawSenderDomain = bodyParser.extractDomainFromEmail(item.email.fromEmail);
       final rootDomain = PatternNormalization.extractRootDomain(rawSenderDomain);
 
+      // Copilot review (Sprint 46): fail the item on a missing domain
+      // rather than passing ''/'@null' into rule creation.
+      if ((type == 'exactDomain' || type == 'entireDomain') &&
+          (rawSenderDomain == null || rawSenderDomain.isEmpty)) {
+        return Future.value(RuleQuickActionResult(
+          success: false,
+          displayMessage: 'No sender domain available',
+          error: 'malformed From header',
+        ));
+      }
+
       final value = switch (type) {
         'from' => rawSenderEmail,
         'exactDomain' => '@$rawSenderDomain',
-        'entireDomain' => rootDomain ?? rawSenderDomain ?? '',
+        'entireDomain' => rootDomain ?? rawSenderDomain!,
         _ => '',
       };
 

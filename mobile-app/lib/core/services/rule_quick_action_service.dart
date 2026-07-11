@@ -63,24 +63,38 @@ class RuleQuickActionService {
     required String senderEmailForConflictCheck,
   }) async {
     try {
+      // Copilot review (Sprint 46): an empty value must never reach pattern
+      // generation -- the entireDomain shape with '' would produce a pattern
+      // matching EVERY email address.
+      final trimmed = value.trim();
+      if (trimmed.isEmpty) {
+        _logger.w('Rejected safe-sender add with empty value (type: $type)');
+        return RuleQuickActionResult(
+          success: false,
+          displayMessage: 'Cannot add a safe sender from an empty value',
+        );
+      }
+
       String pattern;
       String displayMessage;
 
+      // Copilot review (Sprint 46): RegExp.escape (consistent with
+      // PatternGeneration / ManualRulePatternGenerator) instead of escaping
+      // only '.'/'@' -- valid addresses can contain regex metacharacters
+      // (e.g. plus-addressing: bob+tag@x.com).
       switch (type) {
         case 'exact':
-          final escaped = value.replaceAll('.', r'\.').replaceAll('@', r'@');
-          pattern = '^$escaped\$';
-          displayMessage = 'Added "$value" to Safe Senders';
+          pattern = '^${RegExp.escape(trimmed)}\$';
+          displayMessage = 'Added "$trimmed" to Safe Senders';
           break;
         case 'exactDomain':
-          final escaped = value.replaceAll('.', r'\.').replaceAll('@', r'@');
-          pattern = '^[^@\\s]+$escaped\$';
-          displayMessage = 'Added exact domain "$value" to Safe Senders';
+          pattern = '^[^@\\s]+${RegExp.escape(trimmed)}\$';
+          displayMessage = 'Added exact domain "$trimmed" to Safe Senders';
           break;
         case 'entireDomain':
-          final escaped = value.replaceAll('.', r'\.');
-          pattern = r'^[^@\s]+@(?:[a-z0-9-]+\.)*' + escaped + r'$';
-          displayMessage = 'Added entire domain "*.$value" to Safe Senders';
+          pattern =
+              r'^[^@\s]+@(?:[a-z0-9-]+\.)*' + RegExp.escape(trimmed) + r'$';
+          displayMessage = 'Added entire domain "*.$trimmed" to Safe Senders';
           break;
         default:
           _logger.w('Unknown safe sender type: $type');
@@ -140,36 +154,47 @@ class RuleQuickActionService {
     String sourceDescription = 'Results screen',
   }) async {
     try {
+      // Copilot review (Sprint 46): reject empty values before pattern
+      // generation -- the entireDomain shape with '' would produce a
+      // match-everything pattern, and '@'/'@null' inputs create junk rules.
+      final trimmed = value.trim();
+      if (trimmed.isEmpty || trimmed == '@' || trimmed == '@null') {
+        _logger.w('Rejected block-rule create with empty/degenerate value '
+            '(type: $type)');
+        return RuleQuickActionResult(
+          success: false,
+          displayMessage: 'Cannot create a block rule from an empty value',
+        );
+      }
+
       String pattern;
       String ruleName;
       String displayMessage;
 
+      // Copilot review (Sprint 46): RegExp.escape (consistent with
+      // PatternGeneration / ManualRulePatternGenerator) instead of escaping
+      // only '.'/'@' -- valid addresses can contain regex metacharacters.
       switch (type) {
         case 'from':
-          final escaped = value.replaceAll('.', r'\.').replaceAll('@', r'@');
-          pattern = '^$escaped\$';
-          ruleName = 'Block_${_sanitizeForRuleName(value)}';
-          displayMessage = 'Created rule to block email "$value"';
+          pattern = '^${RegExp.escape(trimmed)}\$';
+          ruleName = 'Block_${_sanitizeForRuleName(trimmed)}';
+          displayMessage = 'Created rule to block email "$trimmed"';
           break;
         case 'exactDomain':
-          final escaped = value.replaceAll('.', r'\.').replaceAll('@', r'@');
-          pattern = '$escaped\$';
-          ruleName = 'Block_ExactDomain_${_sanitizeForRuleName(value)}';
-          displayMessage = 'Created rule to block exact domain "$value"';
+          pattern = '${RegExp.escape(trimmed)}\$';
+          ruleName = 'Block_ExactDomain_${_sanitizeForRuleName(trimmed)}';
+          displayMessage = 'Created rule to block exact domain "$trimmed"';
           break;
         case 'entireDomain':
-          final escaped = value.replaceAll('.', r'\.');
-          pattern = r'@(?:[a-z0-9-]+\.)*' + escaped + r'$';
-          ruleName = 'Block_EntireDomain_${_sanitizeForRuleName(value)}';
-          displayMessage = 'Created rule to block entire domain "*.$value"';
+          pattern = r'@(?:[a-z0-9-]+\.)*' + RegExp.escape(trimmed) + r'$';
+          ruleName = 'Block_EntireDomain_${_sanitizeForRuleName(trimmed)}';
+          displayMessage = 'Created rule to block entire domain "*.$trimmed"';
           break;
         case 'subject':
-          final escaped =
-              value.replaceAll(RegExp(r'[.*+?^${}()|[\]\\]'), r'\$&');
-          pattern = escaped;
+          pattern = RegExp.escape(trimmed);
           ruleName =
-              'Block_Subject_${_sanitizeForRuleName(value.substring(0, value.length.clamp(0, 40)))}';
-          displayMessage = 'Created rule to block subject containing "$value"';
+              'Block_Subject_${_sanitizeForRuleName(trimmed.substring(0, trimmed.length.clamp(0, 40)))}';
+          displayMessage = 'Created rule to block subject containing "$trimmed"';
           break;
         default:
           _logger.w('Unknown block rule type: $type');
@@ -196,31 +221,31 @@ class RuleQuickActionService {
         case 'from':
           patternCategory = 'header_from';
           patternSubType = 'exact_email';
-          sourceDomain = value;
+          sourceDomain = trimmed;
           executionOrder = 40;
           break;
         case 'exactDomain':
           patternCategory = 'header_from';
           patternSubType = 'exact_domain';
-          sourceDomain = value.startsWith('@') ? value.substring(1) : value;
+          sourceDomain = trimmed.startsWith('@') ? trimmed.substring(1) : trimmed;
           executionOrder = 30;
           break;
         case 'entireDomain':
           patternCategory = 'header_from';
           patternSubType = 'entire_domain';
-          sourceDomain = value;
+          sourceDomain = trimmed;
           executionOrder = 20;
           break;
         case 'subject':
           patternCategory = 'subject';
           patternSubType = 'exact_domain';
-          sourceDomain = value;
+          sourceDomain = trimmed;
           executionOrder = 60;
           break;
         default:
           patternCategory = 'header_from';
           patternSubType = 'exact_domain';
-          sourceDomain = value;
+          sourceDomain = trimmed;
           executionOrder = 30;
       }
 
