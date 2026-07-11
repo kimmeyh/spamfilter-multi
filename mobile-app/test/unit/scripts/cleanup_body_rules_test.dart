@@ -135,6 +135,24 @@ void main() {
       expect(a.toRemove.map((r) => r.id), contains(1));
     });
 
+    test('G5: NULL condition_body is an orphan removal (Copilot review fix)',
+        () {
+      // The SQL now selects body-category rows even when condition_body is
+      // NULL; the analyzer must classify them as orphans, not crash.
+      final a = analyzeBodyRules([
+        {
+          'id': 2,
+          'name': 'null-orphan',
+          'condition_body': null,
+          'pattern_category': 'body',
+          'pattern_sub_type': 'entire_domain',
+          'source_domain': 'hlvmorinho.com',
+        },
+      ]);
+      expect(a.orphans, hasLength(1));
+      expect(a.toRemove.map((r) => r.id), contains(2));
+    });
+
     test('DUP: same-domain-root duplicates keep the first, remove the rest', () {
       final a = analyzeBodyRules([
         row(10, 'd_a', r'/adamsdomain\.com', src: 'adamsdomain.com'),

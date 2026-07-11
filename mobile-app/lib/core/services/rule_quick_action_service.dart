@@ -104,7 +104,10 @@ class RuleQuickActionService {
             ' (removed ${conflicts.conflictsRemoved} conflicting rule${conflicts.conflictsRemoved > 1 ? "s" : ""})';
       }
 
-      _logger.i('[OK] Added safe sender: $pattern');
+      // Copilot review (Sprint 46): do not log the raw pattern -- it embeds
+      // email addresses/domains. The type + length are enough for debugging.
+      _logger.i('[OK] Added safe sender (type: $type, '
+          'patternLength: ${pattern.length})');
       return RuleQuickActionResult(
         success: true,
         displayMessage: displayMessage,
@@ -125,10 +128,16 @@ class RuleQuickActionService {
   /// for non-subject types to remove conflicting safe senders; pass null
   /// for 'subject' rules (subject-based rules do not conflict with
   /// safe senders, which match on the from address).
+  ///
+  /// [sourceDescription] names the calling surface in the persisted rule
+  /// metadata comment (Copilot review, Sprint 46 -- this service is shared
+  /// by the Results screen and the No Rule Review screen, so the provenance
+  /// must not hard-code one of them).
   Future<RuleQuickActionResult> createBlockRule({
     required String type,
     required String value,
     String? senderEmailForConflictCheck,
+    String sourceDescription = 'Results screen',
   }) async {
     try {
       String pattern;
@@ -228,7 +237,7 @@ class RuleQuickActionService {
         actions: RuleActions(delete: true),
         metadata: {
           'comment':
-              'Created from Results screen on ${DateTime.now().toIso8601String().substring(0, 10)}',
+              'Created from $sourceDescription on ${DateTime.now().toIso8601String().substring(0, 10)}',
         },
         patternCategory: patternCategory,
         patternSubType: patternSubType,
@@ -244,7 +253,10 @@ class RuleQuickActionService {
             ' (removed ${conflicts.conflictsRemoved} conflicting safe sender${conflicts.conflictsRemoved > 1 ? "s" : ""})';
       }
 
-      _logger.i('[OK] Created block rule: $ruleName with pattern: $pattern');
+      // Copilot review (Sprint 46): do not log the rule name or raw pattern
+      // -- both embed user-entered email addresses/domains.
+      _logger.i('[OK] Created block rule (type: $type, '
+          'patternLength: ${pattern.length})');
       return RuleQuickActionResult(
         success: true,
         displayMessage: displayMessage,

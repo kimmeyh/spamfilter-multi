@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
@@ -611,7 +612,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       return Scaffold(
         appBar: AppBarWithExit(
           title: const Text('Select Account'),
-          actions: [_buildHelpButton(), _buildNoRuleReviewButton(), _buildHistoryButton(), _buildSettingsButton()],
+          actions: [_buildHelpButton(), if (Platform.isWindows) _buildNoRuleReviewButton(), _buildHistoryButton(), _buildSettingsButton()],
         ),
         body: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -646,7 +647,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
         appBar: AppBarWithExit(
           title: const Text('Select Account'),
           elevation: 2,
-          actions: [_buildHelpButton(), _buildNoRuleReviewButton(), _buildHistoryButton(), _buildSettingsButton()],
+          actions: [_buildHelpButton(), if (Platform.isWindows) _buildNoRuleReviewButton(), _buildHistoryButton(), _buildSettingsButton()],
         ),
         body: NoAccountsEmptyState(onAddAccount: _addNewAccount),
       );
@@ -657,7 +658,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       appBar: AppBarWithExit(
         title: const Text('Select Account'),
         elevation: 2,
-        actions: [_buildHelpButton(), _buildNoRuleReviewButton(), _buildHistoryButton(), _buildSettingsButton()],
+        actions: [_buildHelpButton(), if (Platform.isWindows) _buildNoRuleReviewButton(), _buildHistoryButton(), _buildSettingsButton()],
       ),
       body: SelectionArea(
         child: Column(

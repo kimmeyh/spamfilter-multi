@@ -2089,7 +2089,13 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
 
     // Step 2: process the current email in the background (matches the
     // original fire-and-forget behavior of these buttons pre-auto-advance).
-    unawaited(action());
+    // The action's own internals surface user-facing failures via SnackBar;
+    // this guard catches anything thrown by the re-evaluate/re-process tail
+    // so a background exception is logged instead of becoming an unhandled
+    // async error (Copilot review, Sprint 46).
+    unawaited(action().catchError((Object e, StackTrace s) {
+      Logger().e('Background quick-action pipeline failed: $e');
+    }));
 
     // Step 3: show the next item's popup right away.
     if (next != null && mounted) {

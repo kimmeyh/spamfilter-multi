@@ -9,15 +9,24 @@ import 'package:my_email_spam_filter/core/services/pattern_compiler.dart';
 /// so none of the 648 F33-converted URL-anchored patterns silently became an
 /// invalid / never-matching / rejected pattern after the cleanup.
 ///
-/// Reads a snapshot exported from the dev DB post-apply. The snapshot path is
-/// the scratchpad export produced during F33 verification; if it is absent
-/// (e.g. on CI where the dev DB does not exist) the test skips rather than
-/// fails, so it is a local-verification aid, not a CI gate.
+/// Reads a snapshot exported from the dev DB post-apply, located via the
+/// F33_PATTERN_SNAPSHOT environment variable (no hardcoded machine-specific
+/// path -- Copilot review, Sprint 46). Export with:
+///   sqlite3 <dev-db> "SELECT condition_body FROM rules WHERE
+///     condition_body IS NOT NULL AND condition_body != '';" > <file>
+/// then run: flutter test --dart-define not needed; set the OS env var
+///   F33_PATTERN_SNAPSHOT=<file>
+/// When the variable is unset or the file is absent (e.g. on CI) the test
+/// skips rather than fails -- it is a local-verification aid, not a CI gate.
 void main() {
-  const snapshotPath =
-      r'C:\Users\kimme\AppData\Local\Temp\claude\D--Data-Harold-github-spamfilter-multi\1ca36477-c303-4cb2-b4f7-d2b2b2e720ce\scratchpad\cleaned_body_patterns.txt';
+  final snapshotPath = Platform.environment['F33_PATTERN_SNAPSHOT'];
 
   test('all cleaned body-rule patterns compile and pass the ReDoS guard', () {
+    if (snapshotPath == null || snapshotPath.isEmpty) {
+      markTestSkipped('F33_PATTERN_SNAPSHOT not set -- skipping '
+          '(local-only verification; see file header for the export step).');
+      return;
+    }
     final file = File(snapshotPath);
     if (!file.existsSync()) {
       markTestSkipped('Cleaned-pattern snapshot not present ($snapshotPath) '

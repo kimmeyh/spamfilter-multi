@@ -13,6 +13,7 @@ import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/unmatched_email_store.dart';
 import '../../core/utils/pattern_normalization.dart';
 import '../../core/utils/provider_sender_grouping.dart';
+import '../../util/redact.dart';
 import '../widgets/app_bar_with_exit.dart';
 import '../widgets/provider_group_markers.dart';
 import '../widgets/auth_warning_dialog.dart';
@@ -240,8 +241,11 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
         }
       } else {
         failed++;
+        // F110: mask the sender when it is the user's own account address
+        // (self-addressed spam); third-party senders log in clear per policy.
         _logger.w('Bulk action "$actionLabel" failed for '
-            '${item.email.fromEmail}: ${result.error}');
+            '${Redact.senderForLog(item.email.fromEmail, {item.accountId})}: '
+            '${result.error}');
       }
     }
 
@@ -342,6 +346,7 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
         type: type,
         value: value,
         senderEmailForConflictCheck: rawSenderEmail,
+        sourceDescription: 'No Rule Review screen',
       );
     });
   }

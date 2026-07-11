@@ -106,7 +106,13 @@ void main(List<String> args) async {
       'pattern_sub_type',
       'source_domain',
     ],
-    where: "condition_body IS NOT NULL AND condition_body != ''",
+    // Copilot review (Sprint 46): body-category rows with a NULL/empty
+    // condition_body must ALSO be selected so G5 (orphan removal) can see
+    // them -- the original filter excluded exactly the rows G5 exists for
+    // (which is why G5 reported 0 on the dev run). Non-body-category rows
+    // with empty bodies (e.g. header rules) are still excluded.
+    where: "(condition_body IS NOT NULL AND condition_body != '') "
+        "OR pattern_category = 'body'",
   );
 
   final analysis = analyzeBodyRules(rows);
@@ -271,6 +277,14 @@ String? extractDomainRoot(String pattern) {
 /// Builds the F33 URL-anchored target regex for a domain root (dotted,
 /// unescaped, e.g. "adianeos.com"). Matches the domain as a URL host:
 /// apex directly after `://`, subdomain after `.`, or in a path after `/`.
+///
+/// Rejects bare-text mentions, substrings (`mydomain.tld`), and APEX-form
+/// email addresses (`bob@domain.tld`). NOTE (Copilot review, Sprint 46): an
+/// address at a SUBDOMAIN of the target (`bob@mail.domain.tld`) still
+/// matches, because `.domain.tld` appears after a dot -- an accepted
+/// tradeoff of Harold's approved `://*[/ or .]domain.tld` spec: mail sent
+/// from a subdomain of a blocked spam domain is itself a block-worthy
+/// signal.
 String buildUrlAnchoredRegex(String domainRoot) {
   final escaped = domainRoot.replaceAll('.', r'\.');
   return '(?:://|[/.])$escaped';
