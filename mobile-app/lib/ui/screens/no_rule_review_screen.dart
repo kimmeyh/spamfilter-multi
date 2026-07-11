@@ -231,21 +231,31 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
     int conflictsRemoved = 0;
 
     for (final item in selected) {
-      final result = await action(item);
-      if (result.success) {
-        succeeded++;
-        conflictsRemoved += result.conflictsRemoved;
-        final id = item.email.id;
-        if (id != null) {
-          await _unmatchedStore.markAsProcessed(id, true);
+      // Copilot round 5: one throwing item must not abort the whole batch
+      // (which would skip the summary SnackBar and leave the selection in a
+      // confusing partial state) -- count it failed and continue.
+      try {
+        final result = await action(item);
+        if (result.success) {
+          succeeded++;
+          conflictsRemoved += result.conflictsRemoved;
+          final id = item.email.id;
+          if (id != null) {
+            await _unmatchedStore.markAsProcessed(id, true);
+          }
+        } else {
+          failed++;
+          // F110: mask the sender when it is the user's own account address
+          // (self-addressed spam); third-party senders log in clear per
+          // policy.
+          _logger.w('Bulk action "$actionLabel" failed for '
+              '${Redact.senderForLog(item.email.fromEmail, {item.accountId})}: '
+              '${result.error}');
         }
-      } else {
+      } catch (e, s) {
         failed++;
-        // F110: mask the sender when it is the user's own account address
-        // (self-addressed spam); third-party senders log in clear per policy.
-        _logger.w('Bulk action "$actionLabel" failed for '
-            '${Redact.senderForLog(item.email.fromEmail, {item.accountId})}: '
-            '${result.error}');
+        _logger.e('Bulk action "$actionLabel" threw for an item',
+            error: e, stackTrace: s);
       }
     }
 
@@ -643,9 +653,17 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
   }
 
   void _showContextMenu(BuildContext context, Offset position) {
+    // Copilot round 5: anchor against the overlay so the menu is placed at
+    // the click point without being clipped near the right/bottom edges
+    // (fromLTRB with mirrored dx/dy over-constrained the available rect).
+    final overlay =
+        Overlay.of(context).context.findRenderObject() as RenderBox;
     showMenu<String>(
       context: context,
-      position: RelativeRect.fromLTRB(position.dx, position.dy, position.dx, position.dy),
+      position: RelativeRect.fromRect(
+        Rect.fromLTWH(position.dx, position.dy, 0, 0),
+        Offset.zero & overlay.size,
+      ),
       items: const [
         PopupMenuItem(value: 'safe_exact', child: Text('Add Safe Sender - Exact Email')),
         PopupMenuItem(value: 'safe_exactDomain', child: Text('Add Safe Sender - Exact Domain')),

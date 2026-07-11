@@ -88,8 +88,11 @@ class RuleQuickActionService {
           displayMessage = 'Added "$trimmed" to Safe Senders';
           break;
         case 'exactDomain':
-          pattern = '^[^@\\s]+${RegExp.escape(trimmed)}\$';
-          displayMessage = 'Added exact domain "$trimmed" to Safe Senders';
+          // Copilot round 5: normalize the leading '@' so a bare-domain
+          // caller cannot silently create an ineffective pattern.
+          final domainValue = trimmed.startsWith('@') ? trimmed : '@$trimmed';
+          pattern = '^[^@\\s]+${RegExp.escape(domainValue)}\$';
+          displayMessage = 'Added exact domain "$domainValue" to Safe Senders';
           break;
         case 'entireDomain':
           pattern =
@@ -181,9 +184,13 @@ class RuleQuickActionService {
           displayMessage = 'Created rule to block email "$trimmed"';
           break;
         case 'exactDomain':
-          pattern = '${RegExp.escape(trimmed)}\$';
-          ruleName = 'Block_ExactDomain_${_sanitizeForRuleName(trimmed)}';
-          displayMessage = 'Created rule to block exact domain "$trimmed"';
+          // Copilot round 5: normalize the leading '@' -- a bare-domain
+          // value would produce a suffix-matching pattern (example\.com$
+          // also matches user@notexample.com).
+          final domainValue = trimmed.startsWith('@') ? trimmed : '@$trimmed';
+          pattern = '${RegExp.escape(domainValue)}\$';
+          ruleName = 'Block_ExactDomain_${_sanitizeForRuleName(domainValue)}';
+          displayMessage = 'Created rule to block exact domain "$domainValue"';
           break;
         case 'entireDomain':
           pattern = r'@(?:[a-z0-9-]+\.)*' + RegExp.escape(trimmed) + r'$';
