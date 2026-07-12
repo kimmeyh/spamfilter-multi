@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-06-23 (Sprint 42 Backlog Refinement: removed 24 completed detail blocks from Sprints 39-42; added F102 logging-redaction policy for Sprint 43)
+**Last Updated**: 2026-07-02 (Sprint 45 completion: Sprint 45 -> Last Completed Sprint; develop->main release merge recorded; Sprint 46 pre-kickoff)
 
 ## How to Maintain This Document
 
@@ -109,6 +109,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 42 | docs/sprints/SPRINT_42_RETROSPECTIVE.md | [OK] Complete | Jun 20, 2026 (PR #263) |
 | 43 | docs/sprints/SPRINT_43_RETROSPECTIVE.md | [OK] Complete | Jun 23-26, 2026 (PR #265) |
 | 44 | docs/sprints/SPRINT_44_RETROSPECTIVE.md | [OK] Complete | Jun 26 - Jul 1, 2026 (PR #266) |
+| 45 | docs/sprints/SPRINT_45_RETROSPECTIVE.md | [OK] Complete | Jul 1-2, 2026 (PR #268) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -116,37 +117,37 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 44** (Jun 26 -- Jul 1, 2026 -- merged PR #266)
-- **Type**: Docs/architecture ratification + UX visibility + dependency hardening
+**Sprint 45** (Jul 1-2, 2026 -- merged PR #268)
+- **Type**: Release-readiness verification (F111, single item, no feature code)
 - **Delivered**:
-  - **F107** -- Accepted ADR-0037 (UI/Accessibility Standards) + promoted ARSD.md to 1.0/Accepted (docs only).
-  - **F109** -- surfaced the background-scan deferral state (scheduled scans pause while the foreground app is open, F98) across Settings/Background status line + Scan History hint + a `status='deferred'` `background_scan_log` row (handoff-file design; `main.cpp` writes to app-support root, `BackgroundDeferralIngest` ingests on next launch; no DB migration). Incidental: fixed the stale `main.cpp` v0.5.3 log filename -> v0.5.4.
-  - **F108** -- upgraded 3 security-relevant deps, each in its own revertable commit: `flutter_appauth` 8->12, `workmanager` 0.5->0.9, `flutter_secure_storage` 9->10 (drops `encryptedSharedPreferences`; Android minSdk 21->23) + minor drift. Revert runbook: `docs/sprints/SPRINT_44_F108_REVERT_RUNBOOK.md`.
-- **Retro IMP-1**: build-failing version-consistency gate (`test/policy/version_consistency_test.dart` + `scripts/check-version-consistency.ps1`).
-- **Tests**: 1692 passing / ~28 skipped; flutter analyze clean; Windows build green.
-- **Summary**: docs/sprints/SPRINT_44_SUMMARY.md · **Retrospective**: docs/sprints/SPRINT_44_RETROSPECTIVE.md
-- **PR**: #266 (merged to develop, 2026-07-01)
-- **Open follow-up**: Android-device retest of the F108 dep bumps (Gmail sign-in, secure-storage round-trip, WorkManager) -- no emulator in the dev session; F108 revert runbook covers per-dep rollback.
-- **Earlier sprints (39-43)**: 39 (PR #260), 40 (PR #261), 41 (PR #262), 42 (PR #263 -- F99/F98/BUG-S37-2), 43 (PR #265 -- F102/F103/F96/F100/F101/F104/F105/F110; SEC-11b deferred Post-MVP). See `docs/sprints/` + the Past Sprint Summary table above.
+  - **F111** -- Windows App Store upload readiness verification. **Result: GO** to build+upload `0.5.4`. Verified: develop/main parity CLEAN (identical content; "15 ahead" was merge/CNAME topology, not drift), version `0.5.4` > published `0.5.3`, MSIX `msix:create` path + `build_windows_args` OAuth injection + `secrets.prod.json` present in prod worktree, Store preconditions, full verification (analyze clean, tests +1692 ~28, prod build green). Findings: `docs/sprints/SPRINT_45_F111_STORE_READINESS.md`.
+  - Fixed as found: `domain_dns_verification_test.dart` made network-resilient (skip on connection error, keep the assertion when connected).
+- **Retro IMP-1**: read-the-format-doc-first phase-boundary rule (`SPRINT_EXECUTION_WORKFLOW.md` Invariants + `SPRINT_CHECKLIST.md`).
+- **Tests**: 1692 passing / ~28 skipped; flutter analyze clean; Windows prod build green.
+- **Summary**: docs/sprints/SPRINT_45_SUMMARY.md · **Retrospective**: docs/sprints/SPRINT_45_RETROSPECTIVE.md
+- **PR**: #268 (merged to develop, 2026-07-02)
+- **RELEASE**: `develop` -> `main` merged (Harold, 2026-07-02) -- Sprint 45's F111-verified codebase is on `main`. Store upload of the MSIX (`0.5.4`) is a separate Harold action targeted for **Saturday/Sunday on a stable network** (`docs/STORE_RELEASE_PROCESS.md`). Once uploaded + live, published version becomes `0.5.3 -> 0.5.4`.
+- **Open follow-up (carried from Sprint 44)**: Android-device retest of the F108 dep bumps (Gmail sign-in, secure-storage round-trip, WorkManager) -- no emulator in the dev session; F108 revert runbook covers per-dep rollback if needed.
+- **Earlier sprints (39-44)**: 39 (PR #260), 40 (PR #261), 41 (PR #262), 42 (PR #263 -- F99/F98/BUG-S37-2), 43 (PR #265 -- F102/F103/F96/F100/F101/F104/F105/F110; SEC-11b deferred Post-MVP), 44 (PR #266 -- F107/F109/F108, retro IMP-1 version-consistency gate). See `docs/sprints/` + the Past Sprint Summary table above.
 
 ---
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: July 1, 2026 (Sprint 45 Backlog Refinement -- see the "Sprint Assignment" subsection below; prior full review June 23, 2026)
+**Last Reviewed**: July 2, 2026 (Sprint 46 Backlog Refinement -- see the "Sprint Assignment" subsection below; prior full review July 1, 2026)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
-### Sprint Assignment (Sprint 45 Backlog Refinement, 2026-07-01)
+### Sprint Assignment (Sprint 46 Backlog Refinement, 2026-07-02)
 
 Recent sprints complete -- detail blocks removed per the Maintenance Guide (history lives in `docs/sprints/` + CHANGELOG.md):
-- **Sprint 40** (merged PR #261): F75, F25, F35, F37, F78, F79, BUG-S40-1
 - **Sprint 41** (merged PR #262): F83 Phase 1 (ADR-0039 Accepted), F97, F76
 - **Sprint 42** (merged PR #263): F99 (integration_test harness), F98 (per-account bg-scan, ADR-0039 + ADR-0040), BUG-S37-2
 - **Sprint 43** (merged PR #265): F102, F103, F96 (DB v8), F100, F101, F104, F105, F110; SEC-11b deferred Post-MVP (cipher -> SQLite3MultipleCiphers)
-- **Sprint 44** (merged PR #266, 2026-07-01): F107 (Accept ADR-0037 + promote ARSD), F109 (surface background-deferral state), F108 (dep bumps: flutter_appauth 8->12, workmanager 0.5->0.9, flutter_secure_storage 9->10 + Android minSdk 23); retro IMP-1 version-consistency gate
+- **Sprint 44** (merged PR #266): F107 (Accept ADR-0037 + promote ARSD), F109 (surface background-deferral state), F108 (dep bumps: flutter_appauth 8->12, workmanager 0.5->0.9, flutter_secure_storage 9->10 + Android minSdk 23); retro IMP-1 version-consistency gate
+- **Sprint 45** (merged PR #268, 2026-07-02): F111 (Windows App Store upload readiness verification -- GO for 0.5.4); **develop -> main released**; retro IMP-1 read-format-doc-first rule
 
-**Sprint 45 scope (Harold-selected 2026-07-01)**: **F111 -- Windows App Store upload readiness verification (P40)**. Backlog changes this refinement: F106 moved Priority 30 -> HOLD/Post-MVP (gated on the SEC-11b DB-encryption item, paired under it). Remaining candidates stay HOLD: template deep dives (F70/F71), F64 (CI/CD), Post-MVP (SEC-11b + F106), HOLD platform/UX tracks (F94/F95, F63, SEC-8b/SEC-15, F6, H1-H5). **Open follow-up**: Android-device retest of the Sprint 44 F108 dep bumps (see Last Completed Sprint).
+**Sprint 46 scope (Harold 2026-07-02)**: F64 (CI/CD pipeline), F33 (body rules cleanup script), F39 (scan results multi-select + bulk rule application) -- all three taken off HOLD for this sprint. **Standing constraint**: hold on major changes elsewhere until the 0.5.4 Windows Store rollout completes (Harold targeting Sat/Sun 2026-07-04/05 on a stable network). Remaining candidates stay HOLD: template deep dives (F70 Security / F71 Architecture, run periodically -- last run F104/F103 in Sprint 43; F111 Store-readiness verification added as a new periodic-review template, first run Sprint 45), Post-MVP (SEC-11b DB encryption + F106 cleanup, paired), HOLD platform/UX tracks (F94/F95 flavors, F63 responsive, SEC-8b/SEC-15, F6, H1-H5, F67, GP-*). **Open follow-up (Sprint 44 carry-in)**: Android-device retest of the Sprint 44 F108 dep bumps (Gmail sign-in, secure-storage round-trip, WorkManager) -- not yet scheduled.
 
 ### Core App
 
@@ -162,31 +163,29 @@ _(F107, F108, F109 shipped in Sprint 44 -- see docs/sprints/SPRINT_44_SUMMARY.md
 
 ### Release Readiness
 
-**F111. Windows App Store upload readiness verification (~3-5h) Priority 40 -- NEW (Harold 2026-07-01) -- SPRINT 45**
-- Phase: Release / Windows Store
-- Platform: Windows Desktop
-- **Value**: This PREVENTS a broken/mismatched Store upload -- confirms the codebase is release-ready and everything is in order BEFORE we build+upload a new version to the Microsoft Store.
-- **Scope** (verification + a checklist doc; NO feature code -- decide any needed fixes at Phase 3):
-  - **develop == main parity**: `main` (the last released code) and `develop` (current) must be reconciled -- diff them, confirm develop is a clean superset of main (no divergent/stranded commits), and identify exactly what a new release would ship. Flag any drift for Harold.
-  - **Version compatibility**: verify the version bump is correct and consistent across all files (run the new Sprint 44 version-consistency gate `test/policy/version_consistency_test.dart`); confirm `pubspec.yaml` `version` + `msix_config.msix_version` are set to the intended Store version and are > the currently-published Store version.
-  - **MSIX build integrity**: confirm the supported build path (`flutter pub run msix:create` honoring `build_windows_args` for OAuth credential injection, per `docs/STORE_RELEASE_PROCESS.md`) -- NOT the deprecated `build-msix.ps1`; verify the produced MSIX has the correct `Identity`/`Version` and non-empty credentials.
-  - **Store-submission preconditions**: walk `docs/STORE_RELEASE_PROCESS.md` and confirm each precondition is satisfied (secrets.prod.json present/recreated, publisher identity, capabilities, privacy policy current, `store: true`); produce a go/no-go checklist.
-  - **Full verification**: `flutter analyze` clean, full `flutter test` green, Windows prod build succeeds, both redaction + version gates green.
-- **Acceptance criteria**: a completed readiness checklist (develop/main reconciled, version verified compatible + > published, MSIX path confirmed, all Store preconditions checked, tests+build green) with an explicit GO / NO-GO recommendation for Harold; any blocker surfaced (not silently fixed).
-- **Depends on**: none (verification of existing state). Note: `main` is user-controlled (release branch) -- reconciling develop->main is a Chief-Developer decision; F111 REPORTS the parity state, it does not merge to main.
-- **Why this sprint**: Harold-selected as the Sprint 45 scope (2026-07-01).
+_(F111 shipped in Sprint 45 -- GO recommendation delivered; see docs/sprints/SPRINT_45_F111_STORE_READINESS.md and SPRINT_45_SUMMARY.md. Store upload of 0.5.4 is a pending Harold action, targeted Sat/Sun on a stable network -- not a backlog item.)_
 
 _(F103 Architecture Deep Dive and F104 Security Deep Dive ran in Sprint 43 -- see `docs/sprints/SPRINT_43_F103_ARCHITECTURE_DEEP_DIVE.md` and `SPRINT_43_F104_SECURITY_DEEP_DIVE.md`; their reusable templates F71 / F70 remain HOLD below. F105 version bump shipped.)_
 
-**F64. CI/CD pipeline with GitHub Actions (~4-6h) Priority HOLD**
+### DevOps
+
+**F64. CI/CD pipeline with GitHub Actions (~4-6h) Priority 10**
 - Phase: DevOps
 - Platform: All
 - GitHub Actions workflow for: flutter analyze, flutter test, build verification
 - Trigger on PR to develop
-- HOLD rationale: Current CI/CD equivalent is handled by Claude Code sprint execution workflow (flutter analyze, flutter test, Windows build in Phase 5). Could be implemented later if beneficial to dev team, maintenance team, or instructed by Product Owner.
+- Taken off HOLD for Sprint 46 (Harold 2026-07-02): prior HOLD rationale was that Claude Code's sprint workflow (flutter analyze, flutter test, Windows build in Phase 5) already covers this. Held for now on major changes until the 0.5.4 Store rollout completes -- scope this task accordingly.
 - Source: Sprint 30 gap analysis (SPRINT_30_GAP_ANALYSIS.md gap G24)
 
 ### HOLD Items (Periodic Reviews)
+
+**F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD**
+- Phase: Release Readiness (reusable template)
+- Platform: Windows Desktop
+- **Generic scope**: verify develop/main parity, version compatibility vs the currently-published Store version, MSIX build-path integrity (`msix_config.build_windows_args` OAuth-credential injection), and Store-submission preconditions (`docs/STORE_RELEASE_PROCESS.md` checklist) BEFORE any Store build/upload. Produces a GO/NO-GO readiness finding; does not build or upload.
+- **How to use**: Duplicate this item, assign a sprint, and remove HOLD. After completion, keep this template for the next review.
+- HOLD rationale: Template item, reusable each time a new Windows Store release is planned. First run: Sprint 45 (see `docs/sprints/SPRINT_45_F111_STORE_READINESS.md`).
+- Source: Sprint 45 backlog refinement (2026-07-02) -- captured as a recurring template since Store readiness verification will be needed for every future release.
 
 **F70. Periodic Security Deep Dive (~4-8h per review) Priority HOLD**
 - Phase: Security Spike (reusable template)
@@ -221,13 +220,19 @@ _(F103 Architecture Deep Dive and F104 Security Deep Dive ran in Sprint 43 -- se
 - HOLD rationale: Template item. Duplicate when periodic architecture review is needed.
 - Source: Sprint 31 retrospective feedback (based on Sprint 30 architecture deep dive experience)
 
-### HOLD Items (Post-Windows Store)
+### Core App Quality
 
-**F33. Body rules cleanup script (~4-6h) Priority HOLD**
+**F33. Body rules cleanup script (~4-6h) Priority 20**
 - Phase: Core App Quality
 - Platform: All
-- Post-Windows Store release
+- Taken off HOLD for Sprint 46 (Harold 2026-07-02). Held for now on major changes until the 0.5.4 Store rollout completes -- scope this task accordingly.
 - [Detail](#body-rules-cleanup-script)
+
+**F39. Cross-Account "No Rule" Review Screen with Multi-Select Bulk Rule Application (~90-140m, Sprint 46 scope) Priority 30**
+- Phase: Core App Quality
+- Platform: Windows Desktop (Sprint 46 scope; Android/iOS deferred)
+- Taken off HOLD for Sprint 46 (Harold 2026-07-02); scope restructured during Phase 4 execution to a new cross-account aggregation screen (see Detail). Held for now on major changes until the 0.5.4 Store rollout completes -- scope this task accordingly.
+- [Detail](#f39-cross-account-no-rule-review-screen-with-multi-select-bulk-rule-application)
 
 ### HOLD Items (Android / Google Play Store)
 
@@ -433,11 +438,6 @@ _(F103 Architecture Deep Dive and F104 Security Deep Dive ran in Sprint 43 -- se
   - **Core methods** via Microsoft Graph API: `loadCredentials()` (init OAuth), `fetchMessages()` (OData `$filter=receivedDateTime ge {date}`, `$top` pagination), plus the rest of the `EmailProvider`/`SpamFilterPlatform` interface (move/delete/folder-list) mapped to Graph endpoints.
   - Register the platform in `PlatformRegistry`; folder/canonical-folder mapping for Outlook's well-known folders.
 - **Why HOLD**: post-MVP provider expansion; large (~16-20h) and gated behind a Microsoft app registration. The existing AOL/Gmail/IMAP providers cover current users.
-
-**F39. Scan Results: Multi-Select and Bulk Rule Application (~12-16h) Priority HOLD**
-- Phase: Post-MVP, Post-Windows Store
-- Platform: All (may need platform-specific UI)
-- [Detail](#f39-scan-results-multi-select-and-bulk-rule-application)
 
 ---
 
@@ -761,23 +761,24 @@ The Windows dev/prod current implementation requires a rebuild to switch -- only
 
 ---
 
-### F39: Scan Results Multi-Select and Bulk Rule Application
+### F39: Cross-Account "No Rule" Review Screen with Multi-Select Bulk Rule Application
 
-**Status**: HOLD (Post-MVP, Post-Windows Store)
-**Estimated Effort**: ~12-16h
-**Phase**: Post-MVP, Post-Windows Store
-**Platform**: All (may need platform-specific UI patterns)
+**Status**: Active, Sprint 46 (taken off HOLD 2026-07-02; scope RESTRUCTURED during Phase 4 execution 2026-07-02 -- see below)
+**Estimated Effort**: ~12-16h (legacy, original scope); Sprint 46 scope ~90-140m (Windows-only, new cross-account screen, see below)
+**Phase**: Core App Quality
+**Platform**: Sprint 46 scope = **Windows Desktop only** (Harold 2026-07-02: Android/iOS multi-select explicitly deferred, not attempted this sprint -- may return to backlog as a separate future item if prioritized).
 
-**Overview**: Allow users to select multiple emails in Scan Results (live and history) and apply a rule action to all selected items at once, rather than one at a time.
+**Scope restructure (Harold 2026-07-02, surfaced during Phase 4 implementation)**: the original ask ("add multi-select to the existing per-account Scan Results screen") was NOT the real need. Clarifying question during execution surfaced the actual requirement: **a single aggregated list of "No rule" items across ALL configured accounts by default** (account-filterable down to one), scoped to **each account's most recent scan/live run only** (not full history -- a user reviewing weekly wants this week's unaddressed items, not a re-scan of history). Realistic weekly volume: **<50 "No rule" items across all accounts**. Structural decision: **new screen** (not a mode grafted onto the existing 2812-line `results_display_screen.dart`, which is constructed with a required single account per instance). See `docs/sprints/SPRINT_46_PLAN.md` Task 3 for full detail.
 
-**Selection Mechanics**:
+**Overview**: New screen aggregating unaddressed ("No rule") scan results across all accounts, with multi-select and bulk rule-application actions -- replaces one-at-a-time triage with a batched weekly-review workflow.
+
+**Selection Mechanics** (Windows desktop):
 - Radial button (checkbox) to the left of each item for select/unselect
-- Ctrl+click to add individual items to selection (Windows/desktop)
-- Shift+click to select a range of items between two clicked items (Windows/desktop)
-- Selection applies only to the currently filtered list (respects active filter chips)
-- Touch-friendly selection for mobile (long-press to enter selection mode, tap to toggle)
+- Ctrl+click to add individual items to selection
+- Shift+click to select a range of items between two clicked items
+- Selection scoped to the current account filter
 
-**Bulk Actions (right-click context menu / action bar)**:
+**Bulk Actions (right-click context menu)**:
 7 options:
 1. Add Safe Sender - Exact Email
 2. Add Safe Sender - Exact Domain
@@ -787,25 +788,20 @@ The Windows dev/prod current implementation requires a rebuild to switch -- only
 6. Add Block Rule - Entire Domain
 7. Remove Current Rule
 
-**Platform-Specific UI Considerations**:
-- **Windows Desktop**: Right-click context menu, Ctrl+click and Shift+click selection, radial buttons
-- **Android/iOS**: Long-press to enter selection mode, floating action bar for bulk actions, tap to toggle selection
-- **Display size**: Compact layouts may need bottom sheet instead of context menu
-- UI investigation needed before implementation to determine best pattern per platform
+**Batching**: the expensive re-evaluate/re-process/notify tail (`_reEvaluateNoRuleEmails()`, `_reProcessAffectedEmails()`, SnackBar) runs ONCE per bulk operation, not once per selected item -- one summary notification instead of up to 50 stacked SnackBars. Rule-creation logic itself is extracted from `_addSafeSender`/`_createBlockRule` into a shared, screen-agnostic method so behavior does not drift between the existing single-item detail-sheet flow and this new bulk screen.
 
-**Dependencies**: Scan Results screen (completed Sprint 12), Rule management (completed Sprint 20)
+**Dependencies**: Scan Results screen (completed Sprint 12), Rule management (completed Sprint 20), existing single-item quick-add logic (`_addSafeSender` ~L2424, `_createBlockRule` ~L2589 in `results_display_screen.dart`) as the extraction source for shared rule-creation logic.
 
-**Current state (verified 2026-05-25)**: NOT essentially complete -- the bulk/multi-select feature remains NOT DONE. `mobile-app/lib/ui/screens/results_display_screen.dart` has NO per-item checkbox/radial selection (`_buildResultTile` ~L1312-1348), no Ctrl+click / Shift+click / long-press selection mode, and no selection state (only `_selectedFolders` exists for the folder filter, ~L74). What DOES exist is the per-item (single-email) version: the email detail sheet (`_showEmailDetailSheet` ~L1367+) offers single-email quick-add safe-sender (exact email / domain / custom) and quick-add block rule (From / domain / body-URL / custom), with inline single-email re-evaluation via `_evaluationOverrides` (~L90, L1914, L2077). F39 is specifically the BULK version of these existing single-email actions; that bulk layer is entirely unbuilt.
-
-**Acceptance Criteria**:
-- [ ] UI investigation completed: document recommended selection and action patterns per platform
+**Acceptance Criteria (Sprint 46, restructured scope, Windows-only per Harold 2026-07-02)**:
+- [ ] New screen aggregates the latest "No rule" items across all accounts by default
+- [ ] Account filter narrows the list to a single account
+- [ ] Only each account's latest scan/live run is included (not full history)
 - [ ] Multi-select works with Ctrl+click and Shift+click on desktop
-- [ ] Radial button per item for direct select/unselect
-- [ ] Selection scoped to current filter results only
-- [ ] Right-click (desktop) or action bar (mobile) shows 7 bulk action options
-- [ ] Bulk action applies chosen rule to all selected emails
-- [ ] Works in both live scan results and scan history views
-- [ ] Platform-appropriate UI for Windows, Android, and iOS
+- [ ] Radial/checkbox per item for direct select/unselect
+- [ ] Right-click context menu shows 7 bulk action options
+- [ ] Bulk action applies chosen rule to all selected emails, with re-evaluate/re-process/notify run ONCE per bulk operation
+- [ ] Rule-creation logic is shared (not duplicated) between the existing single-item detail-sheet flow and the new bulk screen
+- [ ] Android/iOS multi-select explicitly deferred (not attempted this sprint)
 
 ### F74: FAQ Section in Help
 
@@ -1139,6 +1135,8 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 6.4 | 2026-07-02 | Sprint 46 Phase 1 backlog refinement: pruned the shipped **F111** from Next Sprint Candidates (Release Readiness section now empty -- GO delivered Sprint 45); refreshed Sprint Assignment header to Sprint 46 + "Last Reviewed" -> July 2, 2026. Added **F111** as a new reusable HOLD template under Periodic Reviews (Windows Store readiness verification will recur each release). Harold took **F64, F33, F39** off HOLD and selected them as Sprint 46 scope (Priority 10/20/30); standing constraint -- hold on other major changes until the 0.5.4 Store rollout completes. GitHub issues: 0 open. |
+| 6.3 | 2026-07-02 | Sprint 45 completion + Sprint 46 pre-kickoff (Phase 3.2.1): created `docs/sprints/SPRINT_45_SUMMARY.md`; rolled **Last Completed Sprint** 44 -> 45; added the Sprint 45 row (PR #268) to the Past Sprint Summary table. Recorded the **develop -> main RELEASE MERGE** (Harold, 2026-07-02) -- F111-verified `0.5.4` codebase is now on `main`; Store upload targeted Sat/Sun on a stable network. F111 was Sprint 45's only item (Release Readiness), so Next Sprint Candidates is otherwise unchanged from the 6.2 refinement -- awaiting Sprint 46 scope selection. |
 | 6.2 | 2026-07-01 | Sprint 45 backlog refinement (Harold direction): moved **F106** Priority 30 -> HOLD/Post-MVP and paired it under SEC-11b (F106 cannot start until the SEC-11b DB-encryption item ships + ~2 verification sprints). Added **F111** (Windows App Store upload readiness verification, P40) as a NEW active item under a new "Release Readiness" section -- selected as the Sprint 45 scope. |
 | 6.1 | 2026-07-01 | Sprint 44 completion + Sprint 45 pre-kickoff (Phase 3.2.1 + Phase 1 backlog refinement): rolled **Last Completed Sprint** Sprint 42 -> Sprint 44 (43 + 44 both merged, PR #265 + #266); created `docs/sprints/SPRINT_44_SUMMARY.md`; added Sprint 43 (PR #265) + Sprint 44 (PR #266) rows to the Past Sprint Summary table. Pruned the 3 Sprint-44 shipped items (F107, F108, F109) from Next Sprint Candidates -- active near-term backlog is now empty; remaining candidates are the deep-dive templates (F70/F71), F64 (HOLD), Post-MVP (SEC-11b/F106), and the HOLD platform/UX tracks. Refreshed "Last Reviewed" -> July 1, 2026. Open follow-up recorded: Android-device retest of the Sprint 44 F108 dependency bumps. |
 | 6.0 | 2026-06-25 | Sprint 43 Phase 7 currency pass (rolled into PR #265 before merge, per Harold): updated **Last Completed Sprint** Sprint 38 -> Sprint 42 (the last MERGED sprint; Sprint 43 becomes Last-Completed at Sprint 44 pre-kickoff once PR #265 merges). Filled the **Past Sprint Summary** gap -- added the missing Sprint 39 (PR #260) and Sprint 40 (PR #261) rows (table had jumped 38 -> 41). Refreshed the stale **"Last Reviewed: May 25, 2026"** marker to June 23, 2026 (Sprint 42 Backlog Refinement). Backlog items F107/F108/F109 added during Sprint 43; SEC-11b moved to Post-MVP (cipher -> SQLite3MultipleCiphers). Addresses the master-plan staleness flagged in the PR #265 Copilot review. |

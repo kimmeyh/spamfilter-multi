@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [develop]
+
+jobs:
+  analyze-and-test:
+    name: Analyze and Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile-app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.5'
+          channel: 'stable'
+          cache: true
+
+      - name: flutter pub get
+        run: flutter pub get
+
+      - name: flutter analyze
+        run: flutter analyze
+
+      - name: flutter test
+        run: flutter test
+
+  windows-build:
+    name: Windows Build Verification
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: mobile-app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.5'
+          channel: 'stable'
+          cache: true
+
+      - name: Enable Windows desktop
+        run: flutter config --enable-windows-desktop
+
+      - name: flutter pub get
+        run: flutter pub get
+
+      - name: Write CI secrets file
+        shell: pwsh
+        env:
+          GMAIL_DESKTOP_CLIENT_ID: ${{ secrets.CI_GMAIL_DESKTOP_CLIENT_ID }}
+          GMAIL_OAUTH_CLIENT_SECRET: ${{ secrets.CI_GMAIL_OAUTH_CLIENT_SECRET }}
+          GMAIL_REDIRECT_URI: ${{ secrets.CI_GMAIL_REDIRECT_URI }}
+          AOL_EMAIL: ${{ secrets.CI_AOL_EMAIL }}
+          AOL_APP_PASSWORD: ${{ secrets.CI_AOL_APP_PASSWORD }}
+        run: |
+          # This step requires the CI_* repo secrets listed above to be
+          # configured (Settings > Secrets and variables > Actions). Until
+          # they are set, this writes empty-string values -- sufficient for
+          # `flutter build windows` to compile and link (the OAuth values
+          # are only read at runtime, not at build time), but NOT a
+          # substitute for the full local build-with-secrets.ps1 path used
+          # for real Windows/Store builds. See docs/STORE_RELEASE_PROCESS.md.
+          $json = @{
+            GMAIL_DESKTOP_CLIENT_ID = $env:GMAIL_DESKTOP_CLIENT_ID
+            GMAIL_OAUTH_CLIENT_SECRET = $env:GMAIL_OAUTH_CLIENT_SECRET
+            GMAIL_REDIRECT_URI = $env:GMAIL_REDIRECT_URI
+            AOL_EMAIL = $env:AOL_EMAIL
+            AOL_APP_PASSWORD = $env:AOL_APP_PASSWORD
+          } | ConvertTo-Json
+          Set-Content -Path secrets.ci.json -Value $json
+
+      - name: flutter build windows
+        run: flutter build windows --release --dart-define-from-file=secrets.ci.json
+
+      - name: Remove CI secrets file
+        if: always()
+        shell: pwsh
+        run: Remove-Item -Path secrets.ci.json -Force -ErrorAction SilentlyContinue
