@@ -38,6 +38,7 @@ import 'package:my_email_spam_filter/core/storage/rule_database_store.dart';
 import 'package:my_email_spam_filter/core/storage/safe_sender_database_store.dart';
 
 import '../../helpers/database_test_helper.dart';
+import '../../helpers/db_widget_test_harness.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -180,14 +181,10 @@ void main() {
 
         /// Render a fresh screen instance and let its async initState DB load
         /// (getScanResultById -> queryEmailActions -> loadRules/loadSafeSenders
-        /// -> re-evaluate -> setState) complete, then flush the resulting
-        /// setState into rendered frames.
-        Future<void> mountAndLoad(Widget app) async {
-          await tester.pumpWidget(app);
-          await Future<void>.delayed(const Duration(milliseconds: 800));
-          await tester.pump(); // flush the load's setState
-          await tester.pump(const Duration(milliseconds: 50));
-        }
+        /// -> re-evaluate -> setState) complete. Delegates to the shared
+        /// harness (Sprint 46 retro IMP-2).
+        Future<void> mountAndLoad(Widget app) =>
+            mountAndLoadDbWidget(tester, app);
 
         // --- First mount: NO matching rule yet -----------------------------
         await mountAndLoad(wrapScreen(ruleProvider, scanProvider,
@@ -254,6 +251,87 @@ void main() {
       // readOnly mode renders the deleted chip as "Deleted (not processed)".
       expect(find.text('Deleted (not processed): 1'), findsOneWidget,
           reason: 'Newly matched email counts toward the Deleted chip');
+    });
+
+    // Sprint 46 manual-testing feedback (Harold 2026-07-11): the "No rule"
+    // auto-advance must work on the HISTORICAL path (Scan History > scan
+    // results) too, not just live scan results -- both views are the same
+    // ResultsDisplayScreen, and this pins the historical mode so it never
+    // regresses independently. Also covers the skip-covered-items rule: a
+    // Block Exact Domain action on bad@spam.com must advance PAST
+    // worse@spam.com (same domain -- the new rule addresses it too)
+    // straight to friend@trusted.com.
+    testWidgets(
+        'historical view: quick action auto-advances popup to next item '
+        'not covered by the new rule ("No rule" filter active)',
+        (tester) async {
+      tester.view.physicalSize = const Size(1200, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.runAsync(() async {
+        // Third seeded email, SAME domain as bad@spam.com, sitting between it
+        // and friend@trusted.com in the sorted list (folder -> domain ->
+        // email: spam.com sorts after trusted.com? No -- 's' > 't' is false:
+        // 'spam.com' < 'trusted.com', so both spam.com rows come first).
+        await testHelper.dbHelper.insertEmailActionBatch([
+          {
+            'scan_result_id': scanId,
+            'email_id': '1003',
+            'email_from': 'worse@spam.com',
+            'email_subject': 'Another prize',
+            'email_received_date': DateTime.now().millisecondsSinceEpoch,
+            'email_folder': 'INBOX',
+            'action_type': 'none',
+            'matched_rule_name': null,
+            'matched_pattern': null,
+            'is_safe_sender': 0,
+            'success': 1,
+          },
+        ]);
+
+        final ruleProvider = await buildRuleProvider();
+        final scanProvider = EmailScanProvider(); // readOnly / idle
+
+        await mountAndLoadDbWidget(
+            tester,
+            wrapScreen(ruleProvider, scanProvider,
+                instanceKey: const ValueKey('advanceMount')));
+
+        // Activate the "No rule" filter (the advance is scoped to it).
+        expect(find.text('No rule: 3'), findsOneWidget);
+        await tester.tap(find.text('No rule: 3'));
+        await tester.pump();
+
+        // Open the popup on the first spam.com email.
+        await tester.tap(find.text('bad@spam.com'));
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('Create Block Rule'), findsOneWidget,
+            reason: 'Detail popup must open in historical mode');
+
+        // Act: Block Exact Domain (@spam.com) -- covers worse@spam.com too.
+        await tester.tap(find.text('Block Exact Domain'));
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // The popup must have advanced DIRECTLY to friend@trusted.com,
+        // skipping worse@spam.com (covered by the domain rule just created).
+        expect(find.text('Create Block Rule'), findsOneWidget,
+            reason: 'Next popup must be open immediately after the action');
+        expect(find.text('friend@trusted.com'), findsAtLeastNWidgets(2),
+            reason: 'friend@trusted.com must appear in the advanced popup '
+                '(header + button subtitles) in addition to its list row');
+        expect(find.text('worse@spam.com').evaluate().length,
+            lessThanOrEqualTo(1),
+            reason: 'worse@spam.com must NOT be the advanced popup target '
+                '(same domain as the rule just created)');
+
+        // Let the background pipeline (rule persist + re-evaluation) finish
+        // before teardown so no timers/futures leak past the test.
+        await Future<void>.delayed(const Duration(milliseconds: 800));
+        await tester.pump();
+      });
     });
   });
 }

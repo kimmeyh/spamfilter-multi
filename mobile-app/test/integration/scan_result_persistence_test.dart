@@ -289,5 +289,63 @@ void main() {
       expect(providerNoPersist.status.toString(), contains('completed'));
     });
 
+    // F39 (Sprint 46) regression: unmatched_emails MUST be written at scan
+    // completion. Manual testing found the table had NO production writer
+    // (a Sprint 4 placeholder only logged "will persist in Task D"), so the
+    // cross-account Review "No Rule" Items screen always showed 0 items
+    // while scan_results.no_rule_count said otherwise.
+    test('F39: "No rule" results persist to unmatched_emails at completion',
+        () async {
+      // Re-init WITH databaseHelper -- _persistEmailActions requires it and
+      // it is an optional param the other tests omit.
+      scanProvider.initializePersistence(
+        scanResultStore: scanResultStore,
+        unmatchedEmailStore: unmatchedEmailStore,
+        databaseHelper: databaseHelper,
+      );
+      scanProvider.setCurrentAccountId('test@gmail.com');
+
+      await scanProvider.startScan(
+        totalEmails: 2,
+        scanType: 'manual',
+        foldersScanned: ['INBOX'],
+      );
+
+      EmailMessage msg(String id, String from) => EmailMessage(
+            id: id,
+            from: from,
+            subject: 'Subject $id',
+            body: 'Body',
+            headers: const {},
+            receivedDate: DateTime.now(),
+            folderName: 'INBOX',
+          );
+
+      scanProvider.recordResult(EmailActionResult(
+        email: msg('u1', 'norule@biz.example'),
+        action: EmailActionType.none,
+        success: true,
+      ));
+      scanProvider.recordResult(EmailActionResult(
+        email: msg('u2', 'bad@spam.example'),
+        action: EmailActionType.delete,
+        success: true,
+      ));
+
+      await scanProvider.completeScan();
+
+      final latest =
+          await scanResultStore.getLatestCompletedScan('test@gmail.com');
+      expect(latest, isNotNull);
+      final rows = await unmatchedEmailStore.getUnmatchedEmailsByScanFiltered(
+        latest!.id!,
+        unprocessedOnly: true,
+      );
+      expect(rows, hasLength(1),
+          reason: 'exactly the No-rule result (not the delete) must persist');
+      expect(rows.first.fromEmail, 'norule@biz.example');
+      expect(rows.first.processed, isFalse);
+      expect(rows.first.providerIdentifierValue, 'u1');
+    });
   });
 }

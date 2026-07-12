@@ -1,3 +1,4 @@
+import 'dart:async' show unawaited;
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -15,17 +16,18 @@ import '../../core/providers/email_scan_provider.dart' show EmailScanProvider, E
 import '../../core/providers/rule_set_provider.dart';
 import '../../core/models/email_message.dart';
 import '../../core/models/evaluation_result.dart';
-import '../../core/models/rule_set.dart' show Rule, RuleConditions, RuleActions;
 import '../../core/services/auth_results_parser.dart';
 import '../../core/services/email_body_parser.dart';
 import '../../core/services/pattern_compiler.dart';
-import '../../core/services/rule_conflict_resolver.dart';
 import '../../core/services/rule_evaluator.dart';
+import '../../core/services/rule_quick_action_service.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/utils/pattern_normalization.dart';
+import '../../core/utils/provider_sender_grouping.dart';
 import '../../core/data/common_email_providers.dart';
+import '../widgets/provider_group_markers.dart';
 import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/email_providers/spam_filter_platform.dart' show SpamFilterPlatform, FilterAction;
 import '../../adapters/storage/secure_credentials_store.dart';
@@ -478,22 +480,35 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       // First sort by folder
       final folderCompare = a.email.folderName.compareTo(b.email.folderName);
       if (folderCompare != 0) return folderCompare;
-      
+
       // Then sort by domain
       final bodyParser = EmailBodyParser();
       final domainA = bodyParser.extractDomainFromEmail(a.email.from) ?? '';
       final domainB = bodyParser.extractDomainFromEmail(b.email.from) ?? '';
       final domainCompare = domainA.compareTo(domainB);
       if (domainCompare != 0) return domainCompare;
-      
+
       // Finally sort by email
       final emailA = bodyParser.extractEmailAddress(a.email.from);
       final emailB = bodyParser.extractEmailAddress(b.email.from);
       return emailA.compareTo(emailB);
     });
-    
-    return results;
+
+    // Sprint 46 retro IMP-1 (Harold): email-provider senders group at the
+    // TOP (stable partition -- the folder/domain/email sort above is kept
+    // within both groups). Applies under every filter; the heading / end
+    // indicator are rendered by the list builder only when the group is
+    // non-empty. Boundary index is exposed via _providerGroupCount.
+    final partitioned = ProviderSenderGrouping.partitionProviderFirst(
+        results, (r) => r.email.from);
+    _providerGroupCount = partitioned.providerCount;
+    return partitioned.items;
   }
+
+  /// Provider-sender group size within the CURRENT filtered list -- set by
+  /// _getFilteredResults on every recompute; consumed by the list builder to
+  /// place the group heading and end indicator (IMP-1, Sprint 46 retro).
+  int _providerGroupCount = 0;
 
   /// Toggle filter when stat chip is clicked
   void _toggleFilter(EmailActionType? filterType) {
@@ -736,9 +751,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                         ],
                       )
                     : ListView.separated(
-                        itemCount: filteredResults.length,
+                        itemCount: filteredResults.length +
+                            (_providerGroupCount > 0 ? 2 : 0),
                         separatorBuilder: (_, __) => const Divider(height: 1),
-                        itemBuilder: (_, index) => _buildResultTile(filteredResults[index]),
+                        itemBuilder: (_, index) =>
+                            _buildGroupedRow(filteredResults, index),
                       ),
               ),
             ),
@@ -1344,6 +1361,19 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     );
   }
 
+  /// IMP-1 (Sprint 46 retro): maps ListView indices to rows, inserting the
+  /// provider-group heading before and the end indicator after the first
+  /// [_providerGroupCount] tiles. When the group is empty the list renders
+  /// exactly as before (no heading, no indicator).
+  Widget _buildGroupedRow(List<EmailActionResult> results, int index) {
+    final n = _providerGroupCount;
+    if (n <= 0) return _buildResultTile(results[index]);
+    if (index == 0) return ProviderGroupHeader(count: n);
+    if (index <= n) return _buildResultTile(results[index - 1]);
+    if (index == n + 1) return const ProviderGroupEnd();
+    return _buildResultTile(results[index - 2]);
+  }
+
   Widget _buildResultTile(EmailActionResult result) {
     // Issue #47: Title shows sender email, subtitle shows folder • subject • rule
     // Decode Punycode domains for display
@@ -1382,24 +1412,16 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     );
   }
 
-  /// Extract the root domain from a full domain (e.g., "subdomain.example.com" -> "example.com")
-  /// For domains like "pptwvrnbdho.atlantaoffre.com", returns "atlantaoffre.com"
-  String? _extractRootDomain(String? fullDomain) {
-    if (fullDomain == null || fullDomain.isEmpty) return null;
-
-    final parts = fullDomain.split('.');
-    // Need at least 2 parts for a valid domain (e.g., example.com)
-    if (parts.length < 2) return fullDomain;
-
-    // For most domains, return last 2 parts (example.com)
-    // For known TLDs like .co.uk, .com.au, etc., would need more logic
-    // For now, use simple heuristic: last 2 parts
-    return '${parts[parts.length - 2]}.${parts[parts.length - 1]}';
-  }
-
   /// Show positioned popup with email details and inline quick actions
   /// Issue 6: CSS-like positioning - show popup below/above email item
-  void _showEmailDetailSheet(EmailActionResult result, {GlobalKey? itemKey}) {
+  ///
+  /// [anchorPosition]/[anchorSize] (Sprint 46, Harold item 2): explicit
+  /// anchor override used by the "No rule" auto-advance flow, where the next
+  /// email's popup reuses the previous popup's anchor so it appears at the
+  /// same screen position (list tiles get fresh GlobalKeys every rebuild, so
+  /// the next item's own key is not addressable from here).
+  void _showEmailDetailSheet(EmailActionResult result,
+      {GlobalKey? itemKey, Offset? anchorPosition, Size? anchorSize}) {
     final email = result.email;
     final bodyParser = EmailBodyParser();
     // Extract raw email and domain (Punycode format) - used for block rule creation
@@ -1414,7 +1436,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         ? PatternNormalization.decodePunycodeDomain(rawSenderDomain)
         : null;
     // Extract root domain from RAW domain (for rule creation)
-    final rawRootDomain = _extractRootDomain(rawSenderDomain);
+    final rawRootDomain = PatternNormalization.extractRootDomain(rawSenderDomain);
     // Decode root domain for display
     final displayRootDomain = rawRootDomain != null
         ? PatternNormalization.decodePunycodeDomain(rawRootDomain)
@@ -1432,9 +1454,31 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     // Format date/time
     final dateStr = email.receivedDate.toString().substring(0, 16);
 
+    // Sprint 46 (Harold speed follow-up): predicates predicting which OTHER
+    // "No rule" items the quick action about to be taken will ALSO address,
+    // so the auto-advance skips them up front instead of popping up an email
+    // that is about to be resolved by the same rule.
+    bool coversSameEmail(EmailActionResult o) =>
+        bodyParser.extractEmailAddress(o.email.from).toLowerCase().trim() ==
+        rawSenderEmail.toLowerCase().trim();
+    bool coversExactDomain(EmailActionResult o) =>
+        rawSenderDomain != null &&
+        bodyParser.extractDomainFromEmail(o.email.from) == rawSenderDomain;
+    bool coversEntireDomain(EmailActionResult o) {
+      final target = rawRootDomain ?? rawSenderDomain;
+      if (target == null) return false;
+      final otherDomain = bodyParser.extractDomainFromEmail(o.email.from);
+      return PatternNormalization.extractRootDomain(otherDomain) == target;
+    }
+
+    bool coversSubject(EmailActionResult o) =>
+        PatternNormalization.cleanSubjectForDisplay(o.email.subject)
+            .toLowerCase()
+            .contains(cleanedSubject.toLowerCase());
+
     // Issue 6: Calculate position for CSS-like popup positioning
-    Offset? itemPosition;
-    Size? itemSize;
+    Offset? itemPosition = anchorPosition;
+    Size? itemSize = anchorSize;
     if (itemKey != null) {
       final RenderBox? renderBox = itemKey.currentContext?.findRenderObject() as RenderBox?;
       if (renderBox != null) {
@@ -1460,9 +1504,19 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           final itemBottom = itemPosition.dy + itemSize.height;
           final spaceBelow = screenHeight - itemBottom;
           final spaceAbove = itemPosition.dy;
+          // Sprint 46 manual-testing feedback (Harold 2026-07-11): when the
+          // screen has room, drop the popup one additional email-height lower
+          // (the clicked tile's own height is the best available estimate of
+          // one list item) so the NEXT item in the list stays visible above
+          // the popup -- after acting on this email the user can immediately
+          // click the next one instead of it being covered.
+          final oneItemGap = itemSize.height;
 
-          if (spaceBelow >= popupHeight) {
-            // Show below email
+          if (spaceBelow >= popupHeight + oneItemGap) {
+            // Show one email lower, keeping the next list item clickable
+            top = itemBottom + oneItemGap + 8; // 8px gap
+          } else if (spaceBelow >= popupHeight) {
+            // Show directly below email (no room to also expose the next item)
             top = itemBottom + 8; // 8px gap
           } else if (spaceAbove >= popupHeight) {
             // Show above email
@@ -1621,7 +1675,13 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                         onTap: () {
                           Navigator.pop(dialogContext);
                           // Use normalized email (plus-signs stripped) to match SafeSenderList evaluation
-                          _addSafeSender(normalizedSenderEmail, 'exact', email: email);
+                          _quickActionThenAdvance(
+                            current: result,
+                            anchorPosition: itemPosition,
+                            anchorSize: itemSize,
+                            action: () => _addSafeSender(normalizedSenderEmail, 'exact', email: email),
+                            coveredByAction: coversSameEmail,
+                          );
                         },
                       ),
                       if (rawSenderDomain != null)
@@ -1635,7 +1695,13 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                             Navigator.pop(dialogContext);
                             // F47: Check for email provider domain
                             if (!await _checkProviderDomainWarning(domain: rawSenderDomain, isBlockRule: false)) return;
-                            _addSafeSender('@$rawSenderDomain', 'exactDomain', email: email);
+                            _quickActionThenAdvance(
+                              current: result,
+                              anchorPosition: itemPosition,
+                              anchorSize: itemSize,
+                              action: () => _addSafeSender('@$rawSenderDomain', 'exactDomain', email: email),
+                              coveredByAction: coversExactDomain,
+                            );
                           },
                         ),
                       // Always show Entire Domain option (uses root domain or full domain if no subdomain)
@@ -1650,7 +1716,13 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                             Navigator.pop(dialogContext);
                             // F47: Check for email provider domain
                             if (!await _checkProviderDomainWarning(domain: rawRootDomain ?? rawSenderDomain, isBlockRule: false)) return;
-                            _addSafeSender(rawRootDomain ?? rawSenderDomain, 'entireDomain', email: email);
+                            _quickActionThenAdvance(
+                              current: result,
+                              anchorPosition: itemPosition,
+                              anchorSize: itemSize,
+                              action: () => _addSafeSender(rawRootDomain ?? rawSenderDomain, 'entireDomain', email: email),
+                              coveredByAction: coversEntireDomain,
+                            );
                           },
                         ),
                     ],
@@ -1676,7 +1748,13 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                         isMatched: isDeleted && effectiveEval?.matchedPatternType == 'exact_email',
                         onTap: () {
                           Navigator.pop(dialogContext);
-                          _createBlockRule('from', rawSenderEmail, email: email);
+                          _quickActionThenAdvance(
+                            current: result,
+                            anchorPosition: itemPosition,
+                            anchorSize: itemSize,
+                            action: () => _createBlockRule('from', rawSenderEmail, email: email),
+                            coveredByAction: coversSameEmail,
+                          );
                         },
                       ),
                       if (rawSenderDomain != null)
@@ -1690,7 +1768,13 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                             Navigator.pop(dialogContext);
                             // F47: Check for email provider domain
                             if (!await _checkProviderDomainWarning(domain: rawSenderDomain, isBlockRule: true)) return;
-                            _createBlockRule('exactDomain', '@$rawSenderDomain', email: email);
+                            _quickActionThenAdvance(
+                              current: result,
+                              anchorPosition: itemPosition,
+                              anchorSize: itemSize,
+                              action: () => _createBlockRule('exactDomain', '@$rawSenderDomain', email: email),
+                              coveredByAction: coversExactDomain,
+                            );
                           },
                         ),
                       // Always show Block Entire Domain option (uses root domain or full domain if no subdomain)
@@ -1705,7 +1789,13 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                             Navigator.pop(dialogContext);
                             // F47: Check for email provider domain
                             if (!await _checkProviderDomainWarning(domain: rawRootDomain ?? rawSenderDomain, isBlockRule: true)) return;
-                            _createBlockRule('entireDomain', rawRootDomain ?? rawSenderDomain, email: email);
+                            _quickActionThenAdvance(
+                              current: result,
+                              anchorPosition: itemPosition,
+                              anchorSize: itemSize,
+                              action: () => _createBlockRule('entireDomain', rawRootDomain ?? rawSenderDomain, email: email),
+                              coveredByAction: coversEntireDomain,
+                            );
                           },
                         ),
                       if (cleanedSubject.isNotEmpty && cleanedSubject != '(No subject)')
@@ -1719,7 +1809,13 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                           isMatched: isDeleted && effectiveEval?.matchedPatternType == 'subject',
                           onTap: () {
                             Navigator.pop(dialogContext);
-                            _createBlockRule('subject', cleanedSubject, email: email);
+                            _quickActionThenAdvance(
+                              current: result,
+                              anchorPosition: itemPosition,
+                              anchorSize: itemSize,
+                              action: () => _createBlockRule('subject', cleanedSubject, email: email),
+                              coveredByAction: coversSubject,
+                            );
                           },
                         ),
                     ],
@@ -1925,6 +2021,88 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     if (eval.shouldMove) return EmailActionType.moveToJunk;
     if (eval.matchedRule.isEmpty) return EmailActionType.none;
     return result.action;
+  }
+
+  /// Resolve the result list the screen is currently displaying -- the same
+  /// live-vs-historical resolution used by build/_reEvaluateNoRuleEmails/
+  /// _reProcessAffectedEmails (historical-scan views always use
+  /// _historicalResults; otherwise live results when present or a scan is
+  /// active, else the reloaded historical results).
+  List<EmailActionResult> _currentResults() {
+    final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
+    final liveResults = scanProvider.results;
+    final isLiveScanActive = scanProvider.status == ScanStatus.scanning ||
+        scanProvider.status == ScanStatus.paused;
+    return (widget.historicalScanId != null)
+        ? _historicalResults
+        : ((liveResults.isNotEmpty || isLiveScanActive)
+            ? liveResults
+            : _historicalResults);
+  }
+
+  /// Sprint 46 manual-testing feedback (Harold 2026-07-11, item 2 + speed
+  /// follow-up): when the "No rule" filter is active, acting on an email from
+  /// the detail popup auto-advances to the NEXT remaining item -- its popup
+  /// opens IMMEDIATELY at the same screen position, so triage becomes
+  /// click-action -> next email appears -> click-action -> ...
+  ///
+  /// Ordering, per Harold's follow-up ("the auto-advance ... was very slow"):
+  /// 1. Pick the next item FIRST -- the first following item in the filtered
+  ///    list NOT covered by the action just taken ([coveredByAction] predicts
+  ///    which items the new rule/safe-sender also addresses, e.g. every email
+  ///    from the same domain when a domain rule is created).
+  /// 2. Fire the processing pipeline WITHOUT awaiting it -- the rule persist,
+  ///    re-evaluation, IMAP re-processing, and snackbar all complete in the
+  ///    background (they refresh the list via setState when done).
+  /// 3. Open the next item's popup immediately.
+  ///
+  /// The prediction can rarely under-skip (a rule that also matches a later
+  /// email by a signal the predicate does not model); the consequence is just
+  /// that the popup shows an email that gets addressed moments later -- the
+  /// user sees it resolve and clicks on. No-op advance when the "No rule"
+  /// filter is not active or nothing remains.
+  void _quickActionThenAdvance({
+    required EmailActionResult current,
+    required Offset? anchorPosition,
+    required Size? anchorSize,
+    required Future<void> Function() action,
+    required bool Function(EmailActionResult other) coveredByAction,
+  }) {
+    final noRuleFilterActive = _filter == EmailActionType.none;
+
+    // Step 1: choose the next popup target BEFORE the slow pipeline runs.
+    EmailActionResult? next;
+    if (noRuleFilterActive) {
+      final visible = _getFilteredResults(_currentResults());
+      final currentKey = _getEmailKey(current.email);
+      final idx =
+          visible.indexWhere((r) => _getEmailKey(r.email) == currentKey);
+      if (idx >= 0) {
+        for (final candidate in visible.skip(idx + 1)) {
+          if (!coveredByAction(candidate)) {
+            next = candidate;
+            break;
+          }
+        }
+      }
+    }
+
+    // Step 2: process the current email in the background (matches the
+    // original fire-and-forget behavior of these buttons pre-auto-advance).
+    // The action's own internals surface user-facing failures via SnackBar;
+    // this guard catches anything thrown by the re-evaluate/re-process tail
+    // so a background exception is logged instead of becoming an unhandled
+    // async error (Copilot review, Sprint 46).
+    unawaited(action().catchError((Object e, StackTrace s) {
+      Logger().e('Background quick-action pipeline failed',
+          error: e, stackTrace: s);
+    }));
+
+    // Step 3: show the next item's popup right away.
+    if (next != null && mounted) {
+      _showEmailDetailSheet(next,
+          anchorPosition: anchorPosition, anchorSize: anchorSize);
+    }
   }
 
   /// Shared PatternCompiler for re-evaluation.
@@ -2424,7 +2602,6 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   Future<void> _addSafeSender(String value, String type, {EmailMessage? email}) async {
     final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
     final logger = Logger();
-    final conflictResolver = RuleConflictResolver();
 
     // F96 (Sprint 43): on the Scan History reload path the source email is
     // reconstructed from the database, so we re-hydrate the SPF/DKIM/DMARC
@@ -2454,106 +2631,26 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       }
     }
 
-    try {
-      // Create regex pattern based on type
-      String pattern;
-      String displayMessage;
+    // F39 (Sprint 46): rule-persistence core is shared with the
+    // cross-account "No rule" review screen via RuleQuickActionService.
+    // The re-evaluate/re-process/notify tail below stays here -- it is
+    // specific to this screen's in-memory scan-session state.
+    final service = RuleQuickActionService(ruleProvider: ruleProvider);
+    final senderEmail = email != null
+        ? EmailBodyParser().extractEmailAddress(email.from).toLowerCase().trim()
+        : value;
+    final result = await service.addSafeSender(
+      value: value,
+      type: type,
+      senderEmailForConflictCheck: senderEmail,
+    );
 
-      switch (type) {
-        case 'exact':
-          // Exact email match - escape special chars
-          final escaped = value.replaceAll('.', r'\.').replaceAll('@', r'@');
-          pattern = '^$escaped\$';
-          displayMessage = 'Added "$value" to Safe Senders';
-          break;
-        case 'exactDomain':
-          // Exact domain match (e.g., @subdomain.domain.com)
-          final escaped = value.replaceAll('.', r'\.').replaceAll('@', r'@');
-          pattern = '^[^@\\s]+$escaped\$';
-          displayMessage = 'Added exact domain "$value" to Safe Senders';
-          break;
-        case 'entireDomain':
-          // Entire domain pattern (e.g., @*.domain.com matches any subdomain)
-          // Regex: ^[^@\s]+@(?:[a-z0-9-]+\.)*domain\.com$
-          final escaped = value.replaceAll('.', r'\.');
-          pattern = r'^[^@\s]+@(?:[a-z0-9-]+\.)*' + escaped + r'$';
-          displayMessage = 'Added entire domain "*.$value" to Safe Senders';
-          break;
-        default:
-          logger.w('Unknown safe sender type: $type');
-          return;
-      }
-
-      // Remove conflicting block rules before adding safe sender (Issue #154)
-      // Use full email address for conflict matching (domain-only values do not match rule patterns)
-      final senderEmail = email != null
-          ? EmailBodyParser().extractEmailAddress(email.from).toLowerCase().trim()
-          : value;
-      final conflicts = await conflictResolver.removeConflictingRules(
-        emailAddress: senderEmail,
-        ruleProvider: ruleProvider,
-      );
-
-      // Add to safe senders via provider (persists to database and YAML)
-      await ruleProvider.addSafeSender(pattern);
-
-      // Sprint 38 Round 1 F86: reload from DB so any conflict-resolved
-      // changes or safe-sender list normalization are reflected in
-      // ruleProvider before subsequent re-evaluation runs.
-      await ruleProvider.loadSafeSenders();
-      await ruleProvider.loadRules();
-
-      // Include conflict removal info in display message
-      if (conflicts.conflictsRemoved > 0) {
-        displayMessage += ' (removed ${conflicts.conflictsRemoved} conflicting rule${conflicts.conflictsRemoved > 1 ? "s" : ""})';
-      }
-
-      logger.i('[OK] Added safe sender: $pattern');
-
-      // F21: Re-evaluate email against updated rules and refresh list
-      if (email != null) {
-        await _reEvaluateEmail(email);
-      }
-
-      // Re-evaluate all remaining "No rule" emails against the new safe sender
-      final preStats = _computeNoRuleStats();
-      await _reEvaluateNoRuleEmails();
-      final postStats = _computeNoRuleStats();
-
-      // Sprint 38 Round 4 (2026-05-17): advance the oldest-unaddressed-no-rule
-      // UID cursor per folder so the next IMAP scan resumes from the
-      // remaining backlog (or clears the cursor and falls back to daysBack
-      // if all are addressed). Non-IMAP rows are skipped inside the helper.
-      await _updateOldestNoRuleCursorsFromResults();
-
-      // F38: Execute IMAP actions for affected emails
-      await _reProcessAffectedEmails();
-
-      if (mounted) {
-        setState(() {}); // Refresh list to show updated rule assignment
-        // Sprint 38 F82 (Issue #252): append "N removed, M remaining" so the
-        // user sees concrete progress against the no-rules pool.
-        final removedNow = preStats.remaining - postStats.remaining;
-        final remaining = postStats.remaining;
-        final progressSuffix = removedNow > 0
-            ? ' -- $removedNow removed, $remaining "No rule" remaining'
-            : (remaining > 0 ? ' -- $remaining "No rule" remaining' : '');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('$displayMessage$progressSuffix'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
-          ),
-        );
-      }
-    } catch (e) {
-      logger.e('[FAIL] Failed to add safe sender: $e');
+    if (!result.success) {
+      logger.e('[FAIL] Failed to add safe sender: ${result.error}');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to add safe sender: $e'),
+            content: Text(result.displayMessage),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 3),
             behavior: SnackBarBehavior.floating,
@@ -2561,27 +2658,47 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           ),
         );
       }
+      return;
     }
-  }
 
-  /// BUG-S39-1 (Sprint 39): sanitize `input` for use inside a `rules.name`
-  /// or `safe_senders.name` value. Preserves the characters that
-  /// distinguish email-shaped patterns -- `_`, `-`, `@`, `.` -- so distinct
-  /// inputs always yield distinct names. Any other character (whitespace,
-  /// punctuation, non-ASCII) is replaced with `_` so the resulting name is
-  /// readable and shell-safe.
-  ///
-  /// Per Harold (2026-05-24): "should not be collapsing for `<email>@`".
-  /// The pre-fix sanitizer was `replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')`,
-  /// which collapsed all four distinguishing characters into `_` and
-  /// caused `account_update@amazon.com` and `account-update@amazon.com`
-  /// to produce the same rule name `Block_account_update_amazon_com`.
-  /// The DB has `name TEXT NOT NULL UNIQUE` on `rules`, so the second
-  /// insert raised a UNIQUE-constraint violation that `RuleSetProvider.
-  /// addRule` then silently swallowed (see BUG-S39-2). The UI showed
-  /// "Created rule" snackbar despite no row being inserted.
-  String _sanitizeForRuleName(String input) {
-    return input.replaceAll(RegExp(r'[^a-zA-Z0-9._@-]'), '_');
+    // F21: Re-evaluate email against updated rules and refresh list
+    if (email != null) {
+      await _reEvaluateEmail(email);
+    }
+
+    // Re-evaluate all remaining "No rule" emails against the new safe sender
+    final preStats = _computeNoRuleStats();
+    await _reEvaluateNoRuleEmails();
+    final postStats = _computeNoRuleStats();
+
+    // Sprint 38 Round 4 (2026-05-17): advance the oldest-unaddressed-no-rule
+    // UID cursor per folder so the next IMAP scan resumes from the
+    // remaining backlog (or clears the cursor and falls back to daysBack
+    // if all are addressed). Non-IMAP rows are skipped inside the helper.
+    await _updateOldestNoRuleCursorsFromResults();
+
+    // F38: Execute IMAP actions for affected emails
+    await _reProcessAffectedEmails();
+
+    if (mounted) {
+      setState(() {}); // Refresh list to show updated rule assignment
+      // Sprint 38 F82 (Issue #252): append "N removed, M remaining" so the
+      // user sees concrete progress against the no-rules pool.
+      final removedNow = preStats.remaining - postStats.remaining;
+      final remaining = postStats.remaining;
+      final progressSuffix = removedNow > 0
+          ? ' -- $removedNow removed, $remaining "No rule" remaining'
+          : (remaining > 0 ? ' -- $remaining "No rule" remaining' : '');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${result.displayMessage}$progressSuffix'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
+        ),
+      );
+    }
   }
 
   /// Create a block rule (persists to database and YAML)
@@ -2589,187 +2706,25 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   Future<void> _createBlockRule(String type, String value, {EmailMessage? email}) async {
     final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
     final logger = Logger();
-    final conflictResolver = RuleConflictResolver();
 
-    try {
-      // Create rule based on type
-      String pattern;
-      String ruleName;
-      String displayMessage;
+    // F39 (Sprint 46): rule-persistence core is shared with the
+    // cross-account "No rule" review screen via RuleQuickActionService.
+    final service = RuleQuickActionService(ruleProvider: ruleProvider);
+    final senderEmailForConflictCheck = type != 'subject' && email != null
+        ? EmailBodyParser().extractEmailAddress(email.from).toLowerCase().trim()
+        : null;
+    final result = await service.createBlockRule(
+      type: type,
+      value: value,
+      senderEmailForConflictCheck: senderEmailForConflictCheck,
+    );
 
-      switch (type) {
-        case 'from':
-          // Block exact email - escape special chars
-          final escaped = value.replaceAll('.', r'\.').replaceAll('@', r'@');
-          pattern = '^$escaped\$';
-          // BUG-S39-1 (Sprint 39): preserve `_`, `-`, `@`, `.` so distinct
-          // email addresses (e.g., `account_update@amazon.com` vs
-          // `account-update@amazon.com`) produce distinct rule names.
-          // The pre-fix sanitizer `[^a-zA-Z0-9]` -> `_` collapsed all four
-          // characters into `_`, causing a UNIQUE-constraint collision on
-          // the `rules.name` column that was then silently swallowed by
-          // `RuleSetProvider.addRule`. See also BUG-S39-2.
-          ruleName = 'Block_${_sanitizeForRuleName(value)}';
-          displayMessage = 'Created rule to block email "$value"';
-          break;
-        case 'exactDomain':
-          // Block exact domain (e.g., @subdomain.domain.com)
-          final escaped = value.replaceAll('.', r'\.').replaceAll('@', r'@');
-          pattern = '$escaped\$';
-          ruleName = 'Block_ExactDomain_${_sanitizeForRuleName(value)}';
-          displayMessage = 'Created rule to block exact domain "$value"';
-          break;
-        case 'entireDomain':
-          // Block entire domain pattern (e.g., @*.domain.com matches any subdomain)
-          // Regex: @(?:[a-z0-9-]+\.)*domain\.com$
-          final escaped = value.replaceAll('.', r'\.');
-          pattern = r'@(?:[a-z0-9-]+\.)*' + escaped + r'$';
-          ruleName = 'Block_EntireDomain_${_sanitizeForRuleName(value)}';
-          displayMessage = 'Created rule to block entire domain "*.$value"';
-          break;
-        case 'subject':
-          // Block subject containing text - escape special regex chars
-          final escaped = value.replaceAll(RegExp(r'[.*+?^${}()|[\]\\]'), r'\$&');
-          pattern = escaped;
-          ruleName = 'Block_Subject_${_sanitizeForRuleName(value.substring(0, value.length.clamp(0, 40)))}';
-          displayMessage = 'Created rule to block subject containing "$value"';
-          break;
-        default:
-          logger.w('Unknown block rule type: $type');
-          return;
-      }
-
-      // Remove conflicting safe senders before adding block rule (Issue #154)
-      // Subject-based rules do not conflict with safe senders (which match on from address)
-      // Use full email address for conflict matching (domain-only values do not match safe sender patterns)
-      ConflictResolutionResult conflicts = ConflictResolutionResult.empty;
-      if (type != 'subject' && email != null) {
-        final senderEmail = EmailBodyParser().extractEmailAddress(email.from).toLowerCase().trim();
-        conflicts = await conflictResolver.removeConflictingSafeSenders(
-          emailAddress: senderEmail,
-          ruleProvider: ruleProvider,
-        );
-      }
-
-      // Determine pattern classification fields
-      String patternCategory;
-      String patternSubType;
-      String sourceDomain;
-      int executionOrder;
-
-      switch (type) {
-        case 'from':
-          patternCategory = 'header_from';
-          patternSubType = 'exact_email';
-          sourceDomain = value;
-          executionOrder = 40;
-          break;
-        case 'exactDomain':
-          patternCategory = 'header_from';
-          patternSubType = 'exact_domain';
-          sourceDomain = value.startsWith('@') ? value.substring(1) : value;
-          executionOrder = 30;
-          break;
-        case 'entireDomain':
-          patternCategory = 'header_from';
-          patternSubType = 'entire_domain';
-          sourceDomain = value;
-          executionOrder = 20;
-          break;
-        case 'subject':
-          patternCategory = 'subject';
-          patternSubType = 'exact_domain';
-          sourceDomain = value;
-          executionOrder = 60;
-          break;
-        default:
-          patternCategory = 'header_from';
-          patternSubType = 'exact_domain';
-          sourceDomain = value;
-          executionOrder = 30;
-      }
-
-      // Create the rule with proper types and classification
-      final conditions = type == 'subject'
-          ? RuleConditions(type: 'OR', subject: [pattern])
-          : RuleConditions(type: 'OR', header: [pattern]);
-
-      final rule = Rule(
-        name: ruleName,
-        enabled: true,
-        isLocal: true,
-        executionOrder: executionOrder,
-        conditions: conditions,
-        actions: RuleActions(delete: true),
-        metadata: {
-          'comment': 'Created from Results screen on ${DateTime.now().toIso8601String().substring(0, 10)}',
-        },
-        patternCategory: patternCategory,
-        patternSubType: patternSubType,
-        sourceDomain: sourceDomain,
-      );
-
-      // Add rule via provider (persists to database and YAML)
-      await ruleProvider.addRule(rule);
-
-      // Sprint 38 Round 1 F86: reload from DB so any conflict-resolved
-      // changes or rule-list normalization are reflected in ruleProvider
-      // before subsequent re-evaluation runs (and so the next scan sees
-      // the rule even if it was added during an active scan).
-      await ruleProvider.loadRules();
-      await ruleProvider.loadSafeSenders();
-
-      // Include conflict removal info in display message
-      if (conflicts.conflictsRemoved > 0) {
-        displayMessage += ' (removed ${conflicts.conflictsRemoved} conflicting safe sender${conflicts.conflictsRemoved > 1 ? "s" : ""})';
-      }
-
-      logger.i('[OK] Created block rule: $ruleName with pattern: $pattern');
-
-      // F21: Re-evaluate email against updated rules and refresh list
-      if (email != null) {
-        await _reEvaluateEmail(email);
-      }
-
-      // Re-evaluate all remaining "No rule" emails against the new rule
-      final preStats = _computeNoRuleStats();
-      await _reEvaluateNoRuleEmails();
-      final postStats = _computeNoRuleStats();
-
-      // Sprint 38 Round 4 (2026-05-17): advance the oldest-unaddressed-no-rule
-      // UID cursor per folder so the next IMAP scan resumes from the
-      // remaining backlog. See companion call site in safe-sender-add
-      // handler above.
-      await _updateOldestNoRuleCursorsFromResults();
-
-      // F38: Execute IMAP actions for affected emails
-      await _reProcessAffectedEmails();
-
-      if (mounted) {
-        setState(() {}); // Refresh list to show updated rule assignment
-        // Sprint 38 F82 (Issue #252): append "N removed, M remaining" so the
-        // user sees concrete progress against the no-rules pool.
-        final removedNow = preStats.remaining - postStats.remaining;
-        final remaining = postStats.remaining;
-        final progressSuffix = removedNow > 0
-            ? ' -- $removedNow removed, $remaining "No rule" remaining'
-            : (remaining > 0 ? ' -- $remaining "No rule" remaining' : '');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('$displayMessage$progressSuffix'),
-            backgroundColor: Colors.blue,
-            duration: const Duration(seconds: 3),
-            behavior: SnackBarBehavior.floating,
-            margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
-          ),
-        );
-      }
-    } catch (e) {
-      logger.e('[FAIL] Failed to create block rule: $e');
+    if (!result.success) {
+      logger.e('[FAIL] Failed to create block rule: ${result.error}');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to create rule: $e'),
+            content: Text(result.displayMessage),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 3),
             behavior: SnackBarBehavior.floating,
@@ -2777,6 +2732,46 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           ),
         );
       }
+      return;
+    }
+
+    // F21: Re-evaluate email against updated rules and refresh list
+    if (email != null) {
+      await _reEvaluateEmail(email);
+    }
+
+    // Re-evaluate all remaining "No rule" emails against the new rule
+    final preStats = _computeNoRuleStats();
+    await _reEvaluateNoRuleEmails();
+    final postStats = _computeNoRuleStats();
+
+    // Sprint 38 Round 4 (2026-05-17): advance the oldest-unaddressed-no-rule
+    // UID cursor per folder so the next IMAP scan resumes from the
+    // remaining backlog. See companion call site in safe-sender-add
+    // handler above.
+    await _updateOldestNoRuleCursorsFromResults();
+
+    // F38: Execute IMAP actions for affected emails
+    await _reProcessAffectedEmails();
+
+    if (mounted) {
+      setState(() {}); // Refresh list to show updated rule assignment
+      // Sprint 38 F82 (Issue #252): append "N removed, M remaining" so the
+      // user sees concrete progress against the no-rules pool.
+      final removedNow = preStats.remaining - postStats.remaining;
+      final remaining = postStats.remaining;
+      final progressSuffix = removedNow > 0
+          ? ' -- $removedNow removed, $remaining "No rule" remaining'
+          : (remaining > 0 ? ' -- $remaining "No rule" remaining' : '');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${result.displayMessage}$progressSuffix'),
+          backgroundColor: Colors.blue,
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.only(bottom: 80, left: 16, right: 16),
+        ),
+      );
     }
   }
 

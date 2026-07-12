@@ -1,6 +1,76 @@
 ***BELOW IS NOT FOR CLAUDE CODE, GITHUB COPILOT, CHATGPT OR COPILOT PULL REQUEST (PR) REVIEW USE***
 
 TBD---------------------------------------------------------------------------------------------------------
+Sprint 4r Scope should include:
+F107, F109, F108
+
+F107. ADR-0037 status review (Proposed → Accepted?) + ARSD draft promotion (~30m) Priority 45
+- Phase: Architecture maintenance · Platform: All
+- ADR-0037 (UI/Accessibility Standards) is still "Proposed (pending user review)" but the standards ARE implemented. Class-1 Chief-Architect decision — Harold reviews → Accepted (or notes what pends). Also consider promoting ARSD.md from "1.0 (Draft)".
+- Source: Sprint 43 F103 architecture deep dive.
+
+F109. Surface "background run deferred (UI open)" status in Settings/History (~2-3h) Priority 40
+- Phase: UX / background scanning · Platform: All (Windows first)
+- Background scans correctly defer while the foreground app holds the single-instance mutex, but this is invisible — Settings says "running" with no hint. Surface it (a Settings/Background status line, a Scan History hint, and/or a logged skip row). PO decides exact surface at Phase 3.
+- Source: Sprint 43 manual testing.
+
+F108. Security-relevant dependency major-version upgrades (~2-4h) Priority 35
+- Phase: Security / maintenance · Platform: All
+- Evaluate + upgrade deliberately (each a Class-2 decision, with targeted retest): flutter_secure_storage 9→10, flutter_appauth 8→12, workmanager 0.5→0.9; fold in minor drift. No blocking CVE.
+- Source: Sprint 43 F104 security deep dive
+---------------------------------------------------------------------------------------------------------
+Done
+
+Sprint 40 Scope should include:
+F102. Logging redaction policy: documented invariant + enforcement gate - should be done first in the sprint
+Can you make acopy F71 and do it as the second item in the sprint
+SEC-11b. SQLCipher driver swap + plaintext-to-encrypted migration
+F96. F89 auth-state coverage for historical / email-detail quick-add paths
+F100. Port WinWright read-only flows to integration_test
+F101. Configurable/shorter F98 background-scan DB-lock retry bound
+- can you shorten to 15 minutes
+make a copy of F70 and include in this sprint (it should come after all other items except for updating version number). Periodic Security Deep Dive (don't remove F70 as it will be used again later)
+update the version to a new version (next number) - this item should be last item in the sprint.
+
+
+F96. F89 auth-state coverage for historical / email-detail quick-add paths (~4-6h) Priority 73
+- Phase: Security / UX — anti-phishing (extends F89)
+- Platform: All
+- F89's SPF/DKIM/DMARC RED warning only fires on the live-scan path; historical + email-detail quick-add reconstruct headers with only From/Subject → always GREY. Persist the classification (or raw auth headers) so off-scan quick-add evaluates identically. Class-1 (persist-vs-rehydrate) decision at Phase 3.
+
+Security Hardening
+
+SEC-11b. SQLCipher driver swap + plaintext-to-encrypted migration (~6-10h) Priority 60
+- Phase: Security
+- Platform: All
+- Infrastructure shipped (Sprint 33); flip DatabaseHelper to sqflite_sqlcipher, add the atomic plaintext→encrypted migration + Windows/Android plugin registration, QA, then default encrypt_database to true.
+
+F102. Logging redaction policy: documented invariant + enforcement gate (~2-4h) Priority 55 (NEW)
+- Phase: Security / Privacy / Process
+- Platform: All
+- PREVENTS re-introducing PII in logs (account ids embed email; task names too). Document the invariant (extend ADR-0030) + ARCHITECTURE.md cross-ref + Phase 5 checklist line + a grep/analyzer gate that fails on un-redacted $accountId/$email in log calls. From the Sprint 42 PR #263 Copilot finding.
+
+Process
+
+F100. Port WinWright read-only flows to integration_test (incremental) Priority 40
+- Phase: Testing infrastructure
+- Platform: Windows desktop (harness cross-platform)
+- Incrementally migrate the 6 read-only WinWright flows to the F99 in-VM lane; retire each WinWright script as covered. Consolidation, not new coverage.
+
+F101. Configurable/shorter F98 background-scan DB-lock retry bound Priority 35
+- Phase: Tuning / background scanning
+- Platform: All
+- Make the F98 1min×20 retry (up to ~20-min worst case) configurable/shorter — revisit only if long hangs are observed in practice.
+
+HOLD Items (next tier — activate when gate clears)
+
+F70. Periodic Security Deep Dive (~4-8h per review) Priority HOLD — Phase: Security review (template; duplicate when a review is due).
+F71. Periodic Architecture Deep Dive (~4-8h per review) Priority HOLD — Phase: Architecture review (template; duplicate when due).
+F94. Android dev/prod/store flavors (~6-8h) Priority HOLD (Issue #248) — Phase: Build/release; Platform: Android. Blocked on Firebase/GCP setup.
+F33. Body rules cleanup script (~4-6h) Priority HOLD — Phase: Data quality; Platform: All. Post-Windows-Store.
+F95. iOS variants + cross-store hardening (~10-16
+
+
 
 Sprint 39 Backlog Refinement — Candidate List
 

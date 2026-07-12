@@ -436,5 +436,64 @@ void main() {
         );
       });
     });
+
+    // F39 (Sprint 46): extracted from ResultsDisplayScreen._extractRootDomain
+    // so the per-account results screen and the cross-account "No rule"
+    // review screen share one implementation.
+    group('extractRootDomain', () {
+      test('strips a single subdomain', () {
+        expect(
+          PatternNormalization.extractRootDomain('subdomain.example.com'),
+          'example.com',
+        );
+      });
+
+      test('strips multiple subdomain levels', () {
+        expect(
+          PatternNormalization.extractRootDomain('pptwvrnbdho.atlantaoffre.com'),
+          'atlantaoffre.com',
+        );
+      });
+
+      test('returns an already-root domain unchanged', () {
+        expect(
+          PatternNormalization.extractRootDomain('example.com'),
+          'example.com',
+        );
+      });
+
+      test('returns input unchanged when fewer than 2 labels', () {
+        expect(PatternNormalization.extractRootDomain('localhost'), 'localhost');
+      });
+
+      // Copilot review (Sprint 46): multi-part public suffixes must resolve
+      // to the registrable domain, NOT the bare suffix -- otherwise an
+      // "Entire Domain" action on sub.example.co.uk would produce a rule
+      // matching every co.uk address.
+      test('multi-part suffix resolves to registrable domain, not suffix', () {
+        expect(PatternNormalization.extractRootDomain('sub.example.co.uk'),
+            'example.co.uk');
+        expect(PatternNormalization.extractRootDomain('example.co.uk'),
+            'example.co.uk');
+        expect(PatternNormalization.extractRootDomain('a.b.shop.com.au'),
+            'shop.com.au');
+        expect(PatternNormalization.extractRootDomain('mail.corp.co.jp'),
+            'corp.co.jp');
+      });
+
+      test('bare 2-label multi-part suffix falls through unchanged', () {
+        // Degenerate input (a bare public suffix); the 2-label path returns
+        // it as-is rather than inventing a third label.
+        expect(PatternNormalization.extractRootDomain('co.uk'), 'co.uk');
+      });
+
+      test('returns null for null input', () {
+        expect(PatternNormalization.extractRootDomain(null), isNull);
+      });
+
+      test('returns null for empty input', () {
+        expect(PatternNormalization.extractRootDomain(''), isNull);
+      });
+    });
   });
 }
