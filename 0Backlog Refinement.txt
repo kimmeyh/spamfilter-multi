@@ -1,10 +1,21 @@
 ***BELOW IS NOT FOR CLAUDE CODE, GITHUB COPILOT, CHATGPT OR COPILOT PULL REQUEST (PR) REVIEW USE***
 
 ---------------------------------------------------------------------------------------------------------
-Sprint 4r Scope should include:
+Sprint 4n Scope should include:
 ---------------------------------------------------------------------------------------------------------
-Sprint 47 Scope should include:
+Sprint 48 Scope should include:
+---------------------------------------------------------------------------------------------------------
 
+Done
+Sprint 47 Scope should include:
+F119. Store MSIX ships running as APP_ENV=dev (~2-4h) Priority 8
+F112. "Review No Rule Items" entry point everywhere (~2-3h) Priority 20
+F113. New-account default profiles, provider-keyed (~3-5h) Priority 22
+F114. Retention defaults → 90 days (~30m) Priority 24
+F115. Reorder Review-No-Rule selection bar (~15m) Priority 26
+F116. Demo Scan completion matches Live Scan (~1h) Priority 28
+F117. Help footer → app version, not hardcoded sprint # (~30m-1h) Priority 30
+F118. Post-Store-release housekeeping (~1h) Priority 32
 
 
 ---------------------------------------------------------------------------------------------------------

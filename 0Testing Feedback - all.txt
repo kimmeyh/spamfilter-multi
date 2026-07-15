@@ -3,9 +3,9 @@
 can you write a effective but compact /compact string I can use to compact where we are, but let the Claude Code team know where we left off and can pick it up correctly.  Use all the tokens needed, but a few as reasonably possible.
 
 ---------------------------------------------------------------------------------------------------------
-Manual Testing Feedback Sprint 4n
+Sprint 4n Manual Testing Feedback 
 ---------------------------------------------------------------------------------------------------------
-Manual Testing Feedback Sprint 47
+Sprint 47 Manual Testing Feedback 
 
 ---------------------------------------------------------------------------------------------------------
 

@@ -26,6 +26,13 @@ migrate_working_dir/
 # VS Code related
 .vscode/
 
+# F118 (Sprint 47): the archived pre-Sprint-37 Android tree keeps a live Gradle
+# build cache that re-dirties the working tree on every open (transient .lock,
+# .bin, and .properties files under .gradle/). These are build artifacts, never
+# source, and were committed by accident (commit e925855). Ignore the whole
+# .gradle/ cache under any android_legacy_* snapshot.
+android_legacy_*/.gradle/
+
 # Flutter/Dart/Pub related
 **/doc/api/
 **/ios/Flutter/.last_build_id

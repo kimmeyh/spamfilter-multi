@@ -132,7 +132,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 - **PR**: #270 (merged to develop, 2026-07-11)
 - **Sprint 47 carry-ins**: (1) dev version bump 0.5.4 -> 0.5.5; (2) F33 prod-DB apply (post-Store-rollout; requires the decode-failure fix); (3) populate the 5 `CI_*` GitHub repo secrets; (4) IMP-3 CHANGELOG-cadence decision; (5) Copilot round-6 polish (cleanup-script decode-failure report-not-delete; no_rule_review_screen load-error stackTrace + friendly SnackBar).
 - **Open follow-up (carried from Sprint 44)**: Android-device retest of the F108 dep bumps (Gmail sign-in, secure-storage round-trip, WorkManager) -- no emulator in the dev session; F108 revert runbook covers per-dep rollback if needed.
-- **Store status**: Sprint 45's F111-verified `0.5.4` is on `main`. Store upload of the MSIX (`0.5.4`) remains a pending Harold action (`docs/STORE_RELEASE_PROCESS.md`). Once uploaded + live, published version becomes `0.5.3 -> 0.5.4`.
+- **Store status**: `0.5.4` was uploaded and is **LIVE on the Microsoft Store as of 2026-07-15** (published `0.5.3 -> 0.5.4`). **However, that shipped build was defective** (F119): the `msix_config` typo `build_windows_args` (correct key: `windows_build_args`) meant the MSIX ran as `APP_ENV=dev` with empty Gmail OAuth credentials. F119 fixed the key on both `main` and `develop`, added a policy gate, and corrected `STORE_RELEASE_PROCESS.md` (new MANDATORY Step 4.0). **A corrected `0.5.4` (or next) re-release of the MSIX is a pending Harold action** -- rebuild from the fixed prod worktree and verify the running build reports prod before upload.
 - **Earlier sprints (39-45)**: 39 (PR #260), 40 (PR #261), 41 (PR #262), 42 (PR #263), 43 (PR #265), 44 (PR #266), 45 (PR #268 -- F111 Store-readiness GO, develop->main released). See `docs/sprints/` + the Past Sprint Summary table above.
 
 ---
@@ -209,14 +209,14 @@ Captured from Harold's manual testing of the Store-installed 0.5.4 build (2026-0
 - Preferred: read the version at runtime via `package_info_plus` (always accurate, zero upkeep). Alternative: mirror the Settings `Version X.Y.Z` literal that the existing gate already enforces (no new dependency).
 - Consider extending the version-consistency gate to also flag stale "Sprint N" / "Last updated" footer strings.
 
-**F118. Post-Store-release housekeeping (~1h) Priority 32**
+**F118. Post-Store-release housekeeping (~1h) Priority 32 -- [DONE Sprint 47]**
 - Phase: Windows Store Readiness / release close-out
 - Platform: N/A (repo)
-- CHANGELOG: move `[Unreleased]` entries under a `## [0.5.4] - <date>` heading + update comparison links.
-- Dev worktree version bump 0.5.4 -> 0.5.5 (7-file bump per STORE_RELEASE_PROCESS.md Step 1 + version-consistency gate).
-- `ALL_SPRINTS_MASTER_PLAN.md` "Last Completed Sprint": record the Store-release outcome (0.5.4 live 2026-07-15).
-- Clean up the stray gradle-artifact commit (`e925855`) on the Sprint 47 branch + add `android_legacy_*/.gradle/` to `.gitignore`.
-- Refresh/verify `secrets.prod.json` (dated Apr 20) before any future Store re-release.
+- [DONE] CHANGELOG: entries stay under `## [Unreleased]` -- `0.5.5` is a DEV bump, not a release (release = develop->main, user-only). Corrected from the original "move to `[0.5.4]` heading" criterion, which was wrong: `0.5.4` already shipped, and the next release heading is created only when the user merges develop->main.
+- [DONE] Dev worktree version bump `0.5.4 -> 0.5.5` (pubspec version + `msix_version`, `main.dart`, `settings_screen.dart`, `background_scan_windows_worker.dart`, `live_scan_logger.dart`, `windows/runner/main.cpp`, plus doc-comment log-filename refs in `settings_store.dart` and `test-background-scan-skip.ps1`; version-consistency gate green).
+- [DONE] `ALL_SPRINTS_MASTER_PLAN.md` "Last Completed Sprint": recorded the Store-release outcome (0.5.4 live 2026-07-15, but defective per F119; corrected re-release is a pending Harold action).
+- [DONE] Stray gradle-artifact commit (`e925855`): added `android_legacy_*/.gradle/` to `mobile-app/.gitignore` + `git rm --cached` the tracked cache files so they stop re-dirtying the tree (the commit itself stays in history; the files are now untracked/ignored).
+- [Harold action] Refresh/verify `secrets.prod.json` (dated Apr 20) before the corrected Store re-release.
 
 ### Core App
 
@@ -288,6 +288,8 @@ _(F64 CI/CD pipeline shipped in Sprint 46 -- `.github/workflows/ci.yml`; see CHA
 _(F33 body-rules cleanup and F39 cross-account "No Rule" review screen both shipped in Sprint 46 -- see CHANGELOG 2026-07-07 and SPRINT_46_RETROSPECTIVE.md. F33 dev-DB applied; the prod-DB `--env prod --apply` run is a Sprint 47 carry-in, gated on the Copilot round-6 decode-failure fix. F39 mobile (Android/iOS touch) variant remains a future backlog candidate.)_
 
 ### HOLD Items (Android / Google Play Store)
+
+> **[NEXT MAJOR TRACK] Promotion trigger (Harold, 2026-07-15)**: As soon as the corrected Windows Store `0.5.4` re-release (F119 fix) is verified LIVE, this entire Android / Google Play track comes OFF HOLD and becomes the next focus. Android development is intentionally stagnant only until that Windows release lands. At promotion, refine this section into an active sprint: start with the `google-services.json` applicationId mismatch diagnosis (F94 pre-existing investigation item -- likely root of intermittent Android Gmail OAuth), then F94 flavors, then the F108 Android-device dep-bump retest carry-in, then the Google-Play-gated security items below.
 
 **F94. Android dev/prod/store flavors (~6-8h) Priority HOLD (Issue #248) -- RENUMBERED from "F52 Phase 2" + MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
 - Phase: Build and Release Infrastructure / Android Google Play Store Readiness
