@@ -120,11 +120,14 @@ msix_config:
   store: true
   install_certificate: false
   # Forward dart-defines to the inner `flutter build windows` triggered by msix:create.
-  # Required for prod Store builds: APP_ENV=prod + Gmail OAuth credentials from
-  # secrets.prod.json. msix:create does NOT inherit --dart-define from its own CLI,
-  # so without this line the MSIX ships with EMPTY OAuth credentials (silent Gmail
-  # sign-in failure). See docs/STORE_RELEASE_PROCESS.md.
-  build_windows_args: --dart-define=APP_ENV=prod --dart-define-from-file=secrets.prod.json
+  # Required for prod Store builds: APP_ENV=prod (else the MSIX runs as dev --
+  # [DEV] title/About + _Dev data dir, F119) + Gmail OAuth credentials from
+  # secrets.prod.json (else silent Gmail sign-in failure).
+  # F119 (Sprint 47): the correct key for the msix package (3.16.x) is
+  # `windows_build_args`, NOT `build_windows_args`. The wrong key was silently
+  # ignored, so the 0.5.4 Store MSIX shipped as dev with empty credentials.
+  # See docs/STORE_RELEASE_PROCESS.md.
+  windows_build_args: --dart-define=APP_ENV=prod --dart-define-from-file=secrets.prod.json
 
 # Icon Generation Configuration
 # Run: dart run flutter_launcher_icons
