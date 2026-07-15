@@ -25,6 +25,7 @@ import '../../adapters/email_providers/email_provider.dart' show Credentials;
 import '../widgets/app_bar_with_exit.dart';
 import 'folder_selection_screen.dart';
 import 'help_screen.dart';
+import 'no_rule_review_screen.dart';
 import 'scan_history_screen.dart';
 import 'rules_management_screen.dart';
 import 'safe_senders_management_screen.dart';
@@ -252,6 +253,18 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         // History, Accounts, Help, [X auto]. Help deep-links to the section
         // matching the currently visible tab.
         actions: [
+          // F112 (Sprint 47): "Review No Rule Items" entry point, just LEFT
+          // of the View Scan History icon; shared AppBar covers all 4 tabs.
+          // Windows-desktop scoped, consistent with the other entry points.
+          if (Platform.isWindows)
+            IconButton(
+              icon: const Icon(Icons.rule_folder_outlined),
+              tooltip: 'Review "No Rule" Items',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) => const NoRuleReviewScreen()),
+              ),
+            ),
           IconButton(
             icon: const Icon(Icons.history),
             tooltip: 'View Scan History',

@@ -494,18 +494,26 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
     final count = _selectedIds.length;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      // F115 (Sprint 47): when items are selected, order is
+      // `Apply Rule` (left) -> `N selected` -> ~5 spaces -> `Clear`.
+      // With nothing selected, just show the item count.
       child: Row(
         children: [
-          Text(
-            count > 0 ? '$count selected' : '${_filteredItems.length} item${_filteredItems.length == 1 ? "" : "s"}',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          const Spacer(),
           if (count > 0) ...[
-            TextButton(onPressed: _clearSelection, child: const Text('Clear')),
-            const SizedBox(width: 8),
             _buildBulkActionMenu(),
-          ],
+            const SizedBox(width: 12),
+            Text(
+              '$count selected',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(width: 40), // ~5 spaces
+            TextButton(onPressed: _clearSelection, child: const Text('Clear')),
+          ] else
+            Text(
+              '${_filteredItems.length} item${_filteredItems.length == 1 ? "" : "s"}',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          const Spacer(),
         ],
       ),
     );
