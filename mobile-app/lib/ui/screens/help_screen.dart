@@ -13,7 +13,9 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
+import '../../core/services/app_environment.dart';
 import '../../core/services/content_loader.dart';
 import '../widgets/app_bar_with_exit.dart';
 import 'scan_history_screen.dart';
@@ -234,13 +236,26 @@ class _HelpScreenState extends State<HelpScreen> {
                 _section(HelpSection.walkthrough,
                     title: 'First-Use Walkthrough'),
                 const SizedBox(height: 24),
-                Text(
-                  'Last updated: Sprint 40 (June 2026). Report issues at '
-                  'github.com/kimmeyh/spamfilter-multi/issues.',
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 12,
-                  ),
+                // F117 (Sprint 47): show the app version from the compiled
+                // package (package_info_plus) instead of a hardcoded sprint #,
+                // which drifted stale every sprint. Always accurate, zero
+                // manual upkeep. Falls back to no version string if the
+                // platform channel is unavailable.
+                FutureBuilder<PackageInfo>(
+                  future: PackageInfo.fromPlatform(),
+                  builder: (context, snapshot) {
+                    final version = snapshot.hasData
+                        ? 'Version ${snapshot.data!.version}${AppEnvironment.displaySuffix}. '
+                        : '';
+                    return Text(
+                      '${version}Report issues at '
+                      'github.com/kimmeyh/spamfilter-multi/issues.',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 12,
+                      ),
+                    );
+                  },
                 ),
                 // Trailing filler so Scrollable.ensureVisible can always
                 // pin the target section to the TOP of the viewport, even
