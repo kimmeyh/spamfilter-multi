@@ -68,7 +68,39 @@ class SettingsStore {
   static const ScanMode defaultBackgroundScanMode = ScanMode.readOnly;
   static const List<String> defaultBackgroundScanFolders = ['INBOX'];
   static const String? defaultCsvExportDirectory = null; // null means use Downloads folder
-  static const bool defaultBackgroundScanDebugCsv = false;
+  // F113 (Sprint 47): debug-CSV defaults ON for new users (Harold: new users
+  // are the most likely to need diagnostics; the files are tiny).
+  static const bool defaultBackgroundScanDebugCsv = true;
+
+  // F113 (Sprint 47): provider-keyed default scan folders. When an account
+  // has no per-account folder selection, the effective default depends on the
+  // provider (derived from the `{platform}-{email}` accountId prefix). AOL and
+  // Gmail have distinct well-known spam/bulk folder names; anything else falls
+  // back to the generic INBOX. Extensible: add Yahoo/Outlook entries as those
+  // providers are activated.
+  static const List<String> defaultAolScanFolders = [
+    'Inbox',
+    'Bulk',
+    'Bulk Mail',
+  ];
+  static const List<String> defaultGmailScanFolders = [
+    'INBOX',
+    '[Gmail]/Spam',
+    'Unwanted',
+  ];
+
+  /// Returns the provider-specific default scan folders for [accountId]
+  /// (format `{platform}-{email}`). Falls back to `['INBOX']` for unknown
+  /// providers. Used as the effective default when an account has no
+  /// per-account folder selection (F113).
+  static List<String> providerDefaultFolders(String accountId) {
+    final dash = accountId.indexOf('-');
+    final platform =
+        (dash > 0 ? accountId.substring(0, dash) : accountId).toLowerCase();
+    if (platform.contains('aol')) return List.from(defaultAolScanFolders);
+    if (platform.contains('gmail')) return List.from(defaultGmailScanFolders);
+    return List.from(defaultManualScanFolders); // generic INBOX
+  }
   /// F90 (Sprint 39): live-scan debug CSV opt-in. Default `false` for
   /// both dev and prod (matches `defaultBackgroundScanDebugCsv`). The
   /// Settings > Manual Scan tab Debug section exposes a toggle so dev
@@ -76,7 +108,7 @@ class SettingsStore {
   /// (`{logs}/{prefix}live_scan_v0.5.4.log`) is always on regardless
   /// of this setting -- it captures scan-lifecycle events only and is
   /// small enough that surprise disk usage is not a concern.
-  static const bool defaultLiveScanDebugCsv = false;
+  static const bool defaultLiveScanDebugCsv = true; // F113 (Sprint 47): ON for new users
   static const int defaultManualScanDaysBack = 0; // 0 = all emails
   static const int defaultBackgroundScanDaysBack = 0; // 0 = all emails
   static const int defaultScanHistoryRetentionDays = 90; // F114 (Sprint 47): 7 -> 90 (new-user default)
@@ -674,6 +706,11 @@ class SettingsStore {
       // Fall back to generic account override
       final override = await getAccountFolders(accountId);
       if (override != null) return override;
+      // F113 (Sprint 47): no per-account selection -> provider-specific
+      // default (AOL/Gmail well-known folders) rather than the generic global
+      // INBOX-only default. This makes the folder default functional at
+      // SCAN time, not just in the settings display.
+      return providerDefaultFolders(accountId);
     }
     return isBackground ? await getBackgroundScanFolders() : await getManualScanFolders();
   }
