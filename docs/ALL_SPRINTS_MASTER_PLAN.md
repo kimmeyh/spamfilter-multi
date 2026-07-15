@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-07-11 (Sprint 46 completion: Sprint 46 -> Last Completed Sprint; F64/F39/F33 shipped + pruned; Sprint 47 pre-kickoff and carry-ins recorded)
+**Last Updated**: 2026-07-15 (Sprint 47 scope: added F112-F119 from Store-0.5.4 manual-testing feedback; 0.5.4 confirmed LIVE on the Store)
 
 ## How to Maintain This Document
 
@@ -152,7 +152,71 @@ Recent sprints complete -- detail blocks removed per the Maintenance Guide (hist
 - **Sprint 45** (merged PR #268, 2026-07-02): F111 (Windows App Store upload readiness verification -- GO for 0.5.4); **develop -> main released**; retro IMP-1 read-format-doc-first rule
 - **Sprint 46** (merged PR #270, 2026-07-11): F64 (CI/CD pipeline), F39 (cross-account "No Rule" review screen + unmatched_emails writer fix), F33 (body-rules cleanup, dev-DB applied); manual-testing fixes (popup position, auto-advance, provider-sender grouping); retro IMP-1/2/4/5 applied
 
-**Sprint 47 carry-ins (Harold selects scope at Phase 1.2)**: (1) dev version bump 0.5.4 -> 0.5.5; (2) F33 prod-DB `--env prod --apply` (post-Store-rollout; requires the Copilot round-6 decode-failure report-not-delete fix first); (3) populate the 5 `CI_*` GitHub repo secrets; (4) IMP-3 CHANGELOG-cadence decision (A per-completed-item vs B Phase-5-entry gate); (5) Copilot round-6 polish (no_rule_review_screen load-error stackTrace + friendly SnackBar). **Standing HOLD candidates** unchanged: template deep dives (F70 Security / F71 Architecture / F111 Store-readiness), Post-MVP (SEC-11b DB encryption + F106 cleanup, paired), platform/UX tracks (F94/F95 flavors, F63 responsive, SEC-8b/SEC-15, F6, H1-H5, F67, GP-*), F39 mobile variant. **Open follow-up (Sprint 44 carry-in)**: Android-device retest of the F108 dep bumps -- not yet scheduled. **Store status**: 0.5.4 on `main`, MSIX upload pending Harold.
+**Sprint 47 scope (Store 0.5.4 manual-testing feedback + carry-ins, Harold 2026-07-15)**: The **F112-F119** items below (Store-0.5.4 manual-testing feedback) are assigned to Sprint 47. **Carry-ins** also folded in: (1) dev version bump 0.5.4 -> 0.5.5 (see F118); (2) F33 prod-DB `--env prod --apply` (post-Store-rollout; requires the Copilot round-6 decode-failure report-not-delete fix first); (3) populate the 5 `CI_*` GitHub repo secrets; (4) IMP-3 CHANGELOG-cadence decision (A per-completed-item vs B Phase-5-entry gate); (5) Copilot round-6 polish (no_rule_review_screen load-error stackTrace + friendly SnackBar; cleanup-script decode-failure fix -- required before carry-in #2). **Standing HOLD candidates** unchanged: template deep dives (F70 Security / F71 Architecture / F111 Store-readiness), Post-MVP (SEC-11b DB encryption + F106 cleanup, paired), platform/UX tracks (F94/F95 flavors, F63 responsive, SEC-8b/SEC-15, F6, H1-H5, F67, GP-*), F39 mobile variant. **Open follow-up (Sprint 44 carry-in)**: Android-device retest of the F108 dep bumps -- not yet scheduled. **Store status**: 0.5.4 LIVE on the Microsoft Store (submission accepted, certification passed 2026-07-15). Note (F119): 0.5.4 MSIX shipped running as APP_ENV=dev -- fix + re-release needed.
+
+### Sprint 47 -- Store 0.5.4 Manual-Testing Feedback
+
+Captured from Harold's manual testing of the Store-installed 0.5.4 build (2026-07-15). All Windows Desktop unless noted. F119 is highest priority (it distorts every other observation).
+
+**F119. Store MSIX ships running as APP_ENV=dev (~2-4h) Priority 8**
+- Phase: Windows Store Readiness / build integrity
+- Platform: Windows Desktop
+- The Store-installed 0.5.4 build runs as `APP_ENV=dev`: title bar shows `MyEmailSpamFilter [DEV]`, the About screen shows `Version 0.5.4 [DEV]`, and it reads the `MyEmailSpamFilter_Dev` app-data directory instead of prod `MyEmailSpamFilter` (which is why Harold saw his 2 dev accounts -- NOT a privacy leak; accounts are per-machine, never in the package).
+- Root cause: `AppEnvironment.APP_ENV` defaults to `'dev'`; `pubspec.yaml` `msix_config.build_windows_args` DOES specify `--dart-define=APP_ENV=prod`, so `msix:create` is not forwarding it to the inner `flutter build windows` (or a cached dev artifact was packaged).
+- Fix: ensure a prod MSIX builds with `APP_ENV=prod`; add a build-time/CI assertion that a prod MSIX has empty `AppEnvironment.displaySuffix` (no `[DEV]`) and uses the prod data dir. Requires a version bump + re-release to the Store once fixed.
+- Verify: About shows `Version 0.5.x` (no `[DEV]`), clean title bar, prod data dir.
+- Blocks: F113 (clean-user testing is only meaningful once the build runs as prod).
+
+**F112. "Review No Rule Items" entry point everywhere (~2-3h) Priority 20**
+- Phase: Core App Quality / UX consistency
+- Platform: Windows Desktop
+- Add a single consistent icon (rule_folder style, tooltip "Review No Rule Items", opens `NoRuleReviewScreen`, Windows-gated per existing pattern) across the app. Reuse the account-selection screen's existing widget/handler (Sprint 46) for consistency.
+- (a) Scan History AppBar -- add the icon (currently absent; AppBar has only Refresh / Select Account / Settings / Help).
+- (b) Scan History "No Rule: N" total chip -- a small tappable instance centered directly above that chip (wrap `_buildTotalChip('No Rule', ...)` ~L340 in a center-aligned Column).
+- (c) All Settings pages -- insert in the shared Settings AppBar (~L254) just to the LEFT of the "View Scan History" icon; one insertion covers all four tabs.
+
+**F113. New-account default profiles (Manual + Background, provider-keyed) (~3-5h) Priority 22**
+- Phase: Core App Quality / onboarding defaults
+- Platform: All (Windows Desktop primary)
+- Provider-keyed default-folder map -- AOL: `Inbox, Bulk, Bulk Mail`; Gmail: `INBOX, [Gmail]/Spam, Unwanted` (extensible to future providers).
+- Manual Scan (common): Read-Only Mode ON; Scan Range = "Scan all emails" ON (entire mailbox); Show confirmation dialogs ON; Export CSV After Each Scan ON.
+- Background Scan (common): Enable Background Scanning OFF; Frequency 15 min; Read-Only Mode ON; Scan Range = "Scan all emails" OFF, slider = last 1 day; Export CSV After Each Scan ON.
+- Manual vs Background Scan-Range default differs by design (background scans last-1-day, not entire mailbox). Export CSV defaults ON confirmed by Harold (new users most likely to need diagnostics; file size negligible).
+- User base is ~1-2 (Harold + one family member) -- NO migration needed; change the default constants; re-select values once on existing installs if desired. Depends on: F119 (test against a correct prod build).
+
+**F114. Change new-user retention defaults to 90 days (~30m) Priority 24**
+- Phase: Core App Quality / defaults
+- Platform: All
+- `defaultScanHistoryRetentionDays` 7 -> 90 (settings_store.dart:82).
+- `defaultUnmatchedRetentionDays` 30 -> 90 (settings_store.dart:84, SEC-14).
+- Fresh-install default only; ~1-2 users so no migration -- re-select 90 once on existing installs if desired.
+
+**F115. Reorder Review-No-Rule selection bar (~15m) Priority 26**
+- Phase: Core App Quality / UI
+- Platform: Windows Desktop
+- In `_buildSelectionBar` (no_rule_review_screen.dart): change order to `Apply Rule` (left) -> `N selected` -> ~5 spaces -> `Clear`. (Currently: `N selected` ... Clear -> Apply Rule, right-aligned.)
+
+**F116. Demo Scan (Testing) completion screen matches Live Scan (~1h) Priority 28**
+- Phase: Core App Quality / UI
+- Platform: Windows Desktop
+- On completion, show the summary chips/buttons instead of the results list (currently `scan_progress_screen.dart` renders a `ListView` ~L461 in `isDemoMode`; live scan uses the chip/button summary via `ResultsDisplayScreen`).
+- The intermediate "13 / 26 processed" progress counts (inconsistent with the ~20 shown) do NOT need to be displayed once the buttons are present -- so the count discrepancy is not a separate bug to fix, just remove the count display.
+
+**F117. Help footer: show app version, not hardcoded sprint # (~30m-1h) Priority 30**
+- Phase: Core App Quality / docs
+- Platform: All
+- The Help footer (`help_screen.dart:238`) hardcodes "Last updated: Sprint 40 (June 2026)" -- stale (we are at Sprint 46+) and not version-shaped, so the version-consistency gate does not catch it -> it drifts every sprint.
+- Preferred: read the version at runtime via `package_info_plus` (always accurate, zero upkeep). Alternative: mirror the Settings `Version X.Y.Z` literal that the existing gate already enforces (no new dependency).
+- Consider extending the version-consistency gate to also flag stale "Sprint N" / "Last updated" footer strings.
+
+**F118. Post-Store-release housekeeping (~1h) Priority 32**
+- Phase: Windows Store Readiness / release close-out
+- Platform: N/A (repo)
+- CHANGELOG: move `[Unreleased]` entries under a `## [0.5.4] - <date>` heading + update comparison links.
+- Dev worktree version bump 0.5.4 -> 0.5.5 (7-file bump per STORE_RELEASE_PROCESS.md Step 1 + version-consistency gate).
+- `ALL_SPRINTS_MASTER_PLAN.md` "Last Completed Sprint": record the Store-release outcome (0.5.4 live 2026-07-15).
+- Clean up the stray gradle-artifact commit (`e925855`) on the Sprint 47 branch + add `android_legacy_*/.gradle/` to `.gitignore`.
+- Refresh/verify `secrets.prod.json` (dated Apr 20) before any future Store re-release.
 
 ### Core App
 
@@ -1124,6 +1188,7 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 6.6 | 2026-07-15 | Sprint 47 backlog: added **F112-F119** from Harold's manual testing of the Store-installed 0.5.4 build (new "Sprint 47 -- Store 0.5.4 Manual-Testing Feedback" phase group). F119 (MSIX ships as APP_ENV=dev -- `[DEV]` title/About + `_Dev` data dir) is highest priority (P8) and blocks F113 clean-user testing. Others: F112 Review-No-Rule entry point everywhere, F113 new-account default profiles (provider-keyed folders + scan defaults, Export CSV ON), F114 retention defaults -> 90d, F115 selection-bar reorder, F116 Demo Scan completion matches Live, F117 Help footer -> app version, F118 post-Store-release housekeeping. All assigned to Sprint 47; carry-ins folded in. **0.5.4 confirmed LIVE on the Store (cert passed 2026-07-15)**. GitHub issues: 0 open. |
 | 6.5 | 2026-07-11 | Sprint 46 completion + Sprint 47 pre-kickoff rollover (Phase 7 maintenance): rolled **Last Completed Sprint** 45 -> 46 (PR #270 merged); added the Sprint 46 row to the Past Sprint Summary table. Pruned the 3 shipped items **F64/F39/F33** from Next Sprint Candidates (DevOps + Core App Quality sections now reference-only). Refreshed Sprint Assignment header to Sprint 47 + "Last Reviewed" -> July 11, 2026 (dropped the Sprint 41 history line per the rolling window). Recorded **Sprint 47 carry-ins**: 0.5.5 version bump, F33 prod-DB apply (gated on Copilot round-6 decode-fix), CI_* repo secrets, IMP-3 CHANGELOG-cadence decision, round-6 polish. Backlog candidate re-presentation to Harold deferred to Phase 1.2 per his instruction. GitHub issues: 0 open. |
 | 6.4 | 2026-07-02 | Sprint 46 Phase 1 backlog refinement: pruned the shipped **F111** from Next Sprint Candidates (Release Readiness section now empty -- GO delivered Sprint 45); refreshed Sprint Assignment header to Sprint 46 + "Last Reviewed" -> July 2, 2026. Added **F111** as a new reusable HOLD template under Periodic Reviews (Windows Store readiness verification will recur each release). Harold took **F64, F33, F39** off HOLD and selected them as Sprint 46 scope (Priority 10/20/30); standing constraint -- hold on other major changes until the 0.5.4 Store rollout completes. GitHub issues: 0 open. |
 | 6.3 | 2026-07-02 | Sprint 45 completion + Sprint 46 pre-kickoff (Phase 3.2.1): created `docs/sprints/SPRINT_45_SUMMARY.md`; rolled **Last Completed Sprint** 44 -> 45; added the Sprint 45 row (PR #268) to the Past Sprint Summary table. Recorded the **develop -> main RELEASE MERGE** (Harold, 2026-07-02) -- F111-verified `0.5.4` codebase is now on `main`; Store upload targeted Sat/Sun on a stable network. F111 was Sprint 45's only item (Release Readiness), so Next Sprint Candidates is otherwise unchanged from the 6.2 refinement -- awaiting Sprint 46 scope selection. |
