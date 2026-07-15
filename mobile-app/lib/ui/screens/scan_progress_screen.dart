@@ -620,6 +620,25 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware
         folderNames: ['INBOX', 'Spam', 'Bulk'],
         scanType: 'demo',
       );
+
+      // F116 (Sprint 47): match Live Scan -- on completion, navigate to the
+      // Results screen (chip/button summary) instead of leaving the demo
+      // results as an inline ListView on this screen. This also removes the
+      // confusing intermediate progress counts (Harold: those do not need to
+      // be shown once the summary buttons are present). ResultsDisplayScreen
+      // reads scanProvider.results, which the demo scan just populated.
+      if (mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ResultsDisplayScreen(
+              platformId: 'demo',
+              platformDisplayName: 'Demo',
+              accountId: 'demo@example.com',
+              accountEmail: 'demo@example.com',
+            ),
+          ),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
