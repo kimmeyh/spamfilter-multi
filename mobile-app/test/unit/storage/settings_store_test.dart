@@ -316,9 +316,9 @@ void main() {
       expect(await settingsStore.getDisableAuthLogging(), isTrue);
     });
 
-    test('getUnmatchedRetentionDays returns 30 by default', () async {
+    test('getUnmatchedRetentionDays returns 90 by default (F114)', () async {
       final days = await settingsStore.getUnmatchedRetentionDays();
-      expect(days, 30);
+      expect(days, 90);
       expect(days, SettingsStore.defaultUnmatchedRetentionDays);
     });
 

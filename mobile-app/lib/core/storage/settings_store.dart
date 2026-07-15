@@ -79,9 +79,9 @@ class SettingsStore {
   static const bool defaultLiveScanDebugCsv = false;
   static const int defaultManualScanDaysBack = 0; // 0 = all emails
   static const int defaultBackgroundScanDaysBack = 0; // 0 = all emails
-  static const int defaultScanHistoryRetentionDays = 7; // days to keep scan history
+  static const int defaultScanHistoryRetentionDays = 90; // F114 (Sprint 47): 7 -> 90 (new-user default)
   static const bool defaultDisableAuthLogging = false; // SEC-19: default OFF preserves debug behavior
-  static const int defaultUnmatchedRetentionDays = 30; // SEC-14: keep unmatched emails 30 days
+  static const int defaultUnmatchedRetentionDays = 90; // F114 (Sprint 47): 30 -> 90 (was SEC-14 30)
   static const bool defaultCertificatePinningEnabled = true; // SEC-8: pinning on by default
   static const bool defaultEncryptDatabase = false; // SEC-11: opt-in until QA gates
 
