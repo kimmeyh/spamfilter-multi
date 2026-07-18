@@ -46,7 +46,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     const AccountSelectionScreen(),
     const _PlaceholderScreen(
       title: 'Rules',
-      message: 'Rule management coming in Sprint 12-13 (F3)',
+      message: 'Manage rules from the Account Details screen.',
       icon: Icons.rule,
     ),
     // [UPDATED] ISSUE #123: Settings now requires accountId

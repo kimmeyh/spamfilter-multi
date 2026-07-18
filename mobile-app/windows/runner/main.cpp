@@ -29,7 +29,7 @@ static void LogBackgroundScanSkip(const std::wstring& reason) {
     return;
   }
   // Match Dart-side path:
-  //   {AppData}\\MyEmailSpamFilter\\MyEmailSpamFilter[_Dev]\\logs\\[dev_]background_scan_v0.5.4.log
+  //   {AppData}\\MyEmailSpamFilter\\MyEmailSpamFilter[_Dev]\\logs\\[dev_]background_scan_v0.5.5.log
   // We don't know dev-vs-prod from C++ without SPAMFILTER_APP_ENV (defined below),
   // so write to a deterministic startup-skip log that both environments share.
   //
@@ -49,7 +49,7 @@ static void LogBackgroundScanSkip(const std::wstring& reason) {
       + L"\\logs";
   CreateDirectoryW(dataDir.c_str(), nullptr);
   std::wstring logPath = dataDir
-      + (isDevEnv ? L"\\dev_background_scan_v0.5.4.log" : L"\\background_scan_v0.5.4.log");
+      + (isDevEnv ? L"\\dev_background_scan_v0.5.5.log" : L"\\background_scan_v0.5.5.log");
 
   std::wofstream log(logPath, std::ios::app);
   if (!log.is_open()) return;

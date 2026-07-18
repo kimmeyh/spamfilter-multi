@@ -1,8 +1,10 @@
 # Sprint 44 retro IMP-1 -- version-consistency enforcement gate (CLI).
 #
 # Mirrors test/policy/version_consistency_test.dart: FAILS (exit 1) when any
-# app-version literal under lib/ + windows/runner/ + scripts/ does not match the
-# canonical `version:` in pubspec.yaml.
+# app-version literal under lib/ + windows/runner/ + scripts/ + test/ does not
+# match the canonical `version:` in pubspec.yaml. (test/ added Sprint 47 retro
+# Proposal 4 -- catches the F118 fragility class where a test HARDCODED a
+# versioned log filename and broke on the bump.)
 #
 # WHY: app version literals are embedded as log-filename tokens
 # (`..._v0.5.4.log`) and the Settings version-display string (`Version 0.5.4`),
@@ -67,7 +69,7 @@ if ($pubspec -notmatch '(?m)^version:\s*(\d+\.\d+\.\d+)') {
 }
 $canonical = $Matches[1]
 
-$dirs = @('lib', 'windows/runner', 'scripts')
+$dirs = @('lib', 'windows/runner', 'scripts', 'test')
 $exts = @('*.dart', '*.cpp', '*.cc', '*.h', '*.ps1')
 $violations = @()
 
@@ -77,8 +79,12 @@ foreach ($d in $dirs) {
     Get-ChildItem -Path $full -Recurse -Include $exts -File | ForEach-Object {
         $file = $_.FullName
         # Skip the gate's own files -- they intentionally contain stale-version
-        # FIXTURE strings (e.g. 'Version 0.5.3') for their self-tests.
+        # FIXTURE strings (e.g. 'Version 0.5.3') for their self-tests. Now that
+        # test/ is swept, the Dart gate file must be excluded too (it holds the
+        # same deliberate fixtures) -- mirrors the exclusion in
+        # test/policy/version_consistency_test.dart.
         if ($_.Name -eq 'check-version-consistency.ps1') { return }
+        if ($_.Name -eq 'version_consistency_test.dart') { return }
         $n = 0
         foreach ($line in [System.IO.File]::ReadAllLines($file)) {
             $n++

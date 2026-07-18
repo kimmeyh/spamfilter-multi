@@ -88,10 +88,15 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware
 
   Future<void> _loadConfiguredSettings() async {
     final settingsStore = SettingsStore();
-    final folders = await settingsStore.getAccountManualScanFolders(widget.accountId);
+    // F113 (Sprint 47) + Copilot review: resolve via getEffectiveFolders so a
+    // new account with no saved override gets its PROVIDER-specific default
+    // folders (AOL Bulk / Gmail Spam, ...) instead of INBOX-only. This is the
+    // scan-time path; getAccountManualScanFolders() alone bypassed the provider
+    // default and made F113 a settings-display-only change.
+    final resolvedFolders =
+        await settingsStore.getEffectiveFolders(widget.accountId);
     final mode = await settingsStore.getAccountManualScanMode(widget.accountId);
     if (mounted) {
-      final resolvedFolders = (folders != null && folders.isNotEmpty) ? folders : ['INBOX'];
       setState(() {
         _configuredFolders = resolvedFolders;
         _configuredMode = mode ?? ScanMode.readOnly;
@@ -564,21 +569,17 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware
         scanProvider: scanProvider,
       );
 
-      // [FIXED] ISSUE #123+#124: Use saved default folders from Manual Scan tab
-      // The Settings screen saves folders per-account; we always use those
+      // [FIXED] ISSUE #123+#124: Use saved default folders from Manual Scan tab.
+      // F113 (Sprint 47) + Copilot review: resolve via getEffectiveFolders so a
+      // saved per-account override wins, but a new account with no override gets
+      // its PROVIDER-specific defaults (AOL Bulk / Gmail Spam, ...) rather than
+      // INBOX-only. getEffectiveFolders never returns empty, so no separate
+      // INBOX fallback is needed here.
       final scanLogger = Logger();
-      List<String> foldersToScan;
-
-      // Load saved default folders from Settings > Manual Scan tab
-      final savedFolders = await settingsStore.getAccountManualScanFolders(widget.accountId);
-      if (savedFolders != null && savedFolders.isNotEmpty) {
-        foldersToScan = savedFolders;
-        scanLogger.i('[FOLDERS] Using saved default folders from Manual Scan tab: $foldersToScan');
-      } else {
-        // Fallback to INBOX if no folders configured
-        foldersToScan = ['INBOX'];
-        scanLogger.i('[FOLDERS] No folders configured in Settings, using default: $foldersToScan');
-      }
+      final foldersToScan =
+          await settingsStore.getEffectiveFolders(widget.accountId);
+      scanLogger.i('[FOLDERS] Effective scan folders (override or provider '
+          'default): $foldersToScan');
 
       // Store selected folders in provider so results_display_screen can show them
       scanProvider.setSelectedFolders(foldersToScan, accountId: widget.accountId);
@@ -620,6 +621,25 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware
         folderNames: ['INBOX', 'Spam', 'Bulk'],
         scanType: 'demo',
       );
+
+      // F116 (Sprint 47): match Live Scan -- on completion, navigate to the
+      // Results screen (chip/button summary) instead of leaving the demo
+      // results as an inline ListView on this screen. This also removes the
+      // confusing intermediate progress counts (Harold: those do not need to
+      // be shown once the summary buttons are present). ResultsDisplayScreen
+      // reads scanProvider.results, which the demo scan just populated.
+      if (mounted) {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ResultsDisplayScreen(
+              platformId: 'demo',
+              platformDisplayName: 'Demo',
+              accountId: 'demo@example.com',
+              accountEmail: 'demo@example.com',
+            ),
+          ),
+        );
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

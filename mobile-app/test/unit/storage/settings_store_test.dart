@@ -182,10 +182,15 @@ void main() {
       expect(effective, ScanMode.safeSendersAndRules);
     });
 
-    test('getEffectiveFolders uses global when no account override', () async {
+    test('getEffectiveFolders uses provider default when no account override '
+        '(F113)', () async {
+      // F113 (Sprint 47): with an accountId and no per-account override, the
+      // effective folders are the provider-specific default, NOT the global
+      // setting. accountId 'test-account-123' has an unknown provider prefix
+      // ('test'), so it falls back to the generic INBOX default.
       await settingsStore.setManualScanFolders(['Global1', 'Global2']);
       final effective = await settingsStore.getEffectiveFolders(accountId);
-      expect(effective, ['Global1', 'Global2']);
+      expect(effective, ['INBOX']);
     });
 
     test('getEffectiveFolders uses account override when set', () async {
@@ -316,9 +321,9 @@ void main() {
       expect(await settingsStore.getDisableAuthLogging(), isTrue);
     });
 
-    test('getUnmatchedRetentionDays returns 30 by default', () async {
+    test('getUnmatchedRetentionDays returns 90 by default (F114)', () async {
       final days = await settingsStore.getUnmatchedRetentionDays();
-      expect(days, 30);
+      expect(days, 90);
       expect(days, SettingsStore.defaultUnmatchedRetentionDays);
     });
 
@@ -335,9 +340,9 @@ void main() {
 
     // F90 (Sprint 39): live-scan debug CSV setting parity with
     // background-scan debug CSV setting
-    test('getLiveScanDebugCsv returns false by default', () async {
+    test('getLiveScanDebugCsv returns true by default (F113)', () async {
       final enabled = await settingsStore.getLiveScanDebugCsv();
-      expect(enabled, isFalse);
+      expect(enabled, isTrue);
       expect(enabled, SettingsStore.defaultLiveScanDebugCsv);
     });
 
@@ -361,6 +366,64 @@ void main() {
       await settingsStore.setLiveScanDebugCsv(true);
       expect(await settingsStore.getBackgroundScanDebugCsv(), isFalse);
       expect(await settingsStore.getLiveScanDebugCsv(), isTrue);
+    });
+  });
+
+  group('F113 provider-keyed default folders', () {
+    test('AOL accountId -> Inbox/Bulk/Bulk Mail', () {
+      expect(
+        SettingsStore.providerDefaultFolders('aol-kimmeyharold@aol.com'),
+        ['Inbox', 'Bulk', 'Bulk Mail'],
+      );
+    });
+
+    test('Gmail accountId -> INBOX/[Gmail]/Spam/Unwanted', () {
+      expect(
+        SettingsStore.providerDefaultFolders('gmail-kimmeyh@gmail.com'),
+        ['INBOX', '[Gmail]/Spam', 'Unwanted'],
+      );
+    });
+
+    test('unknown provider -> generic INBOX default', () {
+      expect(
+        SettingsStore.providerDefaultFolders('yahoo-someone@yahoo.com'),
+        ['INBOX'],
+      );
+    });
+
+    // Copilot review (Sprint 47): the old dash-split mis-parsed a local-part
+    // that contains a dash. Detection now keys off the email domain, so these
+    // must resolve correctly regardless of dashes or a missing platform prefix.
+    test('dash in local-part still resolves by domain (Gmail)', () {
+      expect(
+        SettingsStore.providerDefaultFolders('gmail-john-doe@gmail.com'),
+        ['INBOX', '[Gmail]/Spam', 'Unwanted'],
+      );
+    });
+
+    test('bare email accountId (no platform prefix) resolves by domain', () {
+      expect(
+        SettingsStore.providerDefaultFolders('john-doe@gmail.com'),
+        ['INBOX', '[Gmail]/Spam', 'Unwanted'],
+      );
+      expect(
+        SettingsStore.providerDefaultFolders('jane-smith@aol.com'),
+        ['Inbox', 'Bulk', 'Bulk Mail'],
+      );
+    });
+
+    test('provider detection is case-insensitive', () {
+      expect(
+        SettingsStore.providerDefaultFolders('GMAIL-A@Gmail.COM'),
+        ['INBOX', '[Gmail]/Spam', 'Unwanted'],
+      );
+    });
+
+    test('getEffectiveFolders falls back to the provider default', () async {
+      // No per-account folders set -> AOL provider default.
+      final folders =
+          await settingsStore.getEffectiveFolders('aol-x@aol.com');
+      expect(folders, ['Inbox', 'Bulk', 'Bulk Mail']);
     });
   });
 }

@@ -57,18 +57,28 @@ void main() {
   );
 
   testWidgets(
-    'Help screen footer timestamp is updated to Sprint 40 / June 2026',
+    'Help screen footer shows the issues link and no stale sprint marker (F117)',
     (tester) async {
       await tester.pumpWidget(const MaterialApp(home: HelpScreen()));
       await tester.pump();
 
+      // F117 (Sprint 47): the footer no longer hardcodes a sprint #; it shows
+      // the app version (via package_info_plus, resolved async) plus the
+      // issues link. Assert the stable part (the link) is present and the
+      // old hardcoded "Sprint 40" string is gone.
       final footer = find.byWidgetPredicate(
         (w) =>
             w is Text &&
-            (w.data ?? '').contains('Sprint 40') &&
-            (w.data ?? '').contains('June 2026'),
+            (w.data ?? '')
+                .contains('github.com/kimmeyh/spamfilter-multi/issues'),
       );
-      expect(footer, findsOneWidget);
+      expect(footer, findsWidgets); // at least one (issues link is stable)
+
+      // The key regression guard: the old hardcoded sprint marker is gone.
+      final staleFooter = find.byWidgetPredicate(
+        (w) => w is Text && (w.data ?? '').contains('Sprint 40'),
+      );
+      expect(staleFooter, findsNothing);
     },
   );
 

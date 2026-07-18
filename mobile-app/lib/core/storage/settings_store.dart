@@ -68,20 +68,68 @@ class SettingsStore {
   static const ScanMode defaultBackgroundScanMode = ScanMode.readOnly;
   static const List<String> defaultBackgroundScanFolders = ['INBOX'];
   static const String? defaultCsvExportDirectory = null; // null means use Downloads folder
-  static const bool defaultBackgroundScanDebugCsv = false;
-  /// F90 (Sprint 39): live-scan debug CSV opt-in. Default `false` for
-  /// both dev and prod (matches `defaultBackgroundScanDebugCsv`). The
-  /// Settings > Manual Scan tab Debug section exposes a toggle so dev
-  /// users can opt in without a code change. The runtime log file
-  /// (`{logs}/{prefix}live_scan_v0.5.4.log`) is always on regardless
-  /// of this setting -- it captures scan-lifecycle events only and is
-  /// small enough that surprise disk usage is not a concern.
-  static const bool defaultLiveScanDebugCsv = false;
+  // F113 (Sprint 47): debug-CSV defaults ON for new users (Harold: new users
+  // are the most likely to need diagnostics; the files are tiny).
+  static const bool defaultBackgroundScanDebugCsv = true;
+
+  // F113 (Sprint 47): provider-keyed default scan folders. When an account
+  // has no per-account folder selection, the effective default depends on the
+  // provider (derived from the `{platform}-{email}` accountId prefix). AOL and
+  // Gmail have distinct well-known spam/bulk folder names; anything else falls
+  // back to the generic INBOX. Extensible: add Yahoo/Outlook entries as those
+  // providers are activated.
+  static const List<String> defaultAolScanFolders = [
+    'Inbox',
+    'Bulk',
+    'Bulk Mail',
+  ];
+  static const List<String> defaultGmailScanFolders = [
+    'INBOX',
+    '[Gmail]/Spam',
+    'Unwanted',
+  ];
+
+  /// Returns the provider-specific default scan folders for [accountId].
+  /// Falls back to `['INBOX']` for unknown providers. Used as the effective
+  /// default when an account has no per-account folder selection (F113).
+  ///
+  /// AccountId format VARIES (`{platform}-{email}` e.g. `gmail-a@gmail.com`,
+  /// or a bare email `a@gmail.com`), so provider detection matches the whole
+  /// id case-insensitively rather than splitting on the first `-`. Splitting
+  /// on `-` mis-parsed local-parts that contain a dash (Copilot review:
+  /// `john-doe@gmail.com` -> prefix `john` -> wrong fallback to INBOX). The
+  /// email domain (`@gmail.com` / `@aol.com`) is the reliable signal and is
+  /// present in every id form, so we key off that plus the platform token.
+  static List<String> providerDefaultFolders(String accountId) {
+    final id = accountId.toLowerCase();
+    // Gmail: `gmail-` platform prefix OR a gmail/googlemail address.
+    if (id.startsWith('gmail-') ||
+        id.contains('@gmail.') ||
+        id.contains('@googlemail.')) {
+      return List.from(defaultGmailScanFolders);
+    }
+    // AOL: `aol-`/`imap-...aol` platform prefix OR an aol/verizon address.
+    if (id.startsWith('aol-') ||
+        id.contains('@aol.') ||
+        id.contains('@verizon.')) {
+      return List.from(defaultAolScanFolders);
+    }
+    return List.from(defaultManualScanFolders); // generic INBOX
+  }
+  /// F90 (Sprint 39): live-scan debug CSV export. F113 (Sprint 47) changed
+  /// the default to `true` for both dev and prod -- new users are the most
+  /// likely to need diagnostics and the CSV files are tiny (matches
+  /// `defaultBackgroundScanDebugCsv`, also `true`). The Settings > Manual Scan
+  /// tab Debug section exposes a toggle so a user can opt OUT without a code
+  /// change. The runtime log file (`{logs}/{prefix}live_scan_v0.5.5.log`) is
+  /// always on regardless of this setting -- it captures scan-lifecycle events
+  /// only and is small enough that surprise disk usage is not a concern.
+  static const bool defaultLiveScanDebugCsv = true; // F113 (Sprint 47): ON for new users
   static const int defaultManualScanDaysBack = 0; // 0 = all emails
   static const int defaultBackgroundScanDaysBack = 0; // 0 = all emails
-  static const int defaultScanHistoryRetentionDays = 7; // days to keep scan history
+  static const int defaultScanHistoryRetentionDays = 90; // F114 (Sprint 47): 7 -> 90 (new-user default)
   static const bool defaultDisableAuthLogging = false; // SEC-19: default OFF preserves debug behavior
-  static const int defaultUnmatchedRetentionDays = 30; // SEC-14: keep unmatched emails 30 days
+  static const int defaultUnmatchedRetentionDays = 90; // F114 (Sprint 47): 30 -> 90 (was SEC-14 30)
   static const bool defaultCertificatePinningEnabled = true; // SEC-8: pinning on by default
   static const bool defaultEncryptDatabase = false; // SEC-11: opt-in until QA gates
 
@@ -193,7 +241,7 @@ class SettingsStore {
   /// live (manual) scans. When true, every live scan appends to a
   /// per-account per-day `live_scan_{email}_{date}.data.csv` and
   /// regenerates the matching `.xlsx` (mirrors background-scan CSV).
-  /// The runtime log file `{logs}/{prefix}live_scan_v0.5.4.log` is
+  /// The runtime log file `{logs}/{prefix}live_scan_v0.5.5.log` is
   /// written regardless of this setting.
   Future<bool> getLiveScanDebugCsv() async {
     final value = await _getAppSetting(keyLiveScanDebugCsv);
@@ -674,6 +722,11 @@ class SettingsStore {
       // Fall back to generic account override
       final override = await getAccountFolders(accountId);
       if (override != null) return override;
+      // F113 (Sprint 47): no per-account selection -> provider-specific
+      // default (AOL/Gmail well-known folders) rather than the generic global
+      // INBOX-only default. This makes the folder default functional at
+      // SCAN time, not just in the settings display.
+      return providerDefaultFolders(accountId);
     }
     return isBackground ? await getBackgroundScanFolders() : await getManualScanFolders();
   }

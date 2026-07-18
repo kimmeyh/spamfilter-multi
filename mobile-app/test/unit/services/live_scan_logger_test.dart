@@ -108,13 +108,32 @@ void main() {
   // log(): append-mode runtime log, silent on failure
   // ---------------------------------------------------------------------------
   group('log', () {
+    // Read the app version from pubspec.yaml so this filename assertion never
+    // drifts on a version bump (F118, Sprint 47): the runtime log filename in
+    // live_scan_logger.dart embeds the version, and the version-consistency
+    // gate updates that source literal on every bump. Hardcoding it here meant
+    // the test broke on each bump; deriving it keeps the test honest without
+    // manual upkeep.
+    String appVersion() {
+      final pubspec = File(p.join(Directory.current.path, 'pubspec.yaml'))
+          .readAsStringSync();
+      final match =
+          RegExp(r'^version:\s*(\d+\.\d+\.\d+)', multiLine: true)
+              .firstMatch(pubspec);
+      if (match == null) {
+        fail('Could not parse version from pubspec.yaml');
+      }
+      return match.group(1)!;
+    }
+
     File runtimeLogFile() {
       final logDir = p.join(
         '${appSupport.path}${AppEnvironment.dataDirSuffix}',
         'logs',
       );
       return File(
-        p.join(logDir, '${AppEnvironment.logPrefix}live_scan_v0.5.4.log'),
+        p.join(logDir,
+            '${AppEnvironment.logPrefix}live_scan_v${appVersion()}.log'),
       );
     }
 
