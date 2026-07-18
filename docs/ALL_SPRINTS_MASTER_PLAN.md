@@ -218,6 +218,13 @@ Captured from Harold's manual testing of the Store-installed 0.5.4 build (2026-0
 - [DONE] Stray gradle-artifact commit (`e925855`): added `android_legacy_*/.gradle/` to `mobile-app/.gitignore` + `git rm --cached` the tracked cache files so they stop re-dirtying the tree (the commit itself stays in history; the files are now untracked/ignored).
 - [Harold action] Refresh/verify `secrets.prod.json` (dated Apr 20) before the corrected Store re-release.
 
+**Sprint 47 retrospective improvements (all "apply now", Harold 2026-07-18)** -- see `docs/sprints/SPRINT_47_RETROSPECTIVE.md`:
+- [DONE] IMP-1 (Proposal 1): sprint-card task template upgraded in `SPRINT_PLANNING.md` (Value / R-N / Affected files / Dependencies / NFRs / AC-N / T-N / Task-Level DoD / Definition of Ready), from a research spike. Source: Category 7 Requirements Clarity (Harold).
+- [DONE] IMP-2 (Proposal 2): in-execution actuals logging codified (Task-Level DoD item 6); all Sprint 47 items backfilled into `CODING_VELOCITY.md` Coverage Ledger + Accuracy Trend.
+- [DONE] IMP-4 (Proposal 4): version-consistency gate extended to sweep `test/` (catches the F118 hardcoded-versioned-filename fragility class); mirrored in `check-version-consistency.ps1`.
+- [DONE] IMP-5 (Proposal 5): new `stale_footer_test.dart` gate flags hardcoded "Sprint N" / "Last updated" strings in `lib/ui/` (the F117 class); caught + fixed a stale "coming in Sprint 12-13" placeholder on the Rules tab.
+- [BLOCKED -> Harold] IMP-3 (Proposal 3): stash-guard PreToolUse hook authored (`.claude/hooks/block-carry-forward-stash.ps1`) but NOT wired -- `.claude/` writes are denied in don't-ask mode. Requires Harold to add the hook file + a `PreToolUse` entry in `.claude/settings.json` (content provided in the retrospective / chat).
+
 ### Core App
 
 _(No active Core App candidates -- F96 shipped in Sprint 43.)_

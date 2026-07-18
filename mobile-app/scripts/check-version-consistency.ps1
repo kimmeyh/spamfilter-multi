@@ -1,8 +1,10 @@
 # Sprint 44 retro IMP-1 -- version-consistency enforcement gate (CLI).
 #
 # Mirrors test/policy/version_consistency_test.dart: FAILS (exit 1) when any
-# app-version literal under lib/ + windows/runner/ + scripts/ does not match the
-# canonical `version:` in pubspec.yaml.
+# app-version literal under lib/ + windows/runner/ + scripts/ + test/ does not
+# match the canonical `version:` in pubspec.yaml. (test/ added Sprint 47 retro
+# Proposal 4 -- catches the F118 fragility class where a test HARDCODED a
+# versioned log filename and broke on the bump.)
 #
 # WHY: app version literals are embedded as log-filename tokens
 # (`..._v0.5.4.log`) and the Settings version-display string (`Version 0.5.4`),
