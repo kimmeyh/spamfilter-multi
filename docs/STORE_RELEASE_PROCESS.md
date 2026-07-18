@@ -119,19 +119,23 @@ flutter pub get
 flutter pub run msix:create
 ```
 
-**Why this specific invocation**: `msix:create` runs `flutter build windows` internally and does **not** inherit any `--dart-define` flags from its own command line. The OAuth credentials are injected via the `build_windows_args` field inside `msix_config` in `pubspec.yaml`:
+**Why this specific invocation**: `msix:create` runs `flutter build windows` internally and does **not** inherit any `--dart-define` flags from its own command line. The `APP_ENV=prod` flag AND the OAuth credentials are injected via the **`windows_build_args`** field inside `msix_config` in `pubspec.yaml`:
 
 ```yaml
 msix_config:
   ...
   msix_version: 0.5.3.0
   ...
-  build_windows_args: --dart-define=APP_ENV=prod --dart-define-from-file=secrets.prod.json
+  windows_build_args: --dart-define=APP_ENV=prod --dart-define-from-file=secrets.prod.json
   store: true
   install_certificate: false
 ```
 
-Without the `build_windows_args` line, the MSIX builds successfully, the manifest looks correct, and the installed app silently fails at runtime when the user tries to sign in to Gmail because `WINDOWS_GMAIL_DESKTOP_CLIENT_ID` is empty. There is no visible error during the build. **This is the single most dangerous failure mode in the release process** -- verify the field is present (Step 4 below) every time.
+**[F119, Sprint 47] CRITICAL -- the key name is `windows_build_args`, NOT `build_windows_args`.** The msix package (3.16.x) reads `windows_build_args` (verified against its README + `configuration.dart:132`). The 0.5.4 submission used the wrong key `build_windows_args`, which the package **silently ignored** -- so the inner `flutter build windows` ran with NO dart-defines. Two consequences shipped to the Store:
+1. `APP_ENV` fell back to its `'dev'` default -> the MSIX ran as dev (`[DEV]` title + About, `_Dev` data directory).
+2. OAuth credentials were empty -> silent Gmail sign-in failure.
+
+Without the `windows_build_args` line (or with a wrong key), the MSIX builds successfully, the manifest looks correct, and the app silently misbehaves at runtime. There is no visible error during the build. **This is the single most dangerous failure mode in the release process** -- verify BOTH the field name AND its effect (Step 4.0 + 4.2 below) every time.
 
 **Do NOT use `mobile-app/scripts/build-msix.ps1`**. That script uses a separate makeappx.exe code path that does not inject dart-defines, and any MSIX built with it will ship with empty OAuth credentials. It was deprecated in Sprint 36; the file header now notes this.
 
@@ -141,7 +145,20 @@ Without the `build_windows_args` line, the MSIX builds successfully, the manifes
 
 ## Step 4: Verify the MSIX
 
-Run these three checks before uploading. Skipping any one has historically caused a failed submission or a user-visible runtime bug.
+Run these checks before uploading. Skipping any one has historically caused a failed submission or a user-visible runtime bug.
+
+### 4.0 Verify the MSIX runs as PROD, not dev [F119, Sprint 47 -- MANDATORY]
+
+This is the check that would have caught the 0.5.4 dev-leak before submission. The `windows_build_args` key is easy to mistype, and a wrong key fails silently. Confirm the dart-defines actually reached the inner build:
+
+```powershell
+# During msix:create, the log echoes the inner flutter command. Confirm it includes APP_ENV=prod:
+#   running "flutter build windows --dart-define=APP_ENV=prod --dart-define-from-file=secrets.prod.json ..."
+# If it shows a bare "flutter build windows" with no dart-defines, the windows_build_args key is
+# wrong/missing -- STOP and fix pubspec.yaml before continuing.
+```
+
+After install (Step 4.2), the definitive check: the title bar and About screen must read `MyEmailSpamFilter` / `Version X.Y.Z` with **NO `[DEV]` suffix**, and the app must use the `MyEmailSpamFilter` (not `MyEmailSpamFilter_Dev`) data directory. A `[DEV]` suffix anywhere = the build ran as dev = do not submit.
 
 ### 4.1 Verify manifest version
 
@@ -166,7 +183,7 @@ The dart-define values end up as UTF-16 strings inside the packaged `flutter_ass
 3. Attempt Gmail sign-in.
 4. Confirm the OAuth browser page opens with the real client ID in the URL (`client_id=577022808534-...` or your project's desktop client ID).
 
-If the browser URL shows `client_id=` with an empty or placeholder value, the `build_windows_args` line in `pubspec.yaml` was missing or `secrets.prod.json` was missing. Rebuild from Step 3.
+If the browser URL shows `client_id=` with an empty or placeholder value, the `windows_build_args` line in `pubspec.yaml` was missing/misnamed (see F119 note in Step 3 -- the key is `windows_build_args`, not `build_windows_args`) or `secrets.prod.json` was missing. Rebuild from Step 3.
 
 ### 4.3 Verify size and structure
 

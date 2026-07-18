@@ -10,7 +10,8 @@
 // escaped normal testing. This gate makes that drift a BUILD FAILURE.
 //
 // FAILS when any recognized version literal under lib/ + windows/runner/ +
-// scripts/ does not match the canonical `version:` in pubspec.yaml.
+// scripts/ + test/ does not match the canonical `version:` in pubspec.yaml.
+// (test/ added Sprint 47 retro Proposal 4 -- the F118 fragility class.)
 //
 // Recognized literal forms (deliberately narrow to the APP-version-bearing
 // contexts, so dependency versions in comments -- e.g.
@@ -48,7 +49,16 @@ final _versionLiteral = RegExp(
 String _versionOf(RegExpMatch m) => m.group(1) ?? m.group(2)!;
 
 /// Directories swept for version literals (relative to mobile-app/).
-const _sweepDirs = ['lib', 'windows/runner', 'scripts'];
+///
+/// `test` was added in Sprint 47 (retro Proposal 4) after F118: two tests had
+/// HARDCODED the versioned log filename (`live_scan_v0.5.4.log`) and silently
+/// broke on the 0.5.4->0.5.5 bump. The gate previously excluded `test/`, so it
+/// could not see that fragility class. Sweeping `test/` too makes a hardcoded
+/// version literal in any test a BUILD FAILURE; the correct pattern is to
+/// DERIVE the version from pubspec at runtime (see
+/// test/unit/services/live_scan_logger_test.dart), which produces no literal
+/// and is therefore never flagged.
+const _sweepDirs = ['lib', 'windows/runner', 'scripts', 'test'];
 
 /// File extensions that may carry a version literal.
 bool _isSweepable(String p) =>
@@ -81,8 +91,8 @@ void main() {
       expect(mismatches(r'sqlite3: 3.1.4', '0.5.4'), isEmpty);
     });
 
-    test('every version literal in lib/ + windows/runner/ + scripts/ matches '
-        'pubspec.yaml', () {
+    test('every version literal in lib/ + windows/runner/ + scripts/ + test/ '
+        'matches pubspec.yaml', () {
       final canonical = _canonicalVersion();
       final violations = <String>[];
 
@@ -94,6 +104,11 @@ void main() {
           // Skip the gate's own CLI -- it intentionally contains stale-version
           // FIXTURE strings (e.g. 'Version 0.5.3') for its self-test.
           if (entity.path.endsWith('check-version-consistency.ps1')) continue;
+          // Skip THIS test file -- it too contains deliberate stale-version
+          // FIXTURE literals (e.g. 'background_scan_v0.5.3.log', 'Version 0.5.3')
+          // in the matcher self-check above. Now that `test/` is swept, this
+          // file must be excluded or its own fixtures would be false positives.
+          if (entity.path.endsWith('version_consistency_test.dart')) continue;
           final lines = entity.readAsLinesSync();
           for (var i = 0; i < lines.length; i++) {
             for (final m in _versionLiteral.allMatches(lines[i])) {

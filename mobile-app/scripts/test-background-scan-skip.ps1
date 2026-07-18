@@ -57,7 +57,7 @@ if ($Environment -eq "dev") {
     $windowTitle = "MyEmailSpamFilter"
 }
 
-$logFileName = "${logPrefix}background_scan_v0.5.4.log"
+$logFileName = "${logPrefix}background_scan_v0.5.5.log"
 $logDir = Join-Path $env:APPDATA "MyEmailSpamFilter\$dataSubDir\logs"
 $logFile = Join-Path $logDir $logFileName
 

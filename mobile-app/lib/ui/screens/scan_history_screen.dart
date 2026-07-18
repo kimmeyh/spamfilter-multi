@@ -10,6 +10,7 @@ import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/settings_store.dart';
 import '../widgets/app_bar_with_exit.dart';
 import 'help_screen.dart';
+import 'no_rule_review_screen.dart';
 import 'results_display_screen.dart';
 import 'settings_screen.dart';
 
@@ -159,6 +160,18 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
             tooltip: 'Refresh',
             onPressed: _loadHistory,
           ),
+          // F112 (Sprint 47): "Review No Rule Items" entry point -- consistent
+          // with the account-selection AppBar (Sprint 46). Windows-desktop
+          // scoped like the source screen.
+          if (Platform.isWindows)
+            IconButton(
+              icon: const Icon(Icons.rule_folder_outlined),
+              tooltip: 'Review "No Rule" Items',
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) => const NoRuleReviewScreen()),
+              ),
+            ),
           IconButton(
             tooltip: 'Select Account',
             icon: const Icon(Icons.people),
@@ -337,8 +350,10 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
               'Total unique emails moved'),
           _buildTotalChip('Safe', totalSafe, Colors.green,
               'Total unique emails marked safe (not including Safe Folder)'),
-          _buildTotalChip('No Rule', totalNoRule, Colors.grey,
-              'Total unique emails currently with no rules assigned'),
+          // F112 (Sprint 47): a small "Review No Rule Items" icon centered
+          // directly above the "No Rule" chip (Column keeps it centered over
+          // the chip regardless of chip width). Windows-desktop scoped.
+          _buildNoRuleChipWithReviewIcon(totalNoRule),
           _buildTotalChip('Errors', totalErrors, Colors.red.shade300,
               'Total unique emails not processed due to errors'),
         ],
@@ -360,6 +375,32 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
         ),
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       ),
+    );
+  }
+
+  /// F112 (Sprint 47): the "No Rule" total chip with a small tappable
+  /// "Review No Rule Items" icon centered directly above it (Windows only,
+  /// consistent with the other Review entry points). On non-Windows it is
+  /// just the plain chip.
+  Widget _buildNoRuleChipWithReviewIcon(int totalNoRule) {
+    final chip = _buildTotalChip('No Rule', totalNoRule, Colors.grey,
+        'Total unique emails currently with no rules assigned');
+    if (!Platform.isWindows) return chip;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.rule_folder_outlined, size: 18),
+          tooltip: 'Review "No Rule" Items',
+          visualDensity: VisualDensity.compact,
+          constraints: const BoxConstraints(),
+          padding: const EdgeInsets.only(bottom: 2),
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const NoRuleReviewScreen()),
+          ),
+        ),
+        chip,
+      ],
     );
   }
 

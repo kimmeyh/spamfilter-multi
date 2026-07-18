@@ -1,6 +1,6 @@
 name: my_email_spam_filter
 description: Cross-platform email spam filter app
-version: 0.5.4+1
+version: 0.5.5+1
 publish_to: 'none'
 
 environment:
@@ -56,6 +56,7 @@ dependencies:
   file_picker: ^8.1.4  # File and folder picker (Sprint 13 - folder selection)
   punycode: ^1.0.0
   syncfusion_flutter_xlsio: ^33.1.44
+  package_info_plus: ^9.0.1
 
   # Phase 2+ - UI Enhancement
   # flutter_svg: ^2.0.9
@@ -112,13 +113,22 @@ msix_config:
   publisher_display_name: Kimmey Consulting - Ohio
   identity_name: KimmeyConsulting-Ohio.MyEmailSpamFilter
   publisher: CN=84EA8722-0CA5-4EC0-9B10-07EE79B66062
-  msix_version: 0.5.4.0
+  msix_version: 0.5.5.0
   logo_path: assets/icon/icon.png
   capabilities: internetClient, internetClientServer, privateNetworkClientServer
   # For Store submission: store: true, install_certificate: false
   # For local MSIX testing: store: false, install_certificate: true
   store: true
   install_certificate: false
+  # Forward dart-defines to the inner `flutter build windows` triggered by msix:create.
+  # Required for prod Store builds: APP_ENV=prod (else the MSIX runs as dev --
+  # [DEV] title/About + _Dev data dir, F119) + Gmail OAuth credentials from
+  # secrets.prod.json (else silent Gmail sign-in failure).
+  # F119 (Sprint 47): the correct key for the msix package (3.16.x) is
+  # `windows_build_args`, NOT `build_windows_args`. The wrong key was silently
+  # ignored, so the 0.5.4 Store MSIX shipped as dev with empty credentials.
+  # See docs/STORE_RELEASE_PROCESS.md.
+  windows_build_args: --dart-define=APP_ENV=prod --dart-define-from-file=secrets.prod.json
 
 # Icon Generation Configuration
 # Run: dart run flutter_launcher_icons

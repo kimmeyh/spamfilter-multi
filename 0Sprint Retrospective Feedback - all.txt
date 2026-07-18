@@ -3,6 +3,48 @@
 Copilot review completed. Can you review all the comments and either: fix now (preferred), create a backlog items (if it will take hours, change architecture, 
 change development strategy...) or explain why it is not relevant.  Then commit any changes, resolve all the comments and report back.
 TBD---------------------------------------------------------------------------------------------------------
+Sprint 47 Review/Retrospective - Combined Product Owner, Scrum Master and Lead Developer feedback
+- Effective while as Efficient as Reasonably Possible
+  - Very Good
+- Testing Approach
+  - Very Good
+- Effort Accuracy
+  - Awful, but already covered it in prior discussion
+- Planning Quality
+  - Very Good
+- Model Assignments
+  - Very Good
+- Communication
+  - Very Good
+- Requirements Clarity
+  - Need additional detail for each task of each sprint plan.
+    - Spike - research best practices for Agile Development Sprint Cards for large code base development teams of 7 to 9 total team members.
+    - Requirements documented in greater detail
+    - More detailed acceptance criteria - so that it fits the current architecture, testing, quality, development best practices
+    - Write what tests should be written for each requirement to meet acceptance criteria
+    - Write a "Definition of Done"
+    - You can leave out some of the above if they don't fit your best practices research
+    - Please add in anything that I left out that fit you best practices research.
+- Documentation
+  - Very Good
+- Process Issues
+  - Very Good
+- Risk Management
+  - Very Good
+- Next Sprint Readiness
+  - Very Good
+- Architecture Maintenance
+  - Very Good
+- Minor function updates that need to be added to the next sprint plan
+  - none
+- Function updates that can be added to the backlog for a future sprint
+  - none
+
+Please complete your sprint retrospective feedback (same sections)
+Combined feedback (yours and mine) and Summarize
+Make suggestions for improvements to be implemented.
+Display suggestions for improvement for review and approval.
+------------------------------------
 
 Sprint 46 Review/Retrospective - Combined Product Owner, Scrum Master and Lead Developer feedback
 - Effective while as Efficient as Reasonably Possible

@@ -300,6 +300,86 @@ Clear statement of what needs to be done and why.
 - [ ] Retrospective: Accepted/Rejected + Heuristic feedback recorded
 ```
 
+## Sprint-Card Task Template (Sprint 47 Spike)
+
+**Source**: Sprint 47 retrospective, Category 7 (Requirements Clarity) -- Harold asked for each per-task card in `SPRINT_N_PLAN.md` to carry richer requirements, architecture-fitting acceptance criteria, per-requirement test specifications, and a written Definition of Done, informed by a research spike on Agile sprint-card best practices for 7-9-member teams on large codebases.
+
+**Why large-team practice for a solo+AI workflow**: large-team cards are written to be self-contained and unambiguous so any team member can execute without tribal knowledge. Here, "any team member" maps to "any Claude model tier" -- a card that is complete enough for a Haiku agent to execute correctly is exactly the goal. Every recommendation below is tuned to that solo-developer-plus-Claude reality; full large-team ceremony that adds no value here is deliberately omitted.
+
+### Best-practices summary (from the spike)
+
+- **INVEST** (Independent, Negotiable, Valuable, Estimable, Small, Testable). The existing cards were already Independent / Estimable / Small / Negotiable. The three gaps this template closes: **Valuable** (a one-line value statement), **Testable** (measurable acceptance criteria + named tests per requirement), and self-containment (explicit dependencies + non-functional requirements).
+- **Acceptance-criteria style: checklist-primary, Gherkin for behavioral UI.** Default to a measurable checklist (matches the existing house rule: no subjective terms like "works well / comprehensive"). Use Given/When/Then only where a test driver replays the steps (behavioral UI flows).
+- **Test spec = intent, not code.** Name *what must be proven* and *which pyramid level* (`TESTING_STRATEGY.md`: Unit / Widget / Integration / E2E), one test-intent line per acceptance criterion, name the target file when it is an obvious extension. Do NOT write assertions / mocks / expected literals into the card -- that over-constrains a cheaper-tier implementer.
+- **Two Definition-of-Done scopes.** Task-level DoD (this change is coded, tested, documented, verified) vs sprint-level DoD (the release gate in `SPRINT_EXECUTION_WORKFLOW.md` Phase 5-7). This repo already had a de-facto sprint-level DoD; the task-level DoD below is the new piece.
+- **Traceability (R-N / AC-N / T-N)** is the cheapest high-value addition -- it makes a card self-contained for any executor and lets tests and the DoD reference specific requirements.
+
+### Task-Level Definition of Done (default -- referenced by every card, not copy-pasted)
+
+A task is "done" only when all of the following are true (a card lists only *additions or deviations* to this default):
+
+1. All acceptance criteria met and demonstrably verified.
+2. Named tests written and passing; full `flutter test` suite green.
+3. `flutter analyze` clean -- 0 new issues (`QUALITY_STANDARDS.md`).
+4. Coding-style conventions honored in touched code: no contractions, `Logger` not `print()`, no emojis in code/docs (CLAUDE.md).
+5. CHANGELOG `[Unreleased]` entry added in the same commit (CHANGELOG policy).
+6. Actual coding minutes recorded in `docs/CODING_VELOCITY.md` (Sprint 47 retro Proposal 2 -- log at task completion, not batched at sprint end).
+7. Docs / ADR / ARCHITECTURE updated if behavior or architecture changed (architecture-docs-no-defer rule).
+8. Decision-class check: no un-surfaced Class-1/2/3 change was made (CLAUDE.md Decision-Class Taxonomy).
+
+### Definition of Ready (one line)
+
+A task is **Ready** to start when Value, Requirements, Affected files, Dependencies, Acceptance criteria, and Tests-to-write are filled in, and no open Class-1/2/3 question remains.
+
+### Augmented per-task template
+
+Bold = mandatory. _Italic_ = optional (include only when the trigger applies). This template AUGMENTS the existing fields (Model + "why not cheaper", Step-types, Est-Effort, decision-class interrupts) -- none are removed.
+
+```markdown
+### Task N -- F<ID>: <Short title> (Priority <P>)
+
+**Value**: This enables <capability> / This prevents <problem>.   <!-- MANDATORY, 1 line (INVEST-Valuable) -->
+
+**Requirements** (numbered, detailed):   <!-- MANDATORY -->
+- R-1: <specific, unambiguous statement of what must be true>
+- R-2: <...>
+
+**Affected components / files**:   <!-- MANDATORY -->
+- `path/to/file.dart:LINE` -- <what changes>
+
+**Dependencies / blockers**:   <!-- MANDATORY IF ANY; else "None" -->
+- <Task X must land first> / <external Harold action> / None
+
+**Non-functional requirements**:   <!-- MANDATORY IF the task touches multi-account UI, user-facing widgets, platform-specific code, persistence, or security; else omit -->
+- Account-scoping: <e.g. uses getSelectedFoldersForAccount(); scoped to current account>  (Sprint 19 rule)
+- Accessibility: <semantics/contrast per QUALITY_STANDARDS.md / ADR-0037>
+- Platform: <e.g. gated behind if (Platform.isWindows)>
+
+**Acceptance criteria** (measurable, traceable):   <!-- MANDATORY; checklist-primary, Given/When/Then for behavioral UI -->
+- AC-1: <measurable condition -- NO subjective terms like "works well / comprehensive">
+- AC-2 (behavioral, if UI flow): Given <state>, When <action>, Then <observable result>
+
+**Tests to write** (one intent per AC; name pyramid level + target file):   <!-- MANDATORY -->
+- T-1 (verifies AC-1) -- TEST-UNIT in `test/unit/<file>_test.dart`: <what it proves>
+- T-2 (verifies AC-2) -- TEST-WIDGET in `test/widget/<file>_test.dart`: <what it proves>
+  (Reference: TESTING_STRATEGY.md pyramid + coverage requirements. State intent, not assertions.)
+
+**Definition of Done**: default task-level DoD (above) PLUS:   <!-- MANDATORY; list only additions/deviations, or "None -- default DoD only" -->
+- <task-specific extra, e.g. "manual clean-user visual verification on a prod build">
+
+**Model**: <Haiku|Sonnet|Opus> -- *why not the cheaper tier*: <one line>   <!-- MANDATORY (existing rule) -->
+
+**Step-types**: <UI-MOVE | SVC-EDIT | DATA | TEST-UNIT | TEST-WIDGET | TEST-INTEGRATION | DOCS | HOOK | NATIVE-WIN ...>   <!-- MANDATORY (existing) -->
+
+**Est-Effort**: <min-max>m  (TWO-metric MINUTE-based per CODING_VELOCITY.md)   <!-- MANDATORY (existing) -->
+
+_**Risk & rollback**_: <one-line risk + mitigation; rollback plan>   <!-- MANDATORY for DATA/migration/release/NATIVE-WIN tasks; optional otherwise -->
+
+_**Decision-class interrupts**_: <Class-1/2/3 items to surface + wait>   <!-- OPTIONAL; include only if the task carries one -->
+```
+
+**Right-sizing note**: mandatory-vs-optional keeps mechanical tasks terse (a constant change lists Value / one Requirement / one AC / one test / "None -- default DoD only") while behavioral-UI and DATA/release tasks carry the full rigor (NFRs, Gherkin AC, risk + rollback).
+
 **Labels**: `sprint`, `card`, `priority:high/medium/low`, `phase:3.x`
 
 #### 2. Bug Report (`bug_report.yml`)
