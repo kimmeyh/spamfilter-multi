@@ -89,25 +89,41 @@ class SettingsStore {
     'Unwanted',
   ];
 
-  /// Returns the provider-specific default scan folders for [accountId]
-  /// (format `{platform}-{email}`). Falls back to `['INBOX']` for unknown
-  /// providers. Used as the effective default when an account has no
-  /// per-account folder selection (F113).
+  /// Returns the provider-specific default scan folders for [accountId].
+  /// Falls back to `['INBOX']` for unknown providers. Used as the effective
+  /// default when an account has no per-account folder selection (F113).
+  ///
+  /// AccountId format VARIES (`{platform}-{email}` e.g. `gmail-a@gmail.com`,
+  /// or a bare email `a@gmail.com`), so provider detection matches the whole
+  /// id case-insensitively rather than splitting on the first `-`. Splitting
+  /// on `-` mis-parsed local-parts that contain a dash (Copilot review:
+  /// `john-doe@gmail.com` -> prefix `john` -> wrong fallback to INBOX). The
+  /// email domain (`@gmail.com` / `@aol.com`) is the reliable signal and is
+  /// present in every id form, so we key off that plus the platform token.
   static List<String> providerDefaultFolders(String accountId) {
-    final dash = accountId.indexOf('-');
-    final platform =
-        (dash > 0 ? accountId.substring(0, dash) : accountId).toLowerCase();
-    if (platform.contains('aol')) return List.from(defaultAolScanFolders);
-    if (platform.contains('gmail')) return List.from(defaultGmailScanFolders);
+    final id = accountId.toLowerCase();
+    // Gmail: `gmail-` platform prefix OR a gmail/googlemail address.
+    if (id.startsWith('gmail-') ||
+        id.contains('@gmail.') ||
+        id.contains('@googlemail.')) {
+      return List.from(defaultGmailScanFolders);
+    }
+    // AOL: `aol-`/`imap-...aol` platform prefix OR an aol/verizon address.
+    if (id.startsWith('aol-') ||
+        id.contains('@aol.') ||
+        id.contains('@verizon.')) {
+      return List.from(defaultAolScanFolders);
+    }
     return List.from(defaultManualScanFolders); // generic INBOX
   }
-  /// F90 (Sprint 39): live-scan debug CSV opt-in. Default `false` for
-  /// both dev and prod (matches `defaultBackgroundScanDebugCsv`). The
-  /// Settings > Manual Scan tab Debug section exposes a toggle so dev
-  /// users can opt in without a code change. The runtime log file
-  /// (`{logs}/{prefix}live_scan_v0.5.5.log`) is always on regardless
-  /// of this setting -- it captures scan-lifecycle events only and is
-  /// small enough that surprise disk usage is not a concern.
+  /// F90 (Sprint 39): live-scan debug CSV export. F113 (Sprint 47) changed
+  /// the default to `true` for both dev and prod -- new users are the most
+  /// likely to need diagnostics and the CSV files are tiny (matches
+  /// `defaultBackgroundScanDebugCsv`, also `true`). The Settings > Manual Scan
+  /// tab Debug section exposes a toggle so a user can opt OUT without a code
+  /// change. The runtime log file (`{logs}/{prefix}live_scan_v0.5.5.log`) is
+  /// always on regardless of this setting -- it captures scan-lifecycle events
+  /// only and is small enough that surprise disk usage is not a concern.
   static const bool defaultLiveScanDebugCsv = true; // F113 (Sprint 47): ON for new users
   static const int defaultManualScanDaysBack = 0; // 0 = all emails
   static const int defaultBackgroundScanDaysBack = 0; // 0 = all emails

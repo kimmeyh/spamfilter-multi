@@ -9,7 +9,7 @@ Sprint 47 Review/Retrospective - Combined Product Owner, Scrum Master and Lead D
 - Testing Approach
   - Very Good
 - Effort Accuracy
-  - Very Good
+  - Awful, but already covered it in prior discussion
 - Planning Quality
   - Very Good
 - Model Assignments
@@ -17,7 +17,14 @@ Sprint 47 Review/Retrospective - Combined Product Owner, Scrum Master and Lead D
 - Communication
   - Very Good
 - Requirements Clarity
-  - Very Good
+  - Need additional detail for each task of each sprint plan.
+    - Spike - research best practices for Agile Development Sprint Cards for large code base development teams of 7 to 9 total team members.
+    - Requirements documented in greater detail
+    - More detailed acceptance criteria - so that it fits the current architecture, testing, quality, development best practices
+    - Write what tests should be written for each requirement to meet acceptance criteria
+    - Write a "Definition of Done"
+    - You can leave out some of the above if they don't fit your best practices research
+    - Please add in anything that I left out that fit you best practices research.
 - Documentation
   - Very Good
 - Process Issues

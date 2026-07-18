@@ -391,6 +391,34 @@ void main() {
       );
     });
 
+    // Copilot review (Sprint 47): the old dash-split mis-parsed a local-part
+    // that contains a dash. Detection now keys off the email domain, so these
+    // must resolve correctly regardless of dashes or a missing platform prefix.
+    test('dash in local-part still resolves by domain (Gmail)', () {
+      expect(
+        SettingsStore.providerDefaultFolders('gmail-john-doe@gmail.com'),
+        ['INBOX', '[Gmail]/Spam', 'Unwanted'],
+      );
+    });
+
+    test('bare email accountId (no platform prefix) resolves by domain', () {
+      expect(
+        SettingsStore.providerDefaultFolders('john-doe@gmail.com'),
+        ['INBOX', '[Gmail]/Spam', 'Unwanted'],
+      );
+      expect(
+        SettingsStore.providerDefaultFolders('jane-smith@aol.com'),
+        ['Inbox', 'Bulk', 'Bulk Mail'],
+      );
+    });
+
+    test('provider detection is case-insensitive', () {
+      expect(
+        SettingsStore.providerDefaultFolders('GMAIL-A@Gmail.COM'),
+        ['INBOX', '[Gmail]/Spam', 'Unwanted'],
+      );
+    });
+
     test('getEffectiveFolders falls back to the provider default', () async {
       // No per-account folders set -> AOL provider default.
       final folders =
