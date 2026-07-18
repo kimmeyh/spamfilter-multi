@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-07-15 (Sprint 47 scope: added F112-F119 from Store-0.5.4 manual-testing feedback; 0.5.4 confirmed LIVE on the Store)
+**Last Updated**: 2026-07-18 (Sprint 47 retro complete; F33 prod-DB apply + decode-fix deferred to Sprint 48 and decoupled from the Store release -- see Version History 6.7)
 
 ## How to Maintain This Document
 
@@ -130,7 +130,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 - **Tests**: 1749 passing / 29 skipped; flutter analyze clean; CI green.
 - **Summary**: docs/sprints/SPRINT_46_SUMMARY.md (pending) · **Retrospective**: docs/sprints/SPRINT_46_RETROSPECTIVE.md
 - **PR**: #270 (merged to develop, 2026-07-11)
-- **Sprint 47 carry-ins**: (1) dev version bump 0.5.4 -> 0.5.5; (2) F33 prod-DB apply (post-Store-rollout; requires the decode-failure fix); (3) populate the 5 `CI_*` GitHub repo secrets; (4) IMP-3 CHANGELOG-cadence decision; (5) Copilot round-6 polish (cleanup-script decode-failure report-not-delete; no_rule_review_screen load-error stackTrace + friendly SnackBar).
+- **Sprint 47 carry-ins**: (1) dev version bump 0.5.4 -> 0.5.5 -- **DONE in Sprint 47 (F118)**; (2) IMP-3 CHANGELOG-cadence decision -- **resolved (practiced Alternative A: per-completed-item commits)**. **Deferred to Sprint 48 (Harold 2026-07-18, decoupled from the Store release)**: F33 prod-DB `--env prod --apply` (see F33-PROD in Next Sprint Candidates) and the `cleanup_body_rules.dart` decode-failure report-not-delete fix (see BUG-DECODE). Still open, not release-gating: populate the 5 `CI_*` GitHub repo secrets; the `no_rule_review_screen.dart` load-error stackTrace + friendly-SnackBar polish (cosmetic).
 - **Open follow-up (carried from Sprint 44)**: Android-device retest of the F108 dep bumps (Gmail sign-in, secure-storage round-trip, WorkManager) -- no emulator in the dev session; F108 revert runbook covers per-dep rollback if needed.
 - **Store status**: `0.5.4` was uploaded and is **LIVE on the Microsoft Store as of 2026-07-15** (published `0.5.3 -> 0.5.4`). **However, that shipped build was defective** (F119): the `msix_config` typo `build_windows_args` (correct key: `windows_build_args`) meant the MSIX ran as `APP_ENV=dev` with empty Gmail OAuth credentials. F119 fixed the key on both `main` and `develop`, added a policy gate, and corrected `STORE_RELEASE_PROCESS.md` (new MANDATORY Step 4.0). **A corrected `0.5.4` (or next) re-release of the MSIX is a pending Harold action** -- rebuild from the fixed prod worktree and verify the running build reports prod before upload.
 - **Earlier sprints (39-45)**: 39 (PR #260), 40 (PR #261), 41 (PR #262), 42 (PR #263), 43 (PR #265), 44 (PR #266), 45 (PR #268 -- F111 Store-readiness GO, develop->main released). See `docs/sprints/` + the Past Sprint Summary table above.
@@ -292,7 +292,17 @@ _(F64 CI/CD pipeline shipped in Sprint 46 -- `.github/workflows/ci.yml`; see CHA
 
 ### Core App Quality
 
-_(F33 body-rules cleanup and F39 cross-account "No Rule" review screen both shipped in Sprint 46 -- see CHANGELOG 2026-07-07 and SPRINT_46_RETROSPECTIVE.md. F33 dev-DB applied; the prod-DB `--env prod --apply` run is a Sprint 47 carry-in, gated on the Copilot round-6 decode-failure fix. F39 mobile (Android/iOS touch) variant remains a future backlog candidate.)_
+_(F39 cross-account "No Rule" review screen shipped in Sprint 46. F39 mobile (Android/iOS touch) variant remains a future backlog candidate.)_
+
+**F33-PROD. Body-rules cleanup: prod-DB `--env prod --apply` run -- [SPRINT 48 CANDIDATE] (Harold 2026-07-18: deferred from Sprint 47)**
+- The `cleanup_body_rules.dart` script (shipped + dev-DB applied in Sprint 46) still needs a one-time `--env prod --apply` run against the **local prod rules database**.
+- **NOT release-gating**: the prod rules DB is a local SQLite file, NOT bundled into the MSIX and NOT downloaded by users (new Store users get bundled `rules.yaml` defaults). This cleanup has zero effect on Store users -- it is dev-machine housekeeping. Decoupled from the 0.5.5 Store re-release (Harold 2026-07-18).
+- **Depends on BUG-DECODE below** (must land first so a malformed row is reported, not silently deleted, on `--apply`). Back up the prod DB before applying.
+
+**BUG-DECODE. `cleanup_body_rules.dart` silently deletes rows on JSON-decode failure -- [SPRINT 48 CANDIDATE] (Copilot round-6; Harold 2026-07-18: assigned to Sprint 48)**
+- In `mobile-app/scripts/cleanup_body_rules.dart` (~L339-345, L357-360): a `condition_body` that fails `jsonDecode` is caught, `patterns` set to `<String>[]`, and the row is then classified **G5 orphan -> in the delete set** on `--apply`. A decode-failing row is thus silently DELETED instead of reported as `ambiguous` for human review.
+- **Fix**: on decode failure, route the row to `ambiguous` (report-only, untouched) with a logged warning -- report-not-delete. Add a unit test feeding malformed JSON that asserts the row is reported, not removed.
+- **Latent, never fired**: the Sprint 46 dev run decoded all 1109 rows cleanly (0 failures), so no data was ever affected. It is a guard on a destructive dev-only script, not a user-facing bug. MUST land before the F33-PROD `--apply` run.
 
 ### HOLD Items (Android / Google Play Store)
 
@@ -1197,6 +1207,7 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 6.7 | 2026-07-18 | Sprint 47 Phase 7 retrospective complete (all 5 apply-now IMPs applied). **Scope decisions (Harold, pre-merge release review)**: (1) prod `secrets.prod.json` CONFIRMED current (Store download signs in cleanly; re-review Dec 2026); (2) prod worktree bumps to 0.5.5 at release (working as expected); (3) **F33 prod-DB apply and the `cleanup_body_rules.dart` decode-failure fix DEFERRED to Sprint 48** and DECOUPLED from the Store release -- both operate on the local prod rules DB / a dev-only script, neither is bundled or user-facing, so they have zero impact on the 20 new Store users. Added F33-PROD + BUG-DECODE as Sprint 48 candidates (Core App Quality). Nothing now gates the develop->main release except Harold's merge. |
 | 6.6 | 2026-07-15 | Sprint 47 backlog: added **F112-F119** from Harold's manual testing of the Store-installed 0.5.4 build (new "Sprint 47 -- Store 0.5.4 Manual-Testing Feedback" phase group). F119 (MSIX ships as APP_ENV=dev -- `[DEV]` title/About + `_Dev` data dir) is highest priority (P8) and blocks F113 clean-user testing. Others: F112 Review-No-Rule entry point everywhere, F113 new-account default profiles (provider-keyed folders + scan defaults, Export CSV ON), F114 retention defaults -> 90d, F115 selection-bar reorder, F116 Demo Scan completion matches Live, F117 Help footer -> app version, F118 post-Store-release housekeeping. All assigned to Sprint 47; carry-ins folded in. **0.5.4 confirmed LIVE on the Store (cert passed 2026-07-15)**. GitHub issues: 0 open. |
 | 6.5 | 2026-07-11 | Sprint 46 completion + Sprint 47 pre-kickoff rollover (Phase 7 maintenance): rolled **Last Completed Sprint** 45 -> 46 (PR #270 merged); added the Sprint 46 row to the Past Sprint Summary table. Pruned the 3 shipped items **F64/F39/F33** from Next Sprint Candidates (DevOps + Core App Quality sections now reference-only). Refreshed Sprint Assignment header to Sprint 47 + "Last Reviewed" -> July 11, 2026 (dropped the Sprint 41 history line per the rolling window). Recorded **Sprint 47 carry-ins**: 0.5.5 version bump, F33 prod-DB apply (gated on Copilot round-6 decode-fix), CI_* repo secrets, IMP-3 CHANGELOG-cadence decision, round-6 polish. Backlog candidate re-presentation to Harold deferred to Phase 1.2 per his instruction. GitHub issues: 0 open. |
 | 6.4 | 2026-07-02 | Sprint 46 Phase 1 backlog refinement: pruned the shipped **F111** from Next Sprint Candidates (Release Readiness section now empty -- GO delivered Sprint 45); refreshed Sprint Assignment header to Sprint 46 + "Last Reviewed" -> July 2, 2026. Added **F111** as a new reusable HOLD template under Periodic Reviews (Windows Store readiness verification will recur each release). Harold took **F64, F33, F39** off HOLD and selected them as Sprint 46 scope (Priority 10/20/30); standing constraint -- hold on other major changes until the 0.5.4 Store rollout completes. GitHub issues: 0 open. |
