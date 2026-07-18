@@ -275,10 +275,10 @@ When certification completes:
 
 ### Gmail sign-in fails on installed MSIX; OAuth URL shows empty client_id
 
-**Cause**: `build_windows_args` missing from `msix_config` in `pubspec.yaml`, OR `secrets.prod.json` missing/malformed.
+**Cause**: `windows_build_args` missing/misnamed in `msix_config` in `pubspec.yaml`, OR `secrets.prod.json` missing/malformed.
 
 **Fix**:
-1. Verify `pubspec.yaml` line: `build_windows_args: --dart-define=APP_ENV=prod --dart-define-from-file=secrets.prod.json`
+1. Verify `pubspec.yaml` line: `windows_build_args: --dart-define=APP_ENV=prod --dart-define-from-file=secrets.prod.json` (F119, Sprint 47: the key is `windows_build_args`, NOT `build_windows_args` -- the wrong key is silently ignored and ships empty credentials + a dev build).
 2. Verify `secrets.prod.json` has `WINDOWS_GMAIL_DESKTOP_CLIENT_ID` (not the old `GMAIL_DESKTOP_CLIENT_ID` key).
 3. Rebuild from Step 3.
 
