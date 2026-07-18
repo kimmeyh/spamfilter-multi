@@ -223,7 +223,7 @@ Captured from Harold's manual testing of the Store-installed 0.5.4 build (2026-0
 - [DONE] IMP-2 (Proposal 2): in-execution actuals logging codified (Task-Level DoD item 6); all Sprint 47 items backfilled into `CODING_VELOCITY.md` Coverage Ledger + Accuracy Trend.
 - [DONE] IMP-4 (Proposal 4): version-consistency gate extended to sweep `test/` (catches the F118 hardcoded-versioned-filename fragility class); mirrored in `check-version-consistency.ps1`.
 - [DONE] IMP-5 (Proposal 5): new `stale_footer_test.dart` gate flags hardcoded "Sprint N" / "Last updated" strings in `lib/ui/` (the F117 class); caught + fixed a stale "coming in Sprint 12-13" placeholder on the Rules tab.
-- [BLOCKED -> Harold] IMP-3 (Proposal 3): stash-guard PreToolUse hook authored (`.claude/hooks/block-carry-forward-stash.ps1`) but NOT wired -- `.claude/` writes are denied in don't-ask mode. Requires Harold to add the hook file + a `PreToolUse` entry in `.claude/settings.json` (content provided in the retrospective / chat).
+- [DONE] IMP-3 (Proposal 3): stash-guard PreToolUse hook `.claude/hooks/block-carry-forward-stash.ps1` authored AND wired into `.claude/settings.json` (matcher `Bash|PowerShell`) after Harold approved the `.claude/` write. Verified live: `git stash` blocked (exit 2), `git status` / `git stash list` / `allow_stash` bypass all pass.
 
 ### Core App
 
