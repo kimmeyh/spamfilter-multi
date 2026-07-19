@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-07-19 (corrected 0.5.5.0 MSIX built + verified + SUBMITTED to Partner Center for certification -- first public release; see Version History 6.8)
+**Last Updated**: 2026-07-19 (corrected 0.5.5.0 MSIX SUBMITTED for certification; added F-WINSTORE-ASSETS backlog item -- see Version History 6.8-6.9)
 
 ## How to Maintain This Document
 
@@ -250,6 +250,17 @@ _(F100 shipped in Sprint 43.)_
 _(F107, F108, F109 shipped in Sprint 44 -- see docs/sprints/SPRINT_44_SUMMARY.md. F106 is HOLD/Post-MVP, paired under SEC-11b below.)_
 
 ### Release Readiness
+
+**F-WINSTORE-ASSETS. Update all Windows/Microsoft Store listing images -- [BACKLOG] (Harold 2026-07-19)**
+- **Why**: the Windows Store listing images (screenshots + store logos + promotional graphics in Partner Center) "carry over from the previous submission" (STORE_RELEASE_PROCESS.md Step 6) -- they have NOT been refreshed and likely show old UI, predating the Sprint 40-47 changes (Review-No-Rule flows, new defaults, footer, demo-scan nav, etc.). The 0.5.5 release is the first true public release (2 -> ~20 users), so the listing should show the current app.
+- **Scope -- audit + refresh every Store-facing image**:
+  - **App tile / launcher icon** (`mobile-app/assets/icon/icon.png` -> `msix_config.logo_path` + `flutter_launcher_icons`): confirm it is current and high-resolution; regenerate the derived sizes if the source changed (`dart run flutter_launcher_icons`).
+  - **Partner Center Store listing screenshots**: recapture from the current build showing the real, current screens (account selection, scan results, Review No Rule Items, settings). Microsoft Store desktop screenshots: min 1366x768, PNG; 1-10 per listing.
+  - **Store logos / tile images** required by the manifest/Partner Center (Square 44x44, 71x71, 150x150, 310x150 wide, 310x310, Store logo 300x300, etc. -- confirm the exact current Partner Center requirements at capture time; some are auto-generated from `logo_path` by `msix:create`, others are uploaded in the Store listing).
+  - **Promotional / hero image** if the listing uses one.
+- **Where they live**: app-side source under `mobile-app/assets/`; the listing screenshots/graphics live in Partner Center (uploaded, not in-repo) -- consider storing masters in the repo (e.g. `docs/store-assets/windows/`) for reproducibility.
+- **Deliverable**: current-UI screenshot set + verified icon/logo assets, uploaded to Partner Center on the next submission (listing images can be updated WITHOUT a new package/version -- a metadata-only Store update).
+- **Note**: this is the Windows counterpart to GP-6 (Play Store Listing and Assets) in the Android HOLD section. Effort: **M (~2-4h)** -- mostly screenshot capture + Partner Center upload; validate against current Microsoft Store image-spec requirements at execution time (specs change).
 
 _(F111 shipped in Sprint 45 -- GO recommendation delivered; see docs/sprints/SPRINT_45_F111_STORE_READINESS.md and SPRINT_45_SUMMARY.md. Store upload of 0.5.4 is a pending Harold action, targeted Sat/Sun on a stable network -- not a backlog item.)_
 
@@ -1219,6 +1230,7 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 6.9 | 2026-07-19 | Added **F-WINSTORE-ASSETS** (Release Readiness, BACKLOG per Harold): update all Windows/Microsoft Store listing images (Partner Center screenshots + store logos/tiles + promo graphics + app icon). Rationale: listing images carry over from prior submissions and predate Sprint 40-47 UI; the 0.5.5 first-public-release listing should show the current app. Windows counterpart to GP-6 (Play Store assets). Effort M (~2-4h). |
 | 6.8 | 2026-07-19 | **First public release submitted.** After the Sprint 47 develop->main merge (PR #273), reconciled prod worktree (no true divergence -- main = develop + GitFlow merge-commits + CNAME churn), synced it to origin/main `cdcb0da`. Version bump was already on main via F118 (0.5.5.0). Built the corrected MSIX (`flutter pub run msix:create`), **Step 4.0 F119 check PASSED** (build log: `--dart-define=APP_ENV=prod --dart-define-from-file=secrets.prod.json`), manifest `0.5.5.0`, 17.6 MB. Harold SUBMITTED it to Partner Center for certification 2026-07-19 (in cert, 24-72h) -- the first true public release (2 -> ~20 users), corrected for the F119 dev/empty-creds defect. On cert PASS: Step 7 close-out + Android/Google Play track off HOLD. Also fixed a stale `build_windows_args` reference in STORE_RELEASE_PROCESS troubleshooting. GitHub issues: 0 open. |
 | 6.7 | 2026-07-18 | Sprint 47 Phase 7 retrospective complete (all 5 apply-now IMPs applied). **Scope decisions (Harold, pre-merge release review)**: (1) prod `secrets.prod.json` CONFIRMED current (Store download signs in cleanly; re-review Dec 2026); (2) prod worktree bumps to 0.5.5 at release (working as expected); (3) **F33 prod-DB apply and the `cleanup_body_rules.dart` decode-failure fix DEFERRED to Sprint 48** and DECOUPLED from the Store release -- both operate on the local prod rules DB / a dev-only script, neither is bundled or user-facing, so they have zero impact on the 20 new Store users. Added F33-PROD + BUG-DECODE as Sprint 48 candidates (Core App Quality). Nothing now gates the develop->main release except Harold's merge. |
 | 6.6 | 2026-07-15 | Sprint 47 backlog: added **F112-F119** from Harold's manual testing of the Store-installed 0.5.4 build (new "Sprint 47 -- Store 0.5.4 Manual-Testing Feedback" phase group). F119 (MSIX ships as APP_ENV=dev -- `[DEV]` title/About + `_Dev` data dir) is highest priority (P8) and blocks F113 clean-user testing. Others: F112 Review-No-Rule entry point everywhere, F113 new-account default profiles (provider-keyed folders + scan defaults, Export CSV ON), F114 retention defaults -> 90d, F115 selection-bar reorder, F116 Demo Scan completion matches Live, F117 Help footer -> app version, F118 post-Store-release housekeeping. All assigned to Sprint 47; carry-ins folded in. **0.5.4 confirmed LIVE on the Store (cert passed 2026-07-15)**. GitHub issues: 0 open. |
