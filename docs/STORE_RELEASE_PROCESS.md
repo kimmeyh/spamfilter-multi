@@ -104,6 +104,8 @@ Copy-Item D:\Data\Harold\github\spamfilter-multi\mobile-app\secrets.dev.json `
 
 **Do NOT use the incorrect key names** (`GMAIL_DESKTOP_CLIENT_ID`, `GMAIL_OAUTH_CLIENT_SECRET`) -- those were in the template pre-Sprint 36 and cause the build to silently ship with empty credentials. The runtime code in `mobile-app/lib/adapters/email_providers/gmail_windows_oauth_handler.dart` reads `WINDOWS_GMAIL_DESKTOP_CLIENT_ID` (with a fallback to the old name for dev compatibility).
 
+**[F119-b, Sprint 47] CRITICAL -- `secrets.prod.json` must contain ONLY well-formed credential keys.** NO comment/note keys (`_comment`, `_note`, `_debug_sha1`), and ESPECIALLY no key containing a SPACE (e.g. `"comment OR try this"`). `--dart-define-from-file` turns EVERY JSON key into a `key=value` dart-define; a key with a space corrupts flutter's dart-define stream and silently drops `APP_ENV=prod`, shipping a DEV build (this is what broke the 0.5.5 Store MSIX). The `test/policy/msix_config_test.dart` gate now fails the build if any secrets file has a space/empty key -- run `flutter test` before building. Keep the file to exactly the credential keys in the table above.
+
 ---
 
 ## Step 3: Build the MSIX
@@ -147,18 +149,37 @@ Without the `windows_build_args` line (or with a wrong key), the MSIX builds suc
 
 Run these checks before uploading. Skipping any one has historically caused a failed submission or a user-visible runtime bug.
 
-### 4.0 Verify the MSIX runs as PROD, not dev [F119, Sprint 47 -- MANDATORY]
+### 4.0 Verify the MSIX runs as PROD, not dev [F119 / F119-b, Sprint 47 -- MANDATORY]
 
-This is the check that would have caught the 0.5.4 dev-leak before submission. The `windows_build_args` key is easy to mistype, and a wrong key fails silently. Confirm the dart-defines actually reached the inner build:
+Two independent defects have shipped a DEV build to the Store despite a correct-looking command. BOTH checks below are mandatory.
 
+**Two known root causes:**
+1. **F119 (0.5.4)**: the `msix_config` key was misspelled `build_windows_args` (correct: `windows_build_args`) -- silently ignored, so no dart-defines reached the inner build.
+2. **F119-b (0.5.5)**: `secrets.prod.json` contained a JSON key with SPACES (`"comment OR try this"`). `--dart-define-from-file` turns each key into a `key=value` dart-define; a space in the key corrupts flutter's dart-define stream and silently DROPS `APP_ENV=prod` -> the build compiles as dev. **The build log still showed `--dart-define=APP_ENV=prod`** -- so a log check alone is NOT sufficient. Both defects are now caught pre-build by `test/policy/msix_config_test.dart`; run the full suite before building.
+
+**Check A -- the build log (necessary, not sufficient):**
 ```powershell
 # During msix:create, the log echoes the inner flutter command. Confirm it includes APP_ENV=prod:
 #   running "flutter build windows --dart-define=APP_ENV=prod --dart-define-from-file=secrets.prod.json ..."
-# If it shows a bare "flutter build windows" with no dart-defines, the windows_build_args key is
-# wrong/missing -- STOP and fix pubspec.yaml before continuing.
+# A bare "flutter build windows" with no dart-defines => the windows_build_args key is wrong/missing.
 ```
 
-After install (Step 4.2), the definitive check: the title bar and About screen must read `MyEmailSpamFilter` / `Version X.Y.Z` with **NO `[DEV]` suffix**, and the app must use the `MyEmailSpamFilter` (not `MyEmailSpamFilter_Dev`) data directory. A `[DEV]` suffix anywhere = the build ran as dev = do not submit.
+**Check B -- the COMPILED result (definitive, no GUI needed) [F119-b]:**
+The build log shows the *command*, not what *compiled*. Probe the actual compiled binary with the headless `--print-env` flag (added F119-b) BEFORE packaging/submitting:
+```powershell
+cd D:\Data\Harold\github\spamfilter-multi-prod\mobile-app\build\windows\x64\runner\Release
+.\my_email_spam_filter.exe --print-env
+# EXPECT for a prod release build:
+#   APP_ENV=prod
+#   displaySuffix=            (empty)
+#   dataDirSuffix=           (empty)
+#   windowTitle=MyEmailSpamFilter
+# If it prints APP_ENV=dev (or a [DEV] windowTitle), the dart-define was dropped --
+# STOP, fix secrets.prod.json (remove any key with spaces / comment keys; keep ONLY
+# credential keys) and pubspec.yaml, rebuild. DO NOT submit.
+```
+
+**Check C -- after install (Step 4.2), final confirmation:** the title bar and About screen must read `MyEmailSpamFilter` / `Version X.Y.Z` with **NO `[DEV]` suffix**, and the app must use the `MyEmailSpamFilter` (not `MyEmailSpamFilter_Dev`) data directory. A `[DEV]` suffix anywhere = the build ran as dev = do not submit.
 
 ### 4.1 Verify manifest version
 
