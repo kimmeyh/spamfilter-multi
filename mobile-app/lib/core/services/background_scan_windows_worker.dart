@@ -51,7 +51,7 @@ class BackgroundScanWindowsWorker {
       // interleave into one file. Null token -> shared legacy filename.
       final accountPart =
           _logAccountToken != null ? '${_logAccountToken}_' : '';
-      final fileName = '${logPrefix}background_scan_${accountPart}v0.5.5.log';
+      final fileName = '${logPrefix}background_scan_${accountPart}v0.5.6.log';
       final logFile = File('$logDir\\$fileName');
       final timestamp = DateTime.now().toIso8601String();
       await logFile.parent.create(recursive: true);

@@ -46,6 +46,27 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // F119-b (Sprint 47): headless compiled-environment probe for the Store
+  // release process (STORE_RELEASE_PROCESS.md Step 4.0). Print the COMPILED
+  // AppEnvironment values and exit -- this verifies what actually compiled into
+  // the binary, not what the build LOG claimed. The 0.5.4 and 0.5.5 Store MSIX
+  // both shipped as dev while their build logs showed APP_ENV=prod; a probe of
+  // the compiled result catches that. Usage after a build:
+  //   .\my_email_spam_filter.exe --print-env    (expect APP_ENV=prod for a
+  //   release build; a prod build printing APP_ENV=dev MUST NOT be submitted).
+  if (args.contains('--print-env')) {
+    // stdout (not Logger) so the release script can parse it directly.
+    // ignore: avoid_print
+    print('APP_ENV=${AppEnvironment.current}');
+    // ignore: avoid_print
+    print('displaySuffix=${AppEnvironment.displaySuffix}');
+    // ignore: avoid_print
+    print('dataDirSuffix=${AppEnvironment.dataDirSuffix}');
+    // ignore: avoid_print
+    print('windowTitle=${AppEnvironment.windowTitle}');
+    exit(0);
+  }
+
   // Initialize sqflite FFI for desktop platforms (Windows, Linux, macOS)
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     sqfliteFfiInit();
@@ -65,7 +86,7 @@ void main(List<String> args) async {
     final logPrefix = AppEnvironment.logPrefix;
     final logDir = Directory('${appSupport.path}$envSuffix\\logs');
     await logDir.create(recursive: true);
-    final logFile = File('${logDir.path}\\${logPrefix}background_scan_v0.5.5.log');
+    final logFile = File('${logDir.path}\\${logPrefix}background_scan_v0.5.6.log');
     Future<void> bgLog(String message) async {
       try {
         final timestamp = DateTime.now().toIso8601String();
