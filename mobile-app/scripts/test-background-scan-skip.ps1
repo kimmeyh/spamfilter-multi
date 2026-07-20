@@ -57,7 +57,19 @@ if ($Environment -eq "dev") {
     $windowTitle = "MyEmailSpamFilter"
 }
 
-$logFileName = "${logPrefix}background_scan_v0.5.5.log"
+# Derive the app version from pubspec.yaml (single source of truth) so this
+# script never needs a manual bump -- mirrors the F118 fix in
+# live_scan_logger_test.dart. Hardcoding the version here was the same
+# fragility class the version-consistency gate exists to prevent.
+$pubspecPath = Join-Path $PSScriptRoot "..\pubspec.yaml"
+$pubspecText = Get-Content $pubspecPath -Raw
+if ($pubspecText -notmatch '(?m)^version:\s*(\d+\.\d+\.\d+)') {
+    Write-Host "[FAIL] Could not parse version from $pubspecPath" -ForegroundColor Red
+    exit 1
+}
+$appVersion = $Matches[1]
+
+$logFileName = "${logPrefix}background_scan_v$appVersion.log"
 $logDir = Join-Path $env:APPDATA "MyEmailSpamFilter\$dataSubDir\logs"
 $logFile = Join-Path $logDir $logFileName
 
