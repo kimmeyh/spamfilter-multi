@@ -336,12 +336,21 @@ BodyRuleAnalysis analyzeBodyRules(List<Map<String, Object?>> rows) {
     final sourceDomain = row['source_domain'] as String?;
 
     List<String> patterns;
+    var decodeFailed = false;
     try {
       final decoded = jsonDecode(raw);
       patterns =
           decoded is List ? decoded.map((e) => e.toString()).toList() : <String>[];
     } catch (_) {
+      // BUG-DECODE (Sprint 49, Copilot round-6): a NON-EMPTY condition_body
+      // that fails to decode is NOT evidence of an empty/orphan rule -- it is
+      // evidence we cannot READ the rule. Falling through with patterns=[]
+      // classified the row as a G5 orphan, which is in the DELETE set on
+      // --apply: silent data loss on a destructive script. Report-not-delete.
+      // A NULL/empty condition_body is different: that is a KNOWN-empty rule
+      // and remains a legitimate G5 orphan (prior Copilot-review decision).
       patterns = <String>[];
+      decodeFailed = raw.trim().isNotEmpty;
     }
 
     final rule = BodyRule(
@@ -353,6 +362,16 @@ BodyRuleAnalysis analyzeBodyRules(List<Map<String, Object?>> rows) {
       sourceDomain: sourceDomain,
     );
     all.add(rule);
+
+    // BUG-DECODE: decode failures go to `ambiguous` (report-only, untouched)
+    // with a loud warning -- NEVER into the G5 delete set.
+    if (decodeFailed) {
+      print('[WARNING] rule id=$id "$name": condition_body failed to '
+          'JSON-decode -- classified AMBIGUOUS (report-only), NOT deleted. '
+          'Inspect manually. raw=${raw.length > 80 ? '${raw.substring(0, 80)}...' : raw}');
+      ambiguous.add(rule);
+      continue;
+    }
 
     // G5: orphan/degenerate -- no usable pattern.
     if (patterns.isEmpty || patterns.every((p) => p.trim().isEmpty)) {
