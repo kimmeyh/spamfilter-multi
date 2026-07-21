@@ -1,6 +1,7 @@
 ***BELOW IS NOT FOR CLAUDE CODE, GITHUB COPILOT, CHATGPT OR COPILOT PULL REQUEST (PR) REVIEW USE***
 claude --resume 1ca36477-c303-4cb2-b4f7-d2b2b2e720ce # from 07/11/26
- # from 07/20/26
+claude --resume 0b7fc320-c9af-4b74-b458-f5472ebd43ca # from 07/20/26
+claude --continue # generally the best option
 
 Github Copilot Review Requests:
 I have requested a github.com copilot review.

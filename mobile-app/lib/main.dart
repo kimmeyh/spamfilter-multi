@@ -64,6 +64,18 @@ void main(List<String> args) async {
     print('dataDirSuffix=${AppEnvironment.dataDirSuffix}');
     // ignore: avoid_print
     print('windowTitle=${AppEnvironment.windowTitle}');
+    // F119-c (Sprint 49): the native runner (windows/runner/main.cpp) passes
+    // its own compiled SPAMFILTER_APP_ENV via --native-app-env=<value>. The
+    // Dart APP_ENV and the native define are SEPARATE compile-time mechanisms
+    // that silently diverged twice (0.5.5/0.5.6 shipped a [DEV] native window
+    // title on a prod Dart build), so the probe must verify BOTH. Reads
+    // 'absent' when not launched through the native runner (e.g. dart test).
+    final nativeEnvArg = args.firstWhere(
+      (a) => a.startsWith('--native-app-env='),
+      orElse: () => '--native-app-env=absent',
+    );
+    // ignore: avoid_print
+    print('NATIVE_APP_ENV=${nativeEnvArg.substring('--native-app-env='.length)}');
     exit(0);
   }
 
@@ -86,7 +98,7 @@ void main(List<String> args) async {
     final logPrefix = AppEnvironment.logPrefix;
     final logDir = Directory('${appSupport.path}$envSuffix\\logs');
     await logDir.create(recursive: true);
-    final logFile = File('${logDir.path}\\${logPrefix}background_scan_v0.5.6.log');
+    final logFile = File('${logDir.path}\\${logPrefix}background_scan_v0.5.7.log');
     Future<void> bgLog(String message) async {
       try {
         final timestamp = DateTime.now().toIso8601String();

@@ -13,6 +13,17 @@
 #include "flutter_window.h"
 #include "utils.h"
 
+// SPAMFILTER_APP_ENV is baked in at compile time by runner/CMakeLists.txt
+// (F119-c: derived from the APP_ENV --dart-define first, the
+// SPAMFILTER_APP_ENV environment variable second, "dev" fallback last).
+// Hoisted guard: define once here so every use below (log paths, window
+// title, and the --native-app-env passthrough) sees the same value. The
+// "dev" fallback when the macro is undefined is INTENTIONAL per Sprint 37
+// F52: a bare compile without the definition produces a usable dev binary.
+#ifndef SPAMFILTER_APP_ENV
+#define SPAMFILTER_APP_ENV "dev"
+#endif
+
 // BUG-S37-1 (Sprint 38, Issue #256): Sprint 37 Phase 5.3 surfaced
 // SqfliteFfiException(sqlite_error: 5, "database is locked") when the
 // foreground UI was running and a scheduled --background-scan launched
@@ -29,7 +40,7 @@ static void LogBackgroundScanSkip(const std::wstring& reason) {
     return;
   }
   // Match Dart-side path:
-  //   {AppData}\\MyEmailSpamFilter\\MyEmailSpamFilter[_Dev]\\logs\\[dev_]background_scan_v0.5.6.log
+  //   {AppData}\\MyEmailSpamFilter\\MyEmailSpamFilter[_Dev]\\logs\\[dev_]background_scan_v0.5.7.log
   // We don't know dev-vs-prod from C++ without SPAMFILTER_APP_ENV (defined below),
   // so write to a deterministic startup-skip log that both environments share.
   //
@@ -49,7 +60,7 @@ static void LogBackgroundScanSkip(const std::wstring& reason) {
       + L"\\logs";
   CreateDirectoryW(dataDir.c_str(), nullptr);
   std::wstring logPath = dataDir
-      + (isDevEnv ? L"\\dev_background_scan_v0.5.6.log" : L"\\background_scan_v0.5.6.log");
+      + (isDevEnv ? L"\\dev_background_scan_v0.5.7.log" : L"\\background_scan_v0.5.7.log");
 
   std::wofstream log(logPath, std::ios::app);
   if (!log.is_open()) return;
@@ -183,6 +194,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
 
   std::vector<std::string> command_line_arguments =
       GetCommandLineArguments();
+
+  // F119-c (Sprint 49): expose the NATIVE compiled environment to the Dart
+  // side so the `--print-env` probe (STORE_RELEASE_PROCESS.md Step 4.0)
+  // verifies BOTH compiled sides. The Dart APP_ENV dart-define and this
+  // native SPAMFILTER_APP_ENV are separate compile-time mechanisms that
+  // silently diverged twice: the 0.5.5 and 0.5.6 Store MSIX shipped a
+  // "[DEV]" native window title on a correctly-prod Dart build.
+  command_line_arguments.push_back(
+      std::string("--native-app-env=") + SPAMFILTER_APP_ENV);
 
   project.set_dart_entrypoint_arguments(std::move(command_line_arguments));
 

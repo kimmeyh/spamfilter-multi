@@ -58,3 +58,9 @@ Added this sprint: **F-VERSION-DERIVE** (derive the app version at runtime inste
 ## Improvement Decisions
 
 Lightweight hotfix retro -- improvements already applied in-flight this sprint (secrets gate, `--print-env` probe, Step 4.0 rewrite, PS1 derive-fix, memory corrections). No separate Step 5/6 improvement-proposal round for this hotfix; the F-VERSION-DERIVE backlog card captures the one deferred improvement.
+
+---
+
+## CORRECTION ADDENDUM (2026-07-21, Sprint 49 F119-c)
+
+**The F119-b causal claim in this retrospective is WRONG.** The Store-installed `0.5.6` (built with the cleaned secrets) STILL showed the `[DEV]` window title. Root cause of the `[DEV]` title on BOTH 0.5.5 and 0.5.6 is **F119-c**: the native window title is compiled from the `SPAMFILTER_APP_ENV` CMake definition, sourced (Sprint 37 F52 design) ONLY from an OS environment variable that the `msix:create` Store path never set -- CMake defaulted `"dev"` and baked the `[DEV]` title into the native runner while the Dart side was correctly prod (evidence that was visible at the time: the 0.5.5 About text had no `[DEV]` suffix and the Store app used the prod data dir). The F119-b secrets cleanup + gate remain valid hygiene, but the "space-key dropped APP_ENV and shipped the dev build" conclusion was not correct for 0.5.5. The Dart-side `--print-env` proof on 0.5.6 was real but covered only one of the two independently-compiled surfaces. Fix + both-sides probe: see `docs/sprints/SPRINT_49_PLAN.md` (F119-c) and the corrected `STORE_RELEASE_PROCESS.md` Step 4.0. Lesson recorded in memory: verify every independently-compiled surface; a single-side compiled check is not proof.

@@ -43,15 +43,47 @@ target_compile_definitions(${BINARY_NAME} PRIVATE "FLUTTER_VERSION_BUILD=${FLUTT
 # .exe with no args) and for Microsoft Store MSIX uploads where the
 # launcher cannot pass --dart-define.
 #
-# Drives APP_ENV from the SPAMFILTER_APP_ENV environment variable seen by
-# CMake at configure time (set by build-windows.ps1 before invoking
-# `flutter build windows`). Defaults to "dev" if unset.
-if(DEFINED ENV{SPAMFILTER_APP_ENV})
+# F119-c (Sprint 49): DERIVE the value from the APP_ENV --dart-define first.
+# The Sprint 37 design read ONLY the SPAMFILTER_APP_ENV environment variable
+# (set by build-windows.ps1), but the Store MSIX path (`flutter pub run
+# msix:create`) never set that env var -- so CMake fell back to "dev" and the
+# native runner compiled the "[DEV]" window title into the 0.5.5 AND 0.5.6
+# Store releases while the Dart side was correctly prod. The flutter tool
+# records the build's dart-defines in ephemeral/generated_config.cmake
+# (DART_DEFINES, entries individually base64-encoded). base64("APP_ENV=prod")
+# is deterministically "QVBQX0VOVj1wcm9k" and base64("APP_ENV=dev") is
+# "QVBQX0VOVj1kZXY=", so a bounded string match suffices -- no decode step.
+# This makes the SINGLE --dart-define=APP_ENV=<env> flag (already injected by
+# msix_config.windows_build_args for Store builds and by build-windows.ps1 for
+# local builds) drive BOTH the Dart AppEnvironment AND this native define.
+#
+# PRECEDENCE: 1) APP_ENV dart-define recorded in generated_config.cmake;
+# 2) SPAMFILTER_APP_ENV environment variable (build-windows.ps1 also exports
+# it -- redundant but consistent; covers direct-CMake edge cases);
+# 3) "dev" fallback (new-developer convenience for a bare
+# `flutter build windows`).
+set(_APP_ENV_FROM_DART_DEFINES "")
+set(_GENERATED_CONFIG "${CMAKE_CURRENT_SOURCE_DIR}/../flutter/ephemeral/generated_config.cmake")
+if(EXISTS "${_GENERATED_CONFIG}")
+  file(READ "${_GENERATED_CONFIG}" _GEN_CFG_TEXT)
+  # Entries are comma-separated standalone base64 strings inside the
+  # DART_DEFINES=... value; bound the match with the possible delimiters.
+  if(_GEN_CFG_TEXT MATCHES "[=,\"]QVBQX0VOVj1wcm9k[,\"]")
+    set(_APP_ENV_FROM_DART_DEFINES "prod")
+  elseif(_GEN_CFG_TEXT MATCHES "[=,\"]QVBQX0VOVj1kZXY=[,\"]")
+    set(_APP_ENV_FROM_DART_DEFINES "dev")
+  endif()
+endif()
+if(NOT _APP_ENV_FROM_DART_DEFINES STREQUAL "")
+  set(SPAMFILTER_APP_ENV "${_APP_ENV_FROM_DART_DEFINES}")
+  message(STATUS "F119-c: SPAMFILTER_APP_ENV='${SPAMFILTER_APP_ENV}' (derived from APP_ENV dart-define)")
+elseif(DEFINED ENV{SPAMFILTER_APP_ENV})
   set(SPAMFILTER_APP_ENV "$ENV{SPAMFILTER_APP_ENV}")
+  message(STATUS "F119-c: SPAMFILTER_APP_ENV='${SPAMFILTER_APP_ENV}' (from environment variable; no APP_ENV dart-define found)")
 else()
   set(SPAMFILTER_APP_ENV "dev")
+  message(STATUS "F119-c: SPAMFILTER_APP_ENV='dev' (fallback; no dart-define, no env var)")
 endif()
-message(STATUS "Sprint 37 F52: SPAMFILTER_APP_ENV='${SPAMFILTER_APP_ENV}'")
 target_compile_definitions(${BINARY_NAME} PRIVATE "SPAMFILTER_APP_ENV=\"${SPAMFILTER_APP_ENV}\"")
 
 # Disable Windows macros that collide with C++ standard library functions.
