@@ -137,12 +137,53 @@ Diagnose and permanently fix the recurring `[DEV]` window title in Store builds 
 
 ---
 
+### Task 4 -- F120: quick-action re-evaluation freezes the UI 1-2 min per rule (Priority: critical; Harold-selected 2026-07-21 "all")
+
+**Value**: This restores sub-second quick actions / This prevents the "(Not Responding)" freeze Harold hit on the Store 0.5.6 build (~1 min per rule, 197-email no-rule set).
+
+**Diagnosis (proven from the app's own log + source)**: each quick action ran `_reEvaluateNoRuleEmails()` = ALL no-rule emails (197) x the FULL rule set (12,539 on the Store prod DB, ~0.5s/email ~= 100s) on the main isolate, in an await chain whose futures complete synchronously -- microtask continuations never yield to the Windows message pump -> "(Not Responding)". The call-site comments said "against the new rule" but the implementation used the full set.
+
+**Fix**: `RuleQuickActionResult` now carries `createdRule` / `createdSafeSenderPattern`; `_reEvaluateNoRuleEmails({deltaRule, deltaSafeSenderPattern})` evaluates the no-rule set against ONLY the added delta (semantically exact for additions -- a no-rule email already failed every existing rule). The no-delta full-set path (historical-screen load) yields a real event-loop turn every 10 emails so the pump keeps running.
+
+**Acceptance criteria**: AC-1 quick action completes its re-evaluation in <1s independent of rule-set size; AC-2 window never enters Not Responding during quick actions; AC-3 existing screen/service behavior tests green.
+**Est-Effort: 45-90m.** **Model**: Fable 5 (session). **Step-types**: SVC-EDIT + UI + TEST.
+
+### Task 5 -- F121: prod-DB dedup + F73 import idempotency guard (Priority: high; Harold-selected "all")
+
+**Value**: This removes 7,657 dead-weight duplicate rules (12,539 -> ~4,882) / This prevents the F73-class re-import from ever re-bloating a DB.
+
+**Diagnosis (proven from the prod DB)**: `created_by=migration_f73` = 8,646 rows; `date_added` clusters show the F73 migration ran ~3x on 2026-04-24, each pass re-importing and renaming collisions `_2`/`_3` (2,885 + 2,879 + 18 `_4`). Distinct condition-content sets: 4,882.
+
+**Scope**: (a) dedup script (dry-run-first, `--apply` with timestamped DB backup, report-not-delete discipline): delete content-identical rules keeping the lowest-id original; (b) find the F73 import path and make it skip content-identical rules (idempotent re-run); (c) unit tests for both.
+**Depends on**: Task 6 (BUG-DECODE) discipline pattern. Prod `--apply` is coordinated with Harold (app closed, backup verified).
+**Acceptance criteria**: AC-1 dry-run reconciles to ~4,882 keepers + ~7,657 removals on a prod-DB copy; AC-2 backup exists before apply; AC-3 idempotency: re-running the dedup (and a simulated F73 re-import) produces 0 changes; AC-4 tests green.
+**Est-Effort: 60-120m.** **Model**: Fable 5 (session). **Step-types**: DATA + SVC-EDIT + TEST-UNIT.
+
+### Task 6 -- BUG-DECODE: cleanup script report-not-delete on JSON-decode failure (Priority: high; pulled forward from Sprint 50)
+
+Per the existing backlog card: `cleanup_body_rules.dart` classifies a decode-failing `condition_body` as a G5 orphan (deletable) instead of reporting it as ambiguous. Fix: route decode failures to `ambiguous` with a logged warning + unit test with malformed JSON. **Prerequisite for Tasks 5 apply + 7.**
+**Est-Effort: 30-45m.** **Step-types**: SVC-EDIT + TEST-UNIT.
+
+### Task 7 -- F33-PROD: prod-DB body-rules cleanup apply (Priority: high; pulled forward from Sprint 50)
+
+Per the existing backlog card: run `cleanup_body_rules.dart --env prod --apply` against the (deduped, Task 5) prod DB -- converts/reclassifies/removes the pre-F33 body-rule class that leaves 197 "No rule" emails per scan (dev shows ~20 after its cleanup). Dry-run first; timestamped backup; reconciliation counts must add up. Coordinated with Harold (app closed).
+**Depends on**: Tasks 5 + 6.
+**Est-Effort: 30-60m.** **Step-types**: DATA.
+
+---
+
 ## Estimated Effort Summary
 
 - Task 1 (F119-c): DONE (~75m actual)
 - Task 2 (F-VERSION-DERIVE): 90-180m
 - Task 3 (F-PRECHECK): 45-90m
-- **Remaining Est-Effort: ~135-270m (~2.5-4.5h)**
+- Task 4 (F120): 45-90m (implementation done; verification in progress)
+- Task 5 (F121): 60-120m
+- Task 6 (BUG-DECODE): 30-45m
+- Task 7 (F33-PROD): 30-60m
+- **Remaining Est-Effort: ~300-585m (~5-10h)**
+
+**Execution order**: 4 (critical UX) -> 6 -> 5 -> 7 (DB chain) -> 2 -> 3.
 
 ## Deferred this refinement (Harold 2026-07-21 selection: 6, 7 only)
 
