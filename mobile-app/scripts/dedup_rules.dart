@@ -74,8 +74,12 @@ class DedupAnalysis {
 DedupAnalysis analyzeDuplicates(List<Map<String, Object?>> rows) {
   final groups = <String, List<int>>{};
   for (final row in rows) {
+    // Copilot review (PR #276): NULL and empty-string are DISTINCT values in
+    // SQLite; collapsing them ((row[c] ?? '') did that) could group two
+    // non-identical rows and delete one on --apply. NULL gets an explicit
+    // sentinel that cannot collide with real content (a lone ASCII NUL).
     final key = kContentColumns
-        .map((c) => (row[c] ?? '').toString())
+        .map((c) => row[c] == null ? '\x00' : row[c].toString())
         // F-PRECHECK class-4 note (Sprint 49 dogfood of the new 5.1.2
         // checklist): the separator must be a character that cannot appear
         // in rule content, and it must be VISIBLE in source -- a raw control

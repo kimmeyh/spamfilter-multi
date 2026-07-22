@@ -2311,16 +2311,19 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
             : _historicalResults);
 
     // Find all emails with effective action "none" (No rule)
-    var evaluated = 0;
+    // F120 + Copilot review (PR #276): on the full-set path, yield a REAL
+    // event-loop turn (Future.delayed, not a microtask) TIME-BASED -- every
+    // ~100ms of work -- so the platform message pump keeps running regardless
+    // of per-email cost or rule-set size. A fixed every-N-emails cadence
+    // could still block ~5s between yields at ~0.5s/email (the Windows
+    // Not Responding threshold).
+    final yieldClock = Stopwatch()..start();
     for (final result in allResults) {
       if (_getEffectiveAction(result) == EmailActionType.none) {
-        // F120: on the full-set path, yield a REAL event-loop turn every few
-        // emails (Future.delayed, not a microtask) so the platform message
-        // pump keeps running and Windows never marks the app Not Responding.
-        if (!useDelta && evaluated > 0 && evaluated % 10 == 0) {
+        if (!useDelta && yieldClock.elapsedMilliseconds >= 100) {
           await Future<void>.delayed(Duration.zero);
+          yieldClock.reset();
         }
-        evaluated++;
         final evalResult = await evaluator.evaluate(result.email);
         // Only store override if the new evaluation found a match
         if (evalResult.matchedRule.isNotEmpty || evalResult.isSafeSender) {

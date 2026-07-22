@@ -48,6 +48,18 @@ void main() {
       expect(a.keeperIds.length + a.removalIds.length, a.total);
     });
 
+    test('NULL and empty-string column values are DISTINCT (Copilot PR #276) '
+        '-- never grouped as duplicates', () {
+      final a = analyzeDuplicates([
+        row(1, header: r'["@x\\.com$"]', body: null),
+        row(2, header: r'["@x\\.com$"]', body: ''),
+      ]);
+      expect(a.removalIds, isEmpty,
+          reason: 'SQLite treats NULL and empty-string as distinct; the '
+              'content key must too, or a non-identical rule could be '
+              'deleted on --apply.');
+    });
+
     test('differing ACTION is not a duplicate', () {
       final a = analyzeDuplicates([
         row(1, header: r'["@x\\.com$"]', actionDelete: 1),

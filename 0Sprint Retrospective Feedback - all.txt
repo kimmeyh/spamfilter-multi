@@ -52,6 +52,8 @@ String:     final key = kContentColumns
   - none
 - Function updates that can be added to the backlog for a future sprint
   - none
+- Questions to be discussed before ending the sprint
+  - How can I start the running of the next version from the Windows Store (prod) with a fresh DB (can I just rename the current database? if so, what is the full URL of the Windows Store DB for my account)?
 
 Please complete your sprint retrospective feedback (same sections)
 Combined feedback (yours and mine) and Summarize

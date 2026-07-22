@@ -542,7 +542,12 @@ BodyRuleAnalysis analyzeBodyRules(List<Map<String, Object?>> rows) {
 
 String buildReport(BodyRuleAnalysis a, {required String env, required bool apply}) {
   final b = StringBuffer();
-  b.writeln('# Sprint 46 F33 -- Body Rules Cleanup Report');
+  // Copilot review (PR #276): the title must match the env-qualified report
+  // filename (prod runs are the Sprint 49 F33-PROD artifact; the dev-run
+  // history keeps its Sprint 46 identity).
+  b.writeln(env == 'prod'
+      ? '# Sprint 49 F33-PROD -- Body Rules Cleanup Report (prod DB)'
+      : '# Sprint 46 F33 -- Body Rules Cleanup Report');
   b.writeln();
   b.writeln('**Environment**: $env');
   b.writeln('**Mode**: ${apply ? "APPLY (changes written)" : "DRY-RUN (no changes)"}');
