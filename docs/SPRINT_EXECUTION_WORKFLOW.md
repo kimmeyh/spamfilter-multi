@@ -605,6 +605,18 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
   - **Model**: Requires Opus (review analysis -- see SPRINT_PLANNING.md "Activities Requiring Opus")
   - **Learning (Sprint 32)**: Code reviewer focused on sprint diff missed SEC-17 gaps in adjacent files (background scan worker, UI screens). User manual testing of logs surfaced the gap. Step 2 (mechanical grep) and step 3 (two-phase review) were added to prevent recurrence.
 
+- [ ] **5.1.2 Pre-PR Self-Review Checklist -- the six recurring review-finding classes** (F-PRECHECK, Sprint 49 -- MANDATORY)
+  - **Purpose**: catch the finding classes that external review (Copilot) has surfaced repeatedly across sprints (23 comments over 6 rounds in Sprint 46; 4 real findings in Sprint 47; the F119 family) BEFORE the PR exists. Each class has a concrete detection ACTION -- run it against the sprint diff, do not just read the list.
+  - **The six classes + detection actions**:
+    1. **Mirror/parallel-site sync**: did the diff touch one of a known twin pair? (Dart gate + its PS1 CLI mirror; manual + background scan paths; two call sites of one helper; dev + prod worktree configs.) ACTION: for each changed file, name its sibling and `grep` it for the same change; update or state why not. (Sprint 47: `check-version-consistency.ps1` header claimed a sweep its `$dirs` did not do.)
+    2. **Helper wired into the PRODUCTION path**: does a new/changed resolver or helper actually get CALLED by the runtime path, not just the settings/display path? ACTION: `grep -rn "<helperName>" lib/` and confirm at least one call site is on the scan/runtime path. (Sprint 47: `getEffectiveFolders` was display-only; scans still used the raw getter.)
+    3. **Doc-comment-vs-code drift**: did a changed default/behavior leave a stale doc comment? ACTION: for every changed constant/default, read the doc comment ABOVE it and any comment that names its value. (Sprint 47: `defaultLiveScanDebugCsv` comment said `false` after the value became `true`.)
+    4. **Fragile input parsing**: does new parsing split on a positional delimiter where the input format varies? ACTION: list each new `split`/`indexOf`/`substring` on user- or id-shaped input; prefer domain/content matching. (Sprint 47: accountId dash-split broke on dashed local-parts.)
+    5. **API scope matches caller intent**: does an API call operate on a broader scope than the caller assumes (mailbox-wide vs folder; all-accounts vs account)? ACTION: for each new external/API call, state its scope in one sentence and check the caller wants exactly that. (Sprint 37: `history.list` was mailbox-wide; Sprint 46: test-scan scoped all accounts.)
+    6. **Silent failure**: does any new `catch` swallow, empty, or DELETE on error instead of reporting? ACTION: read every catch block in the diff; each must log at `Logger.w()`+ AND must not convert an unreadable input into a destructive classification. (Sprint 46/49 BUG-DECODE: a decode failure classified a rule as deletable.)
+  - **Dogfood rule**: record in the PR description that the checklist ran and what it caught (or "clean"). A checklist that is not exercised is decoration.
+  - **Cross-reference**: `.github/copilot-instructions.md` "Cross-Cutting Pattern Sweep" asks Copilot to look for the same classes -- this step exists so WE find them first.
+
 - [ ] **5.1.5 WinWright UI Test Sweep** (Sprint 38 retro - MANDATORY)
   - **Purpose**: Catch UI regressions BEFORE Phase 5.3 manual testing. Sprint 38 had 6+ rounds of post-Phase-5.3 manual UI fixes that WinWright coverage would have caught earlier.
   - **Trigger**: ALWAYS run this phase before proceeding to Phase 5.2. This supersedes the prior per-sprint conditional policy in `feedback_winwright_policy.md`.

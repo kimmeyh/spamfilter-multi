@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import '../../core/services/app_environment.dart';
+import '../../core/services/app_version.dart';
 import '../../core/services/data_deletion_service.dart';
 import '../../core/services/default_rule_set_service.dart';
 import 'package:flutter/material.dart';
@@ -587,9 +588,16 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Text(
-                            'Version 0.5.7${AppEnvironment.displaySuffix}',
-                            style: TextStyle(color: Colors.grey.shade700),
+                          // F-VERSION-DERIVE (Sprint 49): runtime version
+                          // (pubspec-backed), mirroring the F117 Help-footer
+                          // pattern -- never a hardcoded literal.
+                          FutureBuilder<String>(
+                            future: AppVersion.get(),
+                            builder: (context, snapshot) => Text(
+                              'Version ${snapshot.data ?? '...'}'
+                              '${AppEnvironment.displaySuffix}',
+                              style: TextStyle(color: Colors.grey.shade700),
+                            ),
                           ),
                         ],
                       ),

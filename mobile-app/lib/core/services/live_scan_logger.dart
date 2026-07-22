@@ -6,6 +6,7 @@ import 'package:syncfusion_flutter_xlsio/xlsio.dart' as xlsio;
 import '../providers/email_scan_provider.dart';
 import '../storage/settings_store.dart';
 import 'app_environment.dart';
+import 'app_version.dart';
 import '../../util/redact.dart';
 
 /// F90 (Sprint 39, 2026-05-23): live-scan logging parity with background-scan
@@ -19,7 +20,7 @@ import '../../util/redact.dart';
 /// table alone because live scans were not capturing logs to disk.
 ///
 /// File layout (mirrors background-scan with `live_scan_` prefix):
-///   - Runtime log:    `{logs}/{prefix}live_scan_v0.5.7.log`
+///   - Runtime log:    `{logs}/{prefix}live_scan_v<version>.log`
 ///   - Per-account CSV: `{logs}/live_scan_{safe_email}_{date}{_dev}.data.csv`
 ///   - Per-account XLSX: `{logs}/live_scan_{safe_email}_{date}{_dev}.xlsx`
 ///
@@ -52,8 +53,11 @@ class LiveScanLogger {
     try {
       final logDir = await getLogDir();
       final logPrefix = AppEnvironment.logPrefix;
+      // F-VERSION-DERIVE (Sprint 49): version comes from AppVersion (runtime,
+      // pubspec-backed) -- never a hardcoded literal that drifts on a bump.
+      final version = await AppVersion.get();
       final logFile = File(
-        path.join(logDir, '${logPrefix}live_scan_v0.5.7.log'),
+        path.join(logDir, '${logPrefix}live_scan_v$version.log'),
       );
       final timestamp = DateTime.now().toIso8601String();
       await logFile.parent.create(recursive: true);

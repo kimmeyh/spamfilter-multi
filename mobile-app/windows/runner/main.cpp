@@ -24,6 +24,25 @@
 #define SPAMFILTER_APP_ENV "dev"
 #endif
 
+// F-VERSION-DERIVE (Sprint 49): the app version for log filenames, derived
+// from the FLUTTER_VERSION compile definition (runner/CMakeLists.txt bakes it
+// from pubspec.yaml via flutter's generated_config.cmake) -- never a
+// hardcoded literal that drifts on a version bump (the F105 class: main.cpp
+// shipped a stale hardcoded version once already). FLUTTER_VERSION is
+// "X.Y.Z+B"; the log filenames use "X.Y.Z", so strip the build suffix.
+#ifndef FLUTTER_VERSION
+#define FLUTTER_VERSION "0.0.0"
+#endif
+static std::wstring AppVersionForLogs() {
+  std::string v(FLUTTER_VERSION);
+  const size_t plus = v.find('+');
+  if (plus != std::string::npos) {
+    v = v.substr(0, plus);
+  }
+  // Version strings are ASCII; widen directly.
+  return std::wstring(v.begin(), v.end());
+}
+
 // BUG-S37-1 (Sprint 38, Issue #256): Sprint 37 Phase 5.3 surfaced
 // SqfliteFfiException(sqlite_error: 5, "database is locked") when the
 // foreground UI was running and a scheduled --background-scan launched
@@ -40,7 +59,7 @@ static void LogBackgroundScanSkip(const std::wstring& reason) {
     return;
   }
   // Match Dart-side path:
-  //   {AppData}\\MyEmailSpamFilter\\MyEmailSpamFilter[_Dev]\\logs\\[dev_]background_scan_v0.5.7.log
+  //   {AppData}\\MyEmailSpamFilter\\MyEmailSpamFilter[_Dev]\\logs\\[dev_]background_scan_v<version>.log
   // We don't know dev-vs-prod from C++ without SPAMFILTER_APP_ENV (defined below),
   // so write to a deterministic startup-skip log that both environments share.
   //
@@ -60,7 +79,8 @@ static void LogBackgroundScanSkip(const std::wstring& reason) {
       + L"\\logs";
   CreateDirectoryW(dataDir.c_str(), nullptr);
   std::wstring logPath = dataDir
-      + (isDevEnv ? L"\\dev_background_scan_v0.5.7.log" : L"\\background_scan_v0.5.7.log");
+      + (isDevEnv ? L"\\dev_background_scan_v" : L"\\background_scan_v")
+      + AppVersionForLogs() + L".log";
 
   std::wofstream log(logPath, std::ios::app);
   if (!log.is_open()) return;

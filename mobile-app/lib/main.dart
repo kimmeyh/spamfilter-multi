@@ -9,6 +9,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'core/providers/rule_set_provider.dart';
 import 'core/providers/email_scan_provider.dart';
 import 'core/services/app_identity_migration.dart';
+import 'core/services/app_version.dart';
 import 'core/services/background_mode_service.dart';
 import 'core/services/background_scan_windows_worker.dart';
 import 'core/services/windows_system_tray_service.dart';
@@ -98,7 +99,11 @@ void main(List<String> args) async {
     final logPrefix = AppEnvironment.logPrefix;
     final logDir = Directory('${appSupport.path}$envSuffix\\logs');
     await logDir.create(recursive: true);
-    final logFile = File('${logDir.path}\\${logPrefix}background_scan_v0.5.7.log');
+    // F-VERSION-DERIVE (Sprint 49): runtime version (pubspec-backed via
+    // package_info_plus), never a hardcoded literal that drifts on a bump.
+    final appVersion = await AppVersion.get();
+    final logFile = File(
+        '${logDir.path}\\${logPrefix}background_scan_v$appVersion.log');
     Future<void> bgLog(String message) async {
       try {
         final timestamp = DateTime.now().toIso8601String();

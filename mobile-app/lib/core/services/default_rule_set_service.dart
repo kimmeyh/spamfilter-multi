@@ -542,6 +542,32 @@ class DefaultRuleSetService {
 
         // Insert individual rows for each pattern.
         for (final pending in pendingRules) {
+          // F121 (Sprint 49) idempotency guard: skip if a content-identical
+          // individual row already exists. Without this, duplicate monolithic
+          // source rows (the pre-F73 import ran multiple times on the prod
+          // DB) were each faithfully split, and _generateUniqueName's
+          // collision suffixing (_2/_3) minted ~7.6k duplicate rules instead
+          // of skipping them. Content identity = same single-pattern
+          // condition in the same field with the same action/enabled state.
+          final existing = await txn.query(
+            'rules',
+            columns: ['id'],
+            where: '${pending.conditionField} = ? AND pattern_category = ? '
+                'AND action_delete = ? AND enabled = ?',
+            whereArgs: [
+              jsonEncode([pending.pattern]),
+              pending.category,
+              actionDelete,
+              enabled,
+            ],
+            limit: 1,
+          );
+          if (existing.isNotEmpty) {
+            _logger.d('F73/F121: content-identical rule already exists for '
+                'pattern "${pending.pattern}" -- skipping duplicate insert');
+            continue;
+          }
+
           final candidateName =
               await _generateUniqueName(txn, pending.sourceDomain);
 
