@@ -3,16 +3,69 @@
 can you write a effective but compact /compact string I can use to compact where we are, but let the Claude Code team know where we left off and can pick it up correctly.  Use all the tokens needed, but a few as reasonably possible.
 
 ---------------------------------------------------------------------------------------------------------
-Sprint 4n Manual Testing Feedback 
+Sprint 4n Manual Validation Feedback 
 ---------------------------------------------------------------------------------------------------------
-Sprint 48 Manual Testing Feedback 
+Sprint 49 Manual Validation Feedback 
+
+Part A — Automated baseline (mine; the precondition for your review)
+
+Before you start Part B, I confirm and report:
+- Full flutter test suite green (expected ~1,774 pass / 29 skip after the new tests), flutter analyze clean
+- All four policy gates green (version-consistency, stale-footer, msix-config incl. the new F119-c pins + secrets well-formedness, log-redaction)
+- F121 prod-copy dry-run reconciles: 12,539 scanned = 6,526 keepers + 6,013 removals, [OK]
+- All changes committed + pushed to PR #276
+
+Part B — Dev build validation (you, ~15–20 min, from the Sprint 49 branch)
+
+Setup: I build and launch via build-windows.ps1 (dev) and hand it to you.
+
+B1 — F119-c both-sides probe (2 min)
+- From PowerShell: & "D:\...\build\windows\x64\runner\Release\MyEmailSpamFilter.exe" --print-env
+- Expect exactly: APP_ENV=dev, displaySuffix= [DEV], dataDirSuffix=_Dev, windowTitle=MyEmailSpamFilter [DEV], NATIVE_APP_ENV=dev — the new fifth line, and it must agree with APP_ENV
+- Launch the app: title bar reads MyEmailSpamFilter [DEV] — correct for a dev build (dev is supposed to show it; prod-no-[DEV] is validated in Part D)
+
+B2 — F-VERSION-DERIVE (5 min)
+- Settings → About: reads Version 0.5.7 [DEV] (now runtime-derived — pubspec is the only place 0.5.7 exists)
+- Run a short Live Scan → verify ...\MyEmailSpamFilter_Dev\logs\dev_live_scan_v0.5.7.log exists with fresh timestamped entries
+- Settings → Background → Test Background Scan → verify dev_background_scan_...v0.5.7.log gets fresh entries
+- Negative check: no *_v0.5.6.log file receives NEW entries from this session
+
+B3 — F120 quick-action speed + behavior (5 min)
+- On the Results screen with "No rule" items: open an email's popup → Block Email
+- Expect: action completes sub-second; the next popup advances immediately; the title bar never shows "(Not Responding)"; the rule appears in Manage Rules; the email leaves the No-rule count; the "Re-processing…" banner completes
+- Repeat once with Add to Safe Senders → Exact Email — same expectations
+- Open Scan History → an older scan's results (the full-set re-eval path): the screen may work for a few seconds on a large scan, but the window must stay responsive (moveable, never "(Not Responding)")
+
+B4 — Regression spot-checks (3 min)
+- Help → footer shows the version (F117, still dynamic)
+- Demo Scan → completion navigates to the Results summary (F116 intact)
+- Review-No-Rule entry points present on Scan History + Settings (F112 intact)
+
+Part C — Live prod-DB cleanup (you + me together, ~10 min)
+
+This is the coordinated step I've staged. Sequence matters:
+- You: close the Store app (verify no MyEmailSpamFilter in Task Manager) and tell me
+- Me: F121 dry-run on the live prod DB → numbers must match the copy (12,539 / 6,526 / 6,013, [OK]) → then --apply (timestamped backup created first) → verify "Remaining rules: 6,526"
+- Me: F33-PROD dry-run → we review the report together (expected: 0 decode-failure warnings — the BUG-DECODE guard would print [WARNING] ... classified AMBIGUOUS if any rule is unreadable; counts must reconcile) → then --apply (second backup)
+- You: relaunch the Store 0.5.6 app → Manage Rules opens and shows the reduced count; run a scan → "No rule" drops from ~197 toward the dev-like ~20 (your original point, now fixed by the body-rule cleanup)
+- Expectation-setting: quick actions on the 0.5.6 Store app will still be slow-ish (F120 isn't in that binary) — just faster than before because the rule set halved. Sub-second arrives with 0.5.7.
+
+Part D — 0.5.7 release validation (after you merge PR #276 → develop → main)
+
+- Me: sync prod worktree, rebuild MSIX, run Step 4.0 — build log shows the dart-defines (Check A) and --print-env on the built exe shows APP_ENV=prod AND NATIVE_APP_ENV=prod (Check B — the line that 0.5.5/0.5.6 could never have produced); manifest 0.5.7.0
+- You: install the MSIX locally → title bar reads MyEmailSpamFilter with NO [DEV] — the headline check, third time's the charm; About = Version 0.5.7, no suffix; Gmail sign-in opens with your real client_id
+- You: one quick action on real results → sub-second, no freeze (F120 + the cleaned DB together)
+- Submit to Partner Center → after certification: repeat the title-bar/About/sign-in checks on the Store-downloaded install before calling it done
+
 ---------------------------------------------------------------------------------------------------------
-Sprint 47 Manual Testing Feedback 
+Sprint 48 Manual Validation Feedback 
 Done
 All interactive
-
 ---------------------------------------------------------------------------------------------------------
-
+Sprint 47 Manual Validation Feedback 
+Done
+All interactive
+---------------------------------------------------------------------------------------------------------
 
 Done
 Store update loaded, fully accepted, downloaded new version.  I will be providing manual testing feedback on the uploaded/downloaded version from the Windows Store.
@@ -20,25 +73,38 @@ Let me know if you understand.
 We should not immediately make any changes based on this feedback, but keep a list of what needs to be changed in the app and .msix file and then we can add the whole list to the backlog.
 Initial Select Account screen (see attached)
 1) Shows in header, "MyEmailSpamFilter [DEV]", but should not include " [DEV]" in Windows Store version
+- Working as expected. Can be closed.
 2) Shows my 2 accounts already loaded - is this from my prior version installed and the database associated with it or would all users have my 2 accounts loaded?
+- Working as expected. Can be closed.
 Help Screen
 1) At the bottom is list sprint #.  Is this accurate? If not, is there a way to ensure this is aways accurate or preferably change to app version (which should pull from source repository and always be accurate)
+- Working as expected. Can be closed.
 Scan History page
 1) Add icon for """Review "No Rule" Items""" to page
+- Working as expected. Can be closed.
 2) Can you also add the """Review "No Rule" Items""" icon right above the "No Rule: <n>" button (so that it stays in the middle of the "No Rule: <n>" Button - is that possible
+- Working as expected. Can be closed.
 Review "No Rule" Items page
 1) Can you move the "Apply Rule" to the left of "<n> Selected" and "Clear" about 5 spaces to the right of "<n> Selected"
+- Working as expected. Can be closed.
 Settings > General
 1) Keep Scan History for - should default for new users to 90 days.
+- Working as expected. Can be closed.
 2) Privacy & Logging > Unmatched Emails Retention - should default for new users to 90 days.
+- Working as expected. Can be closed.
 3) About - may be the same issue as MSIX bug as it shows " [DEV]"
+- Working as expected. Can be closed.
 Settings > Manual
 1) The attached should represent the new user defaults for all *@aol.com accounts
+- Working as expected. Can be closed.
 2) Add icon for """Review "No Rule" Items""" to all Settings pages (just to the left of the "View Scan History" icon)
+- Working as expected. Can be closed.
 Settings > Background
 1) The attached should represent the new user defaults for all *@aol.com accounts
+- Working as expected. Can be closed.
 Manual Scan Screen
 1) Start Demo Scan (Testing) - mentions processing 13 emails, then 26 emails while only seeing 20 listed when complete.  Can we remove the showing of the list and just show the appropriate buttons like in Live Scan?
+- Working as expected. Can be closed.
 
 
 Updated tracking list — App / .msix items:

@@ -72,16 +72,29 @@ void main(List<String> args) async {
   final env = (envIndex >= 0 && envIndex + 1 < args.length)
       ? args[envIndex + 1]
       : 'dev';
+  // F121-sibling seam (Sprint 49, F-PRECHECK class-1 catch): --db <path>
+  // targets an explicit DB file (e.g. a copy) for safe rehearsal, mirroring
+  // dedup_rules.dart. Without it, a rehearsal invocation silently ran against
+  // the LIVE env DB path (dry-run, so no writes -- but not what was asked).
+  final dbIndex = args.indexOf('--db');
+  final dbOverride = (dbIndex >= 0 && dbIndex + 1 < args.length)
+      ? args[dbIndex + 1]
+      : null;
 
-  final appDataPath = Platform.environment['APPDATA'];
-  if (appDataPath == null) {
-    stderr.writeln('[FAIL] APPDATA environment variable not found');
-    exit(1);
+  final String dbPath;
+  if (dbOverride != null) {
+    dbPath = dbOverride;
+  } else {
+    final appDataPath = Platform.environment['APPDATA'];
+    if (appDataPath == null) {
+      stderr.writeln('[FAIL] APPDATA environment variable not found');
+      exit(1);
+    }
+    final dataDir = env == 'prod'
+        ? 'MyEmailSpamFilter'
+        : 'MyEmailSpamFilter_Dev';
+    dbPath = '$appDataPath\\MyEmailSpamFilter\\$dataDir\\spam_filter.db';
   }
-  final dataDir = env == 'prod'
-      ? 'MyEmailSpamFilter'
-      : 'MyEmailSpamFilter_Dev';
-  final dbPath = '$appDataPath\\MyEmailSpamFilter\\$dataDir\\spam_filter.db';
 
   print('=== F33 Body-Rules Cleanup (${apply ? "APPLY" : "DRY-RUN"}) ===');
   print('Environment: $env');
@@ -130,8 +143,15 @@ void main(List<String> args) async {
   final scriptDir = File(Platform.script.toFilePath()).parent.path;
   final mobileAppDir = Directory(scriptDir).parent.path;
   final repoRoot = Directory(mobileAppDir).parent.path;
-  final reportPath =
-      '$repoRoot/docs/sprints/SPRINT_46_F33_BODY_RULES_REPORT.md';
+  // Sprint 49 fix: the report filename is ENV-QUALIFIED. The original
+  // hardcoded SPRINT_46_... path meant any later run (e.g. the Sprint 49
+  // prod rehearsal) silently OVERWROTE the historical Sprint 46 dev-run
+  // report. The dev-run history stays at its original name; prod and
+  // rehearsal runs get their own files.
+  final reportName = env == 'prod'
+      ? 'SPRINT_49_F33_PROD_BODY_RULES_REPORT.md'
+      : 'SPRINT_46_F33_BODY_RULES_REPORT.md';
+  final reportPath = '$repoRoot/docs/sprints/$reportName';
   File(reportPath).writeAsStringSync(report);
   print(report);
   print('[OK] Report written to $reportPath');
