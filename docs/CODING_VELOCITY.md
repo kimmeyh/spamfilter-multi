@@ -49,6 +49,8 @@ Classify each task by its dominant step-type so estimates aggregate meaningfully
 
 ## Estimate Table (current best estimates, in minutes)
 
+**Sprint 49 recompute note (2026-07-22, Phase 7 Rule 5)**: Sprint 49 actuals land within or under band across the board (NATIVE-WIN deep-debug ~75m incl. investigation; SVC-EDIT-class fixes 20-50m; DATA applies 15-55m with rehearsal; DOCS/process 25-45m). Bands below remain valid but the smaller items keep running ~1.5-2x high -- when estimating S-size SVC-EDIT/DOCS items, prefer the LOW end of band. Full per-type median recompute deferred until n>=3 fresh samples per type accumulate (most types gained 1-2 this sprint).
+
 **Recomputed 2026-06-13 (Sprint 41) from the Sprint 39+40 Actuals Log** -- replaces the 2026-05-25 `[no-history]` seed, which ran ~6x high (median error-ratio ~0.15 across Sprint 39). Effort and wall-clock are equal here because almost every recorded Item so far ran as a single agent (solo Item -> Effort == Wall-clock). Per-type samples are still thin (n=1-3); precision firms up over Sprint 41+. The DIRECTION (~6x lower than the old hour-anchored table) is solid.
 
 | Step-type | Est-Effort (min) | Basis |
