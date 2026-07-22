@@ -481,6 +481,13 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
   - Haiku starts with straightforward tasks
   - Sonnet available for escalation if needed
   - Opus available for complex issues
+  - **Track every approved task in the harness task list** (TaskCreate at Phase 3.7 approval; TaskUpdate as statuses change) so the not-done inventory is mechanical, not recalled (Sprint 49 retro IMP-1).
+  - **Record "Executed-by" per task at completion** (Sprint 49 retro IMP-3): the model that actually executed vs the plan's assignment, with a one-line why on any deviation. Delegate genuinely mechanical tasks to cheaper-tier subagents when not tightly coupled to in-flight context.
+
+- [ ] **4.1.0 ANTI-STOP TASK-INVENTORY RULE** [WARNING] MANDATORY (Sprint 49 retro IMP-1 -- Harold Category 1)
+  - **A batch-completion commit/report is a narration beat, NOT a stopping point.** Before ending ANY turn mid-sprint: enumerate every approved task and its status. If any task is not DONE and not blocked by a specifically NAMED `SPRINT_STOPPING_CRITERIA.md` criterion (1-9), the turn CONTINUES with the next executable task.
+  - **A blocked SUB-STEP blocks only itself**: name the criterion, park that sub-step, and continue every other executable task. (Sprint 49 escape: "Criterion 2: blocked on Harold" was declared for a DB-apply sub-step while four whole approved tasks sat executable -- Harold returned to an incomplete sprint.)
+  - The stop test: "Is every approved task DONE, or does a numbered criterion apply to EACH remaining one?" If no -> continue.
 
 - [ ] **4.1.1 Review Architecture Guidance** (For Complex Tasks)
   - For tasks involving new components or architectural changes:
@@ -602,7 +609,7 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
     4. Address HIGH / CRITICAL findings before PR creation (fix or document why not)
     5. MEDIUM / LOW findings: fix if quick (<15 min), otherwise add to backlog
     6. Record findings and disposition in sprint retrospective
-  - **Model**: Requires Opus (review analysis -- see SPRINT_PLANNING.md "Activities Requiring Opus")
+  - **Model**: Requires Fable/Opus (top tier; review analysis -- see SPRINT_PLANNING.md "Activities Requiring Fable/Opus")
   - **Learning (Sprint 32)**: Code reviewer focused on sprint diff missed SEC-17 gaps in adjacent files (background scan worker, UI screens). User manual testing of logs surfaced the gap. Step 2 (mechanical grep) and step 3 (two-phase review) were added to prevent recurrence.
 
 - [ ] **5.1.2 Pre-PR Self-Review Checklist -- the six recurring review-finding classes** (F-PRECHECK, Sprint 49 -- MANDATORY)
@@ -944,7 +951,7 @@ After Phase 5.2 all tests pass, context can be compacted for efficiency:
     5. Implement approved "Fix now" items as part of retrospective (Phase 7).
     6. Add approved "Add to backlog" items to ALL_SPRINTS_MASTER_PLAN.md.
     7. Post reply comments to Copilot threads explaining resolution.
-  - **Model**: Requires Opus (review analysis -- see SPRINT_PLANNING.md "Activities Requiring Opus").
+  - **Model**: Requires Fable/Opus (top tier; review analysis -- see SPRINT_PLANNING.md "Activities Requiring Fable/Opus").
   - **Skip condition**: If Copilot review is not enabled in repo, skip this step (document in retrospective that Copilot review was unavailable).
 
 - [ ] **6.5 Interim status to user (NOT "ready for approval")**
@@ -955,15 +962,19 @@ After Phase 5.2 all tests pass, context can be compacted for efficiency:
 - [ ] **6.6 Open the NEXT sprint branch immediately after merge** [WARNING] MANDATORY (Sprint 42 retro -- this was missed)
   - **Trigger**: the moment you are notified the sprint PR is **merged/approved** (e.g. user says "PR merged", or `gh pr view <N> --json state` shows `MERGED`). Do this **very soon** after the notice -- before ANY further commits.
   - **Why**: once the PR merges, the sprint feature branch is "done." Phase 7 (including retro improvements) completes BEFORE the merge -- so post-merge work is the NEXT sprint's: backlog refinement, GitHub issue cleanup, next-sprint planning, and any follow-up IMPs deferred to Sprint N+1. None of it may be committed onto the merged branch -- those commits get stranded (not on `develop`). They belong on a fresh branch off the updated `develop`.
-  - **Steps** (run as soon as merge is confirmed; PowerShell -- the project's primary shell):
+  - **Steps** (Sprint 49 retro IMP-6 -- Harold's directive, corrected 5x through Sprints 46-49; this text supersedes any older branch-off-develop recipe):
     ```powershell
-    git fetch origin develop
-    git checkout develop
-    git pull origin develop                                   # updated develop (now has the merged sprint)
-    git checkout -b feature/<YYYYMMDD>_Sprint_<N+1>           # next sprint branch off develop
+    # Create the next sprint branch FROM THE CURRENT FEATURE BRANCH -- NOT from
+    # develop. The current branch already holds any post-merge commits AND any
+    # uncommitted working-tree changes; branching from it carries ALL of that
+    # forward in one move. Then COMMIT the carried-forward changes on the new
+    # branch (uncommitted changes follow the working tree across checkout -b).
+    git checkout feature/<current_sprint_branch>              # usually already on it
+    git checkout -b feature/<YYYYMMDD>_Sprint_<N+1>           # inherits everything
+    # ...commit any carried-forward changes here...
     git push -u origin feature/<YYYYMMDD>_Sprint_<N+1>
     ```
-    (If a `0*.txt`/`0*.md` personal-doc edit is dirty and blocks `checkout`, `git stash push -- <that file>` first, then `git stash pop` on the new branch.)
+    **NEVER stash to carry forward** -- a PreToolUse hook hard-blocks `git stash` (Sprint 47 retro IMP-3); create-branch-then-commit is the only sanctioned flow. Branching from `develop` instead LOSES uncommitted work and forces error-prone cherry-picks (the Sprint 48->49 recovery).
   - **Result**: all post-merge work (retro fixes, backlog refinement, issue reconciliation, next-sprint planning) is committed on the NEXT sprint branch and reaches `develop` via that branch's PR -- nothing is stranded on a merged branch.
   - **Naming note**: this is the same branch Phase 3.4 would create. If Phase 6.6 already created it, Phase 3.4 just verifies it exists (do not create a duplicate).
   - **Recovery (if work was already committed to the merged branch)**: create the next branch off `develop`, `git cherry-pick` the stranded commits onto it, reset the merged branch back to its pushed head, then PR the next branch. (Sprint 42 used exactly this recovery for PR #265.)

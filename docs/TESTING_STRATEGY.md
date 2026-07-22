@@ -26,6 +26,10 @@
 
 ---
 
+## Local Full-Suite Concurrency Policy (Sprint 49 retro IMP-5)
+
+Run local FULL suites with `flutter test --concurrency=4`. At the default concurrency this machine intermittently drops test-isolate connections ("Failed to load ... Connection closed before test suite loaded"), producing phantom load failures (3 episodes in Sprint 49; files pass in isolation). Reduced concurrency eliminated it every time. Targeted single-file runs need no flag. If a full-suite run shows load-failures, do NOT chase them file-by-file: re-run at `--concurrency=4` first.
+
 ## Table of Contents
 
 1. [Testing Philosophy](#testing-philosophy)

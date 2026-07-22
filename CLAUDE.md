@@ -331,7 +331,7 @@ Empty/silent role-feedback lines are NOT acceptable. If a role has nothing to sa
 Work flows through models by complexity:
 - **Haiku**: Straightforward implementation, bug fixes, tests, documentation
 - **Sonnet**: Architectural decisions, complex refactoring, multi-file changes
-- **Opus**: Deep debugging, performance optimization, critical path features
+- **Fable/Opus** (top tier; Fable 5 preferred when enabled, Opus otherwise): Deep debugging, performance optimization, critical path features
 
 Claude determines model assignment using the `/plan-sprint` skill (see below).
 

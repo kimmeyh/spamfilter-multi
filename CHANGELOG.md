@@ -26,6 +26,15 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-07-22 (Sprint 49: retrospective improvements, all "apply now")
+- **docs**: anti-stop task-inventory rule (workflow Phase 4.1.0): a batch-completion report is NOT a stopping point -- enumerate approved tasks before any mid-sprint turn end; a blocked sub-step blocks only itself; harness task-tracking from Phase 3.7. (Sprint 49 retro IMP-1)
+- **docs**: `Executed-by` recorded per task at completion (workflow 4.1 + task template); genuinely mechanical tasks delegated to cheaper tiers where coupling allows. (IMP-3)
+- **docs**: ADR-0041 "Environment propagation: the APP_ENV dart-define is the single source of truth" (Accepted) -- formal Chief-Architect capture of the F119-c design change; ADR index updated. (IMP-4)
+- **docs**: TESTING_STRATEGY local full-suite concurrency policy (`--concurrency=4`; re-run before chasing phantom isolate load-failures). (IMP-5)
+- **docs**: workflow Phase 6.6 rewritten to the branch-from-current-feature-branch + commit carry-forward flow (never stash; supersedes the old branch-off-develop recipe). (IMP-6)
+- **docs**: top-tier model references renamed to "Fable/Opus" (Fable 5 preferred when enabled) across SPRINT_PLANNING, SPRINT_EXECUTION_WORKFLOW, CLAUDE.md. (Harold steering)
+- Memory: `feedback_no_stop_task_inventory`, `feedback_edit_verify_exact_bytes`. (IMP-1/IMP-2)
+
 ### 2026-07-21 (Sprint 49: prod-DB pipeline -- BUG-DECODE, F121, F-VERSION-DERIVE, F-PRECHECK)
 - **fix**: BUG-DECODE -- `cleanup_body_rules.dart` classified a rule whose `condition_body` fails to JSON-decode as a deletable G5 orphan (silent data loss on `--apply`). Decode failures are now reported as ambiguous (report-only) with a loud warning; a NULL/empty body remains a legitimate orphan. (BUG-DECODE)
 - **feat**: F121 -- new `scripts/dedup_rules.dart` removes content-identical duplicate rules (dry-run default, `--apply` with timestamped backup, `--db` override for safe verification, reconciliation gate). The Store prod DB carries 12,539 rules of which 6,013 are exact functional duplicates (keepers 6,526) -- fallout of the pre-F73 import running ~3x on 2026-04-24 and the F73 split faithfully splitting every copy with `_2`/`_3` name suffixes. `splitMonolithicRules` (F73) now SKIPS content-identical rows (idempotency guard + 2 tests), so re-imports can never re-bloat a DB. (F121)
