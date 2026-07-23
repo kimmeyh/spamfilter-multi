@@ -78,6 +78,29 @@ void main() {
           'source_domain': src,
         };
 
+    test('BUG-DECODE (Sprint 49): malformed condition_body is reported '
+        'AMBIGUOUS, never classified as a deletable G5 orphan', () {
+      final a = analyzeBodyRules([
+        // Raw garbage that fails jsonDecode -- previously fell through with
+        // patterns=[] into the G5 orphan DELETE set (silent data loss).
+        {
+          'id': 99,
+          'name': 'corrupt_rule',
+          'condition_body': '[not valid json',
+          'pattern_category': 'body',
+          'pattern_sub_type': 'entire_domain',
+          'source_domain': null,
+        },
+      ]);
+      expect(a.ambiguous.map((r) => r.id), contains(99),
+          reason: 'A decode failure means we cannot READ the rule -- it must '
+              'be reported for human review, not deleted.');
+      expect(a.orphans.map((r) => r.id), isNot(contains(99)));
+      expect(a.toRemove.map((r) => r.id), isNot(contains(99)),
+          reason: 'BUG-DECODE: the delete set must never contain a row whose '
+              'conditions could not be decoded.');
+    });
+
     test('G1: full-domain rules are converted, not removed', () {
       final a = analyzeBodyRules([
         row(1, 'r1', r'/adianeos\.com', src: 'adianeos.com'),

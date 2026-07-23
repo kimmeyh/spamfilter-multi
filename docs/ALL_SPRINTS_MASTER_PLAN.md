@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-07-19 (corrected 0.5.5.0 MSIX SUBMITTED for certification; added F-WINSTORE-ASSETS backlog item -- see Version History 6.8-6.9)
+**Last Updated**: 2026-07-22 (Harold validated ALL Sprint 47 items on the 0.5.7-candidate build -- details pruned to close-out note; Sprint 49 in flight -- see Version History 6.11)
 
 ## How to Maintain This Document
 
@@ -118,21 +118,20 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 46** (Jul 2-11, 2026 -- merged PR #270)
-- **Type**: Three activated backlog items + manual-testing fixes + retro improvements
+**Sprint 48** (2026-07-20 -- merged PR #274; emergency F119-b hotfix)
+- **Type**: Emergency hotfix (no Phase 3 plan / full Phase 7 retro at the time; plan + lightweight Claude-team retro written retroactively per Harold 2026-07-20).
 - **Delivered**:
-  - **F64** -- CI/CD pipeline (`.github/workflows/ci.yml`): analyze+test on `ubuntu-latest`, Windows build verification on `windows-latest` (OAuth via `CI_*` encrypted repo secrets -- one-time setup pending). CI's first run caught a real cross-platform test bug.
-  - **F39** -- cross-account "Review No Rule Items" screen (Windows-desktop-scoped): aggregates each account's latest-scan unaddressed items; multi-select + 7 bulk actions; shared `RuleQuickActionService` + `PatternNormalization.extractRootDomain` extracted. **Writer bug fixed during manual testing**: `unmatched_emails` had no production writer (Sprint 4 placeholder) -- scan completion now persists the "No rule" subset.
-  - **F33** -- body-rules cleanup script applied to dev DB: 647 domain rules -> URL-anchored regex, 84 keyword rules reclassified, 375 removed, 0 ambiguous (4141 -> 3764 rules; backup retained). **Prod-DB `--env prod --apply` run is a Sprint 47 carry-in** (must land the JSON-decode-failure report-not-delete fix first -- Copilot round-6).
-  - Manual-testing fixes: detail-popup positioning (one item lower); "No rule" auto-advance (pick-next-first, process-async); provider-sender grouping in all scan-result lists (retro IMP-1).
-- **Retro improvements applied**: IMP-1 (provider-sender grouping), IMP-2 (shared db-widget-test harness), IMP-4 (ARCHITECTURE.md), IMP-5 (`-SkipClean` full-clean fallback). IMP-3 (CHANGELOG cadence, A vs B) -> Sprint 47 planning decision.
-- **Copilot review**: 23 comments across 6 rounds -- rounds 1-5 (21) fixed/replied/resolved; round-6 (2) dispositioned to Sprint 47 carry-ins.
-- **Tests**: 1749 passing / 29 skipped; flutter analyze clean; CI green.
-- **Summary**: docs/sprints/SPRINT_46_SUMMARY.md (pending) · **Retrospective**: docs/sprints/SPRINT_46_RETROSPECTIVE.md
-- **PR**: #270 (merged to develop, 2026-07-11)
-- **Sprint 47 carry-ins**: (1) dev version bump 0.5.4 -> 0.5.5 -- **DONE in Sprint 47 (F118)**; (2) IMP-3 CHANGELOG-cadence decision -- **resolved (practiced Alternative A: per-completed-item commits)**. **Deferred to Sprint 48 (Harold 2026-07-18, decoupled from the Store release)**: F33 prod-DB `--env prod --apply` (see F33-PROD in Next Sprint Candidates) and the `cleanup_body_rules.dart` decode-failure report-not-delete fix (see BUG-DECODE). Still open, not release-gating: populate the 5 `CI_*` GitHub repo secrets; the `no_rule_review_screen.dart` load-error stackTrace + friendly-SnackBar polish (cosmetic).
-- **Open follow-up (carried from Sprint 44)**: Android-device retest of the F108 dep bumps (Gmail sign-in, secure-storage round-trip, WorkManager) -- no emulator in the dev session; F108 revert runbook covers per-dep rollback if needed.
-- **Store status**: BOTH `0.5.4` and `0.5.5` shipped to the Store running as `APP_ENV=dev` -- two INDEPENDENT defects that masked each other. `0.5.4` (F119): `msix_config` key typo `build_windows_args` (correct: `windows_build_args`). `0.5.5` (F119-b): `secrets.prod.json` had a JSON key with SPACES (`"comment OR try this"`) which silently drops `APP_ENV=prod` via `--dart-define-from-file`; the build LOG still showed `APP_ENV=prod`, so the log-only Step 4.0 check passed while the compiled build was dev. **Fix (Sprint 48, F119-b)**: cleaned both secrets files to credential-keys-only, added a gate (`msix_config_test.dart` fails on space/empty secrets keys) and a `--print-env` compiled-truth probe (Step 4.0 now requires it). **Corrected build = `0.5.6`** (Partner Center will not accept `0.5.5` twice). Sequence: Sprint 48 branch -> PR -> develop (Harold merges) -> main (Harold merges) -> rebuild from prod worktree -> `--print-env` MUST show `APP_ENV=prod` -> resubmit `0.5.6`. On the `0.5.6` cert PASS: Step 7 close-out + Android/Google Play track OFF HOLD.
+  - **F119-b** -- the `0.5.5` Store MSIX shipped running as `APP_ENV=dev` (a SECOND root cause, independent of the F119 key typo): `secrets.prod.json`/`secrets.dev.json` held a JSON key with SPACES (`"comment OR try this"`), which `--dart-define-from-file` turns into a malformed dart-define that silently drops `APP_ENV=prod`. The build LOG still showed `APP_ENV=prod`, so the log-only Step 4.0 check passed while the compiled build was dev.
+  - **Fix**: cleaned both secrets files to credential-keys-only (values preserved, backups gitignored); new `msix_config_test.dart` gate fails the build on space/empty secrets keys; new `main.dart --print-env` prints the COMPILED `APP_ENV` so the release process verifies behavior not the log; `STORE_RELEASE_PROCESS.md` Step 4.0 rewritten to require it.
+  - **0.5.6 bump** (Partner Center rejects a re-used version) across all gated literals; `test-background-scan-skip.ps1` converted to DERIVE the version from pubspec (Harold catch) -> backlog **F-VERSION-DERIVE** to extend derive-not-hardcode to the 6 production log-filename sites.
+- **Verification**: 1763 pass / 29 skip; analyze clean; rebuilt 0.5.6 prod MSIX `--print-env` -> **`APP_ENV=prod`** (compiled proof, the check that was missing on 0.5.4/0.5.5); manifest `0.5.6.0`; 16 MB.
+- **Plan/Retro**: `docs/sprints/SPRINT_48_PLAN.md` (retroactive) · `docs/sprints/SPRINT_48_RETROSPECTIVE.md` (lightweight, Claude-team only, Harold's PO/SM/Lead feedback waived for the hotfix).
+- **PR**: #274 (merged develop -> main, 2026-07-20).
+- **Store**: `0.5.6` SUBMITTED to Partner Center for certification 2026-07-20 (in cert). This is the corrected first-public-release build. On cert PASS -> Step 7 close-out + Android/Google Play track OFF HOLD.
+- **Open carry-ins for next sprint's Phase 1**: F33-PROD prod-DB apply (gated on BUG-DECODE), the 5 `CI_*` GitHub repo secrets, F108 Android-device dep-bump retest, and the retro backlog cards (F-VERSION-DERIVE, F-WINSTORE-ASSETS, F-PRECHECK, F-COPILOT-INSTR).
+
+_(Prior: **Sprint 47** shipped F112-F119 + 8 retro IMPs, PR #272; **Sprint 46** shipped F64/F39/F33 + IMPs, PR #270. See per-sprint docs in `docs/sprints/`.)_
+- **Store status**: BOTH `0.5.4` and `0.5.5` shipped to the Store running as `APP_ENV=dev` -- two INDEPENDENT defects that masked each other. `0.5.4` (F119): `msix_config` key typo `build_windows_args` (correct: `windows_build_args`). `0.5.5` (F119-b): `secrets.prod.json` had a JSON key with SPACES (`"comment OR try this"`) which silently drops `APP_ENV=prod` via `--dart-define-from-file`; the build LOG still showed `APP_ENV=prod`, so the log-only Step 4.0 check passed while the compiled build was dev. **Fix (Sprint 48, F119-b)**: cleaned both secrets files to credential-keys-only, added a gate (`msix_config_test.dart` fails on space/empty secrets keys) and a `--print-env` compiled-truth probe (Step 4.0 now requires it). **`0.5.6` shipped 2026-07-20 and STILL shows the `[DEV]` window title** (Harold's Store-install test, 2026-07-21) -- exposing a THIRD independent defect, **F119-c**: the native window title is compiled from the `SPAMFILTER_APP_ENV` CMake definition, which the Sprint 37 F52 design sourced ONLY from an OS env var that `build-windows.ps1` sets but the `msix:create` Store path NEVER set -> CMake defaulted `"dev"` -> `[DEV]` title baked into the native runner of 0.5.5 AND 0.5.6 while the Dart side was prod. **Record correction**: the F119-b space-key was NOT the cause of the 0.5.5 `[DEV]` title (the 0.5.5 About text was clean and it used the prod data dir -- the Dart side was already prod); F119-b remains as secrets hygiene + gate. The Dart-side `--print-env` "proof" on 0.5.6 was real but only covered the DART side. **Fix (Sprint 49, F119-c)**: `runner/CMakeLists.txt` now derives `SPAMFILTER_APP_ENV` from the `APP_ENV` dart-define recorded in `ephemeral/generated_config.cmake` (env var fallback) -- one flag drives BOTH sides; `main.cpp` passes its compiled value to Dart (`--native-app-env=`) and `--print-env` now prints `NATIVE_APP_ENV` so Step 4.0 verifies both compiled sides; policy pins in `msix_config_test.dart`. **Corrected build = `0.5.7`**. On the `0.5.7` cert PASS: Step 7 close-out + verify Store download (title bar MUST read `MyEmailSpamFilter` with no `[DEV]`) + Android/Google Play track OFF HOLD.
 - **Earlier sprints (39-45)**: 39 (PR #260), 40 (PR #261), 41 (PR #262), 42 (PR #263), 43 (PR #265), 44 (PR #266), 45 (PR #268 -- F111 Store-readiness GO, develop->main released). See `docs/sprints/` + the Past Sprint Summary table above.
 
 ---
@@ -154,76 +153,9 @@ Recent sprints complete -- detail blocks removed per the Maintenance Guide (hist
 
 **Sprint 47 scope (Store 0.5.4 manual-testing feedback + carry-ins, Harold 2026-07-15)**: The **F112-F119** items below (Store-0.5.4 manual-testing feedback) are assigned to Sprint 47. **Carry-ins** also folded in: (1) dev version bump 0.5.4 -> 0.5.5 (see F118); (2) F33 prod-DB `--env prod --apply` (post-Store-rollout; requires the Copilot round-6 decode-failure report-not-delete fix first); (3) populate the 5 `CI_*` GitHub repo secrets; (4) IMP-3 CHANGELOG-cadence decision (A per-completed-item vs B Phase-5-entry gate); (5) Copilot round-6 polish (no_rule_review_screen load-error stackTrace + friendly SnackBar; cleanup-script decode-failure fix -- required before carry-in #2). **Standing HOLD candidates** unchanged: template deep dives (F70 Security / F71 Architecture / F111 Store-readiness), Post-MVP (SEC-11b DB encryption + F106 cleanup, paired), platform/UX tracks (F94/F95 flavors, F63 responsive, SEC-8b/SEC-15, F6, H1-H5, F67, GP-*), F39 mobile variant. **Open follow-up (Sprint 44 carry-in)**: Android-device retest of the F108 dep bumps -- not yet scheduled. **Store status**: 0.5.4 LIVE on the Microsoft Store (submission accepted, certification passed 2026-07-15). Note (F119): 0.5.4 MSIX shipped running as APP_ENV=dev -- fix + re-release needed.
 
-### Sprint 47 -- Store 0.5.4 Manual-Testing Feedback
+### Sprint 47 -- Store 0.5.4 Manual-Testing Feedback [ALL VALIDATED + CLOSED, Harold 2026-07-22]
 
-Captured from Harold's manual testing of the Store-installed 0.5.4 build (2026-07-15). All Windows Desktop unless noted. F119 is highest priority (it distorts every other observation).
-
-**F119. Store MSIX ships running as APP_ENV=dev (~2-4h) Priority 8**
-- Phase: Windows Store Readiness / build integrity
-- Platform: Windows Desktop
-- The Store-installed 0.5.4 build runs as `APP_ENV=dev`: title bar shows `MyEmailSpamFilter [DEV]`, the About screen shows `Version 0.5.4 [DEV]`, and it reads the `MyEmailSpamFilter_Dev` app-data directory instead of prod `MyEmailSpamFilter` (which is why Harold saw his 2 dev accounts -- NOT a privacy leak; accounts are per-machine, never in the package).
-- Root cause: `AppEnvironment.APP_ENV` defaults to `'dev'`; `pubspec.yaml` `msix_config.build_windows_args` DOES specify `--dart-define=APP_ENV=prod`, so `msix:create` is not forwarding it to the inner `flutter build windows` (or a cached dev artifact was packaged).
-- Fix: ensure a prod MSIX builds with `APP_ENV=prod`; add a build-time/CI assertion that a prod MSIX has empty `AppEnvironment.displaySuffix` (no `[DEV]`) and uses the prod data dir. Requires a version bump + re-release to the Store once fixed.
-- Verify: About shows `Version 0.5.x` (no `[DEV]`), clean title bar, prod data dir.
-- Blocks: F113 (clean-user testing is only meaningful once the build runs as prod).
-
-**F112. "Review No Rule Items" entry point everywhere (~2-3h) Priority 20**
-- Phase: Core App Quality / UX consistency
-- Platform: Windows Desktop
-- Add a single consistent icon (rule_folder style, tooltip "Review No Rule Items", opens `NoRuleReviewScreen`, Windows-gated per existing pattern) across the app. Reuse the account-selection screen's existing widget/handler (Sprint 46) for consistency.
-- (a) Scan History AppBar -- add the icon (currently absent; AppBar has only Refresh / Select Account / Settings / Help).
-- (b) Scan History "No Rule: N" total chip -- a small tappable instance centered directly above that chip (wrap `_buildTotalChip('No Rule', ...)` ~L340 in a center-aligned Column).
-- (c) All Settings pages -- insert in the shared Settings AppBar (~L254) just to the LEFT of the "View Scan History" icon; one insertion covers all four tabs.
-
-**F113. New-account default profiles (Manual + Background, provider-keyed) (~3-5h) Priority 22**
-- Phase: Core App Quality / onboarding defaults
-- Platform: All (Windows Desktop primary)
-- Provider-keyed default-folder map -- AOL: `Inbox, Bulk, Bulk Mail`; Gmail: `INBOX, [Gmail]/Spam, Unwanted` (extensible to future providers).
-- Manual Scan (common): Read-Only Mode ON; Scan Range = "Scan all emails" ON (entire mailbox); Show confirmation dialogs ON; Export CSV After Each Scan ON.
-- Background Scan (common): Enable Background Scanning OFF; Frequency 15 min; Read-Only Mode ON; Scan Range = "Scan all emails" OFF, slider = last 1 day; Export CSV After Each Scan ON.
-- Manual vs Background Scan-Range default differs by design (background scans last-1-day, not entire mailbox). Export CSV defaults ON confirmed by Harold (new users most likely to need diagnostics; file size negligible).
-- User base is ~1-2 (Harold + one family member) -- NO migration needed; change the default constants; re-select values once on existing installs if desired. Depends on: F119 (test against a correct prod build).
-
-**F114. Change new-user retention defaults to 90 days (~30m) Priority 24**
-- Phase: Core App Quality / defaults
-- Platform: All
-- `defaultScanHistoryRetentionDays` 7 -> 90 (settings_store.dart:82).
-- `defaultUnmatchedRetentionDays` 30 -> 90 (settings_store.dart:84, SEC-14).
-- Fresh-install default only; ~1-2 users so no migration -- re-select 90 once on existing installs if desired.
-
-**F115. Reorder Review-No-Rule selection bar (~15m) Priority 26**
-- Phase: Core App Quality / UI
-- Platform: Windows Desktop
-- In `_buildSelectionBar` (no_rule_review_screen.dart): change order to `Apply Rule` (left) -> `N selected` -> ~5 spaces -> `Clear`. (Currently: `N selected` ... Clear -> Apply Rule, right-aligned.)
-
-**F116. Demo Scan (Testing) completion screen matches Live Scan (~1h) Priority 28**
-- Phase: Core App Quality / UI
-- Platform: Windows Desktop
-- On completion, show the summary chips/buttons instead of the results list (currently `scan_progress_screen.dart` renders a `ListView` ~L461 in `isDemoMode`; live scan uses the chip/button summary via `ResultsDisplayScreen`).
-- The intermediate "13 / 26 processed" progress counts (inconsistent with the ~20 shown) do NOT need to be displayed once the buttons are present -- so the count discrepancy is not a separate bug to fix, just remove the count display.
-
-**F117. Help footer: show app version, not hardcoded sprint # (~30m-1h) Priority 30**
-- Phase: Core App Quality / docs
-- Platform: All
-- The Help footer (`help_screen.dart:238`) hardcodes "Last updated: Sprint 40 (June 2026)" -- stale (we are at Sprint 46+) and not version-shaped, so the version-consistency gate does not catch it -> it drifts every sprint.
-- Preferred: read the version at runtime via `package_info_plus` (always accurate, zero upkeep). Alternative: mirror the Settings `Version X.Y.Z` literal that the existing gate already enforces (no new dependency).
-- Consider extending the version-consistency gate to also flag stale "Sprint N" / "Last updated" footer strings.
-
-**F118. Post-Store-release housekeeping (~1h) Priority 32 -- [DONE Sprint 47]**
-- Phase: Windows Store Readiness / release close-out
-- Platform: N/A (repo)
-- [DONE] CHANGELOG: entries stay under `## [Unreleased]` -- `0.5.5` is a DEV bump, not a release (release = develop->main, user-only). Corrected from the original "move to `[0.5.4]` heading" criterion, which was wrong: `0.5.4` already shipped, and the next release heading is created only when the user merges develop->main.
-- [DONE] Dev worktree version bump `0.5.4 -> 0.5.5` (pubspec version + `msix_version`, `main.dart`, `settings_screen.dart`, `background_scan_windows_worker.dart`, `live_scan_logger.dart`, `windows/runner/main.cpp`, plus doc-comment log-filename refs in `settings_store.dart` and `test-background-scan-skip.ps1`; version-consistency gate green).
-- [DONE] `ALL_SPRINTS_MASTER_PLAN.md` "Last Completed Sprint": recorded the Store-release outcome (0.5.4 live 2026-07-15, but defective per F119; corrected re-release is a pending Harold action).
-- [DONE] Stray gradle-artifact commit (`e925855`): added `android_legacy_*/.gradle/` to `mobile-app/.gitignore` + `git rm --cached` the tracked cache files so they stop re-dirtying the tree (the commit itself stays in history; the files are now untracked/ignored).
-- [Harold action] Refresh/verify `secrets.prod.json` (dated Apr 20) before the corrected Store re-release.
-
-**Sprint 47 retrospective improvements (all "apply now", Harold 2026-07-18)** -- see `docs/sprints/SPRINT_47_RETROSPECTIVE.md`:
-- [DONE] IMP-1 (Proposal 1): sprint-card task template upgraded in `SPRINT_PLANNING.md` (Value / R-N / Affected files / Dependencies / NFRs / AC-N / T-N / Task-Level DoD / Definition of Ready), from a research spike. Source: Category 7 Requirements Clarity (Harold).
-- [DONE] IMP-2 (Proposal 2): in-execution actuals logging codified (Task-Level DoD item 6); all Sprint 47 items backfilled into `CODING_VELOCITY.md` Coverage Ledger + Accuracy Trend.
-- [DONE] IMP-4 (Proposal 4): version-consistency gate extended to sweep `test/` (catches the F118 hardcoded-versioned-filename fragility class); mirrored in `check-version-consistency.ps1`.
-- [DONE] IMP-5 (Proposal 5): new `stale_footer_test.dart` gate flags hardcoded "Sprint N" / "Last updated" strings in `lib/ui/` (the F117 class); caught + fixed a stale "coming in Sprint 12-13" placeholder on the Rules tab.
-- [DONE] IMP-3 (Proposal 3): stash-guard PreToolUse hook `.claude/hooks/block-carry-forward-stash.ps1` authored AND wired into `.claude/settings.json` (matcher `Bash|PowerShell`) after Harold approved the `.claude/` write. Verified live: `git stash` blocked (exit 2), `git status` / `git stash list` / `allow_stash` bypass all pass.
+**F112-F118 shipped in Sprint 47 (PR #272) and every item was re-validated item-by-item by Harold on the Sprint 49 (0.5.7-candidate) dev build on 2026-07-22 -- all "Working as expected. Can be closed."** Detail sections removed per the Maintenance Guide (history lives in `docs/sprints/SPRINT_47_PLAN.md`, `SPRINT_47_RETROSPECTIVE.md`, and CHANGELOG 2026-07-15). The F119 defect family (F119 key typo -> F119-b secrets hygiene -> F119-c native title) is tracked in the **Store status** line above; the corrected build is `0.5.7` (PR #276). Sprint 47's five retro improvements (IMP-1..IMP-5, all applied) are recorded in `SPRINT_47_RETROSPECTIVE.md`.
 
 ### Core App
 
@@ -233,13 +165,13 @@ _(No active Core App candidates -- F96 shipped in Sprint 43.)_
 
 _(F100 shipped in Sprint 43.)_
 
-**F-VERSION-DERIVE. Derive the app version at runtime instead of hardcoding it in log filenames -- [BACKLOG] (Harold 2026-07-20)**
+**F-VERSION-DERIVE. Derive the app version at runtime instead of hardcoding it in log filenames -- [SPRINT 49 SELECTED, Harold 2026-07-21] (added 2026-07-20)**
 - **Why**: the version bump touches 6 production `lib/`/`windows/` files that HARDCODE the version in version-stamped log filenames (`background_scan_v0.5.6.log`, `live_scan_v0.5.6.log`) plus the About string. Every release requires a manual multi-file bump, backstopped by the version-consistency gate. Harold's point (2026-07-20): if the version lives in `pubspec.yaml`, source should DERIVE it, not duplicate it. (`scripts/test-background-scan-skip.ps1` was converted to derive-from-pubspec this sprint -- the same fix pattern as the F118 `live_scan_logger_test.dart`.)
 - **Scope**: introduce a single compiled version constant (e.g. via `package_info_plus` at runtime -- already a dependency since F117 -- or a build-time generated constant) and use it to build the log filenames + About string, so the 6 files no longer hardcode the literal. `pubspec.yaml` stays the single source of truth; the version-consistency gate then guards only pubspec + any remaining unavoidable literal (e.g. `main.cpp`, which cannot easily read pubspec at C++ compile time -- evaluate whether it can derive via a generated header).
 - **Caution / why NOT a hotfix**: log filenames are used by support/diagnostics and the background-scan worker runs headless (may not have `package_info` initialized the same way) -- validate the runtime-version read works in the background/MSIX-sandbox context before removing the literals. `main.cpp` is the hard case (native, pre-Flutter). Effort: **M-L (~2-4h)**, needs care on the headless + native paths.
 - **Net goal**: a version bump becomes a ONE-file change (pubspec), with the gate confirming nothing else drifted.
 
-**F-PRECHECK. Pre-PR self-review checklist for recurring Copilot finding-classes -- [SPRINT 48 CANDIDATE] (Harold 2026-07-18, from the PR #272 review pattern)**
+**F-PRECHECK. Pre-PR self-review checklist for recurring Copilot finding-classes -- [SPRINT 49 SELECTED, Harold 2026-07-21] (added 2026-07-18, from the PR #272 review pattern)**
 - **Observation**: Copilot reviews keep surfacing the SAME finding-classes across sprints. PR #272: (1) a doc comment contradicting the code it documents; (2) a helper wired into a display path but not the real call path (`getEffectiveFolders` vs the scan path); (3) a CLI mirror out of sync with its Dart-gate twin (`check-version-consistency.ps1` `$dirs`); (4) fragile string parsing (accountId dash-split). Sprint 37 (PR #249): unbounded concurrency (same helper missed at two call sites), a mailbox-wide API used as folder-scoped, a11y-semantics conflation (×2). Sprint 46: silent-delete on decode failure, missing stackTrace on load-error.
 - **Recurring classes** (candidate checklist items): (a) **mirror/parallel-site sync** -- when editing one of a known twin pair (Dart gate + PS1 CLI, manual + background scan paths, two call sites of one helper), grep for the sibling and update it too; (b) **call-path wiring** -- when adding a resolver/helper, confirm the PRODUCTION path calls it, not just the settings/display path; (c) **doc-vs-code drift** -- when changing a default/behavior, update the doc comment in the same edit; (d) **defensive input parsing** -- prefer robust detection (domain match) over positional splits; (e) **API scope** -- verify an API's scope (mailbox-wide vs folder) matches the caller's intent; (f) **silent failure** -- a `catch` that empties/deletes rather than reports.
 - **Deliverable**: a short pre-PR self-review checklist (in SPRINT_EXECUTION_WORKFLOW.md Phase 5.1 automated-review step, or a `.claude` reviewer sub-agent prompt) that runs these classes over the diff BEFORE the PR, so we catch them ourselves instead of round-tripping through Copilot. Consider a code-reviewer sub-agent invoked at Phase 5.1 seeded with this class list.
@@ -1236,6 +1168,8 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 6.11 | 2026-07-22 | **Sprint 47 items ALL VALIDATED + CLOSED.** Harold re-validated every F112-F118 item on the Sprint 49 (0.5.7-candidate) dev build -- all "Working as expected. Can be closed." Pruned the 8-item detail block to a close-out note per the Maintenance Guide. Sprint 49 state: F119-c/F120/BUG-DECODE/F121/F-VERSION-DERIVE/F-PRECHECK done on PR #276; Part-C prod-DB applies rehearsed on a copy (F121: 12,539 -> 6,526; F33-PROD: convert 1,300 / remove 752 / 0 decode warnings) awaiting the app-closed window. |
+| 6.10 | 2026-07-20 | **Sprint 48 (emergency F119-b hotfix) complete + Phase 7 doc maintenance.** Root cause of the 0.5.5 Store dev-leak = a SPACE in a `secrets.*.json` key silently dropping `APP_ENV=prod` via `--dart-define-from-file` (independent of the F119 key typo). Fixed (cleaned secrets + gate + `--print-env` compiled-truth probe + Step 4.0 rewrite), bumped 0.5.5 -> 0.5.6, rebuilt + PROVEN prod (`--print-env` -> `APP_ENV=prod`), submitted 0.5.6 to Partner Center. Rolled **Last Completed Sprint** 46 -> 48; wrote `SPRINT_48_PLAN.md` (retroactive) + `SPRINT_48_RETROSPECTIVE.md` (lightweight, Claude-team only per Harold). Added backlog **F-VERSION-DERIVE** (derive version at runtime, not hardcoded in 6 log-filename sites). GitHub issues: 0 open. |
 | 6.9 | 2026-07-19 | Added **F-WINSTORE-ASSETS** (Release Readiness, BACKLOG per Harold): update all Windows/Microsoft Store listing images (Partner Center screenshots + store logos/tiles + promo graphics + app icon). Rationale: listing images carry over from prior submissions and predate Sprint 40-47 UI; the 0.5.5 first-public-release listing should show the current app. Windows counterpart to GP-6 (Play Store assets). Effort M (~2-4h). |
 | 6.8 | 2026-07-19 | **First public release submitted.** After the Sprint 47 develop->main merge (PR #273), reconciled prod worktree (no true divergence -- main = develop + GitFlow merge-commits + CNAME churn), synced it to origin/main `cdcb0da`. Version bump was already on main via F118 (0.5.5.0). Built the corrected MSIX (`flutter pub run msix:create`), **Step 4.0 F119 check PASSED** (build log: `--dart-define=APP_ENV=prod --dart-define-from-file=secrets.prod.json`), manifest `0.5.5.0`, 17.6 MB. Harold SUBMITTED it to Partner Center for certification 2026-07-19 (in cert, 24-72h) -- the first true public release (2 -> ~20 users), corrected for the F119 dev/empty-creds defect. On cert PASS: Step 7 close-out + Android/Google Play track off HOLD. Also fixed a stale `build_windows_args` reference in STORE_RELEASE_PROCESS troubleshooting. GitHub issues: 0 open. |
 | 6.7 | 2026-07-18 | Sprint 47 Phase 7 retrospective complete (all 5 apply-now IMPs applied). **Scope decisions (Harold, pre-merge release review)**: (1) prod `secrets.prod.json` CONFIRMED current (Store download signs in cleanly; re-review Dec 2026); (2) prod worktree bumps to 0.5.5 at release (working as expected); (3) **F33 prod-DB apply and the `cleanup_body_rules.dart` decode-failure fix DEFERRED to Sprint 48** and DECOUPLED from the Store release -- both operate on the local prod rules DB / a dev-only script, neither is bundled or user-facing, so they have zero impact on the 20 new Store users. Added F33-PROD + BUG-DECODE as Sprint 48 candidates (Core App Quality). Nothing now gates the develop->main release except Harold's merge. |

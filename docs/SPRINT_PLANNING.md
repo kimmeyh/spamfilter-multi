@@ -81,7 +81,7 @@ Each sprint is composed of **Cards** (GitHub issues) broken into **Tasks** assig
 | **Chief Architect** | Harold Kimmey | Makes final architectural decisions; approves ADRs; ensures system coherence and design integrity across sprints |
 | **Architecture Development Team** | Claude Code Team | Researches architectural options; drafts ADRs; performs gap analysis; implements approved architectural designs |
 | **Chief Developer** | Harold Kimmey | Approves PRs; performs manual testing; makes final implementation decisions; owns merge-to-main authority |
-| **Lead Developer** | Claude Code Opus (latest) | Complex debugging, performance optimization, critical path features; cross-cutting architectural implementation |
+| **Lead Developer** | Claude Code Fable/Opus (top tier, latest) | Complex debugging, performance optimization, critical path features; cross-cutting architectural implementation |
 | **Senior Developers** | Claude Code Sonnet (latest, N instances) | Architectural decisions, complex refactoring, multi-file changes, research spikes |
 | **Developers** | Claude Code Haiku (latest, N instances) | Straightforward implementation, bug fixes, tests, documentation, single-file changes |
 | **Chief Test Engineer** | Harold Kimmey | Defines test strategy; performs manual and exploratory testing; approves test coverage and quality |
@@ -89,13 +89,13 @@ Each sprint is composed of **Cards** (GitHub issues) broken into **Tasks** assig
 | **Production Readiness Team** | Harold Kimmey + Claude Code Team | Build verification, store submission prep, deployment checklists, release validation |
 | **User Research** | Harold Kimmey + Claude Code Team | User surveys, testing feedback analysis, competitive research, usability assessment |
 
-**Note**: "Claude Code Team" refers to whichever model (Haiku, Sonnet, Opus) is executing the current task. Multiple instances may run in parallel via subagents.
+**Note**: "Claude Code Team" refers to whichever model (Haiku, Sonnet, Fable/Opus) is executing the current task. Multiple instances may run in parallel via subagents.
 
-### Activities Requiring Opus (MANDATORY)
+### Activities Requiring Fable/Opus (MANDATORY -- the top available tier; Fable 5 preferred when enabled, Opus otherwise. Sprint 49 retro, Harold 2026-07-22)
 
-The following activities require **Claude Code Opus** (not Sonnet or Haiku). These activities involve broad reasoning, judgment, and synthesis that benefit from Opus-level capability:
+The following activities require the **top available tier -- Claude Code Fable 5 when enabled, otherwise Opus** (not Sonnet or Haiku). These activities involve broad reasoning, judgment, and synthesis that benefit from top-tier capability:
 
-| Activity | Why Opus |
+| Activity | Why Fable/Opus |
 |----------|----------|
 | **Sprint Planning** (Phase 3.1-3.6) | Weighing priorities, scoping, model assignment, risk assessment across the backlog |
 | **Sprint Retrospectives** (Phase 7) | Synthesizing feedback, drafting improvement suggestions, combining multi-perspective ratings |
@@ -107,7 +107,7 @@ The following activities require **Claude Code Opus** (not Sonnet or Haiku). The
 | **ADR Authoring** | Trade-off analysis, architectural judgment |
 | **Backlog Refinement** | Prioritization across competing concerns, estimation calibration |
 
-**Verification**: Before starting any of the above activities, confirm the active model is Opus. If on a lower-tier model, escalate to Opus before proceeding.
+**Verification**: Before starting any of the above activities, confirm the active model is the top available tier (Fable 5 preferred, Opus otherwise). If on a lower-tier model, escalate before proceeding.
 
 **Implementation tasks may use Haiku/Sonnet** as documented in the Model Tiering Strategy section below -- Opus requirement applies only to the planning/analysis activities listed above.
 
@@ -367,7 +367,9 @@ Bold = mandatory. _Italic_ = optional (include only when the trigger applies). T
 **Definition of Done**: default task-level DoD (above) PLUS:   <!-- MANDATORY; list only additions/deviations, or "None -- default DoD only" -->
 - <task-specific extra, e.g. "manual clean-user visual verification on a prod build">
 
-**Model**: <Haiku|Sonnet|Opus> -- *why not the cheaper tier*: <one line>   <!-- MANDATORY (existing rule) -->
+**Model**: <Haiku|Sonnet|Fable/Opus> -- *why not the cheaper tier*: <one line>   <!-- MANDATORY (existing rule) -->
+
+**Executed-by** (filled at completion): <model that actually executed> -- <one line why, if it deviates from the assignment>   <!-- MANDATORY at completion (Sprint 49 retro IMP-3) -->
 
 **Step-types**: <UI-MOVE | SVC-EDIT | DATA | TEST-UNIT | TEST-WIDGET | TEST-INTEGRATION | DOCS | HOOK | NATIVE-WIN ...>   <!-- MANDATORY (existing) -->
 
@@ -506,7 +508,7 @@ Use consistent labels for organization:
 
 **Mandatory justification**: in `SPRINT_N_PLAN.md`, record each task's assigned tier AND a one-line **"why not the cheaper tier"** note whenever the assignment is Sonnet or Opus (e.g. "Opus -- touches auth-header parsing + a Class-1 redaction policy change, beyond Haiku/Sonnet heuristics"). This makes an all-Opus (or all-Sonnet) sprint a **visible, justified choice** rather than a silent default. (Sprint 43 ran entirely on Opus with no per-task justification -- the gap this rule closes.)
 
-**Important scope note**: this cheapest-first ladder governs the per-task IMPLEMENTER model. It does NOT lower the planner/analyst model -- the "Activities Requiring Opus (MANDATORY)" list above (sprint planning, retrospectives, deep dives, ADR authoring, etc.) still runs on Opus regardless, because those are reasoning/synthesis activities, not implementation tasks.
+**Important scope note**: this cheapest-first ladder governs the per-task IMPLEMENTER model. It does NOT lower the planner/analyst model -- the "Activities Requiring Fable/Opus (MANDATORY)" list above (sprint planning, retrospectives, deep dives, ADR authoring, etc.) still runs on the top available tier (Fable 5 preferred, Opus otherwise) regardless, because those are reasoning/synthesis activities, not implementation tasks.
 
 The healthy steady-state distribution this produces:
 1. **Haiku handles the majority of work** (straightforward tasks where speed and cost matter)

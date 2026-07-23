@@ -6,6 +6,7 @@ import 'package:path/path.dart' as p;
 
 import 'package:my_email_spam_filter/core/providers/email_scan_provider.dart';
 import 'package:my_email_spam_filter/core/services/app_environment.dart';
+import 'package:my_email_spam_filter/core/services/app_version.dart';
 import 'package:my_email_spam_filter/core/services/live_scan_logger.dart';
 import 'package:my_email_spam_filter/core/storage/settings_store.dart';
 
@@ -125,6 +126,13 @@ void main() {
       }
       return match.group(1)!;
     }
+
+    // F-VERSION-DERIVE (Sprint 49): the logger now resolves the version via
+    // AppVersion (package_info_plus at runtime). Unit tests have no platform
+    // channel, so inject the pubspec-derived version through the test seam --
+    // asserting the same single-source-of-truth the runtime uses.
+    setUp(() => AppVersion.overrideForTest(appVersion()));
+    tearDown(() => AppVersion.overrideForTest(null));
 
     File runtimeLogFile() {
       final logDir = p.join(

@@ -153,9 +153,10 @@ Run these checks before uploading. Skipping any one has historically caused a fa
 
 Two independent defects have shipped a DEV build to the Store despite a correct-looking command. BOTH checks below are mandatory.
 
-**Two known root causes:**
-1. **F119 (0.5.4)**: the `msix_config` key was misspelled `build_windows_args` (correct: `windows_build_args`) -- silently ignored, so no dart-defines reached the inner build.
-2. **F119-b (0.5.5)**: `secrets.prod.json` contained a JSON key with SPACES (`"comment OR try this"`). `--dart-define-from-file` turns each key into a `key=value` dart-define; a space in the key corrupts flutter's dart-define stream and silently DROPS `APP_ENV=prod` -> the build compiles as dev. **The build log still showed `--dart-define=APP_ENV=prod`** -- so a log check alone is NOT sufficient. Both defects are now caught pre-build by `test/policy/msix_config_test.dart`; run the full suite before building.
+**Three known root causes:**
+1. **F119 (0.5.4)**: the `msix_config` key was misspelled `build_windows_args` (correct: `windows_build_args`) -- silently ignored, so no dart-defines reached the inner build. Dart side compiled dev with empty credentials.
+2. **F119-b (0.5.5, hardening)**: `secrets.prod.json` contained a JSON key with SPACES (`"comment OR try this"`) plus comment keys -- malformed dart-define-from-file input. Cleaned + gated (`msix_config_test.dart` fails on space/empty secrets keys). NOTE (F119-c correction): the space-key was originally blamed for the 0.5.5 `[DEV]` title, but the 0.5.5 Dart side was actually prod (clean About text, prod data dir); the `[DEV]` title had a third cause:
+3. **F119-c (0.5.5 AND 0.5.6 -- the `[DEV]` title)**: the NATIVE window title is compiled from the `SPAMFILTER_APP_ENV` CMake definition, which the Sprint 37 F52 design sourced ONLY from an OS environment variable -- one that `build-windows.ps1` sets but the `msix:create` Store path NEVER set. CMake fell back to `"dev"` and compiled the `[DEV]` title into the native runner while the Dart side was prod. **Fixed Sprint 49**: `runner/CMakeLists.txt` now derives the value from the `APP_ENV` dart-define recorded in `ephemeral/generated_config.cmake` (env var kept as fallback), so the single `windows_build_args` dart-define drives BOTH the Dart AND native sides. The runner also passes its compiled value to Dart (`--native-app-env=`), so Check B below verifies both. All three defect classes are caught pre-build by `test/policy/msix_config_test.dart`; run the full suite before building.
 
 **Check A -- the build log (necessary, not sufficient):**
 ```powershell
@@ -168,15 +169,20 @@ Two independent defects have shipped a DEV build to the Store despite a correct-
 The build log shows the *command*, not what *compiled*. Probe the actual compiled binary with the headless `--print-env` flag (added F119-b) BEFORE packaging/submitting:
 ```powershell
 cd D:\Data\Harold\github\spamfilter-multi-prod\mobile-app\build\windows\x64\runner\Release
-.\my_email_spam_filter.exe --print-env
-# EXPECT for a prod release build:
+.\MyEmailSpamFilter.exe --print-env
+# EXPECT for a prod release build (ALL five lines):
 #   APP_ENV=prod
 #   displaySuffix=            (empty)
 #   dataDirSuffix=           (empty)
 #   windowTitle=MyEmailSpamFilter
-# If it prints APP_ENV=dev (or a [DEV] windowTitle), the dart-define was dropped --
-# STOP, fix secrets.prod.json (remove any key with spaces / comment keys; keep ONLY
-# credential keys) and pubspec.yaml, rebuild. DO NOT submit.
+#   NATIVE_APP_ENV=prod      (F119-c: the NATIVE runner's compiled value --
+#                             this is the line that would have caught the
+#                             [DEV] window title shipped in 0.5.5 and 0.5.6)
+# If APP_ENV prints dev -> the dart-define was dropped (F119/F119-b class):
+# fix pubspec windows_build_args / secrets.prod.json, rebuild. DO NOT submit.
+# If NATIVE_APP_ENV prints dev while APP_ENV is prod -> the CMake derivation
+# failed (F119-c class): verify runner/CMakeLists.txt has the dart-define
+# derivation and that flutter clean ran (forces CMake reconfigure). DO NOT submit.
 ```
 
 **Check C -- after install (Step 4.2), final confirmation:** the title bar and About screen must read `MyEmailSpamFilter` / `Version X.Y.Z` with **NO `[DEV]` suffix**, and the app must use the `MyEmailSpamFilter` (not `MyEmailSpamFilter_Dev`) data directory. A `[DEV]` suffix anywhere = the build ran as dev = do not submit.

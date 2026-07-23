@@ -13,6 +13,36 @@
 #include "flutter_window.h"
 #include "utils.h"
 
+// SPAMFILTER_APP_ENV is baked in at compile time by runner/CMakeLists.txt
+// (F119-c: derived from the APP_ENV --dart-define first, the
+// SPAMFILTER_APP_ENV environment variable second, "dev" fallback last).
+// Hoisted guard: define once here so every use below (log paths, window
+// title, and the --native-app-env passthrough) sees the same value. The
+// "dev" fallback when the macro is undefined is INTENTIONAL per Sprint 37
+// F52: a bare compile without the definition produces a usable dev binary.
+#ifndef SPAMFILTER_APP_ENV
+#define SPAMFILTER_APP_ENV "dev"
+#endif
+
+// F-VERSION-DERIVE (Sprint 49): the app version for log filenames, derived
+// from the FLUTTER_VERSION compile definition (runner/CMakeLists.txt bakes it
+// from pubspec.yaml via flutter's generated_config.cmake) -- never a
+// hardcoded literal that drifts on a version bump (the F105 class: main.cpp
+// shipped a stale hardcoded version once already). FLUTTER_VERSION is
+// "X.Y.Z+B"; the log filenames use "X.Y.Z", so strip the build suffix.
+#ifndef FLUTTER_VERSION
+#define FLUTTER_VERSION "0.0.0"
+#endif
+static std::wstring AppVersionForLogs() {
+  std::string v(FLUTTER_VERSION);
+  const size_t plus = v.find('+');
+  if (plus != std::string::npos) {
+    v = v.substr(0, plus);
+  }
+  // Version strings are ASCII; widen directly.
+  return std::wstring(v.begin(), v.end());
+}
+
 // BUG-S37-1 (Sprint 38, Issue #256): Sprint 37 Phase 5.3 surfaced
 // SqfliteFfiException(sqlite_error: 5, "database is locked") when the
 // foreground UI was running and a scheduled --background-scan launched
@@ -29,19 +59,10 @@ static void LogBackgroundScanSkip(const std::wstring& reason) {
     return;
   }
   // Match Dart-side path:
-  //   {AppData}\\MyEmailSpamFilter\\MyEmailSpamFilter[_Dev]\\logs\\[dev_]background_scan_v0.5.6.log
-  // We don't know dev-vs-prod from C++ without SPAMFILTER_APP_ENV (defined below),
-  // so write to a deterministic startup-skip log that both environments share.
-  //
-  // The "dev" fallback when the macro is undefined is INTENTIONAL per Sprint 37
-  // F52 design: `flutter build windows` invoked directly (without going through
-  // `scripts/build-windows.ps1`) should produce a usable dev binary for
-  // new-developer convenience. Prod builds go through the documented
-  // `build-windows.ps1 -Environment prod` and `docs/STORE_RELEASE_PROCESS.md`
-  // paths, both of which set SPAMFILTER_APP_ENV=prod before CMake configures.
-  #ifndef SPAMFILTER_APP_ENV
-  #define SPAMFILTER_APP_ENV "dev"
-  #endif
+  //   {AppData}\\MyEmailSpamFilter\\MyEmailSpamFilter[_Dev]\\logs\\[dev_]background_scan_v<version>.log
+  // SPAMFILTER_APP_ENV is defined once at file scope (see the hoisted guard
+  // near the top; sourced per ADR-0041 -- derived from the APP_ENV
+  // dart-define by runner/CMakeLists.txt, env var fallback, "dev" default).
   const bool isDevEnv = (std::string(SPAMFILTER_APP_ENV) != "prod");
   std::wstring dataDir = std::wstring(appDataPath)
       + L"\\MyEmailSpamFilter\\MyEmailSpamFilter"
@@ -49,7 +70,8 @@ static void LogBackgroundScanSkip(const std::wstring& reason) {
       + L"\\logs";
   CreateDirectoryW(dataDir.c_str(), nullptr);
   std::wstring logPath = dataDir
-      + (isDevEnv ? L"\\dev_background_scan_v0.5.6.log" : L"\\background_scan_v0.5.6.log");
+      + (isDevEnv ? L"\\dev_background_scan_v" : L"\\background_scan_v")
+      + AppVersionForLogs() + L".log";
 
   std::wofstream log(logPath, std::ios::app);
   if (!log.is_open()) return;
@@ -81,9 +103,7 @@ static void RecordBackgroundScanDeferral(const std::wstring& accountId) {
   if (FAILED(SHGetFolderPathW(nullptr, CSIDL_APPDATA, nullptr, 0, appDataPath))) {
     return;
   }
-  #ifndef SPAMFILTER_APP_ENV
-  #define SPAMFILTER_APP_ENV "dev"
-  #endif
+  // SPAMFILTER_APP_ENV: defined once at file scope (hoisted guard; ADR-0041).
   const bool isDevEnv = (std::string(SPAMFILTER_APP_ENV) != "prod");
   // App-support ROOT (NOT logs/) -- keeps the email-derived account id out of
   // the shareable log area (PR #266 Copilot review). Dart ingests + deletes it.
@@ -184,6 +204,15 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   std::vector<std::string> command_line_arguments =
       GetCommandLineArguments();
 
+  // F119-c (Sprint 49): expose the NATIVE compiled environment to the Dart
+  // side so the `--print-env` probe (STORE_RELEASE_PROCESS.md Step 4.0)
+  // verifies BOTH compiled sides. The Dart APP_ENV dart-define and this
+  // native SPAMFILTER_APP_ENV are separate compile-time mechanisms that
+  // silently diverged twice: the 0.5.5 and 0.5.6 Store MSIX shipped a
+  // "[DEV]" native window title on a correctly-prod Dart build.
+  command_line_arguments.push_back(
+      std::string("--native-app-env=") + SPAMFILTER_APP_ENV);
+
   project.set_dart_entrypoint_arguments(std::move(command_line_arguments));
 
   // Determine window title based on APP_ENV (ADR-0035).
@@ -198,11 +227,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   // compile-time defines are also robust for direct-launch variants
   // (Start-Process .exe).
   //
-  // SPAMFILTER_APP_ENV defaults to "dev" if the env var was unset at
-  // CMake configure time (CMakeLists.txt fallback).
-  #ifndef SPAMFILTER_APP_ENV
-  #define SPAMFILTER_APP_ENV "dev"
-  #endif
+  // SPAMFILTER_APP_ENV: defined once at file scope (hoisted guard). Sourcing
+  // per ADR-0041: derived from the APP_ENV dart-define by
+  // runner/CMakeLists.txt, env-var fallback, "dev" default.
   const bool isDevEnvironment = (std::string(SPAMFILTER_APP_ENV) != "prod");
   const wchar_t* windowTitle = isDevEnvironment
       ? L"MyEmailSpamFilter [DEV]"

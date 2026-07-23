@@ -30,6 +30,8 @@ Sprint 4? Review/Retrospective - Combined Product Owner, Scrum Master and Lead D
   - none
 - Function updates that can be added to the backlog for a future sprint
   - none
+- Questions to be discussed before ending the sprint
+  - none
 
 Please complete your sprint retrospective feedback (same sections)
 Combined feedback (yours and mine) and Summarize

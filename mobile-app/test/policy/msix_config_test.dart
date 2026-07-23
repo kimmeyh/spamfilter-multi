@@ -71,6 +71,46 @@ void main() {
     });
   });
 
+  group('native APP_ENV derivation (F119-c)', () {
+    // WHY: the native runner's window title is compiled from the
+    // SPAMFILTER_APP_ENV CMake definition. The Sprint 37 design read ONLY an
+    // environment variable that the Store MSIX path never set, so the 0.5.5
+    // AND 0.5.6 Store releases shipped a "[DEV]" native title on a
+    // correctly-prod Dart build. F119-c derives the CMake value from the
+    // APP_ENV dart-define recorded in ephemeral/generated_config.cmake
+    // (base64("APP_ENV=prod") == "QVBQX0VOVj1wcm9k", deterministic), and the
+    // runner passes its compiled value to Dart (--native-app-env=) so the
+    // --print-env probe verifies BOTH compiled sides. These pins fail if any
+    // link of that chain is removed.
+    test('runner/CMakeLists.txt derives SPAMFILTER_APP_ENV from the '
+        'APP_ENV dart-define (not env-var-only)', () {
+      final cmake =
+          File('windows/runner/CMakeLists.txt').readAsStringSync();
+      expect(cmake, contains('QVBQX0VOVj1wcm9k'),
+          reason: 'F119-c: CMake must match the base64 APP_ENV=prod token '
+              'from generated_config.cmake -- env-var-only sourcing shipped '
+              '[DEV] titles to the Store twice (0.5.5, 0.5.6).');
+      expect(cmake, contains('generated_config.cmake'),
+          reason: 'F119-c: the dart-define source is the flutter-generated '
+              'ephemeral/generated_config.cmake.');
+    });
+
+    test('main.cpp passes the native env to Dart via --native-app-env', () {
+      final mainCpp = File('windows/runner/main.cpp').readAsStringSync();
+      expect(mainCpp, contains('--native-app-env='),
+          reason: 'F119-c: the runner must expose its compiled '
+              'SPAMFILTER_APP_ENV so the --print-env probe verifies the '
+              'native side, not just the Dart side.');
+    });
+
+    test('the --print-env probe reports NATIVE_APP_ENV', () {
+      final mainDart = File('lib/main.dart').readAsStringSync();
+      expect(mainDart, contains('NATIVE_APP_ENV='),
+          reason: 'F119-c: Step 4.0 relies on the probe printing the native '
+              'compiled environment.');
+    });
+  });
+
   group('dart-define-from-file secrets well-formedness (F119-b)', () {
     // A JSON key that becomes a dart-define MUST NOT contain a space (or be
     // empty). `--dart-define-from-file` serializes each key as `key=value` into

@@ -11,6 +11,7 @@ import '../utils/account_id_sanitizer.dart';
 import '../providers/email_scan_provider.dart';
 import '../providers/rule_set_provider.dart';
 import '../services/app_environment.dart';
+import '../services/app_version.dart';
 import '../services/email_scanner.dart';
 import '../../adapters/storage/app_paths.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
@@ -51,7 +52,11 @@ class BackgroundScanWindowsWorker {
       // interleave into one file. Null token -> shared legacy filename.
       final accountPart =
           _logAccountToken != null ? '${_logAccountToken}_' : '';
-      final fileName = '${logPrefix}background_scan_${accountPart}v0.5.6.log';
+      // F-VERSION-DERIVE (Sprint 49): runtime version, never a hardcoded
+      // literal that drifts on a bump.
+      final version = await AppVersion.get();
+      final fileName =
+          '${logPrefix}background_scan_${accountPart}v$version.log';
       final logFile = File('$logDir\\$fileName');
       final timestamp = DateTime.now().toIso8601String();
       await logFile.parent.create(recursive: true);
