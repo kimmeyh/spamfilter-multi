@@ -13,11 +13,24 @@ class RuleQuickActionResult {
   final int conflictsRemoved;
   final Object? error;
 
+  /// F120 (Sprint 49): the rule this action CREATED (createBlockRule success
+  /// only). Callers use it to re-evaluate their in-memory "No rule" set
+  /// against ONLY this delta instead of the full rule set -- the full-set
+  /// re-evaluation froze the UI for ~1-2 minutes per quick action on the
+  /// 12.5k-rule Store prod DB (0.5.6, "(Not Responding)").
+  final Rule? createdRule;
+
+  /// F120: the safe-sender pattern this action ADDED (addSafeSender success
+  /// only). Same delta-re-evaluation purpose as [createdRule].
+  final String? createdSafeSenderPattern;
+
   const RuleQuickActionResult({
     required this.success,
     required this.displayMessage,
     this.conflictsRemoved = 0,
     this.error,
+    this.createdRule,
+    this.createdSafeSenderPattern,
   });
 }
 
@@ -129,6 +142,7 @@ class RuleQuickActionService {
         success: true,
         displayMessage: displayMessage,
         conflictsRemoved: conflicts.conflictsRemoved,
+        createdSafeSenderPattern: pattern,
       );
     } catch (e) {
       _logger.e('[FAIL] Failed to add safe sender: $e');
@@ -293,6 +307,7 @@ class RuleQuickActionService {
         success: true,
         displayMessage: displayMessage,
         conflictsRemoved: conflicts.conflictsRemoved,
+        createdRule: rule,
       );
     } catch (e) {
       _logger.e('[FAIL] Failed to create block rule: $e');

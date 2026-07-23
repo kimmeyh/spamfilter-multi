@@ -46,6 +46,7 @@ This directory contains Architectural Decision Records for the spamfilter-multi 
 | [0038](0038-content-management-for-long-strings.md) | Content Management for Long User-Facing Strings | Accepted | 2026-05-18 |
 | [0039](0039-per-account-background-scanning.md) | Per-Account Background Scanning | Accepted | 2026-06-15 |
 | [0040](0040-two-e2e-test-harnesses.md) | Two E2E Test Harnesses (WinWright + Flutter integration_test) | Accepted | 2026-06-21 |
+| [0041](0041-environment-propagation-single-source.md) | Environment Propagation: APP_ENV Dart-Define Single Source of Truth | Accepted | 2026-07-22 |
 
 ## Creating a New ADR
 

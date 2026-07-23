@@ -3,58 +3,59 @@
 can you write a effective but compact /compact string I can use to compact where we are, but let the Claude Code team know where we left off and can pick it up correctly.  Use all the tokens needed, but a few as reasonably possible.
 
 ---------------------------------------------------------------------------------------------------------
-Sprint 4n Manual Testing Feedback 
+Sprint 4n Manual Validation Feedback 
 ---------------------------------------------------------------------------------------------------------
-Sprint 47 Manual Testing Feedback 
+Sprint 49 Manual Validation Feedback 
+
+Initial Select Account screen (see attached)
+1) Shows in header, "MyEmailSpamFilter [DEV]", but should not include " [DEV]" in Windows Store version
+- Working as expected. Can be closed.
+2) Shows my 2 accounts already loaded - is this from my prior version installed and the database associated with it or would all users have my 2 accounts loaded?
+- Working as expected. Can be closed.
+Help Screen
+1) At the bottom is list sprint #.  Is this accurate? If not, is there a way to ensure this is aways accurate or preferably change to app version (which should pull from source repository and always be accurate)
+- Working as expected. Can be closed.
+Scan History page
+1) Add icon for """Review "No Rule" Items""" to page
+- Working as expected. Can be closed.
+2) Can you also add the """Review "No Rule" Items""" icon right above the "No Rule: <n>" button (so that it stays in the middle of the "No Rule: <n>" Button - is that possible
+- Working as expected. Can be closed.
+Review "No Rule" Items page
+1) Can you move the "Apply Rule" to the left of "<n> Selected" and "Clear" about 5 spaces to the right of "<n> Selected"
+- Working as expected. Can be closed.
+Settings > General
+1) Keep Scan History for - should default for new users to 90 days.
+- Working as expected. Can be closed.
+2) Privacy & Logging > Unmatched Emails Retention - should default for new users to 90 days.
+- Working as expected. Can be closed.
+3) About - may be the same issue as MSIX bug as it shows " [DEV]"
+- Working as expected. Can be closed.
+Settings > Manual
+1) The attached should represent the new user defaults for all *@aol.com accounts
+- Working as expected. Can be closed.
+2) Add icon for """Review "No Rule" Items""" to all Settings pages (just to the left of the "View Scan History" icon)
+- Working as expected. Can be closed.
+Settings > Background
+1) The attached should represent the new user defaults for all *@aol.com accounts
+- Working as expected. Can be closed.
+Manual Scan Screen
+1) Start Demo Scan (Testing) - mentions processing 13 emails, then 26 emails while only seeing 20 listed when complete.  Can we remove the showing of the list and just show the appropriate buttons like in Live Scan?
+- Working as expected. Can be closed.
 
 ---------------------------------------------------------------------------------------------------------
-
+Sprint 48 Manual Validation Feedback 
+Done
+All interactive
+---------------------------------------------------------------------------------------------------------
+Sprint 47 Manual Validation Feedback 
+Done
+All interactive
+---------------------------------------------------------------------------------------------------------
 
 Done
 Store update loaded, fully accepted, downloaded new version.  I will be providing manual testing feedback on the uploaded/downloaded version from the Windows Store.
 Let me know if you understand.
 We should not immediately make any changes based on this feedback, but keep a list of what needs to be changed in the app and .msix file and then we can add the whole list to the backlog.
-Initial Select Account screen (see attached)
-1) Shows in header, "MyEmailSpamFilter [DEV]", but should not include " [DEV]" in Windows Store version
-2) Shows my 2 accounts already loaded - is this from my prior version installed and the database associated with it or would all users have my 2 accounts loaded?
-Help Screen
-1) At the bottom is list sprint #.  Is this accurate? If not, is there a way to ensure this is aways accurate or preferably change to app version (which should pull from source repository and always be accurate)
-Scan History page
-1) Add icon for """Review "No Rule" Items""" to page
-2) Can you also add the """Review "No Rule" Items""" icon right above the "No Rule: <n>" button (so that it stays in the middle of the "No Rule: <n>" Button - is that possible
-Review "No Rule" Items page
-1) Can you move the "Apply Rule" to the left of "<n> Selected" and "Clear" about 5 spaces to the right of "<n> Selected"
-Settings > General
-1) Keep Scan History for - should default for new users to 90 days.
-2) Privacy & Logging > Unmatched Emails Retention - should default for new users to 90 days.
-3) About - may be the same issue as MSIX bug as it shows " [DEV]"
-Settings > Manual
-1) The attached should represent the new user defaults for all *@aol.com accounts
-2) Add icon for """Review "No Rule" Items""" to all Settings pages (just to the left of the "View Scan History" icon)
-Settings > Background
-1) The attached should represent the new user defaults for all *@aol.com accounts
-Manual Scan Screen
-1) Start Demo Scan (Testing) - mentions processing 13 emails, then 26 emails while only seeing 20 listed when complete.  Can we remove the showing of the list and just show the appropriate buttons like in Live Scan?
-
-
-Updated tracking list — App / .msix items:
-
-1. [BUG] Store MSIX ships as APP_ENV=dev — (unchanged).
-2. [DOC] Clean-user Store-install test procedure — (unchanged).
-3. [BUG] Help footer stale "Sprint 40" → app version — (unchanged).
-4–5, 10. [THEME] "Review No Rule Items" entry point everywhere — (unchanged).
-4. [UI] Reorder Review-No-Rule selection bar — (unchanged).
-5. [DEFAULT] Keep Scan History → 90 days — (unchanged).
-6. [DEFAULT] Unmatched Emails Retention → 90 days — (unchanged).
-7. [DEFAULT] New @aol.com Manual-Scan defaults — (unchanged).
-8. [DEFAULT] New @aol.com Background-Scan defaults — (unchanged).
-9. [UI] Demo Scan (Testing) completion screen — make it match Live Scan: on completion, show just the summary chips/buttons instead of the results list (currently scan_progress_screen.dart renders a ListView at ~L461 in isDemoMode). The intermediate "13 / 26 processed" progress counts don't need to be shown at all once the buttons are present — so the earlier count-discrepancy is not a bug to fix, just remove/ignore the count display. Net: one clean UI change, no count-logic investigation required.
-10. [DEFAULT] New-account Manual-Scan defaults (provider-keyed):
-  - Common: Read-Only ON; Scan all emails ON (entire mailbox); Show confi rmation dialogs ON; Export CSV ON.
-  - Folders by provider: AOL → Inbox, Bulk, Bulk Mail; Gmail → INBOX, [Gmail]/Spam, Unwanted.
-11. [DEFAULT] New-account Background-Scan defaults (provider-keyed):
-- Common: Enable Background Scanning OFF; Frequency 15 min; Read-Only ON; Scan Range = "Scan all emails" OFF, slider last 1 day; Export CSV ON.
-- Folders by provider: AOL → Inbox, Bulk, Bulk Mail; Gmail → INBOX, [Gmail]/Spam, Unwanted.
 
 ---------------------------------------------------------------------------------------------------------
 Sprint 44 Manual Testing Feedback:

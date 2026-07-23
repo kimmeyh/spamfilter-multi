@@ -87,6 +87,7 @@ These documents MUST be created/updated during each sprint:
 
 - [ ] Local code review complete
 - [ ] **Automated code review**: Run `pr-review-toolkit:code-reviewer` agent on sprint diff (always include related-patterns grep step); for cross-cutting policy sprints, run a second feature-sweep pass; address HIGH/CRITICAL findings (see SPRINT_EXECUTION_WORKFLOW.md § 5.1.1)
+- [ ] **5.1.2 Pre-PR Self-Review Checklist (F-PRECHECK, Sprint 49 -- MANDATORY)**: run the six recurring-review-class detection ACTIONS against the sprint diff (mirror-site sync, helper-wired-to-production, doc-vs-code drift, fragile parsing, API scope, silent failure) and record the outcome in the PR description (see SPRINT_EXECUTION_WORKFLOW.md § 5.1.2)
 - [ ] **5.1.5 WinWright UI Test Sweep** (MANDATORY -- Sprint 38 retro): update WinWright scripts for sprint UI changes; run all scripts that exercise sprint-touched screens; fix in-sprint or backlog (see SPRINT_EXECUTION_WORKFLOW.md § 5.1.5). If no WinWright coverage exists for sprint's UI surface, file a Sprint N+1 carry-in.
 - [ ] Full test suite passing (`flutter test`)
 - [ ] Code analysis clean (`flutter analyze` - target <50 warnings)

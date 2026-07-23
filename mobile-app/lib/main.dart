@@ -9,6 +9,7 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'core/providers/rule_set_provider.dart';
 import 'core/providers/email_scan_provider.dart';
 import 'core/services/app_identity_migration.dart';
+import 'core/services/app_version.dart';
 import 'core/services/background_mode_service.dart';
 import 'core/services/background_scan_windows_worker.dart';
 import 'core/services/windows_system_tray_service.dart';
@@ -64,6 +65,18 @@ void main(List<String> args) async {
     print('dataDirSuffix=${AppEnvironment.dataDirSuffix}');
     // ignore: avoid_print
     print('windowTitle=${AppEnvironment.windowTitle}');
+    // F119-c (Sprint 49): the native runner (windows/runner/main.cpp) passes
+    // its own compiled SPAMFILTER_APP_ENV via --native-app-env=<value>. The
+    // Dart APP_ENV and the native define are SEPARATE compile-time mechanisms
+    // that silently diverged twice (0.5.5/0.5.6 shipped a [DEV] native window
+    // title on a prod Dart build), so the probe must verify BOTH. Reads
+    // 'absent' when not launched through the native runner (e.g. dart test).
+    final nativeEnvArg = args.firstWhere(
+      (a) => a.startsWith('--native-app-env='),
+      orElse: () => '--native-app-env=absent',
+    );
+    // ignore: avoid_print
+    print('NATIVE_APP_ENV=${nativeEnvArg.substring('--native-app-env='.length)}');
     exit(0);
   }
 
@@ -86,7 +99,11 @@ void main(List<String> args) async {
     final logPrefix = AppEnvironment.logPrefix;
     final logDir = Directory('${appSupport.path}$envSuffix\\logs');
     await logDir.create(recursive: true);
-    final logFile = File('${logDir.path}\\${logPrefix}background_scan_v0.5.6.log');
+    // F-VERSION-DERIVE (Sprint 49): runtime version (pubspec-backed via
+    // package_info_plus), never a hardcoded literal that drifts on a bump.
+    final appVersion = await AppVersion.get();
+    final logFile = File(
+        '${logDir.path}\\${logPrefix}background_scan_v$appVersion.log');
     Future<void> bgLog(String message) async {
       try {
         final timestamp = DateTime.now().toIso8601String();

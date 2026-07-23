@@ -26,6 +26,57 @@ void main() {
   });
 
   group('DefaultRuleSetService', () {
+    group('splitMonolithicRules F121 idempotency guard (Sprint 49)', () {
+      Map<String, Object?> monolithic(String name) => {
+            'name': name,
+            'enabled': 1,
+            'is_local': 1,
+            'execution_order': 30,
+            'condition_type': 'OR',
+            // Multi-pattern header condition -> a split candidate.
+            'condition_header': jsonEncode([r'@spam-a\.com$', r'@spam-b\.com$']),
+            'action_delete': 1,
+            'date_added': DateTime.now().millisecondsSinceEpoch,
+            'created_by': 'user',
+            // pattern_category NULL == monolithic candidate.
+          };
+
+      test('duplicate monolithic source rows do NOT mint duplicate '
+          'individual rules (the 12,539-rule prod-DB bloat class)', () async {
+        final db = await testHelper.dbHelper.database;
+        // The pre-F73 import ran multiple times on the prod DB, leaving
+        // content-identical monolithic rows. Before the guard, the split
+        // created suffixed (_2/_3) duplicates for every pattern of every
+        // copy.
+        await db.insert('rules', monolithic('legacy_import'));
+        await db.insert('rules', monolithic('legacy_import_2'));
+
+        await service.splitMonolithicRules();
+
+        final individual = await db.query('rules',
+            where: "pattern_category IS NOT NULL AND created_by = 'migration_f73'");
+        // 2 patterns total -- NOT 4. Each pattern exactly once.
+        expect(individual, hasLength(2),
+            reason: 'Content-identical patterns from duplicate monolithic '
+                'sources must be inserted exactly once.');
+        // Both monolithic originals are consumed either way.
+        final monolithicLeft =
+            await db.query('rules', where: 'pattern_category IS NULL');
+        expect(monolithicLeft, isEmpty);
+      });
+
+      test('re-running the split is a no-op (idempotent)', () async {
+        final db = await testHelper.dbHelper.database;
+        await db.insert('rules', monolithic('legacy_import'));
+        await service.splitMonolithicRules();
+        final afterFirst = (await db.query('rules')).length;
+
+        final createdSecondRun = await service.splitMonolithicRules();
+        expect(createdSecondRun, 0);
+        expect((await db.query('rules')).length, afterFirst);
+      });
+    });
+
     group('seedIfEmpty', () {
       test('skips seeding when rules already exist', () async {
         // Pre-populate with one rule

@@ -72,16 +72,29 @@ void main(List<String> args) async {
   final env = (envIndex >= 0 && envIndex + 1 < args.length)
       ? args[envIndex + 1]
       : 'dev';
+  // F121-sibling seam (Sprint 49, F-PRECHECK class-1 catch): --db <path>
+  // targets an explicit DB file (e.g. a copy) for safe rehearsal, mirroring
+  // dedup_rules.dart. Without it, a rehearsal invocation silently ran against
+  // the LIVE env DB path (dry-run, so no writes -- but not what was asked).
+  final dbIndex = args.indexOf('--db');
+  final dbOverride = (dbIndex >= 0 && dbIndex + 1 < args.length)
+      ? args[dbIndex + 1]
+      : null;
 
-  final appDataPath = Platform.environment['APPDATA'];
-  if (appDataPath == null) {
-    stderr.writeln('[FAIL] APPDATA environment variable not found');
-    exit(1);
+  final String dbPath;
+  if (dbOverride != null) {
+    dbPath = dbOverride;
+  } else {
+    final appDataPath = Platform.environment['APPDATA'];
+    if (appDataPath == null) {
+      stderr.writeln('[FAIL] APPDATA environment variable not found');
+      exit(1);
+    }
+    final dataDir = env == 'prod'
+        ? 'MyEmailSpamFilter'
+        : 'MyEmailSpamFilter_Dev';
+    dbPath = '$appDataPath\\MyEmailSpamFilter\\$dataDir\\spam_filter.db';
   }
-  final dataDir = env == 'prod'
-      ? 'MyEmailSpamFilter'
-      : 'MyEmailSpamFilter_Dev';
-  final dbPath = '$appDataPath\\MyEmailSpamFilter\\$dataDir\\spam_filter.db';
 
   print('=== F33 Body-Rules Cleanup (${apply ? "APPLY" : "DRY-RUN"}) ===');
   print('Environment: $env');
@@ -130,8 +143,15 @@ void main(List<String> args) async {
   final scriptDir = File(Platform.script.toFilePath()).parent.path;
   final mobileAppDir = Directory(scriptDir).parent.path;
   final repoRoot = Directory(mobileAppDir).parent.path;
-  final reportPath =
-      '$repoRoot/docs/sprints/SPRINT_46_F33_BODY_RULES_REPORT.md';
+  // Sprint 49 fix: the report filename is ENV-QUALIFIED. The original
+  // hardcoded SPRINT_46_... path meant any later run (e.g. the Sprint 49
+  // prod rehearsal) silently OVERWROTE the historical Sprint 46 dev-run
+  // report. The dev-run history stays at its original name; prod and
+  // rehearsal runs get their own files.
+  final reportName = env == 'prod'
+      ? 'SPRINT_49_F33_PROD_BODY_RULES_REPORT.md'
+      : 'SPRINT_46_F33_BODY_RULES_REPORT.md';
+  final reportPath = '$repoRoot/docs/sprints/$reportName';
   File(reportPath).writeAsStringSync(report);
   print(report);
   print('[OK] Report written to $reportPath');
@@ -336,12 +356,21 @@ BodyRuleAnalysis analyzeBodyRules(List<Map<String, Object?>> rows) {
     final sourceDomain = row['source_domain'] as String?;
 
     List<String> patterns;
+    var decodeFailed = false;
     try {
       final decoded = jsonDecode(raw);
       patterns =
           decoded is List ? decoded.map((e) => e.toString()).toList() : <String>[];
     } catch (_) {
+      // BUG-DECODE (Sprint 49, Copilot round-6): a NON-EMPTY condition_body
+      // that fails to decode is NOT evidence of an empty/orphan rule -- it is
+      // evidence we cannot READ the rule. Falling through with patterns=[]
+      // classified the row as a G5 orphan, which is in the DELETE set on
+      // --apply: silent data loss on a destructive script. Report-not-delete.
+      // A NULL/empty condition_body is different: that is a KNOWN-empty rule
+      // and remains a legitimate G5 orphan (prior Copilot-review decision).
       patterns = <String>[];
+      decodeFailed = raw.trim().isNotEmpty;
     }
 
     final rule = BodyRule(
@@ -353,6 +382,16 @@ BodyRuleAnalysis analyzeBodyRules(List<Map<String, Object?>> rows) {
       sourceDomain: sourceDomain,
     );
     all.add(rule);
+
+    // BUG-DECODE: decode failures go to `ambiguous` (report-only, untouched)
+    // with a loud warning -- NEVER into the G5 delete set.
+    if (decodeFailed) {
+      print('[WARNING] rule id=$id "$name": condition_body failed to '
+          'JSON-decode -- classified AMBIGUOUS (report-only), NOT deleted. '
+          'Inspect manually. raw=${raw.length > 80 ? '${raw.substring(0, 80)}...' : raw}');
+      ambiguous.add(rule);
+      continue;
+    }
 
     // G5: orphan/degenerate -- no usable pattern.
     if (patterns.isEmpty || patterns.every((p) => p.trim().isEmpty)) {
@@ -503,7 +542,12 @@ BodyRuleAnalysis analyzeBodyRules(List<Map<String, Object?>> rows) {
 
 String buildReport(BodyRuleAnalysis a, {required String env, required bool apply}) {
   final b = StringBuffer();
-  b.writeln('# Sprint 46 F33 -- Body Rules Cleanup Report');
+  // Copilot review (PR #276): the title must match the env-qualified report
+  // filename (prod runs are the Sprint 49 F33-PROD artifact; the dev-run
+  // history keeps its Sprint 46 identity).
+  b.writeln(env == 'prod'
+      ? '# Sprint 49 F33-PROD -- Body Rules Cleanup Report (prod DB)'
+      : '# Sprint 46 F33 -- Body Rules Cleanup Report');
   b.writeln();
   b.writeln('**Environment**: $env');
   b.writeln('**Mode**: ${apply ? "APPLY (changes written)" : "DRY-RUN (no changes)"}');

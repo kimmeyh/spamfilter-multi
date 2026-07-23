@@ -16,6 +16,8 @@ import '../../core/providers/email_scan_provider.dart' show EmailScanProvider, E
 import '../../core/providers/rule_set_provider.dart';
 import '../../core/models/email_message.dart';
 import '../../core/models/evaluation_result.dart';
+import '../../core/models/rule_set.dart' show Rule, RuleSet;
+import '../../core/models/safe_sender_list.dart' show SafeSenderList;
 import '../../core/services/auth_results_parser.dart';
 import '../../core/services/email_body_parser.dart';
 import '../../core/services/pattern_compiler.dart';
@@ -2259,14 +2261,42 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   /// History > Scan Results page to silently fail to update the
   /// `_evaluationOverrides` map -- which in turn made the F82 footer
   /// counter stay at 0 and the addressed rows never hide.
-  Future<void> _reEvaluateNoRuleEmails() async {
+  /// F120 (Sprint 49): when [deltaRule] or [deltaSafeSenderPattern] is given
+  /// (the quick-action paths), the no-rule set is evaluated against ONLY that
+  /// newly-ADDED delta. This is semantically exact for additions: a "No rule"
+  /// email already failed every existing rule, so only the new one can change
+  /// its outcome. The previous full-set re-evaluation ran all no-rule emails
+  /// x the entire rule set per quick action (~197 x 12,539 = 1-2 MINUTES of
+  /// main-isolate compute on the 0.5.6 Store prod DB) inside an await chain
+  /// whose futures complete synchronously -- microtask continuations never
+  /// yield to the Windows message pump, so the window went "(Not Responding)".
+  /// The no-delta path (historical-screen load, where rules may have changed
+  /// arbitrarily) keeps the full set but yields to the event loop every few
+  /// emails so the UI thread keeps pumping.
+  Future<void> _reEvaluateNoRuleEmails({
+    Rule? deltaRule,
+    String? deltaSafeSenderPattern,
+  }) async {
     final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
     final scanProvider = Provider.of<EmailScanProvider>(context, listen: false);
-    final evaluator = RuleEvaluator(
-      ruleSet: ruleProvider.rules,
-      safeSenderList: ruleProvider.safeSenders,
-      compiler: _sharedCompiler,
-    );
+    final bool useDelta = deltaRule != null || deltaSafeSenderPattern != null;
+    final evaluator = useDelta
+        ? RuleEvaluator(
+            ruleSet: RuleSet(
+              version: ruleProvider.rules.version,
+              settings: const {},
+              rules: [if (deltaRule != null) deltaRule],
+            ),
+            safeSenderList: SafeSenderList(safeSenders: [
+              if (deltaSafeSenderPattern != null) deltaSafeSenderPattern,
+            ]),
+            compiler: _sharedCompiler,
+          )
+        : RuleEvaluator(
+            ruleSet: ruleProvider.rules,
+            safeSenderList: ruleProvider.safeSenders,
+            compiler: _sharedCompiler,
+          );
 
     // Match build()'s resolution: historical-scan views always use
     // _historicalResults, regardless of any stale liveResults in the
@@ -2281,8 +2311,19 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
             : _historicalResults);
 
     // Find all emails with effective action "none" (No rule)
+    // F120 + Copilot review (PR #276): on the full-set path, yield a REAL
+    // event-loop turn (Future.delayed, not a microtask) TIME-BASED -- every
+    // ~100ms of work -- so the platform message pump keeps running regardless
+    // of per-email cost or rule-set size. A fixed every-N-emails cadence
+    // could still block ~5s between yields at ~0.5s/email (the Windows
+    // Not Responding threshold).
+    final yieldClock = Stopwatch()..start();
     for (final result in allResults) {
       if (_getEffectiveAction(result) == EmailActionType.none) {
+        if (!useDelta && yieldClock.elapsedMilliseconds >= 100) {
+          await Future<void>.delayed(Duration.zero);
+          yieldClock.reset();
+        }
         final evalResult = await evaluator.evaluate(result.email);
         // Only store override if the new evaluation found a match
         if (evalResult.matchedRule.isNotEmpty || evalResult.isSafeSender) {
@@ -2667,8 +2708,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     }
 
     // Re-evaluate all remaining "No rule" emails against the new safe sender
+    // ONLY (F120 delta -- full-set re-eval froze the UI 1-2 min per action).
     final preStats = _computeNoRuleStats();
-    await _reEvaluateNoRuleEmails();
+    await _reEvaluateNoRuleEmails(
+        deltaSafeSenderPattern: result.createdSafeSenderPattern);
     final postStats = _computeNoRuleStats();
 
     // Sprint 38 Round 4 (2026-05-17): advance the oldest-unaddressed-no-rule
@@ -2740,9 +2783,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       await _reEvaluateEmail(email);
     }
 
-    // Re-evaluate all remaining "No rule" emails against the new rule
+    // Re-evaluate all remaining "No rule" emails against the new rule ONLY
+    // (F120 delta -- full-set re-eval froze the UI 1-2 min per action).
     final preStats = _computeNoRuleStats();
-    await _reEvaluateNoRuleEmails();
+    await _reEvaluateNoRuleEmails(deltaRule: result.createdRule);
     final postStats = _computeNoRuleStats();
 
     // Sprint 38 Round 4 (2026-05-17): advance the oldest-unaddressed-no-rule
