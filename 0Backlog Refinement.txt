@@ -1,7 +1,45 @@
 ***BELOW IS NOT FOR CLAUDE CODE, GITHUB COPILOT, CHATGPT OR COPILOT PULL REQUEST (PR) REVIEW USE***
 
 ---------------------------------------------------------------------------------------------------------
-Sprint 4n Scope should include:
+Sprint 5n Scope should include:
+---------------------------------------------------------------------------------------------------------
+Sprint 5n Scope should include the below items. Please complete sprint planning (sprint_planning.md) for the below items and present for approval:
+
+1. AMBIG-ROWS. Decide the 4 ambiguous legacy TLD-block rows (~10–15m, mostly your decision)
+- /%.nl/, /%.ru/, /%.store/, /.*.xyz — legacy %-wildcard body rules left report-only by F33-PROD. TLD blocking is handled by the proper top-level-domain rules now, so likely deletable; your data call, I execute.
+
+2. NO-RULE-POLISH. no_rule_review_screen load-error polish (~15–30m)
+- Copilot round-6 leftover: stackTrace in the log + friendly SnackBar. Cosmetic.
+* is this still needed or already completed. Include missing pieces if not already completed.
+
+3. UI-COSMETICS. The two observations from your validation pass (~45–90m)
+- Safe-sender classification display (exact-email pattern shown as "Entire Domain"); the legacy uncategorized rule's blank sub-label.
+
+4. F-COPILOT-INSTR. copilot-instructions audit + char-budget trim (~30–45m)
+- Add n≥2 repeat classes to "Settled Decisions"; trim ~4618 → ~4000 chars.
+
+5. CI_ secrets. Populate the 5 GitHub repo secrets (~30m, mostly your action)*
+- Unblocks real OAuth wiring in the CI Windows build.
+
+6. RELEASE-SELFTEST. Extend --print-env into a one-shot release self-test (~1–2h)
+- Env + version + data-dir verified in one command; folds into Step 4.0. (Retro Cat-14 candidate.)
+
+Tier 2 — Gated on 0.5.7 going LIVE (days away)
+
+7. F-WINSTORE-ASSETS. Refresh all Store listing images (~2–4h)
+- Current listing screenshots show the [DEV] title! Best captured from the certified 0.5.7 build — natural first post-cert item.
+
+8. 0.5.7-CLOSEOUT. Post-cert close-out (~30m, automatic when you report cert PASS)
+- CHANGELOG [0.5.7] heading, dev → 0.5.8 (one file now), master-plan roll, Store-download verification.
+
+Tier 3 — The next major track (promotion trigger: 0.5.7 verified LIVE)
+
+9. ANDROID-KICKOFF. Google Play track opening (~sprint-sized)
+- Sequence per the master plan: google-services.json applicationId mismatch diagnosis → F94 dev/prod/store flavors → F108 device retest → GP-* items (signing, manifest, CASA, listing…). This is Sprint 50-or-51's real body of work depending on cert timing.
+
+HOLD (unchanged)
+
+- F70/F71/F111 periodic-review templates · SEC-11b + F106 (post-MVP) · F63/F6/H1–H5/F67 platform+UX tracks
 ---------------------------------------------------------------------------------------------------------
 Sprint 48 Scope should include:
 ---------------------------------------------------------------------------------------------------------

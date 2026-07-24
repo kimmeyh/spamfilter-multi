@@ -142,9 +142,12 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
   - **Cleanup**: Remove obsolete items, update dependencies
 
 - [ ] **1.2 Present Candidates to User in BACKLOG_REFINEMENT.md Format**
-  - Required format: bullet-list per item with `**<ID>. <Title> (~<effort>) Priority <N>**` header + bullet details
+  - **MANDATORY FIRST ACTION (Sprint 50, Harold): READ `BACKLOG_REFINEMENT.md` section "Backlog Presentation Format" IN THE SAME TURN, immediately before producing the presentation.** This is a deterministic deliverable -- mirror the template EXACTLY; do not produce it from memory. (This rule exists because the format drifted twice, Sprints 49-50, despite the Sprint 45 read-format-doc-first memory.)
+  - Required per-item format (verbatim from the spec): `**<ID>. <Title> (~<effort>) Priority <N>**` header, then bullets `- Phase:`, `- Platform:`, description bullets, `- Depends on:` (if any)
+  - Section structure: `### <Phase Name>` group headers; HOLD items use `Priority HOLD` in a separate `### HOLD Items (<reason>)` section at the bottom
+  - Priorities are NUMERIC (increments of 10; sprint-together items use increments of 2). NEVER invent ad-hoc groupings (tiers, selection numbers) in place of phase headers + priorities
+  - Every item needs a REAL registered identifier (F#/WS-*/GP-#/Issue #N); new items get the next available F# (check ALL_SPRINTS_MASTER_PLAN.md) -- never invent unregistered slugs
   - Do NOT use grid tables (explicit convention violation)
-  - Grouped by priority tier, HOLD items at bottom
   - Include observations/alternative composition options when scope is tight
   - Record user's selection for Phase 3 plan doc
   - **This step is what Phase 3.2.1 used to reference ambiguously. It is now clearly owned by Phase 1.2.**

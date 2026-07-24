@@ -408,7 +408,7 @@ gh issue close #N --reason "not planned" --comment "Removed during backlog refin
 
 ### Backlog Presentation Format
 
-All backlog items in ALL_SPRINTS_MASTER_PLAN.md MUST use this format. This is the **authoritative format** for sprint refinement output.
+All backlog items in ALL_SPRINTS_MASTER_PLAN.md MUST use this format. This is the **authoritative format** for sprint refinement output -- **including the in-chat candidate presentation to the Product Owner (Phase 1.2)**, which mirrors this template exactly: same headers, same `Priority <N>` numbers, same `Phase`/`Platform` bullets, phase-group sections, HOLD at the bottom. The presentation IS the refinement output; producing it in any other shape (ad-hoc tiers, selection numbering, unregistered ids) is a process violation (Sprint 50 correction, Harold 2026-07-24). READ this section in the same turn immediately before producing the presentation -- deterministic process, zero improvisation.
 
 **Item format**:
 ```markdown
@@ -503,5 +503,6 @@ Request refinement if:
 **Status**: Active
 
 **Updates**:
+- 1.2 (2026-07-24): Presentation-format scope clarified -- the in-chat Phase 1.2 candidate presentation mirrors the Backlog Presentation Format exactly (Sprint 50 correction)
 - 1.1 (2026-03-19): Added Backlog Presentation Format spec, item identification rules (F#/WS/GP prefixes)
 - 1.0 (2026-02-01): Initial backlog refinement process document

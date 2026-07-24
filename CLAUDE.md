@@ -133,6 +133,7 @@ git merge develop
 - Don't use Edit tool without first using Read tool on that file in the SAME conversation turn
 - Don't assume file content from earlier reads - always re-read before editing after any significant work or context compaction
 - Don't use Linux-only tools on Windows (see Windows Tool Restrictions below)
+- Don't produce ANY process deliverable (backlog-refinement presentation, retrospective, release checklist, sprint plan card, ADR) without READING its authoritative format/template section IN THE SAME TURN immediately beforehand. These are deterministic processes -- mirror the template exactly, never reproduce it from memory. (Sprint 45 IMP-1; re-violated Sprints 49-50 -> hardened Sprint 50, Harold 2026-07-24.)
 
 ### [CRITICAL] Decision-Class Taxonomy: STOP, Surface, Wait
 

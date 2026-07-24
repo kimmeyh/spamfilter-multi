@@ -27,6 +27,8 @@ These documents MUST be created/updated during each sprint:
 
 ## Phase 1: Backlog Refinement (MANDATORY -- every sprint, no PO request needed)
 
+- [ ] **1.2 FORMAT GATE (Sprint 50)**: READ `BACKLOG_REFINEMENT.md` section "Backlog Presentation Format" in the SAME TURN before presenting candidates; mirror the template exactly (`**<ID>. <Title> (~effort) Priority <N>**` + Phase/Platform bullets, phase-group headers, HOLD section; real F#/WS/GP ids only)
+
 **Sprint 36 policy change (2026-04-20)**: Phase 1 is MANDATORY on every sprint. Do NOT ask the user "should we do backlog refinement?" -- just run it. Skipping or asking is a process violation.
 
 - [ ] Read current `docs/ALL_SPRINTS_MASTER_PLAN.md` "Next Sprint Candidates" section
@@ -55,7 +57,7 @@ These documents MUST be created/updated during each sprint:
 
 ## Phase 3: Kickoff & Planning
 
-- [ ] **Verify active model is Opus** (sprint planning requires Opus per SPRINT_PLANNING.md "Activities Requiring Opus")
+- [ ] **Verify active model is the top tier (Fable/Opus)** (sprint planning requires it per SPRINT_PLANNING.md "Activities Requiring Fable/Opus")
 - [ ] Sprint number determined (N = previous + 1)
 - [ ] **Phase 1 Backlog Refinement complete** (candidates presented in BACKLOG_REFINEMENT.md format, user selected items) -- if Phase 1 was skipped, STOP and return to Phase 1 first
 - [ ] **Verify** `docs/sprints/SPRINT_(N-1)_SUMMARY.md` exists for previous sprint (created in Phase 7)
@@ -74,7 +76,7 @@ These documents MUST be created/updated during each sprint:
 ## Phase 4: Execution
 
 - [ ] **[CONTEXT CHECK]** Verify context < 85% (estimate task cost; `/compact` if next task would exceed 95%)
-- [ ] Tasks assigned to appropriate models (Haiku/Sonnet/Opus)
+- [ ] Tasks assigned to appropriate models (Haiku/Sonnet/Fable-Opus); record Executed-by at completion (Sprint 49 IMP-3)
 - [ ] Each task: **[CONTEXT CHECK]** -> Code -> Build -> Test -> Analyze -> Commit
 - [ ] Commits reference GitHub issues (`feat: ... (Issue #N)`)
 - [ ] CHANGELOG.md updated with each user-facing change
