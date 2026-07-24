@@ -410,6 +410,18 @@ gh issue close #N --reason "not planned" --comment "Removed during backlog refin
 
 All backlog items in ALL_SPRINTS_MASTER_PLAN.md MUST use this format. This is the **authoritative format** for sprint refinement output -- **including the in-chat candidate presentation to the Product Owner (Phase 1.2)**, which mirrors this template exactly: same headers, same `Priority <N>` numbers, same `Phase`/`Platform` bullets, phase-group sections, HOLD at the bottom. The presentation IS the refinement output; producing it in any other shape (ad-hoc tiers, selection numbering, unregistered ids) is a process violation (Sprint 50 correction, Harold 2026-07-24). READ this section in the same turn immediately before producing the presentation -- deterministic process, zero improvisation.
 
+**Summary Index (REQUIRED at the top of every presentation -- Harold, Sprint 50)**: before the detailed sections, list every item's header line only (no bullets), in presentation order, so the Product Owner can scan the full slate at a glance:
+
+```markdown
+## Candidates at a glance
+
+- **F126. Remove the 4 ambiguous legacy TLD-block body rules (~15m) Priority 10**
+- **F122. Review-No-Rule screen load-error polish (~30m) Priority 12**
+- ...
+- **F94. Android dev/prod/store flavors + applicationId diagnosis (~6-8h) Priority 50**
+- HOLD: F70/F71/F111, SEC-11b+F106, ... (one line, ids only)
+```
+
 **Item format**:
 ```markdown
 **<ID>. <Title> (~<effort>) Priority <N>**
@@ -503,6 +515,7 @@ Request refinement if:
 **Status**: Active
 
 **Updates**:
+- 1.3 (2026-07-24): Summary Index required at the top of every presentation (header lines only, then details) -- Harold, Sprint 50
 - 1.2 (2026-07-24): Presentation-format scope clarified -- the in-chat Phase 1.2 candidate presentation mirrors the Backlog Presentation Format exactly (Sprint 50 correction)
 - 1.1 (2026-03-19): Added Backlog Presentation Format spec, item identification rules (F#/WS/GP prefixes)
 - 1.0 (2026-02-01): Initial backlog refinement process document

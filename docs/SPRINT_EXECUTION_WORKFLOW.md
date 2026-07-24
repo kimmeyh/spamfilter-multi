@@ -143,6 +143,7 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
 
 - [ ] **1.2 Present Candidates to User in BACKLOG_REFINEMENT.md Format**
   - **MANDATORY FIRST ACTION (Sprint 50, Harold): READ `BACKLOG_REFINEMENT.md` section "Backlog Presentation Format" IN THE SAME TURN, immediately before producing the presentation.** This is a deterministic deliverable -- mirror the template EXACTLY; do not produce it from memory. (This rule exists because the format drifted twice, Sprints 49-50, despite the Sprint 45 read-format-doc-first memory.)
+  - **Summary Index first**: open with a "Candidates at a glance" list of every item's header line only (Harold, Sprint 50), then the detailed phase sections
   - Required per-item format (verbatim from the spec): `**<ID>. <Title> (~<effort>) Priority <N>**` header, then bullets `- Phase:`, `- Platform:`, description bullets, `- Depends on:` (if any)
   - Section structure: `### <Phase Name>` group headers; HOLD items use `Priority HOLD` in a separate `### HOLD Items (<reason>)` section at the bottom
   - Priorities are NUMERIC (increments of 10; sprint-together items use increments of 2). NEVER invent ad-hoc groupings (tiers, selection numbers) in place of phase headers + priorities

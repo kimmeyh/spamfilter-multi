@@ -27,7 +27,9 @@ encodes it so the presentation can never drift again.
    Issue #N. NEVER present an unregistered slug (AMBIG-ROWS-style names are the
    Sprint 50 violation).
 
-4. **Present in the EXACT template** -- per item:
+4. **Present in the EXACT template** -- opening with the REQUIRED Summary Index
+   ("## Candidates at a glance": every item's header line only, in order, plus a
+   one-line HOLD ids row), then the detailed sections. Per item:
 
    ```markdown
    **<ID>. <Title> (~<effort>) Priority <N>**
