@@ -26,6 +26,11 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+_(No unreleased changes yet -- 0.5.7 shipped everything below on 2026-07-24.)_
+
+## [0.5.7] - 2026-07-24
+
+**First fully-correct public Windows Store release** (2 -> ~20 users). Ends the F119 defect family: the Store build finally runs as prod on BOTH compiled surfaces (Dart + native), proven pre-submission via the `--print-env` both-sides probe. Includes everything merged to `main` since 0.5.0 that had not shipped correctly (Sprints 40-49): notably the cross-account Review No Rule screen, CI/CD, per-account background scanning, the Sprint 47 UX pass, the F120 quick-action performance fix, and the prod rules-DB restoration (5,776 working rules).
 ### 2026-07-22 (Sprint 49: retrospective improvements, all "apply now")
 - **docs**: anti-stop task-inventory rule (workflow Phase 4.1.0): a batch-completion report is NOT a stopping point -- enumerate approved tasks before any mid-sprint turn end; a blocked sub-step blocks only itself; harness task-tracking from Phase 3.7. (Sprint 49 retro IMP-1)
 - **docs**: `Executed-by` recorded per task at completion (workflow 4.1 + task template); genuinely mechanical tasks delegated to cheaper tiers where coupling allows. (IMP-3)
@@ -922,5 +927,6 @@ See git history for detailed changes prior to Phase 3.1.
 
 ## Version Links
 
-[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.7...HEAD
+[0.5.7]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.0...v0.5.7
 [0.5.0]: https://github.com/kimmeyh/spamfilter-multi/releases/tag/v0.5.0

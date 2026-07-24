@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-07-23 (Sprint 49 merged + 0.5.7 SUBMITTED with the full both-sides proof; Last-Completed-Sprint rolled 48 -> 49 -- see Version History 6.12)
+**Last Updated**: 2026-07-24 (0.5.7 LIVE -- Harold verified no [DEV]; CHANGELOG [0.5.7] released; dev bumped 0.5.8; ANDROID TRACK OFF HOLD -- see Version History 6.13)
 
 ## How to Maintain This Document
 
@@ -259,7 +259,7 @@ _(F39 cross-account "No Rule" review screen shipped in Sprint 46. F39 mobile (An
 
 ### HOLD Items (Android / Google Play Store)
 
-> **[NEXT MAJOR TRACK] Promotion trigger (Harold, 2026-07-15)**: As soon as the corrected Windows Store `0.5.5` release (F119 fix -- SUBMITTED for certification 2026-07-19) is verified LIVE, this entire Android / Google Play track comes OFF HOLD and becomes the next focus. Android development is intentionally stagnant only until that Windows release lands. At promotion, refine this section into an active sprint: start with the `google-services.json` applicationId mismatch diagnosis (F94 pre-existing investigation item -- likely root of intermittent Android Gmail OAuth), then F94 flavors, then the F108 Android-device dep-bump retest carry-in, then the Google-Play-gated security items below.
+> **[NEXT MAJOR TRACK -- TRIGGER FIRED 2026-07-24]**: `0.5.7` is verified LIVE (clean prod title). Per Harold's 2026-07-15 promotion trigger, this Android / Google Play track is now **OFF HOLD** and is the next focus. Android development is intentionally stagnant only until that Windows release lands. At promotion, refine this section into an active sprint: start with the `google-services.json` applicationId mismatch diagnosis (F94 pre-existing investigation item -- likely root of intermittent Android Gmail OAuth), then F94 flavors, then the F108 Android-device dep-bump retest carry-in, then the Google-Play-gated security items below.
 
 **F94. Android dev/prod/store flavors (~6-8h) Priority HOLD (Issue #248) -- RENUMBERED from "F52 Phase 2" + MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
 - Phase: Build and Release Infrastructure / Android Google Play Store Readiness
@@ -1160,6 +1160,7 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 6.13 | 2026-07-24 | **`0.5.7` LIVE + verified (NO [DEV] title) -- the first fully-correct public release; F119 family closed.** Close-out executed: CHANGELOG `[0.5.7] - 2026-07-24` release heading + links; dev bump 0.5.7 -> 0.5.8 (ONE file -- pubspec.yaml -- the F-VERSION-DERIVE payoff, gate-verified); Store status LIVE. **Android/Google Play track OFF HOLD** (promotion trigger fired). Sprint 50 scope selection pending with Harold. |
 | 6.12 | 2026-07-23 | **Sprint 49 merged (PR #276 -> develop -> main) + `0.5.7` SUBMITTED to Partner Center** after the first-ever full both-sides proof (`APP_ENV=prod` + `NATIVE_APP_ENV=prod`). Rolled Last-Completed-Sprint 48 -> 49; pruned shipped F-VERSION-DERIVE / F-PRECHECK; Sprint 50 branch open (`feature/20260723_Sprint_50`, Phase 6.6 flow). On cert PASS: 0.5.7 close-out + Android/Google Play OFF HOLD. |
 | 6.11 | 2026-07-22 | **Sprint 47 items ALL VALIDATED + CLOSED.** Harold re-validated every F112-F118 item on the Sprint 49 (0.5.7-candidate) dev build -- all "Working as expected. Can be closed." Pruned the 8-item detail block to a close-out note per the Maintenance Guide. Sprint 49 state: F119-c/F120/BUG-DECODE/F121/F-VERSION-DERIVE/F-PRECHECK done on PR #276; Part-C prod-DB applies rehearsed on a copy (F121: 12,539 -> 6,526; F33-PROD: convert 1,300 / remove 752 / 0 decode warnings) awaiting the app-closed window. |
 | 6.10 | 2026-07-20 | **Sprint 48 (emergency F119-b hotfix) complete + Phase 7 doc maintenance.** Root cause of the 0.5.5 Store dev-leak = a SPACE in a `secrets.*.json` key silently dropping `APP_ENV=prod` via `--dart-define-from-file` (independent of the F119 key typo). Fixed (cleaned secrets + gate + `--print-env` compiled-truth probe + Step 4.0 rewrite), bumped 0.5.5 -> 0.5.6, rebuilt + PROVEN prod (`--print-env` -> `APP_ENV=prod`), submitted 0.5.6 to Partner Center. Rolled **Last Completed Sprint** 46 -> 48; wrote `SPRINT_48_PLAN.md` (retroactive) + `SPRINT_48_RETROSPECTIVE.md` (lightweight, Claude-team only per Harold). Added backlog **F-VERSION-DERIVE** (derive version at runtime, not hardcoded in 6 log-filename sites). GitHub issues: 0 open. |
