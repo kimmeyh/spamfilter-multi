@@ -59,16 +59,22 @@ jobs:
           AOL_EMAIL: ${{ secrets.CI_AOL_EMAIL }}
           AOL_APP_PASSWORD: ${{ secrets.CI_AOL_APP_PASSWORD }}
         run: |
-          # This step requires the CI_* repo secrets listed above to be
-          # configured (Settings > Secrets and variables > Actions). Until
-          # they are set, this writes empty-string values -- sufficient for
-          # `flutter build windows` to compile and link (the OAuth values
-          # are only read at runtime, not at build time), but NOT a
-          # substitute for the full local build-with-secrets.ps1 path used
-          # for real Windows/Store builds. See docs/STORE_RELEASE_PROCESS.md.
+          # F127 (Sprint 50, Harold decision 2026-07-24): the CI_* repo
+          # secrets are DELIBERATELY UNSET. Empty-string dart-defines fully
+          # exercise everything this job verifies -- the values are read at
+          # RUNTIME only, and CI never runs the app. Populate them ONLY when
+          # CI gains a runtime step that would actually use credentials
+          # (integration/smoke test); until then, keeping real OAuth values
+          # out of GitHub buys security for zero verification loss.
+          #
+          # Key names below are the CURRENT runtime keys (WINDOWS_GMAIL_*).
+          # The original F64 version wrote the pre-Sprint-36 legacy names
+          # (GMAIL_DESKTOP_CLIENT_ID / GMAIL_OAUTH_CLIENT_SECRET), which the
+          # runtime only accepts via a dev-compat fallback -- the exact
+          # stale-key class docs/STORE_RELEASE_PROCESS.md warns about.
           $json = @{
-            GMAIL_DESKTOP_CLIENT_ID = $env:GMAIL_DESKTOP_CLIENT_ID
-            GMAIL_OAUTH_CLIENT_SECRET = $env:GMAIL_OAUTH_CLIENT_SECRET
+            WINDOWS_GMAIL_DESKTOP_CLIENT_ID = $env:GMAIL_DESKTOP_CLIENT_ID
+            WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET = $env:GMAIL_OAUTH_CLIENT_SECRET
             GMAIL_REDIRECT_URI = $env:GMAIL_REDIRECT_URI
             AOL_EMAIL = $env:AOL_EMAIL
             AOL_APP_PASSWORD = $env:AOL_APP_PASSWORD

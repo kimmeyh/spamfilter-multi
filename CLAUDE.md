@@ -74,7 +74,7 @@ If any check fails, **STOP and resolve with user before accepting work**.
 
 `.github/workflows/ci.yml` runs on every PR to `develop`: `flutter analyze` + `flutter test` on `ubuntu-latest`, plus a Windows build-verification step (`flutter build windows --release`) on `windows-latest`. This is additive to, not a replacement for, the Phase 5 manual verification loop in `SPRINT_EXECUTION_WORKFLOW.md` -- CI is a safety net that catches regressions on every PR; Phase 5 still runs the full local build and manual app testing before a sprint's work is considered done.
 
-**One-time setup required (not yet done)**: the Windows build step needs `CI_GMAIL_DESKTOP_CLIENT_ID`, `CI_GMAIL_OAUTH_CLIENT_SECRET`, `CI_GMAIL_REDIRECT_URI`, `CI_AOL_EMAIL`, `CI_AOL_APP_PASSWORD` configured as GitHub encrypted repo secrets (Settings > Secrets and variables > Actions) before the Windows build job will exercise real OAuth wiring. Until they are set, the job still runs and compiles (empty-string dart-defines do not fail a Windows build -- they are only read at runtime), so CI is not blocked, but the build is not yet using real credential values.
+**CI_* repo secrets: DELIBERATELY UNSET (F127 decision, Harold 2026-07-24)**: empty-string dart-defines fully exercise everything the Windows build job verifies (values are runtime-read; CI never runs the app). Populate the 5 `CI_*` secrets ONLY when CI gains a runtime step that would use credentials -- tracked as a HOLD item with that trigger. The `secrets.ci.json` key names were corrected to the current `WINDOWS_GMAIL_*` runtime keys in Sprint 50 (the original wrote pre-Sprint-36 legacy names).
 
 ## [WARNING] CRITICAL: Pull Request Branch Policy
 
