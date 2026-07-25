@@ -1,46 +1,114 @@
 ***BELOW IS NOT FOR CLAUDE CODE, GITHUB COPILOT, CHATGPT OR COPILOT PULL REQUEST (PR) REVIEW USE***
 
 ---------------------------------------------------------------------------------------------------------
-Sprint 5n Scope should include:
+Sprint 5n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
 ---------------------------------------------------------------------------------------------------------
-Sprint 5n Scope should include the below items. Please complete sprint planning (sprint_planning.md) for the below items and present for approval:
-
-1. AMBIG-ROWS. Decide the 4 ambiguous legacy TLD-block rows (~10–15m, mostly your decision)
-- /%.nl/, /%.ru/, /%.store/, /.*.xyz — legacy %-wildcard body rules left report-only by F33-PROD. TLD blocking is handled by the proper top-level-domain rules now, so likely deletable; your data call, I execute.
-
-2. NO-RULE-POLISH. no_rule_review_screen load-error polish (~15–30m)
-- Copilot round-6 leftover: stackTrace in the log + friendly SnackBar. Cosmetic.
+Do this interactively first
 * is this still needed or already completed. Include missing pieces if not already completed.
+- F122. Review-No-Rule screen load-error polish (~30m) Priority 12
 
-3. UI-COSMETICS. The two observations from your validation pass (~45–90m)
-- Safe-sender classification display (exact-email pattern shown as "Entire Domain"); the legacy uncategorized rule's blank sub-label.
+* need to know more about this one. What, where, why
+- F127. Populate the 5 CI_ GitHub repo secrets (~30m) Priority 22*
 
-4. F-COPILOT-INSTR. copilot-instructions audit + char-budget trim (~30–45m)
-- Add n≥2 repeat classes to "Settled Decisions"; trim ~4618 → ~4000 chars.
-
-5. CI_ secrets. Populate the 5 GitHub repo secrets (~30m, mostly your action)*
-- Unblocks real OAuth wiring in the CI Windows build.
-
-6. RELEASE-SELFTEST. Extend --print-env into a one-shot release self-test (~1–2h)
-- Env + version + data-dir verified in one command; folds into Step 4.0. (Retro Cat-14 candidate.)
-
-Tier 2 — Gated on 0.5.7 going LIVE (days away)
-
-7. F-WINSTORE-ASSETS. Refresh all Store listing images (~2–4h)
+Do this interactively- can you walk me through it now.
+- F-WINSTORE-ASSETS. Update all Windows Store listing images (~2-4h) Priority 40
 - Current listing screenshots show the [DEV] title! Best captured from the certified 0.5.7 build — natural first post-cert item.
 
-8. 0.5.7-CLOSEOUT. Post-cert close-out (~30m, automatic when you report cert PASS)
-- CHANGELOG [0.5.7] heading, dev → 0.5.8 (one file now), master-plan roll, Store-download verification.
+Sprint 50 Scope should include the below items. Please complete sprint planning (sprint_planning.md) for the below items and present for approval:
+- F126. Remove the 4 ambiguous legacy TLD-block body rules (~15m) Priority 10
+- F122. Review-No-Rule screen load-error polish (~30m) Priority 12
+- F123. Safe-sender classification display fix (~45m) Priority 14
+- F124. Legacy uncategorized-rule label fix (~30m) Priority 16
+- F127. (rescoped)
 
-Tier 3 — The next major track (promotion trigger: 0.5.7 verified LIVE)
+Candidates at a glance
 
-9. ANDROID-KICKOFF. Google Play track opening (~sprint-sized)
-- Sequence per the master plan: google-services.json applicationId mismatch diagnosis → F94 dev/prod/store flavors → F108 device retest → GP-* items (signing, manifest, CASA, listing…). This is Sprint 50-or-51's real body of work depending on cert timing.
+- F126. Remove the 4 ambiguous legacy TLD-block body rules (~15m) Priority 10
+- F122. Review-No-Rule screen load-error polish (~30m) Priority 12
+- F123. Safe-sender classification display fix (~45m) Priority 14
+- F124. Legacy uncategorized-rule label fix (~30m) Priority 16
 
-HOLD (unchanged)
+- F127. Populate the 5 CI_ GitHub repo secrets (~30m) Priority 22*
+- F125. One-shot release self-test probe (~1-2h) Priority 30
+- F-WINSTORE-ASSETS. Update all Windows Store listing images (~2-4h) Priority 40
+- F94. Android dev/prod/store flavors + applicationId diagnosis (~6-8h) Priority 50 (Issue #248)
+- F108-RETEST. Android-device dependency-bump retest (~1-2h) Priority 52
+- HOLD: F70/F71/F111, SEC-11b+F106, F63/F6/SEC-8b/SEC-15/F67/H1-H5/F39-mobile
 
-- F70/F71/F111 periodic-review templates · SEC-11b + F106 (post-MVP) · F63/F6/H1–H5/F67 platform+UX tracks
----------------------------------------------------------------------------------------------------------
+Core App Quality
+
+F126. Remove the 4 ambiguous legacy TLD-block body rules (~15m) Priority 10
+- Phase: Core App Quality
+- Platform: N/A (prod rules data)
+- The F33-PROD run left 4 legacy %-wildcard rows untouched (/%.nl/, /%.ru/, /%.store/, /.*.xyz); TLD blocking is covered by the top_level_domain rules, so these are likely deletable
+- Depends on: Harold's delete/keep decision (Product Owner data call)
+
+F122. Review-No-Rule screen load-error polish (~30m) Priority 12
+- Phase: Core App Quality
+- Platform: Windows Desktop
+- Copilot round-6 carry-in: add stackTrace to the load-error log; replace the raw exception in the SnackBar with a friendly message
+
+F123. Safe-sender classification display fix (~45m) Priority 14
+- Phase: Core App Quality
+- Platform: Windows Desktop
+- Manage Safe Senders shows an exact-email-shaped pattern (^...@live\.com$) labeled "Entire Domain"; correct the classification display logic (observed in Harold's 0.5.6 validation)
+
+F124. Legacy uncategorized-rule label fix (~30m) Priority 16
+- Phase: Core App Quality
+- Platform: Windows Desktop
+- Manage Rules shows a pre-classification rule (SpamAutoDeleteFrom) with a blank "-" sub-label; display a sensible fallback label (observed in Harold's 0.5.6 validation)
+
+Process
+
+F-COPILOT-INSTR. copilot-instructions audit + char-budget trim (~45m) Priority 20
+- Phase: Process
+- Platform: N/A (repo)
+- Add n>=2 repeat Copilot classes to "Settled Decisions"; trim the file from ~4,618 toward the ~4,000-char soft budget
+
+F125. One-shot release self-test probe (~1-2h) Priority 30
+- Phase: Process
+- Platform: Windows Desktop
+- Extend --print-env into a release self-test verifying env + version + data-dir in one command; fold into STORE_RELEASE_PROCESS Step 4.0 (Sprint 49 retro Cat-14 candidate)
+
+DevOps
+
+F127. Populate the 5 CI_ GitHub repo secrets (~30m) Priority 22*
+- Phase: DevOps
+- Platform: N/A (repo)
+- Enables the CI Windows-build job to exercise real OAuth wiring (carry-in since Sprint 46)
+- Depends on: Harold pasting values into GitHub Settings (I prep names/sources)
+
+Windows Store Readiness
+
+F-WINSTORE-ASSETS. Update all Windows Store listing images (~2-4h) Priority 40
+- Phase: Windows Store Readiness
+- Platform: Windows Desktop
+- Refresh Partner Center screenshots/logos/promo images from the certified 0.5.7 build; current listing screenshots still show the [DEV] title
+- Depends on: none (0.5.7 LIVE as of 2026-07-24 -- unblocked)
+
+Android / Google Play Store (OFF HOLD -- promotion trigger fired 2026-07-24)
+
+F94. Android dev/prod/store flavors + applicationId diagnosis (~6-8h) Priority 50 (Issue #248)
+- Phase: Android / Google Play Store Readiness
+- Platform: Android
+- Track opener per the master plan: diagnose the google-services.json applicationId mismatch (likely root of intermittent Android Gmail OAuth), then implement dev/prod/store flavors
+
+F108-RETEST. Android-device dependency-bump retest (~1-2h) Priority 52
+- Phase: Android / Google Play Store Readiness
+- Platform: Android
+- Verify the Sprint 44 flutter_appauth/workmanager/secure_storage bumps on a device/emulator (Gmail sign-in, storage round-trip, WorkManager); carry-in since Sprint 44
+- Depends on: emulator/device availability
+
+(GP-2..GP-16 retain their master-plan entries; their relative prioritization is the first act of the Android kickoff planning.)
+
+HOLD Items (unchanged reasons)
+
+F70 / F71 / F111. Periodic deep-dive + store-readiness review templates Priority HOLD -- reusable per-release/per-quarter reviews
+SEC-11b + F106. DB-at-rest encryption + verification cleanup Priority HOLD -- post-MVP pair
+F63 / F6 / SEC-8b / SEC-15 / F67 / H1-H5 / F39-mobile Priority HOLD -- platform/UX tracks per Sprint 39 refinement
+
+---
+Observations / composition options: Priorities 10-16 form a natural sprint-together cluster (~2h total). Two Sprint 50 compositions fit: (a) the small-item sweep (Priorities 10-40), leaving Android as a clean Sprint 51 kickoff; or (b) F94 + F108-RETEST as the sprint body with the 10-16 cluster folded around it. Your selection sets the Sprint 50 plan.---------------------------------------------------------------------------------------------------------
 Sprint 48 Scope should include:
 ---------------------------------------------------------------------------------------------------------
 

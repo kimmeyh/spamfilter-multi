@@ -130,7 +130,7 @@ _(Prior: **Sprint 48** F119-b hotfix, PR #274; **Sprint 47** F112-F119 + 8 IMPs,
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: July 11, 2026 (Sprint 47 pre-kickoff rollover -- Sprint 46 shipped items pruned; carry-ins recorded. Full candidate re-presentation to Harold pending at Phase 1.2.)
+**Last Reviewed**: July 25, 2026 (Sprint 50 backlog refinement -- full candidate re-presentation to Harold in the v1.3 format with Summary Index; F122-F127 registered; Sprint 49 shipped items pruned; Sprint 50 scope selected.)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
@@ -144,6 +144,8 @@ Recent sprints complete -- detail blocks removed per the Maintenance Guide (hist
 - **Sprint 46** (merged PR #270, 2026-07-11): F64 (CI/CD pipeline), F39 (cross-account "No Rule" review screen + unmatched_emails writer fix), F33 (body-rules cleanup, dev-DB applied); manual-testing fixes (popup position, auto-advance, provider-sender grouping); retro IMP-1/2/4/5 applied
 
 **Sprint 47 scope (Store 0.5.4 manual-testing feedback + carry-ins, Harold 2026-07-15)**: The **F112-F119** items below (Store-0.5.4 manual-testing feedback) are assigned to Sprint 47. **Carry-ins** also folded in: (1) dev version bump 0.5.4 -> 0.5.5 (see F118); (2) F33 prod-DB `--env prod --apply` (post-Store-rollout; requires the Copilot round-6 decode-failure report-not-delete fix first); (3) populate the 5 `CI_*` GitHub repo secrets; (4) IMP-3 CHANGELOG-cadence decision (A per-completed-item vs B Phase-5-entry gate); (5) Copilot round-6 polish (no_rule_review_screen load-error stackTrace + friendly SnackBar; cleanup-script decode-failure fix -- required before carry-in #2). **Standing HOLD candidates** unchanged: template deep dives (F70 Security / F71 Architecture / F111 Store-readiness), Post-MVP (SEC-11b DB encryption + F106 cleanup, paired), platform/UX tracks (F94/F95 flavors, F63 responsive, SEC-8b/SEC-15, F6, H1-H5, F67, GP-*), F39 mobile variant. **Open follow-up (Sprint 44 carry-in)**: Android-device retest of the F108 dep bumps -- not yet scheduled. **Store status**: 0.5.4 LIVE on the Microsoft Store (submission accepted, certification passed 2026-07-15). Note (F119): 0.5.4 MSIX shipped running as APP_ENV=dev -- fix + re-release needed.
+
+**Sprint 50 scope (Harold 2026-07-25)**: **F126 + F122 + F123 + F124 + F127 (rescoped -- residual verification only)**. Selected from the 2026-07-25 refinement presentation after candidate conversations: F122 verified still needed; F127 re-scoped per Harold option 2 (see DevOps section); F-WINSTORE-ASSETS executed interactively during refinement and is DONE (see Release Readiness). Pre-kickoff work already on the sprint branch `feature/20260723_Sprint_50`: backlog-refinement format hardening (spec v1.3 + skill), F127 ci.yml key fix (`5c4e0ce`), F-WINSTORE-ASSETS screenshot masters (`3c357a6`, `b40c089`). Remaining candidates (F-COPILOT-INSTR, F125, F94, F108-RETEST, GP-*) stay in the backlog.
 
 ### Sprint 47 -- Store 0.5.4 Manual-Testing Feedback [ALL VALIDATED + CLOSED, Harold 2026-07-22]
 
@@ -175,22 +177,20 @@ _(F100 shipped in Sprint 43.)_
 - **Caution**: only add entries for decisions that are genuinely settled and that Copilot has actually re-flagged (n>=2) -- do not pre-load speculative suppressions that could hide a real future regression. Each entry states the decision + the one-line why, so a reviewer (human or Copilot) sees it is deliberate.
 - **Effort**: S (~30-45m: audit past Copilot rounds for n>=2 repeat classes, draft concise entries, fit the 4000-char budget).
 
+**F125. One-shot release self-test probe (~1-2h) Priority 30**
+- Phase: Process
+- Platform: Windows Desktop
+- Extend the `--print-env` headless probe into a one-shot release self-test that verifies env + version + data-dir (and any other release-gating invariants) in a single command; fold into `docs/STORE_RELEASE_PROCESS.md` Step 4.0. Source: Sprint 49 retrospective Category 14 candidate.
+
 ### Security Hardening (Sprint 31 Audit)
 
 _(F107, F108, F109 shipped in Sprint 44 -- see docs/sprints/SPRINT_44_SUMMARY.md. F106 is HOLD/Post-MVP, paired under SEC-11b below.)_
 
 ### Release Readiness
 
-**F-WINSTORE-ASSETS. Update all Windows/Microsoft Store listing images -- [BACKLOG] (Harold 2026-07-19)**
-- **Why**: the Windows Store listing images (screenshots + store logos + promotional graphics in Partner Center) "carry over from the previous submission" (STORE_RELEASE_PROCESS.md Step 6) -- they have NOT been refreshed and likely show old UI, predating the Sprint 40-47 changes (Review-No-Rule flows, new defaults, footer, demo-scan nav, etc.). The 0.5.5 release is the first true public release (2 -> ~20 users), so the listing should show the current app.
-- **Scope -- audit + refresh every Store-facing image**:
-  - **App tile / launcher icon** (`mobile-app/assets/icon/icon.png` -> `msix_config.logo_path` + `flutter_launcher_icons`): confirm it is current and high-resolution; regenerate the derived sizes if the source changed (`dart run flutter_launcher_icons`).
-  - **Partner Center Store listing screenshots**: recapture from the current build showing the real, current screens (account selection, scan results, Review No Rule Items, settings). Microsoft Store desktop screenshots: min 1366x768, PNG; 1-10 per listing.
-  - **Store logos / tile images** required by the manifest/Partner Center (Square 44x44, 71x71, 150x150, 310x150 wide, 310x310, Store logo 300x300, etc. -- confirm the exact current Partner Center requirements at capture time; some are auto-generated from `logo_path` by `msix:create`, others are uploaded in the Store listing).
-  - **Promotional / hero image** if the listing uses one.
-- **Where they live**: app-side source under `mobile-app/assets/`; the listing screenshots/graphics live in Partner Center (uploaded, not in-repo) -- consider storing masters in the repo (e.g. `docs/store-assets/windows/`) for reproducibility.
-- **Deliverable**: current-UI screenshot set + verified icon/logo assets, uploaded to Partner Center on the next submission (listing images can be updated WITHOUT a new package/version -- a metadata-only Store update).
-- **Note**: this is the Windows counterpart to GP-6 (Play Store Listing and Assets) in the Android HOLD section. Effort: **M (~2-4h)** -- mostly screenshot capture + Partner Center upload; validate against current Microsoft Store image-spec requirements at execution time (specs change).
+**F-WINSTORE-ASSETS. Update all Windows Store listing screenshots -- [DONE 2026-07-25, executed interactively during Sprint 50 refinement]**
+- Seven 1920x1020 screenshot masters captured from the live Store 0.5.7 build (clean prod title, 100% demo data, zero PII), committed to `docs/store-assets/windows/` (`3c357a6` + `b40c089`: choose-provider, demo-ready, scan-results, quick-actions, manage-rules, settings, help). Harold uploaded all 7 to Partner Center and completed the listing update (metadata-only, no package) on 2026-07-25 -- the old `[DEV]`-title screenshots are replaced.
+- **Residual (small, optional backlog)**: logo/tile/promo audit was not needed -- the app icon source is unchanged and tile images derive from `msix_config.logo_path`; revisit only if the icon is redesigned. Windows counterpart to GP-6 (Play Store assets).
 
 _(F111 shipped in Sprint 45 -- GO recommendation delivered; see docs/sprints/SPRINT_45_F111_STORE_READINESS.md and SPRINT_45_SUMMARY.md. Store upload of 0.5.4 is a pending Harold action, targeted Sat/Sun on a stable network -- not a backlog item.)_
 
@@ -198,7 +198,15 @@ _(F103 Architecture Deep Dive and F104 Security Deep Dive ran in Sprint 43 -- se
 
 ### DevOps
 
-_(F64 CI/CD pipeline shipped in Sprint 46 -- `.github/workflows/ci.yml`; see CHANGELOG 2026-07-02 and SPRINT_46_RETROSPECTIVE.md. One-time `CI_*` repo-secret setup is a Sprint 47 carry-in.)_
+_(F64 CI/CD pipeline shipped in Sprint 46 -- `.github/workflows/ci.yml`; see CHANGELOG 2026-07-02 and SPRINT_46_RETROSPECTIVE.md.)_
+
+**F127. Populate the 5 CI_* GitHub repo secrets -- [RESOLVED-RESCOPED, Harold 2026-07-24 (option 2)]**
+- Phase: DevOps
+- Platform: N/A (repo)
+- Re-scope decision: the CI_* secrets stay **DELIBERATELY UNSET** -- empty-string dart-defines fully exercise everything the Windows build-verification job verifies (values are runtime-read; CI never runs the app). Populating them adds no coverage today.
+- Fixed instead: `secrets.ci.json` generation in ci.yml wrote pre-Sprint-36 legacy key names; corrected to the current `WINDOWS_GMAIL_*` runtime keys (commit `5c4e0ce`, Sprint 50 branch). CLAUDE.md documents the decision.
+- HOLD trigger: populate the 5 secrets ONLY when CI gains a runtime step that would actually use credentials.
+- Sprint 50 residual: verify the corrected generation yields a green CI run on the Sprint 50 PR.
 
 ### HOLD Items (Periodic Reviews)
 
@@ -245,17 +253,28 @@ _(F64 CI/CD pipeline shipped in Sprint 46 -- `.github/workflows/ci.yml`; see CHA
 
 ### Core App Quality
 
-_(F39 cross-account "No Rule" review screen shipped in Sprint 46. F39 mobile (Android/iOS touch) variant remains a future backlog candidate.)_
+_(F39 cross-account "No Rule" review screen shipped in Sprint 46 (F39 mobile touch variant remains a future candidate). F33-PROD + BUG-DECODE + F120 + F121 shipped in Sprint 49 -- prod DB restored to 5,776 working rules; see SPRINT_49_SUMMARY.md and SPRINT_49_F33_PROD_BODY_RULES_REPORT.md.)_
 
-**F33-PROD. Body-rules cleanup: prod-DB `--env prod --apply` run -- [SPRINT 48 CANDIDATE] (Harold 2026-07-18: deferred from Sprint 47)**
-- The `cleanup_body_rules.dart` script (shipped + dev-DB applied in Sprint 46) still needs a one-time `--env prod --apply` run against the **local prod rules database**.
-- **NOT release-gating**: the prod rules DB is a local SQLite file, NOT bundled into the MSIX and NOT downloaded by users (new Store users get bundled `rules.yaml` defaults). This cleanup has zero effect on Store users -- it is dev-machine housekeeping. Decoupled from the 0.5.5 Store re-release (Harold 2026-07-18).
-- **Depends on BUG-DECODE below** (must land first so a malformed row is reported, not silently deleted, on `--apply`). Back up the prod DB before applying.
+**F126. Remove the 4 ambiguous legacy TLD-block body rules (~15m) Priority 10 -- [SPRINT 50]**
+- Phase: Core App Quality
+- Platform: N/A (prod rules data)
+- The F33-PROD run left 4 legacy `%`-wildcard rows untouched as report-only ambiguous (`/%.nl/`, `/%.ru/`, `/%.store/`, `/.*.xyz`); TLD blocking is covered by the `top_level_domain` rules. Harold's Product Owner decision (2026-07-25, by selecting this item): DELETE the 4 rows. Dry-run first; timestamped prod-DB backup before apply.
+- Depends on: none (decision made)
 
-**BUG-DECODE. `cleanup_body_rules.dart` silently deletes rows on JSON-decode failure -- [SPRINT 48 CANDIDATE] (Copilot round-6; Harold 2026-07-18: assigned to Sprint 48)**
-- In `mobile-app/scripts/cleanup_body_rules.dart` (~L339-345, L357-360): a `condition_body` that fails `jsonDecode` is caught, `patterns` set to `<String>[]`, and the row is then classified **G5 orphan -> in the delete set** on `--apply`. A decode-failing row is thus silently DELETED instead of reported as `ambiguous` for human review.
-- **Fix**: on decode failure, route the row to `ambiguous` (report-only, untouched) with a logged warning -- report-not-delete. Add a unit test feeding malformed JSON that asserts the row is reported, not removed.
-- **Latent, never fired**: the Sprint 46 dev run decoded all 1109 rows cleanly (0 failures), so no data was ever affected. It is a guard on a destructive dev-only script, not a user-facing bug. MUST land before the F33-PROD `--apply` run.
+**F122. Review-No-Rule screen load-error polish (~30m) Priority 12 -- [SPRINT 50]**
+- Phase: Core App Quality
+- Platform: Windows Desktop
+- Copilot round-6 carry-in, verified still open 2026-07-25: `no_rule_review_screen.dart:129` `catch (e)` lacks a stackTrace in the load-error log and the SnackBar shows the raw exception (`Failed to load items: $e`). Mirror the correct sibling at line 255 (`catch (e, s)` + `stackTrace: s`) and show a friendly message.
+
+**F123. Safe-sender classification display fix (~45m) Priority 14 -- [SPRINT 50]**
+- Phase: Core App Quality
+- Platform: Windows Desktop
+- Manage Safe Senders shows an exact-email-shaped pattern (`^...@live\.com$`) labeled "Entire Domain" (observed in Harold's 0.5.6 validation). Root-cause `SafeSenderCategory.categorize()` (stored `patternType` precedence vs pattern-shape analysis, `safe_senders_management_screen.dart:51-73`) and correct the classification display.
+
+**F124. Legacy uncategorized-rule label fix (~30m) Priority 16 -- [SPRINT 50]**
+- Phase: Core App Quality
+- Platform: Windows Desktop
+- Manage Rules shows a pre-classification legacy rule (`SpamAutoDeleteFrom`, null `patternCategory`/`patternSubType`) with a blank "-" sub-label (`rules_management_screen.dart:829-830` null fallthrough to `''`; observed in Harold's 0.5.6 validation). Display a sensible fallback label (e.g. "Uncategorized (legacy)").
 
 ### HOLD Items (Android / Google Play Store)
 
@@ -1160,6 +1179,7 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 6.14 | 2026-07-25 | **Sprint 50 backlog refinement (v1.3 format with Summary Index) + scope selection (Harold): F126 + F122 + F123 + F124 + F127-rescope.** Registered F122-F127: F122/F123/F124 (Core App Quality, from Harold's 0.5.6 validation + Copilot round-6 carry-in), F125 (release self-test probe, Process), F126 (delete the 4 ambiguous legacy TLD rows -- PO decision made), F127 RESOLVED-RESCOPED (CI_* secrets deliberately unset; ci.yml key names fixed `5c4e0ce`; HOLD trigger = CI gains a runtime step). **F-WINSTORE-ASSETS DONE** -- 7 screenshot masters from the live 0.5.7 build committed to `docs/store-assets/windows/` and uploaded by Harold to Partner Center (metadata-only listing update). Pruned Sprint-49-shipped F33-PROD/BUG-DECODE details. |
 | 6.13 | 2026-07-24 | **`0.5.7` LIVE + verified (NO [DEV] title) -- the first fully-correct public release; F119 family closed.** Close-out executed: CHANGELOG `[0.5.7] - 2026-07-24` release heading + links; dev bump 0.5.7 -> 0.5.8 (ONE file -- pubspec.yaml -- the F-VERSION-DERIVE payoff, gate-verified); Store status LIVE. **Android/Google Play track OFF HOLD** (promotion trigger fired). Sprint 50 scope selection pending with Harold. |
 | 6.12 | 2026-07-23 | **Sprint 49 merged (PR #276 -> develop -> main) + `0.5.7` SUBMITTED to Partner Center** after the first-ever full both-sides proof (`APP_ENV=prod` + `NATIVE_APP_ENV=prod`). Rolled Last-Completed-Sprint 48 -> 49; pruned shipped F-VERSION-DERIVE / F-PRECHECK; Sprint 50 branch open (`feature/20260723_Sprint_50`, Phase 6.6 flow). On cert PASS: 0.5.7 close-out + Android/Google Play OFF HOLD. |
 | 6.11 | 2026-07-22 | **Sprint 47 items ALL VALIDATED + CLOSED.** Harold re-validated every F112-F118 item on the Sprint 49 (0.5.7-candidate) dev build -- all "Working as expected. Can be closed." Pruned the 8-item detail block to a close-out note per the Maintenance Guide. Sprint 49 state: F119-c/F120/BUG-DECODE/F121/F-VERSION-DERIVE/F-PRECHECK done on PR #276; Part-C prod-DB applies rehearsed on a copy (F121: 12,539 -> 6,526; F33-PROD: convert 1,300 / remove 752 / 0 decode warnings) awaiting the app-closed window. |
