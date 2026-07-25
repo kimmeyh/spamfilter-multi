@@ -3,7 +3,7 @@
 **Sprint**: 50
 **Date**: 2026-07-25
 **Branch**: `feature/20260723_Sprint_50` (created FROM `feature/20260720_Sprint_49` per the Phase 6.6 carry-forward flow)
-**PR**: draft -> develop (created at plan draft per Phase 3.3.1; DRAFT through Phase 7.7)
+**PR**: [#278](https://github.com/kimmeyh/spamfilter-multi/pull/278) (draft -> develop; DRAFT through Phase 7.7)
 **Status**: DRAFT -- awaiting Phase 3.7 approval
 **Scope source**: 2026-07-25 backlog refinement (v1.3 format); Harold's selection 2026-07-25: F126 + F122 + F123 + F124 + F127 (rescoped)
 
@@ -32,7 +32,7 @@ Phase 3.2.2.2 re-estimate: F127 reduced from ~30m to 5-10m residual (fix already
 
 ## Sprint Scope
 
-### Task 1 -- F126: Remove the 4 ambiguous legacy TLD-block body rules (Priority 10)
+### Task 1 -- F126: Remove the 4 ambiguous legacy TLD-block body rules (Priority 10, Issue #279)
 
 **Value**: This removes the last known-dead legacy rows from the restored prod rules DB, completing the F121/F33-PROD data-restoration arc.
 
@@ -75,7 +75,7 @@ Phase 3.2.2.2 re-estimate: F127 reduced from ~30m to 5-10m residual (fix already
 
 ---
 
-### Task 2 -- F122: Review-No-Rule screen load-error polish (Priority 12)
+### Task 2 -- F122: Review-No-Rule screen load-error polish (Priority 12, Issue #280)
 
 **Value**: This prevents a raw exception string reaching the user and gives support-grade stack traces on load failures (Copilot round-6 carry-in).
 
@@ -108,7 +108,7 @@ Phase 3.2.2.2 re-estimate: F127 reduced from ~30m to 5-10m residual (fix already
 
 ---
 
-### Task 3 -- F123: Safe-sender classification display fix (Priority 14)
+### Task 3 -- F123: Safe-sender classification display fix (Priority 14, Issue #281)
 
 **Value**: This prevents Manage Safe Senders from mislabeling patterns (an exact-email pattern shown as "Entire Domain"), which misleads rule-audit decisions.
 
@@ -147,7 +147,7 @@ Phase 3.2.2.2 re-estimate: F127 reduced from ~30m to 5-10m residual (fix already
 
 ---
 
-### Task 4 -- F124: Legacy uncategorized-rule label fix (Priority 16)
+### Task 4 -- F124: Legacy uncategorized-rule label fix (Priority 16, Issue #282)
 
 **Value**: This prevents legacy pre-classification rules (e.g. `SpamAutoDeleteFrom`) from rendering a blank "-" sub-label in Manage Rules.
 
@@ -181,7 +181,7 @@ Phase 3.2.2.2 re-estimate: F127 reduced from ~30m to 5-10m residual (fix already
 
 ---
 
-### Task 5 -- F127 (rescoped): CI green-run verification (Priority 22)
+### Task 5 -- F127 (rescoped): CI green-run verification (Priority 22, Issue #283)
 
 **Value**: This proves the F127 rescope (corrected `secrets.ci.json` key names, CI_* secrets deliberately unset) leaves the CI pipeline fully green.
 
