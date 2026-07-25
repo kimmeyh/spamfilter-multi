@@ -26,7 +26,8 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
-_(No unreleased changes yet -- 0.5.7 shipped everything below on 2026-07-24.)_
+### 2026-07-25 (Sprint 50)
+- **chore**: F126 -- removed the 4 ambiguous legacy `%`-wildcard TLD-block body rules (`/%\.nl/`, `/%\.ru/`, `/%\.store/`, `/.*\.xyz`) from the prod rules DB via new `scripts/remove_ambiguous_tld_rules.dart` (dry-run default, abort-unless-exactly-4 gate, timestamped backup); TLD blocking remains covered by the `top_level_domain` rules (Issue #279)
 
 ## [0.5.7] - 2026-07-24
 
