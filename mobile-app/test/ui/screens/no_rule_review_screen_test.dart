@@ -152,6 +152,32 @@ void main() {
     expect(find.text('No unaddressed items'), findsOneWidget);
   });
 
+  testWidgets(
+      'load failure shows a friendly SnackBar with no raw exception text '
+      '(F122, Issue #280)', (tester) async {
+    await tester.runAsync(() async {
+      await testHelper.createTestAccount('gmail-a@example.com');
+      registerSavedAccount('gmail-a@example.com');
+      // Force the load to throw: drop the table getLatestCompletedScan
+      // queries during the screen's initState load.
+      final db = await testHelper.dbHelper.database;
+      await db.execute('DROP TABLE scan_results');
+
+      await mountAndLoad(tester);
+    });
+    // Let the SnackBar animation start.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(
+        find.text('Could not load review items. Please try again or check '
+            'the log for details.'),
+        findsOneWidget);
+    // AC-2: no raw exception object reaches the UI.
+    expect(find.textContaining('no such table'), findsNothing);
+    expect(find.textContaining('Exception'), findsNothing);
+  });
+
   testWidgets('aggregates No rule items across multiple accounts by default',
       (tester) async {
     tester.view.physicalSize = const Size(1200, 2400);

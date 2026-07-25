@@ -126,12 +126,16 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
           _lastClickedIndex = null;
         });
       }
-    } catch (e) {
-      _logger.e('Failed to load No Rule review items', error: e);
+    } catch (e, s) {
+      _logger.e('Failed to load No Rule review items', error: e, stackTrace: s);
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load items: $e')),
+          const SnackBar(
+            content: Text(
+                'Could not load review items. Please try again or check the '
+                'log for details.'),
+          ),
         );
       }
     }
