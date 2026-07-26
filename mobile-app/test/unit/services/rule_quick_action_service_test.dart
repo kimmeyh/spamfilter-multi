@@ -213,4 +213,61 @@ void main() {
       expect(provider.safeSenders.safeSenders, isEmpty);
     });
   });
+
+  group('MT-2 (Sprint 50): idempotent quick actions', () {
+    test(
+        'createBlockRule for an already-covered domain reports success with '
+        'alreadyExisted and the EXISTING rule as delta -- not a UNIQUE '
+        'constraint failure', () async {
+      final first = await service.createBlockRule(
+        type: 'entireDomain',
+        value: 'spam.example',
+        senderEmailForConflictCheck: 'a@spam.example',
+      );
+      expect(first.success, isTrue);
+      expect(first.alreadyExisted, isFalse);
+
+      final second = await service.createBlockRule(
+        type: 'entireDomain',
+        value: 'spam.example',
+        senderEmailForConflictCheck: 'b@spam.example',
+      );
+
+      expect(second.success, isTrue,
+          reason: 'the sender is covered -- the caller must mark the item '
+              'resolved instead of surfacing a failure (Harold, Sprint 50 '
+              'manual testing)');
+      expect(second.alreadyExisted, isTrue);
+      expect(second.createdRule, isNotNull);
+      expect(second.createdRule!.name, equals(first.createdRule!.name));
+      // Exactly ONE rule persisted.
+      expect(
+        provider.rules.rules.where((r) => r.name == first.createdRule!.name),
+        hasLength(1),
+      );
+    });
+
+    test(
+        'addSafeSender for an already-present pattern reports success with '
+        'alreadyExisted and does not duplicate the pattern', () async {
+      final first = await service.addSafeSender(
+        value: 'trusted.com',
+        type: 'entireDomain',
+        senderEmailForConflictCheck: 'a@trusted.com',
+      );
+      expect(first.success, isTrue);
+
+      final second = await service.addSafeSender(
+        value: 'trusted.com',
+        type: 'entireDomain',
+        senderEmailForConflictCheck: 'b@trusted.com',
+      );
+
+      expect(second.success, isTrue);
+      expect(second.alreadyExisted, isTrue);
+      expect(second.createdSafeSenderPattern,
+          equals(first.createdSafeSenderPattern));
+      expect(provider.safeSenders.safeSenders, hasLength(1));
+    });
+  });
 }

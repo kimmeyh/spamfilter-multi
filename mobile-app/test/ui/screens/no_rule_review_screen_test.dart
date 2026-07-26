@@ -254,6 +254,75 @@ void main() {
     expect(find.text('Apply Rule'), findsOneWidget);
   });
 
+  // MT-2 (Sprint 50, Harold manual testing): a bulk block action must
+  // (a) treat an already-existing covering rule as success (item resolves,
+  // no 'failed to add block rule'), and (b) auto-resolve UNSELECTED items
+  // the new rule covers -- Live Scan parity.
+  testWidgets(
+      'bulk Block Entire Domain resolves selected items AND auto-resolves '
+      'unselected items the rule covers (MT-2)', (tester) async {
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.runAsync(() async {
+      const accountId = 'gmail-a@example.com';
+      await testHelper.createTestAccount(accountId);
+      registerSavedAccount(accountId);
+      final scanId = await insertCompletedScan(accountId,
+          completedAtMs: 1000, noRuleCount: 0);
+
+      final unmatchedStore = UnmatchedEmailStore(testHelper.dbHelper);
+      // Two senders from the SAME domain (one will be selected, one not)
+      // plus one from a different domain that must stay listed.
+      for (final (uid, sender) in [
+        ('uid-1', 'first@dupdomain.example'),
+        ('uid-2', 'second@dupdomain.example'),
+        ('uid-3', 'other@keepme.example'),
+      ]) {
+        await unmatchedStore.addUnmatchedEmail(UnmatchedEmail(
+          scanResultId: scanId,
+          providerIdentifierType: 'imap_uid',
+          providerIdentifierValue: uid,
+          fromEmail: sender,
+          folderName: 'INBOX',
+          createdAt: DateTime.fromMillisecondsSinceEpoch(2000),
+        ));
+      }
+
+      await mountAndLoad(tester);
+    });
+
+    expect(find.text('3 items'), findsOneWidget);
+
+    // Select ONLY the first dupdomain item.
+    await tester.tap(find.byType(Checkbox).first);
+    await tester.pump();
+    expect(find.text('1 selected'), findsOneWidget);
+
+    // Run the bulk action (menu tap handlers hit the DB -> runAsync).
+    await tester.runAsync(() async {
+      await tester.tap(find.text('Apply Rule'));
+      // Pump the popup-menu open ANIMATION frames before tapping the item --
+      // an un-pumped menu is still at its origin and the tap misses.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text('Add Block Rule - Entire Domain'));
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 800));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    });
+
+    // Selected item resolved AND the unselected same-domain item
+    // auto-resolved; only the other-domain item remains.
+    expect(find.text('1 item'), findsOneWidget);
+    expect(find.text('other@keepme.example'), findsOneWidget);
+    expect(find.text('first@dupdomain.example'), findsNothing);
+    expect(find.text('second@dupdomain.example'), findsNothing);
+  });
+
   // Sprint 46 retro IMP-1 (Harold): provider senders group at the top with a
   // heading and end indicator; lists without provider senders are unchanged.
   testWidgets(

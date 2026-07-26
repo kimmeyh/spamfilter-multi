@@ -24,6 +24,16 @@ class RuleQuickActionResult {
   /// only). Same delta-re-evaluation purpose as [createdRule].
   final String? createdSafeSenderPattern;
 
+  /// MT-2 (Sprint 50, Harold manual testing): true when the requested rule /
+  /// safe sender ALREADY existed. The action is reported as success (the
+  /// email is covered -- callers mark it resolved and drop it from their
+  /// list) but nothing was inserted; [createdRule] /
+  /// [createdSafeSenderPattern] still carry the covering rule/pattern so
+  /// delta re-evaluation resolves every other item it covers. Before this,
+  /// a second item sharing a domain hit the UNIQUE rules.name constraint,
+  /// the action reported failure, and the item stuck in the No-Rules list.
+  final bool alreadyExisted;
+
   const RuleQuickActionResult({
     required this.success,
     required this.displayMessage,
@@ -31,6 +41,7 @@ class RuleQuickActionResult {
     this.error,
     this.createdRule,
     this.createdSafeSenderPattern,
+    this.alreadyExisted = false,
   });
 }
 
@@ -118,6 +129,19 @@ class RuleQuickActionService {
             success: false,
             displayMessage: 'Unknown safe sender type: $type',
           );
+      }
+
+      // MT-2 (Sprint 50): idempotent add -- an identical existing pattern is
+      // success ("already covered"), not a duplicate-insert failure.
+      if (ruleProvider.safeSenders.safeSenders.contains(pattern)) {
+        _logger.i('[OK] Safe sender already exists (type: $type) -- '
+            'reporting as covered');
+        return RuleQuickActionResult(
+          success: true,
+          displayMessage: 'Safe sender already exists -- marked as resolved',
+          createdSafeSenderPattern: pattern,
+          alreadyExisted: true,
+        );
       }
 
       final conflicts = await _conflictResolver.removeConflictingRules(
@@ -223,6 +247,25 @@ class RuleQuickActionService {
             success: false,
             displayMessage: 'Unknown block rule type: $type',
           );
+      }
+
+      // MT-2 (Sprint 50): idempotent create -- rule names are derived
+      // deterministically from the pattern, and rules.name is UNIQUE, so a
+      // same-name rule means this sender is already covered. Report success
+      // with the EXISTING rule as the delta (so callers resolve every item
+      // it covers) instead of failing on the constraint.
+      final existing = ruleProvider.rules.rules
+          .where((r) => r.name == ruleName)
+          .toList();
+      if (existing.isNotEmpty) {
+        _logger.i('[OK] Block rule already exists (type: $type) -- '
+            'reporting as covered');
+        return RuleQuickActionResult(
+          success: true,
+          displayMessage: 'Rule already exists -- marked as resolved',
+          createdRule: existing.first,
+          alreadyExisted: true,
+        );
       }
 
       ConflictResolutionResult conflicts = ConflictResolutionResult.empty;

@@ -27,6 +27,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-07-25 (Sprint 50)
+- **fix**: MT-2 -- quick actions are idempotent: adding a rule/safe sender that already exists reports "already covered" success instead of failing on the UNIQUE rule-name constraint, so Review-No-Rule items resolve and leave the list; after a batch, remaining unselected items covered by the new rules are auto-resolved (Live Scan parity). Fixes "failed to add block rule" on domains already blocked (Sprint 50 manual testing, Harold)
 - **fix**: F127 -- ci.yml `secrets.ci.json` generation now writes the current `WINDOWS_GMAIL_DESKTOP_CLIENT_ID`/`WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET` runtime keys (was pre-Sprint-36 legacy names). The 5 `CI_*` repo secrets stay deliberately unset (Harold 2026-07-24, option 2): empty-string dart-defines fully exercise the Windows build-verification job; populate only when CI gains a runtime step that uses credentials. Verified green on CI (Issue #283)
 - **fix**: F124 -- Manage Rules shows "Uncategorized (legacy)" for pre-classification rules (e.g. SpamAutoDeleteFrom) instead of a blank "-" sub-label; consistent across the list tile, details dialog, and a new category filter chip that appears only when such rules exist (Issue #282)
 - **fix**: F122 -- Review No Rule Items load errors now log the stack trace and show a friendly SnackBar instead of the raw exception (Copilot round-6 carry-in; Issue #280)

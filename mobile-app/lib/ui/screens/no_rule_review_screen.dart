@@ -4,9 +4,14 @@ import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 
 import '../../adapters/storage/secure_credentials_store.dart';
+import '../../core/models/email_message.dart';
+import '../../core/models/rule_set.dart' show Rule, RuleSet;
+import '../../core/models/safe_sender_list.dart';
 import '../../core/providers/rule_set_provider.dart';
 import '../../core/services/auth_results_parser.dart';
 import '../../core/services/email_body_parser.dart';
+import '../../core/services/pattern_compiler.dart';
+import '../../core/services/rule_evaluator.dart';
 import '../../core/services/rule_quick_action_service.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/scan_result_store.dart';
@@ -233,6 +238,11 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
     int succeeded = 0;
     int failed = 0;
     int conflictsRemoved = 0;
+    int alreadyCovered = 0;
+    // MT-2 (Sprint 50): the batch's covering rules / safe senders, for the
+    // auto-resolve delta pass below (Live Scan parity).
+    final deltaRules = <Rule>[];
+    final deltaSenders = <String>[];
 
     for (final item in selected) {
       // Copilot round 5: one throwing item must not abort the whole batch
@@ -243,6 +253,15 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
         if (result.success) {
           succeeded++;
           conflictsRemoved += result.conflictsRemoved;
+          if (result.alreadyExisted) alreadyCovered++;
+          final rule = result.createdRule;
+          if (rule != null && !deltaRules.any((r) => r.name == rule.name)) {
+            deltaRules.add(rule);
+          }
+          final sender = result.createdSafeSenderPattern;
+          if (sender != null && !deltaSenders.contains(sender)) {
+            deltaSenders.add(sender);
+          }
           final id = item.email.id;
           if (id != null) {
             await _unmatchedStore.markAsProcessed(id, true);
@@ -263,9 +282,18 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
       }
     }
 
+    // MT-2 (Sprint 50, Harold manual testing): auto-resolve the REMAINING
+    // (unselected) items that the batch's rules / safe senders now cover, so
+    // the list behaves like Live Scan (F120 delta re-evaluation) instead of
+    // keeping items whose covering rule already exists.
+    final autoResolved =
+        await _autoResolveCoveredItems(deltaRules, deltaSenders);
+
     if (!mounted) return;
 
     final parts = <String>['$actionLabel: $succeeded succeeded'];
+    if (alreadyCovered > 0) parts.add('$alreadyCovered already covered');
+    if (autoResolved > 0) parts.add('$autoResolved more auto-resolved');
     if (failed > 0) parts.add('$failed failed');
     if (conflictsRemoved > 0) {
       parts.add('$conflictsRemoved conflicting rule/sender${conflictsRemoved > 1 ? "s" : ""} removed');
@@ -282,6 +310,64 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
 
     _clearSelection();
     await _loadItems();
+  }
+
+  /// MT-2 (Sprint 50): marks as processed every still-listed, unselected
+  /// item that the batch's newly-created (or already-existing) rules /
+  /// safe senders cover, and returns how many were resolved this way.
+  /// Mirrors the Live Scan F120 delta re-evaluation: only the delta is
+  /// evaluated, never the full rule set.
+  Future<int> _autoResolveCoveredItems(
+    List<Rule> deltaRules,
+    List<String> deltaSenders,
+  ) async {
+    if (deltaRules.isEmpty && deltaSenders.isEmpty) return 0;
+    final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
+    final evaluator = RuleEvaluator(
+      ruleSet: RuleSet(
+        version: ruleProvider.rules.version,
+        settings: const {},
+        rules: deltaRules,
+      ),
+      safeSenderList: SafeSenderList(safeSenders: deltaSenders),
+      compiler: PatternCompiler(),
+    );
+
+    int autoResolved = 0;
+    for (final item in _allItems) {
+      final id = item.email.id;
+      if (id == null || _selectedIds.contains(id)) continue;
+      final message = EmailMessage(
+        id: 'unmatched-$id',
+        from: item.email.fromEmail,
+        subject: item.email.subject ?? '',
+        body: item.email.bodyPreview ?? '',
+        headers: {
+          'from': item.email.fromEmail,
+          'subject': item.email.subject ?? '',
+        },
+        receivedDate: item.email.emailDate ?? item.email.createdAt,
+        folderName: item.email.folderName,
+      );
+      try {
+        final eval = await evaluator.evaluate(message);
+        if (eval.matchedRule.isNotEmpty || eval.isSafeSender) {
+          await _unmatchedStore.markAsProcessed(id, true);
+          autoResolved++;
+        }
+      } catch (e, s) {
+        // A malformed delta pattern must not abort the pass; the item simply
+        // stays listed.
+        _logger.e('Auto-resolve evaluation failed for an item',
+            error: e, stackTrace: s);
+      }
+    }
+    if (autoResolved > 0) {
+      _logger.i('Auto-resolved $autoResolved additional item(s) covered by '
+          'the batch delta (${deltaRules.length} rule(s), '
+          '${deltaSenders.length} safe sender(s))');
+    }
+    return autoResolved;
   }
 
   Future<void> _bulkAddSafeSender(String type) async {
