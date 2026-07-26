@@ -4,7 +4,7 @@
 **Date**: 2026-07-25
 **Branch**: `feature/20260723_Sprint_50` (created FROM `feature/20260720_Sprint_49` per the Phase 6.6 carry-forward flow)
 **PR**: [#278](https://github.com/kimmeyh/spamfilter-multi/pull/278) (draft -> develop; DRAFT through Phase 7.7)
-**Status**: DRAFT -- awaiting Phase 3.7 approval
+**Status**: APPROVED (Phase 3.7, Harold 2026-07-25). Tasks 1-5 COMPLETE; suite + CI green; Phase 5.3 manual testing next
 **Scope source**: 2026-07-25 backlog refinement (v1.3 format); Harold's selection 2026-07-25: F126 + F122 + F123 + F124 + F127 (rescoped)
 
 **Estimating method**: TWO-metric MINUTE-based per `docs/CODING_VELOCITY.md` (Sprint 49 recompute note: prefer the LOW end of band for S-size SVC-EDIT/DOCS items).
@@ -65,7 +65,7 @@ Phase 3.2.2.2 re-estimate: F127 reduced from ~30m to 5-10m residual (fix already
 
 **Model**: Sonnet -- *why not Haiku*: destructive apply against the LIVE prod DB; needs the dry-run/abort/backup verification discipline and environment judgment (prod vs dev DB paths), beyond mechanical scripting.
 
-**Executed-by** (filled at completion):
+**Executed-by**: Fable 5 (in-session execution; live prod-DB window coordination)
 
 **Step-types**: DATA + SVC-NEW (small script) + TEST-UNIT
 
@@ -100,7 +100,7 @@ Phase 3.2.2.2 re-estimate: F127 reduced from ~30m to 5-10m residual (fix already
 
 **Model**: Haiku -- single-file mirror of an in-file sibling pattern.
 
-**Executed-by** (filled at completion):
+**Executed-by**: Fable 5 (in-session; trivial mirror edit not worth a delegation round-trip)
 
 **Step-types**: SVC-EDIT + TEST-WIDGET
 
@@ -137,7 +137,7 @@ Phase 3.2.2.2 re-estimate: F127 reduced from ~30m to 5-10m residual (fix already
 
 **Model**: Sonnet -- *why not Haiku*: root cause spans stored DB data vs display-logic precedence and carries a conditional Class-2 decision (R-3); requires investigation judgment, not pattern-following.
 
-**Executed-by** (filled at completion):
+**Executed-by**: Fable 5 (in-session; root-cause escalated to a 350-row data repair)
 
 **Step-types**: SVC-EDIT + TEST-UNIT (+ DATA if R-1 finds bad stored data)
 
@@ -173,7 +173,7 @@ Phase 3.2.2.2 re-estimate: F127 reduced from ~30m to 5-10m residual (fix already
 
 **Model**: Haiku -- well-defined single-file display fallback with named line anchors.
 
-**Executed-by** (filled at completion):
+**Executed-by**: Fable 5 (in-session; scope grew to include the latent filter-key mismatch)
 
 **Step-types**: UI-MOVE (label logic) + TEST-WIDGET
 
@@ -202,7 +202,7 @@ Phase 3.2.2.2 re-estimate: F127 reduced from ~30m to 5-10m residual (fix already
 
 **Model**: Haiku -- status verification.
 
-**Executed-by** (filled at completion):
+**Executed-by**: Fable 5 (in-session; single gh command)
 
 **Step-types**: DOCS (verification note)
 
