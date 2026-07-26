@@ -27,6 +27,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-07-25 (Sprint 50)
+- **fix**: F124 -- Manage Rules shows "Uncategorized (legacy)" for pre-classification rules (e.g. SpamAutoDeleteFrom) instead of a blank "-" sub-label; consistent across the list tile, details dialog, and a new category filter chip that appears only when such rules exist (Issue #282)
 - **fix**: F122 -- Review No Rule Items load errors now log the stack trace and show a friendly SnackBar instead of the raw exception (Copilot round-6 carry-in; Issue #280)
 - **fix**: F123 -- Manage Safe Senders no longer mislabels patterns: 350 prod / 341 dev safe-sender rows carried a legacy write-time `pattern_type` misclassification (exact-email patterns labeled 'subdomain' -> displayed "Entire Domain"; subdomain-wildcard patterns labeled 'domain' -> displayed "Exact Domain"). New `scripts/repair_safe_sender_types.dart` recomputes the stored type with the current classifier (dry-run default, backup, 'custom' never touched); display precedence (stored type is authoritative, Sprint 37) unchanged. Also corrects duplicate detection, which keys on `pattern_type` (Issue #281)
 - **chore**: F126 -- removed the 4 ambiguous legacy `%`-wildcard TLD-block body rules (`/%\.nl/`, `/%\.ru/`, `/%\.store/`, `/.*\.xyz`) from the prod rules DB via new `scripts/remove_ambiguous_tld_rules.dart` (dry-run default, abort-unless-exactly-4 gate, timestamped backup); TLD blocking remains covered by the `top_level_domain` rules (Issue #279)

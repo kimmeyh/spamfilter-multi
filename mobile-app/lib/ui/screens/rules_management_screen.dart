@@ -69,6 +69,13 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
     'top_level_domain': 'Top-Level Domain',
   };
 
+  // F124 (Sprint 50): legacy pre-classification rules (e.g.
+  // SpamAutoDeleteFrom) have a NULL patternCategory/patternSubType and used
+  // to render a blank "-" sub-label. One shared key/label pair keeps the
+  // tile, the details dialog, and the category filter bucket consistent.
+  static const String _uncategorizedKey = 'uncategorized';
+  static const String _uncategorizedLabel = 'Uncategorized (legacy)';
+
   @override
   void initState() {
     super.initState();
@@ -116,9 +123,10 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
     // funnel for all filtered-list rebuilds on this screen.)
     clearRowSelection();
     _filteredRules = _rules.where((rule) {
-      // Category filter
+      // Category filter (null categories bucket under _uncategorizedKey,
+      // matching _getCategoryCounts and the uncategorized filter chip).
       if (_selectedCategories.isNotEmpty) {
-        final cat = rule.patternCategory ?? '';
+        final cat = rule.patternCategory ?? _uncategorizedKey;
         if (!_selectedCategories.contains(cat)) return false;
       }
 
@@ -144,7 +152,7 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
   Map<String, int> _getCategoryCounts() {
     final counts = <String, int>{};
     for (final rule in _rules) {
-      final cat = rule.patternCategory ?? 'uncategorized';
+      final cat = rule.patternCategory ?? _uncategorizedKey;
       counts[cat] = (counts[cat] ?? 0) + 1;
     }
     return counts;
@@ -255,8 +263,8 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
 
   void _showRuleDetails(Rule rule) {
     final displayName = rule.sourceDomain ?? rule.name;
-    final categoryLabel = _categoryLabels[rule.patternCategory] ?? rule.patternCategory ?? 'Unknown';
-    final subTypeLabel = _subTypeLabels[rule.patternSubType] ?? rule.patternSubType ?? 'Unknown';
+    final categoryLabel = _categoryLabels[rule.patternCategory] ?? rule.patternCategory ?? _uncategorizedLabel;
+    final subTypeLabel = _subTypeLabels[rule.patternSubType] ?? rule.patternSubType ?? _uncategorizedLabel;
 
     showDialog(
       context: context,
@@ -647,6 +655,26 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
                     checkmarkColor: Colors.blue.shade800,
                   );
                 }),
+                // F124: legacy uncategorized rules get their own filter chip
+                // (shown only when such rules exist).
+                if ((categoryCounts[_uncategorizedKey] ?? 0) > 0)
+                  FilterChip(
+                    label: Text(
+                        '$_uncategorizedLabel (${categoryCounts[_uncategorizedKey]})'),
+                    selected: _selectedCategories.contains(_uncategorizedKey),
+                    onSelected: (selected) {
+                      setState(() {
+                        if (selected) {
+                          _selectedCategories.add(_uncategorizedKey);
+                        } else {
+                          _selectedCategories.remove(_uncategorizedKey);
+                        }
+                        _applyFilter();
+                      });
+                    },
+                    selectedColor: Colors.blue.shade100,
+                    checkmarkColor: Colors.blue.shade800,
+                  ),
                 if (hasFilters)
                   ActionChip(
                     label: const Text('Clear'),
@@ -826,7 +854,7 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
 
   Widget _buildRuleTile(Rule rule, int index) {
     final displayName = rule.sourceDomain ?? rule.name;
-    final categoryLabel = _categoryLabels[rule.patternCategory] ?? rule.patternCategory ?? '';
+    final categoryLabel = _categoryLabels[rule.patternCategory] ?? rule.patternCategory ?? _uncategorizedLabel;
     final subTypeLabel = _subTypeLabels[rule.patternSubType] ?? rule.patternSubType ?? '';
 
     // Sprint 37 Phase 7 Imp-1 round 6 (Alt-2 final UX, supersedes rounds
@@ -896,7 +924,9 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
                     ? _getSubTypeColor(rule.patternSubType).withValues(alpha: 0.85)
                     : Colors.grey.shade400,
                 size: 20,
-                semanticLabel: '$categoryLabel category, $subTypeLabel sub-type',
+                semanticLabel: subTypeLabel.isEmpty
+                    ? '$categoryLabel category'
+                    : '$categoryLabel category, $subTypeLabel sub-type',
               ),
               tooltip: 'View rule details',
               padding: EdgeInsets.zero,
@@ -917,7 +947,7 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
             overflow: TextOverflow.ellipsis,
           ),
           subtitle: Text(
-            '$categoryLabel - $subTypeLabel',
+            subTypeLabel.isEmpty ? categoryLabel : '$categoryLabel - $subTypeLabel',
             style: TextStyle(
               fontSize: 11,
               color: rule.enabled ? _getSubTypeColor(rule.patternSubType) : Colors.grey.shade400,
