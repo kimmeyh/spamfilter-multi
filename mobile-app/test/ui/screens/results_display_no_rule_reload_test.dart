@@ -333,5 +333,66 @@ void main() {
         await tester.pump();
       });
     });
+
+    // MT-1 (Sprint 50, Harold manual testing): the quick-action popup uses a
+    // FIXED 3-column grid so every action -- Block Entire Domain above all --
+    // sits in the SAME position for every item. This pins the geometry:
+    // columns align across the Safe and Block rows, ordering is
+    // Email < Exact Domain < Entire Domain left-to-right, and Block Subject
+    // sits on its own full-width row below the grid.
+    testWidgets(
+        'MT-1: popup action grid keeps fixed aligned columns across rows',
+        (tester) async {
+      tester.view.physicalSize = const Size(1200, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.runAsync(() async {
+        final ruleProvider = await buildRuleProvider();
+        final scanProvider = EmailScanProvider();
+
+        await mountAndLoadDbWidget(
+            tester,
+            wrapScreen(ruleProvider, scanProvider,
+                instanceKey: const ValueKey('gridMount')));
+
+        await tester.tap(find.text('bad@spam.com'));
+        await tester.pump(const Duration(milliseconds: 300));
+      });
+
+      // All six grid actions plus the subject row render.
+      for (final label in [
+        'Exact Email',
+        'Exact Domain',
+        'Entire Domain',
+        'Block Email',
+        'Block Exact Domain',
+        'Block Entire Domain',
+        'Block Subject',
+      ]) {
+        expect(find.text(label), findsOneWidget,
+            reason: '"$label" must always be present in the popup grid');
+      }
+
+      // Columns align vertically between the Safe row and the Block row.
+      double x(String label) => tester.getTopLeft(find.text(label)).dx;
+      expect(x('Exact Email'), equals(x('Block Email')),
+          reason: 'column 1 must align across Safe and Block rows');
+      expect(x('Exact Domain'), equals(x('Block Exact Domain')),
+          reason: 'column 2 must align across Safe and Block rows');
+      expect(x('Entire Domain'), equals(x('Block Entire Domain')),
+          reason: 'column 3 must align across Safe and Block rows');
+
+      // Left-to-right ordering: Email < Exact Domain < Entire Domain.
+      expect(x('Block Email'), lessThan(x('Block Exact Domain')));
+      expect(x('Block Exact Domain'), lessThan(x('Block Entire Domain')));
+
+      // Block Subject is a full-width row below the grid, starting at
+      // column 1's x position.
+      expect(x('Block Subject'), equals(x('Block Email')));
+      expect(tester.getTopLeft(find.text('Block Subject')).dy,
+          greaterThan(tester.getTopLeft(find.text('Block Entire Domain')).dy));
+    });
   });
 }
