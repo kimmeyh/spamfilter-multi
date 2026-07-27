@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-07-24 (0.5.7 LIVE -- Harold verified no [DEV]; CHANGELOG [0.5.7] released; dev bumped 0.5.8; ANDROID TRACK OFF HOLD -- see Version History 6.13)
+**Last Updated**: 2026-07-27 (**0.5.8 SUBMITTED to Partner Center** -- Sprint 50 merged to main, MSIX built + both-sides proof passed, in certification; Sprint 51 branch open. See Version History 6.15)
 
 ## How to Maintain This Document
 
@@ -111,6 +111,10 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 44 | docs/sprints/SPRINT_44_RETROSPECTIVE.md | [OK] Complete | Jun 26 - Jul 1, 2026 (PR #266) |
 | 45 | docs/sprints/SPRINT_45_RETROSPECTIVE.md | [OK] Complete | Jul 1-2, 2026 (PR #268) |
 | 46 | docs/sprints/SPRINT_46_RETROSPECTIVE.md | [OK] Complete | Jul 2-11, 2026 (PR #270) |
+| 47 | docs/sprints/SPRINT_47_RETROSPECTIVE.md | [OK] Complete | Jul 11-18, 2026 (PR #272) |
+| 48 | docs/sprints/SPRINT_48_RETROSPECTIVE.md | [OK] Complete | Jul 19-20, 2026 (PR #274; F119-b hotfix) |
+| 49 | docs/sprints/SPRINT_49_SUMMARY.md | [OK] Complete | Jul 21-23, 2026 (PR #276) |
+| 50 | docs/sprints/SPRINT_50_SUMMARY.md | [OK] Complete | Jul 25-27, 2026 (PR #278; 0.5.8 submitted) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -118,23 +122,16 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 49** (2026-07-21 -- 2026-07-23; merged PR #276 -> develop -> main)
-- **Type**: Field-defect root-cause sprint (Fable 5) + prod-DB restoration + process hardening. 7/7 tasks.
-- **Delivered**: F119-c (native [DEV]-title root cause: CMake env-var-only sourcing; now derives from the APP_ENV dart-define -- ADR-0041; both-sides `--print-env` probe), F120 (quick-action freeze: delta-scoped re-eval + time-based yields), BUG-DECODE, F121 (LIVE prod dedup 12,539 -> 6,528 + F73 idempotency guard), F33-PROD (LIVE prod body-rules cleanup -> **5,776 working rules**), F-VERSION-DERIVE (version bump = pubspec-only), F-PRECHECK (mandatory 5.1.2 checklist; caught a real defect on first dogfood). 0.5.7 bump.
-- **Verification**: suite +1,775/29; analyze clean; Copilot 4/4 fixed+resolved (incl. a NO-HARM proof for the live dedup); Harold validated Parts A/B/C + every Sprint 47 item with zero deviations.
-- **Retro**: all 6 improvements applied "now" (anti-stop task-inventory rule, Edit exact-bytes discipline, Executed-by, ADR-0041, --concurrency=4 policy, Phase 6.6 carry-forward rewrite) + Fable/Opus tier rename.
-- **Release**: `0.5.7` MSIX built from merged main, FULL both-sides proof passed, **SUBMITTED to Partner Center 2026-07-23** (in certification).
-- **Docs**: SPRINT_49_PLAN.md / SPRINT_49_RETROSPECTIVE.md / SPRINT_49_SUMMARY.md / SPRINT_49_F33_PROD_BODY_RULES_REPORT.md / ADR-0041.
+**Sprint 50** (2026-07-25 -- 2026-07-27; merged PR #278 -> develop, PR #284 -> main)
+- **Type**: Core App Quality polish + live prod-data repair + manual-validation-driven UX fixes. 5/5 planned + 5 mid-sprint + 1 escalated.
+- **Delivered**: F126 (4 legacy TLD rows removed from prod: 5,887 -> 5,883), F122 (load-error stackTrace + friendly SnackBar), F123 (350 prod / 341 dev safe-sender `pattern_type` rows repaired -- root cause was DATA, not display precedence, so the planned Class-2 never triggered), F124 ("Uncategorized (legacy)" fallback + latent filter-key fix), F127-residual (CI green with corrected `secrets.ci.json` keys). From manual validation: MT-1 (fixed 3-column quick-action grid), MT-2/MT-2b/MT-2c (idempotent quick actions + covered-item sweep on every load), MT-3 (Review "No Rule" entry points on Manual Scan + Results). Escalated from backlog on Copilot's finding: **F128** (provider silent no-op on unloaded cache).
+- **Verification**: suite 1,806 passed / 29 skipped / 0 failed; analyze clean; CI green both jobs; Harold validated every item ("All working as expected and can be closed"). Both live-data tasks rehearsed on copies with rollback backups retained.
+- **Copilot**: 9 findings across 4 rounds, ALL fixed in-sprint and resolved -- notably the idempotent fast-paths skipping conflict resolution, and per-evaluation logging on bulk sweeps (opt-in `silent` mode).
+- **Retro**: 5 improvements applied "now" (terminology rename, retro Step-5 completeness gate, CI-platform parallel-site rule, fix-boundary rule, recorded-justification-on-model-deviation); 2 backlogged (F128 residual, F129).
+- **Release**: `0.5.8` MSIX built from merged main (16.8 MB, manifest 0.5.8.0), FULL both-sides proof passed, **SUBMITTED to Partner Center 2026-07-27** (in certification).
+- **Docs**: SPRINT_50_PLAN.md / SPRINT_50_RETROSPECTIVE.md / SPRINT_50_SUMMARY.md.
 
-_(Prior: **Sprint 48** F119-b hotfix, PR #274; **Sprint 47** F112-F119 + 8 IMPs, PR #272 -- see per-sprint docs.)_
-
-**Sprint 50 (2026-07-25 -- 2026-07-26; PR [#278](https://github.com/kimmeyh/spamfilter-multi/pull/278), awaiting merge)** -- rolls into "Last Completed Sprint" at Sprint 51 pre-kickoff (Phase 3.2.1).
-- **Type**: Core App Quality polish + live prod-data repair + manual-validation-driven UX fixes. 5/5 planned tasks + 5 mid-sprint items.
-- **Delivered**: F126 (4 legacy TLD rows removed from prod: 5,887 -> 5,883), F122 (load-error stackTrace + friendly SnackBar), F123 (350 prod / 341 dev safe-sender `pattern_type` rows repaired -- root cause was DATA, not display precedence, so no Class-2), F124 ("Uncategorized (legacy)" fallback + latent filter-key fix), F127-residual (CI green with corrected `secrets.ci.json` keys); then from manual validation: MT-1 (fixed 3-column quick-action grid), MT-2/MT-2b/MT-2c (idempotent quick actions + covered-item sweep on every load), MT-3 (Review "No Rule" entry point on Manual Scan + Results).
-- **Verification**: full suite green; analyze clean; CI green both jobs (one cross-platform test escape caught at the Phase 6.1.1 gate, fixed in `3405a40`); Harold validated every item -- "All working as expected and can be closed."
-- **Retro**: 5 improvements applied now (terminology rename, retro Step-5 completeness gate, CI-platform parallel-site rule, fix-boundary rule, recorded-justification-on-model-deviation); 2 to backlog (F128, F129).
-- **Backlog filed**: F128 (provider silent no-op, Priority 18), F129 (WinWright coverage carry-in, Priority 19).
-- **Docs**: SPRINT_50_PLAN.md / SPRINT_50_RETROSPECTIVE.md (+ Claude draft).
+_(Prior: **Sprint 49** F119-c + prod-DB restoration, PR #276; **Sprint 48** F119-b hotfix, PR #274; **Sprint 47** F112-F119 + 8 IMPs, PR #272 -- see per-sprint docs.)_
 
 ## Next Sprint Candidates
 
@@ -1201,6 +1198,7 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 6.15 | 2026-07-27 | **Sprint 50 merged (PR #278 -> develop, PR #284 -> main) + `0.5.8` SUBMITTED to Partner Center.** MSIX built from merged main; both-sides proof passed; credentials verified embedded. Sprint 51 branch `feature/20260727_Sprint_51` opened per Phase 6.6. Copilot review closed at 9 findings across 4 rounds, all fixed in-sprint (incl. F128 escalated from backlog). Open carry-ins for Sprint 51: F128 sibling early-returns (`removeRule`/`updateRule`/`removeSafeSender`), F129 WinWright coverage. STORE_RELEASE_PROCESS Step 6 gained the release-notes location (Store listings -> "What's new in this version"), which was undocumented. |
 | 6.14 | 2026-07-25 | **Sprint 50 backlog refinement (v1.3 format with Summary Index) + scope selection (Harold): F126 + F122 + F123 + F124 + F127-rescope.** Registered F122-F127: F122/F123/F124 (Core App Quality, from Harold's 0.5.6 validation + Copilot round-6 carry-in), F125 (release self-test probe, Process), F126 (delete the 4 ambiguous legacy TLD rows -- PO decision made), F127 RESOLVED-RESCOPED (CI_* secrets deliberately unset; ci.yml key names fixed `5c4e0ce`; HOLD trigger = CI gains a runtime step). **F-WINSTORE-ASSETS DONE** -- 7 screenshot masters from the live 0.5.7 build committed to `docs/store-assets/windows/` and uploaded by Harold to Partner Center (metadata-only listing update). Pruned Sprint-49-shipped F33-PROD/BUG-DECODE details. |
 | 6.13 | 2026-07-24 | **`0.5.7` LIVE + verified (NO [DEV] title) -- the first fully-correct public release; F119 family closed.** Close-out executed: CHANGELOG `[0.5.7] - 2026-07-24` release heading + links; dev bump 0.5.7 -> 0.5.8 (ONE file -- pubspec.yaml -- the F-VERSION-DERIVE payoff, gate-verified); Store status LIVE. **Android/Google Play track OFF HOLD** (promotion trigger fired). Sprint 50 scope selection pending with Harold. |
 | 6.12 | 2026-07-23 | **Sprint 49 merged (PR #276 -> develop -> main) + `0.5.7` SUBMITTED to Partner Center** after the first-ever full both-sides proof (`APP_ENV=prod` + `NATIVE_APP_ENV=prod`). Rolled Last-Completed-Sprint 48 -> 49; pruned shipped F-VERSION-DERIVE / F-PRECHECK; Sprint 50 branch open (`feature/20260723_Sprint_50`, Phase 6.6 flow). On cert PASS: 0.5.7 close-out + Android/Google Play OFF HOLD. |
