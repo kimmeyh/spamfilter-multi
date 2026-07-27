@@ -1,4 +1,4 @@
-# Build release APK for manual testing
+# Build release APK for manual validation
 param(
   [string]$ProjectPath = "$(Split-Path $PSScriptRoot -Parent)",
   [switch]$VerboseOutput

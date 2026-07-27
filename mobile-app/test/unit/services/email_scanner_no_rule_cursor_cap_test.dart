@@ -13,7 +13,7 @@
 ///      adapter.
 ///
 /// Real IMAP `SEARCH SINCE` wire behavior is provider-coupled and is
-/// verified via Phase 5.3 manual testing (consistent with the Sprint 37
+/// verified via Phase 5.3 manual validation (consistent with the Sprint 37
 /// retrospective Category 2 disposition for IMAP UID search).
 library;
 

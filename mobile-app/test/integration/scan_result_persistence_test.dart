@@ -290,7 +290,7 @@ void main() {
     });
 
     // F39 (Sprint 46) regression: unmatched_emails MUST be written at scan
-    // completion. Manual testing found the table had NO production writer
+    // completion. Manual validation found the table had NO production writer
     // (a Sprint 4 placeholder only logged "will persist in Task D"), so the
     // cross-account Review "No Rule" Items screen always showed 0 items
     // while scan_results.no_rule_count said otherwise.

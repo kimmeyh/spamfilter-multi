@@ -1,6 +1,4 @@
 ***BELOW IS NOT FOR CLAUDE CODE, GITHUB COPILOT, CHATGPT OR COPILOT PULL REQUEST (PR) REVIEW USE***
-claude --resume 1ca36477-c303-4cb2-b4f7-d2b2b2e720ce # from 07/11/26
-claude --resume 0b7fc320-c9af-4b74-b458-f5472ebd43ca # from 07/20/26
 claude --continue # generally the best option
 
 Github Copilot Review Requests:
@@ -12,13 +10,23 @@ Address any comments provided by github.com copilot review and:
 Let me know when completed so I can review and merge the PR
 Please wait 7 minutes for it to complete.
 
+Common Sprint PR merged prompt:
+PR merged.  Please continue following the sprint checklist and \docs\SPRINT_EXECUTION_WORKFLOW.md until backlog refinement (docs\BACKLOG_REFINEMENT.md)
+
+Common post reboot and Claude Code crashed prompts:
+claude --continue
 Please review the "Sprint Execution Docs", Sprint plan and sprint checklist to determine what steps in the current sprint have been completed and not completed, then the next steps.
 
-Common Prompts:
+Common prompt when it did not follow instructions:
+figure out how this happened and update all "sprint execution docs", memories, skills, agents, claude.md, commands, hooks... so that it does not occur in the future.
+
+  all
 - Sprint approval:
-Sprint plan approved, proceed with execution.  
-All Sprint asks and sub-tasks are approved.  Continue without addition approvals until Full Manual Testing.
-Do not stop to ask questions unless meeting the criteria in D:\Data\Harold\github\spamfilter-multi\docs\SPRINT_STOPPING_CRITERIA.md
+Sprint plan approved, proceed with execution. 
+All Sprint tasks and sub-tasks are approved.  
+Continue without addition approvals until Manual Validation, providing your recommendation for Manual Validation steps.
+Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPING_CRITERIA.md
+
 Next:----------------------------------------
 What is the way that Samsung Galaxy S24+ Android email address does authentication for gmail, as it only requests authentication once over multiple years, but the current Windows Desktop and Android app method here seems to need to request an update about once per day?
 

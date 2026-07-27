@@ -304,7 +304,7 @@ While running Windows app via `build-windows.ps1`, monitor the console output:
 
 ## Cross-Platform Checklist
 
-Before closing manual testing, verify:
+Before closing manual validation, verify:
 
 - [ ] **Windows Desktop**
   - [ ] App builds without errors
@@ -348,7 +348,7 @@ Each sprint may have specific areas to focus on. Update this section as needed:
 
 ## Reporting Issues
 
-If you find issues during manual testing:
+If you find issues during manual validation:
 
 1. **Document the Issue**
    - Platform (Windows / Android)

@@ -24,6 +24,16 @@ class RuleQuickActionResult {
   /// only). Same delta-re-evaluation purpose as [createdRule].
   final String? createdSafeSenderPattern;
 
+  /// MT-2 (Sprint 50, Harold manual validation): true when the requested rule /
+  /// safe sender ALREADY existed. The action is reported as success (the
+  /// email is covered -- callers mark it resolved and drop it from their
+  /// list) but nothing was inserted; [createdRule] /
+  /// [createdSafeSenderPattern] still carry the covering rule/pattern so
+  /// delta re-evaluation resolves every other item it covers. Before this,
+  /// a second item sharing a domain hit the UNIQUE rules.name constraint,
+  /// the action reported failure, and the item stuck in the No-Rules list.
+  final bool alreadyExisted;
+
   const RuleQuickActionResult({
     required this.success,
     required this.displayMessage,
@@ -31,6 +41,7 @@ class RuleQuickActionResult {
     this.error,
     this.createdRule,
     this.createdSafeSenderPattern,
+    this.alreadyExisted = false,
   });
 }
 
@@ -120,10 +131,45 @@ class RuleQuickActionService {
           );
       }
 
+      // F128 (Copilot review, PR #278): the idempotency check reads the
+      // provider cache, which returns an EMPTY list when unloaded -- that
+      // would silently miss the fast-path and treat an existing pattern as
+      // new. Ensure the cache is loaded before deciding.
+      await _ensureSafeSendersLoaded();
+
+      // MT-2 (Sprint 50): idempotent add -- an identical existing pattern is
+      // success ("already covered"), not a duplicate-insert failure.
+      final alreadyPresent =
+          ruleProvider.safeSenders.safeSenders.contains(pattern);
+
+      // Conflict resolution runs on BOTH paths (Copilot review, PR #278):
+      // an existing safe-sender pattern does NOT imply the conflicting block
+      // rules are gone -- rules can be imported, restored, or re-created after
+      // the safe sender was added, and a surviving block rule would keep
+      // deleting mail the user has explicitly whitelisted. The idempotent
+      // fast-path must still clean up, it just skips the INSERT.
       final conflicts = await _conflictResolver.removeConflictingRules(
         emailAddress: senderEmailForConflictCheck,
         ruleProvider: ruleProvider,
       );
+
+      if (alreadyPresent) {
+        _logger.i('[OK] Safe sender already exists (type: $type) -- '
+            'reporting as covered '
+            '(${conflicts.conflictsRemoved} conflicting rule(s) removed)');
+        var message = 'Safe sender already exists -- marked as resolved';
+        if (conflicts.conflictsRemoved > 0) {
+          message +=
+              ' (removed ${conflicts.conflictsRemoved} conflicting rule${conflicts.conflictsRemoved > 1 ? "s" : ""})';
+        }
+        return RuleQuickActionResult(
+          success: true,
+          displayMessage: message,
+          conflictsRemoved: conflicts.conflictsRemoved,
+          createdSafeSenderPattern: pattern,
+          alreadyExisted: true,
+        );
+      }
 
       await ruleProvider.addSafeSender(pattern);
       await ruleProvider.loadSafeSenders();
@@ -225,11 +271,49 @@ class RuleQuickActionService {
           );
       }
 
+      // MT-2 (Sprint 50): idempotent create -- rule names are derived
+      // deterministically from the pattern, and rules.name is UNIQUE, so a
+      // same-name rule means this sender is already covered. Report success
+      // with the EXISTING rule as the delta (so callers resolve every item
+      // it covers) instead of failing on the constraint.
+      // F128 (Copilot review, PR #278): see addSafeSender -- an unloaded
+      // rule cache reads as empty, which would miss the idempotent
+      // fast-path and drive a duplicate insert into the UNIQUE name column.
+      await _ensureRulesLoaded();
+
+      final existing = ruleProvider.rules.rules
+          .where((r) => r.name == ruleName)
+          .toList();
+
+      // Conflict resolution runs on BOTH paths (Copilot review, PR #278) --
+      // see the matching note in addSafeSender: an existing block rule does
+      // not imply the conflicting safe senders are gone, and a surviving
+      // safe sender WINS over the block rule (whitelist has priority in
+      // RuleEvaluator), so the sender the user just blocked would keep
+      // arriving. The idempotent fast-path skips the INSERT, not the cleanup.
       ConflictResolutionResult conflicts = ConflictResolutionResult.empty;
       if (type != 'subject' && senderEmailForConflictCheck != null) {
         conflicts = await _conflictResolver.removeConflictingSafeSenders(
           emailAddress: senderEmailForConflictCheck,
           ruleProvider: ruleProvider,
+        );
+      }
+
+      if (existing.isNotEmpty) {
+        _logger.i('[OK] Block rule already exists (type: $type) -- '
+            'reporting as covered '
+            '(${conflicts.conflictsRemoved} conflicting safe sender(s) removed)');
+        var message = 'Rule already exists -- marked as resolved';
+        if (conflicts.conflictsRemoved > 0) {
+          message +=
+              ' (removed ${conflicts.conflictsRemoved} conflicting safe sender${conflicts.conflictsRemoved > 1 ? "s" : ""})';
+        }
+        return RuleQuickActionResult(
+          success: true,
+          displayMessage: message,
+          conflictsRemoved: conflicts.conflictsRemoved,
+          createdRule: existing.first,
+          alreadyExisted: true,
         );
       }
 
@@ -316,6 +400,23 @@ class RuleQuickActionService {
         displayMessage: 'Failed to create rule: $e',
         error: e,
       );
+    }
+  }
+
+  /// F128 (Copilot review, PR #278): `ruleProvider.rules` /
+  /// `.safeSenders` return EMPTY collections when their cache is unloaded,
+  /// which is indistinguishable from "genuinely empty" -- so an idempotency
+  /// check against an unloaded provider would miss an existing rule and
+  /// drive a duplicate insert. These guards make the check trustworthy.
+  Future<void> _ensureRulesLoaded() async {
+    if (!ruleProvider.isRulesLoaded) {
+      await ruleProvider.loadRules();
+    }
+  }
+
+  Future<void> _ensureSafeSendersLoaded() async {
+    if (!ruleProvider.isSafeSendersLoaded) {
+      await ruleProvider.loadSafeSenders();
     }
   }
 

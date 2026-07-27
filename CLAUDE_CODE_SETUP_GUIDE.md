@@ -360,7 +360,7 @@ Automatically validates when you save `rules.yaml` or `rules_safe_senders.yaml`.
    ```
    /skill deploy-debug
    ```
-3. **Manual testing** on emulator
+3. **Manual validation** on emulator
 4. **Check coverage**:
    ```
    /skill check-coverage

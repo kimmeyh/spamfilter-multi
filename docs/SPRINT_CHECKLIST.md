@@ -27,6 +27,8 @@ These documents MUST be created/updated during each sprint:
 
 ## Phase 1: Backlog Refinement (MANDATORY -- every sprint, no PO request needed)
 
+- [ ] **1.2 FORMAT GATE (Sprint 50)**: READ `BACKLOG_REFINEMENT.md` section "Backlog Presentation Format" in the SAME TURN before presenting candidates; mirror the template exactly (`**<ID>. <Title> (~effort) Priority <N>**` + Phase/Platform bullets, phase-group headers, HOLD section; real F#/WS/GP ids only)
+
 **Sprint 36 policy change (2026-04-20)**: Phase 1 is MANDATORY on every sprint. Do NOT ask the user "should we do backlog refinement?" -- just run it. Skipping or asking is a process violation.
 
 - [ ] Read current `docs/ALL_SPRINTS_MASTER_PLAN.md` "Next Sprint Candidates" section
@@ -55,7 +57,7 @@ These documents MUST be created/updated during each sprint:
 
 ## Phase 3: Kickoff & Planning
 
-- [ ] **Verify active model is Opus** (sprint planning requires Opus per SPRINT_PLANNING.md "Activities Requiring Opus")
+- [ ] **Verify active model is the top tier (Fable/Opus)** (sprint planning requires it per SPRINT_PLANNING.md "Activities Requiring Fable/Opus")
 - [ ] Sprint number determined (N = previous + 1)
 - [ ] **Phase 1 Backlog Refinement complete** (candidates presented in BACKLOG_REFINEMENT.md format, user selected items) -- if Phase 1 was skipped, STOP and return to Phase 1 first
 - [ ] **Verify** `docs/sprints/SPRINT_(N-1)_SUMMARY.md` exists for previous sprint (created in Phase 7)
@@ -74,7 +76,7 @@ These documents MUST be created/updated during each sprint:
 ## Phase 4: Execution
 
 - [ ] **[CONTEXT CHECK]** Verify context < 85% (estimate task cost; `/compact` if next task would exceed 95%)
-- [ ] Tasks assigned to appropriate models (Haiku/Sonnet/Opus)
+- [ ] Tasks assigned to appropriate models (Haiku/Sonnet/Fable-Opus); record Executed-by at completion (Sprint 49 IMP-3)
 - [ ] Each task: **[CONTEXT CHECK]** -> Code -> Build -> Test -> Analyze -> Commit
 - [ ] Commits reference GitHub issues (`feat: ... (Issue #N)`)
 - [ ] CHANGELOG.md updated with each user-facing change
@@ -91,10 +93,10 @@ These documents MUST be created/updated during each sprint:
 - [ ] **5.1.5 WinWright UI Test Sweep** (MANDATORY -- Sprint 38 retro): update WinWright scripts for sprint UI changes; run all scripts that exercise sprint-touched screens; fix in-sprint or backlog (see SPRINT_EXECUTION_WORKFLOW.md § 5.1.5). If no WinWright coverage exists for sprint's UI surface, file a Sprint N+1 carry-in.
 - [ ] Full test suite passing (`flutter test`)
 - [ ] Code analysis clean (`flutter analyze` - target <50 warnings)
-- [ ] **5.1.7 Logging-redaction gate clean** (F102, narrowed by F110, ADR-0030 §5): run `mobile-app/scripts/check-log-redaction.ps1` (or it runs as part of the suite via `test/policy/log_redaction_test.dart`) -- no `Logger`/`_bgLog` call may interpolate a raw **account id / token / secret** without `Redact.*`. **Post-F110**: third-party sender/recipient email addresses ARE allowed in the clear (the gate no longer flags the email-address family); use `Redact.senderForLog` for the user's own address. Fix any violation before the manual-testing handoff.
+- [ ] **5.1.7 Logging-redaction gate clean** (F102, narrowed by F110, ADR-0030 §5): run `mobile-app/scripts/check-log-redaction.ps1` (or it runs as part of the suite via `test/policy/log_redaction_test.dart`) -- no `Logger`/`_bgLog` call may interpolate a raw **account id / token / secret** without `Redact.*`. **Post-F110**: third-party sender/recipient email addresses ARE allowed in the clear (the gate no longer flags the email-address family); use `Redact.senderForLog` for the user's own address. Fix any violation before the manual-validation handoff.
 - [ ] **5.1.8 Version-consistency gate clean** (Sprint 44 retro IMP-1): `test/policy/version_consistency_test.dart` (runs in the suite; CLI `scripts/check-version-consistency.ps1`) asserts every app-version literal (`_v<X.Y.Z>.log` log tokens, `Version <X.Y.Z>` display) in `lib/` + `windows/runner/` + `scripts/` matches `pubspec.yaml`. ESPECIALLY relevant on any version-bump sprint -- it catches a stale literal (e.g. the F105/main.cpp miss) that the build cannot.
 - [ ] Risk mitigations validated
-- [ ] **5.1.6 Architecture docs current BEFORE manual-testing handoff** (Sprint 42 retro IMP-5; `feedback_architecture_docs_no_defer`): for every flow, table, ADR, or platform-status line in `ARCHITECTURE.md` / `ARSD.md` touched by this sprint, update it NOW -- do NOT defer to Phase 7. Quick check: `grep -niE "<sprint-touched-feature>" docs/ARCHITECTURE.md docs/ARSD.md` and reconcile each hit. Verify the ADR index (`docs/adr/README.md`) status/date for any ADR touched. (Sprint 42 surfaced a stale ARCHITECTURE.md bg-scan flow at retro -- this line prevents recurrence.)
+- [ ] **5.1.6 Architecture docs current BEFORE manual-validation handoff** (Sprint 42 retro IMP-5; `feedback_architecture_docs_no_defer`): for every flow, table, ADR, or platform-status line in `ARCHITECTURE.md` / `ARSD.md` touched by this sprint, update it NOW -- do NOT defer to Phase 7. Quick check: `grep -niE "<sprint-touched-feature>" docs/ARCHITECTURE.md docs/ARSD.md` and reconcile each hit. Verify the ADR index (`docs/adr/README.md`) status/date for any ADR touched. (Sprint 42 surfaced a stale ARCHITECTURE.md bg-scan flow at retro -- this line prevents recurrence.)
 - [ ] **App built for user testing** (Windows: `build-windows.ps1`)
 - [ ] **Platform-specific UI verified** at native level (Win32 window title, system tray, notifications) -- Flutter UI layer may not control platform-level behavior (learned Sprint 21)
 - [ ] **Manual integration testing complete (Lead Developer)** -- this is a LOOP, not a single step. Each round of testing feedback can produce in-sprint fixes OR backlog additions; do not move to Code Review until the Lead Developer explicitly notes testing complete (see SPRINT_EXECUTION_WORKFLOW.md "Canonical Next Steps progression")
@@ -148,7 +150,7 @@ These documents MUST be created/updated during each sprint:
   - [ ] `docs/sprints/SPRINT_N_SUMMARY.md` created (MANDATORY - do not defer)
   - [ ] ARCHITECTURE.md updated (if architecture changed)
   - [ ] .claude/sprint_status.json updated
-- [ ] **7.7.5 FINAL GATE + announce readiness** (PR lifecycle checkpoint #4, MANDATORY): ONLY after manual testing AND retrospective AND retro improvements AND any Copilot review AND Copilot comments addressed are ALL complete -- final PR update IF anything needs it (no-op if nothing changed); verify PR is already Ready-for-Review (set at end of 7.7; `gh pr ready` now if somehow still draft); THEN notify Product Owner / Scrum Master the PR is ready for FINAL APPROVAL. This PO/SM notification is the ONE readiness announcement of the sprint.
+- [ ] **7.7.5 FINAL GATE + announce readiness** (PR lifecycle checkpoint #4, MANDATORY): ONLY after manual validation AND retrospective AND retro improvements AND any Copilot review AND Copilot comments addressed are ALL complete -- final PR update IF anything needs it (no-op if nothing changed); verify PR is already Ready-for-Review (set at end of 7.7; `gh pr ready` now if somehow still draft); THEN notify Product Owner / Scrum Master the PR is ready for FINAL APPROVAL. This PO/SM notification is the ONE readiness announcement of the sprint.
 - [ ] **7.8** Review results summarized
 - [ ] **7.9** Next steps offered to user
 

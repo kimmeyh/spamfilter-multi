@@ -205,7 +205,7 @@ git merge develop
 7. **Phase Auto-Advance Rule (Sprint 35+)**: When the work for the current phase completes (tests pass / build succeeds / PR pushed / docs updated / etc.), proceed *immediately* to the next phase's first action. **DO NOT** ask "want me to proceed to Phase N+1?" -- sprint-plan approval at Phase 3 is durable authorization through Phase 7. The only acceptable mid-sprint pauses are the 9 SPRINT_STOPPING_CRITERIA listed above. "Confirming the next step" is not on that list.
    - State the next action in one sentence, then execute it. Example:
      - **WRONG**: "Phase 5.2 tests pass. Want me to proceed to Phase 5.3 (build app)?"
-     - **RIGHT**: "Phase 5.2 tests pass. Building Windows desktop app for Phase 5.3 manual testing now." [executes build]
+     - **RIGHT**: "Phase 5.2 tests pass. Building Windows desktop app for Phase 5.3 manual validation now." [executes build]
    - Same rule applies to commit/push/PR-update boundaries when the sprint plan covers them: do NOT ask permission to commit Phase 5 work, push to the sprint feature branch, or update the sprint PR description -- those are within standing approval (see SPRINT_EXECUTION_WORKFLOW.md Phase 3.7 "Standing Approval Inventory")
    - Established Sprint 35 retro after Opus 4.7 cost ~4 wall-clock hours across Sprints 34-35 by repeatedly asking permission at phase boundaries that prior models (Opus 4.6) crossed automatically
 

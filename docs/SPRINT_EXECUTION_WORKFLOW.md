@@ -46,7 +46,7 @@ This document describes the step-by-step process for executing sprints in the sp
 | **Phase 2** | Sprint Pre-Kickoff | Verify prerequisites before starting |
 | **Phase 3** | Sprint Kickoff & Planning | Plan sprint, create branch and issues |
 | **Phase 4** | Sprint Execution (Development) | Implement tasks, test, commit |
-| **Phase 5** | Code Review & Testing | Final review, full test suite, manual testing |
+| **Phase 5** | Code Review & Testing | Final review, full test suite, manual validation |
 | **Phase 6** | Push to Remote & Create PR | Finalize, push, create PR |
 | **Phase 7** | Sprint Review & Retrospective | Mandatory review, feedback, documentation |
 
@@ -64,7 +64,7 @@ One-line-per-phase quick reference. Use this at the start of a sprint and at eve
 | [**4. Sprint Execution (Development)**](#phase-4-sprint-execution-development) | Implement tasks in plan order; run tests + analyze after each; commit with issue number | All acceptance criteria in plan met; test suite green |
 | [**5. Code Review & Testing**](#phase-5-code-review--testing) | Test-assertion sibling sweep (5.1.1); full test suite; build + launch Windows app for manual test | Manual test golden-path + edge cases verified; no regressions |
 | [**6. Push to Remote & Finalize PR**](#phase-6-push-to-remote--create-pr) | Push branch; **UPDATE** the existing sprint PR (created 3.3.1, kept DRAFT); interim status to user -- NOT "ready" (6.5); **on merge, immediately open the NEXT sprint branch off develop (6.6)**. The draft->ready conversion happens at end of Phase 7.7 (retro improvements done); the PO/SM readiness announcement happens at 7.7.5. | PR updated + still DRAFT; Copilot review requested IF configured; next sprint branch created off updated develop as soon as the PR merges (no post-merge commits stranded) |
-| [**7. Sprint Review & Retrospective**](#phase-7-sprint-review--retrospective-after-pr-submitted---mandatory-for-all-sprints) | Send retro prompt; draft Claude feedback in parallel; combine + apply now-vs-backlog decisions; **when "apply now" IMPs done -> set PR "Ready for Review" (end 7.7)**; **FINAL GATE (7.7.5)** after manual-testing + retro + IMPs + Copilot all complete -> final PR update if needed -> notify PO/SM ready for final approval | Retrospective doc committed (4 roles x 14 categories); Cat 13 -> Sprint N+1 plan; Cat 14 -> backlog; **PR set Ready-for-Review when retro improvements done; PO/SM notified for final approval at the gate (the one readiness announcement)** |
+| [**7. Sprint Review & Retrospective**](#phase-7-sprint-review--retrospective-after-pr-submitted---mandatory-for-all-sprints) | Send retro prompt; draft Claude feedback in parallel; combine + apply now-vs-backlog decisions; **when "apply now" IMPs done -> set PR "Ready for Review" (end 7.7)**; **FINAL GATE (7.7.5)** after manual-validation + retro + IMPs + Copilot all complete -> final PR update if needed -> notify PO/SM ready for final approval | Retrospective doc committed (4 roles x 14 categories); Cat 13 -> Sprint N+1 plan; Cat 14 -> backlog; **PR set Ready-for-Review when retro improvements done; PO/SM notified for final approval at the gate (the one readiness announcement)** |
 
 **Invariants** (apply to all phases):
 
@@ -105,7 +105,7 @@ Surface decisions AT the natural break or BEFORE it if implementation is blocked
 | Phase | What's Happening | What to Surface |
 |-------|------------------|-----------------|
 | Phase 1 → Phase 3 approval | Backlog refinement & sprint planning | Any architecture/development/scope item identified during planning that would change a prior decision |
-| Phase 5.3 Manual Testing | User tests, gives feedback | Any proposed fix that involves changing a prior decision (do NOT just apply it -- surface, get approval, then apply) |
+| Phase 5.3 Manual Validation | User tests, gives feedback | Any proposed fix that involves changing a prior decision (do NOT just apply it -- surface, get approval, then apply) |
 | Phase 7 Retrospective | Sprint review and improvements | Any decision that was made mid-sprint without surfacing -- declare it in Claude's feedback so it can be reviewed |
 
 ### Anti-Pattern Signals
@@ -142,9 +142,13 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
   - **Cleanup**: Remove obsolete items, update dependencies
 
 - [ ] **1.2 Present Candidates to User in BACKLOG_REFINEMENT.md Format**
-  - Required format: bullet-list per item with `**<ID>. <Title> (~<effort>) Priority <N>**` header + bullet details
+  - **MANDATORY FIRST ACTION (Sprint 50, Harold): READ `BACKLOG_REFINEMENT.md` section "Backlog Presentation Format" IN THE SAME TURN, immediately before producing the presentation.** This is a deterministic deliverable -- mirror the template EXACTLY; do not produce it from memory. (This rule exists because the format drifted twice, Sprints 49-50, despite the Sprint 45 read-format-doc-first memory.)
+  - **Summary Index first**: open with a "Candidates at a glance" list of every item's header line only (Harold, Sprint 50), then the detailed phase sections
+  - Required per-item format (verbatim from the spec): `**<ID>. <Title> (~<effort>) Priority <N>**` header, then bullets `- Phase:`, `- Platform:`, description bullets, `- Depends on:` (if any)
+  - Section structure: `### <Phase Name>` group headers; HOLD items use `Priority HOLD` in a separate `### HOLD Items (<reason>)` section at the bottom
+  - Priorities are NUMERIC (increments of 10; sprint-together items use increments of 2). NEVER invent ad-hoc groupings (tiers, selection numbers) in place of phase headers + priorities
+  - Every item needs a REAL registered identifier (F#/WS-*/GP-#/Issue #N); new items get the next available F# (check ALL_SPRINTS_MASTER_PLAN.md) -- never invent unregistered slugs
   - Do NOT use grid tables (explicit convention violation)
-  - Grouped by priority tier, HOLD items at bottom
   - Include observations/alternative composition options when scope is tight
   - Record user's selection for Phase 3 plan doc
   - **This step is what Phase 3.2.1 used to reference ambiguously. It is now clearly owned by Phase 1.2.**
@@ -315,15 +319,15 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
   - **THE PR LIFECYCLE** (one PR per sprint, updated at four checkpoints -- Sprint 42 retro, Harold's spec):
     1. **3.3.1 (here)** -- CREATE the PR as a **draft**, body = the drafted sprint plan. **[keep DRAFT -- do not mark ready (see 7.7)]**
     2. **3.7 (plan approved)** -- UPDATE the PR body to reflect the **approved** plan (if for some reason the PR does not exist yet, create it now). **[keep DRAFT -- do not mark ready (see 7.7)]**
-    3. **End of sprint-plan development** (Phase 5, when all planned + manual-testing-feedback dev is complete) -- UPDATE the PR for anything that changed during the sprint (if it does not exist yet, create it). **[keep DRAFT -- do not mark ready (see 7.7)]**
-    4. **End of Phase 7.7 (retro improvements done)** -- once ALL "apply now" retrospective suggestions are implemented + committed, set the PR to **"Ready for Review"** on GitHub (`gh pr ready` -- the draft->ready STATE change; **this is the ONE and ONLY place the PR is marked ready**). THEN at the **7.7.5 final gate** (after manual testing AND retro AND retro improvements AND any Copilot review AND Copilot comments addressed are all complete): a final update if anything needs it (no-op if nothing changed), and the **notify Product Owner / Scrum Master ready for final approval** (the human signal). (See Phase 7 steps 7.7 and 7.7.5.)
+    3. **End of sprint-plan development** (Phase 5, when all planned + manual-validation-feedback dev is complete) -- UPDATE the PR for anything that changed during the sprint (if it does not exist yet, create it). **[keep DRAFT -- do not mark ready (see 7.7)]**
+    4. **End of Phase 7.7 (retro improvements done)** -- once ALL "apply now" retrospective suggestions are implemented + committed, set the PR to **"Ready for Review"** on GitHub (`gh pr ready` -- the draft->ready STATE change; **this is the ONE and ONLY place the PR is marked ready**). THEN at the **7.7.5 final gate** (after manual validation AND retro AND retro improvements AND any Copilot review AND Copilot comments addressed are all complete): a final update if anything needs it (no-op if nothing changed), and the **notify Product Owner / Scrum Master ready for final approval** (the human signal). (See Phase 7 steps 7.7 and 7.7.5.)
   - **Important**: create a NEW draft PR for each sprint (do not reuse planning/architecture PRs).
   - **How**:
     ```powershell
     git push -u origin feature/YYYYMMDD_Sprint_N
     gh pr create --draft --title "Sprint N: [Title]" --body "Sprint plan: [link or summary]"
     ```
-  - **Why draft until the final gate**: the PR is NOT announced "ready for final approval" until the very end (gate #4 above). Draft status signals work-in-progress through coding, manual testing, retrospective, and the Copilot review. This replaces the old "convert to ready when Phase 5.2 tests pass" guidance (which announced readiness too early -- before retro and Copilot).
+  - **Why draft until the final gate**: the PR is NOT announced "ready for final approval" until the very end (gate #4 above). Draft status signals work-in-progress through coding, manual validation, retrospective, and the Copilot review. This replaces the old "convert to ready when Phase 5.2 tests pass" guidance (which announced readiness too early -- before retro and Copilot).
   - **PR Body Template**:
     ```markdown
     ## Sprint N: [Title]
@@ -339,7 +343,7 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
     - Closes #XX, #YY, #ZZ
 
     ---
-    *Draft until the Phase 7 final-update gate (manual testing + retro + retro improvements + Copilot review all complete). Marked ready for final approval there.*
+    *Draft until the Phase 7 final-update gate (manual validation + retro + retro improvements + Copilot review all complete). Marked ready for final approval there.*
     ```
 
 - [ ] **3.4 Create GitHub Sprint Cards** (MANDATORY - Never Skip)
@@ -380,7 +384,7 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
   - **VERIFY**: All acceptance criteria are quantifiable and measurable (no subjective terms)
   - Dependencies on previous sprints verified as complete
   - Risk assessments documented for all tasks (even if "Low - maintenance work")
-  - Effort estimates included for all tasks (with 20% buffer for manual testing tasks)
+  - Effort estimates included for all tasks (with 20% buffer for manual validation tasks)
 
 - [ ] **3.6.1 Architecture Impact Check** (MANDATORY - Added Sprint 30)
   - **Purpose**: Prevent architecture drift by catching documentation gaps BEFORE sprint approval
@@ -442,7 +446,7 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
   - `git push` to the sprint feature branch (`feature/YYYYMMDD_Sprint_N`)
   - PR creation against `develop` and PR description / body updates on the sprint PR
   - Build commands: `build-windows.ps1`, `flutter test`, `flutter analyze`, `build-with-secrets.ps1` (for sprint-relevant build types)
-  - Launching the desktop app for manual testing (Phase 5.3)
+  - Launching the desktop app for manual validation (Phase 5.3)
   - WinWright MCP interactions per the conditional + state-restoration rule (`docs/TESTING_STRATEGY.md` Desktop E2E section)
   - SQLite reads against the dev DB for diagnostic purposes
   - Sprint doc updates: `CHANGELOG.md`, `docs/sprints/SPRINT_N_PLAN.md`, `docs/sprints/SPRINT_N_RETROSPECTIVE.md`, `docs/sprints/SPRINT_N_SUMMARY.md`, `docs/ALL_SPRINTS_MASTER_PLAN.md`
@@ -483,6 +487,12 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
   - Opus available for complex issues
   - **Track every approved task in the harness task list** (TaskCreate at Phase 3.7 approval; TaskUpdate as statuses change) so the not-done inventory is mechanical, not recalled (Sprint 49 retro IMP-1).
   - **Record "Executed-by" per task at completion** (Sprint 49 retro IMP-3): the model that actually executed vs the plan's assignment, with a one-line why on any deviation. Delegate genuinely mechanical tasks to cheaper-tier subagents when not tightly coupled to in-flight context.
+  - **Recorded justification when NOT completed by the planned model** [WARNING] MANDATORY (Sprint 50 retro IMP-7, Harold 2026-07-26): assignment is cheapest-first at plan time, but the session model frequently executes everything (Sprint 50: 10/10 items assigned Haiku/Sonnet, 10/10 executed by the session model). That is ACCEPTABLE -- what is not acceptable is leaving it unexplained. Whenever `Executed-by` differs from the plan's `Model:` assignment, the same line MUST carry a concrete reason, not a restatement. Use one of these shapes:
+    - `in-session -- tightly coupled to in-flight context (<what context>)` (e.g. mid-debug state, an open live-DB apply window, a decision just made with Harold)
+    - `in-session -- delegation round-trip exceeds the task itself (<N>m task)` (genuinely mechanical but sub-round-trip work)
+    - `escalated -- scope grew beyond the assignment (<what changed>)` (e.g. Sprint 50 F123: assigned Sonnet as a display fix, became a 350-row live data repair)
+    - `delegated to <tier> -- <why it was safely separable>` (the assignment held or moved DOWN a tier)
+  - **Retro linkage**: Category 5 (Model Assignments) reads these lines. A sprint where every task says "in-session" with no distinguishing reason is a signal that the assignment step has become ritual -- surface that in the retrospective rather than letting it pass silently.
 
 - [ ] **4.1.0 ANTI-STOP TASK-INVENTORY RULE** [WARNING] MANDATORY (Sprint 49 retro IMP-1 -- Harold Category 1)
   - **A batch-completion commit/report is a narration beat, NOT a stopping point.** Before ending ANY turn mid-sprint: enumerate every approved task and its status. If any task is not DONE and not blocked by a specifically NAMED `SPRINT_STOPPING_CRITERIA.md` criterion (1-9), the turn CONTINUES with the next executable task.
@@ -610,12 +620,13 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
     5. MEDIUM / LOW findings: fix if quick (<15 min), otherwise add to backlog
     6. Record findings and disposition in sprint retrospective
   - **Model**: Requires Fable/Opus (top tier; review analysis -- see SPRINT_PLANNING.md "Activities Requiring Fable/Opus")
-  - **Learning (Sprint 32)**: Code reviewer focused on sprint diff missed SEC-17 gaps in adjacent files (background scan worker, UI screens). User manual testing of logs surfaced the gap. Step 2 (mechanical grep) and step 3 (two-phase review) were added to prevent recurrence.
+  - **Learning (Sprint 32)**: Code reviewer focused on sprint diff missed SEC-17 gaps in adjacent files (background scan worker, UI screens). User manual validation of logs surfaced the gap. Step 2 (mechanical grep) and step 3 (two-phase review) were added to prevent recurrence.
 
 - [ ] **5.1.2 Pre-PR Self-Review Checklist -- the six recurring review-finding classes** (F-PRECHECK, Sprint 49 -- MANDATORY)
   - **Purpose**: catch the finding classes that external review (Copilot) has surfaced repeatedly across sprints (23 comments over 6 rounds in Sprint 46; 4 real findings in Sprint 47; the F119 family) BEFORE the PR exists. Each class has a concrete detection ACTION -- run it against the sprint diff, do not just read the list.
   - **The six classes + detection actions**:
-    1. **Mirror/parallel-site sync**: did the diff touch one of a known twin pair? (Dart gate + its PS1 CLI mirror; manual + background scan paths; two call sites of one helper; dev + prod worktree configs.) ACTION: for each changed file, name its sibling and `grep` it for the same change; update or state why not. (Sprint 47: `check-version-consistency.ps1` header claimed a sweep its `$dirs` did not do.)
+    1. **Mirror/parallel-site sync**: did the diff touch one of a known twin pair? (Dart gate + its PS1 CLI mirror; manual + background scan paths; two call sites of one helper; dev + prod worktree configs; **local Windows host + CI Linux host**.) ACTION: for each changed file, name its sibling and `grep` it for the same change; update or state why not. (Sprint 47: `check-version-consistency.ps1` header claimed a sweep its `$dirs` did not do.)
+       - **Platform-gated widgets are a parallel-site pair (Sprint 50 retro IMP-3)**: the local suite runs on Windows, CI runs on `ubuntu-latest`. Any assertion about a widget behind `if (Platform.isWindows)` (or any other `Platform.is*` gate) MUST be platform-aware -- `expect(finder, Platform.isWindows ? findsOneWidget : findsNothing)` -- or it passes locally and fails CI. ACTION: after writing a widget test, grep the widget's build site for `Platform.is` and make the expectation match. (Sprint 50: the MT-3 entry-point assertion passed on Windows and failed the ubuntu job; caught at the Phase 6.1.1 gate, fixed in `3405a40`.)
     2. **Helper wired into the PRODUCTION path**: does a new/changed resolver or helper actually get CALLED by the runtime path, not just the settings/display path? ACTION: `grep -rn "<helperName>" lib/` and confirm at least one call site is on the scan/runtime path. (Sprint 47: `getEffectiveFolders` was display-only; scans still used the raw getter.)
     3. **Doc-comment-vs-code drift**: did a changed default/behavior leave a stale doc comment? ACTION: for every changed constant/default, read the doc comment ABOVE it and any comment that names its value. (Sprint 47: `defaultLiveScanDebugCsv` comment said `false` after the value became `true`.)
     4. **Fragile input parsing**: does new parsing split on a positional delimiter where the input format varies? ACTION: list each new `split`/`indexOf`/`substring` on user- or id-shaped input; prefer domain/content matching. (Sprint 47: accountId dash-split broke on dashed local-parts.)
@@ -625,7 +636,7 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
   - **Cross-reference**: `.github/copilot-instructions.md` "Cross-Cutting Pattern Sweep" asks Copilot to look for the same classes -- this step exists so WE find them first.
 
 - [ ] **5.1.5 WinWright UI Test Sweep** (Sprint 38 retro - MANDATORY)
-  - **Purpose**: Catch UI regressions BEFORE Phase 5.3 manual testing. Sprint 38 had 6+ rounds of post-Phase-5.3 manual UI fixes that WinWright coverage would have caught earlier.
+  - **Purpose**: Catch UI regressions BEFORE Phase 5.3 manual validation. Sprint 38 had 6+ rounds of post-Phase-5.3 manual UI fixes that WinWright coverage would have caught earlier.
   - **Trigger**: ALWAYS run this phase before proceeding to Phase 5.2. This supersedes the prior per-sprint conditional policy in `feedback_winwright_policy.md`.
   - **Steps**:
     1. Identify existing WinWright scripts under `mobile-app/test/winwright/` (or wherever the project stores them).
@@ -689,15 +700,15 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
 
 - [ ] **5.2.3 Architecture Documentation Gate** (Sprint 39 retro S39-IMP-2 - MANDATORY, NO DEFERRAL)
   - **Purpose**: Architecture documentation must NEVER lag the code. Sprint 39 made real architecture changes (DB v5->v6, new auth-results subsystem, new selection-controller widget, new adapter capabilities) -- all approved and applied -- but ARCHITECTURE.md was not updated, drifting behind reality.
-  - **Rule (no deferral)**: If the sprint made ANY architecture change, its documentation (`docs/ARCHITECTURE.md`, ARSD.md, and/or relevant ADRs) MUST be updated **in-process or here at sprint-end, BEFORE Phase 5.3 manual testing**. It CANNOT be deferred to a future "architecture documentation refresh" backlog item.
+  - **Rule (no deferral)**: If the sprint made ANY architecture change, its documentation (`docs/ARCHITECTURE.md`, ARSD.md, and/or relevant ADRs) MUST be updated **in-process or here at sprint-end, BEFORE Phase 5.3 manual validation**. It CANNOT be deferred to a future "architecture documentation refresh" backlog item.
   - **What counts as an architecture change** (any one triggers the gate):
     - DB schema change (new table/column/migration/version bump)
     - New service / subsystem / cross-cutting capability
     - New reusable widget added to the UI catalog
     - New or changed adapter capability (provider-interface method)
     - Anything that touches or contradicts an existing ADR
-  - **Exception (the ONLY one)**: if documenting the change requires a decision / Q&A with the Chief Architect (Harold), it may be surfaced during Phase 5.3 Manual Testing rather than blocking here -- but it is still NOT deferred to a future sprint.
-  - **Exit criteria**: every architecture change made this sprint is reflected in ARCHITECTURE.md (+ ADR/ARSD if relevant) in this PR, OR a Chief-Architect Q&A item is queued for Phase 5.3. Do NOT start manual testing with stale architecture docs.
+  - **Exception (the ONLY one)**: if documenting the change requires a decision / Q&A with the Chief Architect (Harold), it may be surfaced during Phase 5.3 Manual Validation rather than blocking here -- but it is still NOT deferred to a future sprint.
+  - **Exit criteria**: every architecture change made this sprint is reflected in ARCHITECTURE.md (+ ADR/ARSD if relevant) in this PR, OR a Chief-Architect Q&A item is queued for Phase 5.3. Do NOT start manual validation with stale architecture docs.
   - Companion memory: `feedback_architecture_docs_no_defer.md`.
 
 ---
@@ -731,7 +742,7 @@ After Phase 5.2 all tests pass, context can be compacted for efficiency:
      - Writes documentation
      - Conducts code review analysis
      - Prepares Phase 7 review
-   - **[WARNING] CRITICAL**: the PR update is NOT optional - must happen during manual testing
+   - **[WARNING] CRITICAL**: the PR update is NOT optional - must happen during manual validation
    - **No blocking**: User testing does not wait for the PR update
 
    **Why the PR update happens during testing**:
@@ -741,7 +752,7 @@ After Phase 5.2 all tests pass, context can be compacted for efficiency:
    - No impact on quality (work is independent)
 
 3. **Phase 7 Complete + Final PR Gate**
-   - Do NOT announce "PR ready for approval" merely because Phase 6 work is done. The readiness announcement happens ONLY at the Phase 7 final-update gate (7.7): after manual testing AND retrospective AND retro improvements AND any Copilot review AND Copilot-comment responses are ALL complete.
+   - Do NOT announce "PR ready for approval" merely because Phase 6 work is done. The readiness announcement happens ONLY at the Phase 7 final-update gate (7.7): after manual validation AND retrospective AND retro improvements AND any Copilot review AND Copilot-comment responses are ALL complete.
    - At that gate: final PR update if anything needs it (no-op if nothing changed), convert draft -> ready, then notify Product Owner / Scrum Master the PR is ready for **final approval**.
 
 4. **Efficiency Gain**
@@ -756,9 +767,9 @@ After Phase 5.2 all tests pass, context can be compacted for efficiency:
 - PR includes all Phase 6-7 work when user is ready to review
 - Both activities benefit from independence (faster iteration)
 
-- [ ] **5.3 Build App and Prepare for Manual Testing - PARALLEL WITH PHASE 6**
+- [ ] **5.3 Build App and Prepare for Manual Validation - PARALLEL WITH PHASE 6**
 
-  **CRITICAL**: Claude Code MUST build and run the Windows Desktop App (or target platform) BEFORE declaring the sprint ready for manual testing. User should NOT have to build app themselves. This step is MANDATORY - do NOT skip it.
+  **CRITICAL**: Claude Code MUST build and run the Windows Desktop App (or target platform) BEFORE declaring the sprint ready for manual validation. User should NOT have to build app themselves. This step is MANDATORY - do NOT skip it.
 
   **Pre-Testing Checklist** (Claude Code completes BEFORE handing to user):
   - [ ] **5.3.a Build the application**
@@ -779,7 +790,7 @@ After Phase 5.2 all tests pass, context can be compacted for efficiency:
     - Key UI elements are visible
     - Console shows expected startup logging
   - [ ] **5.3.e Notify user app is ready**
-    - Message: "[OK] App built and running, ready for manual testing"
+    - Message: "[OK] App built and running, ready for manual validation"
     - Provide platform details (Windows desktop / Android emulator)
     - Note any warnings or known issues to watch for
   - [ ] **5.3.f Monitor app output** (Claude Code background task)
@@ -787,7 +798,7 @@ After Phase 5.2 all tests pass, context can be compacted for efficiency:
     - Report any crashes or exceptions immediately
     - Capture relevant logs for debugging if issues arise
 
-  **User Manual Testing**:
+  **User Manual Validation**:
   - Test on target platform (Android emulator, Windows desktop, etc.)
   - Verify user-facing changes work as expected
   - Check for regressions in existing features
@@ -798,7 +809,7 @@ After Phase 5.2 all tests pass, context can be compacted for efficiency:
   **Conditional WinWright E2E (Sprint 35 policy)**: If sprint changes touch any UI surface covered by a WinWright script, run the matching script(s) only -- not the full suite. See the When-to-Run table in `docs/TESTING_STRATEGY.md` (Desktop E2E section). Every script must obey the state-restore rule: any rule, safe sender, or setting it creates or modifies must be reverted before the script ends. The full WinWright sweep (F79, HOLD, Issue #240) is on-demand only.
 
   **NOTE**: Starting Sprint 5, user tests in parallel while Claude completes Phase 6-7
-  - **User Ready?**: Yes -> Begin manual testing on running app
+  - **User Ready?**: Yes -> Begin manual validation on running app
   - **Claude Meanwhile**: Proceeds to Phase 6.3 (PR creation) while monitoring app
 
 - [ ] **5.4 Fix Issues from Testing**
@@ -862,7 +873,7 @@ After Phase 5.2 all tests pass, context can be compacted for efficiency:
 - Scope change discovered (requires re-planning)
 - Blocked by external dependency
 - User explicitly requests pause
-- Phase 5.3 Manual Testing complete (proceed to Phase 6 in parallel)
+- Phase 5.3 Manual Validation complete (proceed to Phase 6 in parallel)
 - Phase 7 Sprint Review (REQUIRED)
 
 **Reference**: See `docs/SPRINT_STOPPING_CRITERIA.md` for complete stopping criteria
@@ -1152,6 +1163,12 @@ Before conducting sprint review, build and test the Windows desktop app:
   - **Effort**: rough estimate (S/M/L or hours)
   - **Recommendation**: apply now or add to backlog (with one-sentence rationale)
 
+  **[WARNING] MANDATORY completeness gate before displaying (Sprint 50 retro IMP-2)**: proposals are generated MECHANICALLY from the feedback, not from memory of the sprint. Before displaying, walk Harold's feedback line-by-line, category 1 through 14, and for EACH category state one of:
+  - the numbered proposal(s) that category produced, or
+  - `no actionable item` explicitly.
+
+  A request buried inside a category rating (e.g. a "Very Good" line that also asks for a rename) is an actionable item and MUST become a numbered proposal. **The failure this closes**: in Sprint 49, Harold's Documentation feedback read "Very Good" followed by a request to rename "manual testing" to "manual validation" -- the rating was recorded, the request was never converted into a proposal, and it silently disappeared until the Sprint 50 retrospective audit found 475 stale occurrences. A rating and a request in the same line are two separate things.
+
   Display all proposals in chat for Harold's review. Do NOT auto-apply any of them.
 
   **STEP 6 (Phase 7.6) -- Harold decides: apply now or add to backlog**
@@ -1271,7 +1288,7 @@ Before conducting sprint review, build and test the Windows desktop app:
     - Create `docs/sprints/SPRINT_N_RETROSPECTIVE.md`
     - Use template from `docs/SPRINT_RETROSPECTIVE.md`
     - Record feedback, improvements, and action items
-    - **TIMING**: Do NOT create the retrospective document until AFTER manual testing (Phase 5) and all testing feedback rounds are complete. Creating it before testing produces stale metrics and incomplete scope. (Learned Sprint 19)
+    - **TIMING**: Do NOT create the retrospective document until AFTER manual validation (Phase 5) and all testing feedback rounds are complete. Creating it before testing produces stale metrics and incomplete scope. (Learned Sprint 19)
 
   - [ ] **Create Sprint Summary Document** (MANDATORY - can be deferred to Phase 3.2.1 of next sprint)
     - Create `docs/sprints/SPRINT_N_SUMMARY.md`
@@ -1286,7 +1303,7 @@ Before conducting sprint review, build and test the Windows desktop app:
 
 - [ ] **7.7.5 FINAL PR GATE + announce readiness** (PR lifecycle checkpoint #4 -- MANDATORY, Sprint 42, Harold's spec)
   - **Gate -- ALL of these must be COMPLETE before this step**:
-    - [ ] Manual testing complete (Lead Developer signed off, Phase 5.3 loop done)
+    - [ ] Manual validation complete (Lead Developer signed off, Phase 5.3 loop done)
     - [ ] Sprint retrospective complete (4 roles x 14 categories)
     - [ ] Retrospective improvements complete (all "apply now" IMPs implemented + committed per 7.7; "backlog" IMPs filed)
     - [ ] Any GitHub Copilot review complete (or confirmed unavailable on this repo)
@@ -1375,7 +1392,7 @@ Brief description of what this sprint delivers.
 ## Test Coverage
 - Unit tests: <N> new tests
 - Integration tests: <N> scenarios covered
-- Manual testing: <list of scenarios tested>
+- Manual validation: <list of scenarios tested>
 
 ## Files Modified/Created
 

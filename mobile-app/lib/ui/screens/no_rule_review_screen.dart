@@ -4,9 +4,12 @@ import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 
 import '../../adapters/storage/secure_credentials_store.dart';
+import '../../core/models/email_message.dart';
 import '../../core/providers/rule_set_provider.dart';
 import '../../core/services/auth_results_parser.dart';
 import '../../core/services/email_body_parser.dart';
+import '../../core/services/pattern_compiler.dart';
+import '../../core/services/rule_evaluator.dart';
 import '../../core/services/rule_quick_action_service.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/scan_result_store.dart';
@@ -67,6 +70,11 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
   final Set<int> _selectedIds = {};
   int? _lastClickedIndex;
 
+  /// MT-2b (Sprint 50): how many already-covered items the most recent
+  /// [_loadItems] sweep resolved (see [_sweepCoveredItems]); surfaced in the
+  /// bulk-action summary SnackBar.
+  int _lastSweepCount = 0;
+
   @override
   void initState() {
     super.initState();
@@ -110,14 +118,23 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
         }
       }
 
+      // MT-2b (Sprint 50, Harold): sweep EVERY load -- items already covered
+      // by the CURRENT rules / safe senders are marked processed and dropped
+      // before display ("re-checking the list for other items still in the
+      // list that are now covered by rules"). This is what removes rows
+      // re-populated by a scan that ran before their covering rules existed
+      // (Harold's 6-item repro: 5 of 6 senders had Block rules yet re-listed
+      // after a newer scan).
+      final kept = await _sweepCoveredItems(items);
+
       // Newest first, matching the existing scan-history/results ordering
       // convention (getUnmatchedEmailsByScan already orders by created_at
       // DESC per-scan; sort again here since we merged across accounts).
-      items.sort((a, b) => b.email.createdAt.compareTo(a.email.createdAt));
+      kept.sort((a, b) => b.email.createdAt.compareTo(a.email.createdAt));
 
       if (mounted) {
         setState(() {
-          _allItems = items;
+          _allItems = kept;
           _distinctAccounts = sortedAccounts;
           _accountEmails = emailMap;
           _applyFilter();
@@ -126,12 +143,16 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
           _lastClickedIndex = null;
         });
       }
-    } catch (e) {
-      _logger.e('Failed to load No Rule review items', error: e);
+    } catch (e, s) {
+      _logger.e('Failed to load No Rule review items', error: e, stackTrace: s);
       if (mounted) {
         setState(() => _isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load items: $e')),
+          const SnackBar(
+            content: Text(
+                'Could not load review items. Please try again or check the '
+                'log for details.'),
+          ),
         );
       }
     }
@@ -229,6 +250,7 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
     int succeeded = 0;
     int failed = 0;
     int conflictsRemoved = 0;
+    int alreadyCovered = 0;
 
     for (final item in selected) {
       // Copilot round 5: one throwing item must not abort the whole batch
@@ -239,6 +261,7 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
         if (result.success) {
           succeeded++;
           conflictsRemoved += result.conflictsRemoved;
+          if (result.alreadyExisted) alreadyCovered++;
           final id = item.email.id;
           if (id != null) {
             await _unmatchedStore.markAsProcessed(id, true);
@@ -260,8 +283,21 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
     }
 
     if (!mounted) return;
+    _clearSelection();
+    // MT-2b: _loadItems runs the covered-item sweep over the freshly
+    // reloaded pool (see _sweepCoveredItems), so rows re-populated by a
+    // newer scan -- or covered by the rules this batch just created -- are
+    // resolved before display. _lastSweepCount carries the count for the
+    // summary below.
+    await _loadItems();
+
+    if (!mounted) return;
 
     final parts = <String>['$actionLabel: $succeeded succeeded'];
+    if (alreadyCovered > 0) parts.add('$alreadyCovered already covered');
+    if (_lastSweepCount > 0) {
+      parts.add('$_lastSweepCount more auto-resolved');
+    }
     if (failed > 0) parts.add('$failed failed');
     if (conflictsRemoved > 0) {
       parts.add('$conflictsRemoved conflicting rule/sender${conflictsRemoved > 1 ? "s" : ""} removed');
@@ -275,9 +311,91 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
         behavior: SnackBarBehavior.floating,
       ),
     );
+  }
 
-    _clearSelection();
-    await _loadItems();
+  /// MT-2/MT-2b (Sprint 50, Harold): evaluates every loaded item against the
+  /// FULL current rule set + safe senders; covered items are marked
+  /// processed (their covering rule addresses them -- Live Scan parity) and
+  /// dropped from the returned list. Runs on EVERY load so covered rows can
+  /// never (re)surface -- including rows written by a scan that ran before
+  /// their covering rules existed. Time-based event-loop yields per the
+  /// F120 pattern keep the UI responsive on large rule sets. The count of
+  /// swept items lands in [_lastSweepCount] for the bulk-action SnackBar.
+  Future<List<_NoRuleItem>> _sweepCoveredItems(
+      List<_NoRuleItem> items) async {
+    _lastSweepCount = 0;
+    if (items.isEmpty || !mounted) return items;
+    final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
+    // F128 (Copilot review, PR #278): use the explicit loaded-state getters
+    // rather than inferring "unloaded" from an empty read -- an unloaded
+    // cache and a genuinely empty rule set look identical through
+    // `rules`/`safeSenders`. This screen can be the first rules consumer, so
+    // the sweep must load before deciding there is nothing to match.
+    if (!ruleProvider.isRulesLoaded) {
+      await ruleProvider.loadRules();
+    }
+    if (!ruleProvider.isSafeSendersLoaded) {
+      await ruleProvider.loadSafeSenders();
+    }
+    if (ruleProvider.rules.rules.isEmpty &&
+        ruleProvider.safeSenders.safeSenders.isEmpty) {
+      return items; // Genuinely nothing to match -- keep all.
+    }
+    final evaluator = RuleEvaluator(
+      ruleSet: ruleProvider.rules,
+      safeSenderList: ruleProvider.safeSenders,
+      compiler: PatternCompiler(),
+      // Copilot review (PR #278): this sweep runs on EVERY load over the whole
+      // pool, so per-item eval logging would flood the log and pay the
+      // interpolation cost for each. The sweep's own summary line below
+      // reports what it resolved.
+      silent: true,
+    );
+
+    final kept = <_NoRuleItem>[];
+    final yieldClock = Stopwatch()..start();
+    for (final item in items) {
+      if (yieldClock.elapsedMilliseconds >= 100) {
+        await Future<void>.delayed(Duration.zero);
+        yieldClock.reset();
+      }
+      final id = item.email.id;
+      if (id == null) {
+        kept.add(item);
+        continue;
+      }
+      final message = EmailMessage(
+        id: 'unmatched-$id',
+        from: item.email.fromEmail,
+        subject: item.email.subject ?? '',
+        body: item.email.bodyPreview ?? '',
+        headers: {
+          'from': item.email.fromEmail,
+          'subject': item.email.subject ?? '',
+        },
+        receivedDate: item.email.emailDate ?? item.email.createdAt,
+        folderName: item.email.folderName,
+      );
+      try {
+        final eval = await evaluator.evaluate(message);
+        if (eval.matchedRule.isNotEmpty || eval.isSafeSender) {
+          await _unmatchedStore.markAsProcessed(id, true);
+          _lastSweepCount++;
+        } else {
+          kept.add(item);
+        }
+      } catch (e, s) {
+        // A malformed pattern must not abort the load; keep the item listed.
+        _logger.e('Covered-item sweep evaluation failed for an item',
+            error: e, stackTrace: s);
+        kept.add(item);
+      }
+    }
+    if (_lastSweepCount > 0) {
+      _logger.i('Swept $_lastSweepCount item(s) already covered by current '
+          'rules/safe senders from the No Rule pool');
+    }
+    return kept;
   }
 
   Future<void> _bulkAddSafeSender(String type) async {
