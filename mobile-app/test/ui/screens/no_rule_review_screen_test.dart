@@ -323,6 +323,87 @@ void main() {
     expect(find.text('second@dupdomain.example'), findsNothing);
   });
 
+  // MT-2b (Sprint 50, Harold's 6-item repro 2026-07-26): a NEWER scan can
+  // complete while the screen is open, re-populating the SAME senders as
+  // fresh unprocessed rows. The bulk action then creates the rules and marks
+  // the OLD scan's rows -- but the reload shows the newer scan's identical
+  // rows, so the list looked completely unchanged. The auto-resolve sweep
+  // must therefore run AFTER the reload, over the fresh pool.
+  testWidgets(
+      'bulk block resolves rows re-populated by a scan that completed while '
+      'the screen was open (MT-2b race)', (tester) async {
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.runAsync(() async {
+      const accountId = 'gmail-a@example.com';
+      await testHelper.createTestAccount(accountId);
+      registerSavedAccount(accountId);
+      final scanA = await insertCompletedScan(accountId,
+          completedAtMs: 1000, noRuleCount: 0);
+      final unmatchedStore = UnmatchedEmailStore(testHelper.dbHelper);
+      await unmatchedStore.addUnmatchedEmail(UnmatchedEmail(
+        scanResultId: scanA,
+        providerIdentifierType: 'imap_uid',
+        providerIdentifierValue: 'a-1',
+        fromEmail: 'victim@racedomain.example',
+        folderName: 'INBOX',
+        createdAt: DateTime.fromMillisecondsSinceEpoch(1500),
+      ));
+
+      await mountAndLoad(tester);
+    });
+
+    expect(find.text('1 item'), findsOneWidget);
+
+    // A NEWER scan completes behind the screen's back, re-writing the same
+    // sender (plus one uncovered sender) as fresh unprocessed rows.
+    await tester.runAsync(() async {
+      const accountId = 'gmail-a@example.com';
+      final scanB = await insertCompletedScan(accountId,
+          completedAtMs: 2000, noRuleCount: 0);
+      final unmatchedStore = UnmatchedEmailStore(testHelper.dbHelper);
+      for (final (uid, sender) in [
+        ('b-1', 'victim@racedomain.example'),
+        ('b-2', 'other@keepme.example'),
+      ]) {
+        await unmatchedStore.addUnmatchedEmail(UnmatchedEmail(
+          scanResultId: scanB,
+          providerIdentifierType: 'imap_uid',
+          providerIdentifierValue: uid,
+          fromEmail: sender,
+          folderName: 'INBOX',
+          createdAt: DateTime.fromMillisecondsSinceEpoch(2500),
+        ));
+      }
+    });
+
+    // Select the (stale, scan-A) victim item and apply Block Entire Domain.
+    await tester.tap(find.byType(Checkbox).first);
+    await tester.pump();
+    await tester.runAsync(() async {
+      await tester.tap(find.text('Apply Rule'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text('Add Block Rule - Entire Domain'));
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 800));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    });
+
+    // The reload lands on scan B; its covered victim row must have been
+    // auto-resolved by the post-reload sweep -- only the uncovered sender
+    // remains, and the count chip reflects it.
+    expect(find.text('1 item'), findsOneWidget,
+        reason: 'scan B\'s covered row must not re-surface after the bulk '
+            'action');
+    expect(find.text('other@keepme.example'), findsOneWidget);
+    expect(find.text('victim@racedomain.example'), findsNothing);
+  });
+
   // Sprint 46 retro IMP-1 (Harold): provider senders group at the top with a
   // heading and end indicator; lists without provider senders are unchanged.
   testWidgets(

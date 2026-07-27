@@ -282,12 +282,24 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
       }
     }
 
-    // MT-2 (Sprint 50, Harold manual testing): auto-resolve the REMAINING
-    // (unselected) items that the batch's rules / safe senders now cover, so
-    // the list behaves like Live Scan (F120 delta re-evaluation) instead of
-    // keeping items whose covering rule already exists.
+    if (!mounted) return;
+    _clearSelection();
+    await _loadItems();
+
+    // MT-2/MT-2b (Sprint 50, Harold manual testing): auto-resolve every
+    // item in the FRESHLY-RELOADED pool that the batch's rules / safe
+    // senders now cover (Live Scan F120 parity). The sweep must run AFTER
+    // the reload: a newer scan can complete while the screen is open and
+    // re-populate the SAME senders as new unprocessed rows -- sweeping the
+    // stale pre-reload items missed them, so the list appeared completely
+    // unchanged after a successful bulk action (Harold's 6-item repro,
+    // 2026-07-26: rules created + old scan's rows marked, newer scan's
+    // identical rows displayed).
     final autoResolved =
         await _autoResolveCoveredItems(deltaRules, deltaSenders);
+    if (autoResolved > 0) {
+      await _loadItems();
+    }
 
     if (!mounted) return;
 
@@ -307,21 +319,21 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
         behavior: SnackBarBehavior.floating,
       ),
     );
-
-    _clearSelection();
-    await _loadItems();
   }
 
-  /// MT-2 (Sprint 50): marks as processed every still-listed, unselected
-  /// item that the batch's newly-created (or already-existing) rules /
-  /// safe senders cover, and returns how many were resolved this way.
-  /// Mirrors the Live Scan F120 delta re-evaluation: only the delta is
-  /// evaluated, never the full rule set.
+  /// MT-2/MT-2b (Sprint 50): marks as processed every currently-loaded item
+  /// that the batch's newly-created (or already-existing) rules / safe
+  /// senders cover, and returns how many were resolved this way. Called
+  /// AFTER the post-bulk reload so it sees the CURRENT pool -- including
+  /// rows re-populated by a scan that completed while the screen was open
+  /// (MT-2b). Mirrors the Live Scan F120 delta re-evaluation: only the
+  /// delta is evaluated, never the full rule set.
   Future<int> _autoResolveCoveredItems(
     List<Rule> deltaRules,
     List<String> deltaSenders,
   ) async {
     if (deltaRules.isEmpty && deltaSenders.isEmpty) return 0;
+    if (!mounted) return 0;
     final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
     final evaluator = RuleEvaluator(
       ruleSet: RuleSet(
@@ -336,7 +348,7 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
     int autoResolved = 0;
     for (final item in _allItems) {
       final id = item.email.id;
-      if (id == null || _selectedIds.contains(id)) continue;
+      if (id == null) continue;
       final message = EmailMessage(
         id: 'unmatched-$id',
         from: item.email.fromEmail,
