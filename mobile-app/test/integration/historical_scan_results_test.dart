@@ -4,7 +4,7 @@
 /// the correct scan's results are displayed -- not stale results
 /// from a previous live scan for the same account.
 ///
-/// Bug found: Sprint 31 manual testing. ResultsDisplayScreen
+/// Bug found: Sprint 31 manual validation. ResultsDisplayScreen
 /// preferred stale EmailScanProvider results over the historically-
 /// loaded results when historicalScanId was provided.
 library;

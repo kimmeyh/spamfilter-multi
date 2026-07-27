@@ -3,7 +3,25 @@
 can you write a effective but compact /compact string I can use to compact where we are, but let the Claude Code team know where we left off and can pick it up correctly.  Use all the tokens needed, but a few as reasonably possible.
 
 ---------------------------------------------------------------------------------------------------------
-Sprint 4n Manual Validation Feedback 
+Sprint 5n Manual Validation Feedback 
+
+---------------------------------------------------------------------------------------------------------
+Sprint 51 Manual Validation Feedback 
+
+---------------------------------------------------------------------------------------------------------
+Sprint 50 Manual Validation Feedback 
+
+Done
+- Please add the "Review "No Rule" Items" icon so that it appears on the "Manual Scan - <email address>" screen and Live Scan > Results screen
+
+
+- For the Live Scan (and all Scan Results pages) > Select item
+  - in the pop-up we need a way to ensure the buttons are in the same place for each item, if at all possible. In "No Rules" mode, most of them will result in "Block Entire Email" and for "mailing domain"s the most likely is Exact Email or Block Email. I think mailing domain items (Exact Email and Block Email) are covered as they are always far left). Do you have a suggestion so that "Block Entire Domain" button is always in the same place?
+- Scan History / No Rules screen
+  - Trying to add "Block Entire Domain" rules for these 4, but getting error - failed to add block rule
+    - I think it is due to already selecting a line and adding "Block Entire Domain" for the domain, but it isn't removing it from the list (like Live Scan rules work).
+    - If so, then the following situations should be updated
+      - If more one or more items are selected and any rule is added, then check to see if the rule was already added and if so, don't try to add it again, just mark the item as resolved and remove from the list.  I think this will also work if more than one items with the same results (like 2 different emails with the same "Block Entire Domain" rule applies) then only apply the rule for the first, remove all the others that match the rule and discard them and remove from the display list.
 ---------------------------------------------------------------------------------------------------------
 Sprint 49 Manual Validation Feedback 
 

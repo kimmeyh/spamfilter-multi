@@ -26,6 +26,12 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-07-26 (Sprint 50: retrospective improvements, all "apply now")
+- **docs**: terminology -- "manual testing" renamed to "manual validation" across active process docs, root docs, the sprint-card template, and code/test comments (81 case-preserving occurrences in 32 files). Historical records (archives, worktrees, prior sprint documents, published CHANGELOG releases) are deliberately unchanged. (Sprint 49 carry-in via Sprint 50 retro IMP-1)
+- **docs**: retrospective Step-5 completeness gate -- proposals are generated mechanically by walking Harold's feedback category-by-category, each yielding either numbered proposal(s) or an explicit `no actionable item`; closes the leak that lost the rename request for a full sprint. (IMP-2)
+- **docs**: F-PRECHECK class 1 now names "local Windows host + CI Linux host" as a parallel-site pair -- assertions about `Platform.is*`-gated widgets must be platform-aware or they pass locally and fail CI. (IMP-3)
+- **docs**: `Executed-by` requires a concrete recorded justification whenever execution deviates from the planned model, in one of four defined shapes; retro Category 5 reads these lines. (IMP-7, Harold's steering)
+
 ### 2026-07-25 (Sprint 50)
 - **fix**: MT-2b -- the Review No Rule screen now sweeps on EVERY load: items already covered by the current rules/safe senders are marked processed and dropped before display (full-set evaluation with F120-style yields), so covered rows can never (re)surface -- including rows written by a scan that ran before their covering rules existed (Sprint 50 manual testing, Harold's 6-item repro). The sweep self-loads an unloaded RuleSetProvider; a latent silent no-op in addRule/addSafeSender when the provider is unloaded was found in the process and filed as F128
 - **feat**: MT-3 -- the Review "No Rule" Items icon now also appears on the Manual Scan screen and the Scan Results screen app bars (ahead of History, matching the scan-history/account-selection convention; Windows desktop) (Sprint 50 manual testing, Harold)

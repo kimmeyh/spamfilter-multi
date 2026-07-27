@@ -24,7 +24,7 @@ class RuleQuickActionResult {
   /// only). Same delta-re-evaluation purpose as [createdRule].
   final String? createdSafeSenderPattern;
 
-  /// MT-2 (Sprint 50, Harold manual testing): true when the requested rule /
+  /// MT-2 (Sprint 50, Harold manual validation): true when the requested rule /
   /// safe sender ALREADY existed. The action is reported as success (the
   /// email is covered -- callers mark it resolved and drop it from their
   /// list) but nothing was inserted; [createdRule] /

@@ -3,6 +3,11 @@
 ---------------------------------------------------------------------------------------------------------
 Sprint 5n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
 ---------------------------------------------------------------------------------------------------------
+Sprint 50 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
+
+
+
+---------------------------------------------------------------------------------------------------------
 Do this interactively first
 * is this still needed or already completed. Include missing pieces if not already completed.
 - F122. Review-No-Rule screen load-error polish (~30m) Priority 12

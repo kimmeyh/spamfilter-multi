@@ -215,7 +215,7 @@ Examples of changes that require a widget test:
 - A Save button that should be disabled while async work is in flight -> widget test pumps the future and confirms the button's `enabled` property.
 - A new tab/screen appearing only when a feature flag is on -> widget test under both flag states.
 
-**Why**: Sprint 36 BUG-S35-1 fix shipped 15 unit tests on the duplicate-checker service but NO widget test for the dialog-skip behavior. The initial fix placed the duplicate check after the Confirm dialog (wrong UX) and the defect was caught only at Phase 5 manual testing. A widget test asserting the dialog is skipped on duplicate would have caught it during Phase 4.
+**Why**: Sprint 36 BUG-S35-1 fix shipped 15 unit tests on the duplicate-checker service but NO widget test for the dialog-skip behavior. The initial fix placed the duplicate check after the Confirm dialog (wrong UX) and the defect was caught only at Phase 5 manual validation. A widget test asserting the dialog is skipped on duplicate would have caught it during Phase 4.
 
 **Cost**: ~20-30 min per UX-flow fix to write the widget test. Saves the equivalent or more in Phase 5 manual-testing iteration time.
 
@@ -254,7 +254,7 @@ void main() {
 
 **Purpose**: Test complete user workflows on real devices/emulators
 
-**Location**: Manual testing
+**Location**: Manual validation
 
 **Coverage**: All critical user paths
 

@@ -336,7 +336,7 @@ void main() {
       });
     });
 
-    // MT-1 (Sprint 50, Harold manual testing): the quick-action popup uses a
+    // MT-1 (Sprint 50, Harold manual validation): the quick-action popup uses a
     // FIXED 3-column grid so every action -- Block Entire Domain above all --
     // sits in the SAME position for every item. This pins the geometry:
     // columns align across the Safe and Block rows, ordering is

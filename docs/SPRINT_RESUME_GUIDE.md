@@ -41,7 +41,7 @@ Detail: `docs/SPRINT_EXECUTION_WORKFLOW.md`. Quick: `docs/SPRINT_CHECKLIST.md`. 
 
 ### 3. Decision-Class Checkpoint (Sprint 38 retro)
 
-Three classes of decisions need explicit user approval AT natural breaks (Backlog Refinement, Manual Testing, Retrospective):
+Three classes of decisions need explicit user approval AT natural breaks (Backlog Refinement, Manual Validation, Retrospective):
 
 - **Architecture** (Chief Architect): data-model changes, control-flow inversions, persistence semantic shifts, ADR pattern changes.
 - **Development** (Chief Developer): function signature changes, removed abstractions, runtime field-meaning shifts.
@@ -71,7 +71,7 @@ NOT valid: implementation choices, approach uncertainty, code style, single test
 
 When work for the current phase completes, proceed IMMEDIATELY to the next phase's first action. Do NOT ask "want me to proceed to Phase N+1?". Sprint-plan approval at Phase 3 is durable authorization through Phase 7. The stop-hook will block paraphrased procedural questions on sprint feature branches.
 
-Standing approval inventory (no permission needed): commits, pushes, PR-description updates, test/analyze runs, build-and-launch for manual testing.
+Standing approval inventory (no permission needed): commits, pushes, PR-description updates, test/analyze runs, build-and-launch for manual validation.
 
 ### 6. Canonical "Next Steps" Progression (Sprint 38 retro)
 
@@ -87,7 +87,7 @@ After development tasks complete, the sequence is:
 5. Merge to develop when approved
 6. Begin next sprint
 
-Do NOT reorder. Do NOT present Code Review before Manual Testing is loop-complete.
+Do NOT reorder. Do NOT present Code Review before Manual Validation is loop-complete.
 
 ### 7. Resume Sequence (4 Steps -- run these in order on resume)
 

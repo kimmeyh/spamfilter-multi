@@ -4,7 +4,7 @@
 
 .DESCRIPTION
     Creates sample emails in a test email account to replenish test data after
-    manual testing that deletes or moves emails. Useful for Sprint testing where
+    manual validation that deletes or moves emails. Useful for Sprint testing where
     readonly mode was not used and test emails were deleted.
 
 .PARAMETER EmailProvider

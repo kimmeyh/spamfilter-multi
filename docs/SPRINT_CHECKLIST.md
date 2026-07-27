@@ -150,7 +150,7 @@ These documents MUST be created/updated during each sprint:
   - [ ] `docs/sprints/SPRINT_N_SUMMARY.md` created (MANDATORY - do not defer)
   - [ ] ARCHITECTURE.md updated (if architecture changed)
   - [ ] .claude/sprint_status.json updated
-- [ ] **7.7.5 FINAL GATE + announce readiness** (PR lifecycle checkpoint #4, MANDATORY): ONLY after manual testing AND retrospective AND retro improvements AND any Copilot review AND Copilot comments addressed are ALL complete -- final PR update IF anything needs it (no-op if nothing changed); verify PR is already Ready-for-Review (set at end of 7.7; `gh pr ready` now if somehow still draft); THEN notify Product Owner / Scrum Master the PR is ready for FINAL APPROVAL. This PO/SM notification is the ONE readiness announcement of the sprint.
+- [ ] **7.7.5 FINAL GATE + announce readiness** (PR lifecycle checkpoint #4, MANDATORY): ONLY after manual validation AND retrospective AND retro improvements AND any Copilot review AND Copilot comments addressed are ALL complete -- final PR update IF anything needs it (no-op if nothing changed); verify PR is already Ready-for-Review (set at end of 7.7; `gh pr ready` now if somehow still draft); THEN notify Product Owner / Scrum Master the PR is ready for FINAL APPROVAL. This PO/SM notification is the ONE readiness announcement of the sprint.
 - [ ] **7.8** Review results summarized
 - [ ] **7.9** Next steps offered to user
 

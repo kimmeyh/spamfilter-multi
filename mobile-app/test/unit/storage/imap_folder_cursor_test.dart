@@ -9,7 +9,7 @@
 /// work for the Round 4 cursor type.
 ///
 /// Real IMAP UID search is provider-coupled and verified via Phase 5.3
-/// manual testing per the Sprint 37 retrospective Category 2 disposition.
+/// manual validation per the Sprint 37 retrospective Category 2 disposition.
 library;
 
 import 'package:flutter_test/flutter_test.dart';

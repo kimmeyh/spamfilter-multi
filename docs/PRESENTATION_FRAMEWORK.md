@@ -438,7 +438,7 @@ Everything Claude needs to know, read automatically at session start:
 | Customer Representative | Real-world requirements, acceptance criteria from user perspective |
 | Product Owner | Backlog priority, sprint scope approval, trade-off decisions |
 | Chief Architect | Final architectural decisions, ADR approval |
-| Chief Developer | PR approval, manual testing, merge-to-main authority |
+| Chief Developer | PR approval, manual validation, merge-to-main authority |
 | Scrum Master | Sprint ceremonies, timeline, scope discipline |
 | Chief Test Engineer | Test strategy, exploratory testing, quality approval |
 

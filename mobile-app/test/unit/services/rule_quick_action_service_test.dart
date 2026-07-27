@@ -236,7 +236,7 @@ void main() {
       expect(second.success, isTrue,
           reason: 'the sender is covered -- the caller must mark the item '
               'resolved instead of surfacing a failure (Harold, Sprint 50 '
-              'manual testing)');
+              'manual validation)');
       expect(second.alreadyExisted, isTrue);
       expect(second.createdRule, isNotNull);
       expect(second.createdRule!.name, equals(first.createdRule!.name));

@@ -528,7 +528,7 @@ Completed Tasks
 - F38 Re-process emails via IMAP after rule changes
 ```
 
-**Manual testing checklists**: Use bullet lists with Feature number, description, and what to verify.
+**Manual validation checklists**: Use bullet lists with Feature number, description, and what to verify.
 ```
 What to test manually
 - Scan status indicator (F34) - Run a scan and watch for the progress bar in the summary card

@@ -4,7 +4,7 @@
 **Date**: 2026-07-25
 **Branch**: `feature/20260723_Sprint_50` (created FROM `feature/20260720_Sprint_49` per the Phase 6.6 carry-forward flow)
 **PR**: [#278](https://github.com/kimmeyh/spamfilter-multi/pull/278) (draft -> develop; DRAFT through Phase 7.7)
-**Status**: COMPLETE through Phase 6. Tasks 1-5 + MT-1/MT-2/MT-2b/MT-2c/MT-3 done; suite + CI green; Phase 5.3 manual testing PASSED (Harold 2026-07-26: "All working as expected and can be closed"); Phase 7 retrospective next
+**Status**: COMPLETE through Phase 6. Tasks 1-5 + MT-1/MT-2/MT-2b/MT-2c/MT-3 done; suite + CI green; Phase 5.3 manual validation PASSED (Harold 2026-07-26: "All working as expected and can be closed"); Phase 7 retrospective next
 **Scope source**: 2026-07-25 backlog refinement (v1.3 format); Harold's selection 2026-07-25: F126 + F122 + F123 + F124 + F127 (rescoped)
 
 **Estimating method**: TWO-metric MINUTE-based per `docs/CODING_VELOCITY.md` (Sprint 49 recompute note: prefer the LOW end of band for S-size SVC-EDIT/DOCS items).
@@ -241,13 +241,13 @@ Risk review complete: 5 planned tasks + 4 manual-testing items reviewed; all mit
 
 All 5 planned tasks complete, plus 5 mid-sprint manual-testing items (MT-1, MT-2, MT-2b, MT-2c, MT-3) and one backlog item filed (F128). Harold validated every item: "All working as expected and can be closed."
 
-## Manual Testing (Phase 5.3) -- PASSED
+## Manual Validation (Phase 5.3) -- PASSED
 
 Build + launch the Windows dev app proactively; Harold verifies: (1) Manage Safe Senders shows "Exact Email" for the observed pattern, (2) Manage Rules shows the fallback label on `SpamAutoDeleteFrom`, (3) Review-No-Rule loads normally (error path covered by widget test), (4) rule counts reflect the F126 removal.
 
 **Result (Harold, 2026-07-26): all items "working as expected and can be closed"** -- F123, F124, F126 (Store app), MT-2c, MT-3, plus MT-1 and MT-2 validated earlier in the session.
 
-### Mid-sprint scope from manual testing (Harold-requested, implemented in-sprint)
+### Mid-sprint scope from manual validation (Harold-requested, implemented in-sprint)
 
 - **MT-1 -- fixed 3-column quick-action grid** (`b17239c`): the email popup renders Email | Exact Domain | Entire Domain as equal-width cells across a Safe row and a Block row, with disabled placeholders when a domain action does not apply and Block Subject on its own full-width row, so Block Entire Domain always occupies the same position. Harold chose this option over "Entire-Domain first" and "widest-fit width". Pinned by a geometry test asserting column x-alignment.
 - **MT-2 -- idempotent quick actions + auto-resolve** (`233ee00`): rule names are deterministic and `rules.name` is UNIQUE, so a second item on an already-blocked domain threw and stuck in the list ("failed to add block rule"). An existing rule/safe sender now reports "already covered" success carrying the existing rule as the F120 delta. Harold chose "idempotent + auto-resolve" over "idempotent only".

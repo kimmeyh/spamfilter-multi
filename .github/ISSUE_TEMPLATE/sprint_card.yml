@@ -119,7 +119,7 @@ body:
         - Integration tests in: [test file]
         - Coverage target: [X%]
 
-        ## Manual Testing
+        ## Manual Validation
         1. Step 1: [What to do]
         2. Step 2: [What to look for]
         3. Expected result: [What should happen]

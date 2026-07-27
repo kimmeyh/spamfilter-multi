@@ -178,7 +178,7 @@ void main() {
     // These are best tested via:
     // - Integration tests on physical/virtual device
     // - Automated testing using Google's test utilities
-    // - Manual testing with test Google account
+    // - Manual validation with test Google account
   });
 
   group('Sprint 37 F6c: IncrementalFetchResult', () {

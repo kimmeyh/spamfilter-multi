@@ -260,7 +260,7 @@ void main() {
     expect(find.text('Apply Rule'), findsOneWidget);
   });
 
-  // MT-2 (Sprint 50, Harold manual testing): a bulk block action must
+  // MT-2 (Sprint 50, Harold manual validation): a bulk block action must
   // (a) treat an already-existing covering rule as success (item resolves,
   // no 'failed to add block rule'), and (b) auto-resolve UNSELECTED items
   // the new rule covers -- Live Scan parity.
