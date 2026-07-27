@@ -344,6 +344,11 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
       ruleSet: ruleProvider.rules,
       safeSenderList: ruleProvider.safeSenders,
       compiler: PatternCompiler(),
+      // Copilot review (PR #278): this sweep runs on EVERY load over the whole
+      // pool, so per-item eval logging would flood the log and pay the
+      // interpolation cost for each. The sweep's own summary line below
+      // reports what it resolved.
+      silent: true,
     );
 
     final kept = <_NoRuleItem>[];

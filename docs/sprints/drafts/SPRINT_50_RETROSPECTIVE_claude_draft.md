@@ -103,8 +103,8 @@ CHANGELOG, CODING_VELOCITY (all ten rows with both metrics), the plan document,
 and the master plan were updated in-commit rather than batched at sprint end.
 F128 was filed in the master plan in the same commit that shipped its workaround,
 so the backlog entry cannot drift from the code. Carry-forward gap discovered
-during this retro: Harold's Sprint 49 request to rename "manual validation" to
-"manual validation" (~48 occurrences across 10 docs) was never converted into a
+during this retro: Harold's Sprint 49 request to rename "manual testing" to
+"manual validation" (475 occurrences repo-wide; 81 in active scope) was never converted into a
 Sprint 49 improvement proposal and so was never applied -- a Step-5 protocol miss.
 
 ### 9. Process Issues

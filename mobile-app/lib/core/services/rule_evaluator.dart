@@ -11,11 +11,29 @@ class RuleEvaluator {
   final SafeSenderList safeSenderList;
   final PatternCompiler compiler;
 
+  /// When true, per-evaluation `[EVAL]`/`[DEBUG]` logging is suppressed
+  /// (Copilot review, PR #278). Every `evaluate` call otherwise emits at
+  /// least one debug line -- fine for a scan the user initiated, but a bulk
+  /// re-evaluation sweep over a large "No rule" pool (Sprint 50 MT-2c, which
+  /// runs on EVERY load of the Review screen) would flood the log with one
+  /// line per item and pay the string-interpolation cost for each. Errors and
+  /// warnings are unaffected; only the routine per-item chatter is silenced.
+  final bool silent;
+
   RuleEvaluator({
     required this.ruleSet,
     required this.safeSenderList,
     required this.compiler,
+    this.silent = false,
   });
+
+  void _eval(String Function() message) {
+    if (!silent) AppLogger.eval(message());
+  }
+
+  void _debug(String Function() message) {
+    if (!silent) AppLogger.debug(message());
+  }
 
   /// Evaluate an email and return the action to take
   ///
@@ -30,7 +48,7 @@ class RuleEvaluator {
     // Check safe senders FIRST (whitelist has priority)
     final safeSenderMatch = safeSenderList.findMatch(message.from);
     if (safeSenderMatch != null) {
-      AppLogger.eval('Email from ${message.from} matched safe sender (pattern: ${safeSenderMatch.pattern})');
+      _eval(() => 'Email from ${message.from} matched safe sender (pattern: ${safeSenderMatch.pattern})');
       return EvaluationResult.safeSender(
         safeSenderMatch.pattern,
         patternType: safeSenderMatch.patternType,
@@ -44,14 +62,14 @@ class RuleEvaluator {
     int enabledRuleCount = 0;
     for (final rule in sortedRules) {
       if (!rule.enabled) {
-        AppLogger.debug('Rule "${rule.name}" is disabled, skipping');
+        _debug(() => 'Rule "${rule.name}" is disabled, skipping');
         continue;
       }
       enabledRuleCount++;
 
       // Check exceptions first
       if (rule.exceptions != null && _matchesExceptions(message, rule.exceptions!)) {
-        AppLogger.eval('Email "${message.subject}" from ${message.from} matched exception in rule "${rule.name}", skipping');
+        _eval(() => 'Email "${message.subject}" from ${message.from} matched exception in rule "${rule.name}", skipping');
         continue;
       }
 
@@ -60,7 +78,7 @@ class RuleEvaluator {
         final matchInfo = _getMatchedPatternWithType(message, rule.conditions);
         final pattern = matchInfo.pattern;
         final patternType = matchInfo.patternType;
-        AppLogger.eval('Email from ${message.from} matched rule "${rule.name}" (pattern: $pattern, type: $patternType, subject: "${message.subject}")');
+        _eval(() => 'Email from ${message.from} matched rule "${rule.name}" (pattern: $pattern, type: $patternType, subject: "${message.subject}")');
         return EvaluationResult(
           shouldDelete: rule.actions.delete,
           shouldMove: rule.actions.moveToFolder != null,
@@ -73,9 +91,11 @@ class RuleEvaluator {
     }
 
     if (enabledRuleCount == 0) {
-      AppLogger.rules('No rules available for evaluation of "${message.subject}" from ${message.from}');
+      if (!silent) {
+        AppLogger.rules('No rules available for evaluation of "${message.subject}" from ${message.from}');
+      }
     } else {
-      AppLogger.eval('Email "${message.subject}" from ${message.from} did not match any of $enabledRuleCount enabled rules or safe senders');
+      _eval(() => 'Email "${message.subject}" from ${message.from} did not match any of $enabledRuleCount enabled rules or safe senders');
     }
     return EvaluationResult.noMatch();
   }

@@ -2572,6 +2572,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
             ruleSet: ruleProvider.rules,
             safeSenderList: ruleProvider.safeSenders,
             compiler: _sharedCompiler,
+            // Copilot review (PR #278), sibling of the MT-2c sweep: the
+            // FULL-SET path re-evaluates every no-rule email against every
+            // rule, so per-item eval logging is pure noise at prod scale.
+            // The delta path above stays verbose -- it is one rule over a
+            // handful of emails and the log line is diagnostically useful.
+            silent: true,
           );
 
     // Match build()'s resolution: historical-scan views always use
