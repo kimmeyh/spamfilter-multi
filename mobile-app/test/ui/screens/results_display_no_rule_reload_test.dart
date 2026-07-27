@@ -26,6 +26,8 @@
 ///   matched row on first paint -- exactly the path under test.
 library;
 
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -362,11 +364,14 @@ void main() {
       });
 
       // MT-3 (Sprint 50, Harold): the Results screen AppBar carries the
-      // Review "No Rule" Items entry point (Windows-scoped; tests run on
-      // the Windows desktop).
-      expect(find.byTooltip('Review "No Rule" Items'), findsOneWidget,
-          reason: 'MT-3: Results screen must expose the No-Rule review '
-              'entry point');
+      // Review "No Rule" Items entry point. The button is Windows-scoped in
+      // the screen (`if (Platform.isWindows)`), and CI runs the suite on
+      // ubuntu-latest as well -- so assert presence on Windows and absence
+      // elsewhere rather than assuming the host platform.
+      expect(find.byTooltip('Review "No Rule" Items'),
+          Platform.isWindows ? findsOneWidget : findsNothing,
+          reason: 'MT-3: Results screen exposes the No-Rule review entry '
+              'point on Windows desktop only');
 
       // All six grid actions plus the subject row render.
       for (final label in [
