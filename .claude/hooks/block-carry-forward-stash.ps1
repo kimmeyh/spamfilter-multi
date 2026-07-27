@@ -57,11 +57,33 @@ if ([string]::IsNullOrWhiteSpace($cmd)) { exit 0 }
 # Explicit human-sanctioned escape hatch.
 if ($cmd -match 'allow_stash') { exit 0 }
 
+# ---- F130-S51 R-2 (Sprint 51, 2026-07-27): match INVOCATIONS, not text ----
+# The original matcher scanned the ENTIRE command string, so it blocked any
+# command whose *content* merely mentioned the words -- e.g. writing docs that
+# document this very prohibition, or a `gh pr create --body` describing the
+# defect. It false-positived three times in one session while the operator was
+# doing correct work. A hook that fires on correct work trains people to route
+# around it, which erodes every hook's authority.
+#
+# Fix: strip regions that are DATA rather than executable command text before
+# matching -- single/double-quoted strings and heredoc bodies. What remains is
+# (approximately) the executable portion, which is where a real `git stash`
+# invocation must appear. Deliberately conservative: when in doubt the text
+# stays and the guard still fires, because a false BLOCK is recoverable
+# (bypass token) while a false ALLOW loses work.
+$scan = $cmd
+# Heredoc bodies: <<'EOF' ... EOF  /  <<EOF ... EOF  (any delimiter token)
+$scan = [regex]::Replace($scan, "(?s)<<-?\s*'?""?([A-Za-z_][A-Za-z0-9_]*)'?""?.*?^\s*\1\s*$", ' ', 'Multiline')
+# Single-quoted and double-quoted spans (non-greedy, no escape handling needed
+# for this purpose -- we only care whether an invocation survives outside them)
+$scan = [regex]::Replace($scan, "'[^']*'", ' ')
+$scan = [regex]::Replace($scan, '"[^"]*"', ' ')
+
 # Read-only stash inspection is always fine.
-if ($cmd -match 'git\s+stash\s+(list|show)\b') { exit 0 }
+if ($scan -match 'git\s+stash\s+(list|show)\b') { exit 0 }
 
 # Any other `git stash ...` (including bare `git stash`) is state-changing.
-if ($cmd -match 'git\s+stash\b') {
+if ($scan -match 'git\s+stash\b') {
     $msg = @"
 [BLOCKED] git stash is disallowed for branch carry-forward.
 

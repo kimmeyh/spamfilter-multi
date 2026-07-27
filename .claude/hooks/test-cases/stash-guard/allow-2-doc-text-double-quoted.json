@@ -1,0 +1,1 @@
+{"session_id": "allow-2-doc-text-double-quoted", "cwd": "D:/Data/Harold/github/spamfilter-multi", "hook_event_name": "PreToolUse", "tool_name": "Bash", "tool_input": {"command": "git commit -m \"docs: never use git stash to carry forward; commit on the new branch instead\""}}
