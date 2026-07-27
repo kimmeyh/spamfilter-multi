@@ -31,9 +31,9 @@ Model assignment is **bottom-up**: do NOT score complexity and then pick a tier.
 
 1. **Design the task for Haiku first** (this pressure keeps the solution simple and cheap). Fits Haiku per the heuristics -> assign **Haiku**.
 2. **Else design for Sonnet.** Fits Sonnet -> assign **Sonnet**.
-3. **Else design for Opus** -> assign **Opus**.
+3. **Else design for the top tier** -> assign **Fable/Opus** (Fable 5 when enabled, otherwise Opus).
 
-For any **Sonnet or Opus** assignment, emit a one-line **"why not the cheaper tier"** note (e.g. `Opus -- Class-1 redaction-policy change across 5 files, beyond Sonnet heuristics`). An all-Opus sprint must be a visible, justified choice -- never a silent default. This rule governs the per-task IMPLEMENTER model only; the planner/analyst model (this skill, sprint planning, retros, deep dives) stays Opus regardless per SPRINT_PLANNING.md "Activities Requiring Opus".
+For any **Sonnet or Fable/Opus** assignment, emit a one-line **"why not the cheaper tier"** note (e.g. `Fable/Opus -- Class-1 redaction-policy change across 5 files, beyond Sonnet heuristics`). An all-top-tier sprint must be a visible, justified choice -- never a silent default. **Whenever the model that ACTUALLY executes differs from the assignment, the `Executed-by` line must carry a concrete reason** (Sprint 50 retro IMP-7). This rule governs the per-task IMPLEMENTER model only; the planner/analyst model (this skill, sprint planning, retros, deep dives) stays the top available tier regardless per SPRINT_PLANNING.md "Activities Requiring Fable/Opus".
 
 ## Usage Examples
 

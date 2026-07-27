@@ -121,7 +121,7 @@ These documents MUST be created/updated during each sprint:
 
 [CRITICAL] **A Sprint Retrospective follows the 7-Step Retrospective Protocol in `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 7.3-7.7. All 14 categories must be addressed by all 4 roles. Steps must run in order; do NOT collapse, reorder, or skip steps. Missing roles, missing categories, skipped steps = retrospective is INCOMPLETE = sprint is NOT complete.**
 
-- [ ] **Verify active model is Opus** (retrospective analysis requires Opus per SPRINT_PLANNING.md "Activities Requiring Opus")
+- [ ] **Verify active model is the top available tier** -- Fable 5 when enabled, otherwise Opus (retrospective analysis per SPRINT_PLANNING.md "Activities Requiring Fable/Opus"). _(F130-S51: this line still said "must be Opus" after the Sprint 49 Fable/Opus rename, so it would have failed verification against the Fable 5 session that actually ran the Sprint 50 retrospective.)_
 - [ ] **7.1** Windows desktop build verified
 - [ ] **7.2** Sprint review offered to user
 
