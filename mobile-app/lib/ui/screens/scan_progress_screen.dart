@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
@@ -8,6 +10,7 @@ import '../../core/services/email_scanner.dart';
 import '../../core/storage/settings_store.dart'; // [NEW] ISSUE #138: Load scan mode from settings
 import '../../main.dart' show routeObserver;
 import '../widgets/app_bar_with_exit.dart';
+import 'no_rule_review_screen.dart';
 import 'results_display_screen.dart';
 import 'scan_history_screen.dart';
 import 'help_screen.dart';
@@ -196,7 +199,19 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware
           ),
           // F55 (Sprint 33, v3): standardized icon order --
           // History, Accounts, Help, Settings, [X auto].
+          // MT-3 (Sprint 50, Harold): Review "No Rule" Items entry point
+          // ahead of History, mirroring the scan-history/account-selection
+          // convention (F112/F39). Windows-desktop scoped like those screens.
           actions: [
+            if (Platform.isWindows)
+              IconButton(
+                icon: const Icon(Icons.rule_folder_outlined),
+                tooltip: 'Review "No Rule" Items',
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                      builder: (_) => const NoRuleReviewScreen()),
+                ),
+              ),
             IconButton(
               tooltip: 'View Scan History',
               icon: const Icon(Icons.history),

@@ -361,6 +361,13 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
       });
 
+      // MT-3 (Sprint 50, Harold): the Results screen AppBar carries the
+      // Review "No Rule" Items entry point (Windows-scoped; tests run on
+      // the Windows desktop).
+      expect(find.byTooltip('Review "No Rule" Items'), findsOneWidget,
+          reason: 'MT-3: Results screen must expose the No-Rule review '
+              'entry point');
+
       // All six grid actions plus the subject row render.
       for (final label in [
         'Exact Email',

@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import '../widgets/app_bar_with_exit.dart';
 import '../widgets/auth_warning_dialog.dart';
 import 'help_screen.dart';
+import 'no_rule_review_screen.dart';
 import 'scan_history_screen.dart';
 import 'scan_progress_screen.dart';
 import 'settings_screen.dart';
@@ -675,6 +676,19 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                   });
                 },
               ),
+              // MT-3 (Sprint 50, Harold): Review "No Rule" Items entry point
+              // ahead of History, mirroring the scan-history/account-selection
+              // convention (F112/F39). Windows-desktop scoped like those
+              // screens.
+              if (Platform.isWindows)
+                IconButton(
+                  icon: const Icon(Icons.rule_folder_outlined),
+                  tooltip: 'Review "No Rule" Items',
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                        builder: (_) => const NoRuleReviewScreen()),
+                  ),
+                ),
               IconButton(
                 tooltip: 'View Scan History',
                 icon: const Icon(Icons.history),
