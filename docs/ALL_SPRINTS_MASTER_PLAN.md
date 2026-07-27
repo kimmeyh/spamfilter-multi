@@ -193,9 +193,7 @@ _(F107, F108, F109 shipped in Sprint 44 -- see docs/sprints/SPRINT_44_SUMMARY.md
 
 ### Release Readiness
 
-**F-WINSTORE-ASSETS. Update all Windows Store listing screenshots -- [DONE 2026-07-25, executed interactively during Sprint 50 refinement]**
-- Seven 1920x1020 screenshot masters captured from the live Store 0.5.7 build (clean prod title, 100% demo data, zero PII), committed to `docs/store-assets/windows/` (`3c357a6` + `b40c089`: choose-provider, demo-ready, scan-results, quick-actions, manage-rules, settings, help). Harold uploaded all 7 to Partner Center and completed the listing update (metadata-only, no package) on 2026-07-25 -- the old `[DEV]`-title screenshots are replaced.
-- **Residual (small, optional backlog)**: logo/tile/promo audit was not needed -- the app icon source is unchanged and tile images derive from `msix_config.logo_path`; revisit only if the icon is redesigned. Windows counterpart to GP-6 (Play Store assets).
+_(F-WINSTORE-ASSETS: **DONE 2026-07-25** -- 7 screenshot masters captured from the live 0.5.7 build, committed to `docs/store-assets/windows/`, and uploaded by Harold to Partner Center. Logo/tile audit was not needed (icon source unchanged).)_
 
 _(F111 shipped in Sprint 45 -- GO recommendation delivered; see docs/sprints/SPRINT_45_F111_STORE_READINESS.md and SPRINT_45_SUMMARY.md. Store upload of 0.5.4 is a pending Harold action, targeted Sat/Sun on a stable network -- not a backlog item.)_
 
@@ -205,13 +203,7 @@ _(F103 Architecture Deep Dive and F104 Security Deep Dive ran in Sprint 43 -- se
 
 _(F64 CI/CD pipeline shipped in Sprint 46 -- `.github/workflows/ci.yml`; see CHANGELOG 2026-07-02 and SPRINT_46_RETROSPECTIVE.md.)_
 
-**F127. Populate the 5 CI_* GitHub repo secrets -- [RESOLVED-RESCOPED, Harold 2026-07-24 (option 2)]**
-- Phase: DevOps
-- Platform: N/A (repo)
-- Re-scope decision: the CI_* secrets stay **DELIBERATELY UNSET** -- empty-string dart-defines fully exercise everything the Windows build-verification job verifies (values are runtime-read; CI never runs the app). Populating them adds no coverage today.
-- Fixed instead: `secrets.ci.json` generation in ci.yml wrote pre-Sprint-36 legacy key names; corrected to the current `WINDOWS_GMAIL_*` runtime keys (commit `5c4e0ce`, Sprint 50 branch). CLAUDE.md documents the decision.
-- HOLD trigger: populate the 5 secrets ONLY when CI gains a runtime step that would actually use credentials.
-- Sprint 50 residual: verify the corrected generation yields a green CI run on the Sprint 50 PR.
+_(F127 CI_* repo secrets: **RESOLVED-RESCOPED** (Harold 2026-07-24) -- the secrets stay deliberately UNSET; the real defect (ci.yml writing pre-Sprint-36 legacy key names) was fixed in `5c4e0ce` and verified green. Documented in CLAUDE.md. Re-open ONLY if CI gains a runtime step that would use credentials.)_
 
 ### HOLD Items (Periodic Reviews)
 
@@ -239,7 +231,7 @@ _(F64 CI/CD pipeline shipped in Sprint 46 -- `.github/workflows/ci.yml`; see CHA
 - HOLD rationale: Template item. Duplicate when periodic security review is needed.
 - Source: Sprint 31 retrospective feedback
 
-**F130. Periodic Process-Docs Consistency Deep Dive (~3-6h per review) Priority HOLD**
+**F130. Periodic Process-Docs Consistency Deep Dive (~3-6h per review) Priority HOLD** _(TEMPLATE -- first run assigned to Sprint 51, see F130-S51 below)_
 - Phase: Process Spike (reusable template)
 - Platform: N/A (repo documentation + harness configuration)
 - **Generic scope**: audit the sprint-execution instruction surface for logical consistency, so that any Claude model tier (Haiku / Sonnet / Opus / Fable) executing the sprint process reaches the SAME correct behavior from whichever document it happens to read. The architecture deep dive (F71) does this for the CODE; nothing does it for the PROCESS DOCS, which are equally load-bearing -- they are the actual control system for development on this project.
@@ -285,23 +277,15 @@ _(F64 CI/CD pipeline shipped in Sprint 46 -- `.github/workflows/ci.yml`; see CHA
 
 ### Core App Quality
 
-_(F39 cross-account "No Rule" review screen shipped in Sprint 46 (F39 mobile touch variant remains a future candidate). F33-PROD + BUG-DECODE + F120 + F121 shipped in Sprint 49 -- prod DB restored to 5,776 working rules; see SPRINT_49_SUMMARY.md and SPRINT_49_F33_PROD_BODY_RULES_REPORT.md.)_
+_(Shipped and pruned per Maintenance Rule 2 -- history lives in the sprint docs and CHANGELOG: F39 cross-account "No Rule" review screen (Sprint 46; the mobile touch variant remains a future candidate); F33-PROD + BUG-DECODE + F120 + F121 (Sprint 49, prod DB restored to 5,776 working rules); **F126 / F122 / F123 / F124 (Sprint 50)**, all Harold-validated "working as expected, can be closed"; **F128** (Sprint 50, escalated from backlog and fixed during Copilot review -- see its residual below).)_
 
-**F126. Remove the 4 ambiguous legacy TLD-block body rules (~15m) Priority 10 -- [SPRINT 50]**
-- Phase: Core App Quality
-- Platform: N/A (prod rules data)
-- The F33-PROD run left 4 legacy `%`-wildcard rows untouched as report-only ambiguous (`/%.nl/`, `/%.ru/`, `/%.store/`, `/.*.xyz`); TLD blocking is covered by the `top_level_domain` rules. Harold's Product Owner decision (2026-07-25, by selecting this item): DELETE the 4 rows. Dry-run first; timestamped prod-DB backup before apply.
-- Depends on: none (decision made)
-
-**F122. Review-No-Rule screen load-error polish (~30m) Priority 12 -- [SPRINT 50]**
-- Phase: Core App Quality
-- Platform: Windows Desktop
-- Copilot round-6 carry-in, verified still open 2026-07-25: `no_rule_review_screen.dart:129` `catch (e)` lacks a stackTrace in the load-error log and the SnackBar shows the raw exception (`Failed to load items: $e`). Mirror the correct sibling at line 255 (`catch (e, s)` + `stackTrace: s`) and show a friendly message.
-
-**F123. Safe-sender classification display fix (~45m) Priority 14 -- [SPRINT 50]**
-- Phase: Core App Quality
-- Platform: Windows Desktop
-- Manage Safe Senders shows an exact-email-shaped pattern (`^...@live\.com$`) labeled "Entire Domain" (observed in Harold's 0.5.6 validation). Root-cause `SafeSenderCategory.categorize()` (stored `patternType` precedence vs pattern-shape analysis, `safe_senders_management_screen.dart:51-73`) and correct the classification display.
+**F130-S51. Process-Docs Consistency Deep Dive -- first run (~3-6h) Priority 12 -- [SPRINT 51 TARGET, Harold 2026-07-27]**
+- Phase: Process Spike
+- Platform: N/A (repo documentation + harness configuration)
+- First instance of the F130 template (HOLD section below). Full scope, method and the 9 defect classes are defined there -- do not restate them here; execute against that definition.
+- **Named item for THIS run (Harold 2026-07-27)**: **fix the stash-guard hook false positive.** `.claude/hooks/block-carry-forward-stash.ps1` matches the literal string `git stash` anywhere in a Bash/PowerShell command, so it blocked a legitimate command whose text merely *documented* the stash prohibition (2026-07-27, while correcting the Phase 6.6 recipe). A hook that fires on correct work trains the operator to route around it, which erodes every other hook's authority. Fix: match only an actual invocation (command position), not an occurrence inside quoted/heredoc content; add test cases under `.claude/hooks/test-cases/` covering (a) a real `git stash` invocation -> BLOCK, (b) documentation text containing the words -> ALLOW, (c) the `allow_stash` bypass token -> ALLOW.
+- **Known inputs already collected** (seeded from the Sprint 50/51 escapes, so the run starts with evidence rather than a blank page): the Phase 6.6 five-site contradiction (corrected 2026-07-27 -- verify no regressions and look for the same shape elsewhere); `sprint_status.json` as an orphan instruction (now documented -- audit for other one-line-mention items); CLAUDE.md vs AGENTS.md divergence check; memory `description:` fields and `MEMORY.md` index lines vs their corrected docs.
+- Depends on: none
 
 **F129. WinWright coverage for the Sprint-50-touched screens (~1-2h) Priority 19 -- [SPRINT 51 CARRY-IN]**
 - Phase: Core App Quality
@@ -309,18 +293,11 @@ _(F39 cross-account "No Rule" review screen shipped in Sprint 46 (F39 mobile tou
 - Phase 5.1.5 exit criteria: no existing WinWright script exercises the three surfaces Sprint 50 changed -- the quick-action grid in the email popup (MT-1), Manage Rules category/sub-type display (F124), and the Review "No Rule" screen incl. its covered-item sweep (MT-2c). Each script must restore all state it modifies (Sprint 37 policy).
 - Depends on: none (Sprint 50 retro IMP-6 -- Harold: backlog)
 
-**F128. RuleSetProvider.addRule/addSafeSender silently no-op when provider is unloaded -- [FIXED in Sprint 50, PR #278 (Copilot review round 4)]**
+**F128-residual. Audit the sibling silent-no-op early-returns in RuleSetProvider (~15m) Priority 21 -- [SPRINT 51 CARRY-IN]**
 - Phase: Core App Quality
 - Platform: All
-- Both methods early-returned on a null cache (`if (_rules == null) return;`) BEFORE the DB insert -- the caller then reported success with no row persisted (F-PRECHECK class 6: silent failure; BUG-S39-2's rethrow guard sits AFTER this return and never fired). Latent in production because app startup always loads the provider; surfaced 2026-07-26 when an unloaded test provider produced "1 succeeded" with no rule inserted.
-- **Fixed 2026-07-27** (escalated from backlog when Copilot independently found it reaching into `RuleQuickActionService`'s idempotency check): `addRule`/`addSafeSender` now load on demand and throw `StateError` if the cache is still unavailable afterwards -- never silent. New `isRulesLoaded` / `isSafeSendersLoaded` getters make "unloaded" distinguishable from "genuinely empty" (the `rules`/`safeSenders` getters return empty collections in both states); `RuleQuickActionService` and the MT-2c sweep consult them before trusting an empty read. +2 regression tests proving an unloaded provider now persists to the DATABASE, not just the cache.
-- **Residual (still open, small)**: the sibling early-returns were NOT audited -- `removeRule`, `updateRule`, `removeSafeSender`, and any other `if (_x == null) return;` in `RuleSetProvider` carry the same silent-no-op shape. Carry to Sprint 51 as a ~15m sweep.
-- Depends on: none
-
-**F124. Legacy uncategorized-rule label fix (~30m) Priority 16 -- [SPRINT 50]**
-- Phase: Core App Quality
-- Platform: Windows Desktop
-- Manage Rules shows a pre-classification legacy rule (`SpamAutoDeleteFrom`, null `patternCategory`/`patternSubType`) with a blank "-" sub-label (`rules_management_screen.dart:829-830` null fallthrough to `''`; observed in Harold's 0.5.6 validation). Display a sensible fallback label (e.g. "Uncategorized (legacy)").
+- F128 fixed `addRule`/`addSafeSender` (load-on-demand + `StateError`) in Sprint 50, but the sibling methods were explicitly NOT audited: `removeRule`, `updateRule`, `removeSafeSender`, and any other `if (_x == null) return;` in `RuleSetProvider` share the same silent-no-op shape -- the caller reports success while nothing is persisted (F-PRECHECK class 6).
+- Depends on: none (F128 landed in Sprint 50)
 
 ### HOLD Items (Android / Google Play Store)
 
