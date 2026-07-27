@@ -166,14 +166,14 @@ If a role has nothing to say for a category, write `Product Owner: No issues -- 
 - Did we test the right scenarios?
 
 **What to Look For**:
-- Bugs found by automated tests vs manual testing
+- Bugs found by automated tests vs manual validation
 - Edge cases covered vs missed
 - Integration test vs unit test balance
 
 **Example Feedback (per role)**:
 > **Product Owner**: All user-facing flows passed automated tests; manual QA caught only UX nuances.
-> **Scrum Master**: Phase 5.3 (manual testing) was actually executed this sprint -- good.
-> **Lead Developer**: Need a database migration test fixture; we keep finding migration regressions in manual testing.
+> **Scrum Master**: Phase 5.3 (manual validation) was actually executed this sprint -- good.
+> **Lead Developer**: Need a database migration test fixture; we keep finding migration regressions in manual validation.
 > **Claude Code Development Team**: Test discovery worked well via flutter test but writing async timer tests required multiple iterations.
 
 #### 3. Effort Accuracy
@@ -373,7 +373,7 @@ If a role has nothing to say for a category, write `Product Owner: No issues -- 
 **Purpose**: Capture small enhancements, fixes, or polish items uncovered during this sprint that should be folded into the NEXT sprint's plan as inline scope additions (not full backlog items).
 
 **Questions**:
-- What small UX/UI nits did manual testing surface that did not make this sprint's scope?
+- What small UX/UI nits did manual validation surface that did not make this sprint's scope?
 - Were there minor refactors or cleanups noticed during code review that fit the next sprint's theme?
 - Are there sub-1-hour touch-ups that should ride along with related work next sprint?
 

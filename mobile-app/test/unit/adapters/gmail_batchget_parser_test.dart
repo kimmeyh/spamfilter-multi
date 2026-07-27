@@ -2,7 +2,7 @@
 /// parser helpers in GmailApiAdapter.
 ///
 /// The batchGet HTTP call itself requires a real Gmail account, so
-/// orchestration is verified in Phase 5.3 manual testing. The parser
+/// orchestration is verified in Phase 5.3 manual validation. The parser
 /// helpers (boundary extraction, multipart splitting, JSON extraction
 /// from each sub-response) are pure-Dart and can be tested directly
 /// against the documented Google batch response shape.

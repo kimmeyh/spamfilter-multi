@@ -1126,4 +1126,58 @@ void main() {
       expect(result3.shouldDelete, isFalse);
     });
   });
+
+  // Copilot review (PR #278): bulk sweeps (Sprint 50 MT-2c "No rule" review
+  // load, and the full-set re-evaluation on the Results screen) construct the
+  // evaluator with silent: true so a large pool does not emit one debug line
+  // per item. Silencing must never change the evaluation RESULT.
+  group('silent mode (Copilot PR #278)', () {
+    test('silent evaluator returns identical results to a verbose one', () async {
+      final rules = RuleSet(version: '1.0', settings: {}, rules: [
+        createTestRule(
+          name: 'Block_spam',
+          conditions:
+              RuleConditions(type: 'OR', header: [r'@spam\.example$']),
+        ),
+      ]);
+      final verbose = RuleEvaluator(
+        ruleSet: rules,
+        safeSenderList: SafeSenderList(safeSenders: [r'^ok@good\.example$']),
+        compiler: PatternCompiler(),
+      );
+      final silent = RuleEvaluator(
+        ruleSet: rules,
+        safeSenderList: SafeSenderList(safeSenders: [r'^ok@good\.example$']),
+        compiler: PatternCompiler(),
+        silent: true,
+      );
+
+      for (final from in [
+        'someone@spam.example', // matches the rule
+        'ok@good.example', // matches the safe sender
+        'nobody@neutral.example', // matches nothing
+      ]) {
+        final email = createTestEmail(from: from);
+        final v = await verbose.evaluate(email);
+        final s = await silent.evaluate(email);
+        expect(s.shouldDelete, v.shouldDelete, reason: 'shouldDelete for $from');
+        expect(s.matchedRule, v.matchedRule, reason: 'matchedRule for $from');
+        expect(s.isSafeSender, v.isSafeSender, reason: 'isSafeSender for $from');
+        expect(s.matchedPattern, v.matchedPattern,
+            reason: 'matchedPattern for $from');
+      }
+    });
+
+    test('silent defaults to false so existing callers keep their logging',
+        () {
+      expect(
+        RuleEvaluator(
+          ruleSet: ruleSet,
+          safeSenderList: safeSenders,
+          compiler: compiler,
+        ).silent,
+        isFalse,
+      );
+    });
+  });
 }

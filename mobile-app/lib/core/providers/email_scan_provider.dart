@@ -452,7 +452,7 @@ class EmailScanProvider extends ChangeNotifier {
 
       // F39 (Sprint 46): persist the "No rule" subset to unmatched_emails --
       // the data source for the cross-account Review "No Rule" Items screen
-      // and the SEC-14 retention pipeline. Manual testing found this table
+      // and the SEC-14 retention pipeline. Manual validation found this table
       // had NO production writer: a Sprint 4 placeholder ("will persist in
       // Task D") only logged, so the review screen always showed 0 items
       // while scan_results.no_rule_count said otherwise.

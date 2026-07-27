@@ -52,11 +52,11 @@ During sprint execution, models work autonomously until one of these stopping cr
 - [ ] **Windows desktop app built and launched successfully** (Phase 5.3)
 
 **Action**:
-1. **Build and launch the app** (MANDATORY before manual testing - Phase 5.3)
+1. **Build and launch the app** (MANDATORY before manual validation - Phase 5.3)
    - Windows: `cd mobile-app/scripts && .\build-windows.ps1`
    - Verify build succeeds, app launches, no database errors
    - User should NOT have to build app themselves
-2. Proceed to Phase 5.3 (Manual Testing in parallel)
+2. Proceed to Phase 5.3 (Manual Validation in parallel)
 2. Once testing complete → Phase 6 (PR creation)
 3. User will conduct Phase 7 (Sprint Review) before merge
 4. **MANDATORY Sprint Completion Updates** (Phase 7.7 and Step 3 after merge):
@@ -202,7 +202,7 @@ What's Required to Unblock:
 **Indicators**:
 - [ ] Unit test fails unexpectedly
 - [ ] Code analysis reports new issue
-- [ ] Manual testing discovers regression
+- [ ] Manual validation discovers regression
 - [ ] Existing feature broken by new changes
 
 **Action** (Per Bug Category):
@@ -231,7 +231,7 @@ What's Required to Unblock:
 
 ### 4a. User-Found Gap in Sprint Theme (Extended Scope Within Theme) (Sprint 32 addition)
 
-**When**: During manual testing, user discovers a gap directly related to the current sprint's theme/feature, not covered by the original sprint scope.
+**When**: During manual validation, user discovers a gap directly related to the current sprint's theme/feature, not covered by the original sprint scope.
 
 **Classic example (Sprint 32)**: SEC-17 sprint scope was `secure_credentials_store.dart`. User reviewed background scan logs and found the redaction policy should have applied to 9 other files. Gap was real, related, and low-effort.
 
@@ -588,7 +588,7 @@ START: Am I working on sprint tasks?
 │  ├─ MEDIUM/LOW → Defer (Criterion 4: Bug - Medium/Low)
 │  └─ NO BUG → Continue
 │
-├─ Did user report a gap in current sprint theme (manual testing finding)?
+├─ Did user report a gap in current sprint theme (manual validation finding)?
 │  ├─ Same category + <2h + no new design + user-reported
 │  │   → Extend scope, continue (Criterion 4a: User-Found Gap)
 │  └─ Otherwise → Treat as Criterion 3 (Scope Change) or 4 (Bug Discovery)

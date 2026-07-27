@@ -74,7 +74,7 @@ If any check fails, **STOP and resolve with user before accepting work**.
 
 `.github/workflows/ci.yml` runs on every PR to `develop`: `flutter analyze` + `flutter test` on `ubuntu-latest`, plus a Windows build-verification step (`flutter build windows --release`) on `windows-latest`. This is additive to, not a replacement for, the Phase 5 manual verification loop in `SPRINT_EXECUTION_WORKFLOW.md` -- CI is a safety net that catches regressions on every PR; Phase 5 still runs the full local build and manual app testing before a sprint's work is considered done.
 
-**One-time setup required (not yet done)**: the Windows build step needs `CI_GMAIL_DESKTOP_CLIENT_ID`, `CI_GMAIL_OAUTH_CLIENT_SECRET`, `CI_GMAIL_REDIRECT_URI`, `CI_AOL_EMAIL`, `CI_AOL_APP_PASSWORD` configured as GitHub encrypted repo secrets (Settings > Secrets and variables > Actions) before the Windows build job will exercise real OAuth wiring. Until they are set, the job still runs and compiles (empty-string dart-defines do not fail a Windows build -- they are only read at runtime), so CI is not blocked, but the build is not yet using real credential values.
+**CI_* repo secrets: DELIBERATELY UNSET (F127 decision, Harold 2026-07-24)**: empty-string dart-defines fully exercise everything the Windows build job verifies (values are runtime-read; CI never runs the app). Populate the 5 `CI_*` secrets ONLY when CI gains a runtime step that would use credentials -- tracked as a HOLD item with that trigger. The `secrets.ci.json` key names were corrected to the current `WINDOWS_GMAIL_*` runtime keys in Sprint 50 (the original wrote pre-Sprint-36 legacy names).
 
 ## [WARNING] CRITICAL: Pull Request Branch Policy
 
@@ -133,6 +133,7 @@ git merge develop
 - Don't use Edit tool without first using Read tool on that file in the SAME conversation turn
 - Don't assume file content from earlier reads - always re-read before editing after any significant work or context compaction
 - Don't use Linux-only tools on Windows (see Windows Tool Restrictions below)
+- Don't produce ANY process deliverable (backlog-refinement presentation, retrospective, release checklist, sprint plan card, ADR) without READING its authoritative format/template section IN THE SAME TURN immediately beforehand. These are deterministic processes -- mirror the template exactly, never reproduce it from memory. (Sprint 45 IMP-1; re-violated Sprints 49-50 -> hardened Sprint 50, Harold 2026-07-24.)
 
 ### [CRITICAL] Decision-Class Taxonomy: STOP, Surface, Wait
 
@@ -159,7 +160,7 @@ When a candidate change falls into one of these three classes, STOP, surface the
 
 **When to surface**: at the next natural break in the interaction. Natural breaks are:
 - Backlog Refinement to Sprint Plan approval (Phase 1 → Phase 3)
-- Manual Testing (Phase 5.3)
+- Manual Validation (Phase 5.3)
 - Sprint Retrospective (Phase 7)
 
 Do NOT bury the decision inside a multi-task code change. Do NOT proceed and "ask in the retrospective." Surface it AT the natural break or BEFORE it if implementation is blocked.
@@ -251,7 +252,7 @@ Do NOT bury the decision inside a multi-task code change. Do NOT proceed and "as
 7. **Phase Auto-Advance Rule (Sprint 35+)**: When the work for the current phase completes (tests pass / build succeeds / PR pushed / docs updated / etc.), proceed *immediately* to the next phase's first action. **DO NOT** ask "want me to proceed to Phase N+1?" -- sprint-plan approval at Phase 3 is durable authorization through Phase 7. The only acceptable mid-sprint pauses are the 9 SPRINT_STOPPING_CRITERIA listed above. "Confirming the next step" is not on that list.
    - State the next action in one sentence, then execute it. Example:
      - **WRONG**: "Phase 5.2 tests pass. Want me to proceed to Phase 5.3 (build app)?"
-     - **RIGHT**: "Phase 5.2 tests pass. Building Windows desktop app for Phase 5.3 manual testing now." [executes build]
+     - **RIGHT**: "Phase 5.2 tests pass. Building Windows desktop app for Phase 5.3 manual validation now." [executes build]
    - Same rule applies to commit/push/PR-update boundaries when the sprint plan covers them: do NOT ask permission to commit Phase 5 work, push to the sprint feature branch, or update the sprint PR description -- those are within standing approval (see SPRINT_EXECUTION_WORKFLOW.md Phase 3.7 "Standing Approval Inventory")
    - Established Sprint 35 retro after Opus 4.7 cost ~4 wall-clock hours across Sprints 34-35 by repeatedly asking permission at phase boundaries that prior models (Opus 4.6) crossed automatically
 

@@ -69,6 +69,12 @@ void main() {
       databaseStore: RuleDatabaseStore(testHelper.dbHelper),
       safeSenderStore: SafeSenderDatabaseStore(testHelper.dbHelper),
     );
+    // MT-2b: load like the real app does at startup -- an UNLOADED provider
+    // makes addRule/addSafeSender silently no-op (_rules == null early
+    // return), which masked a real silent-failure class in earlier versions
+    // of these tests.
+    await ruleProvider.loadRules();
+    await ruleProvider.loadSafeSenders();
   });
 
   tearDown(() async {
@@ -152,6 +158,32 @@ void main() {
     expect(find.text('No unaddressed items'), findsOneWidget);
   });
 
+  testWidgets(
+      'load failure shows a friendly SnackBar with no raw exception text '
+      '(F122, Issue #280)', (tester) async {
+    await tester.runAsync(() async {
+      await testHelper.createTestAccount('gmail-a@example.com');
+      registerSavedAccount('gmail-a@example.com');
+      // Force the load to throw: drop the table getLatestCompletedScan
+      // queries during the screen's initState load.
+      final db = await testHelper.dbHelper.database;
+      await db.execute('DROP TABLE scan_results');
+
+      await mountAndLoad(tester);
+    });
+    // Let the SnackBar animation start.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(
+        find.text('Could not load review items. Please try again or check '
+            'the log for details.'),
+        findsOneWidget);
+    // AC-2: no raw exception object reaches the UI.
+    expect(find.textContaining('no such table'), findsNothing);
+    expect(find.textContaining('Exception'), findsNothing);
+  });
+
   testWidgets('aggregates No rule items across multiple accounts by default',
       (tester) async {
     tester.view.physicalSize = const Size(1200, 2400);
@@ -226,6 +258,156 @@ void main() {
 
     expect(find.text('1 selected'), findsOneWidget);
     expect(find.text('Apply Rule'), findsOneWidget);
+  });
+
+  // MT-2 (Sprint 50, Harold manual validation): a bulk block action must
+  // (a) treat an already-existing covering rule as success (item resolves,
+  // no 'failed to add block rule'), and (b) auto-resolve UNSELECTED items
+  // the new rule covers -- Live Scan parity.
+  testWidgets(
+      'bulk Block Entire Domain resolves selected items AND auto-resolves '
+      'unselected items the rule covers (MT-2)', (tester) async {
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.runAsync(() async {
+      const accountId = 'gmail-a@example.com';
+      await testHelper.createTestAccount(accountId);
+      registerSavedAccount(accountId);
+      final scanId = await insertCompletedScan(accountId,
+          completedAtMs: 1000, noRuleCount: 0);
+
+      final unmatchedStore = UnmatchedEmailStore(testHelper.dbHelper);
+      // Two senders from the SAME domain (one will be selected, one not)
+      // plus one from a different domain that must stay listed.
+      for (final (uid, sender) in [
+        ('uid-1', 'first@dupdomain.example'),
+        ('uid-2', 'second@dupdomain.example'),
+        ('uid-3', 'other@keepme.example'),
+      ]) {
+        await unmatchedStore.addUnmatchedEmail(UnmatchedEmail(
+          scanResultId: scanId,
+          providerIdentifierType: 'imap_uid',
+          providerIdentifierValue: uid,
+          fromEmail: sender,
+          folderName: 'INBOX',
+          createdAt: DateTime.fromMillisecondsSinceEpoch(2000),
+        ));
+      }
+
+      await mountAndLoad(tester);
+    });
+
+    expect(find.text('3 items'), findsOneWidget);
+
+    // Select ONLY the first dupdomain item.
+    await tester.tap(find.byType(Checkbox).first);
+    await tester.pump();
+    expect(find.text('1 selected'), findsOneWidget);
+
+    // Run the bulk action (menu tap handlers hit the DB -> runAsync).
+    await tester.runAsync(() async {
+      await tester.tap(find.text('Apply Rule'));
+      // Pump the popup-menu open ANIMATION frames before tapping the item --
+      // an un-pumped menu is still at its origin and the tap misses.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text('Add Block Rule - Entire Domain'));
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 800));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    });
+
+    // Selected item resolved AND the unselected same-domain item
+    // auto-resolved; only the other-domain item remains.
+    expect(find.text('1 item'), findsOneWidget);
+    expect(find.text('other@keepme.example'), findsOneWidget);
+    expect(find.text('first@dupdomain.example'), findsNothing);
+    expect(find.text('second@dupdomain.example'), findsNothing);
+  });
+
+  // MT-2b (Sprint 50, Harold's 6-item repro 2026-07-26): a NEWER scan can
+  // complete while the screen is open, re-populating the SAME senders as
+  // fresh unprocessed rows. The bulk action then creates the rules and marks
+  // the OLD scan's rows -- but the reload shows the newer scan's identical
+  // rows, so the list looked completely unchanged. The auto-resolve sweep
+  // must therefore run AFTER the reload, over the fresh pool.
+  testWidgets(
+      'bulk block resolves rows re-populated by a scan that completed while '
+      'the screen was open (MT-2b race)', (tester) async {
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.runAsync(() async {
+      const accountId = 'gmail-a@example.com';
+      await testHelper.createTestAccount(accountId);
+      registerSavedAccount(accountId);
+      final scanA = await insertCompletedScan(accountId,
+          completedAtMs: 1000, noRuleCount: 0);
+      final unmatchedStore = UnmatchedEmailStore(testHelper.dbHelper);
+      await unmatchedStore.addUnmatchedEmail(UnmatchedEmail(
+        scanResultId: scanA,
+        providerIdentifierType: 'imap_uid',
+        providerIdentifierValue: 'a-1',
+        fromEmail: 'victim@racedomain.example',
+        folderName: 'INBOX',
+        createdAt: DateTime.fromMillisecondsSinceEpoch(1500),
+      ));
+
+      await mountAndLoad(tester);
+    });
+
+    expect(find.text('1 item'), findsOneWidget);
+
+    // A NEWER scan completes behind the screen's back, re-writing the same
+    // sender (plus one uncovered sender) as fresh unprocessed rows.
+    await tester.runAsync(() async {
+      const accountId = 'gmail-a@example.com';
+      final scanB = await insertCompletedScan(accountId,
+          completedAtMs: 2000, noRuleCount: 0);
+      final unmatchedStore = UnmatchedEmailStore(testHelper.dbHelper);
+      for (final (uid, sender) in [
+        ('b-1', 'victim@racedomain.example'),
+        ('b-2', 'other@keepme.example'),
+      ]) {
+        await unmatchedStore.addUnmatchedEmail(UnmatchedEmail(
+          scanResultId: scanB,
+          providerIdentifierType: 'imap_uid',
+          providerIdentifierValue: uid,
+          fromEmail: sender,
+          folderName: 'INBOX',
+          createdAt: DateTime.fromMillisecondsSinceEpoch(2500),
+        ));
+      }
+    });
+
+    // Select the (stale, scan-A) victim item and apply Block Entire Domain.
+    await tester.tap(find.byType(Checkbox).first);
+    await tester.pump();
+    await tester.runAsync(() async {
+      await tester.tap(find.text('Apply Rule'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text('Add Block Rule - Entire Domain'));
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 800));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    });
+
+    // The reload lands on scan B; its covered victim row must have been
+    // auto-resolved by the post-reload sweep -- only the uncovered sender
+    // remains, and the count chip reflects it.
+    expect(find.text('1 item'), findsOneWidget,
+        reason: 'scan B\'s covered row must not re-surface after the bulk '
+            'action');
+    expect(find.text('other@keepme.example'), findsOneWidget);
+    expect(find.text('victim@racedomain.example'), findsNothing);
   });
 
   // Sprint 46 retro IMP-1 (Harold): provider senders group at the top with a

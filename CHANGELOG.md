@@ -26,6 +26,32 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-07-27 (Sprint 50: Copilot review fixes)
+- **fix**: F128 -- `RuleSetProvider.addRule`/`addSafeSender` no longer no-op silently when the provider cache is unloaded: they load on demand and throw `StateError` if the cache is still unavailable, so a caller can never report success with nothing persisted. New `isRulesLoaded`/`isSafeSendersLoaded` getters distinguish "unloaded" from "genuinely empty" (both read as empty through `rules`/`safeSenders`); the quick-action idempotency checks and the Review-No-Rule sweep consult them before trusting an empty read (Copilot review round 4, PR #278)
+- **fix**: quick-action idempotent fast-paths now run conflict resolution as well -- an existing safe sender did not imply the conflicting block rules were gone (and vice versa), so a whitelisted sender could keep being deleted (Copilot review round 1)
+- **fix**: Manage Rules details dialog no longer labels a categorized rule's missing sub-type "Uncategorized (legacy)"; that fallback now applies only when the category itself is absent (Copilot review round 1)
+- **perf**: `RuleEvaluator` gained an opt-in `silent` mode used by the two bulk re-evaluation sweeps, so opening the Review No Rule screen no longer emits one debug log line (and its string interpolation) per item on large rule sets (Copilot review round 2)
+
+### 2026-07-26 (Sprint 50: retrospective improvements, all "apply now")
+- **docs**: terminology -- "manual testing" renamed to "manual validation" across active process docs, root docs, the sprint-card template, and code/test comments (81 case-preserving occurrences in 32 files). Historical records (archives, worktrees, prior sprint documents, published CHANGELOG releases) are deliberately unchanged. (Sprint 49 carry-in via Sprint 50 retro IMP-1)
+- **docs**: retrospective Step-5 completeness gate -- proposals are generated mechanically by walking Harold's feedback category-by-category, each yielding either numbered proposal(s) or an explicit `no actionable item`; closes the leak that lost the rename request for a full sprint. (IMP-2)
+- **docs**: F-PRECHECK class 1 now names "local Windows host + CI Linux host" as a parallel-site pair -- assertions about `Platform.is*`-gated widgets must be platform-aware or they pass locally and fail CI. (IMP-3)
+- **docs**: `Executed-by` requires a concrete recorded justification whenever execution deviates from the planned model, in one of four defined shapes; retro Category 5 reads these lines. (IMP-7, Harold's steering)
+
+### 2026-07-25 (Sprint 50)
+- **fix**: MT-2b/MT-2c -- the Review No Rule screen resolves already-covered items in two stages: MT-2b moved the post-bulk-action sweep to AFTER the reload (so senders re-populated by a scan that completed while the screen was open are caught), and MT-2c generalized it to sweep on EVERY load: items already covered by the current rules/safe senders are marked processed and dropped before display (full-set evaluation with F120-style yields), so covered rows can never (re)surface -- including rows written by a scan that ran before their covering rules existed (Sprint 50 manual validation, Harold's 6-item repro). The sweep self-loads an unloaded RuleSetProvider; a latent silent no-op in addRule/addSafeSender when the provider is unloaded was found in the process and filed as F128
+- **feat**: MT-3 -- the Review "No Rule" Items icon now also appears on the Manual Scan screen and the Scan Results screen app bars (ahead of History, matching the scan-history/account-selection convention; Windows desktop) (Sprint 50 manual validation, Harold)
+- **feat**: MT-1 -- the email quick-action popup uses a fixed 3-column grid (Email | Exact Domain | Entire Domain, Safe row above Block row) with equal-width cells and disabled placeholders, so every button -- Block Entire Domain especially -- sits in the same position for every item; Block Subject moved to its own full-width row (Sprint 50 manual validation, Harold)
+- **fix**: MT-2 -- quick actions are idempotent: adding a rule/safe sender that already exists reports "already covered" success instead of failing on the UNIQUE rule-name constraint, so Review-No-Rule items resolve and leave the list; after a batch, remaining unselected items covered by the new rules are auto-resolved (Live Scan parity). Fixes "failed to add block rule" on domains already blocked (Sprint 50 manual validation, Harold)
+- **fix**: F127 -- ci.yml `secrets.ci.json` generation now writes the current `WINDOWS_GMAIL_DESKTOP_CLIENT_ID`/`WINDOWS_GMAIL_DESKTOP_CLIENT_SECRET` runtime keys (was pre-Sprint-36 legacy names). The 5 `CI_*` repo secrets stay deliberately unset (Harold 2026-07-24, option 2): empty-string dart-defines fully exercise the Windows build-verification job; populate only when CI gains a runtime step that uses credentials. Verified green on CI (Issue #283)
+- **fix**: F124 -- Manage Rules shows "Uncategorized (legacy)" for pre-classification rules (e.g. SpamAutoDeleteFrom) instead of a blank "-" sub-label; consistent across the list tile, details dialog, and a new category filter chip that appears only when such rules exist (Issue #282)
+- **fix**: F122 -- Review No Rule Items load errors now log the stack trace and show a friendly SnackBar instead of the raw exception (Copilot round-6 carry-in; Issue #280)
+- **fix**: F123 -- Manage Safe Senders no longer mislabels patterns: 350 prod / 341 dev safe-sender rows carried a legacy write-time `pattern_type` misclassification (exact-email patterns labeled 'subdomain' -> displayed "Entire Domain"; subdomain-wildcard patterns labeled 'domain' -> displayed "Exact Domain"). New `scripts/repair_safe_sender_types.dart` recomputes the stored type with the current classifier (dry-run default, backup, 'custom' never touched); display precedence (stored type is authoritative, Sprint 37) unchanged. Also corrects duplicate detection, which keys on `pattern_type` (Issue #281)
+- **chore**: F126 -- removed the 4 ambiguous legacy `%`-wildcard TLD-block body rules (`/%\.nl/`, `/%\.ru/`, `/%\.store/`, `/.*\.xyz`) from the prod rules DB via new `scripts/remove_ambiguous_tld_rules.dart` (dry-run default, abort-unless-exactly-4 gate, timestamped backup); TLD blocking remains covered by the `top_level_domain` rules (Issue #279)
+
+## [0.5.7] - 2026-07-24
+
+**First fully-correct public Windows Store release** (2 -> ~20 users). Ends the F119 defect family: the Store build finally runs as prod on BOTH compiled surfaces (Dart + native), proven pre-submission via the `--print-env` both-sides probe. Includes everything merged to `main` since 0.5.0 that had not shipped correctly (Sprints 40-49): notably the cross-account Review No Rule screen, CI/CD, per-account background scanning, the Sprint 47 UX pass, the F120 quick-action performance fix, and the prod rules-DB restoration (5,776 working rules).
 ### 2026-07-22 (Sprint 49: retrospective improvements, all "apply now")
 - **docs**: anti-stop task-inventory rule (workflow Phase 4.1.0): a batch-completion report is NOT a stopping point -- enumerate approved tasks before any mid-sprint turn end; a blocked sub-step blocks only itself; harness task-tracking from Phase 3.7. (Sprint 49 retro IMP-1)
 - **docs**: `Executed-by` recorded per task at completion (workflow 4.1 + task template); genuinely mechanical tasks delegated to cheaper tiers where coupling allows. (IMP-3)
@@ -922,5 +948,6 @@ See git history for detailed changes prior to Phase 3.1.
 
 ## Version Links
 
-[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.7...HEAD
+[0.5.7]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.0...v0.5.7
 [0.5.0]: https://github.com/kimmeyh/spamfilter-multi/releases/tag/v0.5.0

@@ -80,7 +80,7 @@ Each sprint is composed of **Cards** (GitHub issues) broken into **Tasks** assig
 | **Assistant Scrum Master** | Claude Code Team | Executes sprint checklist steps; tracks task completion; manages sprint documentation and status updates |
 | **Chief Architect** | Harold Kimmey | Makes final architectural decisions; approves ADRs; ensures system coherence and design integrity across sprints |
 | **Architecture Development Team** | Claude Code Team | Researches architectural options; drafts ADRs; performs gap analysis; implements approved architectural designs |
-| **Chief Developer** | Harold Kimmey | Approves PRs; performs manual testing; makes final implementation decisions; owns merge-to-main authority |
+| **Chief Developer** | Harold Kimmey | Approves PRs; performs manual validation; makes final implementation decisions; owns merge-to-main authority |
 | **Lead Developer** | Claude Code Fable/Opus (top tier, latest) | Complex debugging, performance optimization, critical path features; cross-cutting architectural implementation |
 | **Senior Developers** | Claude Code Sonnet (latest, N instances) | Architectural decisions, complex refactoring, multi-file changes, research spikes |
 | **Developers** | Claude Code Haiku (latest, N instances) | Straightforward implementation, bug fixes, tests, documentation, single-file changes |
@@ -199,7 +199,7 @@ For any sprint item that adds a capability **X** on top of an external tool **Y*
      - **NOTE**: Full sprint details archived to SPRINT_<N>_SUMMARY.md during next sprint planning (Phase 3)
   7. Prepare release notes (if needed for major releases)
   8. **Build and Launch Application** (MANDATORY - Phase 5.3 in SPRINT_EXECUTION_WORKFLOW.md)
-     - Claude Code MUST build and launch the app BEFORE declaring ready for manual testing
+     - Claude Code MUST build and launch the app BEFORE declaring ready for manual validation
      - Windows: `cd mobile-app/scripts && .\build-windows.ps1`
      - Android: `cd mobile-app/scripts && .\build-with-secrets.ps1 -BuildType debug -InstallToEmulator`
      - Verify build succeeds and app launches without errors
@@ -267,7 +267,7 @@ Clear statement of what needs to be done and why.
 - [FAIL] BAD: "Code quality improvements"
 - [OK] GOOD: "Reduce all warnings in production code that can be accomplished in 1 hour"
 
-**Multi-Account UI Features**: For UI tasks that involve multi-account features, acceptance criteria MUST specify account-scoping behavior explicitly. (Learned Sprint 19 -- 3 bugs found during manual testing where scan history, folder display, and account context were not scoped to the current account.)
+**Multi-Account UI Features**: For UI tasks that involve multi-account features, acceptance criteria MUST specify account-scoping behavior explicitly. (Learned Sprint 19 -- 3 bugs found during manual validation where scan history, folder display, and account context were not scoped to the current account.)
 
 **Examples**:
 - [FAIL] BAD: "Scan history displays past scans"
@@ -369,7 +369,7 @@ Bold = mandatory. _Italic_ = optional (include only when the trigger applies). T
 
 **Model**: <Haiku|Sonnet|Fable/Opus> -- *why not the cheaper tier*: <one line>   <!-- MANDATORY (existing rule) -->
 
-**Executed-by** (filled at completion): <model that actually executed> -- <one line why, if it deviates from the assignment>   <!-- MANDATORY at completion (Sprint 49 retro IMP-3) -->
+**Executed-by** (filled at completion): <model that actually executed> -- <one line why, MANDATORY whenever it deviates from the assignment>   <!-- MANDATORY at completion (Sprint 49 retro IMP-3; justification hardened Sprint 50 retro IMP-7) -->
 
 **Step-types**: <UI-MOVE | SVC-EDIT | DATA | TEST-UNIT | TEST-WIDGET | TEST-INTEGRATION | DOCS | HOOK | NATIVE-WIN ...>   <!-- MANDATORY (existing) -->
 
@@ -885,10 +885,10 @@ Plus new entry in learning log:
 
 5. **Effort Estimation**: Include estimated hours for each task, even for maintenance sprints.
    - **Base Estimates**: Estimate implementation time for each task
-   - **20% Buffer for Unknowns**: Add 20% time buffer to manual testing tasks for potential debugging
+   - **20% Buffer for Unknowns**: Add 20% time buffer to manual validation tasks for potential debugging
    - **Examples**:
      - Task A: 1h implementation
-     - Task B: 2h implementation + manual testing
+     - Task B: 2h implementation + manual validation
      - Task C: 1.5h implementation
      - **Total**: 4.5h + 20% buffer on Task B (0.4h) = 4.9h estimated
    - **Track Actuals**: Log actual time duration and Claude Code effort time spent per task for future estimation calibration
