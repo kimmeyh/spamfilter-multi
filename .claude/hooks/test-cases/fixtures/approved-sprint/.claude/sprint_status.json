@@ -1,0 +1,10 @@
+{
+  "_description": "Test fixture: approved plan mid-execution (Phase 4+).",
+  "current_sprint": {
+    "number": 51,
+    "branch": "feature/20260727_Sprint_51",
+    "status": "executing",
+    "plan_approved": true,
+    "plan_approval_date": "2026-07-27"
+  }
+}

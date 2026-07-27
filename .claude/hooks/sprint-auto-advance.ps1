@@ -110,17 +110,69 @@ if (-not $branch) { exit 0 }
 if ($branch -match 'allow_stop_hook_bypass') { exit 0 }
 if ($branch -notmatch '^feature/\d+_Sprint_\d+$') { exit 0 }
 
-# ----- Gate 1b: Phase 1 (Backlog Refinement) exemption (F93) --------------
-# The sprint plan file (docs/sprints/SPRINT_<N>_PLAN.md) is created at Phase 3.
-# If it does NOT exist for the sprint number in the branch, we are in Phase 1
-# (Backlog Refinement / pre-kickoff). Surfacing Product Owner decisions is
-# REQUIRED then, so the auto-advance forcing function must not fire: allow.
-# Once the plan file exists (Phase 3+), fall through to normal blocking logic.
+# ----- Gate 1b: pre-approval exemption (Phase 1 + Phase 3.7) -------------
+# Phase 1 (F93): the sprint plan file (docs/sprints/SPRINT_<N>_PLAN.md) is
+# created at Phase 3. If it does NOT exist for the sprint number in the
+# branch, we are in Phase 1 (Backlog Refinement / pre-kickoff). Surfacing
+# Product Owner decisions is REQUIRED then, so the forcing function must not
+# fire: allow.
+#
+# Phase 3.7 (F130-S51 R-2a, Sprint 51 -- fixed 2026-07-27 after this hook
+# blocked the Sprint 51 approval request TWICE): the plan file exists from the
+# moment it is DRAFTED, so its mere existence cannot distinguish
+#   "plan drafted, awaiting approval"  -> asking is MANDATORY, and
+#   "plan approved, executing"         -> asking is a violation.
+# Phase 3.7 approval is what CREATES the durable authorization this hook
+# enforces, so it can never be auto-advanced past. Detect the pre-approval
+# state from artifacts that already record it:
+#   (a) .claude/sprint_status.json -> current_sprint.plan_approved == false
+#       AND current_sprint.number matches the branch (authoritative), or
+#   (b) the plan's own "**Status**:" line still saying DRAFT / awaiting
+#       approval (fallback when the status file is stale or absent).
+# Either signal -> pre-approval -> allow the stop.
 if ($branch -match '_Sprint_(\d+)') {
     $sprintNum = $Matches[1]
     $planPath  = Join-Path $cwd ("docs/sprints/SPRINT_{0}_PLAN.md" -f $sprintNum)
     if (-not (Test-Path -LiteralPath $planPath)) {
         exit 0  # No plan file -> Phase 1 -> allow stop (surfacing PO decisions is required)
+    }
+
+    # (a) sprint_status.json is authoritative when it refers to THIS sprint.
+    $statusPath = Join-Path $cwd '.claude/sprint_status.json'
+    if (Test-Path -LiteralPath $statusPath) {
+        try {
+            $st = Get-Content -LiteralPath $statusPath -Raw | ConvertFrom-Json
+            if (([string]$st.current_sprint.number) -eq $sprintNum -and
+                $st.current_sprint.plan_approved -eq $false) {
+                exit 0  # Phase 3.7: plan drafted, not yet approved -> allow
+            }
+        } catch { }   # malformed status file -> fall through to (b)
+    }
+
+    # (b) Fallback, used ONLY when sprint_status.json is absent/malformed or
+    # does not name a current sprint at all. It must NOT fire when the status
+    # file names a DIFFERENT sprint: a completed sprint's plan keeps its
+    # historical "**Status**: AWAITING PHASE 3.7 APPROVAL" line forever (e.g.
+    # SPRINT_39_PLAN.md), so trusting that line for a non-current sprint would
+    # exempt every real violation. Discovered by test-suite regression while
+    # implementing R-2a (4 violation-* cases went green incorrectly).
+    $statusNamesAnotherSprint = $false
+    if (Test-Path -LiteralPath $statusPath) {
+        try {
+            $st2 = Get-Content -LiteralPath $statusPath -Raw | ConvertFrom-Json
+            $curNum = [string]$st2.current_sprint.number
+            if ($curNum -and $curNum -ne $sprintNum) { $statusNamesAnotherSprint = $true }
+        } catch { }
+    }
+    if (-not $statusNamesAnotherSprint) {
+        try {
+            $planHead = Get-Content -LiteralPath $planPath -TotalCount 20 -ErrorAction Stop
+            foreach ($line in $planHead) {
+                if ($line -match '(?i)^\s*\*\*Status\*\*:.*(DRAFT|awaiting .*approval|NOT APPROVED)') {
+                    exit 0  # Phase 3.7 per the plan doc itself -> allow
+                }
+            }
+        } catch { }
     }
 }
 
