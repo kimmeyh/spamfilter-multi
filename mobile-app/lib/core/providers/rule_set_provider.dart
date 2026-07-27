@@ -275,8 +275,21 @@ class RuleSetProvider extends ChangeNotifier {
   /// Remove a rule by name
   ///
   /// Removes from database first, then exports to YAML for version control.
+  /// F128-residual (Sprint 51): see [addRule] -- an unloaded cache used to make
+  /// this method return SILENTLY, so the caller reported success while nothing
+  /// was deleted. Load on demand instead of no-oping.
   Future<void> removeRule(String ruleName) async {
-    if (_rules == null) return;
+    if (_rules == null) {
+      await loadRules();
+      if (_rules == null) {
+        const message =
+            'Cannot remove rule: rule cache is unavailable after loadRules()';
+        _setError(message);
+        _logger.e(message);
+        notifyListeners();
+        throw StateError(message);
+      }
+    }
 
     try {
       // Remove from database
@@ -307,8 +320,20 @@ class RuleSetProvider extends ChangeNotifier {
   /// BUG-S39-2 discipline: rethrows on failure so UI callers see the
   /// actual error (e.g., ReDoS rejection, rule-not-found) instead of
   /// receiving a silent success. Mirrors `addRule`'s rethrow semantics.
+  /// F128-residual (Sprint 51): see [addRule] -- load on demand rather than
+  /// returning silently, so an unloaded cache cannot swallow the update.
   Future<void> updateRule(String ruleName, Rule updatedRule) async {
-    if (_rules == null) return;
+    if (_rules == null) {
+      await loadRules();
+      if (_rules == null) {
+        const message =
+            'Cannot update rule: rule cache is unavailable after loadRules()';
+        _setError(message);
+        _logger.e(message);
+        notifyListeners();
+        throw StateError(message);
+      }
+    }
 
     try {
       final ruleIndex = _rules!.rules.indexWhere((r) => r.name == ruleName);
@@ -392,8 +417,20 @@ class RuleSetProvider extends ChangeNotifier {
   /// Remove a safe sender
   ///
   /// Removes from database first, then exports to YAML for version control.
+  /// F128-residual (Sprint 51): see [addRule] -- load on demand rather than
+  /// returning silently, so an unloaded cache cannot swallow the removal.
   Future<void> removeSafeSender(String pattern) async {
-    if (_safeSenders == null) return;
+    if (_safeSenders == null) {
+      await loadSafeSenders();
+      if (_safeSenders == null) {
+        const message =
+            'Cannot remove safe sender: cache is unavailable after loadSafeSenders()';
+        _setError(message);
+        _logger.e(message);
+        notifyListeners();
+        throw StateError(message);
+      }
+    }
 
     try {
       // Remove from database
