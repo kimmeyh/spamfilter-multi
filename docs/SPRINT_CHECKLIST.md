@@ -149,7 +149,7 @@ These documents MUST be created/updated during each sprint:
   - [ ] `docs/sprints/SPRINT_N_RETROSPECTIVE.md` created/finalized (MANDATORY -- with all 14 categories x 4 roles filled + "Improvement Decisions" section from Step 6)
   - [ ] `docs/sprints/SPRINT_N_SUMMARY.md` created (MANDATORY - do not defer)
   - [ ] ARCHITECTURE.md updated (if architecture changed)
-  - [ ] .claude/sprint_status.json updated
+  - [ ] `.claude/sprint_status.json` updated -- **VERIFY BY READING IT, not by recalling** (Sprint 50 escape: it had drifted 15 sprints). This is the file that restores sprint state after context compaction, so a stale copy actively misleads the next session. Update: `current_sprint` (number/branch/status/approval flags), `previous_sprint` (number/PR/deliverables), `github_issues` (with closed status), `test_metrics` (actual counts from the last full run), `store_release` if a submission is in flight, and `next_actions`.
 - [ ] **7.7.5 FINAL GATE + announce readiness** (PR lifecycle checkpoint #4, MANDATORY): ONLY after manual validation AND retrospective AND retro improvements AND any Copilot review AND Copilot comments addressed are ALL complete -- final PR update IF anything needs it (no-op if nothing changed); verify PR is already Ready-for-Review (set at end of 7.7; `gh pr ready` now if somehow still draft); THEN notify Product Owner / Scrum Master the PR is ready for FINAL APPROVAL. This PO/SM notification is the ONE readiness announcement of the sprint.
 - [ ] **7.8** Review results summarized
 - [ ] **7.9** Next steps offered to user
@@ -158,7 +158,7 @@ These documents MUST be created/updated during each sprint:
 
 - [ ] PR merged to develop
 - [ ] **6.6 NEXT sprint branch opened off updated develop IMMEDIATELY on merge** (see Phase 6.6 -- before any post-merge commits)
-- [ ] **Review and close all resolved GitHub issues** (`gh issue list --state open` - close any resolved by this sprint)
+- [ ] **Review and close all resolved GitHub issues** -- run `gh issue list --state open` and close each one this sprint resolved. **`Closes #N` does NOT auto-fire in this repo**: PRs merge `feature -> develop`, and GitHub only auto-closes on merge to the DEFAULT branch. Assuming auto-close is the Sprint 50 escape (five issues left open). Verify with `gh issue list --label sprint --state open` returning empty.
 - [ ] GitHub issues auto-closed (verify Closes #N references worked)
 - [ ] **Feature branch NEVER deleted** (sprint branches are retained permanently, local + remote -- see SPRINT_EXECUTION_WORKFLOW.md "Feature branch retention"; do not offer to clean up)
 

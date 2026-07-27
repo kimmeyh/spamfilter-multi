@@ -121,6 +121,8 @@ git merge develop
 - Don't use Edit tool without first using Read tool on that file in the SAME conversation turn
 - Don't assume file content from earlier reads - always re-read before editing after any significant work or context compaction
 - Don't use Linux-only tools on Windows (see Windows Tool Restrictions below)
+- **Don't report a checklist section, phase, or close-out as complete without OPENING the checklist and walking it line by line in that same turn.** "I believe I did that" is not verification. Every line gets an explicit `DONE (<evidence>)` / `N/A (<why>)` / `NOT DONE -> doing it now`. (Sprint 50 escape: close-out reported complete with 5 issues open, `sprint_status.json` 15 sprints stale, and no next-sprint stub. Enforced by the `verify-closeout-complete` Stop hook.)
+- **Don't treat a multi-part user request as a theme.** Enumerate every discrete ask before starting, and restate each ask with its status before ending the turn. A request with a terminal condition ("continue until X") is not satisfied by doing the first part well.
 
 ## Windows Tool Restrictions
 
