@@ -69,6 +69,12 @@ void main() {
       databaseStore: RuleDatabaseStore(testHelper.dbHelper),
       safeSenderStore: SafeSenderDatabaseStore(testHelper.dbHelper),
     );
+    // MT-2b: load like the real app does at startup -- an UNLOADED provider
+    // makes addRule/addSafeSender silently no-op (_rules == null early
+    // return), which masked a real silent-failure class in earlier versions
+    // of these tests.
+    await ruleProvider.loadRules();
+    await ruleProvider.loadSafeSenders();
   });
 
   tearDown(() async {

@@ -271,6 +271,12 @@ _(F39 cross-account "No Rule" review screen shipped in Sprint 46 (F39 mobile tou
 - Platform: Windows Desktop
 - Manage Safe Senders shows an exact-email-shaped pattern (`^...@live\.com$`) labeled "Entire Domain" (observed in Harold's 0.5.6 validation). Root-cause `SafeSenderCategory.categorize()` (stored `patternType` precedence vs pattern-shape analysis, `safe_senders_management_screen.dart:51-73`) and correct the classification display.
 
+**F128. RuleSetProvider.addRule/addSafeSender silently no-op when provider is unloaded (~30m) Priority 18**
+- Phase: Core App Quality
+- Platform: All
+- Both methods early-return on a null cache (`if (_rules == null) return;`) BEFORE the DB insert -- the caller then reports success with no row persisted (F-PRECHECK class 6: silent failure; BUG-S39-2's rethrow guard sits AFTER this return and never fires). Latent in production because app startup always loads the provider; surfaced 2026-07-26 when an unloaded test provider produced "1 succeeded" with no rule inserted. Fix: load-on-demand (mirror the MT-2b sweep's self-load) or throw StateError; audit the sibling early-returns (removeRule, updateRule, removeSafeSender).
+- Depends on: none
+
 **F124. Legacy uncategorized-rule label fix (~30m) Priority 16 -- [SPRINT 50]**
 - Phase: Core App Quality
 - Platform: Windows Desktop
