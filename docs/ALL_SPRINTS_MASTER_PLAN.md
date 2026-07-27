@@ -239,6 +239,33 @@ _(F64 CI/CD pipeline shipped in Sprint 46 -- `.github/workflows/ci.yml`; see CHA
 - HOLD rationale: Template item. Duplicate when periodic security review is needed.
 - Source: Sprint 31 retrospective feedback
 
+**F130. Periodic Process-Docs Consistency Deep Dive (~3-6h per review) Priority HOLD**
+- Phase: Process Spike (reusable template)
+- Platform: N/A (repo documentation + harness configuration)
+- **Generic scope**: audit the sprint-execution instruction surface for logical consistency, so that any Claude model tier (Haiku / Sonnet / Opus / Fable) executing the sprint process reaches the SAME correct behavior from whichever document it happens to read. The architecture deep dive (F71) does this for the CODE; nothing does it for the PROCESS DOCS, which are equally load-bearing -- they are the actual control system for development on this project.
+- **Surfaces in scope** (the full instruction surface, not just `docs/`):
+  - The 11 SPRINT EXECUTION docs (`SPRINT_EXECUTION_WORKFLOW.md`, `SPRINT_CHECKLIST.md`, `SPRINT_PLANNING.md`, `SPRINT_RETROSPECTIVE.md`, `SPRINT_STOPPING_CRITERIA.md`, `BACKLOG_REFINEMENT.md`, `TESTING_STRATEGY.md`, `QUALITY_STANDARDS.md`, `ALL_SPRINTS_MASTER_PLAN.md`, `STORE_RELEASE_PROCESS.md`, `CODING_VELOCITY.md`)
+  - `CLAUDE.md` and `AGENTS.md` (read by every model tier; must not diverge from each other)
+  - `.claude/hooks/*` (enforcement must match what the docs say, and must not false-positive)
+  - `.claude/skills/*/SKILL.md` (skills encode deterministic processes; must match their source doc)
+  - `.claude/agents/*` if present, `.claude/settings.json` hook registrations, `.claude/sprint_status.json` schema
+  - Auto-memory `MEMORY.md` + `feedback_*.md` (**recall re-teaches whatever it says** -- a stale memory silently overrides corrected docs)
+- **Defect classes to hunt** (each seeded by a real escape):
+  1. **Same instruction, contradictory recipes** -- e.g. Phase 6.6 branch creation was stated 5 different ways across 2 docs + 2 memory entries; the cheat sheet said "off updated develop" while the detailed section said "from the current feature branch", and the detailed section's own "Why" paragraph contradicted its own "Steps" block two lines later (found 2026-07-27, Sprint 51).
+  2. **Summary-vs-detail drift** -- cheat-sheet / table-of-contents / quick-reference rows that paraphrase a detailed section and fall out of sync when the section is corrected. Check EVERY summary row against its section.
+  3. **Superseded recipes left in place without a supersession marker** -- old instructions retained "for context" that read as current. Require an explicit `SUPERSEDED by X (date)` marker or delete.
+  4. **Memory-vs-doc divergence** -- a `feedback_*.md` `description:` field or `MEMORY.md` index line still teaching a corrected-away behavior. These surface during recall and outrank docs in practice.
+  5. **Orphan instructions** -- a step referenced in one doc but defined nowhere (or a file like `.claude/sprint_status.json` mentioned in exactly ONE line with no definition of what to put in it -- how it drifted 15 sprints unnoticed).
+  6. **Hook-vs-doc mismatch** -- enforcement that blocks something the docs permit, permits something the docs forbid, or false-positives (e.g. the stash-guard hook blocking a Bash command whose text merely *documents* the stash prohibition, 2026-07-27).
+  7. **Unenforced MANDATORY steps** -- steps marked MANDATORY with no gate, hook, test, or checklist line that would catch omission. Rank by blast radius; propose the cheapest enforcement.
+  8. **Tier-inconsistent guidance** -- instructions that only work if the reader is a top-tier model (implicit judgment calls, unstated context). Haiku executing the same step must reach the same outcome.
+  9. **Dead references** -- links/paths/section anchors/issue numbers/skill names that no longer resolve.
+- **Method**: build an inventory of every instruction that appears in more than one place, diff the statements pairwise, and produce a findings table (`Instruction | Sites | Statements | Authoritative version | Action`). Prefer ONE authoritative statement plus pointers over duplicated prose -- duplication is what drifts.
+- **Deliverable**: findings table + corrections applied in-sprint + any new enforcement proposed; log the count of contradictions found so the trend is visible across reviews.
+- **How to use**: Duplicate this item, assign a sprint, and remove HOLD. After completion, keep this template for the next review.
+- HOLD rationale: Template item, reusable. Duplicate when the process docs have accumulated enough change to warrant a consistency pass -- suggested triggers: after any sprint that applies 4+ process improvements, after any repeat-offense correction (the same mistake corrected 3+ times suggests contradictory guidance rather than model error), or every ~5 sprints.
+- Source: Harold 2026-07-27, after the Sprint 50/51 close-out escapes traced to instruction-surface defects rather than one-off model error: a multi-part request treated as a theme, a checklist reported complete without being opened, and the Phase 6.6 branch recipe stated inconsistently in 5 places (2 of them in memory, which re-teaches on recall).
+
 **F71. Periodic Architecture Deep Dive (~4-8h per review) Priority HOLD**
 - Phase: Architecture Spike (reusable template)
 - Platform: All
@@ -1198,6 +1225,7 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 6.16 | 2026-07-27 | Added **F130. Periodic Process-Docs Consistency Deep Dive** (Process Spike, Priority HOLD, reusable template -- the process-docs counterpart to F71's architecture deep dive). Audits the full instruction surface (11 sprint docs + CLAUDE.md/AGENTS.md + hooks + skills + settings + auto-memory) for 9 defect classes: contradictory recipes, summary-vs-detail drift, unmarked superseded text, memory-vs-doc divergence, orphan instructions, hook-vs-doc mismatch, unenforced MANDATORY steps, tier-inconsistent guidance, dead references. Seeded by the Sprint 50/51 escapes -- notably the Phase 6.6 branch recipe stated 5 inconsistent ways across 2 docs and 2 memory entries. Also added **F129** (WinWright coverage carry-in, Priority 19). |
 | 6.15 | 2026-07-27 | **Sprint 50 merged (PR #278 -> develop, PR #284 -> main) + `0.5.8` SUBMITTED to Partner Center.** MSIX built from merged main; both-sides proof passed; credentials verified embedded. Sprint 51 branch `feature/20260727_Sprint_51` opened per Phase 6.6. Copilot review closed at 9 findings across 4 rounds, all fixed in-sprint (incl. F128 escalated from backlog). Open carry-ins for Sprint 51: F128 sibling early-returns (`removeRule`/`updateRule`/`removeSafeSender`), F129 WinWright coverage. STORE_RELEASE_PROCESS Step 6 gained the release-notes location (Store listings -> "What's new in this version"), which was undocumented. |
 | 6.14 | 2026-07-25 | **Sprint 50 backlog refinement (v1.3 format with Summary Index) + scope selection (Harold): F126 + F122 + F123 + F124 + F127-rescope.** Registered F122-F127: F122/F123/F124 (Core App Quality, from Harold's 0.5.6 validation + Copilot round-6 carry-in), F125 (release self-test probe, Process), F126 (delete the 4 ambiguous legacy TLD rows -- PO decision made), F127 RESOLVED-RESCOPED (CI_* secrets deliberately unset; ci.yml key names fixed `5c4e0ce`; HOLD trigger = CI gains a runtime step). **F-WINSTORE-ASSETS DONE** -- 7 screenshot masters from the live 0.5.7 build committed to `docs/store-assets/windows/` and uploaded by Harold to Partner Center (metadata-only listing update). Pruned Sprint-49-shipped F33-PROD/BUG-DECODE details. |
 | 6.13 | 2026-07-24 | **`0.5.7` LIVE + verified (NO [DEV] title) -- the first fully-correct public release; F119 family closed.** Close-out executed: CHANGELOG `[0.5.7] - 2026-07-24` release heading + links; dev bump 0.5.7 -> 0.5.8 (ONE file -- pubspec.yaml -- the F-VERSION-DERIVE payoff, gate-verified); Store status LIVE. **Android/Google Play track OFF HOLD** (promotion trigger fired). Sprint 50 scope selection pending with Harold. |
