@@ -229,17 +229,17 @@ No architecture impact: no ADR, ARCHITECTURE.md, or ARSD change anticipated. F12
 
 ## Risk Review Gate (Phase 6.1.1)
 
-Risk review complete: 5 planned tasks + 4 manual-testing items reviewed; all mitigations executed and evidenced.
+Risk review complete: 5 planned tasks + 4 manual-validation items reviewed; all mitigations executed and evidenced.
 
 - **F126 (Medium impact -- live prod-DB delete)**: mitigations proven. Dry-run matched exactly 4 rows; abort-if-not-4 gate held; apply verified 5,887 -> 5,883; re-dry-run returned 0 (idempotent); dev-DB parity checked (0 matches). Rollback artifact on disk: `spam_filter.db.backup_pre_f126_prod_2026-07-25T19-41-14-516247` (12.5 MB).
 - **F123 (Medium impact -- 350-row live data repair; conditional Class-2)**: mitigations proven. Rehearsed on a scratchpad copy first (350 repairs, 0 remaining), then applied live prod (350) and dev (341), each verifying 0 repairable rows remain. `custom` types never touched; recompute-to-`unknown` never degrades a labeled row. Class-2 did not trigger (data fix, not precedence change). Rollback artifacts: `...backup_pre_f123_prod_2026-07-25T19-55-28-631532` and `...backup_pre_f123_dev_2026-07-25T19-55-43-579748`.
 - **F122 / F124 / F127-residual (Low -- maintenance)**: tests added and green; analyzer clean; CI green.
-- **MT-1 / MT-2 / MT-2b / MT-2c / MT-3 (Low-Medium -- mid-sprint manual-testing scope)**: each carries a pinning test (grid geometry, idempotency x2, newer-scan race, platform-aware entry point); all Harold-validated on the dev build.
+- **MT-1 / MT-2 / MT-2b / MT-2c / MT-3 (Low-Medium -- mid-sprint manual-validation scope)**: each carries a pinning test (grid geometry, idempotency x2, newer-scan race, platform-aware entry point); all Harold-validated on the dev build.
 - **CI cross-platform escape (found + fixed at this gate)**: the MT-3 tooltip assertion assumed a Windows host and failed the ubuntu CI job (`3405a40` makes it platform-aware). Windows Build Verification was green throughout. This is a genuine F-PRECHECK class-1 miss (mirror/parallel-site: local Windows vs CI Linux) -- carried to the retrospective.
 
 ## Sprint Result (Phase 6)
 
-All 5 planned tasks complete, plus 5 mid-sprint manual-testing items (MT-1, MT-2, MT-2b, MT-2c, MT-3) and one backlog item filed (F128). Harold validated every item: "All working as expected and can be closed."
+All 5 planned tasks complete, plus 5 mid-sprint manual-validation items (MT-1, MT-2, MT-2b, MT-2c, MT-3) and one backlog item filed (F128). Harold validated every item: "All working as expected and can be closed."
 
 ## Manual Validation (Phase 5.3) -- PASSED
 

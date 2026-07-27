@@ -264,7 +264,16 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
   void _showRuleDetails(Rule rule) {
     final displayName = rule.sourceDomain ?? rule.name;
     final categoryLabel = _categoryLabels[rule.patternCategory] ?? rule.patternCategory ?? _uncategorizedLabel;
-    final subTypeLabel = _subTypeLabels[rule.patternSubType] ?? rule.patternSubType ?? _uncategorizedLabel;
+    // Copilot review (PR #278): the legacy fallback belongs to the CATEGORY.
+    // A null sub-type on a categorized rule (e.g. category 'body', no
+    // sub-type) is simply "not applicable" -- labeling it
+    // "Uncategorized (legacy)" both contradicts the tile (which renders the
+    // category alone when the sub-type is empty) and mislabels a
+    // partially-classified rule as legacy. Only a rule with NO category is
+    // legacy-uncategorized.
+    final subTypeLabel = _subTypeLabels[rule.patternSubType] ??
+        rule.patternSubType ??
+        (rule.patternCategory == null ? _uncategorizedLabel : 'Not applicable');
 
     showDialog(
       context: context,

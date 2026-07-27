@@ -217,7 +217,7 @@ Examples of changes that require a widget test:
 
 **Why**: Sprint 36 BUG-S35-1 fix shipped 15 unit tests on the duplicate-checker service but NO widget test for the dialog-skip behavior. The initial fix placed the duplicate check after the Confirm dialog (wrong UX) and the defect was caught only at Phase 5 manual validation. A widget test asserting the dialog is skipped on duplicate would have caught it during Phase 4.
 
-**Cost**: ~20-30 min per UX-flow fix to write the widget test. Saves the equivalent or more in Phase 5 manual-testing iteration time.
+**Cost**: ~20-30 min per UX-flow fix to write the widget test. Saves the equivalent or more in Phase 5 manual-validation iteration time.
 
 **Template**:
 ```dart

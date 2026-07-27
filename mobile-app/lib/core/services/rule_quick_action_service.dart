@@ -133,21 +133,37 @@ class RuleQuickActionService {
 
       // MT-2 (Sprint 50): idempotent add -- an identical existing pattern is
       // success ("already covered"), not a duplicate-insert failure.
-      if (ruleProvider.safeSenders.safeSenders.contains(pattern)) {
-        _logger.i('[OK] Safe sender already exists (type: $type) -- '
-            'reporting as covered');
-        return RuleQuickActionResult(
-          success: true,
-          displayMessage: 'Safe sender already exists -- marked as resolved',
-          createdSafeSenderPattern: pattern,
-          alreadyExisted: true,
-        );
-      }
+      final alreadyPresent =
+          ruleProvider.safeSenders.safeSenders.contains(pattern);
 
+      // Conflict resolution runs on BOTH paths (Copilot review, PR #278):
+      // an existing safe-sender pattern does NOT imply the conflicting block
+      // rules are gone -- rules can be imported, restored, or re-created after
+      // the safe sender was added, and a surviving block rule would keep
+      // deleting mail the user has explicitly whitelisted. The idempotent
+      // fast-path must still clean up, it just skips the INSERT.
       final conflicts = await _conflictResolver.removeConflictingRules(
         emailAddress: senderEmailForConflictCheck,
         ruleProvider: ruleProvider,
       );
+
+      if (alreadyPresent) {
+        _logger.i('[OK] Safe sender already exists (type: $type) -- '
+            'reporting as covered '
+            '(${conflicts.conflictsRemoved} conflicting rule(s) removed)');
+        var message = 'Safe sender already exists -- marked as resolved';
+        if (conflicts.conflictsRemoved > 0) {
+          message +=
+              ' (removed ${conflicts.conflictsRemoved} conflicting rule${conflicts.conflictsRemoved > 1 ? "s" : ""})';
+        }
+        return RuleQuickActionResult(
+          success: true,
+          displayMessage: message,
+          conflictsRemoved: conflicts.conflictsRemoved,
+          createdSafeSenderPattern: pattern,
+          alreadyExisted: true,
+        );
+      }
 
       await ruleProvider.addSafeSender(pattern);
       await ruleProvider.loadSafeSenders();
@@ -257,22 +273,36 @@ class RuleQuickActionService {
       final existing = ruleProvider.rules.rules
           .where((r) => r.name == ruleName)
           .toList();
-      if (existing.isNotEmpty) {
-        _logger.i('[OK] Block rule already exists (type: $type) -- '
-            'reporting as covered');
-        return RuleQuickActionResult(
-          success: true,
-          displayMessage: 'Rule already exists -- marked as resolved',
-          createdRule: existing.first,
-          alreadyExisted: true,
-        );
-      }
 
+      // Conflict resolution runs on BOTH paths (Copilot review, PR #278) --
+      // see the matching note in addSafeSender: an existing block rule does
+      // not imply the conflicting safe senders are gone, and a surviving
+      // safe sender WINS over the block rule (whitelist has priority in
+      // RuleEvaluator), so the sender the user just blocked would keep
+      // arriving. The idempotent fast-path skips the INSERT, not the cleanup.
       ConflictResolutionResult conflicts = ConflictResolutionResult.empty;
       if (type != 'subject' && senderEmailForConflictCheck != null) {
         conflicts = await _conflictResolver.removeConflictingSafeSenders(
           emailAddress: senderEmailForConflictCheck,
           ruleProvider: ruleProvider,
+        );
+      }
+
+      if (existing.isNotEmpty) {
+        _logger.i('[OK] Block rule already exists (type: $type) -- '
+            'reporting as covered '
+            '(${conflicts.conflictsRemoved} conflicting safe sender(s) removed)');
+        var message = 'Rule already exists -- marked as resolved';
+        if (conflicts.conflictsRemoved > 0) {
+          message +=
+              ' (removed ${conflicts.conflictsRemoved} conflicting safe sender${conflicts.conflictsRemoved > 1 ? "s" : ""})';
+        }
+        return RuleQuickActionResult(
+          success: true,
+          displayMessage: message,
+          conflictsRemoved: conflicts.conflictsRemoved,
+          createdRule: existing.first,
+          alreadyExisted: true,
         );
       }
 

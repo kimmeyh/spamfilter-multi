@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:my_email_spam_filter/core/models/rule_set.dart'
+    show Rule, RuleConditions, RuleActions;
 import 'package:my_email_spam_filter/core/providers/rule_set_provider.dart';
 import 'package:my_email_spam_filter/core/services/rule_quick_action_service.dart';
 import 'package:my_email_spam_filter/core/storage/rule_database_store.dart';
@@ -268,6 +270,84 @@ void main() {
       expect(second.createdSafeSenderPattern,
           equals(first.createdSafeSenderPattern));
       expect(provider.safeSenders.safeSenders, hasLength(1));
+    });
+
+    // Copilot review (PR #278): the idempotent fast-path must still run
+    // conflict resolution. An existing safe sender does not imply the
+    // conflicting block rules are gone -- rules can be imported/restored
+    // after the safe sender was created, and a surviving block rule keeps
+    // deleting mail the user has explicitly whitelisted.
+    test(
+        'addSafeSender fast-path still removes conflicting block rules '
+        'when the safe sender already exists (Copilot PR #278)', () async {
+      // Safe sender exists first...
+      final first = await service.addSafeSender(
+        value: 'spam@bad.com',
+        type: 'exact',
+        senderEmailForConflictCheck: 'spam@bad.com',
+      );
+      expect(first.success, isTrue);
+
+      // ...then a conflicting block rule appears (import / restore / manual).
+      await provider.addRule(Rule(
+        name: 'Block_spam@bad.com',
+        enabled: true,
+        isLocal: true,
+        executionOrder: 40,
+        conditions: RuleConditions(type: 'OR', header: [r'^spam@bad\.com$']),
+        actions: RuleActions(delete: true),
+        patternCategory: 'header_from',
+        patternSubType: 'exact_email',
+        sourceDomain: 'spam@bad.com',
+      ));
+      expect(provider.rules.rules.where((r) => r.name == 'Block_spam@bad.com'),
+          hasLength(1));
+
+      // Re-running the quick action hits the idempotent path -- and must
+      // still clean up the conflict.
+      final second = await service.addSafeSender(
+        value: 'spam@bad.com',
+        type: 'exact',
+        senderEmailForConflictCheck: 'spam@bad.com',
+      );
+
+      expect(second.success, isTrue);
+      expect(second.alreadyExisted, isTrue);
+      expect(second.conflictsRemoved, greaterThan(0),
+          reason: 'the fast-path must report the cleanup it performed');
+      expect(provider.rules.rules.where((r) => r.name == 'Block_spam@bad.com'),
+          isEmpty,
+          reason: 'the conflicting block rule must be gone, otherwise the '
+              'whitelisted sender keeps being deleted');
+    });
+
+    test(
+        'createBlockRule fast-path still removes conflicting safe senders '
+        'when the rule already exists (Copilot PR #278)', () async {
+      final first = await service.createBlockRule(
+        type: 'entireDomain',
+        value: 'spam.example',
+        senderEmailForConflictCheck: 'a@spam.example',
+      );
+      expect(first.success, isTrue);
+
+      // A conflicting safe sender appears afterwards. Safe senders WIN over
+      // block rules in RuleEvaluator, so this would silently defeat the rule.
+      await provider.addSafeSender(r'^a@spam\.example$');
+      expect(provider.safeSenders.safeSenders, isNotEmpty);
+
+      final second = await service.createBlockRule(
+        type: 'entireDomain',
+        value: 'spam.example',
+        senderEmailForConflictCheck: 'a@spam.example',
+      );
+
+      expect(second.success, isTrue);
+      expect(second.alreadyExisted, isTrue);
+      expect(second.conflictsRemoved, greaterThan(0));
+      expect(provider.safeSenders.safeSenders, isEmpty,
+          reason: 'the conflicting safe sender must be removed, otherwise it '
+              'overrides the block rule the user just re-applied');
     });
   });
 }
