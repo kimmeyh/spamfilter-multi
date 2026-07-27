@@ -9,7 +9,7 @@
 
 | Tier | Surfaces | Status |
 |---|---|---|
-| 1 | `SPRINT_EXECUTION_WORKFLOW.md`, `SPRINT_CHECKLIST.md`, `CLAUDE.md`, `AGENTS.md`, `.claude/hooks/*`, auto-memory | **IN PROGRESS** |
+| 1 | `SPRINT_EXECUTION_WORKFLOW.md`, `SPRINT_CHECKLIST.md`, `CLAUDE.md`, `AGENTS.md`, `.claude/hooks/*`, auto-memory | **COMPLETE** -- 9 findings, all corrected |
 | 2 | Remaining SPRINT EXECUTION docs, `.claude/skills/*`, `settings.json`, `sprint_status.json` schema | NOT STARTED |
 | 3 | Cross-references, dead links, anchors | NOT STARTED |
 
