@@ -1,50 +1,72 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-04-19T00:00:00Z",
+  "_last_updated": "2026-07-27T13:00:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
+  "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
 
   "current_sprint": {
-    "number": 35,
-    "branch": "feature/20260419_Sprint_35",
+    "number": 51,
+    "branch": "feature/20260727_Sprint_51",
     "pr_number": null,
     "pr_url": null,
-    "start_date": "2026-04-19",
-    "status": "pre-kickoff",
+    "start_date": "2026-07-27",
+    "status": "pre-kickoff (awaiting Phase 1 backlog refinement + scope selection)",
     "plan_approved": false,
     "plan_approval_date": null,
     "blanket_execution_approved": false
   },
 
   "previous_sprint": {
-    "number": 34,
-    "branch": "feature/20260417_Sprint_34",
-    "pr_number": 236,
-    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/236",
-    "merged_at": "2026-04-19T03:53:26Z",
-    "merge_commit": "a3ca9bd2294a8de1175777d7a7223f6b304680bb",
+    "number": 50,
+    "branch": "feature/20260723_Sprint_50",
+    "pr_number": 278,
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/278",
+    "merged_at": "2026-07-27",
+    "merge_note": "PR #278 -> develop, then PR #284 develop -> main",
     "status": "complete",
-    "deliverables": ["F73", "ADR-0037", "F56", "F62", "F72"]
+    "deliverables": ["F126", "F122", "F123", "F124", "F127-rescoped", "MT-1", "MT-2", "MT-2b", "MT-2c", "MT-3", "F128"]
   },
 
   "github_issues": [
-    {"number": 235, "title": "Sprint 34: Rule Management Foundation + UI Standards", "status": "closed"},
-    {"number": 233, "title": "Sprint 33: Security hardening + UX", "status": "closed"}
+    {"number": 279, "title": "F126: Remove the 4 ambiguous legacy TLD-block body rules", "status": "closed"},
+    {"number": 280, "title": "F122: Review-No-Rule screen load-error polish", "status": "closed"},
+    {"number": 281, "title": "F123: Safe-sender classification display fix", "status": "closed"},
+    {"number": 282, "title": "F124: Legacy uncategorized-rule label fix", "status": "closed"},
+    {"number": 283, "title": "F127 (rescoped): CI green-run verification", "status": "closed"}
   ],
 
   "test_metrics": {
-    "tests_passing": 1362,
-    "tests_skipped": 28,
-    "tests_failing": 1,
+    "tests_passing": 1806,
+    "tests_skipped": 29,
+    "tests_failing": 0,
     "analyzer_warnings": 0,
     "coverage_percent": null,
-    "_failing_test_note": "default_rule_set_service_test.dart line 422 - stale F73 assertion. Tracked as BUG-S34-1 in ALL_SPRINTS_MASTER_PLAN.md, carry-in for Sprint 35."
+    "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5); the default concurrency intermittently drops test-isolate connections and produces phantom load failures."
+  },
+
+  "store_release": {
+    "live_version": "0.5.7",
+    "submitted_version": "0.5.8",
+    "submitted_at": "2026-07-27",
+    "status": "in certification",
+    "expected_result": "2026-07-28",
+    "artifact": "D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix",
+    "verification": "both-sides proof passed (APP_ENV=prod AND NATIVE_APP_ENV=prod); manifest 0.5.8.0; 16.8 MB; credentials verified embedded in data/app.so",
+    "post_cert_closeout_pending": [
+      "CHANGELOG [Unreleased] -> ## [0.5.8] - <date> heading + comparison links",
+      "dev worktree bump 0.5.8 -> 0.5.9 (one file: pubspec.yaml, per F-VERSION-DERIVE)",
+      "ALL_SPRINTS_MASTER_PLAN Store status -> LIVE",
+      "Harold verifies the Store-installed build: no [DEV] title, About shows 0.5.8, Gmail sign-in works"
+    ]
   },
 
   "blocking_issues": [],
 
   "next_actions": [
-    "Sprint 35 Phase 2: pre-kickoff verification (working tree clean, develop pulled, dependency check)",
-    "Sprint 35 Phase 3: planning - first task is BUG-S34-1 (restore green test suite)",
-    "Master plan cleanup: F56/F73/F62/F72 still listed as Next Sprint Candidates - remove during Phase 7.7 of Sprint 35 or earlier"
+    "Sprint 51 Phase 1: backlog refinement (docs/BACKLOG_REFINEMENT.md presentation format v1.3 -- read the format section FIRST, present candidates with the Summary Index)",
+    "Sprint 51 Phase 3: scope selection + plan",
+    "Carry-ins for Sprint 51 consideration: F128 residual (sibling early-returns removeRule/updateRule/removeSafeSender share the silent-no-op shape, ~15m); F129 (WinWright coverage for the three Sprint-50-touched screens)",
+    "Post-certification: run the store_release.post_cert_closeout_pending list above",
+    "Android/Google Play remains the next major track (promotion trigger fired 2026-07-24)"
   ]
 }
