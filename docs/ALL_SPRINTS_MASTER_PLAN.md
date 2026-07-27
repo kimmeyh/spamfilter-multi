@@ -231,7 +231,7 @@ _(F127 CI_* repo secrets: **RESOLVED-RESCOPED** (Harold 2026-07-24) -- the secre
 - HOLD rationale: Template item. Duplicate when periodic security review is needed.
 - Source: Sprint 31 retrospective feedback
 
-**F130. Periodic Process-Docs Consistency Deep Dive (~3-6h per review) Priority HOLD** _(TEMPLATE -- first run assigned to Sprint 51, see F130-S51 below)_
+**F130. Periodic Process-Docs Consistency Deep Dive ([no-history] -- unbounded discovery; see estimating note) Priority HOLD** _(TEMPLATE -- first run assigned to Sprint 51, see F130-S51 below)_
 - Phase: Process Spike (reusable template)
 - Platform: N/A (repo documentation + harness configuration)
 - **Generic scope**: audit the sprint-execution instruction surface for logical consistency, so that any Claude model tier (Haiku / Sonnet / Opus / Fable) executing the sprint process reaches the SAME correct behavior from whichever document it happens to read. The architecture deep dive (F71) does this for the CODE; nothing does it for the PROCESS DOCS, which are equally load-bearing -- they are the actual control system for development on this project.
@@ -279,15 +279,16 @@ _(F127 CI_* repo secrets: **RESOLVED-RESCOPED** (Harold 2026-07-24) -- the secre
 
 _(Shipped and pruned per Maintenance Rule 2 -- history lives in the sprint docs and CHANGELOG: F39 cross-account "No Rule" review screen (Sprint 46; the mobile touch variant remains a future candidate); F33-PROD + BUG-DECODE + F120 + F121 (Sprint 49, prod DB restored to 5,776 working rules); **F126 / F122 / F123 / F124 (Sprint 50)**, all Harold-validated "working as expected, can be closed"; **F128** (Sprint 50, escalated from backlog and fixed during Copilot review -- see its residual below).)_
 
-**F130-S51. Process-Docs Consistency Deep Dive -- first run (~3-6h) Priority 12 -- [SPRINT 51 TARGET, Harold 2026-07-27]**
+**F130-S51. Process-Docs Consistency Deep Dive -- first run ([no-history]) Priority 12 -- [SPRINT 51 TARGET, Harold 2026-07-27]**
 - Phase: Process Spike
 - Platform: N/A (repo documentation + harness configuration)
 - First instance of the F130 template (HOLD section below). Full scope, method and the 9 defect classes are defined there -- do not restate them here; execute against that definition.
+- **Estimating note (Harold challenge, 2026-07-27)**: this item is **`[no-history]`** per `CODING_VELOCITY.md` rule 2 -- there is no step-type for "audit the instruction surface" and no prior sample. An earlier "~3-6h" figure here was **invented, not calibrated**, and was withdrawn. The work is unbounded discovery (the audit finds however many contradictions exist -- five were already found in the Phase 6.6 rule alone), so scope it by TIMEBOX rather than estimate: agree a box with the Scrum Master (suggest a first pass on the highest-risk surfaces), record the ACTUAL in the Coverage Ledger, and let the second run be the first genuinely estimated one.
 - **Named item for THIS run (Harold 2026-07-27)**: **fix the stash-guard hook false positive.** `.claude/hooks/block-carry-forward-stash.ps1` matches the literal string `git stash` anywhere in a Bash/PowerShell command, so it blocked a legitimate command whose text merely *documented* the stash prohibition (2026-07-27, while correcting the Phase 6.6 recipe). A hook that fires on correct work trains the operator to route around it, which erodes every other hook's authority. Fix: match only an actual invocation (command position), not an occurrence inside quoted/heredoc content; add test cases under `.claude/hooks/test-cases/` covering (a) a real `git stash` invocation -> BLOCK, (b) documentation text containing the words -> ALLOW, (c) the `allow_stash` bypass token -> ALLOW.
 - **Known inputs already collected** (seeded from the Sprint 50/51 escapes, so the run starts with evidence rather than a blank page): the Phase 6.6 five-site contradiction (corrected 2026-07-27 -- verify no regressions and look for the same shape elsewhere); `sprint_status.json` as an orphan instruction (now documented -- audit for other one-line-mention items); CLAUDE.md vs AGENTS.md divergence check; memory `description:` fields and `MEMORY.md` index lines vs their corrected docs.
 - Depends on: none
 
-**F129. WinWright coverage for the Sprint-50-touched screens (~1-2h) Priority 19 -- [SPRINT 51 CARRY-IN]**
+**F129. WinWright coverage for the Sprint-50-touched screens ([no-history] -- no WinWright script has been authored since the F79/F99 harness work) Priority 19 -- [SPRINT 51 CARRY-IN]**
 - Phase: Core App Quality
 - Platform: Windows Desktop
 - Phase 5.1.5 exit criteria: no existing WinWright script exercises the three surfaces Sprint 50 changed -- the quick-action grid in the email popup (MT-1), Manage Rules category/sub-type display (F124), and the Review "No Rule" screen incl. its covered-item sweep (MT-2c). Each script must restore all state it modifies (Sprint 37 policy).
