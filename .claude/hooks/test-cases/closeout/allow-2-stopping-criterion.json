@@ -1,0 +1,1 @@
+{"session_id": "allow-2-stopping-criterion", "cwd": "D:/Data/Harold/github/spamfilter-multi", "hook_event_name": "Stop", "branch_override": "feature/20260727_Sprint_51", "last_assistant_message": "Stopping criterion 2: Task 3 (F129) is blocked on an external dependency -- the dev environment has no saved account credentials."}

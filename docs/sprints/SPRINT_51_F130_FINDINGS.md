@@ -13,7 +13,7 @@
 | 2 | Remaining SPRINT EXECUTION docs, `.claude/skills/*`, `settings.json`, `sprint_status.json` schema | NOT STARTED |
 | 3 | Cross-references, dead links, anchors | NOT STARTED |
 
-**Contradiction count (running): 9 found / 9 corrected / 0 deferred / 0 surfaced as Class-3.**
+**Contradiction count (running): 10 found / 10 corrected / 0 deferred / 0 surfaced as Class-3.**
 
 ---
 
@@ -30,13 +30,14 @@
 | 7 | Decision-Class Taxonomy (surface architecture / development / scope decisions) | `CLAUDE.md` **vs** `AGENTS.md` | CLAUDE.md carries the full `[CRITICAL]` section; **AGENTS.md had ZERO mentions**. An agent reading only AGENTS.md had no instruction to surface Class-1/2/3 decisions and would make them unilaterally -- the exact failure the taxonomy was written (Sprint 38) to prevent. | CLAUDE.md (both files must carry it -- every model tier reads one or the other) | **CORRECTED** -- section ported to AGENTS.md with Codex-appropriate wording plus a keep-in-sync note. Class 1 (same instruction, one site silently absent). |
 | 8 | Memory `description:` fields teaching superseded guidance | `feedback_cheapest_first_model` (Haiku->Sonnet->**Opus**), `feedback_context_window_stopping` (cites **Opus 4.7** specifically), `feedback_table_format` ("manual **testing**") | Each `description:` is what surfaces during RECALL, so it outranks the docs in practice -- a corrected doc plus a stale memory means the stale version keeps being re-taught. | The corrected docs (Sprint 49 Fable/Opus rename; Sprint 50 IMP-1 terminology; Sprint 50 IMP-7 Executed-by) | **CORRECTED** -- 3 `description:` fields updated. `feedback_opus_pitfalls` deliberately NOT renamed: it is a version-specific historical appendix, and renaming it would falsify what it documents. Class 4. |
 | 9 | `MEMORY.md` index lines (loaded into context EVERY session) | 7 lines carrying "manual testing", "Haiku->Sonnet->Opus", "planner stays Opus", "during Manual Testing" | The index is the highest-frequency instruction surface in the repo -- it is injected every session -- yet it lagged both the terminology rename and the tier rename. | Corrected docs | **CORRECTED** -- 7 index lines aligned. Class 4. |
+| 10 | Close-out hook: what counts as a "close-out complete" claim? | `verify-closeout-complete.ps1` (written 2026-07-26, fired wrongly 2026-07-27) | Its first claim-pattern used an 80-character bridge between the subject and "complete", so ordinary mid-sprint status -- *"Sprint status: Task 1 Tier 1 complete, Task 2 complete, Task 3 blocked"* -- read as a close-out claim. It then blocked the turn for having OPEN sprint issues, which is the CORRECT state mid-sprint (they close at that sprint's merge). **Third hook in this sprint to fire on correct work**, and the newest one -- written the day before. | A claim about the SPRINT/CLOSE-OUT itself, never about an individual task | **CORRECTED** -- patterns anchored (subject adjacent to verb, short bridge) plus a mid-sprint exclusion list ("Task N blocked", "stopping criterion", "Sprint status", "still executing") that overrides a claim match. +5 test cases incl. one reproducing this exact false positive. Class 6. |
 
 ---
 
 ## Observations (not individual findings)
 
 - **Seven of nine findings are duplication artifacts.** Every one arose where the same instruction was written out in more than one place and the copies drifted. This validates the F130 method note: prefer ONE authoritative statement plus pointers over duplicated prose.
-- **Two findings (2, 3) were enforcement firing on correct work.** That is worse than a missing hook: it teaches the operator to route around the guard, which devalues every other hook. Both are now covered by tests.
+- **THREE findings (2, 3, 10) were enforcement firing on correct work** -- including finding 10, in a hook written the day before, which fired on the very message reporting this audit's progress. That is worse than a missing hook: it teaches the operator to route around the guard, which devalues every other hook. Both are now covered by tests.
 - **Finding 4 explains findings 2 and 3.** The hooks had no test coverage, so their false positives could only be discovered by tripping them in live use -- which is what happened, three times in one session.
 - **Finding 6 was a live defect, not a latent one.** The stale checklist line would have failed against the model that actually ran the last retrospective.
 - **Findings 8 and 9 sit on the highest-frequency surface.** `MEMORY.md` is injected into EVERY session and memory `description:` fields drive recall, so a stale line there outranks a corrected doc in practice. Any future terminology or policy rename must sweep memory in the same pass as the docs -- this is now the single most important addition to the F130 method.

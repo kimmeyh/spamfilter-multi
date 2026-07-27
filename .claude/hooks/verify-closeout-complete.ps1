@@ -78,17 +78,46 @@ $sprintNum = [int]$Matches[1]
 
 # ----- Gate 2: does the message CLAIM close-out completion? ---------------
 # Narrow on purpose. Ordinary progress reports must not trip this.
+# Claim patterns are deliberately NARROW and anchored: they must match a claim
+# about the SPRINT/CLOSE-OUT itself, never a claim about an individual task.
+#
+# F130-S51 (2026-07-27, the day after this hook shipped): the original line-1
+# pattern used '\b(sprint|...)\b[^.\n]{0,80}\bcomplete\b', whose 80-character
+# bridge matched ordinary mid-sprint status like
+#   "Sprint status: Task 1 Tier 1 complete, Task 2 complete, Task 3 blocked"
+# -- and then blocked the turn for having open sprint issues, which is the
+# CORRECT state mid-sprint (they close at that sprint's merge). A hook firing
+# on correct work is finding #2/#3 of this very audit; fixed rather than
+# bypassed.
 $claimPatterns = @(
-    '(?i)\b(sprint|phase\s*7|close[- ]?out|post[- ]?merge)\b[^.\n]{0,80}\b(is\s+)?(now\s+)?(fully\s+|genuinely\s+)?complete\b'
-    '(?i)\bclose[- ]?out\b[^.\n]{0,60}\b(done|complete|finished)\b'
+    # "the sprint / phase 7 / close-out is (now) complete" -- short bridge only,
+    # and the subject must be adjacent to the verb.
+    '(?i)\b(the\s+)?(sprint|phase\s*7|close[- ]?out|post[- ]?merge)\s+(work\s+|process\s+)?(is|was)\s+(now\s+)?(fully\s+|genuinely\s+)?(complete|closed|done|finished)\b'
+    '(?i)\bclose[- ]?out\b[^.\n]{0,40}\b(is|was)\s+(now\s+)?(complete|done|finished)\b'
     '(?i)\ball\s+(the\s+)?(post[- ]?merge|checklist|close[- ]?out)\s+(items|steps)\b[^.\n]{0,40}\b(are\s+)?(now\s+)?(complete|done)\b'
     '(?i)\beverything\s+(through|in)\s+the\s+(post[- ]?merge|checklist)\b'
     '(?i)\bready\s+for\s+(the\s+)?next\s+sprint\b'
     '(?i)\bsprint\s+\d+\s+is\s+(fully\s+)?(closed|complete)\b'
 )
+
+# Mid-sprint signals: if the message says the sprint is still in flight, it is
+# reporting progress, not claiming close-out. These win over a claim match.
+$midSprintPatterns = @(
+    '(?i)\b(task|tier)\s+\d+\b[^.\n]{0,40}\b(blocked|in progress|not started|remaining|pending)\b'
+    '(?i)\bstopping criterion\s*\d'
+    '(?i)\b(is|remains)\s+blocked\b'
+    '(?i)\bsprint\s+status\b'
+    '(?i)\bstill\s+(executing|in\s+flight|running)\b'
+)
+
 $claimsCloseout = $false
 foreach ($pat in $claimPatterns) {
     if ($lastMessage -match $pat) { $claimsCloseout = $true; break }
+}
+if ($claimsCloseout) {
+    foreach ($pat in $midSprintPatterns) {
+        if ($lastMessage -match $pat) { $claimsCloseout = $false; break }
+    }
 }
 if (-not $claimsCloseout) { exit 0 }
 
