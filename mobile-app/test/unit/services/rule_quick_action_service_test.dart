@@ -321,6 +321,78 @@ void main() {
               'whitelisted sender keeps being deleted');
     });
 
+    // F128 (Copilot review round 4, PR #278): the provider's rules/safeSenders
+    // getters return EMPTY collections when the cache is unloaded, and
+    // addRule/addSafeSender used to no-op silently in that state -- so the
+    // service could report success having persisted nothing, and the
+    // idempotency check could miss an existing rule. Both are now guarded.
+    test(
+        'createBlockRule against an UNLOADED provider persists the rule '
+        'instead of silently no-oping (F128)', () async {
+      // A fresh provider that has never had loadRules() called.
+      final unloaded = RuleSetProvider();
+      unloaded.initializeForTesting(
+        databaseStore: RuleDatabaseStore(testHelper.dbHelper),
+        safeSenderStore: SafeSenderDatabaseStore(testHelper.dbHelper),
+      );
+      expect(unloaded.isRulesLoaded, isFalse,
+          reason: 'precondition: the cache must start unloaded');
+
+      final unloadedService = RuleQuickActionService(ruleProvider: unloaded);
+      final result = await unloadedService.createBlockRule(
+        type: 'entireDomain',
+        value: 'unloaded.example',
+        senderEmailForConflictCheck: 'x@unloaded.example',
+      );
+
+      expect(result.success, isTrue);
+      expect(unloaded.isRulesLoaded, isTrue,
+          reason: 'the service must load the cache before deciding');
+
+      // The rule must actually be in the DATABASE, not just the cache.
+      final reloaded = RuleSetProvider();
+      reloaded.initializeForTesting(
+        databaseStore: RuleDatabaseStore(testHelper.dbHelper),
+        safeSenderStore: SafeSenderDatabaseStore(testHelper.dbHelper),
+      );
+      await reloaded.loadRules();
+      expect(
+        reloaded.rules.rules
+            .where((r) => r.name == 'Block_EntireDomain_unloaded.example'),
+        hasLength(1),
+        reason: 'reporting success while persisting nothing is the F128 bug',
+      );
+    });
+
+    test(
+        'addSafeSender against an UNLOADED provider persists the pattern '
+        'instead of silently no-oping (F128)', () async {
+      final unloaded = RuleSetProvider();
+      unloaded.initializeForTesting(
+        databaseStore: RuleDatabaseStore(testHelper.dbHelper),
+        safeSenderStore: SafeSenderDatabaseStore(testHelper.dbHelper),
+      );
+      expect(unloaded.isSafeSendersLoaded, isFalse);
+
+      final unloadedService = RuleQuickActionService(ruleProvider: unloaded);
+      final result = await unloadedService.addSafeSender(
+        value: 'friend@unloaded.example',
+        type: 'exact',
+        senderEmailForConflictCheck: 'friend@unloaded.example',
+      );
+
+      expect(result.success, isTrue);
+
+      final reloaded = RuleSetProvider();
+      reloaded.initializeForTesting(
+        databaseStore: RuleDatabaseStore(testHelper.dbHelper),
+        safeSenderStore: SafeSenderDatabaseStore(testHelper.dbHelper),
+      );
+      await reloaded.loadSafeSenders();
+      expect(reloaded.safeSenders.safeSenders,
+          contains(r'^friend@unloaded\.example$'));
+    });
+
     test(
         'createBlockRule fast-path still removes conflicting safe senders '
         'when the rule already exists (Copilot PR #278)', () async {

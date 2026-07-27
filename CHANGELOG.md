@@ -26,8 +26,14 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-07-27 (Sprint 50: Copilot review fixes)
+- **fix**: F128 -- `RuleSetProvider.addRule`/`addSafeSender` no longer no-op silently when the provider cache is unloaded: they load on demand and throw `StateError` if the cache is still unavailable, so a caller can never report success with nothing persisted. New `isRulesLoaded`/`isSafeSendersLoaded` getters distinguish "unloaded" from "genuinely empty" (both read as empty through `rules`/`safeSenders`); the quick-action idempotency checks and the Review-No-Rule sweep consult them before trusting an empty read (Copilot review round 4, PR #278)
+- **fix**: quick-action idempotent fast-paths now run conflict resolution as well -- an existing safe sender did not imply the conflicting block rules were gone (and vice versa), so a whitelisted sender could keep being deleted (Copilot review round 1)
+- **fix**: Manage Rules details dialog no longer labels a categorized rule's missing sub-type "Uncategorized (legacy)"; that fallback now applies only when the category itself is absent (Copilot review round 1)
+- **perf**: `RuleEvaluator` gained an opt-in `silent` mode used by the two bulk re-evaluation sweeps, so opening the Review No Rule screen no longer emits one debug log line (and its string interpolation) per item on large rule sets (Copilot review round 2)
+
 ### 2026-07-26 (Sprint 50: retrospective improvements, all "apply now")
-- **docs**: terminology -- "manual validation" renamed to "manual validation" across active process docs, root docs, the sprint-card template, and code/test comments (81 case-preserving occurrences in 32 files). Historical records (archives, worktrees, prior sprint documents, published CHANGELOG releases) are deliberately unchanged. (Sprint 49 carry-in via Sprint 50 retro IMP-1)
+- **docs**: terminology -- "manual testing" renamed to "manual validation" across active process docs, root docs, the sprint-card template, and code/test comments (81 case-preserving occurrences in 32 files). Historical records (archives, worktrees, prior sprint documents, published CHANGELOG releases) are deliberately unchanged. (Sprint 49 carry-in via Sprint 50 retro IMP-1)
 - **docs**: retrospective Step-5 completeness gate -- proposals are generated mechanically by walking Harold's feedback category-by-category, each yielding either numbered proposal(s) or an explicit `no actionable item`; closes the leak that lost the rename request for a full sprint. (IMP-2)
 - **docs**: F-PRECHECK class 1 now names "local Windows host + CI Linux host" as a parallel-site pair -- assertions about `Platform.is*`-gated widgets must be platform-aware or they pass locally and fail CI. (IMP-3)
 - **docs**: `Executed-by` requires a concrete recorded justification whenever execution deviates from the planned model, in one of four defined shapes; retro Category 5 reads these lines. (IMP-7, Harold's steering)

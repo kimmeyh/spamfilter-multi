@@ -285,10 +285,12 @@ _(F39 cross-account "No Rule" review screen shipped in Sprint 46 (F39 mobile tou
 - Phase 5.1.5 exit criteria: no existing WinWright script exercises the three surfaces Sprint 50 changed -- the quick-action grid in the email popup (MT-1), Manage Rules category/sub-type display (F124), and the Review "No Rule" screen incl. its covered-item sweep (MT-2c). Each script must restore all state it modifies (Sprint 37 policy).
 - Depends on: none (Sprint 50 retro IMP-6 -- Harold: backlog)
 
-**F128. RuleSetProvider.addRule/addSafeSender silently no-op when provider is unloaded (~30m) Priority 18**
+**F128. RuleSetProvider.addRule/addSafeSender silently no-op when provider is unloaded -- [FIXED in Sprint 50, PR #278 (Copilot review round 4)]**
 - Phase: Core App Quality
 - Platform: All
-- Both methods early-return on a null cache (`if (_rules == null) return;`) BEFORE the DB insert -- the caller then reports success with no row persisted (F-PRECHECK class 6: silent failure; BUG-S39-2's rethrow guard sits AFTER this return and never fires). Latent in production because app startup always loads the provider; surfaced 2026-07-26 when an unloaded test provider produced "1 succeeded" with no rule inserted. Fix: load-on-demand (mirror the MT-2b sweep's self-load) or throw StateError; audit the sibling early-returns (removeRule, updateRule, removeSafeSender).
+- Both methods early-returned on a null cache (`if (_rules == null) return;`) BEFORE the DB insert -- the caller then reported success with no row persisted (F-PRECHECK class 6: silent failure; BUG-S39-2's rethrow guard sits AFTER this return and never fired). Latent in production because app startup always loads the provider; surfaced 2026-07-26 when an unloaded test provider produced "1 succeeded" with no rule inserted.
+- **Fixed 2026-07-27** (escalated from backlog when Copilot independently found it reaching into `RuleQuickActionService`'s idempotency check): `addRule`/`addSafeSender` now load on demand and throw `StateError` if the cache is still unavailable afterwards -- never silent. New `isRulesLoaded` / `isSafeSendersLoaded` getters make "unloaded" distinguishable from "genuinely empty" (the `rules`/`safeSenders` getters return empty collections in both states); `RuleQuickActionService` and the MT-2c sweep consult them before trusting an empty read. +2 regression tests proving an unloaded provider now persists to the DATABASE, not just the cache.
+- **Residual (still open, small)**: the sibling early-returns were NOT audited -- `removeRule`, `updateRule`, `removeSafeSender`, and any other `if (_x == null) return;` in `RuleSetProvider` carry the same silent-no-op shape. Carry to Sprint 51 as a ~15m sweep.
 - Depends on: none
 
 **F124. Legacy uncategorized-rule label fix (~30m) Priority 16 -- [SPRINT 50]**

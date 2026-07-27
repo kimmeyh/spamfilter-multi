@@ -128,8 +128,19 @@ void main() {
       expect(dbRules.rules.length, equals(1));
     });
 
-    test('does nothing if rules not loaded', () async {
+    // F128 (Copilot review round 4, PR #278) -- BEHAVIOR CHANGE. This test
+    // previously asserted that addRule "does nothing if rules not loaded",
+    // pinning a silent drop: the caller received no error and no row was
+    // written. That is the F-PRECHECK class-6 silent-failure shape, and it
+    // reached production code -- RuleQuickActionService reported "succeeded"
+    // for rules that were never persisted. The provider now LOADS on demand
+    // (and throws StateError only if the cache is still unavailable
+    // afterwards), so an unloaded cache can no longer swallow a write.
+    test('loads on demand and persists when rules were not preloaded', () async {
       // Do not call loadRules() - _rules is null
+      expect(provider.isRulesLoaded, isFalse,
+          reason: 'precondition: the cache must start unloaded');
+
       final rule = Rule(
         name: 'Test',
         enabled: true,
@@ -140,9 +151,13 @@ void main() {
       );
       await provider.addRule(rule);
 
-      // Should not throw, just silently return
+      expect(provider.isRulesLoaded, isTrue,
+          reason: 'addRule must load the cache rather than no-op');
+
       final dbRules = await ruleStore.loadRules();
-      expect(dbRules.rules, isEmpty);
+      expect(dbRules.rules.where((r) => r.name == 'Test'), hasLength(1),
+          reason: 'the rule must reach the DATABASE -- a silent drop here is '
+              'the F128 defect');
     });
 
     // BUG-S39-2 (Sprint 39): when the underlying DB insert fails (e.g.,

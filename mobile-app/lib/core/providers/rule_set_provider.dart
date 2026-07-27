@@ -79,6 +79,14 @@ class RuleSetProvider extends ChangeNotifier {
   // Getters
   RuleSet get rules => _rules ?? RuleSet(version: '1.0', settings: {}, rules: []);
   SafeSenderList get safeSenders => _safeSenders ?? SafeSenderList(safeSenders: []);
+
+  /// F128 (Copilot review, PR #278): [rules] and [safeSenders] return EMPTY
+  /// collections when their cache is unloaded, which is indistinguishable
+  /// from "genuinely empty" at the call site. Callers whose logic depends on
+  /// the difference -- idempotency checks, duplicate detection, coverage
+  /// sweeps -- must consult these before trusting an empty read.
+  bool get isRulesLoaded => _rules != null;
+  bool get isSafeSendersLoaded => _safeSenders != null;
   bool get isLoading => _loadingState == RuleLoadingState.loading;
   bool get isError => _loadingState == RuleLoadingState.error;
   String? get error => _error;
@@ -208,8 +216,25 @@ class RuleSetProvider extends ChangeNotifier {
   /// Add a new rule
   ///
   /// Saves to database first, then exports to YAML for version control.
+  ///
+  /// F128 (Copilot review, PR #278): an unloaded cache used to make this
+  /// method return SILENTLY -- the caller saw success, nothing was persisted,
+  /// and the BUG-S39-2 rethrow guard below never fired because the early
+  /// return happens before the insert. Callers that check `rules` for
+  /// idempotency (RuleQuickActionService) would additionally miss the
+  /// fast-path against an empty cache. Load on demand instead of no-oping.
   Future<void> addRule(Rule rule) async {
-    if (_rules == null) return;
+    if (_rules == null) {
+      await loadRules();
+      if (_rules == null) {
+        const message =
+            'Cannot add rule: rule cache is unavailable after loadRules()';
+        _setError(message);
+        _logger.e(message);
+        notifyListeners();
+        throw StateError(message);
+      }
+    }
 
     try {
       // Add to database
@@ -321,8 +346,20 @@ class RuleSetProvider extends ChangeNotifier {
   /// Add a safe sender
   ///
   /// Saves to database first, then exports to YAML for version control.
+  /// F128 (Copilot review, PR #278): see [addRule] -- an unloaded cache used
+  /// to no-op silently, reporting success while persisting nothing.
   Future<void> addSafeSender(String pattern) async {
-    if (_safeSenders == null) return;
+    if (_safeSenders == null) {
+      await loadSafeSenders();
+      if (_safeSenders == null) {
+        const message =
+            'Cannot add safe sender: cache is unavailable after loadSafeSenders()';
+        _setError(message);
+        _logger.e(message);
+        notifyListeners();
+        throw StateError(message);
+      }
+    }
 
     try {
       // Create SafeSenderPattern with auto-detected type

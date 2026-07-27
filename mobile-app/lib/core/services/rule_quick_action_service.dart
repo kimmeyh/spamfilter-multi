@@ -131,6 +131,12 @@ class RuleQuickActionService {
           );
       }
 
+      // F128 (Copilot review, PR #278): the idempotency check reads the
+      // provider cache, which returns an EMPTY list when unloaded -- that
+      // would silently miss the fast-path and treat an existing pattern as
+      // new. Ensure the cache is loaded before deciding.
+      await _ensureSafeSendersLoaded();
+
       // MT-2 (Sprint 50): idempotent add -- an identical existing pattern is
       // success ("already covered"), not a duplicate-insert failure.
       final alreadyPresent =
@@ -270,6 +276,11 @@ class RuleQuickActionService {
       // same-name rule means this sender is already covered. Report success
       // with the EXISTING rule as the delta (so callers resolve every item
       // it covers) instead of failing on the constraint.
+      // F128 (Copilot review, PR #278): see addSafeSender -- an unloaded
+      // rule cache reads as empty, which would miss the idempotent
+      // fast-path and drive a duplicate insert into the UNIQUE name column.
+      await _ensureRulesLoaded();
+
       final existing = ruleProvider.rules.rules
           .where((r) => r.name == ruleName)
           .toList();
@@ -389,6 +400,23 @@ class RuleQuickActionService {
         displayMessage: 'Failed to create rule: $e',
         error: e,
       );
+    }
+  }
+
+  /// F128 (Copilot review, PR #278): `ruleProvider.rules` /
+  /// `.safeSenders` return EMPTY collections when their cache is unloaded,
+  /// which is indistinguishable from "genuinely empty" -- so an idempotency
+  /// check against an unloaded provider would miss an existing rule and
+  /// drive a duplicate insert. These guards make the check trustworthy.
+  Future<void> _ensureRulesLoaded() async {
+    if (!ruleProvider.isRulesLoaded) {
+      await ruleProvider.loadRules();
+    }
+  }
+
+  Future<void> _ensureSafeSendersLoaded() async {
+    if (!ruleProvider.isSafeSendersLoaded) {
+      await ruleProvider.loadSafeSenders();
     }
   }
 

@@ -326,19 +326,20 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
     _lastSweepCount = 0;
     if (items.isEmpty || !mounted) return items;
     final ruleProvider = Provider.of<RuleSetProvider>(context, listen: false);
+    // F128 (Copilot review, PR #278): use the explicit loaded-state getters
+    // rather than inferring "unloaded" from an empty read -- an unloaded
+    // cache and a genuinely empty rule set look identical through
+    // `rules`/`safeSenders`. This screen can be the first rules consumer, so
+    // the sweep must load before deciding there is nothing to match.
+    if (!ruleProvider.isRulesLoaded) {
+      await ruleProvider.loadRules();
+    }
+    if (!ruleProvider.isSafeSendersLoaded) {
+      await ruleProvider.loadSafeSenders();
+    }
     if (ruleProvider.rules.rules.isEmpty &&
         ruleProvider.safeSenders.safeSenders.isEmpty) {
-      // Provider not loaded yet (this screen can be the first rules
-      // consumer) -- load it, so the sweep never silently no-ops against an
-      // empty cache. Note: RuleSetProvider.addRule/addSafeSender ALSO
-      // silently no-op while unloaded (flagged for backlog, F-PRECHECK
-      // class 6).
-      await ruleProvider.loadRules();
-      await ruleProvider.loadSafeSenders();
-      if (ruleProvider.rules.rules.isEmpty &&
-          ruleProvider.safeSenders.safeSenders.isEmpty) {
-        return items; // Genuinely nothing to match -- keep all.
-      }
+      return items; // Genuinely nothing to match -- keep all.
     }
     final evaluator = RuleEvaluator(
       ruleSet: ruleProvider.rules,
