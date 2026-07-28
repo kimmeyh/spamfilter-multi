@@ -34,6 +34,19 @@
 
 ---
 
+## Environment finding (not a docs contradiction, but it blocked Task 3)
+
+**Dev credential store was absent; restored 2026-07-28.**
+
+- **Symptom**: every existing WinWright script failed at the account-selection step (`Button[name*='kimmeyharold@aol.com']` resolved 0 elements), and the dev Select Account screen rendered "Saved Accounts" with no rows -- blocking F129 selector discovery on two of three target screens.
+- **My first two diagnoses were WRONG, and both were stated before checking**: (a) that I had renamed the dev credentials during the Sprint 50 screenshot session -- in fact every rename that session was in the PROD directory (`credentials.demoshoot`, `spam_filter.db.demoshoot` are still there); (b) that a prod->dev copy could not work because DPAPI is app-scoped -- it is **user**-scoped, so the copy works fine.
+- **Actual state**: `MyEmailSpamFilter_Devlutter_secure_storage.dat` did not exist. The Sprint 19 `app_identity_migration` copies that file from the legacy `com.example\spam_filter_mobile` path, but it targets the PROD data directory; the dev directory was introduced later by ADR-0035, so dev never received a migrated store. Dev logs show credentials loading successfully as recently as 2026-07-26, so the store existed at some point and was lost/never persisted in its own path.
+- **Fix**: copied prod's `flutter_secure_storage.dat` to the dev data directory (verified it decrypts under the current Windows user and carries `saved_accounts = kimmeyharold@aol.com,kimmeyh@gmail.com`, matching the two rows already in the dev `accounts` table). Harold confirmed both accounts render. The previously-failing script now passes steps 1-7 including account selection.
+- **Residual (real, separate)**: (1) `test_f56_create_safe_sender.json` step 8 (`Button[name='Save']` on the confirm dialog) still resolves 0 elements -- pre-existing selector drift in a Sprint 41 script, now a known F129 input rather than a mystery. (2) The account rows are NOT exposed as named elements in the UIA tree even though they render -- `inspect` shows zero matches while the UI clearly shows both accounts -- so tree inspection cannot be trusted as the sole source for selector discovery on that screen.
+- **Backlog candidate**: `app_identity_migration` does not seed the dev data directory, so a fresh dev environment starts with no credential store even when a valid one exists. Worth an explicit dev-bootstrap step or a documented manual copy.
+
+---
+
 ## Observations (not individual findings)
 
 - **Seven of nine findings are duplication artifacts.** Every one arose where the same instruction was written out in more than one place and the copies drifted. This validates the F130 method note: prefer ONE authoritative statement plus pointers over duplicated prose.
