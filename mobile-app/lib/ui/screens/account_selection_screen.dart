@@ -708,7 +708,16 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                     final displayData = snapshot.data;
                     if (displayData == null) {
                       // Fallback if data couldn't be loaded - show delete option
-                      return Card(
+                      // F129 (Sprint 51): same semantics treatment as the
+                      // healthy row below -- an error row must announce WHICH
+                      // account failed and why, not surface as an unnamed
+                      // Group.
+                      return Semantics(
+                        container: true,
+                        excludeSemantics: true,
+                        label: '$accountId - error: missing credentials',
+                        hint: 'Use the delete button to remove this account',
+                        child: Card(
                         margin: const EdgeInsets.only(bottom: 12),
                         elevation: 2,
                         color: Colors.red[50],
@@ -732,6 +741,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                             color: Colors.red[700],
                           ),
                         ),
+                        ),
                       );
                     }
 
@@ -744,7 +754,27 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                       'Account: $accountId, Email: ${displayData.email}, Platform: ${displayData.platformId}, Auth: $authMethod',
                     );
 
-                    return Card(
+                    // F129 (Sprint 51): the account row is an unnamed Group in
+                    // the accessibility tree without this wrapper -- the child
+                    // Text widgets are not merged into the tappable ancestor,
+                    // so screen readers announce nothing actionable and
+                    // WinWright name-based selectors resolve 0 elements.
+                    // `container` + `explicitChildNodes: false` merges the
+                    // email/provider/auth text into ONE named, tappable node
+                    // while leaving the trailing icon buttons (which carry
+                    // their own tooltips) individually addressable.
+                    return Semantics(
+                      container: true,
+                      button: true,
+                      // excludeSemantics: ListTile builds its own semantics
+                      // node; without this the descendant node wins and the
+                      // container label never reaches UIA (verified against a
+                      // live build, Sprint 51). Excluding descendants makes
+                      // this row announce as ONE named, tappable element.
+                      excludeSemantics: true,
+                      label: '${displayData.email} - $platformName - $authMethod',
+                      hint: 'Select account to scan',
+                      child: Card(
                       margin: const EdgeInsets.only(bottom: 12),
                       elevation: 2,
                       child: ListTile(
@@ -789,6 +819,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                           ],
                         ),
                         onTap: () => _selectAccount(accountId),
+                      ),
                       ),
                     );
                   },

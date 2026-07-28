@@ -31,7 +31,13 @@ Sprint 51 Review/Retrospective - Combined Product Owner, Scrum Master and Lead D
 - Minor function updates that need to be added to the next sprint plan
   - none
 - Function updates that can be added to the backlog for a future sprint
-  - none
+  - Add to backlog as a repeatable HOLD item and assign a copy to the next sprint
+    - Accessibility audit
+      - please do spike research on Accessibility best practices and standards. 
+      - Add/update a repository copy of Accessibility best practices for future reference
+      - Identify gaps in the current Application and code base (focused on the UI for each active, prod UI) and plan tasks to resolve the gaps
+	- Should include, but not limited to: colors, screen reader needs, flutter testing needs, WinWright testing needs, 
+      - One known current gaps is semantic tree elements that as needed for accessibility and WinWright testing on all screens
 - Questions to be discussed before ending the sprint
   - none
 

@@ -1,11 +1,82 @@
 ***BELOW IS NOT FOR CLAUDE CODE, GITHUB COPILOT, CHATGPT OR COPILOT PULL REQUEST (PR) REVIEW USE***
-
+Sprint plan approval:
+Sprint plan approved, proceed with execution. 
+All Sprint tasks and sub-tasks are approved.  
+Continue without addition approvals until Manual Validation, providing your recommendation for Manual Validation steps.
+Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPING_CRITERIA.md
 ---------------------------------------------------------------------------------------------------------
 Sprint 5n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
 ---------------------------------------------------------------------------------------------------------
 Sprint 51 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
+- F130-S51 — time-boxed to < 400 hour estimate. Do first
+- F128
+- F129
 
+Candidates at a glance
 
+- F128-residual. Audit the sibling silent-no-op early-returns in RuleSetProvider (~15m) Priority 10
+- F130-S51. Process-Docs Consistency Deep Dive -- first run (~3-6h) Priority 12
+- F129. WinWright coverage for the Sprint-50-touched screens (~1-2h) Priority 19
+- F-COPILOT-INSTR. Encode "won't-fix, by-design" decisions in copilot-instructions.md (~45m) Priority 20
+- F125. One-shot release self-test probe (~1-2h) Priority 30
+- F94. Android dev/prod/store flavors + applicationId diagnosis (~6-8h) Priority 50 (Issue #248)
+- F108-RETEST. Android-device dependency-bump retest (~1-2h) Priority 52
+- HOLD: F70/F71/F111/F130, SEC-11b+F106, F95/F63/SEC-8b/SEC-15/F6/F67/H1-H5, GP-2..GP-16
+
+Core App Quality
+
+F128-residual. Audit the sibling silent-no-op early-returns in RuleSetProvider (~15m) Priority 10
+- Phase: Core App Quality
+- Platform: All
+- F128 fixed addRule/addSafeSender in Sprint 50, but the siblings were explicitly not audited: removeRule, updateRule, removeSafeSender and any other if (_x == null) return; share the same shape -- caller reports success, nothing persists (F-PRECHECK class 6)
+- Depends on: none (F128 landed in Sprint 50)
+
+F129. WinWright coverage for the Sprint-50-touched screens (~1-2h) Priority 19
+- Phase: Core App Quality
+- Platform: Windows Desktop
+- Phase 5.1.5 exit criteria: no script exercises the three surfaces Sprint 50 changed -- the quick-action grid (MT-1), Manage Rules category/sub-type display (F124), and the Review "No Rule" screen including its covered-item sweep (MT-2c). Each script must restore all state it modifies
+- Depends on: none
+
+Process
+
+F130-S51. Process-Docs Consistency Deep Dive -- first run (~3-6h) Priority 12
+- Phase: Process Spike
+- Platform: N/A (repo documentation + harness configuration)
+- First instance of the F130 template; audits the full instruction surface (11 sprint docs, CLAUDE.md/AGENTS.md, hooks, skills, settings, sprint_status.json, auto-memory) against 9 defect classes
+- Named item for this run: fix the stash-guard hook false positive -- it matches git stash anywhere in a command, so it blocked a command whose text merely documented the prohibition. Fix to match only real invocations, plus test cases for block/allow/bypass
+- Seeded with evidence already collected: the Phase 6.6 five-site contradiction, sprint_status.json as an orphan instruction, CLAUDE.md vs AGENTS.md divergence, memory description: fields vs corrected docs
+- Depends on: none
+
+F-COPILOT-INSTR. Encode "won't-fix, by-design" decisions in copilot-instructions.md (~45m) Priority 20
+- Phase: Process
+- Platform: N/A (repo)
+- Add n>=2 repeat Copilot classes to "Settled Decisions"; trim the file from ~4,618 toward the ~4,000-char soft budget. Sprint 50 added four fresh data points -- 9 findings across 4 rounds, 3 of them self-inflicted documentation garbles
+- Depends on: none
+
+F125. One-shot release self-test probe (~1-2h) Priority 30
+- Phase: Process
+- Platform: Windows Desktop
+- Extend --print-env into a release self-test verifying env + version + data-dir in one command; fold into STORE_RELEASE_PROCESS Step 4.0. The 0.5.8 release ran those checks as four separate manual steps
+- Depends on: none
+
+Android / Google Play Store (OFF HOLD -- trigger fired 2026-07-24)
+
+F94. Android dev/prod/store flavors + applicationId diagnosis (~6-8h) Priority 50 (Issue #248)
+- Phase: Android / Google Play Store Readiness
+- Platform: Android
+- Track opener: diagnose the google-services.json applicationId mismatch (likely root of intermittent Android Gmail OAuth), then implement dev/prod/store flavors
+- Depends on: none
+
+F108-RETEST. Android-device dependency-bump retest (~1-2h) Priority 52
+- Phase: Android / Google Play Store Readiness
+- Platform: Android
+- Verify the Sprint 44 flutter_appauth/workmanager/secure_storage bumps on a device or emulator (Gmail sign-in, storage round-trip, WorkManager); carry-in since Sprint 44
+- Depends on: emulator/device availability
+
+---
+Observations for your selection (deliberately after the list, not woven into it):
+
+The three carry-ins — F128-residual, F130-S51, F129 — total roughly 5–9 hours and share a theme: closing the gaps Sprint 50 exposed rather than opening new surface. F128-residual is 15 minutes and removes a known silent-failure class, so it is cheap insurance regardless of what else you pick.
 
 ---------------------------------------------------------------------------------------------------------
 Do this interactively first

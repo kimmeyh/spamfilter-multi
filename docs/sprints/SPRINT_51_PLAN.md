@@ -142,6 +142,17 @@ Per `CODING_VELOCITY.md` rule 3, every task records its ACTUAL on completion so 
 
 ### Task 3 -- F129: WinWright coverage for the Sprint-50-touched screens (Priority 19)
 
+> **SCOPE ADDITION (Harold, 2026-07-28): "Please add all semantic tree elements as needed for accessibility and WinWright testing."**
+>
+> Selector discovery revealed the blocker is NOT the harness -- it is that our app does not expose a complete Flutter semantics tree. Evidence: the Select Account screen renders two account rows (Harold's screenshot confirms), but the UIA tree exposes them as **unnamed `Group`s** with only "Saved Accounts" / "Select an account to scan" / "Add Account" named. `IconButton` tooltips ARE exposed; row content is not, because the child `Text` widgets are never merged into the tappable ancestor.
+>
+> This is an **accessibility defect first** (a screen reader announces nothing actionable for an account row) and a testability defect second (name-based selectors resolve 0 elements). Adding semantics is therefore in scope as R-6, ahead of script authoring -- writing scripts against an incomplete tree would encode coordinate-based fragility, which is exactly the Sprint 41 F97 failure mode (3 rounds of selector breakage).
+>
+> - **R-6**: every interactive element on the F129 target screens exposes an accessible name. Account rows announce `<email> - <provider> - <auth method>` with a "Select account to scan" hint; error rows announce which account failed and why. Rows use `Semantics(container: true)` so child text merges into ONE named node while the trailing icon buttons stay individually addressable.
+> - **AC-6**: `ww_get_snapshot` on each target screen returns zero unnamed interactive elements (Button/ListItem roles), verified against a live build.
+> - Cross-reference: `QUALITY_STANDARDS.md` / ADR-0037 already require accessibility semantics -- this closes a gap against an existing standard rather than inventing a new one.
+
+
 **Value**: This enables the Phase 5.1.5 UI sweep to actually exercise the three surfaces Sprint 50 changed, instead of exiting with "no script covers this" as it did at Sprint 50's gate.
 
 **Requirements**:
