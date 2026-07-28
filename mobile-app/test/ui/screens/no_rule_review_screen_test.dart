@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -581,5 +582,78 @@ void main() {
         reason: 'no row from the covered sender may be displayed');
     expect(find.text('thegamer@bestbuyingpoint.example'), findsOneWidget);
     expect(find.text('sales@falgunarmy.example'), findsOneWidget);
+  });
+
+  // F129 R-6 (Sprint 51, Harold: "add all semantic tree elements as needed
+  // for accessibility"): each row's checkbox must say WHICH email it selects.
+  // A bare Checkbox announces only "checkbox", so 18 rows produced 18
+  // indistinguishable controls -- unusable with a screen reader, and the
+  // checkboxes were absent from the Windows UIA tree entirely.
+  testWidgets(
+      'each item row and its checkbox expose accessible names identifying the '
+      'email (F129 R-6)', (tester) async {
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final handle = tester.ensureSemantics();
+
+    await tester.runAsync(() async {
+      const accountId = 'gmail-a@example.com';
+      await testHelper.createTestAccount(accountId);
+      registerSavedAccount(accountId);
+      final scanId = await insertCompletedScan(accountId,
+          completedAtMs: 1000, noRuleCount: 0);
+      final unmatchedStore = UnmatchedEmailStore(testHelper.dbHelper);
+      await unmatchedStore.addUnmatchedEmail(UnmatchedEmail(
+        scanResultId: scanId,
+        providerIdentifierType: 'imap_uid',
+        providerIdentifierValue: 'sem-1',
+        fromEmail: 'infoinfo@prohomeprotectplus.example',
+        subject: 'Reviewing your solar billing?',
+        folderName: 'Bulk Mail',
+        createdAt: DateTime.fromMillisecondsSinceEpoch(2000),
+      ));
+      await mountAndLoad(tester);
+    });
+
+    // Assert against the SEMANTICS TREE, not the widget finder.
+    // find.bySemanticsLabel maps labels back to widgets, which fails for a
+    // label that lives on a merged node (the Checkbox's label is real and
+    // present -- verified -- but has no distinct widget to map to). Walking
+    // the tree is the honest check and is what a screen reader actually sees.
+    final labels = <String>[];
+    void collect(SemanticsNode n) {
+      if (n.label.isNotEmpty) labels.add(n.label);
+      n.visitChildren((c) {
+        collect(c);
+        return true;
+      });
+    }
+    collect(tester.binding.pipelineOwner.semanticsOwner!.rootSemanticsNode!);
+
+    // The checkbox names the sender, so 18 checkboxes are distinguishable.
+    // Flutter merges the checkbox's label with the row text onto ONE node
+    // (a single string joining "Select SENDER", the sender, and the subject
+    // with newlines) -- precisely how a screen reader announces a merged
+    // control. So match on substring rather than exact equality.
+    expect(
+      labels.any((l) => l.contains('Select infoinfo@prohomeprotectplus.example')),
+      isTrue,
+      reason: 'a bare Checkbox announces only "checkbox" -- it must say which '
+          'email it selects. Labels found: $labels',
+    );
+
+    // The row announces sender + subject as one unit.
+    expect(
+      labels.any((l) => l.contains(
+          'infoinfo@prohomeprotectplus.example - Reviewing your solar billing?')),
+      isTrue,
+      reason: 'the row must announce the email it represents. '
+          'Labels found: $labels',
+    );
+
+    handle.dispose();
   });
 }
