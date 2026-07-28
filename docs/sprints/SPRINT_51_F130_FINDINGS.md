@@ -71,6 +71,27 @@ Discovered while doing selector discovery for the F129 scripts (Sprint 51). This
 
 ---
 
+## F129 outcome: what WinWright can and cannot cover (Sprint 51)
+
+Harold ran a Live Scan on 2026-07-28 (18 no-rule items, 16 senders, `darngoodyarn@homelivingcares.com` x3) so the coverage could be built against real data rather than an empty pool. Result:
+
+**Delivered as WinWright coverage** -- `test_f129_no_rule_review.json`, 10/10 green:
+- MT-3 entry point on the home screen opens the Review "No Rule" screen.
+- Cross-account filter chips render per configured account; counts are addressable (`All Accounts (18)`, `kimmeyharold@aol.com (18)`, `18 items`).
+- Refresh re-enters `_loadItems` (the sweep path) and the screen survives with chips intact.
+- Read-only, returns home -- inherently net-zero on the dev DB.
+
+**NOT deliverable as WinWright coverage, with reasons** (recorded so the next author does not re-attempt):
+- **Per-item selection and the bulk-action menu**: the 18 item rows render as **unnamed Groups** with no exposed checkboxes -- the UIA projection does not surface them, so no script can select an item or open the Apply-Rule menu by name.
+- **The mutating MT-2c test** (create covering rule -> reload -> assert count drops -> delete rule): reaching Manage Rules requires Settings, which opens an **account-picker dialog whose two account buttons are also unnamed**. A script authored against it was written, proved unrunnable, and deleted rather than committed as a known-broken artifact.
+- **Assertions of any kind**: `ww_assert*` is not replayable by the runner (README line 195), so verification must be expressed as clicks. The 3 pre-existing Sprint 41 scripts contain 10 assert steps that silently skip today -- they are weaker than they appear.
+
+**Covered instead at the widget level, where it is provable**: a new `no_rule_review_screen_test` case models Harold's exact data shape (3 items from one sender + 2 uncovered) and asserts that a **pre-existing** covering rule removes all three on the FIRST load with no user action -- the app's own log confirms "Swept 3 item(s) already covered by current rules/safe senders". That is MT-2c's actual contract, proven deterministically rather than inferred from a count chip.
+
+**Net judgment**: WinWright covers navigation and screen identity well; it cannot cover list-item interaction in this Flutter app until the UIA projection improves or the app adopts a projection-friendly pattern. Widget tests carry the behavioral load. This mirrors the Sprint 41 F76 lesson -- prove the tool primitive before building on it -- and is why the F129 estimate was correctly flagged `[no-history]`.
+
+---
+
 ## Observations (not individual findings)
 
 - **Seven of nine findings are duplication artifacts.** Every one arose where the same instruction was written out in more than one place and the copies drifted. This validates the F130 method note: prefer ONE authoritative statement plus pointers over duplicated prose.

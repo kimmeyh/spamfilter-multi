@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
+import 'package:my_email_spam_filter/core/models/rule_set.dart'
+    show Rule, RuleConditions, RuleActions;
 import 'package:my_email_spam_filter/core/providers/rule_set_provider.dart';
 import 'package:my_email_spam_filter/core/storage/database_helper.dart';
 import 'package:my_email_spam_filter/core/storage/rule_database_store.dart';
@@ -505,5 +507,79 @@ void main() {
     });
 
     expect(find.text('2 items'), findsOneWidget);
+  });
+
+  // MT-2c (Sprint 51, F129): the sweep runs on EVERY load, so an item whose
+  // covering rule already exists must never be DISPLAYED -- not merely
+  // removed after the user acts. This is the behavior the WinWright script
+  // cannot express (the 18 item rows render as unnamed Groups in the Windows
+  // UIA projection, so only the aggregate count chips are addressable), so it
+  // is pinned here instead.
+  //
+  // Modeled on Harold's real 2026-07-28 Live Scan: 18 no-rule items across 16
+  // senders, with darngoodyarn@homelivingcares.com appearing THREE times --
+  // exactly the multi-item case where a single Entire Domain rule must sweep
+  // every one of that sender's rows in one pass.
+  testWidgets(
+      'MT-2c: a pre-existing covering rule removes ALL of that sender\'s items '
+      'on the very first load, leaving uncovered senders untouched',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.runAsync(() async {
+      const accountId = 'gmail-a@example.com';
+      await testHelper.createTestAccount(accountId);
+      registerSavedAccount(accountId);
+      final scanId = await insertCompletedScan(accountId,
+          completedAtMs: 1000, noRuleCount: 0);
+
+      final unmatchedStore = UnmatchedEmailStore(testHelper.dbHelper);
+      // THREE items from one sender (the multi-item case) + two uncovered.
+      for (final (uid, sender) in [
+        ('m-1', 'darngoodyarn@homelivingcares.example'),
+        ('m-2', 'darngoodyarn@homelivingcares.example'),
+        ('m-3', 'darngoodyarn@homelivingcares.example'),
+        ('u-1', 'thegamer@bestbuyingpoint.example'),
+        ('u-2', 'sales@falgunarmy.example'),
+      ]) {
+        await unmatchedStore.addUnmatchedEmail(UnmatchedEmail(
+          scanResultId: scanId,
+          providerIdentifierType: 'imap_uid',
+          providerIdentifierValue: uid,
+          fromEmail: sender,
+          folderName: 'Bulk Mail',
+          createdAt: DateTime.fromMillisecondsSinceEpoch(2000),
+        ));
+      }
+
+      // The covering rule ALREADY exists before the screen is ever opened --
+      // this is the on-load sweep, not the post-action one.
+      await ruleProvider.addRule(Rule(
+        name: 'Block_EntireDomain_homelivingcares.example',
+        enabled: true,
+        isLocal: true,
+        executionOrder: 20,
+        conditions: RuleConditions(
+            type: 'OR', header: [r'@(?:[a-z0-9-]+\.)*homelivingcares\.example$']),
+        actions: RuleActions(delete: true),
+        patternCategory: 'header_from',
+        patternSubType: 'entire_domain',
+        sourceDomain: 'homelivingcares.example',
+      ));
+
+      await mountAndLoad(tester);
+    });
+
+    // 5 seeded - 3 covered = 2 displayed, on the FIRST load with no user action.
+    expect(find.text('2 items'), findsOneWidget,
+        reason: 'all three items from the covered sender must be swept before '
+            'display; a count of 5 means the on-load sweep did not run');
+    expect(find.textContaining('homelivingcares'), findsNothing,
+        reason: 'no row from the covered sender may be displayed');
+    expect(find.text('thegamer@bestbuyingpoint.example'), findsOneWidget);
+    expect(find.text('sales@falgunarmy.example'), findsOneWidget);
   });
 }

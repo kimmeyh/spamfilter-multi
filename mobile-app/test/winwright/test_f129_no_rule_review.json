@@ -22,7 +22,7 @@
         { "_comment": "MT-3: the Review No Rule entry point exists on the home screen and opens the screen. A resolve failure here means the Sprint 50 MT-3 entry point regressed.",
           "tool": "ww_click", "selector": "type=Button[name='Review \"No Rule\" Items']" },
 
-        { "_comment": "Cross-account filter chips: clicking each proves it rendered with the expected account. Counts vary with data, so match on the stable prefix.",
+        { "_comment": "MT-2c evidence: with a populated pool the count chips carry the post-sweep totals. These are what change when the sweep drops covered items, so clicking them proves the sweep produced a coherent count rather than an empty screen. Counts are data-dependent -- prefix match keeps the script valid across scans.",
           "tool": "ww_click", "selector": "type=Button[name*='kimmeyharold@aol.com (']" },
         { "tool": "ww_click", "selector": "type=Button[name*='kimmeyh@gmail.com (']" },
         { "tool": "ww_click", "selector": "type=Button[name*='All Accounts (']" },
