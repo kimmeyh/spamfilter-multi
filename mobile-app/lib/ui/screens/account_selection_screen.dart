@@ -428,11 +428,30 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
             final email = displayData?.email ?? accountId;
             final platformId = displayData?.platformId ?? '';
 
-            return ListTile(
-              leading: Icon(_getPlatformIcon(platformId)),
-              title: Text(email),
-              subtitle: Text(_getPlatformDisplayName(platformId)),
-              onTap: () => Navigator.pop(ctx, accountId),
+            // F129 (Sprint 51): the account-picker entries were unnamed
+            // nodes, so this dialog was unusable with a screen reader and
+            // unaddressable by UI automation -- it is the gate in front of
+            // Settings > Manage Rules, which blocked F129 script coverage of
+            // that whole path. Tooltip carries the name into the Windows UIA
+            // projection; Semantics carries it to assistive technology.
+            // Semantics OUTSIDE, Tooltip INSIDE -- the order proven on the
+            // No-Rule checkbox: Semantics supplies the screen-reader label
+            // (Tooltip alone does not), Tooltip is what reaches the Windows
+            // UIA projection (Semantics alone does not), and keeping the
+            // ListTile innermost leaves it as the tap target rather than a
+            // wrapper node absorbing the click.
+            return Semantics(
+              button: true,
+              label: 'Select account $email',
+              child: Tooltip(
+                message: 'Select account $email',
+                child: ListTile(
+                  leading: Icon(_getPlatformIcon(platformId)),
+                  title: Text(email),
+                  subtitle: Text(_getPlatformDisplayName(platformId)),
+                  onTap: () => Navigator.pop(ctx, accountId),
+                ),
+              ),
             );
           }).toList(),
         ),

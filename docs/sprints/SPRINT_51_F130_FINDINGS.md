@@ -81,14 +81,50 @@ Harold ran a Live Scan on 2026-07-28 (18 no-rule items, 16 senders, `darngoodyar
 - Refresh re-enters `_loadItems` (the sweep path) and the screen survives with chips intact.
 - Read-only, returns home -- inherently net-zero on the dev DB.
 
-**NOT deliverable as WinWright coverage, with reasons** (recorded so the next author does not re-attempt):
-- **Per-item selection and the bulk-action menu**: the 18 item rows render as **unnamed Groups** with no exposed checkboxes -- the UIA projection does not surface them, so no script can select an item or open the Apply-Rule menu by name.
-- **The mutating MT-2c test** (create covering rule -> reload -> assert count drops -> delete rule): reaching Manage Rules requires Settings, which opens an **account-picker dialog whose two account buttons are also unnamed**. A script authored against it was written, proved unrunnable, and deleted rather than committed as a known-broken artifact.
+**Initially judged NOT deliverable -- then FIXED at the source (Harold: "add all semantic tree elements as needed for accessibility and WinWright testing"):**
+- **Per-item selection**: the 18 item rows rendered as unnamed Groups and a control-type census returned **ZERO CheckBox nodes**. I first reported this as "no exposed checkboxes"; Harold's screenshot showed 18 checkboxes plainly, and the correction matters -- they render fine, they were absent from the *accessibility tree*. Root defect: a bare `Checkbox` announces only "checkbox", so 18 rows produced 18 indistinguishable controls. **FIXED**: each checkbox carries `Semantics(label: 'Select <sender>', checked:)` + a `Tooltip` with the same text; each row carries `<sender> - <subject>`.
+- **The account-picker gate**: reaching Manage Rules requires Settings, which opens an account-picker whose entries were **bare `ListTile`s with no accessible name** -- unusable with a screen reader and unaddressable by automation. **FIXED** with the same pattern. A mutating MT-2c script written against the broken picker was proved unrunnable and deleted rather than committed as a known-broken artifact.
+
+**The pattern that works** (learned by test, not assumption): `Tooltip` carries the name into the Windows UIA projection; `Semantics(label:)` carries it to assistive technology. Both are needed -- `Semantics` alone does not project. Two traps found: `explicitChildNodes: true` on a row **suppresses** a child checkbox's own node, and `find.bySemanticsLabel` cannot match a label that Flutter merges onto a shared node (the label was present the whole time; the *assertion* was wrong). Assert by walking the semantics tree instead.
 - **Assertions of any kind**: `ww_assert*` is not replayable by the runner (README line 195), so verification must be expressed as clicks. The 3 pre-existing Sprint 41 scripts contain 10 assert steps that silently skip today -- they are weaker than they appear.
 
 **Covered instead at the widget level, where it is provable**: a new `no_rule_review_screen_test` case models Harold's exact data shape (3 items from one sender + 2 uncovered) and asserts that a **pre-existing** covering rule removes all three on the FIRST load with no user action -- the app's own log confirms "Swept 3 item(s) already covered by current rules/safe senders". That is MT-2c's actual contract, proven deterministically rather than inferred from a count chip.
 
 **Net judgment**: WinWright covers navigation and screen identity well; it cannot cover list-item interaction in this Flutter app until the UIA projection improves or the app adopts a projection-friendly pattern. Widget tests carry the behavioral load. This mirrors the Sprint 41 F76 lesson -- prove the tool primitive before building on it -- and is why the F129 estimate was correctly flagged `[no-history]`.
+
+---
+
+## F129 accessibility work: the pattern, and how far it reaches (Sprint 51)
+
+Harold's instruction ("add all semantic tree elements as needed for accessibility and WinWright testing") turned a blocked test task into an accessibility fix. Three screens were audited; the same defect class appears at every level.
+
+**The pattern that works** -- `Semantics` OUTSIDE, `Tooltip` INSIDE, real control innermost:
+
+```dart
+Semantics(                       // screen readers: Tooltip alone sets NO label
+  label: 'Select $sender',
+  checked: isSelected,
+  child: Tooltip(                // UIA projection: Semantics alone does NOT project
+    message: 'Select $sender',
+    child: Checkbox(...),        // innermost = the hit target
+  ),
+)
+```
+
+Each element was established by a failing test, not by reasoning:
+- **Tooltip alone** -> the widget test for the semantics label FAILS (screen readers hear only "checkbox").
+- **Semantics alone** -> the name never appears in the Windows UIA tree (automation cannot see it).
+- **Tooltip wrapping Semantics** (my first attempt) -> two stacked Button nodes; a click lands on the wrapper and the real control never activates. Observed live on the account picker.
+- **`explicitChildNodes: true` on a parent row** -> SUPPRESSES a child checkbox's own node entirely.
+
+**Fixed and verified:**
+1. **Account rows** (Select Account screen) -- announce `<email> - <provider> - <auth method>`; error rows name the failing account and reason. 3 widget tests.
+2. **No-Rule item rows + checkboxes** -- rows announce `<sender> - <subject>`; each checkbox announces `Select <sender>` so 18 rows are no longer 18 identical "checkbox" controls. Pinned by a widget test asserting against the semantics tree.
+3. **Account-picker dialog** -- entries announce `Select account <email>`. This was the gate blocking Settings; a WinWright probe now selects an account **by name** (steps 1-3 pass), which was impossible before.
+
+**A second harness finding**: `ww_click` defaults to `useInvokePattern: true`, and on these Flutter controls the InvokePattern click **reports success without activating the widget**. Passing `useInvokePattern: false` (physical mouse) works. Any future script driving a Flutter list/dialog row must set that flag -- a "passing" step is otherwise not proof the tap happened.
+
+**Remaining, not fixed** (deliberate, recorded rather than hidden): the Settings screen renders its 4 tabs as **Text** nodes (not TabItem/Button) and its "Rules Management" rows as unnamed Groups under a Text heading. Reaching Manage Rules by name therefore still fails, so the F124 label script and the mutating MT-2c script remain unwritten. The fix is the same pattern applied to `settings_screen.dart`; it is a bounded follow-up, not a mystery. Filed as a Sprint 52 candidate.
 
 ---
 

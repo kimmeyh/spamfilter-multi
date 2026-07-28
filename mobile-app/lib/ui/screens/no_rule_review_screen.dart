@@ -763,11 +763,21 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
               // merged container does not -- Sprint 51 finding), so the
               // sender name is carried BOTH ways: a semantics label for
               // screen readers and a tooltip for UI automation.
-              Tooltip(
-                message: 'Select $decodedFrom',
-                child: Semantics(
-                  label: 'Select $decodedFrom',
-                  checked: isSelected,
+              // Both wrappers ARE needed, and the order matters -- verified by
+              // test, not assumed:
+              //   * Tooltip alone -> no semantics label (the widget test for
+              //     'Select <sender>' fails), so screen readers announce only
+              //     "checkbox".
+              //   * Semantics alone -> the label never reaches the Windows UIA
+              //     projection (Sprint 51 finding), so automation cannot see it.
+              // Semantics OUTSIDE keeps the Checkbox as the innermost hit
+              // target, avoiding the stacked-node click problem seen on the
+              // account picker.
+              Semantics(
+                label: 'Select $decodedFrom',
+                checked: isSelected,
+                child: Tooltip(
+                  message: 'Select $decodedFrom',
                   child: Checkbox(
                     value: isSelected,
                     onChanged: (_) => id != null ? _toggleSelection(id) : null,
