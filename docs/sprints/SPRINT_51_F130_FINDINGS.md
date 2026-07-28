@@ -122,9 +122,28 @@ Each element was established by a failing test, not by reasoning:
 2. **No-Rule item rows + checkboxes** -- rows announce `<sender> - <subject>`; each checkbox announces `Select <sender>` so 18 rows are no longer 18 identical "checkbox" controls. Pinned by a widget test asserting against the semantics tree.
 3. **Account-picker dialog** -- entries announce `Select account <email>`. This was the gate blocking Settings; a WinWright probe now selects an account **by name** (steps 1-3 pass), which was impossible before.
 
-**A second harness finding**: `ww_click` defaults to `useInvokePattern: true`, and on these Flutter controls the InvokePattern click **reports success without activating the widget**. Passing `useInvokePattern: false` (physical mouse) works. Any future script driving a Flutter list/dialog row must set that flag -- a "passing" step is otherwise not proof the tap happened.
+**A second harness finding -- RETRACTED AS STATED, then replaced by what the evidence actually supports (2026-07-28).** It was recorded mid-sprint that `ww_click`'s default `useInvokePattern: true` "reports success without activating the widget" on Flutter controls. Tested against dev build 0.5.8, that general claim **did not reproduce**: with the default flag `Manage Rules` opened, the `Background` tab switched, and a No-Rule `CheckBox` toggled. It was stated as a rule on insufficient evidence and is withdrawn in that form.
 
-**Remaining, not fixed** (deliberate, recorded rather than hidden): the Settings screen renders its 4 tabs as **Text** nodes (not TabItem/Button) and its "Rules Management" rows as unnamed Groups under a Text heading. Reaching Manage Rules by name therefore still fails, so the F124 label script and the mutating MT-2c script remain unwritten. The fix is the same pattern applied to `settings_screen.dart`; it is a bounded follow-up, not a mystery. Filed as a Sprint 52 candidate.
+**What replaced it is narrower, sharper, and was proven by making the scripts pass** -- a per-control-type tool rule:
+
+| Control | Tool | Why |
+|---|---|---|
+| `Button` (any kind) | `ww_invoke` | `ww_click` reported success without activating controls on a cold-launched app |
+| TabBar tab (`Text`) | `ww_click` + `useInvokePattern: false` | needs a real mouse press |
+| Static `Text` | `ww_click` + `useInvokePattern: false` | `Element does not support InvokePattern. ControlType: Text` |
+| `CheckBox` | `ww_click` + `useInvokePattern: false` | exposes TogglePattern, not InvokePattern |
+| `RadioButton` | no reliable path | neither it nor its parent Group selects |
+
+**Three further harness behaviours**, each found by a failing run rather than reasoning:
+1. **The semantics tree is built lazily ON QUERY, not on a timer** -- first query returns an opaque `FLUTTERVIEW` pane, second returns the full tree, and a 10-second wait does not help. This alone caused two failed runs while I misdiagnosed it as a settle-timing problem.
+2. **`ww_invoke` does not verify visibility** -- it reports success on an off-screen element without pressing it (`Save Rule` below the fold); `ww_click` correctly errors `element_offscreen`.
+3. **The search box cannot be cleared by automation** -- `clearFirst` appends, `ww_clear` throws COM, `ctrl+a`/`Delete` does not reach the field.
+
+**And the part of the original finding that always stood**: `{"success": true}` means *dispatched*, not *effective*. Since `ww_assert*` is not replayable, the only in-script proof is a following step that can only resolve if the app actually advanced. Both new scripts are authored as such pairs. (This also confirms the 3 Sprint 41 scripts' 10 silently-skipped assert steps are weaker than they look -- that finding stands.)
+
+**A defect in my own F129 change, found only because a script drove it.** The account-picker entries I added mid-sprint shipped **broken**: `Semantics(button:)` without `excludeSemantics` left the inner `ListTile`'s node in place, so each entry projected as **two stacked Buttons with the same name**. A name-based selector matched the outer wrapper, which has no tap handler -- the click reported success and the dialog never dismissed, silently blocking the entire Settings path. Adding `excludeSemantics: true` then collapsed the node correctly but **removed the tap target**. The working shape is `excludeSemantics: true` **plus `onTap:` on the `Semantics` node itself**. The generalisable lesson: **a tree dump proves a name exists; only an interaction proves the node still works.** Semantics work must be validated by a script that drives the control, not by inspection.
+
+**Settings screen -- earlier claim CORRECTED (2026-07-28).** It was recorded that Settings renders its "Rules Management" rows as unnamed Groups and that Manage Rules was therefore unreachable by name. A live tree dump disproves this: `[Button] "Manage Safe Senders"` and `[Button] "Manage Rules"` are both present and correctly named, matching `_SELECTOR_MAP_2026-06-05.md` and the two committed `test_f56_*` scripts that already click them. The 4 tabs do project as `Text` nodes, but that is documented Flutter TabBar behavior, not a defect. **`settings_screen.dart` required no changes.** The genuine blocker was the account-picker dialog in front of Settings, fixed earlier this sprint -- with that gate open, Manage Rules is reachable end-to-end, verified live.
 
 ---
 

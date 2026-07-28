@@ -440,9 +440,30 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
             // UIA projection (Semantics alone does not), and keeping the
             // ListTile innermost leaves it as the tap target rather than a
             // wrapper node absorbing the click.
+            // Getting BOTH a single named node AND a working tap target here
+            // took three failed shapes (Sprint 51, 2026-07-28) -- keep this
+            // one:
+            //   1. Semantics(button:) WITHOUT excludeSemantics -> the inner
+            //      ListTile keeps its own node, so the entry projects as TWO
+            //      stacked Buttons with the SAME name. A name selector matches
+            //      the outer wrapper, which has no handler, so the dialog never
+            //      dismisses -- while the tool still reports success, because a
+            //      click reports DISPATCH, not effect.
+            //   2. Adding excludeSemantics:true -> collapses to ONE correctly
+            //      named node, but also drops the ListTile's gesture node, so
+            //      the entry becomes unclickable by automation.
+            //   3. This shape -- excludeSemantics:true to collapse the tree,
+            //      PLUS onTap on the Semantics node itself so the merged node
+            //      carries the tap action. One named node, one handler.
+            // The ListTile keeps its own onTap so ordinary mouse/touch input
+            // (which hits the ListTile directly, not the semantics node) still
+            // works exactly as before.
             return Semantics(
+              container: true,
               button: true,
+              excludeSemantics: true,
               label: 'Select account $email',
+              onTap: () => Navigator.pop(ctx, accountId),
               child: Tooltip(
                 message: 'Select account $email',
                 child: ListTile(

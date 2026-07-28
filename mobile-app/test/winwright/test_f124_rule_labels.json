@@ -1,0 +1,94 @@
+{
+  "version": "1",
+  "appId": "",
+  "mode": "test",
+  "attachTitle": "MyEmailSpamFilter",
+  "description": "F124 (Sprint 51): Manage Rules category / sub-type DISPLAY. Verifies that rule rows expose their category and sub-type as accessible names, that the rule-details dialog presents Category and Sub-Type as labelled fields, and that the sub-type filter chips narrow the list. READ-ONLY: navigates and toggles filter chips only -- creates, edits and deletes nothing -- and clears every filter before exiting, so the DB-drift guard stays green. SELECTORS AND INTERACTION MODEL VERIFIED LIVE 2026-07-28 against dev build 0.5.8.\n\nFOUR HARNESS FACTS drove this script's shape. All were established by failing runs, not assumed:\n\n(1) USE ww_invoke, NOT ww_click, FOR FLUTTER CONTROLS. ww_click (which tries UIA InvokePattern then falls back to a physical mouse click) repeatedly reported success WITHOUT activating the control from a cold-launched app -- the Settings button reported success while the app stayed on the home screen. ww_invoke fires InvokePattern directly and works. ww_click is used ONLY where a physical mouse press is genuinely wanted (TabBar tabs, which project as Text nodes).\n\n(2) A STEP REPORTING SUCCESS IS NOT PROOF OF EFFECT. It proves the action was DISPATCHED. Because `ww_assert*` is NOT replayable by the script runner, the only in-script evidence that something happened is a FOLLOWING step that can only resolve if the app actually advanced. Every navigation below is followed by such a step; that pairing is the real assertion.\n\n(3) FLUTTER BUILDS ITS UIA SEMANTICS TREE LAZILY, IN RESPONSE TO A QUERY -- NOT ON A TIMER. On a freshly launched app the first tree query returns an opaque single 'FLUTTERVIEW' pane; the second returns the full tree. A 10-second wait does NOT help, because waiting is not the trigger. The leading ww_window_state acts as that priming query.\n\n(4) THE SEARCH BOX CANNOT BE CLEARED BY AUTOMATION on this build: ww_type clearFirst:true APPENDS (observed 'museum'+'gmail' -> 'museumgmail'), ww_clear throws a COM HRESULT, and ctrl+a/Delete does not reach the Flutter field. This script therefore NEVER types into the search box -- it uses the stateless filter chips, which are idempotent and expose a 'Clear' button that exists ONLY while a filter is active.",
+  "runConfig": {
+    "captureScreenshots": false,
+    "screenshotFormat": "png",
+    "screenshotOnFailureOnly": false,
+    "continueOnFailure": false,
+    "stepTimeoutMs": 15000,
+    "maxFailures": 0
+  },
+  "testCases": [
+    {
+      "id": "F124-LBL-1",
+      "title": "Rule rows expose category + sub-type; details dialog labels them; chips narrow and restore",
+      "steps": [
+        { "_comment": "PRIMING QUERY (fact 3): forces Flutter to build its semantics subtree. Without this the first control lookup on a cold app resolves 0 elements.",
+          "tool": "ww_window_state", "state": "maximize" },
+
+        { "_comment": "Settings is account-scoped: this opens an in-Flutter 'Select Account' overlay, not the Settings screen directly.",
+          "tool": "ww_invoke", "selector": "type=Button[name='Settings']" },
+
+        { "_comment": "The picker entry resolves BY NAME thanks to the Sprint 51 F129 accessibility work, and dismisses because that Semantics node carries its own onTap. Before the 2026-07-28 fix this entry projected as two stacked same-named Buttons and the outer one had no handler -- the click reported success and the dialog stayed open.",
+          "tool": "ww_invoke", "selector": "type=Button[name='Select account kimmeyharold@aol.com']" },
+
+        { "_comment": "PROOF OF ARRIVAL: the General tab exists only once Settings is actually open, so resolving it proves the picker really dismissed. Tabs project as Text nodes; useInvokePattern:false forces the physical mouse press they need.",
+          "tool": "ww_click", "selector": "type=Text[name^='General']", "useInvokePattern": false },
+
+        { "_comment": "F124 entry point. Manage Rules projects as a correctly-named Button.",
+          "tool": "ww_invoke", "selector": "type=Button[name='Manage Rules']" },
+
+        { "_comment": "PROOF OF ARRIVAL: 'Test a pattern against sample emails' exists only on the Manage Rules screen.",
+          "tool": "ww_invoke", "selector": "type=Button[name='Test a pattern against sample emails']" },
+
+        { "_comment": "PROOF OF ARRIVAL on the F25 tool, then straight back -- this also confirms the Manage Rules top bar is live.",
+          "tool": "ww_invoke", "selector": "type=Button[name='Back']" },
+
+        { "_comment": "F124 CORE -- CATEGORY chips carry their live counts in the accessible name. Prefix-matched because counts are data-dependent.",
+          "tool": "ww_invoke", "selector": "type=Button[name*='Header / From (']" },
+        { "_comment": "PROOF OF EFFECT: 'Clear' is rendered ONLY while a filter is active, so its presence proves the chip actually filtered the list. It is also the state-restore.",
+          "tool": "ww_invoke", "selector": "type=Button[name='Clear']" },
+
+        { "tool": "ww_invoke", "selector": "type=Button[name*='Subject (']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name='Clear']" },
+
+        { "tool": "ww_invoke", "selector": "type=Button[name*='Body (']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name='Clear']" },
+
+        { "_comment": "F124 CORE -- the four SUB-TYPE chips, the Sprint 50 classifications under test.",
+          "tool": "ww_invoke", "selector": "type=Button[name*='Entire Domain (']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name='Clear']" },
+
+        { "tool": "ww_invoke", "selector": "type=Button[name*='Exact Domain (']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name='Clear']" },
+
+        { "tool": "ww_invoke", "selector": "type=Button[name*='Exact Email (']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name='Clear']" },
+
+        { "tool": "ww_invoke", "selector": "type=Button[name*='Top-Level Domain (']" },
+
+        { "_comment": "F124 CORE -- with the TLD filter active, each visible row exposes an accessible name stating BOTH its category and its sub-type. Resolving this exact string IS the F124 row-display contract, and proves the filter selected matching rows.",
+          "tool": "ww_invoke", "selector": "type=Button[name='Header / From category, Top-Level Domain sub-type. View rule details']" },
+
+        { "_comment": "F124 STRONGEST EVIDENCE: the details dialog renders Category and Sub-Type as explicitly LABELLED fields. Resolving both labels proves the dialog opened AND that the classification is presented as named fields rather than free text. NOTE: static Text nodes do NOT support InvokePattern ('Element does not support InvokePattern. ControlType: Text' -- observed 2026-07-28), so these two steps must use ww_click with useInvokePattern:false. The click is harmless on a label; the point is that the selector RESOLVES.",
+          "tool": "ww_click", "selector": "type=Text[name='Sub-Type']", "useInvokePattern": false },
+        { "tool": "ww_click", "selector": "type=Text[name='Category']", "useInvokePattern": false },
+
+        { "_comment": "The classification VALUES, not just the field labels -- this rule is a Top-Level Domain rule in the Header / From category, so both values must be present in the dialog.",
+          "tool": "ww_click", "selector": "type=Text[name='Top-Level Domain']", "useInvokePattern": false },
+        { "tool": "ww_click", "selector": "type=Text[name='Header / From']", "useInvokePattern": false },
+
+        { "_comment": "Close the dialog WITHOUT editing -- read-only. WARNING: name='Close' also matches the window titlebar Close (#Close); a stray match would exit the app. Safe here ONLY because the dialog is known open and its Close resolves first (verified live -- app still alive afterwards). Do not reuse this selector when no dialog is open.",
+          "tool": "ww_invoke", "selector": "type=Button[name='Close']" },
+
+        { "_comment": "STATE RESTORE: drop the TLD filter so the screen returns to the unfiltered view it was found in (Sprint 37 policy).",
+          "tool": "ww_invoke", "selector": "type=Button[name='Clear']" },
+
+        { "_comment": "PROOF OF RESTORE: Refresh resolves on the live, unfiltered Manage Rules screen.",
+          "tool": "ww_invoke", "selector": "type=Button[name='Refresh']" },
+
+        { "_comment": "Teardown: Manage Rules -> Settings -> home.",
+          "tool": "ww_invoke", "selector": "type=Button[name='Back']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name='Back']" },
+
+        { "_comment": "PROOF OF RETURN HOME: the account ROW is present only on the home screen. Invoking it would start a scan, so this step deliberately targets the home-screen 'View Scan History' button instead -- present on home, absent on Manage Rules -- and the following Back returns from it. Read-only either way.",
+          "tool": "ww_invoke", "selector": "type=Button[name='View Scan History']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name='Back']" }
+      ]
+    }
+  ]
+}

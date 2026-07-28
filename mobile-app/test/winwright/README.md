@@ -92,14 +92,31 @@ title and closes it at end-of-run. Consequences for script authors:
 > `test_text_selection`, `test_f25_rule_test_tool`, and `test_f35_rule_edit`. See ALL_SPRINTS_MASTER_PLAN.md
 > F100 and docs/TESTING_STRATEGY.md (two-harness section).
 
-The only WinWright scripts that remain are the create/lifecycle flows kept as the F99 reference (already
-EXCLUDED from any default sweep -- their reliable unattended execution lives in `integration_test`):
+Sprint 51 (F129) added 3 read-only scripts covering the Sprint-50-touched surfaces. These DO run in the
+default sweep and pass green with zero DB drift (verified 2026-07-28):
+
+| Script | Purpose | Origin |
+|--------|--------|--------|
+| `test_f129_no_rule_review.json` | MT-3 entry point + account filter chips + reload path on the Review "No Rule" screen | S51 F129 (new) |
+| `test_f124_rule_labels.json` | F124: Manage Rules category/sub-type display -- row accessible names, the details dialog's labelled `Category`/`Sub-Type` fields and their values, and all 7 filter chips (each paired with the `Clear` button that exists only while a filter is active) | S51 F129 (new) |
+| `test_mt2c_no_rule_sweep.json` | MT-2c: the covered-item sweep is idempotent across an in-place Refresh AND a full screen re-entry -- named rows must SURVIVE (guards over-collection, the Sprint 50 bug shape) | S51 F129 (new) |
+
+The create/lifecycle flows below are kept as the F99 reference and remain EXCLUDED from any default
+sweep -- their reliable unattended execution lives in `integration_test`:
 
 | Script | Purpose | Origin |
 |--------|--------|--------|
 | `test_f37_folder_selector.json` | F37: open Safe Sender + Deleted Rule folder pickers (no selection change) -- EXCLUDED from default sweep (dialog-settle race -> F99) | S40 (new) |
 | `test_f56_create_block_rule.json` | F56: create TLD block rule (`museum`), delete it (net zero DB drift) -- EXCLUDED from default sweep (F99) | S41 F97 (new) |
 | `test_f56_create_safe_sender.json` | F56: create Entire Domain safe sender (`winwright-test.com`), delete it (net zero DB drift) -- EXCLUDED from default sweep (F99) | S41 F97 (new) |
+
+> **Note on the F56 scripts (2026-07-28)**: their documented radio-selection workaround (click the
+> parent `Group` instead of the `RadioButton`) did **not** reproduce -- the form stayed in its default
+> Entire-Domain mode either way. Combined with the off-screen `Save Rule` button and input validation
+> rejecting synthetic domains, the create path is currently not drivable end-to-end by the script
+> runner. This is why `test_mt2c_no_rule_sweep.json` asserts sweep *stability* against the existing
+> rule set rather than creating a rule first, and why the sweep-with-a-new-rule contract is covered
+> deterministically in `test/ui/screens/no_rule_review_screen_test.dart` instead.
 
 The 2 F56 scripts **write then delete**: each testCase creates one row and a second testCase deletes it,
 leaving net DB drift of zero. They are EXCLUDED from the default sweep and run explicitly via
@@ -140,6 +157,100 @@ Key UI actuals confirmed:
 - **F37 folder tree** lives on Settings > **Account** tab (`Folder Settings`): buttons
   `Safe Sender Folder` / `Deleted Rule Folder` open per-provider folder pickers whose selection
   **auto-saves** ("Changes saved automatically") -- read-only scripts must NOT click a folder RadioButton.
+
+## Sprint 51 Execution Notes (F129, 2026-07-28)
+
+### Which tool to use for which control (the rule that makes scripts pass)
+
+Established by three consecutive failing runs on 2026-07-28 and then proven by a green sweep. Getting
+this wrong is the single biggest cause of "the selector resolved but nothing happened".
+
+| Control | Tool | Why |
+|---|---|---|
+| `Button` (incl. `OutlinedButton`, `IconButton`, FAB, dialog buttons) | **`ww_invoke`** | `ww_click` reported success WITHOUT activating controls on a cold-launched app |
+| TabBar tab (projects as `Text`) | `ww_click` + `useInvokePattern: false` | tabs need a real mouse press |
+| Static `Text` label | `ww_click` + `useInvokePattern: false` | `Element does not support InvokePattern. ControlType: Text` |
+| `CheckBox` | `ww_click` + `useInvokePattern: false` | exposes TogglePattern, not InvokePattern |
+| `RadioButton` | *(no reliable path on this build)* | neither the RadioButton nor its parent Group selects -- see below |
+
+**A mid-sprint claim that `useInvokePattern: true` "reports success without activating the widget" was
+tested and NOT reproduced as stated, and is withdrawn** -- with the default flag, `Manage Rules` opened,
+the `Background` tab switched, and a No-Rule checkbox toggled. The accurate statement is the table
+above: prefer `ww_invoke` for Buttons because it proved reliable from a cold launch, and fall back to
+the mouse path only for the control types that cannot accept InvokePattern.
+
+### Three harness behaviours that silently break scripts
+
+1. **Flutter builds its UIA semantics tree LAZILY, in response to a query -- not on a timer.** On a
+   freshly launched app the first tree query returns an opaque single `FLUTTERVIEW` pane with no
+   children; the second returns the full tree. **A 10-second wait does not help**, because waiting is
+   not the trigger. Start every script with `ww_window_state` -- it doubles as the priming query.
+2. **`ww_invoke` does not verify visibility.** It happily reports success on an **off-screen** element
+   without pressing it (observed on `Save Rule` below the fold). `ww_click` correctly errors
+   `element_offscreen`. Always `maximize` first.
+3. **A step reporting success proves DISPATCH, not effect.** Since the runner cannot replay
+   `ww_assert*`, the only in-script proof is a **following step that can only resolve if the app
+   actually advanced** -- a control that exists solely on the next screen, or a `Clear` button that
+   renders only while a filter/selection is active. Author every navigation as such a pair; otherwise a
+   green run proves reachability, never behaviour.
+
+### Controls that resist automation on this build (do not sink time into them)
+
+- **The Add-Block-Rule `Rule Type` RadioButtons do not select.** Neither `ww_click` on the RadioButton
+  nor on its parent Group changes the mode -- the form silently stays in its default Entire-Domain
+  mode (confirmed by the input field keeping the name `Enter email, domain, or URL` instead of
+  switching to `Enter TLD (...)`). The older `test_f56_create_block_rule.json` note claims clicking the
+  parent Group works; that did **not** reproduce on 2026-07-28.
+- **The search box cannot be cleared.** `ww_type clearFirst: true` **appends** (observed `museum` +
+  `gmail` -> `museumgmail`), `ww_clear` throws a COM `HRESULT` exception, and `ctrl+a`/`Delete` does not
+  reach the Flutter field. Type into it at most **once** per screen visit; leaving and re-entering the
+  screen resets it.
+- Both of these are why the two `test_f56_*` create/delete scripts stay EXCLUDED from the default
+  sweep, and why `test_mt2c_no_rule_sweep.json` deliberately asserts sweep *stability* using the
+  existing rule set instead of creating a rule first.
+
+### Semantics required for name-based selection (F129)
+
+Rows built from a `Card`/`ListTile` project as **unnamed `Group`s** unless wrapped. The wrapper order
+below was established by failing tests -- each variant was tried and rejected:
+
+```dart
+Semantics(                       // OUTER: carries the name into the UIA tree
+  label: 'Select $sender',
+  checked: isSelected,
+  child: Tooltip(                // INNER: what actually projects to UIA
+    message: 'Select $sender',
+    child: Checkbox(...),        // the real control, innermost
+  ),
+)
+```
+
+- `Tooltip` alone -> projects, but no screen-reader label.
+- `Semantics` alone -> labels the Flutter tree, does **not** reach UIA.
+- `Tooltip` **wrapping** `Semantics` -> two stacked nodes; clicks land on the wrapper, control never fires.
+- `explicitChildNodes: true` on the parent row -> **suppresses** the child checkbox's own node.
+
+Applied in Sprint 51 to `no_rule_review_screen.dart` and `account_selection_screen.dart` (rows +
+account-picker dialog). **`settings_screen.dart` needed no change** -- its `OutlinedButton`s already
+project as named Buttons (`Manage Rules`, `Manage Safe Senders`), confirmed live 2026-07-28. The
+account-picker dialog, not the Settings screen, was what previously blocked reaching Manage Rules.
+
+**A wrapper that names a node can also make it unclickable -- check both.** The account-picker entries
+went through three shapes before working, and the two broken ones each *looked* fine in a tree dump:
+
+1. `Semantics(button:)` **without** `excludeSemantics` -> the inner `ListTile` keeps its own node, so
+   the entry projects as **two stacked Buttons with the same name**. A name selector matches the outer
+   wrapper, which has no handler: the click reports success and the dialog never dismisses. This is
+   what shipped mid-sprint and it broke the whole Settings path.
+2. Adding `excludeSemantics: true` -> collapses to one correctly named node, but **drops the
+   `ListTile`'s gesture node**, so the entry becomes unclickable by automation.
+3. **Working shape**: `excludeSemantics: true` **plus `onTap:` on the `Semantics` node itself**, so the
+   merged node carries both the name and the action. The child keeps its own `onTap` so ordinary
+   mouse/touch input is unaffected.
+
+The lesson generalises: after adding semantics to make something *addressable*, run a script that
+actually *drives* it. A tree dump proves the name exists; only an interaction proves the node still
+works.
 
 ## Running Tests
 
