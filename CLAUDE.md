@@ -713,7 +713,8 @@ spamfilter-multi/
   - `/phase-check` - Sprint phase transition checkpoint (verify phase complete, preview next phase)
   - `/plan-sprint` - Sprint planning with model assignments
   - `/full-test` - Run all Flutter tests and analyze code quality
-  - `/memory-save` and `/memory-restore` - Save/restore sprint context across sessions
+  - `/memory-save` - Produce a compact-string save point for the next session
+  - `/memory-restore` - **RETIRED (Sprint 51)**. Sprint state lives in `.claude/sprint_status.json` (maintained at Phase 7.7); `/startup-check` reads it with staleness checks. The old `.claude/memory/current.md` path is frozen at Sprint 39 and must not be restored.
 
 ### Archives (gitignored)
 - **Archive/**: Historical docs, legacy Python desktop app, completed phase reports

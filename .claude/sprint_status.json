@@ -67,14 +67,14 @@
   "blocking_issues": [],
 
   "sprint_51_task_status": {
-    "task_1_F130_S51": "DONE -- Tiers 1+2+3 all COMPLETE. 27 contradictions found, 27 corrected; 1 item surfaced to Harold as a Class-3 decision (the /memory-restore + /startup-check retired-restore-path question). Findings: docs/sprints/SPRINT_51_F130_FINDINGS.md",
+    "task_1_F130_S51": "DONE -- Tiers 1+2+3 all COMPLETE. 28 contradictions found, 28 corrected, 0 outstanding. The one Class-3 item (retired .claude/memory restore path) was surfaced per R-6, decided by Harold 2026-07-28 (retire /memory-restore, point /startup-check at this file), and applied same-day. Findings: docs/sprints/SPRINT_51_F130_FINDINGS.md",
     "task_2_F128_residual": "DONE -- 3 silent-no-op sites fixed in rule_set_provider.dart",
     "task_3_F129": "DONE -- 3 WinWright scripts green with zero DB drift (f129 / f124 / mt2c). R-1 (MT-1 quick-action grid) required a semantics fix to results_display_screen.dart first; the grid cells were bare InkWells and unaddressable."
   },
 
   "next_actions": [
     "Sprint 51 Phase 5.3: MANUAL VALIDATION by Harold -- recommendation delivered; nothing further blocks it",
-    "DECISION PENDING (Class-3, F130 R-6): /memory-restore + /startup-check step 3 still drive the retired .claude/memory/current.md path, frozen at Sprint 39. Recommend pointing startup-check at sprint_status.json and retiring /memory-restore. See SPRINT_51_F130_FINDINGS.md 'Surfaced for Harold'.",
+    "RESOLVED 2026-07-28 (Class-3): /memory-restore is RETIRED (tombstone skill) and /startup-check now reads THIS file with 4 staleness checks. The .claude/memory/* files are inert and deliberately left on disk -- do not refresh them.",
     "BACKLOG PROPOSALS awaiting Harold's yes/no (not yet carded): F131 -- WinWright create-path is not drivable (radios do not select, Save Rule off-screen, validation rejects synthetic domains), which makes the two test_f56_* scripts STALE not merely excluded; F132 -- systematic accessibility sweep of remaining screens using the now-proven wrapper pattern",
     "Post-certification: run the store_release.post_cert_closeout_pending list above",
     "Android/Google Play remains the next major track (promotion trigger fired 2026-07-24)"

@@ -125,7 +125,8 @@ These memory entries collectively govern sprint execution -- consult on uncertai
 - Project root: `D:\Data\Harold\github\spamfilter-multi`
 - Flutter app: `mobile-app/`
 - Build script: `mobile-app/scripts/build-windows.ps1`
-- Test command: `cd mobile-app && flutter test` then `flutter analyze`
+- Test command: `cd mobile-app && flutter test --concurrency=4` then `flutter analyze` (full suites require `--concurrency=4`; see TESTING_STRATEGY.md "Local Full-Suite Concurrency Policy")
+- Sprint state: `.claude/sprint_status.json` (Phase 7.7-maintained; read via `/startup-check`)
 - Memory dir: `C:\Users\kimme\.claude\projects\D--Data-Harold-github-spamfilter-multi\memory\`
 - Dev app data: `C:\Users\kimme\AppData\Roaming\MyEmailSpamFilter\MyEmailSpamFilter_Dev\`
 - Dev DB: `{dev app data}\spam_filter.db`

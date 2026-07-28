@@ -13,9 +13,10 @@
 | 2 | Remaining SPRINT EXECUTION docs, `.claude/skills/*` (10 files), `settings.json`, `sprint_status.json` schema | **COMPLETE** 2026-07-28 -- 16 findings, all corrected |
 | 3 | Cross-references, dead links, anchors | **COMPLETE** 2026-07-28 -- folded into the Tier 2 pass (6 dead references found and corrected; see findings 21-26) |
 
-**Contradiction count (final): 27 found / 27 corrected / 1 surfaced to Harold as a Class-3 decision.**
+**Contradiction count (final): 28 found / 28 corrected / 0 outstanding.**
 (Tier 1: 10. Tier 2: 11 contradictions + 6 dead references. Finding 27 was caught by the DoD re-grep,
-not by the audit pass.)
+not by the audit pass. Finding 28 -- the retired restore path -- was surfaced as a Class-3 decision
+per R-6, decided by Harold on 2026-07-28, and applied the same day.)
 
 **Method note for the next run**: Tier 2 was executed by two parallel read-only audit agents (one on
 `.claude/skills/*`, one on the remaining `docs/*` SPRINT EXECUTION set), each given the 8-10
@@ -68,7 +69,35 @@ line numbers and no false positives. Every reported path was independently verif
 
 ---
 
-## Surfaced for Harold, NOT corrected unilaterally (Class-3 decision, R-6)
+## Surfaced for Harold -- DECIDED AND APPLIED 2026-07-28 (Class-3, R-6)
+
+**Harold's decision: option (1) -- point `/startup-check` at `sprint_status.json` and retire
+`/memory-restore`.** Applied the same day. What changed:
+
+- **`/startup-check` step 3 rewritten.** It now reads `.claude/sprint_status.json` instead of
+  `.claude/memory/current.md`. There is no `pending_restore` flag to clear any more, so the entire
+  write-back-with-four-permission-fallbacks block is gone -- the skill is read-only for state. The
+  staleness check was KEPT and strengthened to four explicit tests (branch match, sprint-number match,
+  `_last_updated` vs `git log`, and work-already-in-CHANGELOG), because a Phase-7.7-maintained file can
+  still lag the working tree between close-outs.
+- **`/startup-check` step 2.5(c) reordered.** Phase 3.7 approval evidence now comes from
+  `sprint_status.json` (`plan_approved: true` **with** a matching `current_sprint.number`) first, then
+  PR comments, then issue comments. The memory-file source is gone. The number-match requirement is
+  the point: a `plan_approved: true` left over from a prior sprint is stale state, not approval.
+- **`/memory-restore` converted to a tombstone** rather than deleted, so an invocation lands on a page
+  explaining what to use instead rather than on a missing command. It records why, and routes to
+  `sprint_status.json` / `/startup-check` / `SPRINT_RESUME_GUIDE.md` / auto-memory by need.
+- **`CLAUDE.md` + `AGENTS.md` skill listings updated** (both carried the identical line -- the same
+  paired-file divergence as findings 7 and 27).
+- **The old files are deliberately left on disk, unmodified**, as a historical record. They are inert.
+  The tombstone explicitly says not to "refresh" them, because refreshing is what would recreate the
+  trap.
+
+Also corrected in the same pass: `SPRINT_RESUME_GUIDE.md` "Critical File Locations" carried a bare
+`flutter test` (finding 13's class, a site outside the Tier 2 sweep) and did not mention
+`sprint_status.json` at all. Both fixed.
+
+### Original finding, for the record
 
 **The `/memory-restore` + `/startup-check` restore path drives a retired mechanism.**
 `memory-save/SKILL.md:127` states plainly: *"Do NOT save anything to `.claude/memory/current.md` -- that

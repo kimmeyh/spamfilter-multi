@@ -26,6 +26,10 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-07-28 (Sprint 51: retired-restore-path fix, Harold-approved)
+- **fix**: F130-S51 -- `/startup-check` step 3 no longer restores from `.claude/memory/current.md`. That path was superseded before Sprint 39 yet was still the restore source, and was inert only because `pending_restore` happened to be `false`: any stray flag would have injected a **Sprint-39 snapshot into a Sprint-51+ session** and presented it as current. Step 3 now reads `.claude/sprint_status.json` (Phase 7.7-maintained) with four explicit staleness checks, and the write-back-with-permission-fallbacks block is gone since there is no flag to clear. Phase 3.7 approval evidence now comes from that file first, requiring the sprint NUMBER to match so a prior sprint's `plan_approved` cannot be read as approval (Issue #286)
+- **chore**: F130-S51 -- `/memory-restore` RETIRED, converted to a tombstone that routes to `sprint_status.json` / `/startup-check` / `SPRINT_RESUME_GUIDE.md` rather than being deleted, so an invocation lands on an explanation instead of a missing command. `CLAUDE.md` + `AGENTS.md` listings updated. The old memory files are left on disk, inert, with an explicit "do not refresh" note -- refreshing is what would recreate the trap (Issue #286)
+
 ### 2026-07-28 (Sprint 51: F130-S51 Tiers 2-3)
 - **docs**: F130-S51 Tier 2/3 process-docs audit -- **17 further findings, all corrected** (sprint total 27). Highest-consequence: `CLAUDE.md` (and `AGENTS.md`, and the master plan) named the msix credential key **`build_windows_args`** -- the F119 typo that shipped a credential-less 0.5.4 to the Store, and the exact string a build-failing gate (`test/policy/msix_config_test.dart`) asserts must never appear. Corrected to `windows_build_args` (Issue #286)
 - **docs**: F130-S51 -- `.claude/sprint_status.json` was absent from the Phase 7.7 update list in `SPRINT_RETROSPECTIVE.md` while being mandatory in `SPRINT_CHECKLIST.md`: the orphan-instruction shape that let the file drift 15 sprints. Added with its full field list (Issue #286)
