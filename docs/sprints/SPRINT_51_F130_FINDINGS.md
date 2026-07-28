@@ -47,6 +47,30 @@
 
 ---
 
+## F129 tooling finding: WinWright's UIA projection under-reports Flutter semantics
+
+Discovered while doing selector discovery for the F129 scripts (Sprint 51). This is a **tooling-capability finding of the kind SPRINT_PLANNING.md's "Tooling-Capability Pre-Flight" exists to catch** -- and it was found before scripts were written, which is the point of that rule.
+
+**The instruments disagree with each other on the same process at the same moment:**
+
+| Instrument | App-bar buttons (tooltip-based) | Account rows (Semantics label) |
+|---|---|---|
+| CLI `winwright inspect <pid>` | **named** (Help, Settings, `Review "No Rule" Items`, ...) | **unnamed** |
+| MCP `ww_get_snapshot` | **unnamed** | **unnamed** |
+| Flutter widget test (`find.bySemanticsLabel`) | n/a | **NAMED -- label present and correct** |
+
+**Conclusion**: the labels ARE in Flutter's semantics tree (3 widget tests prove it); the Windows UIA projection does not surface `Semantics(label:)` on a merged container, and the MCP snapshot path surfaces even less than the CLI path. So "the element has no name in `ww_get_snapshot`" is NOT evidence that the app lacks accessibility markup -- a conclusion I drew and had to retract mid-task.
+
+**Consequences for F129 (recorded so the next author does not repeat the discovery):**
+1. Verify accessibility markup with **Flutter widget tests** (`find.bySemanticsLabel`, `getSemantics().hasFlag`), never with a WinWright tree dump. The widget test is authoritative; the UIA tree is a lossy projection of it.
+2. Scripts can only address elements the CLI projection actually names -- in practice, widgets carrying a **`tooltip:`** (IconButton/AppBar actions) and screen titles. `Semantics(label:)` on a container is not addressable today.
+3. The account-selection screen therefore cannot be driven by name-based selectors regardless of markup quality, which caps what F129 scripts can cover from the home screen.
+4. Two harness behaviors compound this: the CLI runner **terminates the attached app after every run** (pass or fail), so iterative discovery needs a relaunch per attempt; and `ww_dump_tree` / `ww_wait` are **not replayable** by the script runner, so a script cannot introspect mid-run.
+
+**Accessibility value delivered regardless of the tooling limit**: the Semantics work is a real fix. Before it, an account row was an unnamed node -- a screen-reader user heard nothing actionable. It now announces `<email> - <provider> - <auth method>` with a "Select account to scan" hint, and the error row names the failing account and the reason. Pinned by 3 widget tests so it cannot regress.
+
+---
+
 ## Observations (not individual findings)
 
 - **Seven of nine findings are duplication artifacts.** Every one arose where the same instruction was written out in more than one place and the copies drifted. This validates the F130 method note: prefer ONE authoritative statement plus pointers over duplicated prose.
