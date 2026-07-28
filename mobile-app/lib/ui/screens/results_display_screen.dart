@@ -2184,7 +2184,31 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   }) {
     final bool enabled = onTap != null;
     final Color effectiveColor = enabled ? color : Colors.grey.shade400;
-    return InkWell(
+    // F129 (Sprint 51): these quick-action cells were built from a bare InkWell
+    // wrapping loose Text, so each one surfaced as an UNNAMED node with its
+    // label floating alongside as separate Text -- a screen reader announced
+    // nothing actionable, and name-based automation could not address the grid
+    // at all (the MT-1 blocker). The wrapper order below is the one proven on
+    // the No-Rule checkbox and the account picker: Semantics OUTSIDE (supplies
+    // the assistive-technology label), Tooltip INSIDE (what actually reaches
+    // the Windows UIA projection), real control innermost. `excludeSemantics`
+    // merges the label/subtitle Text into ONE named node instead of leaving
+    // them as loose siblings, and `onTap` is carried on the Semantics node
+    // itself so the merged node stays actionable -- omitting it names the cell
+    // but makes it unclickable (the account-picker regression, same sprint).
+    // `enabled: false` cells deliberately keep the label but take no onTap, so
+    // a disabled placeholder announces as present-but-inactive.
+    return Semantics(
+      container: true,
+      button: true,
+      enabled: enabled,
+      excludeSemantics: true,
+      label: label,
+      hint: subtitle,
+      onTap: onTap,
+      child: Tooltip(
+        message: enabled ? '$label. $subtitle' : '$label (unavailable)',
+        child: InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: Container(
@@ -2253,6 +2277,8 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                 ),
               ),
           ],
+        ),
+      ),
         ),
       ),
     );

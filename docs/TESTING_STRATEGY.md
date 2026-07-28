@@ -190,7 +190,7 @@ void main() {
 
 **Purpose**: Test Flutter UI components and interactions
 
-**Location**: `mobile-app/test/widgets/`
+**Location**: `mobile-app/test/ui/` (contains `screens/` and `widgets/`)
 
 **Coverage Target**: 60%+ for critical UI flows
 
@@ -416,7 +416,7 @@ The desktop app has **two complementary E2E harnesses**. They are not redundant 
 | Strength | true end-to-end + accessibility coverage; real window | deterministic; immune to UIA-exposure / DPI / cursor / dialog-settle flakiness |
 | Weakness | flaky on Flutter dialog/picker-**settle** boundaries (no wait/assert primitive in the `run` runner) -> F56 create/save + F37 picker excluded | not a real window; needs a test seam to bypass live IMAP/credential fetch |
 | DB safety | create-then-delete + pre/post DB-snapshot drift guard | isolated temp DB per test (`AppPaths.testOverrideBaseDir`); never touches dev DB |
-| Runner | `scripts/run-winwright-tests.ps1` (6 read-only scripts) | `scripts/run-integration-tests.ps1` (one `flutter test` **process per file**) |
+| Runner | `mobile-app/scripts/run-winwright-tests.ps1` (6 read-only scripts) | `mobile-app/scripts/run-integration-tests.ps1` (one `flutter test` **process per file**) |
 
 **Which to use:**
 - **WinWright** -- read-only navigation / accessibility-tree coverage on the real window (the 6 green scripts).
@@ -505,7 +505,7 @@ group('RuleEvaluator', () {
 **All Tests**:
 ```bash
 cd mobile-app
-flutter test
+flutter test --concurrency=4
 ```
 
 **Specific File**:
@@ -540,12 +540,12 @@ open coverage/html/index.html
 4. Refactor if needed, re-run tests
 
 **Before Commit**:
-1. Run all tests: `flutter test`
+1. Run all tests: `flutter test --concurrency=4` (full suite -- see the Concurrency Policy above)
 2. Verify 100% pass rate
 3. Commit only if all tests pass
 
 **Before Sprint PR**:
-1. Run full test suite: `flutter test`
+1. Run full test suite: `flutter test --concurrency=4` (see the Concurrency Policy above)
 2. Run analyzer: `flutter analyze` (0 errors required)
 3. Generate coverage report: `flutter test --coverage`
 4. Verify coverage ≥80% for new code
@@ -738,7 +738,7 @@ Starting at: 2026-01-31 10:30:00
 
 ### YAML Validation Script
 
-**Location**: `mobile-app/scripts/validate-yaml-rules.ps1`
+**Location**: `scripts/validate-yaml-rules.ps1` (repo root, NOT `mobile-app/scripts/`)
 
 **Purpose**: Validate `rules.yaml` and `rules_safe_senders.yaml` for syntax errors
 
@@ -750,7 +750,7 @@ cd mobile-app\scripts
 
 ### Regex Pattern Tester
 
-**Location**: `mobile-app/scripts/test-regex-patterns.ps1`
+**Location**: `scripts/test-regex-patterns.ps1` (repo root, NOT `mobile-app/scripts/`)
 
 **Purpose**: Test regex patterns against sample emails
 

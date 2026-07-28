@@ -210,7 +210,7 @@ _(F127 CI_* repo secrets: **RESOLVED-RESCOPED** (Harold 2026-07-24) -- the secre
 **F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD**
 - Phase: Release Readiness (reusable template)
 - Platform: Windows Desktop
-- **Generic scope**: verify develop/main parity, version compatibility vs the currently-published Store version, MSIX build-path integrity (`msix_config.build_windows_args` OAuth-credential injection), and Store-submission preconditions (`docs/STORE_RELEASE_PROCESS.md` checklist) BEFORE any Store build/upload. Produces a GO/NO-GO readiness finding; does not build or upload.
+- **Generic scope**: verify develop/main parity, version compatibility vs the currently-published Store version, MSIX build-path integrity (`msix_config.windows_build_args` OAuth-credential injection -- note the key is `windows_build_args`; the transposed `build_windows_args` is the F119 defect), and Store-submission preconditions (`docs/STORE_RELEASE_PROCESS.md` checklist) BEFORE any Store build/upload. Produces a GO/NO-GO readiness finding; does not build or upload.
 - **How to use**: Duplicate this item, assign a sprint, and remove HOLD. After completion, keep this template for the next review.
 - HOLD rationale: Template item, reusable each time a new Windows Store release is planned. First run: Sprint 45 (see `docs/sprints/SPRINT_45_F111_STORE_READINESS.md`).
 - Source: Sprint 45 backlog refinement (2026-07-02) -- captured as a recurring template since Store readiness verification will be needed for every future release.

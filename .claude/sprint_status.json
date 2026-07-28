@@ -1,6 +1,6 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-07-27T13:00:00Z",
+  "_last_updated": "2026-07-28T19:40:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
 
@@ -10,7 +10,7 @@
     "pr_number": null,
     "pr_url": null,
     "start_date": "2026-07-27",
-    "status": "Phase 4 execution (plan approved; running to Manual Validation without further approvals)",
+    "status": "Phase 4 execution -- all 3 tasks code-complete and verified; next is Phase 5.3 Manual Validation (Harold)",
     "plan_approved": true,
     "plan_approval_date": "2026-07-27",
     "blanket_execution_approved": true,
@@ -38,10 +38,12 @@
   ],
 
   "test_metrics": {
-    "tests_passing": 1806,
+    "tests_passing": 1814,
     "tests_skipped": 29,
     "tests_failing": 0,
     "analyzer_warnings": 0,
+    "hook_test_cases": "29/29 passing (.claude/hooks/run-test-cases.ps1)",
+    "winwright_sweep": "3/3 passing, no DB drift (mobile-app/scripts/run-winwright-tests.ps1)",
     "coverage_percent": null,
     "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5); the default concurrency intermittently drops test-isolate connections and produces phantom load failures."
   },
@@ -64,10 +66,16 @@
 
   "blocking_issues": [],
 
+  "sprint_51_task_status": {
+    "task_1_F130_S51": "DONE -- Tiers 1+2+3 all COMPLETE. 27 contradictions found, 27 corrected; 1 item surfaced to Harold as a Class-3 decision (the /memory-restore + /startup-check retired-restore-path question). Findings: docs/sprints/SPRINT_51_F130_FINDINGS.md",
+    "task_2_F128_residual": "DONE -- 3 silent-no-op sites fixed in rule_set_provider.dart",
+    "task_3_F129": "DONE -- 3 WinWright scripts green with zero DB drift (f129 / f124 / mt2c). R-1 (MT-1 quick-action grid) required a semantics fix to results_display_screen.dart first; the grid cells were bare InkWells and unaddressable."
+  },
+
   "next_actions": [
-    "Sprint 51 Phase 1: backlog refinement (docs/BACKLOG_REFINEMENT.md presentation format v1.3 -- read the format section FIRST, present candidates with the Summary Index)",
-    "Sprint 51 Phase 3: scope selection + plan",
-    "Carry-ins for Sprint 51 consideration: F128 residual (sibling early-returns removeRule/updateRule/removeSafeSender share the silent-no-op shape, ~15m); F129 (WinWright coverage for the three Sprint-50-touched screens)",
+    "Sprint 51 Phase 5.3: MANUAL VALIDATION by Harold -- recommendation delivered; nothing further blocks it",
+    "DECISION PENDING (Class-3, F130 R-6): /memory-restore + /startup-check step 3 still drive the retired .claude/memory/current.md path, frozen at Sprint 39. Recommend pointing startup-check at sprint_status.json and retiring /memory-restore. See SPRINT_51_F130_FINDINGS.md 'Surfaced for Harold'.",
+    "BACKLOG PROPOSALS awaiting Harold's yes/no (not yet carded): F131 -- WinWright create-path is not drivable (radios do not select, Save Rule off-screen, validation rejects synthetic domains), which makes the two test_f56_* scripts STALE not merely excluded; F132 -- systematic accessibility sweep of remaining screens using the now-proven wrapper pattern",
     "Post-certification: run the store_release.post_cert_closeout_pending list above",
     "Android/Google Play remains the next major track (promotion trigger fired 2026-07-24)"
   ]

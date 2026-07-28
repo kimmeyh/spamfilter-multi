@@ -588,7 +588,7 @@ Consumed by `folder_selection_screen.dart`'s `groupFoldersForTree(folders)` -- n
 
 | Tool | Purpose |
 |------|---------|
-| **scripts/run-winwright-tests.ps1** (F79, Sprint 40 enhancement) | Unattended WinWright sweep runner. Extends Sprint 34's runner with `-SnapshotDb` / `-DryRun` / `-TestSnapshotOnly` / `-FailOnDrift` params and a pre/post dev-DB snapshot guard. Exits non-zero on either WinWright script failure OR detected DB drift |
+| **mobile-app/scripts/run-winwright-tests.ps1** (F79, Sprint 40 enhancement) | Unattended WinWright sweep runner. Extends Sprint 34's runner with `-SnapshotDb` / `-DryRun` / `-TestSnapshotOnly` / `-FailOnDrift` params and a pre/post dev-DB snapshot guard. Exits non-zero on either WinWright script failure OR detected DB drift |
 | **scripts/winwright-db-snapshot.ps1** (F79, Sprint 40) | DB-snapshot helper (dot-sourced into the runner). Snapshots `rules`, `safe_senders`, `settings` tables via `sqlite3` (uses Android SDK's `sqlite3.exe`; no new dep). `Compare-DbSnapshots` reports any row added/removed/modified as `[LEAK] table '<t>' added/removed row: <row>`. `-SelfTest` mode injects a synthetic bogus row, verifies drift detection, then cleans up -- no running app or WinWright required for self-verification |
 
 ### UI Standards (ADR-0037)
@@ -723,7 +723,7 @@ mobile-app/
 - **Failed-auth rate limit** (SEC-22): `AuthRateLimiter` blocks an account for 1h after 10 failed IMAP sign-ins in a rolling 1h window; state persists in the `auth_rate_limit` table so blocks survive app restart. UI surfaces a "Try again at HH:MM" message in place of the generic auth error.
 - **Certificate pinning** (SEC-8): `PinnedHttpClient` enforces SPKI pins for Google OAuth endpoints. Runtime kill switch in Settings > General > Privacy & Logging. IMAP is not pinned (enough_mail limitation, tracked as future work).
 - **Auth logging suppression** (SEC-19): Settings toggle makes `Redact.logSafe` a no-op even in debug builds.
-- **Logging & Redaction invariant** (F102, narrowed by F110, Sprint 43): never log the **app user's own** account ids / configured-account email / tokens / email content in the clear -- use the `Redact` utility (`Redact.accountId/token`, and `Redact.senderForLog` for sender/recipient addresses). **F110 narrowing**: third-party sender/recipient email addresses ARE logged in the clear (they are the anti-phishing security signal); only the user's own configured-account addresses are masked. Account ids / tokens / secrets stay strict. Applies to `Logger`, the headless `_bgLog`, and generated artifacts (PowerShell scripts, Task Scheduler task names). Enforced by `scripts/check-log-redaction.ps1` + `test/policy/log_redaction_test.dart` (build-failing; post-F110 they flag account ids / tokens / secrets, NOT the email-address family) + a Phase 5 checklist grep. Policy: ADR-0030 §5 "Logging & Redaction".
+- **Logging & Redaction invariant** (F102, narrowed by F110, Sprint 43): never log the **app user's own** account ids / configured-account email / tokens / email content in the clear -- use the `Redact` utility (`Redact.accountId/token`, and `Redact.senderForLog` for sender/recipient addresses). **F110 narrowing**: third-party sender/recipient email addresses ARE logged in the clear (they are the anti-phishing security signal); only the user's own configured-account addresses are masked. Account ids / tokens / secrets stay strict. Applies to `Logger`, the headless `_bgLog`, and generated artifacts (PowerShell scripts, Task Scheduler task names). Enforced by `mobile-app/scripts/check-log-redaction.ps1` + `test/policy/log_redaction_test.dart` (build-failing; post-F110 they flag account ids / tokens / secrets, NOT the email-address family) + a Phase 5 checklist grep. Policy: ADR-0030 §5 "Logging & Redaction".
 - **Unmatched email retention** (SEC-14): rows pruned on startup + after each scan; body previews capped at 100 chars at insert.
 - **User data deletion** (F66): per-account wipe + full-app reset via `DataDeletionService`.
 - **DB-at-rest encryption infrastructure** (SEC-11, opt-in): `DatabaseEncryptionKeyService` ships (256-bit key in secure storage). The actual encrypting-driver swap is **SEC-11b, deferred to Post-MVP** -- cipher switched from SQLCipher to **SQLite3MultipleCiphers** (cross-platform: Windows + Android + iOS). The Settings "Encrypt database" toggle is hidden until SEC-11b ships (Sprint 43). See ALL_SPRINTS_MASTER_PLAN.md -> HOLD Items (Post-MVP) -> SEC-11b.
@@ -769,13 +769,13 @@ mobile-app/
 - **Method**: Windows UI Automation (UIA3/MSAA) — reads the accessibility tree of the running Flutter Desktop app
 - **Scope**: Read-only screen navigation, accessibility-tree coverage on the real window (the 6 green scripts)
 - **Limitation**: Flutter Windows exposes MSAA (not full UIA); flaky on Flutter dialog/picker-**settle** boundaries (the `run` runner has no wait/assert primitive) -- create/save (F56) and folder-picker (F37) scripts were therefore moved to the integration_test lane
-- **Runner**: `scripts/run-winwright-tests.ps1` (6 read-only scripts + pre/post DB-snapshot drift guard)
+- **Runner**: `mobile-app/scripts/run-winwright-tests.ps1` (6 read-only scripts + pre/post DB-snapshot drift guard)
 
 **2. Flutter `integration_test` (in-VM) -- F99, Sprint 42, pre-MVP.**
 - **Method**: drives the real widget tree in the Dart VM by `Key`/`Finder` with `pumpAndSettle()` -- deterministic; immune to UIA-exposure / DPI / cursor / dialog-settle flakiness
 - **Scope**: create/delete lifecycle (rules + safe senders), folder picker, layout-bounds regression (the F76 goal WinWright's CLI could not deliver)
 - **DB isolation**: isolated temp DB per test via the `AppPaths.testOverrideBaseDir` test seam (null in production); never touches the dev DB. Modes: `bootDbOnly` (seeded temp DB) / `bootAppWithDevDbCopy` (copy dev DB, delete on teardown)
-- **Runner**: `scripts/run-integration-tests.ps1` -- **one `flutter test` process per file** (isolates process-wide singletons); within a file, multiple `testWidgets` share one process with no app shutdown between them
+- **Runner**: `mobile-app/scripts/run-integration-tests.ps1` -- **one `flutter test` process per file** (isolates process-wide singletons); within a file, multiple `testWidgets` share one process with no app shutdown between them
 - **Reference**: See TESTING_STRATEGY.md "Two E2E Harnesses" for which to use when, the per-file execution model, and the test seams
 
 **Target Coverage**: 95%+ for core business logic

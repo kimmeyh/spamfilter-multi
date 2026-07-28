@@ -651,7 +651,25 @@ Update performance baselines:
 - Performance improvements achieved
 - Regression detection
 
-#### 7. CHANGELOG.md
+#### 7. `.claude/sprint_status.json` (MANDATORY -- verify by READING it)
+
+This is the file that restores sprint state after context compaction, so a stale copy actively
+misleads the next session rather than merely being out of date. It had drifted **15 sprints** before
+being caught at Sprint 50 close-out -- precisely because it was a checklist item nowhere named in this
+document. **Verify by opening the file, never by recalling what it should say.**
+
+Update every field that moved this sprint:
+- `current_sprint` -- number, branch, PR number/URL, status, approval flags
+- `previous_sprint` -- number, PR, merge note, deliverables
+- `github_issues` -- every issue with its real status (closed issues marked closed)
+- `test_metrics` -- actual counts from the LAST FULL RUN, not the last remembered run
+- `store_release` -- only if a submission is in flight
+- `next_actions` -- what the next session should genuinely do next
+
+Authoritative field list: `docs/SPRINT_CHECKLIST.md` Phase 7.7. Keep the two in step -- if you change
+one, change the other in the same pass.
+
+#### 8. CHANGELOG.md
 
 Add sprint completion entry:
 ```markdown
@@ -666,9 +684,10 @@ Add sprint completion entry:
 - **docs**: [Documentation update]
 ```
 
-#### 8. Create Sprint Retrospective Document
+#### 9. Create Sprint Retrospective Document
 
-Create `docs/SPRINT_N_RETROSPECTIVE.md` with full retrospective details:
+Create `docs/sprints/SPRINT_N_RETROSPECTIVE.md` with full retrospective details (per-sprint documents
+live in `docs/sprints/`, not directly under `docs/`):
 - User feedback (full quotes)
 - Claude analysis
 - Improvements selected
@@ -679,7 +698,7 @@ Create `docs/SPRINT_N_RETROSPECTIVE.md` with full retrospective details:
 - **SPRINT_N_RETROSPECTIVE.md**: Created during Phase 7 (this phase) - Full retrospective with feedback and improvements
 - **SPRINT_<N>_SUMMARY.md**: Created during next sprint planning (Phase 3.2.1) - Historical archive of sprint details
 
-#### 9. Sprint Summary Document (Created Next Sprint)
+#### 10. Sprint Summary Document (Created Next Sprint)
 
 **SPRINT_<N>_SUMMARY.md** is created as a background process during planning for Sprint N+1:
 - **When**: Phase 3.2.1 of next sprint (see SPRINT_EXECUTION_WORKFLOW.md)

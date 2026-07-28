@@ -464,7 +464,7 @@ flutter pub get
 flutter pub run msix:create
 ```
 
-`flutter pub run msix:create` honors the `msix_config` block in `pubspec.yaml`, including the critical `build_windows_args` field that injects OAuth credentials via `--dart-define-from-file`. **Do NOT use `scripts/build-msix.ps1`** -- that is a deprecated makeappx.exe path that produces an MSIX with empty credentials (silent Gmail sign-in failure).
+`flutter pub run msix:create` honors the `msix_config` block in `pubspec.yaml`, including the critical `windows_build_args` field that injects OAuth credentials via `--dart-define-from-file`. **The key is `windows_build_args`, NOT `build_windows_args`** -- the transposed form is not a real msix key, is silently ignored, and is exactly the F119 defect that shipped a credential-less 0.5.4 to the Store. `test/policy/msix_config_test.dart` is a build-failing gate asserting the typo never reappears. **Do NOT use `scripts/build-msix.ps1`** -- that is a deprecated makeappx.exe path that produces an MSIX with empty credentials (silent Gmail sign-in failure).
 
 For the full end-to-end procedure (version bump 5-file checklist, `secrets.prod.json` recreation, verification steps, Partner Center upload walkthrough, post-submission), see **`docs/STORE_RELEASE_PROCESS.md`**.
 

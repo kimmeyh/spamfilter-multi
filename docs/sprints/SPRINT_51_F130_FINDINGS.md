@@ -9,11 +9,21 @@
 
 | Tier | Surfaces | Status |
 |---|---|---|
-| 1 | `SPRINT_EXECUTION_WORKFLOW.md`, `SPRINT_CHECKLIST.md`, `CLAUDE.md`, `AGENTS.md`, `.claude/hooks/*`, auto-memory | **COMPLETE** -- 9 findings, all corrected |
-| 2 | Remaining SPRINT EXECUTION docs, `.claude/skills/*`, `settings.json`, `sprint_status.json` schema | NOT STARTED |
-| 3 | Cross-references, dead links, anchors | NOT STARTED |
+| 1 | `SPRINT_EXECUTION_WORKFLOW.md`, `SPRINT_CHECKLIST.md`, `CLAUDE.md`, `AGENTS.md`, `.claude/hooks/*`, auto-memory | **COMPLETE** -- 10 findings, all corrected |
+| 2 | Remaining SPRINT EXECUTION docs, `.claude/skills/*` (10 files), `settings.json`, `sprint_status.json` schema | **COMPLETE** 2026-07-28 -- 16 findings, all corrected |
+| 3 | Cross-references, dead links, anchors | **COMPLETE** 2026-07-28 -- folded into the Tier 2 pass (6 dead references found and corrected; see findings 21-26) |
 
-**Contradiction count (running): 10 found / 10 corrected / 0 deferred / 0 surfaced as Class-3.**
+**Contradiction count (final): 27 found / 27 corrected / 1 surfaced to Harold as a Class-3 decision.**
+(Tier 1: 10. Tier 2: 11 contradictions + 6 dead references. Finding 27 was caught by the DoD re-grep,
+not by the audit pass.)
+
+**Method note for the next run**: Tier 2 was executed by two parallel read-only audit agents (one on
+`.claude/skills/*`, one on the remaining `docs/*` SPRINT EXECUTION set), each given the 8-10
+known-authoritative facts as an explicit checklist to test each file against. That framing -- audit
+AGAINST a stated ground truth rather than "look for problems" -- is what produced findings with exact
+line numbers and no false positives. Every reported path was independently verified with
+`Test-Path` before any correction, which caught that two script sets live in OPPOSITE roots
+(findings 21/23). Recommend repeating this shape.
 
 ---
 
@@ -31,6 +41,50 @@
 | 8 | Memory `description:` fields teaching superseded guidance | `feedback_cheapest_first_model` (Haiku->Sonnet->**Opus**), `feedback_context_window_stopping` (cites **Opus 4.7** specifically), `feedback_table_format` ("manual **testing**") | Each `description:` is what surfaces during RECALL, so it outranks the docs in practice -- a corrected doc plus a stale memory means the stale version keeps being re-taught. | The corrected docs (Sprint 49 Fable/Opus rename; Sprint 50 IMP-1 terminology; Sprint 50 IMP-7 Executed-by) | **CORRECTED** -- 3 `description:` fields updated. `feedback_opus_pitfalls` deliberately NOT renamed: it is a version-specific historical appendix, and renaming it would falsify what it documents. Class 4. |
 | 9 | `MEMORY.md` index lines (loaded into context EVERY session) | 7 lines carrying "manual testing", "Haiku->Sonnet->Opus", "planner stays Opus", "during Manual Testing" | The index is the highest-frequency instruction surface in the repo -- it is injected every session -- yet it lagged both the terminology rename and the tier rename. | Corrected docs | **CORRECTED** -- 7 index lines aligned. Class 4. |
 | 10 | Close-out hook: what counts as a "close-out complete" claim? | `verify-closeout-complete.ps1` (written 2026-07-26, fired wrongly 2026-07-27) | Its first claim-pattern used an 80-character bridge between the subject and "complete", so ordinary mid-sprint status -- *"Sprint status: Task 1 Tier 1 complete, Task 2 complete, Task 3 blocked"* -- read as a close-out claim. It then blocked the turn for having OPEN sprint issues, which is the CORRECT state mid-sprint (they close at that sprint's merge). **Third hook in this sprint to fire on correct work**, and the newest one -- written the day before. | A claim about the SPRINT/CLOSE-OUT itself, never about an individual task | **CORRECTED** -- patterns anchored (subject adjacent to verb, short bridge) plus a mid-sprint exclusion list ("Task N blocked", "stopping criterion", "Sprint status", "still executing") that overrides a claim match. +5 test cases incl. one reproducing this exact false positive. Class 6. |
+
+
+### Tier 2 findings (2026-07-28)
+
+| # | Instruction | Sites | Statements found | Authoritative version | Action |
+|---|---|---|---|---|---|
+| 11 | The msix credential-injection key name | `CLAUDE.md:467` **vs** `pubspec.yaml:131`, `test/policy/msix_config_test.dart`, `STORE_RELEASE_PROCESS.md` (7 sites) | CLAUDE.md named the critical field **`build_windows_args`**. That is the F119 typo -- not a real msix key, silently ignored, and the exact defect that shipped a **credential-less 0.5.4 to the Store**. `msix_config_test.dart` is a build-failing gate asserting that string NEVER appears. So the most-read doc in the repo instructed using the one key a test forbids. | `windows_build_args` (pubspec + the gate + STORE_RELEASE_PROCESS, all correct) | **CORRECTED** -- CLAUDE.md now names `windows_build_args`, states the transposed form is the F119 defect, and cites the gate. **Highest-consequence finding of the audit.** Class 2. |
+| 12 | Is `.claude/sprint_status.json` a Phase 7.7 close-out item? | `SPRINT_RETROSPECTIVE.md` "What to Update (Phase 7.7)" **vs** `SPRINT_CHECKLIST.md:152` | The checklist makes it mandatory with a full field list and a "VERIFY BY READING IT" warning. The retrospective doc that actually DRIVES Phase 7.7 enumerated 8 documents and **never mentioned it**. This is the precise orphan-instruction shape F130 was chartered to find -- and the direct cause of the file drifting **15 sprints**. | `SPRINT_CHECKLIST.md` Phase 7.7 | **CORRECTED** -- new numbered subsection in SPRINT_RETROSPECTIVE.md with the full field list, the verify-by-reading rule, and a keep-in-step pointer. Class 1. |
+| 13 | Full-suite test command | `TESTING_STRATEGY.md:508/543/548`, `QUALITY_STANDARDS.md:458/476`, `SPRINT_PLANNING.md:322` (6 sites) **vs** `TESTING_STRATEGY.md:31` | The Concurrency Policy (Sprint 49 IMP-5) requires `flutter test --concurrency=4` for FULL suites; six full-suite instructions -- including TESTING_STRATEGY's own execution section -- said bare `flutter test`, the exact command that produces phantom isolate-load failures. | `TESTING_STRATEGY.md:31` | **CORRECTED** -- all 6 sites now carry `--concurrency=4`; targeted single-file runs deliberately left unflagged. Class 1 + 4. |
+| 14 | Full-suite test command (skill) | `.claude/skills/full-test/SKILL.md:19` | The repo's designated "run all tests" skill prescribed bare `flutter test` -- the single highest-impact instance of finding 13, because it is the path a session actually invokes. | `TESTING_STRATEGY.md:31` | **CORRECTED** -- skill now runs `--concurrency=4` with a one-line rationale. Class 1. |
+| 15 | Expected test count | `.claude/skills/full-test/SKILL.md:25` | "All **185+** tests should pass" -- a Sprint-5-era figure. Against the current ~1,814-test suite this bar passes while ~1,600 tests are missing, so the skill could report success on a catastrophically truncated run. | `.claude/sprint_status.json` -> `test_metrics` | **CORRECTED** -- replaced with a pointer to `sprint_status.json` (self-maintaining) plus the current baseline as of Sprint 51. Class 3. |
+| 16 | Top model tier name | `.claude/skills/plan-sprint/SKILL.md` (7 sites: description line, `What It Does`, rationale bullet, escalation heading, examples) **vs** its own line 34 | The file states the corrected ladder ("Fable/Opus, Fable 5 when enabled") on line 34 while hardcoding **Opus** as the top tier throughout the rest. Same class as Tier-1 finding 6, in a file that finding did not reach. | `SPRINT_PLANNING.md` "Activities Requiring Fable/Opus" | **CORRECTED** -- all sites now read Fable/Opus. Class 3. |
+| 17 | May complexity score select the model tier? | `.claude/skills/plan-sprint/SKILL.md` §2-§3 **vs** its own line 30 | Line 30: "Model assignment is **bottom-up**: do NOT score complexity and then pick a tier." Sections 2-3 immediately below were pure score->tier mapping (`If score <= 15 (Haiku territory)`, `score > 25 (Opus likely)`, matrix cells labelled "Haiku zone"/"Opus likely"). A reader following the sections executes exactly what the rule forbids. | The CHEAPEST-FIRST ladder (Sprint 43 retro IMP-1) | **CORRECTED** -- score reframed as an ADVISORY input feeding the "why not the cheaper tier" justification; tier labels stripped from the bands; the breakdown examples now show the score shaping HOW WORK IS SPLIT (isolate the expensive part into one small task) rather than which tier runs it. Class 2. |
+| 18 | Estimating unit -- planning guidance | `SPRINT_PLANNING.md:886-893` **vs** `SPRINT_PLANNING.md:376` + `CODING_VELOCITY.md` | "Include estimated **hours** for each task" with an all-hours worked example -- in the same file that elsewhere specifies "TWO-metric MINUTE-based per CODING_VELOCITY.md". Hour-anchored estimates ran **4-14x high** (Sprint 39 retro), which is why the minute model replaced them. No `[no-history]` rule mentioned. | `CODING_VELOCITY.md` (minute-based, two-metric) | **CORRECTED** -- rewritten to minutes with Est-Effort/Est-Wall, the `[no-history]` rule, and a pointer to the Estimate Table. Class 3. |
+| 19 | Estimating unit -- the canonical plan template | `SPRINT_PLANNING.md:279-285` | The Model Assignment example table used `1h`/`2h`/`1.5h` and a `4.5h + 20% buffer` total. Being the template block, it propagated the hour anchor into **every new sprint plan**. It also omitted the "why not the cheaper tier" column that the same document mandates. | `CODING_VELOCITY.md` + the cheapest-first rule | **CORRECTED** -- converted to Est-Effort/Est-Wall minutes, added the mandatory justification column, and showed a `[no-history]` row. Class 3 + 1. |
+| 20 | Estimating unit -- backlog sizing | `BACKLOG_REFINEMENT.md:138-149` and `:178` | T-shirt table anchored in hours (XS = "1-2 hours") calibrated against Sprints 3/9/11, all pre-Sprint-39. Measured reality: a UI-MOVE is **3-6 minutes** -- the table ran roughly an order of magnitude high. The velocity formula was likewise `Estimated Hours / Actual Hours`. | `CODING_VELOCITY.md` Estimate Table + Accuracy Trend | **CORRECTED** -- sizing re-anchored to minutes from measured medians; calibration now points at the Estimate Table instead of remembered sprint totals; velocity restated as the maintained median error-ratio, with an explicit Est-Effort vs Est-Wall warning. Class 3. |
+| 21 | Where the E2E runners live | `TESTING_STRATEGY.md:419`, `ARCHITECTURE.md:591/772/778` | Cited `scripts/run-winwright-tests.ps1` / `scripts/run-integration-tests.ps1` at the repo root; both are actually under `mobile-app/scripts/`. | Verified on disk | **CORRECTED**. Class 5 (dead reference). |
+| 22 | Where the redaction gate lives | `ARCHITECTURE.md:726` | Cited `scripts/check-log-redaction.ps1`; actual path `mobile-app/scripts/`. Matters because it is named as the enforcement mechanism for a build-failing privacy gate. | Verified on disk | **CORRECTED**. Class 5. |
+| 23 | Where the YAML/regex scripts live | `TESTING_STRATEGY.md:741/753` | Cited `mobile-app/scripts/validate-yaml-rules.ps1` / `test-regex-patterns.ps1`; both are actually at the **repo root** `scripts/` -- the exact INVERSE of findings 21-22. Two script families in opposite roots, each documented as being in the other's. | Verified on disk | **CORRECTED** -- both now state the correct root explicitly, with a "NOT `mobile-app/scripts/`" note to stop the swap recurring. Class 5. |
+| 24 | Widget-test location | `TESTING_STRATEGY.md:193` | `mobile-app/test/widgets/` does not exist; widget tests live in `mobile-app/test/ui/` (`screens/` + `widgets/`). | Verified on disk | **CORRECTED**. Class 5. |
+| 25 | Hook + skill configuration files | `QUALITY_STANDARDS.md:455`, `TROUBLESHOOTING.md:412-413` | Referenced `.claude/hooks.json` and `.claude/skills.json`; **neither exists**. Hooks are `.ps1` scripts in `.claude/hooks/` registered via `.claude/settings.json`; skills are directories under `.claude/skills/`. The "4 automated hooks" count was also wrong -- there are **3** hooks; the 4th script is the hooks' own test harness. | Verified on disk | **CORRECTED** -- both docs now describe the real layout, and the hook count is corrected with the harness called out. Class 5 + 3. |
+| 26 | Retrospective doc path + section numbering | `SPRINT_RETROSPECTIVE.md` | Instructed creating `docs/SPRINT_N_RETROSPECTIVE.md`; per-sprint docs live in `docs/sprints/`. Section numbering also collided after finding 12's insertion. | `CLAUDE.md` doc-structure section | **CORRECTED** -- path fixed, sections renumbered. Class 5. |
+| 27 | The msix key, AGAIN -- second site | `AGENTS.md:455`, `ALL_SPRINTS_MASTER_PLAN.md:213` | Caught **only by the DoD re-grep** after correcting finding 11: AGENTS.md carried the byte-identical wrong `build_windows_args` sentence, and the master plan's F-STORE-READINESS scope cited the same wrong key. Fixing CLAUDE.md alone would have left two live surfaces still teaching the typo -- the exact "fixing one site while others still teach the old recipe" failure the DoD rule exists to catch, and the same CLAUDE.md-vs-AGENTS.md divergence as Tier-1 finding 7. | `windows_build_args` | **CORRECTED** -- both sites. **This finding is the argument for the re-grep rule: it was invisible to the audit pass and visible only to verification.** Class 1. |
+| -- | Encoding corruption (not a contradiction) | `.claude/skills/memory-restore/SKILL.md` (7 occurrences) | UTF-8 em-dashes read as CP-1252 (`U+00E2 U+20AC U+201D`), violating the no-special-Unicode rule. The sibling `startup-check/SKILL.md` had the identical content clean. | ASCII `--` | **CORRECTED** -- all 7 replaced; full skill tree re-scanned clean. |
+
+---
+
+## Surfaced for Harold, NOT corrected unilaterally (Class-3 decision, R-6)
+
+**The `/memory-restore` + `/startup-check` restore path drives a retired mechanism.**
+`memory-save/SKILL.md:127` states plainly: *"Do NOT save anything to `.claude/memory/current.md` -- that
+was the old `/memory-save` approach."* But `/memory-restore` (whole file) and `/startup-check` step 3
+still read `.claude/memory/current.md` + `memory_metadata.json` as THE restore path. Both files are
+self-labelled `[STALE -- DO NOT TRUST]` and frozen at **Sprint 39** (2026-05-24), with
+`pending_restore: false`.
+
+It does not misfire today only because that flag is false. **The moment anything sets it,
+`/startup-check` restores Sprint-39 context into a Sprint-51+ session.** The live mechanism is
+`docs/SPRINT_RESUME_GUIDE.md` + `.claude/sprint_status.json` (which IS current).
+
+This touches the session-startup contract, so per R-6 it is Harold's call rather than mine. Options:
+(1) point `/startup-check` step 3 at `sprint_status.json` and retire `/memory-restore`; (2) keep both
+and add a staleness guard that refuses to restore a snapshot older than N sprints; (3) leave as-is.
+**Recommend (1)** -- one authoritative restore path, consistent with R-4.
 
 ---
 
