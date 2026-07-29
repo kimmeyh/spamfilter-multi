@@ -49,20 +49,32 @@
   },
 
   "store_release": {
-    "live_version": "0.5.7",
+    "live_version": "0.5.8",
+    "live_submission_number": 9,
+    "previous_live_version": "0.5.7",
     "submitted_version": "0.5.8",
-    "submitted_at": "2026-07-27",
-    "status": "in certification",
-    "expected_result": "2026-07-28",
+    "submission_number": 9,
+    "built_at": "2026-07-27",
+    "submitted_at": "2026-07-28",
+    "certified_at": "2026-07-29",
+    "status": "LIVE in the Microsoft Store",
+    "certification_evidence": "Partner Center 2026-07-29: 'Congrats! Your product is now updated. Your latest product is now available on Microsoft Store.' Store presence advanced Submission 8 -> Submission 9.",
     "artifact": "D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix",
-    "verification": "both-sides proof passed (APP_ENV=prod AND NATIVE_APP_ENV=prod); manifest 0.5.8.0; 16.8 MB; credentials verified embedded in data/app.so",
+    "verification": "both-sides proof passed (APP_ENV=prod AND NATIVE_APP_ENV=prod); manifest 0.5.8.0; 16.8 MB; credentials verified embedded in data/app.so. Partner Center confirms package Validated, v0.5.8.0, X64, Windows.Desktop min 10.0.17763.0.",
+    "_correction_2026_07_28": "This block previously read submitted_at 2026-07-27 / status 'in certification' with an expected result of 2026-07-28. That was WRONG. Partner Center showed Submission 9 sitting 'In draft' with a live 'Submit for certification' button -- the package was built and Validated on 07-27 but the submission was never pushed over the line. Store presence was still Submission 8 (0.5.7). Harold submitted it 2026-07-28 after checking Partner Center directly. LESSON: BUILT + VALIDATED is not SUBMITTED. This file recorded an intent as an accomplished fact and it was then repeated back as fact for a full day, including as a candidate explanation for an unrelated Store client bug. Verify release state in Partner Center, never from this file alone.",
     "post_cert_closeout_pending": [
-      "CHANGELOG [Unreleased] -> ## [0.5.8] - <date> heading + comparison links",
+      "UNBLOCKED 2026-07-29 by certification -- these four are now actionable:",
+      "CHANGELOG [Unreleased] -> ## [0.5.8] - 2026-07-29 heading + comparison links",
       "dev worktree bump 0.5.8 -> 0.5.9 (one file: pubspec.yaml, per F-VERSION-DERIVE)",
       "ALL_SPRINTS_MASTER_PLAN Store status -> LIVE",
       "Harold verifies the Store-installed build: no [DEV] title, About shows 0.5.8, Gmail sign-in works"
-    ]
+    ],
+    "_closeout_sequencing_note": "These are RELEASE close-out steps, not Sprint 51 task work. The dev version bump in particular changes what every version-consistency gate asserts, so it should land as its own commit rather than mixed into sprint changes. Harold's Store-install verification is the only one Claude cannot do."
   },
+
+  "environment_notes": [
+    "Microsoft Store CLIENT bug (observed 2026-07-28, NOT ours, NOT blocking): app DETAIL pages render as skeleton placeholders that never populate, then blank. Search results render fine (12 apps with icons/ratings/screenshots, ours correctly marked Installed), and app icon + title + rating load on the detail page -- only the live-fetched content fails. Reproduces on THIRD-PARTY listings (Spike Email), so it is not our listing or our package. Survived Store restart, full reboot, and wsreset.exe. No action available beyond awaiting a Store client update. Do NOT re-diagnose this as an app or submission defect: the third-party reproduction is the decisive evidence."
+  ],
 
   "blocking_issues": [],
 
