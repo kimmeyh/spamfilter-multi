@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import 'package:provider/provider.dart';
+import '../../core/providers/selected_account_provider.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/services/data_deletion_service.dart';
 import '../../util/redact.dart';
@@ -347,7 +349,15 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
   }
 
   /// Select account and navigate to scan progress
+  ///
+  /// F135 (Sprint 51 retro IMP-3): choosing an account here is THE act that
+  /// establishes the session selection -- Harold: "unless the user returns to
+  /// the Account page and selects another". Recorded before navigating so the
+  /// Manual Scan screen and any later account-scoped destination resolve to it
+  /// without re-prompting.
   Future<void> _selectAccount(String accountId) async {
+    context.read<SelectedAccountProvider>().select(accountId);
+
     final email = accountId; // accountId is the email
     String platformId = await _credStore.getPlatformId(accountId) ?? '';
     
@@ -486,17 +496,59 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
     );
   }
 
-  /// Navigate to settings screen
-  /// [UPDATED] ISSUE #123: Settings requires accountId, show account selector dialog
-  void _openSettings() async {
+  /// Resolve the account for an account-scoped destination (F135, Sprint 51
+  /// retro IMP-3).
+  ///
+  /// Harold's rule: the picker appears ONLY when (1) no account has been
+  /// selected this session AND (2) the destination actually needs one. So:
+  ///   - a session selection already exists -> return it, NO dialog
+  ///   - exactly one account is configured  -> use it, NO dialog (there is
+  ///     nothing to choose, and prompting for a single option is pure friction)
+  ///   - otherwise -> prompt once, and REMEMBER the answer so the next
+  ///     account-scoped destination does not ask again
+  ///
+  /// Returns null if the user cancels or no accounts exist.
+  Future<String?> _resolveAccountForScopedDestination() async {
     if (_savedAccounts.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please add an email account first')),
       );
-      return;
+      return null;
     }
 
-    final selected = await _showAccountSelectionDialog();
+    final selectedAccount = context.read<SelectedAccountProvider>();
+
+    // (1) Already chosen this session -- but only trust it if that account
+    // still exists. An account deleted after selection would otherwise hand a
+    // stale id to Settings, which would then fail to load its credentials.
+    final existing = selectedAccount.accountId;
+    if (existing != null && _savedAccounts.contains(existing)) {
+      return existing;
+    }
+    if (existing != null) {
+      selectedAccount.clear(); // stale -> drop it and fall through to prompt
+    }
+
+    // (2) Single account -> nothing to choose.
+    if (_savedAccounts.length == 1) {
+      final only = _savedAccounts.first;
+      selectedAccount.select(only);
+      return only;
+    }
+
+    final picked = await _showAccountSelectionDialog();
+    if (picked != null && mounted) {
+      selectedAccount.select(picked);
+    }
+    return picked;
+  }
+
+  /// Navigate to settings screen
+  /// [UPDATED] ISSUE #123: Settings requires accountId, show account selector dialog
+  /// [UPDATED] F135 (Sprint 51): resolves via the session selection first, so
+  /// the picker no longer appears every single time Settings is opened.
+  void _openSettings() async {
+    final selected = await _resolveAccountForScopedDestination();
 
     if (selected != null && mounted) {
       Navigator.push(
@@ -573,6 +625,11 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
   /// per-account wipe -- credentials + scan history + unmatched emails +
   /// per-account settings + rate-limit state. Global rules, safe senders,
   /// and other accounts are preserved.
+  /// F135 (Sprint 51): also clears the session selection when the DELETED
+  /// account is the selected one, so a stale accountId can never be handed to
+  /// an account-scoped screen that would then fail to load its credentials.
+  /// `clearIfSelected` is used rather than `clear` so deleting a DIFFERENT
+  /// account leaves a valid selection intact.
   Future<void> _deleteAccount(String accountId) async {
     final email = accountId; // accountId is the email
 
@@ -608,6 +665,10 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       try {
         final service = DataDeletionService(credStore: _credStore);
         final report = await service.deleteAccountData(accountId);
+        // F135: drop the session selection if THIS was the selected account.
+        if (mounted) {
+          context.read<SelectedAccountProvider>().clearIfSelected(accountId);
+        }
         setState(() {
           _savedAccounts.remove(accountId);
           _accountDataCache.remove(accountId);

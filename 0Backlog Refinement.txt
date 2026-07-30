@@ -7,6 +7,13 @@ Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPIN
 ---------------------------------------------------------------------------------------------------------
 Sprint 5n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
 ---------------------------------------------------------------------------------------------------------
+Sprint 52 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
+
+
+
+
+---------------------------------------------------------------------------------------------------------
+Done
 Sprint 51 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
 - F130-S51 — time-boxed to < 400 hour estimate. Do first
 - F128

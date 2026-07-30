@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-07-28 (Sprint 51 execution: F130-S51 CLOSED -- 28 contradictions corrected across all 3 tiers; **F131** + **F132** added to the backlog from F129 execution. **0.5.8 SUBMITTED to Partner Center 2026-07-28** as Submission 9 -- it had been sitting in DRAFT since the 07-27 build, never actually submitted; live Store version remains 0.5.7 (Submission 8) until cert passes. See Version History 6.17)
+**Last Updated**: 2026-07-30 (Sprint 51 retrospective complete: Manual Validation closed all 5 items; IMP-7 shipped in-sprint; **F133/F133-S52, F134, F135, F136 carded for Sprint 52 detail planning**, and **F132 RETIRED into F133**. **`0.5.8` is LIVE in the Store** -- certified 2026-07-29 as Submission 9. See Version History 6.19)
 
 ## How to Maintain This Document
 
@@ -313,6 +313,12 @@ _(Shipped and pruned per Maintenance Rule 2 -- history lives in the sprint docs 
 - Evidence: `docs/sprints/SPRINT_51_F130_FINDINGS.md` (F129 harness findings) and the "Controls that resist automation on this build" section of `mobile-app/test/winwright/README.md`.
 - Depends on: none (Sprint 51 F129 discovery)
 
+**F132. Systematic accessibility sweep of the remaining screens -- [RETIRED 2026-07-30, superseded by F133]**
+- **Do not plan this item.** Harold's Sprint 51 retro Category 14 request (F133) is strictly broader: it adds spike research and a repository standards document ahead of the gap analysis, where F132 was sweep-only. Running both would duplicate the gap-analysis work across two cards -- the exact defect class F130 exists to catch.
+- Its content is preserved below for reference and is fully absorbed into F133 / F133-S52. Retained rather than deleted so the Sprint 51 provenance is not lost.
+
+_(Original F132 text, superseded:)_
+
 **F132. Systematic accessibility sweep of the remaining screens ([no-history]) Priority 20 -- [ADDED 2026-07-28, Harold approved]**
 - Phase: Core App Quality
 - Platform: All (verified on Windows Desktop; the Semantics tree is cross-platform so Android/iOS benefit too)
@@ -323,6 +329,61 @@ _(Shipped and pruned per Maintenance Rule 2 -- history lives in the sprint docs 
 - **Acceptance**: every interactive element on every screen exposes an accessible name AND remains actionable after the wrapper is added. **Verify BOTH** -- Sprint 51 shipped a fix that named the account-picker entries correctly while making them unclickable, and it was caught only because a script drove the control. A tree dump proves a name exists; only an interaction proves the node still works.
 - Pattern reference: `mobile-app/test/winwright/README.md` "Semantics required for name-based selection (F129)"; ADR-0037.
 - Depends on: none (extends Sprint 51 F129; F131 may reveal the create-screen radios as an instance of this)
+
+**F133. Accessibility audit -- repeatable spike template ([no-history]) Priority HOLD** _(TEMPLATE -- first run assigned to Sprint 52, see F133-S52 below)_
+- Phase: Process Spike (reusable template, on the F130 / F71 model)
+- Platform: All (verified on Windows Desktop; the Flutter Semantics tree is cross-platform)
+- **Generic scope** (Harold, Sprint 51 retro Category 14, verbatim): *"please do spike research on Accessibility best practices and standards. Add/update a repository copy of Accessibility best practices for future reference. Identify gaps in the current Application and code base (focused on the UI for each active, prod UI) and plan tasks to resolve the gaps."*
+- **Must cover, but is not limited to**: colors (contrast ratios), screen-reader needs, Flutter testing needs, WinWright testing needs.
+- **Known gap seeding the first run**: semantic tree elements needed for accessibility and WinWright testing are missing on most screens. Sprint 51 fixed four surfaces reactively (No-Rule rows, account rows, account-picker dialog, MT-1 quick-action grid) -- each discovered only because a script hit a wall.
+- **Deliverables**: (1) a repository accessibility-standards document, (2) a per-screen gap analysis, (3) planned remediation tasks.
+- **Relationship to existing docs**: ADR-0037 already sets **WCAG 2.1 AA** as the target and states the Semantics labelling rules. The standards doc must EXTEND ADR-0037, not compete with it. It must also absorb the wrapper pattern currently buried in `mobile-app/test/winwright/README.md` (`excludeSemantics: true` + `onTap` on the Semantics node), which is repo knowledge sitting in a test-harness readme.
+- **How to use**: duplicate this item, assign a sprint, remove HOLD. Keep the template for the next review.
+- HOLD rationale: template item. Duplicate when a periodic accessibility review is needed.
+- Source: Sprint 51 retro Category 14 (Harold). **Supersedes F132**, which was narrower (sweep only, no research or standards doc) -- F132 is retired into this item rather than run alongside it, since two overlapping cards is exactly the duplication F130 warns about.
+
+**F133-S52. Accessibility audit -- first run ([no-history]) Priority 12 -- [SPRINT 52 TARGET, Harold 2026-07-30]**
+- Phase: Process Spike
+- Platform: All
+- First instance of the F133 template above. Full scope and deliverables are defined there -- do not restate them here; execute against that definition.
+- **Time-box by tier, not by estimate** (same rationale as F130-S51, which this mirrors): research and gap discovery are unbounded. Suggested tiers: (1) research + standards doc, (2) gap analysis across active prod screens, (3) remediation task planning. Complete each tier before starting the next so the work is releasable at any tier boundary.
+- **Verification rule carried from Sprint 51 (IMP-6)**: every accessibility change must be proven by a script that ACTIVATES the control, never by a tree dump alone. A dump proves a name exists; only an interaction proves the node still works. Sprint 51 shipped a fix that named the account-picker entries correctly while making them unclickable, and it was caught only when a script drove them.
+- Depends on: none
+
+**F134. Standardize AppBar icon order across all screens (PARTIALLY IMPLEMENTED in Sprint 51) Priority 14 -- [SPRINT 52 TARGET, Harold 2026-07-30]**
+- Phase: Core App Quality
+- Platform: All (icons are Windows-scoped where the existing entry points are)
+- **Canonical order** (Harold, Sprint 51 retro Category 14): screen-specific actions first, then `Review "No Rule" Items, View Scan History, Accounts, Settings, Help`, then the auto-appended Exit. **Help is ALWAYS last** (Harold confirmed 2026-07-30).
+- **Per-surface requirements**:
+  - All Settings pages: `Review "No Rule" Items, View Scan History, Accounts, Settings, Help`
+  - Manual Scan screen: same order
+  - Results -- Demo Scan and Live Scan screens: `Download, Find,` then the standard block
+  - Review "No Rule" Items screen: **add four missing icons** (Help, View Scan History, Accounts, Settings) so the order becomes `Refresh, View Scan History, Accounts, Settings, Help`
+- **DONE in Sprint 51** (committed, analyzer clean): `mobile-app/lib/ui/widgets/standard_app_bar_actions.dart` -- the single shared builder that defines the order once -- and its application to `scan_progress_screen.dart` (Manual Scan), which fixes the Help/Settings inversion there.
+- **REMAINING**: apply the builder to `settings_screen.dart`, `results_display_screen.dart` (with Download + Find as leading actions), and `no_rule_review_screen.dart` (adding the four icons).
+- **Why a shared builder rather than editing each screen**: five screens each hand-rolled the same five IconButtons in **four different orders**, and `scan_progress_screen.dart` carried a comment asserting a "standardized icon order" that matched no other screen. That is the duplication-drift defect class F130 keeps finding, reproduced in code. One builder means the order cannot diverge again.
+- **Test note**: `no_rule_review_screen` gaining a Settings icon needs the F135 account-resolution rule below (the No-Rule screen is cross-account and has no accountId of its own).
+- Depends on: F135 for the No-Rule screen's Settings icon
+
+**F135. Session-scoped account selection + Review "No Rule" Items as default screen (PARTIALLY IMPLEMENTED in Sprint 51) Priority 15 -- [SPRINT 52 TARGET, Harold 2026-07-30]**
+- Phase: Core App Quality / UX
+- Platform: All
+- **The rule** (Harold, 2026-07-30, verbatim): *"If an account is selected while the app is running, the app should keep track of this setting and assume any other needs for the account resolve to this selection unless the user returns to the Account page and selects another. The pop-up should appear only as needed: 1) an account has not been selected AND 2) the user gets to a page that needs it (3 account-specific settings pages and the Manual Live Scan page)."*
+- **Approved approach**: option A -- a `ChangeNotifier` provider holding the selection **in memory only**. Harold: *"does not need to be persisted between sessions."* Persisting it would also change startup semantics (the app would boot into the last account's screen), which was explicitly not wanted.
+- **Which surfaces may prompt**: Settings > Account / Manual Scan / Background tabs, and Manual Live Scan. **Which must NOT**: Settings > General (cross-account), Review "No Rule" Items (aggregates all accounts), Scan History (shows all accounts).
+- **Second part**: when one or more accounts exist, the new DEFAULT screen becomes Review "No Rule" Items rather than Account Selection.
+- **DONE in Sprint 51** (analyzer clean): `mobile-app/lib/core/providers/selected_account_provider.dart` (session-scoped, with `clearIfSelected` so deleting a different account does not discard a valid selection), registered in `main.dart`, plus `_resolveAccountForScopedDestination()` in `account_selection_screen.dart` -- resolves from the session selection, auto-selects when only ONE account is configured, drops a stale selection whose account was deleted, and prompts only otherwise.
+- **REMAINING**: per-tab prompting inside `settings_screen.dart` (General must not prompt while the three account-scoped tabs must), wiring Manual Live Scan to the same resolver, and the default-screen change.
+- **Class-1 note**: the default-screen change alters app startup behavior and should be confirmed at planning, not assumed. Consider what a user with zero configured accounts sees, and whether Back from the No-Rule screen exits the app.
+- Depends on: none (F134's No-Rule Settings icon depends on THIS)
+
+**F136. "Skip" button in the No-Rule item popup Priority 16 -- [SPRINT 52 TARGET, Harold 2026-07-30]**
+- Phase: Core App Quality / UX
+- Platform: All
+- **Requirement** (Harold, Sprint 51 retro Category 14, verbatim): *"In the Live Scan and Scan Results pages > 'No rule' filter selected > item pop-up -- can you add a 'Skip' button in the header - leaves the current item unaffected and goes to the next unaddressed item in the list - button should be about the same size as the safe sender and rules buttons."*
+- **Semantics to settle at planning**: "next unaddressed item" needs a precise definition -- next in the CURRENT filtered/sorted order, skipping items already actioned this session. Also define behavior at the end of the list (wrap, close, or disable) and whether a skipped item is remembered for the session.
+- **Placement**: popup header, sized comparably to the existing safe-sender and rule buttons.
+- Depends on: none
 
 **ENV-1. Dev-machine AppXSvc cleanup loop wedges the Microsoft Store client -- [RESOLVED 2026-07-29] machine-local, NOT an app defect**
 
@@ -1244,6 +1305,7 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 6.19 | 2026-07-30 | **Sprint 51 retrospective complete; 5 items carded for Sprint 52.** Manual Validation closed all 5 items ("Working as expected"). All 7 retro improvements were approved APPLY NOW; **IMP-7 shipped in-sprint** (auto-advance hook gained the ENFORCEMENT WINDOW upper bound Harold specified -- the rule applies only between Phase 3.7 approval and the start of Manual Validation, which was the root cause of every false positive this hook has produced; suite 33/33). IMP-1/2/3/4 became backlog cards for detail planning at Harold's direction: **F133** (accessibility audit as a repeatable HOLD template, **superseding and retiring F132**) + **F133-S52** first run; **F134** (canonical AppBar icon order -- shared builder DONE and applied to Manual Scan in Sprint 51, three screens remaining); **F135** (session-scoped account selection -- provider and lazy resolver DONE in Sprint 51, Settings per-tab prompting and the No-Rule default screen remaining); **F136** (Skip button in the No-Rule popup). IMP-5 (WinWright actuals) and IMP-6 (drive-it-don't-dump-it rule) fold into F133-S52. |
 | 6.18 | 2026-07-28 | **`0.5.8` ACTUALLY SUBMITTED to Partner Center (Submission 9) -- correcting a 6.15 error.** Entry 6.15 recorded 0.5.8 as "SUBMITTED ... in certification" on 07-27. It was not. Partner Center showed Submission 9 **In draft** with a live "Submit for certification" button: the MSIX was built, uploaded and **Validated**, but the submission was never pushed over the line, and Store presence was still Submission 8 (`0.5.7`). Found 2026-07-28 when Harold checked Partner Center directly after questioning why the dev app still read `0.5.8` rather than `0.5.9`. **BUILT + VALIDATED is not SUBMITTED** -- and the same wrong state was then repeated as fact from `sprint_status.json` for a full day, including as a candidate explanation for an unrelated Store-client bug. Release state is verified in Partner Center, never from a tracking file. Also recorded: a **Microsoft Store CLIENT defect** (app detail pages render as never-populating skeletons while search works; reproduces on third-party listings; survives reboot + `wsreset`) -- not ours, not blocking, no action available. |
 | 6.17 | 2026-07-28 | Added **F131** (WinWright create-path not drivable -- Priority 13) and **F132** (systematic accessibility sweep -- Priority 20), both from Sprint 51 F129 execution and both approved by Harold for the backlog. F131 matters beyond tooling: the two `test_f56_*` scripts are **STALE, not merely excluded** -- their own documented radio workaround did not reproduce, so re-enabling them hits three walls while the comment block asserts the fix works. F132 converts the reactive per-script accessibility fixes into one deliberate WCAG 2.1 AA pass (ADR-0037 already sets that target), with the caution that a wrapper which NAMES a node can also make it UNCLICKABLE -- verify both. **F130-S51 CLOSED**: all 3 tiers complete, 28 contradictions found and corrected, 0 outstanding; the single Class-3 item (retired Sprint-39 memory restore path) was decided by Harold 2026-07-28 and applied same-day (`/memory-restore` retired to a tombstone; `/startup-check` now reads `.claude/sprint_status.json`). |
 | 6.16 | 2026-07-27 | Added **F130. Periodic Process-Docs Consistency Deep Dive** (Process Spike, Priority HOLD, reusable template -- the process-docs counterpart to F71's architecture deep dive). Audits the full instruction surface (11 sprint docs + CLAUDE.md/AGENTS.md + hooks + skills + settings + auto-memory) for 9 defect classes: contradictory recipes, summary-vs-detail drift, unmarked superseded text, memory-vs-doc divergence, orphan instructions, hook-vs-doc mismatch, unenforced MANDATORY steps, tier-inconsistent guidance, dead references. Seeded by the Sprint 50/51 escapes -- notably the Phase 6.6 branch recipe stated 5 inconsistent ways across 2 docs and 2 memory entries. Also added **F129** (WinWright coverage carry-in, Priority 19). |

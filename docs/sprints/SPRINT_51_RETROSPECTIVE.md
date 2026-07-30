@@ -203,15 +203,22 @@ carded -- see Improvement Decisions below.
 Harold, 2026-07-30: **all 7 proposals APPLY NOW.** ("apply now imp-1, 2, 3 ... apply now 4, 5, 6, 7
 (needed now).")
 
-| # | Improvement | Disposition |
-|---|---|---|
-| IMP-1 | Accessibility audit as repeatable HOLD template (F133), absorbing F132 | APPLY NOW |
-| IMP-2 | AppBar icon ordering across five surfaces (F134) | APPLY NOW |
-| IMP-3 | No-Rule default screen + session-scoped account selection (F135) | APPLY NOW |
-| IMP-4 | Skip button in the No-Rule item popup (F136) | APPLY NOW |
-| IMP-5 | Record WinWright actuals in CODING_VELOCITY.md | APPLY NOW |
-| IMP-6 | "Drive it, don't dump it" rule for accessibility changes | APPLY NOW |
-| IMP-7 | Hook context-awareness for non-sprint turns | APPLY NOW ("needed now") |
+| # | Improvement | Disposition | Outcome |
+|---|---|---|---|
+| IMP-1 | Accessibility audit as repeatable HOLD template (F133), absorbing F132 | APPLY NOW -> **CARDED for Sprint 52** | F133 template + F133-S52 first run created; **F132 RETIRED** into it |
+| IMP-2 | AppBar icon ordering across five surfaces (F134) | APPLY NOW -> **PARTIAL, remainder carded** | Shared builder `standard_app_bar_actions.dart` DONE + applied to Manual Scan (fixes the Help/Settings inversion). 3 screens remaining -> F134 |
+| IMP-3 | No-Rule default screen + session-scoped account selection (F135) | APPLY NOW -> **PARTIAL, remainder carded** | `SelectedAccountProvider` + lazy resolver + stale/delete handling DONE. Settings per-tab prompting and default-screen change remaining -> F135 |
+| IMP-4 | Skip button in the No-Rule item popup (F136) | APPLY NOW -> **CARDED for Sprint 52** | F136 created; "next unaddressed item" semantics to be settled at planning |
+| IMP-5 | Record WinWright actuals in CODING_VELOCITY.md | APPLY NOW -> **folded into F133-S52** | -- |
+| IMP-6 | "Drive it, don't dump it" rule for accessibility changes | APPLY NOW -> **folded into F133-S52** | Recorded as that card's verification rule |
+| IMP-7 | Hook context-awareness for non-sprint turns | APPLY NOW ("needed now") | **SHIPPED in-sprint** -- enforcement-window upper bound, suite 33/33 |
+
+**Re-disposition (Harold, 2026-07-30)**: after IMP-7 shipped and IMP-2/IMP-3 were partially
+implemented, Harold redirected the remainder: *"can you add to backlog and assign to next sprint so we
+can do detail planning for it."* The UI-facing improvements (IMP-1/2/3/4) touch five screens and app
+startup behavior -- enough surface area to warrant planned tasks with acceptance criteria rather than
+retrospective-tail implementation. The Sprint 51 partial work is committed and analyzer-clean; each
+card records precisely what is DONE and what REMAINS so Sprint 52 planning starts from fact.
 
 ### IMP-3 clarification (Harold, verbatim)
 

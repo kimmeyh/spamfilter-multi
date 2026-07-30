@@ -2,11 +2,35 @@
 
 can you write a effective but compact /compact string I can use to compact where we are, but let the Claude Code team know where we left off and can pick it up correctly.  Use all the tokens needed, but a few as reasonably possible.
 
+Manual Validation complete
+
 ---------------------------------------------------------------------------------------------------------
 Sprint 5n Manual Validation Feedback 
 
 ---------------------------------------------------------------------------------------------------------
+Sprint 52 Manual Validation Feedback 
+
+---------------------------------------------------------------------------------------------------------
+Done
 Sprint 51 Manual Validation Feedback 
+
+MV-1 — Account picker (highest priority: this is where I shipped a defect)
+Home → Settings. The picker appears; click your AOL account.
+- Working as expected. Can be closed.
+MV-2 — Screen reader announces the No-Rule list (the user-facing proof of this sprint's work)
+Turn on Narrator (Ctrl+Win+Enter), open Review "No Rule" Items, Tab through the rows.
+- Working as expected. Can be closed.
+MV-3 — Quick-action grid (fixed today, least exercised)
+Run a scan → open any result → check the action popup.
+- Working as expected. Can be closed.
+MV-4 — No-Rule sweep does not over-collect
+On the No-Rule screen, note the count → Refresh → note again → Back → re-enter.
+- Working as expected. Can be closed.
+MV-5 — Manage Rules labels
+Settings → Manage Rules → click any rule row.
+- Working as expected. Can be closed.
+Manual Validation complete
+
 
 ---------------------------------------------------------------------------------------------------------
 Sprint 50 Manual Validation Feedback 
