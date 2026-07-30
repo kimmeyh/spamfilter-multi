@@ -276,13 +276,17 @@ Clear statement of what needs to be done and why.
 - [OK] GOOD: "Folder display uses getSelectedFoldersForAccount() to show folders for the current account only"
 
 ## Model Assignment
-| Task | Assigned Model | Complexity | Effort Est. | Notes |
-|------|----------------|-----------|-------------|-------|
-| Task A: Implement core logic | Haiku | Low | 1h | Straightforward implementation |
-| Task B: Integrate with existing module | Sonnet | Medium | 2h | Requires architectural knowledge |
-| Task C: Performance optimization | Opus | High | 1.5h | Complex optimization algorithm |
+Estimates are in MINUTES per `docs/CODING_VELOCITY.md`. Every Sonnet / Fable-Opus row MUST carry a
+"why not the cheaper tier" note -- an all-top-tier sprint has to be a visible, justified choice.
 
-**Total Estimated Effort**: 4.5h + 20% buffer (0.9h) = 5.4h
+| Task | Assigned Model | Est-Effort | Est-Wall | Why not the cheaper tier |
+|------|----------------|-----------|----------|--------------------------|
+| Task A: Implement core logic | Haiku | 12-20m | 25m | n/a -- cheapest tier |
+| Task B: Integrate with existing module | Sonnet | 30-45m | 90m | Touches 3 call sites; Haiku heuristics cover single-file changes only |
+| Task C: Performance optimization | Fable/Opus | `[no-history]` | time-boxed | Algorithmic redesign across the evaluator hot path; beyond Sonnet heuristics |
+
+**Total Est-Effort**: sum the ranges; state `[no-history]` items separately rather than folding an
+invented number into the total.
 
 ## Risk Assessment
 | Risk | Likelihood | Impact | Mitigation |
@@ -319,7 +323,7 @@ Clear statement of what needs to be done and why.
 A task is "done" only when all of the following are true (a card lists only *additions or deviations* to this default):
 
 1. All acceptance criteria met and demonstrably verified.
-2. Named tests written and passing; full `flutter test` suite green.
+2. Named tests written and passing; full `flutter test --concurrency=4` suite green.
 3. `flutter analyze` clean -- 0 new issues (`QUALITY_STANDARDS.md`).
 4. Coding-style conventions honored in touched code: no contractions, `Logger` not `print()`, no emojis in code/docs (CLAUDE.md).
 5. CHANGELOG `[Unreleased]` entry added in the same commit (CHANGELOG policy).
@@ -883,15 +887,21 @@ Plus new entry in learning log:
 
 4. **Realistic Model Assignments**: Use `/plan-sprint` skill rather than guessing. Confidence scores reveal uncertain assignments.
 
-5. **Effort Estimation**: Include estimated hours for each task, even for maintenance sprints.
-   - **Base Estimates**: Estimate implementation time for each task
-   - **20% Buffer for Unknowns**: Add 20% time buffer to manual validation tasks for potential debugging
+5. **Effort Estimation**: Estimate in **MINUTES**, matched by step-type against the Estimate Table in
+   `docs/CODING_VELOCITY.md` -- never hour-floored guesses. Hour-anchored estimates ran **4-14x high**
+   (Sprint 39 retro), which is why the minute-based two-metric model replaced them.
+   - **Two metrics per task**: `Est-Effort` (Claude working minutes) and `Est-Wall` (wall-clock
+     minutes, which includes Harold's review and manual validation turns).
+   - **No sample -> say so**: if `CODING_VELOCITY.md` has no comparable step-type, mark the task
+     **`[no-history]`** and time-box it instead of inventing a range. A fabricated range that looks
+     calibrated is worse than an explicit unknown (Sprint 51: an invented "~3-6h" dominated a total
+     and had to be withdrawn).
    - **Examples**:
-     - Task A: 1h implementation
-     - Task B: 2h implementation + manual validation
-     - Task C: 1.5h implementation
-     - **Total**: 4.5h + 20% buffer on Task B (0.4h) = 4.9h estimated
-   - **Track Actuals**: Log actual time duration and Claude Code effort time spent per task for future estimation calibration
+     - Task A: 12-20m Est-Effort / 25m Est-Wall (matches "single-file bounded change")
+     - Task B: 30-45m Est-Effort / 90m Est-Wall (includes a manual-validation round trip)
+     - Task C: `[no-history]` -- time-boxed by tier, no prior sample of this step-type
+   - **Track Actuals**: log the ACTUAL Effort and Wall minutes per task in `docs/CODING_VELOCITY.md`
+     on completion (rule 3) -- that is what makes the NEXT estimate of this step-type real.
 
 6. **Risk Assessment**: Every sprint task must document risks (even if "Low - maintenance work").
    - **Risk Description**: What could go wrong?

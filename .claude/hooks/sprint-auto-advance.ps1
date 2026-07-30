@@ -9,9 +9,19 @@
     Fires on Claude Code's Stop event. Reads the JSON payload from stdin,
     inspects the last assistant message, and:
 
+    ENFORCEMENT WINDOW (Harold, 2026-07-30, Sprint 51 retro IMP-7):
+    this hook applies ONLY between Phase 3.7 sprint-plan approval and the
+    START of Manual Validation. Outside that window, asking is correct:
+    before approval all sprint questions are still being asked, and from
+    Manual Validation onward the work is Harold-driven (validation feedback,
+    retrospective input, improvement dispositions).
+
       - ALLOWS the stop (exit 0) if:
           a) branch is not a sprint branch (feature/YYYYMMDD_Sprint_N), OR
           b) no SPRINT_<N>_PLAN.md exists yet (Phase 1 Backlog Refinement), OR
+          b2) the plan exists but is NOT yet approved (Phase 3.7), OR
+          b3) the sprint has REACHED Manual Validation or later (Gate 1c --
+              the upper bound of the enforcement window), OR
           c) the message does not end in a question, OR
           d) the message contains a legitimate stopping signal matching
              SPRINT_STOPPING_CRITERIA.md criterion 1-9 (the section 1-9 whitelist)
@@ -110,17 +120,131 @@ if (-not $branch) { exit 0 }
 if ($branch -match 'allow_stop_hook_bypass') { exit 0 }
 if ($branch -notmatch '^feature/\d+_Sprint_\d+$') { exit 0 }
 
-# ----- Gate 1b: Phase 1 (Backlog Refinement) exemption (F93) --------------
-# The sprint plan file (docs/sprints/SPRINT_<N>_PLAN.md) is created at Phase 3.
-# If it does NOT exist for the sprint number in the branch, we are in Phase 1
-# (Backlog Refinement / pre-kickoff). Surfacing Product Owner decisions is
-# REQUIRED then, so the auto-advance forcing function must not fire: allow.
-# Once the plan file exists (Phase 3+), fall through to normal blocking logic.
+# ----- Gate 1b: pre-approval exemption (Phase 1 + Phase 3.7) -------------
+# Phase 1 (F93): the sprint plan file (docs/sprints/SPRINT_<N>_PLAN.md) is
+# created at Phase 3. If it does NOT exist for the sprint number in the
+# branch, we are in Phase 1 (Backlog Refinement / pre-kickoff). Surfacing
+# Product Owner decisions is REQUIRED then, so the forcing function must not
+# fire: allow.
+#
+# Phase 3.7 (F130-S51 R-2a, Sprint 51 -- fixed 2026-07-27 after this hook
+# blocked the Sprint 51 approval request TWICE): the plan file exists from the
+# moment it is DRAFTED, so its mere existence cannot distinguish
+#   "plan drafted, awaiting approval"  -> asking is MANDATORY, and
+#   "plan approved, executing"         -> asking is a violation.
+# Phase 3.7 approval is what CREATES the durable authorization this hook
+# enforces, so it can never be auto-advanced past. Detect the pre-approval
+# state from artifacts that already record it:
+#   (a) .claude/sprint_status.json -> current_sprint.plan_approved == false
+#       AND current_sprint.number matches the branch (authoritative), or
+#   (b) the plan's own "**Status**:" line still saying DRAFT / awaiting
+#       approval (fallback when the status file is stale or absent).
+# Either signal -> pre-approval -> allow the stop.
 if ($branch -match '_Sprint_(\d+)') {
     $sprintNum = $Matches[1]
     $planPath  = Join-Path $cwd ("docs/sprints/SPRINT_{0}_PLAN.md" -f $sprintNum)
     if (-not (Test-Path -LiteralPath $planPath)) {
         exit 0  # No plan file -> Phase 1 -> allow stop (surfacing PO decisions is required)
+    }
+
+    # (a) sprint_status.json is authoritative when it refers to THIS sprint.
+    $statusPath = Join-Path $cwd '.claude/sprint_status.json'
+    if (Test-Path -LiteralPath $statusPath) {
+        try {
+            $st = Get-Content -LiteralPath $statusPath -Raw | ConvertFrom-Json
+            if (([string]$st.current_sprint.number) -eq $sprintNum -and
+                $st.current_sprint.plan_approved -eq $false) {
+                exit 0  # Phase 3.7: plan drafted, not yet approved -> allow
+            }
+        } catch { }   # malformed status file -> fall through to (b)
+    }
+
+    # (b) Fallback, used ONLY when sprint_status.json is absent/malformed or
+    # does not name a current sprint at all. It must NOT fire when the status
+    # file names a DIFFERENT sprint: a completed sprint's plan keeps its
+    # historical "**Status**: AWAITING PHASE 3.7 APPROVAL" line forever (e.g.
+    # SPRINT_39_PLAN.md), so trusting that line for a non-current sprint would
+    # exempt every real violation. Discovered by test-suite regression while
+    # implementing R-2a (4 violation-* cases went green incorrectly).
+    $statusNamesAnotherSprint = $false
+    if (Test-Path -LiteralPath $statusPath) {
+        try {
+            $st2 = Get-Content -LiteralPath $statusPath -Raw | ConvertFrom-Json
+            $curNum = [string]$st2.current_sprint.number
+            if ($curNum -and $curNum -ne $sprintNum) { $statusNamesAnotherSprint = $true }
+        } catch { }
+    }
+    if (-not $statusNamesAnotherSprint) {
+        try {
+            $planHead = Get-Content -LiteralPath $planPath -TotalCount 20 -ErrorAction Stop
+            foreach ($line in $planHead) {
+                if ($line -match '(?i)^\s*\*\*Status\*\*:.*(DRAFT|awaiting .*approval|NOT APPROVED)') {
+                    exit 0  # Phase 3.7 per the plan doc itself -> allow
+                }
+            }
+        } catch { }
+    }
+}
+
+# ----- Gate 1c: the ENFORCEMENT WINDOW closes at Manual Validation --------
+# Harold, 2026-07-30 (Sprint 51 retro IMP-7): "the hook for don't stop/don't
+# ask is only applicable between Sprint Plan approval (as all questions for the
+# sprint should have been asked by then) and the beginning of Manual
+# Validation."
+#
+# Gate 1b establishes the LOWER bound (Phase 3.7 approval). This gate adds the
+# UPPER bound, which never existed -- and its absence is the root cause of every
+# false positive this hook has produced:
+#   - Phase 1 refinement presentations (patched by Gate 1b + whitelist rows)
+#   - the Phase 3.7 approval request itself (patched by Gate 1b)
+#   - Phase 7 retrospective prompts (patched by 3 whitelist rows)
+#   - non-sprint side conversations during Phase 5.3+ (unpatchable by phrase)
+# Each was hand-patched with more whitelist patterns; the real defect was that
+# the window had no end. Auto-advance exists to stop Claude asking permission
+# for work the plan ALREADY authorized. Once Manual Validation begins, the
+# remaining work is Harold-driven (validation feedback, retrospective input,
+# improvement dispositions), so asking is CORRECT, not a violation.
+#
+# Detection is artifact-based, in authority order:
+#   (a) .claude/sprint_status.json -> current_sprint.status contains a
+#       manual-validation / phase 5.3+ / phase 6 / phase 7 marker, for THIS
+#       sprint number (authoritative -- maintained at every phase transition).
+#   (b) docs/sprints/SPRINT_<N>_RETROSPECTIVE.md exists -> Phase 7 is underway
+#       by definition, which is past the window.
+# Either signal -> past Manual Validation -> allow the stop.
+if ($branch -match '_Sprint_(\d+)') {
+    $sprintNumW  = $Matches[1]
+    $statusPathW = Join-Path $cwd '.claude/sprint_status.json'
+
+    # Is the branch's sprint the CURRENT sprint? Both signals below are scoped
+    # to that, because a COMPLETED sprint keeps its artifacts forever: every
+    # past sprint has a SPRINT_<N>_RETROSPECTIVE.md on disk, so an unscoped
+    # file-existence test would exempt every historical sprint branch and
+    # defang the hook entirely. Caught by violation-4 (simulates Sprint 39,
+    # whose retrospective shipped in May) going green on the first cut of this
+    # gate -- the same trap Gate 1b hit with historical plan "**Status**" lines.
+    $isCurrentSprint = $false
+    if (Test-Path -LiteralPath $statusPathW) {
+        try {
+            $stW = Get-Content -LiteralPath $statusPathW -Raw | ConvertFrom-Json
+            if (([string]$stW.current_sprint.number) -eq $sprintNumW) {
+                $isCurrentSprint = $true
+
+                # (a) Status file phase marker -- authoritative.
+                $statusText = [string]$stW.current_sprint.status
+                if ($statusText -match '(?i)(manual validation|manual-validation|phase 5\.3|phase 5\.[4-9]|phase 6|phase 7|retrospective|code review|awaiting harold|validation feedback)') {
+                    exit 0  # past the enforcement window -> asking is legitimate
+                }
+            }
+        } catch { }   # malformed status file -> fall through
+    }
+
+    # (b) Fallback: a retrospective file for THIS sprint means Phase 7 has
+    # started. Only consulted when the status file confirms this IS the current
+    # sprint, so historical retrospectives cannot exempt anything.
+    if ($isCurrentSprint) {
+        $retroPath = Join-Path $cwd ("docs/sprints/SPRINT_{0}_RETROSPECTIVE.md" -f $sprintNumW)
+        if (Test-Path -LiteralPath $retroPath) { exit 0 }
     }
 }
 
@@ -237,7 +361,9 @@ $correction = @"
 
 You ended your turn with a procedural question on branch '$branch' (a sprint feature branch). This violates the Phase Auto-Advance Rule (CLAUDE.md section 7 'Development Philosophy: Co-Lead Developer Collaboration' item 7) and the Standing Approval Inventory (docs/SPRINT_EXECUTION_WORKFLOW.md Phase 3.7).
 
-Sprint-plan approval at Phase 3 is DURABLE authorization through Phase 7. The acceptable stopping criteria are enumerated in docs/SPRINT_STOPPING_CRITERIA.md sections 1-9. 'Confirming the next step' is not on that list.
+Sprint-plan approval at Phase 3 is DURABLE authorization through Manual Validation. The acceptable stopping criteria are enumerated in docs/SPRINT_STOPPING_CRITERIA.md sections 1-9. 'Confirming the next step' is not on that list.
+
+ENFORCEMENT WINDOW: this hook applies ONLY between Phase 3.7 approval and the START of Manual Validation. If the sprint has actually reached Manual Validation / Phase 6 / Phase 7, this block is a false positive -- update .claude/sprint_status.json current_sprint.status to name the real phase (e.g. 'Phase 5.3 Manual Validation'), which is a Phase 7.7 checklist item anyway, and the hook will correctly stand down.
 
 Required next action: identify the next action from:
   1. docs/sprints/SPRINT_N_PLAN.md (task list + acceptance criteria)

@@ -1,5 +1,3 @@
-import 'dart:io' show Platform;
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
@@ -10,11 +8,10 @@ import '../../core/services/email_scanner.dart';
 import '../../core/storage/settings_store.dart'; // [NEW] ISSUE #138: Load scan mode from settings
 import '../../main.dart' show routeObserver;
 import '../widgets/app_bar_with_exit.dart';
-import 'no_rule_review_screen.dart';
+import '../widgets/standard_app_bar_actions.dart';
 import 'results_display_screen.dart';
 import 'scan_history_screen.dart';
 import 'help_screen.dart';
-import 'settings_screen.dart';
 
 /// Displays live scan progress bound to EmailScanProvider.
 /// Provides controls to start/pause/resume/reset a scan and
@@ -197,71 +194,28 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware
               }
             },
           ),
-          // F55 (Sprint 33, v3): standardized icon order --
-          // History, Accounts, Help, Settings, [X auto].
-          // MT-3 (Sprint 50, Harold): Review "No Rule" Items entry point
-          // ahead of History, mirroring the scan-history/account-selection
-          // convention (F112/F39). Windows-desktop scoped like those screens.
-          actions: [
-            if (Platform.isWindows)
-              IconButton(
-                icon: const Icon(Icons.rule_folder_outlined),
-                tooltip: 'Review "No Rule" Items',
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                      builder: (_) => const NoRuleReviewScreen()),
-                ),
-              ),
-            IconButton(
-              tooltip: 'View Scan History',
-              icon: const Icon(Icons.history),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => ScanHistoryScreen(
-                      platformId: widget.platformId,
-                      platformDisplayName: widget.platformDisplayName,
-                      accountId: widget.accountId,
-                      accountEmail: widget.accountEmail,
-                    ),
-                  ),
-                );
-              },
-            ),
-            IconButton(
-              tooltip: 'Select Account',
-              icon: const Icon(Icons.people),
-              onPressed: () {
-                Navigator.popUntil(context, (route) => route.isFirst);
-              },
-            ),
-            IconButton(
-              tooltip: 'Help',
-              icon: const Icon(Icons.help_outline),
-              onPressed: () => openHelp(
-                context,
-                // Demo mode deep-links to a different help section.
-                widget.platformId == 'demo'
-                    ? HelpSection.demoScan
-                    : HelpSection.manualScan,
-                accountId: widget.accountId,
-                accountEmail: widget.accountEmail,
-                platformId: widget.platformId,
-                platformDisplayName: widget.platformDisplayName,
-              ),
-            ),
-            IconButton(
-              tooltip: 'Settings',
-              icon: const Icon(Icons.settings),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => SettingsScreen(accountId: widget.accountId),
-                  ),
-                );
-              },
-            ),
-          ],
+          // F134 (Sprint 51 retro IMP-2): the canonical icon order now comes
+          // from ONE shared builder -- Review "No Rule" Items, View Scan
+          // History, Accounts, Settings, Help, [X auto].
+          //
+          // This screen previously carried a comment asserting a
+          // "standardized icon order -- History, Accounts, Help, Settings"
+          // that matched no other screen: five screens had drifted into four
+          // different orders, each hand-rolling the same five IconButtons.
+          // That is the duplication-drift defect class the F130 audit keeps
+          // finding, reproduced in code. Change the order in
+          // StandardAppBarActions, never here.
+          actions: StandardAppBarActions.build(
+            context: context,
+            // Demo mode deep-links to a different help section.
+            helpSection: widget.platformId == 'demo'
+                ? HelpSection.demoScan
+                : HelpSection.manualScan,
+            accountId: widget.accountId,
+            accountEmail: widget.accountEmail,
+            platformId: widget.platformId,
+            platformDisplayName: widget.platformDisplayName,
+          ),
         ),
         body: Padding(
           padding: const EdgeInsets.all(16.0),

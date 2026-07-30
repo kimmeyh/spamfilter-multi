@@ -368,4 +368,101 @@ void main() {
       expect(stats, isA<Map<String, dynamic>>());
     });
   });
+
+  // F128-residual (Sprint 51): F128 fixed addRule/addSafeSender in Sprint 50,
+  // but removeRule / updateRule / removeSafeSender kept the same silent-no-op
+  // shape -- an unloaded cache made them return BEFORE the DB operation, so
+  // the caller saw success while nothing changed (F-PRECHECK class 6). Each
+  // now loads on demand and throws only if the cache is still unavailable.
+  group('F128-residual: mutators never silently no-op on an unloaded cache', () {
+    test('removeRule loads on demand and deletes from the database', () async {
+      // Seed a rule via a SEPARATE loaded provider, so the provider under
+      // test starts with a null cache.
+      await provider.loadRules();
+      await provider.addRule(Rule(
+        name: 'ToRemove',
+        enabled: true,
+        conditions: RuleConditions(type: 'OR', header: ['x']),
+        actions: RuleActions(delete: true),
+        isLocal: true,
+        executionOrder: 50,
+      ));
+      expect((await ruleStore.loadRules()).rules.where((r) => r.name == 'ToRemove'),
+          hasLength(1));
+
+      final fresh = RuleSetProvider();
+      fresh.initializeForTesting(
+        databaseStore: ruleStore,
+        safeSenderStore: safeSenderStore,
+      );
+      expect(fresh.isRulesLoaded, isFalse,
+          reason: 'precondition: cache must start unloaded');
+
+      await fresh.removeRule('ToRemove');
+
+      expect(fresh.isRulesLoaded, isTrue,
+          reason: 'removeRule must load rather than no-op');
+      expect((await ruleStore.loadRules()).rules.where((r) => r.name == 'ToRemove'),
+          isEmpty,
+          reason: 'a silent return here is the F128-residual defect');
+    });
+
+    test('updateRule loads on demand and persists the update', () async {
+      await provider.loadRules();
+      await provider.addRule(Rule(
+        name: 'ToUpdate',
+        enabled: true,
+        conditions: RuleConditions(type: 'OR', header: ['old']),
+        actions: RuleActions(delete: true),
+        isLocal: true,
+        executionOrder: 50,
+      ));
+
+      final fresh = RuleSetProvider();
+      fresh.initializeForTesting(
+        databaseStore: ruleStore,
+        safeSenderStore: safeSenderStore,
+      );
+      expect(fresh.isRulesLoaded, isFalse);
+
+      await fresh.updateRule(
+        'ToUpdate',
+        Rule(
+          name: 'ToUpdate',
+          enabled: false, // the observable change
+          conditions: RuleConditions(type: 'OR', header: ['old']),
+          actions: RuleActions(delete: true),
+          isLocal: true,
+          executionOrder: 50,
+        ),
+      );
+
+      expect(fresh.isRulesLoaded, isTrue);
+      final persisted =
+          (await ruleStore.loadRules()).rules.firstWhere((r) => r.name == 'ToUpdate');
+      expect(persisted.enabled, isFalse,
+          reason: 'the update must reach the database, not just the cache');
+    });
+
+    test('removeSafeSender loads on demand and deletes from the database',
+        () async {
+      await provider.loadSafeSenders();
+      await provider.addSafeSender(r'^gone@example\.com$');
+      expect((await safeSenderStore.loadSafeSenders()).map((s) => s.pattern),
+          contains(r'^gone@example\.com$'));
+
+      final fresh = RuleSetProvider();
+      fresh.initializeForTesting(
+        databaseStore: ruleStore,
+        safeSenderStore: safeSenderStore,
+      );
+      expect(fresh.isSafeSendersLoaded, isFalse);
+
+      await fresh.removeSafeSender(r'^gone@example\.com$');
+
+      expect(fresh.isSafeSendersLoaded, isTrue);
+      expect((await safeSenderStore.loadSafeSenders()).map((s) => s.pattern),
+          isNot(contains(r'^gone@example\.com$')));
+    });
+  });
 }

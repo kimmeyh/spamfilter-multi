@@ -7,7 +7,7 @@ model: sonnet
 ---
 # Plan Sprint Skill
 
-Analyzes GitHub issues (Cards) and automatically generates task breakdowns with intelligent model assignments (Haiku → Sonnet → Opus).
+Analyzes GitHub issues (Cards) and automatically generates task breakdowns with intelligent model assignments (Haiku -> Sonnet -> Fable/Opus).
 
 ## Command
 
@@ -19,9 +19,9 @@ Analyzes GitHub issues (Cards) and automatically generates task breakdowns with 
 
 1. **Analyzes** the Card description to understand scope and complexity
 2. **Breaks down** the Card into granular tasks
-3. **Assigns models CHEAPEST-FIRST** (see below) -- design each task for Haiku first, escalate to Sonnet then Opus only when the heuristics say the cheaper tier does not fit
+3. **Assigns models CHEAPEST-FIRST** (see below) -- design each task for Haiku first, escalate to Sonnet then Fable/Opus only when the heuristics say the cheaper tier does not fit
 4. **Calculates confidence** (High/Medium/Low) based on pattern matching
-5. **Provides rationale** -- including, for any Sonnet/Opus assignment, a one-line **"why not the cheaper tier"** justification
+5. **Provides rationale** -- including, for any Sonnet/Fable/Opus assignment, a one-line **"why not the cheaper tier"** justification
 6. **Suggests labels** for consistent GitHub organization
 7. **References learning** from prior similar tasks in heuristic database
 
@@ -31,9 +31,9 @@ Model assignment is **bottom-up**: do NOT score complexity and then pick a tier.
 
 1. **Design the task for Haiku first** (this pressure keeps the solution simple and cheap). Fits Haiku per the heuristics -> assign **Haiku**.
 2. **Else design for Sonnet.** Fits Sonnet -> assign **Sonnet**.
-3. **Else design for Opus** -> assign **Opus**.
+3. **Else design for the top tier** -> assign **Fable/Opus** (Fable 5 when enabled, otherwise Opus).
 
-For any **Sonnet or Opus** assignment, emit a one-line **"why not the cheaper tier"** note (e.g. `Opus -- Class-1 redaction-policy change across 5 files, beyond Sonnet heuristics`). An all-Opus sprint must be a visible, justified choice -- never a silent default. This rule governs the per-task IMPLEMENTER model only; the planner/analyst model (this skill, sprint planning, retros, deep dives) stays Opus regardless per SPRINT_PLANNING.md "Activities Requiring Opus".
+For any **Sonnet or Fable/Opus** assignment, emit a one-line **"why not the cheaper tier"** note (e.g. `Fable/Opus -- Class-1 redaction-policy change across 5 files, beyond Sonnet heuristics`). An all-top-tier sprint must be a visible, justified choice -- never a silent default. **Whenever the model that ACTUALLY executes differs from the assignment, the `Executed-by` line must carry a concrete reason** (Sprint 50 retro IMP-7). This rule governs the per-task IMPLEMENTER model only; the planner/analyst model (this skill, sprint planning, retros, deep dives) stays the top available tier regardless per SPRINT_PLANNING.md "Activities Requiring Fable/Opus".
 
 ## Usage Examples
 
@@ -195,14 +195,19 @@ Extracts:
 
 ### 2. Complexity Scoring
 
+**[IMPORTANT] The score is an ADVISORY INPUT ONLY -- it never selects the tier.** Model assignment is
+the CHEAPEST-FIRST ladder above: design for Haiku, escalate only when the design does not fit. Scoring
+a Card and then reading off a tier is exactly the top-down behavior that rule prohibits. Use the score
+to *inform the "why not the cheaper tier" justification*, not to choose the tier.
+
 **Scoring Matrix** (0-40 points):
 
 | Factor | Points | Logic |
 |--------|--------|-------|
 | **File Impact** | | |
-| 1 file | +10 | Single-file changes (Haiku zone) |
-| 2-3 files | +20 | Multi-file coordination (Sonnet zone) |
-| 4+ files or arch-wide | +30 | System-wide change (Opus likely) |
+| 1 file | +10 | Single-file change |
+| 2-3 files | +20 | Multi-file coordination |
+| 4+ files or arch-wide | +30 | System-wide change |
 | **Cognitive Load** | | |
 | "Bug fix" in description | +5 | Straightforward bug fixes |
 | "Add" / "implement" | +5-10 | New feature at existing pattern |
@@ -226,22 +231,25 @@ Automatically breaks complex Cards into smaller tasks:
 - Front-load risky tasks (Sonnet reviews architecture first)
 - Save tests for last (often can be done by different model)
 
-**Example breakdown logic**:
+**Example breakdown logic** -- note the score shapes HOW WORK IS SPLIT, not which tier runs it. Each
+resulting task still walks the cheapest-first ladder independently:
 ```
-If score ≤ 15 (Haiku territory):
+Low score:
   - Single task: "Implement [feature]"
-  - Assign to Haiku
+  - Ladder: design for Haiku; if it fits, assign Haiku.
 
-If score 16-25 (Sonnet zone):
-  - Task 1: Core implementation (Sonnet for design)
-  - Task 2: Integration (Sonnet or Haiku depending on complexity)
-  - Task 3: Tests (often Haiku after design is proven)
+Mid score -- split so the design decision is isolated from the mechanical work:
+  - Task 1: Core implementation (the design-bearing task; ladder usually stops at Sonnet)
+  - Task 2: Integration (often fits Haiku once Task 1 fixed the pattern)
+  - Task 3: Tests (usually Haiku once the design is proven)
 
-If score > 25 (Opus likely):
-  - Task 1: Design/architecture (Sonnet)
-  - Task 2: Implementation (attempt Sonnet, escalate to Opus if blocked)
-  - Task 3: Tests (Haiku)
+High score -- split further so the expensive tier covers only the irreducible part:
+  - Task 1: Design/architecture (the only task likely to need the top tier)
+  - Task 2: Implementation against the decided design (retry the ladder -- often Sonnet)
+  - Task 3: Tests (usually Haiku)
 ```
+Splitting this way is what MAKES the cheapest-first rule work: a high-complexity Card does not imply
+high-complexity tasks, it implies the expensive part should be isolated into one small task.
 
 ### 4. Confidence Scoring
 
@@ -298,7 +306,7 @@ Haiku automatically escalates if:
 - Test failures indicate design issue (not implementation issue)
 - Cross-cutting concerns detected (security, performance, architecture)
 
-### When Sonnet Should Escalate to Opus
+### When Sonnet Should Escalate to Fable/Opus
 
 Sonnet escalates if:
 - Score > 30 and hitting fundamental design blocker
@@ -324,32 +332,42 @@ Sonnet escalates if:
 ```
 1. Haiku picks up assigned tasks
 2. If Haiku hits escalation trigger:
-   - Document blocker in GitHub comment
-   - Post comment: /escalate-to-sonnet [reason]
-3. Sonnet continues work, escalates to Opus if needed
+   - Document the blocker in a GitHub comment
+   - Escalate by re-running the task on Sonnet, recording the reason on the
+     task's `Executed-by` line (Sprint 50 retro IMP-7)
+3. Sonnet continues work, escalates to Fable/Opus if needed
 4. Task status updates in issue comments
 ```
+
+[NOTE] There is no `/escalate-to-sonnet` command -- escalation is a manual re-assignment plus a
+recorded justification. (Corrected Sprint 51 F130 Tier 2: the skill previously instructed posting a
+command that has never existed.)
 
 ### During Sprint Review
 
 ```
 1. Collect outcomes: Did assigned model succeed?
 2. If escalation occurred: Document reason
-3. Run: /update-heuristics with sprint data
-4. Heuristic database is updated for future sprints
+3. Record the outcome in the retrospective (Category 5, Model Assignments)
+4. Carry any tier-fit lesson into the next sprint plan
 ```
+
+[NOTE] There is no `/update-heuristics` command either. `.claude/model_assignment_heuristics.json`
+exists but has not been maintained since roughly Sprint 27; retrospective Category 5 is the live
+feedback path. Do not instruct a session to run a command that does not exist -- it silently does
+nothing and the lesson is lost.
 
 ## Tips for Accurate Analysis
 
 ### For Better Model Assignments:
 
 1. **Clear descriptions**: Detailed Card descriptions lead to better analysis
-   - ✅ "Add DKIM header validation following Issue #37 pattern"
-   - ❌ "Improve email security"
+   - [GOOD] "Add DKIM header validation following Issue #37 pattern"
+   - [BAD] "Improve email security"
 
 2. **Explicit acceptance criteria**: Help the skill understand scope
-   - ✅ "Tests pass, all adapters support DKIM, 90% coverage"
-   - ❌ "Works well"
+   - [GOOD] "Tests pass, all adapters support DKIM, 90% coverage"
+   - [BAD] "Works well"
 
 3. **Reference similar work**: Link to prior issues for pattern matching
    - Example: "Similar pattern to Issue #37 Gmail header parsing"

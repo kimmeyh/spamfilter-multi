@@ -133,6 +133,8 @@ git merge develop
 - Don't use Edit tool without first using Read tool on that file in the SAME conversation turn
 - Don't assume file content from earlier reads - always re-read before editing after any significant work or context compaction
 - Don't use Linux-only tools on Windows (see Windows Tool Restrictions below)
+- **Don't report a checklist section, phase, or close-out as complete without OPENING the checklist and walking it line by line in that same turn.** "I believe I did that" is not verification. Every line gets an explicit `DONE (<evidence>)` / `N/A (<why>)` / `NOT DONE -> doing it now`. (Sprint 50 escape: close-out reported complete with 5 issues open, `sprint_status.json` 15 sprints stale, and no next-sprint stub -- because the checklist was never opened. Enforced by the `verify-closeout-complete` Stop hook.)
+- **Don't treat a multi-part user request as a theme.** Enumerate every discrete ask before starting (TaskCreate preferred), and restate each ask with its status before ending the turn. A request with a terminal condition ("continue until X") is not satisfied by doing the first part well. (Sprint 50 escape: "continue the checklist until backlog refinement" -- the first portion was done and reported as if the whole instruction had been.)
 - Don't produce ANY process deliverable (backlog-refinement presentation, retrospective, release checklist, sprint plan card, ADR) without READING its authoritative format/template section IN THE SAME TURN immediately beforehand. These are deterministic processes -- mirror the template exactly, never reproduce it from memory. (Sprint 45 IMP-1; re-violated Sprints 49-50 -> hardened Sprint 50, Harold 2026-07-24.)
 
 ### [CRITICAL] Decision-Class Taxonomy: STOP, Surface, Wait
@@ -249,7 +251,9 @@ Do NOT bury the decision inside a multi-task code change. Do NOT proceed and "as
    - **NOT valid stopping reasons**: Implementation choices, approach uncertainty, minor code style, single test failure
    - **Reference**: SPRINT_EXECUTION_WORKFLOW.md Phase 3.7 and SPRINT_STOPPING_CRITERIA.md
 
-7. **Phase Auto-Advance Rule (Sprint 35+)**: When the work for the current phase completes (tests pass / build succeeds / PR pushed / docs updated / etc.), proceed *immediately* to the next phase's first action. **DO NOT** ask "want me to proceed to Phase N+1?" -- sprint-plan approval at Phase 3 is durable authorization through Phase 7. The only acceptable mid-sprint pauses are the 9 SPRINT_STOPPING_CRITERIA listed above. "Confirming the next step" is not on that list.
+7. **Phase Auto-Advance Rule (Sprint 35+)**: When the work for the current phase completes (tests pass / build succeeds / PR pushed / docs updated / etc.), proceed *immediately* to the next phase's first action. **DO NOT** ask "want me to proceed to Phase N+1?" -- sprint-plan approval at Phase 3 is durable authorization. The only acceptable mid-sprint pauses are the 9 SPRINT_STOPPING_CRITERIA listed above. "Confirming the next step" is not on that list.
+   - **ENFORCEMENT WINDOW (Harold, 2026-07-30, Sprint 51 retro IMP-7)**: this rule applies **ONLY between Phase 3.7 plan approval and the beginning of Manual Validation (Phase 5.3)**. Harold's rationale: *"all questions for the sprint should have been asked by then."* BEFORE approval, asking is required (Phase 1 refinement; the 3.7 approval request itself). FROM Manual Validation onward, the work is Harold-driven -- validation feedback, retrospective input, improvement dispositions -- so asking is CORRECT, not a violation. Outside the window a question is never an auto-advance violation.
+   - Enforced by `.claude/hooks/sprint-auto-advance.ps1` (Gate 1b = lower bound, Gate 1c = upper bound). The upper bound is read from `.claude/sprint_status.json` `current_sprint.status`, so **keep that field current at phase transitions** -- it is what tells the hook which side of the window you are on.
    - State the next action in one sentence, then execute it. Example:
      - **WRONG**: "Phase 5.2 tests pass. Want me to proceed to Phase 5.3 (build app)?"
      - **RIGHT**: "Phase 5.2 tests pass. Building Windows desktop app for Phase 5.3 manual validation now." [executes build]
@@ -462,7 +466,7 @@ flutter pub get
 flutter pub run msix:create
 ```
 
-`flutter pub run msix:create` honors the `msix_config` block in `pubspec.yaml`, including the critical `build_windows_args` field that injects OAuth credentials via `--dart-define-from-file`. **Do NOT use `scripts/build-msix.ps1`** -- that is a deprecated makeappx.exe path that produces an MSIX with empty credentials (silent Gmail sign-in failure).
+`flutter pub run msix:create` honors the `msix_config` block in `pubspec.yaml`, including the critical `windows_build_args` field that injects OAuth credentials via `--dart-define-from-file`. **The key is `windows_build_args`, NOT `build_windows_args`** -- the transposed form is not a real msix key, is silently ignored, and is exactly the F119 defect that shipped a credential-less 0.5.4 to the Store. `test/policy/msix_config_test.dart` is a build-failing gate asserting the typo never reappears. **Do NOT use `scripts/build-msix.ps1`** -- that is a deprecated makeappx.exe path that produces an MSIX with empty credentials (silent Gmail sign-in failure).
 
 For the full end-to-end procedure (version bump 5-file checklist, `secrets.prod.json` recreation, verification steps, Partner Center upload walkthrough, post-submission), see **`docs/STORE_RELEASE_PROCESS.md`**.
 
@@ -711,7 +715,8 @@ spamfilter-multi/
   - `/phase-check` - Sprint phase transition checkpoint (verify phase complete, preview next phase)
   - `/plan-sprint` - Sprint planning with model assignments
   - `/full-test` - Run all Flutter tests and analyze code quality
-  - `/memory-save` and `/memory-restore` - Save/restore sprint context across sessions
+  - `/memory-save` - Produce a compact-string save point for the next session
+  - `/memory-restore` - **RETIRED (Sprint 51)**. Sprint state lives in `.claude/sprint_status.json` (maintained at Phase 7.7); `/startup-check` reads it with staleness checks. The old `.claude/memory/current.md` path is frozen at Sprint 39 and must not be restored.
 
 ### Archives (gitignored)
 - **Archive/**: Historical docs, legacy Python desktop app, completed phase reports

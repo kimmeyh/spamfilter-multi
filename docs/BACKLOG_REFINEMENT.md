@@ -133,20 +133,23 @@ Product Owner drives prioritization using these criteria:
 
 #### 3.2 Effort Assessment (How much work?)
 
-Use relative sizing compared to completed work:
+Use relative sizing compared to completed work. **Durations are Claude Est-Effort MINUTES**, anchored
+to the measured Estimate Table in `docs/CODING_VELOCITY.md` -- not hours.
 
-| Size | Reference Point | Typical Duration |
-|------|-----------------|------------------|
-| **XS** | Single file change, clear scope | 1-2 hours |
-| **S** | 2-3 files, well-defined | 2-4 hours |
-| **M** | Multiple files, some unknowns | 4-8 hours |
-| **L** | Architectural changes, cross-cutting | 8-16 hours |
-| **XL** | Major feature, multiple sprints | 16+ hours |
+| Size | Reference Point | Typical Est-Effort |
+|------|-----------------|--------------------|
+| **XS** | Single file change, clear scope | 3-10m |
+| **S** | 2-3 files, well-defined | 10-25m |
+| **M** | Multiple files, some unknowns | 25-45m |
+| **L** | Architectural changes, cross-cutting | 45-120m |
+| **XL** | Major feature, multiple sprints | 120m+ or split it |
 
-**Calibration**: Reference past sprints:
-- Sprint 11 (UI Polish): ~14 hours (Medium-Large)
-- Sprint 9 (Workflow): ~2 hours (Small)
-- Sprint 3 (Safe Senders): ~8 hours (Medium)
+**Calibration**: use `docs/CODING_VELOCITY.md` -> Estimate Table (per step-type medians from the
+Actuals Log, recomputed every retro), NOT remembered sprint totals. For scale: a UI-MOVE measured 3-6m
+and a UI-NEW 30-40m. **The pre-Sprint-39 hour-anchored figures that used to sit here (XS = "1-2
+hours") ran roughly an order of magnitude high** -- that is exactly why the minute-based model
+replaced them. If a candidate's step-type has no entry in the Estimate Table, size it `[no-history]`
+and time-box rather than inventing a range.
 
 #### 3.3 Risk Assessment (What could go wrong?)
 
@@ -174,13 +177,19 @@ Update estimates based on new information:
 
 #### 4.1 Apply Velocity Calibration
 
-```
-Sprint Velocity = Estimated Hours / Actual Hours
+Do NOT hand-roll a velocity number here. `docs/CODING_VELOCITY.md` already maintains the authoritative
+calibration, recomputed from the Actuals Log at every retro (Category 3):
 
-If velocity < 0.8: Estimates too optimistic, increase by 25%
-If velocity > 1.2: Estimates too conservative, decrease by 15%
-If 0.8 <= velocity <= 1.2: Estimates are calibrated
 ```
+Median Error-ratio = median(Act-Effort / Est-Effort)      # 1.0 = perfect
+                                                          # < 1 = over-estimated
+                                                          # > 1 = under-estimated
+```
+
+Read the current ratio and MAPE from the **Accuracy Trend** table in `CODING_VELOCITY.md` and size
+candidates accordingly. Both metrics are in MINUTES, and the two tracked quantities are `Est-Effort`
+(Claude working minutes) and `Est-Wall` (wall-clock, including Harold's review turns) -- they diverge
+sharply when work runs in parallel agents, so never conflate them.
 
 #### 4.2 Update ALL_SPRINTS_MASTER_PLAN.md
 

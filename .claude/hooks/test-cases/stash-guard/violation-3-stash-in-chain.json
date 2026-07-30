@@ -1,0 +1,1 @@
+{"session_id": "violation-3-stash-in-chain", "cwd": "D:/Data/Harold/github/spamfilter-multi", "hook_event_name": "PreToolUse", "tool_name": "Bash", "tool_input": {"command": "cd /repo && git stash && git checkout -b next"}}

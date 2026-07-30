@@ -26,9 +26,15 @@ Verify the current sprint phase is complete and review the next phase requiremen
 5. **Check Sprint Documents**: Verify which required sprint documents have been created:
    - `docs/sprints/SPRINT_N_PLAN.md` (required in Phase 3)
    - `docs/sprints/SPRINT_N_RETROSPECTIVE.md` (required in Phase 7)
-   - `docs/sprints/SPRINT_N_SUMMARY.md` (required in Phase 7 or deferred)
+   - `docs/sprints/SPRINT_N_SUMMARY.md` (required in Phase 7 -- **do not defer**)
+   - `docs/sprints/SPRINT_(N+1)_PLAN.md` stub with Category 13 carry-ins (required in Phase 7.7)
    - CHANGELOG.md updated (required in Phase 4+)
    - ALL_SPRINTS_MASTER_PLAN.md updated (required in Phase 7)
+
+6. **Check machine-verifiable close-out state** (Sprint 50 escape -- these are the items that drifted silently because nobody looked):
+   - **`.claude/sprint_status.json`**: READ it. Does `current_sprint.number` match the sprint number in the branch name? Is `_last_updated` recent? A stale file misleads the next session after context compaction. Report `[MISSING]` if it disagrees with the branch.
+   - **Open GitHub issues**: `gh issue list --label sprint --state open`. In Phase 7 / post-merge this must be empty. **`Closes #N` does NOT auto-fire** in this repo -- PRs merge `feature -> develop`, and GitHub only auto-closes on merge to the default branch.
+   - **Past Sprint Summary table** in `ALL_SPRINTS_MASTER_PLAN.md`: does it have a row for the sprint just completed?
 
 ## Output Format
 

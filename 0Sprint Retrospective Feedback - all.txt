@@ -1,8 +1,104 @@
 ***BELOW IS NOT FOR CLAUDE CODE, GITHUB COPILOT, CHATGPT OR COPILOT PULL REQUEST (PR) REVIEW USE***
 
-Copilot review completed. Can you review all the comments and either: fix now (preferred), create a backlog items (if it will take hours, change architecture, 
-change development strategy...) or explain why it is not relevant.  Then commit any changes, resolve all the comments and report back.
-TBD---------------------------------------------------------------------------------------------------------
+Copilot review - see 0Claudedev_prompts.txt
+---------------------------------------------------------------------------------------------------------
+Sprint 52 Review/Retrospective - Combined Product Owner, Scrum Master and Lead Developer feedback
+- Effective while as Efficient as Reasonably Possible
+  - Very Good
+- Testing Approach
+  - Very Good
+- Effort Accuracy
+  - Very Good
+- Planning Quality
+  - Very Good
+- Model Assignments
+  - Very Good
+- Communication
+  - Very Good
+- Requirements Clarity
+  - Very Good
+- Documentation
+  - Very Good
+- Process Issues
+  - Very Good
+- Risk Management
+  - Very Good
+- Next Sprint Readiness
+  - Very Good
+- Architecture Maintenance
+  - Very Good
+- Minor function updates that need to be added to the next sprint plan
+  - none
+- Function updates that can be added to the backlog for a future sprint
+  - none
+- Questions to be discussed before ending the sprint
+  - none
+
+Please complete your sprint retrospective feedback (same sections)
+Combined feedback (yours and mine) and Summarize
+Make suggestions for improvements to be implemented.
+Display suggestions for improvement for review and approval.
+------------------------------------
+
+Done
+Sprint 51 Review/Retrospective - Combined Product Owner, Scrum Master and Lead Developer feedback
+- Effective while as Efficient as Reasonably Possible
+  - Very Good
+- Testing Approach
+  - Very Good
+- Effort Accuracy
+  - Very Good
+- Planning Quality
+  - Very Good
+- Model Assignments
+  - Very Good
+- Communication
+  - Very Good
+- Requirements Clarity
+  - Very Good
+- Documentation
+  - Very Good
+- Process Issues
+  - Very Good
+- Risk Management
+  - Very Good
+- Next Sprint Readiness
+  - Very Good
+- Architecture Maintenance
+  - Very Good
+- Minor function updates that need to be added to the next sprint plan
+  - none
+- Function updates that can be added to the backlog for a future sprint
+  - Add to backlog as a repeatable HOLD item and assign a copy to the next sprint
+    - Accessibility audit
+      - please do spike research on Accessibility best practices and standards. 
+      - Add/update a repository copy of Accessibility best practices for future reference
+      - Identify gaps in the current Application and code base (focused on the UI for each active, prod UI) and plan tasks to resolve the gaps
+	- Should include, but not limited to: colors, screen reader needs, flutter testing needs, WinWright testing needs, 
+      - One known current gaps is semantic tree elements that as needed for accessibility and WinWright testing on all screens
+  - Add to backlog for next sprint
+    - On the all the settings pages, update the icons so they appear in this order: Review "No Rules Items, View Scan History, Accounts, Settings, Help
+    - On the Manual Scan screen, update the icons so they appear in this order: Review "No Rules Items, View Scan History, Accounts, Settings, Help
+    - On the Results - Demo Scan screen and Live Scan Screen, update the icons so they appear in this order: Download, Find, Review "No Rules Items, View Scan History, Accounts, Settings, Help
+    - Need to add the following icons to the Review "No Rules" Items screen: Help, View Scan History, Accounts, Settings -- so they appear in this order: Refresh, View Scan History, Accounts, Settings, Help
+  - Add to backlog for next sprint
+    - If one or more accounts exist, the new "default" screen will the Review "No Rules" Items screen
+    - When going to the settings screen, the account selection pop-up is not needed.
+    - When the user, while in settings, goes to the 
+
+  - Add to backlog for next sprint
+    - In the Live Scan and Scan Results pages > "No rule" filter selected > item pop-up
+      - can you add a "Skip" button in the header - leaves the current item unaffected and goes to the next unaddressed item in the list - button should be about the same size as the safe sender and rules buttons.
+The Select Account pop-up 
+- Questions to be discussed before ending the sprint
+  - none
+
+Please complete your sprint retrospective feedback (same sections)
+Combined feedback (yours and mine) and Summarize
+Make suggestions for improvements to be implemented.
+Display suggestions for improvement for review and approval.
+------------------------------------
+
 Sprint 50 Review/Retrospective - Combined Product Owner, Scrum Master and Lead Developer feedback
 - Effective while as Efficient as Reasonably Possible
   - Very Good

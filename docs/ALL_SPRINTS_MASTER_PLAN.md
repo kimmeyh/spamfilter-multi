@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-07-24 (0.5.7 LIVE -- Harold verified no [DEV]; CHANGELOG [0.5.7] released; dev bumped 0.5.8; ANDROID TRACK OFF HOLD -- see Version History 6.13)
+**Last Updated**: 2026-07-30 (Sprint 51 retrospective complete: Manual Validation closed all 5 items; IMP-7 shipped in-sprint; **F133/F133-S52, F134, F135, F136 carded for Sprint 52 detail planning**, and **F132 RETIRED into F133**. **`0.5.8` is LIVE in the Store** -- certified 2026-07-29 as Submission 9. See Version History 6.19)
 
 ## How to Maintain This Document
 
@@ -111,6 +111,11 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 44 | docs/sprints/SPRINT_44_RETROSPECTIVE.md | [OK] Complete | Jun 26 - Jul 1, 2026 (PR #266) |
 | 45 | docs/sprints/SPRINT_45_RETROSPECTIVE.md | [OK] Complete | Jul 1-2, 2026 (PR #268) |
 | 46 | docs/sprints/SPRINT_46_RETROSPECTIVE.md | [OK] Complete | Jul 2-11, 2026 (PR #270) |
+| 47 | docs/sprints/SPRINT_47_RETROSPECTIVE.md | [OK] Complete | Jul 11-18, 2026 (PR #272) |
+| 48 | docs/sprints/SPRINT_48_RETROSPECTIVE.md | [OK] Complete | Jul 19-20, 2026 (PR #274; F119-b hotfix) |
+| 49 | docs/sprints/SPRINT_49_SUMMARY.md | [OK] Complete | Jul 21-23, 2026 (PR #276) |
+| 50 | docs/sprints/SPRINT_50_SUMMARY.md | [OK] Complete | Jul 25-27, 2026 (PR #278; 0.5.8 submitted) |
+| 51 | docs/sprints/SPRINT_51_SUMMARY.md | [OK] Complete | Jul 27-30, 2026 (PR #285; 0.5.8 LIVE Jul 29) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
@@ -118,27 +123,34 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
-**Sprint 49** (2026-07-21 -- 2026-07-23; merged PR #276 -> develop -> main)
-- **Type**: Field-defect root-cause sprint (Fable 5) + prod-DB restoration + process hardening. 7/7 tasks.
-- **Delivered**: F119-c (native [DEV]-title root cause: CMake env-var-only sourcing; now derives from the APP_ENV dart-define -- ADR-0041; both-sides `--print-env` probe), F120 (quick-action freeze: delta-scoped re-eval + time-based yields), BUG-DECODE, F121 (LIVE prod dedup 12,539 -> 6,528 + F73 idempotency guard), F33-PROD (LIVE prod body-rules cleanup -> **5,776 working rules**), F-VERSION-DERIVE (version bump = pubspec-only), F-PRECHECK (mandatory 5.1.2 checklist; caught a real defect on first dogfood). 0.5.7 bump.
-- **Verification**: suite +1,775/29; analyze clean; Copilot 4/4 fixed+resolved (incl. a NO-HARM proof for the live dedup); Harold validated Parts A/B/C + every Sprint 47 item with zero deviations.
-- **Retro**: all 6 improvements applied "now" (anti-stop task-inventory rule, Edit exact-bytes discipline, Executed-by, ADR-0041, --concurrency=4 policy, Phase 6.6 carry-forward rewrite) + Fable/Opus tier rename.
-- **Release**: `0.5.7` MSIX built from merged main, FULL both-sides proof passed, **SUBMITTED to Partner Center 2026-07-23** (in certification).
-- **Docs**: SPRINT_49_PLAN.md / SPRINT_49_RETROSPECTIVE.md / SPRINT_49_SUMMARY.md / SPRINT_49_F33_PROD_BODY_RULES_REPORT.md / ADR-0041.
+**Sprint 51** (2026-07-27 -- 2026-07-30; PR #285 -> develop)
+- **Type**: Process-docs consistency audit + Sprint 50 carry-in closure. 3/3 planned tasks complete.
+- **Delivered**: **F130-S51** -- first run of the F130 template: **28 contradictions found, 28 corrected, 0 outstanding** across all 3 tiers, plus 3 hook false-positive fixes and the hook test harness generalized to cover all hooks (it had been hard-wired to one, which is why two false positives shipped unnoticed). **F128-residual** -- `removeRule`/`updateRule`/`removeSafeSender` no longer no-op silently on an unloaded cache. **F129** -- 3 WinWright scripts green with zero DB drift.
+- **Highest-consequence finding**: `CLAUDE.md` (+ `AGENTS.md` + master plan) named the msix credential key as `build_windows_args` -- the F119 typo that shipped a credential-less 0.5.4 to the Store, and the exact string a build-failing gate asserts must never appear. The AGENTS.md/master-plan copies were caught ONLY by the DoD re-grep.
+- **A defect shipped and caught in-sprint**: the account-picker accessibility fix went in broken (named but unclickable -- two stacked same-named nodes, outer one with no handler). Lesson recorded: a tree dump proves a name exists; only an interaction proves the node still works.
+- **Verification**: suite 1,814 passed / 29 skipped / 0 failed; analyze clean; hook suite 33/33; WinWright 3/3 no drift; policy gates green; Harold validated all 5 Manual Validation items ("Working as expected. Can be closed.").
+- **Retro**: all 7 improvements approved APPLY NOW. **IMP-7 shipped in-sprint** (auto-advance hook gained the enforcement-window upper bound -- the missing bound was the root cause of every false positive it had produced). IMP-2/IMP-3 foundations shipped; **IMP-1/2/3/4 remainder carded for Sprint 52 detail planning** (F133/F133-S52, F134, F135, F136), with **F132 retired into F133**.
+- **Release**: **`0.5.8` CERTIFIED and LIVE 2026-07-29** (Submission 9). Found mid-sprint that it had been sitting In draft since the 07-27 build while the status file claimed "in certification" -- BUILT + VALIDATED is not SUBMITTED. Post-cert close-out done: CHANGELOG `[0.5.8]` heading + links, dev bumped 0.5.8 -> 0.5.9 (one file, gate-verified), Store status LIVE.
+- **F119 FAMILY CLOSED (Harold verified the Store-installed build 2026-07-30: no `[DEV]` in the title)**. Three distinct root causes produced one identical user-visible symptom across three sprints: **F119** (Sprint 47) the msix key typo `build_windows_args`, silently ignored so no dart-defines reached the inner build; **F119-b** (Sprint 48) a SPACE in a `secrets.prod.json` key, silently dropping `APP_ENV=prod`; **F119-c** (Sprint 49) the native `SPAMFILTER_APP_ENV` env var never set by the msix path, so CMake defaulted to dev. `0.5.8` is the first Store release verified clean by direct observation of the installed build rather than by build-log inference. Sprint 51 also removed the last live trap in this family: `CLAUDE.md`/`AGENTS.md`/master-plan still NAMED the typo'd key, contradicting the build-failing `msix_config_test.dart` gate.
+- **Environment**: ENV-1 resolved -- an Acronis filter driver blocking `AppXSvc` cleanup had wedged the Microsoft Store client; fixed by an Acronis exclusion (23h with zero Id-493 events; drivers still loaded, backup protection intact).
+- **Docs**: SPRINT_51_PLAN.md / SPRINT_51_F130_FINDINGS.md / SPRINT_51_RETROSPECTIVE.md / SPRINT_51_SUMMARY.md.
 
-_(Prior: **Sprint 48** F119-b hotfix, PR #274; **Sprint 47** F112-F119 + 8 IMPs, PR #272 -- see per-sprint docs.)_
+_(Prior: **Sprint 50** below.)_
 
-**Sprint 50 (2026-07-25 -- 2026-07-26; PR [#278](https://github.com/kimmeyh/spamfilter-multi/pull/278), awaiting merge)** -- rolls into "Last Completed Sprint" at Sprint 51 pre-kickoff (Phase 3.2.1).
-- **Type**: Core App Quality polish + live prod-data repair + manual-validation-driven UX fixes. 5/5 planned tasks + 5 mid-sprint items.
-- **Delivered**: F126 (4 legacy TLD rows removed from prod: 5,887 -> 5,883), F122 (load-error stackTrace + friendly SnackBar), F123 (350 prod / 341 dev safe-sender `pattern_type` rows repaired -- root cause was DATA, not display precedence, so no Class-2), F124 ("Uncategorized (legacy)" fallback + latent filter-key fix), F127-residual (CI green with corrected `secrets.ci.json` keys); then from manual validation: MT-1 (fixed 3-column quick-action grid), MT-2/MT-2b/MT-2c (idempotent quick actions + covered-item sweep on every load), MT-3 (Review "No Rule" entry point on Manual Scan + Results).
-- **Verification**: full suite green; analyze clean; CI green both jobs (one cross-platform test escape caught at the Phase 6.1.1 gate, fixed in `3405a40`); Harold validated every item -- "All working as expected and can be closed."
-- **Retro**: 5 improvements applied now (terminology rename, retro Step-5 completeness gate, CI-platform parallel-site rule, fix-boundary rule, recorded-justification-on-model-deviation); 2 to backlog (F128, F129).
-- **Backlog filed**: F128 (provider silent no-op, Priority 18), F129 (WinWright coverage carry-in, Priority 19).
-- **Docs**: SPRINT_50_PLAN.md / SPRINT_50_RETROSPECTIVE.md (+ Claude draft).
+**Sprint 50** (2026-07-25 -- 2026-07-27; merged PR #278 -> develop, PR #284 -> main)
+- **Type**: Core App Quality polish + live prod-data repair + manual-validation-driven UX fixes. 5/5 planned + 5 mid-sprint + 1 escalated.
+- **Delivered**: F126 (4 legacy TLD rows removed from prod: 5,887 -> 5,883), F122 (load-error stackTrace + friendly SnackBar), F123 (350 prod / 341 dev safe-sender `pattern_type` rows repaired -- root cause was DATA, not display precedence, so the planned Class-2 never triggered), F124 ("Uncategorized (legacy)" fallback + latent filter-key fix), F127-residual (CI green with corrected `secrets.ci.json` keys). From manual validation: MT-1 (fixed 3-column quick-action grid), MT-2/MT-2b/MT-2c (idempotent quick actions + covered-item sweep on every load), MT-3 (Review "No Rule" entry points on Manual Scan + Results). Escalated from backlog on Copilot's finding: **F128** (provider silent no-op on unloaded cache).
+- **Verification**: suite 1,806 passed / 29 skipped / 0 failed; analyze clean; CI green both jobs; Harold validated every item ("All working as expected and can be closed"). Both live-data tasks rehearsed on copies with rollback backups retained.
+- **Copilot**: 9 findings across 4 rounds, ALL fixed in-sprint and resolved -- notably the idempotent fast-paths skipping conflict resolution, and per-evaluation logging on bulk sweeps (opt-in `silent` mode).
+- **Retro**: 5 improvements applied "now" (terminology rename, retro Step-5 completeness gate, CI-platform parallel-site rule, fix-boundary rule, recorded-justification-on-model-deviation); 2 backlogged (F128 residual, F129).
+- **Release**: `0.5.8` MSIX built from merged main (16.8 MB, manifest 0.5.8.0), FULL both-sides proof passed, **SUBMITTED to Partner Center 2026-07-27** (in certification).
+- **Docs**: SPRINT_50_PLAN.md / SPRINT_50_RETROSPECTIVE.md / SPRINT_50_SUMMARY.md.
+
+_(Prior: **Sprint 49** F119-c + prod-DB restoration, PR #276; **Sprint 48** F119-b hotfix, PR #274; **Sprint 47** F112-F119 + 8 IMPs, PR #272 -- see per-sprint docs.)_
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: July 25, 2026 (Sprint 50 backlog refinement -- full candidate re-presentation to Harold in the v1.3 format with Summary Index; F122-F127 registered; Sprint 49 shipped items pruned; Sprint 50 scope selected.)
+**Last Reviewed**: July 28, 2026 (Sprint 51 execution: F131 + F132 added from F129 execution, both Harold-approved. Full v1.3-format re-presentation last ran July 25 at Sprint 50 refinement; the next one is due at Sprint 52 Phase 1.)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
@@ -196,9 +208,7 @@ _(F107, F108, F109 shipped in Sprint 44 -- see docs/sprints/SPRINT_44_SUMMARY.md
 
 ### Release Readiness
 
-**F-WINSTORE-ASSETS. Update all Windows Store listing screenshots -- [DONE 2026-07-25, executed interactively during Sprint 50 refinement]**
-- Seven 1920x1020 screenshot masters captured from the live Store 0.5.7 build (clean prod title, 100% demo data, zero PII), committed to `docs/store-assets/windows/` (`3c357a6` + `b40c089`: choose-provider, demo-ready, scan-results, quick-actions, manage-rules, settings, help). Harold uploaded all 7 to Partner Center and completed the listing update (metadata-only, no package) on 2026-07-25 -- the old `[DEV]`-title screenshots are replaced.
-- **Residual (small, optional backlog)**: logo/tile/promo audit was not needed -- the app icon source is unchanged and tile images derive from `msix_config.logo_path`; revisit only if the icon is redesigned. Windows counterpart to GP-6 (Play Store assets).
+_(F-WINSTORE-ASSETS: **DONE 2026-07-25** -- 7 screenshot masters captured from the live 0.5.7 build, committed to `docs/store-assets/windows/`, and uploaded by Harold to Partner Center. Logo/tile audit was not needed (icon source unchanged).)_
 
 _(F111 shipped in Sprint 45 -- GO recommendation delivered; see docs/sprints/SPRINT_45_F111_STORE_READINESS.md and SPRINT_45_SUMMARY.md. Store upload of 0.5.4 is a pending Harold action, targeted Sat/Sun on a stable network -- not a backlog item.)_
 
@@ -208,20 +218,14 @@ _(F103 Architecture Deep Dive and F104 Security Deep Dive ran in Sprint 43 -- se
 
 _(F64 CI/CD pipeline shipped in Sprint 46 -- `.github/workflows/ci.yml`; see CHANGELOG 2026-07-02 and SPRINT_46_RETROSPECTIVE.md.)_
 
-**F127. Populate the 5 CI_* GitHub repo secrets -- [RESOLVED-RESCOPED, Harold 2026-07-24 (option 2)]**
-- Phase: DevOps
-- Platform: N/A (repo)
-- Re-scope decision: the CI_* secrets stay **DELIBERATELY UNSET** -- empty-string dart-defines fully exercise everything the Windows build-verification job verifies (values are runtime-read; CI never runs the app). Populating them adds no coverage today.
-- Fixed instead: `secrets.ci.json` generation in ci.yml wrote pre-Sprint-36 legacy key names; corrected to the current `WINDOWS_GMAIL_*` runtime keys (commit `5c4e0ce`, Sprint 50 branch). CLAUDE.md documents the decision.
-- HOLD trigger: populate the 5 secrets ONLY when CI gains a runtime step that would actually use credentials.
-- Sprint 50 residual: verify the corrected generation yields a green CI run on the Sprint 50 PR.
+_(F127 CI_* repo secrets: **RESOLVED-RESCOPED** (Harold 2026-07-24) -- the secrets stay deliberately UNSET; the real defect (ci.yml writing pre-Sprint-36 legacy key names) was fixed in `5c4e0ce` and verified green. Documented in CLAUDE.md. Re-open ONLY if CI gains a runtime step that would use credentials.)_
 
 ### HOLD Items (Periodic Reviews)
 
 **F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD**
 - Phase: Release Readiness (reusable template)
 - Platform: Windows Desktop
-- **Generic scope**: verify develop/main parity, version compatibility vs the currently-published Store version, MSIX build-path integrity (`msix_config.build_windows_args` OAuth-credential injection), and Store-submission preconditions (`docs/STORE_RELEASE_PROCESS.md` checklist) BEFORE any Store build/upload. Produces a GO/NO-GO readiness finding; does not build or upload.
+- **Generic scope**: verify develop/main parity, version compatibility vs the currently-published Store version, MSIX build-path integrity (`msix_config.windows_build_args` OAuth-credential injection -- note the key is `windows_build_args`; the transposed `build_windows_args` is the F119 defect), and Store-submission preconditions (`docs/STORE_RELEASE_PROCESS.md` checklist) BEFORE any Store build/upload. Produces a GO/NO-GO readiness finding; does not build or upload.
 - **How to use**: Duplicate this item, assign a sprint, and remove HOLD. After completion, keep this template for the next review.
 - HOLD rationale: Template item, reusable each time a new Windows Store release is planned. First run: Sprint 45 (see `docs/sprints/SPRINT_45_F111_STORE_READINESS.md`).
 - Source: Sprint 45 backlog refinement (2026-07-02) -- captured as a recurring template since Store readiness verification will be needed for every future release.
@@ -242,6 +246,33 @@ _(F64 CI/CD pipeline shipped in Sprint 46 -- `.github/workflows/ci.yml`; see CHA
 - HOLD rationale: Template item. Duplicate when periodic security review is needed.
 - Source: Sprint 31 retrospective feedback
 
+**F130. Periodic Process-Docs Consistency Deep Dive ([no-history] -- unbounded discovery; see estimating note) Priority HOLD** _(TEMPLATE -- first run assigned to Sprint 51, see F130-S51 below)_
+- Phase: Process Spike (reusable template)
+- Platform: N/A (repo documentation + harness configuration)
+- **Generic scope**: audit the sprint-execution instruction surface for logical consistency, so that any Claude model tier (Haiku / Sonnet / Opus / Fable) executing the sprint process reaches the SAME correct behavior from whichever document it happens to read. The architecture deep dive (F71) does this for the CODE; nothing does it for the PROCESS DOCS, which are equally load-bearing -- they are the actual control system for development on this project.
+- **Surfaces in scope** (the full instruction surface, not just `docs/`):
+  - The 11 SPRINT EXECUTION docs (`SPRINT_EXECUTION_WORKFLOW.md`, `SPRINT_CHECKLIST.md`, `SPRINT_PLANNING.md`, `SPRINT_RETROSPECTIVE.md`, `SPRINT_STOPPING_CRITERIA.md`, `BACKLOG_REFINEMENT.md`, `TESTING_STRATEGY.md`, `QUALITY_STANDARDS.md`, `ALL_SPRINTS_MASTER_PLAN.md`, `STORE_RELEASE_PROCESS.md`, `CODING_VELOCITY.md`)
+  - `CLAUDE.md` and `AGENTS.md` (read by every model tier; must not diverge from each other)
+  - `.claude/hooks/*` (enforcement must match what the docs say, and must not false-positive)
+  - `.claude/skills/*/SKILL.md` (skills encode deterministic processes; must match their source doc)
+  - `.claude/agents/*` if present, `.claude/settings.json` hook registrations, `.claude/sprint_status.json` schema
+  - Auto-memory `MEMORY.md` + `feedback_*.md` (**recall re-teaches whatever it says** -- a stale memory silently overrides corrected docs)
+- **Defect classes to hunt** (each seeded by a real escape):
+  1. **Same instruction, contradictory recipes** -- e.g. Phase 6.6 branch creation was stated 5 different ways across 2 docs + 2 memory entries; the cheat sheet said "off updated develop" while the detailed section said "from the current feature branch", and the detailed section's own "Why" paragraph contradicted its own "Steps" block two lines later (found 2026-07-27, Sprint 51).
+  2. **Summary-vs-detail drift** -- cheat-sheet / table-of-contents / quick-reference rows that paraphrase a detailed section and fall out of sync when the section is corrected. Check EVERY summary row against its section.
+  3. **Superseded recipes left in place without a supersession marker** -- old instructions retained "for context" that read as current. Require an explicit `SUPERSEDED by X (date)` marker or delete.
+  4. **Memory-vs-doc divergence** -- a `feedback_*.md` `description:` field or `MEMORY.md` index line still teaching a corrected-away behavior. These surface during recall and outrank docs in practice.
+  5. **Orphan instructions** -- a step referenced in one doc but defined nowhere (or a file like `.claude/sprint_status.json` mentioned in exactly ONE line with no definition of what to put in it -- how it drifted 15 sprints unnoticed).
+  6. **Hook-vs-doc mismatch** -- enforcement that blocks something the docs permit, permits something the docs forbid, or false-positives (e.g. the stash-guard hook blocking a Bash command whose text merely *documents* the stash prohibition, 2026-07-27).
+  7. **Unenforced MANDATORY steps** -- steps marked MANDATORY with no gate, hook, test, or checklist line that would catch omission. Rank by blast radius; propose the cheapest enforcement.
+  8. **Tier-inconsistent guidance** -- instructions that only work if the reader is a top-tier model (implicit judgment calls, unstated context). Haiku executing the same step must reach the same outcome.
+  9. **Dead references** -- links/paths/section anchors/issue numbers/skill names that no longer resolve.
+- **Method**: build an inventory of every instruction that appears in more than one place, diff the statements pairwise, and produce a findings table (`Instruction | Sites | Statements | Authoritative version | Action`). Prefer ONE authoritative statement plus pointers over duplicated prose -- duplication is what drifts.
+- **Deliverable**: findings table + corrections applied in-sprint + any new enforcement proposed; log the count of contradictions found so the trend is visible across reviews.
+- **How to use**: Duplicate this item, assign a sprint, and remove HOLD. After completion, keep this template for the next review.
+- HOLD rationale: Template item, reusable. Duplicate when the process docs have accumulated enough change to warrant a consistency pass -- suggested triggers: after any sprint that applies 4+ process improvements, after any repeat-offense correction (the same mistake corrected 3+ times suggests contradictory guidance rather than model error), or every ~5 sprints.
+- Source: Harold 2026-07-27, after the Sprint 50/51 close-out escapes traced to instruction-surface defects rather than one-off model error: a multi-part request treated as a theme, a checklist reported complete without being opened, and the Phase 6.6 branch recipe stated inconsistently in 5 places (2 of them in memory, which re-teaches on recall).
+
 **F71. Periodic Architecture Deep Dive (~4-8h per review) Priority HOLD**
 - Phase: Architecture Spike (reusable template)
 - Platform: All
@@ -261,42 +292,130 @@ _(F64 CI/CD pipeline shipped in Sprint 46 -- `.github/workflows/ci.yml`; see CHA
 
 ### Core App Quality
 
-_(F39 cross-account "No Rule" review screen shipped in Sprint 46 (F39 mobile touch variant remains a future candidate). F33-PROD + BUG-DECODE + F120 + F121 shipped in Sprint 49 -- prod DB restored to 5,776 working rules; see SPRINT_49_SUMMARY.md and SPRINT_49_F33_PROD_BODY_RULES_REPORT.md.)_
+_(Shipped and pruned per Maintenance Rule 2 -- history lives in the sprint docs and CHANGELOG: F39 cross-account "No Rule" review screen (Sprint 46; the mobile touch variant remains a future candidate); F33-PROD + BUG-DECODE + F120 + F121 (Sprint 49, prod DB restored to 5,776 working rules); **F126 / F122 / F123 / F124 (Sprint 50)**, all Harold-validated "working as expected, can be closed"; **F128** (Sprint 50, escalated from backlog and fixed during Copilot review -- see its residual below).)_
 
-**F126. Remove the 4 ambiguous legacy TLD-block body rules (~15m) Priority 10 -- [SPRINT 50]**
-- Phase: Core App Quality
-- Platform: N/A (prod rules data)
-- The F33-PROD run left 4 legacy `%`-wildcard rows untouched as report-only ambiguous (`/%.nl/`, `/%.ru/`, `/%.store/`, `/.*.xyz`); TLD blocking is covered by the `top_level_domain` rules. Harold's Product Owner decision (2026-07-25, by selecting this item): DELETE the 4 rows. Dry-run first; timestamped prod-DB backup before apply.
-- Depends on: none (decision made)
+**F130-S51. Process-Docs Consistency Deep Dive -- first run ([no-history]) Priority 12 -- [SPRINT 51 TARGET, Harold 2026-07-27]**
+- Phase: Process Spike
+- Platform: N/A (repo documentation + harness configuration)
+- First instance of the F130 template (HOLD section below). Full scope, method and the 9 defect classes are defined there -- do not restate them here; execute against that definition.
+- **Estimating note (Harold challenge, 2026-07-27)**: this item is **`[no-history]`** per `CODING_VELOCITY.md` rule 2 -- there is no step-type for "audit the instruction surface" and no prior sample. An earlier "~3-6h" figure here was **invented, not calibrated**, and was withdrawn. The work is unbounded discovery (the audit finds however many contradictions exist -- five were already found in the Phase 6.6 rule alone), so scope it by TIMEBOX rather than estimate: agree a box with the Scrum Master (suggest a first pass on the highest-risk surfaces), record the ACTUAL in the Coverage Ledger, and let the second run be the first genuinely estimated one.
+- **Named item for THIS run (Harold 2026-07-27)**: **fix the stash-guard hook false positive.** `.claude/hooks/block-carry-forward-stash.ps1` matches the literal string `git stash` anywhere in a Bash/PowerShell command, so it blocked a legitimate command whose text merely *documented* the stash prohibition (2026-07-27, while correcting the Phase 6.6 recipe). A hook that fires on correct work trains the operator to route around it, which erodes every other hook's authority. Fix: match only an actual invocation (command position), not an occurrence inside quoted/heredoc content; add test cases under `.claude/hooks/test-cases/` covering (a) a real `git stash` invocation -> BLOCK, (b) documentation text containing the words -> ALLOW, (c) the `allow_stash` bypass token -> ALLOW.
+- **Known inputs already collected** (seeded from the Sprint 50/51 escapes, so the run starts with evidence rather than a blank page): the Phase 6.6 five-site contradiction (corrected 2026-07-27 -- verify no regressions and look for the same shape elsewhere); `sprint_status.json` as an orphan instruction (now documented -- audit for other one-line-mention items); CLAUDE.md vs AGENTS.md divergence check; memory `description:` fields and `MEMORY.md` index lines vs their corrected docs.
+- Depends on: none
 
-**F122. Review-No-Rule screen load-error polish (~30m) Priority 12 -- [SPRINT 50]**
-- Phase: Core App Quality
-- Platform: Windows Desktop
-- Copilot round-6 carry-in, verified still open 2026-07-25: `no_rule_review_screen.dart:129` `catch (e)` lacks a stackTrace in the load-error log and the SnackBar shows the raw exception (`Failed to load items: $e`). Mirror the correct sibling at line 255 (`catch (e, s)` + `stackTrace: s`) and show a friendly message.
-
-**F123. Safe-sender classification display fix (~45m) Priority 14 -- [SPRINT 50]**
-- Phase: Core App Quality
-- Platform: Windows Desktop
-- Manage Safe Senders shows an exact-email-shaped pattern (`^...@live\.com$`) labeled "Entire Domain" (observed in Harold's 0.5.6 validation). Root-cause `SafeSenderCategory.categorize()` (stored `patternType` precedence vs pattern-shape analysis, `safe_senders_management_screen.dart:51-73`) and correct the classification display.
-
-**F129. WinWright coverage for the Sprint-50-touched screens (~1-2h) Priority 19 -- [SPRINT 51 CARRY-IN]**
+**F129. WinWright coverage for the Sprint-50-touched screens ([no-history] -- no WinWright script has been authored since the F79/F99 harness work) Priority 19 -- [SPRINT 51 CARRY-IN]**
 - Phase: Core App Quality
 - Platform: Windows Desktop
 - Phase 5.1.5 exit criteria: no existing WinWright script exercises the three surfaces Sprint 50 changed -- the quick-action grid in the email popup (MT-1), Manage Rules category/sub-type display (F124), and the Review "No Rule" screen incl. its covered-item sweep (MT-2c). Each script must restore all state it modifies (Sprint 37 policy).
 - Depends on: none (Sprint 50 retro IMP-6 -- Harold: backlog)
 
-**F128. RuleSetProvider.addRule/addSafeSender silently no-op when provider is unloaded -- [FIXED in Sprint 50, PR #278 (Copilot review round 4)]**
+**F128-residual. Audit the sibling silent-no-op early-returns in RuleSetProvider (~15m) Priority 21 -- [SPRINT 51 CARRY-IN]**
 - Phase: Core App Quality
 - Platform: All
-- Both methods early-returned on a null cache (`if (_rules == null) return;`) BEFORE the DB insert -- the caller then reported success with no row persisted (F-PRECHECK class 6: silent failure; BUG-S39-2's rethrow guard sits AFTER this return and never fired). Latent in production because app startup always loads the provider; surfaced 2026-07-26 when an unloaded test provider produced "1 succeeded" with no rule inserted.
-- **Fixed 2026-07-27** (escalated from backlog when Copilot independently found it reaching into `RuleQuickActionService`'s idempotency check): `addRule`/`addSafeSender` now load on demand and throw `StateError` if the cache is still unavailable afterwards -- never silent. New `isRulesLoaded` / `isSafeSendersLoaded` getters make "unloaded" distinguishable from "genuinely empty" (the `rules`/`safeSenders` getters return empty collections in both states); `RuleQuickActionService` and the MT-2c sweep consult them before trusting an empty read. +2 regression tests proving an unloaded provider now persists to the DATABASE, not just the cache.
-- **Residual (still open, small)**: the sibling early-returns were NOT audited -- `removeRule`, `updateRule`, `removeSafeSender`, and any other `if (_x == null) return;` in `RuleSetProvider` carry the same silent-no-op shape. Carry to Sprint 51 as a ~15m sweep.
-- Depends on: none
+- F128 fixed `addRule`/`addSafeSender` (load-on-demand + `StateError`) in Sprint 50, but the sibling methods were explicitly NOT audited: `removeRule`, `updateRule`, `removeSafeSender`, and any other `if (_x == null) return;` in `RuleSetProvider` share the same silent-no-op shape -- the caller reports success while nothing is persisted (F-PRECHECK class 6).
+- Depends on: none (F128 landed in Sprint 50)
 
-**F124. Legacy uncategorized-rule label fix (~30m) Priority 16 -- [SPRINT 50]**
+**F131. WinWright create-path is not drivable -- the two `test_f56_*` scripts are STALE, not merely excluded ([no-history]) Priority 13 -- [ADDED 2026-07-28, Harold approved]**
 - Phase: Core App Quality
 - Platform: Windows Desktop
-- Manage Rules shows a pre-classification legacy rule (`SpamAutoDeleteFrom`, null `patternCategory`/`patternSubType`) with a blank "-" sub-label (`rules_management_screen.dart:829-830` null fallthrough to `''`; observed in Harold's 0.5.6 validation). Display a sensible fallback label (e.g. "Uncategorized (legacy)").
+- **The problem**: the Add-Block-Rule create flow cannot be driven by the WinWright script runner on the current build. Three independent walls, all confirmed live 2026-07-28 against dev 0.5.8:
+  1. **The Rule Type `RadioButton`s do not select.** Clicking the `RadioButton` *or* its parent `Group` reports `success: true` while the form silently stays in its default Entire-Domain mode (confirmed by the input field keeping the name `Enter email, domain, or URL` instead of switching to `Enter TLD (...)`).
+  2. **`Save Rule` sits off-screen** below the fold unless the window is maximized. `ww_invoke` reports success on it WITHOUT pressing it; `ww_click` correctly errors `element_offscreen`.
+  3. **Input validation rejects synthetic domains**, so no confirm dialog appears and nothing is written.
+- **Why this is a card and not a footnote**: `test_f56_create_block_rule.json` and `test_f56_create_safe_sender.json` both depend on this path, and the workaround documented in their own `description` fields -- "click the PARENT GROUP instead of the RadioButton", recorded as FIX 1 in Sprint 41 -- **did not reproduce**. Those scripts are therefore stale, not simply excluded from the default sweep: anyone who re-enables them hits all three walls while the comment block confidently tells them the fix. A wrong fix recorded as verified is worse than no note at all.
+- **Scope**: determine whether this is a WinWright/UIA limitation or an app-side regression in the create screen (the radios may have lost their `SelectionItemPattern` projection, which would ALSO be an accessibility defect, not just a tooling one -- check that first, it is the outcome with real user impact). Then either (a) fix the scripts and re-verify them green, or (b) mark them RETIRED in `mobile-app/test/winwright/README.md` with the reason, and confirm the coverage they claimed is genuinely carried by `integration_test/`.
+- **Do NOT** simply delete the scripts without confirming where their coverage went -- that converts a visible stale artifact into an invisible coverage hole.
+- Evidence: `docs/sprints/SPRINT_51_F130_FINDINGS.md` (F129 harness findings) and the "Controls that resist automation on this build" section of `mobile-app/test/winwright/README.md`.
+- Depends on: none (Sprint 51 F129 discovery)
+
+**F132. Systematic accessibility sweep of the remaining screens -- [RETIRED 2026-07-30, superseded by F133]**
+- **Do not plan this item.** Harold's Sprint 51 retro Category 14 request (F133) is strictly broader: it adds spike research and a repository standards document ahead of the gap analysis, where F132 was sweep-only. Running both would duplicate the gap-analysis work across two cards -- the exact defect class F130 exists to catch.
+- Its content is preserved below for reference and is fully absorbed into F133 / F133-S52. Retained rather than deleted so the Sprint 51 provenance is not lost.
+
+_(Original F132 text, superseded:)_
+
+**F132. Systematic accessibility sweep of the remaining screens ([no-history]) Priority 20 -- [ADDED 2026-07-28, Harold approved]**
+- Phase: Core App Quality
+- Platform: All (verified on Windows Desktop; the Semantics tree is cross-platform so Android/iOS benefit too)
+- **The problem**: Sprint 51 fixed four surfaces -- No-Rule item rows, account rows, the account-picker dialog, and the MT-1 quick-action grid -- and **every one was found reactively**, because a WinWright script hit a wall. The quick-action cells were the clearest case: bare `InkWell`s wrapping loose `Text`, so each cell surfaced as an UNNAMED node with its label floating alongside as separate `Text` -- announcing nothing actionable to a screen reader and unaddressable by name-based automation. Nothing suggests the remaining screens are different; they simply have not been driven yet.
+- **Why now, as ONE deliberate pass**: the fix pattern is proven and written down, including the three failure shapes established by failing tests (naming without `excludeSemantics` -> two stacked same-named nodes where the outer has no handler; adding `excludeSemantics` alone -> named but unclickable; `excludeSemantics` PLUS `onTap` on the `Semantics` node -> correct). Applying that to the remaining screens is mechanical. Continuing to discover them one script-failure at a time is not, and each discovery costs a build/verify cycle.
+- **Real user value, not just tooling**: this is WCAG 2.1 AA conformance, which **ADR-0037 already sets as the target** for all platforms, and it is Store-facing. The tooling benefit (name-based selectors become possible) is a side effect, not the point.
+- **Scope**: enumerate every screen under `mobile-app/lib/ui/screens/`, audit each against the pattern, fix, and pin each with a widget test asserting against the semantics tree (`find.bySemanticsLabel` / `tester.getSemantics`) -- NOT by live inspection, since the Windows UIA projection proved unreliable as a verification instrument in Sprint 51 (the MCP snapshot path and the CLI `inspect` path disagreed on the same process at the same moment).
+- **Acceptance**: every interactive element on every screen exposes an accessible name AND remains actionable after the wrapper is added. **Verify BOTH** -- Sprint 51 shipped a fix that named the account-picker entries correctly while making them unclickable, and it was caught only because a script drove the control. A tree dump proves a name exists; only an interaction proves the node still works.
+- Pattern reference: `mobile-app/test/winwright/README.md` "Semantics required for name-based selection (F129)"; ADR-0037.
+- Depends on: none (extends Sprint 51 F129; F131 may reveal the create-screen radios as an instance of this)
+
+**F133. Accessibility audit -- repeatable spike template ([no-history]) Priority HOLD** _(TEMPLATE -- first run assigned to Sprint 52, see F133-S52 below)_
+- Phase: Process Spike (reusable template, on the F130 / F71 model)
+- Platform: All (verified on Windows Desktop; the Flutter Semantics tree is cross-platform)
+- **Generic scope** (Harold, Sprint 51 retro Category 14, verbatim): *"please do spike research on Accessibility best practices and standards. Add/update a repository copy of Accessibility best practices for future reference. Identify gaps in the current Application and code base (focused on the UI for each active, prod UI) and plan tasks to resolve the gaps."*
+- **Must cover, but is not limited to**: colors (contrast ratios), screen-reader needs, Flutter testing needs, WinWright testing needs.
+- **Known gap seeding the first run**: semantic tree elements needed for accessibility and WinWright testing are missing on most screens. Sprint 51 fixed four surfaces reactively (No-Rule rows, account rows, account-picker dialog, MT-1 quick-action grid) -- each discovered only because a script hit a wall.
+- **Deliverables**: (1) a repository accessibility-standards document, (2) a per-screen gap analysis, (3) planned remediation tasks.
+- **Relationship to existing docs**: ADR-0037 already sets **WCAG 2.1 AA** as the target and states the Semantics labelling rules. The standards doc must EXTEND ADR-0037, not compete with it. It must also absorb the wrapper pattern currently buried in `mobile-app/test/winwright/README.md` (`excludeSemantics: true` + `onTap` on the Semantics node), which is repo knowledge sitting in a test-harness readme.
+- **How to use**: duplicate this item, assign a sprint, remove HOLD. Keep the template for the next review.
+- HOLD rationale: template item. Duplicate when a periodic accessibility review is needed.
+- Source: Sprint 51 retro Category 14 (Harold). **Supersedes F132**, which was narrower (sweep only, no research or standards doc) -- F132 is retired into this item rather than run alongside it, since two overlapping cards is exactly the duplication F130 warns about.
+
+**F133-S52. Accessibility audit -- first run ([no-history]) Priority 12 -- [SPRINT 52 TARGET, Harold 2026-07-30]**
+- Phase: Process Spike
+- Platform: All
+- First instance of the F133 template above. Full scope and deliverables are defined there -- do not restate them here; execute against that definition.
+- **Time-box by tier, not by estimate** (same rationale as F130-S51, which this mirrors): research and gap discovery are unbounded. Suggested tiers: (1) research + standards doc, (2) gap analysis across active prod screens, (3) remediation task planning. Complete each tier before starting the next so the work is releasable at any tier boundary.
+- **Verification rule carried from Sprint 51 (IMP-6)**: every accessibility change must be proven by a script that ACTIVATES the control, never by a tree dump alone. A dump proves a name exists; only an interaction proves the node still works. Sprint 51 shipped a fix that named the account-picker entries correctly while making them unclickable, and it was caught only when a script drove them.
+- Depends on: none
+
+**F134. Standardize AppBar icon order across all screens (PARTIALLY IMPLEMENTED in Sprint 51) Priority 14 -- [SPRINT 52 TARGET, Harold 2026-07-30]**
+- Phase: Core App Quality
+- Platform: All (icons are Windows-scoped where the existing entry points are)
+- **Canonical order** (Harold, Sprint 51 retro Category 14): screen-specific actions first, then `Review "No Rule" Items, View Scan History, Accounts, Settings, Help`, then the auto-appended Exit. **Help is ALWAYS last** (Harold confirmed 2026-07-30).
+- **Per-surface requirements**:
+  - All Settings pages: `Review "No Rule" Items, View Scan History, Accounts, Settings, Help`
+  - Manual Scan screen: same order
+  - Results -- Demo Scan and Live Scan screens: `Download, Find,` then the standard block
+  - Review "No Rule" Items screen: **add four missing icons** (Help, View Scan History, Accounts, Settings) so the order becomes `Refresh, View Scan History, Accounts, Settings, Help`
+- **DONE in Sprint 51** (committed, analyzer clean): `mobile-app/lib/ui/widgets/standard_app_bar_actions.dart` -- the single shared builder that defines the order once -- and its application to `scan_progress_screen.dart` (Manual Scan), which fixes the Help/Settings inversion there.
+- **REMAINING**: apply the builder to `settings_screen.dart`, `results_display_screen.dart` (with Download + Find as leading actions), and `no_rule_review_screen.dart` (adding the four icons).
+- **Why a shared builder rather than editing each screen**: five screens each hand-rolled the same five IconButtons in **four different orders**, and `scan_progress_screen.dart` carried a comment asserting a "standardized icon order" that matched no other screen. That is the duplication-drift defect class F130 keeps finding, reproduced in code. One builder means the order cannot diverge again.
+- **Test note**: `no_rule_review_screen` gaining a Settings icon needs the F135 account-resolution rule below (the No-Rule screen is cross-account and has no accountId of its own).
+- Depends on: F135 for the No-Rule screen's Settings icon
+
+**F135. Session-scoped account selection + Review "No Rule" Items as default screen (PARTIALLY IMPLEMENTED in Sprint 51) Priority 15 -- [SPRINT 52 TARGET, Harold 2026-07-30]**
+- Phase: Core App Quality / UX
+- Platform: All
+- **The rule** (Harold, 2026-07-30, verbatim): *"If an account is selected while the app is running, the app should keep track of this setting and assume any other needs for the account resolve to this selection unless the user returns to the Account page and selects another. The pop-up should appear only as needed: 1) an account has not been selected AND 2) the user gets to a page that needs it (3 account-specific settings pages and the Manual Live Scan page)."*
+- **Approved approach**: option A -- a `ChangeNotifier` provider holding the selection **in memory only**. Harold: *"does not need to be persisted between sessions."* Persisting it would also change startup semantics (the app would boot into the last account's screen), which was explicitly not wanted.
+- **Which surfaces may prompt**: Settings > Account / Manual Scan / Background tabs, and Manual Live Scan. **Which must NOT**: Settings > General (cross-account), Review "No Rule" Items (aggregates all accounts), Scan History (shows all accounts).
+- **Second part**: when one or more accounts exist, the new DEFAULT screen becomes Review "No Rule" Items rather than Account Selection.
+- **DONE in Sprint 51** (analyzer clean): `mobile-app/lib/core/providers/selected_account_provider.dart` (session-scoped, with `clearIfSelected` so deleting a different account does not discard a valid selection), registered in `main.dart`, plus `_resolveAccountForScopedDestination()` in `account_selection_screen.dart` -- resolves from the session selection, auto-selects when only ONE account is configured, drops a stale selection whose account was deleted, and prompts only otherwise.
+- **REMAINING**: per-tab prompting inside `settings_screen.dart` (General must not prompt while the three account-scoped tabs must), wiring Manual Live Scan to the same resolver, and the default-screen change.
+- **Class-1 note**: the default-screen change alters app startup behavior and should be confirmed at planning, not assumed. Consider what a user with zero configured accounts sees, and whether Back from the No-Rule screen exits the app.
+- Depends on: none (F134's No-Rule Settings icon depends on THIS)
+
+**F136. "Skip" button in the No-Rule item popup Priority 16 -- [SPRINT 52 TARGET, Harold 2026-07-30]**
+- Phase: Core App Quality / UX
+- Platform: All
+- **Requirement** (Harold, Sprint 51 retro Category 14, verbatim): *"In the Live Scan and Scan Results pages > 'No rule' filter selected > item pop-up -- can you add a 'Skip' button in the header - leaves the current item unaffected and goes to the next unaddressed item in the list - button should be about the same size as the safe sender and rules buttons."*
+- **Semantics to settle at planning**: "next unaddressed item" needs a precise definition -- next in the CURRENT filtered/sorted order, skipping items already actioned this session. Also define behavior at the end of the list (wrap, close, or disable) and whether a skipped item is remembered for the session.
+- **Placement**: popup header, sized comparably to the existing safe-sender and rule buttons.
+- Depends on: none
+
+**ENV-1. Dev-machine AppXSvc cleanup loop wedges the Microsoft Store client -- [RESOLVED 2026-07-29] machine-local, NOT an app defect**
+
+- **RESOLUTION**: an **Acronis Protection exclusion** cleared it. Verified 2026-07-30 after **23 hours of uptime with ZERO Id-493 events**, against a baseline of 176 stuck files erroring every 6 minutes for two days (~232 consecutive clean cycles). Independent downstream proof: the Store client updated itself `22606.1401.6.0` -> `22606.1401.10.0`, which requires a working deployment pipeline. The three Acronis filter drivers (`fltsrv`, `snapman`, `tib_mounter`) remain **loaded and running** -- the exclusion stopped them blocking `WindowsApps` deletions without disabling backup protection, which was the desired outcome.
+- **Practical gotcha for next time**: the Acronis "Add file" picker will NOT accept a folder -- it only navigates into them -- and `C:\Program Files\WindowsApps` cannot even be stat-ed (`Test-Path` True but `Get-Item` False; ACL unreadable, TrustedInstaller-owned), so typing the path, the `.` trick, and single-click-then-Open all fail. The exclusion lists are ALSO encrypted+signed (`=GO=` header) with no registry equivalent, so there is no way in from outside the UI. Exclude a stat-able FILE rather than the folder.
+- **Do NOT re-diagnose from the UI.** This was twice mis-read as fixed because a page rendered; the event log disproved it both times. The verdict is `Get-WinEvent ... Id=493` since last boot -- nothing else.
+
+_Original finding, retained for context:_
+- Phase: Environment / developer-machine housekeeping
+- Platform: Windows dev machine only (does NOT affect the shipped app, the MSIX, or any end user)
+- **Symptom**: `AppXSvc` fails every 6 minutes to delete files under `C:\Program Files\WindowsApps\Deleted` (event log `Microsoft-Windows-AppXDeploymentServer/Operational`, Id **493**), and the backlog GROWS: 21 stuck files on 2026-07-28, **176** by 2026-07-29 08:28 -- twelve hours after a reboot that processed 38 queued file-rename operations. While wedged, the Store client renders search results and the Library fine but leaves app DETAIL pages as never-populating skeletons, greys out install/update buttons, and hides "Get updates" (anything needing authoritative deployment state).
+- **Ruled out by measurement, not assumption**: network (all 3 Store content endpoints reachable), package integrity (Store + `Microsoft.UI.Xaml.2.8` + `Microsoft.VCLibs.140.00` all `Status: Ok`), pending-reboot state (no flags), services (AppXSvc/ClipSVC/InstallService/StorSvc all Running). `wsreset.exe`, an AppXSvc restart, a Store re-registration, and a full reboot each failed to clear it.
+- **Prime suspect (UNPROVEN -- do not record as fact)**: this machine runs three file-system-intrusive agent families concurrently -- **Acronis** (6 services incl. **Nonstop Backup** and **Active Protection** anti-ransomware), **Norton 360** (Antivirus/Firewall/VPN/Tools), and **WD Backup**. Continuous-backup and anti-ransomware agents hold persistent handles and block deletions by design, which fits the observed shape exactly. Confirming WHICH process holds the handles requires elevation + Sysinternals `handle.exe`; that was not run.
+- **Decisive test when picked up**: stop Acronis Active Protection + Nonstop Backup, wait ~12 minutes (two cycles), and check whether new Id-493 events stop. If they do, permanently exclude `C:\Program Files\WindowsApps` in that product and re-verify.
+- **Why HOLD**: zero impact on development or on users -- search, Library, installs and updates all function, and `0.5.8` certified and went live WHILE this was active. It is a Windows housekeeping fault on an unusually heavily-instrumented machine, deserving a deliberate session rather than sprint time.
+- **Correction recorded (2026-07-29)**: this was briefly read as "fixed by the reboot" because a third-party listing (Spike Email) rendered correctly. That was pattern-matching on one sample; the event log showed the loop still running and the file count rising. Check the 493 log, never the UI, to judge this one.
+- Depends on: none
 
 ### HOLD Items (Android / Google Play Store)
 
@@ -1201,6 +1320,11 @@ Register Google Play Developer account ($25 one-time), complete identity verific
 
 | Version | Date | Summary |
 |---------|------|---------|
+| 6.19 | 2026-07-30 | **Sprint 51 retrospective complete; 5 items carded for Sprint 52.** Manual Validation closed all 5 items ("Working as expected"). All 7 retro improvements were approved APPLY NOW; **IMP-7 shipped in-sprint** (auto-advance hook gained the ENFORCEMENT WINDOW upper bound Harold specified -- the rule applies only between Phase 3.7 approval and the start of Manual Validation, which was the root cause of every false positive this hook has produced; suite 33/33). IMP-1/2/3/4 became backlog cards for detail planning at Harold's direction: **F133** (accessibility audit as a repeatable HOLD template, **superseding and retiring F132**) + **F133-S52** first run; **F134** (canonical AppBar icon order -- shared builder DONE and applied to Manual Scan in Sprint 51, three screens remaining); **F135** (session-scoped account selection -- provider and lazy resolver DONE in Sprint 51, Settings per-tab prompting and the No-Rule default screen remaining); **F136** (Skip button in the No-Rule popup). IMP-5 (WinWright actuals) and IMP-6 (drive-it-don't-dump-it rule) fold into F133-S52. |
+| 6.18 | 2026-07-28 | **`0.5.8` ACTUALLY SUBMITTED to Partner Center (Submission 9) -- correcting a 6.15 error.** Entry 6.15 recorded 0.5.8 as "SUBMITTED ... in certification" on 07-27. It was not. Partner Center showed Submission 9 **In draft** with a live "Submit for certification" button: the MSIX was built, uploaded and **Validated**, but the submission was never pushed over the line, and Store presence was still Submission 8 (`0.5.7`). Found 2026-07-28 when Harold checked Partner Center directly after questioning why the dev app still read `0.5.8` rather than `0.5.9`. **BUILT + VALIDATED is not SUBMITTED** -- and the same wrong state was then repeated as fact from `sprint_status.json` for a full day, including as a candidate explanation for an unrelated Store-client bug. Release state is verified in Partner Center, never from a tracking file. Also recorded: a **Microsoft Store CLIENT defect** (app detail pages render as never-populating skeletons while search works; reproduces on third-party listings; survives reboot + `wsreset`) -- not ours, not blocking, no action available. |
+| 6.17 | 2026-07-28 | Added **F131** (WinWright create-path not drivable -- Priority 13) and **F132** (systematic accessibility sweep -- Priority 20), both from Sprint 51 F129 execution and both approved by Harold for the backlog. F131 matters beyond tooling: the two `test_f56_*` scripts are **STALE, not merely excluded** -- their own documented radio workaround did not reproduce, so re-enabling them hits three walls while the comment block asserts the fix works. F132 converts the reactive per-script accessibility fixes into one deliberate WCAG 2.1 AA pass (ADR-0037 already sets that target), with the caution that a wrapper which NAMES a node can also make it UNCLICKABLE -- verify both. **F130-S51 CLOSED**: all 3 tiers complete, 28 contradictions found and corrected, 0 outstanding; the single Class-3 item (retired Sprint-39 memory restore path) was decided by Harold 2026-07-28 and applied same-day (`/memory-restore` retired to a tombstone; `/startup-check` now reads `.claude/sprint_status.json`). |
+| 6.16 | 2026-07-27 | Added **F130. Periodic Process-Docs Consistency Deep Dive** (Process Spike, Priority HOLD, reusable template -- the process-docs counterpart to F71's architecture deep dive). Audits the full instruction surface (11 sprint docs + CLAUDE.md/AGENTS.md + hooks + skills + settings + auto-memory) for 9 defect classes: contradictory recipes, summary-vs-detail drift, unmarked superseded text, memory-vs-doc divergence, orphan instructions, hook-vs-doc mismatch, unenforced MANDATORY steps, tier-inconsistent guidance, dead references. Seeded by the Sprint 50/51 escapes -- notably the Phase 6.6 branch recipe stated 5 inconsistent ways across 2 docs and 2 memory entries. Also added **F129** (WinWright coverage carry-in, Priority 19). |
+| 6.15 | 2026-07-27 | **Sprint 50 merged (PR #278 -> develop, PR #284 -> main) + `0.5.8` SUBMITTED to Partner Center.** MSIX built from merged main; both-sides proof passed; credentials verified embedded. Sprint 51 branch `feature/20260727_Sprint_51` opened per Phase 6.6. Copilot review closed at 9 findings across 4 rounds, all fixed in-sprint (incl. F128 escalated from backlog). Open carry-ins for Sprint 51: F128 sibling early-returns (`removeRule`/`updateRule`/`removeSafeSender`), F129 WinWright coverage. STORE_RELEASE_PROCESS Step 6 gained the release-notes location (Store listings -> "What's new in this version"), which was undocumented. |
 | 6.14 | 2026-07-25 | **Sprint 50 backlog refinement (v1.3 format with Summary Index) + scope selection (Harold): F126 + F122 + F123 + F124 + F127-rescope.** Registered F122-F127: F122/F123/F124 (Core App Quality, from Harold's 0.5.6 validation + Copilot round-6 carry-in), F125 (release self-test probe, Process), F126 (delete the 4 ambiguous legacy TLD rows -- PO decision made), F127 RESOLVED-RESCOPED (CI_* secrets deliberately unset; ci.yml key names fixed `5c4e0ce`; HOLD trigger = CI gains a runtime step). **F-WINSTORE-ASSETS DONE** -- 7 screenshot masters from the live 0.5.7 build committed to `docs/store-assets/windows/` and uploaded by Harold to Partner Center (metadata-only listing update). Pruned Sprint-49-shipped F33-PROD/BUG-DECODE details. |
 | 6.13 | 2026-07-24 | **`0.5.7` LIVE + verified (NO [DEV] title) -- the first fully-correct public release; F119 family closed.** Close-out executed: CHANGELOG `[0.5.7] - 2026-07-24` release heading + links; dev bump 0.5.7 -> 0.5.8 (ONE file -- pubspec.yaml -- the F-VERSION-DERIVE payoff, gate-verified); Store status LIVE. **Android/Google Play track OFF HOLD** (promotion trigger fired). Sprint 50 scope selection pending with Harold. |
 | 6.12 | 2026-07-23 | **Sprint 49 merged (PR #276 -> develop -> main) + `0.5.7` SUBMITTED to Partner Center** after the first-ever full both-sides proof (`APP_ENV=prod` + `NATIVE_APP_ENV=prod`). Rolled Last-Completed-Sprint 48 -> 49; pruned shipped F-VERSION-DERIVE / F-PRECHECK; Sprint 50 branch open (`feature/20260723_Sprint_50`, Phase 6.6 flow). On cert PASS: 0.5.7 close-out + Android/Google Play OFF HOLD. |

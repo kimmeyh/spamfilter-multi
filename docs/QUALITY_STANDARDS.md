@@ -452,10 +452,10 @@ Scaffold(
 
 ### Pre-Commit Checks
 
-**Automated Checks** (via `.claude/hooks.json` or git hooks):
+**Automated Checks** (hook scripts live in `.claude/hooks/` and are registered in `.claude/settings.json`; there is no `.claude/hooks.json`):
 1. **File Size**: Warn if file >40k characters
 2. **Analyzer**: Run `flutter analyze` (0 errors required)
-3. **Tests**: Run `flutter test` (100% pass rate required)
+3. **Tests**: Run `flutter test --concurrency=4` (full suite; 100% pass rate required -- see TESTING_STRATEGY.md "Local Full-Suite Concurrency Policy")
 4. **Format**: Run `dart format` (auto-fix)
 
 ### Code Review Checklist
@@ -473,7 +473,7 @@ Scaffold(
 
 **Every Sprint Must**:
 1. Run `flutter analyze` with 0 errors in production code (`lib/`)
-2. Run `flutter test` with 100% pass rate
+2. Run `flutter test --concurrency=4` with 100% pass rate (full suite)
 3. Update documentation for all user-facing changes
 4. Meet test coverage threshold (80% minimum)
 5. Follow coding style guide (Dart effective-dart)

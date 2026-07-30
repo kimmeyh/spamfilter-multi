@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import 'package:provider/provider.dart';
+import '../../core/providers/selected_account_provider.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/services/data_deletion_service.dart';
 import '../../util/redact.dart';
@@ -347,7 +349,15 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
   }
 
   /// Select account and navigate to scan progress
+  ///
+  /// F135 (Sprint 51 retro IMP-3): choosing an account here is THE act that
+  /// establishes the session selection -- Harold: "unless the user returns to
+  /// the Account page and selects another". Recorded before navigating so the
+  /// Manual Scan screen and any later account-scoped destination resolve to it
+  /// without re-prompting.
   Future<void> _selectAccount(String accountId) async {
+    context.read<SelectedAccountProvider>().select(accountId);
+
     final email = accountId; // accountId is the email
     String platformId = await _credStore.getPlatformId(accountId) ?? '';
     
@@ -428,11 +438,51 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
             final email = displayData?.email ?? accountId;
             final platformId = displayData?.platformId ?? '';
 
-            return ListTile(
-              leading: Icon(_getPlatformIcon(platformId)),
-              title: Text(email),
-              subtitle: Text(_getPlatformDisplayName(platformId)),
+            // F129 (Sprint 51): the account-picker entries were unnamed
+            // nodes, so this dialog was unusable with a screen reader and
+            // unaddressable by UI automation -- it is the gate in front of
+            // Settings > Manage Rules, which blocked F129 script coverage of
+            // that whole path. Tooltip carries the name into the Windows UIA
+            // projection; Semantics carries it to assistive technology.
+            // Semantics OUTSIDE, Tooltip INSIDE -- the order proven on the
+            // No-Rule checkbox: Semantics supplies the screen-reader label
+            // (Tooltip alone does not), Tooltip is what reaches the Windows
+            // UIA projection (Semantics alone does not), and keeping the
+            // ListTile innermost leaves it as the tap target rather than a
+            // wrapper node absorbing the click.
+            // Getting BOTH a single named node AND a working tap target here
+            // took three failed shapes (Sprint 51, 2026-07-28) -- keep this
+            // one:
+            //   1. Semantics(button:) WITHOUT excludeSemantics -> the inner
+            //      ListTile keeps its own node, so the entry projects as TWO
+            //      stacked Buttons with the SAME name. A name selector matches
+            //      the outer wrapper, which has no handler, so the dialog never
+            //      dismisses -- while the tool still reports success, because a
+            //      click reports DISPATCH, not effect.
+            //   2. Adding excludeSemantics:true -> collapses to ONE correctly
+            //      named node, but also drops the ListTile's gesture node, so
+            //      the entry becomes unclickable by automation.
+            //   3. This shape -- excludeSemantics:true to collapse the tree,
+            //      PLUS onTap on the Semantics node itself so the merged node
+            //      carries the tap action. One named node, one handler.
+            // The ListTile keeps its own onTap so ordinary mouse/touch input
+            // (which hits the ListTile directly, not the semantics node) still
+            // works exactly as before.
+            return Semantics(
+              container: true,
+              button: true,
+              excludeSemantics: true,
+              label: 'Select account $email',
               onTap: () => Navigator.pop(ctx, accountId),
+              child: Tooltip(
+                message: 'Select account $email',
+                child: ListTile(
+                  leading: Icon(_getPlatformIcon(platformId)),
+                  title: Text(email),
+                  subtitle: Text(_getPlatformDisplayName(platformId)),
+                  onTap: () => Navigator.pop(ctx, accountId),
+                ),
+              ),
             );
           }).toList(),
         ),
@@ -446,17 +496,59 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
     );
   }
 
-  /// Navigate to settings screen
-  /// [UPDATED] ISSUE #123: Settings requires accountId, show account selector dialog
-  void _openSettings() async {
+  /// Resolve the account for an account-scoped destination (F135, Sprint 51
+  /// retro IMP-3).
+  ///
+  /// Harold's rule: the picker appears ONLY when (1) no account has been
+  /// selected this session AND (2) the destination actually needs one. So:
+  ///   - a session selection already exists -> return it, NO dialog
+  ///   - exactly one account is configured  -> use it, NO dialog (there is
+  ///     nothing to choose, and prompting for a single option is pure friction)
+  ///   - otherwise -> prompt once, and REMEMBER the answer so the next
+  ///     account-scoped destination does not ask again
+  ///
+  /// Returns null if the user cancels or no accounts exist.
+  Future<String?> _resolveAccountForScopedDestination() async {
     if (_savedAccounts.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please add an email account first')),
       );
-      return;
+      return null;
     }
 
-    final selected = await _showAccountSelectionDialog();
+    final selectedAccount = context.read<SelectedAccountProvider>();
+
+    // (1) Already chosen this session -- but only trust it if that account
+    // still exists. An account deleted after selection would otherwise hand a
+    // stale id to Settings, which would then fail to load its credentials.
+    final existing = selectedAccount.accountId;
+    if (existing != null && _savedAccounts.contains(existing)) {
+      return existing;
+    }
+    if (existing != null) {
+      selectedAccount.clear(); // stale -> drop it and fall through to prompt
+    }
+
+    // (2) Single account -> nothing to choose.
+    if (_savedAccounts.length == 1) {
+      final only = _savedAccounts.first;
+      selectedAccount.select(only);
+      return only;
+    }
+
+    final picked = await _showAccountSelectionDialog();
+    if (picked != null && mounted) {
+      selectedAccount.select(picked);
+    }
+    return picked;
+  }
+
+  /// Navigate to settings screen
+  /// [UPDATED] ISSUE #123: Settings requires accountId, show account selector dialog
+  /// [UPDATED] F135 (Sprint 51): resolves via the session selection first, so
+  /// the picker no longer appears every single time Settings is opened.
+  void _openSettings() async {
+    final selected = await _resolveAccountForScopedDestination();
 
     if (selected != null && mounted) {
       Navigator.push(
@@ -533,6 +625,11 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
   /// per-account wipe -- credentials + scan history + unmatched emails +
   /// per-account settings + rate-limit state. Global rules, safe senders,
   /// and other accounts are preserved.
+  /// F135 (Sprint 51): also clears the session selection when the DELETED
+  /// account is the selected one, so a stale accountId can never be handed to
+  /// an account-scoped screen that would then fail to load its credentials.
+  /// `clearIfSelected` is used rather than `clear` so deleting a DIFFERENT
+  /// account leaves a valid selection intact.
   Future<void> _deleteAccount(String accountId) async {
     final email = accountId; // accountId is the email
 
@@ -568,6 +665,10 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       try {
         final service = DataDeletionService(credStore: _credStore);
         final report = await service.deleteAccountData(accountId);
+        // F135: drop the session selection if THIS was the selected account.
+        if (mounted) {
+          context.read<SelectedAccountProvider>().clearIfSelected(accountId);
+        }
         setState(() {
           _savedAccounts.remove(accountId);
           _accountDataCache.remove(accountId);
@@ -708,7 +809,16 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                     final displayData = snapshot.data;
                     if (displayData == null) {
                       // Fallback if data couldn't be loaded - show delete option
-                      return Card(
+                      // F129 (Sprint 51): same semantics treatment as the
+                      // healthy row below -- an error row must announce WHICH
+                      // account failed and why, not surface as an unnamed
+                      // Group.
+                      return Semantics(
+                        container: true,
+                        excludeSemantics: true,
+                        label: '$accountId - error: missing credentials',
+                        hint: 'Use the delete button to remove this account',
+                        child: Card(
                         margin: const EdgeInsets.only(bottom: 12),
                         elevation: 2,
                         color: Colors.red[50],
@@ -732,6 +842,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                             color: Colors.red[700],
                           ),
                         ),
+                        ),
                       );
                     }
 
@@ -744,7 +855,37 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                       'Account: $accountId, Email: ${displayData.email}, Platform: ${displayData.platformId}, Auth: $authMethod',
                     );
 
-                    return Card(
+                    // F129 (Sprint 51): the account row is an unnamed Group in
+                    // the accessibility tree without this wrapper -- the child
+                    // Text widgets are not merged into the tappable ancestor,
+                    // so screen readers announce nothing actionable and
+                    // WinWright name-based selectors resolve 0 elements.
+                    // `container` + `explicitChildNodes: false` merges the
+                    // email/provider/auth text into ONE named, tappable node
+                    // while leaving the trailing icon buttons (which carry
+                    // their own tooltips) individually addressable.
+                    return Semantics(
+                      container: true,
+                      button: true,
+                      // excludeSemantics: ListTile builds its own semantics
+                      // node; without this the descendant node wins and the
+                      // container label never reaches UIA (verified against a
+                      // live build, Sprint 51). Excluding descendants makes
+                      // this row announce as ONE named, tappable element.
+                      excludeSemantics: true,
+                      label: '${displayData.email} - $platformName - $authMethod',
+                      hint: 'Select account to scan',
+                      // onTap on the SEMANTICS node is mandatory whenever
+                      // excludeSemantics drops the child's own gesture node:
+                      // without it the row announces as a Button that
+                      // assistive technology cannot ACTIVATE. Found by Copilot
+                      // on PR #285 (it flagged the test helper; the same gap
+                      // was live HERE). Same defect that shipped in the
+                      // account-picker dialog mid-Sprint-51 -- named but
+                      // unclickable. The ListTile keeps its own onTap so
+                      // ordinary mouse/touch input is unchanged.
+                      onTap: () => _selectAccount(accountId),
+                      child: Card(
                       margin: const EdgeInsets.only(bottom: 12),
                       elevation: 2,
                       child: ListTile(
@@ -789,6 +930,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                           ],
                         ),
                         onTap: () => _selectAccount(accountId),
+                      ),
                       ),
                     );
                   },

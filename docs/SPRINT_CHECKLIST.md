@@ -113,7 +113,7 @@ These documents MUST be created/updated during each sprint:
 - [ ] **PR UPDATED** (the sprint PR already exists from 3.3.1): `feature/...` -> `develop` (NOT main), description complete with task summary, references issues `Closes #XX, #YY, #ZZ`. **Kept DRAFT.**
 - [ ] **GitHub Copilot review requested + responded to** (if Copilot enabled): draft Fix/Backlog/NA recommendations per comment, get user approval, implement approved items (see SPRINT_EXECUTION_WORKFLOW.md § 6.4.1)
 - [ ] **6.5 Interim status to user -- NOT "ready for approval"** (the readiness announcement is Phase 7 step 7.7.5, after retro + Copilot all complete)
-- [ ] **6.6 ON MERGE: open the NEXT sprint branch off updated develop IMMEDIATELY** (MANDATORY, Sprint 42 retro) -- the moment the PR is merged/approved, run (PowerShell): `git checkout develop`, `git pull origin develop`, `git checkout -b feature/<date>_Sprint_<N+1>`, then push it, BEFORE any further commits (next-sprint backlog refinement, issue cleanup, deferred IMPs). Phase 7 (incl. retro improvements) completes before merge, so post-merge work belongs to the NEXT sprint; commits on the merged branch get stranded off `develop`. See SPRINT_EXECUTION_WORKFLOW.md § 6.6 (incl. cherry-pick recovery if work already landed on the merged branch).
+- [ ] **6.6 ON MERGE: open the NEXT sprint branch FROM THE CURRENT FEATURE BRANCH IMMEDIATELY** (MANDATORY, Sprint 42 retro; recipe corrected Sprint 49 retro IMP-6) -- the moment the PR is merged/approved, run `git checkout -b feature/<date>_Sprint_<N+1>` **while still on the current sprint branch**, commit any carried-forward changes on the new branch, then `git push -u origin feature/<date>_Sprint_<N+1>` -- all BEFORE any further commits (next-sprint backlog refinement, issue cleanup, deferred IMPs). **Do NOT check out and pull `develop` first**: branching from `develop` LOSES uncommitted work and forces error-prone cherry-picks (the Sprint 48->49 recovery). **Never stash to carry forward** -- a PreToolUse hook hard-blocks it (Sprint 47 retro IMP-3); uncommitted changes already follow the working tree across `checkout -b`. Phase 7 (incl. retro improvements) completes before merge, so post-merge work belongs to the NEXT sprint; commits on the merged branch get stranded off `develop`. See SPRINT_EXECUTION_WORKFLOW.md § 6.6 (incl. cherry-pick recovery if work already landed on the merged branch).
 
 **[CHECKPOINT]** Review Phase 7 checklist before proceeding. Phase 7 is MANDATORY. **[CONTEXT CHECK]** Verify context < 85% before starting Phase 7.
 
@@ -121,7 +121,7 @@ These documents MUST be created/updated during each sprint:
 
 [CRITICAL] **A Sprint Retrospective follows the 7-Step Retrospective Protocol in `docs/SPRINT_EXECUTION_WORKFLOW.md` Phase 7.3-7.7. All 14 categories must be addressed by all 4 roles. Steps must run in order; do NOT collapse, reorder, or skip steps. Missing roles, missing categories, skipped steps = retrospective is INCOMPLETE = sprint is NOT complete.**
 
-- [ ] **Verify active model is Opus** (retrospective analysis requires Opus per SPRINT_PLANNING.md "Activities Requiring Opus")
+- [ ] **Verify active model is the top available tier** -- Fable 5 when enabled, otherwise Opus (retrospective analysis per SPRINT_PLANNING.md "Activities Requiring Fable/Opus"). _(F130-S51: this line still said "must be Opus" after the Sprint 49 Fable/Opus rename, so it would have failed verification against the Fable 5 session that actually ran the Sprint 50 retrospective.)_
 - [ ] **7.1** Windows desktop build verified
 - [ ] **7.2** Sprint review offered to user
 
@@ -149,7 +149,7 @@ These documents MUST be created/updated during each sprint:
   - [ ] `docs/sprints/SPRINT_N_RETROSPECTIVE.md` created/finalized (MANDATORY -- with all 14 categories x 4 roles filled + "Improvement Decisions" section from Step 6)
   - [ ] `docs/sprints/SPRINT_N_SUMMARY.md` created (MANDATORY - do not defer)
   - [ ] ARCHITECTURE.md updated (if architecture changed)
-  - [ ] .claude/sprint_status.json updated
+  - [ ] `.claude/sprint_status.json` updated -- **VERIFY BY READING IT, not by recalling** (Sprint 50 escape: it had drifted 15 sprints). This is the file that restores sprint state after context compaction, so a stale copy actively misleads the next session. Update: `current_sprint` (number/branch/status/approval flags), `previous_sprint` (number/PR/deliverables), `github_issues` (with closed status), `test_metrics` (actual counts from the last full run), `store_release` if a submission is in flight, and `next_actions`.
 - [ ] **7.7.5 FINAL GATE + announce readiness** (PR lifecycle checkpoint #4, MANDATORY): ONLY after manual validation AND retrospective AND retro improvements AND any Copilot review AND Copilot comments addressed are ALL complete -- final PR update IF anything needs it (no-op if nothing changed); verify PR is already Ready-for-Review (set at end of 7.7; `gh pr ready` now if somehow still draft); THEN notify Product Owner / Scrum Master the PR is ready for FINAL APPROVAL. This PO/SM notification is the ONE readiness announcement of the sprint.
 - [ ] **7.8** Review results summarized
 - [ ] **7.9** Next steps offered to user
@@ -157,8 +157,8 @@ These documents MUST be created/updated during each sprint:
 ## Post-Merge Cleanup
 
 - [ ] PR merged to develop
-- [ ] **6.6 NEXT sprint branch opened off updated develop IMMEDIATELY on merge** (see Phase 6.6 -- before any post-merge commits)
-- [ ] **Review and close all resolved GitHub issues** (`gh issue list --state open` - close any resolved by this sprint)
+- [ ] **6.6 NEXT sprint branch opened FROM THE CURRENT FEATURE BRANCH IMMEDIATELY on merge** (see Phase 6.6 -- before any post-merge commits; NOT from develop, never via stash)
+- [ ] **Review and close all resolved GitHub issues** -- run `gh issue list --state open` and close each one this sprint resolved. **`Closes #N` does NOT auto-fire in this repo**: PRs merge `feature -> develop`, and GitHub only auto-closes on merge to the DEFAULT branch. Assuming auto-close is the Sprint 50 escape (five issues left open). Verify with `gh issue list --label sprint --state open` returning empty.
 - [ ] GitHub issues auto-closed (verify Closes #N references worked)
 - [ ] **Feature branch NEVER deleted** (sprint branches are retained permanently, local + remote -- see SPRINT_EXECUTION_WORKFLOW.md "Feature branch retention"; do not offer to clean up)
 
