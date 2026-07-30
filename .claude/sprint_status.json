@@ -1,40 +1,38 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-07-28T19:40:00Z",
+  "_last_updated": "2026-07-30T20:15:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
 
   "current_sprint": {
-    "number": 51,
-    "branch": "feature/20260727_Sprint_51",
+    "number": 52,
+    "branch": "feature/20260730_Sprint_52",
     "pr_number": null,
     "pr_url": null,
-    "start_date": "2026-07-27",
-    "status": "Phase 7.7 COMPLETE -- PR #285 Ready-for-Review, awaiting Harold's merge. Sprint is NOT complete until Post-Merge Cleanup runs (Sprint 52 branch from THIS branch + close issues #286/#287/#288 by hand).",
-    "plan_approved": true,
-    "plan_approval_date": "2026-07-27",
-    "blanket_execution_approved": true,
-    "_approval_note": "Harold 2026-07-27: 'Sprint plan approved, proceed with execution. All Sprint tasks and sub-tasks are approved. Continue without additional approvals until Manual Validation, providing your recommendation for Manual Validation steps. Do not stop to ask questions unless meeting the criteria in docs/SPRINT_STOPPING_CRITERIA.md'",
-    "scope": ["F130-S51 (first, time-boxed by tier)", "F128-residual", "F129"]
+    "start_date": "2026-07-30",
+    "status": "Phase 1 -- NOT YET SCOPED. Branch opened per Phase 6.6 from feature/20260727_Sprint_51. Next: Backlog Refinement (docs/BACKLOG_REFINEMENT.md), then scope selection with Harold.",
+    "plan_approved": false,
+    "plan_approval_date": null,
+    "blanket_execution_approved": false,
+    "_approval_note": "NOT approved -- Sprint 52 has no plan yet. Phase 3.7 approval is what creates execution authorization; do not start task work before it.",
+    "scope": [],
+    "_scope_note": "Carry-in candidates recorded in docs/sprints/SPRINT_52_PLAN.md (stub): F133-S52 (accessibility audit, absorbs IMP-5 + IMP-6), F134 + F135 (both PARTIAL -- foundations shipped in Sprint 51), F136, F131. Harold selects scope at Phase 1."
   },
 
   "previous_sprint": {
-    "number": 50,
-    "branch": "feature/20260723_Sprint_50",
-    "pr_number": 278,
-    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/278",
-    "merged_at": "2026-07-27",
-    "merge_note": "PR #278 -> develop, then PR #284 develop -> main",
+    "number": 51,
+    "branch": "feature/20260727_Sprint_51",
+    "pr_number": 285,
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/285",
+    "merged_at": "2026-07-30",
+    "merge_note": "PR #285 -> develop (merge commit 6e3a152). Post-Merge Cleanup COMPLETE: Sprint 52 branch opened from the Sprint 51 branch, issues #286/#287/#288 closed by hand (gh issue list --label sprint --state open verified EMPTY), all sprint branches retained.",
     "status": "complete",
-    "deliverables": ["F126", "F122", "F123", "F124", "F127-rescoped", "MT-1", "MT-2", "MT-2b", "MT-2c", "MT-3", "F128"]
+    "deliverables": ["F130-S51 (28 contradictions found + corrected across 3 tiers)", "F128-residual", "F129 (3 WinWright scripts)", "IMP-7 auto-advance enforcement window", "F134 + F135 foundations", "0.5.8 post-cert close-out"],
+    "verification": "1,815 tests passed / 29 skipped / 0 failed; analyze clean; hook suite 34/34; WinWright 3/3 no DB drift; Manual Validation 5/5 closed by Harold; Copilot review: 1 finding, fixed and resolved"
   },
 
-  "github_issues": [
-    {"number": 286, "title": "F130-S51: Process-Docs Consistency Deep Dive (first run)", "status": "OPEN -- work COMPLETE, closes at Post-Merge Cleanup"},
-    {"number": 287, "title": "F128-residual: audit sibling silent-no-op early-returns in RuleSetProvider", "status": "OPEN -- work COMPLETE, closes at Post-Merge Cleanup"},
-    {"number": 288, "title": "F129: WinWright coverage for the Sprint-50-touched screens", "status": "OPEN -- work COMPLETE, closes at Post-Merge Cleanup"}
-  ],
-  "_github_issues_note": "These 3 are Sprint 51's task cards. All three tasks are DONE and verified; the issues stay OPEN until PR #285 merges, because closing them is a Post-Merge Cleanup checklist item and `Closes #N` does NOT auto-fire in this GitFlow repo (PRs merge feature -> develop, and GitHub only auto-closes on merge to the DEFAULT branch). Assuming auto-close was the Sprint 50 escape that left five issues open. Verify with `gh issue list --label sprint --state open` returning empty AFTER the merge. Sprint 50's issues (279-283) were closed at its own post-merge step and are recorded in previous_sprint.",
+  "github_issues": [],
+  "_github_issues_note": "EMPTY because Sprint 52 has no cards yet -- they are created when scope is selected at Phase 3. Sprint 51's three cards (#286/#287/#288) were closed BY HAND at Post-Merge Cleanup on 2026-07-30 and verified with `gh issue list --label sprint --state open` returning empty. `Closes #N` does NOT auto-fire in this GitFlow repo: PRs merge feature -> develop, and GitHub only auto-closes on merge to the DEFAULT branch. Assuming auto-close was the Sprint 50 escape that left five issues open.",
 
   "test_metrics": {
     "tests_passing": 1815,
@@ -81,6 +79,7 @@
 
   "blocking_issues": [],
 
+  "_sprint_51_task_status_note": "Retained for reference; Sprint 51 is CLOSED (see previous_sprint). Full record: docs/sprints/SPRINT_51_SUMMARY.md.",
   "sprint_51_task_status": {
     "task_1_F130_S51": "DONE -- Tiers 1+2+3 all COMPLETE. 28 contradictions found, 28 corrected, 0 outstanding. The one Class-3 item (retired .claude/memory restore path) was surfaced per R-6, decided by Harold 2026-07-28 (retire /memory-restore, point /startup-check at this file), and applied same-day. Findings: docs/sprints/SPRINT_51_F130_FINDINGS.md",
     "task_2_F128_residual": "DONE -- 3 silent-no-op sites fixed in rule_set_provider.dart",
@@ -88,10 +87,10 @@
   },
 
   "next_actions": [
-    "HAROLD: review and merge PR #285 -> develop. It is Ready-for-Review, MERGEABLE, all review threads resolved. Phase 7.7 is complete; the sprint is NOT complete until the Post-Merge Cleanup below runs.",
-    "ON MERGE (Post-Merge Cleanup, in this order): (1) open the Sprint 52 branch FROM feature/20260727_Sprint_51 IMMEDIATELY -- never from develop, never via git stash, before any post-merge commits; (2) CLOSE issues #286, #287, #288 by hand -- `Closes #N` does NOT auto-fire on a feature->develop merge in this repo, and assuming it did was the Sprint 50 escape; verify `gh issue list --label sprint --state open` returns empty; (3) NEVER delete the sprint branch.",
-    "HAROLD (release, low priority): confirm the remaining Store-install checks -- About shows 'Version 0.5.8', and Gmail sign-in WORKS. The clean title proves APP_ENV/NATIVE_APP_ENV resolved to prod; only a real sign-in proves the OAuth credentials were embedded, which is what F119 originally broke.",
-    "SPRINT 52 Phase 1: backlog refinement, then scope selection. Stub with carry-ins at docs/sprints/SPRINT_52_PLAN.md; candidates F133-S52 (accessibility audit, absorbs IMP-5 + IMP-6), F134 + F135 (both PARTIAL -- foundations shipped in Sprint 51), F136, F131.",
+    "SPRINT 52 Phase 1: BACKLOG REFINEMENT -- read the authoritative presentation format in docs/BACKLOG_REFINEMENT.md FIRST (v1.3, Summary Index), then present candidates to Harold for scope selection. This is where Sprint 52 starts; no task work before Phase 3.7 approval.",
+    "Candidates entering Phase 1: F133-S52 (accessibility audit, first run of the F133 template, absorbs IMP-5 + IMP-6), F134 (AppBar order -- 3 screens remain), F135 (account selection -- Settings per-tab prompting + default screen remain), F136 (Skip button), F131 (WinWright create-path undrivable; the two test_f56_* scripts are STALE, not merely excluded). Stub with the DONE/REMAINING split: docs/sprints/SPRINT_52_PLAN.md",
+    "HAROLD (release, low priority, not blocking): confirm the remaining Store-install checks -- About shows 'Version 0.5.8', and Gmail sign-in WORKS. The clean title proves APP_ENV/NATIVE_APP_ENV resolved to prod; only a real sign-in proves the OAuth credentials were embedded, which is what F119 originally broke.",
+    "HAROLD (release, when ready): develop -> main merge for the Sprint 51 work. Sprint 51 shipped no user-facing app changes beyond the F134/F135 foundations, so there is no Store submission pending.",
     "Android/Google Play remains the next major track (promotion trigger fired 2026-07-24)"
   ]
 }
