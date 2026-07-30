@@ -65,10 +65,11 @@
     "post_cert_closeout_done": [
       "DONE 2026-07-30: CHANGELOG '## [0.5.8] - 2026-07-29' release heading + comparison links added",
       "DONE 2026-07-30: dev bumped 0.5.8 -> 0.5.9 (ONE file, pubspec.yaml -- the F-VERSION-DERIVE payoff; version_consistency gate green)",
-      "DONE 2026-07-30: ALL_SPRINTS_MASTER_PLAN Store status -> LIVE; Last Completed Sprint rolled 50 -> 51"
+      "DONE 2026-07-30: ALL_SPRINTS_MASTER_PLAN Store status -> LIVE; Last Completed Sprint rolled 50 -> 51",
+      "DONE 2026-07-30 (Harold, Store-installed build): NO [DEV] in the window title. This is the definitive end of the F119 FAMILY -- F119 (msix key typo `build_windows_args`), F119-b (space in a secrets.prod.json key silently dropping APP_ENV=prod), and F119-c (native SPAMFILTER_APP_ENV never set by the msix path, so CMake defaulted to dev). All three presented as the SAME user-visible symptom -- a [DEV] title on a Store build -- and took three sprints to fully clear. 0.5.8 is the first Store release verified clean by direct observation of the installed build."
     ],
     "post_cert_closeout_pending": [
-      "Harold verifies the Store-installed build: no [DEV] title, About shows 0.5.8, Gmail sign-in works (only Harold can do this -- requires installing from the Store)"
+      "Harold to confirm the remaining TWO parts of the Store-install check when convenient (NOT yet reported, deliberately not assumed from the title result): (a) About screen shows 'Version 0.5.8' with no [DEV] suffix, (b) Gmail sign-in works -- the credential-embedding check, which is what F119 originally broke. The title being clean proves APP_ENV/NATIVE_APP_ENV resolved to prod; it does NOT prove the OAuth credentials were embedded, because those are separate dart-defines. Only a real sign-in proves that."
     ],
     "_closeout_sequencing_note": "These are RELEASE close-out steps, not Sprint 51 task work. The dev version bump in particular changes what every version-consistency gate asserts, so it should land as its own commit rather than mixed into sprint changes. Harold's Store-install verification is the only one Claude cannot do."
   },
