@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/models/email_message.dart';
 import '../../core/providers/rule_set_provider.dart';
+import '../../core/providers/selected_account_provider.dart';
 import '../../core/services/auth_results_parser.dart';
 import '../../core/services/email_body_parser.dart';
 import '../../core/services/pattern_compiler.dart';
@@ -18,6 +19,8 @@ import '../../core/utils/pattern_normalization.dart';
 import '../../core/utils/provider_sender_grouping.dart';
 import '../../util/redact.dart';
 import '../widgets/app_bar_with_exit.dart';
+import '../widgets/standard_app_bar_actions.dart';
+import 'help_screen.dart' show HelpSection;
 import '../widgets/provider_group_markers.dart';
 import '../widgets/auth_warning_dialog.dart';
 import '../widgets/empty_state.dart';
@@ -81,6 +84,43 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
     _scanResultStore = ScanResultStore(_dbHelper);
     _unmatchedStore = UnmatchedEmailStore(_dbHelper);
     _loadItems();
+  }
+
+  /// F135 (Sprint 52): resolve an account for the account-scoped Settings
+  /// destination that F134 adds to this screen's AppBar.
+  ///
+  /// This screen is CROSS-ACCOUNT by design -- it aggregates the latest scan
+  /// from every configured account -- so it must never PROMPT (Harold's rule
+  /// lists only the 3 account-specific Settings tabs and Manual Live Scan as
+  /// prompting surfaces). It only resolves:
+  ///   1. the session selection, if that account still appears here, else
+  ///   2. the account whose filter chip is currently active, else
+  ///   3. the first known account.
+  /// Returns null when no account is known, which correctly DISABLES the
+  /// Settings icon rather than pushing Settings with a bogus id.
+  String? _resolveAccountIdForSettings() {
+    // The session selection is an OPTIONAL input, not a requirement: this
+    // screen works perfectly well without one (it falls through to the active
+    // filter chip, then the first known account). Reading it defensively keeps
+    // the screen constructible in any widget-test harness that has not
+    // registered the provider -- 12 pre-existing tests pump this screen
+    // directly, and a hard `context.read` turned all 12 red with
+    // ProviderNotFoundException. A screen should not require a provider it can
+    // do without.
+    String? selected;
+    try {
+      selected = context.read<SelectedAccountProvider>().accountId;
+    } catch (_) {
+      selected = null;
+    }
+    if (selected != null && _distinctAccounts.contains(selected)) {
+      return selected;
+    }
+    if (_accountFilter != 'all' && _distinctAccounts.contains(_accountFilter)) {
+      return _accountFilter;
+    }
+    if (_distinctAccounts.isNotEmpty) return _distinctAccounts.first;
+    return null;
   }
 
   Future<void> _loadItems() async {
@@ -540,13 +580,36 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
     return Scaffold(
       appBar: AppBarWithExit(
         title: const Text('Review "No Rule" Items'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
-            onPressed: _loadItems,
-          ),
-        ],
+        // F134 (Sprint 52): canonical order from the ONE shared builder --
+        // Refresh (screen-specific, first), then View Scan History, Accounts,
+        // Settings, Help, then the auto-appended Exit. Harold specified this
+        // screen explicitly: "Need to add the following icons ... so they
+        // appear in this order: Refresh, View Scan History, Accounts,
+        // Settings, Help".
+        //
+        // includeNoRuleReview: false -- this IS the Review "No Rule" screen; a
+        // self-referential entry point would be noise.
+        // Settings is account-scoped while this screen is cross-account, so the
+        // accountId comes from the F135 resolver (which never prompts here);
+        // when it returns null the builder omits the Settings icon rather than
+        // pushing a bogus id.
+        actions: StandardAppBarActions.build(
+          context: context,
+          // No dedicated HelpSection exists for this screen; resultsDisplay is
+          // the nearest match (this screen reviews scan results). Adding a
+          // reviewNoRule section is a CONTENT task, filed in the F133-S52
+          // findings rather than smuggled into an icon-ordering change.
+          helpSection: HelpSection.resultsDisplay,
+          accountId: _resolveAccountIdForSettings(),
+          includeNoRuleReview: false,
+          leading: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Refresh',
+              onPressed: _loadItems,
+            ),
+          ],
+        ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

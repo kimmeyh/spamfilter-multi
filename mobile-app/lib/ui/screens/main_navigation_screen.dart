@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import '../../adapters/storage/secure_credentials_store.dart';
 import 'account_selection_screen.dart';
+import 'no_rule_review_screen.dart';
 import '../widgets/app_bar_with_exit.dart';
 
 /// Main navigation screen with bottom navigation bar (Android only)
@@ -78,9 +80,72 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         ),
       );
     } else {
-      // On non-Android platforms, just show the account selection screen
-      return const AccountSelectionScreen();
+      // F135 (Sprint 52): on desktop, the DEFAULT screen is Review "No Rule"
+      // Items when at least one account is configured -- Harold: "If one or
+      // more accounts exist, the new 'default' screen will be the Review 'No
+      // Rules' Items screen". With ZERO accounts there is nothing to review, so
+      // Account Selection is shown instead (the plan's stated assumption, not
+      // separately overridden at approval).
+      //
+      // Resolved asynchronously because the account list lives in the secure
+      // credential store. While it resolves we show the same neutral spinner
+      // the app already uses during rule loading, rather than flashing Account
+      // Selection and then replacing it.
+      return const _DesktopDefaultScreen();
     }
+  }
+}
+
+/// Picks the desktop default screen based on whether any account exists
+/// (F135, Sprint 52 retro IMP-3).
+///
+/// Deliberately a separate widget rather than a `FutureBuilder` inline in
+/// [MainNavigationScreen.build]: that build method runs on every rebuild, and
+/// re-reading the credential store each time would both cost IO and risk
+/// flipping the user off their current screen mid-session.
+class _DesktopDefaultScreen extends StatefulWidget {
+  const _DesktopDefaultScreen();
+
+  @override
+  State<_DesktopDefaultScreen> createState() => _DesktopDefaultScreenState();
+}
+
+class _DesktopDefaultScreenState extends State<_DesktopDefaultScreen> {
+  /// null = still resolving; true = at least one account exists.
+  bool? _hasAccounts;
+
+  @override
+  void initState() {
+    super.initState();
+    _resolve();
+  }
+
+  Future<void> _resolve() async {
+    bool hasAccounts = false;
+    try {
+      final accounts = await SecureCredentialsStore().getSavedAccounts();
+      hasAccounts = accounts.isNotEmpty;
+    } catch (_) {
+      // Credential-store failure -> fall back to Account Selection. That screen
+      // surfaces the error state per-account and offers delete/re-add, which is
+      // exactly what a user with a broken store needs to see. Defaulting to the
+      // No-Rule screen here would show an empty list with no way to fix it.
+      hasAccounts = false;
+    }
+    if (mounted) setState(() => _hasAccounts = hasAccounts);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasAccounts = _hasAccounts;
+    if (hasAccounts == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+    return hasAccounts
+        ? const NoRuleReviewScreen()
+        : const AccountSelectionScreen();
   }
 }
 

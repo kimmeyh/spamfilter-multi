@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
+import 'package:provider/provider.dart';
 
+import '../../core/providers/selected_account_provider.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/scan_result_store.dart';
@@ -71,9 +73,36 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
   /// _accountFilter == 'all'). Resolution order: (1) widget.accountId,
   /// (2) current account filter if specific, (3) first known account,
   /// (4) null -> disable the Settings IconButton.
+  /// F135 (Sprint 52): resolution order for the account-scoped Settings
+  /// destination. The SESSION SELECTION is consulted after this screen's own
+  /// context but before falling back to "first account in the list", so a user
+  /// who already chose an account gets THAT account's settings rather than an
+  /// arbitrary one.
+  ///
+  /// Scan History is itself cross-account (it shows every account's scans), so
+  /// it never PROMPTS -- it only resolves. The picker belongs to the account
+  /// selection screen; this screen just needs a sensible account for the
+  /// Settings icon, and returning null correctly disables that icon.
   String? _resolveAccountIdForSettings() {
+    // 1. Explicit context wins: this screen was opened FOR an account.
     if (widget.accountId != null) return widget.accountId;
+    // 2. The user has filtered to one account -- that is their current intent.
     if (_accountFilter != 'all') return _accountFilter;
+    // 3. The session selection (F135) -- honoured only if that account still
+    //    appears here, so a deleted or unrelated account cannot leak through.
+    //    Read defensively: the selection is an OPTIONAL input (the fallbacks
+    //    below cover its absence), so a widget-test harness that has not
+    //    registered the provider must not make this screen unconstructible.
+    String? selected;
+    try {
+      selected = context.read<SelectedAccountProvider>().accountId;
+    } catch (_) {
+      selected = null;
+    }
+    if (selected != null && _distinctAccounts.contains(selected)) {
+      return selected;
+    }
+    // 4. Last resort: the first known account.
     if (_distinctAccounts.isNotEmpty) return _distinctAccounts.first;
     return null;
   }
