@@ -10,13 +10,13 @@
     "pr_number": null,
     "pr_url": null,
     "start_date": "2026-07-30",
-    "status": "Phase 1 -- NOT YET SCOPED. Branch opened per Phase 6.6 from feature/20260727_Sprint_51. Next: Backlog Refinement (docs/BACKLOG_REFINEMENT.md), then scope selection with Harold.",
+    "status": "Phase 3.7 -- plan DRAFTED and awaiting Harold's approval. Scope selected 2026-07-30. No task work until approved.",
     "plan_approved": false,
     "plan_approval_date": null,
     "blanket_execution_approved": false,
-    "_approval_note": "NOT approved -- Sprint 52 has no plan yet. Phase 3.7 approval is what creates execution authorization; do not start task work before it.",
-    "scope": [],
-    "_scope_note": "Carry-in candidates recorded in docs/sprints/SPRINT_52_PLAN.md (stub): F133-S52 (accessibility audit, absorbs IMP-5 + IMP-6), F134 + F135 (both PARTIAL -- foundations shipped in Sprint 51), F136, F131. Harold selects scope at Phase 1."
+    "_approval_note": "NOT approved. Phase 3.7 approval is what creates execution authorization; do not start task work before it. ONE open Class-1 question is surfaced in the plan for resolution AT approval: F135's default-screen change (zero-account startup path, and whether Back exits the app).",
+    "scope": ["F133-S52 (first, time-boxed by tier)", "F131", "F134", "F135", "F136"],
+    "_scope_note": "Harold selected all 5 candidates at Phase 1 backlog refinement 2026-07-30. Plan: docs/sprints/SPRINT_52_PLAN.md. Execution order: Task 1 first (Harold's instruction), then Task 4 BEFORE Task 3 (F134 depends on F135 for the No-Rule Settings icon), then Task 5; Task 2 independent."
   },
 
   "previous_sprint": {
