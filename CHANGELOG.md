@@ -26,6 +26,11 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-07-30 (Sprint 51: retrospective improvements)
+- **fix**: IMP-7 -- the sprint-auto-advance hook gained an **enforcement-window upper bound**. Harold's rule: the don't-stop/don't-ask forcing function applies ONLY between Phase 3.7 plan approval and the start of Manual Validation, because "all questions for the sprint should have been asked by then" and everything after Manual Validation is Harold-driven. The hook had a lower bound but no upper bound, which was the root cause of every false positive it has produced -- Phase 1 refinement, the Phase 3.7 approval request, Phase 7 retro prompts, and non-sprint side conversations had each been hand-patched with more whitelist rows. Suite 33/33, including a guard proving the window still closes during execution (Issue #286)
+- **feat**: F135 foundation -- `SelectedAccountProvider`, a session-scoped selected account (deliberately not persisted). Account-scoped destinations now resolve from the session selection instead of re-prompting: the picker appears only when no account is selected AND the destination needs one, auto-selects when a single account is configured, and drops a stale selection whose account was deleted (Issue #286)
+- **feat**: F134 foundation -- `StandardAppBarActions`, one shared builder defining the canonical AppBar icon order (Review "No Rule" Items, View Scan History, Accounts, Settings, Help -- Help always last), applied to the Manual Scan screen. Five screens had each hand-rolled the same five icons in four different orders, one of them under a comment asserting a "standardized" order that matched no other screen (Issue #286)
+
 ### 2026-07-28 (Sprint 51: retired-restore-path fix, Harold-approved)
 - **fix**: F130-S51 -- `/startup-check` step 3 no longer restores from `.claude/memory/current.md`. That path was superseded before Sprint 39 yet was still the restore source, and was inert only because `pending_restore` happened to be `false`: any stray flag would have injected a **Sprint-39 snapshot into a Sprint-51+ session** and presented it as current. Step 3 now reads `.claude/sprint_status.json` (Phase 7.7-maintained) with four explicit staleness checks, and the write-back-with-permission-fallbacks block is gone since there is no flag to clear. Phase 3.7 approval evidence now comes from that file first, requiring the sprint NUMBER to match so a prior sprint's `plan_approved` cannot be read as approval (Issue #286)
 - **chore**: F130-S51 -- `/memory-restore` RETIRED, converted to a tombstone that routes to `sprint_status.json` / `/startup-check` / `SPRINT_RESUME_GUIDE.md` rather than being deleted, so an invocation lands on an explanation instead of a missing command. `CLAUDE.md` + `AGENTS.md` listings updated. The old memory files are left on disk, inert, with an explicit "do not refresh" note -- refreshing is what would recreate the trap (Issue #286)
@@ -48,6 +53,12 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **fix**: F130-S51 -- two enforcement hooks were firing on CORRECT work. `sprint-auto-advance` blocked the Phase 3.7 plan-approval request (its Phase-1 exemption tested only whether a plan file exists, and the file exists from the moment it is drafted); `block-carry-forward-stash` blocked any command whose text merely mentioned the words it guards, including documentation describing the prohibition. Both fixed with regression cases (Issue #286)
 - **chore**: F130-S51 -- hook test harness generalized. It was hard-wired to one hook, so the other two had no automated coverage, which is why both false positives shipped unnoticed. Suite now 24/24 across two hooks, with every case pinned to its own fixture instead of inheriting live repo state (Issue #286)
 - **docs**: F130-S51 Tier 1 process-docs audit -- 9 contradictions found and corrected across the instruction surface, incl. the Phase 6.6 branch recipe stated 5 inconsistent ways, a stale "must be Opus" model-tier check that would have failed against the model which actually ran the last retrospective, and the Decision-Class Taxonomy being entirely absent from AGENTS.md. Findings recorded in `docs/sprints/SPRINT_51_F130_FINDINGS.md` (Issue #286)
+
+## [0.5.8] - 2026-07-29
+
+Certified and LIVE in the Microsoft Store 2026-07-29 (Partner Center Submission 9). Contains the
+Sprint 50 work below. Sprint 51 entries above remain under `[Unreleased]` -- they ship in a later
+release.
 
 ### 2026-07-27 (Sprint 50: Copilot review fixes)
 - **fix**: F128 -- `RuleSetProvider.addRule`/`addSafeSender` no longer no-op silently when the provider cache is unloaded: they load on demand and throw `StateError` if the cache is still unavailable, so a caller can never report success with nothing persisted. New `isRulesLoaded`/`isSafeSendersLoaded` getters distinguish "unloaded" from "genuinely empty" (both read as empty through `rules`/`safeSenders`); the quick-action idempotency checks and the Review-No-Rule sweep consult them before trusting an empty read (Copilot review round 4, PR #278)
@@ -971,6 +982,7 @@ See git history for detailed changes prior to Phase 3.1.
 
 ## Version Links
 
-[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.7...HEAD
+[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.8...HEAD
+[0.5.8]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.7...v0.5.8
 [0.5.7]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.0...v0.5.7
 [0.5.0]: https://github.com/kimmeyh/spamfilter-multi/releases/tag/v0.5.0

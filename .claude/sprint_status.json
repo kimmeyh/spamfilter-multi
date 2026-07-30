@@ -62,12 +62,13 @@
     "artifact": "D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix",
     "verification": "both-sides proof passed (APP_ENV=prod AND NATIVE_APP_ENV=prod); manifest 0.5.8.0; 16.8 MB; credentials verified embedded in data/app.so. Partner Center confirms package Validated, v0.5.8.0, X64, Windows.Desktop min 10.0.17763.0.",
     "_correction_2026_07_28": "This block previously read submitted_at 2026-07-27 / status 'in certification' with an expected result of 2026-07-28. That was WRONG. Partner Center showed Submission 9 sitting 'In draft' with a live 'Submit for certification' button -- the package was built and Validated on 07-27 but the submission was never pushed over the line. Store presence was still Submission 8 (0.5.7). Harold submitted it 2026-07-28 after checking Partner Center directly. LESSON: BUILT + VALIDATED is not SUBMITTED. This file recorded an intent as an accomplished fact and it was then repeated back as fact for a full day, including as a candidate explanation for an unrelated Store client bug. Verify release state in Partner Center, never from this file alone.",
+    "post_cert_closeout_done": [
+      "DONE 2026-07-30: CHANGELOG '## [0.5.8] - 2026-07-29' release heading + comparison links added",
+      "DONE 2026-07-30: dev bumped 0.5.8 -> 0.5.9 (ONE file, pubspec.yaml -- the F-VERSION-DERIVE payoff; version_consistency gate green)",
+      "DONE 2026-07-30: ALL_SPRINTS_MASTER_PLAN Store status -> LIVE; Last Completed Sprint rolled 50 -> 51"
+    ],
     "post_cert_closeout_pending": [
-      "UNBLOCKED 2026-07-29 by certification -- these four are now actionable:",
-      "CHANGELOG [Unreleased] -> ## [0.5.8] - 2026-07-29 heading + comparison links",
-      "dev worktree bump 0.5.8 -> 0.5.9 (one file: pubspec.yaml, per F-VERSION-DERIVE)",
-      "ALL_SPRINTS_MASTER_PLAN Store status -> LIVE",
-      "Harold verifies the Store-installed build: no [DEV] title, About shows 0.5.8, Gmail sign-in works"
+      "Harold verifies the Store-installed build: no [DEV] title, About shows 0.5.8, Gmail sign-in works (only Harold can do this -- requires installing from the Store)"
     ],
     "_closeout_sequencing_note": "These are RELEASE close-out steps, not Sprint 51 task work. The dev version bump in particular changes what every version-consistency gate asserts, so it should land as its own commit rather than mixed into sprint changes. Harold's Store-install verification is the only one Claude cannot do."
   },

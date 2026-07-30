@@ -115,12 +115,26 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 48 | docs/sprints/SPRINT_48_RETROSPECTIVE.md | [OK] Complete | Jul 19-20, 2026 (PR #274; F119-b hotfix) |
 | 49 | docs/sprints/SPRINT_49_SUMMARY.md | [OK] Complete | Jul 21-23, 2026 (PR #276) |
 | 50 | docs/sprints/SPRINT_50_SUMMARY.md | [OK] Complete | Jul 25-27, 2026 (PR #278; 0.5.8 submitted) |
+| 51 | docs/sprints/SPRINT_51_SUMMARY.md | [OK] Complete | Jul 27-30, 2026 (PR #285; 0.5.8 LIVE Jul 29) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
 ---
 
 ## Last Completed Sprint
+
+**Sprint 51** (2026-07-27 -- 2026-07-30; PR #285 -> develop)
+- **Type**: Process-docs consistency audit + Sprint 50 carry-in closure. 3/3 planned tasks complete.
+- **Delivered**: **F130-S51** -- first run of the F130 template: **28 contradictions found, 28 corrected, 0 outstanding** across all 3 tiers, plus 3 hook false-positive fixes and the hook test harness generalized to cover all hooks (it had been hard-wired to one, which is why two false positives shipped unnoticed). **F128-residual** -- `removeRule`/`updateRule`/`removeSafeSender` no longer no-op silently on an unloaded cache. **F129** -- 3 WinWright scripts green with zero DB drift.
+- **Highest-consequence finding**: `CLAUDE.md` (+ `AGENTS.md` + master plan) named the msix credential key as `build_windows_args` -- the F119 typo that shipped a credential-less 0.5.4 to the Store, and the exact string a build-failing gate asserts must never appear. The AGENTS.md/master-plan copies were caught ONLY by the DoD re-grep.
+- **A defect shipped and caught in-sprint**: the account-picker accessibility fix went in broken (named but unclickable -- two stacked same-named nodes, outer one with no handler). Lesson recorded: a tree dump proves a name exists; only an interaction proves the node still works.
+- **Verification**: suite 1,814 passed / 29 skipped / 0 failed; analyze clean; hook suite 33/33; WinWright 3/3 no drift; policy gates green; Harold validated all 5 Manual Validation items ("Working as expected. Can be closed.").
+- **Retro**: all 7 improvements approved APPLY NOW. **IMP-7 shipped in-sprint** (auto-advance hook gained the enforcement-window upper bound -- the missing bound was the root cause of every false positive it had produced). IMP-2/IMP-3 foundations shipped; **IMP-1/2/3/4 remainder carded for Sprint 52 detail planning** (F133/F133-S52, F134, F135, F136), with **F132 retired into F133**.
+- **Release**: **`0.5.8` CERTIFIED and LIVE 2026-07-29** (Submission 9). Found mid-sprint that it had been sitting In draft since the 07-27 build while the status file claimed "in certification" -- BUILT + VALIDATED is not SUBMITTED. Post-cert close-out done: CHANGELOG `[0.5.8]` heading + links, dev bumped 0.5.8 -> 0.5.9 (one file, gate-verified), Store status LIVE.
+- **Environment**: ENV-1 resolved -- an Acronis filter driver blocking `AppXSvc` cleanup had wedged the Microsoft Store client; fixed by an Acronis exclusion (23h with zero Id-493 events; drivers still loaded, backup protection intact).
+- **Docs**: SPRINT_51_PLAN.md / SPRINT_51_F130_FINDINGS.md / SPRINT_51_RETROSPECTIVE.md / SPRINT_51_SUMMARY.md.
+
+_(Prior: **Sprint 50** below.)_
 
 **Sprint 50** (2026-07-25 -- 2026-07-27; merged PR #278 -> develop, PR #284 -> main)
 - **Type**: Core App Quality polish + live prod-data repair + manual-validation-driven UX fixes. 5/5 planned + 5 mid-sprint + 1 escalated.
