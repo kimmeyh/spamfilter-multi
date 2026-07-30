@@ -68,7 +68,8 @@ One-line-per-phase quick reference. Use this at the start of a sprint and at eve
 
 **Invariants** (apply to all phases):
 
-- Phase 3.7 approval is durable through Phase 7 -- do not re-ask permission at phase boundaries (Phase Auto-Advance Rule, CLAUDE.md §7).
+- Phase 3.7 approval is durable through the START of Manual Validation -- do not re-ask permission at phase boundaries within that window (Phase Auto-Advance Rule, CLAUDE.md §7).
+- **AUTO-ADVANCE ENFORCEMENT WINDOW (Harold, 2026-07-30, Sprint 51 retro IMP-7)**: the don't-stop / don't-ask rule applies **ONLY between Phase 3.7 sprint-plan approval and the beginning of Manual Validation (Phase 5.3)**. Rationale, in Harold's words: *"all questions for the sprint should have been asked by then"* -- so before approval, asking is REQUIRED (Phase 1 refinement, the 3.7 approval request itself), and from Manual Validation onward the work is Harold-driven (validation feedback, retrospective input, improvement dispositions), so asking is CORRECT. Outside the window a question is never an auto-advance violation. `.claude/hooks/sprint-auto-advance.ps1` enforces both bounds: Gate 1b (lower -- pre-approval) and Gate 1c (upper -- Manual Validation onward, detected from `sprint_status.json` `current_sprint.status` or the existence of this sprint's retrospective file). **Keep `current_sprint.status` current at phase transitions** -- it is what tells the hook which side of the window you are on, and it is already a Phase 7.7 checklist item.
 - Standing Approval Inventory (Phase 3.7): commits, pushes, PR-description updates, test/analyze runs do NOT need permission.
 - Stop only for the 9 reasons in `docs/SPRINT_STOPPING_CRITERIA.md` -- not for implementation choices, approach uncertainty, or "confirming the next step".
 - If Phase 1 was skipped for a given sprint, STOP and return to Phase 1 before any Phase 4 work (Sprint 36 gate).

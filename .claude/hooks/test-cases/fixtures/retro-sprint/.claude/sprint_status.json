@@ -1,0 +1,10 @@
+{
+  "_description": "Test fixture: Phase 7 underway. current_sprint.status still says 'executing' ON PURPOSE -- this is the common real-world case, since sprint_status.json is refreshed at Phase 7.7 rather than continuously. It proves Gate 1c's retrospective-file fallback (b) works even when the status marker (a) has not caught up. The status file must still name Sprint 51 as CURRENT, otherwise a historical retrospective would exempt the branch (see violation-4).",
+  "current_sprint": {
+    "number": 51,
+    "branch": "feature/20260727_Sprint_51",
+    "status": "executing",
+    "plan_approved": true,
+    "plan_approval_date": "2026-07-27"
+  }
+}
