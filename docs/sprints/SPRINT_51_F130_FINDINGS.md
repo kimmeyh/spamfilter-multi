@@ -69,6 +69,44 @@ line numbers and no false positives. Every reported path was independently verif
 
 ---
 
+## Hook gap found in use (2026-07-29) -- NOT corrected, recorded for the next F130 run
+
+**`sprint-auto-advance.ps1` has no concept of a NON-SPRINT conversation on a sprint branch.**
+
+Observed twice on 2026-07-29 while diagnosing a machine-local Microsoft Store / AppXSvc fault
+(ENV-1) during Sprint 51. The work was not sprint work at all, but the branch was
+`feature/20260727_Sprint_51`, so the hook read two legitimate questions as Phase-Auto-Advance
+violations:
+
+1. "Should I record this as a backlog item, or leave it out of the project record?" -- a
+   scope question about the PROJECT RECORD, not a sprint phase.
+2. "Do you want to add the exclusion or uninstall?" -- a question about modifying
+   **security software on Harold's machine**, which no sprint plan authorizes and which Claude
+   must not decide unilaterally.
+
+Both are in the same family as the already-recorded Phase-1 false positive
+(`feedback_hook_phase1_gap`): the hook keys on *branch name + question shape* and has no signal
+for "this turn is not about the sprint". The existing whitelist escapes (name a stopping
+criterion, or assert plan ambiguity) do not fit, because neither is true -- the honest framing is
+"this is not sprint work".
+
+**Why it matters beyond annoyance**: the pressure the hook applies is to answer anyway and keep
+going. For a question about uninstalling a user's backup/security software, complying with that
+pressure would be the wrong behavior. A hook that pushes toward acting unilaterally on a
+user-owned decision is worse than one that occasionally lets a question through.
+
+**Candidate fixes (for the next F130 run -- deliberately NOT applied here, since hook changes
+during a sprint were themselves a Sprint 51 finding)**:
+- Add a whitelist phrase for out-of-scope work, e.g. "not sprint work" / "your machine" /
+  "outside the sprint plan", mirroring the existing criterion/ambiguity escapes.
+- Or detect that the turn's tool calls touched no repo files under the sprint plan's
+  "Affected components" and treat that as non-sprint context.
+
+Recorded, not fixed. Count NOT incremented -- this is a new observation from live use rather than
+one of the 28 audited contradictions.
+
+---
+
 ## Surfaced for Harold -- DECIDED AND APPLIED 2026-07-28 (Class-3, R-6)
 
 **Harold's decision: option (1) -- point `/startup-check` at `sprint_status.json` and retire

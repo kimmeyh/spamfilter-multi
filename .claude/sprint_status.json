@@ -73,6 +73,7 @@
   },
 
   "environment_notes": [
+    "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
     "Microsoft Store CLIENT bug (observed 2026-07-28, NOT ours, NOT blocking): app DETAIL pages render as skeleton placeholders that never populate, then blank. Search results render fine (12 apps with icons/ratings/screenshots, ours correctly marked Installed), and app icon + title + rating load on the detail page -- only the live-fetched content fails. Reproduces on THIRD-PARTY listings (Spike Email), so it is not our listing or our package. Survived Store restart, full reboot, and wsreset.exe. No action available beyond awaiting a Store client update. Do NOT re-diagnose this as an app or submission defect: the third-party reproduction is the decisive evidence."
   ],
 

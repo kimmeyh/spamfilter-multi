@@ -324,7 +324,13 @@ _(Shipped and pruned per Maintenance Rule 2 -- history lives in the sprint docs 
 - Pattern reference: `mobile-app/test/winwright/README.md` "Semantics required for name-based selection (F129)"; ADR-0037.
 - Depends on: none (extends Sprint 51 F129; F131 may reveal the create-screen radios as an instance of this)
 
-**ENV-1. Dev-machine AppXSvc cleanup loop wedges the Microsoft Store client ([no-history]) Priority HOLD -- machine-local, NOT an app defect**
+**ENV-1. Dev-machine AppXSvc cleanup loop wedges the Microsoft Store client -- [RESOLVED 2026-07-29] machine-local, NOT an app defect**
+
+- **RESOLUTION**: an **Acronis Protection exclusion** cleared it. Verified 2026-07-30 after **23 hours of uptime with ZERO Id-493 events**, against a baseline of 176 stuck files erroring every 6 minutes for two days (~232 consecutive clean cycles). Independent downstream proof: the Store client updated itself `22606.1401.6.0` -> `22606.1401.10.0`, which requires a working deployment pipeline. The three Acronis filter drivers (`fltsrv`, `snapman`, `tib_mounter`) remain **loaded and running** -- the exclusion stopped them blocking `WindowsApps` deletions without disabling backup protection, which was the desired outcome.
+- **Practical gotcha for next time**: the Acronis "Add file" picker will NOT accept a folder -- it only navigates into them -- and `C:\Program Files\WindowsApps` cannot even be stat-ed (`Test-Path` True but `Get-Item` False; ACL unreadable, TrustedInstaller-owned), so typing the path, the `.` trick, and single-click-then-Open all fail. The exclusion lists are ALSO encrypted+signed (`=GO=` header) with no registry equivalent, so there is no way in from outside the UI. Exclude a stat-able FILE rather than the folder.
+- **Do NOT re-diagnose from the UI.** This was twice mis-read as fixed because a page rendered; the event log disproved it both times. The verdict is `Get-WinEvent ... Id=493` since last boot -- nothing else.
+
+_Original finding, retained for context:_
 - Phase: Environment / developer-machine housekeeping
 - Platform: Windows dev machine only (does NOT affect the shipped app, the MSIX, or any end user)
 - **Symptom**: `AppXSvc` fails every 6 minutes to delete files under `C:\Program Files\WindowsApps\Deleted` (event log `Microsoft-Windows-AppXDeploymentServer/Operational`, Id **493**), and the backlog GROWS: 21 stuck files on 2026-07-28, **176** by 2026-07-29 08:28 -- twelve hours after a reboot that processed 38 queued file-rename operations. While wedged, the Store client renders search results and the Library fine but leaves app DETAIL pages as never-populating skeletons, greys out install/update buttons, and hides "Get updates" (anything needing authoritative deployment state).
