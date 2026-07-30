@@ -69,6 +69,8 @@ Classify each task by its dominant step-type so estimates aggregate meaningfully
 | HOOK | 5-8 | median 6, n=3 (F77/F93/F79-tooling) |
 | DATA | 15-19 | median 17, n=2 (BUG-S37-2) |
 | DOCS | 15-20 | n=1 (S38-CI-7 prep ~18) |
+| WINWRIGHT-SCRIPT | 10-20 | n=3, Sprint 51 F129 (`test_f129_no_rule_review`, `test_f124_rule_labels` 32 steps, `test_mt2c_no_rule_sweep` 28 steps). **AUTHORING is the cheap part.** See the constraint-discovery note below -- estimate the script, then add discovery separately. |
+| WINWRIGHT-DISCOVERY | `[no-history]` | **Do NOT estimate.** Time-box. Sprint 51: discovering the harness constraints and one self-inflicted app defect dominated F129's cost while authoring the three scripts was minutes. Four constraints were found only by failing runs (lazy semantics tree, off-screen `ww_invoke` false success, per-control tool rules, unclearable search box), plus a shipped-broken semantics fix. Nothing predicts how many walls a given surface hides. |
 
 ## Coverage Ledger (no Item missed)
 
