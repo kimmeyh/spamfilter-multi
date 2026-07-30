@@ -158,14 +158,45 @@ if ($prevSprint -gt 0) {
     }
 }
 
-# 3c. open sprint-labeled GitHub issues
+# 3c. open sprint-labeled GitHub issues -- POST-MERGE ONLY
+#
+# "Review and close all resolved GitHub issues" lives under the checklist's
+# `## Post-Merge Cleanup` section, whose FIRST item is `PR merged to develop`.
+# So open sprint issues are only a violation once the sprint PR has actually
+# merged. Before that they are the CORRECT state: closing a sprint's task cards
+# while its code is still sitting in an unmerged PR would mark the work resolved
+# before it exists on develop.
+#
+# Fixed 2026-07-30 (Sprint 51) after this check blocked a turn at Phase 7.7 with
+# PR #285 legitimately open and Ready-for-Review. Same defect class as the
+# sprint-auto-advance Gate 1c fix earlier in this sprint: the check tested a
+# post-condition without testing its PRECONDITION. A hook that fires on correct
+# work trains people to bypass it, which costs more than the escape it prevents.
 try {
-    $ghOut = & gh issue list --repo (& git -C $cwd remote get-url origin 2>$null) --label sprint --state open --json number 2>$null
-    if ($LASTEXITCODE -eq 0 -and $ghOut) {
-        $openIssues = $ghOut | ConvertFrom-Json
-        if ($openIssues.Count -gt 0) {
-            $nums = ($openIssues | ForEach-Object { "#$($_.number)" }) -join ', '
-            $violations += "GitHub issues labeled 'sprint' are still OPEN: $nums. Note 'Closes #N' does NOT auto-fire on a feature->develop merge in this GitFlow repo -- the checklist step 'Review and close all resolved GitHub issues' exists for exactly this."
+    $repoUrl = & git -C $cwd remote get-url origin 2>$null
+
+    # Precondition: has THIS sprint's PR merged? Only then is issue-closing due.
+    $prMerged = $false
+    $branch = (& git -C $cwd branch --show-current 2>$null)
+    if ($branch) {
+        $prJson = & gh pr list --repo $repoUrl --head $branch.Trim() --state all --json state,mergedAt 2>$null
+        if ($LASTEXITCODE -eq 0 -and $prJson) {
+            $prs = $prJson | ConvertFrom-Json
+            foreach ($pr in $prs) {
+                if ($pr.state -eq 'MERGED' -or $pr.mergedAt) { $prMerged = $true }
+            }
+        }
+        # No PR found for this branch at all -> cannot be post-merge either.
+    }
+
+    if ($prMerged) {
+        $ghOut = & gh issue list --repo $repoUrl --label sprint --state open --json number 2>$null
+        if ($LASTEXITCODE -eq 0 -and $ghOut) {
+            $openIssues = $ghOut | ConvertFrom-Json
+            if ($openIssues.Count -gt 0) {
+                $nums = ($openIssues | ForEach-Object { "#$($_.number)" }) -join ', '
+                $violations += "The sprint PR has MERGED but GitHub issues labeled 'sprint' are still OPEN: $nums. 'Closes #N' does NOT auto-fire on a feature->develop merge in this GitFlow repo -- the Post-Merge Cleanup step 'Review and close all resolved GitHub issues' exists for exactly this. Verify with ``gh issue list --label sprint --state open`` returning empty."
+            }
         }
     }
 } catch { }   # gh unavailable/slow -> skip silently
