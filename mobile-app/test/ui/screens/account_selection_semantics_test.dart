@@ -25,6 +25,7 @@ void main() {
     required String platformName,
     required String authMethod,
     required String accountId,
+    VoidCallback? onTap,
   }) {
     return MaterialApp(
       home: Scaffold(
@@ -34,6 +35,13 @@ void main() {
           excludeSemantics: true,
           label: '$email - $platformName - $authMethod',
           hint: 'Select account to scan',
+          // MUST mirror production: `excludeSemantics` drops the ListTile's own
+          // gesture node, so without onTap HERE the merged node announces as a
+          // Button that assistive technology cannot ACTIVATE. Omitting it made
+          // this helper model the exact broken shape that shipped mid-Sprint-51
+          // (named but unclickable), so the tests would have passed against a
+          // regression. Caught by Copilot on PR #285.
+          onTap: onTap ?? () {},
           child: Card(
             child: ListTile(
               leading: const CircleAvatar(child: Icon(Icons.email)),
@@ -103,6 +111,54 @@ void main() {
     expect(node.hasFlag(SemanticsFlag.isButton), isTrue,
         reason: 'the row is tappable, so assistive technology must present '
             'it as actionable');
+
+    handle.dispose();
+  });
+
+  testWidgets(
+      'account row is ACTIVATABLE via the semantics node, not merely labelled',
+      (tester) async {
+    // The regression this pins (Copilot, PR #285): `excludeSemantics: true`
+    // collapses the row into ONE named node, but it also drops the ListTile's
+    // own gesture node. Without `onTap` on the Semantics widget itself, the row
+    // announces as a Button that assistive technology CANNOT ACTIVATE -- which
+    // is exactly what shipped in the account-picker dialog mid-Sprint-51 and
+    // silently blocked the whole Settings path.
+    //
+    // Asserting the isButton FLAG is not enough: the broken shape sets that
+    // flag too. This test performs the semantics ACTION, so it fails against
+    // the broken shape and passes only when the merged node is genuinely
+    // actionable. "A tree dump proves a name exists; only an interaction proves
+    // the node still works."
+    final handle = tester.ensureSemantics();
+
+    var tapped = 0;
+    await tester.pumpWidget(buildAccountRow(
+      email: 'kimmeyharold@aol.com',
+      platformName: 'AOL Mail',
+      authMethod: 'App Password',
+      accountId: 'kimmeyharold@aol.com',
+      onTap: () => tapped++,
+    ));
+
+    final node = tester.getSemantics(
+      find.bySemanticsLabel('kimmeyharold@aol.com - AOL Mail - App Password'),
+    );
+
+    expect(
+      node.getSemanticsData().hasAction(SemanticsAction.tap),
+      isTrue,
+      reason: 'the merged row node must expose a TAP action; a labelled node '
+          'with no action is announced as a button that cannot be activated',
+    );
+
+    tester.binding.pipelineOwner.semanticsOwner!
+        .performAction(node.id, SemanticsAction.tap);
+    await tester.pump();
+
+    expect(tapped, 1,
+        reason: 'activating the row through the accessibility tree must run '
+            'the same handler a mouse tap would');
 
     handle.dispose();
   });

@@ -875,6 +875,16 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                       excludeSemantics: true,
                       label: '${displayData.email} - $platformName - $authMethod',
                       hint: 'Select account to scan',
+                      // onTap on the SEMANTICS node is mandatory whenever
+                      // excludeSemantics drops the child's own gesture node:
+                      // without it the row announces as a Button that
+                      // assistive technology cannot ACTIVATE. Found by Copilot
+                      // on PR #285 (it flagged the test helper; the same gap
+                      // was live HERE). Same defect that shipped in the
+                      // account-picker dialog mid-Sprint-51 -- named but
+                      // unclickable. The ListTile keeps its own onTap so
+                      // ordinary mouse/touch input is unchanged.
+                      onTap: () => _selectAccount(accountId),
                       child: Card(
                       margin: const EdgeInsets.only(bottom: 12),
                       elevation: 2,
