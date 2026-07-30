@@ -10,7 +10,7 @@
     "pr_number": null,
     "pr_url": null,
     "start_date": "2026-07-27",
-    "status": "Phase 7.7 -- retrospective complete; IMP-7 shipped in-sprint, IMP-1/2/3/4 carded for Sprint 52 detail planning (F133/F133-S52, F134, F135, F136)",
+    "status": "Phase 7.7 COMPLETE -- PR #285 Ready-for-Review, awaiting Harold's merge. Sprint is NOT complete until Post-Merge Cleanup runs (Sprint 52 branch from THIS branch + close issues #286/#287/#288 by hand).",
     "plan_approved": true,
     "plan_approval_date": "2026-07-27",
     "blanket_execution_approved": true,
@@ -30,19 +30,19 @@
   },
 
   "github_issues": [
-    {"number": 279, "title": "F126: Remove the 4 ambiguous legacy TLD-block body rules", "status": "closed"},
-    {"number": 280, "title": "F122: Review-No-Rule screen load-error polish", "status": "closed"},
-    {"number": 281, "title": "F123: Safe-sender classification display fix", "status": "closed"},
-    {"number": 282, "title": "F124: Legacy uncategorized-rule label fix", "status": "closed"},
-    {"number": 283, "title": "F127 (rescoped): CI green-run verification", "status": "closed"}
+    {"number": 286, "title": "F130-S51: Process-Docs Consistency Deep Dive (first run)", "status": "OPEN -- work COMPLETE, closes at Post-Merge Cleanup"},
+    {"number": 287, "title": "F128-residual: audit sibling silent-no-op early-returns in RuleSetProvider", "status": "OPEN -- work COMPLETE, closes at Post-Merge Cleanup"},
+    {"number": 288, "title": "F129: WinWright coverage for the Sprint-50-touched screens", "status": "OPEN -- work COMPLETE, closes at Post-Merge Cleanup"}
   ],
+  "_github_issues_note": "These 3 are Sprint 51's task cards. All three tasks are DONE and verified; the issues stay OPEN until PR #285 merges, because closing them is a Post-Merge Cleanup checklist item and `Closes #N` does NOT auto-fire in this GitFlow repo (PRs merge feature -> develop, and GitHub only auto-closes on merge to the DEFAULT branch). Assuming auto-close was the Sprint 50 escape that left five issues open. Verify with `gh issue list --label sprint --state open` returning empty AFTER the merge. Sprint 50's issues (279-283) were closed at its own post-merge step and are recorded in previous_sprint.",
 
   "test_metrics": {
-    "tests_passing": 1814,
+    "tests_passing": 1815,
     "tests_skipped": 29,
     "tests_failing": 0,
     "analyzer_warnings": 0,
-    "hook_test_cases": "29/29 passing (.claude/hooks/run-test-cases.ps1)",
+    "_test_metrics_note": "1,815 as of 2026-07-30 -- +1 vs the 1,814 recorded earlier in the sprint, from the new semantics-ACTIVATION test added for the Copilot #285 finding.",
+    "hook_test_cases": "33/33 passing (.claude/hooks/run-test-cases.ps1) -- +4 from IMP-7 (enforcement-window cases)",
     "winwright_sweep": "3/3 passing, no DB drift (mobile-app/scripts/run-winwright-tests.ps1)",
     "coverage_percent": null,
     "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5); the default concurrency intermittently drops test-isolate connections and produces phantom load failures."
@@ -88,10 +88,10 @@
   },
 
   "next_actions": [
-    "Sprint 51 Phase 5.3: MANUAL VALIDATION by Harold -- recommendation delivered; nothing further blocks it",
-    "RESOLVED 2026-07-28 (Class-3): /memory-restore is RETIRED (tombstone skill) and /startup-check now reads THIS file with 4 staleness checks. The .claude/memory/* files are inert and deliberately left on disk -- do not refresh them.",
-    "BACKLOG PROPOSALS awaiting Harold's yes/no (not yet carded): F131 -- WinWright create-path is not drivable (radios do not select, Save Rule off-screen, validation rejects synthetic domains), which makes the two test_f56_* scripts STALE not merely excluded; F132 -- systematic accessibility sweep of remaining screens using the now-proven wrapper pattern",
-    "Post-certification: run the store_release.post_cert_closeout_pending list above",
+    "HAROLD: review and merge PR #285 -> develop. It is Ready-for-Review, MERGEABLE, all review threads resolved. Phase 7.7 is complete; the sprint is NOT complete until the Post-Merge Cleanup below runs.",
+    "ON MERGE (Post-Merge Cleanup, in this order): (1) open the Sprint 52 branch FROM feature/20260727_Sprint_51 IMMEDIATELY -- never from develop, never via git stash, before any post-merge commits; (2) CLOSE issues #286, #287, #288 by hand -- `Closes #N` does NOT auto-fire on a feature->develop merge in this repo, and assuming it did was the Sprint 50 escape; verify `gh issue list --label sprint --state open` returns empty; (3) NEVER delete the sprint branch.",
+    "HAROLD (release, low priority): confirm the remaining Store-install checks -- About shows 'Version 0.5.8', and Gmail sign-in WORKS. The clean title proves APP_ENV/NATIVE_APP_ENV resolved to prod; only a real sign-in proves the OAuth credentials were embedded, which is what F119 originally broke.",
+    "SPRINT 52 Phase 1: backlog refinement, then scope selection. Stub with carry-ins at docs/sprints/SPRINT_52_PLAN.md; candidates F133-S52 (accessibility audit, absorbs IMP-5 + IMP-6), F134 + F135 (both PARTIAL -- foundations shipped in Sprint 51), F136, F131.",
     "Android/Google Play remains the next major track (promotion trigger fired 2026-07-24)"
   ]
 }
