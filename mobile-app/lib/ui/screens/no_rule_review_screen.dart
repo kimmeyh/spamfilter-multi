@@ -21,6 +21,7 @@ import '../../util/redact.dart';
 import '../widgets/app_bar_with_exit.dart';
 import '../widgets/standard_app_bar_actions.dart';
 import 'help_screen.dart' show HelpSection;
+import 'scan_progress_screen.dart';
 import '../widgets/provider_group_markers.dart';
 import '../widgets/auth_warning_dialog.dart';
 import '../widgets/empty_state.dart';
@@ -121,6 +122,76 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
     }
     if (_distinctAccounts.isNotEmpty) return _distinctAccounts.first;
     return null;
+  }
+
+  /// Opens the Manual Scan screen for the resolved account.
+  ///
+  /// Harold, 2026-07-31 (MV-1): *"the Account screen is also, currently, the
+  /// only way to get to the Live Scan/Manual Scan screen -- but an icon for the
+  /// Manual Scan Screen would be advisable."* This screen is the desktop
+  /// DEFAULT since F135, so requiring a detour through Accounts to start a scan
+  /// was a real dead end.
+  ///
+  /// Reuses [_resolveAccountIdForSettings] rather than adding a second
+  /// resolution path -- the same session-selection / active-filter / first-known
+  /// precedence applies, and the icon is simply omitted when it returns null.
+  ///
+  /// The platformId comes from the credential store, mirroring
+  /// `account_selection_screen._selectAccount`, including its domain-based
+  /// fallback for accounts saved before platformId was recorded.
+  Future<void> _openManualScan() async {
+    final accountId = _resolveAccountIdForSettings();
+    if (accountId == null) return;
+
+    final credStore = SecureCredentialsStore();
+    var platformId = await credStore.getPlatformId(accountId) ?? '';
+    if (platformId.isEmpty) {
+      platformId = _inferPlatformFromEmail(accountId);
+    }
+
+    if (!mounted) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ScanProgressScreen(
+          platformId: platformId,
+          platformDisplayName: _platformDisplayName(platformId),
+          accountId: accountId,
+          accountEmail: _accountEmails[accountId] ?? accountId,
+        ),
+      ),
+    );
+    // A scan can resolve items this screen is showing, so refresh on return.
+    if (mounted) await _loadItems();
+  }
+
+  /// Mirrors the fallback in `account_selection_screen._selectAccount` for
+  /// accounts saved before the platformId was recorded.
+  String _inferPlatformFromEmail(String email) {
+    if (email.contains('@gmail.com')) return 'gmail';
+    if (email.contains('@aol.com')) return 'aol';
+    if (email.contains('@yahoo.com')) return 'yahoo';
+    if (email.contains('@outlook.com') || email.contains('@hotmail.com')) {
+      return 'outlook';
+    }
+    if (email.contains('@icloud.com')) return 'icloud';
+    return 'unknown';
+  }
+
+  String _platformDisplayName(String platformId) {
+    switch (platformId) {
+      case 'gmail':
+        return 'Gmail';
+      case 'aol':
+        return 'AOL';
+      case 'yahoo':
+        return 'Yahoo';
+      case 'outlook':
+        return 'Outlook';
+      case 'icloud':
+        return 'iCloud';
+      default:
+        return platformId;
+    }
   }
 
   Future<void> _loadItems() async {
@@ -602,6 +673,10 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
           helpSection: HelpSection.resultsDisplay,
           accountId: _resolveAccountIdForSettings(),
           includeNoRuleReview: false,
+          // Only offer Manual Scan when an account can be resolved -- otherwise
+          // the icon would push a scan screen with no account to scan.
+          onManualScan:
+              _resolveAccountIdForSettings() == null ? null : _openManualScan,
           leading: [
             IconButton(
               icon: const Icon(Icons.refresh),
