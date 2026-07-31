@@ -1652,6 +1652,36 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
+                              // F136 (Sprint 52): SKIP -- leaves this item
+                              // completely unaffected and moves to the next
+                              // unaddressed one. Harold: "add a 'Skip' button
+                              // in the header ... button should be about the
+                              // same size as the safe sender and rules
+                              // buttons", and (steering) reuse an existing
+                              // button rather than building a new control.
+                              //
+                              // It reuses `_quickActionThenAdvance` -- the SAME
+                              // navigation the quick actions use -- with a
+                              // no-op action and a covers-NOTHING predicate.
+                              // That is what makes "next unaddressed item" mean
+                              // exactly what it means for every other button
+                              // here, instead of a second, subtly-different
+                              // traversal that could drift.
+                              //
+                              // Only shown under the "No rule" filter: outside
+                              // it there is no unaddressed-item sequence to
+                              // advance through, and `_quickActionThenAdvance`
+                              // itself no-ops on navigation in that case.
+                              if (_filter == EmailActionType.none) ...[
+                                const SizedBox(width: 8),
+                                _buildSkipButton(
+                                  result: result,
+                                  dialogContext: dialogContext,
+                                  anchorPosition: itemPosition,
+                                  anchorSize: itemSize,
+                                ),
+                              ],
+                              const SizedBox(width: 8),
                               result.success
                                   ? const Icon(Icons.check,
                                       color: Colors.green, size: 18)
@@ -2319,6 +2349,97 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   /// that the popup shows an email that gets addressed moments later -- the
   /// user sees it resolve and clicks on. No-op advance when the "No rule"
   /// filter is not active or nothing remains.
+  /// F136 (Sprint 52): the popup-header "Skip" control.
+  ///
+  /// Duplicated from the inline quick-action button styling (Harold's steering:
+  /// *"you can re-use an existing button, just duplicate and change the name to
+  /// Skip"*), sized to sit comfortably beside the safe-sender / rule buttons.
+  ///
+  /// CONTRACT -- Skip must leave the item COMPLETELY unaffected:
+  ///   - no rule, no safe sender, no processed flag, no DB write
+  ///   - the item stays in the list and can be returned to
+  ///   - it is navigation, not a state change
+  /// It therefore passes a no-op `action` and a `coveredByAction` that always
+  /// returns false, so nothing is treated as resolved by skipping.
+  Widget _buildSkipButton({
+    required EmailActionResult result,
+    required BuildContext dialogContext,
+    required Offset? anchorPosition,
+    required Size? anchorSize,
+  }) {
+    return Semantics(
+      container: true,
+      button: true,
+      excludeSemantics: true,
+      label: 'Skip',
+      hint: 'Leave this email unchanged and go to the next unaddressed item',
+      onTap: () => _skipToNext(
+        result: result,
+        dialogContext: dialogContext,
+        anchorPosition: anchorPosition,
+        anchorSize: anchorSize,
+      ),
+      child: Tooltip(
+        message: 'Skip -- leave unchanged, go to the next unaddressed item',
+        child: InkWell(
+          onTap: () => _skipToNext(
+            result: result,
+            dialogContext: dialogContext,
+            anchorPosition: anchorPosition,
+            anchorSize: anchorSize,
+          ),
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: Colors.blueGrey.withValues(alpha: 0.3),
+              ),
+              borderRadius: BorderRadius.circular(8),
+              color: Colors.blueGrey.withValues(alpha: 0.05),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.skip_next, size: 16, color: Colors.blueGrey.shade700),
+                const SizedBox(width: 6),
+                Text(
+                  'Skip',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.blueGrey.shade700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Close this popup and open the next unaddressed item's popup, changing
+  /// nothing about the current one (F136).
+  void _skipToNext({
+    required EmailActionResult result,
+    required BuildContext dialogContext,
+    required Offset? anchorPosition,
+    required Size? anchorSize,
+  }) {
+    Navigator.pop(dialogContext);
+    _quickActionThenAdvance(
+      current: result,
+      anchorPosition: anchorPosition,
+      anchorSize: anchorSize,
+      // No-op: skipping must not touch the item in any way.
+      action: () async {},
+      // Skipping resolves NOTHING, so no other item may be treated as covered.
+      coveredByAction: (_) => false,
+    );
+  }
+
   void _quickActionThenAdvance({
     required EmailActionResult current,
     required Offset? anchorPosition,
