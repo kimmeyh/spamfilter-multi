@@ -76,24 +76,31 @@ Recording this so a future run does not churn working code:
 
 ## Remediation tasks (Tier 3)
 
-Sized against the `CODING_VELOCITY.md` Estimate Table. **These are PLANNED, not executed** -- fixing
-every gap was explicitly out of this sprint's scope (F133-S52 R-6).
+Sized against the `CODING_VELOCITY.md` Estimate Table. ~~These are PLANNED, not executed~~ --
+**STATUS UPDATED 2026-07-31.** These were originally scoped as *next-sprint* work (fixing every gap was
+out of the audit's own scope). Harold then expanded Sprint 52 mid-sprint (SC-2, then SC-3: *"please
+fully re-plan the current scope to include all the screens"*), so **7 of the 9 were executed in this
+sprint** as Task 7. R-7 and R-8 remain open and carry forward.
 
-| ID | Task | Step-type | Est-Effort | Priority |
-|---|---|---|---|---|
-| R-1 | Wrap the 11 bare tappable sites on non-Sprint-51 screens | UI-MOVE x11 (3-6m ea) | 35-65m | HIGH |
-| R-2 | `account_setup_screen` dedicated pass (6 sites, first-run UX) | UI-MOVE x6 + TEST-WIDGET | 40-60m | HIGH |
-| R-3 | Row-builder wrappers on the 3 list-heavy management screens | UI-MOVE x3 + TEST-WIDGET x3 | 70-100m | HIGH |
-| R-4 | Contrast audit: 113 grey sites -> `shade600`+ for text | UI-MOVE (bulk) | 45-70m | MEDIUM |
-| R-5 | Theme-color migration (folded into R-4) | -- | included | MEDIUM |
-| R-6 | Add tap-action assertions to existing semantics tests | TEST-WIDGET x5 (20-25m ea) | 100-125m | HIGH |
-| R-7 | Confirm + remove or document the 3 dead screens | DOCS + deletion | 15-25m | LOW |
-| R-8 | WinWright script coverage for newly-named surfaces | E2E `[no-history]` | time-box | MEDIUM |
-| R-9 | Contrast-ratio policy gate (fail the build on `grey.shade400`-or-lighter text) | HOOK/policy test (5-8m) | 20-30m | MEDIUM |
+| ID | Task | Step-type | Est-Effort | Priority | Status |
+|---|---|---|---|---|---|
+| R-1 | Wrap the 11 bare tappable sites on non-Sprint-51 screens | UI-MOVE x11 (3-6m ea) | 35-65m | HIGH | **DONE** (Task 7) |
+| R-2 | `account_setup_screen` dedicated pass (6 sites, first-run UX) | UI-MOVE x6 + TEST-WIDGET | 40-60m | HIGH | **DONE** (Task 7) |
+| R-3 | Row-builder wrappers on the 3 list-heavy management screens | UI-MOVE x3 + TEST-WIDGET x3 | 70-100m | HIGH | **DONE** (Task 7) |
+| R-4 | Contrast audit: 113 grey sites -> `shade600`+ for text | UI-MOVE (bulk) | 45-70m | MEDIUM | **DONE** (Task 7) |
+| R-5 | Theme-color migration (folded into R-4) | -- | included | MEDIUM | **DONE** (with R-4) |
+| R-6 | Add tap-action assertions to existing semantics tests | TEST-WIDGET x5 (20-25m ea) | 100-125m | HIGH | **DONE** (Task 7) |
+| R-7 | Confirm + remove or document the 3 dead screens | DOCS + deletion | 15-25m | LOW | **OPEN -- carries forward.** No `lib/` deletions were made this sprint (verified via `git diff --name-status`). Deleting a screen is a Class-2 development decision and was never surfaced for approval, so it was correctly left alone rather than done silently. |
+| R-8 | WinWright script coverage for newly-named surfaces | E2E `[no-history]` | time-box | MEDIUM | **OPEN -- carries forward.** Deliberately NOT attempted: the script runner cannot bridge a Flutter dialog-settle boundary (skips `ww_wait`, rejects `ww_assert`), which is exactly what Task 2/F131 re-confirmed. New E2E coverage belongs in `integration_test` (F99), not in more WinWright scripts. |
+| R-9 | Contrast-ratio policy gate (fail the build on `grey.shade400`-or-lighter text) | HOOK/policy test (5-8m) | 20-30m | MEDIUM | **DONE** (Task 7 -- `test/policy/text_contrast_test.dart`) |
 
-**Recommended next-sprint slice**: R-6 first (it protects everything else from silent regression),
-then R-1 + R-2 (highest user impact, first-run UX), then R-3. R-4/R-9 pair naturally. R-7 is
-cleanup and R-8 depends on the others landing.
+**Original recommended slice** (superseded by the mid-sprint expansion, kept for the record): R-6 first,
+then R-1 + R-2, then R-3; R-4/R-9 pair naturally; R-7 cleanup; R-8 depends on the others landing.
+In the event R-6 *was* done first, and it earned its place -- the tap-action assertions are what make
+the rest safe from silent regression.
+
+**Carry-forward**: R-7 (needs a Class-2 decision on deleting vs documenting the 3 dead screens) and
+R-8 (should be re-scoped as `integration_test` coverage rather than WinWright scripts).
 
 ---
 

@@ -253,7 +253,18 @@ Each element was established by a failing test, not by reasoning:
 | TabBar tab (`Text`) | `ww_click` + `useInvokePattern: false` | needs a real mouse press |
 | Static `Text` | `ww_click` + `useInvokePattern: false` | `Element does not support InvokePattern. ControlType: Text` |
 | `CheckBox` | `ww_click` + `useInvokePattern: false` | exposes TogglePattern, not InvokePattern |
-| `RadioButton` | no reliable path | neither it nor its parent Group selects |
+| `RadioButton` | ~~no reliable path~~ **[SUPERSEDED -- see note]** | ~~neither it nor its parent Group selects~~ |
+
+> **[CORRECTION added 2026-07-31, Sprint 52 F131 -- this row was wrong.]** The `RadioButton` row above is
+> the one finding in this document that did not survive re-testing, and the way it failed is worth
+> keeping. Sprint 51 targeted the parent `Group` (`type=Group[name*='Top-Level Domain']`) because a
+> Sprint 41 script comment recommended it, observed nothing happen, and generalised that into "radios
+> have no reliable path". A `Group` is a container with no selection behavior, so the click was always
+> going to do nothing. The correct rule is `ww_click` + `useInvokePattern: false` **on the `RadioButton`
+> itself**, verified live 2026-07-31 (input name flips to `Enter TLD (...)`; confirm dialog reads
+> `Type: Top-Level Domain / Source: *.museum`). `ww_invoke` *correctly* fails on a radio because radios
+> expose `SelectionItemPattern`, not `InvokePattern`. **The app was never broken; the selector was.**
+> Authoritative version of this table now lives in `docs/WINWRIGHT_SELECTORS.md`.
 
 **Three further harness behaviours**, each found by a failing run rather than reasoning:
 1. **The semantics tree is built lazily ON QUERY, not on a timer** -- first query returns an opaque `FLUTTERVIEW` pane, second returns the full tree, and a 10-second wait does not help. This alone caused two failed runs while I misdiagnosed it as a settle-timing problem.
