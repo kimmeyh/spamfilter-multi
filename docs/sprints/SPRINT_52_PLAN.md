@@ -4,8 +4,26 @@
 **Date**: 2026-07-30
 **Branch**: `feature/20260730_Sprint_52` (created FROM `feature/20260727_Sprint_51` per the Phase 6.6 carry-forward flow)
 **PR**: not yet created (Phase 3.3.1 creates it as a DRAFT once this plan is drafted)
-**Status**: **AWAITING PHASE 3.7 APPROVAL** -- no task work starts until Harold approves.
+**Status**: **APPROVED** (Phase 3.7, Harold 2026-07-30) -- executing. **Scope EXPANDED twice
+mid-sprint** (2026-07-31, both Harold-directed) -- see the Scope Change Log below.
 **Scope source**: Harold 2026-07-30, Phase 1 backlog refinement -- F133-S52, F131, F134, F135, F136.
+
+---
+
+## Scope Change Log (mid-sprint, Harold-directed)
+
+Recorded rather than folded silently into the original cards, so the plan reflects what was actually
+agreed and the retrospective can measure against it.
+
+| # | Date | Change | Rationale |
+|---|---|---|---|
+| SC-1 | 2026-07-31 | **F134 extended from 3 screens to ALL screens** (Task 6 added). The audit for AC-3 found the same hand-rolled AppBar pattern on 8 screens the card never listed; Help alone appeared hand-rolled 11 times. | Harold: *"please update all screens as needed"*. AC-3 as written is repo-wide ("matches ONLY inside the builder"), so converting the 3 named screens never satisfied it. Extending the work was the correct fix; narrowing the criterion would have been the wrong one. |
+| SC-2 | 2026-07-31 | **F133-S52 remediation EXECUTED, not just planned** (Task 7 added). The audit produced 9 sized tasks; the original card explicitly scoped them as planning-only (R-6). | Harold: *"fully re-plan the current scope to include all the screens - add a new task for the missing screens for this sprint, fully plan for the task, then complete them as part of this sprint"*. |
+| SC-3 | 2026-07-31 | **F135 R-1 (Settings per-tab prompting) reinstated** as part of Task 7. It had been flagged as a deviation (not implemented) because `accountId` is a required constructor param used in 41 places. | Harold: *"Likely will end up doing all as originally requested as it will take < 400 hours to complete."* Correct -- "large refactor" is not a stopping criterion. `SPRINT_STOPPING_CRITERIA.md` Criterion 9 is a 400-wall-clock-hour threshold, and this is nowhere near it. |
+
+**Effect on sprint totals**: the calibrated subtotal below covers Tasks 3-5 only. Tasks 6 and 7 are
+sized in their own cards. Tasks 1 and 2 remain `[no-history]` and are deliberately excluded from any
+total.
 
 **Estimating method**: TWO-metric MINUTE-based per `docs/CODING_VELOCITY.md`, matched by step-type
 against the Estimate Table. **Two of the five tasks are `[no-history]`** and are time-boxed rather
@@ -396,6 +414,144 @@ with a clear contract once R-5 is confirmed.
 
 ---
 
+### Task 6 -- F134-ALL: Canonical AppBar order on every remaining screen (SC-1)
+
+**Value**: This enables ONE definition of the AppBar action order for the whole app. This prevents
+the drift the audit exposed -- the same five icons hand-rolled across 12 screens in at least four
+different orders, with Help alone duplicated 11 times.
+
+**Requirements** (numbered):
+- R-1: Every screen whose AppBar shows any of the five standard actions (Review "No Rule" Items, View
+  Scan History, Accounts, Settings, Help) must build them via `StandardAppBarActions`.
+- R-2: Screen-specific actions (Download, Find, Refresh, Add, Export, ...) are passed as `leading`
+  and keep their existing position BEFORE the standard block.
+- R-3: A screen suppresses its own self-referential entry (Settings suppresses Settings, No-Rule
+  suppresses No-Rule, Account Selection suppresses Accounts).
+- R-4: Screens that override navigation for a standard action (because they carry F135 account
+  resolution or their own helper) pass `onSettings` / `onScanHistory` / `onAccounts` rather than
+  losing that behavior.
+- R-5: Screens with NO standard actions are left alone -- do not add actions a screen never had.
+  This task standardizes ORDER; it does not add navigation.
+
+**Affected components / files** (from the AC-3 audit, 8 screens remaining after the 4 done):
+- `help_screen.dart`, `account_setup_screen.dart`, `platform_selection_screen.dart`,
+  `folder_selection_screen.dart`, `rule_quick_add_screen.dart`, `rule_test_screen.dart`,
+  `rules_management_screen.dart`, `safe_senders_management_screen.dart`,
+  `yaml_import_export_screen.dart`, `scan_history_screen.dart`
+- `lib/ui/widgets/standard_app_bar_actions.dart` -- new override hooks only if a screen needs one
+
+**Dependencies / blockers**: none. Task 3's builder already exists.
+
+**Acceptance criteria**:
+- AC-1: `grep` for each of the five standard tooltips outside `standard_app_bar_actions.dart` returns
+  ZERO hand-rolled matches. (This is Task 3's AC-3, now genuinely achievable.)
+- AC-2: Every converted screen keeps its existing screen-specific actions in their existing relative
+  position.
+- AC-3: No screen gains or loses a navigation destination -- order changes only.
+- AC-4: Full suite green; analyzer clean.
+
+**Tests to write**:
+- T-1 (verifies AC-1) -- policy-style TEST-UNIT: assert no `tooltip:` string matching the five
+  standard action names appears in `lib/ui/screens/` outside the builder. This makes the invariant
+  self-enforcing rather than a one-time cleanup.
+- T-2 (verifies AC-2/AC-3) -- TEST-WIDGET: for a representative converted screen, assert the action
+  tooltips appear in the canonical ORDER with screen-specific actions first.
+
+**Definition of Done**: default task-level DoD PLUS:
+- The AC-1 grep is re-run after the last screen and its ZERO result recorded in the commit.
+
+**Model**: Haiku -- *why not the cheaper tier*: n/a, cheapest tier. Mechanical call-site replacement
+against an existing builder, one screen at a time, with the analyzer catching every mistake.
+
+**Step-types**: UI-MOVE x10 (3-6m each, median 3) + TEST-UNIT (4-10m) + TEST-WIDGET (20-25m)
+
+**Est-Effort**: 60-95m
+**Est-Wall**: 120m
+
+---
+
+### Task 7 -- F133-REMEDIATE: Execute the accessibility remediation (SC-2 + SC-3)
+
+**Value**: This enables the app to meet the WCAG 2.1 AA target ADR-0037 already sets, rather than
+documenting the gap and deferring it. This prevents the Sprint 51 pattern where accessibility defects
+were found one at a time, reactively, by automation failing.
+
+**Requirements** (numbered) -- these ARE the audit's remediation items, promoted from planned to
+executed:
+- R-1: Wrap the bare `InkWell`/`GestureDetector` sites that have no `Semantics` ancestor, per
+  `ACCESSIBILITY_STANDARDS.md` §2. 11 sites across 6 screens.
+- R-2: `account_setup_screen` dedicated pass (6 sites, 0 `Semantics`, 1,347 lines) -- it is the FIRST
+  screen a new Store user meets, so it carries the highest user impact.
+- R-3: Composite list rows on the three list-heavy management screens (`rules_management`,
+  `safe_senders_management`, `scan_history`) announce as ONE named node.
+- R-4: Contrast pass -- text using `grey.shade400`/`shade500` (which FAIL AA at ~2.6:1 and ~3.9:1)
+  moves to `shade600` or darker. Lighter shades remain allowed for non-informational decoration only.
+- R-6: Add tap-ACTION assertions to existing semantics tests. **Do this FIRST** -- it is what stops
+  every other item in this task from silently regressing, and labelling-only assertions demonstrably
+  survive the defect (Copilot, PR #285).
+- R-10 (**SC-3, reinstated F135 R-1**): Settings per-tab prompting -- the General tab must NOT prompt
+  for an account; the Account / Manual Scan / Background tabs may. This requires making `accountId`
+  optional on `SettingsScreen` and guarding the account-scoped reads in `_loadSettings()`.
+
+**Deliberately NOT in this task** (recorded so the boundary is explicit, not forgotten):
+- R-7 (remove/document the 3 dead screens) -- code hygiene, not accessibility.
+- R-8 (WinWright coverage for newly-named surfaces) -- depends on all of the above landing first.
+- R-9 (contrast policy gate) -- worth doing, but a gate that fails the build belongs in its own change
+  where a false positive cannot block unrelated work.
+
+**Affected components / files**: the 8 screens named in R-1..R-3, `settings_screen.dart` (R-10),
+plus `test/ui/screens/*_test.dart` for R-6.
+
+**Dependencies / blockers**: R-6 should land before R-1..R-4 so the regression guard exists first.
+R-10 is independent.
+
+**Non-functional requirements**:
+- Ordinary mouse/touch behavior must be UNCHANGED on every screen touched. The wrapper adds a
+  semantics node; it must not alter hit-testing or layout.
+- R-10 must not change what Settings displays for an already-resolved account.
+
+**Acceptance criteria**:
+- AC-1: Every `InkWell`/`GestureDetector` in `lib/ui/screens/` either has a `Semantics` ancestor with
+  a label, or is provably decorative (recorded case by case).
+- AC-2: For each wrapped element, a test asserts BOTH that it has an accessible name AND that the
+  semantics TAP ACTION fires the same handler a mouse tap would.
+- AC-3: No text style in `lib/ui/screens/` uses `grey.shade400` or `grey.shade500`; remaining light
+  greys are on non-text decoration only.
+- AC-4 (Gherkin, R-10): Given no account is selected, When Settings > General is opened, Then no
+  account picker appears; When an account-scoped tab is then selected, Then the picker appears once.
+- AC-5: Full suite green; analyzer clean; WinWright sweep green with zero DB drift.
+
+**Tests to write**:
+- T-1 (verifies AC-2) -- TEST-WIDGET per wrapped surface: name + `SemanticsAction.tap`, following
+  `account_selection_semantics_test.dart` as the reference.
+- T-2 (verifies AC-3) -- TEST-UNIT policy-style: no `grey.shade400/500` on a `TextStyle` color under
+  `lib/ui/screens/`.
+- T-3 (verifies AC-4) -- TEST-WIDGET in `settings_screen_test.dart`: which tabs prompt, which do not.
+
+**Definition of Done**: default task-level DoD PLUS:
+- Each wrapped control is proven by an ACTIVATION test, never by inspection
+  (`ACCESSIBILITY_STANDARDS.md` §1 -- the rule that cost Sprint 51 three failed runs).
+- `SPRINT_52_F133_FINDINGS.md` updated to mark each executed remediation item DONE, so the findings
+  doc does not keep asserting gaps that are closed.
+
+**Model**: Sonnet -- *why not the cheaper tier*: R-10 changes a required constructor parameter used in
+41 call sites and touches `_loadSettings()` init ordering; the wrapper work alone would fit Haiku, but
+the Settings refactor spans lifecycle and null-safety across the screen.
+
+**Step-types**: UI-MOVE x20 (3-6m ea) + TEST-WIDGET x6 (20-25m ea) + TEST-UNIT x2 (4-10m) +
+SVC-EDIT (5-18m, the Settings optional-accountId refactor)
+
+**Est-Effort**: 240-330m
+**Est-Wall**: 420m (includes manual verification of the Settings tab behavior and a WinWright sweep)
+
+**Decision-class interrupts**:
+- **Class-2 (Chief Developer)**: R-10 makes `SettingsScreen.accountId` optional -- a change to a
+  prior development decision affecting 41 call sites. Harold directed this explicitly via SC-3
+  ("do all as originally requested"), so it is APPROVED, not pending. Recorded here because the
+  taxonomy requires the change be visible, not because it is open.
+
+---
+
 ## Sprint Totals
 
 | Task | Item | Model | Est-Effort | Est-Wall |
@@ -406,13 +562,22 @@ with a clear contract once R-5 is confirmed.
 | 4 | F135 account selection + default screen | Sonnet | 60-90m | 120m |
 | 5 | F136 Skip button | Haiku | 55-75m | 90m |
 
-**Calibrated subtotal (Tasks 3-5)**: 145-210m Est-Effort / 270m Est-Wall.
+| 6 | F134-ALL AppBar order, all screens (SC-1) | Haiku | 60-95m | 120m |
+| 7 | F133-REMEDIATE accessibility execution (SC-2/SC-3) | Sonnet | 240-330m | 420m |
+
+**Calibrated subtotal (Tasks 3-7)**: 445-635m Est-Effort / 810m Est-Wall.
 **Tasks 1-2 are NOT folded into a total** -- adding an invented number to a real one produces a total
 that looks calibrated and is not (Sprint 51 Estimating Integrity note).
 
-**Execution order**: Task 1 first (Harold's instruction), then **Task 4 before Task 3** (F134 depends
-on F135 for the No-Rule Settings icon), then Task 5. Task 2 is independent and can run at any point;
-suggest after Task 1's Tier 2, since its R-1 finding may feed the gap analysis.
+**Execution order** (revised after SC-1/SC-2):
+1. **Task 1** -- DONE (all 3 tiers). Its gap analysis is the input to Task 7.
+2. **Task 4** -- DONE except R-1, which moved into Task 7 as R-10 (SC-3).
+3. **Task 3** -- DONE (the 3 named screens + account_selection).
+4. **Task 6** -- the remaining screens, finishing Task 3's AC-3 repo-wide.
+5. **Task 7 R-6 FIRST** (tap-action assertions), then R-1..R-4, then R-10. R-6 leads because it is
+   the guard that stops everything after it from silently regressing.
+6. **Task 5** (Skip button) -- benefits from Task 7's wrapper work being settled first.
+7. **Task 2** -- independent; run at any point. Its R-1 finding may add an item to Task 7.
 
 ---
 
@@ -425,11 +590,19 @@ suggest after Task 1's Tier 2, since its R-1 finding may feed the gap analysis.
 | F135 default-screen change surprises users | Medium | High | Class-1 surfaced at approval; both startup paths manually verified |
 | Accessibility fixes named-but-unclickable again | Medium | High | Task 1 DoD requires proven patterns; T-3 on Task 5 asserts the tap ACTION |
 | Task 3 blocked waiting on Task 4 | Low | Low | Execution order puts Task 4 first; Task 3's other two screens are unblocked |
+| **Task 7 wrapper work breaks mouse/touch** (SC-2) | Medium | **High** | Explicit NFR: hit-testing and layout must be unchanged. Every wrapped control gets an ACTIVATION test. This is the exact defect shipped twice in Sprint 51 |
+| **Task 7 R-10 breaks 41 Settings call sites** (SC-3) | Medium | High | Analyzer catches every call site mechanically; full suite + manual verification of both Settings entry paths |
+| **Scope expanded 3x mid-sprint** | Realized | Medium | Recorded in the Scope Change Log rather than absorbed silently, so the retrospective measures against actual agreed scope. Sprint is well under the 400h Criterion-9 threshold |
+| Task 6 changes an order a user relies on | Low | Low | Order changes only -- AC-3 forbids gaining or losing any destination |
 
 ---
 
 ## Definition of Ready check
 
-All five tasks have Value, Requirements, Affected files, Dependencies, Acceptance criteria and
-Tests-to-write filled in. **One open Class-1 question remains** (Task 4's default-screen sub-decisions),
-surfaced above for resolution at Phase 3.7 approval rather than assumed.
+All **seven** tasks have Value, Requirements, Affected files, Dependencies, Acceptance criteria and
+Tests-to-write filled in.
+
+**No open questions.** The Task 4 Class-1 sub-decisions (zero-account startup path; Back exits) were
+not separately answered at approval, so the plan's stated assumptions stand and are implemented as
+written. The Task 7 Class-2 item (making `SettingsScreen.accountId` optional) is APPROVED by Harold's
+SC-3 direction, recorded for visibility rather than pending a decision.
