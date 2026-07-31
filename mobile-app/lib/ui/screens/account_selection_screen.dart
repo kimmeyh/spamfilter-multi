@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
@@ -13,7 +12,7 @@ import '../widgets/skeleton_loader.dart';
 import '../widgets/empty_state.dart';
 import '../widgets/error_display.dart';
 import '../widgets/app_bar_with_exit.dart';
-import 'no_rule_review_screen.dart';
+import '../widgets/standard_app_bar_actions.dart';
 import 'platform_selection_screen.dart';
 import 'scan_history_screen.dart';
 import 'scan_progress_screen.dart';
@@ -561,53 +560,36 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
   }
 
   /// Build settings icon button for AppBar
-  Widget _buildSettingsButton() {
-    return IconButton(
-      icon: const Icon(Icons.settings),
-      tooltip: 'Settings',
-      onPressed: _openSettings,
+  /// F134 (Sprint 52): the canonical AppBar action list for this screen, built
+  /// by the ONE shared builder so the order cannot drift.
+  ///
+  /// Canonical order is Review "No Rule" Items, View Scan History, Accounts,
+  /// Settings, Help. This screen previously ran Help / No-Rule / History /
+  /// Settings -- Help FIRST, the exact inverse of the rule that Help is last.
+  ///
+  /// Two deliberate deviations, both because of what this screen IS:
+  ///   - includeAccounts: false -- this IS the account selection screen.
+  ///   - onSettings / onScanHistory are overridden to keep this screen's OWN
+  ///     handlers, which carry the F135 lazy account resolution. Using the
+  ///     builder's defaults would push Settings with a null accountId and
+  ///     bypass the session-selection rule entirely.
+  List<Widget> _buildAppBarActions() {
+    return StandardAppBarActions.build(
+      context: context,
+      helpSection: HelpSection.selectAccount,
+      includeAccounts: false,
+      onSettings: _openSettings,
+      onScanHistory: _openScanHistory,
     );
   }
 
-  /// Build scan history icon button for AppBar
-  /// [UPDATED] ISSUE #219: Show account selection dialog before navigating
-  Widget _buildHistoryButton() {
-    return IconButton(
-      icon: const Icon(Icons.history),
-      tooltip: 'View Scan History',
-      onPressed: _openScanHistory,
-    );
-  }
+  // F134 (Sprint 52): _buildHistoryButton / _buildNoRuleReviewButton /
+  // _buildHelpButton and _openNoRuleReview were all removed --
+  // StandardAppBarActions supplies those three actions in the canonical order
+  // and navigates to the No-Rule screen itself. _openSettings and
+  // _openScanHistory survive as overrides, because they carry this screen's
+  // F135 lazy account resolution, which the builder's defaults do not.
 
-  /// F39 (Sprint 46): "Review No Rule Items" icon button for AppBar --
-  /// opens the cross-account aggregated review screen directly (all
-  /// accounts by default, account-filterable), mirroring the History
-  /// button's no-account-selection-needed convention.
-  Widget _buildNoRuleReviewButton() {
-    return IconButton(
-      icon: const Icon(Icons.rule_folder_outlined),
-      tooltip: 'Review "No Rule" Items',
-      onPressed: _openNoRuleReview,
-    );
-  }
-
-  void _openNoRuleReview() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const NoRuleReviewScreen(),
-      ),
-    );
-  }
-
-  /// F54 (Sprint 33): Help icon button for AppBar -> Select Account section.
-  Widget _buildHelpButton() {
-    return IconButton(
-      icon: const Icon(Icons.help_outline),
-      tooltip: 'Help',
-      onPressed: () => openHelp(context, HelpSection.selectAccount),
-    );
-  }
 
   /// Navigate to scan history (shows all accounts with filter chips)
   void _openScanHistory() {
@@ -713,7 +695,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       return Scaffold(
         appBar: AppBarWithExit(
           title: const Text('Select Account'),
-          actions: [_buildHelpButton(), if (Platform.isWindows) _buildNoRuleReviewButton(), _buildHistoryButton(), _buildSettingsButton()],
+          actions: _buildAppBarActions(),
         ),
         body: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -748,7 +730,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
         appBar: AppBarWithExit(
           title: const Text('Select Account'),
           elevation: 2,
-          actions: [_buildHelpButton(), if (Platform.isWindows) _buildNoRuleReviewButton(), _buildHistoryButton(), _buildSettingsButton()],
+          actions: _buildAppBarActions(),
         ),
         body: NoAccountsEmptyState(onAddAccount: _addNewAccount),
       );
@@ -759,7 +741,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
       appBar: AppBarWithExit(
         title: const Text('Select Account'),
         elevation: 2,
-        actions: [_buildHelpButton(), if (Platform.isWindows) _buildNoRuleReviewButton(), _buildHistoryButton(), _buildSettingsButton()],
+        actions: _buildAppBarActions(),
       ),
       body: SelectionArea(
         child: Column(
