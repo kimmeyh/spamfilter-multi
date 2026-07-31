@@ -215,6 +215,13 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware
             accountEmail: widget.accountEmail,
             platformId: widget.platformId,
             platformDisplayName: widget.platformDisplayName,
+            // includeManualScan: false -- this IS the Manual Scan screen; a
+            // self-referential entry point would be noise, and re-pushing it
+            // would stack a second scan screen on top of a running scan.
+            // Harold chose this variant: "all screens EXCEPT the Manual Scan
+            // screen", matching how No-Rule / Settings / Scan History each
+            // suppress their own icon.
+            includeManualScan: false,
           ),
         ),
         body: Padding(

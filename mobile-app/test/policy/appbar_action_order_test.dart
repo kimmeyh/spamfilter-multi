@@ -23,7 +23,14 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('AppBar action-order invariant (F134, Sprint 52)', () {
     /// Tooltips owned exclusively by the shared builder.
+    ///
+    /// 'Manual Scan' joined the set on 2026-07-31 (Harold, during MV-1): the
+    /// account screen was the ONLY route to Manual Scan, which became a dead
+    /// end once F135 made Review "No Rule" Items the desktop default. It
+    /// follows the same rule as every other action -- default-ON, with
+    /// `includeManualScan: false` used ONLY by the Manual Scan screen itself.
     const standardActionTooltips = <String>[
+      'Manual Scan',
       'Review "No Rule" Items',
       'View Scan History',
       'Select Account',
@@ -90,7 +97,7 @@ void main() {
       );
     });
 
-    test('the shared builder still defines all five standard actions', () {
+    test('the shared builder still defines every standard action', () {
       // If someone deletes an action from the builder, the test above would
       // pass vacuously (no screen declares it, because it no longer exists).
       final builder =
@@ -102,6 +109,42 @@ void main() {
                 'action -- if it was intentionally removed, update this test '
                 'and the canonical order in the class doc together.');
       }
+    });
+
+    test('only the Manual Scan screen suppresses the Manual Scan icon', () {
+      // Harold, 2026-07-31: "The radar icon belongs on either: all screens OR
+      // all screens except the Manual Scan screen (follow the same pattern as
+      // for icon tool bar currently)."
+      //
+      // The chosen variant is the second, so exactly ONE screen may pass
+      // includeManualScan: false. This is the self-referential-suppression rule
+      // every other action follows; a second screen opting out would be the
+      // icon quietly going missing rather than a deliberate design choice.
+      final offenders = <String>[];
+      for (final file in screensDir
+          .listSync()
+          .whereType<File>()
+          .where((f) => f.path.endsWith('.dart'))) {
+        final source = file.readAsStringSync();
+        if (!source.contains('includeManualScan: false')) continue;
+        final name = file.uri.pathSegments.last;
+        if (name != 'scan_progress_screen.dart') offenders.add(name);
+      }
+
+      expect(offenders, isEmpty,
+          reason: 'Only scan_progress_screen.dart (which IS the Manual Scan '
+              'screen) may set includeManualScan: false. These screens also '
+              'opt out, so the icon is missing there: ${offenders.join(', ')}');
+
+      // And the Manual Scan screen MUST suppress it -- otherwise the icon
+      // re-pushes the screen you are already on, stacking a second scan screen
+      // on top of a running scan.
+      final scanScreen =
+          File('lib/ui/screens/scan_progress_screen.dart').readAsStringSync();
+      expect(scanScreen.contains('includeManualScan: false'), isTrue,
+          reason: 'scan_progress_screen.dart must suppress its own Manual Scan '
+              'icon, the same way Settings/Scan History/No-Rule each suppress '
+              'theirs.');
     });
 
     test('Help is declared LAST in the shared builder', () {

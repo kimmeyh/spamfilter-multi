@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 
+import '../../adapters/storage/secure_credentials_store.dart';
 import '../screens/account_selection_screen.dart';
 import '../screens/help_screen.dart';
 import '../screens/no_rule_review_screen.dart';
 import '../screens/scan_history_screen.dart';
+import '../screens/scan_progress_screen.dart';
 import '../screens/settings_screen.dart';
 
 /// The ONE definition of the standard AppBar action icons and their ORDER
@@ -60,6 +62,7 @@ class StandardAppBarActions {
     VoidCallback? onAccounts,
     VoidCallback? onScanHistory,
     VoidCallback? onManualScan,
+    bool includeManualScan = true,
     bool includeNoRuleReview = true,
     bool includeScanHistory = true,
     bool includeAccounts = true,
@@ -93,11 +96,42 @@ class StandardAppBarActions {
       //    the screen for the DESTINATION would make them look like two
       //    different places. The radar icon carries the "scanning" sense that
       //    a generic play arrow does not.
-      if (onManualScan != null)
+      //
+      //    DEFAULT-ON, suppressed only by the Manual Scan screen itself
+      //    (Harold 2026-07-31: "The radar icon belongs on either: all screens
+      //    OR all screens except the Manual Scan screen (follow the same
+      //    pattern as for icon tool bar currently)"). This mirrors every other
+      //    action here: on everywhere, with `include*: false` used ONLY for the
+      //    self-referential case -- No-Rule hides No-Rule, Settings hides
+      //    Settings, Scan History hides Scan History.
+      //
+      //    Like Settings, it is omitted when there is no account to scope it to
+      //    and the caller supplied no handler, rather than opening a scan
+      //    screen with nothing to scan.
+      //
+      //    NET EFFECT (audited 2026-07-31): the icon shows on 9 of the 15
+      //    screens that use this builder. Absent from scan_progress_screen by
+      //    design (it IS Manual Scan), and from five rule-editing surfaces --
+      //    rules_management, safe_senders_management, rule_test, rule_quick_add
+      //    and yaml_import_export -- which pass NO accountId and already
+      //    suppress Accounts/Settings/Scan-History too. Those five are
+      //    deliberately Help-only focused editors, and that predates this
+      //    sprint; they are not an oversight in this change. If Manual Scan is
+      //    ever wanted there, they need an accountId first -- that is a
+      //    separate decision, not something to paper over by showing an icon
+      //    that cannot resolve an account.
+      if (includeManualScan && (onManualScan != null || accountId != null))
         IconButton(
           icon: const Icon(Icons.radar),
           tooltip: 'Manual Scan',
-          onPressed: onManualScan,
+          onPressed: onManualScan ??
+              () => openManualScan(
+                    context,
+                    accountId: accountId!,
+                    accountEmail: accountEmail,
+                    platformId: platformId,
+                    platformDisplayName: platformDisplayName,
+                  ),
         ),
 
       // 1. Review "No Rule" Items -- Windows-desktop scoped, matching the
@@ -203,5 +237,83 @@ class StandardAppBarActions {
           ),
         ),
     ];
+  }
+
+  /// Opens the Manual Scan screen for [accountId], resolving the pieces
+  /// `ScanProgressScreen` requires but that most callers do not carry.
+  ///
+  /// Lives here rather than on each screen so the resolution exists ONCE.
+  /// `account_selection_screen._selectAccount` had this logic inline, and the
+  /// first cut of the No-Rule icon copied it -- two copies of a platform
+  /// lookup is exactly the duplication-drift this class exists to prevent.
+  ///
+  /// [platformId] is looked up in the credential store when the caller does not
+  /// already know it, with a domain-based fallback for accounts saved before
+  /// the platformId was recorded.
+  ///
+  /// PUBLIC so a screen that needs to do something on RETURN can await it --
+  /// the No-Rule screen reloads, because a scan can resolve items it is
+  /// currently displaying. Such a screen passes its own [onManualScan] that
+  /// calls this, rather than reimplementing the resolution.
+  static Future<void> openManualScan(
+    BuildContext context, {
+    required String accountId,
+    String? accountEmail,
+    String? platformId,
+    String? platformDisplayName,
+  }) async {
+    var resolvedPlatformId = platformId ?? '';
+    if (resolvedPlatformId.isEmpty) {
+      resolvedPlatformId =
+          await SecureCredentialsStore().getPlatformId(accountId) ?? '';
+    }
+    if (resolvedPlatformId.isEmpty) {
+      resolvedPlatformId = _inferPlatformFromEmail(accountEmail ?? accountId);
+    }
+
+    // The await above crosses an async gap; the screen may have been popped.
+    if (!context.mounted) return;
+
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ScanProgressScreen(
+          platformId: resolvedPlatformId,
+          platformDisplayName:
+              platformDisplayName ?? _platformDisplayName(resolvedPlatformId),
+          accountId: accountId,
+          accountEmail: accountEmail ?? accountId,
+        ),
+      ),
+    );
+  }
+
+  /// Fallback for accounts saved before the platformId was recorded. Mirrors
+  /// `account_selection_screen._selectAccount`.
+  static String _inferPlatformFromEmail(String email) {
+    if (email.contains('@gmail.com')) return 'gmail';
+    if (email.contains('@aol.com')) return 'aol';
+    if (email.contains('@yahoo.com')) return 'yahoo';
+    if (email.contains('@outlook.com') || email.contains('@hotmail.com')) {
+      return 'outlook';
+    }
+    if (email.contains('@icloud.com')) return 'icloud';
+    return 'unknown';
+  }
+
+  static String _platformDisplayName(String platformId) {
+    switch (platformId) {
+      case 'gmail':
+        return 'Gmail';
+      case 'aol':
+        return 'AOL';
+      case 'yahoo':
+        return 'Yahoo';
+      case 'outlook':
+        return 'Outlook';
+      case 'icloud':
+        return 'iCloud';
+      default:
+        return platformId;
+    }
   }
 }
