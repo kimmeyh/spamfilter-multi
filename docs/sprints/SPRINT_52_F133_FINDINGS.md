@@ -27,9 +27,9 @@ what this audit exists to catch.**
 
 | Measure | Value |
 |---|---|
-| Screens in `lib/ui/screens/` | **27** |
+| Screens in `lib/ui/screens/` | **27** at audit time -> **24** after R-7 |
 | Active (reachable in a prod build) | **24** |
-| Unreachable / dead | **3** (excluded from the audit -- see Finding A-9) |
+| Unreachable / dead | **3** (excluded from the audit -- see Finding A-9). **All 3 DELETED 2026-07-31**, Harold approved |
 | Screens using `Semantics` at all | **5 of 27** |
 | Screens using `Semantics` that Sprint 51 did NOT touch | **2** |
 | `tooltip:` uses (the pattern that works) | **87** |
@@ -55,7 +55,7 @@ The pattern was never applied systematically -- it was applied wherever a test h
 | A-6 | **No activation assertions in existing widget tests** -- before the Copilot finding on PR #285, every semantics test asserted LABELLING only. Labelling survives the `excludeSemantics`-without-`onTap` defect, so those tests would pass against a live regression. | `test/ui/screens/` | **HIGH** | R-6: add tap-action assertions wherever a semantics label is asserted |
 | A-7 | **The proven wrapper pattern lived only in a test-harness README** -- repo knowledge in `mobile-app/test/winwright/README.md`, invisible to anyone writing UI code. | N/A | **RESOLVED** | Absorbed into `ACCESSIBILITY_STANDARDS.md` §2 (this sprint) |
 | A-8 | **No accessibility checklist at code-review time** -- ADR-0037 says "enforced in code review" but supplies no checklist to enforce against. | N/A | **RESOLVED** | `ACCESSIBILITY_STANDARDS.md` §6 (this sprint) |
-| A-9 | **3 screens are unreachable** (0 inbound references, verified by both filename and class-name search): `account_maintenance_screen` (559 lines), `background_scan_log_screen` (293), `background_scan_progress_screen` (59). `process_results_screen` has 1 partial reference. ~900 lines of unaudited, unshipped UI. | those 3 | **LOW** (not an a11y gap) | R-7: confirm dead, then remove or document why retained |
+| A-9 | **3 screens are unreachable** (0 inbound references, verified by both filename and class-name search): `account_maintenance_screen` (559 lines), `background_scan_log_screen` (293), `background_scan_progress_screen` (59). `process_results_screen` has 1 partial reference. ~900 lines of unaudited, unshipped UI. | those 3 | **LOW** (not an a11y gap) | **RESOLVED 2026-07-31** -- all 3 DELETED (Harold approved). Re-verified dead three ways first; see "R-7 evidence" below. `process_results_screen` was NOT deleted -- it has a partial reference and was not part of the approved set. |
 
 ---
 
@@ -90,8 +90,8 @@ sprint** as Task 7. R-7 and R-8 remain open and carry forward.
 | R-4 | Contrast audit: 113 grey sites -> `shade600`+ for text | UI-MOVE (bulk) | 45-70m | MEDIUM | **DONE** (Task 7) |
 | R-5 | Theme-color migration (folded into R-4) | -- | included | MEDIUM | **DONE** (with R-4) |
 | R-6 | Add tap-action assertions to existing semantics tests | TEST-WIDGET x5 (20-25m ea) | 100-125m | HIGH | **DONE** (Task 7) |
-| R-7 | Confirm + remove or document the 3 dead screens | DOCS + deletion | 15-25m | LOW | **OPEN -- carries forward.** No `lib/` deletions were made this sprint (verified via `git diff --name-status`). Deleting a screen is a Class-2 development decision and was never surfaced for approval, so it was correctly left alone rather than done silently. |
-| R-8 | WinWright script coverage for newly-named surfaces | E2E `[no-history]` | time-box | MEDIUM | **OPEN -- carries forward.** Deliberately NOT attempted: the script runner cannot bridge a Flutter dialog-settle boundary (skips `ww_wait`, rejects `ww_assert`), which is exactly what Task 2/F131 re-confirmed. New E2E coverage belongs in `integration_test` (F99), not in more WinWright scripts. |
+| R-7 | Confirm + remove or document the 3 dead screens | DOCS + deletion | 15-25m | LOW | **DONE 2026-07-31 (Harold approved the deletion).** See "R-7 evidence" below. |
+| R-8 | ~~WinWright script coverage~~ **RE-SCOPED to `integration_test`** for newly-named surfaces | E2E `[no-history]` | time-box | MEDIUM | **DONE 2026-07-31 (Harold approved the re-scope).** `integration_test/sprint52_surfaces_test.dart`, 3 cases green. See "R-8 re-scope" below. |
 | R-9 | Contrast-ratio policy gate (fail the build on `grey.shade400`-or-lighter text) | HOOK/policy test (5-8m) | 20-30m | MEDIUM | **DONE** (Task 7 -- `test/policy/text_contrast_test.dart`) |
 
 **Original recommended slice** (superseded by the mid-sprint expansion, kept for the record): R-6 first,
@@ -99,8 +99,71 @@ then R-1 + R-2, then R-3; R-4/R-9 pair naturally; R-7 cleanup; R-8 depends on th
 In the event R-6 *was* done first, and it earned its place -- the tap-action assertions are what make
 the rest safe from silent regression.
 
-**Carry-forward**: R-7 (needs a Class-2 decision on deleting vs documenting the 3 dead screens) and
-R-8 (should be re-scoped as `integration_test` coverage rather than WinWright scripts).
+**Carry-forward**: none. All 9 remediation items are complete as of 2026-07-31.
+
+---
+
+### R-7 evidence (the 3 deleted screens)
+
+Harold approved deletion 2026-07-31 after review. Each was verified dead **three independent ways**
+before the ask, because the audit's bare "0 inbound references" was not sufficient grounds to delete
+~900 lines:
+
+1. **Class-name and filename search across all of `lib/` and `test/`** -- each class appears ONLY
+   inside its own file. Nothing constructs them; there is no route table entry and no conditional
+   import.
+2. **No test references** -- zero files under `test/` mention any of the three.
+3. **The decisive one for `background_scan_progress_screen`**: the Windows background-scan path is
+   **headless**. `main.dart` detects background mode, calls
+   `BackgroundScanWindowsWorker.executeBackgroundScan(...)`, logs, and **exits without ever calling
+   `runApp`**. So the "progress UI shown during a background scan" it was written for cannot render
+   under any code path -- the design it belonged to was replaced by a headless worker.
+
+| Screen | Lines | Added | Why dead |
+|---|---|---|---|
+| `account_maintenance_screen.dart` | 559 | `6f8c352` (2025-12-30) | Superseded by the account-selection / account-setup pair; never wired to a route |
+| `background_scan_log_screen.dart` | 293 | `41c0d57` (2026-02-14, "closes #152") | Log viewing moved into Settings, which uses `BackgroundScanLogStore` (the STORE is alive -- do not confuse the two; that name collision is what made the first reference sweep look ambiguous) |
+| `background_scan_progress_screen.dart` | 59 | `d47ac7a` (2026-01-30, Sprint 8) | Background scanning became headless -- see point 3 above |
+
+**Verification after deletion**: `flutter analyze` clean, full suite **1,824 passing / 0 failing**
+(unchanged), Windows build succeeds. Nothing referenced them.
+
+**Worth recording**: this sprint's own Task 7 commit (`4e846be`) applied accessibility wrappers to two
+of these three screens. That work was wasted -- ~900 lines of unreachable UI absorbed audit and
+remediation effort across the sprint. Dead code is not free; it consumes the attention of every sweep
+that does not know it is dead.
+
+### R-8 re-scope (WinWright -> integration_test)
+
+R-8 was written as "WinWright script coverage for newly-named surfaces". Harold approved re-scoping it
+to the in-VM lane on 2026-07-31. **The original lane was wrong**, and Task 2 (F131) is the evidence:
+the WinWright script runner skips `ww_wait` and rejects `ww_assert`, so it cannot bridge a Flutter
+dialog-settle boundary. Any new script covering a dialog or an animated transition would have been
+born quarantined, exactly like the two `test_f56_*` scripts.
+
+The in-VM lane is also the **stronger instrument for what R-8 actually needs to prove**: the Sprint 52
+work is about the SEMANTICS tree, and `integration_test` reads that tree directly rather than through
+the Windows UIA projection that proved unreliable in Sprint 51.
+
+`integration_test/sprint52_surfaces_test.dart` -- 3 cases, all green:
+
+| Case | Proves |
+|---|---|
+| AppBar actions render in canonical order with Help LAST | The order a user RECEIVES. `test/policy/appbar_action_order_test.dart` proves each screen *calls* the shared builder (source-level); this asserts the built widget tree. Includes an explicit >=3-tooltip guard so a screen exposing no actions cannot pass the ordering assertions vacuously. |
+| Skip announces itself AND exposes a tap action | **Mutation-verified**: removing `onTap` makes this FAIL on the tap-action assertion while the `isButton` flag still passes -- which is precisely why asserting the flag alone is insufficient, and precisely the defect that shipped in Sprint 51. |
+| Manage Rules exposes named, addressable rows | Rows carry both a non-empty label AND a tap handler. Matches rows by their stable `hint` ('View rule details') rather than label text, so the test is not pinned to whatever the bundled seed contains. |
+
+**A note on how the third case was built**: its first version asserted only "some semantics node has a
+label longer than 2 characters". That passed -- but it passed on *incidental* labels (an AppBar
+tooltip, a filter chip) and would not have noticed the rows regressing to bare. Tightening it made it
+fail, which exposed that my filter (matching the literal word "rule") was wrong rather than the app:
+rows are labelled with the rule's display name and category. A green assertion that cannot fail is not
+coverage.
+
+**Not duplicated here**: the F56 create+delete lifecycle already has in-VM coverage in
+`rule_lifecycle_test.dart` (Sprint 42). That test taps `find.text('Top-Level Domain')` and **has passed
+since Sprint 42** -- it was quietly contradicting the "the radios do not select" claim the entire time
+that claim stood in three documents as verified fact.
 
 ---
 
