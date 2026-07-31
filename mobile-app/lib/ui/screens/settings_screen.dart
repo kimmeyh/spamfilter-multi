@@ -7,6 +7,8 @@ import '../../core/services/data_deletion_service.dart';
 import '../../core/services/default_rule_set_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import '../../core/providers/selected_account_provider.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 import '../../core/services/background_scan_manager.dart' show ScanFrequency;
@@ -50,9 +52,21 @@ import 'yaml_import_export_screen.dart';
 /// );
 /// ```
 class SettingsScreen extends StatefulWidget {
-  final String accountId;
+  /// The account whose settings are shown, or null when Settings was opened
+  /// WITHOUT a resolved account (F135 R-10 / F133-S52 R-10, Sprint 52).
+  ///
+  /// Harold's rule: *"The pop-up should appear only as needed: 1) an account
+  /// has not been selected AND 2) the user gets to a page that needs it (3
+  /// account-specific settings pages and the Manual Live Scan page)."* The
+  /// General tab is CROSS-ACCOUNT (rules, retention, privacy), so opening
+  /// Settings must not demand an account up front. It is resolved lazily, the
+  /// first time the user selects the Account, Manual Scan or Background tab.
+  ///
+  /// Existing callers that already know the account keep passing it and see no
+  /// behavior change -- the field is nullable, not removed.
+  final String? accountId;
 
-  const SettingsScreen({super.key, required this.accountId});
+  const SettingsScreen({super.key, this.accountId});
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -107,6 +121,41 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   // without per-tab FutureBuilders. Empty string while loading.
   String _accountEmail = '';
 
+  /// The account actually in use. Seeded from `_accountId` and filled in
+  /// lazily when the user first opens an account-scoped tab (F133-S52 R-10).
+  String? _resolvedAccountId;
+
+  /// True once a picker has been shown (or resolution has been attempted) this
+  /// screen visit, so switching between account-scoped tabs cannot re-prompt.
+  bool _accountResolutionAttempted = false;
+
+  /// Tabs that genuinely need an account. Index 0 (General) is deliberately
+  /// absent: it is cross-account, and prompting there is the exact friction
+  /// R-10 removes.
+  static const _accountScopedTabIndices = {1, 2, 3};
+
+  /// The resolved account for account-scoped reads and writes.
+  ///
+  /// Every call site is inside an account-scoped TAB, and those tabs only
+  /// render once `_resolvedAccountId` is non-null (`_loadSettings` returns
+  /// early otherwise), so this is non-null wherever it is used.
+  ///
+  /// It throws rather than defaulting to `''` deliberately: an empty accountId
+  /// would be accepted by `SettingsStore` and would silently persist settings
+  /// under a bogus key -- a corruption that surfaces much later and looks like
+  /// data loss. Failing loudly here turns that into an immediate, obvious bug.
+  String get _accountId {
+    final id = _resolvedAccountId;
+    if (id == null || id.isEmpty) {
+      throw StateError(
+        'Account-scoped settings were accessed before an account was resolved. '
+        'The General tab is cross-account and must not reach this path; '
+        'account-scoped tabs resolve one lazily before rendering.',
+      );
+    }
+    return id;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -117,7 +166,111 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     _retentionDaysController = TextEditingController(
       text: _scanHistoryRetentionDays.toString(),
     );
+
+    // Seed from the constructor: callers that already know the account (the
+    // common case) get the previous behavior with no picker and no change.
+    _resolvedAccountId = widget.accountId;
+    _accountResolutionAttempted = widget.accountId != null;
+
+    // F133-S52 R-10: resolve lazily on the first account-scoped tab, not on
+    // open. `indexIsChanging` filters the mid-animation callbacks so this fires
+    // once per switch rather than twice.
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging) return;
+      if (!_accountScopedTabIndices.contains(_tabController.index)) return;
+      if (_resolvedAccountId != null || _accountResolutionAttempted) return;
+      _resolveAccountForScopedTab();
+    });
+
     _loadSettings();
+  }
+
+  /// Resolve an account for the account-scoped tabs, prompting only when there
+  /// is a genuine choice to make (F133-S52 R-10).
+  ///
+  /// Mirrors `_resolveAccountForScopedDestination()` on the account-selection
+  /// screen: session selection -> single configured account -> prompt. The
+  /// picker is the LAST resort, not the first step.
+  Future<void> _resolveAccountForScopedTab() async {
+    _accountResolutionAttempted = true;
+    try {
+      final accounts = await _credStore.getSavedAccounts();
+      if (!mounted || accounts.isEmpty) return;
+
+      // 1. Session selection, if that account still exists.
+      String? resolved;
+      try {
+        final selected = context.read<SelectedAccountProvider>().accountId;
+        if (selected != null && accounts.contains(selected)) resolved = selected;
+      } catch (_) {
+        // Provider absent (widget-test harness) -- fall through.
+      }
+
+      // 2. Exactly one account: nothing to choose.
+      resolved ??= accounts.length == 1 ? accounts.first : null;
+
+      // 3. Otherwise ask, once.
+      if (resolved == null && mounted) {
+        resolved = await _showAccountPicker(accounts);
+        if (resolved != null && mounted) {
+          try {
+            context.read<SelectedAccountProvider>().select(resolved);
+          } catch (_) {
+            // Provider absent -- the local resolution below still applies.
+          }
+        }
+      }
+
+      if (resolved != null && mounted) {
+        setState(() => _resolvedAccountId = resolved);
+        await _loadSettings();
+      }
+    } catch (e) {
+      _logger.w('Could not resolve an account for the settings tab: $e');
+    }
+  }
+
+  /// Minimal account picker for the lazy path. Entries carry an accessible
+  /// name and remain activatable (docs/ACCESSIBILITY_STANDARDS.md section 2) --
+  /// the account-selection dialog shipped named-but-unclickable in Sprint 51,
+  /// so this one is built to that pattern from the start.
+  Future<String?> _showAccountPicker(List<String> accounts) {
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Select Account'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: accounts.map((accountId) {
+            final dashIndex = accountId.indexOf('-');
+            final email = (dashIndex > 0 && dashIndex < accountId.length - 1)
+                ? accountId.substring(dashIndex + 1)
+                : accountId;
+            return Semantics(
+              container: true,
+              button: true,
+              excludeSemantics: true,
+              label: 'Select account $email',
+              onTap: () => Navigator.pop(ctx, accountId),
+              child: Tooltip(
+                message: 'Select account $email',
+                child: ListTile(
+                  leading: const Icon(Icons.email),
+                  title: Text(email),
+                  onTap: () => Navigator.pop(ctx, accountId),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -149,43 +302,68 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     setState(() => _isLoading = true);
 
     try {
+      // F133-S52 R-10 (Sprint 52): load the CROSS-ACCOUNT settings first --
+      // these back the General tab (retention, privacy, CSV export) and need no
+      // account at all.
+      _confirmDialogsEnabled = await _settingsStore.getConfirmDialogsEnabled();
+      _csvExportDirectory = await _settingsStore.getCsvExportDirectory();
+      _scanHistoryRetentionDays =
+          await _settingsStore.getScanHistoryRetentionDays();
+      _retentionDaysController.text = _scanHistoryRetentionDays.toString();
+      _disableAuthLogging = await _settingsStore.getDisableAuthLogging();
+      _unmatchedRetentionDays = await _settingsStore.getUnmatchedRetentionDays();
+      _certificatePinningEnabled =
+          await _settingsStore.getCertificatePinningEnabled();
+      _encryptDatabase = await _settingsStore.getEncryptDatabase();
+
+      // Everything below is ACCOUNT-SCOPED. With no account resolved yet, stop
+      // here: the General tab renders correctly and the account-scoped tabs
+      // resolve one lazily when the user opens them. Previously this method
+      // demanded an account up front, which is what forced the picker on every
+      // Settings open -- the friction R-10 removes.
+      final accountId = _resolvedAccountId;
+      if (accountId == null) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+
       // Sprint 38 Round 10: load the account email once so the per-account
       // header card renders on Account/Manual Scan/Background tabs without
       // per-tab FutureBuilders. Failures fall back to empty string and
       // the header degrades to "Account Settings -" (no trailing email).
       try {
-        final creds = await _credStore.getCredentials(widget.accountId);
+        final creds = await _credStore.getCredentials(accountId);
         _accountEmail = creds?.email ?? '';
       } catch (_) {
         _accountEmail = '';
       }
 
       // [UPDATED] ISSUE #123: Load per-account settings (with app-wide fallback)
-      final accountManualMode = await _settingsStore.getAccountManualScanMode(widget.accountId);
+      final accountManualMode = await _settingsStore.getAccountManualScanMode(accountId);
       _manualScanMode = accountManualMode ?? await _settingsStore.getManualScanMode();
 
       // F113 (Sprint 47): when the account has no folder selection, default to
       // the provider-specific folder set (AOL: Inbox/Bulk/Bulk Mail; Gmail:
       // INBOX/[Gmail]/Spam/Unwanted) instead of the generic global default.
-      final accountManualFolders = await _settingsStore.getAccountManualScanFolders(widget.accountId);
+      final accountManualFolders = await _settingsStore.getAccountManualScanFolders(accountId);
       _manualScanFolders = accountManualFolders ??
-          SettingsStore.providerDefaultFolders(widget.accountId);
+          SettingsStore.providerDefaultFolders(accountId);
 
       _confirmDialogsEnabled = await _settingsStore.getConfirmDialogsEnabled();
       // F98 (ADR-0039): the Background tab is account-scoped -- load the
       // per-account effective enable/frequency, not the global flag.
       _backgroundScanEnabled =
-          await _settingsStore.getEffectiveBackgroundEnabled(widget.accountId);
+          await _settingsStore.getEffectiveBackgroundEnabled(accountId);
       _backgroundScanFrequency =
-          await _settingsStore.getEffectiveBackgroundFrequency(widget.accountId);
+          await _settingsStore.getEffectiveBackgroundFrequency(accountId);
 
-      final accountBgMode = await _settingsStore.getAccountBackgroundScanMode(widget.accountId);
+      final accountBgMode = await _settingsStore.getAccountBackgroundScanMode(accountId);
       _backgroundScanMode = accountBgMode ?? await _settingsStore.getBackgroundScanMode();
 
       // F113 (Sprint 47): provider-specific folder default for background too.
-      final accountBgFolders = await _settingsStore.getAccountBackgroundScanFolders(widget.accountId);
+      final accountBgFolders = await _settingsStore.getAccountBackgroundScanFolders(accountId);
       _backgroundScanFolders = accountBgFolders ??
-          SettingsStore.providerDefaultFolders(widget.accountId);
+          SettingsStore.providerDefaultFolders(accountId);
 
       _backgroundScanDebugCsv = await _settingsStore.getBackgroundScanDebugCsv();
       _liveScanDebugCsv = await _settingsStore.getLiveScanDebugCsv();
@@ -199,7 +377,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           kDeferredStatus,
         );
         final forAccount = latestDeferral
-            .where((e) => e.accountId == widget.accountId)
+            .where((e) => e.accountId == accountId)
             .toList();
         if (forAccount.isNotEmpty) {
           _lastBackgroundDeferral = DateTime.fromMillisecondsSinceEpoch(
@@ -213,14 +391,14 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       }
 
       // F43: Load current folder selections for display
-      _safeSenderFolder = await _settingsStore.getAccountSafeSenderFolder(widget.accountId);
-      _deletedRuleFolder = await _settingsStore.getAccountDeletedRuleFolder(widget.accountId);
+      _safeSenderFolder = await _settingsStore.getAccountSafeSenderFolder(accountId);
+      _deletedRuleFolder = await _settingsStore.getAccountDeletedRuleFolder(accountId);
 
       // [NEW] ISSUE #153: Load days-back settings (per-account with app-wide fallback)
-      final accountManualDays = await _settingsStore.getAccountManualDaysBack(widget.accountId);
+      final accountManualDays = await _settingsStore.getAccountManualDaysBack(accountId);
       _manualDaysBack = accountManualDays ?? await _settingsStore.getManualScanDaysBack();
 
-      final accountBgDays = await _settingsStore.getAccountBackgroundDaysBack(widget.accountId);
+      final accountBgDays = await _settingsStore.getAccountBackgroundDaysBack(accountId);
       _backgroundDaysBack = accountBgDays ?? await _settingsStore.getBackgroundScanDaysBack();
 
       _scanHistoryRetentionDays = await _settingsStore.getScanHistoryRetentionDays();
@@ -274,7 +452,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         actions: StandardAppBarActions.build(
           context: context,
           helpSection: _helpSectionForActiveTab(),
-          accountId: widget.accountId,
+          accountId: _accountId,
           includeSettings: false,
           onScanHistory: _navigateToScanHistory,
         ),
@@ -630,7 +808,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   Widget _buildAccountTab() {
     // [UPDATED] ISSUE #123: accountId now required, no null check needed
     return SelectionArea(child: FutureBuilder<Credentials?>(
-      future: _credStore.getCredentials(widget.accountId),
+      future: _credStore.getCredentials(_accountId),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -647,7 +825,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
         final credentials = snapshot.data!;
         final email = credentials.email;
-        final platform = widget.accountId.split('-')[0]; // Extract platform from accountId
+        final platform = _accountId.split('-')[0]; // Extract platform from accountId
 
         return ListView(
           padding: const EdgeInsets.all(16),
@@ -718,7 +896,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           onChanged: (mode) async {
             setState(() => _manualScanMode = mode);
             // [UPDATED] ISSUE #123: Save per-account manual scan mode
-            await _settingsStore.setAccountManualScanMode(widget.accountId, mode);
+            await _settingsStore.setAccountManualScanMode(_accountId, mode);
           },
         ),
         const SizedBox(height: 24),
@@ -728,7 +906,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           daysBack: _manualDaysBack,
           onChanged: (daysBack) async {
             setState(() => _manualDaysBack = daysBack);
-            await _settingsStore.setAccountManualDaysBack(widget.accountId, daysBack);
+            await _settingsStore.setAccountManualDaysBack(_accountId, daysBack);
           },
         ),
         const SizedBox(height: 24),
@@ -740,7 +918,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           onChanged: (folders) async {
             setState(() => _manualScanFolders = folders);
             // [UPDATED] ISSUE #123: Save per-account manual scan folders
-            await _settingsStore.setAccountManualScanFolders(widget.accountId, folders);
+            await _settingsStore.setAccountManualScanFolders(_accountId, folders);
           },
         ),
         // F44: Go to View Scan History link (matching Background settings style)
@@ -852,7 +1030,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   /// (F98 / ADR-0039 -- one task per enabled account).
   Future<void> _updateWindowsScheduledTask({required bool enabled}) async {
     try {
-      final accountId = widget.accountId;
+      final accountId = _accountId;
       bool success;
       if (enabled) {
         final frequency = ScanFrequency.fromMinutes(_backgroundScanFrequency);
@@ -952,7 +1130,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             setState(() => _backgroundScanEnabled = value);
             // F98 (ADR-0039): write the PER-ACCOUNT override, not the global flag.
             await _settingsStore
-                .setAccountBackgroundEnabled(widget.accountId, value);
+                .setAccountBackgroundEnabled(_accountId, value);
             // On Windows, create or delete THIS account's Task Scheduler task.
             if (Platform.isWindows) {
               await _updateWindowsScheduledTask(enabled: value);
@@ -976,7 +1154,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             setState(() => _backgroundScanFrequency = freq);
             // F98 (ADR-0039): write the PER-ACCOUNT frequency override.
             await _settingsStore
-                .setAccountBackgroundFrequency(widget.accountId, freq);
+                .setAccountBackgroundFrequency(_accountId, freq);
             // On Windows, update THIS account's Task Scheduler frequency if enabled
             if (Platform.isWindows && _backgroundScanEnabled) {
               await _updateWindowsScheduledTask(enabled: true);
@@ -992,7 +1170,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           onChanged: (mode) async {
             setState(() => _backgroundScanMode = mode);
             // [UPDATED] ISSUE #123: Save per-account background scan mode
-            await _settingsStore.setAccountBackgroundScanMode(widget.accountId, mode);
+            await _settingsStore.setAccountBackgroundScanMode(_accountId, mode);
           },
         ),
         const SizedBox(height: 24),
@@ -1002,7 +1180,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           daysBack: _backgroundDaysBack,
           onChanged: (daysBack) async {
             setState(() => _backgroundDaysBack = daysBack);
-            await _settingsStore.setAccountBackgroundDaysBack(widget.accountId, daysBack);
+            await _settingsStore.setAccountBackgroundDaysBack(_accountId, daysBack);
           },
         ),
         const SizedBox(height: 24),
@@ -1014,7 +1192,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
           onChanged: (folders) async {
             setState(() => _backgroundScanFolders = folders);
             // [UPDATED] ISSUE #123: Save per-account background scan folders
-            await _settingsStore.setAccountBackgroundScanFolders(widget.accountId, folders);
+            await _settingsStore.setAccountBackgroundScanFolders(_accountId, folders);
           },
         ),
         const SizedBox(height: 24),
@@ -1078,7 +1256,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         // account can be tested.
         final success = await BackgroundScanWindowsWorker.executeBackgroundScan(
           isTest: true,
-          accountId: widget.accountId,
+          accountId: _accountId,
         );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1605,7 +1783,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ScanHistoryScreen(
-          preSelectedAccountId: widget.accountId,
+          preSelectedAccountId: _accountId,
         ),
       ),
     );
@@ -1619,7 +1797,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     // [FIX] ISSUE #123+#124: Get platformId from credentials store
     // accountId in Settings is just the email address, not platform-email format
     final credStore = SecureCredentialsStore();
-    final platformId = await credStore.getPlatformId(widget.accountId);
+    final platformId = await credStore.getPlatformId(_accountId);
     
     if (platformId == null || platformId.isEmpty) {
       if (mounted) {
@@ -1636,8 +1814,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       MaterialPageRoute(
         builder: (context) => FolderSelectionScreen(
           platformId: platformId,
-          accountId: widget.accountId,
-          accountEmail: widget.accountId, // accountId IS the email
+          accountId: _accountId,
+          accountEmail: _accountId, // accountId IS the email
           initialSelectedFolders: currentFolders, // Pre-populate with saved folders
           onFoldersSelected: (selectedFolders) async {
             await onChanged(selectedFolders);
@@ -1778,11 +1956,11 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   /// [UPDATED] Sprint 14: Use FolderSelectionScreen instead of Windows file picker
   Future<void> _configureSafeSenderFolder(String platform, String email) async {
     // Get current setting
-    final currentFolder = await _settingsStore.getAccountSafeSenderFolder(widget.accountId);
+    final currentFolder = await _settingsStore.getAccountSafeSenderFolder(_accountId);
 
     // [FIX] Sprint 14: Get platformId from credentials store
     final credStore = SecureCredentialsStore();
-    final platformId = await credStore.getPlatformId(widget.accountId);
+    final platformId = await credStore.getPlatformId(_accountId);
 
     if (platformId == null || platformId.isEmpty) {
       if (mounted) {
@@ -1799,8 +1977,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       MaterialPageRoute(
         builder: (context) => FolderSelectionScreen(
           platformId: platformId,
-          accountId: widget.accountId,
-          accountEmail: widget.accountId,
+          accountId: _accountId,
+          accountEmail: _accountId,
           initialSelectedFolders: currentFolder != null ? [currentFolder] : null,
           singleSelect: true,
           title: 'Select Safe Sender Folder',
@@ -1810,7 +1988,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               final folderName = selectedFolders.first;
               try {
                 await _settingsStore.setAccountSafeSenderFolder(
-                  widget.accountId,
+                  _accountId,
                   folderName,
                 );
 
@@ -1849,11 +2027,11 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   /// [UPDATED] Sprint 14: Use FolderSelectionScreen instead of Windows file picker
   Future<void> _configureDeletedRuleFolder(String platform, String email) async {
     // Get current setting
-    final currentFolder = await _settingsStore.getAccountDeletedRuleFolder(widget.accountId);
+    final currentFolder = await _settingsStore.getAccountDeletedRuleFolder(_accountId);
 
     // [FIX] Sprint 14: Get platformId from credentials store
     final credStore = SecureCredentialsStore();
-    final platformId = await credStore.getPlatformId(widget.accountId);
+    final platformId = await credStore.getPlatformId(_accountId);
 
     if (platformId == null || platformId.isEmpty) {
       if (mounted) {
@@ -1870,8 +2048,8 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       MaterialPageRoute(
         builder: (context) => FolderSelectionScreen(
           platformId: platformId,
-          accountId: widget.accountId,
-          accountEmail: widget.accountId,
+          accountId: _accountId,
+          accountEmail: _accountId,
           initialSelectedFolders: currentFolder != null ? [currentFolder] : null,
           singleSelect: true,
           title: 'Select Deleted Rule Folder',
@@ -1881,7 +2059,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               final folderName = selectedFolders.first;
               try {
                 await _settingsStore.setAccountDeletedRuleFolder(
-                  widget.accountId,
+                  _accountId,
                   folderName,
                 );
 
