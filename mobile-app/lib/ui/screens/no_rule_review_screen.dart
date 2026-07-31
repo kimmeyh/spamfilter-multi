@@ -151,6 +151,54 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
     if (mounted) await _loadItems();
   }
 
+  /// The AppBar Refresh action.
+  ///
+  /// Harold, 2026-07-31 (manual validation): *"what does the refresh icon do -
+  /// as it appears to do nothing"*. It was doing its job and saying nothing.
+  /// [_loadItems] re-reads the latest completed scan and re-runs the coverage
+  /// sweep, but all of that is local-DB work that finishes in milliseconds, so
+  /// the loading spinner never paints a perceptible frame. With nothing newly
+  /// covered the list is identical afterwards and the press is indistinguishable
+  /// from a dead button.
+  ///
+  /// Deliberately SEPARATE from [_loadItems] rather than putting the SnackBar
+  /// inside it: `_loadItems` also runs on init, after a scan returns, and after
+  /// bulk actions (which show their OWN summary SnackBar). A confirmation
+  /// belongs only on the press the user made on purpose.
+  Future<void> _refreshFromUserAction() async {
+    final before = _allItems.length;
+    await _loadItems();
+    if (!mounted) return;
+
+    // _lastSweepCount is set by the sweep inside _loadItems: items that the
+    // CURRENT rules / safe senders now cover, marked processed and dropped.
+    final swept = _lastSweepCount;
+    final removed = before - _allItems.length;
+
+    final String message;
+    if (swept > 0) {
+      message = swept == 1
+          ? '1 item is now covered by rules -- removed'
+          : '$swept items are now covered by rules -- removed';
+    } else if (removed > 0) {
+      // Defensive: the list shrank for a reason other than the sweep (e.g. a
+      // newer scan superseded the one being displayed). Report honestly rather
+      // than claiming rules covered them.
+      message = removed == 1
+          ? '1 item no longer applies -- removed'
+          : '$removed items no longer apply -- removed';
+    } else {
+      message = 'No changes -- list is up to date';
+    }
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+      ));
+  }
+
   Future<void> _loadItems() async {
     setState(() => _isLoading = true);
 
@@ -639,8 +687,11 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
           leading: [
             IconButton(
               icon: const Icon(Icons.refresh),
-              tooltip: 'Refresh',
-              onPressed: _loadItems,
+              // Harold 2026-07-31: "Refresh" alone reads as "go check for new
+              // mail", which this does NOT do -- it re-reads the scan already
+              // stored locally. Only a Manual Scan contacts the mail server.
+              tooltip: 'Re-check the last scan (does not fetch new mail)',
+              onPressed: _refreshFromUserAction,
             ),
           ],
         ),

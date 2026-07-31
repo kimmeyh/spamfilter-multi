@@ -212,6 +212,51 @@ void main() {
     expect(find.text('All Accounts (5)'), findsOneWidget);
   });
 
+  testWidgets(
+      'Refresh CONFIRMS when nothing changed (Harold MV: "appears to do '
+      'nothing")', (tester) async {
+    // Harold, 2026-07-31 manual validation: "what does the refresh icon do -
+    // as it appears to do nothing". It was working -- re-reading the latest
+    // scan and re-running the coverage sweep -- but all of that is local-DB
+    // work that finishes in milliseconds, so the spinner never paints a
+    // perceptible frame and an unchanged list is indistinguishable from a dead
+    // button. The fix is FEEDBACK, not different behavior, so this test
+    // asserts the confirmation rather than the reload.
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.runAsync(() async {
+      await testHelper.createTestAccount('gmail-a@example.com');
+      registerSavedAccount('gmail-a@example.com');
+      await insertCompletedScan('gmail-a@example.com',
+          completedAtMs: 1000, noRuleCount: 2);
+
+      await mountAndLoad(tester);
+    });
+
+    expect(find.text('2 items'), findsOneWidget,
+        reason: 'precondition: the list loaded');
+
+    // No rules were added between load and refresh, so nothing can become
+    // covered -- the exact case Harold hit.
+    await tester.runAsync(() async {
+      await tester.tap(find.byTooltip(
+          'Re-check the last scan (does not fetch new mail)'));
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+    });
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('No changes -- list is up to date'), findsOneWidget,
+        reason: 'a refresh that changes nothing must SAY so -- silence is what '
+            'made this look broken');
+
+    // The list itself must be unchanged: this is feedback, not behavior.
+    expect(find.text('2 items'), findsOneWidget);
+  });
+
   testWidgets('account filter chip narrows the list to one account',
       (tester) async {
     tester.view.physicalSize = const Size(1200, 2400);

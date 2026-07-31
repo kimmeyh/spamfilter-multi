@@ -90,6 +90,38 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
     super.dispose();
   }
 
+  /// The AppBar Refresh action.
+  ///
+  /// Same silent-success shape Harold found on the No-Rule and Scan History
+  /// screens 2026-07-31: [_loadRules] is local-DB work that finishes in
+  /// milliseconds, so an unchanged list is indistinguishable from a dead
+  /// button. Weaker case than those two (no purge, no coverage sweep, and the
+  /// rule count is on screen), but fixed the same way so the toolbar behaves
+  /// consistently rather than "some refresh buttons confirm and some do not".
+  Future<void> _refreshFromUserAction() async {
+    final before = _rules.length;
+    await _loadRules();
+    if (!mounted) return;
+
+    final delta = _rules.length - before;
+    final String message;
+    if (delta > 0) {
+      message = delta == 1 ? '1 rule added' : '$delta rules added';
+    } else if (delta < 0) {
+      final removed = -delta;
+      message = removed == 1 ? '1 rule removed' : '$removed rules removed';
+    } else {
+      message = 'No changes -- ${_rules.length} rules';
+    }
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+      ));
+  }
+
   Future<void> _loadRules() async {
     setState(() => _isLoading = true);
     try {
@@ -561,8 +593,8 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
             ),
             IconButton(
               icon: const Icon(Icons.refresh),
-              tooltip: 'Refresh',
-              onPressed: _loadRules,
+              tooltip: 'Reload rules from the database',
+              onPressed: _refreshFromUserAction,
             ),
             // Sprint 37 round 6: filter-aware bulk export. Exports the
             // currently-shown subset (search + filter chips applied) as CSV.

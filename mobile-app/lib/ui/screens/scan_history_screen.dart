@@ -107,6 +107,48 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
     return null;
   }
 
+  /// The AppBar Refresh action.
+  ///
+  /// Harold, 2026-07-31 (manual validation), after the same finding on the
+  /// No-Rule screen: *"same for refresh icon on Scan History screen?"* -- yes,
+  /// identical shape. [_loadHistory] re-reads scan history from the local DB
+  /// and finishes in milliseconds, so the spinner never paints a perceptible
+  /// frame and an unchanged list looks like a dead button.
+  ///
+  /// This screen has one behaviour the No-Rule screen does not: `_loadHistory`
+  /// PURGES scan results past the retention window, so a refresh can genuinely
+  /// remove rows. Reporting that is the point -- rows silently disappearing is
+  /// worse than a button that appears to do nothing.
+  ///
+  /// Separate from [_loadHistory] because that also runs on init, where a
+  /// SnackBar would be noise.
+  Future<void> _refreshFromUserAction() async {
+    final before = _allScans.length;
+    await _loadHistory();
+    if (!mounted) return;
+
+    final removed = before - _allScans.length;
+    final String message;
+    if (removed > 0) {
+      // Purged by the retention window (_retentionDays), re-read fresh above.
+      message = removed == 1
+          ? '1 scan older than $_retentionDays days removed'
+          : '$removed scans older than $_retentionDays days removed';
+    } else if (_allScans.length > before) {
+      final added = _allScans.length - before;
+      message = added == 1 ? '1 new scan' : '$added new scans';
+    } else {
+      message = 'No changes -- history is up to date';
+    }
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+      ));
+  }
+
   Future<void> _loadHistory() async {
     setState(() => _isLoading = true);
 
@@ -200,8 +242,11 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
           leading: [
             IconButton(
               icon: const Icon(Icons.refresh),
-              tooltip: 'Refresh',
-              onPressed: _loadHistory,
+              // Same wording problem as the No-Rule screen: "Refresh" reads as
+              // "go check the mail server", which this does not do. It re-reads
+              // locally stored history and applies the retention purge.
+              tooltip: 'Reload scan history (does not fetch new mail)',
+              onPressed: _refreshFromUserAction,
             ),
           ],
         ),

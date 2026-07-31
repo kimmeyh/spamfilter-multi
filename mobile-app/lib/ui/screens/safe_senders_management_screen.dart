@@ -116,6 +116,37 @@ class _SafeSendersManagementScreenState
     super.dispose();
   }
 
+  /// The AppBar Refresh action.
+  ///
+  /// Mirrors the Manage Rules fix (Harold's 2026-07-31 finding on the No-Rule
+  /// and Scan History screens): [_loadSafeSenders] is local-DB work that
+  /// finishes in milliseconds, so an unchanged list reads as a dead button.
+  Future<void> _refreshFromUserAction() async {
+    final before = _safeSenders.length;
+    await _loadSafeSenders();
+    if (!mounted) return;
+
+    final delta = _safeSenders.length - before;
+    final String message;
+    if (delta > 0) {
+      message = delta == 1 ? '1 safe sender added' : '$delta safe senders added';
+    } else if (delta < 0) {
+      final removed = -delta;
+      message = removed == 1
+          ? '1 safe sender removed'
+          : '$removed safe senders removed';
+    } else {
+      message = 'No changes -- ${_safeSenders.length} safe senders';
+    }
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+      ));
+  }
+
   Future<void> _loadSafeSenders() async {
     setState(() => _isLoading = true);
     try {
@@ -355,8 +386,8 @@ class _SafeSendersManagementScreenState
           leading: [
             IconButton(
               icon: const Icon(Icons.refresh),
-              tooltip: 'Refresh',
-              onPressed: _loadSafeSenders,
+              tooltip: 'Reload safe senders from the database',
+              onPressed: _refreshFromUserAction,
             ),
             // Sprint 37 round 6: filter-aware bulk export.
             IconButton(
