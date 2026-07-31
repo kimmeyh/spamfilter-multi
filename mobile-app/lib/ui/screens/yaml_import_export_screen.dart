@@ -26,6 +26,7 @@ import '../../core/storage/database_helper.dart';
 import '../../core/storage/rule_database_store.dart';
 import '../widgets/app_bar_with_exit.dart';
 import 'help_screen.dart';
+import '../widgets/standard_app_bar_actions.dart';
 
 /// Screen for importing and exporting YAML rule files
 class YamlImportExportScreen extends StatefulWidget {
@@ -74,13 +75,15 @@ class _YamlImportExportScreenState extends State<YamlImportExportScreen> {
     return Scaffold(
       appBar: AppBarWithExit(
         title: const Text('Import / Export YAML'),
-        actions: [
-          IconButton(
-            tooltip: 'Help',
-            icon: const Icon(Icons.help_outline),
-            onPressed: () => openHelp(context, HelpSection.yamlImportExport),
-          ),
-        ],
+        // F134 (Sprint 52): declared via the ONE shared builder.
+        actions: StandardAppBarActions.build(
+          context: context,
+          helpSection: HelpSection.yamlImportExport,
+          includeNoRuleReview: false,
+          includeScanHistory: false,
+          includeAccounts: false,
+          includeSettings: false,
+        ),
       ),
       body: SelectionArea(
         child: ListView(

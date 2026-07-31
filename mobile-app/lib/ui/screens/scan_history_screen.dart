@@ -11,10 +11,10 @@ import '../../core/storage/database_helper.dart';
 import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/settings_store.dart';
 import '../widgets/app_bar_with_exit.dart';
+import '../widgets/standard_app_bar_actions.dart';
 import 'help_screen.dart';
 import 'no_rule_review_screen.dart';
 import 'results_display_screen.dart';
-import 'settings_screen.dart';
 
 /// Unified scan history screen showing both manual and background scans
 ///
@@ -183,58 +183,28 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
         // <screen-specific> (Refresh), Accounts, Settings, Help, [X auto].
         // F87 (Sprint 38, Issue #251): Settings icon added so user can reach
         // Settings from sub-screens with one tap rather than back-navigating.
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
-            onPressed: _loadHistory,
-          ),
-          // F112 (Sprint 47): "Review No Rule Items" entry point -- consistent
-          // with the account-selection AppBar (Sprint 46). Windows-desktop
-          // scoped like the source screen.
-          if (Platform.isWindows)
+        // F134 (Sprint 52): canonical order from the ONE shared builder.
+        // includeScanHistory: false -- this IS the Scan History screen.
+        // The accountId comes from the F135 resolver, which consults the
+        // session selection; when it returns null the builder omits Settings
+        // rather than rendering a permanently-disabled icon (the previous
+        // behavior: an always-present control that did nothing).
+        actions: StandardAppBarActions.build(
+          context: context,
+          helpSection: HelpSection.scanHistory,
+          accountId: _resolveAccountIdForSettings() ?? widget.accountId,
+          accountEmail: widget.accountEmail,
+          platformId: widget.platformId,
+          platformDisplayName: widget.platformDisplayName,
+          includeScanHistory: false,
+          leading: [
             IconButton(
-              icon: const Icon(Icons.rule_folder_outlined),
-              tooltip: 'Review "No Rule" Items',
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                    builder: (_) => const NoRuleReviewScreen()),
-              ),
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Refresh',
+              onPressed: _loadHistory,
             ),
-          IconButton(
-            tooltip: 'Select Account',
-            icon: const Icon(Icons.people),
-            onPressed: () {
-              Navigator.popUntil(context, (route) => route.isFirst);
-            },
-          ),
-          IconButton(
-            tooltip: 'Settings',
-            icon: const Icon(Icons.settings),
-            onPressed: _resolveAccountIdForSettings() == null
-                ? null
-                : () {
-                    final accountId = _resolveAccountIdForSettings()!;
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => SettingsScreen(accountId: accountId),
-                      ),
-                    );
-                  },
-          ),
-          IconButton(
-            tooltip: 'Help',
-            icon: const Icon(Icons.help_outline),
-            onPressed: () => openHelp(
-              context,
-              HelpSection.scanHistory,
-              accountId: widget.accountId,
-              accountEmail: widget.accountEmail,
-              platformId: widget.platformId,
-              platformDisplayName: widget.platformDisplayName,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

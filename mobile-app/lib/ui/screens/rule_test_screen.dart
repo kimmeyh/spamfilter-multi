@@ -8,6 +8,7 @@ import '../../core/storage/database_helper.dart';
 import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/unmatched_email_store.dart';
 import '../../core/utils/pattern_normalization.dart';
+import '../widgets/standard_app_bar_actions.dart';
 
 /// Screen for testing rule patterns against sample emails.
 ///
@@ -253,13 +254,17 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Test Rule Pattern'),
-        actions: [
-          IconButton(
-            tooltip: 'Help',
-            icon: const Icon(Icons.help_outline),
-            onPressed: () => openHelp(context, HelpSection.ruleTest),
-          ),
-        ],
+        // F134 (Sprint 52): declared via the ONE shared builder. This screen
+        // only ever had Help, which is already last -- the value is that a
+        // future addition here cannot land in the wrong position.
+        actions: StandardAppBarActions.build(
+          context: context,
+          helpSection: HelpSection.ruleTest,
+          includeNoRuleReview: false,
+          includeScanHistory: false,
+          includeAccounts: false,
+          includeSettings: false,
+        ),
       ),
       body: SelectionArea(child: Column(
         children: [

@@ -24,6 +24,7 @@ import '../../core/storage/settings_store.dart';
 import '../widgets/app_bar_with_exit.dart';
 import 'help_screen.dart';
 import 'manual_rule_create_screen.dart';
+import '../widgets/standard_app_bar_actions.dart';
 
 /// Categories for filtering safe sender patterns by structure
 enum SafeSenderCategory {
@@ -341,26 +342,33 @@ class _SafeSendersManagementScreenState
     return Scaffold(
       appBar: AppBarWithExit(
         title: const Text('Manage Safe Senders'),
-        actions: [
-          IconButton(
-            tooltip: 'Help',
-            icon: const Icon(Icons.help_outline),
-            onPressed: () => openHelp(context, HelpSection.safeSenders),
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
-            onPressed: _loadSafeSenders,
-          ),
-          // Sprint 37 round 6: filter-aware bulk export.
-          IconButton(
-            icon: const Icon(Icons.file_download_outlined),
-            tooltip: _filteredSenders.isEmpty
-                ? 'Nothing to export'
-                : 'Export ${_filteredSenders.length} shown safe sender${_filteredSenders.length == 1 ? '' : 's'} as CSV',
-            onPressed: _filteredSenders.isEmpty ? null : _exportFilteredSafeSenders,
-          ),
-        ],
+        // F134 (Sprint 52): canonical order via the ONE shared builder. Help
+        // was FIRST, ahead of the screen-specific actions; it is now LAST, and
+        // Refresh / Export keep their existing relative order as `leading`.
+        actions: StandardAppBarActions.build(
+          context: context,
+          helpSection: HelpSection.safeSenders,
+          includeNoRuleReview: false,
+          includeScanHistory: false,
+          includeAccounts: false,
+          includeSettings: false,
+          leading: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Refresh',
+              onPressed: _loadSafeSenders,
+            ),
+            // Sprint 37 round 6: filter-aware bulk export.
+            IconButton(
+              icon: const Icon(Icons.file_download_outlined),
+              tooltip: _filteredSenders.isEmpty
+                  ? 'Nothing to export'
+                  : 'Export ${_filteredSenders.length} shown safe sender${_filteredSenders.length == 1 ? '' : 's'} as CSV',
+              onPressed:
+                  _filteredSenders.isEmpty ? null : _exportFilteredSafeSenders,
+            ),
+          ],
+        ),
       ),
       // Sprint 38 F84 Sub-task A (Issue #253): Ctrl+A / Cmd+A copies the
       // ENTIRE filtered safe-sender list to clipboard, not just the

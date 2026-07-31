@@ -5,6 +5,7 @@ import '../widgets/app_bar_with_exit.dart';
 import 'account_setup_screen.dart';
 import 'help_screen.dart';
 import 'scan_progress_screen.dart';
+import '../widgets/standard_app_bar_actions.dart';
 
 /// Platform selection screen - first step in account setup
 /// 
@@ -83,20 +84,16 @@ class _PlatformSelectionScreenState extends State<PlatformSelectionScreen> {
         // Settings omitted here: the settings UI needs an accountId context
         // which does not exist on the pre-account-creation screen. X auto-
         // appended on Windows by AppBarWithExit.
-        actions: [
-          IconButton(
-            tooltip: 'Select Account',
-            icon: const Icon(Icons.people),
-            onPressed: () {
-              Navigator.popUntil(context, (route) => route.isFirst);
-            },
-          ),
-          IconButton(
-            tooltip: 'Help',
-            icon: const Icon(Icons.help_outline),
-            onPressed: () => openHelp(context, HelpSection.accountSetup),
-          ),
-        ],
+        // F134 (Sprint 52): declared via the ONE shared builder. Accounts then
+        // Help was already canonical here; the builder keeps it that way and
+        // makes it structurally impossible to drift.
+        actions: StandardAppBarActions.build(
+          context: context,
+          helpSection: HelpSection.accountSetup,
+          includeNoRuleReview: false,
+          includeScanHistory: false,
+          includeSettings: false,
+        ),
       ),
       body: SelectionArea(
         child: SingleChildScrollView(

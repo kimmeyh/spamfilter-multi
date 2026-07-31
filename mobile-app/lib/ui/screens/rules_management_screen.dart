@@ -27,6 +27,7 @@ import 'help_screen.dart';
 import 'manual_rule_create_screen.dart';
 import 'rule_edit_screen.dart';
 import 'rule_test_screen.dart';
+import '../widgets/standard_app_bar_actions.dart';
 
 /// Screen for managing spam filtering rules
 class RulesManagementScreen extends StatefulWidget {
@@ -535,39 +536,47 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
     return Scaffold(
       appBar: AppBarWithExit(
         title: const Text('Manage Rules'),
-        actions: [
-          IconButton(
-            tooltip: 'Help',
-            icon: const Icon(Icons.help_outline),
-            onPressed: () => openHelp(context, HelpSection.manageRules),
-          ),
-          IconButton(
-            icon: const Icon(Icons.science),
-            tooltip: 'Test a pattern against sample emails',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const RuleTestScreen()),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
-            onPressed: _loadRules,
-          ),
-          // Sprint 37 round 6: filter-aware bulk export. Exports the
-          // currently-shown subset (search + filter chips applied) as CSV.
-          // Respects the "filter is the selection" UX -- power users
-          // narrow the list to what they want, then export.
-          IconButton(
-            icon: const Icon(Icons.file_download_outlined),
-            tooltip: _filteredRules.isEmpty
-                ? 'Nothing to export'
-                : 'Export ${_filteredRules.length} shown rule${_filteredRules.length == 1 ? '' : 's'} as CSV',
-            onPressed: _filteredRules.isEmpty ? null : _exportFilteredRules,
-          ),
-        ],
+        // F134 (Sprint 52): canonical order via the ONE shared builder. Help
+        // was FIRST here, ahead of three screen-specific actions -- the exact
+        // inverse of the rule (screen-specific first, Help last). The three
+        // screen-specific actions keep their existing relative order as
+        // `leading`.
+        actions: StandardAppBarActions.build(
+          context: context,
+          helpSection: HelpSection.manageRules,
+          includeNoRuleReview: false,
+          includeScanHistory: false,
+          includeAccounts: false,
+          includeSettings: false,
+          leading: [
+            IconButton(
+              icon: const Icon(Icons.science),
+              tooltip: 'Test a pattern against sample emails',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const RuleTestScreen()),
+                );
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Refresh',
+              onPressed: _loadRules,
+            ),
+            // Sprint 37 round 6: filter-aware bulk export. Exports the
+            // currently-shown subset (search + filter chips applied) as CSV.
+            // Respects the "filter is the selection" UX -- power users
+            // narrow the list to what they want, then export.
+            IconButton(
+              icon: const Icon(Icons.file_download_outlined),
+              tooltip: _filteredRules.isEmpty
+                  ? 'Nothing to export'
+                  : 'Export ${_filteredRules.length} shown rule${_filteredRules.length == 1 ? '' : 's'} as CSV',
+              onPressed: _filteredRules.isEmpty ? null : _exportFilteredRules,
+            ),
+          ],
+        ),
       ),
       // Sprint 38 F84 Sub-task A (Issue #253): Ctrl+A / Cmd+A copies the
       // ENTIRE filtered rule list to clipboard, not just the viewport

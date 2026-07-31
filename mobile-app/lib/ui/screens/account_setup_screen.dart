@@ -12,6 +12,7 @@ import '../../util/redact.dart';
 import 'help_screen.dart';
 import 'scan_progress_screen.dart';
 import 'gmail_oauth_screen.dart';
+import '../widgets/standard_app_bar_actions.dart';
 
 /// Gmail authentication method choices
 ///
@@ -370,21 +371,15 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Gmail - Sign In Method'),
-        // F55 (Sprint 33): standardized icon order -- Accounts, Help.
-        actions: [
-          IconButton(
-            tooltip: 'Select Account',
-            icon: const Icon(Icons.people),
-            onPressed: () {
-              Navigator.popUntil(context, (route) => route.isFirst);
-            },
-          ),
-          IconButton(
-            tooltip: 'Help',
-            icon: const Icon(Icons.help_outline),
-            onPressed: () => openHelp(context, HelpSection.accountSetup),
-          ),
-        ],
+        // F134 (Sprint 52): declared via the ONE shared builder (was already
+        // Accounts then Help; the builder makes that structural).
+        actions: StandardAppBarActions.build(
+          context: context,
+          helpSection: HelpSection.accountSetup,
+          includeNoRuleReview: false,
+          includeScanHistory: false,
+          includeSettings: false,
+        ),
       ),
       body: SelectionArea(
         child: SingleChildScrollView(
@@ -573,22 +568,14 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
                 },
               )
             : null,
-        // F55 (Sprint 33): standardized icon order -- Accounts, Help.
-        actions: [
-          IconButton(
-            tooltip: 'Select Account',
-            icon: const Icon(Icons.people),
-            onPressed: () {
-              Navigator.popUntil(context, (route) => route.isFirst);
-            },
-          ),
-          // F54 (Sprint 33): Help icon -> Account Setup section.
-          IconButton(
-            tooltip: 'Help',
-            icon: const Icon(Icons.help_outline),
-            onPressed: () => openHelp(context, HelpSection.accountSetup),
-          ),
-        ],
+        // F134 (Sprint 52): declared via the ONE shared builder.
+        actions: StandardAppBarActions.build(
+          context: context,
+          helpSection: HelpSection.accountSetup,
+          includeNoRuleReview: false,
+          includeScanHistory: false,
+          includeSettings: false,
+        ),
       ),
       body: SelectionArea(
         child: SingleChildScrollView(

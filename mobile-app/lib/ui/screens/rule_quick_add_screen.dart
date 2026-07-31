@@ -13,6 +13,7 @@ import '../../core/utils/pattern_generation.dart';
 import '../widgets/email_auth_badge.dart';
 import 'help_screen.dart';
 import 'rule_test_screen.dart';
+import '../widgets/standard_app_bar_actions.dart';
 
 enum RuleActionType { delete, move }
 enum ConditionBucket { fromHeader, subject, body, bodyUrl }
@@ -425,12 +426,16 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
       appBar: AppBar(
         title: const Text('Create Auto-Delete Rule'),
         elevation: 0,
-        actions: [
-          IconButton(
-            tooltip: 'Help',
-            icon: const Icon(Icons.help_outline),
-            onPressed: () => openHelp(context, HelpSection.ruleQuickAdd),
-          ),
+        // F134 (Sprint 52): canonical order via the ONE shared builder -- Help
+        // was FIRST, ahead of the screen-specific Test action; it is now LAST.
+        actions: StandardAppBarActions.build(
+          context: context,
+          helpSection: HelpSection.ruleQuickAdd,
+          includeNoRuleReview: false,
+          includeScanHistory: false,
+          includeAccounts: false,
+          includeSettings: false,
+          leading: [
           IconButton(
             icon: const Icon(Icons.science),
             tooltip: 'Test pattern against sample emails',
@@ -462,7 +467,8 @@ class _RuleQuickAddScreenState extends State<RuleQuickAddScreen> {
               );
             },
           ),
-        ],
+          ],
+        ),
       ),
       body: Form(
         key: _formKey,

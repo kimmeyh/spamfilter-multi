@@ -24,7 +24,7 @@ import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../adapters/auth/google_auth_service.dart';
 import 'help_screen.dart';
-import 'settings_screen.dart';
+import '../widgets/standard_app_bar_actions.dart';
 
 /// Groups folders into a two-level tree structure for multi-select display.
 ///
@@ -567,29 +567,17 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
       appBar: AppBar(
         title: Text(widget.title ?? 'Select Folders to Scan'),
         elevation: 0,
-        actions: [
-          IconButton(
-            tooltip: 'Help',
-            icon: const Icon(Icons.help_outline),
-            onPressed: () => openHelp(
-              context,
-              HelpSection.folderSelection,
-              accountId: widget.accountId,
-              platformId: widget.platformId,
-            ),
-          ),
-          IconButton(
-            tooltip: 'Settings',
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => SettingsScreen(accountId: widget.accountId),
-                ),
-              );
-            },
-          ),
-        ],
+        // F134 (Sprint 52): canonical order via the ONE shared builder -- was
+        // Help then Settings, the inverse of the rule (Settings then Help).
+        actions: StandardAppBarActions.build(
+          context: context,
+          helpSection: HelpSection.folderSelection,
+          accountId: widget.accountId,
+          platformId: widget.platformId,
+          includeNoRuleReview: false,
+          includeScanHistory: false,
+          includeAccounts: false,
+        ),
       ),
       body: SelectionArea(child: Column(
         children: [
