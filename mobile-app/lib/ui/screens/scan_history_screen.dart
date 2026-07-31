@@ -445,7 +445,7 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
           const SizedBox(height: 8),
           Text(
             'Completed scans will appear here.',
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
           ),
         ],
       ),
@@ -492,12 +492,29 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
 
     final accountEmail = _accountEmails[scan.accountId] ?? scan.accountId;
 
+    // F133-S52 R-1 (Sprint 52): the scan card was a bare InkWell -- tappable
+    // but unnamed, so a screen reader announced nothing about WHICH scan it
+    // was. Wrapped per docs/ACCESSIBILITY_STANDARDS.md §2.
+    //
+    // The card body is pure text/decoration with no interactive children, so
+    // `excludeSemantics: true` is safe and correct here: it merges the whole
+    // card into ONE announced node instead of a stream of disconnected text
+    // fragments. `button` and `onTap` are supplied ONLY when the card is
+    // actually tappable -- an incomplete scan must not advertise an action it
+    // does not have.
+    final canOpen = isCompleted && scan.id != null;
     return Card(
       elevation: 1,
-      child: InkWell(
-        onTap: (isCompleted && scan.id != null)
-            ? () => _navigateToResults(scan)
-            : null,
+      child: Semantics(
+        container: true,
+        button: canOpen,
+        excludeSemantics: true,
+        label: '${isManual ? 'Manual' : 'Background'} scan - $accountEmail - '
+            '$modeLabel - ${scan.status}',
+        hint: canOpen ? 'View scan results' : null,
+        onTap: canOpen ? () => _navigateToResults(scan) : null,
+        child: InkWell(
+        onTap: canOpen ? () => _navigateToResults(scan) : null,
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Column(
@@ -599,6 +616,7 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

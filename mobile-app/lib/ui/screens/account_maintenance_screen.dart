@@ -432,7 +432,7 @@ class _AccountMaintenanceScreenState extends State<AccountMaintenanceScreen> {
                         'Add your first email account to get started',
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.grey.shade500,
+                          color: Colors.grey.shade600,
                         ),
                       ),
                     ],

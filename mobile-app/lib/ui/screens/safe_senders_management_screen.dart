@@ -529,7 +529,7 @@ class _SafeSendersManagementScreenState
                               Text(
                                 'Add safe senders from scan results using Quick Add',
                                 style: TextStyle(
-                                  color: Colors.grey.shade500,
+                                  color: Colors.grey.shade600,
                                   fontSize: 13,
                                 ),
                               ),
@@ -614,7 +614,21 @@ class _SafeSendersManagementScreenState
             setState(() => _hoveredPattern = null);
           }
         },
-        child: GestureDetector(
+        // F133-S52 R-3 (Sprint 52): bare GestureDetector row -> unnamed node.
+        // Wrapped per docs/ACCESSIBILITY_STANDARDS.md §2. `container: true`
+        // WITHOUT `excludeSemantics`, because this row owns interactive
+        // children (the leading category IconButton) that must stay
+        // independently reachable. `onTap` mirrors the GestureDetector so the
+        // named node is genuinely activatable, and the GestureDetector keeps
+        // its own handlers so mouse input and drag-selection are unchanged.
+        child: Semantics(
+          container: true,
+          button: true,
+          label: '${sender.pattern} - ${_formatPatternType(sender)}'
+              '${hasExceptions ? ' (has exceptions)' : ''}',
+          hint: 'View safe sender details',
+          onTap: () => handleRowTap(index, _filteredSenders.length),
+          child: GestureDetector(
           behavior: HitTestBehavior.translucent,
           onTap: () => handleRowTap(index, _filteredSenders.length),
           onPanStart: (_) =>
@@ -693,6 +707,7 @@ class _SafeSendersManagementScreenState
             ),
           ),
           ),
+        ),
         ),
       ),
     );

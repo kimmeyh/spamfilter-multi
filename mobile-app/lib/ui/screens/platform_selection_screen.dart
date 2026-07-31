@@ -262,7 +262,7 @@ class _PlatformSelectionScreenState extends State<PlatformSelectionScreen> {
               _getAuthMethodLabel(platformInfo.authMethod),
               style: TextStyle(
                 fontSize: 10,
-                color: Colors.grey[500],
+                color: Colors.grey.shade600,
                 fontStyle: FontStyle.italic,
               ),
             ),

@@ -654,6 +654,39 @@ void main() {
           'Labels found: $labels',
     );
 
+    // F133-S52 R-6 (Sprint 52): being NAMED is only half the contract -- the
+    // node must also be ACTIVATABLE. Sprint 51 shipped a fix twice that named
+    // a node correctly while leaving it unclickable (`excludeSemantics` drops
+    // the child's gesture node unless `onTap` is supplied on the Semantics
+    // widget). Labelling assertions SURVIVE that defect, which is exactly why
+    // Copilot flagged the account-selection tests on PR #285.
+    //
+    // "A tree dump proves a name exists; only an interaction proves the node
+    // still works." -- docs/ACCESSIBILITY_STANDARDS.md §1
+    final actionableNodes = <SemanticsNode>[];
+    void collectTappable(SemanticsNode n) {
+      if (n.label.contains('Select infoinfo@prohomeprotectplus.example') &&
+          n.getSemanticsData().hasAction(SemanticsAction.tap)) {
+        actionableNodes.add(n);
+      }
+      n.visitChildren((c) {
+        collectTappable(c);
+        return true;
+      });
+    }
+
+    collectTappable(
+        tester.binding.pipelineOwner.semanticsOwner!.rootSemanticsNode!);
+
+    expect(
+      actionableNodes,
+      isNotEmpty,
+      reason: 'the named checkbox node must expose a TAP action. A labelled '
+          'node with no action announces as a control that assistive '
+          'technology cannot activate -- the exact defect shipped twice in '
+          'Sprint 51.',
+    );
+
     handle.dispose();
   });
 }

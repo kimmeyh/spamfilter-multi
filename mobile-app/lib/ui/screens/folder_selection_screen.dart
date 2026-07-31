@@ -778,7 +778,7 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
                     'Changes saved automatically',
                     style: TextStyle(
                       fontSize: 11,
-                      color: Colors.grey.shade500,
+                      color: Colors.grey.shade600,
                       fontStyle: FontStyle.italic,
                     ),
                   ),

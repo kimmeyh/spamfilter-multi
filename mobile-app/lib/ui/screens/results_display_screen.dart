@@ -1181,7 +1181,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                 Flexible(
                   child: Text(
                     folder,
-                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -1678,7 +1678,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                               Text(
                                 dateStr,
                                 style: TextStyle(
-                                    fontSize: 11, color: Colors.grey[500]),
+                                    fontSize: 11, color: Colors.grey.shade600),
                               ),
                               if (displaySenderDomain != null) ...[
                                 const SizedBox(width: 12),
@@ -1688,7 +1688,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                                 Text(
                                   displaySenderDomain,
                                   style: TextStyle(
-                                      fontSize: 11, color: Colors.grey[500]),
+                                      fontSize: 11, color: Colors.grey.shade600),
                                 ),
                               ],
                             ],

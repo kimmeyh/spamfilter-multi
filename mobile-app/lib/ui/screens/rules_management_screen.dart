@@ -917,7 +917,30 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
             setState(() => _hoveredRuleName = null);
           }
         },
-        child: GestureDetector(
+        // F133-S52 R-3 (Sprint 52): the row is a bare GestureDetector, so it
+        // announced as an unnamed node -- a screen reader said nothing about
+        // WHICH rule it was, and name-based automation could not address it.
+        // Wrapped per docs/ACCESSIBILITY_STANDARDS.md §2.
+        //
+        // Deliberately NOT using `excludeSemantics: true` here (unlike the
+        // account rows): this row contains its OWN interactive control -- the
+        // trailing "View rule details" IconButton -- and excluding descendants
+        // would swallow it. `container: true` names the row while leaving that
+        // button independently reachable.
+        //
+        // `onTap` on the Semantics node mirrors the GestureDetector's, so the
+        // named node is genuinely ACTIVATABLE (the Sprint 51 defect: named but
+        // unclickable). The GestureDetector keeps its own handlers, so mouse
+        // input and drag-selection are unchanged.
+        child: Semantics(
+          container: true,
+          button: true,
+          label: '$displayName - '
+              '${subTypeLabel.isEmpty ? categoryLabel : '$categoryLabel - $subTypeLabel'}'
+              '${rule.enabled ? '' : ' (disabled)'}',
+          hint: 'View rule details',
+          onTap: () => handleRowTap(index, _filteredRules.length),
+          child: GestureDetector(
           behavior: HitTestBehavior.translucent,
           onTap: () => handleRowTap(index, _filteredRules.length),
           onPanStart: (_) => handleRowDragStart(index, _filteredRules.length),
@@ -989,6 +1012,7 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
             ),
           ),
           ),
+        ),
         ),
       ),
     );

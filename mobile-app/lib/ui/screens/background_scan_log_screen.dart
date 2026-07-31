@@ -181,7 +181,7 @@ class _BackgroundScanLogScreenState extends State<BackgroundScanLogScreen> {
           const SizedBox(height: 8),
           Text(
             'Background scans will appear here after they run.',
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
           ),
         ],
       ),
