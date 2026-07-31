@@ -6,12 +6,10 @@ import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
 import '../widgets/app_bar_with_exit.dart';
+import '../widgets/standard_app_bar_actions.dart';
 import '../widgets/auth_warning_dialog.dart';
 import 'help_screen.dart';
-import 'no_rule_review_screen.dart';
-import 'scan_history_screen.dart';
 import 'scan_progress_screen.dart';
-import 'settings_screen.dart';
 
 import '../../core/providers/email_scan_provider.dart'
     show
@@ -658,89 +656,45 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                     Navigator.pop(context);
                   },
                 ),
-          // F55 (Sprint 33, v3): standardized icon order --
-          // Download, Search, History, Accounts, Help, Settings, [X auto].
+          // F134 (Sprint 52): canonical order from the ONE shared builder --
+          // Download, Find (screen-specific, leading), then Review "No Rule"
+          // Items, View Scan History, Accounts, Settings, Help, then the
+          // auto-appended Exit. Exactly Harold's spec for this screen.
+          // Previously this ran Download, Search, No-Rule, History, Accounts,
+          // HELP, Settings -- Help and Settings inverted. Change the order in
+          // StandardAppBarActions, never here.
+          //
+          // The whole block stays gated on !_showSearch: when the search field
+          // is open it takes over the AppBar, so every action is hidden.
           actions: [
-            if (!_showSearch) ...[
-              IconButton(
-                tooltip: 'Export Results to CSV',
-                icon: const Icon(Icons.file_download),
-                onPressed: () => _exportResults(context, scanProvider),
-              ),
-              IconButton(
-                tooltip: 'Search (Ctrl+F)',
-                icon: const Icon(Icons.search),
-                onPressed: () {
-                  setState(() {
-                    _showSearch = true;
-                  });
-                },
-              ),
-              // MT-3 (Sprint 50, Harold): Review "No Rule" Items entry point
-              // ahead of History, mirroring the scan-history/account-selection
-              // convention (F112/F39). Windows-desktop scoped like those
-              // screens.
-              if (Platform.isWindows)
-                IconButton(
-                  icon: const Icon(Icons.rule_folder_outlined),
-                  tooltip: 'Review "No Rule" Items',
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                        builder: (_) => const NoRuleReviewScreen()),
+            if (!_showSearch)
+              ...StandardAppBarActions.build(
+                context: context,
+                // Demo scans deep-link to a different help section.
+                helpSection: widget.platformId == 'demo'
+                    ? HelpSection.demoScan
+                    : HelpSection.resultsDisplay,
+                accountId: widget.accountId,
+                accountEmail: widget.accountEmail,
+                platformId: widget.platformId,
+                platformDisplayName: widget.platformDisplayName,
+                leading: [
+                  IconButton(
+                    tooltip: 'Export Results to CSV',
+                    icon: const Icon(Icons.file_download),
+                    onPressed: () => _exportResults(context, scanProvider),
                   ),
-                ),
-              IconButton(
-                tooltip: 'View Scan History',
-                icon: const Icon(Icons.history),
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => ScanHistoryScreen(
-                        accountId: widget.accountId,
-                        accountEmail: widget.accountEmail,
-                        platformId: widget.platformId,
-                        platformDisplayName: widget.platformDisplayName,
-                      ),
-                    ),
-                  );
-                },
+                  IconButton(
+                    tooltip: 'Search (Ctrl+F)',
+                    icon: const Icon(Icons.search),
+                    onPressed: () {
+                      setState(() {
+                        _showSearch = true;
+                      });
+                    },
+                  ),
+                ],
               ),
-              IconButton(
-                tooltip: 'Select Account',
-                icon: const Icon(Icons.people),
-                onPressed: () {
-                  Navigator.popUntil(context, (route) => route.isFirst);
-                },
-              ),
-              IconButton(
-                tooltip: 'Help',
-                icon: const Icon(Icons.help_outline),
-                onPressed: () => openHelp(
-                  context,
-                  // Use demo-scan section when this screen is showing a demo
-                  // scan, otherwise the default live-scan Results section.
-                  widget.platformId == 'demo'
-                      ? HelpSection.demoScan
-                      : HelpSection.resultsDisplay,
-                  accountId: widget.accountId,
-                  accountEmail: widget.accountEmail,
-                  platformId: widget.platformId,
-                  platformDisplayName: widget.platformDisplayName,
-                ),
-              ),
-              IconButton(
-                tooltip: 'Settings',
-                icon: const Icon(Icons.settings),
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          SettingsScreen(accountId: widget.accountId),
-                    ),
-                  );
-                },
-              ),
-            ],
           ],
         ),
         body: SelectionArea(

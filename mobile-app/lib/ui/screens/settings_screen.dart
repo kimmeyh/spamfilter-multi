@@ -24,9 +24,9 @@ import '../../core/security/certificate_pinner.dart';
 import '../../util/redact.dart';
 import '../../adapters/email_providers/email_provider.dart' show Credentials;
 import '../widgets/app_bar_with_exit.dart';
+import '../widgets/standard_app_bar_actions.dart';
 import 'folder_selection_screen.dart';
 import 'help_screen.dart';
-import 'no_rule_review_screen.dart';
 import 'scan_history_screen.dart';
 import 'rules_management_screen.dart';
 import 'safe_senders_management_screen.dart';
@@ -259,41 +259,25 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         // F55 (Sprint 33, v3): icon order --
         // History, Accounts, Help, [X auto]. Help deep-links to the section
         // matching the currently visible tab.
-        actions: [
-          // F112 (Sprint 47): "Review No Rule Items" entry point, just LEFT
-          // of the View Scan History icon; shared AppBar covers all 4 tabs.
-          // Windows-desktop scoped, consistent with the other entry points.
-          if (Platform.isWindows)
-            IconButton(
-              icon: const Icon(Icons.rule_folder_outlined),
-              tooltip: 'Review "No Rule" Items',
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                    builder: (_) => const NoRuleReviewScreen()),
-              ),
-            ),
-          IconButton(
-            icon: const Icon(Icons.history),
-            tooltip: 'View Scan History',
-            onPressed: () => _navigateToScanHistory(),
-          ),
-          IconButton(
-            tooltip: 'Select Account',
-            icon: const Icon(Icons.people),
-            onPressed: () {
-              Navigator.popUntil(context, (route) => route.isFirst);
-            },
-          ),
-          IconButton(
-            tooltip: 'Help',
-            icon: const Icon(Icons.help_outline),
-            onPressed: () => openHelp(
-              context,
-              _helpSectionForActiveTab(),
-              accountId: widget.accountId,
-            ),
-          ),
-        ],
+        // F134 (Sprint 52): canonical order from the ONE shared builder --
+        // Review "No Rule" Items, View Scan History, Accounts, Settings, Help,
+        // then the auto-appended Exit. Previously this screen ran
+        // No-Rule / History / Accounts / HELP, with Help third-from-last
+        // instead of last. Change the order in StandardAppBarActions, not here.
+        //
+        // includeSettings: false -- this IS the Settings screen; a
+        // self-referential entry point would be noise (the same reason the
+        // No-Rule screen suppresses its own Review-No-Rule icon).
+        //
+        // Help deep-links to the section matching the VISIBLE TAB, so the
+        // helpSection is computed per-build rather than fixed (F54, Sprint 33).
+        actions: StandardAppBarActions.build(
+          context: context,
+          helpSection: _helpSectionForActiveTab(),
+          accountId: widget.accountId,
+          includeSettings: false,
+          onScanHistory: _navigateToScanHistory,
+        ),
         bottom: TabBar(
           controller: _tabController,
           tabs: const [

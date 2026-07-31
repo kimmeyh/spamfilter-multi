@@ -57,6 +57,7 @@ class StandardAppBarActions {
     List<Widget> leading = const [],
     VoidCallback? onSettings,
     VoidCallback? onAccounts,
+    VoidCallback? onScanHistory,
     bool includeNoRuleReview = true,
     bool includeScanHistory = true,
     bool includeAccounts = true,
@@ -78,21 +79,24 @@ class StandardAppBarActions {
           ),
         ),
 
-      // 2. View Scan History
+      // 2. View Scan History -- [onScanHistory] lets a screen supply its own
+      //    navigation (e.g. Settings, which routes through a helper that also
+      //    carries platform/email context it already resolved).
       if (includeScanHistory)
         IconButton(
           icon: const Icon(Icons.history),
           tooltip: 'View Scan History',
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => ScanHistoryScreen(
-                platformId: platformId,
-                platformDisplayName: platformDisplayName,
-                accountId: accountId,
-                accountEmail: accountEmail,
-              ),
-            ),
-          ),
+          onPressed: onScanHistory ??
+              () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => ScanHistoryScreen(
+                        platformId: platformId,
+                        platformDisplayName: platformDisplayName,
+                        accountId: accountId,
+                        accountEmail: accountEmail,
+                      ),
+                    ),
+                  ),
         ),
 
       // 3. Accounts
