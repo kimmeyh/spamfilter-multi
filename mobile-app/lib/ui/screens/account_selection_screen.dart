@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/providers/selected_account_provider.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/services/data_deletion_service.dart';
+import '../../core/utils/platform_inference.dart';
 import '../../util/redact.dart';
 import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/email_providers/spam_filter_platform.dart';
@@ -15,7 +16,6 @@ import '../widgets/app_bar_with_exit.dart';
 import '../widgets/standard_app_bar_actions.dart';
 import 'platform_selection_screen.dart';
 import 'scan_history_screen.dart';
-import 'scan_progress_screen.dart';
 import 'help_screen.dart';
 import 'settings_screen.dart';
 
@@ -202,26 +202,20 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
         _logger.w('[WARNING] Email not properly stored for account: ${Redact.accountId(accountId)}, using fallback: ${Redact.email(email)}');
       }
 
-      // Get platformId from storage or infer from email domain
-      String platformId = await _credStore.getPlatformId(accountId) ?? 'unknown';
+      // Get platformId from storage or infer from email domain.
+      // Inference is the ONE core implementation (PR #292 re-review): this
+      // method previously carried its own contains()-based copy, which
+      // diverged from the shared endsWith fix -- a lookalike domain resolved
+      // as Gmail here while being blocked on the AppBar path.
+      String platformId =
+          await _credStore.getPlatformId(accountId) ?? unknownPlatformId;
 
-      // If platformId is still unknown, try to infer from email domain
-      if (platformId == 'unknown' && email.contains('@')) {
-        if (email.contains('@gmail.com')) {
-          platformId = 'gmail';
-        } else if (email.contains('@aol.com')) {
-          platformId = 'aol';
-        } else if (email.contains('@yahoo.com')) {
-          platformId = 'yahoo';
-        } else if (email.contains('@outlook.com') || email.contains('@hotmail.com')) {
-          platformId = 'outlook';
-        } else if (email.contains('@icloud.com')) {
-          platformId = 'icloud';
-        }
+      if (platformId == unknownPlatformId && email.contains('@')) {
+        platformId = inferPlatformFromEmail(email);
       }
 
       // Last resort: if platformId still unknown, try to parse from accountId
-      if (platformId == 'unknown' && !accountId.contains('@')) {
+      if (platformId == unknownPlatformId && !accountId.contains('@')) {
         // accountId might be just the platformId (old format)
         platformId = accountId;
       }
@@ -357,47 +351,25 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
   Future<void> _selectAccount(String accountId) async {
     context.read<SelectedAccountProvider>().select(accountId);
 
-    final email = accountId; // accountId is the email
-    String platformId = await _credStore.getPlatformId(accountId) ?? '';
-    
-    // If platformId is not found, try to infer from email domain
-    if (platformId.isEmpty) {
-      _logger.w('Platform ID not found for ${Redact.accountId(accountId)}, attempting to infer from email');
-      
-      if (email.contains('@gmail.com')) {
-        platformId = 'gmail';
-      } else if (email.contains('@aol.com')) {
-        platformId = 'aol';
-      } else if (email.contains('@yahoo.com')) {
-        platformId = 'yahoo';
-      } else if (email.contains('@outlook.com') || email.contains('@hotmail.com')) {
-        platformId = 'outlook';
-      } else if (email.contains('@icloud.com')) {
-        platformId = 'icloud';
-      } else {
-        platformId = 'unknown';
-      }
-      
-      _logger.i('Inferred platform: $platformId from email: ${Redact.email(email)}');
-    }
+    _logger.i('Selected account: ${Redact.accountId(accountId)}');
 
-    _logger.i('Selected account: ${Redact.accountId(accountId)} (platform: $platformId)');
-
-    if (!mounted) return;
-
-    // Navigate to scan progress with existing account
-    // Using push (not pushReplacement) so back button returns here
-    Navigator.push(
+    // Resolution + navigation delegated to the ONE shared helper (PR #292
+    // re-review). This method used to carry its own inline platformId lookup
+    // and inference and pushed ScanProgressScreen even when the result was
+    // 'unknown' -- reproducing the exact defer-the-failure defect the AppBar
+    // path had been fixed for (the scan failed two screens later, naming a
+    // platform the user never chose), and its contains()-based inference had
+    // DIVERGED from the shared endsWith fix. openManualScan carries the store
+    // lookup, the core inference, and the report-instead-of-navigate guard.
+    // Using push (not pushReplacement) inside it, so back returns here.
+    await StandardAppBarActions.openManualScan(
       context,
-      MaterialPageRoute(
-        builder: (context) => ScanProgressScreen(
-          platformId: platformId,
-          platformDisplayName: _getPlatformName(platformId),
-          accountId: accountId,
-          accountEmail: email,
-        ),
-      ),
-    ).then((_) => _loadSavedAccounts()); // Refresh accounts on return
+      accountId: accountId,
+      accountEmail: accountId, // accountId is the email
+    );
+
+    // Refresh accounts on return from the scan flow.
+    if (mounted) await _loadSavedAccounts();
   }
 
   /// Navigate to platform selection to add new account

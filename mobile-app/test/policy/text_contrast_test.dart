@@ -5,13 +5,17 @@ import 'package:flutter_test/flutter_test.dart';
 /// F133-S52 R-4 (Sprint 52): build-failing gate on text contrast.
 ///
 /// Target is **WCAG 2.1 AA** per `docs/adr/0037-ui-accessibility-standards.md`:
-/// 4.5:1 for normal text, 3:1 for large text. Against a light background:
+/// 4.5:1 for normal text, 3:1 for large text. Against white, computed with the
+/// WCAG relative-luminance formula (ratios CORRECTED in the PR #292 re-review
+/// -- the original table overstated every ratio, and wrongly gave shade500 an
+/// AA-large PASS; the situation was WORSE than documented, so the floor
+/// conclusion survives unchanged):
 ///
-/// | Shade            | Contrast on white | AA normal | AA large |
-/// |------------------|-------------------|-----------|----------|
-/// | `grey.shade400`  | ~2.6:1            | FAIL      | FAIL     |
-/// | `grey.shade500`  | ~3.9:1            | FAIL      | PASS     |
-/// | `grey.shade600`  | ~5.4:1            | PASS      | PASS     |
+/// | Shade                    | Contrast on white | AA normal | AA large |
+/// |--------------------------|-------------------|-----------|----------|
+/// | `grey.shade400` #BDBDBD  | ~1.9:1            | FAIL      | FAIL     |
+/// | `grey.shade500` #9E9E9E  | ~2.7:1            | FAIL      | FAIL     |
+/// | `grey.shade600` #757575  | ~4.6:1            | PASS      | PASS     |
 ///
 /// So `shade600` is the floor for text a user must read. Lighter greys remain
 /// correct for NON-informational decoration: dividers, borders, disabled fills.
@@ -54,9 +58,9 @@ void main() {
       expect(uiDir.existsSync(), isTrue,
           reason: 'run this test from the mobile-app/ directory');
 
-      // Bare `Colors.grey` IS `shade500` (~3.9:1) -- it fails AA for normal
-      // text exactly like the explicit form. The original pattern matched only
-      // the explicit shades, so the gate documented a floor it did not enforce
+      // Bare `Colors.grey` IS `shade500` (~2.7:1 on white) -- it fails AA for
+      // BOTH normal and large text. The original pattern matched only the
+      // explicit shades, so the gate documented a floor it did not enforce
       // and 13 real text sites sat below it undetected (PR #292 review). The
       // negative lookahead keeps `grey.shade600`, `greyAccent` and
       // `grey[700]` out of the match.

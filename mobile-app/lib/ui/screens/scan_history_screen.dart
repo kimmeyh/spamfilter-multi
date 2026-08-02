@@ -96,7 +96,9 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
     String? selected;
     try {
       selected = context.read<SelectedAccountProvider>().accountId;
-    } catch (_) {
+    } on ProviderNotFoundException {
+      // Missing provider is the ONLY tolerated case (Copilot, PR #292) -- a
+      // bare catch would also hide a real error from a present provider.
       selected = null;
     }
     if (selected != null && _distinctAccounts.contains(selected)) {

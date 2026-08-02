@@ -110,7 +110,10 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
     String? selected;
     try {
       selected = context.read<SelectedAccountProvider>().accountId;
-    } catch (_) {
+    } on ProviderNotFoundException {
+      // Missing provider is the ONLY tolerated case (Copilot, PR #292): a bare
+      // catch here would also swallow a real error thrown by a present
+      // provider, hiding a genuine misconfiguration behind the fallback chain.
       selected = null;
     }
     if (selected != null && _distinctAccounts.contains(selected)) {
@@ -140,7 +143,18 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
   /// icon uses, so both icons always agree on which account they mean.
   Future<void> _openManualScan() async {
     final accountId = _resolveAccountIdForSettings();
-    if (accountId == null) return;
+    if (accountId == null) {
+      // Report rather than silently return (PR #292 re-review): this handler
+      // is always wired, so the icon is VISIBLE even with zero accounts -- a
+      // silent return here is a dead icon, the exact MV-1 shape.
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Add an email account first -- there is no account to '
+              'scan yet.'),
+        ),
+      );
+      return;
+    }
 
     await StandardAppBarActions.openManualScan(
       context,
@@ -417,13 +431,18 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
     // newer scan -- or covered by the rules this batch just created -- are
     // resolved before display. _lastSweepCount carries the count for the
     // summary below.
-    await _loadItems();
+    final reloaded = await _loadItems();
 
     if (!mounted) return;
 
+    // The batch counts above are real regardless of the reload outcome, so
+    // the summary still shows -- but the sweep segment is gated on the reload
+    // SUCCEEDING (PR #292 re-review): on a failed reload the sweep never ran,
+    // and _lastSweepCount still holds the PREVIOUS load's count, so appending
+    // it would be a false claim painted over the load-failure SnackBar.
     final parts = <String>['$actionLabel: $succeeded succeeded'];
     if (alreadyCovered > 0) parts.add('$alreadyCovered already covered');
-    if (_lastSweepCount > 0) {
+    if (reloaded && _lastSweepCount > 0) {
       parts.add('$_lastSweepCount more auto-resolved');
     }
     if (failed > 0) parts.add('$failed failed');
@@ -693,8 +712,14 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
           // Own handler (not the builder's default) purely so this screen can
           // RELOAD when the scan returns -- a scan can resolve items shown
           // here. The account/platform resolution itself still lives in the
-          // shared builder. The builder omits the icon when accountId is null,
-          // so this is never reachable without an account.
+          // shared builder.
+          //
+          // NOTE (corrected, PR #292 re-review): because this handler is
+          // non-null, the builder's `onManualScan != null || accountId != null`
+          // guard shows the icon EVEN WITH ZERO ACCOUNTS -- an earlier comment
+          // here claimed the opposite. The zero-account press is handled inside
+          // _openManualScan with an explicit "add an account first" message
+          // rather than a silent return.
           onManualScan: _openManualScan,
           leading: [
             IconButton(

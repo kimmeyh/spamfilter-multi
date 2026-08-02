@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../adapters/storage/secure_credentials_store.dart';
+import '../../core/utils/platform_inference.dart';
 import '../screens/account_selection_screen.dart';
 import '../screens/help_screen.dart';
 import '../screens/no_rule_review_screen.dart';
@@ -101,17 +102,24 @@ class StandardAppBarActions {
       //    and the caller supplied no handler, rather than opening a scan
       //    screen with nothing to scan.
       //
-      //    NET EFFECT (audited 2026-07-31): the icon shows on 9 of the 15
-      //    screens that use this builder. Absent from scan_progress_screen by
-      //    design (it IS Manual Scan), and from five rule-editing surfaces --
-      //    rules_management, safe_senders_management, rule_test, rule_quick_add
-      //    and yaml_import_export -- which pass NO accountId and already
-      //    suppress Accounts/Settings/Scan-History too. Those five are
-      //    deliberately Help-only focused editors, and that predates this
-      //    sprint; they are not an oversight in this change. If Manual Scan is
-      //    ever wanted there, they need an accountId first -- that is a
-      //    separate decision, not something to paper over by showing an icon
-      //    that cannot resolve an account.
+      //    NET EFFECT (re-audited 2026-08-02 against this guard, PR #292
+      //    re-review -- the previous "9 of 15" figure here was WRONG and
+      //    survived two fix rounds; it omitted three screens and its arithmetic
+      //    never matched the guard). Across the 15 screens (16 call sites)
+      //    using this builder, the icon can appear on at most SIX:
+      //      - always (3): folder_selection, results_display (non-nullable
+      //        accountId) and no_rule_review (always passes onManualScan);
+      //      - only when an account is resolvable (3): help_screen,
+      //        scan_history and settings (nullable accountId).
+      //    Never on the other nine: scan_progress (includeManualScan: false --
+      //    it IS Manual Scan); the five Help-only editors (rules_management,
+      //    safe_senders_management, rule_test, rule_quick_add,
+      //    yaml_import_export); and account_selection, account_setup (both call
+      //    sites) and platform_selection, which pass no accountId and no
+      //    handler. The editor and account-flow screens are deliberate: showing
+      //    an icon that cannot resolve an account would be the MV-1 dead-icon
+      //    class again. If Manual Scan is ever wanted there, give them an
+      //    accountId first.
       if (includeManualScan && (onManualScan != null || accountId != null))
         IconButton(
           icon: const Icon(Icons.radar),
@@ -260,20 +268,22 @@ class StandardAppBarActions {
           await SecureCredentialsStore().getPlatformId(accountId) ?? '';
     }
     if (resolvedPlatformId.isEmpty) {
-      resolvedPlatformId = _inferPlatformFromEmail(accountEmail ?? accountId);
+      resolvedPlatformId = inferPlatformFromEmail(accountEmail ?? accountId);
     }
 
     // The await above crosses an async gap; the screen may have been popped.
     if (!context.mounted) return;
 
     // DO NOT navigate with an unresolved platform (PR #292 review).
-    // `_inferPlatformFromEmail` returns `unknownPlatformId` for any address
-    // outside its five hardcoded domains -- which includes every custom or
-    // corporate IMAP host the generic adapter otherwise supports fine. Pushing
-    // anyway sent the user to a screen titled "Manual Scan - unknown", and the
-    // real failure (`EmailScanner`: 'Platform unknown not supported') only
-    // surfaced two screens later, after they tapped Start Live Scan and were
-    // auto-pushed to Results -- naming a platform they never chose.
+    // `inferPlatformFromEmail` (core/utils/platform_inference.dart -- the ONE
+    // implementation; this widget's private copy diverged from its two
+    // account_selection_screen siblings and was removed) returns
+    // `unknownPlatformId` for any address outside its six known domains --
+    // which includes every custom or corporate IMAP host the generic adapter
+    // otherwise supports fine. Pushing anyway put "unknown" into the scan
+    // pipeline: the real failure (`EmailScanner`: 'Platform unknown not
+    // supported') only surfaced two screens later, in a Results screen titled
+    // with a provider the user never chose, after they tapped Start Live Scan.
     //
     // The sentinel is also ambiguous at this boundary: it is indistinguishable
     // between a genuinely unsupported provider, a keystore read failure inside
@@ -309,28 +319,12 @@ class StandardAppBarActions {
     );
   }
 
-  /// Sentinel returned by [_inferPlatformFromEmail] when the address matches no
-  /// known provider. Named rather than inlined so the guard in
-  /// [openManualScan] cannot drift away from the value it checks.
-  static const String unknownPlatformId = 'unknown';
-
-  /// Fallback for accounts saved before the platformId was recorded. Mirrors
-  /// `account_selection_screen._selectAccount`.
-  ///
-  /// Matches on the address ENDING, not `contains` (PR #292 review): a
-  /// `contains('@gmail.com')` test also matches
-  /// `user@gmail.com.example.net`, which is a different provider entirely.
-  static String _inferPlatformFromEmail(String email) {
-    final address = email.trim().toLowerCase();
-    if (address.endsWith('@gmail.com')) return 'gmail';
-    if (address.endsWith('@aol.com')) return 'aol';
-    if (address.endsWith('@yahoo.com')) return 'yahoo';
-    if (address.endsWith('@outlook.com') || address.endsWith('@hotmail.com')) {
-      return 'outlook';
-    }
-    if (address.endsWith('@icloud.com')) return 'icloud';
-    return unknownPlatformId;
-  }
+  // Platform inference and its `unknownPlatformId` sentinel moved to
+  // `core/utils/platform_inference.dart` (PR #292 re-review): this widget's
+  // private copy had diverged from the two copies in
+  // `account_selection_screen.dart` when the endsWith security fix was applied
+  // here only -- the spoof address the AppBar path blocked still resolved as
+  // Gmail on the account-selection path. One core function, three call sites.
 
   static String _platformDisplayName(String platformId) {
     switch (platformId) {

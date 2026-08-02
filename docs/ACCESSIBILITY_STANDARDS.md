@@ -98,10 +98,16 @@ screens. Grey-on-white is the classic AA failure:
 
 | Shade | Contrast on white | AA normal text | AA large text |
 |---|---|---|---|
-| `grey.shade400` | ~2.6:1 | **FAIL** | **FAIL** |
-| `grey.shade500` | ~3.9:1 | **FAIL** | PASS |
-| `grey.shade600` | ~5.4:1 | PASS | PASS |
-| `grey.shade700` | ~7.4:1 | PASS | PASS |
+| `grey.shade400` (#BDBDBD) | ~1.9:1 | **FAIL** | **FAIL** |
+| `grey.shade500` (#9E9E9E, = bare `Colors.grey`) | ~2.7:1 | **FAIL** | **FAIL** |
+| `grey.shade600` (#757575) | ~4.6:1 | PASS | PASS |
+| `grey.shade700` (#616161) | ~6.2:1 | PASS | PASS |
+
+*(Ratios corrected in the PR #292 re-review via the WCAG relative-luminance
+formula -- the original table overstated every ratio and wrongly gave
+`shade500` an AA-large PASS. The real situation was worse than documented:
+`shade500`, including the bare `Colors.grey` alias, fails BOTH tiers. The
+`shade600` floor conclusion is unchanged.)*
 
 **Rules**:
 1. Body and label text must use **`grey.shade600` or darker** on a light background.

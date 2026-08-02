@@ -84,10 +84,10 @@ void main() {
       // Drain the credential-store retry timer that AccountSelectionScreen
       // schedules in initState, so the test does not fail on a pending timer.
       await tester.pump(const Duration(seconds: 1));
-    },
-        // The builder's action set is Windows-desktop scoped in places, and this
-        // defect is a desktop-navigation one.
-        skip: !Platform.isWindows);
+      // No Windows skip (Copilot, PR #292): everything this test presses is
+      // cross-platform, and the skip kept the MV-1 regression gate out of CI,
+      // which runs on ubuntu-latest.
+    });
 
     // ---------------------------------------------------------------------
     // IMP-1 (Sprint 52 retro): every AppBar action must actually GO somewhere.
@@ -110,8 +110,16 @@ void main() {
       // and Manual Scan because it performs an async credential-store read
       // before pushing (covered by its own path); both are asserted PRESENT
       // below rather than pressed here.
-      const navigatingActions = <String>[
-        'Review "No Rule" Items',
+      //
+      // PLATFORM-CONDITIONAL rather than a whole-test Windows skip (Copilot,
+      // PR #292): only the Review "No Rule" Items icon is Windows-scoped in
+      // the builder. Skipping the entire test on !Windows meant CI (which runs
+      // `flutter test` on ubuntu-latest) NEVER exercised the MV-1 regression
+      // gate -- protection existed only on local Windows runs. The three
+      // cross-platform actions now run everywhere; the No-Rule icon is
+      // asserted only where the builder emits it.
+      final navigatingActions = <String>[
+        if (Platform.isWindows) 'Review "No Rule" Items',
         'View Scan History',
         'Select Account',
         'Settings',
@@ -167,7 +175,7 @@ void main() {
                 'Accounts icon passed the source-text order gate while being '
                 'dead in the app.');
       }
-    }, skip: !Platform.isWindows);
+    });
 
     testWidgets('an explicit onAccounts override still wins', (tester) async {
       // The fix must not take the override away from screens that need their
@@ -200,7 +208,9 @@ void main() {
               'the default push');
       expect(find.byType(AccountSelectionScreen), findsNothing,
           reason: 'the override replaces the default navigation entirely');
-    }, skip: !Platform.isWindows);
+      // No Windows skip (Copilot, PR #292): the Accounts action is
+      // cross-platform, so this runs in CI too.
+    });
   });
 }
 

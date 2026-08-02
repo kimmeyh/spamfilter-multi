@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:my_email_spam_filter/ui/screens/account_selection_screen.dart';
@@ -105,6 +106,49 @@ void main() {
 
         // Drain AccountSelectionScreen's credential-store retry timer before
         // the next iteration replaces the tree.
+        await tester.pump(const Duration(seconds: 1));
+      }
+    });
+
+    testWidgets(
+        'WIRING: MainNavigationScreen itself lands on Account Selection with '
+        'an empty credential store', (tester) async {
+      // The function tests above cannot catch a wiring regression -- e.g.
+      // build() hardcoding `desktopDefaultScreenFor(hasAccounts: true)` --
+      // because they bypass the widget (PR #292 re-review). This pumps the
+      // real screen with the secure-storage channel stubbed empty, driving
+      // the actual initState -> _resolve -> build chain end to end. The
+      // earlier claim that this needed "a production test-override seam" was
+      // wrong: the channel stub is the seam, same as the sibling tests use.
+      const channel =
+          MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (call) async {
+        if (call.method == 'read') return null; // no saved_accounts
+        if (call.method == 'readAll') return <String, String>{};
+        return null;
+      });
+      addTearDown(() {
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(channel, null);
+      });
+
+      await tester.pumpWidget(const MaterialApp(home: MainNavigationScreen()));
+      // First frame: still resolving (spinner). Then the async store read
+      // completes and the decision renders.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.byType(AccountSelectionScreen), findsOneWidget,
+          reason: 'an empty credential store must land on Account Selection '
+              '-- the screen that can add an account. Landing on No-Rule '
+              'here means the wiring inverted or hardcoded the decision.');
+      expect(find.byType(NoRuleReviewScreen), findsNothing);
+
+      // Drain AccountSelectionScreen's credential-store retry timers -- on the
+      // EMPTY-store path it schedules repeated retries, so a single drain is
+      // not enough here.
+      for (var i = 0; i < 10; i++) {
         await tester.pump(const Duration(seconds: 1));
       }
     });

@@ -15,15 +15,16 @@ import '../../helpers/database_test_helper.dart';
 /// PR #292 review: Manual Scan must not navigate with an unresolved platform.
 ///
 /// `openManualScan` resolves platformId in three tiers -- the caller's value,
-/// then the credential store, then a domain guess. The guess returns
-/// [StandardAppBarActions.unknownPlatformId] for any address outside its five
-/// hardcoded domains, which includes every custom or corporate IMAP host the
-/// generic adapter otherwise supports.
+/// then the credential store, then a domain guess. The guess
+/// (`inferPlatformFromEmail` in `core/utils/platform_inference.dart` -- the
+/// ONE implementation) returns `unknownPlatformId` for any address outside its
+/// six known domains (five providers), which includes every custom or
+/// corporate IMAP host the generic adapter otherwise supports.
 ///
-/// It used to push anyway. The user landed on a screen titled "Manual Scan -
-/// unknown" and the real failure (`EmailScanner`: 'Platform unknown not
-/// supported') surfaced two screens later, after they tapped Start Live Scan
-/// and were auto-pushed to Results -- naming a platform they never chose.
+/// It used to push anyway, feeding "unknown" into the scan pipeline: the real
+/// failure (`EmailScanner`: 'Platform unknown not supported') surfaced two
+/// screens later, in a Results screen titled with a provider the user never
+/// chose, after they tapped Start Live Scan.
 ///
 /// The sentinel is also ambiguous at the navigation boundary: it cannot
 /// distinguish an unsupported provider from a keystore read failure from a
@@ -140,7 +141,7 @@ void main() {
 
   testWidgets('an UNRESOLVABLE provider reports and does NOT navigate',
       (tester) async {
-    // A corporate IMAP host: not one of the five guessable domains, and the
+    // A corporate IMAP host: not one of the six guessable domains, and the
     // fake store holds no platformId for it -- nothing to fall back on.
     await tapManualScan(
         tester, hostWith(accountId: 'harold@corp-mail.example'));
