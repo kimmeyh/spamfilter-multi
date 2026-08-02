@@ -148,6 +148,36 @@ if (-not (Test-Path -LiteralPath $statusPath)) {
     }
 }
 
+# 3a-2. uncommitted non-coding-agent working files (0*.txt / 0*.md at root)
+#
+# Harold, 2026-08-02: "there are often file changes made by the non-coding agent
+# team during sprints ... I have yet to see one that didn't end up being
+# committed across all sprints." These are his working documents -- testing
+# feedback, retrospective feedback, prompts, backlog notes -- authored while the
+# sprint runs. The default is COMMIT, and leaving one behind at close-out is a
+# miss rather than a decision.
+#
+# This is deliberately a close-out gate, not a per-commit one: the files change
+# repeatedly mid-sprint and blocking each time would fire on correct work. It
+# only needs to be true by the END of the sprint.
+# `dirty_zero_files_override` lets a test case supply the porcelain output
+# directly. Without it a fixture would need its OWN git repo, and a nested
+# repo commits as a broken gitlink that does not survive a fresh clone (every
+# other fixture here is a plain directory). Test-only; never set in production.
+try {
+    $dirty = $null
+    if ($null -ne $payload.dirty_zero_files_override) {
+        $dirty = [string]$payload.dirty_zero_files_override
+        if ([string]::IsNullOrWhiteSpace($dirty)) { $dirty = $null }
+    } else {
+        $dirty = & git -C $cwd status --porcelain -- '0*' 2>$null
+    }
+    if ($dirty) {
+        $names = @($dirty | ForEach-Object { ($_ -replace '^..\s*', '').Trim() }) -join ', '
+        $violations += "Uncommitted non-coding-agent working file(s) at repo root: $names. These are Harold's 0* working documents and are expected to be committed (they have been, every sprint). Stage and commit them -- do NOT read them (the deny-list blocks it), so use a neutral message rather than paraphrasing content you cannot see."
+    }
+} catch { }
+
 # 3b. previous sprint summary exists (Phase 3.2.1 background process)
 $prevSprint = $sprintNum - 1
 if ($prevSprint -gt 0) {

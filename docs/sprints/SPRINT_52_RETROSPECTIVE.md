@@ -173,7 +173,7 @@ Harold approved **all five** on 2026-08-02 ("all now"). All are applied.
 | IMP-1 | **Behavior-level AppBar gate.** A widget test that presses every standard AppBar action and asserts the navigator stack changed, rather than asserting source text. | **APPLIED** | `mobile-app/test/ui/widgets/appbar_action_navigation_test.dart` (renamed from `accounts_icon_navigation_test.dart` once it stopped being Accounts-specific). Loops over all four navigating actions, so a future action is covered as soon as it appears. **Mutation-verified**: stubbing the Scan History handler to `() {}` fails it with "pressing 'View Scan History' must PUSH a route" -- i.e. it catches the MV-1 defect class on an action OTHER than the one that originally broke. |
 | IMP-2 | **Phase 3 card-creation gate.** Block the first sprint task commit when the plan is approved but no issue cards are recorded. | **APPLIED** | New PreToolUse hook `.claude/hooks/require-sprint-cards.ps1`, registered in `.claude/settings.json`. Gated on `plan_approved` so pre-approval commits (the plan document itself) are NOT blocked -- a hook that fires on correct work trains people to route around it (the F130-S51 R-2 lesson). Bypass token `allow_no_cards`. 7 new harness cases; suite **34 -> 41, all passing**. |
 | IMP-3 | **Check known-issues before investigating a failure.** Grep the runner/README/script header for the failing test name first. | **APPLIED** | New line in `CLAUDE.md` "Things Claude Should NOT Do". |
-| IMP-4 | **No bare `git add -A` in sprint commits.** Stage explicit paths, or confirm `git status --short` first. | **APPLIED** | New line in `CLAUDE.md` "Things Claude Should NOT Do". |
+| IMP-4 | ~~No bare `git add -A` in sprint commits.~~ **CORRECTED: don't stage BLIND.** Always `git status --short` first and account for every entry; `-A` itself is fine once you have. | **APPLIED (revised 2026-08-02)** | `CLAUDE.md` rule rewritten + new close-out gate in `verify-closeout-complete.ps1`. See "IMP-4 correction" below. |
 | IMP-5 | **Read the existing pattern before designing a new member of a shared abstraction.** | **APPLIED** | New line in `CLAUDE.md` "Things Claude Should NOT Do". |
 
 Two durable lessons were also written to memory rather than left in this
@@ -189,3 +189,41 @@ document, because they generalize beyond this sprint:
 *Stop* hook firing at close-out, long after the six card-less commits would
 already have landed. A PreToolUse gate on `git commit` is the only placement
 that catches the problem when it happens rather than reporting it afterwards.
+
+### IMP-4 correction (Harold, 2026-08-02)
+
+Harold challenged the rule as first written: *"there are often file changes made
+by the non-coding agent team during sprints ... I have yet to see one that
+didn't end up being committed across all sprints. How are these file changes
+handled with this new rule?"*
+
+He was right, and the original rule was the wrong lesson drawn from the right
+incident. Banning `git add -A` would have made the `0*` working files -- Harold's
+testing feedback, retrospective feedback, prompts and backlog notes, authored by
+non-coding agents while a sprint runs -- **harder** to catch, not easier. Every
+one of them has been committed in every sprint, so a rule that pushes toward
+excluding them is a net loss.
+
+The actual Sprint 52 defect was never the flag. It was that I ran `git add -A`
+and only discovered *afterwards* what it had swept in. Blind staging is the
+failure; `-A` is often the correct tool once you have looked.
+
+**Revised rule**: always `git status --short` first and account for every entry.
+`-A` is then fine. Plus an explicit statement that `0*` files are EXPECTED to
+change mid-sprint and EXPECTED to be committed, and -- because the deny-list
+blocks reading them -- must be committed with a neutral message rather than a
+paraphrase of contents Claude cannot see.
+
+**Backed by a gate rather than a good intention**: `verify-closeout-complete.ps1`
+now flags any uncommitted root-level `0*` file when close-out is claimed.
+Deliberately a *close-out* gate, not a per-commit one -- these files change
+repeatedly mid-sprint, and blocking each time would fire on correct work. It only
+needs to be true by the end of the sprint. Verified BIDIRECTIONALLY: the gate
+fires naming the exact file, and clears once the file is committed.
+
+Two test cases added (`violation-3-uncommitted-zero-file`,
+`allow-5-no-dirty-zero-files`); harness **41 -> 43, all passing**. The cases use a
+`dirty_zero_files_override` payload field: the first attempt built a fixture with
+its own git repo, which commits as a broken gitlink that does not survive a fresh
+clone -- every other fixture here is a plain directory, and that outlier was
+caught before it landed.
