@@ -164,6 +164,36 @@ note at all -- and that lesson only survives if the wrong note survives with it.
 
 ---
 
+## Copilot Review (PR #292, 2026-08-02)
+
+**4 findings, all legitimate, all fixed in-sprint (`a37604f`), all threads
+replied-to and resolved.** No finding was deferred to the backlog.
+
+| # | File | Finding | Resolution |
+|---|---|---|---|
+| 1 | `standard_app_bar_actions.dart` | The Manual Scan doc comment said "Opt-IN rather than default-on" while the code was default-on and the very next paragraph said "DEFAULT-ON". | Stale paragraph from the FIRST design removed. When Harold directed the inversion I added the new rationale and failed to delete the old one -- a comment that contradicts the code actively misleads the next change. |
+| 2 | `main_navigation_screen.dart` | Redundant `try/catch` around `getSavedAccounts()`, which already catches and returns `[]`. | Verified the claim at `secure_credentials_store.dart:443` before acting, then simplified. The wrapper was unreachable, and a silent `catch (_)` there would have swallowed a genuinely unexpected error. Behaviour unchanged. |
+| 3 | `appbar_action_order_test.dart` | Exemption keyed by FILENAME exempted every standard action in that file, not just the documented in-body chip. | Re-keyed to `'<file>::<tooltip>'`. |
+| 4 | `text_contrast_test.dart` | Same defect, worse -- the file was skipped before its lines were read, so any future low-contrast text in that screen bypassed the gate. | Re-keyed to `'<file>::<code substring on the offending line>'`; the file keeps being scanned. |
+
+**Findings 3 and 4 are the sharpest lesson of the sprint.** They are the exact
+failure mode I spent the sprint writing rules about -- *a gate that quietly stops
+gating* -- and I introduced both **while building the gates**. The exemption
+comments in each file already said "an unexplained exemption is how a gate
+quietly stops gating". The exemptions WERE documented. They were too **wide**.
+Documenting an exemption is not the same as scoping it.
+
+Both fixes were **mutation-verified**, because a narrowed exemption that still
+passes proves nothing on its own:
+- Hand-rolled `tooltip: 'Settings'` into `scan_history_screen.dart` -> gate
+  FAILS naming it (would have passed under the old file-wide key).
+- Added `TextStyle(color: Colors.grey.shade400)` elsewhere in
+  `rules_management_screen.dart` -> gate FAILS naming `file:line` (would have
+  passed).
+- Both mutations reverted; `git diff` confirmed both files byte-identical.
+
+---
+
 ## Improvement Suggestions
 
 Harold approved **all five** on 2026-08-02 ("all now"). All are applied.
