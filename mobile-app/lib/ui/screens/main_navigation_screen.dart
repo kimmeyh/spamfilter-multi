@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:flutter/material.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import 'account_selection_screen.dart';
@@ -137,17 +138,29 @@ class _DesktopDefaultScreenState extends State<_DesktopDefaultScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final hasAccounts = _hasAccounts;
-    if (hasAccounts == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-    return hasAccounts
-        ? const NoRuleReviewScreen()
-        : const AccountSelectionScreen();
+  Widget build(BuildContext context) =>
+      desktopDefaultScreenFor(hasAccounts: _hasAccounts);
+}
+
+/// The desktop default-screen DECISION, extracted so it is testable without a
+/// credential store (PR #292 review -- this branch decides what the app shows
+/// on launch and had zero coverage, and it is the change that caused MV-1).
+///
+/// [hasAccounts] null means "still resolving".
+///   null  -> neutral spinner (never flash Account Selection then replace it)
+///   true  -> Review "No Rule" Items (F135: the desktop default)
+///   false -> Account Selection (nothing to review yet, and it is the screen
+///            that can add an account or repair a broken credential store)
+@visibleForTesting
+Widget desktopDefaultScreenFor({required bool? hasAccounts}) {
+  if (hasAccounts == null) {
+    return const Scaffold(
+      body: Center(child: CircularProgressIndicator()),
+    );
   }
+  return hasAccounts
+      ? const NoRuleReviewScreen()
+      : const AccountSelectionScreen();
 }
 
 /// Placeholder screen for future features

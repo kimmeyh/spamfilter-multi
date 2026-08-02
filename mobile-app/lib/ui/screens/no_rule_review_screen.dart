@@ -167,8 +167,12 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
   /// belongs only on the press the user made on purpose.
   Future<void> _refreshFromUserAction() async {
     final before = _allItems.length;
-    await _loadItems();
+    final ok = await _loadItems();
     if (!mounted) return;
+
+    // Load failed and already showed its error -- do not overwrite it with a
+    // delta computed over state we never refreshed.
+    if (!ok) return;
 
     // _lastSweepCount is set by the sweep inside _loadItems: items that the
     // CURRENT rules / safe senders now cover, marked processed and dropped.
@@ -199,8 +203,14 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
       ));
   }
 
-  Future<void> _loadItems() async {
+  /// Returns true when the load SUCCEEDED, false when it failed -- see the note
+  /// on `rules_management_screen._loadRules` (PR #292 review). This screen's
+  /// own comment already said "report honestly rather than claiming rules
+  /// covered them", but that honesty check only distinguished sweep from other
+  /// shrinkage; it never considered "the load did not happen at all".
+  Future<bool> _loadItems() async {
     setState(() => _isLoading = true);
+    var ok = true;
 
     try {
       final credStore = SecureCredentialsStore();
@@ -260,6 +270,7 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
         });
       }
     } catch (e, s) {
+      ok = false;
       _logger.e('Failed to load No Rule review items', error: e, stackTrace: s);
       if (mounted) {
         setState(() => _isLoading = false);
@@ -272,6 +283,7 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
         );
       }
     }
+    return ok;
   }
 
   void _applyFilter() {

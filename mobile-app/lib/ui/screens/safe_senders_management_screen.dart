@@ -123,8 +123,12 @@ class _SafeSendersManagementScreenState
   /// finishes in milliseconds, so an unchanged list reads as a dead button.
   Future<void> _refreshFromUserAction() async {
     final before = _safeSenders.length;
-    await _loadSafeSenders();
+    final ok = await _loadSafeSenders();
     if (!mounted) return;
+
+    // Load failed and already reported itself -- do not overwrite that error
+    // with a count delta we never actually observed.
+    if (!ok) return;
 
     final delta = _safeSenders.length - before;
     final String message;
@@ -147,12 +151,16 @@ class _SafeSendersManagementScreenState
       ));
   }
 
-  Future<void> _loadSafeSenders() async {
+  /// Returns true when the load SUCCEEDED, false when it failed -- see the note
+  /// on `rules_management_screen._loadRules` (PR #292 review).
+  Future<bool> _loadSafeSenders() async {
     setState(() => _isLoading = true);
+    var ok = true;
     try {
       _safeSenders = await _store.loadSafeSenders();
       _applyFilter();
     } catch (e) {
+      ok = false;
       _logger.e('Failed to load safe senders', error: e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -163,6 +171,7 @@ class _SafeSendersManagementScreenState
     if (mounted) {
       setState(() => _isLoading = false);
     }
+    return ok;
   }
 
   void _applyFilter() {

@@ -100,8 +100,14 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
   /// consistently rather than "some refresh buttons confirm and some do not".
   Future<void> _refreshFromUserAction() async {
     final before = _rules.length;
-    await _loadRules();
+    final ok = await _loadRules();
     if (!mounted) return;
+
+    // The load FAILED and already showed its own error. Say nothing: reporting
+    // a count delta here would claim a state we never observed, and the
+    // `hideCurrentSnackBar()` below would erase the error the user needs to
+    // read (PR #292 review).
+    if (!ok) return;
 
     final delta = _rules.length - before;
     final String message;
@@ -122,8 +128,15 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
       ));
   }
 
-  Future<void> _loadRules() async {
+  /// Returns true when the load SUCCEEDED, false when it failed.
+  ///
+  /// The return value exists so [_refreshFromUserAction] can tell the two apart
+  /// (PR #292 review). This method surfaces its own failure SnackBar and then
+  /// returns normally, so without a signal the caller saw an unchanged list and
+  /// cheerfully reported "No changes" -- over the top of the error message.
+  Future<bool> _loadRules() async {
     setState(() => _isLoading = true);
+    var ok = true;
     try {
       final ruleSet = await _store.loadRules();
       _rules = List.from(ruleSet.rules);
@@ -137,6 +150,7 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
       });
       _applyFilter();
     } catch (e) {
+      ok = false;
       _logger.e('Failed to load rules', error: e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -147,6 +161,7 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
     if (mounted) {
       setState(() => _isLoading = false);
     }
+    return ok;
   }
 
   void _applyFilter() {

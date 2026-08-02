@@ -124,8 +124,13 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
   /// SnackBar would be noise.
   Future<void> _refreshFromUserAction() async {
     final before = _allScans.length;
-    await _loadHistory();
+    final ok = await _loadHistory();
     if (!mounted) return;
+
+    // Load failed and already showed its error. Reporting "N scans removed" or
+    // "no changes" here would be a false statement about deleted data, and the
+    // hideCurrentSnackBar() below would wipe the real diagnostic.
+    if (!ok) return;
 
     final removed = before - _allScans.length;
     final String message;
@@ -149,8 +154,14 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
       ));
   }
 
-  Future<void> _loadHistory() async {
+  /// Returns true when the load SUCCEEDED, false when it failed -- see the note
+  /// on `rules_management_screen._loadRules` (PR #292 review). It matters more
+  /// here than elsewhere: this method also PURGES rows past the retention
+  /// window, so a wrong "N scans removed" or "no changes" message is a claim
+  /// about deleted data.
+  Future<bool> _loadHistory() async {
     setState(() => _isLoading = true);
+    var ok = true;
 
     try {
       _retentionDays = await _settingsStore.getScanHistoryRetentionDays();
@@ -190,6 +201,7 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
         });
       }
     } catch (e) {
+      ok = false;
       _logger.e('Failed to load scan history', error: e);
       if (mounted) {
         setState(() => _isLoading = false);
@@ -198,6 +210,7 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
         );
       }
     }
+    return ok;
   }
 
   void _applyFilter() {

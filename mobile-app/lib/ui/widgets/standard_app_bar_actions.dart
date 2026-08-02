@@ -266,6 +266,36 @@ class StandardAppBarActions {
     // The await above crosses an async gap; the screen may have been popped.
     if (!context.mounted) return;
 
+    // DO NOT navigate with an unresolved platform (PR #292 review).
+    // `_inferPlatformFromEmail` returns `unknownPlatformId` for any address
+    // outside its five hardcoded domains -- which includes every custom or
+    // corporate IMAP host the generic adapter otherwise supports fine. Pushing
+    // anyway sent the user to a screen titled "Manual Scan - unknown", and the
+    // real failure (`EmailScanner`: 'Platform unknown not supported') only
+    // surfaced two screens later, after they tapped Start Live Scan and were
+    // auto-pushed to Results -- naming a platform they never chose.
+    //
+    // The sentinel is also ambiguous at this boundary: it is indistinguishable
+    // between a genuinely unsupported provider, a keystore read failure inside
+    // getPlatformId (which swallows its own errors and returns null), and a
+    // missing _platformId key. Reporting here keeps the message honest about
+    // what we actually know.
+    //
+    // This mirrors what settings_screen.dart already does correctly in three
+    // places: resolve, and on failure show a message and return WITHOUT
+    // navigating. The shared helper was the outlier.
+    if (resolvedPlatformId.isEmpty ||
+        resolvedPlatformId == unknownPlatformId) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Could not determine the email provider for this account. Open '
+              'Accounts and re-add it to restore its provider setting.'),
+        ),
+      );
+      return;
+    }
+
     await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ScanProgressScreen(
@@ -279,17 +309,27 @@ class StandardAppBarActions {
     );
   }
 
+  /// Sentinel returned by [_inferPlatformFromEmail] when the address matches no
+  /// known provider. Named rather than inlined so the guard in
+  /// [openManualScan] cannot drift away from the value it checks.
+  static const String unknownPlatformId = 'unknown';
+
   /// Fallback for accounts saved before the platformId was recorded. Mirrors
   /// `account_selection_screen._selectAccount`.
+  ///
+  /// Matches on the address ENDING, not `contains` (PR #292 review): a
+  /// `contains('@gmail.com')` test also matches
+  /// `user@gmail.com.example.net`, which is a different provider entirely.
   static String _inferPlatformFromEmail(String email) {
-    if (email.contains('@gmail.com')) return 'gmail';
-    if (email.contains('@aol.com')) return 'aol';
-    if (email.contains('@yahoo.com')) return 'yahoo';
-    if (email.contains('@outlook.com') || email.contains('@hotmail.com')) {
+    final address = email.trim().toLowerCase();
+    if (address.endsWith('@gmail.com')) return 'gmail';
+    if (address.endsWith('@aol.com')) return 'aol';
+    if (address.endsWith('@yahoo.com')) return 'yahoo';
+    if (address.endsWith('@outlook.com') || address.endsWith('@hotmail.com')) {
       return 'outlook';
     }
-    if (email.contains('@icloud.com')) return 'icloud';
-    return 'unknown';
+    if (address.endsWith('@icloud.com')) return 'icloud';
+    return unknownPlatformId;
   }
 
   static String _platformDisplayName(String platformId) {
