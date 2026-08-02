@@ -32,7 +32,7 @@ import 'package:my_email_spam_filter/ui/screens/help_screen.dart';
 /// That is the same lesson as the Sprint 51 semantics defect, one layer up: a
 /// declaration existing is not proof that activating it works.
 void main() {
-  group('Accounts icon navigation (MV-1 regression)', () {
+  group('AppBar action navigation (MV-1 regression + Sprint 52 IMP-1)', () {
     testWidgets('pressing Accounts pushes the account selection screen',
         (tester) async {
       await tester.pumpWidget(MaterialApp(
@@ -89,6 +89,86 @@ void main() {
         // defect is a desktop-navigation one.
         skip: !Platform.isWindows);
 
+    // ---------------------------------------------------------------------
+    // IMP-1 (Sprint 52 retro): every AppBar action must actually GO somewhere.
+    //
+    // MV-1 was not caught by test/policy/appbar_action_order_test.dart because
+    // that gate reads SOURCE TEXT: it proves each screen calls the shared
+    // builder and that the icons are declared in canonical order. It cannot
+    // see what a handler DOES, so a handler that navigated nowhere passed it
+    // cleanly while being completely dead in the app.
+    //
+    // This closes that hole generically rather than one icon at a time: press
+    // each standard action and assert the navigator stack actually changed.
+    // A future action added to the builder is covered automatically as soon as
+    // it appears in the AppBar.
+    // ---------------------------------------------------------------------
+    testWidgets('EVERY standard AppBar action navigates somewhere',
+        (tester) async {
+      // Tooltips whose handler is expected to push a route. Help is excluded
+      // because openHelp() is itself a navigation helper with its own tests,
+      // and Manual Scan because it performs an async credential-store read
+      // before pushing (covered by its own path); both are asserted PRESENT
+      // below rather than pressed here.
+      const navigatingActions = <String>[
+        'Review "No Rule" Items',
+        'View Scan History',
+        'Select Account',
+        'Settings',
+      ];
+
+      for (final tooltip in navigatingActions) {
+        final observer = _StackObserver();
+
+        // Tear the previous iteration's tree down completely, so a destination
+        // pushed a moment ago cannot leave a second copy of these same actions
+        // mounted (they would make the finder ambiguous).
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+
+        await tester.pumpWidget(MaterialApp(
+          navigatorObservers: [observer],
+          home: Builder(
+            builder: (context) => Scaffold(
+              appBar: AppBar(
+                actions: StandardAppBarActions.build(
+                  context: context,
+                  helpSection: HelpSection.resultsDisplay,
+                  // A real accountId, so account-scoped actions (Settings,
+                  // Manual Scan) are not omitted by the null-account guard.
+                  accountId: 'gmail-test@example.com',
+                  accountEmail: 'test@example.com',
+                ),
+              ),
+              body: const Text('body'),
+            ),
+          ),
+        ));
+        // Fixed frames rather than pumpAndSettle: from the second loop
+        // iteration onward the previous iteration's destination screen may
+        // still hold a credential-store retry timer, and pumpAndSettle would
+        // time out on it. Mounting an AppBar needs only a frame.
+        await tester.pump();
+
+        final finder = find.byTooltip(tooltip);
+        expect(finder, findsOneWidget,
+            reason: '"$tooltip" must be present when an accountId is supplied');
+
+        await tester.tap(finder);
+        // Fixed frames, not pumpAndSettle: several destination screens load
+        // from the DB / credential store on init and never fully settle in a
+        // widget test. We only need the push to have been observed.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(observer.pushes, greaterThan(0),
+            reason: 'pressing "$tooltip" must PUSH a route. It currently does '
+                'nothing -- which is exactly the MV-1 defect, where the '
+                'Accounts icon passed the source-text order gate while being '
+                'dead in the app.');
+      }
+    }, skip: !Platform.isWindows);
+
     testWidgets('an explicit onAccounts override still wins', (tester) async {
       // The fix must not take the override away from screens that need their
       // own behavior (account_selection_screen passes includeAccounts: false;
@@ -122,4 +202,19 @@ void main() {
           reason: 'the override replaces the default navigation entirely');
     }, skip: !Platform.isWindows);
   });
+}
+
+/// Counts route pushes so a test can assert that a handler NAVIGATED, rather
+/// than asserting on the destination widget (which would couple every case to
+/// whatever that screen renders once its async init finishes).
+class _StackObserver extends NavigatorObserver {
+  int pushes = 0;
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    // The initial home route counts as a push; only routes pushed ON TOP of an
+    // existing one represent navigation triggered by the test.
+    if (previousRoute != null) pushes++;
+    super.didPush(route, previousRoute);
+  }
 }

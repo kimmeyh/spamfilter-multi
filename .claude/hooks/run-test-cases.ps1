@@ -14,6 +14,7 @@
       test-cases/*.json                  -> sprint-auto-advance.ps1  (Stop)
       test-cases/stash-guard/*.json      -> block-carry-forward-stash.ps1 (PreToolUse)
       test-cases/closeout/*.json         -> verify-closeout-complete.ps1 (Stop)
+      test-cases/sprint-cards/*.json     -> require-sprint-cards.ps1 (PreToolUse)
 
     Prints a per-case PASS/FAIL line and a summary. Exits 0 if all pass, 1 if
     any fail.
@@ -37,9 +38,10 @@ if (-not (Test-Path -LiteralPath $casesDir)) { throw "Cases dir not found: $case
 
 # subdirectory name -> hook script
 $routes = @{
-    ''            = 'sprint-auto-advance.ps1'
-    'stash-guard' = 'block-carry-forward-stash.ps1'
-    'closeout'    = 'verify-closeout-complete.ps1'
+    ''             = 'sprint-auto-advance.ps1'
+    'stash-guard'  = 'block-carry-forward-stash.ps1'
+    'closeout'     = 'verify-closeout-complete.ps1'
+    'sprint-cards' = 'require-sprint-cards.ps1'
 }
 
 $pass = 0
