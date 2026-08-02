@@ -121,18 +121,19 @@ class _DesktopDefaultScreenState extends State<_DesktopDefaultScreen> {
   }
 
   Future<void> _resolve() async {
-    bool hasAccounts = false;
-    try {
-      final accounts = await SecureCredentialsStore().getSavedAccounts();
-      hasAccounts = accounts.isNotEmpty;
-    } catch (_) {
-      // Credential-store failure -> fall back to Account Selection. That screen
-      // surfaces the error state per-account and offers delete/re-add, which is
-      // exactly what a user with a broken store needs to see. Defaulting to the
-      // No-Rule screen here would show an empty list with no way to fix it.
-      hasAccounts = false;
-    }
-    if (mounted) setState(() => _hasAccounts = hasAccounts);
+    // No try/catch here deliberately (Copilot review, PR #292):
+    // SecureCredentialsStore.getSavedAccounts() already catches, logs, and
+    // returns an empty list on failure, so a wrapper here would be unreachable
+    // -- and a silent `catch (_)` at this layer would swallow any genuinely
+    // unexpected error instead of surfacing it.
+    //
+    // The fallback behaviour is unchanged and still correct: a credential-store
+    // failure yields an empty list, so we land on Account Selection. That screen
+    // surfaces the per-account error state and offers delete/re-add, which is
+    // what a user with a broken store needs to see. Defaulting to the No-Rule
+    // screen would show an empty list with no way to fix it.
+    final accounts = await SecureCredentialsStore().getSavedAccounts();
+    if (mounted) setState(() => _hasAccounts = accounts.isNotEmpty);
   }
 
   @override

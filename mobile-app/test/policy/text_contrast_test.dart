@@ -23,8 +23,15 @@ void main() {
     /// Sites where a light grey is CORRECT and must not be "fixed".
     /// Every entry needs a reason -- an unexplained exemption is how a gate
     /// quietly stops gating.
+    ///
+    /// Keyed `'<file>::<code substring that must appear ON the line>'` so an
+    /// exemption covers ONE construct, not a whole file. Keying by file alone
+    /// (the original form) meant ANY future low-contrast text anywhere in that
+    /// screen would bypass the invariant -- a blind spot Copilot caught on
+    /// PR #292. The substring is matched against the offending line itself, so
+    /// moving the code does not silently widen the exemption.
     const allowedExemptions = <String, String>{
-      'rules_management_screen.dart':
+      'rules_management_screen.dart::rule.enabled ?':
           'Disabled-rule subtitle: the color is the false branch of '
           '`rule.enabled ? ... : Colors.grey.shade400`. WCAG 1.4.3 exempts '
           'DISABLED controls from the contrast minimum, and the disabled state '
@@ -54,11 +61,20 @@ void main() {
       for (final entity in uiDir.listSync(recursive: true)) {
         if (entity is! File || !entity.path.endsWith('.dart')) continue;
         final fileName = entity.uri.pathSegments.last;
-        if (allowedExemptions.containsKey(fileName)) continue;
 
         final lines = entity.readAsLinesSync();
         for (var i = 0; i < lines.length; i++) {
           if (!failingGrey.hasMatch(lines[i])) continue;
+
+          // Per-CONSTRUCT exemption: the key's code substring must appear on
+          // the offending line itself. The file keeps being scanned, so a new
+          // low-contrast text color elsewhere in it still fails.
+          final exempt = allowedExemptions.keys.any((k) {
+            final parts = k.split('::');
+            if (parts.length != 2 || parts[0] != fileName) return false;
+            return lines[i].contains(parts[1]);
+          });
+          if (exempt) continue;
 
           // Only TEXT colors are in scope. Look back a few lines for the
           // enclosing TextStyle -- a grey on a Border, Divider or fill is fine.

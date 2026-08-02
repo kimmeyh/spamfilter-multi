@@ -78,14 +78,6 @@ class StandardAppBarActions {
       //    Live Scan/Manual Scan screen -- but an icon for the Manual Scan
       //    Screen would be advisable."
       //
-      //    Opt-IN rather than default-on, unlike the other actions: starting a
-      //    scan needs a resolved account AND its platformId (an async
-      //    credential-store read), which this builder cannot do inline without
-      //    duplicating the F135 resolver. A screen that already has that
-      //    context supplies [onManualScan]; screens that do not simply omit it
-      //    and keep reaching Manual Scan via the Accounts screen exactly as
-      //    before. Nothing regresses for a screen that does not pass it.
-      //
       //    Placed FIRST in the standard block because it acts on the selected
       //    account rather than navigating to a management surface, and because
       //    appending it would put it after Help -- Help is always last.

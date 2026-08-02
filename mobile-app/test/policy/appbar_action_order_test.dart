@@ -41,8 +41,12 @@ void main() {
     /// Declarations that are legitimately NOT AppBar actions and must not be
     /// flagged. Each entry needs a reason -- an unexplained exemption is how a
     /// gate quietly stops gating.
+    ///
+    /// Keyed `'<file>::<tooltip>'` so an exemption covers ONE tooltip in ONE
+    /// file. Keying by file alone (the original form) exempted every standard
+    /// action in that file -- a blind spot Copilot caught on PR #292.
     const allowedExemptions = <String, String>{
-      'scan_history_screen.dart':
+      'scan_history_screen.dart::Review "No Rule" Items':
           'In-BODY filter chip: a compact Review-No-Rule icon rendered directly '
           'above the "No Rule" total chip (_buildNoRuleChipWithReviewIcon). It '
           'is page content, not an AppBar action, so the canonical order does '
@@ -76,7 +80,12 @@ void main() {
 
         for (final tooltip in standardActionTooltips) {
           if (!source.contains("tooltip: '$tooltip'")) continue;
-          if (allowedExemptions.containsKey(fileName)) continue;
+          // Exemptions are keyed by FILE + TOOLTIP, not by file alone (Copilot
+          // review, PR #292). Skipping the whole file left a blind spot: any
+          // OTHER hand-rolled standard action added to an exempted screen would
+          // go undetected, which is a gate that has quietly stopped gating --
+          // exactly the failure mode this suite exists to prevent.
+          if (allowedExemptions.containsKey('$fileName::$tooltip')) continue;
 
           violations.add(
             '$fileName declares `tooltip: \'$tooltip\'` directly. '
