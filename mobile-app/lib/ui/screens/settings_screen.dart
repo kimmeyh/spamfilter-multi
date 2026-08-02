@@ -134,16 +134,27 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   /// R-10 removes.
   static const _accountScopedTabIndices = {1, 2, 3};
 
-  /// The resolved account for account-scoped reads and writes.
-  ///
-  /// Every call site is inside an account-scoped TAB, and those tabs only
-  /// render once `_resolvedAccountId` is non-null (`_loadSettings` returns
-  /// early otherwise), so this is non-null wherever it is used.
+  /// The resolved account for account-scoped reads and writes. THROWS when no
+  /// account has been resolved -- use [_resolvedAccountId] on any build path.
   ///
   /// It throws rather than defaulting to `''` deliberately: an empty accountId
   /// would be accepted by `SettingsStore` and would silently persist settings
   /// under a bogus key -- a corruption that surfaces much later and looks like
   /// data loss. Failing loudly here turns that into an immediate, obvious bug.
+  ///
+  /// **Use it for account-scoped WRITES and for reads that already ran behind a
+  /// null check -- never during `build()`.** This doc previously claimed "every
+  /// call site is inside an account-scoped TAB ... so this is non-null wherever
+  /// it is used". That was FALSE and it hid a crash (PR #292 review): the
+  /// AppBar in `build()` is chrome shared by all four tabs, and `TabBarView`
+  /// constructs every tab body eagerly regardless of the selected index. Both
+  /// reached this getter before an account existed, so opening Settings without
+  /// one threw `StateError` on the first frame and the lazy-resolution listener
+  /// could never fire.
+  ///
+  /// A comment asserting an invariant is not the same as enforcing it. The
+  /// build paths now read the nullable [_resolvedAccountId] and degrade, which
+  /// is pinned by `test/ui/screens/settings_null_account_test.dart`.
   String get _accountId {
     final id = _resolvedAccountId;
     if (id == null || id.isEmpty) {
@@ -173,10 +184,16 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     _accountResolutionAttempted = widget.accountId != null;
 
     // F133-S52 R-10: resolve lazily on the first account-scoped tab, not on
-    // open. `indexIsChanging` filters the mid-animation callbacks so this fires
-    // once per switch rather than twice.
+    // open.
+    //
+    // Deliberately NOT filtered on `indexIsChanging` (PR #292 review): that
+    // flag is true only for TAP-driven changes, so an early-return on it would
+    // skip resolution for a SWIPE between tabs -- the user would land on an
+    // account-scoped tab with no account and no picker. `_accountResolutionAttempted`
+    // is what actually prevents double-prompting, and it is set at the top of
+    // `_resolveAccountForScopedTab` before any await, so re-entrancy from the
+    // extra mid-animation callbacks is already handled.
     _tabController.addListener(() {
-      if (_tabController.indexIsChanging) return;
       if (!_accountScopedTabIndices.contains(_tabController.index)) return;
       if (_resolvedAccountId != null || _accountResolutionAttempted) return;
       _resolveAccountForScopedTab();
@@ -452,9 +469,26 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         actions: StandardAppBarActions.build(
           context: context,
           helpSection: _helpSectionForActiveTab(),
-          accountId: _accountId,
+          // NULLABLE field, not the throwing `_accountId` getter (PR #292
+          // review). The AppBar is chrome shared by ALL FOUR tabs, including
+          // the cross-account General tab, so it builds before any account is
+          // resolved -- which is the entire point of R-10. Reading the getter
+          // here threw `StateError` on the FIRST frame of the no-account path,
+          // making the screen an unrecoverable red box: the tab listener that
+          // resolves an account lazily could never fire, because the user could
+          // never see a tab to tap.
+          //
+          // The builder already treats a null accountId as "omit the
+          // account-scoped icons" -- that is its documented contract -- so
+          // passing the nullable field degrades correctly instead of crashing.
+          accountId: _resolvedAccountId,
           includeSettings: false,
-          onScanHistory: _navigateToScanHistory,
+          // Scan History is account-scoped here (it pre-selects this account's
+          // filter and dereferences the getter), so offer it only once an
+          // account exists. Null falls back to the builder's own cross-account
+          // navigation rather than a dead icon.
+          onScanHistory:
+              _resolvedAccountId == null ? null : _navigateToScanHistory,
         ),
         bottom: TabBar(
           controller: _tabController,
@@ -806,7 +840,25 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   }
 
   Widget _buildAccountTab() {
-    // [UPDATED] ISSUE #123: accountId now required, no null check needed
+    // R-10 (PR #292 review): `TabBarView` builds ALL FOUR children eagerly,
+    // regardless of which tab is selected -- so this runs while the user is
+    // still on the cross-account General tab, before any account is resolved.
+    // Touching the throwing `_accountId` getter here crashed the whole screen
+    // even when the account tab was never opened.
+    //
+    // The prompt is not dead-end UI: switching to this tab triggers
+    // `_resolveAccountForScopedTab`, which shows the picker and rebuilds.
+    if (_resolvedAccountId == null) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Text(
+            'Select an account to view its settings.',
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
     return SelectionArea(child: FutureBuilder<Credentials?>(
       future: _credStore.getCredentials(_accountId),
       builder: (context, snapshot) {

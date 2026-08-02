@@ -393,7 +393,7 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
             Text(
               '${_testResults.length} of ${_sampleEmails.length} emails match',
               style: TextStyle(
-                color: _testResults.isEmpty ? Colors.grey : Colors.blue,
+                color: _testResults.isEmpty ? Colors.grey.shade600 : Colors.blue,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -436,14 +436,14 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
 
   Widget _buildResults() {
     if (!_hasTestedOnce && _sampleEmails.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(32),
+          padding: const EdgeInsets.all(32),
           child: Text(
             'No sample emails available.\n\n'
             'Run a scan first to load emails for testing.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey),
+            style: TextStyle(color: Colors.grey.shade600),
           ),
         ),
       );
@@ -590,7 +590,7 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
   /// Build text with the matched portion highlighted.
   Widget _buildHighlightedText(String fullText, String matchedText) {
     if (matchedText.isEmpty) {
-      return Text(fullText, style: const TextStyle(fontSize: 10, color: Colors.grey));
+      return Text(fullText, style: TextStyle(fontSize: 10, color: Colors.grey.shade600));
     }
 
     final lowerFull = fullText.toLowerCase();
@@ -598,12 +598,12 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
     final matchIndex = lowerFull.indexOf(lowerMatch);
 
     if (matchIndex < 0) {
-      return Text(fullText, style: const TextStyle(fontSize: 10, color: Colors.grey));
+      return Text(fullText, style: TextStyle(fontSize: 10, color: Colors.grey.shade600));
     }
 
     return RichText(
       text: TextSpan(
-        style: const TextStyle(fontSize: 10, color: Colors.grey),
+        style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
         children: [
           if (matchIndex > 0)
             TextSpan(text: fullText.substring(0, matchIndex)),

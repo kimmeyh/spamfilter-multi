@@ -305,19 +305,19 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware
         if (isReady) ...[
           Text(
             'Mode: $configuredModeName',
-            style: const TextStyle(color: Colors.grey),
+            style: TextStyle(color: Colors.grey.shade600),
           ),
           const SizedBox(height: 2),
           Text(
             'Folders: ${_configuredFolders.join(", ")}',
-            style: const TextStyle(color: Colors.grey),
+            style: TextStyle(color: Colors.grey.shade600),
             overflow: TextOverflow.ellipsis,
             maxLines: 2,
           ),
         ] else
           Text(
             scanProvider.statusMessage ?? 'Waiting to begin...',
-            style: const TextStyle(color: Colors.grey),
+            style: TextStyle(color: Colors.grey.shade600),
           ),
       ],
     );
@@ -421,7 +421,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware
       return Center(
         child: Text(
           'No results yet. Start a scan to see activity.',
-          style: const TextStyle(color: Colors.grey, fontSize: 16),
+          style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
           textAlign: TextAlign.center,
         ),
       );
@@ -432,7 +432,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware
       return Center(
         child: Text(
           'No emails processed.',
-          style: const TextStyle(color: Colors.grey, fontSize: 16),
+          style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
           textAlign: TextAlign.center,
         ),
       );

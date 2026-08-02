@@ -602,7 +602,7 @@ class _FolderSelectionScreenState extends State<FolderSelectionScreen> {
                     if (widget.accountEmail != null)
                       Text(
                         widget.accountEmail!,
-                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                       ),
                   ],
                 ),

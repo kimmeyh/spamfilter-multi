@@ -93,15 +93,42 @@ void main() {
           reason: 'Help must be present in the AppBar');
 
       final helpIndex = tooltips.indexOf('Help');
+
+      // TOOLTIP NAMES MUST MATCH THE BUILDER EXACTLY. This list said
+      // 'Accounts' until the PR #292 review; the real tooltip is
+      // 'Select Account', so the `continue` below silently skipped it and the
+      // Accounts icon was never order-checked at all -- it could have been
+      // moved anywhere and this test would still have passed.
       const navigationActions = <String>[
         'Review "No Rule" Items',
         'View Scan History',
-        'Accounts',
+        'Select Account',
         'Settings',
       ];
+
+      // Guard against the same class of typo returning: every name here must
+      // be one the shared builder actually emits. A name that matches nothing
+      // is a broken assertion, not an absent action.
+      const knownTooltips = <String>{
+        'Manual Scan',
+        'Review "No Rule" Items',
+        'View Scan History',
+        'Select Account',
+        'Settings',
+        'Help',
+      };
+      for (final action in navigationActions) {
+        expect(knownTooltips, contains(action),
+            reason: '"$action" is not a tooltip StandardAppBarActions emits -- '
+                'this assertion would silently pass on every screen');
+      }
+
       for (final action in navigationActions) {
         final index = tooltips.indexOf(action);
-        if (index == -1) continue; // not every screen includes every action
+        // Genuinely absent is fine (this screen passes includeSettings: false,
+        // and No-Rule suppresses its own icon) -- but it must be absent for a
+        // reason the test can see, which the knownTooltips check above pins.
+        if (index == -1) continue;
         expect(index, lessThan(helpIndex),
             reason: 'Help must come AFTER "$action" -- Help is always last '
                 'among the navigation actions (Harold, 2026-07-30)');

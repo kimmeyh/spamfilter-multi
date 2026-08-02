@@ -758,7 +758,7 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
             const SizedBox(height: 16),
             Text(
               'Platform: $_effectiveDisplayName ($_effectivePlatformId)',
-              style: const TextStyle(color: Colors.grey, fontSize: 12),
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
               textAlign: TextAlign.center,
             ),
             ],

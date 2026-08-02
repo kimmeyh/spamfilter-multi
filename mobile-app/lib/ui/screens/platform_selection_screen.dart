@@ -275,12 +275,12 @@ class _PlatformSelectionScreenState extends State<PlatformSelectionScreen> {
                   color: Colors.grey[200],
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: const Text(
+                child: Text(
                   'Soon',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
-                    color: Colors.grey,
+                    color: Colors.grey.shade600,
                   ),
                 ),
               )

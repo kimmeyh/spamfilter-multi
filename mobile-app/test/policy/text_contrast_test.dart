@@ -54,8 +54,15 @@ void main() {
       expect(uiDir.existsSync(), isTrue,
           reason: 'run this test from the mobile-app/ directory');
 
-      final failingGrey =
-          RegExp(r'Colors\.grey\.shade(400|500)|Colors\.grey\[(400|500)\]');
+      // Bare `Colors.grey` IS `shade500` (~3.9:1) -- it fails AA for normal
+      // text exactly like the explicit form. The original pattern matched only
+      // the explicit shades, so the gate documented a floor it did not enforce
+      // and 13 real text sites sat below it undetected (PR #292 review). The
+      // negative lookahead keeps `grey.shade600`, `greyAccent` and
+      // `grey[700]` out of the match.
+      final failingGrey = RegExp(r'Colors\.grey\.shade(400|500)'
+          r'|Colors\.grey\[(400|500)\]'
+          r'|Colors\.grey(?![.\[A-Za-z0-9])');
       final violations = <String>[];
 
       for (final entity in uiDir.listSync(recursive: true)) {
