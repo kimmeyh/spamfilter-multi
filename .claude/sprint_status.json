@@ -11,7 +11,7 @@
     "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/292",
     "_pr_note": "CREATED LATE -- 2026-08-02, at Phase 7, not at Phase 3.3.1 where the lifecycle requires it. Harold flagged the miss. Cause: the Sprint 52 branch already existed from the Sprint 51 Phase 6.6 carry-forward, so the first commit on it was Sprint 51 close-out work and Phase 3.3.1 was never walked -- the same skipped step that cost the issue cards (backfilled as #289/#290/#291). Now enforced by require-sprint-cards.ps1, which blocks task commits when EITHER Phase 3.3.1 deliverable is missing. Stays DRAFT until the end of 7.7.",
     "start_date": "2026-07-30",
-    "status": "Phase 4 COMPLETE -- all 7 tasks DONE plus R-7 and R-8 closed at Harold's direction 2026-07-31 ('We need to complete the items not done before validation'). NOTHING carries forward from Sprint 52. 1,824 passing / 0 failing / analyzer clean / Windows build green. READY FOR MANUAL VALIDATION (Phase 5.3).",
+    "status": "Phase 7.7 -- Manual Validation COMPLETE (Harold 2026-08-02); retrospective COMPLETE (14 categories x 4 roles, all Very Good); all 6 improvements APPLIED. Remaining: Copilot review on PR #292 (requested 2026-08-02, awaiting), then 7.7.5 final gate + `gh pr ready`. 1,829 passing / 0 failing / analyzer clean / build green / hooks 45/45.",
     "plan_approved": true,
     "plan_approval_date": "2026-07-30",
     "blanket_execution_approved": true,
@@ -37,12 +37,12 @@
   "_github_issues_note": "Sprint 52 cards: #289 (F133-S52 + F133-REMEDIATE accessibility audit + remediation), #290 (F131 WinWright create-path root cause), #291 (F134/F134-ALL/F135/F136 UX). CREATED LATE -- 2026-07-31, at the end of Phase 4 rather than at Phase 3 where the process requires. Six task commits had already landed with no issue cards and no CHANGELOG entries; both gaps were caught and closed together while recording Task 2. Root cause of the miss: execution began straight from plan approval without walking the Phase 3 card-creation step. Flag for retro Category 9. Original note follows -- EMPTY because Sprint 52 has no cards yet -- they are created when scope is selected at Phase 3. Sprint 51's three cards (#286/#287/#288) were closed BY HAND at Post-Merge Cleanup on 2026-07-30 and verified with `gh issue list --label sprint --state open` returning empty. `Closes #N` does NOT auto-fire in this GitFlow repo: PRs merge feature -> develop, and GitHub only auto-closes on merge to the DEFAULT branch. Assuming auto-close was the Sprint 50 escape that left five issues open.",
 
   "test_metrics": {
-    "tests_passing": 1824,
+    "tests_passing": 1829,
     "tests_skipped": 29,
     "tests_failing": 0,
     "analyzer_warnings": 0,
-    "_test_metrics_note": "1,824 as of 2026-07-31 (Sprint 52, all 7 tasks complete; --concurrency=4, analyzer clean). +9 vs Sprint 51's 1,815, from the two new policy gates (appbar_action_order_test 4, text_contrast_test 2) plus skip_button_semantics_test 3.",
-    "hook_test_cases": "33/33 passing (.claude/hooks/run-test-cases.ps1) -- +4 from IMP-7 (enforcement-window cases)",
+    "_test_metrics_note": "1,829 as of 2026-08-02 (Sprint 52 complete through retro improvements; --concurrency=4, analyzer clean). +14 vs Sprint 51's 1,815: two policy gates (appbar_action_order 4, text_contrast 2), skip_button_semantics 3, sprint52_surfaces 3 (R-8), appbar_action_navigation 3 (IMP-1), no_rule_review refresh-confirmation 1.",
+    "hook_test_cases": "45/45 passing (.claude/hooks/run-test-cases.ps1) -- +12 in Sprint 52: 8 sprint-cards (IMP-2/IMP-6 Phase 3.3.1 gate), 2 closeout 0*-file cases (IMP-4), 1 closeout no-PR case (IMP-6), and the premerge fixture gained a pr_number so it still models a correct pre-merge state.",
     "winwright_sweep": "3/3 passing, no DB drift (mobile-app/scripts/run-winwright-tests.ps1)",
     "coverage_percent": null,
     "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5); the default concurrency intermittently drops test-isolate connections and produces phantom load failures."

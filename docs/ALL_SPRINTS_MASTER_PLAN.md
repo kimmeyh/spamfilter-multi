@@ -123,6 +123,19 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 
 ## Last Completed Sprint
 
+**Sprint 52** (2026-07-30 -- 2026-08-02; PR #292 -> develop)
+- **Type**: Accessibility audit + full remediation, AppBar consistency, account-selection UX. 7/7 tasks complete (5 planned + 2 added mid-sprint), plus 3 manual-validation fixes.
+- **Delivered**: **F133-S52** -- accessibility audit of all 27 screens; headline finding **only 5 of 27 used `Semantics` at all**, so most of the app was unaddressable by name to a screen reader or to automation. **F133-REMEDIATE** -- all 9 remediation items executed (Harold expanded this mid-sprint from planned-only), including 113 grey text sites migrated to meet WCAG 2.1 AA and two new build-failing gates. **F134/F134-ALL** -- `StandardAppBarActions` became the single definition of icon order across 12 screens that had each hand-rolled it in differing orders. **F135** -- session-scoped account selection, Settings resolves its account lazily per tab, No-Rule becomes the desktop default. **F136** -- Skip button. **F131** -- root-caused.
+- **F131: the card's premise was wrong.** No app defect and no accessibility defect existed -- the Add-Block-Rule radios always worked. A Sprint 41 comment recommended clicking the parent `Group` instead of the `RadioButton`; Sprint 51 followed it, saw nothing happen, and generalised that into "the radios do not select", writing it into five documents as verified fact. Wrong findings were **struck through, not deleted**: a wrong fix recorded as verified is worse than no note at all, and the lesson only survives if the wrong note survives with it.
+- **Dead code removed**: 3 unreachable screens (911 lines). Decisive evidence for the last one -- the Windows background-scan path is headless (`main.dart` runs the worker and exits without ever calling `runApp`), so a "progress UI during a background scan" cannot render on any path.
+- **Manual Validation found a real defect (MV-1)**: the Accounts icon reached nothing on **every** screen -- an intersection defect where F134 and F135 were each correct alone, but `popUntil(isFirst)` could not reach Account Selection once F135 made No-Rule the desktop default. Also added a Manual Scan icon (previously reachable only via the Accounts screen) and gave 4 silent Refresh buttons real feedback.
+- **Verification**: suite **1,829 passed** / 29 skipped / 0 failed; analyze clean; Windows build green; hook harness **45/45** (from 34); Manual Validation complete.
+- **Retro**: all 14 categories rated Very Good; **6 improvements, all applied**. IMP-1 behavior-level AppBar gate (source-text gates verify shape, not behavior -- the order gate was structurally blind to MV-1). IMP-2 + **IMP-6** Phase 3.3.1 gate: task commits now blocked when issue cards **or** the draft PR are missing. IMP-4 was **corrected by Harold** from "no bare `git add -A`" to "don't stage BLIND", because banning the flag would have made the `0*` working files harder to catch.
+- **Two process misses, both Harold-flagged and both now gated**: the sprint's GitHub issue cards were backfilled at end of Phase 4, and the draft PR was not created until Phase 7. Same root cause -- a branch that already existed from the Sprint 51 Phase 6.6 carry-forward, so Phase 3.3.1 was never walked. Fixing the card half without asking what else that step produced is why the PR miss survived a further day.
+- **Docs**: SPRINT_52_PLAN.md / SPRINT_52_F133_FINDINGS.md / SPRINT_52_RETROSPECTIVE.md / SPRINT_52_SUMMARY.md / ACCESSIBILITY_STANDARDS.md (new).
+
+_(Prior: **Sprint 51** below.)_
+
 **Sprint 51** (2026-07-27 -- 2026-07-30; PR #285 -> develop)
 - **Type**: Process-docs consistency audit + Sprint 50 carry-in closure. 3/3 planned tasks complete.
 - **Delivered**: **F130-S51** -- first run of the F130 template: **28 contradictions found, 28 corrected, 0 outstanding** across all 3 tiers, plus 3 hook false-positive fixes and the hook test harness generalized to cover all hooks (it had been hard-wired to one, which is why two false positives shipped unnoticed). **F128-residual** -- `removeRule`/`updateRule`/`removeSafeSender` no longer no-op silently on an unloaded cache. **F129** -- 3 WinWright scripts green with zero DB drift.
@@ -136,6 +149,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 - **Docs**: SPRINT_51_PLAN.md / SPRINT_51_F130_FINDINGS.md / SPRINT_51_RETROSPECTIVE.md / SPRINT_51_SUMMARY.md.
 
 _(Prior: **Sprint 50** below.)_
+
 
 **Sprint 50** (2026-07-25 -- 2026-07-27; merged PR #278 -> develop, PR #284 -> main)
 - **Type**: Core App Quality polish + live prod-data repair + manual-validation-driven UX fixes. 5/5 planned + 5 mid-sprint + 1 escalated.
