@@ -176,6 +176,8 @@ Harold approved **all five** on 2026-08-02 ("all now"). All are applied.
 | IMP-4 | ~~No bare `git add -A` in sprint commits.~~ **CORRECTED: don't stage BLIND.** Always `git status --short` first and account for every entry; `-A` itself is fine once you have. | **APPLIED (revised 2026-08-02)** | `CLAUDE.md` rule rewritten + new close-out gate in `verify-closeout-complete.ps1`. See "IMP-4 correction" below. |
 | IMP-5 | **Read the existing pattern before designing a new member of a shared abstraction.** | **APPLIED** | New line in `CLAUDE.md` "Things Claude Should NOT Do". |
 
+| IMP-6 | **The sprint draft PR was never created.** Phase 3.3.1 requires it at plan approval, in parallel with the first execution task. Sprint 52 ran to Phase 7 with no PR at all. | **APPLIED (added 2026-08-02, Harold-flagged)** | PR #292 created as a draft; `require-sprint-cards.ps1` extended to block on BOTH Phase 3.3.1 deliverables; close-out backstop added to `verify-closeout-complete.ps1`. See "IMP-6" below. |
+
 Two durable lessons were also written to memory rather than left in this
 document, because they generalize beyond this sprint:
 
@@ -227,3 +229,58 @@ Two test cases added (`violation-3-uncommitted-zero-file`,
 its own git repo, which commits as a broken gitlink that does not survive a fresh
 clone -- every other fixture here is a plain directory, and that outlier was
 caught before it landed.
+
+### IMP-6 -- the sprint PR was never created (Harold, 2026-08-02)
+
+Harold: *"the pull request was not drafted for this sprint, after plan approval
+and before or in parallel with first execution task. It is a miss."*
+
+Correct, and a clean one. Sprint 52 ran from plan approval through Manual
+Validation and the full retrospective with **no pull request at all**.
+
+**How it was missed.** Sprint 51's PR (#285) was created on its branch-creation
+day, so the process itself works. What differed here: the Sprint 52 branch
+ALREADY EXISTED, created during the Sprint 51 Phase 6.6 carry-forward. The first
+commit on it was `chore: Sprint 51 Post-Merge Cleanup complete` -- prior-sprint
+close-out work. Execution felt underway because the branch was live and commits
+were landing, so Phase 3.3.1 was never walked.
+
+**The compounding factor, and the real lesson.** This is the SAME root cause as
+IMP-2, which I had fixed two commits earlier. Phase 3.3.1 has two deliverables:
+issue cards **and** the draft PR. I diagnosed the card half from the
+retrospective, built a gate for it, and never asked what else that step
+produces. **I fixed one symptom of a skipped phase instead of the phase.**
+
+Two further contributors:
+- **No forcing function.** `sprint_status.json` carries `pr_number` / `pr_url`
+  fields that sat null all sprint and nothing read them.
+- **A chain of soft fallbacks hid it.** The PR lifecycle has four checkpoints
+  (3.3.1, 3.7, end of Phase 5, 7.7) and EACH says "create it now if it does not
+  exist". All four passed silently, because every one assumed a later one would
+  catch it. Redundant soft fallbacks are not a safety net -- exactly one
+  checkpoint must OWN the deliverable and fail loudly.
+
+I also flagged the absence in my own close-out list ("no PR open for Sprint 52
+yet -- I can create it as a draft") and framed it as an *option* rather than an
+overdue obligation.
+
+**Correction applied**:
+1. **PR #292 created as a DRAFT** (Harold's choice), base `develop`, body = the
+   approved plan, with an explicit note recording that it was created late and
+   why. Stays draft until the end of 7.7, preserving Copilot suppression for the
+   remaining close-out commits. `pr_number` / `pr_url` recorded.
+2. **`require-sprint-cards.ps1` now blocks on EITHER missing deliverable**
+   (Harold's choice: same strength as the card gate), naming which one and how to
+   fix it. The block message calls out the already-exists-branch trigger by name.
+3. **Close-out backstop** in `verify-closeout-complete.ps1`: a close-out claim
+   with `pr_number` null is a violation.
+4. **Three CLAUDE.md rules**: do not fix one symptom of a skipped step (enumerate
+   everything it produces); do not trust a chain of "create it if missing"
+   fallbacks; an already-existing branch is the classic Phase 3.3.1 skip trigger.
+
+Harness **43 -> 45, all passing**. Both new violation cases were verified to
+block for the RIGHT reason, not incidentally. Worth recording: the first run of
+the extended gate failed all 8 sprint-cards cases with exit 1 -- a PowerShell
+`$number:` drive-qualified-variable parse error in the new message text. The
+harness caught a bug that would otherwise have made the hook fail-open on every
+commit, which is precisely why hooks need test coverage.

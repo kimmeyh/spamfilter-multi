@@ -148,6 +148,22 @@ if (-not (Test-Path -LiteralPath $statusPath)) {
     }
 }
 
+# 3a-1. the sprint PR exists (Phase 3.3.1 deliverable, verified at close-out)
+#
+# Sprint 52 IMP-6 (Harold, 2026-08-02): the sprint ran to Phase 7 with NO pull
+# request at all. The PR lifecycle has four checkpoints (3.3.1, 3.7, end of
+# Phase 5, 7.7) and EACH carries a "create it now if it does not exist"
+# fallback -- so every checkpoint quietly assumed a later one would catch it,
+# and the miss stayed silent through all four. The primary guard is
+# require-sprint-cards.ps1 (blocks task commits); this is the backstop that
+# makes a close-out claim impossible while pr_number is still null.
+if ($status -and $null -ne $status.current_sprint) {
+    $prNum = $status.current_sprint.pr_number
+    if ($null -eq $prNum -or [string]$prNum -eq '') {
+        $violations += "No pull request recorded for Sprint $sprintNum (.claude/sprint_status.json current_sprint.pr_number is null). Phase 3.3.1 requires a DRAFT PR created at plan approval, in parallel with the first execution task. Create it (gh pr create --draft --base develop) and record pr_number / pr_url. Keep it a DRAFT until the end of Phase 7.7."
+    }
+}
+
 # 3a-2. uncommitted non-coding-agent working files (0*.txt / 0*.md at root)
 #
 # Harold, 2026-08-02: "there are often file changes made by the non-coding agent

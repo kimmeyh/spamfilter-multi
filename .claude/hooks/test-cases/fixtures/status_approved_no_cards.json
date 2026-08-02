@@ -1,5 +1,5 @@
 {
-  "_fixture": "Sprint 52 IMP-2: plan APPROVED but github_issues EMPTY -- the exact Sprint 52 state in which six task commits landed with no cards. require-sprint-cards.ps1 must BLOCK a git commit here.",
+  "_fixture": "Sprint 52 IMP-2/IMP-6: plan APPROVED but BOTH Phase 3.3.1 deliverables missing -- no cards and no PR. This is the real Sprint 52 state during the six card-less task commits. require-sprint-cards.ps1 must BLOCK and name both.",
   "current_sprint": {
     "number": 99,
     "branch": "feature/29990101_Sprint_99",

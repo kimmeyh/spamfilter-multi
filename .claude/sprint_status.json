@@ -7,8 +7,9 @@
   "current_sprint": {
     "number": 52,
     "branch": "feature/20260730_Sprint_52",
-    "pr_number": null,
-    "pr_url": null,
+    "pr_number": 292,
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/292",
+    "_pr_note": "CREATED LATE -- 2026-08-02, at Phase 7, not at Phase 3.3.1 where the lifecycle requires it. Harold flagged the miss. Cause: the Sprint 52 branch already existed from the Sprint 51 Phase 6.6 carry-forward, so the first commit on it was Sprint 51 close-out work and Phase 3.3.1 was never walked -- the same skipped step that cost the issue cards (backfilled as #289/#290/#291). Now enforced by require-sprint-cards.ps1, which blocks task commits when EITHER Phase 3.3.1 deliverable is missing. Stays DRAFT until the end of 7.7.",
     "start_date": "2026-07-30",
     "status": "Phase 4 COMPLETE -- all 7 tasks DONE plus R-7 and R-8 closed at Harold's direction 2026-07-31 ('We need to complete the items not done before validation'). NOTHING carries forward from Sprint 52. 1,824 passing / 0 failing / analyzer clean / Windows build green. READY FOR MANUAL VALIDATION (Phase 5.3).",
     "plan_approved": true,

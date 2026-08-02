@@ -1,9 +1,11 @@
 {
-  "_fixture": "Sprint 52 IMP-2: plan approved AND cards recorded -- the correct state. require-sprint-cards.ps1 must ALLOW.",
+  "_fixture": "Sprint 52 IMP-2 + IMP-6: plan approved AND cards recorded AND a draft PR recorded -- the fully correct Phase 3.3.1 state. require-sprint-cards.ps1 must ALLOW.",
   "current_sprint": {
     "number": 99,
     "branch": "feature/29990101_Sprint_99",
     "plan_approved": true,
+    "pr_number": 999,
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/999",
     "status": "Phase 4 execution"
   },
   "github_issues": [901, 902]

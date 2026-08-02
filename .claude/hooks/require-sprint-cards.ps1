@@ -1,8 +1,7 @@
 <#
 .SYNOPSIS
-    PreToolUse hook that blocks the FIRST sprint task commit when the current
-    sprint has no GitHub issue cards recorded. Enforces the Phase 3 card-creation
-    step.
+    PreToolUse hook that blocks sprint task commits when a Phase 3.3.1
+    deliverable is missing -- either the GitHub issue cards or the draft PR.
 
 .DESCRIPTION
     Fires on Claude Code's PreToolUse event for the Bash / PowerShell tools.
@@ -11,12 +10,13 @@
       - ALLOWS (exit 0) unless the command is a `git commit` invocation.
       - ALLOWS if `.claude/sprint_status.json` is missing/unparseable, if the
         sprint plan is not yet approved (pre-Phase-3.7 commits are legitimate:
-        the plan doc, the branch stub), or if `github_issues` is non-empty.
+        the plan doc, the branch stub), or if BOTH `github_issues` is non-empty
+        AND `current_sprint.pr_number` is set.
       - ALLOWS if the command carries the literal bypass token
         `allow_no_cards` -- the deliberate escape hatch, matching the
         established pattern in block-carry-forward-stash.ps1.
-      - BLOCKS (exit 2) a `git commit` when the plan IS approved and
-        `github_issues` is empty. stderr carries the corrective instruction.
+      - BLOCKS (exit 2) a `git commit` when the plan IS approved and either
+        deliverable is missing. stderr names WHICH one and how to fix it.
 
     WHY: Sprint 52. Execution began straight from Phase 3.7 plan approval
     without walking the Phase 3 card-creation step. SIX task commits landed with
@@ -99,34 +99,70 @@ if (-not $sprint) { exit 0 }
 # Pre-approval commits are legitimate (plan document, branch stub, carry-forward).
 if (-not $sprint.plan_approved) { exit 0 }
 
-$cards = $status.github_issues
-if ($cards -and @($cards).Count -gt 0) { exit 0 }
+# Phase 3.3.1 produces TWO deliverables and BOTH are checked here.
+#
+# Sprint 52 IMP-6 (Harold, 2026-08-02): the first version of this gate checked
+# only the issue cards. That fixed one SYMPTOM of a skipped phase rather than
+# the phase -- the same Phase 3.3.1 skip also cost the sprint's draft PR, which
+# was not noticed until Phase 7. When fixing a skipped process step, enumerate
+# everything that step produces; do not patch the one symptom that happened to
+# reach the retrospective.
+$cards      = $status.github_issues
+$hasCards   = ($cards -and @($cards).Count -gt 0)
+$hasPr      = ($null -ne $sprint.pr_number -and [string]$sprint.pr_number -ne '')
 
-$number = $sprint.number
+if ($hasCards -and $hasPr) { exit 0 }
+
+$number  = $sprint.number
+$missing = @()
+if (-not $hasCards) { $missing += 'GitHub issue cards (`github_issues` is empty)' }
+if (-not $hasPr)    { $missing += 'a draft PR (`pr_number` is null)' }
+$missingText = $missing -join ' AND '
+
+$cardFix = @"
+  Cards:
+    gh issue create --title "<F-number>: <title>" --label sprint --body "<scope>"
+    -> record the numbers in .claude/sprint_status.json "github_issues": [<n>, ...]
+"@
+$prFix = @"
+  Draft PR (MUST be --draft; see the Sprint 43 Copilot-per-commit failure):
+    git push -u origin <sprint-branch>
+    gh pr create --draft --base develop --title "Sprint ${number}: <title>" --body "<approved plan>"
+    -> record pr_number / pr_url in .claude/sprint_status.json
+"@
+
+$fixes = @()
+if (-not $hasCards) { $fixes += $cardFix }
+if (-not $hasPr)    { $fixes += $prFix }
+$fixText = $fixes -join "`n"
+
 $msg = @"
-[BLOCKED] Sprint $number has no GitHub issue cards recorded.
+[BLOCKED] Sprint $number is missing a Phase 3.3.1 deliverable: $missingText.
 
-The sprint plan is APPROVED (plan_approved: true) but
-.claude/sprint_status.json has an empty `github_issues` array, so the Phase 3
-card-creation step was skipped. Task commits must not land before their cards
-exist.
+The sprint plan is APPROVED (plan_approved: true), so BOTH the issue cards and
+the draft PR are due -- Phase 3.3.1 creates them together, in parallel with the
+first execution task. Task commits must not land before they exist.
 
-WHY THIS GATE EXISTS (Sprint 52 retro IMP-2): execution began straight from
-plan approval and SIX task commits landed with no cards and no CHANGELOG
-entries before anyone noticed. The cards then had to be backfilled from
-reconstructed scope, which is exactly the kind of after-the-fact record that is
-never as accurate as the real thing.
+WHY THIS GATE EXISTS (Sprint 52 retro IMP-2 + IMP-6): execution began straight
+from plan approval. SIX task commits landed with no cards and no CHANGELOG
+entries before the gap was noticed, and the draft PR was not created until
+Phase 7 -- an entire sprint with no PR. Both were backfilled from reconstructed
+scope, which is never as accurate as the real record. The usual trigger is a
+branch that ALREADY EXISTS from the previous sprint's Phase 6.6 carry-forward:
+the first commit on it is prior-sprint close-out work, so Phase 3.3.1 is never
+walked.
 
 DO THIS NOW:
-  1. Create one card per scope theme:
-       gh issue create --title "<F-number>: <title>" --label sprint --body "<scope>"
-  2. Record the numbers in .claude/sprint_status.json:
-       "github_issues": [<n>, <n>, ...]
-  3. Re-run the commit. Reference the card in the CHANGELOG entry: (Issue #N)
+$fixText
 
-Note `Closes #N` does NOT auto-fire in this GitFlow repo -- PRs merge
-feature -> develop, and GitHub only auto-closes on merge to the DEFAULT branch.
-Close the cards by hand at Post-Merge Cleanup.
+Then re-run the commit. Reference the card in the CHANGELOG entry: (Issue #N)
+
+Notes:
+  - Keep the PR a DRAFT until the END of Phase 7.7. Marking it ready early
+    triggers a GitHub Copilot review on EVERY subsequent commit (Sprint 43).
+  - `Closes #N` does NOT auto-fire in this GitFlow repo -- PRs merge
+    feature -> develop, and GitHub only auto-closes on merge to the DEFAULT
+    branch. Close cards by hand at Post-Merge Cleanup.
 
 Deliberate exception (rare): add the literal token `allow_no_cards` to the
 command.
