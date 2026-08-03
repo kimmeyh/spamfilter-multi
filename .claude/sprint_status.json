@@ -1,34 +1,35 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-03T14:30:00Z",
+  "_last_updated": "2026-08-03T14:45:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
 
   "current_sprint": {
-    "number": 54,
-    "branch": null,
-    "pr_number": null,
-    "pr_url": null,
-    "start_date": null,
-    "status": "NOT YET OPENED. Sprint 53 closed 2026-08-03 (retro skipped by PO decision). Next sprint's branch/scope selection has not started -- Backlog Refinement is the next step whenever work resumes.",
-    "plan_approved": false,
-    "plan_approval_date": null,
-    "blanket_execution_approved": false,
-    "scope": [],
-    "_scope_note": "Not yet selected."
+    "number": 53,
+    "branch": "feature/20260803_Sprint_53",
+    "pr_number": 297,
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/297",
+    "start_date": "2026-08-03",
+    "status": "Phase 7 complete (retro SKIPPED by explicit PO decision, Harold 2026-08-03). Sprint 53's F-STORE-53 task is done, 0.5.9.0 is CERTIFIED + LIVE. Follow-up PR #297 (post-cert closeout: CHANGELOG heading, master-plan roll, dev version bump) is open on this same branch, targeting develop, awaiting Harold's merge -- this is past Manual Validation, outside the sprint-auto-advance enforcement window. Sprint 54 has not been opened yet; that starts once #297 merges and Phase 6.6 carry-forward runs.",
+    "plan_approved": true,
+    "plan_approval_date": "2026-08-03",
+    "blanket_execution_approved": true,
+    "scope": ["F-STORE-53: build + smoke-test-verify release-candidate MSIX, then build the real Store MSIX and submit to Partner Center", "F138 closed (icons not needed)", "secrets.dev.json cleanup (prod worktree, gitignored)", "F139 + F140 added to backlog", "post-cert closeout (PR #297)"],
+    "_scope_note": "Sprint 53 complete. Kept as current_sprint (rather than rolled to previous_sprint) until PR #297 actually merges, so the branch this session is on matches what the status file names as current."
   },
 
   "previous_sprint": {
-    "number": 53,
-    "branch": "feature/20260803_Sprint_53",
-    "pr_number": 295,
-    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/295",
+    "number": 52,
+    "branch": "feature/20260730_Sprint_52",
+    "pr_number": 292,
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/292",
     "merged_at": "2026-08-03",
-    "merge_note": "PR #295 -> develop, PR #296 (develop -> main) both merged 2026-08-03. Issue #294 closed by hand (Closes-on-merge-to-develop does not auto-fire in this GitFlow repo). Retrospective SKIPPED by explicit Product Owner decision (Harold, 2026-08-03: 'PO approves skipping sprint 53 retrospective') -- deliberate exception, not an oversight, for this single-task release sprint.",
+    "merge_commit": "dfe8f89e37e1d3bf171bf5d7e2b57c43355ec674",
+    "merge_note": "PR #292 -> develop. Post-Merge Cleanup COMPLETE: Sprint 53 branch opened from the Sprint 52 branch, issues #289/#290/#291 closed by hand with resolution notes (gh issue list --label sprint --state open verified EMPTY), all sprint branches retained.",
     "status": "complete",
-    "deliverables": ["F-STORE-53: release-candidate smoke test (passed) then real Store MSIX 0.5.9.0 built, uploaded, and CERTIFIED + LIVE as Submission 10", "F138 closed (icons not needed in rule-editing-screen context)", "secrets.dev.json cleanup (prod worktree, gitignored, no commit)", "F139 + F140 added to backlog (local-install smoke test template; WinWright end-of-page reachability gap)", "dev bumped 0.5.9 -> 0.5.10 (pubspec.yaml, gate-verified)"],
-    "verification": "Pre-build: 1,859 tests passed / 29 skipped / 0 failed, analyze clean. Store build: manifest 0.5.9.0, 16.80 MB, correct prod dart-defines. Smoke test (RC build): --print-env clean, title bar clean, Harold-confirmed Gmail sign-in + About screen clean.",
-    "_no_retro_note": "Because the retrospective was skipped, there is no Category 1-14 x 4-role feedback to carry forward and no docs/sprints/SPRINT_53_RETROSPECTIVE.md. Only SPRINT_53_PLAN.md exists for this sprint's docs."
+    "deliverables": ["F133-S52 accessibility audit (all 27 screens) + full remediation", "F131 WinWright root cause (selector bug, not an app defect)", "F134 + F134-ALL canonical AppBar order (all screens)", "F135 session-scoped account selection + lazy Settings resolution", "F136 Skip button", "6 retrospective improvements (IMP-1..6)"],
+    "verification": "1,859 tests passed / 29 skipped / 0 failed (from 1,815 at Sprint 51 close); analyze clean; hook suite 45/45; Manual Validation closed by Harold; Copilot review + 3 further multi-agent review rounds, all findings fixed",
+    "_review_depth_note": "Sprint 52 went through FOUR review rounds before merge (Copilot, then 3 multi-agent rounds), each finding real defects the previous round missed or introduced -- MV-1 (Accounts icon reaching nothing), diverged platform-inference logic across 3 copies (contains() vs endsWith()), a legacy-account regression from the round-2 fix, cache-staleness in a round-3 fix, and a zero-test-coverage function hit by 3 consecutive rounds. Worth referencing if a future sprint's review cadence is being scoped."
   },
 
   "github_issues": [294],
@@ -82,8 +83,9 @@
   "blocking_issues": [],
 
   "next_actions": [
+    "HAROLD: merge PR #297 (feature/20260803_Sprint_53 -> develop, post-cert closeout) when convenient, then develop -> main same as PR #295/#296.",
+    "ON MERGE: Phase 6.6 carry-forward -- open the Sprint 54 branch from feature/20260803_Sprint_53 immediately, then Backlog Refinement is Sprint 54's first step (read docs/BACKLOG_REFINEMENT.md's presentation format first).",
     "Harold: once winget/Store client propagation catches up, confirm the actual Store-installed 0.5.9.0 build shows no [DEV] artifacts (About screen, title bar) -- see store_release.post_cert_closeout_pending.",
-    "SPRINT 54: not yet opened. Backlog Refinement is the next step whenever work resumes -- read docs/BACKLOG_REFINEMENT.md's presentation format first.",
     "Android/Google Play remains the next major track (promotion trigger fired 2026-07-24)"
   ]
 }
