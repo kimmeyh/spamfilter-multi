@@ -1,21 +1,21 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-03T04:10:00Z",
+  "_last_updated": "2026-08-03T13:00:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
 
   "current_sprint": {
     "number": 53,
     "branch": "feature/20260803_Sprint_53",
-    "pr_number": null,
-    "pr_url": null,
+    "pr_number": 295,
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/295",
     "start_date": "2026-08-03",
-    "status": "Phase 1 -- awaiting Backlog Refinement. Branch opened via Phase 6.6 immediately after PR #292 merged; no task work has started. Do NOT create issue cards or task commits before Phase 3.7 plan approval -- require-sprint-cards.ps1 will block them anyway.",
-    "plan_approved": false,
-    "plan_approval_date": null,
-    "blanket_execution_approved": false,
-    "scope": [],
-    "_scope_note": "Not yet selected. Backlog Refinement is next."
+    "status": "PR #295 merged -> develop, PR #296 merged develop -> main (both 2026-08-03). F-STORE-53 smoke test complete and passed. Store MSIX 0.5.9.0 built from main, verified, uploaded to Partner Center as Submission 10, submitted for certification 2026-08-03 -- IN CERTIFICATION as of last check. Awaiting certification result before Phase 7 close-out.",
+    "plan_approved": true,
+    "plan_approval_date": "2026-08-03",
+    "blanket_execution_approved": true,
+    "scope": ["F-STORE-53: build + smoke-test-verify release-candidate MSIX, then (once smoke test passed) build the real Store MSIX and submit to Partner Center", "F138 closed (icons not needed)", "secrets.dev.json cleanup (prod worktree, gitignored)", "F139 + F140 added to backlog (surfaced live during F-STORE-53)"],
+    "_scope_note": "Single-task release sprint. Scope was corrected mid-sprint (Harold: 'this task is meant to be a smoke test, correct?') to exclude the merge/upload/certification steps from the TASK CARD -- those happened afterward as a separate, later, Harold-initiated action once the smoke pass had passed."
   },
 
   "previous_sprint": {
@@ -32,8 +32,8 @@
     "_review_depth_note": "Sprint 52 went through FOUR review rounds before merge (Copilot, then 3 multi-agent rounds), each finding real defects the previous round missed or introduced -- MV-1 (Accounts icon reaching nothing), diverged platform-inference logic across 3 copies (contains() vs endsWith()), a legacy-account regression from the round-2 fix, cache-staleness in a round-3 fix, and a zero-test-coverage function hit by 3 consecutive rounds. Worth referencing if a future sprint's review cadence is being scoped."
   },
 
-  "github_issues": [],
-  "_github_issues_note": "EMPTY -- Sprint 53 has no cards yet; created when scope is selected at Phase 3 (require-sprint-cards.ps1 blocks task commits until then). Sprint 52's three cards (#289/#290/#291) were closed BY HAND at Post-Merge Cleanup on 2026-08-03 and verified with `gh issue list --label sprint --state open` returning empty. `Closes #N` does NOT auto-fire in this GitFlow repo: PRs merge feature -> develop, and GitHub only auto-closes on merge to the DEFAULT branch.",
+  "github_issues": [294],
+  "_github_issues_note": "Issue #294 (F-STORE-53) created at Phase 3.3.1. Confirmed the standing GitFlow caveat held again: PR #295's 'Closes #294' did NOT auto-close it on merge to develop (gh issue view 294 showed OPEN after both #295 and #296 merged) -- closed by hand 2026-08-03 with a resolution comment, same pattern as Sprint 52's #289/#290/#291. This array tracks cards CREATED this sprint, not cards currently open -- #294 stays listed here even though it is now closed.",
 
   "test_metrics": {
     "tests_passing": 1859,
@@ -52,26 +52,23 @@
     "live_version": "0.5.8",
     "live_submission_number": 9,
     "previous_live_version": "0.5.7",
-    "submitted_version": "0.5.8",
-    "submission_number": 9,
-    "built_at": "2026-07-27",
-    "submitted_at": "2026-07-28",
-    "certified_at": "2026-07-29",
-    "status": "LIVE in the Microsoft Store",
-    "certification_evidence": "Partner Center 2026-07-29: 'Congrats! Your product is now updated. Your latest product is now available on Microsoft Store.' Store presence advanced Submission 8 -> Submission 9.",
+    "submitted_version": "0.5.9",
+    "submission_number": 10,
+    "built_at": "2026-08-03",
+    "submitted_at": "2026-08-03",
+    "certified_at": null,
+    "status": "IN CERTIFICATION (Submission 10). Pipeline stage at last check: Submission [done] -> Pre-processing [in progress] -> Certification [pending] -> Publishing [pending]. Do NOT treat as live until Partner Center shows a certified/published state -- see the 2026-07-28 BUILT+VALIDATED-is-not-SUBMITTED lesson below; the equivalent risk here is treating SUBMITTED as CERTIFIED.",
+    "certification_evidence": "Partner Center screenshot, Harold, 2026-08-03: product overview shows 'Update in certification' badge; Product update panel reads 'Submission 10: Last modified on 08/03/2026'.",
     "artifact": "D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix",
-    "verification": "both-sides proof passed (APP_ENV=prod AND NATIVE_APP_ENV=prod); manifest 0.5.8.0; 16.8 MB; credentials verified embedded in data/app.so. Partner Center confirms package Validated, v0.5.8.0, X64, Windows.Desktop min 10.0.17763.0.",
-    "_correction_2026_07_28": "This block previously read submitted_at 2026-07-27 / status 'in certification' with an expected result of 2026-07-28. That was WRONG. Partner Center showed Submission 9 sitting 'In draft' with a live 'Submit for certification' button -- the package was built and Validated on 07-27 but the submission was never pushed over the line. Store presence was still Submission 8 (0.5.7). Harold submitted it 2026-07-28 after checking Partner Center directly. LESSON: BUILT + VALIDATED is not SUBMITTED. This file recorded an intent as an accomplished fact and it was then repeated back as fact for a full day, including as a candidate explanation for an unrelated Store client bug. Verify release state in Partner Center, never from this file alone.",
-    "post_cert_closeout_done": [
-      "DONE 2026-07-30: CHANGELOG '## [0.5.8] - 2026-07-29' release heading + comparison links added",
-      "DONE 2026-07-30: dev bumped 0.5.8 -> 0.5.9 (ONE file, pubspec.yaml -- the F-VERSION-DERIVE payoff; version_consistency gate green)",
-      "DONE 2026-07-30: ALL_SPRINTS_MASTER_PLAN Store status -> LIVE; Last Completed Sprint rolled 50 -> 51",
-      "DONE 2026-07-30 (Harold, Store-installed build): NO [DEV] in the window title. This is the definitive end of the F119 FAMILY -- F119 (msix key typo `build_windows_args`), F119-b (space in a secrets.prod.json key silently dropping APP_ENV=prod), and F119-c (native SPAMFILTER_APP_ENV never set by the msix path, so CMake defaulted to dev). All three presented as the SAME user-visible symptom -- a [DEV] title on a Store build -- and took three sprints to fully clear. 0.5.8 is the first Store release verified clean by direct observation of the installed build."
-    ],
+    "verification": "Pre-upload: build log shows correct prod dart-defines (APP_ENV=prod, secrets.prod.json); manifest Version=0.5.9.0; size 16.80 MB (matches the RC build built earlier same day for the F-STORE-53 smoke test, byte-identical source). Smoke test (separate release-candidate build, self-signed for local install, NOT this artifact): --print-env clean (APP_ENV=prod, NATIVE_APP_ENV=prod, no dev suffixes), title bar clean, About screen + Gmail sign-in confirmed by Harold.",
     "post_cert_closeout_pending": [
-      "Harold to confirm the remaining TWO parts of the Store-install check when convenient (NOT yet reported, deliberately not assumed from the title result): (a) About screen shows 'Version 0.5.8' with no [DEV] suffix, (b) Gmail sign-in works -- the credential-embedding check, which is what F119 originally broke. The title being clean proves APP_ENV/NATIVE_APP_ENV resolved to prod; it does NOT prove the OAuth credentials were embedded, because those are separate dart-defines. Only a real sign-in proves that."
+      "Once Submission 10 certifies: update docs/STORE_VERSION_STATUS.md Live row to 0.5.9.0 (do not do this before certification actually completes)",
+      "Once certified: CHANGELOG.md -- add '## [0.5.9] - <cert-date>' release heading + comparison links (Unreleased entries already assembled)",
+      "Once certified: docs/ALL_SPRINTS_MASTER_PLAN.md -- Store status -> LIVE 0.5.9.0; roll Last Completed Sprint 52 -> 53",
+      "Once certified: dev bump 0.5.9 -> 0.5.10 (pubspec.yaml top-level version + msix_version, one commit, version_consistency gate green) -- per ADR-0035 patch+1 convention",
+      "Harold: confirm no [DEV] artifacts on the ACTUAL Store-installed (not self-signed RC) build once it publishes, same as every prior release -- the RC smoke test is a strong predictor but the Store-signed artifact has never been directly observed installed until it publishes"
     ],
-    "_closeout_sequencing_note": "These are RELEASE close-out steps, not Sprint 51 task work. The dev version bump in particular changes what every version-consistency gate asserts, so it should land as its own commit rather than mixed into sprint changes. Harold's Store-install verification is the only one Claude cannot do."
+    "_prior_release_history": "0.5.8 (Submission 9): built 2026-07-27, submitted 2026-07-28 (after a BUILT+VALIDATED-is-not-SUBMITTED near-miss -- see docs/sprints/SPRINT_51_SUMMARY.md), certified 2026-07-29, Harold-verified clean (no [DEV] title) 2026-07-30. Full both-sides proof (APP_ENV=prod AND NATIVE_APP_ENV=prod) passed for the first time on this release, closing the 3-sprint F119 family (F119 msix-key typo, F119-b secrets space-key, F119-c native env var never set)."
   },
 
   "environment_notes": [
@@ -82,9 +79,10 @@
   "blocking_issues": [],
 
   "next_actions": [
-    "SPRINT 53 Phase 1: BACKLOG REFINEMENT -- read the authoritative presentation format in docs/BACKLOG_REFINEMENT.md FIRST, then present candidates to Harold for scope selection. This is where Sprint 53 starts; no task work before Phase 3.7 approval.",
-    "HAROLD (release, low priority, not blocking): confirm the remaining Store-install checks -- About shows 'Version 0.5.8', and Gmail sign-in WORKS. The clean title proves APP_ENV/NATIVE_APP_ENV resolved to prod; only a real sign-in proves the OAuth credentials were embedded, which is what F119 originally broke.",
-    "HAROLD (release, when ready): develop -> main merge for the Sprint 52 work, once ready for a Store release cycle.",
+    "WAIT for Submission 10 (0.5.9.0) certification result in Partner Center -- typically a few hours, up to 3 business days per Microsoft. Do not assume certified; check Partner Center directly.",
+    "ON CERTIFICATION: run the post_cert_closeout_pending list in store_release above (STORE_VERSION_STATUS.md Live row, CHANGELOG [0.5.9] heading, master-plan Store status + Last Completed Sprint roll, dev bump 0.5.9 -> 0.5.10).",
+    "ON CERTIFICATION: Harold to confirm the actual Store-installed 0.5.9.0 build shows no [DEV] artifacts -- the RC smoke test already passed, but the Store-signed artifact itself has not been directly observed installed yet.",
+    "AFTER post-cert closeout: Sprint 53 Phase 7 retrospective (14 categories x 4 roles) -- has not yet been run.",
     "Android/Google Play remains the next major track (promotion trigger fired 2026-07-24)"
   ]
 }

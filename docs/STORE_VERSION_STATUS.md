@@ -17,8 +17,8 @@ Partner Center before saying anything about the Store version.
 
 | | Version | Last verified | Notes |
 |---|---|---|---|
-| **Live/certified on Store** (cache) | 0.5.8.0 | 2026-07-30 (Harold, Store-installed build) | Submission 9, certified 2026-07-29. |
-| **Dev worktree** (authoritative -- mirrors `pubspec.yaml`) | 0.5.9+1 | 2026-08-03 | Not yet released. `msix_version` bumped to `0.5.9.0` to match (Sprint 53) -- it had been left stale at `0.5.8.0` through Sprints 51-52. This is the release currently in progress. |
+| **Live/certified on Store** (cache) | 0.5.8.0 | 2026-07-30 (Harold, Store-installed build) | Submission 9, certified 2026-07-29. **Submission 10 (0.5.9.0) is IN CERTIFICATION as of 2026-08-03** (Harold, Partner Center screenshot: Submission -> Pre-processing -> Certification -> Publishing pipeline, currently at Pre-processing). Update this row to 0.5.9.0 only once certification actually completes -- do not treat "submitted" as "live". |
+| **Dev worktree** (authoritative -- mirrors `pubspec.yaml`) | 0.5.9+1 | 2026-08-03 | `msix_version` bumped to `0.5.9.0` to match (Sprint 53) -- it had been left stale at `0.5.8.0` through Sprints 51-52. Built and submitted as Submission 10, 2026-08-03 (see Live row). |
 
 ## Update this file every time
 
