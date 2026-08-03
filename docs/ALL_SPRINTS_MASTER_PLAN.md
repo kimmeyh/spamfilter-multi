@@ -164,9 +164,36 @@ _(Prior: **Sprint 49** F119-c + prod-DB restoration, PR #276; **Sprint 48** F119
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: July 28, 2026 (Sprint 51 execution: F131 + F132 added from F129 execution, both Harold-approved. Full v1.3-format re-presentation last ran July 25 at Sprint 50 refinement; the next one is due at Sprint 52 Phase 1.)
+**Last Reviewed**: August 3, 2026 (Sprint 53 Phase 1 refinement, post-PR-292/293 merge to develop/main, updated again same day during Sprint 53 execution. F137, F138 surfaced from Sprint 52's retro Category 14 + the F133 accessibility audit's dead-code finding; F138 decided and closed same-day. F139 (HOLD template) and F140 surfaced live during the F-STORE-53 smoke test -- see below.)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
+
+### Core App Quality
+
+**F137. Verify and remove dead `process_results_screen.dart` (~15-20m) Priority 10**
+- Phase: Core App Quality
+- Platform: Windows Desktop (verified on; cross-platform code)
+- Confirmed zero references anywhere in `lib/` by both filename and class-name search (`ProcessResultsScreen`) -- same verification standard used for the three screens removed in Sprint 52's R-7. The Sprint 52 accessibility audit flagged this file as having "1 partial reference," but that reference no longer exists in the current tree.
+- Scope: re-verify dead (quick recheck, since code moves fast), then delete -- or, if a reference turns up this time, document why it's retained instead.
+- Depends on: none
+
+**F140. Version number unreachable by WinWright/UIA on Settings > General and Help (~30-90m, investigation-first) Priority 20**
+- Phase: Core App Quality / Testing Infrastructure
+- Platform: Windows Desktop (WinWright/UIA-specific; the underlying UX issue is cross-platform)
+- **Problem**: the app version string (`settings_screen.dart`, `'Version ${snapshot.data ?? '...'}'${AppEnvironment.displaySuffix}`, near the bottom of the General tab's "About" section) and similar end-of-content text on the Help screen sit at the very end of long, single-page-per-tab scrollable content. During the Sprint 53 F-STORE-53 smoke test, WinWright's `ww_scroll` (both `direction` and `find_target` modes) could not bring either element into view: `find_target` returned `found:false` with no error, and a direct `ww_click` on a known off-screen element (`Danger Zone`, immediately after About) failed with `element_offscreen: could not be scrolled into view`. Flutter's Windows semantics tree exposes these off-screen elements in the UIA tree (so `ww_get_snapshot`/`ww_find_by_description` DO find them, `visible:false`) but does not appear to implement a working `ScrollItemPattern`/`ScrollPattern` for WinWright to act on. Maximizing the window and using keyboard `PageDown` also did not reach them reliably.
+- **Two-part scope** (Harold, 2026-08-03, following the F-STORE-53 smoke test where I had to skip independently re-verifying the About-screen version and rely on Harold's direct check instead):
+  1. **Primary**: find a way for WinWright (or Flutter's semantics/UIA integration generally) to reach elements at the end of a long scrollable page -- investigate whether a Flutter-side change (e.g. ensuring the scroll view implements `RenderViewport`'s UIA scroll patterns correctly, or exposing `Semantics(explicitChildNodes:)` differently) or a WinWright-side technique (mouse-wheel-based scroll simulation instead of pattern-based, `ww_dump_tree` raw approach, or a different container selector) resolves it. This is genuinely open-ended -- start with a short timeboxed investigation before committing to a fix.
+  2. **Fallback** (if the primary proves impractical or out of scope for this codebase): move or duplicate the version number (and equivalently, the Help screen's end-of-page content) so it also displays near the TOP of its page/tab -- e.g. in the AppBar subtitle, or as the first visible item on General/Help -- so both a human and an automation tool can see it without scrolling.
+- **Why it matters beyond testing convenience**: the version display is also the primary user-facing proof-point that a build is NOT running as dev (`[DEV]` suffix) -- this is the exact F119-family defect class (three prior sprints, three separate silent-dev-build root causes). A version indicator any tester (human or automated) can see immediately, without scrolling through unrelated settings, directly supports catching that defect class faster.
+- Depends on: none. Complements [[F139]] (which currently documents the Harold-manual-check workaround for this exact gap).
+- Source: Sprint 53 (2026-08-03), F-STORE-53 smoke test.
+
+**F138. Decide: should the 5 rule-editing screens gain account context? -- [CLOSED 2026-08-03, Harold: not needed]**
+- Phase: Core App Quality / UX
+- Platform: All
+- **Decision**: Harold reviewed and closed same-day -- "icons not needed in this context." `rules_management`, `safe_senders_management`, `rule_test`, `rule_quick_add`, and `yaml_import_export` stay deliberately Help-only focused editors with no Manual Scan/Settings/Accounts AppBar icons. Not a defect; working as intended.
+- Candidate for `.github/copilot-instructions.md`'s settled-decisions list, since these five screens keep surfacing in review passes as "missing" the icons other screens have.
+- Source: Sprint 52 retrospective Category 14.
 
 ### Sprint Assignment (Sprint 47 pre-kickoff rollover, 2026-07-11)
 
@@ -243,6 +270,28 @@ _(F127 CI_* repo secrets: **RESOLVED-RESCOPED** (Harold 2026-07-24) -- the secre
 - **How to use**: Duplicate this item, assign a sprint, and remove HOLD. After completion, keep this template for the next review.
 - HOLD rationale: Template item, reusable each time a new Windows Store release is planned. First run: Sprint 45 (see `docs/sprints/SPRINT_45_F111_STORE_READINESS.md`).
 - Source: Sprint 45 backlog refinement (2026-07-02) -- captured as a recurring template since Store readiness verification will be needed for every future release.
+
+**F139. Local-install smoke test for a release-candidate MSIX (~30-50m per review) Priority HOLD**
+- Phase: Release Readiness (reusable template)
+- Platform: Windows Desktop
+- **Generic scope**: build a release-candidate MSIX and run a full manual smoke pass (Gmail sign-in, About screen version, title bar, data directory) on the SAME machine that has the live Store build installed -- WITHOUT merging to `develop`/`main`, without uploading to Partner Center, and without disturbing the installed Store build. Produces a PASS/FAIL smoke-test finding on a release candidate; does not release anything.
+- **What this covers (do this)**:
+  1. Build from a **local, unpushed** checkout: merge the sprint feature branch into the prod worktree's local `main` (`git merge --no-edit origin/feature/...`) so `pubspec.yaml`'s `msix_version` bump and any other release-affecting changes are present, WITHOUT pushing or asking Harold to merge to `develop`/`main` first. Record the pre-merge HEAD SHA so the worktree can be restored (`git reset --hard <sha>`) after the smoke test.
+  2. **The Store-submission MSIX config (`store: true, install_certificate: false`) produces an UNSIGNED package that cannot be locally installed** -- `Add-AppxPackage` fails with `0x800B0100 / HRESULT 0x80073CF0: The app package must be digitally signed for signature validation`. This is expected and is NOT a defect (Partner Center signs the real submission; a local smoke test never goes through Partner Center).
+  3. **To make it locally installable**, temporarily flip the two flags already documented in `pubspec.yaml`'s own comment (`mobile-app/pubspec.yaml`, `msix_config` block, ~line 119-122): `store: false` and `install_certificate: true`, then rebuild with `flutter pub run msix:create`. This self-signs the package with a locally generated test certificate.
+  4. A self-signed local build installs as a **separate package** alongside the live Store build (different signing identity -> different package family), so `Add-AppxPackage` does NOT need `-ForceApplicationShutdown` to replace anything and the live Store install is untouched. Both versions coexist and are separately launchable (`Get-AppxPackage -Name "*MyEmailSpamFilter*"` lists both; `Get-StartApps` shows two Start-menu entries with different AppIDs).
+  5. Verify the installed release candidate the same way as any Store build: `<InstallLocation>\MyEmailSpamFilter.exe --print-env` (launch via `Start-Process ... -RedirectStandardOutput` to reliably capture output; a bare `&` invocation from a script can silently produce nothing) should show `APP_ENV=prod`, empty `displaySuffix`/`dataDirSuffix`, `windowTitle=MyEmailSpamFilter`, `NATIVE_APP_ENV=prod`. Launch the actual window via its AppX identity (`Start-Process "shell:AppsFolder\<AppID>"`, from `Get-StartApps`) for the visual title-bar/About-screen check, not the raw exe path directly (packaged apps are normally activated through their app identity). **Known gap (see [[F140]])**: WinWright cannot currently scroll to the About screen's version text (Settings > General, end of tab) via automation -- the `--print-env` probe and title-bar check ARE independently WinWright-reachable and prove the same APP_ENV/version facts, but the visual About-screen confirmation currently requires a Harold-performed check until F140 lands.
+  6. Extract and grep `AppxManifest.xml` for `Version=` to confirm the manifest matches the target version, and check file size (~16-17 MB expected) -- same checks as a real release, see `docs/STORE_RELEASE_PROCESS.md` Step 4.
+  7. After the smoke test: revert `pubspec.yaml`'s `store`/`install_certificate` flags back to `true`/`false` (do NOT commit the local-testing flip), and reset the prod worktree back to the recorded pre-merge SHA (`git reset --hard <sha>`) so it is clean and ready for the REAL release build later.
+- **What this does NOT require (avoid re-deriving these)**:
+  - Does NOT require merging the sprint branch to `develop` or `main` first -- a local, unpushed merge into the prod worktree is sufficient to get the version bump for a smoke-test build.
+  - Does NOT require uploading anything to Partner Center.
+  - Does NOT require a code-signing certificate purchase or Windows SDK signtool workflow -- the `install_certificate: true` msix-package option self-signs automatically.
+  - Does NOT require uninstalling or disturbing the live Store build first -- self-signed and Store-signed packages install side-by-side under different package identities.
+  - Does NOT require Developer Mode / sideload registry changes on a machine that already has them (check `HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock` -> `AllowAllTrustedApps`/`AllowDevelopmentWithoutDevLicense` -- Harold's dev machine already had both set to 1; the earlier signature-validation error was NOT a sideload/trust problem, it was purely the unsigned-package error above).
+- **How to use**: Duplicate this item, assign a sprint, and remove HOLD. After completion, keep this template for the next review.
+- HOLD rationale: Template item, reusable each time a release-candidate smoke test is needed before committing to a full Store release. Complements F111 (pre-build readiness check) and `docs/STORE_RELEASE_PROCESS.md` Step 4 (post-upload verification) by covering the middle step: proving an unreleased build installs and runs correctly on real hardware.
+- Source: Sprint 53 (2026-08-03) -- F-STORE-53 scope was corrected mid-sprint from "full release pipeline" to "smoke test only" after Harold flagged the scope creep; the local-install signing workaround was discovered live during that task and is captured here so it does not need to be re-derived on the next release.
 
 **F70. Periodic Security Deep Dive (~4-8h per review) Priority HOLD**
 - Phase: Security Spike (reusable template)
