@@ -7,14 +7,24 @@ Manual Validation complete
 ---------------------------------------------------------------------------------------------------------
 Sprint 5n Manual Validation Feedback 
 
+
+
+1. Launch MyEmailSpamFilter (0.5.9.0) from the Start menu — there should now be two entries since both versions are installed; look for the one you just installed.
+2. Attempt Gmail sign-in — confirm the OAuth browser page opens with a real client ID (577022808534-...), not empty/placeholder.
+3. Check the About screen — should read "Version 0.5.9" with no [DEV] suffix.
+4. Check the title bar — should read "MyEmailSpamFilter" with no [DEV] suffix.
 ---------------------------------------------------------------------------------------------------------
 Sprint 52 Manual Validation Feedback 
 
 - MV-1 (F135, highest risk) — the account picker should appear only when no account is selected AND the page needs one. Open Settings → the three account-scoped tabs; confirm it prompts once, then not again. Confirm the desktop opens on Review "No Rule" Items.
 - MV-2 (F136) — Skip in the No-Rule popup header: confirm it advances to the next unaddressed item and leaves the current email completely unchanged (no rule, no safe sender).
 - MV-3 (F134-ALL) — spot-check 3–4 screens: Help is always the last icon before Exit.
+Working as expected. Can be closed.
 - MV-4 (F133 contrast) — the greys should read noticeably darker; confirm nothing looks washed out or, conversely, too heavy.
 - MV-5 (F133 a11y) — optional but the real payoff: run Narrator briefly on Manage Rules and confirm rows announce themselves by name.
+- Can you add the Manual Scan icon to the Account selection screen
+- can you add the "no rules" icon to the Help screen
+- 
 
 ---------------------------------------------------------------------------------------------------------
 Done
@@ -40,6 +50,27 @@ Manual Validation complete
 
 ---------------------------------------------------------------------------------------------------------
 Sprint 50 Manual Validation Feedback 
+
+On the No-Rule screen it re-reads the latest completed scan from the local database and re-runs the coverage sweep, dropping any items now covered by rules or safe senders you've added since. What it does not do is contact your mail server — only a Manual Scan does that.
+
+All of that is local-DB work finishing in milliseconds, so the loading spinner never paints a visible frame. With one item and no new rules, the correct result is an identical list — and there was no SnackBar, no toast, no completion signal anywhere on the success path (only on errors). A correct operation that reports nothing is indistinguishable from a dead button.
+
+What I changed (feedback only — reload logic untouched)
+
+Four screens, fixed as a class rather than one at a time:
+
+- No-Rule — "No changes — list is up to date" / "N items are now covered by rules — removed"
+- Scan History — "No changes — history is up to date" / "N scans older than <retention> days removed"
+- Manage Rules — "No changes — N rules" / "N rules added|removed"
+- Safe Senders — same shape
+
+Scan History mattered more than it first looked: its reload also purges results past your retention window, so a refresh there can genuinely delete rows — and said nothing. Rows silently disappearing is worse than a button that seems to do nothing.
+
+Flagging a judgment call: Manage Rules and Safe Senders are a weaker case (no purge, no sweep, count already on screen). I fixed them anyway so the toolbar doesn't become "some refresh buttons confirm and some don't" — tell me if you'd rather leave those two alone.
+
+Tooltips corrected too: "Refresh" reads as "go check for new mail," which none of these do. They now say what they actually re-read.
+
+Verification: analyzer clean, 1,828 passing / 0 failing, build green, pushed as 3fb4d55. The new test is mutation-verified — pointing the button back at the bare loader makes it fail with "Found 0 widgets with text 'No changes — list is up to date'", exactly your sympto
 
 Done
 - Please add the "Review "No Rule" Items" icon so that it appears on the "Manual Scan - <email address>" screen and Live Scan > Results screen

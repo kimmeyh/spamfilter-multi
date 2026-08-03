@@ -27,6 +27,16 @@ All Sprint tasks and sub-tasks are approved.
 Continue without addition approvals until Manual Validation, providing your recommendation for Manual Validation steps.
 Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPING_CRITERIA.md
 
+Install MyEmailSpamFilter update from Microsoft Store after certification (without having to do it via the Store):
+winget source update
+winget upgrade --id "9N5QK9G904C0" --source msstore --accept-package-agreements --accept-source-agreements
+
+to upgrade, may need to uninstall, then re-install
+
+winget install --id "9N5QK9G904C0" --source msstore --accept-package-agreements --accept-source-agreements
+Get-AppxPackage -Name "*MyEmailSpamFilter*" | Select-Object Name, Version, PackageFullName # currently installed version
+
+
 Next:----------------------------------------
 What is the way that Samsung Galaxy S24+ Android email address does authentication for gmail, as it only requests authentication once over multiple years, but the current Windows Desktop and Android app method here seems to need to request an update about once per day?
 
@@ -59,7 +69,8 @@ Claud Instructions:
   3. Based on your understanding of the codebase, Windows Desktop app, Android app and conducting code searches, as needed for the request(s) below:
     - If implementation exists, verify completeness and document findings.
     - Only implement missing pieces.
-    - Never consider updating or update this prompt file (0Clauddev_prompts.md)
+    - Never consider
+ updating or update this prompt file (0Clauddev_prompts.md)
   3. Provide a summary of the plan and request approval
   5. Once the plan is approved:
     - Create or update github issues(s) for the plan

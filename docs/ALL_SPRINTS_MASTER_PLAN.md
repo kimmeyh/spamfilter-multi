@@ -255,6 +255,18 @@ _(F100 shipped in Sprint 43.)_
 - Platform: Windows Desktop
 - Extend the `--print-env` headless probe into a one-shot release self-test that verifies env + version + data-dir (and any other release-gating invariants) in a single command; fold into `docs/STORE_RELEASE_PROCESS.md` Step 4.0. Source: Sprint 49 retrospective Category 14 candidate.
 
+**F141. Android / Google Play re-expansion deep dive ([no-history], time-boxed) Priority 40 -- [SPRINT 54 TARGET, Harold 2026-08-03]**
+- Phase: Android / Google Play Store Readiness (kickoff of the track promoted off HOLD 2026-07-24)
+- Platform: Android (analysis only this sprint -- no code changes)
+- **Scope, four parts**:
+  1. Changes needed for Android / Google Play Store submission itself: re-verify the current state of every GP-* HOLD item below (signing, manifest permissions, OAuth CASA verification trigger, privacy policy, listing assets, target SDK/16KB page size, ProGuard/R8, data-safety form) against the codebase and current Play Store policy -- some may be stale, already partially done, or have new Play policy requirements since these were last reviewed (Sprint 39, 2026-05-25).
+  2. UI adaptation: systematically assess which existing screens work as-is on phone/tablet/large-tablet (8x11) form factors, which need adaptation, referencing F63 (Responsive design framework, currently HOLD) -- and explicitly fold in accessibility compatibility (per the Sprint 52 F133 accessibility standards) as a requirement of any adapted UI, not an afterthought.
+  3. Non-UI / backend changes needed so the existing provider-agnostic core, adapters, and background-scan services continue working correctly on Android (WorkManager scheduling differences, Android-specific storage/credential paths, the pre-existing `google-services.json` applicationId mismatch noted under F94, etc.).
+  4. Produce a reviewed, updated, and/or newly-added set of backlog items from the above -- re-scope/re-estimate existing F94/F95/F63/GP-* items where stale, add new F#/GP items for gaps found, so the NEXT sprint that touches Android has an accurate, current task list instead of executing against 2-3-sprint-old HOLD entries.
+- **Deliverable**: a findings document (`docs/sprints/SPRINT_54_F141_ANDROID_DEEP_DIVE.md`, following the F103/F104 deep-dive precedent) plus the backlog updates in `ALL_SPRINTS_MASTER_PLAN.md` themselves -- no app code changes.
+- Depends on: none to start. Informs the scoping of every Android/GP HOLD item below.
+- Source: Sprint 54 scope (Harold, 2026-08-03) -- ordered LAST in the sprint, after F137/F140/F125, since it is investigation/analysis work that produces backlog for future sprints rather than shippable code this sprint.
+
 ### Security Hardening (Sprint 31 Audit)
 
 _(F107, F108, F109 shipped in Sprint 44 -- see docs/sprints/SPRINT_44_SUMMARY.md. F106 is HOLD/Post-MVP, paired under SEC-11b below.)_
