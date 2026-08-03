@@ -508,6 +508,32 @@ _Original finding, retained for context:_
 
 > **[NEXT MAJOR TRACK -- TRIGGER FIRED 2026-07-24]**: `0.5.7` is verified LIVE (clean prod title). Per Harold's 2026-07-15 promotion trigger, this Android / Google Play track is now **OFF HOLD** and is the next focus. Android development is intentionally stagnant only until that Windows release lands. At promotion, refine this section into an active sprint: start with the `google-services.json` applicationId mismatch diagnosis (F94 pre-existing investigation item -- likely root of intermittent Android Gmail OAuth), then F94 flavors, then the F108 Android-device dep-bump retest carry-in, then the Google-Play-gated security items below.
 
+> **[GOVERNING DIRECTION -- Harold, 2026-08-03, Sprint 54 F141 deep dive]**: *"All the UIs (now with the Windows UI being the default) should use the same UI and tools unless they cannot -- then they should adapt as needed for the needs of the platform"* (UI/navigation), and *"same architectural principle for all the non-UI components -- reuse whatever possible, exactly as is, but adjust where necessary"* (services/backend). **Clarified same day**: the app was built Android-first for early MVP speed, then switched to the Windows Store App style UI and architecture once that became the priority -- so **Windows' current architecture and tooling is the baseline that takes precedence, not "whichever platform already has code."** It is explicitly OK to REMOVE existing Android UI and backend code and replace it with the Windows-side pattern, adjusting only where Android has a genuine platform constraint (no keyboard modifiers, no hover state, no Windows Task Scheduler equivalent) -- never merely to preserve old Android-first code for its own sake. This is DURABLE guidance for every future Android-track item, not scoped to one sprint. See `docs/sprints/SPRINT_54_F141_ANDROID_DEEP_DIVE.md` for the full deep dive this direction came from.
+
+**F142. Android navigation model: adopt desktop's shared AppBar-icon + session-account pattern, replacing the bottom-nav placeholder shell (~time-boxed, no-history) Priority HOLD**
+- Phase: Android / Google Play Store Readiness
+- Platform: Android
+- **Finding** (F141 deep dive): `main_navigation_screen.dart`'s bottom-nav shell has 2 of 3 tabs as non-functional `_PlaceholderScreen`s ("Manage rules from the Account Details screen" / "Configure account settings from Account Details screen") -- this predates and diverges from the Sprint 51/52 desktop navigation overhaul (`SelectedAccountProvider` session-scoped account context, `StandardAppBarActions` canonical icon order).
+- **Direction (clarified 2026-08-03)**: Windows' current architecture takes precedence -- the app was built Android-first for early MVP speed, then switched to the Windows Store App style UI/architecture once that became the priority, and Windows is now the mature, actively-maintained side. `MainNavigationScreen`'s bottom-nav shell is old Android-first scaffolding that should be REMOVED, not preserved or adapted -- Android should adopt the SAME session-scoped account model and AppBar-icon navigation desktop now uses. A bottom nav bar is not a platform constraint Android needs to work around (AppBar icons work identically on touch), so no divergence is warranted here.
+- Depends on: none to scope; implementation should sequence before F143 (No-Rule review needs the same navigation shell to attach to).
+- Source: Sprint 54 F141 deep dive, 2026-08-03.
+
+**F143. Android entry point + touch-adapted selection for No-Rule Review screen (~time-boxed, no-history) Priority HOLD**
+- Phase: Android / Google Play Store Readiness
+- Platform: Android
+- **Finding** (F141 deep dive): `NoRuleReviewScreen` (F39/F135) -- the desktop app's DEFAULT screen when accounts exist -- has ZERO Android entry point. `StandardAppBarActions` gates its AppBar icon to `Platform.isWindows`; the Android nav branch never reaches `_DesktopDefaultScreen`.
+- **Direction**: Android's default screen should be the SAME `NoRuleReviewScreen`, reached the same way, once F142 lands. The one genuine platform-driven adaptation needed is the screen's multi-item SELECTION mechanism specifically -- `_handleItemTap` reads `isControlPressed`/`isShiftPressed`, and `onSecondaryTapDown` opens a right-click menu, neither of which has a touch equivalent (a real "cannot," not a preference). Redesign to long-press-to-select + contextual action bar (the bulk-action `PopupMenuButton` already works fine by tap and needs no change).
+- Depends on: F142 (needs the shared navigation shell to attach an entry point to).
+- Source: Sprint 54 F141 deep dive, 2026-08-03.
+
+**F144. Re-evaluate Android background scanning against the Windows Task Scheduler pattern (WorkManager as the only genuine platform substitution) + add POST_NOTIFICATIONS runtime request (~time-boxed, no-history) Priority HOLD**
+- Phase: Android / Google Play Store Readiness
+- Platform: Android
+- **Finding** (F141 deep dive): `BackgroundScanManager`/`BackgroundScanService` (a `workmanager`-based scheduler, pre-dating the current architecture) exist in source but have ZERO call sites anywhere in `lib/` -- entirely unwired since Windows' `WindowsTaskSchedulerService`-based path became the maintained, actively-developed background-scan architecture (per-account scheduling, ADR-0039/0040, F98). Separately, no `POST_NOTIFICATIONS` runtime permission request exists anywhere (Android 13+/API 33+ requires this at runtime in addition to the manifest declaration, which IS auto-merged by dependent plugins) -- without it, notifications would silently never show.
+- **Direction (clarified 2026-08-03)**: Windows' architecture takes precedence, not "whichever platform has existing code." Evaluate whether the OLD `BackgroundScanManager`/`BackgroundScanService` should be REMOVED and replaced with an Android background-scan implementation that mirrors the CURRENT Windows design (per-account scheduling model, settings/UI wiring pattern, notification approach) as closely as Android's platform allows -- substituting `workmanager`/`AlarmManager` only where WorkManager genuinely IS the Android equivalent of Windows Task Scheduler (a real platform constraint), not preserving the old code's own design decisions where they predate and diverge from the current architecture. Also add the missing `POST_NOTIFICATIONS` runtime request.
+- Depends on: F142 (needs a Settings surface to wire the enable/disable toggle to).
+- Source: Sprint 54 F141 deep dive, 2026-08-03.
+
 **F94. Android dev/prod/store flavors (~6-8h) Priority HOLD (Issue #248) -- RENUMBERED from "F52 Phase 2" + MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
 - Phase: Build and Release Infrastructure / Android Google Play Store Readiness
 - Platform: Android
@@ -518,7 +544,7 @@ _Original finding, retained for context:_
   2. Firebase Console -- register SHA-1 fingerprint for `com.myemailspamfilter.prod` applicationId
   3. Google Cloud Console -- create OAuth client ID for `.dev` package + matching SHA-1
   4. Google Cloud Console -- create OAuth client ID for `.prod` package + matching SHA-1
-- **Pre-existing investigation item**: `mobile-app/android/app/google-services.json` has `applicationId="com.example.spamfiltermobile"` while `build.gradle.kts` declares `applicationId="com.myemailspamfilter"`. Diagnose and fix this mismatch BEFORE adding flavor complexity (may explain intermittent Android Gmail OAuth).
+- **Pre-existing investigation item**: `mobile-app/android/app/google-services.json` has `applicationId="com.example.spamfiltermobile"` while `build.gradle.kts` declares `applicationId="com.myemailspamfilter"`. Diagnose and fix this mismatch BEFORE adding flavor complexity (may explain intermittent Android Gmail OAuth). **RE-VERIFIED Sprint 54 (2026-08-03), still open**: same mismatch confirmed present today, no `.dev`/`.prod` variants exist, single OAuth Android client tied to the old package name -- Firebase/GCP prerequisites (items 1-4 above) confirmed not done. External prerequisites remain unconfirmable from repo evidence alone.
 - Memory note: `project_f52_phase2_blockers.md` has full Sprint 37 deferral context.
 - **Full #248 Phase 2 task list** (from the issue, deferred here): configure `productFlavors` in `android/app/build.gradle.kts` (dev/prod/store) with distinct `applicationId` suffixes, flavor-specific `google-services.json`, flavor-aware build scripts, and verify side-by-side install of dev + prod APKs on one device/emulator.
 - Source: Sprint 37 retrospective Category 11 + Category 13; Issue [#248](https://github.com/kimmeyh/spamfilter-multi/issues/248) (closed 2026-06-23 -- Phase 1 Windows SHIPPED in Sprint 37; Phase 2 Android = this item F94; Phase 3 iOS = F95).
@@ -531,11 +557,12 @@ _Original finding, retained for context:_
 - [Detail](#f52-multi-variant-side-by-side-install)
 - Source: ADR-0035 dev/prod separation.
 
-**F63. Responsive design framework (~8-12h) Priority HOLD -- MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
+**F63. Responsive design framework -- [SUPERSEDED 2026-08-03 by Sprint 54 F141's per-screen findings] Priority HOLD**
 - Phase: UX Improvement
 - Platform: All
-- Implement adaptive breakpoints per ARSD AR-7: phone (<600dp), tablet (600-900dp), desktop (>900dp); LayoutBuilder + breakpoints (ARSD A6). Priority screens: scan progress, results display, settings.
-- Moved to HOLD per Harold (2026-05-25). Related: F55 (navigation consistency). Source: Sprint 30 gap analysis (gap G23).
+- Original scope: adaptive breakpoints per ARSD AR-7 (phone/tablet/desktop), priority screens scan progress/results display/settings.
+- **Superseded**: the Sprint 54 F141 deep dive (`docs/sprints/SPRINT_54_F141_ANDROID_DEEP_DIVE.md` Section 2) audited all 23 screens directly -- only 2 use `MediaQuery` at all (both incidental, not breakpoint logic), zero `LayoutBuilder`/`OrientationBuilder` anywhere. Concrete per-screen findings now exist: 16 screens work-as-is, 5 need touch-target/density adaptation (`results_display`, `rules_management`, `safe_senders_management`, `account_setup`, `settings`), 2 need a genuine new interaction pattern (`yaml_import_export` -- data-layer, not layout; `no_rule_review` -- see F143). Use that document's Section 2 as the authoritative scope instead of this item's original vague framing.
+- Source: Sprint 30 gap analysis (gap G23); superseded by Sprint 54 F141.
 
 **SEC-15. IMAP host validation for custom servers (~1h) Priority HOLD -- MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
 - Phase: Security
@@ -563,15 +590,17 @@ _Original finding, retained for context:_
 - Platform: Android
 - Create release keystore, configure in build.gradle.kts. Overlaps with GP-2 (release signing). Source: Sprint 31 security audit (S12).
 
-**SEC-7. Android: Enable R8 obfuscation + Dart obfuscation (~2h) Priority HOLD -- MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
+**SEC-7. Android: Enable R8 obfuscation + Dart obfuscation (~2h) Priority HOLD -- MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25) -- DUPLICATE of GP-9, recommend merging**
 - Phase: Security / Android Google Play Store Readiness
 - Platform: Android
 - Enable minifyEnabled, create proguard-rules.pro; use --obfuscate --split-debug-info for Dart. Overlaps with GP-9 (ProGuard/R8). Source: Sprint 31 security audit (S13).
+- **RE-VERIFIED Sprint 54 (2026-08-03)**: confirmed still fully unresolved -- no `isMinifyEnabled`/`isShrinkResources`/`proguardFiles`/`proguard-rules.pro` anywhere in the Android tree. SEC-7 and GP-9 are literally the same investigation and fix; recommend merging at next refinement rather than tracking twice.
 
 **SEC-9. Move hardcoded Android client ID to build-time injection (~1h) Priority HOLD -- MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
 - Phase: Security / Android Google Play Store Readiness
 - Platform: Android
 - Move _androidClientId to --dart-define or google-services.json. Source: Sprint 31 security audit (S5).
+- **RE-VERIFIED Sprint 54 (2026-08-03)**: confirmed still hardcoded in `build.gradle.kts` + `AndroidManifest.xml` (the OAuth redirect scheme, inherently manifest-declared for Android). No client *secret* found hardcoded anywhere -- Android installed-app OAuth clients typically do not use one, unlike Windows' desktop client. Real fix is avoiding a per-flavor literal `build.gradle.kts` edit once F94 lands, not a security leak of a secret. Sequence after/alongside F94.
 
 **Issue #163. Android app not tested in several sprints (~2-4h) Priority HOLD**
 - Phase: Android Google Play Store Readiness
@@ -589,9 +618,10 @@ _Original finding, retained for context:_
 - Phase: Android Google Play Store Readiness
 - Platform: Android
 
-**GP-3. Android Manifest Permissions (~4-6h) Priority HOLD**
+**GP-3. Android Manifest Permissions (~4-6h -> re-scoped ~1-2h remaining) Priority HOLD**
 - Phase: Android Google Play Store Readiness
 - Platform: Android
+- **RE-VERIFIED Sprint 54 (2026-08-03)**: the app's own manifest declares zero `<uses-permission>` entries, but direct inspection of bundled plugin manifests confirms auto-merge already provides `INTERNET` (via `google_sign_in_android`), `ACCESS_NETWORK_STATE` (via `connectivity_plus`), and `POST_NOTIFICATIONS` (via `flutter_local_notifications`/`workmanager_android`). Genuinely missing: `RECEIVE_BOOT_COMPLETED`, `WAKE_LOCK`, `FOREGROUND_SERVICE`/`FOREGROUND_SERVICE_DATA_SYNC` -- but WorkManager periodic tasks do not inherently need a foreground service, so add these ONLY if F144's background-scan design actually requires one. Re-scoped: verify auto-merge via a real merged-manifest build, add the 3-4 missing declarations only if needed.
 
 **GP-4. Gmail API OAuth Verification / CASA (~40-80h) Priority HOLD**
 - Phase: Android Google Play Store Readiness
@@ -610,13 +640,15 @@ _Original finding, retained for context:_
 - Phase: Android Google Play Store Readiness
 - Platform: Android
 
-**GP-8. Android Target SDK + 16 KB Page Size (~4-8h) Priority HOLD**
+**GP-8. Android Target SDK + 16 KB Page Size (~4-8h -> re-scoped ~1-2h verify) Priority HOLD**
 - Phase: Android Google Play Store Readiness
 - Platform: Android
+- **RE-VERIFIED Sprint 54 (2026-08-03)**: the installed Flutter 3.38.5's gradle plugin already defaults `compileSdk`/`targetSdk` to API 36 (no explicit override needed in `build.gradle.kts`) -- the SDK-level part of this item is likely already satisfied by the current toolchain. The 16KB native page-size alignment is unverified and needs an actual APK build + inspection of NDK-touching plugin `.so` files, not a source read. Policy-currency against LIVE Play Console requirements also needs a manual check (not verifiable from a read-only repo investigation). Re-scoped down to ~1-2h "verify + confirm."
 
-**GP-9. ProGuard/R8 Code Optimization (~4-6h) Priority HOLD**
+**GP-9. ProGuard/R8 Code Optimization (~4-6h) Priority HOLD -- DUPLICATE of SEC-7, recommend merging**
 - Phase: Android Google Play Store Readiness
 - Platform: Android
+- **RE-VERIFIED Sprint 54 (2026-08-03)**: same investigation as SEC-7 (above) -- confirmed no divergence, no minification/shrinking config exists. Recommend merging into one item at next refinement.
 
 **GP-10. Data Safety Form Declarations (~2-4h) Priority HOLD**
 - Phase: Android Google Play Store Readiness
@@ -624,9 +656,10 @@ _Original finding, retained for context:_
 
 **GP-11. Account and Data Deletion Feature** -- Moved to F66 (off HOLD, all platforms including Windows Store). See F66 in Core App section above.
 
-**GP-12. Firebase Analytics Decision (~2-4h) Priority HOLD**
+**GP-12. Firebase Analytics -- [RE-SCOPED 2026-08-03] Execute the existing ADR-0030 removal decision, not a new decision (~1-2h) Priority HOLD**
 - Phase: Android Google Play Store Readiness
 - Platform: All
+- **RE-VERIFIED Sprint 54 (2026-08-03)**: ADR-0030 (Accepted) already decided "zero telemetry -- remove Firebase Analytics," but `firebase-analytics`/`firebase-bom` are STILL active dependencies in `build.gradle.kts` with zero Dart-side code anywhere calling them -- dead native-layer weight. ADR-0033 (the analytics/crash-reporting strategy ADR) is still "Proposed," inconsistent with ADR-0030 having already made the call. This is no longer a "~2-4h decision" task -- re-scoped to "~1-2h execute the removal + formally reconcile/accept ADR-0033 referencing ADR-0030's existing decision."
 
 **GP-16. Google Play Developer Account Setup (~2-4h) Priority HOLD**
 - Phase: Android Google Play Store Readiness
