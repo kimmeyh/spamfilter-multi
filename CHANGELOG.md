@@ -26,6 +26,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-08-03 (Sprint 54: F137)
+- **chore**: F137 -- removed `process_results_screen.dart` (confirmed dead, zero references anywhere in `lib/` by both filename and class-name search) and its dedicated test file `process_results_screen_test.dart`. Same verification standard used for the three screens removed in Sprint 52's R-7. Suite 1859 -> 1847 tests (the removed file's own tests), analyze clean (Issue #299).
+
 ### 2026-08-03 (Sprint 53: post-certification closeout)
 - **chore**: Submission 10 (0.5.9.0) certified and published to the Microsoft Store 2026-08-03, confirmed via Partner Center's "Store presence" section. `winget upgrade`/the Store app's own product page lagged behind the certified state for a time (same client-side propagation-lag pattern documented 2026-07-28) -- Partner Center's Store-presence confirmation is authoritative regardless of what client-side surfaces report.
 - **docs**: F139 (HOLD template) -- local-install smoke test for a release-candidate MSIX: the Store-submission MSIX config (`store: true, install_certificate: false`) produces an unsigned package that cannot install locally; flipping to `store: false, install_certificate: true` self-signs a build for local testing, which installs side-by-side with the live Store build under a different package identity without disturbing it.
