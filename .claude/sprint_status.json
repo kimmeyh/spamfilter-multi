@@ -48,6 +48,7 @@
   },
 
   "store_release": {
+    "_see_also": "docs/STORE_VERSION_STATUS.md is the quick-check summary (live Store version + current dev version, both with a last-verified date). This block is the working detail behind that summary. Keep both in sync; STORE_VERSION_STATUS.md is what to open for a fast answer, this block is where the evidence lives.",
     "live_version": "0.5.8",
     "live_submission_number": 9,
     "previous_live_version": "0.5.7",
