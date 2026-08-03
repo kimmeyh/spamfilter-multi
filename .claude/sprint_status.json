@@ -1,6 +1,6 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-03T15:00:00Z",
+  "_last_updated": "2026-08-03T15:15:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
 
@@ -61,16 +61,15 @@
     "certification_evidence": "Partner Center screenshot, Harold, 2026-08-03: Application overview -> 'Store presence (Submission 10)' section shows the green 'Your product is currently available in the Microsoft Store' confirmation. Submission 11 auto-opened as the next draft slot (normal behavior, same v0.5.9.0 package shown 'Unchanged') -- not a new release in progress.",
     "artifact": "D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix",
     "verification": "Pre-upload: build log shows correct prod dart-defines (APP_ENV=prod, secrets.prod.json); manifest Version=0.5.9.0; size 16.80 MB (matches the RC build built earlier same day for the F-STORE-53 smoke test, byte-identical source). Smoke test (separate release-candidate build, self-signed for local install, NOT this artifact): --print-env clean (APP_ENV=prod, NATIVE_APP_ENV=prod, no dev suffixes), title bar clean, About screen + Gmail sign-in confirmed by Harold.",
-    "_client_propagation_lag_2026_08_03": "Same day as certification, BOTH the Store app's own product-detail page (renders as skeleton placeholders, identical symptom to the 2026-07-28 known bug logged in environment_notes) AND `winget upgrade`/`winget install --source msstore` (reports 'No available upgrade found', `winget show` reports Version: Unknown) lagged behind the certified state. `winget source update` was run and did not fix it -- the msstore catalog itself is a Microsoft-hosted index outside local control. Partner Center's Store-presence confirmation is authoritative regardless of what these client-side surfaces report; no further action needed beyond waiting for propagation. Not a submission defect -- do not re-diagnose as one.",
+    "_client_propagation_lag_2026_08_03": "Same day as certification, BOTH the Store app's own product-detail page (renders as skeleton placeholders, identical symptom to the 2026-07-28 known bug logged in environment_notes) AND `winget upgrade`/`winget install --source msstore` (reports 'No available upgrade found', `winget show` reports Version: Unknown) lagged behind the certified state. `winget source update` was run and did not fix it -- the msstore catalog itself is a Microsoft-hosted index outside local control. WORKAROUND THAT WORKED: `winget uninstall --id <StoreID>` then `winget install --id <StoreID> --source msstore --accept-package-agreements --accept-source-agreements` -- a forced fresh acquisition bypasses the stale upgrade-check even while `winget show`/`upgrade` still report stale metadata. Confirmed: this installed the correct 0.5.9.0, Harold verified no [DEV] artifacts. Partner Center's Store-presence confirmation is authoritative regardless of what these client-side surfaces report. Not a submission defect -- do not re-diagnose as one.",
     "post_cert_closeout_done": [
       "DONE 2026-08-03: docs/STORE_VERSION_STATUS.md Live row updated to 0.5.9.0 + client-propagation-lag note added",
       "DONE 2026-08-03: CHANGELOG.md -- added post-cert closeout entry + '## [0.5.9] - 2026-08-03' release heading + comparison note (Sprint 51/52/53 entries now under it)",
       "DONE 2026-08-03: docs/ALL_SPRINTS_MASTER_PLAN.md -- Store status -> LIVE 0.5.9.0; Last Completed Sprint rolled 52 -> 53; Past Sprint Summary table updated (also backfilled the missing Sprint 52 row)",
-      "DONE 2026-08-03: dev bumped 0.5.9 -> 0.5.10 (pubspec.yaml top-level version ONLY -- msix_version deliberately left at 0.5.9.0 until the next release build, per the F139 lesson about premature/stale bumps); version_consistency gate green"
+      "DONE 2026-08-03: dev bumped 0.5.9 -> 0.5.10 (pubspec.yaml top-level version ONLY -- msix_version deliberately left at 0.5.9.0 until the next release build, per the F139 lesson about premature/stale bumps); version_consistency gate green",
+      "DONE 2026-08-03 (Harold, Store-installed build, worked around the propagation lag via `winget uninstall` then `winget install --source msstore` -- forced a fresh acquisition rather than an upgrade-check, which bypassed the stale winget catalog even though `winget show`/`upgrade` still reported stale metadata): NO [DEV] in the header or Settings; Settings shows 'Version 0.5.9'. This is the definitive Store-installed-build confirmation, completing the F119-family verification standard for this release."
     ],
-    "post_cert_closeout_pending": [
-      "Harold: confirm the actual Store-installed 0.5.9.0 build (once winget/Store client propagation catches up and it can be freshly installed/updated) shows no [DEV] artifacts -- the RC smoke test is a strong predictor but the Store-signed artifact itself has not yet been directly observed installed via winget/Store client"
-    ],
+    "post_cert_closeout_pending": [],
     "_prior_release_history": "0.5.8 (Submission 9): built 2026-07-27, submitted 2026-07-28 (after a BUILT+VALIDATED-is-not-SUBMITTED near-miss -- see docs/sprints/SPRINT_51_SUMMARY.md), certified 2026-07-29, Harold-verified clean (no [DEV] title) 2026-07-30. Full both-sides proof (APP_ENV=prod AND NATIVE_APP_ENV=prod) passed for the first time on this release, closing the 3-sprint F119 family (F119 msix-key typo, F119-b secrets space-key, F119-c native env var never set)."
   },
 
@@ -83,9 +82,8 @@
   "blocking_issues": [],
 
   "next_actions": [
-    "HAROLD: merge PR #298 (feature/20260803_Sprint_54 -> develop, Sprint 53 post-cert closeout) when convenient, then develop -> main same as PR #295/#296.",
-    "ON MERGE: Sprint 54's branch already exists and is where scope selection happens next -- Backlog Refinement is the first step (read docs/BACKLOG_REFINEMENT.md's presentation format first).",
-    "Harold: once winget/Store client propagation catches up, confirm the actual Store-installed 0.5.9.0 build shows no [DEV] artifacts (About screen, title bar) -- see store_release.post_cert_closeout_pending.",
+    "HAROLD: merge PR #298 (feature/20260803_Sprint_54 -> develop, Sprint 53 post-cert closeout) when convenient, then develop -> main same as PR #295/#296 (not necessarily on the same timeline -- develop -> main is an independent release decision, per Harold's clarification 2026-08-03).",
+    "Sprint 54's branch already exists and is where scope selection happens next -- Backlog Refinement is the first step (read docs/BACKLOG_REFINEMENT.md's presentation format first).",
     "Android/Google Play remains the next major track (promotion trigger fired 2026-07-24)"
   ]
 }
