@@ -164,9 +164,25 @@ _(Prior: **Sprint 49** F119-c + prod-DB restoration, PR #276; **Sprint 48** F119
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: July 28, 2026 (Sprint 51 execution: F131 + F132 added from F129 execution, both Harold-approved. Full v1.3-format re-presentation last ran July 25 at Sprint 50 refinement; the next one is due at Sprint 52 Phase 1.)
+**Last Reviewed**: August 3, 2026 (Sprint 53 Phase 1 refinement, post-PR-292/293 merge to develop/main. Two new candidates surfaced from Sprint 52's retro Category 14 + the F133 accessibility audit's dead-code finding: F137, F138. F138 decided and closed same-day, see below.)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
+
+### Core App Quality
+
+**F137. Verify and remove dead `process_results_screen.dart` (~15-20m) Priority 10**
+- Phase: Core App Quality
+- Platform: Windows Desktop (verified on; cross-platform code)
+- Confirmed zero references anywhere in `lib/` by both filename and class-name search (`ProcessResultsScreen`) -- same verification standard used for the three screens removed in Sprint 52's R-7. The Sprint 52 accessibility audit flagged this file as having "1 partial reference," but that reference no longer exists in the current tree.
+- Scope: re-verify dead (quick recheck, since code moves fast), then delete -- or, if a reference turns up this time, document why it's retained instead.
+- Depends on: none
+
+**F138. Decide: should the 5 rule-editing screens gain account context? -- [CLOSED 2026-08-03, Harold: not needed]**
+- Phase: Core App Quality / UX
+- Platform: All
+- **Decision**: Harold reviewed and closed same-day -- "icons not needed in this context." `rules_management`, `safe_senders_management`, `rule_test`, `rule_quick_add`, and `yaml_import_export` stay deliberately Help-only focused editors with no Manual Scan/Settings/Accounts AppBar icons. Not a defect; working as intended.
+- Candidate for `.github/copilot-instructions.md`'s settled-decisions list, since these five screens keep surfacing in review passes as "missing" the icons other screens have.
+- Source: Sprint 52 retrospective Category 14.
 
 ### Sprint Assignment (Sprint 47 pre-kickoff rollover, 2026-07-11)
 
