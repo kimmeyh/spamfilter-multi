@@ -217,7 +217,24 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     _accountResolutionAttempted = true;
     try {
       final accounts = await _credStore.getSavedAccounts();
-      if (!mounted || accounts.isEmpty) return;
+      if (!mounted) return;
+      if (accounts.isEmpty) {
+        // Distinct from the keystore-failure catch below (PR #292 round 3):
+        // this is a genuinely EMPTY account list, not an error. Without a
+        // message the "Choose Account" button became a silent retry-loop to
+        // nowhere -- pressing it re-runs this method, hits this same
+        // early-return, and nothing visible ever happens. In practice the
+        // caller (account_selection_screen) already blocks pushing Settings
+        // with zero accounts, so this covers the narrower race of the last
+        // account being deleted elsewhere while Settings is already open.
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No accounts configured. Add one from the Accounts '
+                'screen.'),
+          ),
+        );
+        return;
+      }
 
       // 1. Session selection, if that account still exists.
       String? resolved;

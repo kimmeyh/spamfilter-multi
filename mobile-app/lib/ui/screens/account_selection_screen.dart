@@ -367,20 +367,32 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
     // lookup, the core inference, and the report-instead-of-navigate guard.
     // Using push (not pushReplacement) inside it, so back returns here.
     //
-    // [platformId] is the platform the ROW already resolved
-    // (`_fetchAccountDisplayData`), passed through as the helper's first
-    // resolution tier (PR #292 round 3). The display path has a LEGACY
-    // fallback the helper deliberately does not: an old-format accountId with
-    // no '@' IS the platformId. Without this pass-through, a row that visibly
-    // renders "AOL Mail" refused to scan -- the two paths disagreed about a
-    // value one of them had already computed. Reusing the row's resolution
-    // makes the displayed provider and the scan target the same value by
-    // construction.
+    // [platformId] is passed through ONLY for the LEGACY case (PR #292 round
+    // 3, narrowed in round 4): an old-format accountId with no '@' IS the
+    // platformId, per `_fetchAccountDisplayData`'s fallback -- a fallback
+    // `openManualScan`'s own three tiers deliberately do not know about.
+    // Without this, a row that visibly renders "AOL Mail" refused to scan,
+    // because the two paths disagreed about a value one of them had already
+    // computed.
+    //
+    // Deliberately NOT passed through for modern (`@`-containing) accountIds,
+    // even though `displayData.platformId` is available for those too: that
+    // value can be STALE. `_loadAccountDisplayData` returns a cached
+    // `AccountDisplayData` immediately on a cache hit and refreshes it in the
+    // background via a later `setState` -- so a tap landing in that window
+    // would freeze whatever platformId was cached at render time. Passing it
+    // through would fill `openManualScan`'s FIRST resolution tier, which
+    // short-circuits its own fresh credential-store read. For a modern
+    // account that store read finds the identical value anyway (both read the
+    // same key), so there is nothing to gain from passing it and a staleness
+    // window to lose. Only the legacy fallback is synthesized data
+    // `openManualScan` cannot otherwise reach, which is why it alone is worth
+    // passing through.
     await StandardAppBarActions.openManualScan(
       context,
       accountId: accountId,
       accountEmail: accountEmail ?? accountId,
-      platformId: platformId,
+      platformId: accountId.contains('@') ? null : platformId,
     );
 
     // Refresh accounts on return from the scan flow.

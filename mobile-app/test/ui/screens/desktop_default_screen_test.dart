@@ -17,11 +17,16 @@ import 'package:my_email_spam_filter/ui/screens/no_rule_review_screen.dart';
 /// permanent spinner (resolution never completes), or an inverted ternary that
 /// boots straight past the account list.
 ///
-/// Tested through `desktopDefaultScreenFor` rather than the private
-/// `_DesktopDefaultScreen` widget, because the widget reads the real secure
-/// credential store on init -- which has no test binding on Windows. Extracting
-/// the DECISION keeps the risky part testable without adding a production
-/// test-override seam to the store.
+/// Most cases are tested through `desktopDefaultScreenFor` -- the extracted
+/// decision, not the private `_DesktopDefaultScreen` widget -- so the branch
+/// logic is pinned without the async credential-store round-trip in every
+/// case. That is a scoping choice, not a real harness limitation: the
+/// `flutter_secure_storage` MethodChannel DOES have a test binding (stubbed
+/// the same way `manual_scan_unknown_platform_test.dart` and
+/// `settings_null_account_test.dart` do it), which the final WIRING test
+/// below uses to drive the real widget end to end. A prior version of this
+/// comment claimed no binding existed; that was wrong, and is corrected here
+/// rather than left standing next to the test that disproves it.
 void main() {
   group('desktopDefaultScreenFor', () {
     testWidgets('null (still resolving) shows a neutral spinner',

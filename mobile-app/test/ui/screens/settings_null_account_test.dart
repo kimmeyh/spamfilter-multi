@@ -72,15 +72,17 @@ void main() {
   testWidgets(
       'ALL THREE account-scoped tabs render the guarded placeholder when '
       'unresolved', (tester) async {
-    // TabBarView builds ALL children eagerly, so the Account / Manual Scan /
-    // Background tab bodies are constructed even while General is selected.
-    // The re-review found the first fix guarded only the Account tab: the
-    // Manual Scan and Background tabs rendered LIVE controls whose onChanged
-    // callbacks flipped the UI, hit the throwing getter, persisted nothing and
-    // reported nothing ("Enable Background Scanning" showing ON with no task
-    // scheduled). All three must show the placeholder instead.
-    // TabBarView mounts only the visible page, so visit each scoped tab and
-    // assert the placeholder is what renders there.
+    // TabBarView CONSTRUCTS all children eagerly -- `children:` is a plain
+    // list literal, so every `_buildXTab()` call runs immediately, even while
+    // General is the visible tab. (The underlying PageView separately mounts
+    // only nearby pages into the render tree; that is a different layer and
+    // not what this bug depended on.) The re-review found the first fix
+    // guarded only the Account tab: the Manual Scan and Background tabs
+    // CONSTRUCTED live controls whose onChanged callbacks flipped the UI, hit
+    // the throwing getter, persisted nothing and reported nothing ("Enable
+    // Background Scanning" showing ON with no task scheduled). All three must
+    // show the placeholder instead. Visit each scoped tab and assert the
+    // placeholder is what renders there.
     await tester.pumpWidget(const MaterialApp(home: SettingsScreen()));
     await tester.pump();
     expect(tester.takeException(), isNull);

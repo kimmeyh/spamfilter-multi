@@ -95,8 +95,9 @@ void main() {
 
           violations.add(
             '$fileName:${i + 1} -- ${lines[i].trim()}\n'
-            '    grey.shade400 (~2.6:1) and grey.shade500 (~3.9:1) FAIL WCAG '
-            'AA for normal text. Use grey.shade600 or darker, or prefer '
+            '    grey.shade400 (~1.9:1) and grey.shade500 (~2.7:1, = bare '
+            'Colors.grey) FAIL WCAG AA for normal AND large text. Use '
+            'grey.shade600 (~4.6:1) or darker, or prefer '
             'Theme.of(context).colorScheme.* so dark mode inherits correctly.',
           );
         }
