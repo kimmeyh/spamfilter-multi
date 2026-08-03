@@ -1,5 +1,6 @@
 ***BELOW IS NOT FOR CLAUDE CODE, GITHUB COPILOT, CHATGPT OR COPILOT PULL REQUEST (PR) REVIEW USE***
 claude --continue # generally the best option
+claude --continue --model claude-fable-5 # to request the Fable 5 model when continuing
 
 Github Copilot Review Requests:
 I have requested a github.com copilot review.
@@ -18,10 +19,9 @@ claude --continue
 Please review the "Sprint Execution Docs", Sprint plan and sprint checklist to determine what steps in the current sprint have been completed and not completed, then the next steps.
 
 Common prompt when it did not follow instructions:
-figure out how this happened and update all "sprint execution docs", memories, skills, agents, claude.md, commands, hooks... so that it does not occur in the future.
+Figure out how this happened and update all "sprint execution docs", memories, skills, agents, claude.md, commands, hooks... so that it does not occur in the future.
 
-  all
-- Sprint approval:
+Sprint plan approval:
 Sprint plan approved, proceed with execution. 
 All Sprint tasks and sub-tasks are approved.  
 Continue without addition approvals until Manual Validation, providing your recommendation for Manual Validation steps.

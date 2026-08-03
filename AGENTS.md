@@ -121,6 +121,44 @@ git merge develop
 - Don't use Edit tool without first using Read tool on that file in the SAME conversation turn
 - Don't assume file content from earlier reads - always re-read before editing after any significant work or context compaction
 - Don't use Linux-only tools on Windows (see Windows Tool Restrictions below)
+- **Don't report a checklist section, phase, or close-out as complete without OPENING the checklist and walking it line by line in that same turn.** "I believe I did that" is not verification. Every line gets an explicit `DONE (<evidence>)` / `N/A (<why>)` / `NOT DONE -> doing it now`. (Sprint 50 escape: close-out reported complete with 5 issues open, `sprint_status.json` 15 sprints stale, and no next-sprint stub. Enforced by the `verify-closeout-complete` Stop hook.)
+- **Don't treat a multi-part user request as a theme.** Enumerate every discrete ask before starting, and restate each ask with its status before ending the turn. A request with a terminal condition ("continue until X") is not satisfied by doing the first part well.
+
+### [CRITICAL] Decision-Class Taxonomy: STOP, Surface, Wait
+
+_(F130-S51, Sprint 51: this section was present in CLAUDE.md but entirely ABSENT from AGENTS.md -- so an agent reading only AGENTS.md had no instruction to surface architecture / development / sprint-scope decisions. Kept in sync with CLAUDE.md; if one is edited, edit both.)_
+
+**Source**: Sprint 38 retrospective, 2026-05-18 (Harold's PO/SM/LD feedback).
+
+Harold wears three distinct roles -- Chief Architect, Chief Developer, and Scrum Master. Codex is **not** authorized to make unilateral decisions in any of the three classes below. Sprint-plan approval at Phase 3 is durable authorization for tasks AS PLANNED -- it is NOT authorization to change architecture, change prior development decisions, or change the approved sprint scope.
+
+When a candidate change falls into one of these three classes, STOP, surface the decision to the user with the explicit phrasing pattern below, and WAIT for approval before implementing:
+
+**1. Architecture decisions (Chief Architect)**
+- Any change that downgrades, inverts, or replaces a prior architectural decision.
+- Examples: data-model changes, control-flow inversions, persistence semantic shifts, removal of an ADR-documented pattern, changes to the meaning of a stored value (e.g., Sprint 38 Round 4 inverted IMAP cursor from "max UID seen" to "oldest unaddressed UID").
+- Surface phrasing: "This would change a prior architectural decision: [describe the prior decision and the proposed change]. Should I proceed?"
+
+**2. Development decisions (Chief Developer)**
+- Any change to prior development decisions or established patterns.
+- Examples: function signature changes that affect callers, removed abstractions, ordering changes that affect downstream callers, semantic shifts in a field's meaning at runtime (e.g., Sprint 38 Round 8 changed `_initialNoRuleCount` from "snapshot at scan-completion" to "snapshot at re-entry").
+- Surface phrasing: "This would change a prior development decision: [describe the prior decision and the proposed change]. Should I proceed?"
+
+**3. Sprint execution decisions (Scrum Master)**
+- Any decision to shorten the sprint, de-scope an approved task, or defer an approved task to a future sprint -- UNLESS a `SPRINT_STOPPING_CRITERIA.md` criterion (1-9) is genuinely met AND the Scrum Master has approved.
+- Examples: marking a task "deferred to Sprint N+1" without SM approval, drafting "Next Steps" / "ready for retrospective" while approved tasks remain incomplete and no stopping criterion applies.
+- Surface phrasing: "This would change the approved sprint scope: [describe what is being deferred / de-scoped]. Should I proceed?"
+
+**When to surface**: at the next natural break in the interaction. Natural breaks are:
+- Backlog Refinement to Sprint Plan approval (Phase 1 → Phase 3)
+- Manual Validation (Phase 5.3)
+- Sprint Retrospective (Phase 7)
+
+Do NOT bury the decision inside a multi-task code change. Do NOT proceed and "ask in the retrospective." Surface it AT the natural break or BEFORE it if implementation is blocked.
+
+**If you catch yourself thinking** "this is just a small change, the user will be fine with it" -- that is the signal to STOP and surface. Sprint 38 had 10 rounds of fixes; multiple of those rounds contained class-1, class-2, or class-3 decisions that were not surfaced. The 400-hour stopping-criterion clarification in `docs/SPRINT_STOPPING_CRITERIA.md` Criterion 9 specifically addresses class-3 violations.
+
+**Touchpoint**: See `docs/SPRINT_EXECUTION_WORKFLOW.md` "Decision-Class Checkpoint Protocol" for the full surfacing template and the per-phase application matrix.
 
 ## Windows Tool Restrictions
 
@@ -202,7 +240,9 @@ git merge develop
    - **NOT valid stopping reasons**: Implementation choices, approach uncertainty, minor code style, single test failure
    - **Reference**: SPRINT_EXECUTION_WORKFLOW.md Phase 3.7 and SPRINT_STOPPING_CRITERIA.md
 
-7. **Phase Auto-Advance Rule (Sprint 35+)**: When the work for the current phase completes (tests pass / build succeeds / PR pushed / docs updated / etc.), proceed *immediately* to the next phase's first action. **DO NOT** ask "want me to proceed to Phase N+1?" -- sprint-plan approval at Phase 3 is durable authorization through Phase 7. The only acceptable mid-sprint pauses are the 9 SPRINT_STOPPING_CRITERIA listed above. "Confirming the next step" is not on that list.
+7. **Phase Auto-Advance Rule (Sprint 35+)**: When the work for the current phase completes (tests pass / build succeeds / PR pushed / docs updated / etc.), proceed *immediately* to the next phase's first action. **DO NOT** ask "want me to proceed to Phase N+1?" -- sprint-plan approval at Phase 3 is durable authorization. The only acceptable mid-sprint pauses are the 9 SPRINT_STOPPING_CRITERIA listed above. "Confirming the next step" is not on that list.
+   - **ENFORCEMENT WINDOW (Harold, 2026-07-30, Sprint 51 retro IMP-7)**: this rule applies **ONLY between Phase 3.7 plan approval and the beginning of Manual Validation (Phase 5.3)**. Harold's rationale: *"all questions for the sprint should have been asked by then."* BEFORE approval, asking is required (Phase 1 refinement; the 3.7 approval request itself). FROM Manual Validation onward, the work is Harold-driven -- validation feedback, retrospective input, improvement dispositions -- so asking is CORRECT, not a violation. Outside the window a question is never an auto-advance violation.
+   - Enforced by `.claude/hooks/sprint-auto-advance.ps1` (Gate 1b = lower bound, Gate 1c = upper bound). The upper bound is read from `.claude/sprint_status.json` `current_sprint.status`, so **keep that field current at phase transitions** -- it is what tells the hook which side of the window you are on.
    - State the next action in one sentence, then execute it. Example:
      - **WRONG**: "Phase 5.2 tests pass. Want me to proceed to Phase 5.3 (build app)?"
      - **RIGHT**: "Phase 5.2 tests pass. Building Windows desktop app for Phase 5.3 manual validation now." [executes build]
@@ -414,7 +454,7 @@ flutter pub get
 flutter pub run msix:create
 ```
 
-`flutter pub run msix:create` honors the `msix_config` block in `pubspec.yaml`, including the critical `build_windows_args` field that injects OAuth credentials via `--dart-define-from-file`. **Do NOT use `scripts/build-msix.ps1`** -- that is a deprecated makeappx.exe path that produces an MSIX with empty credentials (silent Gmail sign-in failure).
+`flutter pub run msix:create` honors the `msix_config` block in `pubspec.yaml`, including the critical `windows_build_args` field that injects OAuth credentials via `--dart-define-from-file`. **The key is `windows_build_args`, NOT `build_windows_args`** -- the transposed form is not a real msix key, is silently ignored, and is exactly the F119 defect that shipped a credential-less 0.5.4 to the Store. `test/policy/msix_config_test.dart` is a build-failing gate asserting the typo never reappears. **Do NOT use `scripts/build-msix.ps1`** -- that is a deprecated makeappx.exe path that produces an MSIX with empty credentials (silent Gmail sign-in failure).
 
 For the full end-to-end procedure (version bump 5-file checklist, `secrets.prod.json` recreation, verification steps, Partner Center upload walkthrough, post-submission), see **`docs/STORE_RELEASE_PROCESS.md`**.
 
@@ -757,7 +797,8 @@ spamfilter-multi/
   - `/phase-check` - Sprint phase transition checkpoint (verify phase complete, preview next phase)
   - `/plan-sprint` - Sprint planning with model assignments
   - `/full-test` - Run all Flutter tests and analyze code quality
-  - `/memory-save` and `/memory-restore` - Save/restore sprint context across sessions
+  - `/memory-save` - Produce a compact-string save point for the next session
+  - `/memory-restore` - **RETIRED (Sprint 51)**. Sprint state lives in `.claude/sprint_status.json` (maintained at Phase 7.7); `/startup-check` reads it with staleness checks. The old `.claude/memory/current.md` path is frozen at Sprint 39 and must not be restored.
 
 ### Archives (gitignored)
 - **Archive/**: Historical docs, legacy Python desktop app, completed phase reports

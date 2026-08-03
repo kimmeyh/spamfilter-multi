@@ -54,7 +54,7 @@ Flutter elements map to these UIA control types:
 
 ### Tab Switching
 
-Flutter TabBar tabs render as `Text` elements, NOT `Tab` controls. You MUST use `useInvokePattern: false` to force a mouse click:
+Flutter TabBar tabs render as `Text` elements, NOT `Tab` controls. Prefer `useInvokePattern: false` to force a mouse click:
 
 ```json
 {"name": "ww_click", "arguments": {
@@ -64,7 +64,31 @@ Flutter TabBar tabs render as `Text` elements, NOT `Tab` controls. You MUST use 
 }}
 ```
 
-Without `useInvokePattern: false`, the click reports success but the tab does not switch.
+### Which tool for which control (verified 2026-07-28, Sprint 51 F129)
+
+| Control | Tool | Why |
+|---------|------|-----|
+| `Button` (any kind, incl. dialog buttons) | **`ww_invoke`** | `ww_click` reported success without activating controls on a cold-launched app |
+| TabBar tab (projects as `Text`) | `ww_click` + `useInvokePattern: false` | needs a real mouse press |
+| Static `Text` label | `ww_click` + `useInvokePattern: false` | `Element does not support InvokePattern. ControlType: Text` |
+| `CheckBox` | `ww_click` + `useInvokePattern: false` | exposes TogglePattern, not InvokePattern |
+| `RadioButton` | `ww_click` + `useInvokePattern: false` **on the RadioButton itself** | exposes `SelectionItemPattern`, not `InvokePattern`, so `ww_invoke` correctly fails. Do **not** target the parent `Group` -- a Group is a container with no selection behavior (corrected 2026-07-31, Sprint 52 F131) |
+
+### Three behaviours that silently break scripts
+
+1. **The semantics tree is built lazily, on query -- not on a timer.** A cold-launched app returns an
+   opaque `FLUTTERVIEW` pane on the *first* tree query and the full tree on the *second*; a 10-second
+   wait does not help. Start scripts with `ww_window_state`, which doubles as the priming query.
+2. **`ww_invoke` does not check visibility** -- it reports success on an off-screen element without
+   pressing it. `ww_click` errors `element_offscreen` instead. Maximize first.
+3. **A click reporting success is not proof of effect.** `{"success": true}` means *dispatched*. The
+   runner cannot replay `ww_assert*`, so the only in-script evidence is a **following step that can
+   only resolve if the app actually advanced** (a control unique to the next screen, or a `Clear`
+   button that renders only while a filter is active). Without that pairing, a green run proves
+   reachability, never behaviour.
+
+Full detail, including the search box that cannot be cleared and the semantics wrapper shapes that
+name a node while making it unclickable: `mobile-app/test/winwright/README.md` (Sprint 51 notes).
 
 ### No automationId
 

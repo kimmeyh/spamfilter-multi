@@ -8,6 +8,7 @@ import '../../core/storage/database_helper.dart';
 import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/unmatched_email_store.dart';
 import '../../core/utils/pattern_normalization.dart';
+import '../widgets/standard_app_bar_actions.dart';
 
 /// Screen for testing rule patterns against sample emails.
 ///
@@ -253,13 +254,17 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Test Rule Pattern'),
-        actions: [
-          IconButton(
-            tooltip: 'Help',
-            icon: const Icon(Icons.help_outline),
-            onPressed: () => openHelp(context, HelpSection.ruleTest),
-          ),
-        ],
+        // F134 (Sprint 52): declared via the ONE shared builder. This screen
+        // only ever had Help, which is already last -- the value is that a
+        // future addition here cannot land in the wrong position.
+        actions: StandardAppBarActions.build(
+          context: context,
+          helpSection: HelpSection.ruleTest,
+          includeNoRuleReview: false,
+          includeScanHistory: false,
+          includeAccounts: false,
+          includeSettings: false,
+        ),
       ),
       body: SelectionArea(child: Column(
         children: [
@@ -388,7 +393,7 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
             Text(
               '${_testResults.length} of ${_sampleEmails.length} emails match',
               style: TextStyle(
-                color: _testResults.isEmpty ? Colors.grey : Colors.blue,
+                color: _testResults.isEmpty ? Colors.grey.shade600 : Colors.blue,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -431,14 +436,14 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
 
   Widget _buildResults() {
     if (!_hasTestedOnce && _sampleEmails.isEmpty) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(32),
+          padding: const EdgeInsets.all(32),
           child: Text(
             'No sample emails available.\n\n'
             'Run a scan first to load emails for testing.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey),
+            style: TextStyle(color: Colors.grey.shade600),
           ),
         ),
       );
@@ -585,7 +590,7 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
   /// Build text with the matched portion highlighted.
   Widget _buildHighlightedText(String fullText, String matchedText) {
     if (matchedText.isEmpty) {
-      return Text(fullText, style: const TextStyle(fontSize: 10, color: Colors.grey));
+      return Text(fullText, style: TextStyle(fontSize: 10, color: Colors.grey.shade600));
     }
 
     final lowerFull = fullText.toLowerCase();
@@ -593,12 +598,12 @@ class _RuleTestScreenState extends State<RuleTestScreen> {
     final matchIndex = lowerFull.indexOf(lowerMatch);
 
     if (matchIndex < 0) {
-      return Text(fullText, style: const TextStyle(fontSize: 10, color: Colors.grey));
+      return Text(fullText, style: TextStyle(fontSize: 10, color: Colors.grey.shade600));
     }
 
     return RichText(
       text: TextSpan(
-        style: const TextStyle(fontSize: 10, color: Colors.grey),
+        style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
         children: [
           if (matchIndex > 0)
             TextSpan(text: fullText.substring(0, matchIndex)),

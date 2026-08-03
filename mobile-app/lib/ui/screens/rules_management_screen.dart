@@ -27,6 +27,7 @@ import 'help_screen.dart';
 import 'manual_rule_create_screen.dart';
 import 'rule_edit_screen.dart';
 import 'rule_test_screen.dart';
+import '../widgets/standard_app_bar_actions.dart';
 
 /// Screen for managing spam filtering rules
 class RulesManagementScreen extends StatefulWidget {
@@ -89,8 +90,53 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
     super.dispose();
   }
 
-  Future<void> _loadRules() async {
+  /// The AppBar Refresh action.
+  ///
+  /// Same silent-success shape Harold found on the No-Rule and Scan History
+  /// screens 2026-07-31: [_loadRules] is local-DB work that finishes in
+  /// milliseconds, so an unchanged list is indistinguishable from a dead
+  /// button. Weaker case than those two (no purge, no coverage sweep, and the
+  /// rule count is on screen), but fixed the same way so the toolbar behaves
+  /// consistently rather than "some refresh buttons confirm and some do not".
+  Future<void> _refreshFromUserAction() async {
+    final before = _rules.length;
+    final ok = await _loadRules();
+    if (!mounted) return;
+
+    // The load FAILED and already showed its own error. Say nothing: reporting
+    // a count delta here would claim a state we never observed, and the
+    // `hideCurrentSnackBar()` below would erase the error the user needs to
+    // read (PR #292 review).
+    if (!ok) return;
+
+    final delta = _rules.length - before;
+    final String message;
+    if (delta > 0) {
+      message = delta == 1 ? '1 rule added' : '$delta rules added';
+    } else if (delta < 0) {
+      final removed = -delta;
+      message = removed == 1 ? '1 rule removed' : '$removed rules removed';
+    } else {
+      message = 'No changes -- ${_rules.length} rules';
+    }
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+      ));
+  }
+
+  /// Returns true when the load SUCCEEDED, false when it failed.
+  ///
+  /// The return value exists so [_refreshFromUserAction] can tell the two apart
+  /// (PR #292 review). This method surfaces its own failure SnackBar and then
+  /// returns normally, so without a signal the caller saw an unchanged list and
+  /// cheerfully reported "No changes" -- over the top of the error message.
+  Future<bool> _loadRules() async {
     setState(() => _isLoading = true);
+    var ok = true;
     try {
       final ruleSet = await _store.loadRules();
       _rules = List.from(ruleSet.rules);
@@ -104,6 +150,7 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
       });
       _applyFilter();
     } catch (e) {
+      ok = false;
       _logger.e('Failed to load rules', error: e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -114,6 +161,7 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
     if (mounted) {
       setState(() => _isLoading = false);
     }
+    return ok;
   }
 
   void _applyFilter() {
@@ -535,39 +583,47 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
     return Scaffold(
       appBar: AppBarWithExit(
         title: const Text('Manage Rules'),
-        actions: [
-          IconButton(
-            tooltip: 'Help',
-            icon: const Icon(Icons.help_outline),
-            onPressed: () => openHelp(context, HelpSection.manageRules),
-          ),
-          IconButton(
-            icon: const Icon(Icons.science),
-            tooltip: 'Test a pattern against sample emails',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const RuleTestScreen()),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
-            onPressed: _loadRules,
-          ),
-          // Sprint 37 round 6: filter-aware bulk export. Exports the
-          // currently-shown subset (search + filter chips applied) as CSV.
-          // Respects the "filter is the selection" UX -- power users
-          // narrow the list to what they want, then export.
-          IconButton(
-            icon: const Icon(Icons.file_download_outlined),
-            tooltip: _filteredRules.isEmpty
-                ? 'Nothing to export'
-                : 'Export ${_filteredRules.length} shown rule${_filteredRules.length == 1 ? '' : 's'} as CSV',
-            onPressed: _filteredRules.isEmpty ? null : _exportFilteredRules,
-          ),
-        ],
+        // F134 (Sprint 52): canonical order via the ONE shared builder. Help
+        // was FIRST here, ahead of three screen-specific actions -- the exact
+        // inverse of the rule (screen-specific first, Help last). The three
+        // screen-specific actions keep their existing relative order as
+        // `leading`.
+        actions: StandardAppBarActions.build(
+          context: context,
+          helpSection: HelpSection.manageRules,
+          includeNoRuleReview: false,
+          includeScanHistory: false,
+          includeAccounts: false,
+          includeSettings: false,
+          leading: [
+            IconButton(
+              icon: const Icon(Icons.science),
+              tooltip: 'Test a pattern against sample emails',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const RuleTestScreen()),
+                );
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Reload rules from the database',
+              onPressed: _refreshFromUserAction,
+            ),
+            // Sprint 37 round 6: filter-aware bulk export. Exports the
+            // currently-shown subset (search + filter chips applied) as CSV.
+            // Respects the "filter is the selection" UX -- power users
+            // narrow the list to what they want, then export.
+            IconButton(
+              icon: const Icon(Icons.file_download_outlined),
+              tooltip: _filteredRules.isEmpty
+                  ? 'Nothing to export'
+                  : 'Export ${_filteredRules.length} shown rule${_filteredRules.length == 1 ? '' : 's'} as CSV',
+              onPressed: _filteredRules.isEmpty ? null : _exportFilteredRules,
+            ),
+          ],
+        ),
       ),
       // Sprint 38 F84 Sub-task A (Issue #253): Ctrl+A / Cmd+A copies the
       // ENTIRE filtered rule list to clipboard, not just the viewport
@@ -908,7 +964,30 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
             setState(() => _hoveredRuleName = null);
           }
         },
-        child: GestureDetector(
+        // F133-S52 R-3 (Sprint 52): the row is a bare GestureDetector, so it
+        // announced as an unnamed node -- a screen reader said nothing about
+        // WHICH rule it was, and name-based automation could not address it.
+        // Wrapped per docs/ACCESSIBILITY_STANDARDS.md §2.
+        //
+        // Deliberately NOT using `excludeSemantics: true` here (unlike the
+        // account rows): this row contains its OWN interactive control -- the
+        // trailing "View rule details" IconButton -- and excluding descendants
+        // would swallow it. `container: true` names the row while leaving that
+        // button independently reachable.
+        //
+        // `onTap` on the Semantics node mirrors the GestureDetector's, so the
+        // named node is genuinely ACTIVATABLE (the Sprint 51 defect: named but
+        // unclickable). The GestureDetector keeps its own handlers, so mouse
+        // input and drag-selection are unchanged.
+        child: Semantics(
+          container: true,
+          button: true,
+          label: '$displayName - '
+              '${subTypeLabel.isEmpty ? categoryLabel : '$categoryLabel - $subTypeLabel'}'
+              '${rule.enabled ? '' : ' (disabled)'}',
+          hint: 'View rule details',
+          onTap: () => handleRowTap(index, _filteredRules.length),
+          child: GestureDetector(
           behavior: HitTestBehavior.translucent,
           onTap: () => handleRowTap(index, _filteredRules.length),
           onPanStart: (_) => handleRowDragStart(index, _filteredRules.length),
@@ -980,6 +1059,7 @@ class _RulesManagementScreenState extends State<RulesManagementScreen>
             ),
           ),
           ),
+        ),
         ),
       ),
     );

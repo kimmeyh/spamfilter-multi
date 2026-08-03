@@ -3,16 +3,18 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
+import 'package:provider/provider.dart';
 
+import '../../core/providers/selected_account_provider.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/scan_result_store.dart';
 import '../../core/storage/settings_store.dart';
 import '../widgets/app_bar_with_exit.dart';
+import '../widgets/standard_app_bar_actions.dart';
 import 'help_screen.dart';
 import 'no_rule_review_screen.dart';
 import 'results_display_screen.dart';
-import 'settings_screen.dart';
 
 /// Unified scan history screen showing both manual and background scans
 ///
@@ -71,15 +73,97 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
   /// _accountFilter == 'all'). Resolution order: (1) widget.accountId,
   /// (2) current account filter if specific, (3) first known account,
   /// (4) null -> disable the Settings IconButton.
+  /// F135 (Sprint 52): resolution order for the account-scoped Settings
+  /// destination. The SESSION SELECTION is consulted after this screen's own
+  /// context but before falling back to "first account in the list", so a user
+  /// who already chose an account gets THAT account's settings rather than an
+  /// arbitrary one.
+  ///
+  /// Scan History is itself cross-account (it shows every account's scans), so
+  /// it never PROMPTS -- it only resolves. The picker belongs to the account
+  /// selection screen; this screen just needs a sensible account for the
+  /// Settings icon, and returning null correctly disables that icon.
   String? _resolveAccountIdForSettings() {
+    // 1. Explicit context wins: this screen was opened FOR an account.
     if (widget.accountId != null) return widget.accountId;
+    // 2. The user has filtered to one account -- that is their current intent.
     if (_accountFilter != 'all') return _accountFilter;
+    // 3. The session selection (F135) -- honoured only if that account still
+    //    appears here, so a deleted or unrelated account cannot leak through.
+    //    Read defensively: the selection is an OPTIONAL input (the fallbacks
+    //    below cover its absence), so a widget-test harness that has not
+    //    registered the provider must not make this screen unconstructible.
+    String? selected;
+    try {
+      selected = context.read<SelectedAccountProvider>().accountId;
+    } on ProviderNotFoundException {
+      // Missing provider is the ONLY tolerated case (Copilot, PR #292) -- a
+      // bare catch would also hide a real error from a present provider.
+      selected = null;
+    }
+    if (selected != null && _distinctAccounts.contains(selected)) {
+      return selected;
+    }
+    // 4. Last resort: the first known account.
     if (_distinctAccounts.isNotEmpty) return _distinctAccounts.first;
     return null;
   }
 
-  Future<void> _loadHistory() async {
+  /// The AppBar Refresh action.
+  ///
+  /// Harold, 2026-07-31 (manual validation), after the same finding on the
+  /// No-Rule screen: *"same for refresh icon on Scan History screen?"* -- yes,
+  /// identical shape. [_loadHistory] re-reads scan history from the local DB
+  /// and finishes in milliseconds, so the spinner never paints a perceptible
+  /// frame and an unchanged list looks like a dead button.
+  ///
+  /// This screen has one behaviour the No-Rule screen does not: `_loadHistory`
+  /// PURGES scan results past the retention window, so a refresh can genuinely
+  /// remove rows. Reporting that is the point -- rows silently disappearing is
+  /// worse than a button that appears to do nothing.
+  ///
+  /// Separate from [_loadHistory] because that also runs on init, where a
+  /// SnackBar would be noise.
+  Future<void> _refreshFromUserAction() async {
+    final before = _allScans.length;
+    final ok = await _loadHistory();
+    if (!mounted) return;
+
+    // Load failed and already showed its error. Reporting "N scans removed" or
+    // "no changes" here would be a false statement about deleted data, and the
+    // hideCurrentSnackBar() below would wipe the real diagnostic.
+    if (!ok) return;
+
+    final removed = before - _allScans.length;
+    final String message;
+    if (removed > 0) {
+      // Purged by the retention window (_retentionDays), re-read fresh above.
+      message = removed == 1
+          ? '1 scan older than $_retentionDays days removed'
+          : '$removed scans older than $_retentionDays days removed';
+    } else if (_allScans.length > before) {
+      final added = _allScans.length - before;
+      message = added == 1 ? '1 new scan' : '$added new scans';
+    } else {
+      message = 'No changes -- history is up to date';
+    }
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+      ));
+  }
+
+  /// Returns true when the load SUCCEEDED, false when it failed -- see the note
+  /// on `rules_management_screen._loadRules` (PR #292 review). It matters more
+  /// here than elsewhere: this method also PURGES rows past the retention
+  /// window, so a wrong "N scans removed" or "no changes" message is a claim
+  /// about deleted data.
+  Future<bool> _loadHistory() async {
     setState(() => _isLoading = true);
+    var ok = true;
 
     try {
       _retentionDays = await _settingsStore.getScanHistoryRetentionDays();
@@ -119,6 +203,7 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
         });
       }
     } catch (e) {
+      ok = false;
       _logger.e('Failed to load scan history', error: e);
       if (mounted) {
         setState(() => _isLoading = false);
@@ -127,6 +212,7 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
         );
       }
     }
+    return ok;
   }
 
   void _applyFilter() {
@@ -154,58 +240,31 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
         // <screen-specific> (Refresh), Accounts, Settings, Help, [X auto].
         // F87 (Sprint 38, Issue #251): Settings icon added so user can reach
         // Settings from sub-screens with one tap rather than back-navigating.
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
-            onPressed: _loadHistory,
-          ),
-          // F112 (Sprint 47): "Review No Rule Items" entry point -- consistent
-          // with the account-selection AppBar (Sprint 46). Windows-desktop
-          // scoped like the source screen.
-          if (Platform.isWindows)
+        // F134 (Sprint 52): canonical order from the ONE shared builder.
+        // includeScanHistory: false -- this IS the Scan History screen.
+        // The accountId comes from the F135 resolver, which consults the
+        // session selection; when it returns null the builder omits Settings
+        // rather than rendering a permanently-disabled icon (the previous
+        // behavior: an always-present control that did nothing).
+        actions: StandardAppBarActions.build(
+          context: context,
+          helpSection: HelpSection.scanHistory,
+          accountId: _resolveAccountIdForSettings() ?? widget.accountId,
+          accountEmail: widget.accountEmail,
+          platformId: widget.platformId,
+          platformDisplayName: widget.platformDisplayName,
+          includeScanHistory: false,
+          leading: [
             IconButton(
-              icon: const Icon(Icons.rule_folder_outlined),
-              tooltip: 'Review "No Rule" Items',
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                    builder: (_) => const NoRuleReviewScreen()),
-              ),
+              icon: const Icon(Icons.refresh),
+              // Same wording problem as the No-Rule screen: "Refresh" reads as
+              // "go check the mail server", which this does not do. It re-reads
+              // locally stored history and applies the retention purge.
+              tooltip: 'Reload scan history (does not fetch new mail)',
+              onPressed: _refreshFromUserAction,
             ),
-          IconButton(
-            tooltip: 'Select Account',
-            icon: const Icon(Icons.people),
-            onPressed: () {
-              Navigator.popUntil(context, (route) => route.isFirst);
-            },
-          ),
-          IconButton(
-            tooltip: 'Settings',
-            icon: const Icon(Icons.settings),
-            onPressed: _resolveAccountIdForSettings() == null
-                ? null
-                : () {
-                    final accountId = _resolveAccountIdForSettings()!;
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => SettingsScreen(accountId: accountId),
-                      ),
-                    );
-                  },
-          ),
-          IconButton(
-            tooltip: 'Help',
-            icon: const Icon(Icons.help_outline),
-            onPressed: () => openHelp(
-              context,
-              HelpSection.scanHistory,
-              accountId: widget.accountId,
-              accountEmail: widget.accountEmail,
-              platformId: widget.platformId,
-              platformDisplayName: widget.platformDisplayName,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -446,7 +505,7 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
           const SizedBox(height: 8),
           Text(
             'Completed scans will appear here.',
-            style: TextStyle(fontSize: 14, color: Colors.grey.shade500),
+            style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
           ),
         ],
       ),
@@ -493,12 +552,29 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
 
     final accountEmail = _accountEmails[scan.accountId] ?? scan.accountId;
 
+    // F133-S52 R-1 (Sprint 52): the scan card was a bare InkWell -- tappable
+    // but unnamed, so a screen reader announced nothing about WHICH scan it
+    // was. Wrapped per docs/ACCESSIBILITY_STANDARDS.md §2.
+    //
+    // The card body is pure text/decoration with no interactive children, so
+    // `excludeSemantics: true` is safe and correct here: it merges the whole
+    // card into ONE announced node instead of a stream of disconnected text
+    // fragments. `button` and `onTap` are supplied ONLY when the card is
+    // actually tappable -- an incomplete scan must not advertise an action it
+    // does not have.
+    final canOpen = isCompleted && scan.id != null;
     return Card(
       elevation: 1,
-      child: InkWell(
-        onTap: (isCompleted && scan.id != null)
-            ? () => _navigateToResults(scan)
-            : null,
+      child: Semantics(
+        container: true,
+        button: canOpen,
+        excludeSemantics: true,
+        label: '${isManual ? 'Manual' : 'Background'} scan - $accountEmail - '
+            '$modeLabel - ${scan.status}',
+        hint: canOpen ? 'View scan results' : null,
+        onTap: canOpen ? () => _navigateToResults(scan) : null,
+        child: InkWell(
+        onTap: canOpen ? () => _navigateToResults(scan) : null,
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Column(
@@ -600,6 +676,7 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

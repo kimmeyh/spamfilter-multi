@@ -1,0 +1,9 @@
+{
+  "_description": "Test fixture: plan DRAFTED, awaiting Phase 3.7 approval.",
+  "current_sprint": {
+    "number": 51,
+    "branch": "feature/20260727_Sprint_51",
+    "status": "awaiting approval",
+    "plan_approved": false
+  }
+}

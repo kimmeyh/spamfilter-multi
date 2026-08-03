@@ -1,0 +1,6 @@
+{
+  "status_path_override": "test-cases/fixtures/does_not_exist.json",
+  "tool_input": {
+    "command": "git commit -m \"feat: x\""
+  }
+}

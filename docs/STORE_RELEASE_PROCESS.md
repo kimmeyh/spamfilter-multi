@@ -258,9 +258,13 @@ Now the prod worktree is ready for Step 3 (build MSIX).
    - Click **Add packages** (or drag-drop the `.msix`).
    - Wait for cert + validation. Takes 1-3 minutes. If validation fails, fix the MSIX per the error message (most common: version number already used -- go back to Step 1 and bump again).
    - Confirm the version number shown matches the target.
-6. Leave the other sections untouched unless you have specific release-note or metadata updates.
-7. Click **Submit for certification** (bottom of overview page).
-8. Microsoft runs automated + manual review. Turnaround is usually 24-72 hours.
+6. **Release notes** (Sprint 51 addition -- this was not documented and cost a round-trip during the 0.5.8 release): release notes are NOT in the Packages section. They live in **Store listings -> \<language\> -> "What's new in this version"** (below Description, above Screenshots; 10,000-char limit, per-language -- currently English (United States) only).
+   - **Order matters**: the field only appears once a package is attached to the submission. Upload the MSIX and let validation finish FIRST, then open Store listings.
+   - Write for Store users, not for the repo: describe user-visible behavior changes only. Omit internal work (local-DB repairs, CI fixes, provider refactors) -- it is noise on a public listing.
+   - Confirm the screenshots carried over from the previous submission while you are on this page. Masters live in `docs/store-assets/windows/` if they need re-uploading.
+7. Leave the other sections untouched unless you have specific metadata updates.
+8. Click **Submit for certification** (bottom of the overview page). Note the exact button name -- it is "Submit for certification", not "Submit to the Store".
+9. Microsoft runs automated + manual review. Turnaround is usually 24-72 hours.
 
 **Submission artifact path** (for future reference / sprint documentation):
 

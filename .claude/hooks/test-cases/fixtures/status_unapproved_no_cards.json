@@ -1,0 +1,10 @@
+{
+  "_fixture": "Sprint 52 IMP-2: plan NOT yet approved and no cards -- the legitimate pre-Phase-3.7 state (committing the plan document itself). require-sprint-cards.ps1 must ALLOW; blocking here would be a false positive on correct work.",
+  "current_sprint": {
+    "number": 99,
+    "branch": "feature/29990101_Sprint_99",
+    "plan_approved": false,
+    "status": "Phase 3 -- plan drafted, awaiting approval"
+  },
+  "github_issues": []
+}

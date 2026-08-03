@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
 
+import 'package:my_email_spam_filter/core/models/rule_set.dart'
+    show Rule, RuleConditions, RuleActions;
 import 'package:my_email_spam_filter/core/providers/rule_set_provider.dart';
 import 'package:my_email_spam_filter/core/storage/database_helper.dart';
 import 'package:my_email_spam_filter/core/storage/rule_database_store.dart';
@@ -209,6 +212,51 @@ void main() {
     expect(find.text('All Accounts (5)'), findsOneWidget);
   });
 
+  testWidgets(
+      'Refresh CONFIRMS when nothing changed (Harold MV: "appears to do '
+      'nothing")', (tester) async {
+    // Harold, 2026-07-31 manual validation: "what does the refresh icon do -
+    // as it appears to do nothing". It was working -- re-reading the latest
+    // scan and re-running the coverage sweep -- but all of that is local-DB
+    // work that finishes in milliseconds, so the spinner never paints a
+    // perceptible frame and an unchanged list is indistinguishable from a dead
+    // button. The fix is FEEDBACK, not different behavior, so this test
+    // asserts the confirmation rather than the reload.
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.runAsync(() async {
+      await testHelper.createTestAccount('gmail-a@example.com');
+      registerSavedAccount('gmail-a@example.com');
+      await insertCompletedScan('gmail-a@example.com',
+          completedAtMs: 1000, noRuleCount: 2);
+
+      await mountAndLoad(tester);
+    });
+
+    expect(find.text('2 items'), findsOneWidget,
+        reason: 'precondition: the list loaded');
+
+    // No rules were added between load and refresh, so nothing can become
+    // covered -- the exact case Harold hit.
+    await tester.runAsync(() async {
+      await tester.tap(find.byTooltip(
+          'Re-check the last scan (does not fetch new mail)'));
+      await Future<void>.delayed(const Duration(milliseconds: 500));
+    });
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('No changes -- list is up to date'), findsOneWidget,
+        reason: 'a refresh that changes nothing must SAY so -- silence is what '
+            'made this look broken');
+
+    // The list itself must be unchanged: this is feedback, not behavior.
+    expect(find.text('2 items'), findsOneWidget);
+  });
+
   testWidgets('account filter chip narrows the list to one account',
       (tester) async {
     tester.view.physicalSize = const Size(1200, 2400);
@@ -327,6 +375,125 @@ void main() {
     expect(find.text('other@keepme.example'), findsOneWidget);
     expect(find.text('first@dupdomain.example'), findsNothing);
     expect(find.text('second@dupdomain.example'), findsNothing);
+  });
+
+  testWidgets(
+      'bulk summary omits the STALE sweep count when the post-action reload '
+      'fails (PR #292 re-review)', (tester) async {
+    // _lastSweepCount is only reset inside _sweepCoveredItems, which a FAILED
+    // reload never reaches -- so an ungated summary would append the PREVIOUS
+    // load's count ("N more auto-resolved") as a false claim, painted over the
+    // load-failure SnackBar. Sequence: a first bulk action that genuinely
+    // sweeps one item (making the stale count non-zero), then a broken DB,
+    // then a second bulk action whose reload fails.
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.runAsync(() async {
+      const accountId = 'gmail-a@example.com';
+      await testHelper.createTestAccount(accountId);
+      registerSavedAccount(accountId);
+      final scanId = await insertCompletedScan(accountId,
+          completedAtMs: 1000, noRuleCount: 0);
+
+      final unmatchedStore = UnmatchedEmailStore(testHelper.dbHelper);
+      for (final (uid, sender) in [
+        ('uid-1', 'first@dupdomain.example'),
+        ('uid-2', 'second@dupdomain.example'),
+        ('uid-3', 'other@keepme.example'),
+      ]) {
+        await unmatchedStore.addUnmatchedEmail(UnmatchedEmail(
+          scanResultId: scanId,
+          providerIdentifierType: 'imap_uid',
+          providerIdentifierValue: uid,
+          fromEmail: sender,
+          folderName: 'INBOX',
+          createdAt: DateTime.fromMillisecondsSinceEpoch(2000),
+        ));
+      }
+
+      await mountAndLoad(tester);
+    });
+
+    // FIRST bulk action: blocking dupdomain sweeps the unselected sibling,
+    // leaving _lastSweepCount == 1 (the stale value the gate must suppress).
+    await tester.tap(find.byType(Checkbox).first);
+    await tester.pump();
+    await tester.runAsync(() async {
+      await tester.tap(find.text('Apply Rule'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text('Add Block Rule - Entire Domain'));
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 800));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    });
+    expect(find.text('1 item'), findsOneWidget,
+        reason: 'precondition: the first bulk action resolved the pair, '
+            'sweeping the unselected sibling');
+
+    // The FIRST action's summary legitimately says "1 more auto-resolved" --
+    // clear the whole SnackBar queue so the loop below can only be failed by a
+    // SECOND-round (stale) claim.
+    final messenger =
+        tester.state<ScaffoldMessengerState>(find.byType(ScaffoldMessenger));
+    messenger.clearSnackBars();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.textContaining('auto-resolved'), findsNothing,
+        reason: 'precondition: the first-round summary must have been cleared');
+
+    // Break the reload path only: the second batch itself (rule insert +
+    // mark-processed) does not read scan_results, but _loadItems starts with
+    // getLatestCompletedScan, which does.
+    await tester.runAsync(() async {
+      final db = await DatabaseHelper().database;
+      await db.execute('DROP TABLE IF EXISTS scan_results');
+    });
+
+    // SECOND bulk action: batch succeeds, reload fails.
+    await tester.tap(find.byType(Checkbox).first);
+    await tester.pump();
+    await tester.runAsync(() async {
+      await tester.tap(find.text('Apply Rule'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text('Add Block Rule - Entire Domain'));
+      await tester.pump();
+      await Future<void>.delayed(const Duration(milliseconds: 800));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+    });
+
+    // The load-failure SnackBar shows FIRST, and the batch summary queues
+    // behind it. Its auto-dismiss uses a real-time Timer that `pump(duration)`
+    // does not advance (shown from inside runAsync), so the queue must be
+    // advanced explicitly. A first version of this assertion frame-scanned and
+    // never saw the queued summary at all -- it passed against the ungated
+    // mutation, which is exactly the worthless-green shape mutation checks
+    // exist to catch.
+    expect(find.textContaining('Could not load review items'), findsOneWidget,
+        reason: 'the reload failure must be the FIRST thing the user sees');
+
+    messenger.hideCurrentSnackBar();
+    Finder summary = find.textContaining('succeeded');
+    for (var i = 0; i < 20 && summary.evaluate().isEmpty; i++) {
+      await tester.pump(const Duration(milliseconds: 250));
+      summary = find.textContaining('succeeded');
+    }
+    expect(summary, findsOneWidget,
+        reason: 'the batch summary must still appear once the error is '
+            'dismissed -- the batch itself succeeded; only the sweep claim '
+            'is gated');
+
+    final summaryText = tester.widget<Text>(summary.first).data ?? '';
+    expect(summaryText.contains('auto-resolved'), isFalse,
+        reason: 'the reload FAILED, so the sweep never ran this round -- '
+            'appending the previous round\'s count ("1 more auto-resolved") '
+            'would be a false claim about state never observed');
   });
 
   // MT-2b (Sprint 50, Harold's 6-item repro 2026-07-26): a NEWER scan can
@@ -505,5 +672,185 @@ void main() {
     });
 
     expect(find.text('2 items'), findsOneWidget);
+  });
+
+  // MT-2c (Sprint 51, F129): the sweep runs on EVERY load, so an item whose
+  // covering rule already exists must never be DISPLAYED -- not merely
+  // removed after the user acts. This is the behavior the WinWright script
+  // cannot express (the 18 item rows render as unnamed Groups in the Windows
+  // UIA projection, so only the aggregate count chips are addressable), so it
+  // is pinned here instead.
+  //
+  // Modeled on Harold's real 2026-07-28 Live Scan: 18 no-rule items across 16
+  // senders, with darngoodyarn@homelivingcares.com appearing THREE times --
+  // exactly the multi-item case where a single Entire Domain rule must sweep
+  // every one of that sender's rows in one pass.
+  testWidgets(
+      'MT-2c: a pre-existing covering rule removes ALL of that sender\'s items '
+      'on the very first load, leaving uncovered senders untouched',
+      (tester) async {
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.runAsync(() async {
+      const accountId = 'gmail-a@example.com';
+      await testHelper.createTestAccount(accountId);
+      registerSavedAccount(accountId);
+      final scanId = await insertCompletedScan(accountId,
+          completedAtMs: 1000, noRuleCount: 0);
+
+      final unmatchedStore = UnmatchedEmailStore(testHelper.dbHelper);
+      // THREE items from one sender (the multi-item case) + two uncovered.
+      for (final (uid, sender) in [
+        ('m-1', 'darngoodyarn@homelivingcares.example'),
+        ('m-2', 'darngoodyarn@homelivingcares.example'),
+        ('m-3', 'darngoodyarn@homelivingcares.example'),
+        ('u-1', 'thegamer@bestbuyingpoint.example'),
+        ('u-2', 'sales@falgunarmy.example'),
+      ]) {
+        await unmatchedStore.addUnmatchedEmail(UnmatchedEmail(
+          scanResultId: scanId,
+          providerIdentifierType: 'imap_uid',
+          providerIdentifierValue: uid,
+          fromEmail: sender,
+          folderName: 'Bulk Mail',
+          createdAt: DateTime.fromMillisecondsSinceEpoch(2000),
+        ));
+      }
+
+      // The covering rule ALREADY exists before the screen is ever opened --
+      // this is the on-load sweep, not the post-action one.
+      await ruleProvider.addRule(Rule(
+        name: 'Block_EntireDomain_homelivingcares.example',
+        enabled: true,
+        isLocal: true,
+        executionOrder: 20,
+        conditions: RuleConditions(
+            type: 'OR', header: [r'@(?:[a-z0-9-]+\.)*homelivingcares\.example$']),
+        actions: RuleActions(delete: true),
+        patternCategory: 'header_from',
+        patternSubType: 'entire_domain',
+        sourceDomain: 'homelivingcares.example',
+      ));
+
+      await mountAndLoad(tester);
+    });
+
+    // 5 seeded - 3 covered = 2 displayed, on the FIRST load with no user action.
+    expect(find.text('2 items'), findsOneWidget,
+        reason: 'all three items from the covered sender must be swept before '
+            'display; a count of 5 means the on-load sweep did not run');
+    expect(find.textContaining('homelivingcares'), findsNothing,
+        reason: 'no row from the covered sender may be displayed');
+    expect(find.text('thegamer@bestbuyingpoint.example'), findsOneWidget);
+    expect(find.text('sales@falgunarmy.example'), findsOneWidget);
+  });
+
+  // F129 R-6 (Sprint 51, Harold: "add all semantic tree elements as needed
+  // for accessibility"): each row's checkbox must say WHICH email it selects.
+  // A bare Checkbox announces only "checkbox", so 18 rows produced 18
+  // indistinguishable controls -- unusable with a screen reader, and the
+  // checkboxes were absent from the Windows UIA tree entirely.
+  testWidgets(
+      'each item row and its checkbox expose accessible names identifying the '
+      'email (F129 R-6)', (tester) async {
+    tester.view.physicalSize = const Size(1200, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final handle = tester.ensureSemantics();
+
+    await tester.runAsync(() async {
+      const accountId = 'gmail-a@example.com';
+      await testHelper.createTestAccount(accountId);
+      registerSavedAccount(accountId);
+      final scanId = await insertCompletedScan(accountId,
+          completedAtMs: 1000, noRuleCount: 0);
+      final unmatchedStore = UnmatchedEmailStore(testHelper.dbHelper);
+      await unmatchedStore.addUnmatchedEmail(UnmatchedEmail(
+        scanResultId: scanId,
+        providerIdentifierType: 'imap_uid',
+        providerIdentifierValue: 'sem-1',
+        fromEmail: 'infoinfo@prohomeprotectplus.example',
+        subject: 'Reviewing your solar billing?',
+        folderName: 'Bulk Mail',
+        createdAt: DateTime.fromMillisecondsSinceEpoch(2000),
+      ));
+      await mountAndLoad(tester);
+    });
+
+    // Assert against the SEMANTICS TREE, not the widget finder.
+    // find.bySemanticsLabel maps labels back to widgets, which fails for a
+    // label that lives on a merged node (the Checkbox's label is real and
+    // present -- verified -- but has no distinct widget to map to). Walking
+    // the tree is the honest check and is what a screen reader actually sees.
+    final labels = <String>[];
+    void collect(SemanticsNode n) {
+      if (n.label.isNotEmpty) labels.add(n.label);
+      n.visitChildren((c) {
+        collect(c);
+        return true;
+      });
+    }
+    collect(tester.binding.pipelineOwner.semanticsOwner!.rootSemanticsNode!);
+
+    // The checkbox names the sender, so 18 checkboxes are distinguishable.
+    // Flutter merges the checkbox's label with the row text onto ONE node
+    // (a single string joining "Select SENDER", the sender, and the subject
+    // with newlines) -- precisely how a screen reader announces a merged
+    // control. So match on substring rather than exact equality.
+    expect(
+      labels.any((l) => l.contains('Select infoinfo@prohomeprotectplus.example')),
+      isTrue,
+      reason: 'a bare Checkbox announces only "checkbox" -- it must say which '
+          'email it selects. Labels found: $labels',
+    );
+
+    // The row announces sender + subject as one unit.
+    expect(
+      labels.any((l) => l.contains(
+          'infoinfo@prohomeprotectplus.example - Reviewing your solar billing?')),
+      isTrue,
+      reason: 'the row must announce the email it represents. '
+          'Labels found: $labels',
+    );
+
+    // F133-S52 R-6 (Sprint 52): being NAMED is only half the contract -- the
+    // node must also be ACTIVATABLE. Sprint 51 shipped a fix twice that named
+    // a node correctly while leaving it unclickable (`excludeSemantics` drops
+    // the child's gesture node unless `onTap` is supplied on the Semantics
+    // widget). Labelling assertions SURVIVE that defect, which is exactly why
+    // Copilot flagged the account-selection tests on PR #285.
+    //
+    // "A tree dump proves a name exists; only an interaction proves the node
+    // still works." -- docs/ACCESSIBILITY_STANDARDS.md §1
+    final actionableNodes = <SemanticsNode>[];
+    void collectTappable(SemanticsNode n) {
+      if (n.label.contains('Select infoinfo@prohomeprotectplus.example') &&
+          n.getSemanticsData().hasAction(SemanticsAction.tap)) {
+        actionableNodes.add(n);
+      }
+      n.visitChildren((c) {
+        collectTappable(c);
+        return true;
+      });
+    }
+
+    collectTappable(
+        tester.binding.pipelineOwner.semanticsOwner!.rootSemanticsNode!);
+
+    expect(
+      actionableNodes,
+      isNotEmpty,
+      reason: 'the named checkbox node must expose a TAP action. A labelled '
+          'node with no action announces as a control that assistive '
+          'technology cannot activate -- the exact defect shipped twice in '
+          'Sprint 51.',
+    );
+
+    handle.dispose();
   });
 }

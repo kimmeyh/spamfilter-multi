@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'core/providers/rule_set_provider.dart';
 import 'core/providers/email_scan_provider.dart';
+import 'core/providers/selected_account_provider.dart';
 import 'core/services/app_identity_migration.dart';
 import 'core/services/app_version.dart';
 import 'core/services/background_mode_service.dart';
@@ -337,6 +338,12 @@ class SpamFilterApp extends StatelessWidget {
         // Email scan provider for managing scan progress and results
         ChangeNotifierProvider(
           create: (_) => EmailScanProvider(),
+        ),
+        // F135 (Sprint 51 retro IMP-3): session-scoped selected account, so
+        // account-scoped destinations stop re-prompting once the user has
+        // chosen. Deliberately not persisted -- see the class doc.
+        ChangeNotifierProvider(
+          create: (_) => SelectedAccountProvider(),
         ),
       ],
       child: Shortcuts(

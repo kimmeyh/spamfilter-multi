@@ -1,0 +1,8 @@
+{
+  "cwd": "D:/Data/Harold/github/spamfilter-multi/.claude/hooks/test-cases/fixtures/no-pr-sprint",
+  "branch_override": "feature/20260727_Sprint_51",
+  "hook_event_name": "Stop",
+  "dirty_zero_files_override": "",
+  "session_id": "closeout-violation-4",
+  "last_assistant_message": "Sprint 51 is fully closed out. Everything through the Post-Merge and Ready-for-Next-Sprint sections is done."
+}

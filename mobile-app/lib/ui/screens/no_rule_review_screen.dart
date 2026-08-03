@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/models/email_message.dart';
 import '../../core/providers/rule_set_provider.dart';
+import '../../core/providers/selected_account_provider.dart';
 import '../../core/services/auth_results_parser.dart';
 import '../../core/services/email_body_parser.dart';
 import '../../core/services/pattern_compiler.dart';
@@ -18,6 +19,8 @@ import '../../core/utils/pattern_normalization.dart';
 import '../../core/utils/provider_sender_grouping.dart';
 import '../../util/redact.dart';
 import '../widgets/app_bar_with_exit.dart';
+import '../widgets/standard_app_bar_actions.dart';
+import 'help_screen.dart' show HelpSection;
 import '../widgets/provider_group_markers.dart';
 import '../widgets/auth_warning_dialog.dart';
 import '../widgets/empty_state.dart';
@@ -83,8 +86,145 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
     _loadItems();
   }
 
-  Future<void> _loadItems() async {
+  /// F135 (Sprint 52): resolve an account for the account-scoped Settings
+  /// destination that F134 adds to this screen's AppBar.
+  ///
+  /// This screen is CROSS-ACCOUNT by design -- it aggregates the latest scan
+  /// from every configured account -- so it must never PROMPT (Harold's rule
+  /// lists only the 3 account-specific Settings tabs and Manual Live Scan as
+  /// prompting surfaces). It only resolves:
+  ///   1. the session selection, if that account still appears here, else
+  ///   2. the account whose filter chip is currently active, else
+  ///   3. the first known account.
+  /// Returns null when no account is known, which correctly DISABLES the
+  /// Settings icon rather than pushing Settings with a bogus id.
+  String? _resolveAccountIdForSettings() {
+    // The session selection is an OPTIONAL input, not a requirement: this
+    // screen works perfectly well without one (it falls through to the active
+    // filter chip, then the first known account). Reading it defensively keeps
+    // the screen constructible in any widget-test harness that has not
+    // registered the provider -- 12 pre-existing tests pump this screen
+    // directly, and a hard `context.read` turned all 12 red with
+    // ProviderNotFoundException. A screen should not require a provider it can
+    // do without.
+    String? selected;
+    try {
+      selected = context.read<SelectedAccountProvider>().accountId;
+    } on ProviderNotFoundException {
+      // Missing provider is the ONLY tolerated case (Copilot, PR #292): a bare
+      // catch here would also swallow a real error thrown by a present
+      // provider, hiding a genuine misconfiguration behind the fallback chain.
+      selected = null;
+    }
+    if (selected != null && _distinctAccounts.contains(selected)) {
+      return selected;
+    }
+    if (_accountFilter != 'all' && _distinctAccounts.contains(_accountFilter)) {
+      return _accountFilter;
+    }
+    if (_distinctAccounts.isNotEmpty) return _distinctAccounts.first;
+    return null;
+  }
+
+  /// Opens the Manual Scan screen for the resolved account.
+  ///
+  /// Harold, 2026-07-31 (MV-1): *"the Account screen is also, currently, the
+  /// only way to get to the Live Scan/Manual Scan screen -- but an icon for the
+  /// Manual Scan Screen would be advisable."* This screen is the desktop
+  /// DEFAULT since F135, so requiring a detour through Accounts to start a scan
+  /// was a real dead end.
+  ///
+  /// The platform lookup and the push itself live in [StandardAppBarActions],
+  /// so this screen only adds what is specific to IT: a reload on return,
+  /// because a scan can resolve items currently displayed here.
+  ///
+  /// The account comes from [_resolveAccountIdForSettings] -- the same
+  /// session-selection / active-filter / first-known precedence the Settings
+  /// icon uses, so both icons always agree on which account they mean.
+  Future<void> _openManualScan() async {
+    final accountId = _resolveAccountIdForSettings();
+    if (accountId == null) {
+      // Report rather than silently return (PR #292 re-review): this handler
+      // is always wired, so the icon is VISIBLE even with zero accounts -- a
+      // silent return here is a dead icon, the exact MV-1 shape.
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Add an email account first -- there is no account to '
+              'scan yet.'),
+        ),
+      );
+      return;
+    }
+
+    await StandardAppBarActions.openManualScan(
+      context,
+      accountId: accountId,
+      accountEmail: _accountEmails[accountId] ?? accountId,
+    );
+
+    if (mounted) await _loadItems();
+  }
+
+  /// The AppBar Refresh action.
+  ///
+  /// Harold, 2026-07-31 (manual validation): *"what does the refresh icon do -
+  /// as it appears to do nothing"*. It was doing its job and saying nothing.
+  /// [_loadItems] re-reads the latest completed scan and re-runs the coverage
+  /// sweep, but all of that is local-DB work that finishes in milliseconds, so
+  /// the loading spinner never paints a perceptible frame. With nothing newly
+  /// covered the list is identical afterwards and the press is indistinguishable
+  /// from a dead button.
+  ///
+  /// Deliberately SEPARATE from [_loadItems] rather than putting the SnackBar
+  /// inside it: `_loadItems` also runs on init, after a scan returns, and after
+  /// bulk actions (which show their OWN summary SnackBar). A confirmation
+  /// belongs only on the press the user made on purpose.
+  Future<void> _refreshFromUserAction() async {
+    final before = _allItems.length;
+    final ok = await _loadItems();
+    if (!mounted) return;
+
+    // Load failed and already showed its error -- do not overwrite it with a
+    // delta computed over state we never refreshed.
+    if (!ok) return;
+
+    // _lastSweepCount is set by the sweep inside _loadItems: items that the
+    // CURRENT rules / safe senders now cover, marked processed and dropped.
+    final swept = _lastSweepCount;
+    final removed = before - _allItems.length;
+
+    final String message;
+    if (swept > 0) {
+      message = swept == 1
+          ? '1 item is now covered by rules -- removed'
+          : '$swept items are now covered by rules -- removed';
+    } else if (removed > 0) {
+      // Defensive: the list shrank for a reason other than the sweep (e.g. a
+      // newer scan superseded the one being displayed). Report honestly rather
+      // than claiming rules covered them.
+      message = removed == 1
+          ? '1 item no longer applies -- removed'
+          : '$removed items no longer apply -- removed';
+    } else {
+      message = 'No changes -- list is up to date';
+    }
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+      ));
+  }
+
+  /// Returns true when the load SUCCEEDED, false when it failed -- see the note
+  /// on `rules_management_screen._loadRules` (PR #292 review). This screen's
+  /// own comment already said "report honestly rather than claiming rules
+  /// covered them", but that honesty check only distinguished sweep from other
+  /// shrinkage; it never considered "the load did not happen at all".
+  Future<bool> _loadItems() async {
     setState(() => _isLoading = true);
+    var ok = true;
 
     try {
       final credStore = SecureCredentialsStore();
@@ -144,6 +284,7 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
         });
       }
     } catch (e, s) {
+      ok = false;
       _logger.e('Failed to load No Rule review items', error: e, stackTrace: s);
       if (mounted) {
         setState(() => _isLoading = false);
@@ -156,6 +297,7 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
         );
       }
     }
+    return ok;
   }
 
   void _applyFilter() {
@@ -289,13 +431,18 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
     // newer scan -- or covered by the rules this batch just created -- are
     // resolved before display. _lastSweepCount carries the count for the
     // summary below.
-    await _loadItems();
+    final reloaded = await _loadItems();
 
     if (!mounted) return;
 
+    // The batch counts above are real regardless of the reload outcome, so
+    // the summary still shows -- but the sweep segment is gated on the reload
+    // SUCCEEDING (PR #292 re-review): on a failed reload the sweep never ran,
+    // and _lastSweepCount still holds the PREVIOUS load's count, so appending
+    // it would be a false claim painted over the load-failure SnackBar.
     final parts = <String>['$actionLabel: $succeeded succeeded'];
     if (alreadyCovered > 0) parts.add('$alreadyCovered already covered');
-    if (_lastSweepCount > 0) {
+    if (reloaded && _lastSweepCount > 0) {
       parts.add('$_lastSweepCount more auto-resolved');
     }
     if (failed > 0) parts.add('$failed failed');
@@ -540,13 +687,51 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
     return Scaffold(
       appBar: AppBarWithExit(
         title: const Text('Review "No Rule" Items'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
-            onPressed: _loadItems,
-          ),
-        ],
+        // F134 (Sprint 52): canonical order from the ONE shared builder --
+        // Refresh (screen-specific, first), then View Scan History, Accounts,
+        // Settings, Help, then the auto-appended Exit. Harold specified this
+        // screen explicitly: "Need to add the following icons ... so they
+        // appear in this order: Refresh, View Scan History, Accounts,
+        // Settings, Help".
+        //
+        // includeNoRuleReview: false -- this IS the Review "No Rule" screen; a
+        // self-referential entry point would be noise.
+        // Settings is account-scoped while this screen is cross-account, so the
+        // accountId comes from the F135 resolver (which never prompts here);
+        // when it returns null the builder omits the Settings icon rather than
+        // pushing a bogus id.
+        actions: StandardAppBarActions.build(
+          context: context,
+          // No dedicated HelpSection exists for this screen; resultsDisplay is
+          // the nearest match (this screen reviews scan results). Adding a
+          // reviewNoRule section is a CONTENT task, filed in the F133-S52
+          // findings rather than smuggled into an icon-ordering change.
+          helpSection: HelpSection.resultsDisplay,
+          accountId: _resolveAccountIdForSettings(),
+          includeNoRuleReview: false,
+          // Own handler (not the builder's default) purely so this screen can
+          // RELOAD when the scan returns -- a scan can resolve items shown
+          // here. The account/platform resolution itself still lives in the
+          // shared builder.
+          //
+          // NOTE (corrected, PR #292 re-review): because this handler is
+          // non-null, the builder's `onManualScan != null || accountId != null`
+          // guard shows the icon EVEN WITH ZERO ACCOUNTS -- an earlier comment
+          // here claimed the opposite. The zero-account press is handled inside
+          // _openManualScan with an explicit "add an account first" message
+          // rather than a silent return.
+          onManualScan: _openManualScan,
+          leading: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              // Harold 2026-07-31: "Refresh" alone reads as "go check for new
+              // mail", which this does NOT do -- it re-reads the scan already
+              // stored locally. Only a Manual Scan contacts the mail server.
+              tooltip: 'Re-check the last scan (does not fetch new mail)',
+              onPressed: _refreshFromUserAction,
+            ),
+          ],
+        ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -721,7 +906,18 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
     final decodedFrom = PatternNormalization.normalizeAndDecodeEmail(item.email.fromEmail);
     final subject = item.email.subject?.isNotEmpty == true ? item.email.subject! : 'No subject';
 
-    return Card(
+    // F129 (Sprint 51): the row carries an accessible name so the sender and
+    // subject are announced together as one selectable unit.
+    //
+    // NOTE (verified by test, not assumed): `explicitChildNodes: true` here
+    // SUPPRESSED the checkbox's own semantics node, so its "Select <sender>"
+    // label disappeared from the tree. The row is a plain container instead --
+    // the checkbox keeps its own node and its own label.
+    return Semantics(
+      container: true,
+      selected: isSelected,
+      label: '$decodedFrom - $subject',
+      child: Card(
       elevation: isSelected ? 3 : 1,
       color: isSelected ? Theme.of(context).colorScheme.primaryContainer.withOpacity(0.4) : null,
       child: InkWell(
@@ -745,9 +941,33 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Row(
             children: [
-              Checkbox(
-                value: isSelected,
-                onChanged: (_) => id != null ? _toggleSelection(id) : null,
+              // F129 (Sprint 51): a bare Checkbox announces only "checkbox"
+              // -- it does not say WHICH email it selects, so 18 rows produced
+              // 18 indistinguishable controls. The tooltip is what actually
+              // reaches the Windows UIA projection (Semantics(label:) on a
+              // merged container does not -- Sprint 51 finding), so the
+              // sender name is carried BOTH ways: a semantics label for
+              // screen readers and a tooltip for UI automation.
+              // Both wrappers ARE needed, and the order matters -- verified by
+              // test, not assumed:
+              //   * Tooltip alone -> no semantics label (the widget test for
+              //     'Select <sender>' fails), so screen readers announce only
+              //     "checkbox".
+              //   * Semantics alone -> the label never reaches the Windows UIA
+              //     projection (Sprint 51 finding), so automation cannot see it.
+              // Semantics OUTSIDE keeps the Checkbox as the innermost hit
+              // target, avoiding the stacked-node click problem seen on the
+              // account picker.
+              Semantics(
+                label: 'Select $decodedFrom',
+                checked: isSelected,
+                child: Tooltip(
+                  message: 'Select $decodedFrom',
+                  child: Checkbox(
+                    value: isSelected,
+                    onChanged: (_) => id != null ? _toggleSelection(id) : null,
+                  ),
+                ),
               ),
               Expanded(
                 child: Column(
@@ -774,6 +994,7 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

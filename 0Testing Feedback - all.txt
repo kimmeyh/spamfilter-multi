@@ -2,11 +2,41 @@
 
 can you write a effective but compact /compact string I can use to compact where we are, but let the Claude Code team know where we left off and can pick it up correctly.  Use all the tokens needed, but a few as reasonably possible.
 
+Manual Validation complete
+
 ---------------------------------------------------------------------------------------------------------
 Sprint 5n Manual Validation Feedback 
 
 ---------------------------------------------------------------------------------------------------------
+Sprint 52 Manual Validation Feedback 
+
+- MV-1 (F135, highest risk) — the account picker should appear only when no account is selected AND the page needs one. Open Settings → the three account-scoped tabs; confirm it prompts once, then not again. Confirm the desktop opens on Review "No Rule" Items.
+- MV-2 (F136) — Skip in the No-Rule popup header: confirm it advances to the next unaddressed item and leaves the current email completely unchanged (no rule, no safe sender).
+- MV-3 (F134-ALL) — spot-check 3–4 screens: Help is always the last icon before Exit.
+- MV-4 (F133 contrast) — the greys should read noticeably darker; confirm nothing looks washed out or, conversely, too heavy.
+- MV-5 (F133 a11y) — optional but the real payoff: run Narrator briefly on Manage Rules and confirm rows announce themselves by name.
+
+---------------------------------------------------------------------------------------------------------
+Done
 Sprint 51 Manual Validation Feedback 
+
+MV-1 — Account picker (highest priority: this is where I shipped a defect)
+Home → Settings. The picker appears; click your AOL account.
+- Working as expected. Can be closed.
+MV-2 — Screen reader announces the No-Rule list (the user-facing proof of this sprint's work)
+Turn on Narrator (Ctrl+Win+Enter), open Review "No Rule" Items, Tab through the rows.
+- Working as expected. Can be closed.
+MV-3 — Quick-action grid (fixed today, least exercised)
+Run a scan → open any result → check the action popup.
+- Working as expected. Can be closed.
+MV-4 — No-Rule sweep does not over-collect
+On the No-Rule screen, note the count → Refresh → note again → Back → re-enter.
+- Working as expected. Can be closed.
+MV-5 — Manage Rules labels
+Settings → Manage Rules → click any rule row.
+- Working as expected. Can be closed.
+Manual Validation complete
+
 
 ---------------------------------------------------------------------------------------------------------
 Sprint 50 Manual Validation Feedback 
