@@ -10,6 +10,12 @@ Sprint 5n Manual Validation Feedback
 ---------------------------------------------------------------------------------------------------------
 Sprint 52 Manual Validation Feedback 
 
+- MV-1 (F135, highest risk) — the account picker should appear only when no account is selected AND the page needs one. Open Settings → the three account-scoped tabs; confirm it prompts once, then not again. Confirm the desktop opens on Review "No Rule" Items.
+- MV-2 (F136) — Skip in the No-Rule popup header: confirm it advances to the next unaddressed item and leaves the current email completely unchanged (no rule, no safe sender).
+- MV-3 (F134-ALL) — spot-check 3–4 screens: Help is always the last icon before Exit.
+- MV-4 (F133 contrast) — the greys should read noticeably darker; confirm nothing looks washed out or, conversely, too heavy.
+- MV-5 (F133 a11y) — optional but the real payoff: run Narrator briefly on Manage Rules and confirm rows announce themselves by name.
+
 ---------------------------------------------------------------------------------------------------------
 Done
 Sprint 51 Manual Validation Feedback 

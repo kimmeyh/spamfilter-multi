@@ -6,12 +6,10 @@ import 'package:provider/provider.dart';
 import 'package:logger/logger.dart';
 import 'package:path_provider/path_provider.dart';
 import '../widgets/app_bar_with_exit.dart';
+import '../widgets/standard_app_bar_actions.dart';
 import '../widgets/auth_warning_dialog.dart';
 import 'help_screen.dart';
-import 'no_rule_review_screen.dart';
-import 'scan_history_screen.dart';
 import 'scan_progress_screen.dart';
-import 'settings_screen.dart';
 
 import '../../core/providers/email_scan_provider.dart'
     show
@@ -658,89 +656,45 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                     Navigator.pop(context);
                   },
                 ),
-          // F55 (Sprint 33, v3): standardized icon order --
-          // Download, Search, History, Accounts, Help, Settings, [X auto].
+          // F134 (Sprint 52): canonical order from the ONE shared builder --
+          // Download, Find (screen-specific, leading), then Review "No Rule"
+          // Items, View Scan History, Accounts, Settings, Help, then the
+          // auto-appended Exit. Exactly Harold's spec for this screen.
+          // Previously this ran Download, Search, No-Rule, History, Accounts,
+          // HELP, Settings -- Help and Settings inverted. Change the order in
+          // StandardAppBarActions, never here.
+          //
+          // The whole block stays gated on !_showSearch: when the search field
+          // is open it takes over the AppBar, so every action is hidden.
           actions: [
-            if (!_showSearch) ...[
-              IconButton(
-                tooltip: 'Export Results to CSV',
-                icon: const Icon(Icons.file_download),
-                onPressed: () => _exportResults(context, scanProvider),
-              ),
-              IconButton(
-                tooltip: 'Search (Ctrl+F)',
-                icon: const Icon(Icons.search),
-                onPressed: () {
-                  setState(() {
-                    _showSearch = true;
-                  });
-                },
-              ),
-              // MT-3 (Sprint 50, Harold): Review "No Rule" Items entry point
-              // ahead of History, mirroring the scan-history/account-selection
-              // convention (F112/F39). Windows-desktop scoped like those
-              // screens.
-              if (Platform.isWindows)
-                IconButton(
-                  icon: const Icon(Icons.rule_folder_outlined),
-                  tooltip: 'Review "No Rule" Items',
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                        builder: (_) => const NoRuleReviewScreen()),
+            if (!_showSearch)
+              ...StandardAppBarActions.build(
+                context: context,
+                // Demo scans deep-link to a different help section.
+                helpSection: widget.platformId == 'demo'
+                    ? HelpSection.demoScan
+                    : HelpSection.resultsDisplay,
+                accountId: widget.accountId,
+                accountEmail: widget.accountEmail,
+                platformId: widget.platformId,
+                platformDisplayName: widget.platformDisplayName,
+                leading: [
+                  IconButton(
+                    tooltip: 'Export Results to CSV',
+                    icon: const Icon(Icons.file_download),
+                    onPressed: () => _exportResults(context, scanProvider),
                   ),
-                ),
-              IconButton(
-                tooltip: 'View Scan History',
-                icon: const Icon(Icons.history),
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => ScanHistoryScreen(
-                        accountId: widget.accountId,
-                        accountEmail: widget.accountEmail,
-                        platformId: widget.platformId,
-                        platformDisplayName: widget.platformDisplayName,
-                      ),
-                    ),
-                  );
-                },
+                  IconButton(
+                    tooltip: 'Search (Ctrl+F)',
+                    icon: const Icon(Icons.search),
+                    onPressed: () {
+                      setState(() {
+                        _showSearch = true;
+                      });
+                    },
+                  ),
+                ],
               ),
-              IconButton(
-                tooltip: 'Select Account',
-                icon: const Icon(Icons.people),
-                onPressed: () {
-                  Navigator.popUntil(context, (route) => route.isFirst);
-                },
-              ),
-              IconButton(
-                tooltip: 'Help',
-                icon: const Icon(Icons.help_outline),
-                onPressed: () => openHelp(
-                  context,
-                  // Use demo-scan section when this screen is showing a demo
-                  // scan, otherwise the default live-scan Results section.
-                  widget.platformId == 'demo'
-                      ? HelpSection.demoScan
-                      : HelpSection.resultsDisplay,
-                  accountId: widget.accountId,
-                  accountEmail: widget.accountEmail,
-                  platformId: widget.platformId,
-                  platformDisplayName: widget.platformDisplayName,
-                ),
-              ),
-              IconButton(
-                tooltip: 'Settings',
-                icon: const Icon(Icons.settings),
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          SettingsScreen(accountId: widget.accountId),
-                    ),
-                  );
-                },
-              ),
-            ],
           ],
         ),
         body: SelectionArea(
@@ -1227,7 +1181,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                 Flexible(
                   child: Text(
                     folder,
-                    style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -1698,6 +1652,36 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
+                              // F136 (Sprint 52): SKIP -- leaves this item
+                              // completely unaffected and moves to the next
+                              // unaddressed one. Harold: "add a 'Skip' button
+                              // in the header ... button should be about the
+                              // same size as the safe sender and rules
+                              // buttons", and (steering) reuse an existing
+                              // button rather than building a new control.
+                              //
+                              // It reuses `_quickActionThenAdvance` -- the SAME
+                              // navigation the quick actions use -- with a
+                              // no-op action and a covers-NOTHING predicate.
+                              // That is what makes "next unaddressed item" mean
+                              // exactly what it means for every other button
+                              // here, instead of a second, subtly-different
+                              // traversal that could drift.
+                              //
+                              // Only shown under the "No rule" filter: outside
+                              // it there is no unaddressed-item sequence to
+                              // advance through, and `_quickActionThenAdvance`
+                              // itself no-ops on navigation in that case.
+                              if (_filter == EmailActionType.none) ...[
+                                const SizedBox(width: 8),
+                                _buildSkipButton(
+                                  result: result,
+                                  dialogContext: dialogContext,
+                                  anchorPosition: itemPosition,
+                                  anchorSize: itemSize,
+                                ),
+                              ],
+                              const SizedBox(width: 8),
                               result.success
                                   ? const Icon(Icons.check,
                                       color: Colors.green, size: 18)
@@ -1724,7 +1708,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                               Text(
                                 dateStr,
                                 style: TextStyle(
-                                    fontSize: 11, color: Colors.grey[500]),
+                                    fontSize: 11, color: Colors.grey.shade600),
                               ),
                               if (displaySenderDomain != null) ...[
                                 const SizedBox(width: 12),
@@ -1734,7 +1718,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                                 Text(
                                   displaySenderDomain,
                                   style: TextStyle(
-                                      fontSize: 11, color: Colors.grey[500]),
+                                      fontSize: 11, color: Colors.grey.shade600),
                                 ),
                               ],
                             ],
@@ -2365,6 +2349,97 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   /// that the popup shows an email that gets addressed moments later -- the
   /// user sees it resolve and clicks on. No-op advance when the "No rule"
   /// filter is not active or nothing remains.
+  /// F136 (Sprint 52): the popup-header "Skip" control.
+  ///
+  /// Duplicated from the inline quick-action button styling (Harold's steering:
+  /// *"you can re-use an existing button, just duplicate and change the name to
+  /// Skip"*), sized to sit comfortably beside the safe-sender / rule buttons.
+  ///
+  /// CONTRACT -- Skip must leave the item COMPLETELY unaffected:
+  ///   - no rule, no safe sender, no processed flag, no DB write
+  ///   - the item stays in the list and can be returned to
+  ///   - it is navigation, not a state change
+  /// It therefore passes a no-op `action` and a `coveredByAction` that always
+  /// returns false, so nothing is treated as resolved by skipping.
+  Widget _buildSkipButton({
+    required EmailActionResult result,
+    required BuildContext dialogContext,
+    required Offset? anchorPosition,
+    required Size? anchorSize,
+  }) {
+    return Semantics(
+      container: true,
+      button: true,
+      excludeSemantics: true,
+      label: 'Skip',
+      hint: 'Leave this email unchanged and go to the next unaddressed item',
+      onTap: () => _skipToNext(
+        result: result,
+        dialogContext: dialogContext,
+        anchorPosition: anchorPosition,
+        anchorSize: anchorSize,
+      ),
+      child: Tooltip(
+        message: 'Skip -- leave unchanged, go to the next unaddressed item',
+        child: InkWell(
+          onTap: () => _skipToNext(
+            result: result,
+            dialogContext: dialogContext,
+            anchorPosition: anchorPosition,
+            anchorSize: anchorSize,
+          ),
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: Colors.blueGrey.withValues(alpha: 0.3),
+              ),
+              borderRadius: BorderRadius.circular(8),
+              color: Colors.blueGrey.withValues(alpha: 0.05),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.skip_next, size: 16, color: Colors.blueGrey.shade700),
+                const SizedBox(width: 6),
+                Text(
+                  'Skip',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.blueGrey.shade700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Close this popup and open the next unaddressed item's popup, changing
+  /// nothing about the current one (F136).
+  void _skipToNext({
+    required EmailActionResult result,
+    required BuildContext dialogContext,
+    required Offset? anchorPosition,
+    required Size? anchorSize,
+  }) {
+    Navigator.pop(dialogContext);
+    _quickActionThenAdvance(
+      current: result,
+      anchorPosition: anchorPosition,
+      anchorSize: anchorSize,
+      // No-op: skipping must not touch the item in any way.
+      action: () async {},
+      // Skipping resolves NOTHING, so no other item may be treated as covered.
+      coveredByAction: (_) => false,
+    );
+  }
+
   void _quickActionThenAdvance({
     required EmailActionResult current,
     required Offset? anchorPosition,

@@ -215,6 +215,13 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware
             accountEmail: widget.accountEmail,
             platformId: widget.platformId,
             platformDisplayName: widget.platformDisplayName,
+            // includeManualScan: false -- this IS the Manual Scan screen; a
+            // self-referential entry point would be noise, and re-pushing it
+            // would stack a second scan screen on top of a running scan.
+            // Harold chose this variant: "all screens EXCEPT the Manual Scan
+            // screen", matching how No-Rule / Settings / Scan History each
+            // suppress their own icon.
+            includeManualScan: false,
           ),
         ),
         body: Padding(
@@ -298,19 +305,19 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware
         if (isReady) ...[
           Text(
             'Mode: $configuredModeName',
-            style: const TextStyle(color: Colors.grey),
+            style: TextStyle(color: Colors.grey.shade600),
           ),
           const SizedBox(height: 2),
           Text(
             'Folders: ${_configuredFolders.join(", ")}',
-            style: const TextStyle(color: Colors.grey),
+            style: TextStyle(color: Colors.grey.shade600),
             overflow: TextOverflow.ellipsis,
             maxLines: 2,
           ),
         ] else
           Text(
             scanProvider.statusMessage ?? 'Waiting to begin...',
-            style: const TextStyle(color: Colors.grey),
+            style: TextStyle(color: Colors.grey.shade600),
           ),
       ],
     );
@@ -414,7 +421,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware
       return Center(
         child: Text(
           'No results yet. Start a scan to see activity.',
-          style: const TextStyle(color: Colors.grey, fontSize: 16),
+          style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
           textAlign: TextAlign.center,
         ),
       );
@@ -425,7 +432,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware
       return Center(
         child: Text(
           'No emails processed.',
-          style: const TextStyle(color: Colors.grey, fontSize: 16),
+          style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
           textAlign: TextAlign.center,
         ),
       );

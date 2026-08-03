@@ -24,6 +24,7 @@ import '../../core/storage/settings_store.dart';
 import '../widgets/app_bar_with_exit.dart';
 import 'help_screen.dart';
 import 'manual_rule_create_screen.dart';
+import '../widgets/standard_app_bar_actions.dart';
 
 /// Categories for filtering safe sender patterns by structure
 enum SafeSenderCategory {
@@ -115,12 +116,51 @@ class _SafeSendersManagementScreenState
     super.dispose();
   }
 
-  Future<void> _loadSafeSenders() async {
+  /// The AppBar Refresh action.
+  ///
+  /// Mirrors the Manage Rules fix (Harold's 2026-07-31 finding on the No-Rule
+  /// and Scan History screens): [_loadSafeSenders] is local-DB work that
+  /// finishes in milliseconds, so an unchanged list reads as a dead button.
+  Future<void> _refreshFromUserAction() async {
+    final before = _safeSenders.length;
+    final ok = await _loadSafeSenders();
+    if (!mounted) return;
+
+    // Load failed and already reported itself -- do not overwrite that error
+    // with a count delta we never actually observed.
+    if (!ok) return;
+
+    final delta = _safeSenders.length - before;
+    final String message;
+    if (delta > 0) {
+      message = delta == 1 ? '1 safe sender added' : '$delta safe senders added';
+    } else if (delta < 0) {
+      final removed = -delta;
+      message = removed == 1
+          ? '1 safe sender removed'
+          : '$removed safe senders removed';
+    } else {
+      message = 'No changes -- ${_safeSenders.length} safe senders';
+    }
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+      ));
+  }
+
+  /// Returns true when the load SUCCEEDED, false when it failed -- see the note
+  /// on `rules_management_screen._loadRules` (PR #292 review).
+  Future<bool> _loadSafeSenders() async {
     setState(() => _isLoading = true);
+    var ok = true;
     try {
       _safeSenders = await _store.loadSafeSenders();
       _applyFilter();
     } catch (e) {
+      ok = false;
       _logger.e('Failed to load safe senders', error: e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -131,6 +171,7 @@ class _SafeSendersManagementScreenState
     if (mounted) {
       setState(() => _isLoading = false);
     }
+    return ok;
   }
 
   void _applyFilter() {
@@ -341,26 +382,33 @@ class _SafeSendersManagementScreenState
     return Scaffold(
       appBar: AppBarWithExit(
         title: const Text('Manage Safe Senders'),
-        actions: [
-          IconButton(
-            tooltip: 'Help',
-            icon: const Icon(Icons.help_outline),
-            onPressed: () => openHelp(context, HelpSection.safeSenders),
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
-            onPressed: _loadSafeSenders,
-          ),
-          // Sprint 37 round 6: filter-aware bulk export.
-          IconButton(
-            icon: const Icon(Icons.file_download_outlined),
-            tooltip: _filteredSenders.isEmpty
-                ? 'Nothing to export'
-                : 'Export ${_filteredSenders.length} shown safe sender${_filteredSenders.length == 1 ? '' : 's'} as CSV',
-            onPressed: _filteredSenders.isEmpty ? null : _exportFilteredSafeSenders,
-          ),
-        ],
+        // F134 (Sprint 52): canonical order via the ONE shared builder. Help
+        // was FIRST, ahead of the screen-specific actions; it is now LAST, and
+        // Refresh / Export keep their existing relative order as `leading`.
+        actions: StandardAppBarActions.build(
+          context: context,
+          helpSection: HelpSection.safeSenders,
+          includeNoRuleReview: false,
+          includeScanHistory: false,
+          includeAccounts: false,
+          includeSettings: false,
+          leading: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              tooltip: 'Reload safe senders from the database',
+              onPressed: _refreshFromUserAction,
+            ),
+            // Sprint 37 round 6: filter-aware bulk export.
+            IconButton(
+              icon: const Icon(Icons.file_download_outlined),
+              tooltip: _filteredSenders.isEmpty
+                  ? 'Nothing to export'
+                  : 'Export ${_filteredSenders.length} shown safe sender${_filteredSenders.length == 1 ? '' : 's'} as CSV',
+              onPressed:
+                  _filteredSenders.isEmpty ? null : _exportFilteredSafeSenders,
+            ),
+          ],
+        ),
       ),
       // Sprint 38 F84 Sub-task A (Issue #253): Ctrl+A / Cmd+A copies the
       // ENTIRE filtered safe-sender list to clipboard, not just the
@@ -521,7 +569,7 @@ class _SafeSendersManagementScreenState
                               Text(
                                 'Add safe senders from scan results using Quick Add',
                                 style: TextStyle(
-                                  color: Colors.grey.shade500,
+                                  color: Colors.grey.shade600,
                                   fontSize: 13,
                                 ),
                               ),
@@ -606,7 +654,21 @@ class _SafeSendersManagementScreenState
             setState(() => _hoveredPattern = null);
           }
         },
-        child: GestureDetector(
+        // F133-S52 R-3 (Sprint 52): bare GestureDetector row -> unnamed node.
+        // Wrapped per docs/ACCESSIBILITY_STANDARDS.md §2. `container: true`
+        // WITHOUT `excludeSemantics`, because this row owns interactive
+        // children (the leading category IconButton) that must stay
+        // independently reachable. `onTap` mirrors the GestureDetector so the
+        // named node is genuinely activatable, and the GestureDetector keeps
+        // its own handlers so mouse input and drag-selection are unchanged.
+        child: Semantics(
+          container: true,
+          button: true,
+          label: '${sender.pattern} - ${_formatPatternType(sender)}'
+              '${hasExceptions ? ' (has exceptions)' : ''}',
+          hint: 'View safe sender details',
+          onTap: () => handleRowTap(index, _filteredSenders.length),
+          child: GestureDetector(
           behavior: HitTestBehavior.translucent,
           onTap: () => handleRowTap(index, _filteredSenders.length),
           onPanStart: (_) =>
@@ -685,6 +747,7 @@ class _SafeSendersManagementScreenState
             ),
           ),
           ),
+        ),
         ),
       ),
     );

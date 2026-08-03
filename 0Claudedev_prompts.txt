@@ -1,5 +1,6 @@
 ***BELOW IS NOT FOR CLAUDE CODE, GITHUB COPILOT, CHATGPT OR COPILOT PULL REQUEST (PR) REVIEW USE***
 claude --continue # generally the best option
+claude --continue --model claude-fable-5 # to request the Fable 5 model when continuing
 
 Github Copilot Review Requests:
 I have requested a github.com copilot review.

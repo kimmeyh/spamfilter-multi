@@ -148,6 +148,52 @@ if (-not (Test-Path -LiteralPath $statusPath)) {
     }
 }
 
+# 3a-1. the sprint PR exists (Phase 3.3.1 deliverable, verified at close-out)
+#
+# Sprint 52 IMP-6 (Harold, 2026-08-02): the sprint ran to Phase 7 with NO pull
+# request at all. The PR lifecycle has four checkpoints (3.3.1, 3.7, end of
+# Phase 5, 7.7) and EACH carries a "create it now if it does not exist"
+# fallback -- so every checkpoint quietly assumed a later one would catch it,
+# and the miss stayed silent through all four. The primary guard is
+# require-sprint-cards.ps1 (blocks task commits); this is the backstop that
+# makes a close-out claim impossible while pr_number is still null.
+if ($status -and $null -ne $status.current_sprint) {
+    $prNum = $status.current_sprint.pr_number
+    if ($null -eq $prNum -or [string]$prNum -eq '') {
+        $violations += "No pull request recorded for Sprint $sprintNum (.claude/sprint_status.json current_sprint.pr_number is null). Phase 3.3.1 requires a DRAFT PR created at plan approval, in parallel with the first execution task. Create it (gh pr create --draft --base develop) and record pr_number / pr_url. Keep it a DRAFT until the end of Phase 7.7."
+    }
+}
+
+# 3a-2. uncommitted non-coding-agent working files (0*.txt / 0*.md at root)
+#
+# Harold, 2026-08-02: "there are often file changes made by the non-coding agent
+# team during sprints ... I have yet to see one that didn't end up being
+# committed across all sprints." These are his working documents -- testing
+# feedback, retrospective feedback, prompts, backlog notes -- authored while the
+# sprint runs. The default is COMMIT, and leaving one behind at close-out is a
+# miss rather than a decision.
+#
+# This is deliberately a close-out gate, not a per-commit one: the files change
+# repeatedly mid-sprint and blocking each time would fire on correct work. It
+# only needs to be true by the END of the sprint.
+# `dirty_zero_files_override` lets a test case supply the porcelain output
+# directly. Without it a fixture would need its OWN git repo, and a nested
+# repo commits as a broken gitlink that does not survive a fresh clone (every
+# other fixture here is a plain directory). Test-only; never set in production.
+try {
+    $dirty = $null
+    if ($null -ne $payload.dirty_zero_files_override) {
+        $dirty = [string]$payload.dirty_zero_files_override
+        if ([string]::IsNullOrWhiteSpace($dirty)) { $dirty = $null }
+    } else {
+        $dirty = & git -C $cwd status --porcelain -- '0*' 2>$null
+    }
+    if ($dirty) {
+        $names = @($dirty | ForEach-Object { ($_ -replace '^..\s*', '').Trim() }) -join ', '
+        $violations += "Uncommitted non-coding-agent working file(s) at repo root: $names. These are Harold's 0* working documents and are expected to be committed (they have been, every sprint). Stage and commit them -- do NOT read them (the deny-list blocks it), so use a neutral message rather than paraphrasing content you cannot see."
+    }
+} catch { }
+
 # 3b. previous sprint summary exists (Phase 3.2.1 background process)
 $prevSprint = $sprintNum - 1
 if ($prevSprint -gt 0) {
@@ -158,14 +204,45 @@ if ($prevSprint -gt 0) {
     }
 }
 
-# 3c. open sprint-labeled GitHub issues
+# 3c. open sprint-labeled GitHub issues -- POST-MERGE ONLY
+#
+# "Review and close all resolved GitHub issues" lives under the checklist's
+# `## Post-Merge Cleanup` section, whose FIRST item is `PR merged to develop`.
+# So open sprint issues are only a violation once the sprint PR has actually
+# merged. Before that they are the CORRECT state: closing a sprint's task cards
+# while its code is still sitting in an unmerged PR would mark the work resolved
+# before it exists on develop.
+#
+# Fixed 2026-07-30 (Sprint 51) after this check blocked a turn at Phase 7.7 with
+# PR #285 legitimately open and Ready-for-Review. Same defect class as the
+# sprint-auto-advance Gate 1c fix earlier in this sprint: the check tested a
+# post-condition without testing its PRECONDITION. A hook that fires on correct
+# work trains people to bypass it, which costs more than the escape it prevents.
 try {
-    $ghOut = & gh issue list --repo (& git -C $cwd remote get-url origin 2>$null) --label sprint --state open --json number 2>$null
-    if ($LASTEXITCODE -eq 0 -and $ghOut) {
-        $openIssues = $ghOut | ConvertFrom-Json
-        if ($openIssues.Count -gt 0) {
-            $nums = ($openIssues | ForEach-Object { "#$($_.number)" }) -join ', '
-            $violations += "GitHub issues labeled 'sprint' are still OPEN: $nums. Note 'Closes #N' does NOT auto-fire on a feature->develop merge in this GitFlow repo -- the checklist step 'Review and close all resolved GitHub issues' exists for exactly this."
+    $repoUrl = & git -C $cwd remote get-url origin 2>$null
+
+    # Precondition: has THIS sprint's PR merged? Only then is issue-closing due.
+    $prMerged = $false
+    $branch = (& git -C $cwd branch --show-current 2>$null)
+    if ($branch) {
+        $prJson = & gh pr list --repo $repoUrl --head $branch.Trim() --state all --json state,mergedAt 2>$null
+        if ($LASTEXITCODE -eq 0 -and $prJson) {
+            $prs = $prJson | ConvertFrom-Json
+            foreach ($pr in $prs) {
+                if ($pr.state -eq 'MERGED' -or $pr.mergedAt) { $prMerged = $true }
+            }
+        }
+        # No PR found for this branch at all -> cannot be post-merge either.
+    }
+
+    if ($prMerged) {
+        $ghOut = & gh issue list --repo $repoUrl --label sprint --state open --json number 2>$null
+        if ($LASTEXITCODE -eq 0 -and $ghOut) {
+            $openIssues = $ghOut | ConvertFrom-Json
+            if ($openIssues.Count -gt 0) {
+                $nums = ($openIssues | ForEach-Object { "#$($_.number)" }) -join ', '
+                $violations += "The sprint PR has MERGED but GitHub issues labeled 'sprint' are still OPEN: $nums. 'Closes #N' does NOT auto-fire on a feature->develop merge in this GitFlow repo -- the Post-Merge Cleanup step 'Review and close all resolved GitHub issues' exists for exactly this. Verify with ``gh issue list --label sprint --state open`` returning empty."
+            }
         }
     }
 } catch { }   # gh unavailable/slow -> skip silently

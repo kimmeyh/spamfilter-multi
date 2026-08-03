@@ -9,8 +9,11 @@
 
 # *** RUN DEV variant manually
 Start-Process "D:\Data\Harold\github\spamfilter-multi\mobile-app\dist\dev\MyEmailSpamFilter-Dev.exe"
+Start-Sleep -Seconds 12
+Get-Process -Name "MyEmailSpamFilter-Dev" -ErrorAction SilentlyContinue |
+    Select-Object Id, MainWindowTitle, Responding
 
-# *** RUN PROD variant manually
+# *** RUN PROD variant manually - no longer works.
 Start-Process "D:\Data\Harold\github\spamfilter-multi\mobile-app\dist\prod\MyEmailSpamFilter.exe"
 
 

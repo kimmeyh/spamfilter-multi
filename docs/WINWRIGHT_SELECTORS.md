@@ -72,7 +72,7 @@ Flutter TabBar tabs render as `Text` elements, NOT `Tab` controls. Prefer `useIn
 | TabBar tab (projects as `Text`) | `ww_click` + `useInvokePattern: false` | needs a real mouse press |
 | Static `Text` label | `ww_click` + `useInvokePattern: false` | `Element does not support InvokePattern. ControlType: Text` |
 | `CheckBox` | `ww_click` + `useInvokePattern: false` | exposes TogglePattern, not InvokePattern |
-| `RadioButton` | no reliable path on this build | neither it nor its parent Group selects |
+| `RadioButton` | `ww_click` + `useInvokePattern: false` **on the RadioButton itself** | exposes `SelectionItemPattern`, not `InvokePattern`, so `ww_invoke` correctly fails. Do **not** target the parent `Group` -- a Group is a container with no selection behavior (corrected 2026-07-31, Sprint 52 F131) |
 
 ### Three behaviours that silently break scripts
 

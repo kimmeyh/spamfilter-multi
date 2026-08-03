@@ -12,6 +12,7 @@ import '../../util/redact.dart';
 import 'help_screen.dart';
 import 'scan_progress_screen.dart';
 import 'gmail_oauth_screen.dart';
+import '../widgets/standard_app_bar_actions.dart';
 
 /// Gmail authentication method choices
 ///
@@ -370,21 +371,15 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Gmail - Sign In Method'),
-        // F55 (Sprint 33): standardized icon order -- Accounts, Help.
-        actions: [
-          IconButton(
-            tooltip: 'Select Account',
-            icon: const Icon(Icons.people),
-            onPressed: () {
-              Navigator.popUntil(context, (route) => route.isFirst);
-            },
-          ),
-          IconButton(
-            tooltip: 'Help',
-            icon: const Icon(Icons.help_outline),
-            onPressed: () => openHelp(context, HelpSection.accountSetup),
-          ),
-        ],
+        // F134 (Sprint 52): declared via the ONE shared builder (was already
+        // Accounts then Help; the builder makes that structural).
+        actions: StandardAppBarActions.build(
+          context: context,
+          helpSection: HelpSection.accountSetup,
+          includeNoRuleReview: false,
+          includeScanHistory: false,
+          includeSettings: false,
+        ),
       ),
       body: SelectionArea(
         child: SingleChildScrollView(
@@ -478,13 +473,31 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     required Color borderColor,
     required VoidCallback onTap,
   }) {
+    // F133-S52 R-2 (Sprint 52): this shared card helper was a bare InkWell --
+    // tappable but unnamed. It renders the sign-in-method choices on
+    // account_setup, which is the FIRST screen a brand-new Store user meets,
+    // so an unannounced choice here is the highest-impact instance of the gap.
+    // Wrapping the HELPER covers every call site at once.
+    //
+    // `excludeSemantics: true` is correct here: the card body is text and
+    // decoration with no interactive children, so merging it into one node is
+    // what a screen reader should hear. The subtitle becomes the hint rather
+    // than being concatenated into the label, so the announcement leads with
+    // WHAT the choice is.
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(color: borderColor.withValues(alpha: 0.3)),
       ),
-      child: InkWell(
+      child: Semantics(
+        container: true,
+        button: true,
+        excludeSemantics: true,
+        label: title,
+        hint: subtitle,
+        onTap: onTap,
+        child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
@@ -549,6 +562,7 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
           ),
         ),
       ),
+      ),
     );
   }
 
@@ -573,22 +587,14 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
                 },
               )
             : null,
-        // F55 (Sprint 33): standardized icon order -- Accounts, Help.
-        actions: [
-          IconButton(
-            tooltip: 'Select Account',
-            icon: const Icon(Icons.people),
-            onPressed: () {
-              Navigator.popUntil(context, (route) => route.isFirst);
-            },
-          ),
-          // F54 (Sprint 33): Help icon -> Account Setup section.
-          IconButton(
-            tooltip: 'Help',
-            icon: const Icon(Icons.help_outline),
-            onPressed: () => openHelp(context, HelpSection.accountSetup),
-          ),
-        ],
+        // F134 (Sprint 52): declared via the ONE shared builder.
+        actions: StandardAppBarActions.build(
+          context: context,
+          helpSection: HelpSection.accountSetup,
+          includeNoRuleReview: false,
+          includeScanHistory: false,
+          includeSettings: false,
+        ),
       ),
       body: SelectionArea(
         child: SingleChildScrollView(
@@ -752,7 +758,7 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
             const SizedBox(height: 16),
             Text(
               'Platform: $_effectiveDisplayName ($_effectivePlatformId)',
-              style: const TextStyle(color: Colors.grey, fontSize: 12),
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
               textAlign: TextAlign.center,
             ),
             ],
@@ -1146,8 +1152,28 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
             ),
             const SizedBox(height: 20),
 
-            // Read-only mode (default)
-            GestureDetector(
+            // F133-S52 R-2 (Sprint 52): the scan-mode selectors are
+            // radio-GROUP options whose whole card is tappable via a bare
+            // GestureDetector. The inner Radio already carries correct radio
+            // semantics, but it is announced WITHOUT the option name -- the
+            // title text sits in a sibling Text, so a screen reader hears
+            // "radio button, selected" with no indication of WHICH mode.
+            //
+            // `inMutuallyExclusiveGroup` + `checked` + a label is the standard
+            // radio-group pattern: it names the option AND reports its selected
+            // state. Deliberately NOT `excludeSemantics` -- that would destroy
+            // the inner Radio's own working semantics, which is the opposite of
+            // the goal.
+            Semantics(
+              container: true,
+              inMutuallyExclusiveGroup: true,
+              checked: _selectedMode == ScanMode.readOnly,
+              label: 'Read-Only Mode (Recommended). '
+                  'Safe testing - no emails modified',
+              onTap: () {
+                setState(() => _selectedMode = ScanMode.readOnly);
+              },
+              child: GestureDetector(
               onTap: () {
                 setState(() => _selectedMode = ScanMode.readOnly);
               },
@@ -1199,10 +1225,22 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
                 ),
               ),
             ),
+            ),
             const SizedBox(height: 12),
 
-            // Test limit mode
-            GestureDetector(
+            // Test limit mode -- see the Read-Only selector above for why this
+            // uses inMutuallyExclusiveGroup + checked rather than
+            // excludeSemantics (F133-S52 R-2).
+            Semantics(
+              container: true,
+              inMutuallyExclusiveGroup: true,
+              checked: _selectedMode == ScanMode.rulesOnly,
+              label: 'Test Limited Emails. '
+                  'Apply changes to first N emails only',
+              onTap: () {
+                setState(() => _selectedMode = ScanMode.rulesOnly);
+              },
+              child: GestureDetector(
               onTap: () {
                 setState(() => _selectedMode = ScanMode.rulesOnly);
               },
@@ -1278,10 +1316,21 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
                 ),
               ),
             ),
+            ),
             const SizedBox(height: 12),
 
-            // Full test mode
-            GestureDetector(
+            // Full test mode -- see the Read-Only selector for the pattern
+            // rationale (F133-S52 R-2).
+            Semantics(
+              container: true,
+              inMutuallyExclusiveGroup: true,
+              checked: _selectedMode == ScanMode.safeSendersOnly,
+              label: 'Full Scan with Revert. '
+                  'Apply all changes (can be reverted)',
+              onTap: () {
+                setState(() => _selectedMode = ScanMode.safeSendersOnly);
+              },
+              child: GestureDetector(
               onTap: () {
                 setState(() => _selectedMode = ScanMode.safeSendersOnly);
               },
@@ -1333,10 +1382,23 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
                 ),
               ),
             ),
+            ),
             const SizedBox(height: 12),
 
             // [NEW] PHASE 3.1: Full Scan mode (permanent)
-            GestureDetector(
+            // The label states PERMANENT explicitly -- a screen-reader user
+            // must hear the irreversibility before selecting, not after
+            // (F133-S52 R-2).
+            Semantics(
+              container: true,
+              inMutuallyExclusiveGroup: true,
+              checked: _selectedMode == ScanMode.safeSendersAndRules,
+              label: 'Full Scan. '
+                  'PERMANENT delete or move, cannot revert',
+              onTap: () {
+                setState(() => _selectedMode = ScanMode.safeSendersAndRules);
+              },
+              child: GestureDetector(
               onTap: () {
                 setState(() => _selectedMode = ScanMode.safeSendersAndRules);
               },
@@ -1388,6 +1450,7 @@ class _ScanModeSelectorState extends State<_ScanModeSelector> {
                   ],
                 ),
               ),
+            ),
             ),
             const SizedBox(height: 16),
 

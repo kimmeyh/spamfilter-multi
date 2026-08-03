@@ -1,0 +1,12 @@
+{
+  "_description": "Test fixture: Sprint 51 at Phase 7.7 with its PR still OPEN (not merged). Sprint-labelled issues are legitimately still open here, because closing them is a POST-MERGE Cleanup item. The hook must NOT flag them before the merge.",
+  "_last_updated": "2026-07-30T20:00:00Z",
+  "current_sprint": {
+    "number": 51,
+    "branch": "feature/20260727_Sprint_51",
+    "status": "Phase 7.7 COMPLETE -- PR Ready-for-Review, awaiting merge",
+    "plan_approved": true,
+    "pr_number": 285,
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/285"
+  }
+}

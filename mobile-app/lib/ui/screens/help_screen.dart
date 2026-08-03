@@ -18,8 +18,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import '../../core/services/app_environment.dart';
 import '../../core/services/content_loader.dart';
 import '../widgets/app_bar_with_exit.dart';
-import 'scan_history_screen.dart';
-import 'settings_screen.dart';
+import '../widgets/standard_app_bar_actions.dart';
 
 /// Anchors for each primary screen / settings-tab section in [HelpScreen].
 enum HelpSection {
@@ -129,50 +128,22 @@ class _HelpScreenState extends State<HelpScreen> {
     return Scaffold(
       appBar: AppBarWithExit(
         title: const Text('Help'),
-        // F55 (Sprint 33, round 3): Help screen gets the same icon row as
-        // every other screen. Order: History, Accounts, Settings, [X auto].
-        // History and Settings are account-scoped, so they only appear when
-        // an accountId was threaded through openHelp().
-        actions: [
-          if (hasAccount)
-            IconButton(
-              tooltip: 'View Scan History',
-              icon: const Icon(Icons.history),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => ScanHistoryScreen(
-                      accountId: widget.accountId!,
-                      accountEmail: widget.accountEmail ?? widget.accountId!,
-                      platformId: widget.platformId ?? '',
-                      platformDisplayName:
-                          widget.platformDisplayName ?? '',
-                    ),
-                  ),
-                );
-              },
-            ),
-          IconButton(
-            tooltip: 'Select Account',
-            icon: const Icon(Icons.people),
-            onPressed: () {
-              Navigator.popUntil(context, (route) => route.isFirst);
-            },
-          ),
-          if (hasAccount)
-            IconButton(
-              tooltip: 'Settings',
-              icon: const Icon(Icons.settings),
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        SettingsScreen(accountId: widget.accountId!),
-                  ),
-                );
-              },
-            ),
-        ],
+        // F134 (Sprint 52): canonical order via the ONE shared builder.
+        // includeHelp: false -- this IS the Help screen.
+        // History and Settings stay account-scoped: passing a null accountId
+        // makes the builder omit Settings, and includeScanHistory follows
+        // hasAccount, preserving the previous conditional behavior exactly.
+        actions: StandardAppBarActions.build(
+          context: context,
+          helpSection: HelpSection.settings, // unused -- includeHelp is false
+          accountId: hasAccount ? widget.accountId : null,
+          accountEmail: widget.accountEmail ?? widget.accountId,
+          platformId: widget.platformId ?? '',
+          platformDisplayName: widget.platformDisplayName ?? '',
+          includeNoRuleReview: false,
+          includeScanHistory: hasAccount,
+          includeHelp: false,
+        ),
       ),
       // Round 2 feedback: wrap in Scrollbar with thumbVisibility: true so
       // the scroll position is always visible, not hover-only.

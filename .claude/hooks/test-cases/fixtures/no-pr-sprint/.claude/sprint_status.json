@@ -1,0 +1,12 @@
+{
+  "_description": "Test fixture (Sprint 52 IMP-6): Sprint 51 at close-out with NO pr_number recorded -- the real Sprint 52 state Harold flagged, where the sprint ran to Phase 7 with no PR at all. verify-closeout-complete.ps1 must BLOCK a close-out claim here.",
+  "_last_updated": "2026-07-30T20:00:00Z",
+  "current_sprint": {
+    "number": 51,
+    "branch": "feature/20260727_Sprint_51",
+    "status": "Phase 7.7",
+    "plan_approved": true,
+    "pr_number": null,
+    "pr_url": null
+  }
+}

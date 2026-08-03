@@ -3,7 +3,7 @@
   "appId": "",
   "mode": "test",
   "attachTitle": "MyEmailSpamFilter",
-  "description": "F56 create+delete safe sender lifecycle (Sprint 41 F97, round 2 fix 2026-06-14). Creates an Entire-Domain safe sender for 'winwright-test.com' (a non-existent domain chosen to avoid duplicate-check collision), confirms the save dialog, then uses the Manage Safe Senders search box to locate and delete the created pattern in a teardown testCase -- net DB change is zero. TEST DATA: 'winwright-test.com' verified absent from safe_senders table (count=0) at authoring time. Domain has TLD 'com' which is in kIanaTlds. Generated pattern: @(?:[a-z0-9-]+\\.)*winwright-test\\.com$ , type: entire_domain. DEFAULT TYPE: Entire Domain is the default selection on the Add Safe Sender screen (ManualRuleCreateScreen initState); SelectionItemPattern IsSelected=True confirmed via live UIA inspect -- no radio click needed. TLD type is not available for safe senders (only Entire Domain, Exact Domain, Exact Email). FIX 1 -- MAXIMIZE: ww_window_state maximize added as first step. Verified live: after maximize, Save Rule is IsOffscreen=False at y=654 (window 1020px+ tall). No ww_scroll step needed -- scroll caused a race condition in the runner (see block-rule script description). FIX 2 -- SAVE BUTTON INVOKE->CLICK: ww_invoke replaced with ww_click for Save Rule. CONFIRMATION DIALOG: 'Confirm Safe Sender' Alert with Button[name='Save'] -- verified live (NOT 'Save Rule', just 'Save'). TEARDOWN: search 'winwright-test' in Edit[name*='Search patterns'], click Button[name*='View safe sender details'], Delete x2 (first Delete opens 'Delete Safe Sender' confirm, second confirms), Back x2 to home -- all selectors verified live. INPUT FIELD: type=Edit[name='Enter email, domain, or URL'] -- same name in Entire-Domain mode on both block-rule and safe-sender create screens.",
+  "description": "[QUARANTINED -- NOT RUNNABLE END-TO-END BY THE SCRIPT RUNNER. Do not read a failure of this script as an app defect.] EXCLUDED from the default sweep (run-winwright-tests.ps1 $excludedFromSweep): the runner SKIPS ww_wait and REJECTS ww_assert, so a Flutter dialog-settle boundary cannot be bridged. Symptom when run anyway via -TestName f56: a step succeeds, then the NEXT selector resolves 0 elements -- observed 2026-07-31 at ww_invoke Button[name='Save'] (the confirm dialog had not animated in yet). Selectors below are verified live and correct; the gap is runner settle, not the app. Reliable execution belongs in integration_test (F99). F56 create+delete safe sender lifecycle (Sprint 41 F97, round 2 fix 2026-06-14). Creates an Entire-Domain safe sender for 'winwright-test.com' (a non-existent domain chosen to avoid duplicate-check collision), confirms the save dialog, then uses the Manage Safe Senders search box to locate and delete the created pattern in a teardown testCase -- net DB change is zero. TEST DATA: 'winwright-test.com' verified absent from safe_senders table (count=0) at authoring time. Domain has TLD 'com' which is in kIanaTlds. Generated pattern: @(?:[a-z0-9-]+\\.)*winwright-test\\.com$ , type: entire_domain. DEFAULT TYPE: Entire Domain is the default selection on the Add Safe Sender screen (ManualRuleCreateScreen initState); SelectionItemPattern IsSelected=True confirmed via live UIA inspect -- no radio click needed. TLD type is not available for safe senders (only Entire Domain, Exact Domain, Exact Email). FIX 1 -- MAXIMIZE: ww_window_state maximize added as first step. Verified live: after maximize, Save Rule is IsOffscreen=False at y=654 (window 1020px+ tall). No ww_scroll step needed -- scroll caused a race condition in the runner (see block-rule script description). FIX 2 -- SAVE BUTTON INVOKE->CLICK: ww_invoke replaced with ww_click for Save Rule. CONFIRMATION DIALOG: 'Confirm Safe Sender' Alert with Button[name='Save'] -- verified live (NOT 'Save Rule', just 'Save'). TEARDOWN: search 'winwright-test' in Edit[name*='Search patterns'], click Button[name*='View safe sender details'], Delete x2 (first Delete opens 'Delete Safe Sender' confirm, second confirms), Back x2 to home -- all selectors verified live. INPUT FIELD: type=Edit[name='Enter email, domain, or URL'] -- same name in Entire-Domain mode on both block-rule and safe-sender create screens.",
   "runConfig": {
     "captureScreenshots": false,
     "screenshotFormat": "png",
@@ -17,24 +17,41 @@
       "id": "F56-SS-1",
       "title": "Create Entire Domain safe sender for winwright-test.com",
       "steps": [
-        { "tool": "ww_window_state", "state": "maximize" },
-        { "tool": "ww_click", "selector": "type=Button[name='Settings']" },
-        { "tool": "ww_click", "selector": "type=Button[name*='kimmeyharold@aol.com']" },
-        { "tool": "ww_click", "selector": "type=Button[name='Manage Safe Senders']" },
-        { "tool": "ww_click", "selector": "type=Button[name*='Add safe sender']" },
-        { "tool": "ww_type", "selector": "type=Edit[name='Enter email, domain, or URL']", "text": "winwright-test.com" },
-        { "tool": "ww_click", "selector": "type=Button[name='Save Rule']" },
-        { "tool": "ww_click", "selector": "type=Button[name='Save']" }
+        { "_comment": "PRIMING QUERY (Flutter builds its semantics tree lazily ON QUERY, not on a timer) + maximize, so Save Rule is not below the fold.",
+          "tool": "ww_window_state", "state": "maximize" },
+
+        { "_comment": "F135 (Sprint 52): the account-picker step this script used to have is GONE -- the desktop default screen is now Review 'No Rule' Items and Settings resolves its account lazily, opening straight onto the General tab.",
+          "tool": "ww_invoke", "selector": "type=Button[name='Settings']" },
+
+        { "_comment": "PROOF OF ARRIVAL. Tabs project as Text nodes -> physical mouse path.",
+          "tool": "ww_click", "selector": "type=Text[name^='General']", "useInvokePattern": false },
+
+        { "tool": "ww_invoke", "selector": "type=Button[name='Manage Safe Senders']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name*='Add safe sender']" },
+
+        { "_comment": "Entire Domain is the DEFAULT rule type, so no radio selection is needed here -- which is why this script never hit the selector problem that was misdiagnosed in the block-rule script (see F131 correction there).",
+          "tool": "ww_type", "selector": "type=Edit[name='Enter email, domain, or URL']", "text": "winwright-test.com" },
+
+        { "_comment": "Mouse path deliberately: ww_invoke reports success on an off-screen element WITHOUT pressing it.",
+          "tool": "ww_click", "selector": "type=Button[name='Save Rule']", "useInvokePattern": false },
+
+        { "_comment": "PROOF OF EFFECT: the confirm dialog appears only if Save Rule actually fired.",
+          "tool": "ww_invoke", "selector": "type=Button[name='Save']" }
       ]
     },
     {
       "id": "F56-SS-2",
       "title": "Delete the winwright-test.com safe sender (teardown -- restores DB state)",
       "steps": [
-        { "tool": "ww_type", "selector": "type=Edit[name*='Search patterns']", "text": "winwright-test" },
-        { "tool": "ww_click", "selector": "type=Button[name*='View safe sender details']" },
-        { "tool": "ww_click", "selector": "type=Button[name='Delete']" },
-        { "tool": "ww_click", "selector": "type=Button[name='Delete']" },
+        { "_comment": "Typed ONCE into a fresh search box -- it cannot be cleared by automation on this build.",
+          "tool": "ww_type", "selector": "type=Edit[name*='Search patterns']", "text": "winwright-test" },
+
+        { "_comment": "PROOF THE SAFE SENDER EXISTED: this row resolves only if case 1 created it.",
+          "tool": "ww_invoke", "selector": "type=Button[name*='View safe sender details']" },
+
+        { "tool": "ww_invoke", "selector": "type=Button[name='Delete']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name='Delete']" },
+
         { "tool": "ww_invoke", "selector": "type=Button[name='Back']" },
         { "tool": "ww_invoke", "selector": "type=Button[name='Back']" }
       ]

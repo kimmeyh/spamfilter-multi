@@ -1,0 +1,8 @@
+{
+  "cwd": "D:/Data/Harold/github/spamfilter-multi/.claude/hooks/test-cases/fixtures/premerge-sprint",
+  "session_id": "closeout-violation-3",
+  "branch_override": "feature/20260727_Sprint_51",
+  "last_assistant_message": "Sprint 51 is fully closed out. Everything through the Post-Merge and Ready-for-Next-Sprint sections is done.",
+  "hook_event_name": "Stop",
+  "dirty_zero_files_override": " M 0Testing Feedback - all.txt"
+}

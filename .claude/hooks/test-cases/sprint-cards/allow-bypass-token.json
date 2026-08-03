@@ -1,0 +1,6 @@
+{
+  "status_path_override": "test-cases/fixtures/status_approved_no_cards.json",
+  "tool_input": {
+    "command": "git commit -m \"hotfix\" # allow_no_cards"
+  }
+}

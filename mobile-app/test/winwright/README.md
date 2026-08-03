@@ -110,13 +110,26 @@ sweep -- their reliable unattended execution lives in `integration_test`:
 | `test_f56_create_block_rule.json` | F56: create TLD block rule (`museum`), delete it (net zero DB drift) -- EXCLUDED from default sweep (F99) | S41 F97 (new) |
 | `test_f56_create_safe_sender.json` | F56: create Entire Domain safe sender (`winwright-test.com`), delete it (net zero DB drift) -- EXCLUDED from default sweep (F99) | S41 F97 (new) |
 
-> **Note on the F56 scripts (2026-07-28)**: their documented radio-selection workaround (click the
-> parent `Group` instead of the `RadioButton`) did **not** reproduce -- the form stayed in its default
-> Entire-Domain mode either way. Combined with the off-screen `Save Rule` button and input validation
-> rejecting synthetic domains, the create path is currently not drivable end-to-end by the script
-> runner. This is why `test_mt2c_no_rule_sweep.json` asserts sweep *stability* against the existing
-> rule set rather than creating a rule first, and why the sweep-with-a-new-rule contract is covered
-> deterministically in `test/ui/screens/no_rule_review_screen_test.dart` instead.
+> **Note on the F56 scripts (CORRECTED 2026-07-31, Sprint 52 F131)**: the Sprint 51 note here said the
+> radios "do not select" and that the create path "is not drivable". **Both claims were wrong, and the
+> cause was a bad selector, not the app.** Sprint 41 had documented a workaround of clicking the parent
+> `Group` (`type=Group[name*='Top-Level Domain']`); Sprint 51 followed it, saw nothing happen, and
+> generalised that to "radios cannot be selected". Clicking a `Group` hits a container with no selection
+> behavior. Targeting the **`RadioButton` itself** with `useInvokePattern: false` works -- verified live
+> 2026-07-31: the input's name flips from `Enter email, domain, or URL` to `Enter TLD (...)`, and the
+> confirm dialog reads `Type: Top-Level Domain / Source: *.museum`. `ww_invoke` correctly *fails* on a
+> radio (`does not support InvokePattern`) because radios expose `SelectionItemPattern` -- that is proper
+> UIA behavior, not a defect.
+>
+> What remains true is narrower: these two scripts are **still EXCLUDED from the default sweep**, because
+> the script runner skips `ww_wait` and rejects `ww_assert` and therefore cannot bridge a Flutter
+> dialog-settle boundary. Run explicitly via `-TestName f56` and a step will succeed while the *next*
+> selector resolves 0 elements (observed 2026-07-31 at `Button[name='Save']` and `Edit[name*='Enter TLD']`).
+> That is a **runner limitation, not an app defect** -- do not read a failure of these scripts as a
+> regression. Reliable execution of the lifecycle belongs in `integration_test` (F99), which has
+> `pumpAndSettle`. `test_mt2c_no_rule_sweep.json` still asserts sweep *stability* against the existing
+> rule set, and the sweep-with-a-new-rule contract stays covered deterministically in
+> `test/ui/screens/no_rule_review_screen_test.dart`.
 
 The 2 F56 scripts **write then delete**: each testCase creates one row and a second testCase deletes it,
 leaving net DB drift of zero. They are EXCLUDED from the default sweep and run explicitly via
@@ -171,7 +184,7 @@ this wrong is the single biggest cause of "the selector resolved but nothing hap
 | TabBar tab (projects as `Text`) | `ww_click` + `useInvokePattern: false` | tabs need a real mouse press |
 | Static `Text` label | `ww_click` + `useInvokePattern: false` | `Element does not support InvokePattern. ControlType: Text` |
 | `CheckBox` | `ww_click` + `useInvokePattern: false` | exposes TogglePattern, not InvokePattern |
-| `RadioButton` | *(no reliable path on this build)* | neither the RadioButton nor its parent Group selects -- see below |
+| `RadioButton` | `ww_click` + `useInvokePattern: false` **on the RadioButton itself** | exposes `SelectionItemPattern`, not `InvokePattern`, so `ww_invoke` correctly fails. Do **not** target the parent `Group` -- a Group is a container with no selection behavior (corrected Sprint 52 F131) |
 
 **A mid-sprint claim that `useInvokePattern: true` "reports success without activating the widget" was
 tested and NOT reproduced as stated, and is withdrawn** -- with the default flag, `Manage Rules` opened,
@@ -196,11 +209,13 @@ the mouse path only for the control types that cannot accept InvokePattern.
 
 ### Controls that resist automation on this build (do not sink time into them)
 
-- **The Add-Block-Rule `Rule Type` RadioButtons do not select.** Neither `ww_click` on the RadioButton
-  nor on its parent Group changes the mode -- the form silently stays in its default Entire-Domain
-  mode (confirmed by the input field keeping the name `Enter email, domain, or URL` instead of
-  switching to `Enter TLD (...)`). The older `test_f56_create_block_rule.json` note claims clicking the
-  parent Group works; that did **not** reproduce on 2026-07-28.
+- ~~**The Add-Block-Rule `Rule Type` RadioButtons do not select.**~~ **RETRACTED 2026-07-31 (Sprint 52,
+  F131) -- this was a selector bug, not an app limitation.** The Sprint 51 entry targeted the parent
+  `Group`; a Group has no selection behavior, so nothing happened. `ww_click` +
+  `useInvokePattern: false` on `type=RadioButton[name^='Top-Level Domain']` selects correctly (verified
+  live: input name flips to `Enter TLD (...)`, confirm dialog reads `Type: Top-Level Domain`). See the
+  per-control-type table above. Kept here deliberately rather than deleted: the failure mode -- reading
+  "my selector did nothing" as "the app cannot do this" -- is the thing to avoid repeating.
 - **The search box cannot be cleared.** `ww_type clearFirst: true` **appends** (observed `museum` +
   `gmail` -> `museumgmail`), `ww_clear` throws a COM `HRESULT` exception, and `ctrl+a`/`Delete` does not
   reach the Flutter field. Type into it at most **once** per screen visit; leaving and re-entering the

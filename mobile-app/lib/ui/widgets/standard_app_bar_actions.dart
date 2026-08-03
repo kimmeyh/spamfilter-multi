@@ -1,9 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 
+import '../../adapters/storage/secure_credentials_store.dart';
+import '../../core/utils/platform_inference.dart';
+import '../screens/account_selection_screen.dart';
 import '../screens/help_screen.dart';
 import '../screens/no_rule_review_screen.dart';
 import '../screens/scan_history_screen.dart';
+import '../screens/scan_progress_screen.dart';
 import '../screens/settings_screen.dart';
 
 /// The ONE definition of the standard AppBar action icons and their ORDER
@@ -57,6 +61,9 @@ class StandardAppBarActions {
     List<Widget> leading = const [],
     VoidCallback? onSettings,
     VoidCallback? onAccounts,
+    VoidCallback? onScanHistory,
+    VoidCallback? onManualScan,
+    bool includeManualScan = true,
     bool includeNoRuleReview = true,
     bool includeScanHistory = true,
     bool includeAccounts = true,
@@ -66,6 +73,66 @@ class StandardAppBarActions {
     return [
       // Screen-specific actions first (Download, Find, Refresh, ...).
       ...leading,
+
+      // 0. Manual / Live Scan (Harold 2026-07-31, during MV-1):
+      //    "the Account screen is also, currently, the only way to get to the
+      //    Live Scan/Manual Scan screen -- but an icon for the Manual Scan
+      //    Screen would be advisable."
+      //
+      //    Placed FIRST in the standard block because it acts on the selected
+      //    account rather than navigating to a management surface, and because
+      //    appending it would put it after Help -- Help is always last.
+      //    LABEL: the destination screen titles itself "Manual Scan -
+      //    <email>", so the tooltip matches the screen you land on. Harold
+      //    okayed "Live Scan" if it read better, but the button ON that screen
+      //    is already "Start Live Scan" -- naming the icon for the ACTION and
+      //    the screen for the DESTINATION would make them look like two
+      //    different places. The radar icon carries the "scanning" sense that
+      //    a generic play arrow does not.
+      //
+      //    DEFAULT-ON, suppressed only by the Manual Scan screen itself
+      //    (Harold 2026-07-31: "The radar icon belongs on either: all screens
+      //    OR all screens except the Manual Scan screen (follow the same
+      //    pattern as for icon tool bar currently)"). This mirrors every other
+      //    action here: on everywhere, with `include*: false` used ONLY for the
+      //    self-referential case -- No-Rule hides No-Rule, Settings hides
+      //    Settings, Scan History hides Scan History.
+      //
+      //    Like Settings, it is omitted when there is no account to scope it to
+      //    and the caller supplied no handler, rather than opening a scan
+      //    screen with nothing to scan.
+      //
+      //    NET EFFECT (re-audited 2026-08-02 against this guard, PR #292
+      //    re-review -- the previous "9 of 15" figure here was WRONG and
+      //    survived two fix rounds; it omitted three screens and its arithmetic
+      //    never matched the guard). Across the 15 screens (16 call sites)
+      //    using this builder, the icon can appear on at most SIX:
+      //      - always (3): folder_selection, results_display (non-nullable
+      //        accountId) and no_rule_review (always passes onManualScan);
+      //      - only when an account is resolvable (3): help_screen,
+      //        scan_history and settings (nullable accountId).
+      //    Never on the other nine: scan_progress (includeManualScan: false --
+      //    it IS Manual Scan); the five Help-only editors (rules_management,
+      //    safe_senders_management, rule_test, rule_quick_add,
+      //    yaml_import_export); and account_selection, account_setup (both call
+      //    sites) and platform_selection, which pass no accountId and no
+      //    handler. The editor and account-flow screens are deliberate: showing
+      //    an icon that cannot resolve an account would be the MV-1 dead-icon
+      //    class again. If Manual Scan is ever wanted there, give them an
+      //    accountId first.
+      if (includeManualScan && (onManualScan != null || accountId != null))
+        IconButton(
+          icon: const Icon(Icons.radar),
+          tooltip: 'Manual Scan',
+          onPressed: onManualScan ??
+              () => openManualScan(
+                    context,
+                    accountId: accountId!,
+                    accountEmail: accountEmail,
+                    platformId: platformId,
+                    platformDisplayName: platformDisplayName,
+                  ),
+        ),
 
       // 1. Review "No Rule" Items -- Windows-desktop scoped, matching the
       //    existing F112/F39 entry points.
@@ -78,30 +145,67 @@ class StandardAppBarActions {
           ),
         ),
 
-      // 2. View Scan History
+      // 2. View Scan History -- [onScanHistory] lets a screen supply its own
+      //    navigation (e.g. Settings, which routes through a helper that also
+      //    carries platform/email context it already resolved).
       if (includeScanHistory)
         IconButton(
           icon: const Icon(Icons.history),
           tooltip: 'View Scan History',
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => ScanHistoryScreen(
-                platformId: platformId,
-                platformDisplayName: platformDisplayName,
-                accountId: accountId,
-                accountEmail: accountEmail,
-              ),
-            ),
-          ),
+          onPressed: onScanHistory ??
+              () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => ScanHistoryScreen(
+                        platformId: platformId,
+                        platformDisplayName: platformDisplayName,
+                        accountId: accountId,
+                        accountEmail: accountEmail,
+                      ),
+                    ),
+                  ),
         ),
 
       // 3. Accounts
+      //
+      // MV-1 FIX (Sprint 52, Harold 2026-07-31): this used to default to
+      // `Navigator.popUntil(context, (route) => route.isFirst)`. That was
+      // correct BEFORE F135 -- Account Selection was effectively what the first
+      // route rendered, so unwinding to it worked. F135 changed the desktop
+      // default screen to Review "No Rule" Items, and the first route is
+      // MainNavigationScreen, which now renders the No-Rule screen inline
+      // whenever at least one account exists. Account Selection is therefore
+      // NOT a route on desktop at all, so popUntil could never reach it:
+      //   - from the No-Rule screen itself, popUntil found it was already at
+      //     the first route and did nothing at all (the reported symptom -- a
+      //     completely dead icon);
+      //   - from any deeper screen it unwound to the No-Rule screen instead of
+      //     to Accounts.
+      //
+      // Harold: "the account screen is still needed for adding additional
+      // accounts ... it is no longer the default screen if you have more than
+      // one account setup, but still needs to be available (also for making
+      // updates to an email account)."
+      //
+      // PUSHING is the correct verb now: Account Selection is a destination
+      // like any other, not an ancestor to unwind to. Screens that ARE the
+      // account selection screen pass includeAccounts: false, so this never
+      // pushes a duplicate of itself.
+      //
+      // The two changes were each correct in isolation and broke only at their
+      // intersection -- which is exactly the class of defect a shared builder
+      // is supposed to make impossible to hit in only some places. It is
+      // fixed once here, so every screen gets it.
       if (includeAccounts)
         IconButton(
           icon: const Icon(Icons.people),
           tooltip: 'Select Account',
           onPressed: onAccounts ??
-              () => Navigator.popUntil(context, (route) => route.isFirst),
+              () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const AccountSelectionScreen(),
+                    ),
+                  ),
         ),
 
       // 4. Settings -- omitted when there is no account to scope it to and the
@@ -133,5 +237,109 @@ class StandardAppBarActions {
           ),
         ),
     ];
+  }
+
+  /// Opens the Manual Scan screen for [accountId], resolving the pieces
+  /// `ScanProgressScreen` requires but that most callers do not carry.
+  ///
+  /// Lives here rather than on each screen so the resolution exists ONCE.
+  /// `account_selection_screen._selectAccount` had this logic inline, and the
+  /// first cut of the No-Rule icon copied it -- two copies of a platform
+  /// lookup is exactly the duplication-drift this class exists to prevent.
+  ///
+  /// [platformId] is looked up in the credential store when the caller does not
+  /// already know it, with a domain-based fallback for accounts saved before
+  /// the platformId was recorded.
+  ///
+  /// PUBLIC so a screen that needs to do something on RETURN can await it --
+  /// the No-Rule screen reloads, because a scan can resolve items it is
+  /// currently displaying. Such a screen passes its own [onManualScan] that
+  /// calls this, rather than reimplementing the resolution.
+  static Future<void> openManualScan(
+    BuildContext context, {
+    required String accountId,
+    String? accountEmail,
+    String? platformId,
+    String? platformDisplayName,
+  }) async {
+    var resolvedPlatformId = platformId ?? '';
+    if (resolvedPlatformId.isEmpty) {
+      resolvedPlatformId =
+          await SecureCredentialsStore().getPlatformId(accountId) ?? '';
+    }
+    if (resolvedPlatformId.isEmpty) {
+      resolvedPlatformId = inferPlatformFromEmail(accountEmail ?? accountId);
+    }
+
+    // The await above crosses an async gap; the screen may have been popped.
+    if (!context.mounted) return;
+
+    // DO NOT navigate with an unresolved platform (PR #292 review).
+    // `inferPlatformFromEmail` (core/utils/platform_inference.dart -- the ONE
+    // implementation; this widget's private copy diverged from its two
+    // account_selection_screen siblings and was removed) returns
+    // `unknownPlatformId` for any address outside its six known domains --
+    // which includes every custom or corporate IMAP host the generic adapter
+    // otherwise supports fine. Pushing anyway put "unknown" into the scan
+    // pipeline: the real failure (`EmailScanner`: 'Platform unknown not
+    // supported') only surfaced two screens later, in a Results screen titled
+    // with a provider the user never chose, after they tapped Start Live Scan.
+    //
+    // The sentinel is also ambiguous at this boundary: it is indistinguishable
+    // between a genuinely unsupported provider, a keystore read failure inside
+    // getPlatformId (which swallows its own errors and returns null), and a
+    // missing _platformId key. Reporting here keeps the message honest about
+    // what we actually know.
+    //
+    // This mirrors what settings_screen.dart already does correctly in three
+    // places: resolve, and on failure show a message and return WITHOUT
+    // navigating. The shared helper was the outlier.
+    if (resolvedPlatformId.isEmpty ||
+        resolvedPlatformId == unknownPlatformId) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Could not determine the email provider for this account. Open '
+              'Accounts and re-add it to restore its provider setting.'),
+        ),
+      );
+      return;
+    }
+
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ScanProgressScreen(
+          platformId: resolvedPlatformId,
+          platformDisplayName:
+              platformDisplayName ?? _platformDisplayName(resolvedPlatformId),
+          accountId: accountId,
+          accountEmail: accountEmail ?? accountId,
+        ),
+      ),
+    );
+  }
+
+  // Platform inference and its `unknownPlatformId` sentinel moved to
+  // `core/utils/platform_inference.dart` (PR #292 re-review): this widget's
+  // private copy had diverged from the two copies in
+  // `account_selection_screen.dart` when the endsWith security fix was applied
+  // here only -- the spoof address the AppBar path blocked still resolved as
+  // Gmail on the account-selection path. One core function, three call sites.
+
+  static String _platformDisplayName(String platformId) {
+    switch (platformId) {
+      case 'gmail':
+        return 'Gmail';
+      case 'aol':
+        return 'AOL';
+      case 'yahoo':
+        return 'Yahoo';
+      case 'outlook':
+        return 'Outlook';
+      case 'icloud':
+        return 'iCloud';
+      default:
+        return platformId;
+    }
   }
 }

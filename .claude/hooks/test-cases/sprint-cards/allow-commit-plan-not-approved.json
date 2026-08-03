@@ -1,0 +1,6 @@
+{
+  "status_path_override": "test-cases/fixtures/status_unapproved_no_cards.json",
+  "tool_input": {
+    "command": "git commit -m \"docs: sprint plan drafted\""
+  }
+}
