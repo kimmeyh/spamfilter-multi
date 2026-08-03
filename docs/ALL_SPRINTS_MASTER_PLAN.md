@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-07-30 (Sprint 51 retrospective complete: Manual Validation closed all 5 items; IMP-7 shipped in-sprint; **F133/F133-S52, F134, F135, F136 carded for Sprint 52 detail planning**, and **F132 RETIRED into F133**. **`0.5.8` is LIVE in the Store** -- certified 2026-07-29 as Submission 9. See Version History 6.19)
+**Last Updated**: 2026-08-03 (Sprint 53 F-STORE-53 complete: release-candidate smoke test passed, then the real Store MSIX built, uploaded, and certified. **`0.5.9` is LIVE in the Store** -- certified 2026-08-03 as Submission 10. F139 (local-install smoke test template) and F140 (WinWright end-of-page reachability) added to backlog. Dev bumped 0.5.9 -> 0.5.10 (pubspec.yaml, gate-verified).)
 
 ## How to Maintain This Document
 
@@ -116,12 +116,24 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 49 | docs/sprints/SPRINT_49_SUMMARY.md | [OK] Complete | Jul 21-23, 2026 (PR #276) |
 | 50 | docs/sprints/SPRINT_50_SUMMARY.md | [OK] Complete | Jul 25-27, 2026 (PR #278; 0.5.8 submitted) |
 | 51 | docs/sprints/SPRINT_51_SUMMARY.md | [OK] Complete | Jul 27-30, 2026 (PR #285; 0.5.8 LIVE Jul 29) |
+| 52 | docs/sprints/SPRINT_52_SUMMARY.md | [OK] Complete | Jul 30-Aug 2, 2026 (PR #292) |
+| 53 | docs/sprints/SPRINT_53_PLAN.md | [OK] Complete (retro skipped, PO decision) | Aug 3, 2026 (PR #295/#296; 0.5.9 LIVE Aug 3) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
 ---
 
 ## Last Completed Sprint
+
+**Sprint 53** (2026-08-03; PR #295 -> develop, PR #296 -> main)
+- **Type**: Single-task Store release sprint. 1/1 task complete.
+- **Delivered**: **F-STORE-53** -- scope corrected mid-sprint from "full release pipeline" to "smoke test only" after Harold flagged scope creep ("this task is meant to be a smoke test, correct?"); release-candidate MSIX built locally (no merge required) and smoke-tested clean (Gmail sign-in, About screen, title bar, no `[DEV]` artifacts). Once the smoke test passed, the real Store MSIX 0.5.9.0 was built from `main`, verified, uploaded to Partner Center, and **CERTIFIED + LIVE 2026-08-03** as Submission 10. **F138** closed (icons not needed in the 5 rule-editing screens' context, Harold decision). Dev bumped 0.5.9 -> 0.5.10 (pubspec.yaml, one file, gate-verified).
+- **Backlog additions found live during the smoke test**: **F139** (HOLD template) -- the Store-submission MSIX config produces an unsigned package that cannot install locally; self-signing via `store: false, install_certificate: true` installs a release candidate side-by-side with the live Store build without disturbing it. **F140** -- the app version display on Settings > General and Help sits at the end of a long scrollable tab and could not be reached by WinWright/UIA automation (`ww_scroll`/direct-click both failed with `element_offscreen`); backlogged to investigate a fix or relocate the display nearer the top of the page.
+- **Verification**: pre-build suite 1,859 passed / 29 skipped / 0 failed, analyze clean (re-confirmed on the release-candidate build); Store-build manifest 0.5.9.0, 16.80 MB, correct prod dart-defines; Harold-confirmed Gmail sign-in + About screen + title bar clean on the smoke-test build.
+- **Retro**: **SKIPPED by explicit Product Owner decision** (Harold, 2026-08-03: "PO approves skipping sprint 53 retrospective") -- a deliberate exception to the Phase 7 completeness rule for this single-task release sprint, not an oversight.
+- **Docs**: SPRINT_53_PLAN.md.
+
+_(Prior: **Sprint 52** below.)_
 
 **Sprint 52** (2026-07-30 -- 2026-08-02; PR #292 -> develop)
 - **Type**: Accessibility audit + full remediation, AppBar consistency, account-selection UX. 7/7 tasks complete (5 planned + 2 added mid-sprint), plus 3 manual-validation fixes.

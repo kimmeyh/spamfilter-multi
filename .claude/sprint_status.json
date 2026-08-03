@@ -1,35 +1,34 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-03T13:00:00Z",
+  "_last_updated": "2026-08-03T14:30:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
 
   "current_sprint": {
+    "number": 54,
+    "branch": null,
+    "pr_number": null,
+    "pr_url": null,
+    "start_date": null,
+    "status": "NOT YET OPENED. Sprint 53 closed 2026-08-03 (retro skipped by PO decision). Next sprint's branch/scope selection has not started -- Backlog Refinement is the next step whenever work resumes.",
+    "plan_approved": false,
+    "plan_approval_date": null,
+    "blanket_execution_approved": false,
+    "scope": [],
+    "_scope_note": "Not yet selected."
+  },
+
+  "previous_sprint": {
     "number": 53,
     "branch": "feature/20260803_Sprint_53",
     "pr_number": 295,
     "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/295",
-    "start_date": "2026-08-03",
-    "status": "PR #295 merged -> develop, PR #296 merged develop -> main (both 2026-08-03). F-STORE-53 smoke test complete and passed. Store MSIX 0.5.9.0 built from main, verified, uploaded to Partner Center as Submission 10, submitted for certification 2026-08-03 -- IN CERTIFICATION as of last check. Awaiting certification result before Phase 7 close-out.",
-    "plan_approved": true,
-    "plan_approval_date": "2026-08-03",
-    "blanket_execution_approved": true,
-    "scope": ["F-STORE-53: build + smoke-test-verify release-candidate MSIX, then (once smoke test passed) build the real Store MSIX and submit to Partner Center", "F138 closed (icons not needed)", "secrets.dev.json cleanup (prod worktree, gitignored)", "F139 + F140 added to backlog (surfaced live during F-STORE-53)"],
-    "_scope_note": "Single-task release sprint. Scope was corrected mid-sprint (Harold: 'this task is meant to be a smoke test, correct?') to exclude the merge/upload/certification steps from the TASK CARD -- those happened afterward as a separate, later, Harold-initiated action once the smoke pass had passed."
-  },
-
-  "previous_sprint": {
-    "number": 52,
-    "branch": "feature/20260730_Sprint_52",
-    "pr_number": 292,
-    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/292",
     "merged_at": "2026-08-03",
-    "merge_commit": "dfe8f89e37e1d3bf171bf5d7e2b57c43355ec674",
-    "merge_note": "PR #292 -> develop. Post-Merge Cleanup COMPLETE: Sprint 53 branch opened from the Sprint 52 branch, issues #289/#290/#291 closed by hand with resolution notes (gh issue list --label sprint --state open verified EMPTY), all sprint branches retained.",
+    "merge_note": "PR #295 -> develop, PR #296 (develop -> main) both merged 2026-08-03. Issue #294 closed by hand (Closes-on-merge-to-develop does not auto-fire in this GitFlow repo). Retrospective SKIPPED by explicit Product Owner decision (Harold, 2026-08-03: 'PO approves skipping sprint 53 retrospective') -- deliberate exception, not an oversight, for this single-task release sprint.",
     "status": "complete",
-    "deliverables": ["F133-S52 accessibility audit (all 27 screens) + full remediation", "F131 WinWright root cause (selector bug, not an app defect)", "F134 + F134-ALL canonical AppBar order (all screens)", "F135 session-scoped account selection + lazy Settings resolution", "F136 Skip button", "6 retrospective improvements (IMP-1..6)"],
-    "verification": "1,859 tests passed / 29 skipped / 0 failed (from 1,815 at Sprint 51 close); analyze clean; hook suite 45/45; Manual Validation closed by Harold; Copilot review + 3 further multi-agent review rounds, all findings fixed",
-    "_review_depth_note": "Sprint 52 went through FOUR review rounds before merge (Copilot, then 3 multi-agent rounds), each finding real defects the previous round missed or introduced -- MV-1 (Accounts icon reaching nothing), diverged platform-inference logic across 3 copies (contains() vs endsWith()), a legacy-account regression from the round-2 fix, cache-staleness in a round-3 fix, and a zero-test-coverage function hit by 3 consecutive rounds. Worth referencing if a future sprint's review cadence is being scoped."
+    "deliverables": ["F-STORE-53: release-candidate smoke test (passed) then real Store MSIX 0.5.9.0 built, uploaded, and CERTIFIED + LIVE as Submission 10", "F138 closed (icons not needed in rule-editing-screen context)", "secrets.dev.json cleanup (prod worktree, gitignored, no commit)", "F139 + F140 added to backlog (local-install smoke test template; WinWright end-of-page reachability gap)", "dev bumped 0.5.9 -> 0.5.10 (pubspec.yaml, gate-verified)"],
+    "verification": "Pre-build: 1,859 tests passed / 29 skipped / 0 failed, analyze clean. Store build: manifest 0.5.9.0, 16.80 MB, correct prod dart-defines. Smoke test (RC build): --print-env clean, title bar clean, Harold-confirmed Gmail sign-in + About screen clean.",
+    "_no_retro_note": "Because the retrospective was skipped, there is no Category 1-14 x 4-role feedback to carry forward and no docs/sprints/SPRINT_53_RETROSPECTIVE.md. Only SPRINT_53_PLAN.md exists for this sprint's docs."
   },
 
   "github_issues": [294],
@@ -49,40 +48,42 @@
 
   "store_release": {
     "_see_also": "docs/STORE_VERSION_STATUS.md is the quick-check summary (live Store version + current dev version, both with a last-verified date). This block is the working detail behind that summary. Keep both in sync; STORE_VERSION_STATUS.md is what to open for a fast answer, this block is where the evidence lives.",
-    "live_version": "0.5.8",
-    "live_submission_number": 9,
-    "previous_live_version": "0.5.7",
+    "live_version": "0.5.9",
+    "live_submission_number": 10,
+    "previous_live_version": "0.5.8",
     "submitted_version": "0.5.9",
     "submission_number": 10,
     "built_at": "2026-08-03",
     "submitted_at": "2026-08-03",
-    "certified_at": null,
-    "status": "IN CERTIFICATION (Submission 10). Pipeline stage at last check: Submission [done] -> Pre-processing [in progress] -> Certification [pending] -> Publishing [pending]. Do NOT treat as live until Partner Center shows a certified/published state -- see the 2026-07-28 BUILT+VALIDATED-is-not-SUBMITTED lesson below; the equivalent risk here is treating SUBMITTED as CERTIFIED.",
-    "certification_evidence": "Partner Center screenshot, Harold, 2026-08-03: product overview shows 'Update in certification' badge; Product update panel reads 'Submission 10: Last modified on 08/03/2026'.",
+    "certified_at": "2026-08-03",
+    "status": "CERTIFIED + LIVE in the Microsoft Store.",
+    "certification_evidence": "Partner Center screenshot, Harold, 2026-08-03: Application overview -> 'Store presence (Submission 10)' section shows the green 'Your product is currently available in the Microsoft Store' confirmation. Submission 11 auto-opened as the next draft slot (normal behavior, same v0.5.9.0 package shown 'Unchanged') -- not a new release in progress.",
     "artifact": "D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix",
     "verification": "Pre-upload: build log shows correct prod dart-defines (APP_ENV=prod, secrets.prod.json); manifest Version=0.5.9.0; size 16.80 MB (matches the RC build built earlier same day for the F-STORE-53 smoke test, byte-identical source). Smoke test (separate release-candidate build, self-signed for local install, NOT this artifact): --print-env clean (APP_ENV=prod, NATIVE_APP_ENV=prod, no dev suffixes), title bar clean, About screen + Gmail sign-in confirmed by Harold.",
+    "_client_propagation_lag_2026_08_03": "Same day as certification, BOTH the Store app's own product-detail page (renders as skeleton placeholders, identical symptom to the 2026-07-28 known bug logged in environment_notes) AND `winget upgrade`/`winget install --source msstore` (reports 'No available upgrade found', `winget show` reports Version: Unknown) lagged behind the certified state. `winget source update` was run and did not fix it -- the msstore catalog itself is a Microsoft-hosted index outside local control. Partner Center's Store-presence confirmation is authoritative regardless of what these client-side surfaces report; no further action needed beyond waiting for propagation. Not a submission defect -- do not re-diagnose as one.",
+    "post_cert_closeout_done": [
+      "DONE 2026-08-03: docs/STORE_VERSION_STATUS.md Live row updated to 0.5.9.0 + client-propagation-lag note added",
+      "DONE 2026-08-03: CHANGELOG.md -- added post-cert closeout entry + '## [0.5.9] - 2026-08-03' release heading + comparison note (Sprint 51/52/53 entries now under it)",
+      "DONE 2026-08-03: docs/ALL_SPRINTS_MASTER_PLAN.md -- Store status -> LIVE 0.5.9.0; Last Completed Sprint rolled 52 -> 53; Past Sprint Summary table updated (also backfilled the missing Sprint 52 row)",
+      "DONE 2026-08-03: dev bumped 0.5.9 -> 0.5.10 (pubspec.yaml top-level version ONLY -- msix_version deliberately left at 0.5.9.0 until the next release build, per the F139 lesson about premature/stale bumps); version_consistency gate green"
+    ],
     "post_cert_closeout_pending": [
-      "Once Submission 10 certifies: update docs/STORE_VERSION_STATUS.md Live row to 0.5.9.0 (do not do this before certification actually completes)",
-      "Once certified: CHANGELOG.md -- add '## [0.5.9] - <cert-date>' release heading + comparison links (Unreleased entries already assembled)",
-      "Once certified: docs/ALL_SPRINTS_MASTER_PLAN.md -- Store status -> LIVE 0.5.9.0; roll Last Completed Sprint 52 -> 53",
-      "Once certified: dev bump 0.5.9 -> 0.5.10 (pubspec.yaml top-level version + msix_version, one commit, version_consistency gate green) -- per ADR-0035 patch+1 convention",
-      "Harold: confirm no [DEV] artifacts on the ACTUAL Store-installed (not self-signed RC) build once it publishes, same as every prior release -- the RC smoke test is a strong predictor but the Store-signed artifact has never been directly observed installed until it publishes"
+      "Harold: confirm the actual Store-installed 0.5.9.0 build (once winget/Store client propagation catches up and it can be freshly installed/updated) shows no [DEV] artifacts -- the RC smoke test is a strong predictor but the Store-signed artifact itself has not yet been directly observed installed via winget/Store client"
     ],
     "_prior_release_history": "0.5.8 (Submission 9): built 2026-07-27, submitted 2026-07-28 (after a BUILT+VALIDATED-is-not-SUBMITTED near-miss -- see docs/sprints/SPRINT_51_SUMMARY.md), certified 2026-07-29, Harold-verified clean (no [DEV] title) 2026-07-30. Full both-sides proof (APP_ENV=prod AND NATIVE_APP_ENV=prod) passed for the first time on this release, closing the 3-sprint F119 family (F119 msix-key typo, F119-b secrets space-key, F119-c native env var never set)."
   },
 
   "environment_notes": [
     "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
-    "Microsoft Store CLIENT bug (observed 2026-07-28, NOT ours, NOT blocking): app DETAIL pages render as skeleton placeholders that never populate, then blank. Search results render fine (12 apps with icons/ratings/screenshots, ours correctly marked Installed), and app icon + title + rating load on the detail page -- only the live-fetched content fails. Reproduces on THIRD-PARTY listings (Spike Email), so it is not our listing or our package. Survived Store restart, full reboot, and wsreset.exe. No action available beyond awaiting a Store client update. Do NOT re-diagnose this as an app or submission defect: the third-party reproduction is the decisive evidence."
+    "Microsoft Store CLIENT bug (observed 2026-07-28, NOT ours, NOT blocking): app DETAIL pages render as skeleton placeholders that never populate, then blank. Search results render fine (12 apps with icons/ratings/screenshots, ours correctly marked Installed), and app icon + title + rating load on the detail page -- only the live-fetched content fails. Reproduces on THIRD-PARTY listings (Spike Email), so it is not our listing or our package. Survived Store restart, full reboot, and wsreset.exe. No action available beyond awaiting a Store client update. Do NOT re-diagnose this as an app or submission defect: the third-party reproduction is the decisive evidence.",
+    "RECURRED 2026-08-03 (0.5.9.0 certification day): the same Store-detail-page skeleton symptom reproduced immediately, PLUS winget's msstore catalog independently lagged (winget show reported Version: Unknown, winget upgrade/install reported 'No available upgrade found' even after `winget source update`). Partner Center's Store-presence section was the only surface confirming the release was actually live. This is now a recurring pattern on certification day specifically -- client-side propagation (Store app cache, winget's msstore catalog mirror) lags Partner Center's own confirmation by some hours. Treat Partner Center as authoritative every time; do not wait for winget/Store client agreement before considering a release live."
   ],
 
   "blocking_issues": [],
 
   "next_actions": [
-    "WAIT for Submission 10 (0.5.9.0) certification result in Partner Center -- typically a few hours, up to 3 business days per Microsoft. Do not assume certified; check Partner Center directly.",
-    "ON CERTIFICATION: run the post_cert_closeout_pending list in store_release above (STORE_VERSION_STATUS.md Live row, CHANGELOG [0.5.9] heading, master-plan Store status + Last Completed Sprint roll, dev bump 0.5.9 -> 0.5.10).",
-    "ON CERTIFICATION: Harold to confirm the actual Store-installed 0.5.9.0 build shows no [DEV] artifacts -- the RC smoke test already passed, but the Store-signed artifact itself has not been directly observed installed yet.",
-    "AFTER post-cert closeout: Sprint 53 Phase 7 retrospective (14 categories x 4 roles) -- has not yet been run.",
+    "Harold: once winget/Store client propagation catches up, confirm the actual Store-installed 0.5.9.0 build shows no [DEV] artifacts (About screen, title bar) -- see store_release.post_cert_closeout_pending.",
+    "SPRINT 54: not yet opened. Backlog Refinement is the next step whenever work resumes -- read docs/BACKLOG_REFINEMENT.md's presentation format first.",
     "Android/Google Play remains the next major track (promotion trigger fired 2026-07-24)"
   ]
 }
