@@ -109,6 +109,33 @@ void main() {
           reason: 'F119-c: Step 4.0 relies on the probe printing the native '
               'compiled environment.');
     });
+
+    // F125 (Sprint 54): a one-shot release self-test collapsing the manual
+    // multi-step Step 4.0 verification into a single PASS/FAIL command. Like
+    // --print-env above, this is a source-text gate (main() calls exit() and
+    // needs the real platform channel, so it is not unit-testable directly);
+    // the actual behavior is verified against a real running dev build as
+    // part of this task's Definition of Done, not by a unit test.
+    test('the --release-self-test probe exists and checks all six '
+        'release-gating invariants', () {
+      final mainDart = File('lib/main.dart').readAsStringSync();
+      expect(mainDart, contains('--release-self-test'),
+          reason: 'F125: the one-shot release self-test flag must exist.');
+      expect(mainDart, contains('--expected-version='),
+          reason: 'F125: the probe cannot know the release target on its '
+              'own -- it must be passed explicitly.');
+      for (final check in [
+        "AppEnvironment.current == 'prod'",
+        "nativeEnv == 'prod'",
+        'AppEnvironment.displaySuffix.isEmpty',
+        'AppEnvironment.dataDirSuffix.isEmpty',
+        "AppEnvironment.windowTitle.contains('[DEV]')",
+        'actualVersion == expectedVersion',
+      ]) {
+        expect(mainDart, contains(check),
+            reason: 'F125: release self-test must check "$check".');
+      }
+    });
   });
 
   group('dart-define-from-file secrets well-formedness (F119-b)', () {

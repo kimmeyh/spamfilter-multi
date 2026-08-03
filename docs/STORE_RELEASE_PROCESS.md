@@ -189,6 +189,18 @@ cd D:\Data\Harold\github\spamfilter-multi-prod\mobile-app\build\windows\x64\runn
 
 **Check C -- after install (Step 4.2), final confirmation:** the title bar and About screen must read `MyEmailSpamFilter` / `Version X.Y.Z` with **NO `[DEV]` suffix**, and the app must use the `MyEmailSpamFilter` (not `MyEmailSpamFilter_Dev`) data directory. A `[DEV]` suffix anywhere = the build ran as dev = do not submit.
 
+**Check B, one-shot version (F125, Sprint 54):** `--print-env` above requires five separate lines to be individually read and interpreted correctly under release-day time pressure -- exactly the class of gap that let the F119 family through three times. `--release-self-test` collapses the same checks (plus a version match) into a single PASS/FAIL command:
+```powershell
+cd D:\Data\Harold\github\spamfilter-multi-prod\mobile-app\build\windows\x64\runner\Release
+.\MyEmailSpamFilter.exe --release-self-test --expected-version=X.Y.Z
+# Checks APP_ENV=prod, NATIVE_APP_ENV=prod, both suffixes empty, no [DEV] in
+# windowTitle, and the compiled version matches --expected-version. Prints
+# one PASS/FAIL line per check, then RESULT: PASS or RESULT: FAIL. Exit code
+# 0 on PASS, 1 on any FAIL -- safe to gate a script on.
+# DO NOT submit unless RESULT: PASS.
+```
+This does not replace Check C (the visual/interactive About-screen and Gmail sign-in confirmation) -- it replaces the manual multi-line reading of Check B's `--print-env` output with one command that cannot be partially skipped.
+
 ### 4.1 Verify manifest version
 
 ```powershell
