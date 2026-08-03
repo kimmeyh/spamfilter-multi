@@ -11,6 +11,7 @@
 **Related docs**:
 - `docs/adr/0035-production-development-side-by-side.md` -- why production and development builds coexist with different data directories.
 - `CLAUDE.md` -- Common Commands / Windows Development section for day-to-day dev builds (separate from store release).
+- `docs/STORE_VERSION_STATUS.md` -- quick-check cache of the current live/certified Store version and the current dev version. Checked at the start of a release (Pre-Release Checklist) and updated at the end (Step 7).
 
 ---
 
@@ -34,7 +35,8 @@ Before starting a store release, confirm all of these:
 
 - [ ] `develop` branch is green: `flutter test` passes, `flutter analyze` has 0 issues.
 - [ ] Most recent sprint retrospective is complete (Phase 7 done, `docs/sprints/SPRINT_N_RETROSPECTIVE.md` committed).
-- [ ] Target version is chosen. By convention we release from production worktree at `X.Y.Z.0` and dev is always `X.Y.(Z+1).0` (per ADR-0035 patch+1).
+- [ ] **Check `docs/STORE_VERSION_STATUS.md`, then re-verify its Live/certified row against Partner Center directly** (it is a cache, not authoritative -- see the file's own header). Confirms the actual live version before deciding the target.
+- [ ] Target version is chosen. By convention we release from production worktree at `X.Y.Z.0` and dev is always `X.Y.(Z+1).0` (per ADR-0035 patch+1). Cross-check against `mobile-app/pubspec.yaml`'s current `version:` -- if dev has not been bumped since the last release, the target is dev's CURRENT version, not current+1.
 - [ ] `docs/ALL_SPRINTS_MASTER_PLAN.md` "Last Completed Sprint" is up to date.
 - [ ] CHANGELOG.md entries for the version are assembled under `## [Unreleased]` ready to move under a versioned heading.
 
@@ -290,8 +292,9 @@ When certification completes:
   - Missing privacy policy URL -> update in Store listings.
   - Accessibility issue -> fix and resubmit (does not require a version bump if the fix is UI-only and the MSIX is rebuilt from the same source version).
   - Functional failure during review -> fix, bump version (Store does not accept the same version twice), resubmit.
+- [ ] **Update `docs/STORE_VERSION_STATUS.md`** -- the Live/certified row: new version, today's date, submission number, and how it was verified (installed-build check is the strongest evidence). This file is a CACHE of what Partner Center actually says; only update it after direct verification there, never from memory or from a prior sprint's notes.
 - [ ] Update `docs/ALL_SPRINTS_MASTER_PLAN.md` "Last Completed Sprint" with store release outcome.
-- [ ] Bump dev worktree to the next patch version (per Step 1, run Step 1 again with dev now one version ahead of prod).
+- [ ] Bump dev worktree to the next patch version (per Step 1, run Step 1 again with dev now one version ahead of prod). **Also update the Dev row in `docs/STORE_VERSION_STATUS.md`** to match the new `pubspec.yaml` version.
 - [ ] Move the CHANGELOG `[Unreleased]` entries under a new `## [X.Y.Z] - YYYY-MM-DD` section and update comparison links.
 
 ---

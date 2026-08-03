@@ -1,54 +1,54 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-07-30T20:15:00Z",
+  "_last_updated": "2026-08-03T04:10:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
 
   "current_sprint": {
+    "number": 53,
+    "branch": "feature/20260803_Sprint_53",
+    "pr_number": null,
+    "pr_url": null,
+    "start_date": "2026-08-03",
+    "status": "Phase 1 -- awaiting Backlog Refinement. Branch opened via Phase 6.6 immediately after PR #292 merged; no task work has started. Do NOT create issue cards or task commits before Phase 3.7 plan approval -- require-sprint-cards.ps1 will block them anyway.",
+    "plan_approved": false,
+    "plan_approval_date": null,
+    "blanket_execution_approved": false,
+    "scope": [],
+    "_scope_note": "Not yet selected. Backlog Refinement is next."
+  },
+
+  "previous_sprint": {
     "number": 52,
     "branch": "feature/20260730_Sprint_52",
     "pr_number": 292,
     "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/292",
-    "_pr_note": "CREATED LATE -- 2026-08-02, at Phase 7, not at Phase 3.3.1 where the lifecycle requires it. Harold flagged the miss. Cause: the Sprint 52 branch already existed from the Sprint 51 Phase 6.6 carry-forward, so the first commit on it was Sprint 51 close-out work and Phase 3.3.1 was never walked -- the same skipped step that cost the issue cards (backfilled as #289/#290/#291). Now enforced by require-sprint-cards.ps1, which blocks task commits when EITHER Phase 3.3.1 deliverable is missing. Stays DRAFT until the end of 7.7.",
-    "start_date": "2026-07-30",
-    "status": "Phase 7.7.5 COMPLETE -- awaiting Harold's final approval + merge of PR #292 (Ready-for-Review, mergeable). Manual Validation complete; retrospective complete (14 categories x 4 roles, all Very Good); all 6 improvements applied; Copilot review complete -- 4 findings, ALL fixed in a37604f and all 4 threads replied-to and resolved. 1,829 passing / 0 failing / analyzer clean / build green / hooks 45/45.",
-    "plan_approved": true,
-    "plan_approval_date": "2026-07-30",
-    "blanket_execution_approved": true,
-    "_approval_note": "Harold 2026-07-30: 'Plan approved. Order as needed. proceed with execution. All Sprint tasks and sub-tasks are approved. Continue without addition approvals until Manual Validation, providing your recommendation for Manual Validation steps. Do not stop to ask questions unless meeting the criteria in docs/SPRINT_STOPPING_CRITERIA.md'. Also steered Task 5: reuse an existing button widget -- duplicate it, rename to Skip, place it sensibly in the header (Claude picks the position). The F135 Class-1 sub-decisions were NOT separately answered, so the plan's stated assumptions stand: zero accounts -> Account Selection at startup; Back from the default No-Rule screen exits the app.",
-    "scope": ["F133-S52 (first, time-boxed by tier)", "F131", "F134", "F135", "F136", "F134-ALL (SC-1, added mid-sprint)", "F133-REMEDIATE (SC-2/SC-3, added mid-sprint)"],
-    "_scope_change_log": "EXPANDED TWICE mid-sprint, both Harold-directed, recorded in SPRINT_52_PLAN.md 'Scope Change Log': SC-1 (2026-07-31) F134 extended from 3 screens to ALL -- the AC-3 audit found the hand-rolled pattern on 8 more screens, and AC-3 is repo-wide, so converting only the named 3 never satisfied it. SC-2 (2026-07-31) F133-S52 remediation EXECUTED rather than planned-only. SC-3 (2026-07-31) F135 R-1 (Settings per-tab prompting) reinstated -- it had been deviated on 'large refactor' grounds, which Harold correctly rejected: 'large' is not a stopping criterion, and Criterion 9 is a 400-wall-clock-hour threshold this sprint is nowhere near.",
-    "_scope_note": "Harold selected all 5 candidates at Phase 1 backlog refinement 2026-07-30. Plan: docs/sprints/SPRINT_52_PLAN.md. Execution order: Task 1 first (Harold's instruction), then Task 4 BEFORE Task 3 (F134 depends on F135 for the No-Rule Settings icon), then Task 5; Task 2 independent."
-  },
-
-  "previous_sprint": {
-    "number": 51,
-    "branch": "feature/20260727_Sprint_51",
-    "pr_number": 285,
-    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/285",
-    "merged_at": "2026-07-30",
-    "merge_note": "PR #285 -> develop (merge commit 6e3a152). Post-Merge Cleanup COMPLETE: Sprint 52 branch opened from the Sprint 51 branch, issues #286/#287/#288 closed by hand (gh issue list --label sprint --state open verified EMPTY), all sprint branches retained.",
+    "merged_at": "2026-08-03",
+    "merge_commit": "dfe8f89e37e1d3bf171bf5d7e2b57c43355ec674",
+    "merge_note": "PR #292 -> develop. Post-Merge Cleanup COMPLETE: Sprint 53 branch opened from the Sprint 52 branch, issues #289/#290/#291 closed by hand with resolution notes (gh issue list --label sprint --state open verified EMPTY), all sprint branches retained.",
     "status": "complete",
-    "deliverables": ["F130-S51 (28 contradictions found + corrected across 3 tiers)", "F128-residual", "F129 (3 WinWright scripts)", "IMP-7 auto-advance enforcement window", "F134 + F135 foundations", "0.5.8 post-cert close-out"],
-    "verification": "1,815 tests passed / 29 skipped / 0 failed; analyze clean; hook suite 34/34; WinWright 3/3 no DB drift; Manual Validation 5/5 closed by Harold; Copilot review: 1 finding, fixed and resolved"
+    "deliverables": ["F133-S52 accessibility audit (all 27 screens) + full remediation", "F131 WinWright root cause (selector bug, not an app defect)", "F134 + F134-ALL canonical AppBar order (all screens)", "F135 session-scoped account selection + lazy Settings resolution", "F136 Skip button", "6 retrospective improvements (IMP-1..6)"],
+    "verification": "1,859 tests passed / 29 skipped / 0 failed (from 1,815 at Sprint 51 close); analyze clean; hook suite 45/45; Manual Validation closed by Harold; Copilot review + 3 further multi-agent review rounds, all findings fixed",
+    "_review_depth_note": "Sprint 52 went through FOUR review rounds before merge (Copilot, then 3 multi-agent rounds), each finding real defects the previous round missed or introduced -- MV-1 (Accounts icon reaching nothing), diverged platform-inference logic across 3 copies (contains() vs endsWith()), a legacy-account regression from the round-2 fix, cache-staleness in a round-3 fix, and a zero-test-coverage function hit by 3 consecutive rounds. Worth referencing if a future sprint's review cadence is being scoped."
   },
 
-  "github_issues": [289, 290, 291],
-  "_github_issues_note": "Sprint 52 cards: #289 (F133-S52 + F133-REMEDIATE accessibility audit + remediation), #290 (F131 WinWright create-path root cause), #291 (F134/F134-ALL/F135/F136 UX). CREATED LATE -- 2026-07-31, at the end of Phase 4 rather than at Phase 3 where the process requires. Six task commits had already landed with no issue cards and no CHANGELOG entries; both gaps were caught and closed together while recording Task 2. Root cause of the miss: execution began straight from plan approval without walking the Phase 3 card-creation step. Flag for retro Category 9. Original note follows -- EMPTY because Sprint 52 has no cards yet -- they are created when scope is selected at Phase 3. Sprint 51's three cards (#286/#287/#288) were closed BY HAND at Post-Merge Cleanup on 2026-07-30 and verified with `gh issue list --label sprint --state open` returning empty. `Closes #N` does NOT auto-fire in this GitFlow repo: PRs merge feature -> develop, and GitHub only auto-closes on merge to the DEFAULT branch. Assuming auto-close was the Sprint 50 escape that left five issues open.",
+  "github_issues": [],
+  "_github_issues_note": "EMPTY -- Sprint 53 has no cards yet; created when scope is selected at Phase 3 (require-sprint-cards.ps1 blocks task commits until then). Sprint 52's three cards (#289/#290/#291) were closed BY HAND at Post-Merge Cleanup on 2026-08-03 and verified with `gh issue list --label sprint --state open` returning empty. `Closes #N` does NOT auto-fire in this GitFlow repo: PRs merge feature -> develop, and GitHub only auto-closes on merge to the DEFAULT branch.",
 
   "test_metrics": {
-    "tests_passing": 1829,
+    "tests_passing": 1859,
     "tests_skipped": 29,
     "tests_failing": 0,
     "analyzer_warnings": 0,
-    "_test_metrics_note": "1,829 as of 2026-08-02 (Sprint 52 complete through retro improvements; --concurrency=4, analyzer clean). +14 vs Sprint 51's 1,815: two policy gates (appbar_action_order 4, text_contrast 2), skip_button_semantics 3, sprint52_surfaces 3 (R-8), appbar_action_navigation 3 (IMP-1), no_rule_review refresh-confirmation 1.",
-    "hook_test_cases": "45/45 passing (.claude/hooks/run-test-cases.ps1) -- +12 in Sprint 52: 8 sprint-cards (IMP-2/IMP-6 Phase 3.3.1 gate), 2 closeout 0*-file cases (IMP-4), 1 closeout no-PR case (IMP-6), and the premerge fixture gained a pr_number so it still models a correct pre-merge state.",
+    "_test_metrics_note": "1,859 as of 2026-08-03 (Sprint 52 final, post-merge; --concurrency=4, analyzer clean). +30 vs the 1,829 recorded at Phase 7.7.5: the 3 post-Ready-for-Review review rounds added settings_null_account_test (5), account_selection_legacy_platform_test (1, new file), plus fixes to existing tests -- no net regressions across any round.",
+    "hook_test_cases": "45/45 passing (.claude/hooks/run-test-cases.ps1) -- unchanged since Phase 7.7.5.",
     "winwright_sweep": "3/3 passing, no DB drift (mobile-app/scripts/run-winwright-tests.ps1)",
     "coverage_percent": null,
-    "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5); the default concurrency intermittently drops test-isolate connections and produces phantom load failures."
+    "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5); the default concurrency intermittently drops test-isolate connections and produces phantom load failures -- confirmed again during Sprint 52's post-merge review rounds (2 separate runs each showed a different random file 'did not complete' with zero exceptions; both isolated clean). Always re-run once before treating a concurrency-run failure as real."
   },
 
   "store_release": {
+    "_see_also": "docs/STORE_VERSION_STATUS.md is the quick-check summary (live Store version + current dev version, both with a last-verified date). This block is the working detail behind that summary. Keep both in sync; STORE_VERSION_STATUS.md is what to open for a fast answer, this block is where the evidence lives.",
     "live_version": "0.5.8",
     "live_submission_number": 9,
     "previous_live_version": "0.5.7",
@@ -81,18 +81,10 @@
 
   "blocking_issues": [],
 
-  "_sprint_51_task_status_note": "Retained for reference; Sprint 51 is CLOSED (see previous_sprint). Full record: docs/sprints/SPRINT_51_SUMMARY.md.",
-  "sprint_51_task_status": {
-    "task_1_F130_S51": "DONE -- Tiers 1+2+3 all COMPLETE. 28 contradictions found, 28 corrected, 0 outstanding. The one Class-3 item (retired .claude/memory restore path) was surfaced per R-6, decided by Harold 2026-07-28 (retire /memory-restore, point /startup-check at this file), and applied same-day. Findings: docs/sprints/SPRINT_51_F130_FINDINGS.md",
-    "task_2_F128_residual": "DONE -- 3 silent-no-op sites fixed in rule_set_provider.dart",
-    "task_3_F129": "DONE -- 3 WinWright scripts green with zero DB drift (f129 / f124 / mt2c). R-1 (MT-1 quick-action grid) required a semantics fix to results_display_screen.dart first; the grid cells were bare InkWells and unaddressable."
-  },
-
   "next_actions": [
-    "SPRINT 52 Phase 1: BACKLOG REFINEMENT -- read the authoritative presentation format in docs/BACKLOG_REFINEMENT.md FIRST (v1.3, Summary Index), then present candidates to Harold for scope selection. This is where Sprint 52 starts; no task work before Phase 3.7 approval.",
-    "Candidates entering Phase 1: F133-S52 (accessibility audit, first run of the F133 template, absorbs IMP-5 + IMP-6), F134 (AppBar order -- 3 screens remain), F135 (account selection -- Settings per-tab prompting + default screen remain), F136 (Skip button), F131 (WinWright create-path undrivable; the two test_f56_* scripts are STALE, not merely excluded). Stub with the DONE/REMAINING split: docs/sprints/SPRINT_52_PLAN.md",
+    "SPRINT 53 Phase 1: BACKLOG REFINEMENT -- read the authoritative presentation format in docs/BACKLOG_REFINEMENT.md FIRST, then present candidates to Harold for scope selection. This is where Sprint 53 starts; no task work before Phase 3.7 approval.",
     "HAROLD (release, low priority, not blocking): confirm the remaining Store-install checks -- About shows 'Version 0.5.8', and Gmail sign-in WORKS. The clean title proves APP_ENV/NATIVE_APP_ENV resolved to prod; only a real sign-in proves the OAuth credentials were embedded, which is what F119 originally broke.",
-    "HAROLD (release, when ready): develop -> main merge for the Sprint 51 work. Sprint 51 shipped no user-facing app changes beyond the F134/F135 foundations, so there is no Store submission pending.",
+    "HAROLD (release, when ready): develop -> main merge for the Sprint 52 work, once ready for a Store release cycle.",
     "Android/Google Play remains the next major track (promotion trigger fired 2026-07-24)"
   ]
 }
