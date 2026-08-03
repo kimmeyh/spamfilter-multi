@@ -348,7 +348,11 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
   /// the Account page and selects another". Recorded before navigating so the
   /// Manual Scan screen and any later account-scoped destination resolve to it
   /// without re-prompting.
-  Future<void> _selectAccount(String accountId) async {
+  Future<void> _selectAccount(
+    String accountId, {
+    String? platformId,
+    String? accountEmail,
+  }) async {
     context.read<SelectedAccountProvider>().select(accountId);
 
     _logger.i('Selected account: ${Redact.accountId(accountId)}');
@@ -362,10 +366,21 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
     // DIVERGED from the shared endsWith fix. openManualScan carries the store
     // lookup, the core inference, and the report-instead-of-navigate guard.
     // Using push (not pushReplacement) inside it, so back returns here.
+    //
+    // [platformId] is the platform the ROW already resolved
+    // (`_fetchAccountDisplayData`), passed through as the helper's first
+    // resolution tier (PR #292 round 3). The display path has a LEGACY
+    // fallback the helper deliberately does not: an old-format accountId with
+    // no '@' IS the platformId. Without this pass-through, a row that visibly
+    // renders "AOL Mail" refused to scan -- the two paths disagreed about a
+    // value one of them had already computed. Reusing the row's resolution
+    // makes the displayed provider and the scan target the same value by
+    // construction.
     await StandardAppBarActions.openManualScan(
       context,
       accountId: accountId,
-      accountEmail: accountId, // accountId is the email
+      accountEmail: accountEmail ?? accountId,
+      platformId: platformId,
     );
 
     // Refresh accounts on return from the scan flow.
@@ -838,7 +853,9 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                       // account-picker dialog mid-Sprint-51 -- named but
                       // unclickable. The ListTile keeps its own onTap so
                       // ordinary mouse/touch input is unchanged.
-                      onTap: () => _selectAccount(accountId),
+                      onTap: () => _selectAccount(accountId,
+                          platformId: displayData.platformId,
+                          accountEmail: displayData.email),
                       child: Card(
                       margin: const EdgeInsets.only(bottom: 12),
                       elevation: 2,
@@ -872,7 +889,9 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                           children: [
                             IconButton(
                               icon: const Icon(Icons.play_arrow, color: Colors.green),
-                              onPressed: () => _selectAccount(accountId),
+                              onPressed: () => _selectAccount(accountId,
+                                  platformId: displayData.platformId,
+                                  accountEmail: displayData.email),
                               tooltip: 'Start Scan',
                             ),
                             IconButton(
@@ -883,7 +902,9 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
                             ),
                           ],
                         ),
-                        onTap: () => _selectAccount(accountId),
+                        onTap: () => _selectAccount(accountId,
+                            platformId: displayData.platformId,
+                            accountEmail: displayData.email),
                       ),
                       ),
                     );
