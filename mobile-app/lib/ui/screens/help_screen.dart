@@ -164,6 +164,28 @@ class _HelpScreenState extends State<HelpScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // F140 (Sprint 54): duplicated near the top so the version is
+                // visible without scrolling -- the full footer (with the
+                // issue-tracker link) stays at the bottom of this page.
+                // Neither a human tester nor WinWright/UIA automation could
+                // reach the bottom-of-page footer without scrolling, and no
+                // working scroll mechanism was found (see
+                // docs/WINWRIGHT_SELECTORS.md).
+                FutureBuilder<PackageInfo>(
+                  future: PackageInfo.fromPlatform(),
+                  builder: (context, snapshot) {
+                    final version = snapshot.hasData
+                        ? snapshot.data!.version
+                        : '...';
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Text(
+                        'Version $version${AppEnvironment.displaySuffix}',
+                        style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                      ),
+                    );
+                  },
+                ),
                 // Sprint 38 F85 (ADR-0038): all section bodies now load
                 // from `assets/content/help/*.md` via the asset manifest.
                 // Titles remain inline because they are short labels, not

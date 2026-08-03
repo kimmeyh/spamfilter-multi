@@ -26,6 +26,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-08-03 (Sprint 54: F140)
+- **fix**: F140 -- the app version display on Settings > General and Help sat at the end of long single-page scrollable content, unreachable by WinWright/UIA automation (confirmed during Sprint 53's smoke test). A capability spike (`ww_dump_tree` with `includePatterns: true`) proved Flutter's Windows UIA bridge exposes NO control patterns to WinWright for any element -- not even `InvokePattern` on Buttons -- and no scrollable-region control type exists, so no scroll technique could have worked. Duplicated the version display near the top of both `settings_screen.dart`'s General tab and `help_screen.dart`, leaving the original bottom-of-page content in place. Two new widget tests pin the version text is visible without scrolling; mutation-caught a real bug in the first draft (a `SizedBox.shrink()` fallback on the Help-screen duplicate hid the text until `PackageInfo` resolved, which never happens in the test harness and would have shown real users nothing for a moment) -- fixed to always render a placeholder immediately, matching the Settings-screen pattern. Suite 1847 -> 1849, analyze clean (Issue #300).
+
 ### 2026-08-03 (Sprint 54: F137)
 - **chore**: F137 -- removed `process_results_screen.dart` (confirmed dead, zero references anywhere in `lib/` by both filename and class-name search) and its dedicated test file `process_results_screen_test.dart`. Same verification standard used for the three screens removed in Sprint 52's R-7. Suite 1859 -> 1847 tests (the removed file's own tests), analyze clean (Issue #299).
 
