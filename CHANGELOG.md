@@ -41,6 +41,13 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ### 2026-08-03 (Sprint 54: F137)
 - **chore**: F137 -- removed `process_results_screen.dart` (confirmed dead, zero references anywhere in `lib/` by both filename and class-name search) and its dedicated test file `process_results_screen_test.dart`. Same verification standard used for the three screens removed in Sprint 52's R-7. Suite 1859 -> 1847 tests (the removed file's own tests), analyze clean (Issue #299).
 
+## [0.5.9] - 2026-08-03
+
+Certified and LIVE in the Microsoft Store 2026-08-03 (Partner Center Submission 10). Contains the
+Sprint 51, 52, and Sprint 53 work below (moved here from `[Unreleased]` once the release actually
+shipped, per `docs/CHANGELOG_POLICY.md`'s "PRs to main" rule -- Sprint 54's own entries above stay
+under `[Unreleased]` until the NEXT release, currently targeted `0.6.0`, ships).
+
 ### 2026-08-03 (Sprint 53: post-certification closeout)
 - **chore**: Submission 10 (0.5.9.0) certified and published to the Microsoft Store 2026-08-03, confirmed via Partner Center's "Store presence" section. `winget upgrade`/the Store app's own product page lagged behind the certified state for a time (same client-side propagation-lag pattern documented 2026-07-28) -- Partner Center's Store-presence confirmation is authoritative regardless of what client-side surfaces report.
 - **docs**: F139 (HOLD template) -- local-install smoke test for a release-candidate MSIX: the Store-submission MSIX config (`store: true, install_certificate: false`) produces an unsigned package that cannot install locally; flipping to `store: false, install_certificate: true` self-signs a build for local testing, which installs side-by-side with the live Store build under a different package identity without disturbing it.
@@ -49,11 +56,6 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ### 2026-08-03 (Sprint 53: Store release prep)
 - **chore**: `msix_config.msix_version` bumped `0.5.8.0` -> `0.5.9.0`. This field had not been touched in Sprint 51 or 52 -- only `pubspec.yaml`'s top-level `version:` (which drives the runtime version via F-VERSION-DERIVE) had moved to `0.5.9+1` as a post-0.5.8-release step; `msix_version` is a separate field read only by the MSIX packaging step and was left stale. Caught while preparing the 0.5.9.0 Store submission.
 - **docs**: new `docs/STORE_VERSION_STATUS.md` -- a two-row quick-check cache of the current live/certified Store version and the current dev version, each with a last-verified date. Explicitly framed as a CACHE, not a source of truth: the live-Store fact can only be authoritative in Partner Center itself, and this file exists so nobody has to re-derive "what's live" from scattered notes -- while still requiring a direct Partner Center check before treating it as current. Wired into `STORE_RELEASE_PROCESS.md`'s Pre-Release Checklist (check + re-verify) and Step 7 (update on certification / dev bump), and cross-referenced from `sprint_status.json`'s `store_release` block so there is one clear hierarchy instead of three places that can each drift independently.
-
-## [0.5.9] - 2026-08-03
-
-Certified and LIVE in the Microsoft Store 2026-08-03 (Partner Center Submission 10). Contains the
-Sprint 51, 52, and Sprint 53 work below.
 
 ### 2026-08-02 (Sprint 52: manual-validation fixes + retrospective improvements)
 - **fix**: MV-1 -- the Accounts AppBar icon reached nothing on **every** screen. An intersection defect: F134 (canonical order) and F135 (No-Rule becomes the desktop default) were each correct alone, but the icon defaulted to `Navigator.popUntil(context, (route) => route.isFirst)`, which worked only while Account Selection was what the first route rendered. Once F135 made `MainNavigationScreen` render the No-Rule screen inline, Account Selection stopped being a route at all -- so from the No-Rule screen the icon did nothing, and from deeper screens it unwound to No-Rule. Now pushes `AccountSelectionScreen`; fixed once in the shared builder, so every screen got it (Issue #291)
@@ -1036,7 +1038,8 @@ See git history for detailed changes prior to Phase 3.1.
 
 ## Version Links
 
-[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.8...HEAD
+[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.9...HEAD
+[0.5.9]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.8...v0.5.9
 [0.5.8]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.7...v0.5.8
 [0.5.7]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.0...v0.5.7
 [0.5.0]: https://github.com/kimmeyh/spamfilter-multi/releases/tag/v0.5.0

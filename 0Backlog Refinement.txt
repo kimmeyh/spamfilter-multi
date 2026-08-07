@@ -8,7 +8,8 @@ Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPIN
 Sprint 5n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
 
 ---------------------------------------------------------------------------------------------------------
-Sprint 55 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
+Sprint 551
+ Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
 
 ---------------------------------------------------------------------------------------------------------
 Sprint 54 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:

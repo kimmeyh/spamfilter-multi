@@ -54,6 +54,7 @@ When a PR applies a pattern that should be codebase-wide (redaction, error handl
 - `test/policy/version_consistency_test.dart` and `check-version-consistency.ps1` intentionally contain stale-version FIXTURE literals (e.g. `0.5.3`) for their self-tests; they are excluded from the sweep. Do not flag these as version drift.
 - Scan-log filenames intentionally embed the app version (`live_scan_v0.5.x.log`); the version-consistency gate keeps them in sync. Do not flag the embedded version.
 - Windows-desktop-only gating (`if (Platform.isWindows)`) on Review/No-Rule entry points and some scan UI is intentional (Android UX differs), not a platform-coverage gap.
+- CHANGELOG.md: `[Unreleased]` can legitimately hold a NEW sprint's entries at the same time an OLDER sprint's entries correctly sit under a versioned heading below it (e.g. `## [0.5.9]`) -- these are different sprints, not a placement contradiction. Check each entry's own sprint/date label against the heading's stated contents before flagging a mismatch.
 
 ## De-Emphasize
 

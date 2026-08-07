@@ -25,8 +25,8 @@
 **Dependencies / blockers**: None.
 
 **Acceptance criteria** (measurable, traceable):
-- AC-1: `grep -r "process_results_screen" mobile-app/lib/` returns 0 matches outside the file itself (pre-deletion) or the file does not exist (post-deletion).
-- AC-2: `grep -r "ProcessResultsScreen" mobile-app/lib/` returns 0 matches outside the file itself (pre-deletion) or the file does not exist (post-deletion).
+- AC-1: `Get-ChildItem mobile-app/lib -Recurse | Select-String "process_results_screen"` returns 0 matches outside the file itself (pre-deletion) or the file does not exist (post-deletion). (Executed in-turn via the Grep tool, not a literal bash `grep -r` -- this repo is Windows/PowerShell-first per CLAUDE.md's Windows Tool Restrictions.)
+- AC-2: `Get-ChildItem mobile-app/lib -Recurse | Select-String "ProcessResultsScreen"` returns 0 matches outside the file itself (pre-deletion) or the file does not exist (post-deletion). (Same tooling note as AC-1.)
 - AC-3: `flutter analyze` and `flutter test` remain clean after deletion (no import broke).
 
 **Tests to write**:

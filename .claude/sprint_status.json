@@ -1,6 +1,6 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-03T15:15:00Z",
+  "_last_updated": "2026-08-07T00:00:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
 
@@ -10,12 +10,12 @@
     "pr_number": 298,
     "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/298",
     "start_date": "2026-08-03",
-    "status": "Branch opened via Phase 6.6 carry-forward from feature/20260803_Sprint_53 (corrected: an earlier attempt wrongly committed follow-up work directly onto the already-merged Sprint 53 branch and opened PR #297 from it -- Harold flagged this, #297 closed, and this branch/PR #298 created the correct way instead). Currently carries ONLY the Sprint 53 post-cert closeout commits (CHANGELOG [0.5.9] heading, master-plan roll, dev version bump 0.5.9->0.5.10, sprint_status.json updates) -- no Sprint 54 scope has been selected yet. Backlog Refinement is the next step once PR #298 merges.",
-    "plan_approved": false,
-    "plan_approval_date": null,
-    "blanket_execution_approved": false,
-    "scope": [],
-    "_scope_note": "Not yet selected. The commits currently on this branch are Sprint 53 closeout carried forward, not Sprint 54 scope."
+    "status": "Phase 7.7.5 FINAL GATE -- all 4 tasks complete, manual validation done (Harold confirmed version text visible in UI), retrospective complete (all 14 categories x 4 roles, 2 improvements applied), PR marked Ready for Review. Awaiting Harold's merge to develop.",
+    "plan_approved": true,
+    "plan_approval_date": "2026-08-03",
+    "blanket_execution_approved": true,
+    "scope": ["F137: verify and remove dead process_results_screen.dart -- DONE", "F140: WinWright/UIA end-of-page reachability -- DONE (spike negative, R-3 fallback applied)", "F125: one-shot release self-test probe -- DONE", "F141: Android/Google Play re-expansion deep dive -- DONE (analysis only, surfaced 2 architecture findings + Harold's governing direction, new backlog F142/F143/F144)"],
+    "_scope_note": "All 4 tasks complete. Retrospective added 2 more items: TROUBLESHOOTING.md entry (applied) and F145 backlog registration (applied). Versioning-policy gap also surfaced post-retro (Harold asked directly) and resolved as a documented decision -- CHANGELOG_POLICY.md/STORE_RELEASE_PROCESS.md updated to start enforcing semver from the next release."
   },
 
   "previous_sprint": {
@@ -32,19 +32,19 @@
     "_process_correction": "An initial attempt committed the post-cert closeout (CHANGELOG heading, master-plan roll, dev version bump) directly onto this already-merged branch and opened PR #297 from it -- exactly the 'stranded post-merge commits' anti-pattern the standing Phase 6.6 guidance warns against. Harold corrected this: the documented, always-100%-reliable fix is to create the NEXT branch from the current one FIRST, then commit there -- never commit follow-up work onto an already-merged branch. Corrected by creating feature/20260803_Sprint_54 from this branch and moving the closeout commits there via PR #298."
   },
 
-  "github_issues": [294],
-  "_github_issues_note": "Issue #294 (F-STORE-53) created at Phase 3.3.1. Confirmed the standing GitFlow caveat held again: PR #295's 'Closes #294' did NOT auto-close it on merge to develop (gh issue view 294 showed OPEN after both #295 and #296 merged) -- closed by hand 2026-08-03 with a resolution comment, same pattern as Sprint 52's #289/#290/#291. This array tracks cards CREATED this sprint, not cards currently open -- #294 stays listed here even though it is now closed.",
+  "github_issues": [294, 299, 300, 301, 302],
+  "_github_issues_note": "294 = Sprint 53 (F-STORE-53), carried in the array from before. 299/300/301/302 = Sprint 54 (F137/F140/F125/F141), all closed by hand with resolution comments -- confirmed the standing GitFlow caveat holds every time: `Closes #N` does not auto-fire on merge to develop. Verify with `gh issue list --label sprint --state open` returning empty before next sprint's Phase 2.3.",
 
   "test_metrics": {
-    "tests_passing": 1859,
+    "tests_passing": 1850,
     "tests_skipped": 29,
     "tests_failing": 0,
     "analyzer_warnings": 0,
-    "_test_metrics_note": "1,859 as of 2026-08-03 (Sprint 52 final, post-merge; --concurrency=4, analyzer clean). +30 vs the 1,829 recorded at Phase 7.7.5: the 3 post-Ready-for-Review review rounds added settings_null_account_test (5), account_selection_legacy_platform_test (1, new file), plus fixes to existing tests -- no net regressions across any round.",
-    "hook_test_cases": "45/45 passing (.claude/hooks/run-test-cases.ps1) -- unchanged since Phase 7.7.5.",
-    "winwright_sweep": "3/3 passing, no DB drift (mobile-app/scripts/run-winwright-tests.ps1)",
+    "_test_metrics_note": "1,850 as of 2026-08-07 (Sprint 54 final full run, --concurrency=4, analyzer clean). Path from Sprint 53's 1,859: F137 deleted process_results_screen.dart + its test file (-12, 1859->1847); F140 added 2 new tests for the version-duplicate fix (+2, 1847->1849); F125 added 1 source-text policy test (+1, 1849->1850). Net -9 vs Sprint 53, entirely explained by the F137 deletion outweighing the 3 new tests added.",
+    "hook_test_cases": "45/45 passing (.claude/hooks/run-test-cases.ps1) -- unchanged since Sprint 52.",
+    "winwright_sweep": "Not re-run this sprint (F140's UI changes were verified via new widget tests + manual validation, not a WinWright sweep -- no WinWright script touches Settings/Help screens yet; see new backlog item F145).",
     "coverage_percent": null,
-    "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5); the default concurrency intermittently drops test-isolate connections and produces phantom load failures -- confirmed again during Sprint 52's post-merge review rounds (2 separate runs each showed a different random file 'did not complete' with zero exceptions; both isolated clean). Always re-run once before treating a concurrency-run failure as real."
+    "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5). Sprint 54 hit the OTHER documented risk of concurrent flutter processes -- not the concurrency-flake, but a real resource-lock collision from running flutter test and build-windows.ps1 in the background at the same time (truncated a test run with no summary, non-regression, re-ran clean solo). Now documented in TROUBLESHOOTING.md."
   },
 
   "store_release": {
@@ -82,8 +82,10 @@
   "blocking_issues": [],
 
   "next_actions": [
-    "HAROLD: merge PR #298 (feature/20260803_Sprint_54 -> develop, Sprint 53 post-cert closeout) when convenient, then develop -> main same as PR #295/#296 (not necessarily on the same timeline -- develop -> main is an independent release decision, per Harold's clarification 2026-08-03).",
-    "Sprint 54's branch already exists and is where scope selection happens next -- Backlog Refinement is the first step (read docs/BACKLOG_REFINEMENT.md's presentation format first).",
-    "Android/Google Play remains the next major track (promotion trigger fired 2026-07-24)"
+    "IN PROGRESS: Harold requested a GitHub Copilot review on PR #298 (2026-08-07). Waiting for it to complete, then addressing each comment (fix now preferred, or backlog for next sprint if not), replying with how it was/will be fixed, and resolving the comment thread.",
+    "AFTER Copilot comments addressed: Harold re-requests Copilot review to confirm clean, then reviews and merges PR #298 (feature/20260803_Sprint_54 -> develop).",
+    "AFTER merge: develop -> main is a separate, independent release decision (not necessarily same timeline, per Harold's 2026-08-03 clarification).",
+    "NEXT SPRINT (55): Phase 6.6 carry-forward opens the branch from Sprint 54's on merge. Backlog Refinement is Sprint 55's first step.",
+    "Android/Google Play remains the next major track (promotion trigger fired 2026-07-24; F142/F143/F144 scoped and ready whenever prioritized, per the F141 deep dive)."
   ]
 }
