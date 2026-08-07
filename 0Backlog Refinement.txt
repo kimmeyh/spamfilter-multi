@@ -6,6 +6,25 @@ Continue without addition approvals until Manual Validation, providing your reco
 Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPING_CRITERIA.md
 ---------------------------------------------------------------------------------------------------------
 Sprint 5n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
+
+---------------------------------------------------------------------------------------------------------
+Sprint 551
+ Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
+
+---------------------------------------------------------------------------------------------------------
+Sprint 54 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
+- F137. Verify and remove dead process_results_screen.dart (~15-20m) Priority 10
+- F140. Version number unreachable by WinWright/UIA on Settings > General and Help (~30-90m, investigation-first) Priority 20
+- F125. One-shot release self-test probe (~1-2h) Priority 30
+- Add to backlog and assign to this sprint
+  - Do all other sprint items first, this one last
+  - Need a deep dive into what is needed for re-expanding the current app to an Android app
+    - Changes needed for the Android / Google Play Store
+    - UI - what will work as is, what will need to be adapted to an Android/phone/tablet/large tablet (8x11), while still being Accessibility compatible
+    - Any non-UI changes so that backend continues to work
+    - Review, update and/or add backlog items as needed
+  - Exception for Q&A on this sprint task, however, please try to batch them together up front or as late as possible - there is some dependencies between questions, but put the dependencies together whenever possible.
+
 ---------------------------------------------------------------------------------------------------------
 Sprint 52 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
 - F133-S52. Accessibility audit -- first run of the F133 template ([no-history], time-box by tier) Priority 12

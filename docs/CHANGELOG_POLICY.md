@@ -62,6 +62,7 @@ When `develop` is merged to `main`, create a versioned release:
    - **MAJOR**: Breaking changes or major milestones (Phase releases)
    - **MINOR**: New features (feat)
    - **PATCH**: Bug fixes (fix)
+   - **[ENFORCEMENT MARKER, Harold 2026-08-07]**: this policy was documented from early on but not actually followed -- every release from `0.5.1` through `0.5.10` bumped only PATCH regardless of whether it contained `feat` entries (several did: F133/F134/F135/F136 among others). **Confirmed gap, decision made 2026-08-07 (Sprint 54 retro follow-up)**: start enforcing this policy from the NEXT release forward. Before choosing a release's target version, check the `[Unreleased]` entries being rolled in -- if ANY entry is `feat`, the release bumps MINOR (not PATCH); if the release also contains a breaking change or is a deliberate milestone, it bumps MAJOR instead. A release containing only `fix`/`chore`/`docs`/`test` entries still bumps PATCH. No renumbering of past `0.5.x` releases -- history stays as recorded.
 
 4. **Update Version History**: Add summary to the `## Version History` section at bottom of CHANGELOG.md
 

@@ -301,6 +301,14 @@ rm D:/dev/flutter/bin/cache/flutter_tools.snapshot
 
 **Upstream**: This should be reported to [flutter/flutter](https://github.com/flutter/flutter/issues) as a Windows native assets build bug.
 
+### `flutter test` truncates with no pass/fail summary, non-zero exit code
+
+**Cause**: A concurrently-running `flutter` process (`build-windows.ps1`, another `flutter build`, or another `flutter test`) is holding locks on the shared `build/` directory. Both processes fight over the same files; the test run gets killed mid-way rather than failing cleanly.
+
+**Symptoms**: `flutter test` output stops after only a handful of lines (often mid-database-setup, before any test results appear), with no `+N ~M -K: All tests passed!`/`Some tests failed` summary line, and a non-zero exit code. This looks like a real regression at first glance, but is resource contention, not a code defect (confirmed Sprint 54: the background build's own log showed `"Terminating N stale dart process(es) holding build/ locks"` at the exact time the concurrent test run truncated).
+
+**Fix**: Never run `flutter test` and a build script (or another `flutter test`/`flutter build`) in the background at the same time. If you hit this, wait for the other process to finish, then re-run the test solo -- it will complete cleanly. Do not treat a truncated run as evidence of a regression without first checking whether another `flutter` process was running concurrently.
+
 ---
 
 ## Authentication Issues

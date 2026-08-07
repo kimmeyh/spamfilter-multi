@@ -26,6 +26,33 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-08-07 (Sprint 54 retro follow-up: versioning policy)
+- **docs**: confirmed a real policy-vs-practice gap in version numbering. `docs/CHANGELOG_POLICY.md` documents standard semver (MAJOR = breaking/milestone, MINOR = `feat`, PATCH = `fix`), but every release from `0.5.1` through the current `0.5.10` bumped only PATCH regardless of content -- several of those releases shipped substantial `feat` work (F133 accessibility remediation, F134 AppBar order, F135 session-scoped accounts, F136 Skip button) under a PATCH-only bump. **Decision (Harold, 2026-08-07)**: start following the documented semver policy from the NEXT release forward -- the first release containing a `feat` entry bumps MINOR (e.g. `0.5.10` -> `0.6.0`), not PATCH. No renumbering of past releases; history stays as-is. See `docs/CHANGELOG_POLICY.md` for the reference marker on where the transition applies.
+
+### 2026-08-03 (Sprint 54: F141)
+- **docs**: F141 -- Android/Google Play re-expansion deep dive (analysis only, no app code changed). Re-verified all GP-*/F94/F95 HOLD items against current repo state (last reviewed Sprint 39, over two months stale): GP-12 (Firebase Analytics) was already decided by an Accepted ADR-0030 but never executed; GP-8 (target SDK) is likely already satisfied by the current Flutter toolchain; SEC-7/GP-9 confirmed duplicates. Per-screen UI-adaptation assessment across all 23 screens found 16 work-as-is, 5 need touch-target/density adaptation, 2 need a genuine new interaction pattern. Surfaced two previously-undocumented architecture findings: the Android bottom-nav shell has 2 non-functional placeholder tabs, and the desktop app's default screen (`NoRuleReviewScreen`, F135) has zero Android entry point. Harold's on-the-spot direction: Windows' current architecture and tooling takes precedence (the app was built Android-first for early MVP speed, then switched to the Windows Store App style once that became the priority) -- old Android-first UI/backend should be REMOVED and replaced with Windows' pattern, adapting only for genuine platform constraints (no keyboard modifiers/hover/right-click on touch). New backlog items F142/F143/F144 (all HOLD, for a future dedicated Android sprint) capture the concrete remove-and-replace scope. See `docs/sprints/SPRINT_54_F141_ANDROID_DEEP_DIVE.md` (Issue #302).
+
+### 2026-08-03 (Sprint 54: F125)
+- **feat**: F125 -- extended the existing `--print-env` headless probe into a one-shot `--release-self-test --expected-version=X.Y.Z` command, checking `APP_ENV=prod`, `NATIVE_APP_ENV=prod`, both suffixes empty, no `[DEV]` in the window title, and the compiled version, in a single PASS/FAIL run (exit 0/1). Collapses `STORE_RELEASE_PROCESS.md` Step 4.0's manual multi-line `--print-env` reading into one command that cannot be partially skipped -- directly targets the F119 defect class (a skipped verification step shipped a dev-flagged build three times). Verified against the real dev build: correctly FAILs every prod-only check (expected -- it is a dev build) while correctly discriminating the version-match check both ways (match and deliberate mismatch). Suite 1849 -> 1850, analyze clean (Issue #301).
+
+### 2026-08-03 (Sprint 54: F140)
+- **fix**: F140 -- the app version display on Settings > General and Help sat at the end of long single-page scrollable content, unreachable by WinWright/UIA automation (confirmed during Sprint 53's smoke test). A capability spike (`ww_dump_tree` with `includePatterns: true`) proved Flutter's Windows UIA bridge exposes NO control patterns to WinWright for any element -- not even `InvokePattern` on Buttons -- and no scrollable-region control type exists, so no scroll technique could have worked. Duplicated the version display near the top of both `settings_screen.dart`'s General tab and `help_screen.dart`, leaving the original bottom-of-page content in place. Two new widget tests pin the version text is visible without scrolling; mutation-caught a real bug in the first draft (a `SizedBox.shrink()` fallback on the Help-screen duplicate hid the text until `PackageInfo` resolved, which never happens in the test harness and would have shown real users nothing for a moment) -- fixed to always render a placeholder immediately, matching the Settings-screen pattern. Suite 1847 -> 1849, analyze clean (Issue #300).
+
+### 2026-08-03 (Sprint 54: F137)
+- **chore**: F137 -- removed `process_results_screen.dart` (confirmed dead, zero references anywhere in `lib/` by both filename and class-name search) and its dedicated test file `process_results_screen_test.dart`. Same verification standard used for the three screens removed in Sprint 52's R-7. Suite 1859 -> 1847 tests (the removed file's own tests), analyze clean (Issue #299).
+
+## [0.5.9] - 2026-08-03
+
+Certified and LIVE in the Microsoft Store 2026-08-03 (Partner Center Submission 10). Contains the
+Sprint 51, 52, and Sprint 53 work below (moved here from `[Unreleased]` once the release actually
+shipped, per `docs/CHANGELOG_POLICY.md`'s "PRs to main" rule -- Sprint 54's own entries above stay
+under `[Unreleased]` until the NEXT release, currently targeted `0.6.0`, ships).
+
+### 2026-08-03 (Sprint 53: post-certification closeout)
+- **chore**: Submission 10 (0.5.9.0) certified and published to the Microsoft Store 2026-08-03, confirmed via Partner Center's "Store presence" section. `winget upgrade`/the Store app's own product page lagged behind the certified state for a time (same client-side propagation-lag pattern documented 2026-07-28) -- Partner Center's Store-presence confirmation is authoritative regardless of what client-side surfaces report.
+- **docs**: F139 (HOLD template) -- local-install smoke test for a release-candidate MSIX: the Store-submission MSIX config (`store: true, install_certificate: false`) produces an unsigned package that cannot install locally; flipping to `store: false, install_certificate: true` self-signs a build for local testing, which installs side-by-side with the live Store build under a different package identity without disturbing it.
+- **docs**: F140 -- the app version display (Settings > General "About" section, and equivalent Help-screen content) sits at the end of a long scrollable single-page tab and could not be reached by WinWright/UIA automation during the F-STORE-53 smoke test (`ww_scroll` and direct element clicks both failed with `element_offscreen`). Backlogged: investigate a WinWright/Flutter-side fix, falling back to relocating the version display nearer the top of the page if that proves impractical.
+
 ### 2026-08-03 (Sprint 53: Store release prep)
 - **chore**: `msix_config.msix_version` bumped `0.5.8.0` -> `0.5.9.0`. This field had not been touched in Sprint 51 or 52 -- only `pubspec.yaml`'s top-level `version:` (which drives the runtime version via F-VERSION-DERIVE) had moved to `0.5.9+1` as a post-0.5.8-release step; `msix_version` is a separate field read only by the MSIX packaging step and was left stale. Caught while preparing the 0.5.9.0 Store submission.
 - **docs**: new `docs/STORE_VERSION_STATUS.md` -- a two-row quick-check cache of the current live/certified Store version and the current dev version, each with a last-verified date. Explicitly framed as a CACHE, not a source of truth: the live-Store fact can only be authoritative in Partner Center itself, and this file exists so nobody has to re-derive "what's live" from scattered notes -- while still requiring a direct Partner Center check before treating it as current. Wired into `STORE_RELEASE_PROCESS.md`'s Pre-Release Checklist (check + re-verify) and Step 7 (update on certification / dev bump), and cross-referenced from `sprint_status.json`'s `store_release` block so there is one clear hierarchy instead of three places that can each drift independently.
@@ -1011,7 +1038,8 @@ See git history for detailed changes prior to Phase 3.1.
 
 ## Version Links
 
-[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.8...HEAD
+[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.9...HEAD
+[0.5.9]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.8...v0.5.9
 [0.5.8]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.7...v0.5.8
 [0.5.7]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.0...v0.5.7
 [0.5.0]: https://github.com/kimmeyh/spamfilter-multi/releases/tag/v0.5.0

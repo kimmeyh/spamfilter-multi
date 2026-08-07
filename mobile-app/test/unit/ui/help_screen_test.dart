@@ -18,6 +18,22 @@ void main() {
     expect(find.text('Select Account'), findsOneWidget);
   });
 
+  testWidgets(
+      'HelpScreen shows the version near the top, visible without scrolling '
+      '(F140, Sprint 54)', (tester) async {
+    // Default (small) test viewport -- if the version text only appeared in
+    // the original bottom-of-page footer, this would find nothing without a
+    // scroll action. WinWright/UIA automation could not reach that footer
+    // (see docs/WINWRIGHT_SELECTORS.md), so the duplicate near the top must
+    // render within the initial viewport with no scroll.
+    await tester.pumpWidget(
+      const MaterialApp(home: HelpScreen()),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Version'), findsWidgets);
+  });
+
   testWidgets('HelpScreen contains a heading for every HelpSection enum value',
       (tester) async {
     // Use a large viewport so all sections are rendered (ListView still
