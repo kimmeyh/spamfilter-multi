@@ -50,7 +50,9 @@ The version string is referenced in **5 files** in the dev worktree. Miss any on
 
 **Operate in the dev worktree** (`D:\Data\Harold\github\spamfilter-multi\`) on the `feature/YYYYMMDD_Sprint_N` branch for the current sprint. The version bump is a Sprint 36-style kickoff commit that lands first on develop, then gets merged to main during the release itself.
 
-Target version fields (example: bumping dev from `0.5.2.0` to `0.5.3.0`):
+**Which digit to bump (Harold, 2026-08-07 -- `CHANGELOG_POLICY.md` enforcement marker)**: before choosing the target version, check what `[Unreleased]` actually contains. If ANY entry is `feat` (or the release is a deliberate breaking-change/milestone release), bump MINOR, not PATCH -- e.g. `0.5.10` -> `0.6.0`, resetting PATCH to 0. Only bump PATCH when the release contains exclusively `fix`/`chore`/`docs`/`test` entries. This was NOT followed for `0.5.1` through `0.5.10` (every release bumped PATCH regardless of content, including several with substantial `feat` work) -- past versions are not renumbered, but this now applies starting with the next release.
+
+Target version fields (example below uses the OLD flat-PATCH pattern purely to illustrate which files change -- apply the MINOR/PATCH decision above to pick the actual target digit):
 
 | # | File | String to update |
 |---|------|------------------|
@@ -74,7 +76,7 @@ flutter test test/policy/version_consistency_test.dart   # the authoritative gat
 
 The gate greps `lib/` + `windows/runner/` + `scripts/` for app-version literals (`_v<X.Y.Z>.log` log tokens and `Version <X.Y.Z>` display strings) and asserts every one matches `pubspec.yaml`. It ignores dependency-version references in comments. This is what caught (and now prevents) the F105/main.cpp miss. The manual `grep -rn "v0\.5\." ...` audit remains a quick sanity check, but the gate is the real backstop.
 
-**Note**: The dev worktree version is always `patch+1` relative to the last prod release. At release time the prod worktree's `pubspec.yaml` gets bumped to the dev version *minus 1* -- for example, when dev is at `0.5.3`, the release itself ships from prod at `0.5.3.0` and immediately after, dev bumps to `0.5.4`.
+**Note**: The dev worktree version is always ONE step ahead of the last prod release, where "one step" now means the semver-correct next digit (PATCH+1 for a fix-only release, MINOR+1/PATCH-reset-to-0 for a release containing `feat`) rather than an unconditional `patch+1`. At release time the prod worktree's `pubspec.yaml` gets bumped to that dev version, and immediately after, dev bumps one further step ahead again -- for example, when dev is at `0.5.3` and ships a fix-only release, the release itself ships from prod at `0.5.3.0` and dev bumps to `0.5.4`; when dev is at `0.6.0` and the accumulated work included a `feat`, the pattern was already applied at the bump INTO `0.6.0`, so continuing fix-only work after that stays on PATCH (`0.6.1`, `0.6.2`, ...) until the next `feat` triggers another MINOR bump.
 
 Commit the version bump as `chore: version bump X.Y.Z.0 -> X.Y.(Z+1).0` on the sprint feature branch.
 
