@@ -2,6 +2,12 @@
 claude --continue # generally the best option
 claude --continue --model claude-fable-5 # to request the Fable 5 model when continuing
 
+Sprint plan approval:
+Sprint plan approved, proceed with execution. 
+All Sprint tasks and sub-tasks are approved.  
+Continue without addition approvals until Manual Validation, providing your recommendation for Manual Validation steps.
+Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPING_CRITERIA.md
+
 Github Copilot Review Requests:
 I have requested a github.com copilot review.
 Then check to see if it has completed and wait until completed.

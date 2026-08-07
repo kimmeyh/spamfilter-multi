@@ -182,24 +182,13 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 
 ### Core App Quality
 
-**F137. Verify and remove dead `process_results_screen.dart` (~15-20m) Priority 10**
-- Phase: Core App Quality
-- Platform: Windows Desktop (verified on; cross-platform code)
-- Confirmed zero references anywhere in `lib/` by both filename and class-name search (`ProcessResultsScreen`) -- same verification standard used for the three screens removed in Sprint 52's R-7. The Sprint 52 accessibility audit flagged this file as having "1 partial reference," but that reference no longer exists in the current tree.
-- Scope: re-verify dead (quick recheck, since code moves fast), then delete -- or, if a reference turns up this time, document why it's retained instead.
-- Depends on: none
-
-**F140. Version number unreachable by WinWright/UIA on Settings > General and Help -- [RESOLVED 2026-08-03, Sprint 54, R-3 fallback applied]**
+**F145. WinWright/integration_test coverage: Help-icon deep-link from every screen (~time-boxed, no-history) Priority 10**
 - Phase: Core App Quality / Testing Infrastructure
-- Platform: Windows Desktop (WinWright/UIA-specific; the underlying UX issue is cross-platform)
-- **Problem**: the app version string (`settings_screen.dart`, `'Version ${snapshot.data ?? '...'}'${AppEnvironment.displaySuffix}`, near the bottom of the General tab's "About" section) and similar end-of-content text on the Help screen sit at the very end of long, single-page-per-tab scrollable content. During the Sprint 53 F-STORE-53 smoke test, WinWright's `ww_scroll` (both `direction` and `find_target` modes) could not bring either element into view: `find_target` returned `found:false` with no error, and a direct `ww_click` on a known off-screen element (`Danger Zone`, immediately after About) failed with `element_offscreen: could not be scrolled into view`. Flutter's Windows semantics tree exposes these off-screen elements in the UIA tree (so `ww_get_snapshot`/`ww_find_by_description` DO find them, `visible:false`) but does not appear to implement a working `ScrollItemPattern`/`ScrollPattern` for WinWright to act on. Maximizing the window and using keyboard `PageDown` also did not reach them reliably.
-- **Two-part scope** (Harold, 2026-08-03, following the F-STORE-53 smoke test where I had to skip independently re-verifying the About-screen version and rely on Harold's direct check instead):
-  1. **Primary**: find a way for WinWright (or Flutter's semantics/UIA integration generally) to reach elements at the end of a long scrollable page -- investigate whether a Flutter-side change (e.g. ensuring the scroll view implements `RenderViewport`'s UIA scroll patterns correctly, or exposing `Semantics(explicitChildNodes:)` differently) or a WinWright-side technique (mouse-wheel-based scroll simulation instead of pattern-based, `ww_dump_tree` raw approach, or a different container selector) resolves it. This is genuinely open-ended -- start with a short timeboxed investigation before committing to a fix.
-  2. **Fallback** (if the primary proves impractical or out of scope for this codebase): move or duplicate the version number (and equivalently, the Help screen's end-of-page content) so it also displays near the TOP of its page/tab -- e.g. in the AppBar subtitle, or as the first visible item on General/Help -- so both a human and an automation tool can see it without scrolling.
-- **Why it matters beyond testing convenience**: the version display is also the primary user-facing proof-point that a build is NOT running as dev (`[DEV]` suffix) -- this is the exact F119-family defect class (three prior sprints, three separate silent-dev-build root causes). A version indicator any tester (human or automated) can see immediately, without scrolling through unrelated settings, directly supports catching that defect class faster.
-- **Resolution (Sprint 54 Task 2)**: the capability spike (R-1) produced a definitive NEGATIVE result -- `ww_dump_tree` with `includePatterns: true` showed ZERO UIA control patterns exposed on ANY element in the tree, for any control type (not even `InvokePattern` on Buttons, which are known-clickable), and no distinct scrollable-region control type exists. Flutter's Windows UIA bridge simply does not expose scroll affordances to automation -- this is a platform-embedding limitation, not a WinWright usage gap. Took the R-3 fallback: duplicated the version display as the first item on `settings_screen.dart`'s General tab and the first Column child on `help_screen.dart`, leaving the original bottom-of-page content in place. Full finding recorded in `docs/WINWRIGHT_SELECTORS.md`.
-- Depends on: none. Complements [[F139]] (which documented the Harold-manual-check workaround needed until this resolution).
-- Source: Sprint 53 (2026-08-03), F-STORE-53 smoke test. Resolved Sprint 54 (2026-08-03), Issue #300.
+- Platform: Windows Desktop (WinWright-specific; the underlying deep-link mechanism is cross-platform)
+- **Scope**: for every screen carrying a Help AppBar icon (per `StandardAppBarActions`, ~15+ screens), verify that tapping it opens `HelpScreen` scrolled to that screen's specific section, not just that `HelpScreen` opens at all. The deep-link mechanism (`initialSection` -> `HelpSection` enum -> auto-scroll on arrival) already exists (F54, Sprint 33) but has no systematic per-screen regression coverage today.
+- **Likely test lane**: `integration_test` (per the F131/F99 precedent -- WinWright's runner cannot bridge dialog-settle/animated-transition boundaries reliably; the in-VM harness reads the semantics tree directly). Confirm via a quick capability check before committing to a full script suite, per `SPRINT_PLANNING.md`'s Tooling-Capability Pre-Flight rule.
+- Depends on: none.
+- Source: Sprint 54 retrospective (Harold, 2026-08-07), Category 14.
 
 **F138. Decide: should the 5 rule-editing screens gain account context? -- [CLOSED 2026-08-03, Harold: not needed]**
 - Phase: Core App Quality / UX
