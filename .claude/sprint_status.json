@@ -1,21 +1,21 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-09T00:00:00Z",
+  "_last_updated": "2026-08-09T23:30:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
 
   "current_sprint": {
     "number": 55,
     "branch": "feature/20260809_Sprint_55",
-    "pr_number": null,
-    "pr_url": null,
+    "pr_number": 304,
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/304",
     "start_date": "2026-08-09",
-    "status": "Branch opened via Phase 6.6 carry-forward from feature/20260803_Sprint_54, immediately on merge, correctly this time (from the feature branch, not develop; no uncommitted work to carry -- working tree was clean at carry-forward time). No Sprint 55 scope selected yet. Backlog Refinement is the next step.",
+    "status": "Branch opened via Phase 6.6 carry-forward. Backlog Refinement was underway (presented, hygiene pass applied) when Harold pivoted mid-refinement to a Store release request. Version bumped 0.5.10.0 -> 0.6.0.0 (first release under the enforced semver policy -- MINOR bump because Sprint 54's F125 was a feat entry). PR #304 (draft) carries the backlog hygiene + version bump. Store MSIX 0.6.0.0 built from a LOCAL, UNPUSHED merge of this branch into the prod worktree's main (F139-template pattern -- no develop/main merge needed to build); --release-self-test probe PASSED all 6 checks against the real compiled binary before packaging. Awaiting Harold's manual smoke pass (Gmail sign-in, About screen, title bar) then Partner Center upload. Backlog Refinement itself is NOT complete -- scope selection for Sprint 55's actual work is still pending once the release is handled.",
     "plan_approved": false,
     "plan_approval_date": null,
     "blanket_execution_approved": false,
     "scope": [],
-    "_scope_note": "Not yet selected. Do NOT create issue cards or task commits before Phase 3.7 plan approval -- require-sprint-cards.ps1 will block them anyway."
+    "_scope_note": "Sprint 55's actual task scope has not been selected yet -- current branch activity is release-process work (version bump + build), not sprint feature work, so require-sprint-cards.ps1's gate does not apply the same way. Return to Backlog Refinement once the release is submitted."
   },
 
   "previous_sprint": {
@@ -51,25 +51,25 @@
     "live_version": "0.5.9",
     "live_submission_number": 10,
     "previous_live_version": "0.5.8",
-    "submitted_version": "0.5.9",
-    "submission_number": 10,
-    "built_at": "2026-08-03",
-    "submitted_at": "2026-08-03",
-    "certified_at": "2026-08-03",
-    "status": "CERTIFIED + LIVE in the Microsoft Store.",
-    "certification_evidence": "Partner Center screenshot, Harold, 2026-08-03: Application overview -> 'Store presence (Submission 10)' section shows the green 'Your product is currently available in the Microsoft Store' confirmation. Submission 11 auto-opened as the next draft slot (normal behavior, same v0.5.9.0 package shown 'Unchanged') -- not a new release in progress.",
+    "submitted_version": "0.6.0",
+    "submission_number": null,
+    "built_at": "2026-08-09",
+    "submitted_at": null,
+    "certified_at": null,
+    "status": "BUILT, NOT YET SUBMITTED. MSIX built and verified 2026-08-09; awaiting Harold's manual smoke pass (Gmail sign-in, About screen, title bar) before upload to Partner Center. Do NOT assume submitted until Harold confirms the upload -- see the 0.5.8 BUILT+VALIDATED-is-not-SUBMITTED near-miss below.",
+    "certification_evidence": null,
     "artifact": "D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix",
-    "verification": "Pre-upload: build log shows correct prod dart-defines (APP_ENV=prod, secrets.prod.json); manifest Version=0.5.9.0; size 16.80 MB (matches the RC build built earlier same day for the F-STORE-53 smoke test, byte-identical source). Smoke test (separate release-candidate build, self-signed for local install, NOT this artifact): --print-env clean (APP_ENV=prod, NATIVE_APP_ENV=prod, no dev suffixes), title bar clean, About screen + Gmail sign-in confirmed by Harold.",
-    "_client_propagation_lag_2026_08_03": "Same day as certification, BOTH the Store app's own product-detail page (renders as skeleton placeholders, identical symptom to the 2026-07-28 known bug logged in environment_notes) AND `winget upgrade`/`winget install --source msstore` (reports 'No available upgrade found', `winget show` reports Version: Unknown) lagged behind the certified state. `winget source update` was run and did not fix it -- the msstore catalog itself is a Microsoft-hosted index outside local control. WORKAROUND THAT WORKED: `winget uninstall --id <StoreID>` then `winget install --id <StoreID> --source msstore --accept-package-agreements --accept-source-agreements` -- a forced fresh acquisition bypasses the stale upgrade-check even while `winget show`/`upgrade` still report stale metadata. Confirmed: this installed the correct 0.5.9.0, Harold verified no [DEV] artifacts. Partner Center's Store-presence confirmation is authoritative regardless of what these client-side surfaces report. Not a submission defect -- do not re-diagnose as one.",
-    "post_cert_closeout_done": [
-      "DONE 2026-08-03: docs/STORE_VERSION_STATUS.md Live row updated to 0.5.9.0 + client-propagation-lag note added",
-      "DONE 2026-08-03: CHANGELOG.md -- added post-cert closeout entry + '## [0.5.9] - 2026-08-03' release heading + comparison note (Sprint 51/52/53 entries now under it)",
-      "DONE 2026-08-03: docs/ALL_SPRINTS_MASTER_PLAN.md -- Store status -> LIVE 0.5.9.0; Last Completed Sprint rolled 52 -> 53; Past Sprint Summary table updated (also backfilled the missing Sprint 52 row)",
-      "DONE 2026-08-03: dev bumped 0.5.9 -> 0.5.10 (pubspec.yaml top-level version ONLY -- msix_version deliberately left at 0.5.9.0 until the next release build, per the F139 lesson about premature/stale bumps); version_consistency gate green",
-      "DONE 2026-08-03 (Harold, Store-installed build, worked around the propagation lag via `winget uninstall` then `winget install --source msstore` -- forced a fresh acquisition rather than an upgrade-check, which bypassed the stale winget catalog even though `winget show`/`upgrade` still reported stale metadata): NO [DEV] in the header or Settings; Settings shows 'Version 0.5.9'. This is the definitive Store-installed-build confirmation, completing the F119-family verification standard for this release."
+    "verification": "Build log shows correct prod dart-defines (APP_ENV=prod, secrets.prod.json); manifest Version=0.6.0.0; size 16.80 MB. The NEW F125 --release-self-test --expected-version=0.6.0 probe was run directly against the compiled exe (build\\...\\Release\\MyEmailSpamFilter.exe) BEFORE packaging and returned RESULT: PASS on all 6 checks (APP_ENV=prod, NATIVE_APP_ENV=prod, both suffixes empty, no [DEV] in title, version match) -- first real-release use of this probe, collapsing what used to be 4 separate manual checks into one command.",
+    "_build_process_note_2026_08_09": "Built via a LOCAL, UNPUSHED merge of feature/20260809_Sprint_55 into the prod worktree's main (git merge --no-edit origin/feature/20260809_Sprint_55, restore point c6d0501 recorded before merging) -- per the F139 template, this does NOT require the develop->main merge to happen first. The prod worktree should be reset to c6d0501 (git reset --hard c6d0501) once this release either ships or is abandoned, so it is clean for the next cycle.",
+    "post_cert_closeout_done": [],
+    "post_cert_closeout_pending": [
+      "Harold: manual smoke pass on the built MSIX before upload -- Gmail sign-in, About screen shows 'Version 0.6.0' with no [DEV], title bar clean. The --release-self-test probe already proved the compiled-binary invariants; this step is the visual/interactive confirmation only Harold can do.",
+      "Upload to Partner Center, submit for certification (Harold, once smoke pass confirmed)",
+      "Once certified: docs/STORE_VERSION_STATUS.md Live row -> 0.6.0.0; CHANGELOG.md already has the [0.6.0] heading (done pre-build this time, not post-cert); ALL_SPRINTS_MASTER_PLAN.md Store status -> LIVE 0.6.0.0",
+      "Once certified: reset the prod worktree to the recorded restore point c6d0501 (git reset --hard, discarding the local unpushed merge) so it is clean for the next release cycle",
+      "PR #304 (feature/20260809_Sprint_55 -> develop) needs Harold's merge once the release path is confirmed, then develop -> main separately (Harold-only, independent timing per the Sprint 53 clarification)"
     ],
-    "post_cert_closeout_pending": [],
-    "_prior_release_history": "0.5.8 (Submission 9): built 2026-07-27, submitted 2026-07-28 (after a BUILT+VALIDATED-is-not-SUBMITTED near-miss -- see docs/sprints/SPRINT_51_SUMMARY.md), certified 2026-07-29, Harold-verified clean (no [DEV] title) 2026-07-30. Full both-sides proof (APP_ENV=prod AND NATIVE_APP_ENV=prod) passed for the first time on this release, closing the 3-sprint F119 family (F119 msix-key typo, F119-b secrets space-key, F119-c native env var never set)."
+    "_prior_release_history": "0.5.9 (Submission 10): built + certified + LIVE 2026-08-03, Harold-verified clean via winget uninstall/reinstall workaround (client-side propagation lag on cert day, resolved). 0.5.8 (Submission 9): built 2026-07-27, submitted 2026-07-28 (after a BUILT+VALIDATED-is-not-SUBMITTED near-miss -- see docs/sprints/SPRINT_51_SUMMARY.md), certified 2026-07-29, Harold-verified clean 2026-07-30. Full both-sides proof passed for the first time on 0.5.8, closing the 3-sprint F119 family."
   },
 
   "environment_notes": [
@@ -81,7 +81,8 @@
   "blocking_issues": [],
 
   "next_actions": [
-    "SPRINT 55 Phase 1: BACKLOG REFINEMENT -- read the authoritative presentation format in docs/BACKLOG_REFINEMENT.md FIRST, then present candidates to Harold for scope selection. No task work before Phase 3.7 approval.",
+    "IN PROGRESS (pivot from Backlog Refinement, Harold 2026-08-09): Store release for 0.6.0.0. MSIX built + verified (F125 probe PASS, all 6 checks) 2026-08-09; awaiting Harold's manual smoke pass (Gmail sign-in, About screen, title bar) on the built artifact, then upload to Partner Center. See store_release block for full detail and post_cert_closeout_pending for the remaining steps.",
+    "AFTER the release is submitted/certified: RETURN to SPRINT 55 Phase 1 BACKLOG REFINEMENT scope selection -- it was interrupted mid-presentation, not completed. Hygiene pass already applied (commit f4aec58). Re-present remaining candidates to Harold for scope selection; no task work before Phase 3.7 approval.",
     "Android/Google Play remains the next major track (promotion trigger fired 2026-07-24; F142/F143/F144 scoped and ready whenever prioritized, per the Sprint 54 F141 deep dive).",
     "F145 (WinWright/integration_test coverage for Help-icon deep-links) is also an active backlog candidate from the Sprint 54 retrospective."
   ]

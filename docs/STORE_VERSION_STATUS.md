@@ -18,7 +18,7 @@ Partner Center before saying anything about the Store version.
 | | Version | Last verified | Notes |
 |---|---|---|---|
 | **Live/certified on Store** (cache) | 0.5.9.0 | 2026-08-03 (Harold, Store-INSTALLED build via `winget install`: no `[DEV]` in header or Settings, Settings shows "Version 0.5.9") | Submission 10, certified and published 2026-08-03. Submission 11 auto-opened as the next draft slot (normal Partner Center behavior, not a new release in progress) -- shows the same v0.5.9.0 package "Unchanged". This is the strongest possible verification: the actual Store-signed, Store-distributed package, freshly installed and directly observed clean. |
-| **Dev worktree** (authoritative -- mirrors `pubspec.yaml`) | 0.5.10+1 | 2026-08-03 | Post-cert patch+1 bump applied per ADR-0035 convention (Sprint 53 close-out, PR #298). `msix_version` deliberately left at `0.5.9.0` until the next release build. |
+| **Dev worktree** (authoritative -- mirrors `pubspec.yaml`) | 0.6.0+1 | 2026-08-09 | First release under the enforced semver policy (2026-08-07 CHANGELOG_POLICY.md decision) -- MINOR bump, not patch+1, because Sprint 54's F125 was a `feat` entry. `msix_version` bumped to `0.6.0.0` for this release build (in progress, not yet submitted -- see `.claude/sprint_status.json` `store_release` block). |
 
 ## Update this file every time
 
