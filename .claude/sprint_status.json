@@ -1,6 +1,6 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-09T23:30:00Z",
+  "_last_updated": "2026-08-10T23:00:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
 
@@ -10,12 +10,12 @@
     "pr_number": 304,
     "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/304",
     "start_date": "2026-08-09",
-    "status": "Branch opened via Phase 6.6 carry-forward. Backlog Refinement was underway (presented, hygiene pass applied) when Harold pivoted mid-refinement to a Store release request. Version bumped 0.5.10.0 -> 0.6.0.0 (first release under the enforced semver policy -- MINOR bump because Sprint 54's F125 was a feat entry). PR #304 (draft) carries the backlog hygiene + version bump. Store MSIX 0.6.0.0 built from a LOCAL, UNPUSHED merge of this branch into the prod worktree's main (F139-template pattern -- no develop/main merge needed to build); --release-self-test probe PASSED all 6 checks against the real compiled binary before packaging. Awaiting Harold's manual smoke pass (Gmail sign-in, About screen, title bar) then Partner Center upload. Backlog Refinement itself is NOT complete -- scope selection for Sprint 55's actual work is still pending once the release is handled.",
-    "plan_approved": false,
-    "plan_approval_date": null,
-    "blanket_execution_approved": false,
-    "scope": [],
-    "_scope_note": "Sprint 55's actual task scope has not been selected yet -- current branch activity is release-process work (version bump + build), not sprint feature work, so require-sprint-cards.ps1's gate does not apply the same way. Return to Backlog Refinement once the release is submitted."
+    "status": "0.6.0.0 Store release (Submission 11) certified + live 2026-08-10, fully closed out (see store_release block). Sprint 55 Plan (docs/sprints/SPRINT_55_PLAN.md) approved by Harold 2026-08-10: F147 + F146 + F145, in that priority order, execution continues without per-task approval until Manual Validation per standing autonomy grant. All 3 tasks COMPLETE: F147 (scan-all-emails cursor bypass, both IMAP + Gmail paths, 7 new tests, mutation-verified), F146 (generalized AOL-specific error message across 6 files), F145 (Help-icon deep-link -- WinWright spike genuinely tried first per Harold's instruction, found WinWright produces FALSE FAILURES for this class of check not just blind spots, re-scoped to integration_test, which then surfaced and fixed a REAL scroll-timing bug in HelpScreen -- 27 new tests). Full suite 1857 passed / 0 failed, flutter analyze clean. Final build+launch in progress for Manual Validation.",
+    "plan_approved": true,
+    "plan_approval_date": "2026-08-10",
+    "blanket_execution_approved": true,
+    "scope": ["F147", "F146", "F145"],
+    "_scope_note": "All 3 approved tasks complete. Next: Manual Validation (Harold), then Phase 6/7 (PR review, retrospective)."
   },
 
   "previous_sprint": {
@@ -31,19 +31,19 @@
     "_process_note": "This sprint's own Phase 6.6 carry-forward corrected a Sprint-53-era mistake: post-cert closeout work must land on a NEW branch created from the current one, never as follow-up commits on an already-merged branch. Applied correctly this time (Sprint 54 -> Sprint 55)."
   },
 
-  "github_issues": [],
-  "_github_issues_note": "EMPTY -- Sprint 55 has no cards yet; created when scope is selected at Phase 3 (require-sprint-cards.ps1 blocks task commits until then). Sprint 54's four cards (#299/#300/#301/#302) were closed by hand during execution and verified empty via `gh issue list --label sprint --state open` at this Post-Merge Cleanup.",
+  "github_issues": [305, 306, 307],
+  "_github_issues_note": "305=F147, 306=F146, 307=F145. Created 2026-08-10 AFTER task execution (require-sprint-cards.ps1's Phase 3.3.1 gate caught this on the first post-approval commit attempt -- cards should have been created at plan approval time, not after all 3 tasks were already done; backfilled from the approved plan + actual commits, per the gate's own guidance). All 3 tasks' work is already committed on the branch; issues reference the commits/CHANGELOG entries retroactively.",
 
   "test_metrics": {
-    "tests_passing": 1850,
+    "tests_passing": 1857,
     "tests_skipped": 29,
     "tests_failing": 0,
     "analyzer_warnings": 0,
-    "_test_metrics_note": "1,850 as of 2026-08-07 (Sprint 54 final full run, --concurrency=4, analyzer clean). Path from Sprint 53's 1,859: F137 deleted process_results_screen.dart + its test file (-12, 1859->1847); F140 added 2 new tests for the version-duplicate fix (+2, 1847->1849); F125 added 1 source-text policy test (+1, 1849->1850). Net -9 vs Sprint 53, entirely explained by the F137 deletion outweighing the 3 new tests added.",
+    "_test_metrics_note": "1,857 as of 2026-08-10 (Sprint 55 final full run, analyzer clean). Path from Sprint 54's 1,850: F147 added 7 new tests (email_scanner_scan_all_bypass_test.dart, +7). F146 updated 2 existing tests (message-text assertions), no net count change. F145's 27 new tests live in integration_test/help_deep_link_test.dart, which runs via a SEPARATE runner (scripts/run-integration-tests.ps1, all 27 passing) and is not counted in this flutter-test total, consistent with how sprint52_surfaces_test.dart etc. are also excluded. Net +7 vs Sprint 54.",
     "hook_test_cases": "45/45 passing (.claude/hooks/run-test-cases.ps1) -- unchanged since Sprint 52.",
-    "winwright_sweep": "Not re-run this sprint (F140's UI changes were verified via new widget tests + manual validation, not a WinWright sweep -- no WinWright script touches Settings/Help screens yet; see new backlog item F145).",
+    "winwright_sweep": "Not run this sprint as a general sweep. F145's Tooling-Capability Pre-Flight spike DID interactively drive WinWright against the live app (ww_attach/ww_click/ww_get_snapshot on Select Account's Help icon) and found it produces a FALSE FAILURE for scroll-target verification -- documented in WINWRIGHT_SELECTORS.md. Not a general regression sweep, a targeted capability probe.",
     "coverage_percent": null,
-    "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5). Sprint 54 hit the OTHER documented risk of concurrent flutter processes -- not the concurrency-flake, but a real resource-lock collision from running flutter test and build-windows.ps1 in the background at the same time (truncated a test run with no summary, non-regression, re-ran clean solo). Now documented in TROUBLESHOOTING.md."
+    "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5). Sprint 55: cleaned up 10 stray flutter_tester.exe processes left from a prior session before running the full suite (feedback_longrun_process_checks discipline applied)."
   },
 
   "store_release": {
@@ -88,8 +88,9 @@
 
   "next_actions": [
     "DONE 2026-08-10: Store release 0.6.0.0 CERTIFIED + LIVE (Submission 11), Check C smoke-tested clean, all post-cert doc close-out complete. See store_release block. Only remaining loose end: PR #304 merge (Harold-only).",
-    "SPRINT 55 Phase 1 BACKLOG REFINEMENT scope selection -- interrupted mid-presentation by the release pivot, resume now. Hygiene pass already applied (commit f4aec58). Re-present remaining candidates (including new F146) to Harold for scope selection; no task work before Phase 3.7 approval.",
-    "Android/Google Play remains the next major track (promotion trigger fired 2026-07-24; F142/F143/F144 scoped and ready whenever prioritized, per the Sprint 54 F141 deep dive).",
-    "F145 (WinWright/integration_test coverage for Help-icon deep-links) is also an active backlog candidate from the Sprint 54 retrospective."
+    "DONE 2026-08-10: Sprint 55 Plan approved (F147+F146+F145) and ALL 3 TASKS COMPLETE -- see docs/sprints/SPRINT_55_PLAN.md and this file's current_sprint.status for full detail. Full suite 1857/0/29, analyze clean.",
+    "NEXT: Manual Validation (Harold) -- final build+launch was in progress for this at the point of this status update. See the assistant's Manual Validation recommendation in-conversation for the specific checks to run per task (F147 scan-range settings, F146 message text, F145 Help-icon deep-links from several screens).",
+    "AFTER Manual Validation: Phase 6 (PR review/Copilot pass on PR #304, which already carries the pre-sprint hygiene + version bump work and now also carries F147/F146/F145) then Phase 7 (retrospective).",
+    "Android/Google Play remains the next major track (promotion trigger fired 2026-07-24; F142/F143/F144 scoped and ready whenever prioritized, per the Sprint 54 F141 deep dive)."
   ]
 }
