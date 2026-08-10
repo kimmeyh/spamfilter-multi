@@ -204,6 +204,20 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
       _resolveAccountForScopedTab();
     });
 
+    // F145 manual-validation finding (Sprint 55, Harold 2026-08-10): the Help
+    // icon always deep-linked to the General tab's section regardless of
+    // which tab was actually visible. Root cause: nothing called setState()
+    // when the tab index changed, so build() (and therefore
+    // _helpSectionForActiveTab(), which reads _tabController.index) only
+    // re-ran on the NEXT unrelated rebuild -- for most users, never, since
+    // the account-scoped listener above only setState()s once per screen
+    // visit (or not at all on the General tab). This dedicated listener
+    // rebuilds on every tab change so the AppBar's Help icon always reflects
+    // the currently visible tab.
+    _tabController.addListener(() {
+      if (mounted) setState(() {});
+    });
+
     _loadSettings();
   }
 

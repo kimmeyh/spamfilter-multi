@@ -53,15 +53,31 @@
 //   results_display_screen.dart -- platformId == 'demo' ? demoScan : resultsDisplay
 //   settings_screen.dart -- _helpSectionForActiveTab() switches on tab index
 //
-// Run: flutter test test/integration_test/help_deep_link_test.dart
-//   (or via scripts/run-integration-tests.ps1 -TestName help_deep_link, once
-//   this file is wired into that runner's discovery -- see F145 completion
-//   note for whether that step was needed.)
+// SETTINGS TAB REGRESSION (Sprint 55 manual validation, Harold 2026-08-10):
+// the original F145 delivery documented settings_screen.dart as
+// "runtime-tested here" in this comment block but never actually wrote that
+// test -- it only covered the two demo-vs-live ternary sites above. Harold
+// caught the real bug in manual testing: the Help icon on Account/Manual
+// Scan/Background tabs always deep-linked to the General tab's section
+// (HelpSection.settings) instead of its own. Root cause: nothing called
+// setState() when the TabController's index changed, so
+// _helpSectionForActiveTab() (read during build()) only picked up a tab
+// change on the NEXT unrelated rebuild -- for most users, never. Fixed in
+// settings_screen.dart with a dedicated tab-change listener that calls
+// setState(). The 'Settings AppBar Help icon follows the active tab' group
+// below is the regression test this should have been from the start.
+//
+// Run: flutter test integration_test/help_deep_link_test.dart
+//   (or via scripts/run-integration-tests.ps1 -TestName help_deep_link)
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+
+import 'package:my_email_spam_filter/ui/screens/settings_screen.dart';
+
+import 'helpers/app_harness.dart';
 
 import 'package:my_email_spam_filter/ui/screens/help_screen.dart';
 
@@ -189,5 +205,62 @@ void main() {
       expect(resolveDemoAware('aol', HelpSection.resultsDisplay),
           HelpSection.resultsDisplay);
     });
+  });
+
+  group('Settings AppBar Help icon follows the active tab (Sprint 55 manual '
+      'validation regression, Harold 2026-08-10)', () {
+    HarnessSession? session;
+
+    tearDown(() async {
+      await session?.dispose();
+    });
+
+    // General (tab 0) is the DEFAULT tab, so it would pass even with the bug
+    // (the bug's symptom was "always resolves to General's section") --
+    // included for completeness, not as the primary regression guard.
+    const tabCases = <(String tabLabel, String expectedSectionTitle)>[
+      ('General', 'Settings'),
+      ('Account', 'Account > Folder Settings'),
+      ('Manual Scan', 'Manual Scan Settings'),
+      ('Background', 'Background Scanning'),
+    ];
+
+    for (final (tabLabel, expectedSectionTitle) in tabCases) {
+      testWidgets(
+          'tapping Help on the "$tabLabel" tab opens Help scrolled to '
+          '"$expectedSectionTitle"', (tester) async {
+        session = await bootDbOnly(tester);
+
+        await tester.pumpWidget(
+          const MaterialApp(home: SettingsScreen(accountId: 'test-account')),
+        );
+        await tester.pumpAndSettle();
+
+        if (tabLabel != 'General') {
+          await tester.tap(find.widgetWithText(Tab, tabLabel));
+          await tester.pumpAndSettle();
+        }
+
+        await tester.tap(find.byTooltip('Help'));
+        await tester.pumpAndSettle();
+
+        final scrollable =
+            tester.widget<Scrollable>(find.byType(Scrollable).first);
+        final titleY =
+            tester.getTopLeft(find.text(expectedSectionTitle).first).dy;
+        final scrollableTopY = tester.getTopLeft(find.byType(Scrollable).first).dy;
+
+        expect(titleY, closeTo(scrollableTopY, 1.0),
+            reason: 'The Help icon on the "$tabLabel" tab must deep-link to '
+                '"$expectedSectionTitle", not silently fall back to the '
+                'General tab\'s section. (Root cause of the original bug: '
+                '_helpSectionForActiveTab() reads _tabController.index '
+                'during build(), but nothing called setState() when the tab '
+                'changed, so the AppBar\'s helpSection was stuck at '
+                'whichever tab was active during the LAST unrelated '
+                'rebuild -- General, for most users, most of the time.)');
+        expect(scrollable.controller?.position, isNotNull);
+      });
+    }
   });
 }
