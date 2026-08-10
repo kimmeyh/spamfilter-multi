@@ -26,6 +26,12 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-08-09
+
+First release under the enforced semver policy (see the 2026-08-07 entry below) -- bumped MINOR
+rather than PATCH because this release contains a `feat` entry (F125). Contains all of Sprint 54's
+work below.
+
 ### 2026-08-07 (Sprint 54 retro follow-up: versioning policy)
 - **docs**: confirmed a real policy-vs-practice gap in version numbering. `docs/CHANGELOG_POLICY.md` documents standard semver (MAJOR = breaking/milestone, MINOR = `feat`, PATCH = `fix`), but every release from `0.5.1` through the current `0.5.10` bumped only PATCH regardless of content -- several of those releases shipped substantial `feat` work (F133 accessibility remediation, F134 AppBar order, F135 session-scoped accounts, F136 Skip button) under a PATCH-only bump. **Decision (Harold, 2026-08-07)**: start following the documented semver policy from the NEXT release forward -- the first release containing a `feat` entry bumps MINOR (e.g. `0.5.10` -> `0.6.0`), not PATCH. No renumbering of past releases; history stays as-is. See `docs/CHANGELOG_POLICY.md` for the reference marker on where the transition applies.
 
@@ -1038,7 +1044,8 @@ See git history for detailed changes prior to Phase 3.1.
 
 ## Version Links
 
-[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.9...HEAD
+[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.9...v0.6.0
 [0.5.9]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.8...v0.5.9
 [0.5.8]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.7...v0.5.8
 [0.5.7]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.0...v0.5.7
