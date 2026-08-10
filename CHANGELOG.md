@@ -26,6 +26,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-08-10 (Sprint 55: post-0.6.0.0-cert dev bump)
+- **chore**: dev worktree version bump `0.6.0` -> `0.6.1` (PATCH -- no `feat` queued yet) following certification and Store publication of `0.6.0.0` (Submission 11). `msix_version` deliberately left at `0.6.0.0` until the next release build.
+
 ## [0.6.0] - 2026-08-09
 
 First release under the enforced semver policy (see the 2026-08-07 entry below) -- bumped MINOR

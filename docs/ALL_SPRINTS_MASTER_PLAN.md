@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-08-10 (Sprint 54 complete: F137/F140/F125/F141 all shipped, PR #298 merged to develop then PR #303 to main. F141's Android deep dive surfaced 2 undocumented architecture findings + Harold's governing direction (Windows architecture takes precedence); new backlog F142/F143/F144 (HOLD) + F145 (retro-added, active). Versioning-policy decision recorded: start enforcing documented semver from the next release. Sprint 55 branch opened via Phase 6.6 carry-forward, Backlog Refinement next.)
+**Last Updated**: 2026-08-10 (Sprint 55, mid-Backlog-Refinement pivot to a Store release: **`0.6.0.0` CERTIFIED and LIVE 2026-08-10** (Submission 11) -- first release under the enforced semver policy (MINOR bump, Sprint 54's F125 was a `feat`). Check C smoke test on the live Store build confirmed clean (Settings "Version 0.6.0" no [DEV], clean title bar, Gmail-IMAP live scan succeeded). Smoke test surfaced new backlog item F146 (mislabeled AOL-specific error message firing on Gmail-IMAP, pre-existing since Sprint 40, not release-caused). Dev bumped 0.6.0 -> 0.6.1 (PATCH, gate-verified). Backlog Refinement scope selection for Sprint 55 resumes next.)
 
 ## How to Maintain This Document
 
@@ -194,6 +194,13 @@ _(Prior: **Sprint 49** F119-c + prod-DB restoration, PR #276; **Sprint 48** F119
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
 ### Core App Quality
+
+**F146. Fix mislabeled "AOL copy-not-move" error message in GenericIMAPAdapter (also fires on Gmail-IMAP) Priority 10**
+- Phase: Core App Quality / Bug Fix
+- Platform: All (any provider routed through `GenericIMAPAdapter`, not AOL-specific)
+- **Scope**: `mobile-app/lib/adapters/email_providers/generic_imap_adapter.dart:1125` (`partitionByMoveSurvival`, from `BUG-S40-1`, Sprint 40) hardcodes the failure reason string `'... (AOL copy-not-move)'`. Confirmed 2026-08-10 during the 0.6.0.0 release smoke test: this fired on a Gmail-IMAP account (`kimmeyh@gmail.com`, `platformId=gmail-imap`), not AOL -- `live_scan_v0.6.0.log`, 2 of 10 messages, UIDs 2849/2850. At minimum the message text is misleading for non-AOL accounts; worth checking whether the copy-not-move pathology itself needs provider-specific handling (retry strategy, root cause) rather than being AOL-only as originally assumed. Not a release blocker -- pre-existing since Sprint 40, not caused by the version bump.
+- Depends on: none.
+- Source: 0.6.0.0 Store release Check C smoke test, Harold + Claude, 2026-08-10.
 
 **F145. WinWright/integration_test coverage: Help-icon deep-link from every screen (~time-boxed, no-history) Priority 10**
 - Phase: Core App Quality / Testing Infrastructure

@@ -55,21 +55,25 @@
     "submission_number": 11,
     "built_at": "2026-08-09",
     "submitted_at": "2026-08-10",
-    "certified_at": null,
-    "status": "SUBMITTED, IN CERTIFICATION. Harold uploaded the built+verified MSIX directly to Partner Center (skipped a separate local smoke-test cycle per his 2026-08-09 decision -- the F125 --release-self-test probe already confirmed the compiled binary's env/version invariants). Submission 11 confirmed via Partner Center screenshot, Harold 2026-08-10: 'Product update: In certification', pipeline at Pre-processing (Submission -> Pre-processing -> Certification -> Publishing). Store presence still shows Submission 10 (0.5.9.0) live/read-only, as expected until 11 passes. Awaiting certification result.",
-    "certification_evidence": "Partner Center screenshot, Harold, 2026-08-10: 'Product update: In certification (Submission 11: Last modified on 08/10/2026)' card, pipeline progress bar at Pre-processing stage.",
+    "certified_at": "2026-08-10",
+    "status": "CERTIFIED + LIVE in the Microsoft Store. Partner Center confirmed: 'Congrats! Your product is now updated.' Store presence shows Submission 11 live. Check C smoke test on the live Store-installed build (Harold, 2026-08-10): Settings screen shows 'Version 0.6.0' with no [DEV], title bar clean 'MyEmailSpamFilter', live Gmail-IMAP scan against kimmeyh@gmail.com completed successfully (Found 10, Processed 2, Deleted 2, Errors 2) confirming Gmail OAuth/sign-in works on the Store build. The 2 errors were investigated and are a pre-existing, non-release-caused bug (mislabeled AOL-specific error message firing on Gmail-IMAP, BUG-S40-1 from Sprint 40) -- logged as new backlog item F146, not a release defect.",
+    "certification_evidence": "Partner Center screenshots, Harold, 2026-08-10: first showed 'Product update: In certification (Submission 11)' at Pre-processing; second confirmed 'Congrats! Your product is now updated' with Store presence at Submission 11.",
     "artifact": "D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix",
     "verification": "Build log shows correct prod dart-defines (APP_ENV=prod, secrets.prod.json); manifest Version=0.6.0.0; size 16.80 MB. The NEW F125 --release-self-test --expected-version=0.6.0 probe was run directly against the compiled exe (build\\...\\Release\\MyEmailSpamFilter.exe) BEFORE packaging and returned RESULT: PASS on all 6 checks (APP_ENV=prod, NATIVE_APP_ENV=prod, both suffixes empty, no [DEV] in title, version match) -- first real-release use of this probe, collapsing what used to be 4 separate manual checks into one command.",
     "_build_process_note_2026_08_09": "Built via a LOCAL, UNPUSHED merge of feature/20260809_Sprint_55 into the prod worktree's main (git merge --no-edit origin/feature/20260809_Sprint_55, restore point c6d0501 recorded before merging) -- per the F139 template, this does NOT require the develop->main merge to happen first. The prod worktree should be reset to c6d0501 (git reset --hard c6d0501) once this release either ships or is abandoned, so it is clean for the next cycle.",
     "post_cert_closeout_done": [
-      "DONE 2026-08-10 (Harold): uploaded 0.6.0.0 MSIX to Partner Center, submitted for certification. Submission 11 confirmed in-pipeline (Pre-processing)."
+      "DONE 2026-08-10 (Harold): uploaded 0.6.0.0 MSIX to Partner Center, submitted for certification. Submission 11 confirmed in-pipeline (Pre-processing), then certified + live same day.",
+      "DONE 2026-08-10: Check C smoke test on the live Store build -- Settings 'Version 0.6.0' no [DEV], clean title bar, Gmail-IMAP live scan + OAuth confirmed working.",
+      "DONE 2026-08-10: docs/STORE_VERSION_STATUS.md Live row -> 0.6.0.0 (Submission 11) with full verification evidence.",
+      "DONE 2026-08-10: dev bumped 0.6.0 -> 0.6.1+1 (PATCH, no feat queued; msix_version deliberately left at 0.6.0.0 until next release build); version_consistency gate green.",
+      "DONE 2026-08-10: CHANGELOG.md -- [0.6.0] heading was already in place pre-build; added [Unreleased] entry for the post-cert dev bump.",
+      "DONE 2026-08-10: docs/ALL_SPRINTS_MASTER_PLAN.md Last Updated rolled forward with release outcome + F146 backlog addition.",
+      "DONE 2026-08-10: prod worktree reset to restore point c6d0501 (git reset --hard), discarding the local unpushed merge used only to build the release; worktree clean for next cycle.",
+      "DONE 2026-08-10: F146 added to backlog (Core App Quality) -- mislabeled 'AOL copy-not-move' error message in GenericIMAPAdapter, confirmed firing on Gmail-IMAP too; pre-existing since Sprint 40, not release-caused; Harold chose backlog over immediate fix."
     ],
     "post_cert_closeout_pending": [
-      "Monitor Submission 11 through Pre-processing -> Certification -> Publishing. Typical turnaround 1-3 business days per Partner Center's own estimate on this page.",
-      "Once certified: install the live Store build, confirm Gmail sign-in, About screen shows 'Version 0.6.0' with no [DEV], title bar clean (Step 4/Check C -- Harold-only, deferred from pre-upload to post-cert this release per his 2026-08-09 call).",
-      "Once certified: docs/STORE_VERSION_STATUS.md Live row -> 0.6.0.0 (Submission 11, verification evidence); CHANGELOG.md already has the [0.6.0] heading (done pre-build this time, not post-cert); ALL_SPRINTS_MASTER_PLAN.md Store status -> LIVE 0.6.0.0",
-      "Once certified: reset the prod worktree to the recorded restore point c6d0501 (git reset --hard, discarding the local unpushed merge) so it is clean for the next release cycle",
-      "PR #304 (feature/20260809_Sprint_55 -> develop) needs Harold's merge once the release path is confirmed, then develop -> main separately (Harold-only, independent timing per the Sprint 53 clarification)"
+      "PR #304 (feature/20260809_Sprint_55 -> develop) still needs Harold's merge, then develop -> main separately (Harold-only, independent timing per the Sprint 53 clarification). Not yet done as of this update.",
+      "RETURN to Sprint 55 Phase 1 Backlog Refinement scope selection -- interrupted mid-presentation by this release pivot, not completed. Hygiene pass already applied (commit f4aec58)."
     ],
     "_prior_release_history": "0.5.9 (Submission 10): built + certified + LIVE 2026-08-03, Harold-verified clean via winget uninstall/reinstall workaround (client-side propagation lag on cert day, resolved). 0.5.8 (Submission 9): built 2026-07-27, submitted 2026-07-28 (after a BUILT+VALIDATED-is-not-SUBMITTED near-miss -- see docs/sprints/SPRINT_51_SUMMARY.md), certified 2026-07-29, Harold-verified clean 2026-07-30. Full both-sides proof passed for the first time on 0.5.8, closing the 3-sprint F119 family."
   },
@@ -83,8 +87,8 @@
   "blocking_issues": [],
 
   "next_actions": [
-    "IN PROGRESS (pivot from Backlog Refinement, Harold 2026-08-09): Store release for 0.6.0.0. MSIX built + verified (F125 probe PASS, all 6 checks) 2026-08-09; Harold uploaded to Partner Center 2026-08-10 -- Submission 11 now IN CERTIFICATION (Pre-processing stage). See store_release block for full detail and post_cert_closeout_pending for the remaining steps (Check C smoke pass now deferred to post-cert, STORE_VERSION_STATUS.md/CHANGELOG/MASTER_PLAN updates, prod worktree reset to c6d0501, PR #304 merge).",
-    "AFTER certification completes: RETURN to SPRINT 55 Phase 1 BACKLOG REFINEMENT scope selection -- it was interrupted mid-presentation, not completed. Hygiene pass already applied (commit f4aec58). Re-present remaining candidates to Harold for scope selection; no task work before Phase 3.7 approval.",
+    "DONE 2026-08-10: Store release 0.6.0.0 CERTIFIED + LIVE (Submission 11), Check C smoke-tested clean, all post-cert doc close-out complete. See store_release block. Only remaining loose end: PR #304 merge (Harold-only).",
+    "SPRINT 55 Phase 1 BACKLOG REFINEMENT scope selection -- interrupted mid-presentation by the release pivot, resume now. Hygiene pass already applied (commit f4aec58). Re-present remaining candidates (including new F146) to Harold for scope selection; no task work before Phase 3.7 approval.",
     "Android/Google Play remains the next major track (promotion trigger fired 2026-07-24; F142/F143/F144 scoped and ready whenever prioritized, per the Sprint 54 F141 deep dive).",
     "F145 (WinWright/integration_test coverage for Help-icon deep-links) is also an active backlog candidate from the Sprint 54 retrospective."
   ]
