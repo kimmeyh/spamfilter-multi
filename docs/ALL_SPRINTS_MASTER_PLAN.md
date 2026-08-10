@@ -195,34 +195,7 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 
 ### Core App Quality
 
-**F147. "Scan all emails" (no date filter) is silently overridden by the no-rule backlog cursor, for both Manual and Background scan Priority 10**
-- Phase: Core App Quality / Bug Fix
-- Platform: All IMAP-backed providers (`GenericIMAPAdapter` -- AOL, Gmail-IMAP, Yahoo, generic IMAP); likely also affects Gmail API's historyId-incremental path (`_fetchFolderMessagesGmail`) by the same pattern, needs confirming.
-- **Scope**: confirmed 2026-08-10 while investigating an AOL Outlook-vs-app count mismatch (Outlook: "Bulk Mail" = 301 messages; app live scan: 8). Root cause: `EmailScanner._fetchFolderMessagesImap` (`mobile-app/lib/core/services/email_scanner.dart:1120`) unconditionally prefers the per-folder `oldest_no_rule_uid` cursor (`account_folder_cursors` table) whenever one exists, calling `imap.fetchMessagesIncremental` (UID cursor forward only) instead of `imap.fetchMessages` (the true full/`daysBack`-windowed fetch). This happens **regardless of the user's "Scan all emails" toggle** (Manual Scan tab: "No date filter - scans entire mailbox", maps to `daysBack=0`) -- the cursor branch has no check for that setting at all, so once any no-rule backlog exists for a folder, "Scan all emails" silently stops being honored and the user is told (via the UI's own descriptive text) that the mailbox is being fully scanned when it is not. The same unconditional-cursor-preference pattern needs checking against the Background Scan tab's own range setting (checkbox + 1-90 day slider, separate account_settings keys `background_days_back`/implied "scan all") to confirm background scans respect their own configured range the same way, not just manual.
-- **Fix shape (not yet designed in detail)**: the cursor-preference branch in `_fetchFolderMessagesImap` needs to check whether the active scan (manual or background) has "scan all emails" set for that account before choosing the incremental-cursor path; if so, bypass the cursor and do the full `fetchMessages` call instead (the cursor can still be recomputed/persisted afterward for the next incremental run).
-- **Test coverage required (Harold, 2026-08-10 -- this is critical, user-trust-affecting functionality; a fix without a regression test is not acceptable for this item)**: unit/integration tests must assert, for BOTH Manual and Background scan and for every settings combination, that the configured scan-range setting is what actually determines the fetch:
-  - "Scan all emails" (daysBack=0) + an existing no-rule cursor for the folder -> full mailbox fetch (`fetchMessages`), cursor bypassed, NOT the incremental UID-forward fetch.
-  - A specific N-day window + an existing no-rule cursor -> still honors the daysBack window (verify the interaction, not just the "scan all" case).
-  - No cursor at all (first-ever scan) -> unaffected, existing behavior preserved.
-  - Same three cases exercised for Background scan's own range setting (`background_days_back` / its own "scan all" flag), not just Manual -- these are independently configurable per account and must not be assumed to share a code path without a test proving it.
-  - Regression-test the exact repro: a folder with a stored `oldest_no_rule_uid` cursor and "scan all" enabled must return message counts consistent with the full folder content, not just the post-cursor subset.
-- Depends on: none.
-- Source: Harold + Claude investigation, 2026-08-10 (Outlook folder-count discrepancy on kimmeyharold@aol.com "Bulk Mail").
-
-**F146. Fix mislabeled "AOL copy-not-move" error message in GenericIMAPAdapter (also fires on Gmail-IMAP) Priority 10**
-- Phase: Core App Quality / Bug Fix
-- Platform: All (any provider routed through `GenericIMAPAdapter`, not AOL-specific)
-- **Scope**: `mobile-app/lib/adapters/email_providers/generic_imap_adapter.dart:1125` (`partitionByMoveSurvival`, from `BUG-S40-1`, Sprint 40) hardcodes the failure reason string `'... (AOL copy-not-move)'`. Confirmed 2026-08-10 during the 0.6.0.0 release smoke test: this fired on a Gmail-IMAP account (`kimmeyh@gmail.com`, `platformId=gmail-imap`), not AOL -- `live_scan_v0.6.0.log`, 2 of 10 messages, UIDs 2849/2850. At minimum the message text is misleading for non-AOL accounts; worth checking whether the copy-not-move pathology itself needs provider-specific handling (retry strategy, root cause) rather than being AOL-only as originally assumed. Not a release blocker -- pre-existing since Sprint 40, not caused by the version bump.
-- Depends on: none.
-- Source: 0.6.0.0 Store release Check C smoke test, Harold + Claude, 2026-08-10.
-
-**F145. WinWright/integration_test coverage: Help-icon deep-link from every screen (~time-boxed, no-history) Priority 10**
-- Phase: Core App Quality / Testing Infrastructure
-- Platform: Windows Desktop (WinWright-specific; the underlying deep-link mechanism is cross-platform)
-- **Scope**: for every screen carrying a Help AppBar icon (per `StandardAppBarActions`, ~15+ screens), verify that tapping it opens `HelpScreen` scrolled to that screen's specific section, not just that `HelpScreen` opens at all. The deep-link mechanism (`initialSection` -> `HelpSection` enum -> auto-scroll on arrival) already exists (F54, Sprint 33) but has no systematic per-screen regression coverage today.
-- **Likely test lane**: `integration_test` (per the F131/F99 precedent -- WinWright's runner cannot bridge dialog-settle/animated-transition boundaries reliably; the in-VM harness reads the semantics tree directly). Confirm via a quick capability check before committing to a full script suite, per `SPRINT_PLANNING.md`'s Tooling-Capability Pre-Flight rule.
-- Depends on: none.
-- Source: Sprint 54 retrospective (Harold, 2026-08-07), Category 14.
+_(F145/F146/F147 all shipped Sprint 55 -- see `docs/sprints/SPRINT_55_PLAN.md`, CHANGELOG.md 2026-08-10, and `docs/WINWRIGHT_SELECTORS.md`'s new F145 entry (WinWright false-failure finding + the real HelpScreen scroll-timing bug it led to). F145 also produced `integration_test/help_deep_link_test.dart`, the durable regression suite for all 22 HelpSection values.)_
 
 **F138. Decide: should the 5 rule-editing screens gain account context? -- [CLOSED 2026-08-03, Harold: not needed]**
 - Phase: Core App Quality / UX
