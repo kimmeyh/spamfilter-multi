@@ -195,6 +195,14 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 
 ### Core App Quality
 
+**F147. "Scan all emails" (no date filter) is silently overridden by the no-rule backlog cursor, for both Manual and Background scan Priority 10**
+- Phase: Core App Quality / Bug Fix
+- Platform: All IMAP-backed providers (`GenericIMAPAdapter` -- AOL, Gmail-IMAP, Yahoo, generic IMAP); likely also affects Gmail API's historyId-incremental path (`_fetchFolderMessagesGmail`) by the same pattern, needs confirming.
+- **Scope**: confirmed 2026-08-10 while investigating an AOL Outlook-vs-app count mismatch (Outlook: "Bulk Mail" = 301 messages; app live scan: 8). Root cause: `EmailScanner._fetchFolderMessagesImap` (`mobile-app/lib/core/services/email_scanner.dart:1120`) unconditionally prefers the per-folder `oldest_no_rule_uid` cursor (`account_folder_cursors` table) whenever one exists, calling `imap.fetchMessagesIncremental` (UID cursor forward only) instead of `imap.fetchMessages` (the true full/`daysBack`-windowed fetch). This happens **regardless of the user's "Scan all emails" toggle** (Manual Scan tab: "No date filter - scans entire mailbox", maps to `daysBack=0`) -- the cursor branch has no check for that setting at all, so once any no-rule backlog exists for a folder, "Scan all emails" silently stops being honored and the user is told (via the UI's own descriptive text) that the mailbox is being fully scanned when it is not. The same unconditional-cursor-preference pattern needs checking against the Background Scan tab's own range setting (checkbox + 1-90 day slider, separate account_settings keys `background_days_back`/implied "scan all") to confirm background scans respect their own configured range the same way, not just manual.
+- **Fix shape (not yet designed in detail)**: the cursor-preference branch in `_fetchFolderMessagesImap` needs to check whether the active scan (manual or background) has "scan all emails" set for that account before choosing the incremental-cursor path; if so, bypass the cursor and do the full `fetchMessages` call instead (the cursor can still be recomputed/persisted afterward for the next incremental run).
+- Depends on: none.
+- Source: Harold + Claude investigation, 2026-08-10 (Outlook folder-count discrepancy on kimmeyharold@aol.com "Bulk Mail").
+
 **F146. Fix mislabeled "AOL copy-not-move" error message in GenericIMAPAdapter (also fires on Gmail-IMAP) Priority 10**
 - Phase: Core App Quality / Bug Fix
 - Platform: All (any provider routed through `GenericIMAPAdapter`, not AOL-specific)
