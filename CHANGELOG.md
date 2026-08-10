@@ -26,6 +26,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-08-10 (Sprint 55)
+- **fix**: F147 -- "Scan all emails" (no date filter) was silently overridden by the per-folder no-rule backlog cursor on IMAP accounts (AOL, Gmail-IMAP, Yahoo, generic IMAP) and by the historyId cursor on Gmail OAuth, for both Manual and Background scan. A folder with a stored cursor returned only the post-cursor subset even with "Scan all emails" enabled -- confirmed live on an AOL account (301 actual messages in "Bulk Mail", only 8 returned). Fixed by bypassing the cursor whenever `daysBack<=0` ("scan all"); the cursor is still recomputed after the bypass so a later windowed scan resumes incrementally as before. 7 new regression tests, mutation-verified.
+
 ### 2026-08-10 (Sprint 55: post-0.6.0.0-cert dev bump)
 - **chore**: dev worktree version bump `0.6.0` -> `0.6.1` (PATCH -- no `feat` queued yet) following certification and Store publication of `0.6.0.0` (Submission 11). `msix_version` deliberately left at `0.6.0.0` until the next release build.
 
