@@ -81,6 +81,59 @@ void main(List<String> args) async {
     exit(0);
   }
 
+  // F125 (Sprint 54): a one-shot release self-test collapsing the manual
+  // multi-step release verification (build-log check, --print-env, manifest
+  // grep, size check) into a single PASS/FAIL command, so no individual check
+  // can be silently skipped under release-day time pressure -- the exact
+  // failure shape of the F119 family (a skipped verification step shipped a
+  // dev-flagged build three separate times). Usage:
+  //   .\my_email_spam_filter.exe --release-self-test --expected-version=0.5.9
+  // Checks: APP_ENV=prod, NATIVE_APP_ENV=prod, both suffixes empty, window
+  // title has no [DEV] marker, and the compiled version matches
+  // --expected-version (required -- the probe cannot know the release target
+  // on its own). Prints one line per check plus a final PASS/FAIL summary;
+  // exits 0 on PASS, 1 on any FAIL, so it composes in a script.
+  if (args.contains('--release-self-test')) {
+    final expectedVersionArg = args.firstWhere(
+      (a) => a.startsWith('--expected-version='),
+      orElse: () => '',
+    );
+    if (expectedVersionArg.isEmpty) {
+      // ignore: avoid_print
+      print('FAIL: --expected-version=<X.Y.Z> is required');
+      exit(1);
+    }
+    final expectedVersion =
+        expectedVersionArg.substring('--expected-version='.length);
+    final nativeEnvArg = args.firstWhere(
+      (a) => a.startsWith('--native-app-env='),
+      orElse: () => '--native-app-env=absent',
+    );
+    final nativeEnv = nativeEnvArg.substring('--native-app-env='.length);
+    final actualVersion = await AppVersion.get();
+
+    final checks = <String, bool>{
+      'APP_ENV=prod': AppEnvironment.current == 'prod',
+      'NATIVE_APP_ENV=prod': nativeEnv == 'prod',
+      'displaySuffix empty': AppEnvironment.displaySuffix.isEmpty,
+      'dataDirSuffix empty': AppEnvironment.dataDirSuffix.isEmpty,
+      'windowTitle has no [DEV] marker':
+          !AppEnvironment.windowTitle.contains('[DEV]'),
+      'version matches --expected-version=$expectedVersion':
+          actualVersion == expectedVersion,
+    };
+
+    for (final entry in checks.entries) {
+      // ignore: avoid_print
+      print('${entry.value ? 'PASS' : 'FAIL'}: ${entry.key}'
+          '${entry.key.startsWith('version matches') ? ' (actual: $actualVersion)' : ''}');
+    }
+    final allPassed = checks.values.every((v) => v);
+    // ignore: avoid_print
+    print(allPassed ? 'RESULT: PASS' : 'RESULT: FAIL');
+    exit(allPassed ? 0 : 1);
+  }
+
   // Initialize sqflite FFI for desktop platforms (Windows, Linux, macOS)
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     sqfliteFfiInit();
