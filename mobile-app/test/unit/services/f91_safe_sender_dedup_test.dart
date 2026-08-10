@@ -1,5 +1,6 @@
 /// F91 (Sprint 39) Phase 2 tests: post-safe-sender-move source-folder dedup
-/// (AOL copy-not-move reconciliation).
+/// (server-acknowledged-but-not-performed-move reconciliation; confirmed
+/// provider-agnostic, F146 Sprint 55).
 ///
 /// EmailScanner.scanInbox is orchestration-heavy (real platform adapter,
 /// credentials, IMAP connection) and is exercised in Phase 5.3 manual

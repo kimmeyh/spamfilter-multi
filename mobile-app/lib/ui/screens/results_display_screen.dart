@@ -1090,9 +1090,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                   ),
                   // F91 (Sprint 39): informational chip for source-folder
                   // duplicates removed during post-safe-sender-move dedup
-                  // (AOL copy-not-move reconciliation). Shown only when the
-                  // count is greater than zero so it does not clutter the
-                  // summary for non-AOL providers.
+                  // (server-acknowledged-but-not-performed move
+                  // reconciliation; confirmed provider-agnostic, F146
+                  // Sprint 55). Shown only when the count is greater than
+                  // zero so it does not clutter the summary otherwise.
                   if (scanProvider.safeSenderDedupCount > 0)
                     Tooltip(
                       message:
