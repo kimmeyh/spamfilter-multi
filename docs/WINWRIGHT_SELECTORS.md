@@ -90,6 +90,14 @@ Flutter TabBar tabs render as `Text` elements, NOT `Tab` controls. Prefer `useIn
 Full detail, including the search box that cannot be cleared and the semantics wrapper shapes that
 name a node while making it unclickable: `mobile-app/test/winwright/README.md` (Sprint 51 notes).
 
+### No scroll patterns exposed at all (F140, Sprint 54 -- definitive negative result)
+
+**Flutter's Windows UIA bridge does not expose ANY control patterns to WinWright, for ANY element type -- not even `InvokePattern` on Buttons, which we know work.** Confirmed via `ww_dump_tree` with `includePatterns: true`: every element in the tree, across all control types present (`Button`, `CheckBox`, `Edit`, `Group`, `Text`, `MenuBar`, `MenuItem`, `Pane`, `TitleBar`, `Window`), returned an empty/absent `patterns` field. There is also no distinct `ScrollBar` control type or any Group/Pane marked as scrollable anywhere in the tree.
+
+**Conclusion**: WinWright/UIA has no mechanism to scroll a Flutter Windows app's off-screen content into view, regardless of technique (`ww_scroll` direction/find_target modes, mouse-wheel simulation, a different container selector) -- because Flutter does not expose scroll affordances as UIA patterns in the first place; clicks work via a different (likely coordinate/event-injection) path WinWright wraps, not via `InvokePattern` dispatch. This is a Flutter-Windows-embedding limitation, not a WinWright usage error.
+
+**Practical implication**: any UI content that sits below the fold on a long single-page scrollable screen is NOT reachable by WinWright automation. If a value needs to be automation-verifiable (like the app version, given its role in the F119 defect-detection story), duplicate it near the top of the page rather than relying on scroll-to-reach. See `settings_screen.dart` (`_buildGeneralTab`) and `help_screen.dart` for the applied pattern -- version text duplicated as the first list item / first Column child, full original content left in place at the bottom.
+
 ### No automationId
 
 Flutter's MSAA bridge does NOT set UIA `AutomationId` on elements. All selection must use `name` or `type` properties. The `#id` selector only works for Win32 elements (title bar, minimize/maximize/close buttons).

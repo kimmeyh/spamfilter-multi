@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-07-30 (Sprint 51 retrospective complete: Manual Validation closed all 5 items; IMP-7 shipped in-sprint; **F133/F133-S52, F134, F135, F136 carded for Sprint 52 detail planning**, and **F132 RETIRED into F133**. **`0.5.8` is LIVE in the Store** -- certified 2026-07-29 as Submission 9. See Version History 6.19)
+**Last Updated**: 2026-08-03 (Sprint 53 F-STORE-53 complete: release-candidate smoke test passed, then the real Store MSIX built, uploaded, and certified. **`0.5.9` is LIVE in the Store** -- certified 2026-08-03 as Submission 10. F139 (local-install smoke test template) and F140 (WinWright end-of-page reachability) added to backlog. Dev bumped 0.5.9 -> 0.5.10 (pubspec.yaml, gate-verified).)
 
 ## How to Maintain This Document
 
@@ -116,12 +116,24 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 49 | docs/sprints/SPRINT_49_SUMMARY.md | [OK] Complete | Jul 21-23, 2026 (PR #276) |
 | 50 | docs/sprints/SPRINT_50_SUMMARY.md | [OK] Complete | Jul 25-27, 2026 (PR #278; 0.5.8 submitted) |
 | 51 | docs/sprints/SPRINT_51_SUMMARY.md | [OK] Complete | Jul 27-30, 2026 (PR #285; 0.5.8 LIVE Jul 29) |
+| 52 | docs/sprints/SPRINT_52_SUMMARY.md | [OK] Complete | Jul 30-Aug 2, 2026 (PR #292) |
+| 53 | docs/sprints/SPRINT_53_PLAN.md | [OK] Complete (retro skipped, PO decision) | Aug 3, 2026 (PR #295/#296; 0.5.9 LIVE Aug 3) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
 ---
 
 ## Last Completed Sprint
+
+**Sprint 53** (2026-08-03; PR #295 -> develop, PR #296 -> main)
+- **Type**: Single-task Store release sprint. 1/1 task complete.
+- **Delivered**: **F-STORE-53** -- scope corrected mid-sprint from "full release pipeline" to "smoke test only" after Harold flagged scope creep ("this task is meant to be a smoke test, correct?"); release-candidate MSIX built locally (no merge required) and smoke-tested clean (Gmail sign-in, About screen, title bar, no `[DEV]` artifacts). Once the smoke test passed, the real Store MSIX 0.5.9.0 was built from `main`, verified, uploaded to Partner Center, and **CERTIFIED + LIVE 2026-08-03** as Submission 10. **F138** closed (icons not needed in the 5 rule-editing screens' context, Harold decision). Dev bumped 0.5.9 -> 0.5.10 (pubspec.yaml, one file, gate-verified).
+- **Backlog additions found live during the smoke test**: **F139** (HOLD template) -- the Store-submission MSIX config produces an unsigned package that cannot install locally; self-signing via `store: false, install_certificate: true` installs a release candidate side-by-side with the live Store build without disturbing it. **F140** -- the app version display on Settings > General and Help sits at the end of a long scrollable tab and could not be reached by WinWright/UIA automation (`ww_scroll`/direct-click both failed with `element_offscreen`); backlogged to investigate a fix or relocate the display nearer the top of the page.
+- **Verification**: pre-build suite 1,859 passed / 29 skipped / 0 failed, analyze clean (re-confirmed on the release-candidate build); Store-build manifest 0.5.9.0, 16.80 MB, correct prod dart-defines; Harold-confirmed Gmail sign-in + About screen + title bar clean on the smoke-test build.
+- **Retro**: **SKIPPED by explicit Product Owner decision** (Harold, 2026-08-03: "PO approves skipping sprint 53 retrospective") -- a deliberate exception to the Phase 7 completeness rule for this single-task release sprint, not an oversight.
+- **Docs**: SPRINT_53_PLAN.md.
+
+_(Prior: **Sprint 52** below.)_
 
 **Sprint 52** (2026-07-30 -- 2026-08-02; PR #292 -> develop)
 - **Type**: Accessibility audit + full remediation, AppBar consistency, account-selection UX. 7/7 tasks complete (5 planned + 2 added mid-sprint), plus 3 manual-validation fixes.
@@ -170,23 +182,13 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 
 ### Core App Quality
 
-**F137. Verify and remove dead `process_results_screen.dart` (~15-20m) Priority 10**
-- Phase: Core App Quality
-- Platform: Windows Desktop (verified on; cross-platform code)
-- Confirmed zero references anywhere in `lib/` by both filename and class-name search (`ProcessResultsScreen`) -- same verification standard used for the three screens removed in Sprint 52's R-7. The Sprint 52 accessibility audit flagged this file as having "1 partial reference," but that reference no longer exists in the current tree.
-- Scope: re-verify dead (quick recheck, since code moves fast), then delete -- or, if a reference turns up this time, document why it's retained instead.
-- Depends on: none
-
-**F140. Version number unreachable by WinWright/UIA on Settings > General and Help (~30-90m, investigation-first) Priority 20**
+**F145. WinWright/integration_test coverage: Help-icon deep-link from every screen (~time-boxed, no-history) Priority 10**
 - Phase: Core App Quality / Testing Infrastructure
-- Platform: Windows Desktop (WinWright/UIA-specific; the underlying UX issue is cross-platform)
-- **Problem**: the app version string (`settings_screen.dart`, `'Version ${snapshot.data ?? '...'}'${AppEnvironment.displaySuffix}`, near the bottom of the General tab's "About" section) and similar end-of-content text on the Help screen sit at the very end of long, single-page-per-tab scrollable content. During the Sprint 53 F-STORE-53 smoke test, WinWright's `ww_scroll` (both `direction` and `find_target` modes) could not bring either element into view: `find_target` returned `found:false` with no error, and a direct `ww_click` on a known off-screen element (`Danger Zone`, immediately after About) failed with `element_offscreen: could not be scrolled into view`. Flutter's Windows semantics tree exposes these off-screen elements in the UIA tree (so `ww_get_snapshot`/`ww_find_by_description` DO find them, `visible:false`) but does not appear to implement a working `ScrollItemPattern`/`ScrollPattern` for WinWright to act on. Maximizing the window and using keyboard `PageDown` also did not reach them reliably.
-- **Two-part scope** (Harold, 2026-08-03, following the F-STORE-53 smoke test where I had to skip independently re-verifying the About-screen version and rely on Harold's direct check instead):
-  1. **Primary**: find a way for WinWright (or Flutter's semantics/UIA integration generally) to reach elements at the end of a long scrollable page -- investigate whether a Flutter-side change (e.g. ensuring the scroll view implements `RenderViewport`'s UIA scroll patterns correctly, or exposing `Semantics(explicitChildNodes:)` differently) or a WinWright-side technique (mouse-wheel-based scroll simulation instead of pattern-based, `ww_dump_tree` raw approach, or a different container selector) resolves it. This is genuinely open-ended -- start with a short timeboxed investigation before committing to a fix.
-  2. **Fallback** (if the primary proves impractical or out of scope for this codebase): move or duplicate the version number (and equivalently, the Help screen's end-of-page content) so it also displays near the TOP of its page/tab -- e.g. in the AppBar subtitle, or as the first visible item on General/Help -- so both a human and an automation tool can see it without scrolling.
-- **Why it matters beyond testing convenience**: the version display is also the primary user-facing proof-point that a build is NOT running as dev (`[DEV]` suffix) -- this is the exact F119-family defect class (three prior sprints, three separate silent-dev-build root causes). A version indicator any tester (human or automated) can see immediately, without scrolling through unrelated settings, directly supports catching that defect class faster.
-- Depends on: none. Complements [[F139]] (which currently documents the Harold-manual-check workaround for this exact gap).
-- Source: Sprint 53 (2026-08-03), F-STORE-53 smoke test.
+- Platform: Windows Desktop (WinWright-specific; the underlying deep-link mechanism is cross-platform)
+- **Scope**: for every screen carrying a Help AppBar icon (per `StandardAppBarActions`, ~15+ screens), verify that tapping it opens `HelpScreen` scrolled to that screen's specific section, not just that `HelpScreen` opens at all. The deep-link mechanism (`initialSection` -> `HelpSection` enum -> auto-scroll on arrival) already exists (F54, Sprint 33) but has no systematic per-screen regression coverage today.
+- **Likely test lane**: `integration_test` (per the F131/F99 precedent -- WinWright's runner cannot bridge dialog-settle/animated-transition boundaries reliably; the in-VM harness reads the semantics tree directly). Confirm via a quick capability check before committing to a full script suite, per `SPRINT_PLANNING.md`'s Tooling-Capability Pre-Flight rule.
+- Depends on: none.
+- Source: Sprint 54 retrospective (Harold, 2026-08-07), Category 14.
 
 **F138. Decide: should the 5 rule-editing screens gain account context? -- [CLOSED 2026-08-03, Harold: not needed]**
 - Phase: Core App Quality / UX
@@ -242,6 +244,18 @@ _(F100 shipped in Sprint 43.)_
 - Phase: Process
 - Platform: Windows Desktop
 - Extend the `--print-env` headless probe into a one-shot release self-test that verifies env + version + data-dir (and any other release-gating invariants) in a single command; fold into `docs/STORE_RELEASE_PROCESS.md` Step 4.0. Source: Sprint 49 retrospective Category 14 candidate.
+
+**F141. Android / Google Play re-expansion deep dive ([no-history], time-boxed) Priority 40 -- [SPRINT 54 TARGET, Harold 2026-08-03]**
+- Phase: Android / Google Play Store Readiness (kickoff of the track promoted off HOLD 2026-07-24)
+- Platform: Android (analysis only this sprint -- no code changes)
+- **Scope, four parts**:
+  1. Changes needed for Android / Google Play Store submission itself: re-verify the current state of every GP-* HOLD item below (signing, manifest permissions, OAuth CASA verification trigger, privacy policy, listing assets, target SDK/16KB page size, ProGuard/R8, data-safety form) against the codebase and current Play Store policy -- some may be stale, already partially done, or have new Play policy requirements since these were last reviewed (Sprint 39, 2026-05-25).
+  2. UI adaptation: systematically assess which existing screens work as-is on phone/tablet/large-tablet (8x11) form factors, which need adaptation, referencing F63 (Responsive design framework, currently HOLD) -- and explicitly fold in accessibility compatibility (per the Sprint 52 F133 accessibility standards) as a requirement of any adapted UI, not an afterthought.
+  3. Non-UI / backend changes needed so the existing provider-agnostic core, adapters, and background-scan services continue working correctly on Android (WorkManager scheduling differences, Android-specific storage/credential paths, the pre-existing `google-services.json` applicationId mismatch noted under F94, etc.).
+  4. Produce a reviewed, updated, and/or newly-added set of backlog items from the above -- re-scope/re-estimate existing F94/F95/F63/GP-* items where stale, add new F#/GP items for gaps found, so the NEXT sprint that touches Android has an accurate, current task list instead of executing against 2-3-sprint-old HOLD entries.
+- **Deliverable**: a findings document (`docs/sprints/SPRINT_54_F141_ANDROID_DEEP_DIVE.md`, following the F103/F104 deep-dive precedent) plus the backlog updates in `ALL_SPRINTS_MASTER_PLAN.md` themselves -- no app code changes.
+- Depends on: none to start. Informs the scoping of every Android/GP HOLD item below.
+- Source: Sprint 54 scope (Harold, 2026-08-03) -- ordered LAST in the sprint, after F137/F140/F125, since it is investigation/analysis work that produces backlog for future sprints rather than shippable code this sprint.
 
 ### Security Hardening (Sprint 31 Audit)
 
@@ -483,6 +497,32 @@ _Original finding, retained for context:_
 
 > **[NEXT MAJOR TRACK -- TRIGGER FIRED 2026-07-24]**: `0.5.7` is verified LIVE (clean prod title). Per Harold's 2026-07-15 promotion trigger, this Android / Google Play track is now **OFF HOLD** and is the next focus. Android development is intentionally stagnant only until that Windows release lands. At promotion, refine this section into an active sprint: start with the `google-services.json` applicationId mismatch diagnosis (F94 pre-existing investigation item -- likely root of intermittent Android Gmail OAuth), then F94 flavors, then the F108 Android-device dep-bump retest carry-in, then the Google-Play-gated security items below.
 
+> **[GOVERNING DIRECTION -- Harold, 2026-08-03, Sprint 54 F141 deep dive]**: *"All the UIs (now with the Windows UI being the default) should use the same UI and tools unless they cannot -- then they should adapt as needed for the needs of the platform"* (UI/navigation), and *"same architectural principle for all the non-UI components -- reuse whatever possible, exactly as is, but adjust where necessary"* (services/backend). **Clarified same day**: the app was built Android-first for early MVP speed, then switched to the Windows Store App style UI and architecture once that became the priority -- so **Windows' current architecture and tooling is the baseline that takes precedence, not "whichever platform already has code."** It is explicitly OK to REMOVE existing Android UI and backend code and replace it with the Windows-side pattern, adjusting only where Android has a genuine platform constraint (no keyboard modifiers, no hover state, no Windows Task Scheduler equivalent) -- never merely to preserve old Android-first code for its own sake. This is DURABLE guidance for every future Android-track item, not scoped to one sprint. See `docs/sprints/SPRINT_54_F141_ANDROID_DEEP_DIVE.md` for the full deep dive this direction came from.
+
+**F142. Android navigation model: adopt desktop's shared AppBar-icon + session-account pattern, replacing the bottom-nav placeholder shell (~time-boxed, no-history) Priority HOLD**
+- Phase: Android / Google Play Store Readiness
+- Platform: Android
+- **Finding** (F141 deep dive): `main_navigation_screen.dart`'s bottom-nav shell has 2 of 3 tabs as non-functional `_PlaceholderScreen`s ("Manage rules from the Account Details screen" / "Configure account settings from Account Details screen") -- this predates and diverges from the Sprint 51/52 desktop navigation overhaul (`SelectedAccountProvider` session-scoped account context, `StandardAppBarActions` canonical icon order).
+- **Direction (clarified 2026-08-03)**: Windows' current architecture takes precedence -- the app was built Android-first for early MVP speed, then switched to the Windows Store App style UI/architecture once that became the priority, and Windows is now the mature, actively-maintained side. `MainNavigationScreen`'s bottom-nav shell is old Android-first scaffolding that should be REMOVED, not preserved or adapted -- Android should adopt the SAME session-scoped account model and AppBar-icon navigation desktop now uses. A bottom nav bar is not a platform constraint Android needs to work around (AppBar icons work identically on touch), so no divergence is warranted here.
+- Depends on: none to scope; implementation should sequence before F143 (No-Rule review needs the same navigation shell to attach to).
+- Source: Sprint 54 F141 deep dive, 2026-08-03.
+
+**F143. Android entry point + touch-adapted selection for No-Rule Review screen (~time-boxed, no-history) Priority HOLD**
+- Phase: Android / Google Play Store Readiness
+- Platform: Android
+- **Finding** (F141 deep dive): `NoRuleReviewScreen` (F39/F135) -- the desktop app's DEFAULT screen when accounts exist -- has ZERO Android entry point. `StandardAppBarActions` gates its AppBar icon to `Platform.isWindows`; the Android nav branch never reaches `_DesktopDefaultScreen`.
+- **Direction**: Android's default screen should be the SAME `NoRuleReviewScreen`, reached the same way, once F142 lands. The one genuine platform-driven adaptation needed is the screen's multi-item SELECTION mechanism specifically -- `_handleItemTap` reads `isControlPressed`/`isShiftPressed`, and `onSecondaryTapDown` opens a right-click menu, neither of which has a touch equivalent (a real "cannot," not a preference). Redesign to long-press-to-select + contextual action bar (the bulk-action `PopupMenuButton` already works fine by tap and needs no change).
+- Depends on: F142 (needs the shared navigation shell to attach an entry point to).
+- Source: Sprint 54 F141 deep dive, 2026-08-03.
+
+**F144. Re-evaluate Android background scanning against the Windows Task Scheduler pattern (WorkManager as the only genuine platform substitution) + add POST_NOTIFICATIONS runtime request (~time-boxed, no-history) Priority HOLD**
+- Phase: Android / Google Play Store Readiness
+- Platform: Android
+- **Finding** (F141 deep dive): `BackgroundScanManager`/`BackgroundScanService` (a `workmanager`-based scheduler, pre-dating the current architecture) exist in source but have ZERO call sites anywhere in `lib/` -- entirely unwired since Windows' `WindowsTaskSchedulerService`-based path became the maintained, actively-developed background-scan architecture (per-account scheduling, ADR-0039/0040, F98). Separately, no `POST_NOTIFICATIONS` runtime permission request exists anywhere (Android 13+/API 33+ requires this at runtime in addition to the manifest declaration, which IS auto-merged by dependent plugins) -- without it, notifications would silently never show.
+- **Direction (clarified 2026-08-03)**: Windows' architecture takes precedence, not "whichever platform has existing code." Evaluate whether the OLD `BackgroundScanManager`/`BackgroundScanService` should be REMOVED and replaced with an Android background-scan implementation that mirrors the CURRENT Windows design (per-account scheduling model, settings/UI wiring pattern, notification approach) as closely as Android's platform allows -- substituting `workmanager`/`AlarmManager` only where WorkManager genuinely IS the Android equivalent of Windows Task Scheduler (a real platform constraint), not preserving the old code's own design decisions where they predate and diverge from the current architecture. Also add the missing `POST_NOTIFICATIONS` runtime request.
+- Depends on: F142 (needs a Settings surface to wire the enable/disable toggle to).
+- Source: Sprint 54 F141 deep dive, 2026-08-03.
+
 **F94. Android dev/prod/store flavors (~6-8h) Priority HOLD (Issue #248) -- RENUMBERED from "F52 Phase 2" + MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
 - Phase: Build and Release Infrastructure / Android Google Play Store Readiness
 - Platform: Android
@@ -493,7 +533,7 @@ _Original finding, retained for context:_
   2. Firebase Console -- register SHA-1 fingerprint for `com.myemailspamfilter.prod` applicationId
   3. Google Cloud Console -- create OAuth client ID for `.dev` package + matching SHA-1
   4. Google Cloud Console -- create OAuth client ID for `.prod` package + matching SHA-1
-- **Pre-existing investigation item**: `mobile-app/android/app/google-services.json` has `applicationId="com.example.spamfiltermobile"` while `build.gradle.kts` declares `applicationId="com.myemailspamfilter"`. Diagnose and fix this mismatch BEFORE adding flavor complexity (may explain intermittent Android Gmail OAuth).
+- **Pre-existing investigation item**: `mobile-app/android/app/google-services.json` has `applicationId="com.example.spamfiltermobile"` while `build.gradle.kts` declares `applicationId="com.myemailspamfilter"`. Diagnose and fix this mismatch BEFORE adding flavor complexity (may explain intermittent Android Gmail OAuth). **RE-VERIFIED Sprint 54 (2026-08-03), still open**: same mismatch confirmed present today, no `.dev`/`.prod` variants exist, single OAuth Android client tied to the old package name -- Firebase/GCP prerequisites (items 1-4 above) confirmed not done. External prerequisites remain unconfirmable from repo evidence alone.
 - Memory note: `project_f52_phase2_blockers.md` has full Sprint 37 deferral context.
 - **Full #248 Phase 2 task list** (from the issue, deferred here): configure `productFlavors` in `android/app/build.gradle.kts` (dev/prod/store) with distinct `applicationId` suffixes, flavor-specific `google-services.json`, flavor-aware build scripts, and verify side-by-side install of dev + prod APKs on one device/emulator.
 - Source: Sprint 37 retrospective Category 11 + Category 13; Issue [#248](https://github.com/kimmeyh/spamfilter-multi/issues/248) (closed 2026-06-23 -- Phase 1 Windows SHIPPED in Sprint 37; Phase 2 Android = this item F94; Phase 3 iOS = F95).
@@ -506,11 +546,12 @@ _Original finding, retained for context:_
 - [Detail](#f52-multi-variant-side-by-side-install)
 - Source: ADR-0035 dev/prod separation.
 
-**F63. Responsive design framework (~8-12h) Priority HOLD -- MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
+**F63. Responsive design framework -- [SUPERSEDED 2026-08-03 by Sprint 54 F141's per-screen findings] Priority HOLD**
 - Phase: UX Improvement
 - Platform: All
-- Implement adaptive breakpoints per ARSD AR-7: phone (<600dp), tablet (600-900dp), desktop (>900dp); LayoutBuilder + breakpoints (ARSD A6). Priority screens: scan progress, results display, settings.
-- Moved to HOLD per Harold (2026-05-25). Related: F55 (navigation consistency). Source: Sprint 30 gap analysis (gap G23).
+- Original scope: adaptive breakpoints per ARSD AR-7 (phone/tablet/desktop), priority screens scan progress/results display/settings.
+- **Superseded**: the Sprint 54 F141 deep dive (`docs/sprints/SPRINT_54_F141_ANDROID_DEEP_DIVE.md` Section 2) audited all 23 screens directly -- only 2 use `MediaQuery` at all (both incidental, not breakpoint logic), zero `LayoutBuilder`/`OrientationBuilder` anywhere. Concrete per-screen findings now exist: 16 screens work-as-is, 5 need touch-target/density adaptation (`results_display`, `rules_management`, `safe_senders_management`, `account_setup`, `settings`), 2 need a genuine new interaction pattern (`yaml_import_export` -- data-layer, not layout; `no_rule_review` -- see F143). Use that document's Section 2 as the authoritative scope instead of this item's original vague framing.
+- Source: Sprint 30 gap analysis (gap G23); superseded by Sprint 54 F141.
 
 **SEC-15. IMAP host validation for custom servers (~1h) Priority HOLD -- MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
 - Phase: Security
@@ -538,15 +579,17 @@ _Original finding, retained for context:_
 - Platform: Android
 - Create release keystore, configure in build.gradle.kts. Overlaps with GP-2 (release signing). Source: Sprint 31 security audit (S12).
 
-**SEC-7. Android: Enable R8 obfuscation + Dart obfuscation (~2h) Priority HOLD -- MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
+**SEC-7. Android: Enable R8 obfuscation + Dart obfuscation (~2h) Priority HOLD -- MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25) -- DUPLICATE of GP-9, recommend merging**
 - Phase: Security / Android Google Play Store Readiness
 - Platform: Android
 - Enable minifyEnabled, create proguard-rules.pro; use --obfuscate --split-debug-info for Dart. Overlaps with GP-9 (ProGuard/R8). Source: Sprint 31 security audit (S13).
+- **RE-VERIFIED Sprint 54 (2026-08-03)**: confirmed still fully unresolved -- no `isMinifyEnabled`/`isShrinkResources`/`proguardFiles`/`proguard-rules.pro` anywhere in the Android tree. SEC-7 and GP-9 are literally the same investigation and fix; recommend merging at next refinement rather than tracking twice.
 
 **SEC-9. Move hardcoded Android client ID to build-time injection (~1h) Priority HOLD -- MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
 - Phase: Security / Android Google Play Store Readiness
 - Platform: Android
 - Move _androidClientId to --dart-define or google-services.json. Source: Sprint 31 security audit (S5).
+- **RE-VERIFIED Sprint 54 (2026-08-03)**: confirmed still hardcoded in `build.gradle.kts` + `AndroidManifest.xml` (the OAuth redirect scheme, inherently manifest-declared for Android). No client *secret* found hardcoded anywhere -- Android installed-app OAuth clients typically do not use one, unlike Windows' desktop client. Real fix is avoiding a per-flavor literal `build.gradle.kts` edit once F94 lands, not a security leak of a secret. Sequence after/alongside F94.
 
 **Issue #163. Android app not tested in several sprints (~2-4h) Priority HOLD**
 - Phase: Android Google Play Store Readiness
@@ -564,9 +607,10 @@ _Original finding, retained for context:_
 - Phase: Android Google Play Store Readiness
 - Platform: Android
 
-**GP-3. Android Manifest Permissions (~4-6h) Priority HOLD**
+**GP-3. Android Manifest Permissions (~4-6h -> re-scoped ~1-2h remaining) Priority HOLD**
 - Phase: Android Google Play Store Readiness
 - Platform: Android
+- **RE-VERIFIED Sprint 54 (2026-08-03)**: the app's own manifest declares zero `<uses-permission>` entries, but direct inspection of bundled plugin manifests confirms auto-merge already provides `INTERNET` (via `google_sign_in_android`), `ACCESS_NETWORK_STATE` (via `connectivity_plus`), and `POST_NOTIFICATIONS` (via `flutter_local_notifications`/`workmanager_android`). Genuinely missing: `RECEIVE_BOOT_COMPLETED`, `WAKE_LOCK`, `FOREGROUND_SERVICE`/`FOREGROUND_SERVICE_DATA_SYNC` -- but WorkManager periodic tasks do not inherently need a foreground service, so add these ONLY if F144's background-scan design actually requires one. Re-scoped: verify auto-merge via a real merged-manifest build, add the 3-4 missing declarations only if needed.
 
 **GP-4. Gmail API OAuth Verification / CASA (~40-80h) Priority HOLD**
 - Phase: Android Google Play Store Readiness
@@ -585,13 +629,15 @@ _Original finding, retained for context:_
 - Phase: Android Google Play Store Readiness
 - Platform: Android
 
-**GP-8. Android Target SDK + 16 KB Page Size (~4-8h) Priority HOLD**
+**GP-8. Android Target SDK + 16 KB Page Size (~4-8h -> re-scoped ~1-2h verify) Priority HOLD**
 - Phase: Android Google Play Store Readiness
 - Platform: Android
+- **RE-VERIFIED Sprint 54 (2026-08-03)**: the installed Flutter 3.38.5's gradle plugin already defaults `compileSdk`/`targetSdk` to API 36 (no explicit override needed in `build.gradle.kts`) -- the SDK-level part of this item is likely already satisfied by the current toolchain. The 16KB native page-size alignment is unverified and needs an actual APK build + inspection of NDK-touching plugin `.so` files, not a source read. Policy-currency against LIVE Play Console requirements also needs a manual check (not verifiable from a read-only repo investigation). Re-scoped down to ~1-2h "verify + confirm."
 
-**GP-9. ProGuard/R8 Code Optimization (~4-6h) Priority HOLD**
+**GP-9. ProGuard/R8 Code Optimization (~4-6h) Priority HOLD -- DUPLICATE of SEC-7, recommend merging**
 - Phase: Android Google Play Store Readiness
 - Platform: Android
+- **RE-VERIFIED Sprint 54 (2026-08-03)**: same investigation as SEC-7 (above) -- confirmed no divergence, no minification/shrinking config exists. Recommend merging into one item at next refinement.
 
 **GP-10. Data Safety Form Declarations (~2-4h) Priority HOLD**
 - Phase: Android Google Play Store Readiness
@@ -599,9 +645,10 @@ _Original finding, retained for context:_
 
 **GP-11. Account and Data Deletion Feature** -- Moved to F66 (off HOLD, all platforms including Windows Store). See F66 in Core App section above.
 
-**GP-12. Firebase Analytics Decision (~2-4h) Priority HOLD**
+**GP-12. Firebase Analytics -- [RE-SCOPED 2026-08-03] Execute the existing ADR-0030 removal decision, not a new decision (~1-2h) Priority HOLD**
 - Phase: Android Google Play Store Readiness
 - Platform: All
+- **RE-VERIFIED Sprint 54 (2026-08-03)**: ADR-0030 (Accepted) already decided "zero telemetry -- remove Firebase Analytics," but `firebase-analytics`/`firebase-bom` are STILL active dependencies in `build.gradle.kts` with zero Dart-side code anywhere calling them -- dead native-layer weight. ADR-0033 (the analytics/crash-reporting strategy ADR) is still "Proposed," inconsistent with ADR-0030 having already made the call. This is no longer a "~2-4h decision" task -- re-scoped to "~1-2h execute the removal + formally reconcile/accept ADR-0033 referencing ADR-0030's existing decision."
 
 **GP-16. Google Play Developer Account Setup (~2-4h) Priority HOLD**
 - Phase: Android Google Play Store Readiness

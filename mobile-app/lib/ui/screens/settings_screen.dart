@@ -557,6 +557,20 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     return SelectionArea(child: ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        // F140 (Sprint 54): duplicated near the top so the version is visible
+        // without scrolling -- the full About card stays at the bottom of this
+        // tab. Neither a human tester nor WinWright/UIA automation could reach
+        // the bottom-of-tab About card without scrolling, and no working
+        // scroll mechanism was found (see docs/WINWRIGHT_SELECTORS.md).
+        FutureBuilder<String>(
+          future: AppVersion.get(),
+          builder: (context, snapshot) => Text(
+            'Version ${snapshot.data ?? '...'}${AppEnvironment.displaySuffix}',
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+          ),
+        ),
+        const SizedBox(height: 16),
+
         // Rules Management section (moved from Account tab)
         Text(
           'Rules Management',
