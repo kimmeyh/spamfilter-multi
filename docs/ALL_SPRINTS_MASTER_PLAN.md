@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-08-03 (Sprint 53 F-STORE-53 complete: release-candidate smoke test passed, then the real Store MSIX built, uploaded, and certified. **`0.5.9` is LIVE in the Store** -- certified 2026-08-03 as Submission 10. F139 (local-install smoke test template) and F140 (WinWright end-of-page reachability) added to backlog. Dev bumped 0.5.9 -> 0.5.10 (pubspec.yaml, gate-verified).)
+**Last Updated**: 2026-08-10 (Sprint 54 complete: F137/F140/F125/F141 all shipped, PR #298 merged to develop then PR #303 to main. F141's Android deep dive surfaced 2 undocumented architecture findings + Harold's governing direction (Windows architecture takes precedence); new backlog F142/F143/F144 (HOLD) + F145 (retro-added, active). Versioning-policy decision recorded: start enforcing documented semver from the next release. Sprint 55 branch opened via Phase 6.6 carry-forward, Backlog Refinement next.)
 
 ## How to Maintain This Document
 
@@ -118,12 +118,25 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 51 | docs/sprints/SPRINT_51_SUMMARY.md | [OK] Complete | Jul 27-30, 2026 (PR #285; 0.5.8 LIVE Jul 29) |
 | 52 | docs/sprints/SPRINT_52_SUMMARY.md | [OK] Complete | Jul 30-Aug 2, 2026 (PR #292) |
 | 53 | docs/sprints/SPRINT_53_PLAN.md | [OK] Complete (retro skipped, PO decision) | Aug 3, 2026 (PR #295/#296; 0.5.9 LIVE Aug 3) |
+| 54 | docs/sprints/SPRINT_54_RETROSPECTIVE.md | [OK] Complete | Aug 3-10, 2026 (PR #298/#303) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
 ---
 
 ## Last Completed Sprint
+
+**Sprint 54** (2026-08-03 -- 2026-08-10; PR #298 -> develop, PR #303 -> main)
+- **Type**: Core App Quality cleanup + Android/Google Play deep dive. 4/4 tasks complete.
+- **Delivered**: **F137** -- removed confirmed-dead `process_results_screen.dart` + its test. **F140** -- WinWright/UIA capability spike gave a definitive NEGATIVE result (Flutter's Windows UIA bridge exposes zero control patterns to WinWright, for any element type, and no scrollable-region control type exists -- a platform-embedding limitation, not a usage gap); took the documented R-3 fallback, duplicating the version display near the top of Settings > General and Help. **F125** -- one-shot `--release-self-test --expected-version=X.Y.Z` probe collapsing the manual multi-line `--print-env` release check into a single PASS/FAIL command; verified against the real dev build. **F141** -- Android/Google Play re-expansion deep dive (analysis only, no app code): re-verified every GP-*/F94/F95 HOLD item against current repo state (several stale -- GP-12 already decided by an unexecuted ADR, GP-8 likely already satisfied by the current toolchain); per-screen UI-adaptation assessment across all 23 screens.
+- **Two undocumented architecture findings from F141**: the Android bottom-nav shell has 2 non-functional placeholder tabs, and the desktop app's default screen (`NoRuleReviewScreen`, F135) has zero Android entry point. **Harold's governing direction** (2026-08-03/07): Windows' current architecture and tooling takes precedence -- the app was built Android-first for early MVP speed, then switched to the Windows Store App style once that became priority, so old Android-first UI/backend should be REMOVED and replaced with Windows' pattern, adapting only for genuine platform constraints. New backlog **F142/F143/F144** (all HOLD, for a future dedicated Android sprint) capture the concrete remove-and-replace scope.
+- **Versioning-policy decision**: Harold asked directly whether the project follows semver best practices -- investigation confirmed `CHANGELOG_POLICY.md` had documented standard semver (MINOR for `feat`, PATCH for `fix`) since early on, but every release from `0.5.1` through `0.5.10` bumped only PATCH regardless of content (several shipped substantial `feat` work). Decided to start enforcing the documented policy from the NEXT release forward; no renumbering of past releases.
+- **Verification**: suite **1,850 passed** / 29 skipped / 0 failed (from 1,859 at Sprint 53 close -- net change explained entirely by F137's deletion outweighing 3 new tests added); analyze clean throughout; CI green (Analyze+Test, Windows Build Verification).
+- **GitHub Copilot review** (requested by Harold post-retrospective): 3 real findings (CHANGELOG.md Sprint-53-entries-vs-`[0.5.9]`-heading placement, a bash `grep -r` in a PowerShell-first repo's sprint plan, a `<StoreID>` placeholder where the concrete ID was already available) all fixed; 2 findings already resolved by earlier commits in the same PR; 1 not applicable (expected carry-forward content, not scope creep). Added a standing note to `.github/copilot-instructions.md` so the CHANGELOG placement pattern is not re-flagged on future PRs.
+- **Retro**: all 14 categories rated Very Good; **2 improvements, both applied**. `TROUBLESHOOTING.md` gained an entry for the concurrent-`flutter`-process build-lock collision hit during F137. **F145** (WinWright/integration_test coverage for Help-icon deep-links from every screen) registered as a new backlog item from Harold's Category 14 feedback.
+- **Docs**: SPRINT_54_PLAN.md / SPRINT_54_F141_ANDROID_DEEP_DIVE.md / SPRINT_54_RETROSPECTIVE.md.
+
+_(Prior: **Sprint 53** below.)_
 
 **Sprint 53** (2026-08-03; PR #295 -> develop, PR #296 -> main)
 - **Type**: Single-task Store release sprint. 1/1 task complete.
