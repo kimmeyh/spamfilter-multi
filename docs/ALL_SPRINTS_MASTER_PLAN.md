@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-08-10 (Sprint 55, mid-Backlog-Refinement pivot to a Store release: **`0.6.0.0` CERTIFIED and LIVE 2026-08-10** (Submission 11) -- first release under the enforced semver policy (MINOR bump, Sprint 54's F125 was a `feat`). Check C smoke test on the live Store build confirmed clean (Settings "Version 0.6.0" no [DEV], clean title bar, Gmail-IMAP live scan succeeded). Smoke test surfaced new backlog item F146 (mislabeled AOL-specific error message firing on Gmail-IMAP, pre-existing since Sprint 40, not release-caused). Dev bumped 0.6.0 -> 0.6.1 (PATCH, gate-verified). Backlog Refinement scope selection for Sprint 55 resumes next.)
+**Last Updated**: 2026-08-10 (Sprint 55 COMPLETE, PR #304, retro all-Very-Good: F147 scan-all-emails cursor bypass, F146 generalized AOL-specific error message, F145 Help-icon deep-link coverage + a real HelpScreen scroll-timing bug found and fixed via the F145 test suite itself, plus 2 same-sprint Manual Validation follow-ups (Settings tab-scoped Help fix, walkthrough content rewrite). 1 retro improvement applied: new Phase 3.7.0 step in SPRINT_EXECUTION_WORKFLOW.md fixing a recurring GitHub-issue-card-creation-ordering gap. This sprint also shipped `0.6.0.0` CERTIFIED and LIVE on the Store (Submission 11) via a mid-Backlog-Refinement pivot. Backlog Refinement scope selection for Sprint 56 is next.)
 
 ## How to Maintain This Document
 
@@ -119,12 +119,25 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 52 | docs/sprints/SPRINT_52_SUMMARY.md | [OK] Complete | Jul 30-Aug 2, 2026 (PR #292) |
 | 53 | docs/sprints/SPRINT_53_PLAN.md | [OK] Complete (retro skipped, PO decision) | Aug 3, 2026 (PR #295/#296; 0.5.9 LIVE Aug 3) |
 | 54 | docs/sprints/SPRINT_54_RETROSPECTIVE.md | [OK] Complete | Aug 3-10, 2026 (PR #298/#303) |
+| 55 | docs/sprints/SPRINT_55_RETROSPECTIVE.md | [OK] Complete | Aug 9-10, 2026 (PR #304; 0.6.0.0 LIVE Aug 10) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
 ---
 
 ## Last Completed Sprint
+
+**Sprint 55** (2026-08-09 -- 2026-08-10; PR #304 -> develop)
+- **Type**: Bug fixes surfaced from the 0.6.0.0 release smoke test + a mid-sprint Store release pivot. 3/3 planned tasks complete, plus 2 same-sprint Manual Validation follow-ups.
+- **Store release** (pivot from Backlog Refinement, Harold): 0.6.0.0 certified and LIVE on the Microsoft Store (Submission 11, 2026-08-10) -- first release under the semver policy enforced starting Sprint 54. Check C smoke test on the live Store build (Gmail sign-in, About screen, title bar) confirmed clean.
+- **Delivered**: **F147** -- "Scan all emails" was silently overridden by the no-rule backlog cursor (IMAP) and historyId cursor (Gmail OAuth), for both Manual and Background scan; fixed by bypassing the cursor whenever `daysBack<=0`, 7 new mutation-verified tests. **F146** -- generalized the "AOL copy-not-move" error message (confirmed firing on Gmail-IMAP too) across 6 files. **F145** -- WinWright Tooling-Capability spike was genuinely tried live per Harold's instruction and found to produce a FALSE FAILURE for scroll-target verification (worse than a blind spot), documented as a durable rule in `WINWRIGHT_SELECTORS.md`; re-scoped to `integration_test`, which then surfaced and fixed a real `HelpScreen` scroll-timing bug (async section content not settled before the deep-link scroll computed its target, landing later sections up to ~4000px short). 27 new tests.
+- **Manual Validation follow-ups** (same sprint, not deferred): Settings screen's Help icon always deep-linked to the General tab's section regardless of which tab was visible -- root cause was a missing `setState()` on tab change; fixed with a dedicated listener, 4 new regression tests. Help > First-Use Walkthrough rewritten per Harold's feedback (8 steps, up from 6) -- corrected one button-label reference against actual app code ("Block Exact Domain", not "Block Domain") before committing.
+- **Process gap found and fixed**: GitHub issue cards for F145/F146/F147 were only created retroactively when `require-sprint-cards.ps1` blocked the first commit -- all 3 tasks were already fully implemented by then. Second recurrence of the Sprint 52 retro IMP-2/IMP-6 failure class. New Phase 3.7.0 step added to `SPRINT_EXECUTION_WORKFLOW.md`: cards are created in the SAME turn as plan-approval acknowledgment, before any task file is touched.
+- **Verification**: suite **1,857 passed** / 29 skipped / 0 failed; analyze clean throughout.
+- **Retro**: all 14 categories rated Very Good; **1 improvement, applied** (Phase 3.7.0 card-creation-ordering fix above).
+- **Docs**: SPRINT_55_PLAN.md / SPRINT_55_RETROSPECTIVE.md.
+
+_(Prior: **Sprint 54** below.)_
 
 **Sprint 54** (2026-08-03 -- 2026-08-10; PR #298 -> develop, PR #303 -> main)
 - **Type**: Core App Quality cleanup + Android/Google Play deep dive. 4/4 tasks complete.

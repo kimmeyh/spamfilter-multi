@@ -483,9 +483,16 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
 
   **Rationale**: Per Sprint 35 retro Process Issues, Opus 4.7 has a higher tendency to confirm before visible/persistent actions than prior models. This inventory makes the autonomy boundary explicit: if the action is in the [OK] list, execute it; if it's in the [FAIL] list, confirm. Anything not enumerated falls back to the Decision Rule above.
 
+- [ ] **3.7.0 Create GitHub issue cards for the approved plan -- FIRST action after approval, before touching any task's first file** (MANDATORY, Sprint 55 retro IMP-1)
+  - **When**: in the SAME turn as acknowledging "plan approved" -- before Phase 3.7.1's PR update, and before any code/doc/test file for Task A is opened or edited.
+  - **Why this exists**: `require-sprint-cards.ps1` blocks the FIRST commit attempt if cards are missing, but a blocking hook is a downstream catch, not a prevention -- Sprint 55 discovered this the hard way when the hook fired only after all 3 approved tasks were ALREADY fully implemented (code, tests, docs all written), forcing a retroactive backfill of cards #305-#307 that describe work already done rather than work about to be done. This is the SECOND recurrence of this exact failure class (Sprint 52 retro IMP-2/IMP-6 built the hook for the first one). A branch that already exists from a Phase 6.6 carry-forward is the classic trigger -- it feels like execution is already underway, so the explicit Phase 3 sequence (3.3.1 draft PR -> 3.4 cards -> ... -> 3.7 approval) gets skipped or walked out of order.
+  - **Action**: for every task in the approved plan, `gh issue create` per Phase 3.4's template (sprint_card.yml fields, `sprint` label), then record every issue number in `.claude/sprint_status.json` `github_issues` immediately -- do not wait for a later checklist pass.
+  - **If Phase 3.4 already ran normally** (cards created before 3.7 approval, the standard-flow case): this step is a no-op verification -- confirm the cards exist and are open, do not create duplicates.
+  - Do NOT proceed to 3.7.1 or any Phase 4 task work until this step's cards exist.
+
 - [ ] **3.7.1 Update the PR to the APPROVED plan** (PR lifecycle checkpoint #2 -- Sprint 42, Harold's spec)
   - **When**: immediately after Phase 3.7 approval ("plan approved").
-  - **Action**: update the draft PR body (created at 3.3.1) to reflect the **approved** sprint plan -- final task list, scope, issues. (If the PR does not exist yet -- e.g. 3.3.1 was skipped -- create it now as a draft.)
+  - **Action**: update the draft PR body (created at 3.3.1) to reflect the **approved** sprint plan -- final task list, scope, issues (reference the Phase 3.7.0 issue numbers). (If the PR does not exist yet -- e.g. 3.3.1 was skipped -- create it now as a draft.)
   - Keep the PR in DRAFT; it is not marked ready until the Phase 7 final-update gate.
 
 **[CHECKPOINT]** Before proceeding to Phase 4, re-read Phase 4 items in `docs/SPRINT_CHECKLIST.md`.

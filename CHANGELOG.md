@@ -26,6 +26,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-08-10 (Sprint 55 Complete, PR #304)
+- **docs**: Sprint 55 retrospective -- all 14 categories rated Very Good. 1 improvement applied: new Phase 3.7.0 step in `docs/SPRINT_EXECUTION_WORKFLOW.md` -- GitHub issue cards are now created in the same turn as plan-approval acknowledgment, before any task file is touched, closing a recurring gap (Sprint 52 retro IMP-2/IMP-6, recurred this sprint) where cards were only backfilled after a downstream hook blocked the first commit.
+
 ### 2026-08-10 (Sprint 55 Manual Validation follow-up)
 - **fix**: F145 follow-up -- the Settings screen's Help icon always deep-linked to the General tab's section regardless of which tab (Account, Manual Scan, Background) was actually visible, because nothing called `setState()` when the tab index changed. Found in manual validation (Harold). Fixed with a dedicated tab-change listener in `settings_screen.dart`; 4 new regression tests added to `integration_test/help_deep_link_test.dart`, mutation-verified.
 - **docs**: rewrote Help > First-Use Walkthrough (`assets/content/help/walkthrough.md`) per manual-validation feedback -- added a new step for adding a real email account (Step 3), substantially expanded the safe-sender/block-rule tuning step with exact button-path instructions and full per-rule-type guidance (Step 5), and added a new step covering Settings-based rule/safe-sender management including TLD management (Step 6). 8 steps total, up from 6.
