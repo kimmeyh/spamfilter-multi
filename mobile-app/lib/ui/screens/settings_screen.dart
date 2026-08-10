@@ -77,6 +77,10 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   final SettingsStore _settingsStore = SettingsStore();
   final SecureCredentialsStore _credStore = SecureCredentialsStore();
   late TabController _tabController;
+  // F145 Copilot follow-up: last index the Help-icon tab-change listener
+  // acted on, so a duplicate notification with the same index (TabController
+  // fires twice per tap -- see initState) is a no-op, not a second rebuild.
+  late int _lastHelpTabIndex;
 
   // App-wide settings
   ScanMode _manualScanMode = SettingsStore.defaultManualScanMode;
@@ -214,7 +218,17 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     // visit (or not at all on the General tab). This dedicated listener
     // rebuilds on every tab change so the AppBar's Help icon always reflects
     // the currently visible tab.
+    //
+    // Copilot review (PR #304): TabController notifies listeners TWICE per
+    // tap -- immediately when index changes (indexIsChanging=true) and again
+    // at animation completion (indexIsChanging=false) -- both times with the
+    // SAME index value (TabController._changeIndex sets _index synchronously
+    // before either notification). Guard on the index actually changing so
+    // the second, redundant notification does not trigger a second rebuild.
+    _lastHelpTabIndex = _tabController.index;
     _tabController.addListener(() {
+      if (_tabController.index == _lastHelpTabIndex) return;
+      _lastHelpTabIndex = _tabController.index;
       if (mounted) setState(() {});
     });
 

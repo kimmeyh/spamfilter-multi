@@ -26,6 +26,10 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-08-10 (Sprint 55 GitHub Copilot review, PR #304)
+- **fix**: Copilot review finding -- the F145 Settings tab-scoped Help fix's `TabController` listener called `setState()` on every notification. `TabController` fires its listener twice per tap (immediately when the index changes, again at animation completion), both times with the same index value, so the second notification was a redundant rebuild. Added an index-comparison guard so `setState()` only fires when the index actually changes.
+- **fix**: Copilot review finding -- `.claude/sprint_status.json`'s `store_release.live_version`/`live_submission_number`/`previous_live_version` still showed the prior release (0.5.9, Submission 10) even though the rest of the block correctly described 0.6.0.0/Submission 11 as certified and live -- an internal inconsistency that contradicted `docs/STORE_VERSION_STATUS.md`. Updated to match.
+
 ### 2026-08-10 (Sprint 55 Complete, PR #304)
 - **docs**: Sprint 55 retrospective -- all 14 categories rated Very Good. 1 improvement applied: new Phase 3.7.0 step in `docs/SPRINT_EXECUTION_WORKFLOW.md` -- GitHub issue cards are now created in the same turn as plan-approval acknowledgment, before any task file is touched, closing a recurring gap (Sprint 52 retro IMP-2/IMP-6, recurred this sprint) where cards were only backfilled after a downstream hook blocked the first commit.
 

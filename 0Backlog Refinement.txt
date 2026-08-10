@@ -9,6 +9,14 @@ Sprint 5n Scope should include the below items. Please complete sprint planning 
 
 ---------------------------------------------------------------------------------------------------------
 Sprint 56 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
+- Add to backlog and target for this sprint:
+  - Add a help section for the "Review "No Rule" Items Screen
+    - Please draft content to be reviewed during Manual Validation.  Use other help text as examples for content. Use actual functionality and process in forming content.
+    - Help button on the screen should point to this new section in the Help page. Adjust all other help links and related test scripts as appropriate.
+  - Add the icon for "Review "No Rule" items to the Help screen
+
+
+
 
 ---------------------------------------------------------------------------------------------------------
 Sprint 55

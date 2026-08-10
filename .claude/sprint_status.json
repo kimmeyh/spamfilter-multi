@@ -1,6 +1,6 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-11T00:15:00Z",
+  "_last_updated": "2026-08-11T01:00:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
 
@@ -48,9 +48,9 @@
 
   "store_release": {
     "_see_also": "docs/STORE_VERSION_STATUS.md is the quick-check summary (live Store version + current dev version, both with a last-verified date). This block is the working detail behind that summary. Keep both in sync; STORE_VERSION_STATUS.md is what to open for a fast answer, this block is where the evidence lives.",
-    "live_version": "0.5.9",
-    "live_submission_number": 10,
-    "previous_live_version": "0.5.8",
+    "live_version": "0.6.0",
+    "live_submission_number": 11,
+    "previous_live_version": "0.5.9",
     "submitted_version": "0.6.0",
     "submission_number": 11,
     "built_at": "2026-08-09",
