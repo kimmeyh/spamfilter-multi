@@ -134,8 +134,9 @@ class EmailScanProvider extends ChangeNotifier {
   /// F91 (Sprint 39): number of source-folder duplicate messages removed
   /// during post-safe-sender-move dedup. Separate from [_deletedCount] (which
   /// counts rule-driven deletes) because these are reconciliation removals of
-  /// AOL copy-not-move re-injections, not spam-rule matches. Surfaced in the
-  /// scan summary only when greater than zero.
+  /// server-acknowledged-but-not-performed-move re-injections (confirmed
+  /// provider-agnostic, F146 Sprint 55), not spam-rule matches. Surfaced in
+  /// the scan summary only when greater than zero.
   int _safeSenderDedupCount = 0;
 
   // [NEW] PHASE 2 SPRINT 3: Read-only mode & revert capability
@@ -172,7 +173,8 @@ class EmailScanProvider extends ChangeNotifier {
   int get errorCount => _errorCount;
 
   /// F91 (Sprint 39): count of source-folder duplicates removed during
-  /// post-safe-sender-move dedup (AOL copy-not-move reconciliation).
+  /// post-safe-sender-move dedup (server-acknowledged-but-not-performed-move
+  /// reconciliation; confirmed provider-agnostic, F146 Sprint 55).
   int get safeSenderDedupCount => _safeSenderDedupCount;
 
   /// F91 (Sprint 39): record [count] source-folder duplicates removed during

@@ -5,12 +5,14 @@ import 'package:my_email_spam_filter/adapters/email_providers/generic_imap_adapt
 import 'package:my_email_spam_filter/core/models/email_message.dart';
 
 /// BUG-S40-1 regression: a UID MOVE that the server acknowledges but does not
-/// perform (AOL "copy-not-move" on the delete path) must be reported as a
-/// FAILURE, not a false success. Before the fix, every message in a batch was
-/// marked succeeded merely because uidMove() did not throw, so spam that
-/// remained in Bulk Mail was reported deleted and reappeared on every scan
-/// (a delete-loop). These tests lock the partition logic that decides
-/// succeeded vs failed from the post-move survivor set.
+/// perform (originally observed on AOL's delete path; confirmed on
+/// Gmail-IMAP too, F146 Sprint 55 -- provider-agnostic IMAP server behavior,
+/// not an AOL-only quirk) must be reported as a FAILURE, not a false
+/// success. Before the fix, every message in a batch was marked succeeded
+/// merely because uidMove() did not throw, so spam that remained in Bulk
+/// Mail was reported deleted and reappeared on every scan (a delete-loop).
+/// These tests lock the partition logic that decides succeeded vs failed
+/// from the post-move survivor set.
 void main() {
   EmailMessage msg(String id) => EmailMessage(
         id: id,
@@ -57,7 +59,12 @@ void main() {
       );
       expect(succeeded, isEmpty);
       expect(failed.keys, containsAll(['100', '101']));
-      expect(failed['100'], contains('AOL copy-not-move'));
+      expect(failed['100'], isNot(contains('AOL')),
+          reason: 'F146 (Sprint 55): the failure reason must not name a '
+              'specific provider -- this pathology is confirmed '
+              'provider-agnostic (fired on Gmail-IMAP too), and naming AOL '
+              'specifically misleads troubleshooting on other providers.');
+      expect(failed['100'], contains('acknowledged the move without performing it'));
       expect(failed['100'], contains('Trash'));
       expect(failed['100'], contains('Bulk Mail'));
     });

@@ -33,7 +33,9 @@ abstract class RuleDatabaseProvider {
 ///     intentionally carries MORE THAN ONE additive column so sibling tasks
 ///     can land in the same migration:
 ///       - F91: rfc5322_message_id (nullable TEXT) -- RFC 5322 Message-ID
-///         captured at scan time for AOL copy-not-move source-folder dedup.
+///         captured at scan time for server-acknowledged-but-not-performed-
+///         move source-folder dedup (confirmed provider-agnostic, F146
+///         Sprint 55).
 ///       - F89: created_with_auth_state (nullable TEXT) on BOTH the rules and
 ///         safe_senders tables -- the GREEN/YELLOW/RED/GREY SPF/DKIM/DMARC
 ///         snapshot captured when a rule or safe sender was created via a

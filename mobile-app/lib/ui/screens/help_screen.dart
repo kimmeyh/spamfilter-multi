@@ -107,6 +107,22 @@ class _HelpScreenState extends State<HelpScreen> {
     super.dispose();
   }
 
+  /// F145 (Sprint 55): every section's body loads via an async
+  /// `FutureBuilder<String>` (`ContentLoader().load`). Even when the
+  /// underlying asset read is effectively synchronous, the `Future` still
+  /// completes on a LATER frame than the one `initState`'s
+  /// `addPostFrameCallback` fires on -- so the FIRST `_scrollTo` call
+  /// computes its target offset while every PRECEDING section is still
+  /// showing its short loading placeholder (`SizedBox(height: 14)`) instead
+  /// of its real (often much taller) rendered content. The computed scroll
+  /// distance is then too short by the sum of all not-yet-loaded preceding
+  /// sections' height deltas -- worse the further down the page the target
+  /// section is (confirmed via `integration_test`: a section 3 places down
+  /// landed ~168px short of the viewport top, growing roughly linearly with
+  /// position). Retrying once more after content has had a frame to settle
+  /// corrects this without changing the FutureBuilder/ContentLoader design.
+  int _scrollRetriesRemaining = 2;
+
   void _scrollTo(HelpSection section) {
     final keyContext = _keys[section]?.currentContext;
     if (keyContext == null) return;
@@ -119,6 +135,19 @@ class _HelpScreenState extends State<HelpScreen> {
       alignment: 0.0,
       alignmentPolicy: ScrollPositionAlignmentPolicy.explicit,
     );
+    // F145: schedule a follow-up scroll for the next frame so a second pass
+    // corrects the position once any preceding sections' async content has
+    // resolved and the Column has grown to its real height. Bounded to 2
+    // retries: the placeholder-to-content transition settles within one or
+    // two frames once the (in-memory-cached after first load) ContentLoader
+    // future completes; an unbounded retry loop would risk fighting a user
+    // who starts manually scrolling immediately after the screen opens.
+    if (_scrollRetriesRemaining > 0) {
+      _scrollRetriesRemaining--;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _scrollTo(section);
+      });
+    }
   }
 
   @override

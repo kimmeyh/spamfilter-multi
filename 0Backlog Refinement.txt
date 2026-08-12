@@ -8,8 +8,77 @@ Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPIN
 Sprint 5n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
 
 ---------------------------------------------------------------------------------------------------------
-Sprint 551
+Sprint 56 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
+- Add to backlog and target for this sprint:
+  - Add a help section for the "Review "No Rule" Items Screen
+    - Please draft content to be reviewed during Manual Validation.  Use other help text as examples for content. Use actual functionality and process in forming content.
+    - Help button on the screen should point to this new section in the Help page. Adjust all other help links and related test scripts as appropriate.
+  - Add the icon for "Review "No Rule" items to the Help screen
+
+
+
+
+---------------------------------------------------------------------------------------------------------
+Sprint 55
  Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
+- F145. WinWright/integration_test coverage: Help-icon deep-link from every screen (~time-boxed, no-history) Priority 10
+- F146
+- F147
+Backlog hygiene found (Step 2.3 — stale items over 3 sprints old):
+1. F125, F141 — both shipped in Sprint 54, still listed as active candidates. Should be removed (history lives in CHANGELOG.md + SPRINT_54_F141_ANDROID_DEEP_DIVE.md).
+2. F130-S51 through F136, ENV-1 (~110 lines) — a large block of Sprint 51-52 work, all shipped/resolved/retired, still carrying full detail blocks instead of the one-line rollup format the doc uses elsewhere (e.g., the Sprint 42-46 rollup at line 216).
+3. F-VERSION-DERIVE, F-PRECHECK — both tagged [SHIPPED Sprint 49] but still full-length.
+4. F-COPILOT-INSTR — tagged [SPRINT 48 CANDIDATE] but its actual goal (documenting settled decisions to stop Copilot re-flagging them) has been happening organically each sprint since (most recently this session) — recommend closing as effectively-fulfilled rather than carrying it as an open candidate.
+5. do a full prune as part of this refinement, or handle it separately from scope selection?
+
+
+
+Sprint 55 Backlog Refinement
+
+Prepared (Step 1): read ALL_SPRINTS_MASTER_PLAN.md's full "Next Sprint Candidates" section. Found two shipped items still listed as active (F125, F141 — both completed in Sprint 54) and a large block of stale detail sections from Sprints 49-52 that were never pruned per the Maintenance Guide's "Completed items: Remove from the backlog" rule — some tagged [SHIPPED]/[RESOLVED]/[RETIRED] but still carrying full multi-paragraph detail instead of the one-line rollup format used elsewhere in the doc.
+
+Candidates at a glance
+
+- F145. WinWright/integration_test coverage: Help-icon deep-link from every screen (~time-boxed, no-history) Priority 10
+- HOLD: F142/F143/F144 (Android nav/screen/background-scan remove-and-replace), F111/F139/F70/F130/F71 (periodic templates), F94/F95/F63/SEC-4/6/7/8b/9/15/F6/F4/GP-2..16 (Android/GP track), F67 (multi-platform), SEC-11b+F106 (post-MVP), H1-H5
+
+Core App Quality
+
+F145. WinWright/integration_test coverage: Help-icon deep-link from every screen (~time-boxed, no-history) Priority 10
+- Phase: Core App Quality / Testing Infrastructure
+- Platform: Windows Desktop (WinWright-specific; the deep-link mechanism itself is cross-platform)
+- For every screen carrying a Help AppBar icon (~15+ screens via StandardAppBarActions), verify tapping it opens HelpScreen scrolled to that screen's specific section, not just that Help opens at all. The deep-link mechanism (F54, Sprint 33) exists but has no systematic per-screen regression coverage.
+- Likely lane: integration_test, per the F131/F99 precedent (WinWright's runner cannot reliably bridge dialog-settle/animated-transition boundaries). Confirm via a quick capability check before committing to a full suite.
+- Depends on: none.
+- Source: Sprint 54 retrospective (Harold, 2026-08-07), Category 14.
+
+HOLD Items (Android / Google Play Store — promoted off HOLD 2026-07-24, next major track)
+
+- F142. Android navigation model: adopt desktop's shared AppBar-icon + session-account pattern, replacing the bottom-nav placeholder shell
+- F143. Android entry point + touch-adapted selection for No-Rule Review screen (depends on F142)
+- F144. Re-evaluate Android background scanning against the Windows Task Scheduler pattern + add POST_NOTIFICATIONS (depends on F142)
+- F94. Android dev/prod/store flavors + applicationId mismatch (still unresolved, re-verified Sprint 54)
+- F95. iOS variants (stays HOLD, no macOS/Apple Developer account)
+- F63. Superseded by Sprint 54 F141's per-screen findings — recommend closing, folded into F142/F143 scope
+- Plus SEC-4/6/7/8b/9/15, F6, F4, GP-2 through GP-16 — all re-verified Sprint 54, several re-scoped down (GP-3, GP-8, GP-12) or flagged as duplicates (SEC-7/GP-9)
+
+HOLD Items (Periodic Review Templates)
+
+- F111 (Store readiness), F139 (local-install smoke test), F70 (Security Deep Dive), F130 (Process-Docs Deep Dive), F71 (Architecture Deep Dive)
+
+HOLD Items (Multi-Platform / Post-MVP)
+
+- F67 (iOS/Linux/macOS validation), SEC-11b + F106 (DB encryption), H1-H5 (GenAI suggestions, rule-pattern consistency, requirements docs, sent-messages scan, Outlook.com adapter)
+
+---
+Backlog hygiene found (Step 2.3 — stale items over 3 sprints old):
+
+1. F125, F141 — both shipped in Sprint 54, still listed as active candidates. Should be removed (history lives in CHANGELOG.md + SPRINT_54_F141_ANDROID_DEEP_DIVE.md).
+2. F130-S51 through F136, ENV-1 (~110 lines) — a large block of Sprint 51-52 work, all shipped/resolved/retired, still carrying full detail blocks instead of the one-line rollup format the doc uses elsewhere (e.g., the Sprint 42-46 rollup at line 216).
+3. F-VERSION-DERIVE, F-PRECHECK — both tagged [SHIPPED Sprint 49] but still full-length.
+4. F-COPILOT-INSTR — tagged [SPRINT 48 CANDIDATE] but its actual goal (documenting settled decisions to stop Copilot re-flagging them) has been happening organically each sprint since (most recently this session) — recommend closing as effectively-fulfilled rather than carrying it as an open candidate.
+
+Given the size of this cleanup, want me to do the full prune as part of this refinement, or handle it separately from scope selection?
 
 ---------------------------------------------------------------------------------------------------------
 Sprint 54 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
