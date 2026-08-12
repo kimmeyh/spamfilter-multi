@@ -1,38 +1,38 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-11T01:00:00Z",
+  "_last_updated": "2026-08-12T00:00:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
 
   "current_sprint": {
+    "number": 56,
+    "branch": "feature/20260812_Sprint_56",
+    "pr_number": null,
+    "pr_url": null,
+    "start_date": "2026-08-12",
+    "status": "Branch opened via Phase 6.6 carry-forward immediately after PR #304 merged. Post-Merge Cleanup for Sprint 55 in progress: issues #305/#306/#307 closed by hand (verified gh issue list --label sprint --state open empty). Harold also merged develop -> main separately (PR #308) -- codebase is fully released, not just integration-branch-merged. Next: finish Post-Merge Cleanup, then Backlog Refinement (Harold's explicit instruction: continue the checklist until Backlog Refinement, then prep a new Store upload).",
+    "plan_approved": false,
+    "plan_approval_date": null,
+    "blanket_execution_approved": false,
+    "scope": [],
+    "_scope_note": "No sprint plan yet -- Backlog Refinement + scope selection still pending. Current activity is Post-Merge Cleanup + a Store-release prep pivot (same pattern as Sprint 54->55), not sprint feature work."
+  },
+
+  "previous_sprint": {
     "number": 55,
     "branch": "feature/20260809_Sprint_55",
     "pr_number": 304,
     "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/304",
-    "start_date": "2026-08-09",
-    "status": "SPRINT COMPLETE, AWAITING HAROLD'S MERGE. 0.6.0.0 Store release (Submission 11) certified + live 2026-08-10. Sprint 55 Plan approved 2026-08-10: F147 + F146 + F145, all 3 COMPLETE with mutation-verified tests. Manual Validation done (Harold) -- found and fixed 2 same-sprint follow-ups: Settings tab-scoped Help bug (setState gap on tab change) and a full Help > First-Use Walkthrough content rewrite. Phase 7 retrospective COMPLETE: all 14 categories Very Good, 1 improvement applied (new Phase 3.7.0 step in SPRINT_EXECUTION_WORKFLOW.md). PR #304 marked Ready for Review; Harold requested GitHub Copilot review (2026-08-10) -- 2 findings, both fixed (setState churn on duplicate TabController notifications; store_release live_version/live_submission_number/previous_live_version stale-vs-rest-of-block inconsistency), both threads replied to + resolved via GraphQL. Full suite 1857 passed / 0 failed / 29 skipped, flutter analyze clean throughout. Awaiting Harold's review and merge to develop.",
-    "plan_approved": true,
-    "plan_approval_date": "2026-08-10",
-    "blanket_execution_approved": true,
-    "scope": ["F147", "F146", "F145"],
-    "_scope_note": "All 3 approved tasks complete, manual validation complete, retrospective complete. Next: Copilot review request + address comments, then Harold merges PR #304."
-  },
-
-  "previous_sprint": {
-    "number": 54,
-    "branch": "feature/20260803_Sprint_54",
-    "pr_number": 298,
-    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/298",
-    "merged_at": "2026-08-10",
-    "merge_note": "PR #298 -> develop merged 2026-08-10, PR #303 (develop -> main) also merged same day. Issues #299/#300/#301/#302 closed by hand during execution (Closes-on-merge-to-develop does not auto-fire in this GitFlow repo; gh issue list --label sprint --state open verified empty at Post-Merge Cleanup). GitHub Copilot review requested by Harold post-retrospective (2026-08-07): 3 real findings (CHANGELOG.md Sprint-53-entries-vs-[0.5.9]-heading placement, SPRINT_54_PLAN.md bash grep -r in a PowerShell-first repo, STORE_VERSION_STATUS.md <StoreID> placeholder) all fixed in commit a0c63db; 2 findings already resolved by earlier same-PR commits; 1 not applicable. All 3 review threads replied to + resolved via GraphQL. Added a short standing note to .github/copilot-instructions.md so the CHANGELOG placement pattern is not re-flagged on future PRs.",
+    "merged_at": "2026-08-12",
+    "merge_note": "PR #304 -> develop merged 2026-08-12 (Harold). Harold also merged develop -> main same session (PR #308). Issues #305/#306/#307 closed by hand during Post-Merge Cleanup (Closes-on-merge-to-develop does not auto-fire in this GitFlow repo; gh issue list --label sprint --state open verified empty). GitHub Copilot review requested by Harold (2026-08-10): 2 real findings (settings_screen.dart setState churn on duplicate TabController notifications; sprint_status.json store_release live_version/live_submission_number/previous_live_version stale-vs-rest-of-block inconsistency) both fixed in commit e8fc7ce, both threads replied to + resolved via GraphQL.",
     "status": "complete",
-    "deliverables": ["F137: dead process_results_screen.dart + its test removed", "F140: WinWright/UIA end-of-page reachability -- spike gave a definitive negative (no UIA control patterns exposed at all), R-3 fallback applied (version duplicated near top of Settings/Help)", "F125: one-shot --release-self-test --expected-version=X.Y.Z probe, verified against the real dev build", "F141: Android/Google Play re-expansion deep dive (analysis only) -- surfaced 2 undocumented architecture findings (bottom-nav placeholder tabs, zero Android entry point for the desktop-default No-Rule screen); Harold's governing direction: Windows architecture takes precedence, remove-and-replace old Android code; new backlog F142/F143/F144 (HOLD, future dedicated Android sprint)", "Retrospective: all 14 categories x 4 roles, both improvements applied (TROUBLESHOOTING.md entry + F145 backlog registration)", "Versioning-policy decision: confirmed CHANGELOG_POLICY.md's semver policy was documented but not followed for 15+ releases; decided to start enforcing from the NEXT release forward, no renumbering of history"],
-    "verification": "Final full suite 1,850 passed / 29 skipped / 0 failed (--concurrency=4), analyze clean throughout every task. Manual validation: Harold confirmed version text visible in UI without scrolling (F140). CI green (Analyze and Test + Windows Build Verification, both SUCCESS).",
-    "_process_note": "This sprint's own Phase 6.6 carry-forward corrected a Sprint-53-era mistake: post-cert closeout work must land on a NEW branch created from the current one, never as follow-up commits on an already-merged branch. Applied correctly this time (Sprint 54 -> Sprint 55)."
+    "deliverables": ["F147: scan-all-emails cursor bypass (IMAP + Gmail paths), 7 mutation-verified tests", "F146: generalized \"AOL copy-not-move\" error message across 6 files", "F145: Help-icon deep-link coverage -- WinWright spike found a false-failure signal (documented in WINWRIGHT_SELECTORS.md), re-scoped to integration_test, surfaced + fixed a real HelpScreen scroll-timing bug, 27 new tests", "Manual Validation follow-ups (same sprint): Settings tab-scoped Help fix (4 tests) + Help > First-Use Walkthrough rewrite (8 steps, up from 6)", "0.6.0.0 Store release certified + live (Submission 11) via a mid-Backlog-Refinement pivot", "Retrospective: all 14 categories Very Good, 1 improvement applied (Phase 3.7.0 card-creation-ordering fix in SPRINT_EXECUTION_WORKFLOW.md)"],
+    "verification": "Final full suite 1,857 passed / 29 skipped / 0 failed, analyze clean throughout every task. integration_test/help_deep_link_test.dart 31/31 passed via run-integration-tests.ps1.",
+    "_process_note": "Phase 6.6 carry-forward applied correctly again (Sprint 55 -> Sprint 56): branch created from the current feature branch immediately on merge notification, before any post-merge commits."
   },
 
-  "github_issues": [305, 306, 307],
-  "_github_issues_note": "305=F147, 306=F146, 307=F145. Created 2026-08-10 AFTER task execution (require-sprint-cards.ps1's Phase 3.3.1 gate caught this on the first post-approval commit attempt -- cards should have been created at plan approval time, not after all 3 tasks were already done; backfilled from the approved plan + actual commits, per the gate's own guidance). All 3 tasks' work is already committed on the branch; issues reference the commits/CHANGELOG entries retroactively.",
+  "github_issues": [],
+  "_github_issues_note": "EMPTY -- Sprint 55's cards (305/306/307) all closed by hand at Post-Merge Cleanup, verified via gh issue list --label sprint --state open returning empty. Sprint 56 has no cards yet -- created when scope is selected at Phase 3 (require-sprint-cards.ps1 blocks task commits until then; Phase 3.7.0 now creates them immediately at plan approval, before any task work, per the Sprint 55 retro improvement).",
 
   "test_metrics": {
     "tests_passing": 1857,
@@ -71,10 +71,8 @@
       "DONE 2026-08-10: prod worktree reset to restore point c6d0501 (git reset --hard), discarding the local unpushed merge used only to build the release; worktree clean for next cycle.",
       "DONE 2026-08-10: F146 added to backlog (Core App Quality) -- mislabeled 'AOL copy-not-move' error message in GenericIMAPAdapter, confirmed firing on Gmail-IMAP too; pre-existing since Sprint 40, not release-caused; Harold chose backlog over immediate fix."
     ],
-    "post_cert_closeout_pending": [
-      "PR #304 (feature/20260809_Sprint_55 -> develop) still needs Harold's merge, then develop -> main separately (Harold-only, independent timing per the Sprint 53 clarification). Not yet done as of this update.",
-      "RETURN to Sprint 55 Phase 1 Backlog Refinement scope selection -- interrupted mid-presentation by this release pivot, not completed. Hygiene pass already applied (commit f4aec58)."
-    ],
+    "post_cert_closeout_pending": [],
+    "_post_cert_closeout_note": "DONE 2026-08-12: PR #304 merged to develop (Harold), then develop -> main also merged (PR #308). This 0.6.0.0 release's closeout is fully complete. A NEW release cycle is starting per Harold's 2026-08-12 instruction (\"prep for new store upload\") -- see the sprint_status.json top-level for Sprint 56 state; a fresh store_release block will be needed once the next version's build begins.",
     "_prior_release_history": "0.5.9 (Submission 10): built + certified + LIVE 2026-08-03, Harold-verified clean via winget uninstall/reinstall workaround (client-side propagation lag on cert day, resolved). 0.5.8 (Submission 9): built 2026-07-27, submitted 2026-07-28 (after a BUILT+VALIDATED-is-not-SUBMITTED near-miss -- see docs/sprints/SPRINT_51_SUMMARY.md), certified 2026-07-29, Harold-verified clean 2026-07-30. Full both-sides proof passed for the first time on 0.5.8, closing the 3-sprint F119 family."
   },
 
@@ -91,9 +89,9 @@
     "DONE 2026-08-10: Sprint 55 Plan (F147+F146+F145) approved, all 3 tasks COMPLETE, mutation-verified.",
     "DONE 2026-08-10: Manual Validation complete (Harold) -- 2 follow-ups found and fixed same-sprint (Settings tab-scoped Help bug, walkthrough content rewrite).",
     "DONE 2026-08-10: Phase 7 retrospective complete -- all 14 categories Very Good, 1 improvement applied (Phase 3.7.0 card-creation-ordering fix in SPRINT_EXECUTION_WORKFLOW.md).",
-    "DONE 2026-08-10: PR #304 marked Ready for Review; GitHub Copilot review requested by Harold and completed -- 2 findings, both fixed (setState churn guard, sprint_status.json store_release staleness), replied to + resolved via GraphQL. See current_sprint.status for detail.",
-    "NEXT: Harold reviews and merges PR #304 to develop (Harold-only, per branch policy).",
-    "AFTER merge: Phase 6.6 carry-forward -- open Sprint 56 branch FROM feature/20260809_Sprint_55 (not develop), then return to Backlog Refinement for Sprint 56 scope selection.",
+    "DONE 2026-08-10: PR #304 marked Ready for Review; GitHub Copilot review requested by Harold and completed -- 2 findings, both fixed (setState churn guard, sprint_status.json store_release staleness), replied to + resolved via GraphQL.",
+    "DONE 2026-08-12: PR #304 merged to develop (Harold); develop -> main also merged (PR #308). Post-Merge Cleanup: Sprint 56 branch opened via Phase 6.6 carry-forward, issues #305/#306/#307 closed by hand, verified empty.",
+    "IN PROGRESS (Harold's 2026-08-12 instruction): continue the checklist through Post-Merge Cleanup to Backlog Refinement, THEN prep a new Store upload. Backlog Refinement scope selection for Sprint 56 has not started yet.",
     "Android/Google Play remains the next major track (promotion trigger fired 2026-07-24; F142/F143/F144 scoped and ready whenever prioritized, per the Sprint 54 F141 deep dive)."
   ]
 }
