@@ -8,7 +8,64 @@ Sprint 5n Manual Validation Feedback
 
 
 ---------------------------------------------------------------------------------------------------------
+Sprint 56 Manual Validation Feedback 
+
+
+---------------------------------------------------------------------------------------------------------
 Sprint 55 Manual Validation Feedback 
+
+- Need to add to Help > First-Use Walkthrough
+  - Need to insert before step 3 as new step 3:
+    - Add you first email account:  Google Mail/GMail or AOL email using the Accounts screen <show Select Account icon here>
+  - for old step 4: update the text to be:
+"""
+Look at the results on the Results screen or Scan History. 
+Click the "Deleted" bullet to filter by only deleted that will be automatically deleted.
+If you see legitimate emails that show as deleted, but you would like to mark them as safe senders.  Click on the email, then select as appropriate: Add to Safe Senders > "Exact Email", "Exact Domain" or "Entire Domain".
+Click the "Safe" bullet to filter by only emails marked as "Safe" and will be kept in your Inbox.
+If emails show as "Safe" but are spam, then mark them as spam. Click on the email, then select as appropriate: Create Block Rule > "Block Email", "Block Domain" or "Block Entire Domain"
+grouped with spam (for example, a mailing list or notification sender you actually want), do not let the current rules delete or move them.
+"Exact Domain" or "Entire Domain".
+Click the "No rule" bullet to filter by emails that have no rule associated them.
+Select the fist email.  
+If email is clearly spam, create a rule to block future emails. Select as appropriate: Create Block Rule > "Block Email", "Block Domain" or "Block Entire Domain"
+If email is clearly good/save, create a rule to mark future emails as safe. Select as appropriate: Add to Safe Senders > "Exact Email", "Exact Domain" or "Entire Domain".
+If you are unsure you can look in your email to find it (usually you can copy the email address and then search your email for this address and then look at the email, decide and return to the app.
+If you are unsure, you can simply click Skip.
+After you create a rule, the app will re-evaluate the list for other emails where the rule applies and update the list.
+
+Notes on Safe Sender Rules:
+- **Exact Email** (input `spam@example.com`): the best choice for people you know and transactional senders or when you want to mark as safe for one specific address only. Matches only that one address, so it is safe and surgical. This is the HIGHLY recommended way to mark safe sender email addresses from email providers (gmail.com, yahoo.com, hotmail.com, outlook.com, msn.com, icloud.com, aol.com, comcast.com, att.net...) as you likely have one or more safe senders and spam senders from each - so you would not want to block domains or entire domains for these). The app will show a recommendation to mark the email address for all known "email provider" email addresses.
+- **Exact Domain** (input `example.com`): the best choice for some spam. Marks the domain and all email addresses for that domain as safe. This is the general best because it stops spam from that domain without being so broad that it allow anything.
+- **Entire Domain** (input `survey.example.com`): can be best choice for some domain. Marks as safe both the main domain and all of its subdomains. This is the general best for some companies you interact with, like your bank.
+
+Notes on Block Rules:
+- **Exact Email** (input `spam@example.com`): the HIGHLY recommended way to block email addresses from email providers (gmail.com, yahoo.com, hotmail.com, outlook.com, msn.com, icloud.com, aol.com, comcast.com, att.net...) as you likely have one or more safe senders and spam senders from each email provider. Matches only that one address, so it is safe and surgical. The app will show a recommendation to mark the email address for all known "email provider" email addresses.
+- **Entire Domain** (input `example.com`): the best choice for most spam. Blocks the domain and all of its subdomains. This is the general best because it stops spam from that domain without being so broad that it catches legitimate mail. 99% of the cases in testing, if you want to block the domain, you want to block the entire domain; with a few exceptions.
+- **Exact Domain** (input `example.com`): the best choice for some spam. Blocks the domain. This is the general best because it stops spam from that domain without being so broad that it catches legitimate mail - ex. you may want to get email from email.tacobell.com, but not want email from info.tacobell.com
+
+You can also manage Safe Sender and Block rules from the Settings > General tab.
+"""
+  - Insert new "Step 5: Tune Safe Senders and Rules from Settings"
+"""
+Go to Settings > General > Manage Safe Senders screen 
+Add, update or delete safe senders. A safe sender is a whitelist: it is checked before any rule, and a match bypasses every block rule (take priority over Block Rules")
+
+Go to Settings > General > Manage Rules screen
+Add, update or delete Block Rules.  The app will help create the appropriate regex pattern for you, so you do not have to write regex manually unless you want to.
+- **TLD** (input `.AU`): This is the only place you can manage the set of "Top Level Domains" (TLD). A TLD is the last part of a domain, example ".com" is a TLD.
+Almost all TLD's are 100% spam to anyone in the USA and have been blocked by default.
+You can remove any TLD or add additional TLD's.
+If you do business or personal communications with many people in in one of the blocked TLD's you may wish to remove the TLD.  However, would recommend adding safe sender rules for the individual email, domains or entire domains as a better approach.
+"""
+
+F145
+- While on the Settings > Account screen > Help it goes to Settings instead of "Account > Folder Settings" - the first help item that is for Settings > Account
+- While on the Settings > Manual Scan screen > Help it goes to Settings instead of "Manual Scan Settings" - the first help item that is for Settings > Manual
+- While on the Settings > Background screen > Help it goes to Settings instead of "Background Scanning" - the first help item that is for Settings > Background
+
+
+
 
 ---------------------------------------------------------------------------------------------------------
 Sprint 53 Manual Validation Feedback 

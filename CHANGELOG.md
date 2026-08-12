@@ -26,6 +26,31 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-08-10 (Sprint 55 GitHub Copilot review, PR #304)
+- **fix**: Copilot review finding -- the F145 Settings tab-scoped Help fix's `TabController` listener called `setState()` on every notification. `TabController` fires its listener twice per tap (immediately when the index changes, again at animation completion), both times with the same index value, so the second notification was a redundant rebuild. Added an index-comparison guard so `setState()` only fires when the index actually changes.
+- **fix**: Copilot review finding -- `.claude/sprint_status.json`'s `store_release.live_version`/`live_submission_number`/`previous_live_version` still showed the prior release (0.5.9, Submission 10) even though the rest of the block correctly described 0.6.0.0/Submission 11 as certified and live -- an internal inconsistency that contradicted `docs/STORE_VERSION_STATUS.md`. Updated to match.
+
+### 2026-08-10 (Sprint 55 Complete, PR #304)
+- **docs**: Sprint 55 retrospective -- all 14 categories rated Very Good. 1 improvement applied: new Phase 3.7.0 step in `docs/SPRINT_EXECUTION_WORKFLOW.md` -- GitHub issue cards are now created in the same turn as plan-approval acknowledgment, before any task file is touched, closing a recurring gap (Sprint 52 retro IMP-2/IMP-6, recurred this sprint) where cards were only backfilled after a downstream hook blocked the first commit.
+
+### 2026-08-10 (Sprint 55 Manual Validation follow-up)
+- **fix**: F145 follow-up -- the Settings screen's Help icon always deep-linked to the General tab's section regardless of which tab (Account, Manual Scan, Background) was actually visible, because nothing called `setState()` when the tab index changed. Found in manual validation (Harold). Fixed with a dedicated tab-change listener in `settings_screen.dart`; 4 new regression tests added to `integration_test/help_deep_link_test.dart`, mutation-verified.
+- **docs**: rewrote Help > First-Use Walkthrough (`assets/content/help/walkthrough.md`) per manual-validation feedback -- added a new step for adding a real email account (Step 3), substantially expanded the safe-sender/block-rule tuning step with exact button-path instructions and full per-rule-type guidance (Step 5), and added a new step covering Settings-based rule/safe-sender management including TLD management (Step 6). 8 steps total, up from 6.
+
+### 2026-08-10 (Sprint 55)
+- **fix**: F145 -- the Help screen's deep-link scroll (tapping a screen's Help AppBar icon should land on that screen's own section) computed its scroll offset before preceding sections' async content had finished loading, landing later sections increasingly short of the viewport top (up to ~4000px short for the last section). Found while building `integration_test` regression coverage for all 22 `HelpSection` values (`integration_test/help_deep_link_test.dart`); fixed with a bounded 2-frame scroll retry in `help_screen.dart`. The pre-flight tooling spike also found that WinWright produces a false-failure signal for this class of check (reported a correct deep-link as broken) -- documented in `docs/WINWRIGHT_SELECTORS.md` as a durable "do not use WinWright for scroll-target verification" note.
+- **fix**: F146 -- the IMAP move-failure diagnostic message hardcoded "(AOL copy-not-move)" even though the underlying pathology (server acknowledges a UID MOVE but does not perform it) is provider-agnostic -- confirmed firing on a Gmail-IMAP account during the 0.6.0.0 release smoke test. Generalized the message and all related internal doc comments to describe the mechanism rather than blame a specific provider.
+- **fix**: F147 -- "Scan all emails" (no date filter) was silently overridden by the per-folder no-rule backlog cursor on IMAP accounts (AOL, Gmail-IMAP, Yahoo, generic IMAP) and by the historyId cursor on Gmail OAuth, for both Manual and Background scan. A folder with a stored cursor returned only the post-cursor subset even with "Scan all emails" enabled -- confirmed live on an AOL account (301 actual messages in "Bulk Mail", only 8 returned). Fixed by bypassing the cursor whenever `daysBack<=0` ("scan all"); the cursor is still recomputed after the bypass so a later windowed scan resumes incrementally as before. 7 new regression tests, mutation-verified.
+
+### 2026-08-10 (Sprint 55: post-0.6.0.0-cert dev bump)
+- **chore**: dev worktree version bump `0.6.0` -> `0.6.1` (PATCH -- no `feat` queued yet) following certification and Store publication of `0.6.0.0` (Submission 11). `msix_version` deliberately left at `0.6.0.0` until the next release build.
+
+## [0.6.0] - 2026-08-09
+
+First release under the enforced semver policy (see the 2026-08-07 entry below) -- bumped MINOR
+rather than PATCH because this release contains a `feat` entry (F125). Contains all of Sprint 54's
+work below.
+
 ### 2026-08-07 (Sprint 54 retro follow-up: versioning policy)
 - **docs**: confirmed a real policy-vs-practice gap in version numbering. `docs/CHANGELOG_POLICY.md` documents standard semver (MAJOR = breaking/milestone, MINOR = `feat`, PATCH = `fix`), but every release from `0.5.1` through the current `0.5.10` bumped only PATCH regardless of content -- several of those releases shipped substantial `feat` work (F133 accessibility remediation, F134 AppBar order, F135 session-scoped accounts, F136 Skip button) under a PATCH-only bump. **Decision (Harold, 2026-08-07)**: start following the documented semver policy from the NEXT release forward -- the first release containing a `feat` entry bumps MINOR (e.g. `0.5.10` -> `0.6.0`), not PATCH. No renumbering of past releases; history stays as-is. See `docs/CHANGELOG_POLICY.md` for the reference marker on where the transition applies.
 
@@ -1038,7 +1063,8 @@ See git history for detailed changes prior to Phase 3.1.
 
 ## Version Links
 
-[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.9...HEAD
+[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.9...v0.6.0
 [0.5.9]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.8...v0.5.9
 [0.5.8]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.7...v0.5.8
 [0.5.7]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.0...v0.5.7

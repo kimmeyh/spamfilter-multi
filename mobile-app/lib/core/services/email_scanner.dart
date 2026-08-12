@@ -1066,10 +1066,17 @@ class EmailScanner {
     final dbHelper = DatabaseHelper();
     final lastHistoryId = await dbHelper.getLastHistoryId(accountId);
 
-    if (lastHistoryId == null) {
-      // First-ever Gmail scan for this account. Full-fetch, then capture
-      // historyId so the next scan can run incrementally.
-      AppLogger.scan('Step 4: Gmail first-scan for $folderName -- full fetch');
+    // F147 (Sprint 55): daysBack<=0 is the established "scan all emails"
+    // sentinel (matches the IMAP path's _fetchFolderMessagesImap bypass).
+    // The account-wide historyId cursor must not override an explicit
+    // "scan all" request either -- otherwise the incremental delta-only
+    // fetch below silently returns far less than the full mailbox,
+    // contradicting the setting's own UI text. Re-capture historyId
+    // afterward so a later windowed scan still resumes incrementally.
+    if (lastHistoryId == null || daysBack <= 0) {
+      AppLogger.scan(lastHistoryId == null
+          ? 'Step 4: Gmail first-scan for $folderName -- full fetch'
+          : 'Step 4: Gmail full-fetch for $folderName (daysBack=$daysBack "scan all" -- bypassing historyId=$lastHistoryId)');
       final messages = await gmail.fetchMessages(
         daysBack: daysBack,
         folderNames: [folderName],
@@ -1077,7 +1084,7 @@ class EmailScanner {
       final newHistoryId = await gmail.getCurrentHistoryId();
       if (newHistoryId != null) {
         await dbHelper.setLastHistoryId(accountId, newHistoryId);
-        AppLogger.scan('Step 4: Persisted initial historyId=$newHistoryId for $accountId');
+        AppLogger.scan('Step 4: Persisted historyId=$newHistoryId for $accountId');
       }
       return messages;
     }
@@ -1148,10 +1155,18 @@ class EmailScanner {
     // round-trip. One lookup per folder per scan (cached, including null).
     await _resolveDaysBackUidFloor(imap, folderName, daysBack);
 
-    if (oldestNoRuleUid == null) {
-      // No unaddressed backlog. Standard time-window scan.
-      AppLogger.scan(
-          'Step 4: IMAP full-fetch for $folderName (daysBack=$daysBack, no no-rule backlog cursor)');
+    // F147 (Sprint 55): daysBack<=0 is the established "scan all emails"
+    // sentinel (see _resolveDaysBackUidFloor above). The no-rule backlog
+    // cursor must NOT override that -- otherwise "Scan all emails" silently
+    // returns only the post-cursor subset instead of the full mailbox,
+    // contradicting the setting's own UI text ("No date filter - scans
+    // entire mailbox"). _updateOldestNoRuleCursors still recomputes/persists
+    // the cursor after this full fetch (it runs unconditionally on whatever
+    // was evaluated), so a later windowed scan resumes incrementally as normal.
+    if (oldestNoRuleUid == null || daysBack <= 0) {
+      AppLogger.scan(oldestNoRuleUid == null
+          ? 'Step 4: IMAP full-fetch for $folderName (daysBack=$daysBack, no no-rule backlog cursor)'
+          : 'Step 4: IMAP full-fetch for $folderName (daysBack=$daysBack "scan all" -- bypassing no-rule cursor=$oldestNoRuleUid)');
       return imap.fetchMessages(
         daysBack: daysBack,
         folderNames: [folderName],
@@ -1233,6 +1248,29 @@ class EmailScanner {
     int daysBack,
   ) =>
       _resolveDaysBackUidFloor(imap, folderName, daysBack);
+
+  /// F147 (Sprint 55): test-only entry point for the IMAP fetch-path
+  /// decision (full fetch vs no-rule-cursor incremental fetch), so unit
+  /// tests can assert "scan all" (daysBack<=0) bypasses an existing cursor
+  /// instead of exercising the full `scanInbox` orchestration.
+  @visibleForTesting
+  Future<List<EmailMessage>> fetchFolderMessagesImapForTesting(
+    GenericIMAPAdapter imap,
+    String folderName,
+    int daysBack,
+  ) =>
+      _fetchFolderMessagesImap(imap, folderName, daysBack);
+
+  /// F147 (Sprint 55): test-only entry point for the Gmail fetch-path
+  /// decision (full fetch vs historyId incremental fetch), mirroring
+  /// [fetchFolderMessagesImapForTesting] for the Gmail OAuth path.
+  @visibleForTesting
+  Future<List<EmailMessage>> fetchFolderMessagesGmailForTesting(
+    GmailApiAdapter gmail,
+    String folderName,
+    int daysBack,
+  ) =>
+      _fetchFolderMessagesGmail(gmail, folderName, daysBack);
 
   /// S38-CI-4: test-only reset of the per-scan cache (production resets it
   /// at each `scanInbox` start).

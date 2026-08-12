@@ -1100,10 +1100,12 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
   /// A message is a SUCCESS only if its UID is NOT in [survivingUids] (the set
   /// the server still reports in [sourceFolder] after the move + retry). A
   /// message whose UID survived is a real FAILURE -- the server acknowledged
-  /// the move but did not perform it (the AOL copy-not-move pathology). A
-  /// message with an unparseable UID is treated as a success (it could not have
-  /// been part of the UID-keyed survivor set, and the legacy behavior counted
-  /// it as moved).
+  /// the move but did not perform it. Originally observed on AOL and
+  /// documented as AOL-specific; confirmed on Gmail-IMAP too (F146, Sprint
+  /// 55), so this is provider-agnostic IMAP server behavior, not an AOL-only
+  /// quirk. A message with an unparseable UID is treated as a success (it
+  /// could not have been part of the UID-keyed survivor set, and the legacy
+  /// behavior counted it as moved).
   ///
   /// Pure and side-effect-free apart from the two callbacks, so it can be unit
   /// tested without an IMAP client.
@@ -1122,7 +1124,8 @@ class GenericIMAPAdapter with BatchOperationsMixin implements SpamFilterPlatform
         onFailed(
           message.id,
           'Server acknowledged move to "$targetFolder" but message remained '
-          'in "$sourceFolder" after retry (AOL copy-not-move)',
+          'in "$sourceFolder" after retry (server acknowledged the move '
+          'without performing it)',
         );
       } else {
         onSucceeded(message.id);
