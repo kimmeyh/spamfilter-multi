@@ -1,38 +1,38 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-13T01:30:00Z",
+  "_last_updated": "2026-08-13T01:45:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
 
   "current_sprint": {
-    "number": 57,
-    "branch": null,
-    "pr_number": null,
-    "pr_url": null,
-    "start_date": null,
-    "status": "NOT YET STARTED. Sprint 56 (F148) fully complete -- see previous_sprint. Phase 6.6 carry-forward (branch creation + Phase 3.3.1 cards/draft PR) has NOT happened yet; do this at the start of the next work session before touching any task file. Backlog Refinement scope selection is the next action -- Android-track candidates (F142/F143/F144) are the standing next-track items, deferred twice now (once for the 0.6.1.0 Store release pivot, once for the F148 production bug fix).",
-    "plan_approved": false,
-    "plan_approval_date": null,
-    "blanket_execution_approved": false,
-    "scope": [],
-    "_scope_note": "Not yet scoped. Run Backlog Refinement first (docs/BACKLOG_REFINEMENT.md); F142/F143/F144 Android-track items are the leading candidates per the Sprint 54 F141 deep dive, but 0.6.1.0's certification status should also be checked first (see store_release block)."
-  },
-
-  "previous_sprint": {
     "number": 56,
     "branch": "feature/20260812_Sprint_56",
     "pr_number": 310,
     "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/310",
-    "merged_at": null,
-    "merge_note": "PR #310 marked Ready for Review 2026-08-13 at end of Phase 7.7. NOT YET MERGED -- Harold reviews and merges when ready (Claude never merges). Also carries Sprint 55 Post-Merge Cleanup commits and the 0.6.1.0 Store release prep work (already on this branch from before F148 started).",
-    "status": "complete",
-    "deliverables": ["F148: background-scan scheduled tasks now survive Store version updates via a stable MSIX App Execution Alias, replacing the versioned Platform.resolvedExecutable path that broke on every update. Immediate production fix applied 2026-08-12 (manual PowerShell repointing); durable code fix validated via a real simulated Store update (build+install version N, then N+1 over it, confirmed the SAME unchanged alias-registered task survived with log-file proof).", "Retrospective: all 14 categories Very Good, 1 improvement applied (CLAUDE.md pre-flight rule for APP_ENV=prod in non-release test builds, sourced from a self-caught near-miss during T-3 validation)."],
-    "verification": "flutter analyze clean; full suite 1,857 passed / 29 skipped / 0 failed. R-1 spike PASS (Task Scheduler launches MSIX alias directly, no wrapper). AC-2 (update survival) PASS with direct log-file evidence. AC-3 (stale-path self-heal) PASS by verified composition of independently-tested components.",
-    "_process_note": "Manual Validation confirmed working as expected (Harold) before Phase 7 retrospective began. PR #310 marked ready at end of 7.7 per standing convention (draft through Phases 3-7, ready exactly once)."
+    "start_date": "2026-08-12",
+    "status": "F148 CODE COMPLETE + VALIDATED + Manual Validation COMPLETE (Harold, working as expected) + Phase 7 retrospective COMPLETE (all 14 categories Very Good, 1 improvement applied). PR #310 marked Ready for Review 2026-08-13. NOT YET AT 7.7.5 FINAL GATE: Harold has requested a GitHub Copilot review on PR #310 (2026-08-13) -- waiting for it to complete, then must address every finding (fix now preferred, else backlog), reply to each comment thread explaining the fix, and resolve each thread via GraphQL resolveReviewThread before the 7.7.5 PO/SM readiness announcement can fire. This sprint is NOT complete until that Copilot review is fully handled and Harold gives final merge approval.",
+    "plan_approved": true,
+    "plan_approval_date": "2026-08-12",
+    "blanket_execution_approved": true,
+    "scope": ["F148"],
+    "_scope_note": "F148 only -- background-scan scheduled tasks break on every Store version update (App Execution Alias fix). Android-track Backlog Refinement scope selection (F142/F143/F144) remains deferred until this sprint fully closes (merge + Post-Merge Cleanup + Phase 6.6 carry-forward)."
   },
 
-  "github_issues": [],
-  "_github_issues_note": "Issue #309 (F148) closed by Sprint 56's completion; no open sprint issues currently. Next sprint's issue(s) get created in the SAME turn as plan approval, before any task file is touched (Phase 3.7.0 discipline).",
+  "previous_sprint": {
+    "number": 55,
+    "branch": "feature/20260809_Sprint_55",
+    "pr_number": 304,
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/304",
+    "merged_at": "2026-08-12",
+    "merge_note": "PR #304 -> develop merged 2026-08-12 (Harold). Harold also merged develop -> main same session (PR #308). Issues #305/#306/#307 closed by hand during Post-Merge Cleanup (Closes-on-merge-to-develop does not auto-fire in this GitFlow repo; gh issue list --label sprint --state open verified empty). GitHub Copilot review requested by Harold (2026-08-10): 2 real findings (settings_screen.dart setState churn on duplicate TabController notifications; sprint_status.json store_release live_version/live_submission_number/previous_live_version stale-vs-rest-of-block inconsistency) both fixed in commit e8fc7ce, both threads replied to + resolved via GraphQL.",
+    "status": "complete",
+    "deliverables": ["F147: scan-all-emails cursor bypass (IMAP + Gmail paths), 7 mutation-verified tests", "F146: generalized \"AOL copy-not-move\" error message across 6 files", "F145: Help-icon deep-link coverage -- WinWright spike found a false-failure signal (documented in WINWRIGHT_SELECTORS.md), re-scoped to integration_test, surfaced + fixed a real HelpScreen scroll-timing bug, 27 new tests", "Manual Validation follow-ups (same sprint): Settings tab-scoped Help fix (4 tests) + Help > First-Use Walkthrough rewrite (8 steps, up from 6)", "0.6.0.0 Store release certified + live (Submission 11) via a mid-Backlog-Refinement pivot", "Retrospective: all 14 categories Very Good, 1 improvement applied (Phase 3.7.0 card-creation-ordering fix in SPRINT_EXECUTION_WORKFLOW.md)"],
+    "verification": "Final full suite 1,857 passed / 29 skipped / 0 failed, analyze clean throughout every task. integration_test/help_deep_link_test.dart 31/31 passed via run-integration-tests.ps1.",
+    "_process_note": "Phase 6.6 carry-forward applied correctly again (Sprint 55 -> Sprint 56): branch created from the current feature branch immediately on merge notification, before any post-merge commits. SPRINT_55_SUMMARY.md was missed during Sprint 56 planning (Phase 3.2.1 mandatory deliverable) -- created retroactively 2026-08-13 after the verify-closeout-complete hook caught the gap."
+  },
+
+  "github_issues": [309],
+  "_github_issues_note": "309=F148. Created 2026-08-12 in the SAME turn as plan approval, before any task file was touched -- the Phase 3.7.0 discipline (Sprint 55 retro improvement) applied correctly this time, no retroactive backfill needed. Remains OPEN until PR #310 actually merges to develop.",
 
   "test_metrics": {
     "tests_passing": 1857,
@@ -93,10 +93,12 @@
     "DONE 2026-08-13: Manual Validation complete (Harold) -- working as expected, no follow-ups needed.",
     "DONE 2026-08-13: Phase 7 retrospective complete -- all 14 categories Very Good, 1 improvement applied (CLAUDE.md pre-flight rule for APP_ENV=prod in non-release test builds).",
     "DONE 2026-08-13: PR #310 marked Ready for Review; description updated to reflect sprint completion.",
-    "NEXT: Harold reviews and merges PR #310 to develop when ready (Claude never merges). Ask whether a GitHub Copilot review is wanted before merge, per standing practice on recent sprints.",
-    "AFTER merge: Phase 6.6 carry-forward -- open Sprint 57 branch from feature/20260812_Sprint_56 immediately on merge notification, before any other commits.",
+    "DONE 2026-08-13: SPRINT_55_SUMMARY.md created retroactively (missed during Sprint 56 planning, caught by verify-closeout-complete hook).",
+    "IN PROGRESS: Harold requested a GitHub Copilot review on PR #310 (2026-08-13) -- waiting for it to complete, then address every finding (fix now preferred, else backlog per Harold's decision), reply to each comment thread with how it was/will be fixed, resolve each thread via GraphQL resolveReviewThread.",
+    "AFTER Copilot review handled: 7.7.5 final gate -- notify Harold PR #310 is ready for final review/merge (the ONE readiness announcement of the sprint).",
+    "AFTER Harold merges PR #310: Phase 6.6 carry-forward -- open Sprint 57 branch from feature/20260812_Sprint_56 immediately on merge notification, before any other commits.",
     "AFTER merge: Post-Merge Cleanup (close issue #309 by hand if not auto-closed, verify gh issue list --label sprint --state open is empty).",
     "STILL PENDING (independent of Sprint 56/57): 0.6.1.0 Submission 12 certification -- monitor Pre-processing -> Certification -> Publishing, then run the post_cert_closeout_pending checklist in the store_release block.",
-    "NEXT SPRINT SCOPE: Backlog Refinement, likely landing on Android/Google Play track (F142/F143/F144, scoped and ready per the Sprint 54 F141 deep dive) unless something else takes priority."
+    "NEXT SPRINT SCOPE (after Sprint 56 fully closes): Backlog Refinement, likely landing on Android/Google Play track (F142/F143/F144, scoped and ready per the Sprint 54 F141 deep dive) unless something else takes priority."
   ]
 }
