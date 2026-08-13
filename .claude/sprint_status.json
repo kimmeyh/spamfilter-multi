@@ -1,6 +1,6 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-12T20:30:00Z",
+  "_last_updated": "2026-08-13T00:20:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
 
@@ -10,7 +10,7 @@
     "pr_number": 310,
     "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/310",
     "start_date": "2026-08-12",
-    "status": "Post-Merge Cleanup for Sprint 55 COMPLETE. 0.6.1.0 Store release (Submission 12) IN CERTIFICATION (see store_release block). Android/Google Play track unblocked (emulator tooling decision recorded). Backlog Refinement scope selection was pending when Harold found a LIVE PRODUCTION BUG: background-scan tasks broken by the Store update (both accounts, ERROR_FILE_NOT_FOUND -- stale versioned install path). Manually repaired production same-day (both tasks now run, LastTaskResult=0). Sprint 56 Plan APPROVED 2026-08-12: F148 (durable fix for this bug) as the SOLE scope, replacing Android-track scope selection for now. Issue #309 created, draft PR #310 created. Execution starting per Harold's blanket approval (continue without per-task approval until Manual Validation).",
+    "status": "F148 CODE COMPLETE + VALIDATED, ready for Manual Validation. R-1 spike proved Task Scheduler launches an MSIX App Execution Alias directly (no wrapper). R-2 through R-5 implemented: WindowsTaskSchedulerService registers/repairs against the alias path for MSIX installs; main.dart's kReleaseMode reconciliation re-enabled for MSIX (was previously excluded); AppEnvironment.isMsixInstall doc comment corrected. T-3 real-world validation performed 2026-08-12/13: built+installed a locally-signed test MSIX at version N (99.0.0.0), confirmed alias-registered launch; built+installed version N+1 (99.0.1.0) over it (simulating a Store update via Add-AppxPackage in-place replace); confirmed the SAME unchanged alias-based task launched the NEW version with log-file proof (Executable: ...99.0.1.0...), no repair triggered, no code intervention -- AC-2 PROVEN. AC-3 (stale-path self-heal) proven by verified composition of already-tested components (see SPRINT_56_PLAN.md completion notes) rather than a full end-to-end app-launch reproduction, since real dev accounts have background scans disabled by design. All test artifacts cleaned up (test packages uninstalled, both worktrees' pubspec.yaml reverted to real values, only the permanent execution_alias addition retained). flutter analyze clean; full suite 1,857 passed / 29 skipped / 0 failed. CHANGELOG.md updated. Next: commit, then Manual Validation.",
     "plan_approved": true,
     "plan_approval_date": "2026-08-12",
     "blanket_execution_approved": true,

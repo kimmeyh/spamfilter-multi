@@ -287,9 +287,21 @@ class WindowsTaskSchedulerService {
 
   /// Verify and repair the scheduled task executable path
   ///
-  /// Checks if the registered task's executable path matches the current
-  /// running app path. If mismatched (e.g., after a rebuild), deletes and
-  /// recreates the task with the correct path and same frequency.
+  /// Checks if the registered task's executable path matches what a FRESH
+  /// registration would use right now. If mismatched, deletes and recreates
+  /// the task with the correct path and same frequency.
+  ///
+  /// F148 (Sprint 56): compares against `_getExecutablePath()` (the SAME
+  /// alias-aware resolver `createScheduledTask` uses), NOT the raw
+  /// `Platform.resolvedExecutable`. For MSIX installs this is now the
+  /// App Execution Alias path, which never changes across Store updates --
+  /// so once a task is registered with the alias, this comparison correctly
+  /// reports "no repair needed" going forward instead of falsely detecting
+  /// a mismatch on every launch (the alias path never equals
+  /// Platform.resolvedExecutable's versioned path by design). This method's
+  /// real remaining purpose for MSIX installs is the ONE-TIME migration of
+  /// an install still on an old VERSIONED registration (e.g. from before
+  /// this fix shipped) to the new alias-based one.
   ///
   /// Returns true if repair was needed and performed, false otherwise.
   static Future<bool> verifyAndRepairTaskPath({String? accountId}) async {
@@ -303,7 +315,7 @@ class WindowsTaskSchedulerService {
       }
 
       final registeredPath = status['executablePath'] as String?;
-      final currentPath = Platform.resolvedExecutable;
+      final currentPath = await _getExecutablePath();
 
       if (registeredPath == null || registeredPath.isEmpty) {
         _logger.w('Could not determine registered executable path');
@@ -445,11 +457,42 @@ class WindowsTaskSchedulerService {
     }
   }
 
-  /// Get the path to the current executable
+  /// F148 (Sprint 56): the MSIX App Execution Alias filename declared via
+  /// `msix_config.execution_alias` in `pubspec.yaml`. MUST match that value
+  /// exactly -- there is no runtime way to read it back out of the MSIX
+  /// package, so this is a manually-kept-in-sync literal (the same pattern
+  /// already used elsewhere in this file for other config-derived constants).
+  static const String _executionAliasFileName = 'myemailspamfilter.exe';
+
+  /// Get the path Task Scheduler should use to LAUNCH the app.
   ///
-  /// Returns the full path to the Flutter app executable
+  /// For MSIX installs, this is the App Execution Alias path
+  /// (`%LOCALAPPDATA%\Microsoft\WindowsApps\<alias>.exe`), which Windows
+  /// resolves to whatever version is CURRENTLY installed -- stable across
+  /// every future Store update, unlike `Platform.resolvedExecutable` (which
+  /// resolves to the VERSIONED install folder and breaks on every update;
+  /// see F148, found in production 2026-08-12 when a Store update from
+  /// 0.6.0.0 to 0.6.1.0 broke both accounts' background-scan tasks).
+  /// Proven via a live Task Scheduler spike (F148 R-1, 2026-08-12) that
+  /// Task Scheduler CAN launch an app via its alias directly -- no wrapper
+  /// needed, contrary to some third-party reports of this failing for other
+  /// app types.
+  ///
+  /// For non-MSIX (dev/debug) builds, unchanged: `Platform.resolvedExecutable`.
   static Future<String> _getExecutablePath() async {
     try {
+      if (AppEnvironment.isMsixInstall) {
+        final localAppData = Platform.environment['LOCALAPPDATA'];
+        if (localAppData == null || localAppData.isEmpty) {
+          _logger.w('LOCALAPPDATA not set; falling back to '
+              'Platform.resolvedExecutable (will break on next Store update)');
+          return Platform.resolvedExecutable;
+        }
+        final aliasPath = path.join(
+            localAppData, 'Microsoft', 'WindowsApps', _executionAliasFileName);
+        _logger.d('Resolved MSIX execution-alias path: $aliasPath');
+        return aliasPath;
+      }
       // In a Flutter Windows app, Platform.resolvedExecutable gives the .exe path
       final executablePath = Platform.resolvedExecutable;
       _logger.d('Resolved executable path: $executablePath');
@@ -460,13 +503,18 @@ class WindowsTaskSchedulerService {
     }
   }
 
-  /// Get the working directory for the app
+  /// Get the working directory for the scheduled task.
   ///
-  /// Returns the directory containing the executable
+  /// F148: deliberately NOT derived from the alias path (which lives in
+  /// `%LOCALAPPDATA%\Microsoft\WindowsApps`, not the real app install
+  /// directory) -- always resolved from `Platform.resolvedExecutable`'s
+  /// REAL (versioned, for MSIX) directory, so any code that depends on the
+  /// process working directory (e.g. relative asset-path resolution) still
+  /// sees the actual app install location, not the alias stub's folder.
   static Future<String> _getWorkingDirectory() async {
     try {
-      final executablePath = await _getExecutablePath();
-      final workingDir = path.dirname(executablePath);
+      final realExecutablePath = Platform.resolvedExecutable;
+      final workingDir = path.dirname(realExecutablePath);
       _logger.d('Working directory: $workingDir');
       return workingDir;
     } catch (e) {

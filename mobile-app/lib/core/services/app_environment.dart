@@ -59,11 +59,24 @@ class AppEnvironment {
 
   /// Whether the app is running from an MSIX package (Microsoft Store install).
   ///
-  /// MSIX-installed apps run from C:\Program Files\WindowsApps\... which is
-  /// read-only and has sandbox restrictions. Task Scheduler registration and
-  /// other OS-level integrations may not work in this context.
+  /// MSIX-installed apps run from C:\Program Files\WindowsApps\..., a
+  /// VERSIONED folder that Windows replaces on every Store update -- a
+  /// scheduled task registered against that literal path breaks the next
+  /// time the app updates (F148, found in production 2026-08-12).
   ///
-  /// [NEW] Issue #218: Used to skip Task Scheduler operations in MSIX builds.
+  /// [Issue #218] originally used this flag to skip Task Scheduler
+  /// operations entirely for MSIX installs, believing Task Scheduler
+  /// "cannot work" in this context. **That belief was wrong, corrected in
+  /// F148 (Sprint 56)**: this app's own production install ran its
+  /// Task-Scheduler-triggered background scans successfully for weeks, and
+  /// a live spike (F148 R-1) proved Task Scheduler can launch the app
+  /// directly via its App Execution Alias -- no wrapper needed. Task
+  /// Scheduler DOES work for MSIX; the real problem was only that the
+  /// registered path (`Platform.resolvedExecutable`) is version-specific
+  /// and goes stale. `WindowsTaskSchedulerService._getExecutablePath()` now
+  /// resolves to the stable alias path for MSIX installs instead, and
+  /// `isMsixInstall` is used to select that resolution branch -- not to
+  /// skip Task Scheduler integration.
   static bool get isMsixInstall {
     if (!Platform.isWindows) return false;
     final exe = Platform.resolvedExecutable.toLowerCase();
