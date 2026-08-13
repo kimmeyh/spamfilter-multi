@@ -1,6 +1,6 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-13T01:45:00Z",
+  "_last_updated": "2026-08-13T12:15:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
 
@@ -10,7 +10,7 @@
     "pr_number": 310,
     "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/310",
     "start_date": "2026-08-12",
-    "status": "F148 CODE COMPLETE + VALIDATED + Manual Validation COMPLETE (Harold, working as expected) + Phase 7 retrospective COMPLETE (all 14 categories Very Good, 1 improvement applied). PR #310 marked Ready for Review 2026-08-13. NOT YET AT 7.7.5 FINAL GATE: Harold has requested a GitHub Copilot review on PR #310 (2026-08-13) -- waiting for it to complete, then must address every finding (fix now preferred, else backlog), reply to each comment thread explaining the fix, and resolve each thread via GraphQL resolveReviewThread before the 7.7.5 PO/SM readiness announcement can fire. This sprint is NOT complete until that Copilot review is fully handled and Harold gives final merge approval.",
+    "status": "F148 CODE COMPLETE + VALIDATED + Manual Validation COMPLETE (Harold, working as expected) + Phase 7 retrospective COMPLETE (all 14 categories Very Good, 1 improvement applied). PR #310 marked Ready for Review 2026-08-13. GitHub Copilot review requested by Harold, completed 2026-08-13: 1 real finding (_getWorkingDirectory() still used the versioned install directory for MSIX installs, would go stale on the next Store update exactly like the original bug even though _getExecutablePath() was already fixed) -- fixed in commit 398ff14 (mirrors the alias-resolution pattern), validated against a real MSIX install, comment replied to + thread resolved via GraphQL. AT 7.7.5 FINAL GATE now: PR #310 ready, Copilot review fully addressed. NEXT: notify Harold for final review/merge (the one readiness announcement of the sprint). This sprint is NOT complete until Harold reviews and merges.",
     "plan_approved": true,
     "plan_approval_date": "2026-08-12",
     "blanket_execution_approved": true,
@@ -94,8 +94,8 @@
     "DONE 2026-08-13: Phase 7 retrospective complete -- all 14 categories Very Good, 1 improvement applied (CLAUDE.md pre-flight rule for APP_ENV=prod in non-release test builds).",
     "DONE 2026-08-13: PR #310 marked Ready for Review; description updated to reflect sprint completion.",
     "DONE 2026-08-13: SPRINT_55_SUMMARY.md created retroactively (missed during Sprint 56 planning, caught by verify-closeout-complete hook).",
-    "IN PROGRESS: Harold requested a GitHub Copilot review on PR #310 (2026-08-13) -- waiting for it to complete, then address every finding (fix now preferred, else backlog per Harold's decision), reply to each comment thread with how it was/will be fixed, resolve each thread via GraphQL resolveReviewThread.",
-    "AFTER Copilot review handled: 7.7.5 final gate -- notify Harold PR #310 is ready for final review/merge (the ONE readiness announcement of the sprint).",
+    "DONE 2026-08-13: GitHub Copilot review on PR #310 completed and fully addressed -- 1 finding (_getWorkingDirectory() needed alias-based resolution for MSIX installs too, same class as the original bug but for -WorkingDirectory instead of -Execute), fixed in commit 398ff14, validated against a real MSIX install, comment replied to + thread resolved via GraphQL.",
+    "NEXT: 7.7.5 final gate -- notify Harold PR #310 is ready for final review/merge (the ONE readiness announcement of the sprint).",
     "AFTER Harold merges PR #310: Phase 6.6 carry-forward -- open Sprint 57 branch from feature/20260812_Sprint_56 immediately on merge notification, before any other commits.",
     "AFTER merge: Post-Merge Cleanup (close issue #309 by hand if not auto-closed, verify gh issue list --label sprint --state open is empty).",
     "STILL PENDING (independent of Sprint 56/57): 0.6.1.0 Submission 12 certification -- monitor Pre-processing -> Certification -> Publishing, then run the post_cert_closeout_pending checklist in the store_release block.",
