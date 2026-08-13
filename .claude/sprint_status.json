@@ -66,15 +66,14 @@
       "DONE 2026-08-13: dev worktree bumped 0.6.1 -> 0.6.2 (commit ff03d35, Sprint 57 branch) per the semver policy (PATCH -- F148 is fix-only).",
       "DONE 2026-08-13: 0.6.2.0 MSIX built + verified (manifest 0.6.2.0, --release-self-test PASS all 6 checks, policy gates 23/23 green, full suite 1,858/0 failed).",
       "DONE 2026-08-13 (Harold): uploaded 0.6.2.0 MSIX to Partner Center, submitted for certification.",
-      "DONE 2026-08-13 (Harold): Submission 13 (0.6.2.0) CERTIFIED AND LIVE -- confirmed via Partner Center screenshot (Store presence card, green checkmark, 'Congrats! Your product is now updated')."
+      "DONE 2026-08-13 (Harold): Submission 13 (0.6.2.0) CERTIFIED AND LIVE -- confirmed via Partner Center screenshot (Store presence card, green checkmark, 'Congrats! Your product is now updated').",
+      "DONE 2026-08-13: docs/ALL_SPRINTS_MASTER_PLAN.md Store status line updated.",
+      "DONE 2026-08-13: CHANGELOG.md [0.6.2] heading + Version Links added ([Unreleased] entries moved under it; also backfilled a missing [0.6.1] heading from the prior interrupted release cycle).",
+      "DONE 2026-08-13 (Harold): Check C smoke pass CONFIRMED -- screenshot of the actual Store-downloaded/installed app: title bar 'MyEmailSpamFilter' (no [DEV]), Settings > General shows 'Version 0.6.2' (no [DEV] marker). This is the definitive on-device confirmation, stronger than the Partner Center screenshot alone."
     ],
     "post_cert_closeout_pending": [
-      "OUTSTANDING: Harold still needs to do the REAL develop -> main merge/PR -- this build used a local-only, unpushed merge for build purposes only. main on GitHub does not yet contain F148, even though it is now live on the Store. Do this before the next release cycle so history does not diverge further.",
-      "Check C smoke pass on the live Store build (Gmail sign-in, About screen 'Version 0.6.2' no [DEV], clean title bar) -- Harold-only, not yet confirmed via the installed app itself (only via Partner Center screenshot so far).",
-      "docs/ALL_SPRINTS_MASTER_PLAN.md Store status line update.",
-      "CHANGELOG.md [0.6.2] heading + Version Links added, [Unreleased] entries moved under it.",
-      "Dev bump 0.6.2 -> 0.6.3 per the semver policy (next release cycle).",
-      "Once the real develop->main merge is done: prod worktree's local msix_version bump + generated-plugin-file noise + this throwaway local-only merge commit cleaned up (git reset --hard origin/main after Harold's real merge lands)."
+      "OUTSTANDING: Harold still needs to do the REAL develop -> main merge/PR -- this build used a local-only, unpushed merge for build purposes only. main on GitHub does not yet contain F148, even though it is now live on the Store and Harold has confirmed the installed app is clean. Do this before the next release cycle so history does not diverge further.",
+      "Dev bump 0.6.2 -> 0.6.3 per the semver policy (next release cycle, not before then)."
     ],
     "_prior_release_history": "0.6.1 (Submission 12): built 2026-08-12, certified + LIVE (per Harold's 2026-08-13 direct confirmation; formal screenshot evidence pending). 0.6.0 (Submission 11): built 2026-08-09, certified + LIVE 2026-08-10, Harold-verified clean (Check C: Gmail sign-in, About screen, title bar all clean). 0.5.9 (Submission 10): built + certified + LIVE 2026-08-03, Harold-verified clean via winget uninstall/reinstall workaround (client-side propagation lag on cert day, resolved). 0.5.8 (Submission 9): built 2026-07-27, submitted 2026-07-28 (after a BUILT+VALIDATED-is-not-SUBMITTED near-miss -- see docs/sprints/SPRINT_51_SUMMARY.md), certified 2026-07-29, Harold-verified clean 2026-07-30."
   },
