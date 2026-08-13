@@ -1,21 +1,21 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-12T08:30:00Z",
+  "_last_updated": "2026-08-12T20:30:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
 
   "current_sprint": {
     "number": 56,
     "branch": "feature/20260812_Sprint_56",
-    "pr_number": null,
-    "pr_url": null,
+    "pr_number": 310,
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/310",
     "start_date": "2026-08-12",
-    "status": "Post-Merge Cleanup for Sprint 55 COMPLETE (branch opened via Phase 6.6, issues #305/#306/#307 closed by hand, verified empty). Backlog Refinement presented -- Harold deferred Sprint 56 scope selection, requested a Store release prep instead (0.6.1.0, PATCH-only, no feat entries in [Unreleased]). Store release IN PROGRESS: MSIX built + verified (--release-self-test PASS all 6 checks, manifest Version=0.6.1.0), uploaded by Harold to Partner Center as Submission 12, now IN CERTIFICATION (Pre-processing). See store_release block. Sprint 56 scope selection remains pending once this release is handled.",
-    "plan_approved": false,
-    "plan_approval_date": null,
-    "blanket_execution_approved": false,
-    "scope": [],
-    "_scope_note": "No sprint plan yet -- Backlog Refinement + scope selection still pending. Current activity is Post-Merge Cleanup + a Store-release prep pivot (same pattern as Sprint 54->55), not sprint feature work."
+    "status": "Post-Merge Cleanup for Sprint 55 COMPLETE. 0.6.1.0 Store release (Submission 12) IN CERTIFICATION (see store_release block). Android/Google Play track unblocked (emulator tooling decision recorded). Backlog Refinement scope selection was pending when Harold found a LIVE PRODUCTION BUG: background-scan tasks broken by the Store update (both accounts, ERROR_FILE_NOT_FOUND -- stale versioned install path). Manually repaired production same-day (both tasks now run, LastTaskResult=0). Sprint 56 Plan APPROVED 2026-08-12: F148 (durable fix for this bug) as the SOLE scope, replacing Android-track scope selection for now. Issue #309 created, draft PR #310 created. Execution starting per Harold's blanket approval (continue without per-task approval until Manual Validation).",
+    "plan_approved": true,
+    "plan_approval_date": "2026-08-12",
+    "blanket_execution_approved": true,
+    "scope": ["F148"],
+    "_scope_note": "F148 only -- background-scan scheduled tasks break on every Store version update (App Execution Alias fix). Android-track Backlog Refinement scope selection (F142/F143/F144) remains deferred until F148 ships."
   },
 
   "previous_sprint": {
@@ -31,8 +31,8 @@
     "_process_note": "Phase 6.6 carry-forward applied correctly again (Sprint 55 -> Sprint 56): branch created from the current feature branch immediately on merge notification, before any post-merge commits."
   },
 
-  "github_issues": [],
-  "_github_issues_note": "EMPTY -- Sprint 55's cards (305/306/307) all closed by hand at Post-Merge Cleanup, verified via gh issue list --label sprint --state open returning empty. Sprint 56 has no cards yet -- created when scope is selected at Phase 3 (require-sprint-cards.ps1 blocks task commits until then; Phase 3.7.0 now creates them immediately at plan approval, before any task work, per the Sprint 55 retro improvement).",
+  "github_issues": [309],
+  "_github_issues_note": "309=F148. Created 2026-08-12 in the SAME turn as plan approval, before any task file was touched -- the Phase 3.7.0 discipline (Sprint 55 retro improvement) applied correctly this time, no retroactive backfill needed.",
 
   "test_metrics": {
     "tests_passing": 1857,
