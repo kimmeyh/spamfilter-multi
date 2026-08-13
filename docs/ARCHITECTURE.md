@@ -436,8 +436,8 @@ main.dart
   5. SecureCredentialsStore.migrateFromLegacyTokenStore()
   6. WindowsSystemTrayService.initialize() [Windows only]
   7. WindowsNotificationService.initialize() [Windows only]
-  8. WindowsTaskSchedulerService.verifyAndRepairTaskPath() [Windows release only]
-  9. WindowsTaskSchedulerService.ensureTaskExists() [Windows release only]
+  8. WindowsTaskSchedulerService.verifyAndRepairTaskPath() [Windows release only, incl. MSIX -- F148, Sprint 56]
+  9. WindowsTaskSchedulerService.ensureTaskExists() [Windows release only, incl. MSIX -- F148, Sprint 56]
   10. MultiProvider
         |- RuleSetProvider
         |- EmailScanProvider
@@ -690,7 +690,8 @@ mobile-app/
 - System tray integration with context menu (ADR-0019)
 - Toast notifications via PowerShell WinRT (ADR-0018)
 - Background scanning via Windows Task Scheduler (ADR-0014)
-- Task Scheduler auto-repair on app startup (executable path fix after rebuild)
+- Task registration uses a stable MSIX App Execution Alias for Store installs (F148, Sprint 56) -- Windows resolves `%LOCALAPPDATA%\Microsoft\WindowsApps\myemailspamfilter.exe` to whichever version is CURRENTLY installed, so tasks survive Store version updates without repair. Non-MSIX (dev) builds still use `Platform.resolvedExecutable` directly.
+- Task Scheduler auto-repair on app startup (`verifyAndRepairTaskPath()`): for MSIX installs, its main remaining purpose is one-time migration of a stale VERSIONED-path task (from before F148 shipped) to the new alias-based registration; for dev builds it still fixes the executable path after a rebuild.
 
 ### iOS/macOS
 - Not yet validated but architecture supports

@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-08-12 (Sprint 56: Post-Merge Cleanup for Sprint 55 complete; Backlog Refinement presented, Harold deferred scope selection to prep a `0.6.1.0` Store release (Submission 12, in certification -- see `.claude/sprint_status.json`). Android/Google Play track formally unblocked by Harold same day -- added a Tooling Decision callout under the Android HOLD section: Android Studio Emulator chosen as primary Android testing environment (native Google Play Services support, matches existing Gmail-OAuth guidance, already installed), with Genymotion and BlueStacks documented as free alternatives if needed. Sprint 56 scope selection (F142/F143/F144 Android track candidates) still pending once the Store release closes out.)
+**Last Updated**: 2026-08-13 (Sprint 56 COMPLETE: F148 -- background-scan scheduled tasks now survive Store version updates via a stable MSIX App Execution Alias, replacing the versioned `Platform.resolvedExecutable` path that broke on every update. Full sprint rigor applied (card #309, plan, real simulated-Store-update validation). Retro: all 14 categories Very Good, 1 improvement applied (`CLAUDE.md` pre-flight rule for `APP_ENV=prod` in non-release test builds). 0.6.1.0 Store release (Submission 12) remains IN CERTIFICATION -- see `.claude/sprint_status.json`. Android/Google Play track (F142/F143/F144) remains the next candidate for Sprint 57 scope selection, deferred twice now -- once for the Store release pivot, once for this production bug fix.)
 
 ## How to Maintain This Document
 
@@ -120,12 +120,23 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 53 | docs/sprints/SPRINT_53_PLAN.md | [OK] Complete (retro skipped, PO decision) | Aug 3, 2026 (PR #295/#296; 0.5.9 LIVE Aug 3) |
 | 54 | docs/sprints/SPRINT_54_RETROSPECTIVE.md | [OK] Complete | Aug 3-10, 2026 (PR #298/#303) |
 | 55 | docs/sprints/SPRINT_55_RETROSPECTIVE.md | [OK] Complete | Aug 9-10, 2026 (PR #304; 0.6.0.0 LIVE Aug 10) |
+| 56 | docs/sprints/SPRINT_56_RETROSPECTIVE.md | [OK] Complete | Aug 12-13, 2026 (PR #310) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
 ---
 
 ## Last Completed Sprint
+
+**Sprint 56** (2026-08-12 -- 2026-08-13; PR #310 -> develop)
+- **Type**: Single-item production bug-fix sprint, full sprint rigor (card, plan, testing) per Harold's explicit instruction. 1/1 task complete.
+- **F148**: background-scan scheduled tasks broke on every Microsoft Store version update because task registration used `Platform.resolvedExecutable`, a VERSIONED install path Windows deletes on every update. Found in production 2026-08-12 (Harold) after a 0.6.0.0 -> 0.6.1.0 update silently stopped both accounts' background scans. Immediate fix: both tasks manually repointed via PowerShell same-day. Durable fix (Harold-steered toward a version-independent design instead of heal-after-the-fact): registered tasks against a stable MSIX App Execution Alias, which Windows keeps pointed at whichever version is currently installed; existing installs on a stale versioned-path registration self-heal via the existing repair reconciliation, re-enabled for MSIX installs.
+- **Validation**: real simulated Store update -- built+installed a test MSIX at version N, confirmed alias-registered launch, then built+installed version N+1 over it and confirmed the SAME unchanged task launched N+1 automatically with log-file proof, no code intervention. Full detail in `docs/sprints/SPRINT_56_PLAN.md` completion notes.
+- **Verification**: suite **1,857 passed** / 29 skipped / 0 failed; analyze clean throughout.
+- **Retro**: all 14 categories rated Very Good; **1 improvement, applied** (pre-flight check before using `APP_ENV=prod` in non-release test builds, added to `CLAUDE.md`).
+- **Docs**: SPRINT_56_PLAN.md / SPRINT_56_RETROSPECTIVE.md.
+
+_(Prior: **Sprint 55** below.)_
 
 **Sprint 55** (2026-08-09 -- 2026-08-10; PR #304 -> develop)
 - **Type**: Bug fixes surfaced from the 0.6.0.0 release smoke test + a mid-sprint Store release pivot. 3/3 planned tasks complete, plus 2 same-sprint Manual Validation follow-ups.
@@ -208,18 +219,7 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 
 ### Core App Quality
 
-**F148. Background-scan scheduled tasks break on every Windows Store version update -- use a stable App Execution Alias instead of the versioned install path Priority 10 [Sprint 56 scope]**
-- Phase: Core App Quality / Bug Fix
-- Platform: Windows Desktop
-- **Found in production 2026-08-12**: after the Store auto-updated `MyEmailSpamFilter` from 0.6.0.0 to 0.6.1.0, both accounts' background-scan scheduled tasks stopped running (`LastTaskResult = 0x80070002`, `ERROR_FILE_NOT_FOUND`). Root cause: `WindowsTaskSchedulerService._getExecutablePath()` (`mobile-app/lib/core/services/windows_task_scheduler_service.dart:451`) uses `Platform.resolvedExecutable`, which for an MSIX install resolves to the VERSIONED folder (`C:\Program Files\WindowsApps\...MyEmailSpamFilter_0.6.0.0_x64.../MyEmailSpamFilter.exe`). Every Store version bump changes this folder name; the old one is deleted, and any scheduled task still pointing at it fails silently until manually repaired.
-- **A repair mechanism already exists but is disabled for the affected install type**: `verifyAndRepairTaskPath()` (same file, line 295) correctly detects and fixes a path mismatch, but `main.dart:304`'s `if (kReleaseMode && !AppEnvironment.isMsixInstall)` guard skips the ENTIRE per-account task reconciliation block -- including this repair call -- specifically for MSIX installs. The guard's stated reasoning ("Task Scheduler cannot work" in MSIX) is factually disproven by this exact production install, whose tasks ran successfully for weeks before the update.
-- **Real fix (not just re-enabling the guard)**: use a Windows App Execution Alias instead of a versioned path, so the registered task never goes stale in the first place. The `msix` package (v3.16.13, already a dependency) natively supports this via `msix_config.execution_alias: <name>.exe` in `pubspec.yaml` -- it generates the `windows.appExecutionAlias` manifest extension, which Windows resolves to whatever version is CURRENTLY installed at `%LOCALAPPDATA%\Microsoft\WindowsApps\<alias>.exe`, with no version number baked in.
-- **Known gotcha requiring investigation**: multiple sources report Windows Task Scheduler has a specific bug launching App Execution Alias paths directly ("The file cannot be accessed by the system"), needing a wrapper (e.g. `cmd /c start`, or invoking via `explorer.exe`) rather than a bare `-Execute` pointing at the alias. This needs to be spiked and proven against a real installed alias before committing to the design -- do not assume the naive approach works without testing.
-- **Manual production workaround already applied 2026-08-12** (not a substitute for this fix): both scheduled tasks' `Execute`/`WorkingDirectory` were manually updated via PowerShell to point at the current 0.6.1.0 path; confirmed both run successfully (`LastTaskResult = 0`). This will break again on the NEXT Store update without this fix.
-- Depends on: none.
-- Source: Harold + Claude live production investigation, 2026-08-12.
-
-_(F145/F146/F147 all shipped Sprint 55 -- see `docs/sprints/SPRINT_55_PLAN.md`, CHANGELOG.md 2026-08-10, and `docs/WINWRIGHT_SELECTORS.md`'s new F145 entry (WinWright false-failure finding + the real HelpScreen scroll-timing bug it led to). F145 also produced `integration_test/help_deep_link_test.dart`, the durable regression suite for all 22 HelpSection values.)_
+_(F148 shipped Sprint 56 -- see `docs/sprints/SPRINT_56_PLAN.md` and CHANGELOG.md 2026-08-13. F145/F146/F147 all shipped Sprint 55 -- see `docs/sprints/SPRINT_55_PLAN.md`, CHANGELOG.md 2026-08-10, and `docs/WINWRIGHT_SELECTORS.md`'s new F145 entry (WinWright false-failure finding + the real HelpScreen scroll-timing bug it led to). F145 also produced `integration_test/help_deep_link_test.dart`, the durable regression suite for all 22 HelpSection values.)_
 
 **F138. Decide: should the 5 rule-editing screens gain account context? -- [CLOSED 2026-08-03, Harold: not needed]**
 - Phase: Core App Quality / UX

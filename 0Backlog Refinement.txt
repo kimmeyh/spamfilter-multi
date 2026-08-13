@@ -7,15 +7,27 @@ Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPIN
 ---------------------------------------------------------------------------------------------------------
 Sprint 5n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
 
----------------------------------------------------------------------------------------------------------
-Sprint 56 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
+
 - Add to backlog and target for this sprint:
   - Add a help section for the "Review "No Rule" Items Screen
     - Please draft content to be reviewed during Manual Validation.  Use other help text as examples for content. Use actual functionality and process in forming content.
     - Help button on the screen should point to this new section in the Help page. Adjust all other help links and related test scripts as appropriate.
   - Add the icon for "Review "No Rule" items to the Help screen
+---------------------------------------------------------------------------------------------------------
+Sprint 56 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
 
+Sprint 56 Plan is ready for your approval — docs/sprints/SPRINT_56_PLAN.md, committed and pushed.
 
+Scope: F148 only — background-scan scheduled tasks breaking on every Windows Store version update.
+
+- R-1: A capability spike, first — prove whether Windows Task Scheduler can actually launch an app via a stable App Execution Alias (there are documented reports it can't launch alias paths directly and needs a wrapper). This gates everything else.
+- R-2: Implement the fix based on R-1's result — either point the task registration straight at the alias, or wrap it if needed.
+- R-3: Re-enable the existing (currently MSIX-disabled) repair mechanism so anyone already on a stale versioned path — like your production install before today's manual fix — self-heals on next launch.
+- R-4/R-5: Correct the stale doc comment that incorrectly claims Task Scheduler doesn't work for MSIX, and sanity-check the repair-comparison logic still makes sense once paths are alias-based.
+
+The Definition of Done requires actually simulating a Store update locally (build+install version N, then N+1 over it) and proving the existing task survives — not just unit tests, since this exact bug already slipped past everything except a live production failure.
+
+Also flagged: if R-1's spike disproves the alias approach entirely, this is a Decision-Class interrupt — I'll stop and check with you before falling back to a different design, rather than silently reverting to the heal-after-the-fact approach you steered away from.
 
 
 ---------------------------------------------------------------------------------------------------------
