@@ -503,16 +503,38 @@ class WindowsTaskSchedulerService {
     }
   }
 
-  /// Get the working directory for the scheduled task.
+  /// Get the working directory Task Scheduler should use ("Start in") for
+  /// the scheduled task.
   ///
-  /// F148: deliberately NOT derived from the alias path (which lives in
-  /// `%LOCALAPPDATA%\Microsoft\WindowsApps`, not the real app install
-  /// directory) -- always resolved from `Platform.resolvedExecutable`'s
-  /// REAL (versioned, for MSIX) directory, so any code that depends on the
-  /// process working directory (e.g. relative asset-path resolution) still
-  /// sees the actual app install location, not the alias stub's folder.
+  /// F148 Copilot review fix: for MSIX installs this MUST be the alias's own
+  /// directory (`%LOCALAPPDATA%\Microsoft\WindowsApps`), the same stable
+  /// directory used by `_getExecutablePath()` -- NOT the real versioned
+  /// install directory. The versioned directory is deleted/replaced on every
+  /// Store update just like the old `-Execute` path was, so if the task's
+  /// `-WorkingDirectory` still pointed there, the task could fail again after
+  /// an update (`CreateProcess` can fail when the working directory does not
+  /// exist) even though `-Execute` is now alias-based -- and
+  /// `verifyAndRepairTaskPath()` would not catch it, since that comparison
+  /// only checks `executablePath`. The launched process still resolves its
+  /// OWN working directory from its real (versioned) executable location at
+  /// runtime regardless of what Task Scheduler's "Start in" was set to, so
+  /// this does not affect relative asset-path resolution inside the app.
+  ///
+  /// For non-MSIX (dev/debug) builds, unchanged: derived from
+  /// `Platform.resolvedExecutable`.
   static Future<String> _getWorkingDirectory() async {
     try {
+      if (AppEnvironment.isMsixInstall) {
+        final localAppData = Platform.environment['LOCALAPPDATA'];
+        if (localAppData == null || localAppData.isEmpty) {
+          _logger.w('LOCALAPPDATA not set; falling back to '
+              'Platform.resolvedExecutable\'s directory (will break on next Store update)');
+          return path.dirname(Platform.resolvedExecutable);
+        }
+        final aliasDir = path.join(localAppData, 'Microsoft', 'WindowsApps');
+        _logger.d('Resolved MSIX execution-alias working directory: $aliasDir');
+        return aliasDir;
+      }
       final realExecutablePath = Platform.resolvedExecutable;
       final workingDir = path.dirname(realExecutablePath);
       _logger.d('Working directory: $workingDir');
