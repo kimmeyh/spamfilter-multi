@@ -17,8 +17,8 @@ Partner Center before saying anything about the Store version.
 
 | | Version | Last verified | Notes |
 |---|---|---|---|
-| **Live/certified on Store** (cache) | 0.6.0.0 | 2026-08-10 (Harold, Store-live build confirmed via app: Settings shows "Version 0.6.0" with no `[DEV]`, title bar clean "MyEmailSpamFilter", live Gmail-IMAP scan against kimmeyh@gmail.com completed successfully -- Gmail OAuth/sign-in confirmed working) | Submission 11, certified and published 2026-08-10. First release under the enforced semver policy (MINOR bump, not PATCH -- Sprint 54's F125 was a `feat` entry). Partner Center: "Congrats! Your product is now updated." Store presence confirms Submission 11 live. |
-| **Dev worktree** (authoritative -- mirrors `pubspec.yaml`) | 0.6.1+1 | 2026-08-10 | Post-cert bump per `docs/STORE_RELEASE_PROCESS.md` Step 7 -- PATCH, not MINOR, since no `feat` is queued yet. `msix_version` deliberately left at `0.6.0.0` until the next release build (same convention as the 0.5.9 -> 0.5.10 bump). |
+| **Live/certified on Store** (cache) | 0.6.0.0 | 2026-08-10 (Harold, Store-live build confirmed via app: Settings shows "Version 0.6.0" with no `[DEV]`, title bar clean "MyEmailSpamFilter", live Gmail-IMAP scan against kimmeyh@gmail.com completed successfully -- Gmail OAuth/sign-in confirmed working) | Submission 11, certified and published 2026-08-10. **Submission 12 (0.6.1.0, PATCH-only) is IN CERTIFICATION as of 2026-08-12 -- NOT yet live, do not update this row until Partner Center confirms certification.** See `.claude/sprint_status.json` `store_release` block for in-flight detail. |
+| **Dev worktree** (authoritative -- mirrors `pubspec.yaml`) | 0.6.1+1 | 2026-08-10 | Post-cert bump per `docs/STORE_RELEASE_PROCESS.md` Step 7 -- PATCH, not MINOR, since no `feat` is queued yet. `msix_version` bumped to `0.6.1.0` in the PROD worktree for the in-flight Submission 12 build (dev worktree's own `msix_version` field intentionally stays behind, per convention, until this release closes out). |
 
 ## Update this file every time
 

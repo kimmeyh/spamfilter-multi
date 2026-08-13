@@ -297,11 +297,21 @@ void main(List<String> args) async {
     await notificationService.initialize();
     Logger().i('Windows notifications initialized');
 
-    // Only manage Task Scheduler in release mode and non-MSIX installs.
-    // In debug mode: Platform.resolvedExecutable points to a temporary runner path.
-    // In MSIX: The exe is in read-only WindowsApps dir; Task Scheduler cannot work.
-    // [UPDATED] Issue #218: Skip Task Scheduler in MSIX context.
-    if (kReleaseMode && !AppEnvironment.isMsixInstall) {
+    // Only manage Task Scheduler in release mode.
+    // In debug mode: Platform.resolvedExecutable points to a temporary runner path
+    // that is not meaningful to schedule against.
+    //
+    // F148 (Sprint 56): MSIX installs are NO LONGER excluded here. The prior
+    // exclusion (Issue #218) was based on the belief that "Task Scheduler
+    // cannot work" for MSIX -- disproven by this app's own production
+    // history (the tasks ran successfully for weeks) and by a live spike
+    // (F148 R-1) proving Task Scheduler can launch the app via its App
+    // Execution Alias directly. Running this reconciliation block for MSIX
+    // installs is now REQUIRED, not just safe: it is what lets an install
+    // still on an old VERSIONED task registration (from before this fix
+    // shipped) self-heal to the new alias-based one via
+    // verifyAndRepairTaskPath, on the very next app launch.
+    if (kReleaseMode) {
       // F98 (ADR-0039): per-account background-scan startup reconciliation.
       try {
         final settingsStore = SettingsStore();

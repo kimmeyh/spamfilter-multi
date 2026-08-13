@@ -1,49 +1,49 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-11T01:00:00Z",
+  "_last_updated": "2026-08-13T12:15:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
 
   "current_sprint": {
+    "number": 56,
+    "branch": "feature/20260812_Sprint_56",
+    "pr_number": 310,
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/310",
+    "start_date": "2026-08-12",
+    "status": "F148 CODE COMPLETE + VALIDATED + Manual Validation COMPLETE (Harold, working as expected) + Phase 7 retrospective COMPLETE (all 14 categories Very Good, 1 improvement applied). PR #310 marked Ready for Review 2026-08-13. GitHub Copilot review requested by Harold, completed 2026-08-13: 1 real finding (_getWorkingDirectory() still used the versioned install directory for MSIX installs, would go stale on the next Store update exactly like the original bug even though _getExecutablePath() was already fixed) -- fixed in commit 398ff14 (mirrors the alias-resolution pattern), validated against a real MSIX install, comment replied to + thread resolved via GraphQL. AT 7.7.5 FINAL GATE now: PR #310 ready, Copilot review fully addressed. NEXT: notify Harold for final review/merge (the one readiness announcement of the sprint). This sprint is NOT complete until Harold reviews and merges.",
+    "plan_approved": true,
+    "plan_approval_date": "2026-08-12",
+    "blanket_execution_approved": true,
+    "scope": ["F148"],
+    "_scope_note": "F148 only -- background-scan scheduled tasks break on every Store version update (App Execution Alias fix). Android-track Backlog Refinement scope selection (F142/F143/F144) remains deferred until this sprint fully closes (merge + Post-Merge Cleanup + Phase 6.6 carry-forward)."
+  },
+
+  "previous_sprint": {
     "number": 55,
     "branch": "feature/20260809_Sprint_55",
     "pr_number": 304,
     "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/304",
-    "start_date": "2026-08-09",
-    "status": "SPRINT COMPLETE, AWAITING HAROLD'S MERGE. 0.6.0.0 Store release (Submission 11) certified + live 2026-08-10. Sprint 55 Plan approved 2026-08-10: F147 + F146 + F145, all 3 COMPLETE with mutation-verified tests. Manual Validation done (Harold) -- found and fixed 2 same-sprint follow-ups: Settings tab-scoped Help bug (setState gap on tab change) and a full Help > First-Use Walkthrough content rewrite. Phase 7 retrospective COMPLETE: all 14 categories Very Good, 1 improvement applied (new Phase 3.7.0 step in SPRINT_EXECUTION_WORKFLOW.md). PR #304 marked Ready for Review; Harold requested GitHub Copilot review (2026-08-10) -- 2 findings, both fixed (setState churn on duplicate TabController notifications; store_release live_version/live_submission_number/previous_live_version stale-vs-rest-of-block inconsistency), both threads replied to + resolved via GraphQL. Full suite 1857 passed / 0 failed / 29 skipped, flutter analyze clean throughout. Awaiting Harold's review and merge to develop.",
-    "plan_approved": true,
-    "plan_approval_date": "2026-08-10",
-    "blanket_execution_approved": true,
-    "scope": ["F147", "F146", "F145"],
-    "_scope_note": "All 3 approved tasks complete, manual validation complete, retrospective complete. Next: Copilot review request + address comments, then Harold merges PR #304."
-  },
-
-  "previous_sprint": {
-    "number": 54,
-    "branch": "feature/20260803_Sprint_54",
-    "pr_number": 298,
-    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/298",
-    "merged_at": "2026-08-10",
-    "merge_note": "PR #298 -> develop merged 2026-08-10, PR #303 (develop -> main) also merged same day. Issues #299/#300/#301/#302 closed by hand during execution (Closes-on-merge-to-develop does not auto-fire in this GitFlow repo; gh issue list --label sprint --state open verified empty at Post-Merge Cleanup). GitHub Copilot review requested by Harold post-retrospective (2026-08-07): 3 real findings (CHANGELOG.md Sprint-53-entries-vs-[0.5.9]-heading placement, SPRINT_54_PLAN.md bash grep -r in a PowerShell-first repo, STORE_VERSION_STATUS.md <StoreID> placeholder) all fixed in commit a0c63db; 2 findings already resolved by earlier same-PR commits; 1 not applicable. All 3 review threads replied to + resolved via GraphQL. Added a short standing note to .github/copilot-instructions.md so the CHANGELOG placement pattern is not re-flagged on future PRs.",
+    "merged_at": "2026-08-12",
+    "merge_note": "PR #304 -> develop merged 2026-08-12 (Harold). Harold also merged develop -> main same session (PR #308). Issues #305/#306/#307 closed by hand during Post-Merge Cleanup (Closes-on-merge-to-develop does not auto-fire in this GitFlow repo; gh issue list --label sprint --state open verified empty). GitHub Copilot review requested by Harold (2026-08-10): 2 real findings (settings_screen.dart setState churn on duplicate TabController notifications; sprint_status.json store_release live_version/live_submission_number/previous_live_version stale-vs-rest-of-block inconsistency) both fixed in commit e8fc7ce, both threads replied to + resolved via GraphQL.",
     "status": "complete",
-    "deliverables": ["F137: dead process_results_screen.dart + its test removed", "F140: WinWright/UIA end-of-page reachability -- spike gave a definitive negative (no UIA control patterns exposed at all), R-3 fallback applied (version duplicated near top of Settings/Help)", "F125: one-shot --release-self-test --expected-version=X.Y.Z probe, verified against the real dev build", "F141: Android/Google Play re-expansion deep dive (analysis only) -- surfaced 2 undocumented architecture findings (bottom-nav placeholder tabs, zero Android entry point for the desktop-default No-Rule screen); Harold's governing direction: Windows architecture takes precedence, remove-and-replace old Android code; new backlog F142/F143/F144 (HOLD, future dedicated Android sprint)", "Retrospective: all 14 categories x 4 roles, both improvements applied (TROUBLESHOOTING.md entry + F145 backlog registration)", "Versioning-policy decision: confirmed CHANGELOG_POLICY.md's semver policy was documented but not followed for 15+ releases; decided to start enforcing from the NEXT release forward, no renumbering of history"],
-    "verification": "Final full suite 1,850 passed / 29 skipped / 0 failed (--concurrency=4), analyze clean throughout every task. Manual validation: Harold confirmed version text visible in UI without scrolling (F140). CI green (Analyze and Test + Windows Build Verification, both SUCCESS).",
-    "_process_note": "This sprint's own Phase 6.6 carry-forward corrected a Sprint-53-era mistake: post-cert closeout work must land on a NEW branch created from the current one, never as follow-up commits on an already-merged branch. Applied correctly this time (Sprint 54 -> Sprint 55)."
+    "deliverables": ["F147: scan-all-emails cursor bypass (IMAP + Gmail paths), 7 mutation-verified tests", "F146: generalized \"AOL copy-not-move\" error message across 6 files", "F145: Help-icon deep-link coverage -- WinWright spike found a false-failure signal (documented in WINWRIGHT_SELECTORS.md), re-scoped to integration_test, surfaced + fixed a real HelpScreen scroll-timing bug, 27 new tests", "Manual Validation follow-ups (same sprint): Settings tab-scoped Help fix (4 tests) + Help > First-Use Walkthrough rewrite (8 steps, up from 6)", "0.6.0.0 Store release certified + live (Submission 11) via a mid-Backlog-Refinement pivot", "Retrospective: all 14 categories Very Good, 1 improvement applied (Phase 3.7.0 card-creation-ordering fix in SPRINT_EXECUTION_WORKFLOW.md)"],
+    "verification": "Final full suite 1,857 passed / 29 skipped / 0 failed, analyze clean throughout every task. integration_test/help_deep_link_test.dart 31/31 passed via run-integration-tests.ps1.",
+    "_process_note": "Phase 6.6 carry-forward applied correctly again (Sprint 55 -> Sprint 56): branch created from the current feature branch immediately on merge notification, before any post-merge commits. SPRINT_55_SUMMARY.md was missed during Sprint 56 planning (Phase 3.2.1 mandatory deliverable) -- created retroactively 2026-08-13 after the verify-closeout-complete hook caught the gap."
   },
 
-  "github_issues": [305, 306, 307],
-  "_github_issues_note": "305=F147, 306=F146, 307=F145. Created 2026-08-10 AFTER task execution (require-sprint-cards.ps1's Phase 3.3.1 gate caught this on the first post-approval commit attempt -- cards should have been created at plan approval time, not after all 3 tasks were already done; backfilled from the approved plan + actual commits, per the gate's own guidance). All 3 tasks' work is already committed on the branch; issues reference the commits/CHANGELOG entries retroactively.",
+  "github_issues": [309],
+  "_github_issues_note": "309=F148. Created 2026-08-12 in the SAME turn as plan approval, before any task file was touched -- the Phase 3.7.0 discipline (Sprint 55 retro improvement) applied correctly this time, no retroactive backfill needed. Remains OPEN until PR #310 actually merges to develop.",
 
   "test_metrics": {
     "tests_passing": 1857,
     "tests_skipped": 29,
     "tests_failing": 0,
     "analyzer_warnings": 0,
-    "_test_metrics_note": "1,857 as of 2026-08-10 (Sprint 55 final full run, analyzer clean). Path from Sprint 54's 1,850: F147 added 7 new tests (email_scanner_scan_all_bypass_test.dart, +7). F146 updated 2 existing tests (message-text assertions), no net count change. F145's 27 new tests live in integration_test/help_deep_link_test.dart, which runs via a SEPARATE runner (scripts/run-integration-tests.ps1, all 27 passing) and is not counted in this flutter-test total, consistent with how sprint52_surfaces_test.dart etc. are also excluded. Net +7 vs Sprint 54.",
+    "_test_metrics_note": "1,857 as of 2026-08-13 (Sprint 56 final full run, analyzer clean) -- unchanged from Sprint 55's count. F148 added no new automated tests (the bug class has no mockable seam for Task Scheduler/MSIX installation; validated instead via a real manual update-simulation reproduction, documented in SPRINT_56_PLAN.md completion notes). Existing windows_task_scheduler_service_test.dart (9 tests) re-verified passing unchanged.",
     "hook_test_cases": "45/45 passing (.claude/hooks/run-test-cases.ps1) -- unchanged since Sprint 52.",
-    "winwright_sweep": "Not run this sprint as a general sweep. F145's Tooling-Capability Pre-Flight spike DID interactively drive WinWright against the live app (ww_attach/ww_click/ww_get_snapshot on Select Account's Help icon) and found it produces a FALSE FAILURE for scroll-target verification -- documented in WINWRIGHT_SELECTORS.md. Not a general regression sweep, a targeted capability probe.",
+    "winwright_sweep": "Not run this sprint. F148 was Windows-desktop-only and validated via direct MSIX install/Task Scheduler manipulation, not WinWright.",
     "coverage_percent": null,
-    "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5). Sprint 55: cleaned up 10 stray flutter_tester.exe processes left from a prior session before running the full suite (feedback_longrun_process_checks discipline applied)."
+    "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5)."
   },
 
   "store_release": {
@@ -51,31 +51,30 @@
     "live_version": "0.6.0",
     "live_submission_number": 11,
     "previous_live_version": "0.5.9",
-    "submitted_version": "0.6.0",
-    "submission_number": 11,
-    "built_at": "2026-08-09",
-    "submitted_at": "2026-08-10",
-    "certified_at": "2026-08-10",
-    "status": "CERTIFIED + LIVE in the Microsoft Store. Partner Center confirmed: 'Congrats! Your product is now updated.' Store presence shows Submission 11 live. Check C smoke test on the live Store-installed build (Harold, 2026-08-10): Settings screen shows 'Version 0.6.0' with no [DEV], title bar clean 'MyEmailSpamFilter', live Gmail-IMAP scan against kimmeyh@gmail.com completed successfully (Found 10, Processed 2, Deleted 2, Errors 2) confirming Gmail OAuth/sign-in works on the Store build. The 2 errors were investigated and are a pre-existing, non-release-caused bug (mislabeled AOL-specific error message firing on Gmail-IMAP, BUG-S40-1 from Sprint 40) -- logged as new backlog item F146, not a release defect.",
-    "certification_evidence": "Partner Center screenshots, Harold, 2026-08-10: first showed 'Product update: In certification (Submission 11)' at Pre-processing; second confirmed 'Congrats! Your product is now updated' with Store presence at Submission 11.",
+    "submitted_version": "0.6.1",
+    "submission_number": 12,
+    "built_at": "2026-08-12",
+    "submitted_at": "2026-08-12",
+    "certified_at": null,
+    "status": "SUBMITTED, IN CERTIFICATION. Harold uploaded the built+verified MSIX to Partner Center (2026-08-12). Submission 12 confirmed in-pipeline via Partner Center screenshots: Packages page showed v0.6.1.0 as the ranked/active package (v0.6.0.0 marked for removal); Application overview showed 'Product update: In draft' then 'Submit for certification' clicked; pipeline now at Pre-processing (Submission -> Pre-processing -> Certification -> Publishing). Store presence still shows Submission 11 (0.6.0.0) live/read-only, as expected until 12 passes.",
+    "certification_evidence": "Partner Center screenshots, Harold, 2026-08-12: Packages page (v0.6.1.0 ranked #1, v0.6.0.0 marked for removal, both X64); Application overview 'Product update: In certification (Submission 12: Last modified on 08/12/2026)' card, pipeline progress bar at Pre-processing stage.",
     "artifact": "D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix",
-    "verification": "Build log shows correct prod dart-defines (APP_ENV=prod, secrets.prod.json); manifest Version=0.6.0.0; size 16.80 MB. The NEW F125 --release-self-test --expected-version=0.6.0 probe was run directly against the compiled exe (build\\...\\Release\\MyEmailSpamFilter.exe) BEFORE packaging and returned RESULT: PASS on all 6 checks (APP_ENV=prod, NATIVE_APP_ENV=prod, both suffixes empty, no [DEV] in title, version match) -- first real-release use of this probe, collapsing what used to be 4 separate manual checks into one command.",
-    "_build_process_note_2026_08_09": "Built via a LOCAL, UNPUSHED merge of feature/20260809_Sprint_55 into the prod worktree's main (git merge --no-edit origin/feature/20260809_Sprint_55, restore point c6d0501 recorded before merging) -- per the F139 template, this does NOT require the develop->main merge to happen first. The prod worktree should be reset to c6d0501 (git reset --hard c6d0501) once this release either ships or is abandoned, so it is clean for the next cycle.",
+    "verification": "This is a PATCH-only release (no feat entries in CHANGELOG.md [Unreleased] -- all fix/docs) per the enforced semver policy, consistent with dev already being at 0.6.1+1 before this cycle started. Build log showed correct prod dart-defines (APP_ENV=prod, secrets.prod.json). Manifest Version=0.6.1.0 (confirmed via Expand-Archive + AppxManifest.xml). Size 16.8 MB (17624264 bytes), normal range. --release-self-test --expected-version=0.6.1 run directly against the compiled exe BEFORE packaging: RESULT: PASS on all 6 checks (APP_ENV=prod, NATIVE_APP_ENV=prod, both suffixes empty, no [DEV] in title, version match).",
+    "_build_process_note_2026_08_12": "Built from prod worktree's main AFTER Harold's real develop -> main merge (PR #308) -- no local-unpushed-merge trick needed this cycle (unlike the F139-template pattern used for 0.6.0.0), since main already had 0.6.1's content from the real merge. Prod worktree was stale (last at the 0.6.0.0 restore point c6d0501) and needed `git pull origin main` (fast-forward, 19 commits) before building. msix_version bumped 0.6.0.0 -> 0.6.1.0 locally in pubspec.yaml (uncommitted, per the standing convention -- reconciled at the next dev-bump post-cert). Hit a stale native-asset hooks_runner cache on the first `flutter test` attempt (sqlite3 hook.dill write failure) -- resolved by `rm -rf .dart_tool/hooks_runner`, not a real test failure, consistent with the documented flaky-native-asset-hook fix pattern (rm -rf caches + clean rebuild, not a version pin).",
     "post_cert_closeout_done": [
-      "DONE 2026-08-10 (Harold): uploaded 0.6.0.0 MSIX to Partner Center, submitted for certification. Submission 11 confirmed in-pipeline (Pre-processing), then certified + live same day.",
-      "DONE 2026-08-10: Check C smoke test on the live Store build -- Settings 'Version 0.6.0' no [DEV], clean title bar, Gmail-IMAP live scan + OAuth confirmed working.",
-      "DONE 2026-08-10: docs/STORE_VERSION_STATUS.md Live row -> 0.6.0.0 (Submission 11) with full verification evidence.",
-      "DONE 2026-08-10: dev bumped 0.6.0 -> 0.6.1+1 (PATCH, no feat queued; msix_version deliberately left at 0.6.0.0 until next release build); version_consistency gate green.",
-      "DONE 2026-08-10: CHANGELOG.md -- [0.6.0] heading was already in place pre-build; added [Unreleased] entry for the post-cert dev bump.",
-      "DONE 2026-08-10: docs/ALL_SPRINTS_MASTER_PLAN.md Last Updated rolled forward with release outcome + F146 backlog addition.",
-      "DONE 2026-08-10: prod worktree reset to restore point c6d0501 (git reset --hard), discarding the local unpushed merge used only to build the release; worktree clean for next cycle.",
-      "DONE 2026-08-10: F146 added to backlog (Core App Quality) -- mislabeled 'AOL copy-not-move' error message in GenericIMAPAdapter, confirmed firing on Gmail-IMAP too; pre-existing since Sprint 40, not release-caused; Harold chose backlog over immediate fix."
+      "DONE 2026-08-12: MSIX built + verified (manifest 0.6.1.0, --release-self-test PASS all 6 checks, policy gates green).",
+      "DONE 2026-08-12 (Harold): uploaded 0.6.1.0 MSIX to Partner Center, submitted for certification. Submission 12 confirmed in-pipeline (Pre-processing)."
     ],
     "post_cert_closeout_pending": [
-      "PR #304 (feature/20260809_Sprint_55 -> develop) still needs Harold's merge, then develop -> main separately (Harold-only, independent timing per the Sprint 53 clarification). Not yet done as of this update.",
-      "RETURN to Sprint 55 Phase 1 Backlog Refinement scope selection -- interrupted mid-presentation by this release pivot, not completed. Hygiene pass already applied (commit f4aec58)."
+      "Monitor Submission 12 through Pre-processing -> Certification -> Publishing.",
+      "Once certified: Check C smoke pass on the live Store build (Gmail sign-in, About screen 'Version 0.6.1' no [DEV], clean title bar) -- Harold-only.",
+      "Once certified: docs/STORE_VERSION_STATUS.md Live row -> 0.6.1.0 (Submission 12) with verification evidence.",
+      "Once certified: dev bump 0.6.1 -> 0.6.2 (or MINOR if a feat lands first) per the semver policy; msix_version left at 0.6.1.0 until the next release build.",
+      "Once certified: docs/ALL_SPRINTS_MASTER_PLAN.md Store status line updated; CHANGELOG.md [0.6.1] heading + Version Links added, [Unreleased] entries moved under it.",
+      "Once certified: prod worktree's local msix_version bump + generated-plugin-file noise cleaned up (git checkout -- or reset, since main should stay at the real merge commit, not carry an uncommitted local bump forward).",
+      "RETURN to Sprint 56 Backlog Refinement scope selection -- deferred by Harold's explicit instruction to prep this release first, not completed."
     ],
-    "_prior_release_history": "0.5.9 (Submission 10): built + certified + LIVE 2026-08-03, Harold-verified clean via winget uninstall/reinstall workaround (client-side propagation lag on cert day, resolved). 0.5.8 (Submission 9): built 2026-07-27, submitted 2026-07-28 (after a BUILT+VALIDATED-is-not-SUBMITTED near-miss -- see docs/sprints/SPRINT_51_SUMMARY.md), certified 2026-07-29, Harold-verified clean 2026-07-30. Full both-sides proof passed for the first time on 0.5.8, closing the 3-sprint F119 family."
+    "_prior_release_history": "0.6.0 (Submission 11): built 2026-08-09, certified + LIVE 2026-08-10, Harold-verified clean (Check C: Gmail sign-in, About screen, title bar all clean). 0.5.9 (Submission 10): built + certified + LIVE 2026-08-03, Harold-verified clean via winget uninstall/reinstall workaround (client-side propagation lag on cert day, resolved). 0.5.8 (Submission 9): built 2026-07-27, submitted 2026-07-28 (after a BUILT+VALIDATED-is-not-SUBMITTED near-miss -- see docs/sprints/SPRINT_51_SUMMARY.md), certified 2026-07-29, Harold-verified clean 2026-07-30."
   },
 
   "environment_notes": [
@@ -87,13 +86,19 @@
   "blocking_issues": [],
 
   "next_actions": [
-    "DONE 2026-08-10: Store release 0.6.0.0 CERTIFIED + LIVE (Submission 11), fully closed out.",
-    "DONE 2026-08-10: Sprint 55 Plan (F147+F146+F145) approved, all 3 tasks COMPLETE, mutation-verified.",
-    "DONE 2026-08-10: Manual Validation complete (Harold) -- 2 follow-ups found and fixed same-sprint (Settings tab-scoped Help bug, walkthrough content rewrite).",
-    "DONE 2026-08-10: Phase 7 retrospective complete -- all 14 categories Very Good, 1 improvement applied (Phase 3.7.0 card-creation-ordering fix in SPRINT_EXECUTION_WORKFLOW.md).",
-    "DONE 2026-08-10: PR #304 marked Ready for Review; GitHub Copilot review requested by Harold and completed -- 2 findings, both fixed (setState churn guard, sprint_status.json store_release staleness), replied to + resolved via GraphQL. See current_sprint.status for detail.",
-    "NEXT: Harold reviews and merges PR #304 to develop (Harold-only, per branch policy).",
-    "AFTER merge: Phase 6.6 carry-forward -- open Sprint 56 branch FROM feature/20260809_Sprint_55 (not develop), then return to Backlog Refinement for Sprint 56 scope selection.",
-    "Android/Google Play remains the next major track (promotion trigger fired 2026-07-24; F142/F143/F144 scoped and ready whenever prioritized, per the Sprint 54 F141 deep dive)."
+    "DONE 2026-08-12: Backlog Refinement presented -- Harold deferred Sprint 56 scope selection twice (once for Store release prep, once when the F148 production bug was found).",
+    "DONE 2026-08-12: 0.6.1.0 MSIX built + verified (all gates green), uploaded by Harold, Submission 12 IN CERTIFICATION. See store_release block for full detail and post_cert_closeout_pending for remaining steps.",
+    "DONE 2026-08-12: Sprint 56 Plan (F148, sole scope) approved; issue #309 created same-turn as approval (Phase 3.7.0 discipline).",
+    "DONE 2026-08-12/13: F148 implemented (R-1 spike through R-5), real update-simulation validated (AC-2 with log-file proof, AC-3 by verified composition), committed + pushed.",
+    "DONE 2026-08-13: Manual Validation complete (Harold) -- working as expected, no follow-ups needed.",
+    "DONE 2026-08-13: Phase 7 retrospective complete -- all 14 categories Very Good, 1 improvement applied (CLAUDE.md pre-flight rule for APP_ENV=prod in non-release test builds).",
+    "DONE 2026-08-13: PR #310 marked Ready for Review; description updated to reflect sprint completion.",
+    "DONE 2026-08-13: SPRINT_55_SUMMARY.md created retroactively (missed during Sprint 56 planning, caught by verify-closeout-complete hook).",
+    "DONE 2026-08-13: GitHub Copilot review on PR #310 completed and fully addressed -- 1 finding (_getWorkingDirectory() needed alias-based resolution for MSIX installs too, same class as the original bug but for -WorkingDirectory instead of -Execute), fixed in commit 398ff14, validated against a real MSIX install, comment replied to + thread resolved via GraphQL.",
+    "NEXT: 7.7.5 final gate -- notify Harold PR #310 is ready for final review/merge (the ONE readiness announcement of the sprint).",
+    "AFTER Harold merges PR #310: Phase 6.6 carry-forward -- open Sprint 57 branch from feature/20260812_Sprint_56 immediately on merge notification, before any other commits.",
+    "AFTER merge: Post-Merge Cleanup (close issue #309 by hand if not auto-closed, verify gh issue list --label sprint --state open is empty).",
+    "STILL PENDING (independent of Sprint 56/57): 0.6.1.0 Submission 12 certification -- monitor Pre-processing -> Certification -> Publishing, then run the post_cert_closeout_pending checklist in the store_release block.",
+    "NEXT SPRINT SCOPE (after Sprint 56 fully closes): Backlog Refinement, likely landing on Android/Google Play track (F142/F143/F144, scoped and ready per the Sprint 54 F141 deep dive) unless something else takes priority."
   ]
 }
