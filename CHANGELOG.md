@@ -26,9 +26,20 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-08-13 (Sprint 57)
+- **chore**: dev worktree version bump `0.6.1` -> `0.6.2` (PATCH -- `[Unreleased]` contained only `fix` entries) ahead of the 0.6.2.0 release build.
+
+## [0.6.2] - 2026-08-13
+
+PATCH release -- Submission 13, certified and published same day as submission. Contains F148 (background-scan Store-update survival) and its GitHub Copilot review follow-up.
+
 ### 2026-08-13 (Sprint 56, F148)
 - **fix**: F148 -- Windows background-scan scheduled tasks stopped running after a Microsoft Store update. Root cause: task registration used `Platform.resolvedExecutable`, which resolves to a VERSIONED install path (`C:\Program Files\WindowsApps\...\_0.6.0.0_...\`); a Store update deletes the old version's folder, so the task's `Execute` path pointed at a file that no longer existed (`ERROR_FILE_NOT_FOUND`). Found in production 2026-08-12 (Harold) after a 0.6.0.0 -> 0.6.1.0 Store update silently stopped both accounts' background scans. Immediate fix: both tasks manually repointed via PowerShell. Durable fix: added a stable MSIX App Execution Alias (`myemailspamfilter.exe`, resolves via `%LOCALAPPDATA%\Microsoft\WindowsApps\`) that Windows keeps pointed at whichever version is CURRENTLY installed; `WindowsTaskSchedulerService` now registers tasks against this alias for MSIX installs instead of the versioned path, and existing installs still on a stale versioned-path registration self-heal to the alias on next launch via the existing `verifyAndRepairTaskPath()` reconciliation (re-enabled for MSIX installs, previously excluded). Validated with a real simulated Store update (build+install version N, confirm alias-registered task launches N; build+install version N+1 over it; confirm the SAME unchanged task now launches N+1 with no code intervention) -- see `docs/sprints/SPRINT_56_PLAN.md` completion notes for full validation detail.
 - **fix**: F148 follow-up (GitHub Copilot review, PR #310) -- the task's `-WorkingDirectory` ("Start in") still resolved to the same VERSIONED install directory the alias fix was meant to replace, so it would have gone stale on the next Store update even though `-Execute` was already fixed. `_getWorkingDirectory()` now also resolves to the alias's own stable directory for MSIX installs, mirroring `_getExecutablePath()`. Validated against a real MSIX install with both `-Execute` and `-WorkingDirectory` alias-based.
+
+## [0.6.1] - 2026-08-13
+
+PATCH release -- Submission 12, certified and published. No user-facing changes beyond what shipped in 0.6.0 (this cycle's dev-worktree bump; see the 2026-08-10 entry below).
 
 ### 2026-08-10 (Sprint 55 GitHub Copilot review, PR #304)
 - **fix**: Copilot review finding -- the F145 Settings tab-scoped Help fix's `TabController` listener called `setState()` on every notification. `TabController` fires its listener twice per tap (immediately when the index changes, again at animation completion), both times with the same index value, so the second notification was a redundant rebuild. Added an index-comparison guard so `setState()` only fires when the index actually changes.
@@ -1067,7 +1078,9 @@ See git history for detailed changes prior to Phase 3.1.
 
 ## Version Links
 
-[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.6.2...HEAD
+[0.6.2]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.6.1...v0.6.2
+[0.6.1]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.9...v0.6.0
 [0.5.9]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.8...v0.5.9
 [0.5.8]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.7...v0.5.8

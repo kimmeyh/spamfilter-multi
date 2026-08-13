@@ -48,32 +48,32 @@
 
   "store_release": {
     "_see_also": "docs/STORE_VERSION_STATUS.md is the quick-check summary (live Store version + current dev version, both with a last-verified date). This block is the working detail behind that summary. Keep both in sync; STORE_VERSION_STATUS.md is what to open for a fast answer, this block is where the evidence lives.",
-    "live_version": "0.6.1",
-    "live_submission_number": 12,
-    "previous_live_version": "0.6.0",
-    "_live_version_note": "Harold confirmed 2026-08-13 (steering message) that 0.6.1.0/Submission 12 IS certified and live -- this block previously lagged behind that fact (still said 'IN CERTIFICATION'). Harold offered screenshots but the conversation moved directly to building 0.6.2 before they were attached; if/when provided, replace this note with the actual certification_evidence detail. Until then, treat 'live and certified' as confirmed by Harold directly, not yet by a screenshot artifact in this file.",
+    "live_version": "0.6.2",
+    "live_submission_number": 13,
+    "previous_live_version": "0.6.1",
+    "certified_at": "2026-08-13",
+    "certification_evidence": "Partner Center screenshot, Harold, 2026-08-13: Application overview banner 'Congrats! Your product is now updated' + 'Your latest product is now available on Microsoft Store'; Store presence card shows 'Submission 13: Last modified on 08/13/2026' with a green checkmark 'Your product is currently available in the Microsoft Store'.",
     "submitted_version": "0.6.2",
-    "submission_number": null,
+    "submission_number": 13,
     "built_at": "2026-08-13",
     "submitted_at": "2026-08-13",
-    "certified_at": null,
-    "status": "SUBMITTED, awaiting certification. Harold requested 'build 0.6.2 prod release' directly (2026-08-13); built + verified, then Harold uploaded to Partner Center and submitted for certification same session (steering message: 'submitted 0.6.2 for certification'). Submission number not yet captured -- ask Harold or check Partner Center directly when convenient. IMPORTANT OUTSTANDING GAP: this MSIX was built from a LOCAL, UNPUSHED merge of develop into the prod worktree's main (F139-template pattern) -- the REAL develop->main merge/PR has NOT yet happened, so `main` on GitHub still does NOT contain F148 even though the Store now has a build containing it. Harold still needs to do the real merge so main's history matches what is now submitted to the Store (git history should not permanently diverge from what shipped).",
+    "status": "CERTIFIED AND LIVE. Harold requested 'build 0.6.2 prod release' directly (2026-08-13); built + verified same session, Harold uploaded to Partner Center and submitted; certified and live same day (Submission 13, confirmed via Partner Center screenshot). Fast turnaround -- certification completed within the session. IMPORTANT OUTSTANDING GAP (unresolved): this MSIX was built from a LOCAL, UNPUSHED merge of develop into the prod worktree's main (F139-template pattern) -- the REAL develop->main merge/PR has NOT yet happened, so `main` on GitHub still does NOT contain F148 even though it is now live on the Store. Harold still needs to do the real merge so main's history matches what has shipped.",
     "artifact": "D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix",
     "verification": "PATCH-only release (CHANGELOG [Unreleased] contains only F148 fix entries, no feat) per the enforced semver policy. Build log Check A: confirmed --dart-define=APP_ENV=prod --dart-define-from-file=secrets.prod.json in the inner flutter build windows command. Check B (--release-self-test --expected-version=0.6.2): RESULT: PASS on all 6 checks (APP_ENV=prod, NATIVE_APP_ENV=prod, both suffixes empty, no [DEV] in title, version match actual=0.6.2). Manifest Version=0.6.2.0 confirmed via Expand-Archive + AppxManifest.xml (unpacked folder cleaned up after). Size 16.81 MB (17624737 bytes), normal range. Full test suite in prod worktree: 1,858 passed / 29 skipped / 0 failed (up from 1,857 -- F148 changes). Policy gates (version_consistency, msix_config, stale_footer, text_contrast): 23/23 passing.",
     "_build_process_note_2026_08_13": "Prod worktree had stale LOCAL-ONLY changes left over from the 0.6.1.0 build cycle (msix_version: 0.6.1.0 + generated_plugin_registrant.* churn) that were never cleaned up post-cert as sprint_status.json's own post_cert_closeout_pending had flagged -- discarded via `git checkout --` before merging (confirmed no divergent commits, branch in sync with origin/main, safe to discard). Then `git fetch` + local `git merge origin/develop --no-ff` (message: 'chore: local build-only merge of develop for 0.6.2.0 release (not pushed)') brought in F148 + all of Sprint 55/56's work cleanly, no conflicts. msix_version bumped 0.6.0.0 -> 0.6.2.0 locally (uncommitted, per the standing convention). Dev worktree's own pubspec.yaml version bump (0.6.1+1 -> 0.6.2+1) WAS committed for real on the Sprint 57 branch (commit ff03d35) since that one belongs on develop, unlike the prod worktree's throwaway local merge.",
     "post_cert_closeout_done": [
-      "DONE 2026-08-13 (per Harold's direct confirmation): 0.6.1.0/Submission 12 certified and live. Formal screenshot evidence not yet attached to this file -- see _live_version_note.",
+      "DONE 2026-08-13 (per Harold's direct confirmation): 0.6.1.0/Submission 12 certified and live (superseded same day by 0.6.2.0/Submission 13).",
       "DONE 2026-08-13: dev worktree bumped 0.6.1 -> 0.6.2 (commit ff03d35, Sprint 57 branch) per the semver policy (PATCH -- F148 is fix-only).",
       "DONE 2026-08-13: 0.6.2.0 MSIX built + verified (manifest 0.6.2.0, --release-self-test PASS all 6 checks, policy gates 23/23 green, full suite 1,858/0 failed).",
-      "DONE 2026-08-13 (Harold): uploaded 0.6.2.0 MSIX to Partner Center, submitted for certification."
+      "DONE 2026-08-13 (Harold): uploaded 0.6.2.0 MSIX to Partner Center, submitted for certification.",
+      "DONE 2026-08-13 (Harold): Submission 13 (0.6.2.0) CERTIFIED AND LIVE -- confirmed via Partner Center screenshot (Store presence card, green checkmark, 'Congrats! Your product is now updated')."
     ],
     "post_cert_closeout_pending": [
-      "OUTSTANDING: Harold still needs to do the REAL develop -> main merge/PR -- this build used a local-only, unpushed merge for build purposes only. main on GitHub does not yet contain F148, even though the Store now has a submission built from it. Do this before the next release cycle so history does not diverge further.",
-      "Get the actual submission number for 0.6.2.0 from Partner Center when convenient (not currently recorded).",
-      "Once certified: Check C smoke pass on the live Store build (Gmail sign-in, About screen 'Version 0.6.2' no [DEV], clean title bar) -- Harold-only.",
-      "Once certified: docs/STORE_VERSION_STATUS.md Live row -> 0.6.2.0 with verification evidence.",
-      "Once certified: dev bump 0.6.2 -> 0.6.3 per the semver policy.",
-      "Once certified: docs/ALL_SPRINTS_MASTER_PLAN.md Store status line updated; CHANGELOG.md [0.6.2] heading + Version Links added, [Unreleased] entries moved under it.",
+      "OUTSTANDING: Harold still needs to do the REAL develop -> main merge/PR -- this build used a local-only, unpushed merge for build purposes only. main on GitHub does not yet contain F148, even though it is now live on the Store. Do this before the next release cycle so history does not diverge further.",
+      "Check C smoke pass on the live Store build (Gmail sign-in, About screen 'Version 0.6.2' no [DEV], clean title bar) -- Harold-only, not yet confirmed via the installed app itself (only via Partner Center screenshot so far).",
+      "docs/ALL_SPRINTS_MASTER_PLAN.md Store status line update.",
+      "CHANGELOG.md [0.6.2] heading + Version Links added, [Unreleased] entries moved under it.",
+      "Dev bump 0.6.2 -> 0.6.3 per the semver policy (next release cycle).",
       "Once the real develop->main merge is done: prod worktree's local msix_version bump + generated-plugin-file noise + this throwaway local-only merge commit cleaned up (git reset --hard origin/main after Harold's real merge lands)."
     ],
     "_prior_release_history": "0.6.1 (Submission 12): built 2026-08-12, certified + LIVE (per Harold's 2026-08-13 direct confirmation; formal screenshot evidence pending). 0.6.0 (Submission 11): built 2026-08-09, certified + LIVE 2026-08-10, Harold-verified clean (Check C: Gmail sign-in, About screen, title bar all clean). 0.5.9 (Submission 10): built + certified + LIVE 2026-08-03, Harold-verified clean via winget uninstall/reinstall workaround (client-side propagation lag on cert day, resolved). 0.5.8 (Submission 9): built 2026-07-27, submitted 2026-07-28 (after a BUILT+VALIDATED-is-not-SUBMITTED near-miss -- see docs/sprints/SPRINT_51_SUMMARY.md), certified 2026-07-29, Harold-verified clean 2026-07-30."

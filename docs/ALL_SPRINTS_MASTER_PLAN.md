@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-08-13 (Sprint 56 COMPLETE: F148 -- background-scan scheduled tasks now survive Store version updates via a stable MSIX App Execution Alias, replacing the versioned `Platform.resolvedExecutable` path that broke on every update. Full sprint rigor applied (card #309, plan, real simulated-Store-update validation). Retro: all 14 categories Very Good, 1 improvement applied (`CLAUDE.md` pre-flight rule for `APP_ENV=prod` in non-release test builds). 0.6.1.0 Store release (Submission 12) remains IN CERTIFICATION -- see `.claude/sprint_status.json`. Android/Google Play track (F142/F143/F144) remains the next candidate for Sprint 57 scope selection, deferred twice now -- once for the Store release pivot, once for this production bug fix.)
+**Last Updated**: 2026-08-13 (Sprint 56 COMPLETE + merged; Sprint 57 branch opened. 0.6.1.0 (Submission 12) certified and went live, then SUPERSEDED same day by 0.6.2.0 (Submission 13, F148 -- background-scan Store-update survival via a stable MSIX App Execution Alias) -- also certified and live 2026-08-13, a same-day turnaround. Known outstanding gap: the 0.6.2.0 build used a local, unpushed develop->main merge for build purposes; Harold still needs to do the real merge/PR so `main` on GitHub matches what shipped -- see `.claude/sprint_status.json` `store_release` block. Backlog Refinement presented for Sprint 57: Android/Google Play track (F142/F143/F144) is the entire active backlog, scope selection pending.)
 
 ## How to Maintain This Document
 
