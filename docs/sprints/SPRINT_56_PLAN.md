@@ -1,0 +1,77 @@
+# Sprint 56 Plan
+
+**Branch**: `feature/20260812_Sprint_56`
+**Dates**: 2026-08-12 --
+**Scope defined by Harold** (2026-08-12): F148 ONLY -- background-scan scheduled tasks break on every Windows Store version update. This is the sole sprint item; Backlog Refinement's Android-track scope selection (F142/F143/F144) remains deferred until this production bug fix ships.
+
+**Context**: Found live in production on 2026-08-12 while investigating why background scanning stopped running after the Store auto-updated `MyEmailSpamFilter` from 0.6.0.0 to 0.6.1.0. Both accounts' scheduled tasks failed with `ERROR_FILE_NOT_FOUND` because their registered `Execute` path was the OLD versioned MSIX install folder, which Windows deletes on every update. A manual production workaround was applied same-day (both tasks repointed at the current path via PowerShell) to restore scanning immediately -- this plan is for the durable code fix so it does not recur on the next Store update.
+
+**Why not just re-enable the existing repair mechanism**: `WindowsTaskSchedulerService.verifyAndRepairTaskPath()` already exists and would have self-healed this on next app launch, but it is unconditionally skipped for MSIX installs (`main.dart:304`, `!AppEnvironment.isMsixInstall` guard) on the stated but factually-disproven belief that Task Scheduler does not work for MSIX. Harold's steering: rather than just remove that guard (a "heal after the fact" fix, still leaves a window where scans silently fail until next app launch), use a Windows App Execution Alias so the registered task path is stable across versions and never goes stale in the first place -- eliminating the need to detect-and-repair at all.
+
+---
+
+## Task 1 -- F148: Stable App Execution Alias for background-scan scheduled tasks (Priority 10)
+
+**Value**: This prevents background scanning from silently breaking on every future Store update (already happened once in production, 2026-08-12) -- protecting the app's core unattended-scanning value proposition, which the user cannot be expected to notice failing on their own (no error surfaces to the user; Scan History simply stops gaining new Background rows).
+
+**Requirements** (numbered, detailed):
+- R-1 (Tooling-Capability Pre-Flight, per `SPRINT_PLANNING.md` -- mandatory for "bolt X onto tool Y" items): before committing to the App Execution Alias design, spike and PROVE that Windows Task Scheduler can actually launch an app via its App Execution Alias path. Multiple external sources report Task Scheduler has a specific, reproducible failure launching alias paths directly ("The file cannot be accessed by the system") -- this is a real, documented interaction bug, not a hypothetical. The spike must:
+  1. Add `msix_config.execution_alias: myemailspamfilter.exe` (or similar) to the PROD worktree's `pubspec.yaml` (do not commit to dev yet -- this is a build-only spike).
+  2. Build the MSIX (`flutter pub run msix:create`), confirm the alias registers at `%LOCALAPPDATA%\Microsoft\WindowsApps\myemailspamfilter.exe` after local install.
+  3. Create a throwaway `schtasks`/`New-ScheduledTaskAction` entry pointing `-Execute` directly at that alias path, with a harmless argument (e.g. `--print-env`, already implemented), and manually trigger it.
+  4. Record the actual result: does it run cleanly, or reproduce the "file cannot be accessed" failure?
+  5. If the naive direct-alias approach fails, spike the documented workaround (a wrapper via `cmd /c start` or equivalent) and confirm THAT works before finalizing the design.
+- R-2: Based on R-1's result, implement the durable fix in `WindowsTaskSchedulerService`:
+  - If direct alias launch works: change `_getExecutablePath()` (or add a parallel MSIX-specific path) to resolve to the App Execution Alias path instead of `Platform.resolvedExecutable` when `AppEnvironment.isMsixInstall` is true.
+  - If a wrapper is required: encode the wrapper invocation in `PowerShellScriptGenerator.generateCreateTaskScript` for the MSIX case specifically, so the generated task's `Execute`/`Argument` correctly launches through the alias.
+- R-3: Re-enable the per-account task reconciliation block in `main.dart` for MSIX installs (remove or narrow the `!AppEnvironment.isMsixInstall` guard at line 304) so existing installations with a stale VERSIONED path (like Harold's production install before today's manual fix) self-heal to the new alias-based registration on next app launch -- this covers the transition for anyone already on a version-pathed task from a prior release, not just new installs.
+- R-4: Update `AppEnvironment.isMsixInstall`'s doc comment (`app_environment.dart:60-66`) -- it currently states "Task Scheduler registration... may not work in this context," which R-1's spike will prove or disprove either way; correct the comment to reflect the actual, tested behavior rather than the prior untested assumption.
+- R-5: Confirm `verifyAndRepairTaskPath()`'s comparison logic (`registeredPath.toLowerCase() == currentPath.toLowerCase()`) still makes sense once the registered path is alias-based rather than version-based -- an alias path never changes between versions, so this comparison should now rarely/never trigger a repair for MSIX installs going forward; the repair path still matters for the ONE-TIME migration covered by R-3.
+
+**Affected components / files**:
+- `mobile-app/pubspec.yaml` -- add `msix_config.execution_alias`
+- `mobile-app/lib/core/services/windows_task_scheduler_service.dart:451-476` (`_getExecutablePath`/`_getWorkingDirectory`) -- resolve to the alias path for MSIX installs
+- `mobile-app/lib/core/services/powershell_script_generator.dart` -- IF R-1's spike requires a wrapper invocation
+- `mobile-app/lib/main.dart:304` -- narrow/remove the `!AppEnvironment.isMsixInstall` guard
+- `mobile-app/lib/core/services/app_environment.dart:60-71` -- correct the doc comment per R-4
+
+**Dependencies / blockers**: R-2 through R-5 depend on R-1's spike result -- this is an explicit branch point per the Tooling-Capability Pre-Flight rule, not a blocker to starting.
+
+**Non-functional requirements**:
+- Platform: this fix is Windows-desktop-only (`Platform.isWindows` / MSIX-specific); no Android/iOS impact.
+- This is a Class-2 development-decision-adjacent change (altering how a core service resolves its own executable identity) but is squarely a bug fix restoring documented/intended behavior (background scanning working across app updates), not a novel architectural decision -- proceeding under standing sprint-plan approval per CLAUDE.md's Decision-Class Taxonomy; flag if R-1's spike surfaces something that changes this assessment.
+
+**Acceptance criteria** (measurable, traceable):
+- AC-1: R-1's spike produces a definitive, recorded yes/no answer (with the actual command tried and its result) on whether Task Scheduler can launch an MSIX App Execution Alias directly -- not an assumption carried from external forum reports alone.
+- AC-2 (behavioral, the core regression test): Given a scheduled task registered against the CURRENT app version's alias-resolved path, When the Store updates the app to a NEW version (simulated by building and installing a version-bumped MSIX locally, replacing the prior install), Then the existing scheduled task -- unchanged, not repaired -- still successfully launches the new version and completes a background scan (`LastTaskResult = 0`).
+- AC-3: Given an existing installation with a stale VERSIONED task path (reproducing today's production bug), When the app is launched once, Then the task is detected as needing repair and is re-registered using the alias-based path (R-3), and a subsequent manual trigger succeeds.
+- AC-4: `AppEnvironment.isMsixInstall`'s doc comment accurately reflects the tested Task Scheduler behavior (R-4).
+
+**Tests to write**:
+- T-1 (verifies AC-1) -- no automated test; this is the R-1 spike itself, its result recorded in this plan's completion notes and in `CODING_VELOCITY.md`.
+- T-2 (verifies AC-4) -- no automated test; doc-comment correction, verified by review.
+- T-3 (verifies AC-2, AC-3) -- these are inherently integration-level (real Windows Task Scheduler, real MSIX install/update, no mockable seam for `schtasks`/`Get-ScheduledTask`) and CANNOT be meaningfully unit-tested. Verify via a REAL manual reproduction: build+install version N, register the task, build+install version N+1 over it (simulating a Store update), confirm the existing task still runs. Document the exact steps taken and their results in this plan's completion notes -- this is the Phase 5.3-equivalent manual validation for this specific fix, and is NOT optional given AC-2/AC-3 are the entire point of the fix.
+- T-4 (unit-testable slice, if R-2's implementation allows) -- if `_getExecutablePath()` is refactored to have a pure/injectable branch for "resolve alias path when MSIX," add a `TEST-UNIT` case in `mobile-app/test/unit/services/` asserting the alias-path format (e.g. `%LOCALAPPDATA%\Microsoft\WindowsApps\<alias>.exe`) is constructed correctly, mirroring how other Windows-path-construction logic in this codebase is tested. Not a substitute for T-3.
+
+**Definition of Done**: default task-level DoD PLUS:
+- T-3's real update-simulation reproduction is actually performed and its result (pass/fail, with specifics) is recorded before this task is considered done -- a fix that is not proven against a real simulated Store update is not trustworthy for this specific bug class (the original bug was never caught by any automated test either).
+- The manual production workaround applied 2026-08-12 (both tasks repointed via PowerShell) is noted as superseded once this fix ships and Harold's production install picks it up via R-3's self-heal path.
+
+**Model**: Sonnet -- *why not Haiku*: requires a genuine capability spike with an uncertain, documented-as-flaky external interaction (Task Scheduler + MSIX App Execution Alias), judgment on how to proceed if the spike fails (wrapper design), and touches a native-Windows-integration surface with production-bug history (F119 family precedent) -- beyond Haiku's heuristics. Not escalated to Fable/Opus: the root cause is already fully diagnosed (not a diagnostic unknown), and the fix shape (alias instead of versioned path) is already decided by Harold -- this is scoped implementation + spike-verification, not open-ended architectural investigation.
+
+**Executed-by**: _(fill at completion)_
+
+**Step-types**: WINWRIGHT-DISCOVERY-adjacent (R-1 spike, treat as `[no-history]` per the same "do not estimate discovery time" convention as F140), NATIVE-WIN (MSIX config + Task Scheduler integration), SVC-EDIT (windows_task_scheduler_service.dart, main.dart), DOCS (app_environment.dart comment correction)
+
+**Est-Effort**: R-1 spike time-boxed to 30-45m (matching the F140/F119-c NATIVE-WIN-with-discovery precedent, toward the lower end since the specific failure mode being tested is already well-documented externally, not a blind investigation). R-2 through R-5 implementation: 45-90m (NATIVE-WIN band per `CODING_VELOCITY.md`, toward the higher end given this touches release-gating background-scan reliability, where correctness matters more than speed -- same reasoning F125's estimate used for release-gating logic). T-3's real update-simulation validation: 20-30m (build + install twice, trigger, verify). Total: roughly 95-165m.
+
+_**Risk & rollback**_: Medium -- if R-1's spike proves Task Scheduler genuinely cannot launch an alias path even with a wrapper, this task must STOP and surface that finding to Harold as a Class-1/2 decision point (the fix would need a different approach entirely, e.g. keeping the repair-on-launch mechanism as the permanent design rather than eliminating it) rather than forcing a broken alias-based design through. Rollback: this is additive to `pubspec.yaml` (new config key) and a resolution-logic change in one service -- `git revert` the commit(s) fully restores the current (buggy but familiar) versioned-path behavior; the manual production workaround already applied remains valid as a stopgap regardless of this task's outcome.
+
+_**Decision-class interrupts**_: If R-1's spike disproves the alias approach entirely, STOP and surface to Harold per the Decision-Class Taxonomy before choosing a fallback design (this would be changing the previously-agreed fix approach, a Class-2 development decision) -- do not silently fall back to "just remove the isMsixInstall guard" without confirming that is acceptable, since Harold explicitly steered toward the alias approach specifically to avoid a heal-after-the-fact design.
+
+---
+
+## Sprint-Level Notes
+
+- **This is the sole sprint item.** Sprint 56's Backlog Refinement (Android-track scope selection: F142/F143/F144) was already presented and is on hold per Harold's explicit instruction -- this production bug fix takes priority. Resume Backlog Refinement once F148 ships.
+- **No architecture changes are pre-approved beyond what's scoped above.** If R-1's spike surfaces a need to redesign the repair mechanism more broadly (e.g., affecting non-background-scan Windows integrations), that is out of scope for this task and gets surfaced as a new backlog candidate, not folded in.
