@@ -1,38 +1,38 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-13T12:15:00Z",
+  "_last_updated": "2026-08-13T12:30:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
 
   "current_sprint": {
+    "number": 57,
+    "branch": "feature/20260813_Sprint_57",
+    "pr_number": null,
+    "pr_url": null,
+    "start_date": "2026-08-13",
+    "status": "Branch opened via Phase 6.6 carry-forward immediately on Sprint 56 merge notification. Post-Merge Cleanup for Sprint 56 COMPLETE (issue #309 closed by hand, verified gh issue list --label sprint --state open empty). NOT YET SCOPED -- Backlog Refinement is the next action per Harold's explicit instruction. Phase 3.3.1 (cards + draft PR) has NOT happened yet -- do this in the SAME turn as plan approval, before touching any task file (Phase 3.7.0 discipline).",
+    "plan_approved": false,
+    "plan_approval_date": null,
+    "blanket_execution_approved": false,
+    "scope": [],
+    "_scope_note": "Not yet scoped. Backlog Refinement in progress per Harold's 2026-08-13 instruction. Android-track candidates (F142/F143/F144) are the standing next-track items, deferred twice across Sprints 55/56."
+  },
+
+  "previous_sprint": {
     "number": 56,
     "branch": "feature/20260812_Sprint_56",
     "pr_number": 310,
     "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/310",
-    "start_date": "2026-08-12",
-    "status": "F148 CODE COMPLETE + VALIDATED + Manual Validation COMPLETE (Harold, working as expected) + Phase 7 retrospective COMPLETE (all 14 categories Very Good, 1 improvement applied). PR #310 marked Ready for Review 2026-08-13. GitHub Copilot review requested by Harold, completed 2026-08-13: 1 real finding (_getWorkingDirectory() still used the versioned install directory for MSIX installs, would go stale on the next Store update exactly like the original bug even though _getExecutablePath() was already fixed) -- fixed in commit 398ff14 (mirrors the alias-resolution pattern), validated against a real MSIX install, comment replied to + thread resolved via GraphQL. AT 7.7.5 FINAL GATE now: PR #310 ready, Copilot review fully addressed. NEXT: notify Harold for final review/merge (the one readiness announcement of the sprint). This sprint is NOT complete until Harold reviews and merges.",
-    "plan_approved": true,
-    "plan_approval_date": "2026-08-12",
-    "blanket_execution_approved": true,
-    "scope": ["F148"],
-    "_scope_note": "F148 only -- background-scan scheduled tasks break on every Store version update (App Execution Alias fix). Android-track Backlog Refinement scope selection (F142/F143/F144) remains deferred until this sprint fully closes (merge + Post-Merge Cleanup + Phase 6.6 carry-forward)."
-  },
-
-  "previous_sprint": {
-    "number": 55,
-    "branch": "feature/20260809_Sprint_55",
-    "pr_number": 304,
-    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/304",
-    "merged_at": "2026-08-12",
-    "merge_note": "PR #304 -> develop merged 2026-08-12 (Harold). Harold also merged develop -> main same session (PR #308). Issues #305/#306/#307 closed by hand during Post-Merge Cleanup (Closes-on-merge-to-develop does not auto-fire in this GitFlow repo; gh issue list --label sprint --state open verified empty). GitHub Copilot review requested by Harold (2026-08-10): 2 real findings (settings_screen.dart setState churn on duplicate TabController notifications; sprint_status.json store_release live_version/live_submission_number/previous_live_version stale-vs-rest-of-block inconsistency) both fixed in commit e8fc7ce, both threads replied to + resolved via GraphQL.",
+    "merged_at": "2026-08-13",
+    "merge_note": "PR #310 -> develop merged 2026-08-13 (Harold). GitHub Copilot review requested by Harold, completed 2026-08-13: 1 real finding (_getWorkingDirectory() still used the versioned install directory for MSIX installs, would go stale on the next Store update exactly like the original bug even though _getExecutablePath() was already fixed) -- fixed in commit 398ff14 (mirrors the alias-resolution pattern), validated against a real MSIX install, comment replied to + thread resolved via GraphQL. Issue #309 closed by hand during Post-Merge Cleanup (Closes-on-merge-to-develop does not auto-fire in this GitFlow repo; gh issue list --label sprint --state open verified empty).",
     "status": "complete",
-    "deliverables": ["F147: scan-all-emails cursor bypass (IMAP + Gmail paths), 7 mutation-verified tests", "F146: generalized \"AOL copy-not-move\" error message across 6 files", "F145: Help-icon deep-link coverage -- WinWright spike found a false-failure signal (documented in WINWRIGHT_SELECTORS.md), re-scoped to integration_test, surfaced + fixed a real HelpScreen scroll-timing bug, 27 new tests", "Manual Validation follow-ups (same sprint): Settings tab-scoped Help fix (4 tests) + Help > First-Use Walkthrough rewrite (8 steps, up from 6)", "0.6.0.0 Store release certified + live (Submission 11) via a mid-Backlog-Refinement pivot", "Retrospective: all 14 categories Very Good, 1 improvement applied (Phase 3.7.0 card-creation-ordering fix in SPRINT_EXECUTION_WORKFLOW.md)"],
-    "verification": "Final full suite 1,857 passed / 29 skipped / 0 failed, analyze clean throughout every task. integration_test/help_deep_link_test.dart 31/31 passed via run-integration-tests.ps1.",
-    "_process_note": "Phase 6.6 carry-forward applied correctly again (Sprint 55 -> Sprint 56): branch created from the current feature branch immediately on merge notification, before any post-merge commits. SPRINT_55_SUMMARY.md was missed during Sprint 56 planning (Phase 3.2.1 mandatory deliverable) -- created retroactively 2026-08-13 after the verify-closeout-complete hook caught the gap."
+    "deliverables": ["F148: background-scan scheduled tasks now survive Store version updates via a stable MSIX App Execution Alias, replacing the versioned Platform.resolvedExecutable path that broke on every update (both -Execute and, after the Copilot review follow-up, -WorkingDirectory). Immediate production fix applied 2026-08-12 (manual PowerShell repointing); durable code fix validated via a real simulated Store update.", "Retrospective: all 14 categories Very Good, 1 improvement applied (CLAUDE.md pre-flight rule for APP_ENV=prod in non-release test builds)."],
+    "verification": "flutter analyze clean; full suite 1,857 passed / 29 skipped / 0 failed. R-1 spike PASS. AC-2 (update survival) PASS with direct log-file evidence, both for -Execute (original) and -WorkingDirectory (Copilot follow-up). AC-3 (stale-path self-heal) PASS by verified composition.",
+    "_process_note": "Phase 6.6 carry-forward applied correctly again (Sprint 56 -> Sprint 57): branch created from the current feature branch immediately on merge notification, before any post-merge commits (carried forward 0Claudedev_prompts.txt). SPRINT_55_SUMMARY.md was missed during Sprint 56 planning (Phase 3.2.1 mandatory deliverable) -- created retroactively 2026-08-13 after the verify-closeout-complete hook caught the gap; verify SPRINT_56_SUMMARY.md is NOT missed the same way during Sprint 57 planning."
   },
 
-  "github_issues": [309],
-  "_github_issues_note": "309=F148. Created 2026-08-12 in the SAME turn as plan approval, before any task file was touched -- the Phase 3.7.0 discipline (Sprint 55 retro improvement) applied correctly this time, no retroactive backfill needed. Remains OPEN until PR #310 actually merges to develop.",
+  "github_issues": [],
+  "_github_issues_note": "Issue #309 (F148) closed 2026-08-13 during Post-Merge Cleanup; no open sprint issues currently. Next sprint's issue(s) get created in the SAME turn as plan approval, before any task file is touched (Phase 3.7.0 discipline).",
 
   "test_metrics": {
     "tests_passing": 1857,
@@ -86,19 +86,11 @@
   "blocking_issues": [],
 
   "next_actions": [
-    "DONE 2026-08-12: Backlog Refinement presented -- Harold deferred Sprint 56 scope selection twice (once for Store release prep, once when the F148 production bug was found).",
-    "DONE 2026-08-12: 0.6.1.0 MSIX built + verified (all gates green), uploaded by Harold, Submission 12 IN CERTIFICATION. See store_release block for full detail and post_cert_closeout_pending for remaining steps.",
-    "DONE 2026-08-12: Sprint 56 Plan (F148, sole scope) approved; issue #309 created same-turn as approval (Phase 3.7.0 discipline).",
-    "DONE 2026-08-12/13: F148 implemented (R-1 spike through R-5), real update-simulation validated (AC-2 with log-file proof, AC-3 by verified composition), committed + pushed.",
-    "DONE 2026-08-13: Manual Validation complete (Harold) -- working as expected, no follow-ups needed.",
-    "DONE 2026-08-13: Phase 7 retrospective complete -- all 14 categories Very Good, 1 improvement applied (CLAUDE.md pre-flight rule for APP_ENV=prod in non-release test builds).",
-    "DONE 2026-08-13: PR #310 marked Ready for Review; description updated to reflect sprint completion.",
-    "DONE 2026-08-13: SPRINT_55_SUMMARY.md created retroactively (missed during Sprint 56 planning, caught by verify-closeout-complete hook).",
-    "DONE 2026-08-13: GitHub Copilot review on PR #310 completed and fully addressed -- 1 finding (_getWorkingDirectory() needed alias-based resolution for MSIX installs too, same class as the original bug but for -WorkingDirectory instead of -Execute), fixed in commit 398ff14, validated against a real MSIX install, comment replied to + thread resolved via GraphQL.",
-    "NEXT: 7.7.5 final gate -- notify Harold PR #310 is ready for final review/merge (the ONE readiness announcement of the sprint).",
-    "AFTER Harold merges PR #310: Phase 6.6 carry-forward -- open Sprint 57 branch from feature/20260812_Sprint_56 immediately on merge notification, before any other commits.",
-    "AFTER merge: Post-Merge Cleanup (close issue #309 by hand if not auto-closed, verify gh issue list --label sprint --state open is empty).",
-    "STILL PENDING (independent of Sprint 56/57): 0.6.1.0 Submission 12 certification -- monitor Pre-processing -> Certification -> Publishing, then run the post_cert_closeout_pending checklist in the store_release block.",
-    "NEXT SPRINT SCOPE (after Sprint 56 fully closes): Backlog Refinement, likely landing on Android/Google Play track (F142/F143/F144, scoped and ready per the Sprint 54 F141 deep dive) unless something else takes priority."
+    "DONE 2026-08-13: PR #310 merged to develop (Harold).",
+    "DONE 2026-08-13: Phase 6.6 carry-forward -- Sprint 57 branch (feature/20260813_Sprint_57) opened from feature/20260812_Sprint_56 immediately on merge notification, before any other commits; carried-forward 0Claudedev_prompts.txt committed.",
+    "DONE 2026-08-13: Post-Merge Cleanup -- issue #309 closed by hand, gh issue list --label sprint --state open verified empty. Sprint 56 branch retained permanently (never deleted).",
+    "NEXT: Backlog Refinement (docs/BACKLOG_REFINEMENT.md) per Harold's explicit instruction -- present prioritized candidates from ALL_SPRINTS_MASTER_PLAN.md \"Next Sprint Candidates\", likely landing on Android/Google Play track (F142/F143/F144, scoped and ready per the Sprint 54 F141 deep dive) unless something else takes priority.",
+    "AFTER Backlog Refinement scope selection: Sprint 57 Plan creation, approval, Phase 3.7.0 (issue cards + draft PR in the SAME turn as approval).",
+    "STILL PENDING (independent of sprint cadence): 0.6.1.0 Submission 12 certification -- monitor Pre-processing -> Certification -> Publishing, then run the post_cert_closeout_pending checklist in the store_release block."
   ]
 }
