@@ -1,6 +1,6 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-14T09:00:00Z",
+  "_last_updated": "2026-08-14T01:00:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
 
@@ -10,7 +10,7 @@
     "pr_number": 314,
     "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/314",
     "start_date": "2026-08-13",
-    "status": "PLAN APPROVED 2026-08-14, EXECUTION STARTING. Scope expanded same day: Harold approved F142 (as planned) AND pulled in F149 (safe-sender Inbox/Bulk oscillation) as Task 2. Standing execution authorization given: continue without additional approvals until Manual Validation; provide a Manual Validation recommendation; do not stop except per SPRINT_STOPPING_CRITERIA.md. docs/sprints/SPRINT_57_PLAN.md expanded with Task 2's full card (R-1 through R-5, AC-1 through AC-5, T-1 through T-5) -- fix design confirmed against actual code: EmailScanner's safe-sender move logic has no pre-move check against the target folder for an existing duplicate; F91's (Sprint 39) existing dedup only reconciles the source folder post-move. Fix reuses the existing searchByMessageId capability for a target-folder pre-check, keeping F91 unchanged as a second layer. Issue #312 updated (labeled card, comment added) rather than duplicated. Both tasks independent, can proceed in either order.",
+    "status": "BOTH TASKS CODE-COMPLETE, tested, mutation-verified, committed (acb1abc, 2af6d75). F149: added filterAlreadyInTargetFolder() pre-move check in email_scanner.dart, reusing existing searchByMessageId; F91's post-move dedup unchanged as a second layer; fails open on search errors; 6 new tests. R-5 confirmed via git history this is an always-existing F91 design gap, not a regression. F142: MainNavigationScreen's Platform.isAndroid branch removed entirely; both platforms share the same default-screen decision (renamed _DesktopDefaultScreen/desktopDefaultScreenFor -> _AppDefaultScreen/appDefaultScreenFor); No-Rule-Review AppBar icon stays Windows-gated (F143 dependency, documented). New F142 source-text policy gate added. Full suite 1,864/0 failed, analyze clean, Windows desktop build+launch verified. BLOCKED: F142's T-3 manual Android-emulator verification could not run -- pre-existing F94 blocker (google-services.json applicationId mismatch) fails EVERY Android build at :app:processDebugGoogleServices, unrelated to F142's own changes. Fallback verification (shared-code-path argument + Windows proof) documented in the plan's completion notes. AWAITING Manual Validation from Harold -- recommendation prepared.",
     "plan_approved": true,
     "plan_approval_date": "2026-08-14",
     "blanket_execution_approved": true,
