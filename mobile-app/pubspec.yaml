@@ -116,6 +116,12 @@ msix_config:
   msix_version: 0.6.0.0
   logo_path: assets/icon/icon.png
   capabilities: internetClient, internetClientServer, privateNetworkClientServer
+  # F148 (Sprint 56): stable App Execution Alias so background-scan scheduled
+  # tasks survive Store version updates -- Windows resolves this alias to
+  # whatever version is CURRENTLY installed, unlike the versioned
+  # C:\Program Files\WindowsApps\...\ path (which breaks on every update).
+  # MUST match WindowsTaskSchedulerService._executionAliasFileName exactly.
+  execution_alias: myemailspamfilter.exe
   # For Store submission: store: true, install_certificate: false
   # For local MSIX testing: store: false, install_certificate: true
   store: true

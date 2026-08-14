@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-08-10 (Sprint 55 COMPLETE, PR #304, retro all-Very-Good: F147 scan-all-emails cursor bypass, F146 generalized AOL-specific error message, F145 Help-icon deep-link coverage + a real HelpScreen scroll-timing bug found and fixed via the F145 test suite itself, plus 2 same-sprint Manual Validation follow-ups (Settings tab-scoped Help fix, walkthrough content rewrite). 1 retro improvement applied: new Phase 3.7.0 step in SPRINT_EXECUTION_WORKFLOW.md fixing a recurring GitHub-issue-card-creation-ordering gap. This sprint also shipped `0.6.0.0` CERTIFIED and LIVE on the Store (Submission 11) via a mid-Backlog-Refinement pivot. Backlog Refinement scope selection for Sprint 56 is next.)
+**Last Updated**: 2026-08-13 (Sprint 56 COMPLETE: F148 -- background-scan scheduled tasks now survive Store version updates via a stable MSIX App Execution Alias, replacing the versioned `Platform.resolvedExecutable` path that broke on every update. Full sprint rigor applied (card #309, plan, real simulated-Store-update validation). Retro: all 14 categories Very Good, 1 improvement applied (`CLAUDE.md` pre-flight rule for `APP_ENV=prod` in non-release test builds). 0.6.1.0 Store release (Submission 12) remains IN CERTIFICATION -- see `.claude/sprint_status.json`. Android/Google Play track (F142/F143/F144) remains the next candidate for Sprint 57 scope selection, deferred twice now -- once for the Store release pivot, once for this production bug fix.)
 
 ## How to Maintain This Document
 
@@ -120,12 +120,23 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 53 | docs/sprints/SPRINT_53_PLAN.md | [OK] Complete (retro skipped, PO decision) | Aug 3, 2026 (PR #295/#296; 0.5.9 LIVE Aug 3) |
 | 54 | docs/sprints/SPRINT_54_RETROSPECTIVE.md | [OK] Complete | Aug 3-10, 2026 (PR #298/#303) |
 | 55 | docs/sprints/SPRINT_55_RETROSPECTIVE.md | [OK] Complete | Aug 9-10, 2026 (PR #304; 0.6.0.0 LIVE Aug 10) |
+| 56 | docs/sprints/SPRINT_56_RETROSPECTIVE.md | [OK] Complete | Aug 12-13, 2026 (PR #310) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
 ---
 
 ## Last Completed Sprint
+
+**Sprint 56** (2026-08-12 -- 2026-08-13; PR #310 -> develop)
+- **Type**: Single-item production bug-fix sprint, full sprint rigor (card, plan, testing) per Harold's explicit instruction. 1/1 task complete.
+- **F148**: background-scan scheduled tasks broke on every Microsoft Store version update because task registration used `Platform.resolvedExecutable`, a VERSIONED install path Windows deletes on every update. Found in production 2026-08-12 (Harold) after a 0.6.0.0 -> 0.6.1.0 update silently stopped both accounts' background scans. Immediate fix: both tasks manually repointed via PowerShell same-day. Durable fix (Harold-steered toward a version-independent design instead of heal-after-the-fact): registered tasks against a stable MSIX App Execution Alias, which Windows keeps pointed at whichever version is currently installed; existing installs on a stale versioned-path registration self-heal via the existing repair reconciliation, re-enabled for MSIX installs.
+- **Validation**: real simulated Store update -- built+installed a test MSIX at version N, confirmed alias-registered launch, then built+installed version N+1 over it and confirmed the SAME unchanged task launched N+1 automatically with log-file proof, no code intervention. Full detail in `docs/sprints/SPRINT_56_PLAN.md` completion notes.
+- **Verification**: suite **1,857 passed** / 29 skipped / 0 failed; analyze clean throughout.
+- **Retro**: all 14 categories rated Very Good; **1 improvement, applied** (pre-flight check before using `APP_ENV=prod` in non-release test builds, added to `CLAUDE.md`).
+- **Docs**: SPRINT_56_PLAN.md / SPRINT_56_RETROSPECTIVE.md.
+
+_(Prior: **Sprint 55** below.)_
 
 **Sprint 55** (2026-08-09 -- 2026-08-10; PR #304 -> develop)
 - **Type**: Bug fixes surfaced from the 0.6.0.0 release smoke test + a mid-sprint Store release pivot. 3/3 planned tasks complete, plus 2 same-sprint Manual Validation follow-ups.
@@ -208,7 +219,7 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 
 ### Core App Quality
 
-_(F145/F146/F147 all shipped Sprint 55 -- see `docs/sprints/SPRINT_55_PLAN.md`, CHANGELOG.md 2026-08-10, and `docs/WINWRIGHT_SELECTORS.md`'s new F145 entry (WinWright false-failure finding + the real HelpScreen scroll-timing bug it led to). F145 also produced `integration_test/help_deep_link_test.dart`, the durable regression suite for all 22 HelpSection values.)_
+_(F148 shipped Sprint 56 -- see `docs/sprints/SPRINT_56_PLAN.md` and CHANGELOG.md 2026-08-13. F145/F146/F147 all shipped Sprint 55 -- see `docs/sprints/SPRINT_55_PLAN.md`, CHANGELOG.md 2026-08-10, and `docs/WINWRIGHT_SELECTORS.md`'s new F145 entry (WinWright false-failure finding + the real HelpScreen scroll-timing bug it led to). F145 also produced `integration_test/help_deep_link_test.dart`, the durable regression suite for all 22 HelpSection values.)_
 
 **F138. Decide: should the 5 rule-editing screens gain account context? -- [CLOSED 2026-08-03, Harold: not needed]**
 - Phase: Core App Quality / UX
@@ -359,6 +370,12 @@ _(Sprint 51-52 detail sections pruned per Maintenance Rule 2 -- all shipped/reso
 > **[NEXT MAJOR TRACK -- TRIGGER FIRED 2026-07-24]**: `0.5.7` is verified LIVE (clean prod title). Per Harold's 2026-07-15 promotion trigger, this Android / Google Play track is now **OFF HOLD** and is the next focus. Android development is intentionally stagnant only until that Windows release lands. At promotion, refine this section into an active sprint: start with the `google-services.json` applicationId mismatch diagnosis (F94 pre-existing investigation item -- likely root of intermittent Android Gmail OAuth), then F94 flavors, then the F108 Android-device dep-bump retest carry-in, then the Google-Play-gated security items below.
 
 > **[GOVERNING DIRECTION -- Harold, 2026-08-03, Sprint 54 F141 deep dive]**: *"All the UIs (now with the Windows UI being the default) should use the same UI and tools unless they cannot -- then they should adapt as needed for the needs of the platform"* (UI/navigation), and *"same architectural principle for all the non-UI components -- reuse whatever possible, exactly as is, but adjust where necessary"* (services/backend). **Clarified same day**: the app was built Android-first for early MVP speed, then switched to the Windows Store App style UI and architecture once that became the priority -- so **Windows' current architecture and tooling is the baseline that takes precedence, not "whichever platform already has code."** It is explicitly OK to REMOVE existing Android UI and backend code and replace it with the Windows-side pattern, adjusting only where Android has a genuine platform constraint (no keyboard modifiers, no hover state, no Windows Task Scheduler equivalent) -- never merely to preserve old Android-first code for its own sake. This is DURABLE guidance for every future Android-track item, not scoped to one sprint. See `docs/sprints/SPRINT_54_F141_ANDROID_DEEP_DIVE.md` for the full deep dive this direction came from.
+
+> **[TOOLING DECISION -- Harold, 2026-08-12, Android track unblocked]**: **Android Studio Emulator (AVD Manager) is the primary/default Android testing environment** for this track. Deep-dive comparison against 2 free alternatives (WSA ruled out -- discontinued March 2025):
+> - **Android Studio Emulator (chosen)**: native "Google APIs"/"Google Play" system images (matches CLAUDE.md's existing Gmail-OAuth guidance exactly, zero extra setup); fully free, no feature gating; best Flutter tooling integration (`flutter devices`/`flutter run`/hot reload built against this exact toolchain); native multi-AVD side-by-side support (useful for F94 dev/prod/store flavor testing). Con: slowest cold boot (~22s) and heaviest resource footprint of the 3 candidates -- accepted tradeoff for zero-workaround OAuth correctness. SDK already installed at `C:\Android\android-sdk`.
+> - **Genymotion Desktop (documented alternative, if needed)**: free "Personal Use" tier, ~9s boot (fastest of the 3). Requires flashing "Open GApps" for Google Sign-In -- **the classic Open GApps package only covers up to Android 11; Android 12+ needs Genymotion's newer built-in GApps mechanism**, verify per target API level before relying on it. Free tier disables Quick Boot and network-profile simulation (the latter could matter for WorkManager background-scan testing under connectivity changes). Consider if F94 flavor-testing iteration speed becomes a bottleneck on the Android Studio emulator.
+> - **BlueStacks (documented alternative, if needed)**: free tier, ships with Google Play pre-baked (nothing to flash). Built on a gaming-oriented Android image, not a clean Google reference build -- higher risk of diverging from real-device behavior on OAuth redirects or background-task timing; known Flutter hardware-rendering compatibility issue (flutter/flutter#19711) may need a software-rendering fallback. Has a native multi-instance manager that could double for F94 side-by-side flavor testing if BlueStacks is ever adopted.
+> - Not evaluated as primary candidates: Windows Subsystem for Android (discontinued), gaming-only emulators with no credible dev/testing workflow.
 
 **F142. Android navigation model: adopt desktop's shared AppBar-icon + session-account pattern, replacing the bottom-nav placeholder shell (~time-boxed, no-history) Priority HOLD**
 - Phase: Android / Google Play Store Readiness
