@@ -2,6 +2,12 @@
 /// (server-acknowledged-but-not-performed-move reconciliation; confirmed
 /// provider-agnostic, F146 Sprint 55).
 ///
+/// F149 (Sprint 57) tests: pre-move target-folder duplicate check (AOL
+/// Inbox/Bulk oscillation fix). The symmetric counterpart to F91 -- F91
+/// cleans up the SOURCE folder after a move, F149 checks the TARGET folder
+/// before one, using the same searchByMessageId capability and the same
+/// fake-IMAP harness.
+///
 /// EmailScanner.scanInbox is orchestration-heavy (real platform adapter,
 /// credentials, IMAP connection) and is exercised in Phase 5.3 manual
 /// testing per the Sprint 37/38 retrospectives. These tests target the
@@ -9,7 +15,7 @@
 /// `dedupSafeSenderSourceFolder` entry point and a fake IMAP platform with
 /// mocked search/move responses (no live server).
 ///
-/// Covered scenarios:
+/// F91 covered scenarios:
 ///   - clean move (no source duplicate -> no dedup, count stays 0)
 ///   - AOL re-injection (source duplicate exists -> moved to Trash, counted)
 ///   - Message-ID missing (skip, no search issued)
@@ -17,6 +23,14 @@
 ///   - source folder == target folder (skip)
 ///   - multiple messages across folders (aggregate count)
 ///   - search/move failure degrades to a no-op (scan never breaks)
+///
+/// F149 covered scenarios:
+///   - candidate already in target folder -> skipped, not kept
+///   - candidate with no target-folder match -> kept, proceeds normally
+///   - Message-ID missing -> kept (cannot check, no false block)
+///   - Gmail OAuth platform (skip entirely -- returns candidates unchanged)
+///   - search failure degrades to fail-open (candidate kept, not blocked)
+///   - multiple candidates, mixed outcomes
 library;
 
 import 'package:flutter_test/flutter_test.dart';
@@ -300,6 +314,120 @@ void main() {
 
       expect(platform.moveCalls, isEmpty);
       expect(scanProvider.safeSenderDedupCount, 0);
+    });
+  });
+
+  group('F149 -- pre-move target-folder duplicate check', () {
+    test('candidate already in target folder is skipped, not kept', () async {
+      // A message with this Message-ID is already sitting in INBOX (e.g.
+      // the original promotion from a prior scan cycle, or AOL has not
+      // finished demoting it yet).
+      final existingInInbox = _msg(id: '50', folder: 'INBOX', messageId: '<a@aol.com>');
+      final platform = _FakeImapPlatform(searchResponses: {
+        'INBOX': {
+          '<a@aol.com>': [existingInInbox],
+        },
+      });
+      final candidate = _msg(id: '10', folder: 'Bulk Mail', messageId: '<a@aol.com>');
+
+      final kept = await scanner.filterAlreadyInTargetFolder(
+        platform: platform,
+        candidates: [candidate],
+        safeSenderTarget: 'INBOX',
+        isLiveScan: false,
+      );
+
+      expect(platform.searchCalls, ['INBOX|<a@aol.com>']);
+      expect(kept, isEmpty);
+    });
+
+    test('candidate with no target-folder match is kept', () async {
+      final platform = _FakeImapPlatform(searchResponses: const {});
+      final candidate = _msg(id: '10', folder: 'Bulk Mail', messageId: '<a@aol.com>');
+
+      final kept = await scanner.filterAlreadyInTargetFolder(
+        platform: platform,
+        candidates: [candidate],
+        safeSenderTarget: 'INBOX',
+        isLiveScan: false,
+      );
+
+      expect(platform.searchCalls, ['INBOX|<a@aol.com>']);
+      expect(kept, [candidate]);
+    });
+
+    test('Message-ID missing -> kept, no search issued (cannot check)', () async {
+      final platform = _FakeImapPlatform();
+      final candidate = _msg(id: '10', folder: 'Bulk Mail', messageId: null);
+
+      final kept = await scanner.filterAlreadyInTargetFolder(
+        platform: platform,
+        candidates: [candidate],
+        safeSenderTarget: 'INBOX',
+        isLiveScan: false,
+      );
+
+      expect(platform.searchCalls, isEmpty);
+      expect(kept, [candidate]);
+    });
+
+    test('Gmail OAuth (non-IMAP) platform returns candidates unchanged', () async {
+      final platform = _FakeGmailPlatform();
+      final candidate = _msg(id: '10', folder: 'Bulk Mail', messageId: '<a@gmail.com>');
+
+      final kept = await scanner.filterAlreadyInTargetFolder(
+        platform: platform,
+        candidates: [candidate],
+        safeSenderTarget: 'INBOX',
+        isLiveScan: false,
+      );
+
+      // The IMAP-only gate short-circuits before any search.
+      expect(platform.searchCalled, isFalse);
+      expect(kept, [candidate]);
+    });
+
+    test('search failure fails OPEN -- candidate is kept, not blocked', () async {
+      final platform = _FakeImapPlatform(throwOnSearch: true);
+      final candidate = _msg(id: '10', folder: 'Bulk Mail', messageId: '<a@aol.com>');
+
+      // Should not throw, and must not strand a genuine safe-sender
+      // candidate outside Inbox because of a transient IMAP error.
+      final kept = await scanner.filterAlreadyInTargetFolder(
+        platform: platform,
+        candidates: [candidate],
+        safeSenderTarget: 'INBOX',
+        isLiveScan: false,
+      );
+
+      expect(kept, [candidate]);
+    });
+
+    test('mixed outcomes: some kept, some skipped, across multiple candidates',
+        () async {
+      final platform = _FakeImapPlatform(searchResponses: {
+        'INBOX': {
+          '<already-there@aol.com>': [
+            _msg(id: '99', folder: 'INBOX', messageId: '<already-there@aol.com>'),
+          ],
+          // no entry for '<clean@aol.com>' -> empty match -> kept
+        },
+      });
+      final alreadyThere =
+          _msg(id: '1', folder: 'Bulk Mail', messageId: '<already-there@aol.com>');
+      final clean = _msg(id: '2', folder: 'Bulk Mail', messageId: '<clean@aol.com>');
+      final noMessageId = _msg(id: '3', folder: 'Bulk Mail', messageId: null);
+
+      final kept = await scanner.filterAlreadyInTargetFolder(
+        platform: platform,
+        candidates: [alreadyThere, clean, noMessageId],
+        safeSenderTarget: 'INBOX',
+        isLiveScan: false,
+      );
+
+      expect(kept, containsAll([clean, noMessageId]));
+      expect(kept.contains(alreadyThere), isFalse);
+      expect(kept.length, 2);
     });
   });
 }

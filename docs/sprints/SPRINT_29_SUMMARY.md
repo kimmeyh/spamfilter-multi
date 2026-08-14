@@ -1,5 +1,7 @@
 # Sprint 29 Summary
 
+> **NOTE (Sprint 57 doc-audit, 2026-08-14)**: This summary was not found in the repository during a repo-wide sprint-documentation audit and has been reconstructed retroactively from PR #225's body/commits and the existing `SPRINT_29_RETROSPECTIVE.md`. Figures not recoverable from those sources are not included rather than invented.
+
 **Sprint**: Sprint 29 - UX + Quality + Features
 **Date**: April 3-13, 2026
 **Branch**: `feature/20260403_Sprint_29`

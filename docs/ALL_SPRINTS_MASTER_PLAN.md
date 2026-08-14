@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-08-13 (Sprint 56 COMPLETE: F148 -- background-scan scheduled tasks now survive Store version updates via a stable MSIX App Execution Alias, replacing the versioned `Platform.resolvedExecutable` path that broke on every update. Full sprint rigor applied (card #309, plan, real simulated-Store-update validation). Retro: all 14 categories Very Good, 1 improvement applied (`CLAUDE.md` pre-flight rule for `APP_ENV=prod` in non-release test builds). 0.6.1.0 Store release (Submission 12) remains IN CERTIFICATION -- see `.claude/sprint_status.json`. Android/Google Play track (F142/F143/F144) remains the next candidate for Sprint 57 scope selection, deferred twice now -- once for the Store release pivot, once for this production bug fix.)
+**Last Updated**: 2026-08-14 (Sprint 57 COMPLETE: F142 (Android navigation model) and F149 (safe-sender AOL Inbox/Bulk oscillation fix) both shipped, Manual Validation complete (Harold). Plus 2 same-sprint testing-feedback follow-ups: "Scan Again" now triggers Live Scan directly; a live-production investigation during manual validation was root-caused to the PRODUCTION background-scan job's own independent 15-minute cycle correctly deleting a rule-matched message on the real mailbox -- not an app defect. Retro: all 14 categories Very Good, 1 improvement applied (Tooling-Capability Pre-Flight extended to manual-validation build/environment dependencies, `docs/SPRINT_PLANNING.md`). F143/F144's F142 dependency is now satisfied (both remain HOLD pending future scope selection). New backlog item **F150** (Android builds fail outright, `google-services.json`/`applicationId` mismatch) targeted for Sprint 58. Known outstanding gap (unrelated, carried from Sprint 56): the 0.6.2.0 build used a local, unpushed develop->main merge for build purposes; Harold still needs to do the real merge/PR -- see `.claude/sprint_status.json` `store_release` block.)
 
 ## How to Maintain This Document
 
@@ -121,12 +121,25 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 54 | docs/sprints/SPRINT_54_RETROSPECTIVE.md | [OK] Complete | Aug 3-10, 2026 (PR #298/#303) |
 | 55 | docs/sprints/SPRINT_55_RETROSPECTIVE.md | [OK] Complete | Aug 9-10, 2026 (PR #304; 0.6.0.0 LIVE Aug 10) |
 | 56 | docs/sprints/SPRINT_56_RETROSPECTIVE.md | [OK] Complete | Aug 12-13, 2026 (PR #310) |
+| 57 | docs/sprints/SPRINT_57_RETROSPECTIVE.md | [OK] Complete | Aug 13-14, 2026 (PR #314) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
 ---
 
 ## Last Completed Sprint
+
+**Sprint 57** (2026-08-13 -- 2026-08-14; PR #314 -> develop)
+- **Type**: Android navigation model + a live-production bug fix, expanded mid-sprint. 2/2 tasks complete, plus 2 same-sprint testing-feedback follow-ups.
+- **F142**: Android navigation now shares desktop's `NoRuleReviewScreen`-as-default pattern instead of a bottom-nav shell with 2 dead-end placeholder tabs ("Rules"/"Settings"). `MainNavigationScreen`'s `Platform.isAndroid` branch removed entirely; both platforms render the same default-screen decision. The "Review No Rule Items" AppBar icon stays Windows-gated pending F143's touch-selection redesign (explicit decision, not silent default). New source-text policy gate confirms the removed scaffolding does not silently reappear.
+- **F149**: safe-sender messages on AOL were oscillating between Inbox and Bulk/Spam -- AOL's own server-side rule independently demotes non-Outlook-safe-sender Inbox messages, and the app's safe-sender logic had no check for an existing duplicate in the target folder before re-promoting. Added a pre-move target-folder check (`filterAlreadyInTargetFolder`) reusing the existing `searchByMessageId` capability, alongside the existing F91 (Sprint 39) post-move dedup as a second layer. Root-caused via git history as an always-existing F91 design gap, not a regression.
+- **Blocked**: F142's Android-emulator manual validation could not run -- pre-existing F94 issue (`google-services.json`/`applicationId` mismatch) fails EVERY Android build outright, unrelated to F142. Fallback verification (shared-code-path argument + Windows build/launch proof) used instead. Split out as **F150**, targeted for Sprint 58.
+- **Testing-feedback follow-ups (same sprint)**: "Scan Again" on the Results screen now triggers Live Scan directly instead of returning to Manual Scan (required a second tap before). A live-production investigation into a "disappeared" no-rule email during manual validation was root-caused to the PRODUCTION background-scan job (running its own independent 15-minute schedule against the same real mailbox) correctly deleting a message that matched an existing rule -- not an app defect, confirmed via production background-scan logs after a controlled reproduction test.
+- **Verification**: suite **1,864 passed** / 29 skipped / 0 failed; analyze clean throughout.
+- **Retro**: all 14 categories rated Very Good; **1 improvement, applied** (Tooling-Capability Pre-Flight extended to cover manual-validation build/environment dependencies, `docs/SPRINT_PLANNING.md`).
+- **Docs**: SPRINT_57_PLAN.md / SPRINT_57_RETROSPECTIVE.md.
+
+_(Prior: **Sprint 56** below.)_
 
 **Sprint 56** (2026-08-12 -- 2026-08-13; PR #310 -> develop)
 - **Type**: Single-item production bug-fix sprint, full sprint rigor (card, plan, testing) per Harold's explicit instruction. 1/1 task complete.
@@ -219,7 +232,7 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 
 ### Core App Quality
 
-_(F148 shipped Sprint 56 -- see `docs/sprints/SPRINT_56_PLAN.md` and CHANGELOG.md 2026-08-13. F145/F146/F147 all shipped Sprint 55 -- see `docs/sprints/SPRINT_55_PLAN.md`, CHANGELOG.md 2026-08-10, and `docs/WINWRIGHT_SELECTORS.md`'s new F145 entry (WinWright false-failure finding + the real HelpScreen scroll-timing bug it led to). F145 also produced `integration_test/help_deep_link_test.dart`, the durable regression suite for all 22 HelpSection values.)_
+_(F149 shipped Sprint 57 -- see `docs/sprints/SPRINT_57_PLAN.md` and CHANGELOG.md 2026-08-14. Root-caused as an always-existing gap in F91's (Sprint 39) design, not a regression: F91 only reconciled the SOURCE folder after a safe-sender move; F149 added a symmetric pre-move check against the TARGET folder using the existing `searchByMessageId` capability. F148 shipped Sprint 56 -- see `docs/sprints/SPRINT_56_PLAN.md` and CHANGELOG.md 2026-08-13. F145/F146/F147 all shipped Sprint 55 -- see `docs/sprints/SPRINT_55_PLAN.md`, CHANGELOG.md 2026-08-10, and `docs/WINWRIGHT_SELECTORS.md`'s new F145 entry (WinWright false-failure finding + the real HelpScreen scroll-timing bug it led to). F145 also produced `integration_test/help_deep_link_test.dart`, the durable regression suite for all 22 HelpSection values.)_
 
 **F138. Decide: should the 5 rule-editing screens gain account context? -- [CLOSED 2026-08-03, Harold: not needed]**
 - Phase: Core App Quality / UX
@@ -377,29 +390,33 @@ _(Sprint 51-52 detail sections pruned per Maintenance Rule 2 -- all shipped/reso
 > - **BlueStacks (documented alternative, if needed)**: free tier, ships with Google Play pre-baked (nothing to flash). Built on a gaming-oriented Android image, not a clean Google reference build -- higher risk of diverging from real-device behavior on OAuth redirects or background-task timing; known Flutter hardware-rendering compatibility issue (flutter/flutter#19711) may need a software-rendering fallback. Has a native multi-instance manager that could double for F94 side-by-side flavor testing if BlueStacks is ever adopted.
 > - Not evaluated as primary candidates: Windows Subsystem for Android (discontinued), gaming-only emulators with no credible dev/testing workflow.
 
-**F142. Android navigation model: adopt desktop's shared AppBar-icon + session-account pattern, replacing the bottom-nav placeholder shell (~time-boxed, no-history) Priority HOLD**
-- Phase: Android / Google Play Store Readiness
-- Platform: Android
-- **Finding** (F141 deep dive): `main_navigation_screen.dart`'s bottom-nav shell has 2 of 3 tabs as non-functional `_PlaceholderScreen`s ("Manage rules from the Account Details screen" / "Configure account settings from Account Details screen") -- this predates and diverges from the Sprint 51/52 desktop navigation overhaul (`SelectedAccountProvider` session-scoped account context, `StandardAppBarActions` canonical icon order).
-- **Direction (clarified 2026-08-03)**: Windows' current architecture takes precedence -- the app was built Android-first for early MVP speed, then switched to the Windows Store App style UI/architecture once that became the priority, and Windows is now the mature, actively-maintained side. `MainNavigationScreen`'s bottom-nav shell is old Android-first scaffolding that should be REMOVED, not preserved or adapted -- Android should adopt the SAME session-scoped account model and AppBar-icon navigation desktop now uses. A bottom nav bar is not a platform constraint Android needs to work around (AppBar icons work identically on touch), so no divergence is warranted here.
-- Depends on: none to scope; implementation should sequence before F143 (No-Rule review needs the same navigation shell to attach to).
-- Source: Sprint 54 F141 deep dive, 2026-08-03.
+_(F142 shipped Sprint 57 -- see `docs/sprints/SPRINT_57_PLAN.md` and CHANGELOG.md 2026-08-14. `MainNavigationScreen`'s `Platform.isAndroid` bottom-nav branch removed entirely; both platforms now share the same default-screen decision, `appDefaultScreenFor`, formerly `_DesktopDefaultScreen`/`desktopDefaultScreenFor`. Manual on-device Android validation was blocked by the pre-existing F94/F150 build issue -- see F150 below.)_
 
-**F143. Android entry point + touch-adapted selection for No-Rule Review screen (~time-boxed, no-history) Priority HOLD**
+**F143. Android entry point + touch-adapted selection for No-Rule Review screen (~time-boxed, no-history) Priority HOLD (F142 dependency satisfied Sprint 57)**
 - Phase: Android / Google Play Store Readiness
 - Platform: Android
-- **Finding** (F141 deep dive): `NoRuleReviewScreen` (F39/F135) -- the desktop app's DEFAULT screen when accounts exist -- has ZERO Android entry point. `StandardAppBarActions` gates its AppBar icon to `Platform.isWindows`; the Android nav branch never reaches `_DesktopDefaultScreen`.
-- **Direction**: Android's default screen should be the SAME `NoRuleReviewScreen`, reached the same way, once F142 lands. The one genuine platform-driven adaptation needed is the screen's multi-item SELECTION mechanism specifically -- `_handleItemTap` reads `isControlPressed`/`isShiftPressed`, and `onSecondaryTapDown` opens a right-click menu, neither of which has a touch equivalent (a real "cannot," not a preference). Redesign to long-press-to-select + contextual action bar (the bulk-action `PopupMenuButton` already works fine by tap and needs no change).
-- Depends on: F142 (needs the shared navigation shell to attach an entry point to).
-- Source: Sprint 54 F141 deep dive, 2026-08-03.
+- **Finding** (F141 deep dive): `NoRuleReviewScreen` (F39/F135) -- the desktop app's DEFAULT screen when accounts exist -- has ZERO Android entry point. `StandardAppBarActions` gates its AppBar icon to `Platform.isWindows`; prior to F142 (Sprint 57), the Android nav branch never reached the shared default-screen decision at all. **F142 now routes Android through the SAME `appDefaultScreenFor` decision desktop uses, so Android reaches `NoRuleReviewScreen` as its default screen when accounts exist** -- the remaining gap this item covers is narrower than originally scoped: the AppBar icon deep-link still stays Windows-gated (F142's own explicit R-3 decision, since this item's touch-selection redesign has not landed yet), and the screen's multi-item selection mechanism itself needs the touch redesign below.
+- **Direction**: Android's default screen is now the SAME `NoRuleReviewScreen`, reached the same way (F142 landed Sprint 57). The one genuine platform-driven adaptation still needed is the screen's multi-item SELECTION mechanism specifically -- `_handleItemTap` reads `isControlPressed`/`isShiftPressed`, and `onSecondaryTapDown` opens a right-click menu, neither of which has a touch equivalent (a real "cannot," not a preference). Redesign to long-press-to-select + contextual action bar (the bulk-action `PopupMenuButton` already works fine by tap and needs no change).
+- Depends on: none remaining -- F142's navigation shell landed Sprint 57. Note: on-device Android verification of this item will hit the same F150 build blocker until that is resolved.
+- Source: Sprint 54 F141 deep dive, 2026-08-03; F142 dependency satisfied Sprint 57.
 
 **F144. Re-evaluate Android background scanning against the Windows Task Scheduler pattern (WorkManager as the only genuine platform substitution) + add POST_NOTIFICATIONS runtime request (~time-boxed, no-history) Priority HOLD**
 - Phase: Android / Google Play Store Readiness
 - Platform: Android
 - **Finding** (F141 deep dive): `BackgroundScanManager`/`BackgroundScanService` (a `workmanager`-based scheduler, pre-dating the current architecture) exist in source but have ZERO call sites anywhere in `lib/` -- entirely unwired since Windows' `WindowsTaskSchedulerService`-based path became the maintained, actively-developed background-scan architecture (per-account scheduling, ADR-0039/0040, F98). Separately, no `POST_NOTIFICATIONS` runtime permission request exists anywhere (Android 13+/API 33+ requires this at runtime in addition to the manifest declaration, which IS auto-merged by dependent plugins) -- without it, notifications would silently never show.
 - **Direction (clarified 2026-08-03)**: Windows' architecture takes precedence, not "whichever platform has existing code." Evaluate whether the OLD `BackgroundScanManager`/`BackgroundScanService` should be REMOVED and replaced with an Android background-scan implementation that mirrors the CURRENT Windows design (per-account scheduling model, settings/UI wiring pattern, notification approach) as closely as Android's platform allows -- substituting `workmanager`/`AlarmManager` only where WorkManager genuinely IS the Android equivalent of Windows Task Scheduler (a real platform constraint), not preserving the old code's own design decisions where they predate and diverge from the current architecture. Also add the missing `POST_NOTIFICATIONS` runtime request.
-- Depends on: F142 (needs a Settings surface to wire the enable/disable toggle to).
-- Source: Sprint 54 F141 deep dive, 2026-08-03.
+- Depends on: none remaining -- F142's navigation/Settings surface landed Sprint 57.
+- Source: Sprint 54 F141 deep dive, 2026-08-03; F142 dependency satisfied Sprint 57.
+
+**F150. Android debug builds fail outright -- google-services.json/applicationId mismatch blocks ALL Android work, not just OAuth (~time-boxed, no-history) Priority 10 (Issue #315)**
+- Phase: Android / Google Play Store Readiness
+- Platform: Android
+- **Confirmed Sprint 57 (2026-08-14)**: attempting a real Android debug build (`build-with-secrets.ps1 -BuildType debug -InstallToEmulator`, for F142's manual validation) fails outright with `BUILD FAILED` at `:app:processDebugGoogleServices`: `No matching client found for package name 'com.myemailspamfilter' in google-services.json`. This is the SAME root cause F94 already documented as a "pre-existing investigation item" (`google-services.json`'s registered `applicationId` is `com.example.spamfiltermobile`, not `com.myemailspamfilter`) -- but this is the first time the actual build was attempted and the severity confirmed: it is not "may explain intermittent Gmail OAuth," it is a hard, unconditional build failure. The `com.google.gms.google-services` Gradle plugin is applied unconditionally in `build.gradle.kts`, so this blocks EVERY Android debug/release build, regardless of what feature is being tested -- not just OAuth-touching work.
+- **Impact this sprint**: F142 (Android navigation model) could not complete its manual on-device validation step because no Android build could be produced at all. Fallback verification (shared-code-path argument against the proven Windows build) was used instead -- see `docs/sprints/SPRINT_57_PLAN.md` Task 1 completion notes.
+- **Fix**: register the app's real `applicationId` (`com.myemailspamfilter`) in Firebase Console and download a fresh, matching `google-services.json`. This is external work (Firebase Console access), same prerequisite F94 already lists (items 1-4 there cover the `.dev`/`.prod` flavor variants specifically; this item is the simpler baseline case -- get ONE working `google-services.json` for the current single, un-flavored `applicationId` before adding flavor complexity on top).
+- **Relationship to F94**: F94 (below) is the LARGER "add dev/prod/store flavors" scope, which explicitly lists this exact mismatch as a prerequisite to resolve first. F150 is that prerequisite, split out as its own priority-10 item because it now blocks ALL Android work (confirmed this sprint), not just flavor-specific work -- resolving F150 does not require deciding on or building out F94's flavor architecture.
+- Depends on: none to scope; external prerequisite is Firebase Console access (Harold-only).
+- Source: Sprint 57, F142 manual validation attempt, 2026-08-14.
 
 **F94. Android dev/prod/store flavors (~6-8h) Priority HOLD (Issue #248) -- RENUMBERED from "F52 Phase 2" + MOVED TO HOLD (Sprint 39 Backlog Refinement, 2026-05-25)**
 - Phase: Build and Release Infrastructure / Android Google Play Store Readiness
