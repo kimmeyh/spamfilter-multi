@@ -6,11 +6,11 @@
 
   "current_sprint": {
     "number": 58,
-    "branch": null,
+    "branch": "feature/20260814_Sprint_58",
     "pr_number": null,
     "pr_url": null,
-    "start_date": null,
-    "status": "Phase 7.7 / awaiting merge. NOT YET STARTED for real work -- Sprint 57 (F142 + F149) is fully complete and PR #314 is Ready for Review, but still unmerged; still operating on feature/20260813_Sprint_57 (Claude never merges, this is Harold-only). GitHub Copilot review on PR #314 completed 2026-08-14: all 6 findings fixed (commit 3a83a16), all 3 threads replied-to and resolved, summary comment posted. Currently WAITING on Harold's review/merge -- this is not a sprint-execution stopping point, it is the natural end of Phase 7.7. Phase 6.6 carry-forward (branch creation from feature/20260813_Sprint_57 + Phase 3.3.1 cards/draft PR) happens immediately on PR #314 merge notification, before touching any task file. Backlog Refinement is the next action after that -- F150 (Android google-services.json build blocker) is the clear next candidate; F143/F144 (Android track, dependency on F142 now satisfied) remain available HOLD candidates for a future Android-focused sprint.",
+    "start_date": "2026-08-14",
+    "status": "Phase 6.6 carry-forward complete (branch created from feature/20260813_Sprint_57, pushed). Post-Merge Cleanup complete: PR #314 confirmed MERGED (commit 43d155a on develop); Harold also completed the long-outstanding real develop->main merge via PR #316 (main and develop now fully in sync, resolving the F148/0.6.2.0 known-gap). Issues #313 (F142) and #312 (F149) manually closed (GitFlow does not auto-close on feature->develop merge). #315 (F150) remains open, targeted for this sprint. Next action: Backlog Refinement per docs/BACKLOG_REFINEMENT.md, then prep the next Store release per docs/STORE_RELEASE_PROCESS.md per Harold's standing request.",
     "plan_approved": false,
     "plan_approval_date": null,
     "blanket_execution_approved": false,
@@ -23,8 +23,8 @@
     "branch": "feature/20260813_Sprint_57",
     "pr_number": 314,
     "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/314",
-    "merged_at": null,
-    "merge_note": "PR #314 marked Ready for Review 2026-08-14 at end of Phase 7.7. NOT YET MERGED -- Harold reviews and merges when ready (Claude never merges).",
+    "merged_at": "2026-08-14T15:03:15Z",
+    "merge_note": "PR #314 MERGED 2026-08-14T15:03:15Z (commit 43d155a on develop).",
     "status": "complete",
     "deliverables": ["F142: Android navigation model now shares desktop's NoRuleReviewScreen-as-default pattern; MainNavigationScreen's Platform.isAndroid branch removed entirely (renamed _DesktopDefaultScreen/desktopDefaultScreenFor -> _AppDefaultScreen/appDefaultScreenFor, shared by both platforms). No-Rule-Review AppBar icon stays Windows-gated pending F143. New source-text policy gate. Manual Android-emulator validation BLOCKED by pre-existing F94 build issue (split out as F150); fallback verification (shared-code-path argument + Windows build/launch proof) used instead.", "F149: safe-sender messages no longer re-promoted to Inbox when already present/duplicated there -- added filterAlreadyInTargetFolder() pre-move check reusing existing searchByMessageId, alongside F91's (Sprint 39) unchanged post-move dedup as a second layer. Fails open on search errors. Root-caused via git history as an always-existing F91 design gap, not a regression.", "Testing-feedback follow-ups (same sprint): 'Scan Again' now triggers Live Scan directly (extracted startRealScan() as a shared top-level function). Version bump corrected to 0.7.0 (MINOR, per semver policy) instead of the requested 0.6.3, since [Unreleased] contained a feat entry.", "Live-production investigation (Manual Validation): a 'disappeared' no-rule email was root-caused to the PRODUCTION background-scan job's own independent 15-minute cycle correctly deleting a rule-matched message on the real mailbox during dev-side testing -- not an app defect. Confirmed via production background-scan logs after a controlled reproduction test that did NOT recur (supporting the timing-coincidence explanation).", "Retrospective: all 14 categories Very Good, 1 improvement applied (Tooling-Capability Pre-Flight extended to manual-validation build/environment dependencies, docs/SPRINT_PLANNING.md)."],
     "verification": "flutter analyze clean; full suite 1,864 passed / 29 skipped / 0 failed. F149: 6 new mutation-verified tests. F142: widget test + new policy gate, both mutation-verified; Windows desktop build+launch verified twice (once pre-manual-validation, once with the Scan Again fix). Manual Validation complete (Harold) -- Scan Again fix confirmed, production-vs-dev scan discrepancy fully explained.",
@@ -32,7 +32,7 @@
   },
 
   "github_issues": [],
-  "_github_issues_note": "Issues #313 (F142) and #312 (F149) will close on PR #314's merge (Closes references in the PR body); remain OPEN on GitHub until then per this repo's GitFlow (feature->develop merges do not auto-close). Verify + close by hand during Post-Merge Cleanup if not auto-closed, same as every prior sprint. 311 is Harold's own tracking issue for the still-pending real develop->main merge (carried from Sprint 56) -- not a sprint card, not closed by this PR. 315 (F150) remains open, targeted for Sprint 58.",
+  "_github_issues_note": "Issues #313 (F142) and #312 (F149) manually closed 2026-08-14 during Sprint 58 Post-Merge Cleanup (GitFlow does not auto-close on feature->develop merge). #311 (Harold's develop->main tracking issue) is MERGED -- PR #316 completed the real merge, resolving the F148/0.6.2.0 known gap. #315 (F150) remains open, targeted for Sprint 58.",
 
   "test_metrics": {
     "tests_passing": 1864,

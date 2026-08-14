@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-08-14 (Sprint 57 COMPLETE: F142 (Android navigation model) and F149 (safe-sender AOL Inbox/Bulk oscillation fix) both shipped, Manual Validation complete (Harold). Plus 2 same-sprint testing-feedback follow-ups: "Scan Again" now triggers Live Scan directly; a live-production investigation during manual validation was root-caused to the PRODUCTION background-scan job's own independent 15-minute cycle correctly deleting a rule-matched message on the real mailbox -- not an app defect. Retro: all 14 categories Very Good, 1 improvement applied (Tooling-Capability Pre-Flight extended to manual-validation build/environment dependencies, `docs/SPRINT_PLANNING.md`). F143/F144's F142 dependency is now satisfied (both remain HOLD pending future scope selection). New backlog item **F150** (Android builds fail outright, `google-services.json`/`applicationId` mismatch) targeted for Sprint 58. Known outstanding gap (unrelated, carried from Sprint 56): the 0.6.2.0 build used a local, unpushed develop->main merge for build purposes; Harold still needs to do the real merge/PR -- see `.claude/sprint_status.json` `store_release` block.)
+**Last Updated**: 2026-08-14 (Sprint 57 MERGED to develop (PR #314) and main (PR #316, Harold) -- develop and main now fully in sync, resolving the 0.6.2.0/F148 known gap from Sprint 56. F142 (Android navigation model) and F149 (safe-sender AOL Inbox/Bulk oscillation fix) both shipped, Manual Validation complete (Harold). Plus 2 same-sprint testing-feedback follow-ups: "Scan Again" now triggers Live Scan directly; a live-production investigation during manual validation was root-caused to the PRODUCTION background-scan job's own independent 15-minute cycle correctly deleting a rule-matched message on the real mailbox -- not an app defect. GitHub Copilot review on PR #314: 6 findings, all fixed. Retro: all 14 categories Very Good, 1 improvement applied (Tooling-Capability Pre-Flight extended to manual-validation build/environment dependencies, `docs/SPRINT_PLANNING.md`). F143/F144's F142 dependency is now satisfied (both remain HOLD pending future scope selection). New backlog item **F150** (Android builds fail outright, `google-services.json`/`applicationId` mismatch) targeted for Sprint 58. Sprint 58 branch created (`feature/20260814_Sprint_58`); Backlog Refinement in progress.)
 
 ## How to Maintain This Document
 
@@ -121,7 +121,7 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 54 | docs/sprints/SPRINT_54_RETROSPECTIVE.md | [OK] Complete | Aug 3-10, 2026 (PR #298/#303) |
 | 55 | docs/sprints/SPRINT_55_RETROSPECTIVE.md | [OK] Complete | Aug 9-10, 2026 (PR #304; 0.6.0.0 LIVE Aug 10) |
 | 56 | docs/sprints/SPRINT_56_RETROSPECTIVE.md | [OK] Complete | Aug 12-13, 2026 (PR #310) |
-| 57 | docs/sprints/SPRINT_57_RETROSPECTIVE.md | [OK] Complete | Aug 13-14, 2026 (PR #314) |
+| 57 | docs/sprints/SPRINT_57_RETROSPECTIVE.md | [OK] Complete | Aug 13-14, 2026 (PR #314 -> develop, PR #316 -> main) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
