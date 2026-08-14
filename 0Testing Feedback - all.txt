@@ -8,6 +8,18 @@ Sprint 5n Manual Validation Feedback
 
 
 ---------------------------------------------------------------------------------------------------------
+Sprint 58 Manual Validation Feedback 
+
+
+---------------------------------------------------------------------------------------------------------
+Sprint 57 Manual Validation Feedback 
+- current production version is 0.6.2 and this testing develop version is 0.6.2.  Need to bump the current develop version
+  to 0.6.3
+- Can you update the "Scan Again" button at the bottom to start "Live Scan" again (currently goes back to the Manual Scan
+  screen where the user then needs to click "Live Scan" a second time - this should now just trigger the "Live Scan" without returning to the
+  previous screen) [Image #76]
+
+---------------------------------------------------------------------------------------------------------
 Sprint 56 Manual Validation Feedback 
 
 

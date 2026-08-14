@@ -365,7 +365,15 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware
           icon: const Icon(Icons.play_arrow),
           label: const Text('Start Live Scan'),
           onPressed: canStartScan
-              ? () => _startRealScan(context, scanProvider, ruleProvider)
+              ? () => startRealScan(
+                    context: context,
+                    scanProvider: scanProvider,
+                    ruleProvider: ruleProvider,
+                    platformId: widget.platformId,
+                    platformDisplayName: widget.platformDisplayName,
+                    accountId: widget.accountId,
+                    accountEmail: widget.accountEmail,
+                  )
               : null,
         ),
         const SizedBox(height: 12),
@@ -456,127 +464,6 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware
     );
   }
 
-  /// [UPDATED] Testing feedback: Removed Scan Options dialog - uses Settings directly.
-  /// Start a real IMAP scan using Settings > Manual > Scan Range
-  Future<void> _startRealScan(
-    BuildContext context,
-    EmailScanProvider scanProvider,
-    RuleSetProvider ruleProvider,
-  ) async {
-    // Load scan configuration directly from Settings (no dialog popup)
-    final settingsStore = SettingsStore();
-    final daysBack = await settingsStore.getEffectiveDaysBack(
-      widget.accountId,
-      isBackground: false,
-    );
-
-    // Load scan mode from account settings
-    final scanMode = await settingsStore.getAccountManualScanMode(widget.accountId) ?? ScanMode.readOnly;
-    scanProvider.initializeScanMode(mode: scanMode);
-
-    final logger = Logger();
-    logger.i('[SCAN_SCREEN] accountId=${widget.accountId}, platformId=${widget.platformId}');
-    logger.i('[SCAN_SCREEN] Loaded settings: scanMode=$scanMode, daysBack=$daysBack');
-
-    // Sprint 38 F86 (Issue #254): if the user added/edited a rule or safe
-    // sender right before tapping Start Scan and the rule set is still
-    // loading from disk, show a brief "Applying rule(s)..." snackbar and
-    // await readiness BEFORE starting the scan. The opportunistic-async
-    // mid-scan path handles changes made DURING a scan; this check handles
-    // the narrow window between save and re-scan trigger.
-    if (ruleProvider.isLoading && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Applying new rule(s) before scan starts...'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      // Poll briefly for rule-set readiness (max ~2s). The provider's
-      // isLoading flag transitions to false once loadRules() completes.
-      // If the deadline expires while still loading (e.g., slow disk + very
-      // large rule set), surface a warning rather than silently starting
-      // with a stale evaluator -- the user can cancel and retry.
-      final deadline = DateTime.now().add(const Duration(seconds: 2));
-      while (ruleProvider.isLoading && DateTime.now().isBefore(deadline)) {
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-      }
-      if (ruleProvider.isLoading) {
-        logger.w('[SCAN_SCREEN] F86: rule-set still loading after 2s deadline; scan will start with previously-loaded rules');
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('New rules still loading -- scan will use previously-loaded rules. Re-scan when ready to apply the new rules.'),
-              duration: Duration(seconds: 4),
-            ),
-          );
-        }
-      } else {
-        logger.i('[SCAN_SCREEN] F86: rule-set ready (isLoading=false)');
-      }
-    }
-
-    // Immediately update UI to show scan is starting (no database record -
-    // the EmailScanner.executeScan() will create the real persisted record)
-    scanProvider.startScan(totalEmails: 0, persist: false);
-
-    // [NEW] SPRINT 12: Navigate to Results immediately after starting scan
-    // User feedback: "Start Scan should immediately go to View Results page"
-    // F55 (Sprint 33, v3): push (not pushReplacement) -- back from Results
-    // must return to Manual Scan. Staleness fixed by didPopNext reset below.
-    if (context.mounted) {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => ResultsDisplayScreen(
-            platformId: widget.platformId,
-            platformDisplayName: widget.platformDisplayName,
-            accountId: widget.accountId,
-            accountEmail: widget.accountEmail,
-          ),
-        ),
-      );
-    }
-
-    try {
-      // Create scanner
-      final scanner = EmailScanner(
-        platformId: widget.platformId,
-        accountId: widget.accountId,
-        ruleSetProvider: ruleProvider,
-        scanProvider: scanProvider,
-      );
-
-      // [FIXED] ISSUE #123+#124: Use saved default folders from Manual Scan tab.
-      // F113 (Sprint 47) + Copilot review: resolve via getEffectiveFolders so a
-      // saved per-account override wins, but a new account with no override gets
-      // its PROVIDER-specific defaults (AOL Bulk / Gmail Spam, ...) rather than
-      // INBOX-only. getEffectiveFolders never returns empty, so no separate
-      // INBOX fallback is needed here.
-      final scanLogger = Logger();
-      final foldersToScan =
-          await settingsStore.getEffectiveFolders(widget.accountId);
-      scanLogger.i('[FOLDERS] Effective scan folders (override or provider '
-          'default): $foldersToScan');
-
-      // Store selected folders in provider so results_display_screen can show them
-      scanProvider.setSelectedFolders(foldersToScan, accountId: widget.accountId);
-
-      scanLogger.i('[SCAN_SCREEN] Starting scan: folders=$foldersToScan, daysBack=$daysBack');
-
-      // Start scan in background (will call startScan again with real count)
-      await scanner.scanInbox(daysBack: daysBack, folderNames: foldersToScan);
-      scanLogger.i('[SCAN_SCREEN] scanInbox() completed successfully');
-    } catch (e, st) {
-      logger.e('[SCAN_SCREEN] SCAN EXCEPTION: $e\n$st');
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Scan failed: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
 
   /// [UPDATED] ISSUE #125: Use MockEmailProvider with 50+ sample emails
   Future<void> _startDemoScan(EmailScanProvider scanProvider) async {
@@ -653,6 +540,153 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware
         return const Icon(Icons.mark_email_read, color: Colors.blueGrey);
       case EmailActionType.none:
         return const Icon(Icons.mail_outline, color: Colors.grey);
+    }
+  }
+}
+
+/// Starts a real IMAP Live Scan using Settings > Manual > Scan Range
+/// configuration, then navigates to [ResultsDisplayScreen].
+///
+/// Extracted from [_ScanProgressScreenState._startRealScan] (testing
+/// feedback, Sprint 57) so [ResultsDisplayScreen]'s "Scan Again" button can
+/// trigger a fresh Live Scan directly, without a round trip back through
+/// [ScanProgressScreen] -- previously "Scan Again" only replaced the current
+/// screen with [ScanProgressScreen], landing the user back on "Ready to
+/// Scan" where they had to tap "Start Live Scan" a second time.
+///
+/// [useReplacement] controls how the Results screen is navigated to:
+///   - `false` (default, used by [ScanProgressScreen]'s "Start Live Scan"):
+///     `Navigator.push`, matching the existing F55 (Sprint 33) contract --
+///     back from Results must return to the "Ready to Scan" screen.
+///   - `true` (used by [ResultsDisplayScreen]'s "Scan Again"): pushes a
+///     REPLACEMENT Results screen instead, so repeated "Scan Again" taps do
+///     not stack an ever-growing chain of Results screens on the
+///     Navigator -- each new scan's Results replaces the previous one, and
+///     "Back" still returns to whatever was before Results in either case.
+Future<void> startRealScan({
+  required BuildContext context,
+  required EmailScanProvider scanProvider,
+  required RuleSetProvider ruleProvider,
+  required String platformId,
+  required String platformDisplayName,
+  required String accountId,
+  required String accountEmail,
+  bool useReplacement = false,
+}) async {
+  // Load scan configuration directly from Settings (no dialog popup)
+  final settingsStore = SettingsStore();
+  final daysBack = await settingsStore.getEffectiveDaysBack(
+    accountId,
+    isBackground: false,
+  );
+
+  // Load scan mode from account settings
+  final scanMode = await settingsStore.getAccountManualScanMode(accountId) ?? ScanMode.readOnly;
+  scanProvider.initializeScanMode(mode: scanMode);
+
+  final logger = Logger();
+  logger.i('[SCAN_SCREEN] accountId=$accountId, platformId=$platformId');
+  logger.i('[SCAN_SCREEN] Loaded settings: scanMode=$scanMode, daysBack=$daysBack');
+
+  // Sprint 38 F86 (Issue #254): if the user added/edited a rule or safe
+  // sender right before tapping Start Scan and the rule set is still
+  // loading from disk, show a brief "Applying rule(s)..." snackbar and
+  // await readiness BEFORE starting the scan. The opportunistic-async
+  // mid-scan path handles changes made DURING a scan; this check handles
+  // the narrow window between save and re-scan trigger.
+  if (ruleProvider.isLoading && context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Applying new rule(s) before scan starts...'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+    // Poll briefly for rule-set readiness (max ~2s). The provider's
+    // isLoading flag transitions to false once loadRules() completes.
+    // If the deadline expires while still loading (e.g., slow disk + very
+    // large rule set), surface a warning rather than silently starting
+    // with a stale evaluator -- the user can cancel and retry.
+    final deadline = DateTime.now().add(const Duration(seconds: 2));
+    while (ruleProvider.isLoading && DateTime.now().isBefore(deadline)) {
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+    }
+    if (ruleProvider.isLoading) {
+      logger.w('[SCAN_SCREEN] F86: rule-set still loading after 2s deadline; scan will start with previously-loaded rules');
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('New rules still loading -- scan will use previously-loaded rules. Re-scan when ready to apply the new rules.'),
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+    } else {
+      logger.i('[SCAN_SCREEN] F86: rule-set ready (isLoading=false)');
+    }
+  }
+
+  // Immediately update UI to show scan is starting (no database record -
+  // the EmailScanner.executeScan() will create the real persisted record)
+  scanProvider.startScan(totalEmails: 0, persist: false);
+
+  // [NEW] SPRINT 12: Navigate to Results immediately after starting scan
+  // User feedback: "Start Scan should immediately go to View Results page"
+  // F55 (Sprint 33, v3): push (not pushReplacement) -- back from Results
+  // must return to Manual Scan. Staleness fixed by didPopNext reset below.
+  if (context.mounted) {
+    final route = MaterialPageRoute(
+      builder: (_) => ResultsDisplayScreen(
+        platformId: platformId,
+        platformDisplayName: platformDisplayName,
+        accountId: accountId,
+        accountEmail: accountEmail,
+      ),
+    );
+    if (useReplacement) {
+      Navigator.of(context).pushReplacement(route);
+    } else {
+      Navigator.of(context).push(route);
+    }
+  }
+
+  try {
+    // Create scanner
+    final scanner = EmailScanner(
+      platformId: platformId,
+      accountId: accountId,
+      ruleSetProvider: ruleProvider,
+      scanProvider: scanProvider,
+    );
+
+    // [FIXED] ISSUE #123+#124: Use saved default folders from Manual Scan tab.
+    // F113 (Sprint 47) + Copilot review: resolve via getEffectiveFolders so a
+    // saved per-account override wins, but a new account with no override gets
+    // its PROVIDER-specific defaults (AOL Bulk / Gmail Spam, ...) rather than
+    // INBOX-only. getEffectiveFolders never returns empty, so no separate
+    // INBOX fallback is needed here.
+    final scanLogger = Logger();
+    final foldersToScan =
+        await settingsStore.getEffectiveFolders(accountId);
+    scanLogger.i('[FOLDERS] Effective scan folders (override or provider '
+        'default): $foldersToScan');
+
+    // Store selected folders in provider so results_display_screen can show them
+    scanProvider.setSelectedFolders(foldersToScan, accountId: accountId);
+
+    scanLogger.i('[SCAN_SCREEN] Starting scan: folders=$foldersToScan, daysBack=$daysBack');
+
+    // Start scan in background (will call startScan again with real count)
+    await scanner.scanInbox(daysBack: daysBack, folderNames: foldersToScan);
+    scanLogger.i('[SCAN_SCREEN] scanInbox() completed successfully');
+  } catch (e, st) {
+    logger.e('[SCAN_SCREEN] SCAN EXCEPTION: $e\n$st');
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Scan failed: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 }
