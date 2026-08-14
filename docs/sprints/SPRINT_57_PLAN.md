@@ -1,0 +1,70 @@
+# Sprint 57 Plan
+
+**Branch**: `feature/20260813_Sprint_57`
+**Dates**: 2026-08-13 --
+**Scope defined by Harold** (2026-08-13): F142 ONLY -- adopt desktop's shared AppBar-icon + session-account navigation pattern for Android, replacing the non-functional bottom-nav placeholder shell. F143 and F144 are explicitly tagged for the NEXT sprint, not this one -- both depend on F142 landing first.
+
+**Context**: Sprint 54's F141 Android/Google Play deep dive found that `MainNavigationScreen`'s bottom-nav shell has 2 of its 3 tabs as dead-end `_PlaceholderScreen`s ("Manage rules from the Account Details screen" / "Configure account settings from Account Details screen") -- scaffolding that predates and diverges from the Sprint 51/52 desktop navigation overhaul (`SelectedAccountProvider` session-scoped account context, `StandardAppBarActions` canonical AppBar-icon order, F135's `NoRuleReviewScreen`-as-default pattern). Harold's governing direction (2026-08-03): Windows' current architecture takes precedence; Android should adopt the same pattern, not be preserved as-is or given a separate bespoke design.
+
+**Backlog refinement note**: this sprint's refinement also surfaced F149 (safe-sender Inbox/Bulk oscillation bug, Issue #312) as a strong candidate given it is an active live-production nuisance. Harold explicitly chose F142 as the sole scope for this sprint; F149 was not deferred by omission -- it remains in the backlog for a future sprint's consideration.
+
+---
+
+## Task 1 -- F142: Android navigation model -- adopt desktop's shared AppBar-icon + session-account pattern (Priority 10)
+
+**Value**: This enables Android reaching the same default screen (`NoRuleReviewScreen`, the app's core cross-account workflow) and the same session-scoped account UX desktop users already have. This prevents Android users from hitting 2 non-functional dead-end tabs, which currently makes the Android build feel broken/incomplete relative to desktop.
+
+**Requirements** (numbered, detailed):
+- R-1: Remove `MainNavigationScreen`'s `Platform.isAndroid` bottom-navigation branch (the `NavigationBar` + `_screens` list backing "Accounts" / "Rules" / "Settings" tabs, where "Rules" and "Settings" are `_PlaceholderScreen`s). Android should fall through to the SAME decision logic the desktop `else` branch already uses (`_DesktopDefaultScreen` -> `desktopDefaultScreenFor(hasAccounts:)` -> `NoRuleReviewScreen` when accounts exist, `AccountSelectionScreen` when they do not).
+- R-2: Because `desktopDefaultScreenFor()` (`main_navigation_screen.dart:154-164`) is a pure, `@visibleForTesting` function already independent of any platform check, R-1 should NOT require inventing new decision logic -- only removing the `if (Platform.isAndroid) { ... } else { ... }` branch structure so BOTH platforms take the path currently labeled `else`. Confirm during implementation whether the `_DesktopDefaultScreen`/`desktopDefaultScreenFor` naming should be updated to drop "Desktop" now that Android shares it, or left as-is with an updated doc comment -- Haiku/Sonnet judgment call, not a blocking decision.
+- R-3 (sequencing decision, must be resolved and recorded, not silently defaulted): `StandardAppBarActions.build()` gates the "Review No Rule Items" AppBar icon to `Platform.isWindows` (`standard_app_bar_actions.dart:139`), with the code comment explicitly noting "Windows-desktop scoped, matching the existing F112/F39 entry points." F143 (next sprint, not this one) is what adapts `NoRuleReviewScreen`'s multi-item SELECTION mechanism for touch (the screen currently reads `isControlPressed`/`isShiftPressed` and opens a right-click context menu, neither of which has a touch equivalent). Decide: (a) extend the icon to Android now, accepting that multi-select will not work correctly on touch until F143 lands, or (b) leave it Windows-gated and let Android reach `NoRuleReviewScreen` only via the R-1 default-screen path (view-only / single-tap actions still functional, just no working bulk-select). Recommendation: (b) -- avoid shipping a visibly broken selection interaction; R-1's default-screen routing already gets Android users to the screen without needing the AppBar icon. Surface this recommendation to Harold at Manual Validation if not already confirmed during planning approval.
+- R-4: Confirm no other code path assumes `MainNavigationScreen`'s Android branch exists (e.g., any test, deep link, or navigation helper hardcoding the old bottom-nav route). Grep `main_navigation_screen.dart` callers and `_screens`/`_destinations` references before removing.
+
+**Affected components / files**:
+- `mobile-app/lib/ui/screens/main_navigation_screen.dart` -- remove the `Platform.isAndroid` branch and its backing `_destinations`/`_screens`/`_onDestinationSelected`/`_PlaceholderScreen` (all now dead once the branch is removed); Android and desktop both render `_DesktopDefaultScreen()`.
+- `mobile-app/lib/ui/widgets/standard_app_bar_actions.dart:139` -- the `Platform.isWindows` gate on the "Review No Rule Items" icon; per R-3, likely left unchanged (recommendation is to keep it Windows-only this sprint), but the decision must be explicit in the plan completion notes either way.
+- `mobile-app/test/ui/screens/desktop_default_screen_test.dart` -- existing coverage exercises the (now-shared) default-screen decision logic on the host OS; per T-2 below, needs a companion Android-branch-specific case.
+
+**Dependencies / blockers**:
+- None to scope. F143 (touch-adapted No-Rule Review selection) and F144 (Android background scanning re-evaluation) both depend on this landing first -- explicitly tagged for Sprint 58, not bundled here.
+
+**Non-functional requirements**:
+- Platform: this is an Android-Flutter-layer change; no native Android code, no `build.gradle.kts`/manifest changes expected. Desktop (Windows) behavior must be provably unchanged (the desktop `else` branch's logic is being reused verbatim, not modified).
+- Account-scoping: `SelectedAccountProvider` is already registered app-wide (unconditional `ChangeNotifierProvider` in `main.dart:408-410`, not platform-gated) and already implements the lazy-picker session-scoped model this task needs -- confirmed during planning research, no changes needed to the provider itself.
+
+**Acceptance criteria** (measurable, traceable):
+- AC-1: Given an Android build with >=1 saved account, When the app launches, Then the Android device shows the SAME `NoRuleReviewScreen` the Windows desktop build shows as its default, reached via the same `_DesktopDefaultScreen`/`desktopDefaultScreenFor` decision path (not a separate Android-specific code path).
+- AC-2: Given an Android build with 0 saved accounts, When the app launches, Then the Android device shows `AccountSelectionScreen` (same as desktop's empty-account behavior).
+- AC-3: The `Platform.isAndroid` bottom-navigation branch, its `NavigationBar`/`_destinations`/`_screens` list, and the two `_PlaceholderScreen` instances are removed from `main_navigation_screen.dart` -- confirmed by their absence (grep clean) and by AC-1/AC-2 passing without them.
+- AC-4: The R-3 sequencing decision (extend the No-Rule-Review AppBar icon to Android now, or leave Windows-gated) is explicitly recorded in this plan's completion notes with the reasoning, not left as an unstated side effect of the code change.
+- AC-5: `flutter analyze` clean; full existing test suite passes unchanged (no desktop-behavior regression).
+
+**Tests to write** (one intent per AC; name pyramid level + target file):
+- T-1 (verifies AC-1, AC-2) -- TEST-WIDGET, extend `mobile-app/test/ui/screens/desktop_default_screen_test.dart`: the existing "WIRING: MainNavigationScreen..." test pumps the real screen and only exercises whatever `Platform.isX` is true on the test host (Windows for `flutter test`). Since `dart:io.Platform.isAndroid` cannot be overridden in a widget test without an injectable seam, and this codebase has no existing pattern for that (confirmed absent during planning research), the practical choice is to test `desktopDefaultScreenFor()` (the pure decision function, already `@visibleForTesting` and platform-independent) directly for both the has-accounts and no-accounts cases -- this proves the DECISION logic is correct and platform-agnostic, which is what R-1/R-2 actually change. A true device-level confirmation that Android literally reaches this code path is a MANUAL verification (T-3), not a unit/widget test, since faking `Platform.isAndroid` would require production-code changes out of scope for this task.
+- T-2 (verifies AC-3) -- TEST-STATIC (grep-based, matching this codebase's existing policy-gate pattern in `test/policy/`): assert `main_navigation_screen.dart` no longer contains `Platform.isAndroid`, `_PlaceholderScreen`, or `NavigationBar` -- a source-text gate proving the dead code was actually removed, not just unreachable. Pair with T-1's behavior test per the project's "source gates prove existence, not behavior" standing lesson.
+- T-3 (verifies AC-1, AC-2 end-to-end on real Android) -- MANUAL, per Harold's 2026-08-12 tooling decision (Android Studio Emulator, Google Play system image already installed at `C:\Android\android-sdk`): build and run on the emulator with both a populated and an empty account list, confirm the SAME default-screen behavior as the Windows desktop build. This is the Manual Validation step for this sprint, not optional.
+- T-4 (verifies AC-4) -- DOCS: record the R-3 decision and its reasoning in this plan's completion notes section (added at task completion).
+
+**Definition of Done**: default task-level DoD PLUS:
+- T-3's manual Android-emulator verification is actually performed and its result (pass/fail, with what was observed) recorded before this task is considered done -- this is genuinely new platform-branching logic with no existing test seam for direct automated coverage of the Android path, so the manual check is the only end-to-end proof available this sprint.
+- The R-3 sequencing decision is recorded explicitly, with reasoning, before Manual Validation begins (not deferred to retrospective).
+
+**Model**: Sonnet -- *why not Haiku*: this removes and restructures existing platform-branching UI code that other screens/tests implicitly depend on (R-4's "confirm no other code path assumes the old branch exists" is a cross-cutting concern, not a single-file mechanical change), and requires the R-3 sequencing judgment call against F143's not-yet-built scope -- beyond Haiku's heuristics for well-defined single-file work. Not escalated to Fable/Opus: the target pattern (`_DesktopDefaultScreen`) already exists and is proven in production; this is applying an established pattern to a second platform, not designing a new one.
+
+**Executed-by**: _(fill at completion)_
+
+**Step-types**: UI-NEW (adapting the shared default-screen pattern to a second platform counts as new integration work, not a move), SVC-EDIT (removing the dead branch), TEST-WIDGET (T-1), HOOK-adjacent (T-2's source-text gate, following the `test/policy/` pattern)
+
+**Est-Effort**: `[no-history]` -- no prior sample of "remove an Android-specific placeholder branch and adopt an existing desktop pattern" in `CODING_VELOCITY.md`'s Estimate Table. Time-boxed per the project's `[no-history]` convention rather than inventing a range. Rough expectation based on file scope (1 primary file edit, 1 test file extension, 1 new policy-gate test, no native code): likely in the same band as a UI-NEW item (30-40m Est-Effort per the table's F25/F35/F37 median) plus T-3's manual emulator round-trip (Est-Wall only, not Est-Effort -- emulator cold boot is ~22s per Harold's 2026-08-12 tooling decision, plus install/launch/verify time).
+
+_**Risk & rollback**_: Low-Medium. Risk: R-4's cross-cutting check (confirming nothing else references the old Android branch) could surface an unexpected dependency, expanding scope; mitigation is to grep BEFORE deleting, not after. Rollback: this is a subtractive change to one screen file plus a possible one-line revert in `standard_app_bar_actions.dart` if R-3 is later reconsidered -- `git revert` fully restores the placeholder bottom-nav shell if needed, though Harold's governing direction (Sprint 54) makes reverting to the old Android-first pattern an unlikely outcome regardless of this task's result.
+
+_**Decision-class interrupts**_: R-3 (whether to extend the No-Rule-Review AppBar icon to Android this sprint) is presented above with a recommendation (keep Windows-gated) but is NOT unilaterally decided -- confirm with Harold at plan approval or flag explicitly at Manual Validation if approval does not address it. This is not a Class-1/2/3 architecture/development-decision change in the CLAUDE.md sense (it is squarely within the already-approved F142 scope and Sprint 54's governing direction), but it is exactly the kind of "small design choice with a stated recommendation" the augmented card template exists to surface rather than bury in a commit.
+
+---
+
+## Sprint-Level Notes
+
+- **This is the sole sprint item.** F143 and F144 are explicitly deferred to the NEXT sprint per Harold's direct instruction (2026-08-13) -- both depend on F142 landing first, so this is not an arbitrary split but the natural dependency boundary already identified during backlog refinement.
+- **F149** (safe-sender Inbox/Bulk oscillation, Issue #312) was surfaced during this sprint's backlog refinement as a live-production bug with a strong root-cause lead (likely the same "AOL re-injection" mechanism F91/Sprint 39 was built to handle, but only reconciling the source folder, not the target). Harold explicitly chose F142 over F149 for this sprint's scope; F149 remains in the backlog for a future sprint's consideration, not lost.
+- **No architecture changes are pre-approved beyond what's scoped above.** If R-1's implementation surfaces a need to redesign navigation more broadly (e.g., affecting how deep links or notifications route into the app), that is out of scope for this task and gets surfaced as a new backlog candidate, not folded in.

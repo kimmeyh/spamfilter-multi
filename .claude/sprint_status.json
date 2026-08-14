@@ -1,21 +1,21 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-13T12:30:00Z",
+  "_last_updated": "2026-08-13T20:15:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
 
   "current_sprint": {
     "number": 57,
     "branch": "feature/20260813_Sprint_57",
-    "pr_number": null,
-    "pr_url": null,
+    "pr_number": 314,
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/314",
     "start_date": "2026-08-13",
-    "status": "Branch opened via Phase 6.6 carry-forward immediately on Sprint 56 merge notification. Post-Merge Cleanup for Sprint 56 COMPLETE (issue #309 closed by hand, verified gh issue list --label sprint --state open empty). NOT YET SCOPED -- Backlog Refinement is the next action per Harold's explicit instruction. Phase 3.3.1 (cards + draft PR) has NOT happened yet -- do this in the SAME turn as plan approval, before touching any task file (Phase 3.7.0 discipline).",
+    "status": "PLAN WRITTEN, AWAITING APPROVAL. Backlog Refinement presented (F142/F143/F144 Android track + newly-surfaced F149 safe-sender bug). Harold selected F142 as the sole sprint scope; F143/F144 explicitly tagged for next sprint. Issue #313 (F142) created and draft PR #314 created in the SAME turn as plan authoring (Phase 3.7.0 discipline). docs/sprints/SPRINT_57_PLAN.md written per the augmented card template -- includes an unresolved R-3 sequencing decision (extend the No-Rule-Review AppBar icon to Android now vs keep Windows-gated pending F143) with a stated recommendation (keep gated), surfaced for Harold's approval rather than silently decided. Presented for approval; execution has NOT started.",
     "plan_approved": false,
     "plan_approval_date": null,
     "blanket_execution_approved": false,
-    "scope": [],
-    "_scope_note": "Not yet scoped. Backlog Refinement in progress per Harold's 2026-08-13 instruction. Android-track candidates (F142/F143/F144) are the standing next-track items, deferred twice across Sprints 55/56."
+    "scope": ["F142"],
+    "_scope_note": "F142 only -- Android navigation model, adopt desktop's shared AppBar-icon + session-account pattern. F143 (touch-adapted No-Rule Review selection) and F144 (Android background scanning re-evaluation) explicitly deferred to next sprint, both depend on F142 landing first. F149 (safe-sender Inbox/Bulk oscillation, Issue #312) was also a candidate this refinement but Harold chose F142 over it -- F149 remains in the backlog, not lost."
   },
 
   "previous_sprint": {
@@ -31,8 +31,8 @@
     "_process_note": "Phase 6.6 carry-forward applied correctly again (Sprint 56 -> Sprint 57): branch created from the current feature branch immediately on merge notification, before any post-merge commits (carried forward 0Claudedev_prompts.txt). SPRINT_55_SUMMARY.md was missed during Sprint 56 planning (Phase 3.2.1 mandatory deliverable) -- created retroactively 2026-08-13 after the verify-closeout-complete hook caught the gap; verify SPRINT_56_SUMMARY.md is NOT missed the same way during Sprint 57 planning."
   },
 
-  "github_issues": [],
-  "_github_issues_note": "Issue #309 (F148) closed 2026-08-13 during Post-Merge Cleanup; no open sprint issues currently. Next sprint's issue(s) get created in the SAME turn as plan approval, before any task file is touched (Phase 3.7.0 discipline).",
+  "github_issues": [313],
+  "_github_issues_note": "313=F142. Created 2026-08-13 in the SAME turn as plan authoring, before any task file was touched -- Phase 3.7.0 discipline applied. 312=F149 (backlog item, not in this sprint's scope) also created this session. 311 is Harold's own tracking issue for the still-pending real develop->main merge -- not a sprint card.",
 
   "test_metrics": {
     "tests_passing": 1857,
