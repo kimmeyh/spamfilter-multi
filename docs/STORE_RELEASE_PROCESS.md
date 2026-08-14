@@ -251,11 +251,18 @@ git push origin main
 git checkout develop
 ```
 
-Then pull `main` into the prod worktree:
+**Before pulling into the prod worktree, discard its stale local-only leftovers.** Every release build leaves exactly 2 kinds of local-only, uncommitted change in the prod worktree by design (per Step 1's convention: the prod worktree's own `msix_version` bump is never committed there, and `flutter clean`/`flutter pub get` regenerate the 3 Windows plugin-registrant files with machine-local paths):
+- `mobile-app/pubspec.yaml` (stale `msix_version` from the LAST release build)
+- `mobile-app/windows/flutter/generated_plugin_registrant.cc` / `.h` / `generated_plugins.cmake`
+
+**Pre-approved standing guidance (Harold, 2026-08-14)**: discarding these specific files via `git checkout -- .` in the prod worktree, immediately before a `git pull origin main`, does NOT require asking first -- confirm first that `git status --short` in the prod worktree shows ONLY these known files (nothing else, no unexpected paths) and that `git log HEAD..origin/main` is non-empty (i.e. this is a real fast-forward, not a case where the worktree has diverged local commits that would be lost). If `git status --short` shows anything else, STOP and ask -- that is not the known-safe pattern and may be real uncommitted work.
 
 ```powershell
 cd D:\Data\Harold\github\spamfilter-multi-prod
+git status --short   # confirm ONLY the known files above -- if anything else appears, STOP and ask
 git fetch
+git log HEAD..origin/main --oneline   # confirm non-empty (a real fast-forward is expected)
+git checkout -- .
 git checkout main
 git pull origin main
 ```
