@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-08-13 (Sprint 56 COMPLETE + merged; Sprint 57 branch opened. 0.6.1.0 (Submission 12) certified and went live, then SUPERSEDED same day by 0.6.2.0 (Submission 13, F148 -- background-scan Store-update survival via a stable MSIX App Execution Alias) -- also certified and live 2026-08-13, a same-day turnaround. Known outstanding gap: the 0.6.2.0 build used a local, unpushed develop->main merge for build purposes; Harold still needs to do the real merge/PR so `main` on GitHub matches what shipped -- see `.claude/sprint_status.json` `store_release` block. Backlog Refinement presented for Sprint 57: Android/Google Play track (F142/F143/F144) is the entire active backlog, scope selection pending.)
+**Last Updated**: 2026-08-13 (0.6.2.0 (Submission 13, F148) certified and live -- same-day turnaround, Check C smoke-tested clean by Harold on the actual Store-installed app. F148 also validated live in production: both accounts' background-scan tasks confirmed self-healed to the new alias-based path and completed real end-to-end scans post-update. Known outstanding gap: the 0.6.2.0 build used a local, unpushed develop->main merge for build purposes; Harold still needs to do the real merge/PR so `main` on GitHub matches what shipped -- see `.claude/sprint_status.json` `store_release` block. New backlog item **F149** added (Harold, live production observation): safe-sender messages oscillating between Inbox and Bulk/Spam across scan cycles -- a suspected recurrence of a previously-believed-fixed bug, not yet root-caused. Sprint 57 Backlog Refinement candidates: Android/Google Play track (F142/F143/F144) plus new F149, scope selection pending.)
 
 ## How to Maintain This Document
 
@@ -220,6 +220,16 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 ### Core App Quality
 
 _(F148 shipped Sprint 56 -- see `docs/sprints/SPRINT_56_PLAN.md` and CHANGELOG.md 2026-08-13. F145/F146/F147 all shipped Sprint 55 -- see `docs/sprints/SPRINT_55_PLAN.md`, CHANGELOG.md 2026-08-10, and `docs/WINWRIGHT_SELECTORS.md`'s new F145 entry (WinWright false-failure finding + the real HelpScreen scroll-timing bug it led to). F145 also produced `integration_test/help_deep_link_test.dart`, the durable regression suite for all 22 HelpSection values.)_
+
+**F149. Safe-sender messages oscillating between Inbox and Bulk/Spam folder (recurrence) -- Priority 10 (Issue #312)**
+- Phase: Core App Quality / Bug Fix
+- Platform: All (reported on Windows Desktop, background scan)
+- **Symptom** (Harold, 2026-08-13): a message from a known safe sender gets moved to the Inbox (correct), then on a later scan gets cleared/moved to the Bulk/Spam folder, then moved back to the Inbox again -- repeating over multiple scan cycles. Observed as many duplicate messages from safe senders piling up in the Inbox.
+- **History**: Harold reports this same behavior occurred once before and was believed fixed; no matching closed issue or CHANGELOG entry was found by a git-history/docs search during backlog refinement, so either the fix was never fully durable, the description in prior work does not match this exact symptom, or this is a genuine regression. Needs investigation to confirm which.
+- **Not yet root-caused.** Candidate starting points for investigation (not confirmed): interaction between safe-sender matching and rule evaluation across successive background-scan cycles (`rule_conflict_resolver.dart` handles conflicts at rule/safe-sender CREATION time, not at scan-time move decisions, so likely a different code path); possible scan-mode or cursor state causing the same message to be re-evaluated repeatedly with an inconsistent verdict.
+- **Impact**: user-visible duplicate/confusing Inbox state; safe senders are supposed to always land in Inbox and stay there.
+- Depends on: none to scope; needs a fresh investigation, likely starting with reproducing against a real affected message and tracing its rule-evaluation history across scan cycles.
+- Source: Harold, 2026-08-13 (live production observation during F148 background-scan validation).
 
 **F138. Decide: should the 5 rule-editing screens gain account context? -- [CLOSED 2026-08-03, Harold: not needed]**
 - Phase: Core App Quality / UX
