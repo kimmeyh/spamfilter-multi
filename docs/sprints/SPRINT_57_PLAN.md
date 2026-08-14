@@ -2,11 +2,11 @@
 
 **Branch**: `feature/20260813_Sprint_57`
 **Dates**: 2026-08-13 --
-**Scope defined by Harold** (2026-08-13): F142 ONLY -- adopt desktop's shared AppBar-icon + session-account navigation pattern for Android, replacing the non-functional bottom-nav placeholder shell. F143 and F144 are explicitly tagged for the NEXT sprint, not this one -- both depend on F142 landing first.
+**Scope defined by Harold** (2026-08-13, expanded 2026-08-14): F142 (Android navigation model) AND F149 (safe-sender Inbox/Bulk oscillation bug). F143 and F144 are explicitly tagged for the NEXT sprint, not this one -- both depend on F142 landing first.
 
-**Context**: Sprint 54's F141 Android/Google Play deep dive found that `MainNavigationScreen`'s bottom-nav shell has 2 of its 3 tabs as dead-end `_PlaceholderScreen`s ("Manage rules from the Account Details screen" / "Configure account settings from Account Details screen") -- scaffolding that predates and diverges from the Sprint 51/52 desktop navigation overhaul (`SelectedAccountProvider` session-scoped account context, `StandardAppBarActions` canonical AppBar-icon order, F135's `NoRuleReviewScreen`-as-default pattern). Harold's governing direction (2026-08-03): Windows' current architecture takes precedence; Android should adopt the same pattern, not be preserved as-is or given a separate bespoke design.
+**Context (F142)**: Sprint 54's F141 Android/Google Play deep dive found that `MainNavigationScreen`'s bottom-nav shell has 2 of its 3 tabs as dead-end `_PlaceholderScreen`s ("Manage rules from the Account Details screen" / "Configure account settings from Account Details screen") -- scaffolding that predates and diverges from the Sprint 51/52 desktop navigation overhaul (`SelectedAccountProvider` session-scoped account context, `StandardAppBarActions` canonical AppBar-icon order, F135's `NoRuleReviewScreen`-as-default pattern). Harold's governing direction (2026-08-03): Windows' current architecture takes precedence; Android should adopt the same pattern, not be preserved as-is or given a separate bespoke design.
 
-**Backlog refinement note**: this sprint's refinement also surfaced F149 (safe-sender Inbox/Bulk oscillation bug, Issue #312) as a strong candidate given it is an active live-production nuisance. Harold explicitly chose F142 as the sole scope for this sprint; F149 was not deferred by omission -- it remains in the backlog for a future sprint's consideration.
+**Context (F149)**: Harold reported (2026-08-13) live production duplicates -- safe-sender messages oscillating between Inbox and Bulk/Spam on the AOL account. Root cause clarified by Harold: AOL's own Outlook-side account rules independently demote any Inbox message not from an AOL/Outlook-defined safe sender to Bulk, entirely outside this app's control; this app then sees the same message as one of ITS OWN safe senders and promotes it back to Inbox, fighting AOL's rule every scan cycle. Harold's stated expectation: the app should not re-promote a safe-sender message to Inbox if it is already there, or if a copy of it already exists there.
 
 ---
 
@@ -63,8 +63,64 @@ _**Decision-class interrupts**_: R-3 (whether to extend the No-Rule-Review AppBa
 
 ---
 
+## Task 2 -- F149: Safe-sender messages no longer re-promoted to Inbox when already present or duplicated there (Priority 10)
+
+**Value**: This prevents an active, user-visible production defect -- safe-sender messages repeatedly oscillating between Inbox and Bulk/Spam on the AOL account, producing duplicate-feeling clutter in the Inbox and undermining trust that safe senders "just work."
+
+**Requirements** (numbered, detailed):
+- R-1: Before executing a safe-sender move-to-target-folder action for a given message, check whether a message with the SAME Message-ID already exists in the TARGET folder (`safeSenderTarget`, normally Inbox). If it does, skip the move for that message entirely (do not re-promote something that is already there, or that AOL's rule is actively fighting over) -- this is the gap in the existing F91 (Sprint 39) dedup, which only reconciles the SOURCE folder AFTER a move, never the TARGET before one.
+- R-2: Reuse the existing `SpamFilterPlatform.searchByMessageId(folder, messageId)` capability (already used by `dedupSafeSenderSourceFolder`) for the target-folder pre-check -- this is a genuinely existing IMAP primitive, not a new one, so no Tooling-Capability Pre-Flight spike is required per `SPRINT_PLANNING.md`'s trigger condition (that rule applies to bolting a NEW capability onto an external tool; this reuses a capability already proven in production since Sprint 39).
+- R-3: Preserve F91's existing post-move source-folder dedup (`dedupSafeSenderSourceFolder`) UNCHANGED as a second layer of defense -- R-1's pre-move check and F91's post-move cleanup are complementary, not redundant: R-1 stops an unnecessary re-promotion before it happens (the new gap this task closes); F91 still cleans up any genuine same-scan re-injection race that slips past R-1 (e.g., AOL's rule fires between the pre-check and the move completing). Do not remove or weaken F91.
+- R-4: Scope the pre-check to IMAP-backed platforms only, mirroring F91's existing `platform is! GenericIMAPAdapter` skip (Gmail OAuth uses labels, not folders, and has no reproducible version of this bug reported).
+- R-5: Investigate whether this is a genuine regression of F91 or an always-existing gap in F91's original design (F91 never claimed to check the target folder; its own doc comments describe only source-folder reconciliation) -- record the finding in this task's completion notes. This determines whether the CHANGELOG entry frames this as a "fix: regression" or "fix: gap in the original F91 design," which matters for accurate project history.
+
+**Affected components / files**:
+- `mobile-app/lib/core/services/email_scanner.dart` -- new pre-move target-folder check, inserted into the same evaluation loop that currently builds `safeSenderMoveEmails` (around line 407-419), likely as a new `@visibleForTesting` async function mirroring `dedupSafeSenderSourceFolder`'s existing shape and code style (same file, `dedupSafeSenderSourceFolder` at line 854 is the direct sibling to follow).
+- `mobile-app/test/unit/services/f91_safe_sender_dedup_test.dart` -- extend using the EXISTING `_FakeImapPlatform` test harness (already mocks `searchByMessageId` and `moveToFolderBatch`, already covers the AOL-re-injection scenario) rather than building new test infrastructure.
+
+**Dependencies / blockers**:
+- None to scope. Independent of F142 (different subsystem entirely -- IMAP scan/move logic vs. UI navigation).
+
+**Non-functional requirements**:
+- Platform: this affects any IMAP-backed account (AOL, Yahoo, generic IMAP), not Android/Windows-specific -- the bug is provider-behavior-driven (AOL's server-side rule), not platform-UI-driven.
+- The evaluation loop currently building `safeSenderMoveEmails` (line 399-424) is synchronous; R-1's per-message target-folder check requires an async IMAP search, so this loop -- or the filtering step -- needs to become async. Mirror how `dedupSafeSenderSourceFolder` already handles this (an async `for` loop over candidates, one `searchByMessageId` call per message) rather than inventing a new concurrency pattern.
+
+**Acceptance criteria** (measurable, traceable):
+- AC-1: Given a safe-sender message whose Message-ID ALREADY has a matching message in the target folder (Inbox), When the scan evaluates it for a safe-sender move, Then the move is skipped for that message (not executed), and this is logged distinctly from the existing "already in target folder" skip (line 413-415, which only catches the message's OWN current folder being the target -- AC-1 covers a DIFFERENT message/UID with the same Message-ID already sitting there).
+- AC-2: Given a safe-sender message whose Message-ID has NO match in the target folder, When the scan evaluates it, Then the move proceeds normally (no regression to the existing clean-move path).
+- AC-3: Given the IMAP search for AC-1 fails or throws, When the scan proceeds, Then the message's move is NOT silently skipped by the failure (fail open to the pre-existing behavior, matching F91's own "search/move failure degrades to a no-op, scan never breaks" precedent) -- record which failure-handling choice was actually made and why in completion notes, since "fail open" (attempt the move anyway) and "fail closed" (skip the move) have different risk profiles and this is worth an explicit decision, not a default.
+- AC-4: F91's existing `dedupSafeSenderSourceFolder` behavior is unchanged -- all 7 existing scenarios in `f91_safe_sender_dedup_test.dart` (per that file's own doc-comment list) still pass without modification to their assertions.
+- AC-5: R-5's investigation finding (regression vs. always-existing gap) is recorded in this task's completion notes with supporting evidence (e.g., git blame / commit history reasoning), not asserted without a check.
+
+**Tests to write** (one intent per AC; name pyramid level + target file):
+- T-1 (verifies AC-1) -- TEST-UNIT in `test/unit/services/f91_safe_sender_dedup_test.dart` (or a new sibling file if the existing one is judged better left untouched structurally -- Sonnet judgment call): using `_FakeImapPlatform`, set up a safe-sender message with a Message-ID that has a match in `searchResponses[targetFolder]`, assert `moveToFolderBatch` is NEVER called for that message.
+- T-2 (verifies AC-2) -- TEST-UNIT, same harness: no target-folder match -> assert the move proceeds (existing "clean move" scenario extended to also assert the NEW pre-check ran and returned empty).
+- T-3 (verifies AC-3) -- TEST-UNIT, same harness: `throwOnSearch: true` on the target-folder pre-check -> assert the chosen fail-open/fail-closed behavior (the move proceeds if fail-open is chosen; is skipped if fail-closed is chosen) and that the failure is logged, not silently swallowed.
+- T-4 (verifies AC-4) -- regression: run the full existing `f91_safe_sender_dedup_test.dart` suite unmodified in assertions, confirm all 7 scenarios still pass.
+- T-5 (verifies AC-1/AC-2 end-to-end, if feasible) -- MANUAL, per Harold's own AOL account if a real affected message can be identified and observed across 2+ scan cycles; likely NOT feasible to force-reproduce on demand (depends on AOL's rule timing, which is outside this app's control) -- if not reproducible on demand, T-1 through T-4's unit coverage is the primary proof, and this becomes a "monitor in production over the following days" verification instead of a blocking Manual Validation step. Record which path was taken in completion notes.
+
+**Definition of Done**: default task-level DoD PLUS:
+- R-5's regression-vs-gap investigation finding recorded with evidence.
+- AC-3's fail-open-vs-fail-closed decision recorded with reasoning.
+- T-5's feasibility outcome recorded (real-world reproduction attempted and result, OR explicitly deferred to production monitoring with reasoning).
+
+**Model**: Sonnet -- *why not Haiku*: requires understanding an existing, non-trivial IMAP reconciliation mechanism (F91) well enough to extend it correctly without breaking its existing guarantees, plus a genuine root-cause judgment call (R-5) about whether this is a regression or a gap -- beyond Haiku's heuristics for well-defined single-file work. Not escalated to Fable/Opus: the fix pattern (reuse `searchByMessageId` for a pre-check, mirroring the existing post-check) is already fully diagnosed and scoped during backlog refinement; this is targeted implementation against an existing, well-tested pattern, not open-ended architectural investigation.
+
+**Executed-by**: _(fill at completion)_
+
+**Step-types**: SVC-EDIT (email_scanner.dart), IMAP (searchByMessageId reuse), TEST-UNIT (T-1 through T-4)
+
+**Est-Effort**: `[no-history]` -- no prior sample of "extend an existing IMAP dedup mechanism with a symmetric pre-check" in `CODING_VELOCITY.md`'s Estimate Table, though it is closely related to F91's own original IMAP/SVC-EDIT work (13-40m band, bundled). Time-boxed rather than inventing a precise range; expect the SVC-EDIT band's higher end given the existing test harness significantly reduces T-1/T-2/T-3/T-4's authoring cost.
+
+_**Risk & rollback**_: Medium. Risk: AC-3's fail-open/fail-closed choice has real behavioral consequences under IMAP flakiness (fail-open risks the original bug persisting under search failures; fail-closed risks safe-sender messages never reaching Inbox if the target-folder search is persistently broken) -- must be a deliberate choice, not a default, and should match F91's own established "degrade to no-op, never break the scan" philosophy unless Harold's stated expectation ("should not move if already in Inbox, or a copy is in Inbox") is read as prioritizing correctness over move-liveness under failure. Rollback: additive change (new pre-check function + one call site); `git revert` fully restores current behavior; F91's existing mechanism is untouched so no compounding risk.
+
+_**Decision-class interrupts**_: None anticipated -- this is a targeted bug fix within already-diagnosed scope, not an architecture or prior-development-decision change. If R-1's implementation reveals the fix needs to touch shared infrastructure beyond `email_scanner.dart` (e.g., a change to `SpamFilterPlatform`'s interface contract), surface that as a Class-2 development decision before proceeding.
+
+---
+
 ## Sprint-Level Notes
 
-- **This is the sole sprint item.** F143 and F144 are explicitly deferred to the NEXT sprint per Harold's direct instruction (2026-08-13) -- both depend on F142 landing first, so this is not an arbitrary split but the natural dependency boundary already identified during backlog refinement.
-- **F149** (safe-sender Inbox/Bulk oscillation, Issue #312) was surfaced during this sprint's backlog refinement as a live-production bug with a strong root-cause lead (likely the same "AOL re-injection" mechanism F91/Sprint 39 was built to handle, but only reconciling the source folder, not the target). Harold explicitly chose F142 over F149 for this sprint's scope; F149 remains in the backlog for a future sprint's consideration, not lost.
-- **No architecture changes are pre-approved beyond what's scoped above.** If R-1's implementation surfaces a need to redesign navigation more broadly (e.g., affecting how deep links or notifications route into the app), that is out of scope for this task and gets surfaced as a new backlog candidate, not folded in.
+- **Sprint scope is F142 + F149** (F149 added 2026-08-14, expanding the sprint after initial F142-only approval). F143 and F144 are explicitly deferred to the NEXT sprint per Harold's direct instruction -- both depend on F142 landing first, so that boundary is unchanged.
+- **The two tasks are independent** (Android UI navigation vs. IMAP scan/move logic) and can proceed in either order or in parallel; no shared files, no dependency between them.
+- **No architecture changes are pre-approved beyond what's scoped above.** If either task's implementation surfaces a need for broader changes (F142: navigation/deep-link redesign; F149: a `SpamFilterPlatform` interface change), that is out of scope for this sprint and gets surfaced as a new backlog candidate or a Class-2 decision point, not folded in silently.
+- **Standing execution authorization** (Harold, 2026-08-14): "Continue without additional approvals until Manual Validation... Do not stop to ask questions unless meeting the criteria in SPRINT_STOPPING_CRITERIA.md." Both tasks proceed under this blanket approval; a Manual Validation recommendation for both is provided once implementation completes.

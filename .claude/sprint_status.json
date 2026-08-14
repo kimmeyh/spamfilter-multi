@@ -1,6 +1,6 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-13T20:15:00Z",
+  "_last_updated": "2026-08-14T09:00:00Z",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
 
@@ -10,12 +10,12 @@
     "pr_number": 314,
     "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/314",
     "start_date": "2026-08-13",
-    "status": "PLAN WRITTEN, AWAITING APPROVAL. Backlog Refinement presented (F142/F143/F144 Android track + newly-surfaced F149 safe-sender bug). Harold selected F142 as the sole sprint scope; F143/F144 explicitly tagged for next sprint. Issue #313 (F142) created and draft PR #314 created in the SAME turn as plan authoring (Phase 3.7.0 discipline). docs/sprints/SPRINT_57_PLAN.md written per the augmented card template -- includes an unresolved R-3 sequencing decision (extend the No-Rule-Review AppBar icon to Android now vs keep Windows-gated pending F143) with a stated recommendation (keep gated), surfaced for Harold's approval rather than silently decided. Presented for approval; execution has NOT started.",
-    "plan_approved": false,
-    "plan_approval_date": null,
-    "blanket_execution_approved": false,
-    "scope": ["F142"],
-    "_scope_note": "F142 only -- Android navigation model, adopt desktop's shared AppBar-icon + session-account pattern. F143 (touch-adapted No-Rule Review selection) and F144 (Android background scanning re-evaluation) explicitly deferred to next sprint, both depend on F142 landing first. F149 (safe-sender Inbox/Bulk oscillation, Issue #312) was also a candidate this refinement but Harold chose F142 over it -- F149 remains in the backlog, not lost."
+    "status": "PLAN APPROVED 2026-08-14, EXECUTION STARTING. Scope expanded same day: Harold approved F142 (as planned) AND pulled in F149 (safe-sender Inbox/Bulk oscillation) as Task 2. Standing execution authorization given: continue without additional approvals until Manual Validation; provide a Manual Validation recommendation; do not stop except per SPRINT_STOPPING_CRITERIA.md. docs/sprints/SPRINT_57_PLAN.md expanded with Task 2's full card (R-1 through R-5, AC-1 through AC-5, T-1 through T-5) -- fix design confirmed against actual code: EmailScanner's safe-sender move logic has no pre-move check against the target folder for an existing duplicate; F91's (Sprint 39) existing dedup only reconciles the source folder post-move. Fix reuses the existing searchByMessageId capability for a target-folder pre-check, keeping F91 unchanged as a second layer. Issue #312 updated (labeled card, comment added) rather than duplicated. Both tasks independent, can proceed in either order.",
+    "plan_approved": true,
+    "plan_approval_date": "2026-08-14",
+    "blanket_execution_approved": true,
+    "scope": ["F142", "F149"],
+    "_scope_note": "F142 -- Android navigation model, adopt desktop's shared AppBar-icon + session-account pattern. F149 -- safe-sender messages no longer re-promoted to Inbox when already present/duplicated there (fixes AOL Inbox/Bulk oscillation). F143 (touch-adapted No-Rule Review selection) and F144 (Android background scanning re-evaluation) explicitly deferred to next sprint, both depend on F142 landing first."
   },
 
   "previous_sprint": {
@@ -31,8 +31,8 @@
     "_process_note": "Phase 6.6 carry-forward applied correctly again (Sprint 56 -> Sprint 57): branch created from the current feature branch immediately on merge notification, before any post-merge commits (carried forward 0Claudedev_prompts.txt). SPRINT_55_SUMMARY.md was missed during Sprint 56 planning (Phase 3.2.1 mandatory deliverable) -- created retroactively 2026-08-13 after the verify-closeout-complete hook caught the gap; verify SPRINT_56_SUMMARY.md is NOT missed the same way during Sprint 57 planning."
   },
 
-  "github_issues": [313],
-  "_github_issues_note": "313=F142. Created 2026-08-13 in the SAME turn as plan authoring, before any task file was touched -- Phase 3.7.0 discipline applied. 312=F149 (backlog item, not in this sprint's scope) also created this session. 311 is Harold's own tracking issue for the still-pending real develop->main merge -- not a sprint card.",
+  "github_issues": [313, 312],
+  "_github_issues_note": "313=F142, 312=F149 -- both now sprint cards (312 was created as a backlog item first, then labeled 'card' and pulled into Sprint 57 on 2026-08-14 rather than duplicated). 311 is Harold's own tracking issue for the still-pending real develop->main merge -- not a sprint card.",
 
   "test_metrics": {
     "tests_passing": 1857,
