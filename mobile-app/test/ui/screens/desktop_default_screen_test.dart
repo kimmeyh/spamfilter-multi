@@ -6,19 +6,22 @@ import 'package:my_email_spam_filter/ui/screens/account_selection_screen.dart';
 import 'package:my_email_spam_filter/ui/screens/main_navigation_screen.dart';
 import 'package:my_email_spam_filter/ui/screens/no_rule_review_screen.dart';
 
-/// F135 desktop default-screen decision (PR #292 review).
+/// F135 default-screen decision (PR #292 review), shared across every
+/// platform since F142 (Sprint 57).
 ///
-/// This branch decides what the whole desktop app shows on launch and had ZERO
-/// coverage. It is also empirically the risky one: changing the desktop default
-/// is what caused MV-1, where the Accounts icon stopped reaching anything
-/// because Account Selection was no longer a route.
+/// This branch decides what the WHOLE app shows on launch (previously
+/// desktop-only; Android had a separate bottom-nav shell removed by F142)
+/// and had ZERO coverage when first written. It is also empirically the
+/// risky one: changing the default screen is what caused MV-1, where the
+/// Accounts icon stopped reaching anything because Account Selection was no
+/// longer a route.
 ///
 /// The failure modes worth pinning are the ones a user would meet head-on: a
 /// permanent spinner (resolution never completes), or an inverted ternary that
 /// boots straight past the account list.
 ///
-/// Most cases are tested through `desktopDefaultScreenFor` -- the extracted
-/// decision, not the private `_DesktopDefaultScreen` widget -- so the branch
+/// Most cases are tested through `appDefaultScreenFor` -- the extracted
+/// decision, not the private `_AppDefaultScreenState` widget -- so the branch
 /// logic is pinned without the async credential-store round-trip in every
 /// case. That is a scoping choice, not a real harness limitation: the
 /// `flutter_secure_storage` MethodChannel DOES have a test binding (stubbed
@@ -27,14 +30,19 @@ import 'package:my_email_spam_filter/ui/screens/no_rule_review_screen.dart';
 /// below uses to drive the real widget end to end. A prior version of this
 /// comment claimed no binding existed; that was wrong, and is corrected here
 /// rather than left standing next to the test that disproves it.
+///
+/// F142 (Sprint 57): the WIRING test below now validates BOTH platforms
+/// uniformly -- `MainNavigationScreen.build()` no longer has a
+/// `Platform.isAndroid` branch, so this same test exercises Android's path
+/// too (there is only one path now).
 void main() {
-  group('desktopDefaultScreenFor', () {
+  group('appDefaultScreenFor', () {
     testWidgets('null (still resolving) shows a neutral spinner',
         (tester) async {
       // Deliberately NOT Account Selection: flashing it and then replacing it
       // once accounts resolve is the jarring behaviour this avoids.
       await tester.pumpWidget(MaterialApp(
-        home: desktopDefaultScreenFor(hasAccounts: null),
+        home: appDefaultScreenFor(hasAccounts: null),
       ));
       await tester.pump();
 
@@ -47,7 +55,7 @@ void main() {
     testWidgets('true (accounts exist) shows Review "No Rule" Items',
         (tester) async {
       await tester.pumpWidget(MaterialApp(
-        home: desktopDefaultScreenFor(hasAccounts: true),
+        home: appDefaultScreenFor(hasAccounts: true),
       ));
       await tester.pump();
 
@@ -63,7 +71,7 @@ void main() {
       // that can add an account or repair the situation. Landing on No-Rule
       // would show an empty list with no way to fix it.
       await tester.pumpWidget(MaterialApp(
-        home: desktopDefaultScreenFor(hasAccounts: false),
+        home: appDefaultScreenFor(hasAccounts: false),
       ));
       await tester.pump();
 
@@ -92,7 +100,7 @@ void main() {
 
       for (final entry in expected.entries) {
         await tester.pumpWidget(MaterialApp(
-          home: desktopDefaultScreenFor(hasAccounts: entry.key),
+          home: appDefaultScreenFor(hasAccounts: entry.key),
         ));
         await tester.pump();
 
@@ -119,7 +127,7 @@ void main() {
         'WIRING: MainNavigationScreen itself lands on Account Selection with '
         'an empty credential store', (tester) async {
       // The function tests above cannot catch a wiring regression -- e.g.
-      // build() hardcoding `desktopDefaultScreenFor(hasAccounts: true)` --
+      // build() hardcoding `appDefaultScreenFor(hasAccounts: true)` --
       // because they bypass the widget (PR #292 re-review). This pumps the
       // real screen with the secure-storage channel stubbed empty, driving
       // the actual initState -> _resolve -> build chain end to end. The

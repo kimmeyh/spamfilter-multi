@@ -26,9 +26,33 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-08-14 (Sprint 57, GitHub Copilot review, PR #314)
+- **fix**: Copilot review finding -- F149's new `filterAlreadyInTargetFolder()` logged the raw sender address when skipping a re-promotion. Redacted via the existing `Redact.email()` helper, matching this file's established logging convention.
+- **fix**: Copilot review finding -- `startRealScan()`'s SettingsStore reads, rule-loading wait, and initial navigation ran outside its try/catch, so a failure there (before the scan itself started) would surface as an unhandled async error with no user-facing feedback. The entire function body is now one try/catch.
+- **docs**: Copilot review finding -- `docs/STORE_VERSION_STATUS.md` and `.claude/sprint_status.json` still referenced the dev worktree's pre-bump version (`0.6.2+1` / a pending `0.6.3` bump) after this PR had already bumped `pubspec.yaml` to `0.7.0+1`. Updated both to match.
+
+### 2026-08-14 (Sprint 57, manual validation follow-up)
+- **fix**: "Scan Again" on the Results screen used to return to the "Ready to Scan" screen, requiring a second tap on "Start Live Scan" to actually re-scan. Extracted the Live Scan start logic (`ScanProgressScreen._startRealScan`) into a shared top-level `startRealScan()` function so "Scan Again" now triggers a fresh Live Scan directly, without the extra round trip. Uses `Navigator.pushReplacement` so repeated "Scan Again" taps replace the current Results screen rather than stacking an ever-growing chain of Results screens.
+- **chore**: dev worktree version bump `0.6.2` -> `0.7.0` (MINOR, per the enforced semver policy -- `[Unreleased]` contains a `feat` entry, F142).
+
+### 2026-08-14 (Sprint 57)
+- **fix**: F149 -- safe-sender messages on AOL oscillating between Inbox and Bulk/Spam across scan cycles, producing duplicate-feeling clutter in the Inbox. Root cause: AOL's own Outlook-side account rules independently demote any Inbox message not from an AOL/Outlook-defined safe sender to Bulk, entirely outside this app's control; the app's existing safe-sender logic had no check for whether a message (or a copy of it, by Message-ID) already existed in the target folder before re-promoting a candidate, so it kept fighting AOL's rule every scan. The existing F91 (Sprint 39) dedup only reconciled the SOURCE folder after a move, never the TARGET before one. Added a pre-move target-folder check reusing the existing `searchByMessageId` capability, alongside F91's unchanged post-move source-folder dedup as a second layer of defense. Fails open on search errors (a transient IMAP failure never permanently strands a genuine safe-sender message outside Inbox). 6 new mutation-verified tests extending the existing F91 fake-IMAP test harness.
+- **feat**: F142 -- Android navigation model now shares desktop's `NoRuleReviewScreen`-as-default pattern instead of a separate bottom-navigation shell with 2 dead-end placeholder tabs ("Rules" and "Settings," both requiring an `accountId` the shell had no mechanism to supply). `MainNavigationScreen`'s `Platform.isAndroid` branch removed entirely; both platforms now render the same default-screen decision (`AccountSelectionScreen` with 0 accounts, `NoRuleReviewScreen` with 1+). The "Review No Rule Items" AppBar icon remains Windows-gated this sprint -- `NoRuleReviewScreen`'s multi-item selection (Ctrl/Shift-click, right-click) has no touch equivalent yet; that redesign is F143 (next sprint). New source-text policy gate confirms the removed scaffolding does not silently reappear.
+
+### 2026-08-13 (Sprint 57)
+- **chore**: dev worktree version bump `0.6.1` -> `0.6.2` (PATCH -- `[Unreleased]` contained only `fix` entries) ahead of the 0.6.2.0 release build.
+
+## [0.6.2] - 2026-08-13
+
+PATCH release -- Submission 13, certified and published same day as submission. Contains F148 (background-scan Store-update survival) and its GitHub Copilot review follow-up.
+
 ### 2026-08-13 (Sprint 56, F148)
 - **fix**: F148 -- Windows background-scan scheduled tasks stopped running after a Microsoft Store update. Root cause: task registration used `Platform.resolvedExecutable`, which resolves to a VERSIONED install path (`C:\Program Files\WindowsApps\...\_0.6.0.0_...\`); a Store update deletes the old version's folder, so the task's `Execute` path pointed at a file that no longer existed (`ERROR_FILE_NOT_FOUND`). Found in production 2026-08-12 (Harold) after a 0.6.0.0 -> 0.6.1.0 Store update silently stopped both accounts' background scans. Immediate fix: both tasks manually repointed via PowerShell. Durable fix: added a stable MSIX App Execution Alias (`myemailspamfilter.exe`, resolves via `%LOCALAPPDATA%\Microsoft\WindowsApps\`) that Windows keeps pointed at whichever version is CURRENTLY installed; `WindowsTaskSchedulerService` now registers tasks against this alias for MSIX installs instead of the versioned path, and existing installs still on a stale versioned-path registration self-heal to the alias on next launch via the existing `verifyAndRepairTaskPath()` reconciliation (re-enabled for MSIX installs, previously excluded). Validated with a real simulated Store update (build+install version N, confirm alias-registered task launches N; build+install version N+1 over it; confirm the SAME unchanged task now launches N+1 with no code intervention) -- see `docs/sprints/SPRINT_56_PLAN.md` completion notes for full validation detail.
 - **fix**: F148 follow-up (GitHub Copilot review, PR #310) -- the task's `-WorkingDirectory` ("Start in") still resolved to the same VERSIONED install directory the alias fix was meant to replace, so it would have gone stale on the next Store update even though `-Execute` was already fixed. `_getWorkingDirectory()` now also resolves to the alias's own stable directory for MSIX installs, mirroring `_getExecutablePath()`. Validated against a real MSIX install with both `-Execute` and `-WorkingDirectory` alias-based.
+
+## [0.6.1] - 2026-08-13
+
+PATCH release -- Submission 12, certified and published. No user-facing changes beyond what shipped in 0.6.0 (this cycle's dev-worktree bump; see the 2026-08-10 entry below).
 
 ### 2026-08-10 (Sprint 55 GitHub Copilot review, PR #304)
 - **fix**: Copilot review finding -- the F145 Settings tab-scoped Help fix's `TabController` listener called `setState()` on every notification. `TabController` fires its listener twice per tap (immediately when the index changes, again at animation completion), both times with the same index value, so the second notification was a redundant rebuild. Added an index-comparison guard so `setState()` only fires when the index actually changes.
@@ -1067,7 +1091,9 @@ See git history for detailed changes prior to Phase 3.1.
 
 ## Version Links
 
-[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.6.2...HEAD
+[0.6.2]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.6.1...v0.6.2
+[0.6.1]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.9...v0.6.0
 [0.5.9]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.8...v0.5.9
 [0.5.8]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.7...v0.5.8

@@ -33,6 +33,9 @@ All Sprint tasks and sub-tasks are approved.
 Continue without addition approvals until Manual Validation, providing your recommendation for Manual Validation steps.
 Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPING_CRITERIA.md
 
+Microsoft Store Update:
+Follow the Microsoft Store release process in docs/STORE_RELEASE_PROCESS.md to build and prep the next update.
+
 Install MyEmailSpamFilter update from Microsoft Store after certification (without having to do it via the Store):
 winget source update
 winget upgrade --id "9N5QK9G904C0" --source msstore --accept-package-agreements --accept-source-agreements

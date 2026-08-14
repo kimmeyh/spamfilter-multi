@@ -802,20 +802,25 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: () {
-                            // [NEW] SPRINT 12 FIX: Push replacement to Scan screen directly
-                            // This avoids navigation state issues with pop() and ensures
-                            // reliable navigation to the scan screen
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => ScanProgressScreen(
-                                  platformId: widget.platformId,
-                                  platformDisplayName:
-                                      widget.platformDisplayName,
-                                  accountId: widget.accountId,
-                                  accountEmail: widget.accountEmail,
-                                ),
-                              ),
+                            // Testing feedback (Sprint 57): "Scan Again"
+                            // used to return to the "Ready to Scan" screen,
+                            // requiring a second tap on "Start Live Scan".
+                            // Trigger the Live Scan directly instead --
+                            // useReplacement: true so repeated taps replace
+                            // the current Results screen rather than
+                            // stacking a new one on the Navigator each time.
+                            final ruleProvider = Provider.of<RuleSetProvider>(
+                                context,
+                                listen: false);
+                            startRealScan(
+                              context: context,
+                              scanProvider: scanProvider,
+                              ruleProvider: ruleProvider,
+                              platformId: widget.platformId,
+                              platformDisplayName: widget.platformDisplayName,
+                              accountId: widget.accountId,
+                              accountEmail: widget.accountEmail,
+                              useReplacement: true,
                             );
                           },
                           icon: const Icon(Icons.refresh),

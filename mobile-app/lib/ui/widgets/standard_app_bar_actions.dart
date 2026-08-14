@@ -136,6 +136,19 @@ class StandardAppBarActions {
 
       // 1. Review "No Rule" Items -- Windows-desktop scoped, matching the
       //    existing F112/F39 entry points.
+      //
+      //    F142 (Sprint 57) DECISION: deliberately left Windows-gated rather
+      //    than extended to Android alongside the navigation-shell change.
+      //    NoRuleReviewScreen's multi-item SELECTION mechanism reads
+      //    isControlPressed/isShiftPressed and opens a right-click context
+      //    menu, neither of which has a touch equivalent -- extending this
+      //    icon to Android now would surface a screen whose core bulk-action
+      //    interaction does not work by touch. F143 (next sprint) redesigns
+      //    that selection mechanism for touch (long-press + contextual
+      //    action bar); this gate should be revisited then. Android still
+      //    reaches NoRuleReviewScreen via the F142 default-screen routing
+      //    (MainNavigationScreen -> AppDefaultScreen) when accounts exist --
+      //    this icon is a secondary deep-link entry point, not the only path.
       if (includeNoRuleReview && Platform.isWindows)
         IconButton(
           icon: const Icon(Icons.rule_folder_outlined),
