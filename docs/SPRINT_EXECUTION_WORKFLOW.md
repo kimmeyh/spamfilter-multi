@@ -254,7 +254,8 @@ This change was introduced after Sprint 36 kickoff skipped Phase 1 (prior "OPTIO
   - Verify scope, tasks, and acceptance criteria
   - Note any changes needed based on previous sprint learnings
 
-- [ ] **3.2.1 Create Sprint Summary for Previous Sprint** (Background Process - MANDATORY)
+- [ ] **3.2.1 Create Sprint Summary for Previous Sprint** (Background Process - MANDATORY, NO EXCEPTIONS)
+  - **[CRITICAL, Harold 2026-08-14]: every completed sprint gets ALL THREE of `SPRINT_N_PLAN.md`, `SPRINT_N_RETROSPECTIVE.md`, AND `SPRINT_N_SUMMARY.md` -- always, no exceptions.** "The plan and retrospective already cover it" is NOT a valid reason to skip the summary; it is a distinct deliverable (the retrospective is 14-category feedback, the summary is the archival record ALL_SPRINTS_MASTER_PLAN.md's "Past Sprint Summary" table links to). A retroactive audit at Sprint 57 close-out found 25 of 57 sprints missing at least one of the three -- almost entirely missing SUMMARY -- because this step was repeatedly treated as optional/satisfied-by-precedent. It is not optional. Verify all three exist for the JUST-COMPLETED sprint before considering that sprint's close-out done, not only during the NEXT sprint's Phase 3.2.1 (do both -- create it here per the normal cadence below, but also treat "SUMMARY exists for sprint N" as part of sprint N's own Phase 7.7 exit checklist, not deferred).
   - **When**: During planning for Sprint N+1, create `docs/sprints/SPRINT_<N>_SUMMARY.md` for completed Sprint N
   - **Purpose**: Archive historical sprint details from ALL_SPRINTS_MASTER_PLAN.md
   - **Template**: Use structure from SPRINT_RETROSPECTIVE.md or previous `docs/sprints/SPRINT_<N>_SUMMARY.md` files
