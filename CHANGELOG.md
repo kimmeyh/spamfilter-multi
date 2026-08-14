@@ -26,6 +26,10 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-08-14 (Sprint 57)
+- **fix**: F149 -- safe-sender messages on AOL oscillating between Inbox and Bulk/Spam across scan cycles, producing duplicate-feeling clutter in the Inbox. Root cause: AOL's own Outlook-side account rules independently demote any Inbox message not from an AOL/Outlook-defined safe sender to Bulk, entirely outside this app's control; the app's existing safe-sender logic had no check for whether a message (or a copy of it, by Message-ID) already existed in the target folder before re-promoting a candidate, so it kept fighting AOL's rule every scan. The existing F91 (Sprint 39) dedup only reconciled the SOURCE folder after a move, never the TARGET before one. Added a pre-move target-folder check reusing the existing `searchByMessageId` capability, alongside F91's unchanged post-move source-folder dedup as a second layer of defense. Fails open on search errors (a transient IMAP failure never permanently strands a genuine safe-sender message outside Inbox). 6 new mutation-verified tests extending the existing F91 fake-IMAP test harness.
+- **feat**: F142 -- Android navigation model now shares desktop's `NoRuleReviewScreen`-as-default pattern instead of a separate bottom-navigation shell with 2 dead-end placeholder tabs ("Rules" and "Settings," both requiring an `accountId` the shell had no mechanism to supply). `MainNavigationScreen`'s `Platform.isAndroid` branch removed entirely; both platforms now render the same default-screen decision (`AccountSelectionScreen` with 0 accounts, `NoRuleReviewScreen` with 1+). The "Review No Rule Items" AppBar icon remains Windows-gated this sprint -- `NoRuleReviewScreen`'s multi-item selection (Ctrl/Shift-click, right-click) has no touch equivalent yet; that redesign is F143 (next sprint). New source-text policy gate confirms the removed scaffolding does not silently reappear.
+
 ### 2026-08-13 (Sprint 57)
 - **chore**: dev worktree version bump `0.6.1` -> `0.6.2` (PATCH -- `[Unreleased]` contained only `fix` entries) ahead of the 0.6.2.0 release build.
 

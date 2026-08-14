@@ -394,7 +394,9 @@ class EmailScanner {
       // Collect emails by action type for batch processing
       final deleteEmails = <_EvaluatedEmail>[];
       final moveToJunkEmails = <_EvaluatedEmail>[];
-      final safeSenderMoveEmails = <_EvaluatedEmail>[];
+      // F149 (Sprint 57): mutable -- reassigned after filterAlreadyInTargetFolder
+      // filters out candidates already present in the target folder.
+      var safeSenderMoveEmails = <_EvaluatedEmail>[];
 
       for (final evaluated in evaluatedEmails) {
         switch (evaluated.action) {
@@ -438,6 +440,22 @@ class EmailScanner {
       }
 
       // --- Priority 1: Safe sender moves (rescue good emails first) ---
+      // F149 (Sprint 57): filter out candidates already present in the
+      // target folder BEFORE moving, so a message AOL's own rule has
+      // independently demoted is not blindly re-promoted every scan cycle.
+      // See filterAlreadyInTargetFolder's doc comment for the full mechanism
+      // and how this complements F91's existing post-move source dedup.
+      final keptAfterTargetCheck = (await filterAlreadyInTargetFolder(
+        platform: platform,
+        candidates: safeSenderMoveEmails.map((e) => e.message).toList(),
+        safeSenderTarget: safeSenderTarget,
+        isLiveScan: isLiveScan,
+      ))
+          .toSet();
+      safeSenderMoveEmails = safeSenderMoveEmails
+          .where((e) => keptAfterTargetCheck.contains(e.message))
+          .toList();
+
       AppLogger.scan('Step 6b-1: Safe sender move batch: ${safeSenderMoveEmails.length} emails to move (canExecuteSafeSenders=$canExecuteSafeSenders, target="$safeSenderTarget")');
       if (safeSenderMoveEmails.isNotEmpty) {
         for (final evaluated in safeSenderMoveEmails) {
@@ -954,6 +972,136 @@ class EmailScanner {
         await LiveScanLogger.log('Step 6b-1b: dedup COMPLETE removed=$totalDeduped');
       }
     }
+  }
+
+  /// F149 (Sprint 57): pre-move target-folder duplicate check (AOL
+  /// Inbox/Bulk oscillation fix).
+  ///
+  /// F91 (Sprint 39, [dedupSafeSenderSourceFolder] above) reconciles the
+  /// SOURCE folder AFTER a safe-sender move, on the assumption that any
+  /// AOL server-side re-injection happens promptly enough to be caught by
+  /// that same-scan cleanup. In production (Harold, 2026-08-13) this proved
+  /// insufficient: AOL's own account rule demotes non-Outlook-safe-sender
+  /// Inbox messages to Bulk on ITS OWN schedule, independent of this app's
+  /// scan cadence. When that demotion happens AFTER F91's cleanup already
+  /// ran, the NEXT scan finds the demoted copy in Bulk, evaluates it as a
+  /// safe sender again (correctly, by Message-ID it IS one), and moves it
+  /// back to Inbox -- even though the original is very likely still sitting
+  /// there. AOL then demotes it again, and the cycle repeats indefinitely,
+  /// producing the oscillation and duplicate-feeling clutter Harold
+  /// reported.
+  ///
+  /// This filters [candidates] BEFORE the move executes: for each candidate,
+  /// search [safeSenderTarget] for an existing message with the same
+  /// Message-ID. If found, skip moving this candidate -- it (or a copy of
+  /// it) is already where it belongs, and AOL's own rule is what moved it
+  /// out, not a defect in the app's own bookkeeping. This is the symmetric
+  /// counterpart to F91: F91 cleans up AFTER a move (source folder), this
+  /// filters BEFORE one (target folder). Both stay active; neither replaces
+  /// the other -- F91 still catches a genuine same-scan re-injection race
+  /// that slips past this pre-check (e.g. AOL's rule fires between this
+  /// check and the move completing).
+  ///
+  /// Fails OPEN: if the target-folder search itself fails or throws, the
+  /// candidate is kept (move proceeds) rather than silently blocked, matching
+  /// F91's own established "degrade to no-op, never break the scan"
+  /// philosophy -- a candidate that is not actually a duplicate must not be
+  /// permanently stuck outside Inbox because of a transient IMAP error.
+  ///
+  /// Skips are intentional and per-message / per-platform, mirroring F91:
+  ///   - [EmailMessage.messageIdHeader] is null (no stable cross-folder
+  ///     identity) -- candidate is kept, cannot check, so no false block.
+  ///   - The platform is Gmail OAuth or any non-IMAP adapter -- returns
+  ///     [candidates] unchanged; Gmail OAuth uses labels, not folders, and no
+  ///     reproducible version of this bug has been reported there.
+  ///
+  /// Takes/returns `List<EmailMessage>` rather than the internal
+  /// `_EvaluatedEmail` wrapper (matching [dedupSafeSenderSourceFolder]'s own
+  /// signature) so this stays a valid public API -- `_EvaluatedEmail` is a
+  /// private type and cannot appear in a public method signature.
+  ///
+  /// Exposed and [visibleForTesting] so this can be exercised with a fake
+  /// [SpamFilterPlatform] and mocked IMAP search responses, mirroring how
+  /// [dedupSafeSenderSourceFolder] is already tested. Production calls it
+  /// from `scanInbox` only, immediately before the safe-sender move batch
+  /// executes.
+  @visibleForTesting
+  Future<List<EmailMessage>> filterAlreadyInTargetFolder({
+    required SpamFilterPlatform platform,
+    required List<EmailMessage> candidates,
+    required String safeSenderTarget,
+    required bool isLiveScan,
+  }) async {
+    if (platform is! GenericIMAPAdapter) {
+      AppLogger.scan(
+        'Step 6b-0: target-folder pre-check skipped (platform ${platform.runtimeType} is not IMAP-backed)',
+      );
+      return candidates;
+    }
+
+    final kept = <EmailMessage>[];
+    var skippedNoMessageId = 0;
+    var skippedAlreadyInTarget = 0;
+    var skippedSearchFailed = 0;
+
+    for (final candidate in candidates) {
+      final messageId = candidate.messageIdHeader;
+      if (messageId == null || messageId.isEmpty) {
+        skippedNoMessageId++;
+        kept.add(candidate);
+        continue;
+      }
+
+      try {
+        final matches = await platform.searchByMessageId(safeSenderTarget, messageId);
+        if (matches.isEmpty) {
+          kept.add(candidate);
+        } else {
+          skippedAlreadyInTarget++;
+          AppLogger.scan(
+            'Step 6b-0: skipping re-promotion of safe sender already in target -- '
+            'from="${candidate.from}", messageId="$messageId", '
+            'target="$safeSenderTarget", existingMatches=${matches.length}',
+          );
+          if (isLiveScan) {
+            await LiveScanLogger.log(
+              'Step 6b-0: skip re-promotion messageId="$messageId" '
+              'target="$safeSenderTarget" existingMatches=${matches.length}',
+            );
+          }
+        }
+      } catch (e) {
+        // Fail open: keep the candidate so a transient search failure never
+        // permanently strands a genuine safe-sender message outside Inbox.
+        skippedSearchFailed++;
+        kept.add(candidate);
+        AppLogger.warning(
+          'Step 6b-0: target-folder pre-check failed for messageId="$messageId" '
+          'in "$safeSenderTarget", proceeding with move (fail-open): $e',
+        );
+        if (isLiveScan) {
+          await LiveScanLogger.log(
+            'Step 6b-0: target-folder pre-check FAILED messageId="$messageId" '
+            'target="$safeSenderTarget", proceeding (fail-open): $e',
+          );
+        }
+      }
+    }
+
+    AppLogger.scan(
+      'Step 6b-0: target-folder pre-check candidates=${candidates.length}, '
+      'kept=${kept.length}, skippedAlreadyInTarget=$skippedAlreadyInTarget, '
+      'skippedNoMessageId=$skippedNoMessageId, skippedSearchFailed=$skippedSearchFailed',
+    );
+    if (isLiveScan) {
+      await LiveScanLogger.log(
+        'Step 6b-0: target-folder pre-check candidates=${candidates.length} '
+        'kept=${kept.length} skippedAlreadyInTarget=$skippedAlreadyInTarget '
+        'skippedNoMessageId=$skippedNoMessageId skippedSearchFailed=$skippedSearchFailed',
+      );
+    }
+
+    return kept;
   }
 
   /// Scan specific folders
