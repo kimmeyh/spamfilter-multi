@@ -26,6 +26,11 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-08-14 (Sprint 57, GitHub Copilot review, PR #314)
+- **fix**: Copilot review finding -- F149's new `filterAlreadyInTargetFolder()` logged the raw sender address when skipping a re-promotion. Redacted via the existing `Redact.email()` helper, matching this file's established logging convention.
+- **fix**: Copilot review finding -- `startRealScan()`'s SettingsStore reads, rule-loading wait, and initial navigation ran outside its try/catch, so a failure there (before the scan itself started) would surface as an unhandled async error with no user-facing feedback. The entire function body is now one try/catch.
+- **docs**: Copilot review finding -- `docs/STORE_VERSION_STATUS.md` and `.claude/sprint_status.json` still referenced the dev worktree's pre-bump version (`0.6.2+1` / a pending `0.6.3` bump) after this PR had already bumped `pubspec.yaml` to `0.7.0+1`. Updated both to match.
+
 ### 2026-08-14 (Sprint 57, manual validation follow-up)
 - **fix**: "Scan Again" on the Results screen used to return to the "Ready to Scan" screen, requiring a second tap on "Start Live Scan" to actually re-scan. Extracted the Live Scan start logic (`ScanProgressScreen._startRealScan`) into a shared top-level `startRealScan()` function so "Scan Again" now triggers a fresh Live Scan directly, without the extra round trip. Uses `Navigator.pushReplacement` so repeated "Scan Again" taps replace the current Results screen rather than stacking an ever-growing chain of Results screens.
 - **chore**: dev worktree version bump `0.6.2` -> `0.7.0` (MINOR, per the enforced semver policy -- `[Unreleased]` contains a `feat` entry, F142).

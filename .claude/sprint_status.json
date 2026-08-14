@@ -73,7 +73,7 @@
     ],
     "post_cert_closeout_pending": [
       "OUTSTANDING: Harold still needs to do the REAL develop -> main merge/PR -- this build used a local-only, unpushed merge for build purposes only. main on GitHub does not yet contain F148, even though it is now live on the Store and Harold has confirmed the installed app is clean. Do this before the next release cycle so history does not diverge further.",
-      "Dev bump 0.6.2 -> 0.6.3 per the semver policy (next release cycle, not before then)."
+      "DONE (superseded) 2026-08-14: dev worktree already bumped to 0.7.0+1 during Sprint 57 (MINOR, not PATCH -- [Unreleased] contained F142's feat entry when the bump was made). No further dev bump needed until the NEXT release cycle after 0.7.0 ships."
     ],
     "_prior_release_history": "0.6.1 (Submission 12): built 2026-08-12, certified + LIVE (per Harold's 2026-08-13 direct confirmation; formal screenshot evidence pending). 0.6.0 (Submission 11): built 2026-08-09, certified + LIVE 2026-08-10, Harold-verified clean (Check C: Gmail sign-in, About screen, title bar all clean). 0.5.9 (Submission 10): built + certified + LIVE 2026-08-03, Harold-verified clean via winget uninstall/reinstall workaround (client-side propagation lag on cert day, resolved). 0.5.8 (Submission 9): built 2026-07-27, submitted 2026-07-28 (after a BUILT+VALIDATED-is-not-SUBMITTED near-miss -- see docs/sprints/SPRINT_51_SUMMARY.md), certified 2026-07-29, Harold-verified clean 2026-07-30."
   },

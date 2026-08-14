@@ -573,83 +573,98 @@ Future<void> startRealScan({
   required String accountEmail,
   bool useReplacement = false,
 }) async {
-  // Load scan configuration directly from Settings (no dialog popup)
-  final settingsStore = SettingsStore();
-  final daysBack = await settingsStore.getEffectiveDaysBack(
-    accountId,
-    isBackground: false,
-  );
-
-  // Load scan mode from account settings
-  final scanMode = await settingsStore.getAccountManualScanMode(accountId) ?? ScanMode.readOnly;
-  scanProvider.initializeScanMode(mode: scanMode);
-
   final logger = Logger();
-  logger.i('[SCAN_SCREEN] accountId=$accountId, platformId=$platformId');
-  logger.i('[SCAN_SCREEN] Loaded settings: scanMode=$scanMode, daysBack=$daysBack');
 
-  // Sprint 38 F86 (Issue #254): if the user added/edited a rule or safe
-  // sender right before tapping Start Scan and the rule set is still
-  // loading from disk, show a brief "Applying rule(s)..." snackbar and
-  // await readiness BEFORE starting the scan. The opportunistic-async
-  // mid-scan path handles changes made DURING a scan; this check handles
-  // the narrow window between save and re-scan trigger.
-  if (ruleProvider.isLoading && context.mounted) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Applying new rule(s) before scan starts...'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-    // Poll briefly for rule-set readiness (max ~2s). The provider's
-    // isLoading flag transitions to false once loadRules() completes.
-    // If the deadline expires while still loading (e.g., slow disk + very
-    // large rule set), surface a warning rather than silently starting
-    // with a stale evaluator -- the user can cancel and retry.
-    final deadline = DateTime.now().add(const Duration(seconds: 2));
-    while (ruleProvider.isLoading && DateTime.now().isBefore(deadline)) {
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-    }
-    if (ruleProvider.isLoading) {
-      logger.w('[SCAN_SCREEN] F86: rule-set still loading after 2s deadline; scan will start with previously-loaded rules');
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('New rules still loading -- scan will use previously-loaded rules. Re-scan when ready to apply the new rules.'),
-            duration: Duration(seconds: 4),
-          ),
-        );
-      }
-    } else {
-      logger.i('[SCAN_SCREEN] F86: rule-set ready (isLoading=false)');
-    }
-  }
-
-  // Immediately update UI to show scan is starting (no database record -
-  // the EmailScanner.executeScan() will create the real persisted record)
-  scanProvider.startScan(totalEmails: 0, persist: false);
-
-  // [NEW] SPRINT 12: Navigate to Results immediately after starting scan
-  // User feedback: "Start Scan should immediately go to View Results page"
-  // F55 (Sprint 33, v3): push (not pushReplacement) -- back from Results
-  // must return to Manual Scan. Staleness fixed by didPopNext reset below.
-  if (context.mounted) {
-    final route = MaterialPageRoute(
-      builder: (_) => ResultsDisplayScreen(
-        platformId: platformId,
-        platformDisplayName: platformDisplayName,
-        accountId: accountId,
-        accountEmail: accountEmail,
-      ),
-    );
-    if (useReplacement) {
-      Navigator.of(context).pushReplacement(route);
-    } else {
-      Navigator.of(context).push(route);
-    }
-  }
-
+  // Copilot review (PR #314): the original version only wrapped the final
+  // scanner.scanInbox() call in try/catch, leaving the SettingsStore reads,
+  // rule-loading wait, and initial navigation below unguarded -- any
+  // exception there (e.g. a SettingsStore read failure) would surface as an
+  // unhandled async error with no user-facing feedback. The whole body is
+  // now one try/catch so every failure path reports consistently.
   try {
+    // Load scan configuration directly from Settings (no dialog popup)
+    final settingsStore = SettingsStore();
+    final daysBack = await settingsStore.getEffectiveDaysBack(
+      accountId,
+      isBackground: false,
+    );
+
+    // Load scan mode from account settings
+    final scanMode = await settingsStore.getAccountManualScanMode(accountId) ?? ScanMode.readOnly;
+    scanProvider.initializeScanMode(mode: scanMode);
+
+    logger.i('[SCAN_SCREEN] accountId=$accountId, platformId=$platformId');
+    logger.i('[SCAN_SCREEN] Loaded settings: scanMode=$scanMode, daysBack=$daysBack');
+
+    // Sprint 38 F86 (Issue #254): if the user added/edited a rule or safe
+    // sender right before tapping Start Scan and the rule set is still
+    // loading from disk, show a brief "Applying rule(s)..." snackbar and
+    // await readiness BEFORE starting the scan. The opportunistic-async
+    // mid-scan path handles changes made DURING a scan; this check handles
+    // the narrow window between save and re-scan trigger.
+    if (ruleProvider.isLoading && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Applying new rule(s) before scan starts...'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      // Poll briefly for rule-set readiness (max ~2s). The provider's
+      // isLoading flag transitions to false once loadRules() completes.
+      // If the deadline expires while still loading (e.g., slow disk + very
+      // large rule set), surface a warning rather than silently starting
+      // with a stale evaluator -- the user can cancel and retry.
+      final deadline = DateTime.now().add(const Duration(seconds: 2));
+      while (ruleProvider.isLoading && DateTime.now().isBefore(deadline)) {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      }
+      if (ruleProvider.isLoading) {
+        logger.w('[SCAN_SCREEN] F86: rule-set still loading after 2s deadline; scan will start with previously-loaded rules');
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('New rules still loading -- scan will use previously-loaded rules. Re-scan when ready to apply the new rules.'),
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+      } else {
+        logger.i('[SCAN_SCREEN] F86: rule-set ready (isLoading=false)');
+      }
+    }
+
+    // Immediately update UI to show scan is starting (no database record -
+    // the EmailScanner.executeScan() will create the real persisted record)
+    scanProvider.startScan(totalEmails: 0, persist: false);
+
+    // [NEW] SPRINT 12: Navigate to Results immediately after starting scan
+    // User feedback: "Start Scan should immediately go to View Results page"
+    // F55 (Sprint 33, v3): push (not pushReplacement) -- back from Results
+    // must return to Manual Scan. Staleness fixed by didPopNext reset below.
+    //
+    // Copilot review (PR #314): capture the ScaffoldMessenger BEFORE
+    // navigating (not after) when useReplacement is true -- pushReplacement
+    // disposes the CALLER's route, and using `context` for a SnackBar after
+    // that point (e.g. in the catch block below) can silently no-op because
+    // context.mounted is now false. Binding the messenger to the NEW
+    // (post-navigation) Results screen's context once it exists keeps error
+    // feedback working regardless of which navigation mode was used.
+    if (context.mounted) {
+      final route = MaterialPageRoute(
+        builder: (_) => ResultsDisplayScreen(
+          platformId: platformId,
+          platformDisplayName: platformDisplayName,
+          accountId: accountId,
+          accountEmail: accountEmail,
+        ),
+      );
+      if (useReplacement) {
+        Navigator.of(context).pushReplacement(route);
+      } else {
+        Navigator.of(context).push(route);
+      }
+    }
+
     // Create scanner
     final scanner = EmailScanner(
       platformId: platformId,
@@ -680,6 +695,13 @@ Future<void> startRealScan({
     scanLogger.i('[SCAN_SCREEN] scanInbox() completed successfully');
   } catch (e, st) {
     logger.e('[SCAN_SCREEN] SCAN EXCEPTION: $e\n$st');
+    // This SnackBar is the ONLY user-facing signal for this exception --
+    // EmailScanner.scanInbox() does not itself set scanProvider's
+    // ScanStatus.error on failure, so Results screen has no independent way
+    // to know the scan errored here. If context is unmounted by the time
+    // this fires (e.g. the user already navigated away), the failure is
+    // logged (above) but not shown to the user -- a known, accepted gap
+    // rather than a silent one.
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

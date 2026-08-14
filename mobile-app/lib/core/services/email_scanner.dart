@@ -1060,7 +1060,7 @@ class EmailScanner {
           skippedAlreadyInTarget++;
           AppLogger.scan(
             'Step 6b-0: skipping re-promotion of safe sender already in target -- '
-            'from="${candidate.from}", messageId="$messageId", '
+            'from="${Redact.email(candidate.from)}", messageId="$messageId", '
             'target="$safeSenderTarget", existingMatches=${matches.length}',
           );
           if (isLiveScan) {
