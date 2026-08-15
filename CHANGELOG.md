@@ -26,6 +26,10 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-08-15
+
+Microsoft Store release (Submission 15, certified and live 2026-08-15). MINOR bump per the enforced semver policy -- Sprint 58 contains `feat` entries (F151a/b, F151h/i, MV-3).
+
 ### 2026-08-15 (Sprint 58, GitHub Copilot review, PR #317)
 - **fix**: Copilot review finding -- the Help screen's Markdown link handler called `launchUrl()` without awaiting it, so a failed launch (e.g. no handler for a scheme) would surface as an unhandled async error. Now awaited in a try/catch; failures degrade to a "Could not open the link." SnackBar.
 - **fix**: Copilot review finding -- the sign-in failure message said "check your email and password", which is wrong for OAuth flows with no password; now provider-agnostic ("check your sign-in details").
@@ -1125,7 +1129,8 @@ See git history for detailed changes prior to Phase 3.1.
 
 ## Version Links
 
-[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.6.2...HEAD
+[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.6.2...v0.7.0
 [0.6.2]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.6.0...v0.6.1

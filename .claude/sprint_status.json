@@ -1,18 +1,18 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-15 (Sprint 59 Phase 3 planning; Sprint 58 merged; Submission 15 in certification)",
+  "_last_updated": "2026-08-15 (0.8.0.0 certified+live, Step 7 close-out done; Sprint 59 executing)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
     "number": 59,
     "branch": "feature/20260815_Sprint_59",
-    "pr_number": null,
-    "pr_url": null,
+    "pr_number": 326,
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/326",
     "start_date": "2026-08-15",
-    "status": "Phase 3 PLANNING -- SPRINT_59_PLAN.md written, PRESENTED TO HAROLD, AWAITING APPROVAL (plan NOT yet approved; asking is required on this side of the auto-advance window). Scope set by Harold 2026-08-15: F150 FIRST (Android build blocker, interactive -- Harold walks Firebase Console), F153 (WinWright/UIA re-test with SPI_SETSCREENREADER), F155 (NEW: rename Review \"No Rule\" Items -> Review No Rule Items, forward-only), F154 (NEW: dedicated Help section for the Review No Rule Items screen; content draft for MV review). F154/F155 registered in ALL_SPRINTS_MASTER_PLAN.md. On approval: Phase 3.3.1 -- create GitHub issue cards + DRAFT PR (branch already exists = the classic 3.3.1 skip trigger, do NOT skip).",
-    "plan_approved": false,
-    "plan_approval_date": null,
-    "blanket_execution_approved": false,
+    "status": "Phase 4 EXECUTION (blanket-approved through Manual Validation). Cards #322 (F150) #323 (F153) #324 (F155) #325 (F154); draft PR #326. Executing F150 first (interactive Firebase Console).",
+    "plan_approved": true,
+    "plan_approval_date": "2026-08-15",
+    "blanket_execution_approved": true,
     "scope": [
       "F150",
       "F153",
@@ -55,7 +55,7 @@
   },
   "store_release": {
     "_see_also": "docs/STORE_VERSION_STATUS.md is the quick-check summary (live Store version + current dev version, both with a last-verified date). This block is the working detail behind that summary. Keep both in sync; STORE_VERSION_STATUS.md is what to open for a fast answer, this block is where the evidence lives.",
-    "live_version": "0.7.0",
+    "live_version": "0.8.0.0",
     "live_submission_number": 14,
     "previous_live_version": "0.6.2",
     "certified_at": "2026-08-15",
@@ -64,7 +64,7 @@
     "submission_number": 15,
     "built_at": "2026-08-15",
     "submitted_at": "2026-08-15",
-    "status": "SUBMITTED, IN CERTIFICATION (Submission 15). Harold uploaded and submitted same day -- confirmed via Partner Center screenshots (2026-08-15): Packages page v0.8.0.0 X64 validated, ranked #1, v0.7.0.0 marked for removal; Application overview 'Update in certification', pipeline at Pre-processing; Store presence still correctly shows Submission 14 (0.7.0.0) live until 15 passes. MINOR release per the enforced semver policy (Sprint 58 feat entries F151a/h/i). Built from prod worktree main (PR #321) plus a LOCAL-ONLY unpushed merge of the Sprint 59 branch's 0.8.0 dev bump (F139-template pattern; pre-merge SHA ff42c78; the bump IS committed for real on feature/20260815_Sprint_59). All pre-submission checks PASSED: Check A dart-defines, Check B --release-self-test 6/6 (actual=0.8.0), manifest 0.8.0.0, 17.07 MB (flutter_markdown_plus adds ~0.3 MB, expected). Prod suite 1,892/0 pre-build. AFTER certification: Check C smoke pass (Harold), STORE_VERSION_STATUS Live row, CHANGELOG [0.8.0] heading, dev bump to next version.",
+    "status": "0.8.0.0 / Submission 15 CERTIFIED AND LIVE 2026-08-15 (same day as upload). Verified by Harold via three screenshots: Partner Center overview 'product is now updated' + Store presence 'currently available'; Store client product page 'Installed version 0.8.0.0' (last updated 08/15/2026); the INSTALLED app running with title 'MyEmailSpamFilter' (no [DEV]) and Settings > General 'Version 0.8.0' (no [DEV]) -- the strongest evidence. Step 7 close-out COMPLETE 2026-08-15: STORE_VERSION_STATUS Live row 0.8.0.0 + Dev row 0.8.1+1; CHANGELOG [0.8.0] heading + comparison links (also fixed the stale [Unreleased] base link that still pointed at v0.6.2); master plan Last Completed Sprint store outcome; dev pubspec bumped 0.8.0+1 -> 0.8.1+1 (msix_version in dev pubspec also refreshed 0.6.0.0 -> 0.8.1.0, it had been stale since 0.6.0); version_consistency gate green post-bump.",
     "artifact": "D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix",
     "verification": "Full test suite in prod worktree (post-pull, pre-build): 1,865 passed / 29 skipped / 0 failed; flutter analyze clean. Build log Check A: confirmed --dart-define=APP_ENV=prod --dart-define-from-file=secrets.prod.json in the inner flutter build windows command. Check B (--release-self-test --expected-version=0.7.0): RESULT: PASS on all 6 checks (APP_ENV=prod, NATIVE_APP_ENV=prod, both suffixes empty, no [DEV] in title, version match actual=0.7.0). Manifest Version=0.7.0.0 confirmed via Expand-Archive + AppxManifest.xml (unpacked folder cleaned up after). Size 16.81 MB (17627671 bytes), normal range.",
     "_build_process_note_2026_08_14": "Prod worktree had the SAME class of stale local-only leftovers as the 0.6.2.0 cycle (msix_version: 0.6.1.0 + generated_plugin_registrant.* churn) -- discarded via `git checkout -- .` (Harold approved via AskUserQuestion since this is a destructive-pattern action gated by the auto-mode classifier; Harold also asked that this class of discard be pre-approved going forward -- see CLAUDE.md/STORE_RELEASE_PROCESS.md note to add). Then a REAL `git pull origin main` (not a local-only merge this time) brought main current -- Harold had already completed the real develop->main merge via PR #316 before this build started, so no local-unpushed-merge workaround was needed. msix_version bumped 0.6.0.0 -> 0.7.0.0 locally in the prod worktree (uncommitted, per the standing convention -- dev worktree's own version bump to 0.7.0+1 was already committed for real on the Sprint 57 branch during Sprint 57 itself, commit visible in develop history).",
@@ -90,7 +90,9 @@
       "CHANGELOG.md [Unreleased] entries moved under a new [0.7.0] heading + Version Links added.",
       "Dev worktree bumped 0.7.0 -> next version per the semver policy (PATCH unless a feat lands first)."
     ],
-    "_prior_release_history": "0.7.0 (Submission 14): built 2026-08-14, certified + LIVE 2026-08-15, Harold-verified clean (Check C). First MINOR release under the semver policy. 0.6.2 (Submission 13): built 2026-08-13, certified + LIVE same day, Harold-verified clean (Check C). 0.6.1 (Submission 12): built 2026-08-12, certified + LIVE (per Harold's 2026-08-13 direct confirmation). 0.6.0 (Submission 11): built 2026-08-09, certified + LIVE 2026-08-10, Harold-verified clean. 0.5.9 (Submission 10): built + certified + LIVE 2026-08-03, Harold-verified clean via winget uninstall/reinstall workaround (client-side propagation lag on cert day, resolved). 0.5.8 (Submission 9): built 2026-07-27, submitted 2026-07-28, certified 2026-07-29, Harold-verified clean 2026-07-30."
+    "_prior_release_history": "0.7.0 (Submission 14): built 2026-08-14, certified + LIVE 2026-08-15, Harold-verified clean (Check C). First MINOR release under the semver policy. 0.6.2 (Submission 13): built 2026-08-13, certified + LIVE same day, Harold-verified clean (Check C). 0.6.1 (Submission 12): built 2026-08-12, certified + LIVE (per Harold's 2026-08-13 direct confirmation). 0.6.0 (Submission 11): built 2026-08-09, certified + LIVE 2026-08-10, Harold-verified clean. 0.5.9 (Submission 10): built + certified + LIVE 2026-08-03, Harold-verified clean via winget uninstall/reinstall workaround (client-side propagation lag on cert day, resolved). 0.5.8 (Submission 9): built 2026-07-27, submitted 2026-07-28, certified 2026-07-29, Harold-verified clean 2026-07-30.",
+    "submission": 15,
+    "certified_date": "2026-08-15"
   },
   "environment_notes": [
     "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
@@ -99,9 +101,7 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Harold: review/approve SPRINT_59_PLAN.md",
-    "On approval: Phase 3.3.1 cards + draft PR for Sprint 59 (branch exists -- do not skip)",
-    "Execute F150 first (interactive: Firebase Console registration of com.myemailspamfilter)",
-    "When Submission 15 certifies: Store release Step 7 post-submission close-out"
+    "Execute F153 (WinWright/UIA re-test) -> F155 (rename) -> F154 (help section)",
+    "F150 waiting on Harold's Firebase Console registration (steps provided)"
   ]
 }
