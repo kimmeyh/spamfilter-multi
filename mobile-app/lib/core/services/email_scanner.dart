@@ -332,10 +332,14 @@ class EmailScanner {
             // If email is already in the safe sender folder, skip entirely --
             // do not count, do not display, do not process. It is already
             // where it belongs. Other rule types (delete, no rule) in the
-            // safe sender folder ARE still shown.
-            // Note: safeSenderTarget defaults to INBOX when not explicitly set,
-            // so this comparison works whether the folder is configured or not.
-            if (message.folderName.toLowerCase() == safeSenderTarget.toLowerCase()) {
+            // safe sender folder ARE still shown. See
+            // shouldSkipSafeSenderAlreadyInTarget's doc comment for the F151d
+            // (Sprint 58) Demo Mode exception.
+            if (shouldSkipSafeSenderAlreadyInTarget(
+              platformId: platformId,
+              messageFolderName: message.folderName,
+              safeSenderTarget: safeSenderTarget,
+            )) {
               AppLogger.scan('Skipping safe sender in target folder: '
                   'from="${message.from}", folder="${message.folderName}", '
                   'target="$safeSenderTarget"');
@@ -1020,6 +1024,40 @@ class EmailScanner {
   /// signature) so this stays a valid public API -- `_EvaluatedEmail` is a
   /// private type and cannot appear in a public method signature.
   ///
+  /// Whether a safe-sender match already sitting in [safeSenderTarget]
+  /// should be skipped entirely (not counted, not displayed, not
+  /// processed) rather than shown as a normal Safe-sender result.
+  ///
+  /// For REAL scans this is a correct, deliberate optimization: if the
+  /// email is already exactly where a safe-sender rule would put it, there
+  /// is genuinely nothing to do, and showing it would just be no-op
+  /// clutter.
+  ///
+  /// F151d (Sprint 58): this optimization had an unintended side effect in
+  /// Demo Mode. Every demo safe-sender-matching email is deliberately
+  /// placed in INBOX (the default safe-sender target) by design, so this
+  /// skip silently excluded ALL of them -- a first-time user's Demo Scan
+  /// never showed a single Safe result (confirmed via a live walkthrough,
+  /// Harold 2026-08-15: 21 correctly-configured demo safe-sender emails,
+  /// 0 ever appeared). Demo Mode's [MockEmailProvider] never performs a
+  /// real move regardless (`canExecuteSafeSenders` is false in the
+  /// Read-Only mode Demo Scan defaults to), so there is no real "already
+  /// in place, nothing to do" case to optimize for in demo -- every demo
+  /// safe-sender match should just be listed, exactly like the
+  /// Delete/No-rule categories already are.
+  ///
+  /// Exposed and [visibleForTesting] as a pure predicate so this decision
+  /// is directly unit-testable without the full `scanInbox` orchestration.
+  @visibleForTesting
+  bool shouldSkipSafeSenderAlreadyInTarget({
+    required String platformId,
+    required String messageFolderName,
+    required String safeSenderTarget,
+  }) {
+    if (platformId == 'demo') return false;
+    return messageFolderName.toLowerCase() == safeSenderTarget.toLowerCase();
+  }
+
   /// Exposed and [visibleForTesting] so this can be exercised with a fake
   /// [SpamFilterPlatform] and mocked IMAP search responses, mirroring how
   /// [dedupSafeSenderSourceFolder] is already tested. Production calls it

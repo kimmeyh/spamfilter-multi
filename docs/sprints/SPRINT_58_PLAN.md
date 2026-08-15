@@ -139,38 +139,48 @@
 
 ---
 
-## Task 4 -- F151d: Add safe-sender example to demo dataset (Priority 10)
+## Task 4 -- F151d: Demo Scan never shows a Safe result (SCOPE CHANGED mid-task, Harold approved 2026-08-15) (Priority 10)
+
+**Original scope** (as planned): add a safe-sender example email to the demo dataset. **Actual scope** (root-cause investigation found a real bug, not missing data -- Harold explicitly approved the change before proceeding): fix the scan pipeline so Demo Mode's existing 21 correctly-configured safe-sender demo emails are not silently dropped before evaluation-counting.
 
 **Value**: This enables a first-time user's very first Demo Scan to demonstrate all major outcome categories (delete, safe, no-rule), not just delete/no-rule as confirmed during the live walkthrough (2026-08-15: the 38 processed demo emails included 0 Safe-category matches).
 
+**Investigation finding** (why the original R-1/R-2 "add demo data" premise was wrong): a scratch evaluation script run directly against `MockEmailData.generateSampleEmails()` + `MockEmailData.getDemoRuleSet()`/`getDemoSafeSenderList()` confirmed the demo dataset ALREADY has 21 correctly-configured safe-sender-matching emails (design intent comment in `mock_email_data.dart:786` says "Target: ~20 safe senders," and 21 is exactly right). Filtered to INBOX only (matching the live walkthrough's "Folders: INBOX" scope), the full evaluation produces Delete: 26, Safe: 21, No rule: 12 -- but the live walkthrough's real scan showed Processed: 38 (exactly Delete 26 + No rule 12), Safe never appearing at all. Root cause: `email_scanner.dart`'s per-email evaluation loop has a `continue` (skip entirely -- not counted, not displayed, not processed) whenever a safe-sender match's `message.folderName` already equals `safeSenderTarget` (defaults to INBOX). This is a CORRECT, deliberate optimization for real scans (nothing to do if the email is already exactly where it belongs) but every demo safe-sender email is deliberately placed in INBOX by dataset design, so this skip silently ate all 21 of them.
+
 **Requirements** (numbered, detailed):
-- R-1: Add at least one email to the demo dataset that matches an existing default safe-sender rule (or add a demo-specific safe-sender rule alongside it, whichever fits the existing demo-data architecture), so a fresh Demo Scan shows a non-zero "Safe" chip.
-- R-2: Locate the existing demo dataset source (confirm exact file/service during implementation -- likely a fixture list or generator referenced by the Demo Mode scan path) and follow its existing pattern/format for adding a new sample email, matching the style of existing entries (e.g. `DemoBlockHeader`/`DemoBlockSubject`/`DemoBlockBody` tags seen in the live walkthrough's results).
+- R-1 (revised): the "already in target folder" skip must not apply to Demo Mode (`platformId == 'demo'`). Demo Mode never performs a real move regardless of this skip (Demo Scan defaults to Read-Only, so `canExecuteSafeSenders` is already false and the existing code path already records-without-acting in that case) -- so removing the skip for demo does not introduce any real side effect, it only stops silently discarding the evaluation result.
+- R-2 (revised): extract the skip condition into a small, pure, `@visibleForTesting` predicate (matching the established F91/F149 extraction pattern already in this file) rather than leaving it as an inline `if` -- makes the decision directly unit-testable without needing full `scanInbox()` orchestration, which this file's own doc comments state is intentionally out of unit-test scope (exercised via Manual Validation instead).
+- R-3: real (non-demo) scan behavior must be provably unchanged -- the skip still applies exactly as before for every `platformId != 'demo'`.
 
 **Affected components / files**:
-- Demo dataset source file (confirm exact path during implementation -- search for the existing "50+ sample emails" generator/fixture referenced in `platform_selection_screen.dart`'s "Try Demo Mode" description).
+- `mobile-app/lib/core/services/email_scanner.dart` -- new `shouldSkipSafeSenderAlreadyInTarget()` predicate (near `filterAlreadyInTargetFolder`, same file); call site in the per-email evaluation loop updated to use it instead of the inline condition.
 
-**Dependencies / blockers**: None.
+**Dependencies / blockers**: None. Investigated and root-caused within this task; Harold approved via AskUserQuestion mid-task before any fix was applied (Sprint Stopping Criteria: scope change requiring explicit approval, not silently expanded).
 
-**Non-functional requirements**: None.
+**Non-functional requirements**:
+- Platform: this touches the shared `scanInbox()` evaluation loop used by ALL platforms (real IMAP/Gmail accounts and Demo Mode alike) -- R-3's regression proof is mandatory, not optional.
 
 **Acceptance criteria** (measurable, traceable):
-- AC-1: Given a fresh Demo Scan run, When results are computed, Then at least 1 email is categorized as "Safe" (matches an existing safe-sender rule).
-- AC-2: The added email does not change any other existing demo-data counts in a way that breaks existing demo-related tests (if any assert exact counts).
+- AC-1: Given Demo Mode, When a Demo Scan runs against the existing demo dataset, Then safe-sender-matching demo emails are evaluated, counted, and displayed as "Safe" results (not silently dropped).
+- AC-2: Given a real (non-demo) platform, When a safe-sender match is already in the safe-sender target folder, Then it is still skipped entirely exactly as before (no regression to the real-scan optimization).
+- AC-3: Demo Mode's Safe-sender matches never trigger a real move/execute action -- Demo Scan's default Read-Only mode already guarantees this (the existing "record without acting" code path was not changed), verified rather than assumed.
 
 **Tests to write** (one intent per AC; name pyramid level + target file):
-- T-1 (verifies AC-1) -- TEST-UNIT or TEST-WIDGET (whichever matches the existing demo-data test pattern, if one exists; if not, a new lightweight test in `test/unit/` or `test/core/` asserting the demo dataset contains at least one safe-sender-matching entry): confirm the new entry evaluates to "Safe" against the current default rule set.
-- T-2 (verifies AC-2) -- run existing demo-related tests, confirm no count-based assertions break; update them if they hardcode the previous total count (acceptable, expected consequence of this change).
+- T-1 (verifies AC-1) -- TEST-UNIT in new `test/unit/services/f151d_demo_safe_sender_test.dart`: `shouldSkipSafeSenderAlreadyInTarget(platformId: 'demo', ...)` returns `false` even when the message is already in the target folder.
+- T-2 (verifies AC-2) -- TEST-UNIT, same file: `shouldSkipSafeSenderAlreadyInTarget(platformId: <non-demo>, ...)` returns `true` when already in target, `false` when not -- unchanged from the pre-fix behavior.
+- T-3 (verifies AC-3) -- re-run the full existing EmailScanner-related test suite (`f91_safe_sender_dedup_test.dart`, `email_scanner_test.dart`, `email_scanner_f86_test.dart`, `email_scanner_no_rule_cursor_cap_test.dart`, `email_scanner_scan_all_bypass_test.dart`) to confirm zero regression to real-scan safe-sender handling.
 
 **Definition of Done**: default task-level DoD PLUS: manual confirmation via a real Demo Scan run that a Safe-category result appears (Manual Validation, can double up with Task 3's manual check).
 
-**Model**: Haiku -- *why not escalate*: adding one data entry following an existing established pattern. No architectural decision.
+**Model**: Sonnet -- *why not Haiku*: this started as a Haiku-sized "add one data entry" task but the investigation surfaced a genuine cross-platform scan-pipeline bug requiring root-cause tracing through `email_scanner.dart`'s evaluation loop, a scope-change decision surfaced to Harold, and a fix constrained by an explicit "must not change real-scan behavior" non-functional requirement -- beyond Haiku's heuristics once the actual defect was found.
 
-**Executed-by**: _(fill at completion)_
+**Executed-by**: Sonnet -- matches the revised model assignment above; the investigation and fix both required cross-file root-cause tracing beyond a Haiku-sized single-file data change.
 
-**Step-types**: DATA, TEST-UNIT
+**Step-types**: SVC-EDIT, TEST-UNIT
 
-**Est-Effort**: 10-15m
+**Est-Effort**: 10-15m (original "add demo data" estimate; superseded, actual ~35m -- see `CODING_VELOCITY.md`)
+
+**Completion notes (2026-08-15)**: Root-caused and fixed as revised above. Extracted `shouldSkipSafeSenderAlreadyInTarget()` (pure predicate, `@visibleForTesting`) in `email_scanner.dart`, gated the skip to `platformId != 'demo'`. 5 new unit tests in `test/unit/services/f151d_demo_safe_sender_test.dart`, mutation-verified (removing the demo gate correctly failed exactly the demo-in-target-folder case, no other test affected). Full EmailScanner-related suite (52 tests across 5 files) re-run clean -- confirmed zero regression to real-scan behavior. `flutter analyze` clean.
 
 ---
 
