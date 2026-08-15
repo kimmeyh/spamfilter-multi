@@ -26,6 +26,13 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-08-15 (Sprint 58, Manual Validation follow-ups) (Issue #318)
+- **fix**: MV-1 -- tapping the Search icon on the Scan Results screen now focuses the search text box immediately, so typing can start without a second click. The Ctrl+F path already requested focus; the icon path was missing the same post-frame request, and the TextField's own autofocus loses the race against the screen's outer keyboard-shortcut Focus wrapper.
+- **fix**: MV-2 -- the close-search control changed from an X to a back-arrow (Material convention for leaving in-AppBar search mode); the X visually collided with the app-exit X on the opposite end of the AppBar.
+- **feat**: MV-3 -- Escape now closes the open search box (standard Windows desktop convention), sharing the same close path as the back-arrow.
+- **fix**: MV-8 -- the email-detail action popup layout revised again per Manual Validation: the Sprint 58 480px-centered cap was too squashed for long addresses/domains and forced scrolling. The popup's left edge now sits around the 1/3 mark and it extends to the far right edge of the window, leaving the list rows' sender + subject visible on the left for row-matching while roughly doubling the popup's content width.
+- **docs**: MV-6 -- Help walkthrough Step 7 (Set Up Daily Background Scanning) rewritten per Harold's provided text: now describes where results land ("View Scan History" + "Review No Rule Items"), what background scanning guarantees (safe senders in the Safe Sender Folder, delete-rule matches in the Deleted Rule Folder), and the two ways to process No Rule items on an ongoing cadence.
+
 ### 2026-08-15 (Sprint 58)
 - **feat**: F151a -- the zero-accounts empty state (`AccountSelectionScreen`) now explains what the app does and surfaces a "Try Demo Mode instead" action distinct from "Add Account," so a first-time user can find the no-account-needed exploration path without a prior tap. Sourced from a live user-centric first-run walkthrough (Harold, 2026-08-15).
 - **feat**: F151b -- the Help screen now shows a "First time? Start here" callout near the top, linking directly to the 8-step walkthrough (previously the last of 22 passive sections, requiring the user to already know it existed and scroll to the bottom). Closes the gap F75 (Sprint 34) explicitly deferred.

@@ -102,11 +102,13 @@ void main() {
     }
 
     testWidgets(
-        'popup width is capped well below the default 1600px window width',
+        'popup occupies the right ~65% of the window, leaving the left list '
+        'column visible (MV-8 revision of the original 480px cap)',
         (tester) async {
       // Wide surface matching the default app window size confirmed during
       // the live walkthrough (1600x900) -- this is exactly the scenario
-      // that showed the oversized popup.
+      // that showed the oversized popup, and then (Manual Validation,
+      // 2026-08-15) the too-squashed 480px-centered first fix.
       tester.view.physicalSize = const Size(1600, 900);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -127,21 +129,34 @@ void main() {
       // The popup's Material widget carries the elevation:8/borderRadius:12
       // styling unique to this sheet (distinguishes it from the Scaffold's
       // own root Material).
-      final popupMaterial = tester.widgetList<Material>(find.byType(Material))
-          .where((m) => m.elevation == 8)
-          .toList();
-      expect(popupMaterial, hasLength(1),
+      final popupFinder = find
+          .byWidgetPredicate((w) => w is Material && w.elevation == 8);
+      expect(popupFinder, findsOneWidget,
           reason: 'expected exactly one popup Material (elevation: 8)');
 
-      final popupSize = tester.getSize(find
-          .byWidgetPredicate((w) => w is Material && w.elevation == 8)
-          .first);
-      expect(popupSize.width, lessThanOrEqualTo(480),
-          reason: 'popup must be capped at maxWidth: 480, not stretch to '
-              'the full window width');
-      expect(popupSize.width, greaterThan(200),
-          reason: 'sanity check -- popup should still be a normal usable '
-              'width, not collapsed');
+      final popupRect = tester.getRect(popupFinder);
+      const windowWidth = 1600.0;
+
+      // Right edge reaches (nearly) the window's right edge -- the popup
+      // extends to the far right per MV-8, minus the Positioned right: 16
+      // margin.
+      expect(popupRect.right, greaterThan(windowWidth - 32),
+          reason: 'popup must extend to the far right of the window');
+
+      // Left edge sits around the 1/3 mark, leaving the list rows'
+      // sender/subject column visible behind it. 0.65 widthFactor of the
+      // (1600 - 32) available width -> left edge ~= 16 + 0.35 * 1568 ~= 565.
+      expect(popupRect.left, greaterThan(windowWidth * 0.30),
+          reason: 'popup must NOT cover the left list column (sender + '
+              'subject stay visible for row-matching)');
+      expect(popupRect.left, lessThan(windowWidth * 0.42),
+          reason: 'popup left edge should start around the ~1/3 mark, not '
+              'be squashed further right');
+
+      // Width sanity: substantially wider than the rejected 480px cap.
+      expect(popupRect.width, greaterThan(700),
+          reason: 'popup must be roomier than the too-squashed 480px '
+              'centered version');
     });
   });
 }

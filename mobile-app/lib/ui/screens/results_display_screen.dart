@@ -83,6 +83,18 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   String _searchQuery = '';
   bool _showSearch = false;
 
+  /// MV-2/MV-3 (Sprint 58 Manual Validation): single close-search path shared
+  /// by the leading back-arrow button and the Escape key, so both exits
+  /// behave identically (clear the query, clear the field, restore the
+  /// normal AppBar).
+  void _closeSearch() {
+    setState(() {
+      _showSearch = false;
+      _searchQuery = '';
+      _searchController.clear();
+    });
+  }
+
   // Folder filter state (Item 6: folder dropdown)
   Set<String> _selectedFolders = {};
 
@@ -602,6 +614,18 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
             });
             return KeyEventResult.handled;
           }
+
+          // MV-3 (Sprint 58 Manual Validation): Escape closes the search box
+          // when it is open -- standard Windows desktop convention (Escape
+          // dismisses transient UI). Key events bubble from the focused
+          // TextField up through this ancestor Focus, so this fires while
+          // typing in the search field. Only handled when search is open;
+          // otherwise Escape is ignored and does nothing else on this screen.
+          if (_showSearch &&
+              event.logicalKey == LogicalKeyboardKey.escape) {
+            _closeSearch();
+            return KeyEventResult.handled;
+          }
         }
         return KeyEventResult.ignored;
       },
@@ -629,17 +653,18 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               : Text(
                   'Results - ${widget.accountEmail} - ${widget.platformDisplayName}'),
           // Add explicit back button that returns to account selection
+          // MV-2 (Sprint 58 Manual Validation): close-search icon changed
+          // from Icons.close (X) to Icons.arrow_back -- the X visually
+          // collided with the app-exit X on the opposite end of the AppBar.
+          // Back-arrow is the standard Material convention for leaving an
+          // in-AppBar search mode (Gmail et al.): "go back from search" on
+          // the left edge, matching this screen's own non-search leading
+          // back-arrow semantics (leave the current mode/screen).
           leading: _showSearch
               ? IconButton(
-                  icon: const Icon(Icons.close),
+                  icon: const Icon(Icons.arrow_back),
                   tooltip: 'Close Search',
-                  onPressed: () {
-                    setState(() {
-                      _showSearch = false;
-                      _searchQuery = '';
-                      _searchController.clear();
-                    });
-                  },
+                  onPressed: _closeSearch,
                 )
               : IconButton(
                   icon: const Icon(Icons.arrow_back),
@@ -690,6 +715,16 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                     onPressed: () {
                       setState(() {
                         _showSearch = true;
+                      });
+                      // MV-1 (Sprint 58 Manual Validation): the icon path was
+                      // missing the focus request the Ctrl+F path already had,
+                      // so the user had to click the text box before typing.
+                      // The TextField's own autofocus loses the race against
+                      // this screen's outer Focus(autofocus: true) wrapper --
+                      // an explicit post-frame request is required on BOTH
+                      // open paths.
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _searchFocusNode.requestFocus();
                       });
                     },
                   ),
@@ -1637,16 +1672,23 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               right: 16,
               // F151e (Sprint 58): the popup previously stretched edge-to-edge
               // minus 16px margins on both sides -- at the default 1600px
-              // window width that meant a ~1568px-wide popup, so the 3-button
-              // safe-sender/block-rule grids (already laid out side-by-side,
-              // not stacked) each stretched far wider than their content
-              // needed, reading as oversized. Capping the width and centering
-              // makes the popup a reasonable dialog size on large windows
-              // while the left/right: 16 fallback still applies on narrow ones
-              // (ConstrainedBox never grows PAST the Positioned bounds).
-              child: Center(
+              // window width that meant a ~1568px-wide popup. First fix
+              // (centered, maxWidth 480) was REVISED per Manual Validation
+              // (Harold, 2026-08-15): 480 was too squashed for long email
+              // addresses/domains and forced scrolling. Revised layout: the
+              // popup's LEFT edge stays around where the centered version
+              // started (~35% of the available width) and the popup extends
+              // to the FAR RIGHT edge -- this leaves the list rows' sender +
+              // subject visible on the left (so the user can match the popup
+              // against the row it came from) while giving the popup's
+              // content roughly double the width. FractionallySizedBox
+              // scales with the window, so narrow windows keep a usable
+              // proportional popup instead of a fixed-width overflow.
+              child: FractionallySizedBox(
+                alignment: Alignment.centerRight,
+                widthFactor: 0.65,
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 480),
+                  constraints: const BoxConstraints(minWidth: 400),
                   child: Material(
                     elevation: 8,
                     borderRadius: BorderRadius.circular(12),
@@ -2123,7 +2165,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                     ), // Close SelectionArea
                   ), // Close Material
                 ), // Close ConstrainedBox
-              ), // Close Center
+              ), // Close FractionallySizedBox
             ), // Close Positioned
           ],
         );
