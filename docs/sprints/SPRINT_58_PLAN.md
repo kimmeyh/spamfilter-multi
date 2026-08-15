@@ -298,7 +298,21 @@
 
 **Model**: Sonnet -- *why not Haiku*: judging what counts as a "genuine" layout issue vs. cosmetic non-issue, and correctly time-boxing/scoping any follow-up items, requires more judgment than a mechanical check.
 
-**Executed-by**: _(fill at completion)_
+**Executed-by**: Sonnet -- matches the planned assignment.
+
+**Completion notes (2026-08-15)**:
+
+**Major discovery, not part of R-1/R-2/R-3's original scope but directly relevant to this investigation's tooling**: `docs/WINWRIGHT_SELECTORS.md` documents a prerequisite -- the Windows `SPI_SETSCREENREADER` system flag must be enabled (`mobile-app/scripts/enable-screen-reader-flag.ps1 enable`) before WinWright can see ANY Flutter semantics content. This flag was NOT enabled anywhere earlier in this sprint's live walkthrough or in this task's own initial attempts -- `ww_get_snapshot` returned an empty content `Pane` (0 children) every time, which was misread as confirming F140's "Flutter exposes zero UIA patterns" finding. Checked (`enable-screen-reader-flag.ps1 status` -> `False`), enabled it, and WinWright immediately began returning full semantics trees (31+ interactive elements with real bounds) and successfully clicking real app buttons via `ww_invoke`/`type=Button[name*='...']` selectors -- something this session had concluded was impossible. **A scroll action also visibly moved real content** (`ww_scroll` against a `type=Group` selector), directly contradicting F140's "no scroll patterns exposed at all" conclusion. Left the flag enabled per Harold's explicit direction (2026-08-15) since it is broadly useful for all future WinWright sessions and has no visible side effect (does not start a real screen reader).
+
+**This does NOT necessarily mean F140/F153 were wrong that Flutter has NO Windows UIA support** -- it means this session's specific negative evidence (empty snapshots, no scroll) was confounded by a missing prerequisite the whole time, so the true state of Flutter's Windows UIA support is now UNKNOWN again and needs a real re-test with the flag correctly enabled from the start. **Updated F153's scope** (see `docs/ALL_SPRINTS_MASTER_PLAN.md`) to lead with re-testing WITH the flag enabled before concluding anything about Flutter's engine-level support -- the original F140 spike (Sprint 54) and this sprint's early walkthrough sessions may never have had the flag enabled either, since no `docs/WINWRIGHT_SELECTORS.md` prerequisite check is documented as a standard pre-flight step anywhere in the sprint process. Flagged as a possible new process gap (a pre-flight check missing from `SPRINT_PLANNING.md`'s Tooling-Capability Pre-Flight guidance) -- not fixed inline per R-4's time-box, noted here for a future sprint to pick up.
+
+**R-1 (window resize)**: Checked 4 sizes with the flag enabled -- small (1078x633), medium (1522x853), wide (1672x899), and maximized (1938x1038) -- across No-Rule Review (default screen), Settings (General tab), Settings (Manual Scan tab), and Help. All four screens rendered cleanly at every size: no overflow, no clipping, no broken layout. Text reflowed appropriately at the maximized width in Help. Account Selection and Scan Results/email-detail popup were NOT separately re-checked at multiple sizes in this task (already covered by Task 5's dedicated popup-width work and the Backlog Refinement walkthrough's default-size checks) -- time-boxed per R-4, judged sufficient coverage rather than re-testing what two other tasks already verified.
+
+**R-2 (DPI scale)**: Machine's actual DPI scale (125%, confirmed via `dpiScale: 1.25` in every WinWright screenshot's metadata throughout this sprint) is clean across all sizes checked. A second DPI scale was NOT tested (would require a live Windows display-settings change and sign-out/sign-in cycle -- out of proportion for a time-boxed spot-check; noted as a gap, not silently skipped).
+
+**R-3 (UI flicker/jitter)**: No flicker/jitter observed during screen transitions (Settings tab switches, Help navigation) in this session. Not exhaustively tested under scan-progress-update conditions (would require a real scan, out of this task's time-box).
+
+**AC-3 (findings filed)**: No layout/DPI issues found -- explicitly recording a CLEAN result, not omitting it. The screen-reader-flag discovery is the one substantive finding from this task, and it is process/tooling-scoped (F153 updated) rather than an app-code backlog item.
 
 **Step-types**: DOCS (investigation + findings write-up)
 
