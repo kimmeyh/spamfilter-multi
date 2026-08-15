@@ -66,9 +66,18 @@
 
 **Model**: Sonnet -- *why not Haiku*: evidence interpretation against a confounded historical record, and a docs-consistency sweep.
 
-**Executed-by**: _(fill at completion)_
+**Executed-by**: Fable 5 (session model; ran inline rather than delegating -- the probe was interactive tool-driving with live evidence interpretation at each step)
 **Step-types**: WINWRIGHT-DISCOVERY, DOCS
-**Est-Effort**: 30-45m (time-boxed)
+**Est-Effort**: 30-45m (time-boxed) -- **Actual: ~25m**
+
+**COMPLETION NOTES (2026-08-15) -- F140 refuted; WinWright works. Raw evidence:**
+- R-1: flag `True` at session start (persisted since the Sprint 58 same-day enablement; reboot-survival still unverified -- always run `status`).
+- **New root-cause discovery**: Flutter builds its semantics tree LAZILY. First `ww_dump_tree` after app launch returned only the opaque `FLUTTERVIEW` pane (with the flag on); after ONE `ww_get_snapshot` (48 interactive elements, full labels/bounds), the SAME `ww_dump_tree` returned the full 66-element tree. This plus the missing flag fully explains F140's Sprint 54 empty-tree record.
+- R-2: `ww_invoke` (pure InvokePattern) succeeded on Buttons (Help, Settings) -- "zero patterns" refuted. `ww_dump_tree includePatterns: true` still prints no pattern annotations: pattern REPORTING is incomplete while pattern INVOCATION works; test the verb, never the dump.
+- R-3: `ww_scroll` direction mode works, direction semantics CORRECT (down = advance; Sprint 58's inversion did not reproduce). ~165px per call regardless of line/page; Help (~6000px) needs many calls; live element `bounds.y` via a selector dump is the position probe. into_view BROKEN two ways (handleId -> `PropertyNotSupportedException` on RuntimeId; selector -> `success, method:"none"` false success, screenshot-verified no movement). find_target = tree lookup (found, 0 steps, for content 4500px below the fold) -- existence only, not visibility.
+- R-4: F140's failure case is moot AND closed: Settings > General version text now sits at the TOP of the tab (`Version 0.8.0 [DEV]` read directly via `name*="Version 0.8"`, on-screen) and the whole tab fits the default window (bottom element `Go to View Scan History` at y=827, on-screen). F139's version check can be automated.
+- R-5: all three doc sites updated consistently -- `WINWRIGHT_SELECTORS.md` (Prerequisites promoted to MUST-check two-step pre-flight; F140 section superseded by a verified capability/gap list), master plan (F139 gap note closed; F153 entry marked RESOLVED), `SPRINT_PLANNING.md` (WinWright pre-flight added to Tooling-Capability Pre-Flight).
+- R-6: no upstream Flutter research needed -- residual gaps are WinWright-tool-mode specifics (into_view/find_target), not engine ceilings. Bonus observations: F145 deep-link behavior visible via automation (Help opened from the No Rule screen landed on "Results"); F151i Markdown rendering confirmed live; selector syntax that works: `name="X"`, `name*="partial"`, `type="Pane"`.
 
 ---
 

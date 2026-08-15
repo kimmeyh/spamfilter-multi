@@ -26,6 +26,9 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-08-15 (Sprint 59)
+- **docs**: F153 -- WinWright/UIA re-test with `SPI_SETSCREENREADER` enabled refutes F140's Sprint 54 "Flutter exposes zero UIA patterns" conclusion: the flag was never enabled during the original spike, and Flutter's lazy semantics init (first query empty; one `ww_get_snapshot` primes the tree) accounted for the rest. Verified working: InvokePattern on Buttons, direction-mode scrolling with correct semantics, full off-screen tree visibility, direct automation read of the Settings version text (closes F139's "Known gap"). Verified broken: `ww_scroll` into_view (false success / RuntimeId unsupported). Capability record + mandatory two-step pre-flight in `docs/WINWRIGHT_SELECTORS.md`; pre-flight also added to `SPRINT_PLANNING.md`. (Issue #323)
+
 ## [0.8.0] - 2026-08-15
 
 Microsoft Store release (Submission 15, certified and live 2026-08-15). MINOR bump per the enforced semver policy -- Sprint 58 contains `feat` entries (F151a/b, F151h/i, MV-3).
