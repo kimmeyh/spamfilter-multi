@@ -18,7 +18,7 @@ Partner Center before saying anything about the Store version.
 | | Version | Last verified | Notes |
 |---|---|---|---|
 | **Live/certified on Store** (cache) | 0.7.0.0 | 2026-08-15 (Harold, installed-build confirmation: Settings screen screenshot -- title bar "MyEmailSpamFilter" with no `[DEV]`, Settings > General "Version 0.7.0" with no `[DEV]` marker, the strongest possible evidence) | Submission 14, certified and published 2026-08-15 (first MINOR release under the semver policy -- Sprint 57's F142 `feat` entry). Superseded 0.6.2.0/Submission 13. Built from a genuinely current `main` (real develop->main merge via PR #316 already in place) -- no local-unpushed-merge workaround needed this cycle. |
-| **Dev worktree** (authoritative -- mirrors `pubspec.yaml`) | 0.7.1+1 | 2026-08-15 | Post-cert bump per `docs/STORE_RELEASE_PROCESS.md` Step 7 -- PATCH, not MINOR, since `[Unreleased]` is empty (no `feat` queued). `msix_version` remains at the last release build's value until the next Store release cycle. |
+| **Dev worktree** (authoritative -- mirrors `pubspec.yaml`) | 0.8.0+1 | 2026-08-15 | Bumped MINOR per the enforced semver policy (Sprint 58's `[Unreleased]` contains `feat` entries F151a/h/i), committed on `feature/20260815_Sprint_59`. `msix_version` bumped to `0.8.0.0` in the PROD worktree (local/uncommitted, per convention) -- **0.8.0.0 BUILT + VERIFIED 2026-08-15, awaiting Harold's Partner Center upload/submission.** See `.claude/sprint_status.json` `store_release` block for full evidence. |
 
 ## Update this file every time
 
