@@ -13,7 +13,7 @@ import 'package:my_email_spam_filter/ui/screens/help_screen.dart';
 /// **The defect this pins.** `StandardAppBarActions` defaulted the Accounts icon
 /// to `Navigator.popUntil(context, (route) => route.isFirst)`. That was correct
 /// before F135, when Account Selection was effectively what the first route
-/// rendered. F135 made Review "No Rule" Items the desktop default, and the first
+/// rendered. F135 made Review No Rule Items the desktop default, and the first
 /// route is `MainNavigationScreen`, which renders the No-Rule screen inline
 /// whenever an account exists -- so Account Selection stopped being a route on
 /// desktop and `popUntil` could never reach it. On the No-Rule screen the icon
@@ -112,14 +112,14 @@ void main() {
       // below rather than pressed here.
       //
       // PLATFORM-CONDITIONAL rather than a whole-test Windows skip (Copilot,
-      // PR #292): only the Review "No Rule" Items icon is Windows-scoped in
+      // PR #292): only the Review No Rule Items icon is Windows-scoped in
       // the builder. Skipping the entire test on !Windows meant CI (which runs
       // `flutter test` on ubuntu-latest) NEVER exercised the MV-1 regression
       // gate -- protection existed only on local Windows runs. The three
       // cross-platform actions now run everywhere; the No-Rule icon is
       // asserted only where the builder emits it.
       final navigatingActions = <String>[
-        if (Platform.isWindows) 'Review "No Rule" Items',
+        if (Platform.isWindows) 'Review No Rule Items',
         'View Scan History',
         'Select Account',
         'Settings',

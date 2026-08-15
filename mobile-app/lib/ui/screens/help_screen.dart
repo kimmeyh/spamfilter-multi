@@ -229,7 +229,7 @@ class _HelpScreenState extends State<HelpScreen> {
           platformId: widget.platformId ?? '',
           platformDisplayName: widget.platformDisplayName ?? '',
           // MV-5 (Sprint 58 Manual Validation, Harold 2026-08-15): the
-          // Review "No Rule" Items icon now appears on Help too (previously
+          // Review No Rule Items icon now appears on Help too (previously
           // suppressed here) -- the builder's default includes it.
           includeScanHistory: hasAccount,
           includeHelp: false,

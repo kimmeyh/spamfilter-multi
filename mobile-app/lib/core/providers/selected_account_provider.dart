@@ -27,7 +27,7 @@ import 'package:flutter/foundation.dart';
 ///   - Manual / Live Scan
 /// Which do NOT:
 ///   - Settings > General (cross-account by design -- rules, retention, privacy)
-///   - Review "No Rule" Items (aggregates across ALL accounts)
+///   - Review No Rule Items (aggregates across ALL accounts)
 ///   - Scan History (shows every account's scans)
 class SelectedAccountProvider extends ChangeNotifier {
   String? _accountId;

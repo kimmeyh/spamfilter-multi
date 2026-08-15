@@ -27,6 +27,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 ## [Unreleased]
 
 ### 2026-08-15 (Sprint 59)
+- **fix**: F155 -- the screen name 'Review "No Rule" Items' is now "Review No Rule Items" everywhere current: screen title, AppBar tooltips, help/walkthrough text, code comments stating the live name, and the policy gates that enforce the tooltip set and canonical order (31 occurrences across 10 lib files, 6 test files, and the walkthrough content). Historical records (past sprint docs, CHANGELOG release history) deliberately untouched. Gate mutation-verified against the old name. (Issue #324)
 - **docs**: F153 -- WinWright/UIA re-test with `SPI_SETSCREENREADER` enabled refutes F140's Sprint 54 "Flutter exposes zero UIA patterns" conclusion: the flag was never enabled during the original spike, and Flutter's lazy semantics init (first query empty; one `ww_get_snapshot` primes the tree) accounted for the rest. Verified working: InvokePattern on Buttons, direction-mode scrolling with correct semantics, full off-screen tree visibility, direct automation read of the Settings version text (closes F139's "Known gap"). Verified broken: `ww_scroll` into_view (false success / RuntimeId unsupported). Capability record + mandatory two-step pre-flight in `docs/WINWRIGHT_SELECTORS.md`; pre-flight also added to `SPRINT_PLANNING.md`. (Issue #323)
 
 ## [0.8.0] - 2026-08-15

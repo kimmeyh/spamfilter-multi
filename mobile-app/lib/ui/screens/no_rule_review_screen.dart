@@ -686,7 +686,7 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBarWithExit(
-        title: const Text('Review "No Rule" Items'),
+        title: const Text('Review No Rule Items'),
         // F134 (Sprint 52): canonical order from the ONE shared builder --
         // Refresh (screen-specific, first), then View Scan History, Accounts,
         // Settings, Help, then the auto-appended Exit. Harold specified this

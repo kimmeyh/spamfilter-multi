@@ -107,9 +107,11 @@
 
 **Model**: Haiku -- mechanical, fully-enumerated rename with existing gates as the net. *(Escalate only if a test reveals a hidden coupling.)*
 
-**Executed-by**: _(fill at completion)_
+**Executed-by**: Fable 5 (session model; executed inline -- the replacement was a single scripted pass, cheaper in wall-clock than delegating)
 **Step-types**: UI-MOVE (strings), TEST-UNIT, CONTENT, DOCS
-**Est-Effort**: 20-30m
+**Est-Effort**: 20-30m -- **Actual: ~8m**
+
+**COMPLETION NOTES (2026-08-15)**: 31 replacements total -- 13 in 10 lib files, 15 in 6 test files (planning said 5; `integration_test/sprint52_surfaces_test.dart` was the 6th, found by the execution grep), 3 in `walkthrough.md` (including the secondary `update "No Rule" items` phrase, de-quoted for consistency; the `"No rule"` chip-label quotation kept -- it cites the chip's actual literal label). CHANGELOG historical entries and past sprint docs untouched per Harold. Master plan's only hit is the F155 item description itself (intentionally names the old name). Verification: `flutter analyze` clean; all 29 affected-suite tests green; final grep of lib/ + test/ + integration_test/ + assets/content/ = zero old-name hits; policy gate mutation-verified (old tooltip reintroduced -> 2 tests red -> restored -> 6/6 green).
 
 ---
 

@@ -450,7 +450,7 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
       children: [
         IconButton(
           icon: const Icon(Icons.rule_folder_outlined, size: 18),
-          tooltip: 'Review "No Rule" Items',
+          tooltip: 'Review No Rule Items',
           visualDensity: VisualDensity.compact,
           constraints: const BoxConstraints(),
           padding: const EdgeInsets.only(bottom: 2),

@@ -100,7 +100,7 @@ void main() {
       // Accounts icon was never order-checked at all -- it could have been
       // moved anywhere and this test would still have passed.
       const navigationActions = <String>[
-        'Review "No Rule" Items',
+        'Review No Rule Items',
         'View Scan History',
         'Select Account',
         'Settings',
@@ -111,7 +111,7 @@ void main() {
       // is a broken assertion, not an absent action.
       const knownTooltips = <String>{
         'Manual Scan',
-        'Review "No Rule" Items',
+        'Review No Rule Items',
         'View Scan History',
         'Select Account',
         'Settings',

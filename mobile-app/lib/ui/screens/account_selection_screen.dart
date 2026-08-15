@@ -579,7 +579,7 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
   /// F134 (Sprint 52): the canonical AppBar action list for this screen, built
   /// by the ONE shared builder so the order cannot drift.
   ///
-  /// Canonical order is Review "No Rule" Items, View Scan History, Accounts,
+  /// Canonical order is Review No Rule Items, View Scan History, Accounts,
   /// Settings, Help. This screen previously ran Help / No-Rule / History /
   /// Settings -- Help FIRST, the exact inverse of the rule that Help is last.
   ///
