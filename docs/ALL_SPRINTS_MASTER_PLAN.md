@@ -4,7 +4,7 @@
 
 **Audience**: Claude Code models planning sprints; User prioritizing future work
 
-**Last Updated**: 2026-08-15 (**Sprint 58 Backlog Refinement scoped to F151** -- Windows first-run/onboarding UX gaps, sourced from Harold's user-centric MVP test script + First-Run Evaluation Summary Page, confirmed via a live Windows walkthrough (real 0.7.0.0 prod exe, genuinely empty account/data state, Harold driving + Claude observing via WinWright). 7 sub-findings: no welcome/orientation screen, buried Demo Mode, buried walkthrough, dense/under-explained Scan Results (chip tooltips, missing safe-sender demo example, dead "Moved" chip, ambiguous "Deleted (not processed)" wording), oversized email-detail action popup, raw-exception error text on 2 connection/scan paths, unaudited Windows window-resize/DPI compatibility. F152 registered as a new reusable periodic HOLD template so this evaluation method can be re-run on future releases/platforms. F151 is the ONLY Sprint 58 item, superseding F150 (Android build blocker) as this sprint's scope -- F150 remains open, still blocked on Harold's Firebase Console action, next candidate once resolved. Prior: **0.7.0.0 CERTIFIED AND LIVE on the Microsoft Store** (Submission 14, 2026-08-15) -- first MINOR release under the enforced semver policy, triggered by Sprint 57's F142 `feat` entry; Sprint 57 (F142 + F149) merged to develop (PR #314) and main (PR #316).)
+**Last Updated**: 2026-08-15 (**Sprint 58 COMPLETE** -- F151 Windows first-run/onboarding UX, 9 tasks + 9 MV follow-ups, all shipped; retro complete (2 improvements applied); PR #317 ready for Harold's review/merge. See "Last Completed Sprint" below. Next sprint candidates: F150 (Android build blocker, needs Harold's Firebase Console action) and F153 (WinWright/UIA re-test with the SPI_SETSCREENREADER flag, Priority 10). Earlier same-day: **0.7.0.0 CERTIFIED AND LIVE** (Submission 14), first MINOR release under the semver policy. Prior refinement notes: Sprint 58 Backlog Refinement scoped to F151 -- Windows first-run/onboarding UX gaps, sourced from Harold's user-centric MVP test script + First-Run Evaluation Summary Page, confirmed via a live Windows walkthrough (real 0.7.0.0 prod exe, genuinely empty account/data state, Harold driving + Claude observing via WinWright). 7 sub-findings: no welcome/orientation screen, buried Demo Mode, buried walkthrough, dense/under-explained Scan Results (chip tooltips, missing safe-sender demo example, dead "Moved" chip, ambiguous "Deleted (not processed)" wording), oversized email-detail action popup, raw-exception error text on 2 connection/scan paths, unaudited Windows window-resize/DPI compatibility. F152 registered as a new reusable periodic HOLD template so this evaluation method can be re-run on future releases/platforms. F151 is the ONLY Sprint 58 item, superseding F150 (Android build blocker) as this sprint's scope -- F150 remains open, still blocked on Harold's Firebase Console action, next candidate once resolved. Prior: **0.7.0.0 CERTIFIED AND LIVE on the Microsoft Store** (Submission 14, 2026-08-15) -- first MINOR release under the enforced semver policy, triggered by Sprint 57's F142 `feat` entry; Sprint 57 (F142 + F149) merged to develop (PR #314) and main (PR #316).)
 
 ## How to Maintain This Document
 
@@ -122,12 +122,24 @@ Historical sprint information lives in individual documents in `docs/sprints/` a
 | 55 | docs/sprints/SPRINT_55_RETROSPECTIVE.md | [OK] Complete | Aug 9-10, 2026 (PR #304; 0.6.0.0 LIVE Aug 10) |
 | 56 | docs/sprints/SPRINT_56_RETROSPECTIVE.md | [OK] Complete | Aug 12-13, 2026 (PR #310) |
 | 57 | docs/sprints/SPRINT_57_RETROSPECTIVE.md | [OK] Complete | Aug 13-14, 2026 (PR #314 -> develop, PR #316 -> main) |
+| 58 | docs/sprints/SPRINT_58_SUMMARY.md | [OK] Complete | Aug 14-15, 2026 (PR #317; 0.7.0.0 LIVE Aug 15) |
 
 **Key Achievements**: See CHANGELOG.md for detailed feature history.
 
 ---
 
 ## Last Completed Sprint
+
+**Sprint 58** (2026-08-14 -- 2026-08-15; PR #317 -> develop)
+- **Type**: Windows first-run/onboarding UX (F151, from Harold's user-centric MVP test script + First-Run Evaluation Summary Page), expanded by two Manual Validation rounds. 9 tasks (F151a-i) + 9 MV follow-up items, all complete.
+- **Delivered**: welcome/orientation + Demo Mode surfacing on the empty-accounts screen (F151a); Help "First time? Start here" walkthrough callout (F151b, closes F75's deferred piece); Scan Results chip tooltips + dead "Moved" chip removal (F151c); **F151d real bug fix** -- Demo Scan never showed a Safe result (a correct real-scan "already in target folder" skip silently ate all 21 demo safe-sender emails; fix scoped to Demo Mode, scope change Harold-approved mid-task); email-detail popup right-extending layout (F151e, revised per MV); humanized error messages via new `ErrorMessages.humanize()` (F151f); Windows environment-compatibility check clean (F151g); AppBar icon order audited to canonical spec + full-order policy gate (F151h); Help rendered as formatted Markdown via `flutter_markdown_plus` (F151i). MV follow-ups: search auto-focus/back-arrow-close/Escape-close, walkthrough Step 7 rewrite, Help-from-Select-Account lazy account resolution.
+- **Major tooling discovery (F151g)**: the `SPI_SETSCREENREADER` OS flag was the missing prerequisite for WinWright to see/click Flutter content -- F140's Sprint 54 "zero UIA patterns" finding was likely measuring this missing flag, not a platform ceiling. F153 upgraded to Priority 10 for a clean re-test; flag left enabled.
+- **Also this sprint**: Store release **0.7.0.0 (Submission 14) CERTIFIED AND LIVE** 2026-08-15, first MINOR release under the semver policy; Backlog Refinement included a live first-run walkthrough of the real prod exe with a genuinely empty data state (3 persistence layers backup-verified and fully restored).
+- **Verification**: suite **1,891 passed** / 29 skipped / 0 failed (from 1,864); analyze clean throughout; every change mutation-verified.
+- **Retro**: Category 1 "Good" (3 tooling-friction items root-caused), all other 13 categories "Very Good"; **2 improvements, both applied** (shell-homogeneous-pipelines memory; Dart-LSP-noise-signature memory).
+- **Docs**: SPRINT_58_PLAN.md / SPRINT_58_RETROSPECTIVE.md / SPRINT_58_SUMMARY.md.
+
+_(Prior: **Sprint 57** below.)_
 
 **Sprint 57** (2026-08-13 -- 2026-08-14; PR #314 -> develop)
 - **Type**: Android navigation model + a live-production bug fix, expanded mid-sprint. 2/2 tasks complete, plus 2 same-sprint testing-feedback follow-ups.
