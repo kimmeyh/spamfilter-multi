@@ -13,12 +13,15 @@ import '../screens/settings_screen.dart';
 /// The ONE definition of the standard AppBar action icons and their ORDER
 /// (F134, Sprint 51 retro IMP-2).
 ///
-/// Harold, 2026-07-30, specified the canonical order for every screen:
+/// Harold specified the canonical order for every screen (2026-07-30; Manual
+/// Scan position updated per the Sprint 58 MV-4 audit, 2026-08-15):
 ///
-///   Review "No Rule" Items, View Scan History, Accounts, Settings, Help
+///   Review "No Rule" Items, View Scan History, Manual Scan, Select Account,
+///   Settings, Help
 ///
-/// with screen-specific icons (Download, Find, Refresh) preceding that block,
-/// and the Exit button appended automatically by [AppBarWithExit].
+/// with screen-specific icons preceding that block in the order Reload,
+/// Export Results, Search (each only where the screen has it), and the Exit
+/// button appended automatically by [AppBarWithExit].
 ///
 /// **Why this is shared rather than copied per screen**: before this, five
 /// screens each hand-rolled the same five IconButtons in four DIFFERENT orders,
@@ -71,17 +74,67 @@ class StandardAppBarActions {
     bool includeHelp = true,
   }) {
     return [
-      // Screen-specific actions first (Download, Find, Refresh, ...).
+      // Screen-specific actions first (Download/Export, Find/Search,
+      // Refresh/Reload, ...). Their own relative order is Harold's MV-4 spec
+      // (2026-08-15): Reload, Export Results, Search -- callers pass them in
+      // that order.
       ...leading,
 
-      // 0. Manual / Live Scan (Harold 2026-07-31, during MV-1):
+      // 1. Review "No Rule" Items -- Windows-desktop scoped, matching the
+      //    existing F112/F39 entry points.
+      //
+      //    F142 (Sprint 57) DECISION: deliberately left Windows-gated rather
+      //    than extended to Android alongside the navigation-shell change.
+      //    NoRuleReviewScreen's multi-item SELECTION mechanism reads
+      //    isControlPressed/isShiftPressed and opens a right-click context
+      //    menu, neither of which has a touch equivalent -- extending this
+      //    icon to Android now would surface a screen whose core bulk-action
+      //    interaction does not work by touch. F143 (next sprint) redesigns
+      //    that selection mechanism for touch (long-press + contextual
+      //    action bar); this gate should be revisited then. Android still
+      //    reaches NoRuleReviewScreen via the F142 default-screen routing
+      //    (MainNavigationScreen -> AppDefaultScreen) when accounts exist --
+      //    this icon is a secondary deep-link entry point, not the only path.
+      if (includeNoRuleReview && Platform.isWindows)
+        IconButton(
+          icon: const Icon(Icons.rule_folder_outlined),
+          tooltip: 'Review "No Rule" Items',
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const NoRuleReviewScreen()),
+          ),
+        ),
+
+      // 2. View Scan History -- [onScanHistory] lets a screen supply its own
+      //    navigation (e.g. Settings, which routes through a helper that also
+      //    carries platform/email context it already resolved).
+      if (includeScanHistory)
+        IconButton(
+          icon: const Icon(Icons.history),
+          tooltip: 'View Scan History',
+          onPressed: onScanHistory ??
+              () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => ScanHistoryScreen(
+                        platformId: platformId,
+                        platformDisplayName: platformDisplayName,
+                        accountId: accountId,
+                        accountEmail: accountEmail,
+                      ),
+                    ),
+                  ),
+        ),
+
+      // 3. Manual / Live Scan (Harold 2026-07-31, during MV-1):
       //    "the Account screen is also, currently, the only way to get to the
       //    Live Scan/Manual Scan screen -- but an icon for the Manual Scan
       //    Screen would be advisable."
       //
-      //    Placed FIRST in the standard block because it acts on the selected
-      //    account rather than navigating to a management surface, and because
-      //    appending it would put it after Help -- Help is always last.
+      //    POSITION (Sprint 58 MV-4, Harold 2026-08-15): moved from first in
+      //    the standard block to AFTER View Scan History, per the audited
+      //    canonical order: No-Rule Review, Scan History, Manual Scan,
+      //    Accounts, Settings, Help. (The original first-position rationale --
+      //    "acts on the selected account rather than a management surface" --
+      //    is superseded by Harold's explicit full ordering.)
       //    LABEL: the destination screen titles itself "Manual Scan -
       //    <email>", so the tooltip matches the screen you land on. Harold
       //    okayed "Live Scan" if it read better, but the button ON that screen
@@ -134,51 +187,7 @@ class StandardAppBarActions {
                   ),
         ),
 
-      // 1. Review "No Rule" Items -- Windows-desktop scoped, matching the
-      //    existing F112/F39 entry points.
-      //
-      //    F142 (Sprint 57) DECISION: deliberately left Windows-gated rather
-      //    than extended to Android alongside the navigation-shell change.
-      //    NoRuleReviewScreen's multi-item SELECTION mechanism reads
-      //    isControlPressed/isShiftPressed and opens a right-click context
-      //    menu, neither of which has a touch equivalent -- extending this
-      //    icon to Android now would surface a screen whose core bulk-action
-      //    interaction does not work by touch. F143 (next sprint) redesigns
-      //    that selection mechanism for touch (long-press + contextual
-      //    action bar); this gate should be revisited then. Android still
-      //    reaches NoRuleReviewScreen via the F142 default-screen routing
-      //    (MainNavigationScreen -> AppDefaultScreen) when accounts exist --
-      //    this icon is a secondary deep-link entry point, not the only path.
-      if (includeNoRuleReview && Platform.isWindows)
-        IconButton(
-          icon: const Icon(Icons.rule_folder_outlined),
-          tooltip: 'Review "No Rule" Items',
-          onPressed: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const NoRuleReviewScreen()),
-          ),
-        ),
-
-      // 2. View Scan History -- [onScanHistory] lets a screen supply its own
-      //    navigation (e.g. Settings, which routes through a helper that also
-      //    carries platform/email context it already resolved).
-      if (includeScanHistory)
-        IconButton(
-          icon: const Icon(Icons.history),
-          tooltip: 'View Scan History',
-          onPressed: onScanHistory ??
-              () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => ScanHistoryScreen(
-                        platformId: platformId,
-                        platformDisplayName: platformDisplayName,
-                        accountId: accountId,
-                        accountEmail: accountEmail,
-                      ),
-                    ),
-                  ),
-        ),
-
-      // 3. Accounts
+      // 4. Accounts
       //
       // MV-1 FIX (Sprint 52, Harold 2026-07-31): this used to default to
       // `Navigator.popUntil(context, (route) => route.isFirst)`. That was
@@ -221,7 +230,7 @@ class StandardAppBarActions {
                   ),
         ),
 
-      // 4. Settings -- omitted when there is no account to scope it to and the
+      // 5. Settings -- omitted when there is no account to scope it to and the
       //    caller supplied no handler, rather than pushing a bogus accountId.
       if (includeSettings && (onSettings != null || accountId != null))
         IconButton(
@@ -235,7 +244,7 @@ class StandardAppBarActions {
                   ),
         ),
 
-      // 5. Help -- ALWAYS LAST (Harold, 2026-07-30).
+      // 6. Help -- ALWAYS LAST (Harold, 2026-07-30).
       if (includeHelp)
         IconButton(
           icon: const Icon(Icons.help_outline),

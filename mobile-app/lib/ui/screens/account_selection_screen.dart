@@ -16,6 +16,7 @@ import '../widgets/app_bar_with_exit.dart';
 import '../widgets/standard_app_bar_actions.dart';
 import 'platform_selection_screen.dart';
 import 'scan_history_screen.dart';
+import 'scan_progress_screen.dart';
 import 'help_screen.dart';
 import 'settings_screen.dart';
 
@@ -421,6 +422,22 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
     });
   }
 
+  /// F151a (Sprint 58): navigate directly to Demo Scan from the zero-accounts
+  /// empty state, mirroring PlatformSelectionScreen._startDemoMode() -- no
+  /// account setup needed, same demo params.
+  void _startDemoMode() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const ScanProgressScreen(
+          platformId: 'demo',
+          platformDisplayName: 'Demo Mode',
+          accountId: 'demo@example.com',
+          accountEmail: 'demo@example.com',
+        ),
+      ),
+    );
+  }
+
   /// Show account selection dialog and return the selected accountId.
   /// Reused by Settings and Scan History navigation.
   /// [UPDATED] Issue #219: Uses cached AccountDisplayData for correct display.
@@ -731,7 +748,10 @@ class _AccountSelectionScreenState extends State<AccountSelectionScreen> with Wi
           elevation: 2,
           actions: _buildAppBarActions(),
         ),
-        body: NoAccountsEmptyState(onAddAccount: _addNewAccount),
+        body: NoAccountsEmptyState(
+          onAddAccount: _addNewAccount,
+          onTryDemoMode: _startDemoMode,
+        ),
       );
     }
 

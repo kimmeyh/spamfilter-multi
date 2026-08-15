@@ -6,8 +6,8 @@ import '../../adapters/email_providers/email_provider.dart';
 import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../core/providers/email_scan_provider.dart';
-import '../../core/security/auth_rate_limiter.dart';
 import '../../core/storage/settings_store.dart';
+import '../../util/error_messages.dart';
 import '../../util/redact.dart';
 import 'help_screen.dart';
 import 'scan_progress_screen.dart';
@@ -226,17 +226,11 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     } catch (e) {
       // SEC-22 (Sprint 33): surface rate-limit blocks with a clear unlock
       // time instead of a raw toString() that exposes the redacted account
-      // and exception name.
-      String userMessage;
-      if (e is AuthRateLimitedException) {
-        final unlock = e.blockedUntil.toLocal();
-        final hh = unlock.hour.toString().padLeft(2, '0');
-        final mm = unlock.minute.toString().padLeft(2, '0');
-        userMessage =
-            'Too many failed sign-in attempts. Try again at $hh:$mm.';
-      } else {
-        userMessage = 'Connection failed: $e';
-      }
+      // and exception name. F151f (Sprint 58): the fallback for every other
+      // exception type now goes through ErrorMessages.humanize() instead of
+      // raw '$e' interpolation, which previously leaked internal exception
+      // class names (e.g. "ConnectionException: ...") to the user.
+      final userMessage = ErrorMessages.humanize(e);
 
       setState(() {
         _isTesting = false;
@@ -294,10 +288,12 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
       _logger.i('[OK] Saved credentials for account: ${Redact.accountId(accountId)} (platform: $_effectivePlatformId)');
     } catch (e) {
       setState(() => _isLoading = false);
+      // F151f (Sprint 58): the log line keeps the raw exception for
+      // diagnostics; only the user-facing SnackBar text is humanized.
       _logger.e('Failed to save credentials: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to save credentials: $e')),
+          SnackBar(content: Text(ErrorMessages.humanize(e))),
         );
       }
       return;

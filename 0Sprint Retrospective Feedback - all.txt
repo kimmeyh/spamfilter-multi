@@ -3,6 +3,119 @@
 Copilot review - see 0Claudedev_prompts.txt
 ---------------------------------------------------------------------------------------------------------
 Manual Validation complete
+Sprint 58 Review/Retrospective - Combined Product Owner, Scrum Master and Lead Developer feedback
+- Effective while as Efficient as Reasonably Possible
+  - Good
+  - anything you can recommend so that you avoid these errors in the future:
+"""Bash(cd "D:\Data\Harold\github\spamfilter-multi" && powershell -NoProfile -Command "Select-String -Path docs\SPRINT_PLANNING.md -Pattern 'Task-Level DoD|augmented template|Value/R-N/AC-N' -Context 0,2" | Select-Object -First 5)
+Error: Exit code 127
+/usr/bin/bash: line 1: Select-Object: command not found"""
+"""Now I have the exact format. Given the sprint auto-advance rule (no stopping for questions until Manual Validation), I'll write the full plan now, splitting F151's 7 sub-items into right-sized tasks with cheapest-first model assignment, then execute immediately without further check-ins.
+Error: InputValidationError: TaskCreate failed due to the following issues:
+The required parameter `subject` is missing
+The required parameter `description` is missing
+An unexpected parameter `tasks` was provided
+
+TaskCreate creates ONE task per call and has no `tasks` or `todos` parameter. Call TaskCreate once per task, passing `subject` (a brief title) and `description` (what needs to be done) as top-level string parameters."""
+  - Not sure what these are from, but if you could address them as it looks like they are a time waste - showed up multiple times during development phase. Note: never seen these before this sprint - in case there were recent changes in the code Base, Sonnet or Claude Code v2.1.229 that introduced them:
+"""..\..\..\..\..\d:\Data\Harold\github\spamfilter-multi\mobile-app\lib\ui\widgets\empty_state.dart (file://):
+  ✘ [Line 1:8] Target of URI doesn't exist: 'package:flutter/material.dart'.
+Try creating the file referenced by the URI, or try using a URI for a file that does exist. [[object Object]] (dart)
+  ✘ [Line 7:26] Classes can only extend other classes.
+Try specifying a different superclass, or removing the extends clause. [[object Object]] (dart)
+  ✘ [Line 8:9] Undefined class 'IconData'.
+Try changing the name to the name of an existing class, or creating a class with the name 'IconData'. [[object Object]] (dart)
+  ✘ [Line 12:9] Undefined class 'VoidCallback'.
+Try changing the name to the name of an existing class, or creating a class with the name 'VoidCallback'. [[object Object]] (dart)
+  ✘ [Line 14:9] Undefined class 'VoidCallback'.
+Try changing the name to the name of an existing class, or creating a class with the name 'VoidCallback'. [[object Object]] (dart)
+  ✘ [Line 28:16] Undefined class 'BuildContext'.
+Try changing the name to the name of an existing class, or creating a class with the name 'BuildContext'. [[object Object]] (dart)
+  ✘ [Line 28:3] Undefined class 'Widget'.
+Try changing the name to the name of an existing class, or creating a class with the name 'Widget'. [[object Object]] (dart)
+  ✘ [Line 34:24] Undefined name 'EdgeInsets'.
+Try correcting the name to one that is defined, or defining the name. [[object Object]] (dart)
+  ✘ [Line 44:19] The name 'SizedBox' isn't a class.
+Try correcting the name to match an existing class. [[object Object]] (dart)
+  ✘ [Line 55:19] The name 'SizedBox' isn't a class.
+Try correcting the name to match an existing class. [[object Object]] (dart)
+  ✘ [Line 68:21] The name 'SizedBox' isn't a class.
+Try correcting the name to match an existing class. [[object Object]] (dart)
+  ✘ [Line 71:29] The name 'Icon' isn't a class.
+Try correcting the name to match an existing class. [[object Object]] (dart)
+  ✘ [Line 74:34] Undefined name 'EdgeInsets'.
+Try correcting the name to one that is defined, or defining the name. [[object Object]] (dart)
+  ✘ [Line 87:36] Classes can only extend other classes.
+Try specifying a different superclass, or removing the extends clause. [[object Object]] (dart)
+  ✘ [Line 88:9] Undefined class 'VoidCallback'.
+Try changing the name to the name of an existing class, or creating a class with the name 'VoidCallback'. [[object Object]] (dart)
+  ✘ [Line 96:16] Undefined class 'BuildContext'.
+Try changing the name to the name of an existing class, or creating a class with the name 'BuildContext'. [[object Object]] (dart)
+  ✘ [Line 96:3] Undefined class 'Widget'.
+Try changing the name to the name of an existing class, or creating a class with the name 'Widget'. [[object Object]] (dart)
+  ✘ [Line 107:35] Classes can only extend other classes.
+Try specifying a different superclass, or removing the extends clause. [[object Object]] (dart)
+  ✘ [Line 111:16] Undefined class 'BuildContext'.
+Try changing the name to the name of an existing class, or creating a class with the name 'BuildContext'. [[object Object]] (dart)
+  ✘ [Line 111:3] Undefined class 'Widget'.
+Try changing the name to the name of an existing class, or creating a class with the name 'Widget'. [[object Object]] (dart)
+  ✘ [Line 121:46] Classes can only extend other classes.
+Try specifying a different superclass, or removing the extends clause. [[object Object]] (dart)
+  ✘ [Line 125:16] Undefined class 'BuildContext'.
+Try changing the name to the name of an existing class, or creating a class with the name 'BuildContext'. [[object Object]] (dart)
+  ✘ [Line 125:3] Undefined class 'Widget'.
+Try changing the name to the name of an existing class, or creating a class with the name 'Widget'. [[object Object]] (dart)
+  ✘ [Line 134:42] Classes can only extend other classes.
+Try specifying a different superclass, or removing the extends clause. [[object Object]] (dart)
+  ✘ [Line 138:16] Undefined class 'BuildContext'.
+Try changing the name to the name of an existing class, or creating a class with the name 'BuildContext'. [[object Object]] (dart)
+  ✘ [Line 138:3] Undefined class 'Widget'.
+Try changing the name to the name of an existing class, or creating a class with the name 'Widget'. [[object Object]] (dart)
+  ✘ [Line 147:33] Classes can only extend other classes.
+Try specifying a different superclass, or removing the extends clause. [[object Object]] (dart)
+  ✘ [Line 148:9] Undefined class 'VoidCallback'.
+Try changing the name to the name of an existing class, or creating a class with the name 'VoidCallback'. [[object Object]] (dart)
+  ✘ [Line 156:16] Undefined class 'BuildContext'.
+Try changing the name to the name of an existing class, or creating a class with the name 'BuildContext'. [[object Object]] (dart)
+  ✘ [Line 156:3] Undefined class 'Widget'.
+Try changing the name to the name of an existing class, or creating a class with the name 'Widget'. [[object Object]] (dart)"""
+
+- Testing Approach
+  - Very Good
+- Effort Accuracy
+  - Very Good
+- Planning Quality
+  - Very Good
+- Model Assignments
+  - Very Good
+- Communication
+  - Very Good
+- Requirements Clarity
+  - Very Good
+- Documentation
+  - Very Good
+- Process Issues
+  - Very Good
+- Risk Management
+  - Very Good
+- Next Sprint Readiness
+  - Very Good
+- Architecture Maintenance
+  - Very Good
+- Minor function updates that need to be added to the next sprint plan
+  - none
+- Function updates that can be added to the backlog for a future sprint
+  - none
+- Questions to be discussed before ending the sprint
+  - none
+
+Please complete your sprint retrospective feedback (same sections)
+Combined feedback (yours and mine) and Summarize
+Make suggestions for improvements to be implemented.
+Display suggestions for improvement for review and approval.
+------------------------------------
+
+Manual Validation complete
 Sprint 57 Review/Retrospective - Combined Product Owner, Scrum Master and Lead Developer feedback
 - Effective while as Efficient as Reasonably Possible
   - Very Good
