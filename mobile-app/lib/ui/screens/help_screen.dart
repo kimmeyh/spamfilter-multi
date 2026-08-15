@@ -13,7 +13,13 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../../adapters/storage/secure_credentials_store.dart';
+import '../../core/providers/selected_account_provider.dart';
 
 import '../../core/services/app_environment.dart';
 import '../../core/services/content_loader.dart';
@@ -91,6 +97,17 @@ class _HelpScreenState extends State<HelpScreen> {
     for (final s in HelpSection.values) s: GlobalKey(),
   };
 
+  /// Sprint 58 Manual Validation (Harold, 2026-08-15): Help opened from the
+  /// Select Account screen showed only 2 standard icons -- Scan History,
+  /// Manual Scan, and Settings were all missing, because that caller has no
+  /// account context to pass and this screen relied SOLELY on
+  /// [HelpScreen.accountId]. Every other nullable-account screen (Scan
+  /// History, No-Rule Review) already resolves an account lazily via the
+  /// F135 pattern: explicit context first, then the session selection, then
+  /// the first saved account. This applies the same pattern here, so the
+  /// account-scoped icons appear whenever ANY account is resolvable.
+  String? _resolvedAccountId;
+
   @override
   void initState() {
     super.initState();
@@ -98,6 +115,42 @@ class _HelpScreenState extends State<HelpScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) => _scrollTo(
             widget.initialSection!,
           ));
+    }
+    if (widget.accountId == null) {
+      _resolveAccountContext();
+    }
+  }
+
+  Future<void> _resolveAccountContext() async {
+    // Session selection first (F135). Read defensively: the provider is an
+    // OPTIONAL input (widget tests may pump this screen without it), and a
+    // missing provider is the only tolerated failure -- matching the
+    // scan_history_screen precedent.
+    String? selected;
+    try {
+      selected = context.read<SelectedAccountProvider>().accountId;
+    } on ProviderNotFoundException {
+      selected = null;
+    }
+
+    // The session selection is trusted outright: it was set by a live flow
+    // this session, and deleted-account leakage is already prevented at the
+    // source (SelectedAccountProvider.clear() fires when an account is
+    // deleted). Validating against getSavedAccounts() here would be WRONG,
+    // not just redundant: that method swallows all errors and returns []
+    // for both "zero accounts" and "backend failure", so a transient
+    // keystore failure (or a widget-test environment) would silently drop a
+    // perfectly live selection.
+    String? resolved = selected;
+    if (resolved == null || resolved.isEmpty) {
+      // No session selection -- fall back to the first saved account.
+      // getSavedAccounts never throws (returns [] on any failure).
+      final saved = await SecureCredentialsStore().getSavedAccounts();
+      if (saved.isNotEmpty) resolved = saved.first;
+    }
+
+    if (resolved != null && resolved.isNotEmpty && mounted) {
+      setState(() => _resolvedAccountId = resolved);
     }
   }
 
@@ -153,7 +206,13 @@ class _HelpScreenState extends State<HelpScreen> {
   @override
   Widget build(BuildContext context) {
     final viewportHeight = MediaQuery.of(context).size.height;
-    final hasAccount = widget.accountId != null;
+    // Sprint 58 MV: explicit caller context wins; otherwise the lazily
+    // resolved account (session selection -> first saved account) keeps the
+    // account-scoped icons (Scan History, Manual Scan, Settings) available
+    // even when Help was opened from a screen with no account context
+    // (e.g. Select Account).
+    final effectiveAccountId = widget.accountId ?? _resolvedAccountId;
+    final hasAccount = effectiveAccountId != null;
     return Scaffold(
       appBar: AppBarWithExit(
         title: const Text('Help'),
@@ -165,11 +224,13 @@ class _HelpScreenState extends State<HelpScreen> {
         actions: StandardAppBarActions.build(
           context: context,
           helpSection: HelpSection.settings, // unused -- includeHelp is false
-          accountId: hasAccount ? widget.accountId : null,
-          accountEmail: widget.accountEmail ?? widget.accountId,
+          accountId: effectiveAccountId,
+          accountEmail: widget.accountEmail ?? effectiveAccountId,
           platformId: widget.platformId ?? '',
           platformDisplayName: widget.platformDisplayName ?? '',
-          includeNoRuleReview: false,
+          // MV-5 (Sprint 58 Manual Validation, Harold 2026-08-15): the
+          // Review "No Rule" Items icon now appears on Help too (previously
+          // suppressed here) -- the builder's default includes it.
           includeScanHistory: hasAccount,
           includeHelp: false,
         ),
@@ -215,6 +276,25 @@ class _HelpScreenState extends State<HelpScreen> {
                     );
                   },
                 ),
+                // F151b (Sprint 58): "First time? Start here" callout, near
+                // the top so it is visible without scrolling -- closes the
+                // gap F75 (Sprint 34) explicitly deferred. The walkthrough
+                // section itself stays last (line ~259) so screen-anchored
+                // reference sections are not pushed down for readers who
+                // already know the app; this callout is the discoverable
+                // shortcut for first-time users instead.
+                Card(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  child: ListTile(
+                    leading: const Icon(Icons.explore_outlined),
+                    title: const Text('First time? Start here'),
+                    subtitle: const Text(
+                        'Jump to the step-by-step walkthrough for getting started.'),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () => _scrollTo(HelpSection.walkthrough),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 // Sprint 38 F85 (ADR-0038): all section bodies now load
                 // from `assets/content/help/*.md` via the asset manifest.
                 // Titles remain inline because they are short labels, not
@@ -326,10 +406,11 @@ class _HelpScreenState extends State<HelpScreen> {
               future: ContentLoader().load('help', manifestKey),
               builder: (context, snapshot) {
                 if (snapshot.hasData) {
-                  return Text(
-                    snapshot.data!,
-                    style: const TextStyle(fontSize: 14, height: 1.4),
-                  );
+                  // F151i (Sprint 58, MV-7): render as formatted Markdown
+                  // (headers, bold, lists, tappable links) instead of raw
+                  // text -- the content files were always Markdown; only the
+                  // renderer was plain Text.
+                  return _markdownBody(snapshot.data!);
                 }
                 if (snapshot.hasError) {
                   return Text(
@@ -352,6 +433,56 @@ class _HelpScreenState extends State<HelpScreen> {
             ),
         ],
       ),
+    );
+  }
+
+  /// F151i (Sprint 58, MV-7): shared Markdown renderer for section bodies.
+  ///
+  /// Sizing matches the previous plain-Text rendering (14px, height 1.4) for
+  /// paragraph text so the conversion does not reflow more than it must, and
+  /// in-body headings are sized BELOW the screen's own 18px-bold section
+  /// titles so a `##` inside a content file reads as a sub-heading of its
+  /// section rather than competing with it.
+  ///
+  /// Links open in the default browser via url_launcher (already a
+  /// dependency). A failed/unparseable href is ignored rather than thrown --
+  /// content files are audited (F151i R-2), so this is belt-and-suspenders.
+  Widget _markdownBody(String data) {
+    final base = MarkdownStyleSheet.fromTheme(Theme.of(context));
+    return MarkdownBody(
+      data: data,
+      styleSheet: base.copyWith(
+        p: const TextStyle(fontSize: 14, height: 1.4),
+        listBullet: const TextStyle(fontSize: 14, height: 1.4),
+        h1: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+        h2: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        h3: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+        code: const TextStyle(fontSize: 13, fontFamily: 'monospace'),
+      ),
+      onTapLink: (text, href, title) async {
+        if (href == null) return;
+        final uri = Uri.tryParse(href);
+        if (uri == null) return;
+        // Copilot review (PR #317): launchUrl returns a Future and can
+        // throw (e.g. no handler for the scheme) -- await it inside a
+        // try/catch so a bad link degrades to a SnackBar instead of an
+        // unhandled async error crashing the Help screen.
+        try {
+          final launched =
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
+          if (!launched && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Could not open the link.')),
+            );
+          }
+        } catch (_) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Could not open the link.')),
+            );
+          }
+        }
+      },
     );
   }
 

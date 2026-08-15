@@ -9,7 +9,25 @@ Sprint 5n Manual Validation Feedback
 
 ---------------------------------------------------------------------------------------------------------
 Sprint 58 Manual Validation Feedback 
+- In Scan Results screens (all) > Search icon
+  - can you allow for the user to immediately start typing by setting the typing focus to the search text box
+    - currently the user has to hit the search icon, then the search text box before typing.
+  - The exit for search is an X (to the left) and the exit for the application is an X (to the right). Can you think of a different exit from search box icon.
+  - Can you also allow exit via the Escape key - need your feedback if this is a good idea or not.
+- Can you audit the order of the icons on these screens: Scan History, Select Account, Review "No Rule", Manual Scan, Help, Scan Results (all) and update the order if necessary - should be from left to right, if they are appropriate for the screen:  "Reload...", "Export Results", "Search", "Review "No Rule" Items", "View Scan History", "Manual Scan", "Select Account", "Settings", "Help"
+- Add the "Review "No Rule" Items" to the Help screen (if not added by above audit) 
+- Can you update help section "## Step 7: Set Up Daily Background Scanning" to be
+"""
+Once you have configured your rules and safe senders to your liking, enable background scanning in Settings. Background scanning automatically scans your email on a schedule you set. After the scan completes, the app stores the results in "View Scan History" and emails without rules are listed in the "Review "No Rule" Items" screen.
 
+This means you do not have to manually run a scan periodically, or every day, but will run in the background. The Background scanning ensures all emails from safe senders are in your default/defined "Safe Sender Folder" (see Settings > Account) and all emails matching "Delete Rules" are in your default/defined "Deleted Rule Folder".
+
+Once configured and running, the app should open to the "Review "No Rule" Items where you can update the rules as needed daily, every few days or weekly depending on the activity you see in your accounts.  A second way to update "No Rule" items is to go to "View Scan History", select the last scan for each email, select the "No rule" button, click on the first item and decide on a rule or Skip.  Determine the way that works best for you.
+"""
+- The Help screen text is generally "Markup" format.  Can you review/update so that it is all valid Markup and in the app display it in "Markup" (bold, headers, URL's...)?
+- f151e - this is too squashed and didn't stay on the same page - this would be OK if it starts there and goes to
+  the far right hand side of the screen because the user can match the email address and subject. It is too squashed for larger emails and
+  domains <image of screen>
 
 ---------------------------------------------------------------------------------------------------------
 Sprint 57 Manual Validation Feedback 

@@ -2,11 +2,31 @@
 ///
 /// Verifies the new terminal section appears, references the FTC and
 /// donotcall.gov sources, and the timestamp footer is updated.
+///
+/// F151i (Sprint 58, MV-7): section bodies now render as formatted Markdown
+/// (RichText trees) instead of one large Text widget, so the body-content
+/// assertions collect ALL rendered text (Text + RichText) and assert on the
+/// combined string -- the CONTENT contract is unchanged, only the widget
+/// shape it renders through.
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:my_email_spam_filter/ui/screens/help_screen.dart';
+
+/// Concatenates every piece of rendered text on screen (plain Text widgets
+/// and RichText/TextSpan trees, which is what Markdown renders through).
+String _allRenderedText(WidgetTester tester) {
+  final buffer = StringBuffer();
+  for (final widget in tester.allWidgets) {
+    if (widget is Text && widget.data != null) {
+      buffer.writeln(widget.data);
+    } else if (widget is RichText) {
+      buffer.writeln(widget.text.toPlainText());
+    }
+  }
+  return buffer.toString();
+}
 
 void main() {
   testWidgets(
@@ -36,23 +56,25 @@ void main() {
       // before the body assertion runs.
       await tester.pumpAndSettle();
 
-      // The section body is one large Text widget; assert key tokens that
-      // future-me must not silently lose during a content edit.
-      final body = find.byWidgetPredicate(
-        (w) =>
-            w is Text &&
-            (w.data ?? '').contains('7726') &&
-            (w.data ?? '').contains('DoNotCall.gov') &&
-            (w.data ?? '').contains('OptOutPrescreen') &&
-            (w.data ?? '').contains('DMAchoice') &&
-            (w.data ?? '').contains('ReportFraud.ftc.gov'),
-      );
-      expect(
-        body,
-        findsOneWidget,
-        reason:
-            '"Other ways to reduce junk" body must reference the canonical reporting and opt-out destinations.',
-      );
+      // Assert key tokens that future-me must not silently lose during a
+      // content edit. Collected across the full rendered tree (F151i:
+      // Markdown renders as RichText spans, not one Text widget).
+      final rendered = _allRenderedText(tester);
+      for (final token in const [
+        '7726',
+        'DoNotCall.gov',
+        'OptOutPrescreen',
+        'DMAchoice',
+        'ReportFraud.ftc.gov',
+      ]) {
+        expect(
+          rendered.contains(token),
+          isTrue,
+          reason:
+              '"Other ways to reduce junk" body must reference "$token" -- '
+              'the canonical reporting and opt-out destinations.',
+        );
+      }
     },
   );
 
@@ -86,20 +108,17 @@ void main() {
     'Help section warns about unsubscribe risk for non-reputable senders',
     (tester) async {
       await tester.pumpWidget(const MaterialApp(home: HelpScreen()));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       // Sprint 37 Phase 7 round 2 (Harold feedback): unsubscribe advice was
       // initially too generous. Verify the section now warns to ONLY use
-      // unsubscribe for well-known / Fortune 1000 senders.
-      final body = find.byWidgetPredicate(
-        (w) =>
-            w is Text &&
-            (w.data ?? '').contains('Fortune 1000') &&
-            (w.data ?? '').contains('mark as Junk/Spam (above)'),
-      );
+      // unsubscribe for well-known / Fortune 1000 senders. (F151i: collected
+      // across the rendered tree -- Markdown renders as RichText spans.)
+      final rendered = _allRenderedText(tester);
       expect(
-        body,
-        findsOneWidget,
+        rendered.contains('Fortune 1000') &&
+            rendered.contains('mark as Junk/Spam (above)'),
+        isTrue,
         reason:
             'Unsubscribe section must caution that unsubscribing can confirm a live address to non-reputable senders.',
       );
@@ -110,20 +129,17 @@ void main() {
     'Help section advises AGAINST contacting individual mail-order catalogs',
     (tester) async {
       await tester.pumpWidget(const MaterialApp(home: HelpScreen()));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       // Sprint 37 Phase 7 round 2 (Harold feedback): contacting a catalog
       // directly is often interpreted as a confirmed-monitored address;
       // verify the section now recommends DMAchoice bulk opt-out instead.
-      final body = find.byWidgetPredicate(
-        (w) =>
-            w is Text &&
-            (w.data ?? '').contains('AVOID contacting individual mail-order catalogs') &&
-            (w.data ?? '').contains('DMAchoice.org bulk opt-out'),
-      );
+      // (F151i: collected across the rendered tree.)
+      final rendered = _allRenderedText(tester);
       expect(
-        body,
-        findsOneWidget,
+        rendered.contains('AVOID contacting individual mail-order catalogs') &&
+            rendered.contains('DMAchoice.org bulk opt-out'),
+        isTrue,
         reason:
             'Postal mail section must advise AGAINST direct catalog contact and steer users to DMAchoice bulk opt-out.',
       );

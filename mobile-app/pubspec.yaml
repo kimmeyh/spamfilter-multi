@@ -1,6 +1,6 @@
 name: my_email_spam_filter
 description: Cross-platform email spam filter app
-version: 0.7.0+1
+version: 0.7.1+1
 publish_to: 'none'
 
 environment:
@@ -49,6 +49,12 @@ dependencies:
   flutter_local_notifications: ^16.2.0  # Local notifications
   connectivity_plus: ^5.0.0  # Network connectivity detection
   battery_plus: ^5.0.0  # Battery level detection
+
+  # F151i (Sprint 58, MV-7): render Help content as formatted Markdown.
+  # flutter_markdown_plus is the official continuation of Google's
+  # DISCONTINUED flutter_markdown (drop-in API, maintained by Foresight
+  # Mobile) -- do not "upgrade" back to flutter_markdown.
+  flutter_markdown_plus: ^1.0.0
 
   # Sprint 10 - Windows Desktop UI
   system_tray: ^2.0.3  # System tray integration (Windows/macOS/Linux)

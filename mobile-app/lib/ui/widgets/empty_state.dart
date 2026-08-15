@@ -10,6 +10,8 @@ class EmptyState extends StatelessWidget {
   final String message;
   final String? actionLabel;
   final VoidCallback? onActionPressed;
+  final String? secondaryActionLabel;
+  final VoidCallback? onSecondaryActionPressed;
 
   const EmptyState({
     super.key,
@@ -18,6 +20,8 @@ class EmptyState extends StatelessWidget {
     required this.message,
     this.actionLabel,
     this.onActionPressed,
+    this.secondaryActionLabel,
+    this.onSecondaryActionPressed,
   });
 
   @override
@@ -71,6 +75,16 @@ class EmptyState extends StatelessWidget {
                 ),
               ),
             ],
+
+            // Secondary action button (optional, F151a: Demo Mode surfacing)
+            if (secondaryActionLabel != null && onSecondaryActionPressed != null) ...[
+              const SizedBox(height: 12),
+              TextButton.icon(
+                onPressed: onSecondaryActionPressed,
+                icon: const Icon(Icons.science_outlined),
+                label: Text(secondaryActionLabel!),
+              ),
+            ],
           ],
         ),
       ),
@@ -82,10 +96,12 @@ class EmptyState extends StatelessWidget {
 
 class NoAccountsEmptyState extends StatelessWidget {
   final VoidCallback onAddAccount;
+  final VoidCallback? onTryDemoMode;
 
   const NoAccountsEmptyState({
     super.key,
     required this.onAddAccount,
+    this.onTryDemoMode,
   });
 
   @override
@@ -93,9 +109,13 @@ class NoAccountsEmptyState extends StatelessWidget {
     return EmptyState(
       icon: Icons.email_outlined,
       title: 'No Accounts Yet',
-      message: 'Add your first email account to start scanning for spam.',
+      message: 'My Email Spam Filter scans your inbox and automatically '
+          'filters out spam using rules you control. '
+          'Add your first email account to start scanning for spam.',
       actionLabel: 'Add Account',
       onActionPressed: onAddAccount,
+      secondaryActionLabel: onTryDemoMode != null ? 'Try Demo Mode instead' : null,
+      onSecondaryActionPressed: onTryDemoMode,
     );
   }
 }

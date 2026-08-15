@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 
+import 'package:my_email_spam_filter/core/providers/selected_account_provider.dart';
 import 'package:my_email_spam_filter/ui/screens/help_screen.dart';
 
 /// Widget tests for [HelpScreen] (F54, Sprint 33).
@@ -76,6 +78,100 @@ void main() {
       expect(find.text(title), findsOneWidget,
           reason: 'missing Help section: $title');
     }
+  });
+
+  testWidgets(
+      'HelpScreen shows a "First time? Start here" callout near the top, '
+      'visible without scrolling (F151b, Sprint 58)', (tester) async {
+    // Same rationale as the F140 version-display test above -- a first-time
+    // user should not have to already know to scroll to the last of 22
+    // sections to find the walkthrough.
+    await tester.pumpWidget(
+      const MaterialApp(home: HelpScreen()),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('First time? Start here'), findsOneWidget);
+  });
+
+  testWidgets(
+      'Tapping the "First time? Start here" callout scrolls toward the '
+      'walkthrough section (F151b, Sprint 58)', (tester) async {
+    // The screen builds all 22 sections into one eager Column (not a lazy
+    // ListView, per the Round-3 fix documented in help_screen.dart), so
+    // find.text() locates every section's text regardless of scroll
+    // position -- it does not prove visibility. Assert on scroll OFFSET
+    // instead, matching how the existing initialSection test above avoids
+    // asserting an exact platform-sensitive scroll position but still
+    // proves the scroll actually moved.
+    await tester.binding.setSurfaceSize(const Size(800, 600));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      const MaterialApp(home: HelpScreen()),
+    );
+    await tester.pumpAndSettle();
+
+    final scrollable = find.byType(Scrollable).first;
+    final initialOffset = tester.state<ScrollableState>(scrollable).position.pixels;
+    expect(initialOffset, 0.0,
+        reason: 'screen should open at the top with no initialSection');
+
+    await tester.tap(find.text('First time? Start here'));
+    await tester.pumpAndSettle();
+
+    final offsetAfterTap = tester.state<ScrollableState>(scrollable).position.pixels;
+    expect(offsetAfterTap, greaterThan(initialOffset),
+        reason: 'tapping the callout should scroll down toward the '
+            'last-positioned walkthrough section');
+  });
+
+  testWidgets(
+      'Help content renders as formatted Markdown, not raw text '
+      '(F151i, Sprint 58 MV-7)', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: HelpScreen()),
+    );
+    await tester.pumpAndSettle();
+
+    // The walkthrough file contains literal '## Step 1:' and '**Notes on'
+    // markers. Rendered as Markdown, those markers must NOT appear as raw
+    // text anywhere on the page -- the ## becomes a heading and the **
+    // becomes bold.
+    expect(find.textContaining('## Step'), findsNothing,
+        reason: 'raw ## heading markers must not be visible -- content must '
+            'render as formatted Markdown');
+    expect(find.textContaining('**'), findsNothing,
+        reason: 'raw ** bold markers must not be visible -- content must '
+            'render as formatted Markdown');
+  });
+
+  testWidgets(
+      'Help opened WITHOUT account context resolves one lazily from the '
+      'session selection, so account-scoped icons appear (Sprint 58 MV)',
+      (tester) async {
+    // Reproduces the Manual Validation finding (Harold, 2026-08-15): Help
+    // opened from Select Account passed no accountId, so Scan History,
+    // Manual Scan, and Settings icons were all missing. The fix resolves an
+    // account lazily via the F135 pattern -- here, the session selection.
+    // (The secure-storage saved-accounts list is unavailable in the test
+    // environment; the resolver trusts the session selection in that case.)
+    final selection = SelectedAccountProvider()..select('user@aol.com');
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<SelectedAccountProvider>.value(
+        value: selection,
+        child: const MaterialApp(home: HelpScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('View Scan History'), findsOneWidget,
+        reason: 'Scan History icon must appear once an account is resolved');
+    expect(find.byTooltip('Settings'), findsOneWidget,
+        reason: 'Settings icon must appear once an account is resolved');
+    expect(find.byTooltip('Manual Scan'), findsOneWidget,
+        reason: 'Manual Scan icon must appear once an account is resolved');
   });
 
   testWidgets('HelpScreen accepts an initialSection without throwing',
