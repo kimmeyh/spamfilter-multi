@@ -26,6 +26,11 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-08-15 (Sprint 58, GitHub Copilot review, PR #317)
+- **fix**: Copilot review finding -- the Help screen's Markdown link handler called `launchUrl()` without awaiting it, so a failed launch (e.g. no handler for a scheme) would surface as an unhandled async error. Now awaited in a try/catch; failures degrade to a "Could not open the link." SnackBar.
+- **fix**: Copilot review finding -- the sign-in failure message said "check your email and password", which is wrong for OAuth flows with no password; now provider-agnostic ("check your sign-in details").
+- **docs**: Copilot review finding -- walkthrough Step 7's nested-double-quote collisions around screen names fixed and one unclear sentence rewritten; meaning preserved.
+
 ### 2026-08-15 (Sprint 58 Complete)
 - **docs**: Sprint 58 retrospective -- Category 1 "Good" (three tooling-friction items root-caused: Bash-into-PowerShell pipeline errors, a TaskCreate schema miss, and the Claude Code client's new Dart LSP diagnostics noise), all other 13 categories "Very Good". 2 improvements approved and applied as memory notes (shell-homogeneous pipelines; Dart LSP noise-signature triage). Sprint doc triad complete (`SPRINT_58_PLAN.md` / `SPRINT_58_RETROSPECTIVE.md` / `SPRINT_58_SUMMARY.md`).
 
