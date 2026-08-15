@@ -7,6 +7,7 @@ import '../../core/providers/rule_set_provider.dart';
 import '../../core/services/email_scanner.dart';
 import '../../core/storage/settings_store.dart'; // [NEW] ISSUE #138: Load scan mode from settings
 import '../../main.dart' show routeObserver;
+import '../../util/error_messages.dart';
 import '../widgets/app_bar_with_exit.dart';
 import '../widgets/standard_app_bar_actions.dart';
 import 'results_display_screen.dart';
@@ -703,9 +704,11 @@ Future<void> startRealScan({
     // logged (above) but not shown to the user -- a known, accepted gap
     // rather than a silent one.
     if (context.mounted) {
+      // F151f (Sprint 58): humanized message instead of raw '$e'
+      // interpolation, which previously leaked internal exception detail.
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Scan failed: $e'),
+          content: Text(ErrorMessages.humanize(e)),
           backgroundColor: Colors.red,
         ),
       );

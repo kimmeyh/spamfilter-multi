@@ -238,36 +238,35 @@
 - `mobile-app/lib/ui/screens/account_setup_screen.dart:238` -- `_testConnection()` catch-all.
 - `mobile-app/lib/ui/screens/account_setup_screen.dart:299-301` -- `_handleConnect()` credential-save failure.
 - `mobile-app/lib/ui/screens/scan_progress_screen.dart:696-712` -- `startRealScan()` scan-failure catch.
-- `mobile-app/lib/ui/widgets/error_display.dart` -- reused, not modified (unless a genuinely new variant is needed, which is not expected).
+- `mobile-app/lib/ui/widgets/error_display.dart` -- NOT used (see Completion notes: none of the 3 call sites fit this widget family's full-screen layout).
+- `mobile-app/lib/util/error_messages.dart` (NEW) -- `ErrorMessages.humanize()`, the actual fix, following the established `Redact` utility pattern.
 
 **Dependencies / blockers**: None.
 
-**Non-functional requirements**:
-- Accessibility: `ErrorDisplay` family widgets are presumed already accessible per their existing use elsewhere; no new accessibility work expected, just reuse.
+**Non-functional requirements**: None -- no UI widget changes, only message-text substitution at 3 existing display call sites (colored status box, SnackBar x2), all pre-existing and unchanged in structure.
 
 **Acceptance criteria** (measurable, traceable):
-- AC-1: Given a connection-test failure in `AccountSetupScreen` (not a rate-limit case, which already has friendly handling), When the error is displayed, Then it uses an `ErrorDisplay` family widget instead of raw `'Connection failed: $e'` text.
-- AC-2: Given a credential-save failure in `AccountSetupScreen`, When the error is displayed, Then it uses an `ErrorDisplay` family widget instead of raw `'Failed to save credentials: $e'` text.
-- AC-3: Given a scan failure in `startRealScan()` (context still mounted), When the error is displayed, Then it uses clearer, human-readable messaging instead of raw `'Scan failed: $e'` text -- via `ErrorDisplay` if the UI context supports it, or improved SnackBar copy if it does not (judgment call, record which approach was taken and why).
-- AC-4: The existing rate-limit-specific friendly message in `_testConnection()` is unchanged.
+- AC-1 (REVISED -- see Completion notes): Given a connection-test failure in `AccountSetupScreen` (not a rate-limit case, which already has friendly handling), When the error is displayed, Then it shows a human-readable message via `ErrorMessages.humanize()` instead of raw `'Connection failed: $e'` text.
+- AC-2 (REVISED): Given a credential-save failure in `AccountSetupScreen`, When the error is displayed, Then it shows a human-readable message via `ErrorMessages.humanize()` instead of raw `'Failed to save credentials: $e'` text.
+- AC-3 (REVISED): Given a scan failure in `startRealScan()` (context still mounted), When the error is displayed, Then it shows a human-readable message via `ErrorMessages.humanize()` instead of raw `'Scan failed: $e'` text.
+- AC-4: The existing rate-limit-specific friendly message in `_testConnection()` is unchanged (now implemented inside `ErrorMessages.humanize()` itself, same message text).
 - AC-5: The unmounted-context silent-log behavior in `startRealScan()` is unchanged (explicitly out of scope, not touched).
 
 **Tests to write** (one intent per AC; name pyramid level + target file):
-- T-1 (verifies AC-1) -- TEST-WIDGET, extend `mobile-app/test/ui/screens/account_setup_screen_test.dart`: simulate a non-rate-limit connection failure, assert an `ErrorDisplay` family widget (not raw text) is rendered.
-- T-2 (verifies AC-2) -- TEST-WIDGET: simulate a credential-save failure, assert an `ErrorDisplay` family widget is rendered.
-- T-3 (verifies AC-3) -- TEST-WIDGET, extend `mobile-app/test/ui/screens/scan_progress_screen_test.dart` (or wherever `startRealScan()`'s existing error-path coverage lives): simulate a scan failure with a mounted context, assert improved messaging (exact assertion depends on which approach -- `ErrorDisplay` vs. improved SnackBar -- was chosen during implementation).
-- T-4 (verifies AC-4) -- TEST-WIDGET: simulate a rate-limit-specific failure, assert the existing friendly message is unchanged (regression guard).
-- T-5 (verifies AC-5) -- TEST-WIDGET: confirm the unmounted-context behavior test (if one already exists from the Sprint 57 Copilot-review fix) still passes unchanged.
+- T-1 through T-4 (verify AC-1/AC-2/AC-3/AC-4) -- TEST-UNIT in new `test/unit/util/error_messages_test.dart`: `ErrorMessages.humanize()` tested directly against each exception type (`AuthRateLimitedException`, `AuthenticationException`, `ConnectionException`, `CredentialStorageException`, `SocketException`, `TimeoutException`, generic fallback) -- cheaper and more precise than widget-pumping 3 separate screens to indirectly exercise the same classification logic.
+- T-5 (verifies AC-5) -- re-run the full `test/ui/screens/` suite to confirm no regression to `startRealScan()`'s unmounted-context behavior (untouched code path).
 
-**Definition of Done**: default task-level DoD PLUS: manual Windows verification that a real triggered failure (e.g. a bad IMAP password) shows the improved error UI (Manual Validation).
+**Definition of Done**: default task-level DoD PLUS: manual Windows verification that a real triggered failure (e.g. a bad IMAP password) shows the improved error message (Manual Validation).
 
-**Model**: Sonnet -- *why not Haiku*: requires distinguishing exception types to pick the right `ErrorDisplay` variant per path (not a single mechanical substitution), and R-3's SnackBar-vs-ErrorDisplay judgment call for the scan-failure context requires reading the actual UI structure to decide what fits.
+**Model**: Sonnet -- *why not Haiku*: required reading the actual UI structure at all 3 call sites to correctly determine the `ErrorDisplay` widget family did not fit any of them (a wrong assumption in the original plan), then designing a shared classification helper -- beyond a Haiku-sized mechanical substitution.
 
-**Executed-by**: _(fill at completion)_
+**Executed-by**: Sonnet -- matches the (already-correct) planned assignment.
 
-**Step-types**: SVC-EDIT, TEST-WIDGET
+**Step-types**: SVC-NEW, TEST-UNIT
 
 **Est-Effort**: 25-40m
+
+**Completion notes (2026-08-15)**: AC-1/AC-2/AC-3 revised as noted above after reading the actual UI structure at all 3 call sites -- `ErrorDisplay`/`AuthenticationErrorDisplay`/`NetworkErrorDisplay` are full-screen replacement widgets (Center + 80px icon + headline text), which fits none of the 3 sites: `account_setup_screen.dart` already has its own inline colored status box (a reasonably good, pre-existing UX pattern), and `scan_progress_screen.dart` uses a bare SnackBar with no inline status surface at all. Built `lib/util/error_messages.dart` (`ErrorMessages.humanize()`) instead, generalizing the account-setup screen's own pre-existing `AuthRateLimitedException`-specific classification (previously not reused anywhere else) to also cover `AuthenticationException`/`ConnectionException`/`CredentialStorageException`/`SocketException`/`TimeoutException`/generic fallback. 7 new unit tests, mutation-verified (3 separate mutations, all correctly caught). Full `test/ui/screens/` suite (164 tests) re-run clean. `flutter analyze` clean. Actual ~25m.
 
 ---
 
