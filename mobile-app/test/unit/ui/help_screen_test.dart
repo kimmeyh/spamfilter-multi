@@ -124,6 +124,26 @@ void main() {
             'last-positioned walkthrough section');
   });
 
+  testWidgets(
+      'Help content renders as formatted Markdown, not raw text '
+      '(F151i, Sprint 58 MV-7)', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: HelpScreen()),
+    );
+    await tester.pumpAndSettle();
+
+    // The walkthrough file contains literal '## Step 1:' and '**Notes on'
+    // markers. Rendered as Markdown, those markers must NOT appear as raw
+    // text anywhere on the page -- the ## becomes a heading and the **
+    // becomes bold.
+    expect(find.textContaining('## Step'), findsNothing,
+        reason: 'raw ## heading markers must not be visible -- content must '
+            'render as formatted Markdown');
+    expect(find.textContaining('**'), findsNothing,
+        reason: 'raw ** bold markers must not be visible -- content must '
+            'render as formatted Markdown');
+  });
+
   testWidgets('HelpScreen accepts an initialSection without throwing',
       (tester) async {
     // The ensureVisible scroll is best-effort and depends on ListView's

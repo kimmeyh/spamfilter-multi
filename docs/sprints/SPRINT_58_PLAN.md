@@ -320,6 +320,74 @@
 
 ---
 
+## Manual Validation Feedback Round (Harold, 2026-08-15)
+
+Eight feedback items (MV-1 through MV-8). Per Harold's steering ("if you think needed for any of the 8 items, do full planning, create a card, then execute"), the five small single-site items (MV-1/2/3/6/8) executed directly as same-sprint MV follow-ups (committed `5a480d1`, each mutation-verified -- see CHANGELOG); the two substantial items got full task cards below (Task 8 = MV-4+MV-5, Task 9 = MV-7).
+
+---
+
+## Task 8 -- F151h: AppBar icon-order audit + Help-screen No-Rule icon (MV-4 + MV-5) (Priority 10)
+
+**Value**: This ensures every screen presents the same icons in Harold's specified left-to-right order, so muscle memory works everywhere: "Reload...", "Export Results", "Search", "Review "No Rule" Items", "View Scan History", "Manual Scan", "Select Account", "Settings", "Help" (each present only where appropriate for the screen). This also restores the Review "No Rule" Items entry point on the Help screen (MV-5).
+
+**Audit findings (planning research, 2026-08-15)** -- the F134 shared builder means most of this is ONE change:
+- Current builder order: Manual Scan, No-Rule Review, Scan History, Accounts, Settings, Help. Harold's new order moves **Manual Scan from first to AFTER View Scan History**. One edit in `standard_app_bar_actions.dart` fixes every screen simultaneously.
+- Leading (screen-specific) icons audited per screen: Scan History = [Reload] OK; No-Rule Review = [Reload] OK; Results Display = [Export Results, Search] OK (matches Reload->Export->Search spec order; no Reload exists there); Account Selection = none OK; Manual Scan = none OK; Help = none OK. NO per-screen leading reorders needed.
+- Help screen passes `includeNoRuleReview: false` -- MV-5 removes that so Help gains the icon via the builder's default.
+- The existing policy gate (`test/policy/appbar_action_order_test.dart`) only asserts Help-is-last, not the full inter-icon order -- extend it to assert the complete new declaration order so future drift fails the build.
+
+**Requirements**:
+- R-1: `StandardAppBarActions.build()`'s standard block declares, in order: Review "No Rule" Items, View Scan History, Manual Scan, Select Account, Settings, Help. (Leading screen-specific actions -- Reload/Export/Search -- stay before the block, already in spec order everywhere they exist.)
+- R-2: Help screen no longer suppresses the No-Rule icon (`includeNoRuleReview: false` removed).
+- R-3: The policy gate asserts the FULL canonical declaration order, not just Help-last.
+- R-4: The builder's class doc comment (which states the canonical order in prose) updated to match -- the doc IS the reference the gate's failure message points people to.
+
+**Affected components / files**: `lib/ui/widgets/standard_app_bar_actions.dart` (block reorder + doc), `lib/ui/screens/help_screen.dart` (one line), `test/policy/appbar_action_order_test.dart` (order assertion).
+
+**Acceptance criteria**:
+- AC-1: Every screen using the builder now shows Manual Scan between View Scan History and Select Account.
+- AC-2: Help screen shows the Review "No Rule" Items icon (Windows).
+- AC-3: The policy gate fails if the builder's declaration order deviates from the canonical order.
+
+**Tests**: extend `appbar_action_order_test.dart` (full-order assertion, mutation-verified); existing `appbar_action_navigation_test.dart` re-run for regression.
+
+**Model**: Sonnet -- cross-cutting order contract + gate extension. **Executed-by**: Sonnet. **Step-types**: UI-MOVE, TEST-UNIT. **Est-Effort**: 15-25m.
+
+**Completion notes (2026-08-15)**: Implemented as planned -- one block reorder in the shared builder (comment numbering and class doc updated to match), Help screen suppression removed, policy gate extended with the full-canonical-order assertion and mutation-verified (a tooltip swap correctly failed exactly the new test). All 9 order/navigation tests green. Actual ~15m.
+
+---
+
+## Task 9 -- F151i: Help content as valid Markdown, rendered as Markdown (MV-7) (Priority 10)
+
+**Value**: The Help content files are written in Markdown (headers, bold, lists, URLs) but render as raw plain text -- literal `##`, `**`, and bare URLs. Rendering them formatted makes Help dramatically more readable, and auditing the files to valid Markdown makes the content robust to the renderer.
+
+**Dependency decision (planning research, 2026-08-15)**: `flutter_markdown` (the Google package) was DISCONTINUED in 2025. Its official continuation is **`flutter_markdown_plus`** (Foresight Mobile) -- drop-in API, actively maintained, GitHub-Flavored Markdown, text selection support (Help wraps content in `SelectionArea`), and link tap callbacks (needed for URL rendering; wire to `url_launcher`, already a dependency). Chosen over `markdown_widget` because drop-in continuity with the known API is lower-risk than a new API surface for a single screen.
+
+**Impact scoped per Harold's steering (2026-08-15)**: rendered Markdown changes section HEIGHTS, which stresses the F145 deep-link scroll mechanism (`_scrollTo` + bounded settle-retries computed against rendered heights) -- `integration_test/help_deep_link_test.dart` (all 22 `HelpSection` values) MUST be re-run and its expectations updated if needed; UI testing updates are expected, not incidental.
+
+**Requirements**:
+- R-1: Add `flutter_markdown_plus` to pubspec; render each Help section's body through it instead of plain `Text` (`help_screen.dart` `_section()`).
+- R-2: Audit all 23 content files under `assets/content/help/` (+ `audit-log.md`) for valid Markdown -- headers, bold, lists, code spans, URLs; fix anything malformed. The in-file `## Step N` headers inside `walkthrough.md` etc. must render as headers WITHOUT fighting the screen's own section-title styling (sections already render their own 18px bold title -- confirm heading levels inside bodies read sensibly under it).
+- R-3: URLs render as tappable links opening in the default browser via `url_launcher`.
+- R-4: F145 deep-link integrity re-verified: full `integration_test/help_deep_link_test.dart` suite re-run post-conversion; scroll-retry behavior re-validated since section heights change.
+- R-5: The F151b "First time? Start here" callout and F140 top-of-page version display continue to render above the sections, unaffected.
+
+**Affected components / files**: `pubspec.yaml` (new dependency), `lib/ui/screens/help_screen.dart` (`_section()` body rendering), `assets/content/help/*.md` (validity audit), `integration_test/help_deep_link_test.dart` (re-run/update), widget tests for rendering.
+
+**Acceptance criteria**:
+- AC-1: Help sections render formatted Markdown (headers, bold, lists) -- no literal `##`/`**` visible.
+- AC-2: URLs in Help content are tappable and open externally.
+- AC-3: All 22 `HelpSection` deep links still land correctly (integration suite green).
+- AC-4: `flutter analyze` clean; full suite green.
+
+**Tests**: new widget test asserting a Markdown body renders formatted (no raw `**` text found, link present); full `help_deep_link_test.dart` re-run; mutation-verify the renderer swap.
+
+**Model**: Sonnet -- new dependency + cross-cutting rendering change + scroll-mechanism revalidation. **Executed-by**: Sonnet. **Step-types**: UI-NEW, CONTENT, TEST-WIDGET, TEST-INTEGRATION. **Est-Effort**: 45-75m.
+
+**Completion notes (2026-08-15)**: Implemented as planned. `flutter_markdown_plus` added; `_markdownBody()` renderer sized to match the previous plain-Text metrics (14px/1.4) with in-body headings below the section titles; links open externally via the existing `url_launcher`. R-2 content audit: files were ALREADY valid Markdown (zero fixes needed -- ADR-0038 discipline paid off; faq.md's `<you>` tokens are inside code spans). R-4: all 31 F145 deep-link integration tests passed UNCHANGED against the new rendered heights -- the bounded scroll-retry absorbed the change. As predicted by Harold's steering, UI-test updates were needed: 3 pre-existing Help-content tests asserted the body was ONE Text widget (Markdown renders RichText trees) -- updated to collect all rendered text and assert the same content tokens. New rendering test mutation-verified. Full suite 1,890 passed / 0 failed; analyze clean. Actual ~40m.
+
+---
+
 ## Sprint-Level Notes
 
 **F153 registered separately** (originally HOLD, upgraded to Priority 10 mid-sprint, `docs/ALL_SPRINTS_MASTER_PLAN.md`) -- re-investigation of F140's WinWright/Flutter-Windows-UIA limitation, per Harold's 2026-08-15 request. Task 7's investigation found the likely root cause the same day (a missing `SPI_SETSCREENREADER` OS flag, not a genuine Flutter engine limitation) -- see Task 7's completion notes and F153's updated master-plan entry for the full re-test scope this unlocks for a future sprint.

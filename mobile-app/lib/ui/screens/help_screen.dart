@@ -13,7 +13,9 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/services/app_environment.dart';
 import '../../core/services/content_loader.dart';
@@ -169,7 +171,9 @@ class _HelpScreenState extends State<HelpScreen> {
           accountEmail: widget.accountEmail ?? widget.accountId,
           platformId: widget.platformId ?? '',
           platformDisplayName: widget.platformDisplayName ?? '',
-          includeNoRuleReview: false,
+          // MV-5 (Sprint 58 Manual Validation, Harold 2026-08-15): the
+          // Review "No Rule" Items icon now appears on Help too (previously
+          // suppressed here) -- the builder's default includes it.
           includeScanHistory: hasAccount,
           includeHelp: false,
         ),
@@ -345,10 +349,11 @@ class _HelpScreenState extends State<HelpScreen> {
               future: ContentLoader().load('help', manifestKey),
               builder: (context, snapshot) {
                 if (snapshot.hasData) {
-                  return Text(
-                    snapshot.data!,
-                    style: const TextStyle(fontSize: 14, height: 1.4),
-                  );
+                  // F151i (Sprint 58, MV-7): render as formatted Markdown
+                  // (headers, bold, lists, tappable links) instead of raw
+                  // text -- the content files were always Markdown; only the
+                  // renderer was plain Text.
+                  return _markdownBody(snapshot.data!);
                 }
                 if (snapshot.hasError) {
                   return Text(
@@ -371,6 +376,39 @@ class _HelpScreenState extends State<HelpScreen> {
             ),
         ],
       ),
+    );
+  }
+
+  /// F151i (Sprint 58, MV-7): shared Markdown renderer for section bodies.
+  ///
+  /// Sizing matches the previous plain-Text rendering (14px, height 1.4) for
+  /// paragraph text so the conversion does not reflow more than it must, and
+  /// in-body headings are sized BELOW the screen's own 18px-bold section
+  /// titles so a `##` inside a content file reads as a sub-heading of its
+  /// section rather than competing with it.
+  ///
+  /// Links open in the default browser via url_launcher (already a
+  /// dependency). A failed/unparseable href is ignored rather than thrown --
+  /// content files are audited (F151i R-2), so this is belt-and-suspenders.
+  Widget _markdownBody(String data) {
+    final base = MarkdownStyleSheet.fromTheme(Theme.of(context));
+    return MarkdownBody(
+      data: data,
+      styleSheet: base.copyWith(
+        p: const TextStyle(fontSize: 14, height: 1.4),
+        listBullet: const TextStyle(fontSize: 14, height: 1.4),
+        h1: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+        h2: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        h3: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+        code: const TextStyle(fontSize: 13, fontFamily: 'monospace'),
+      ),
+      onTapLink: (text, href, title) {
+        if (href == null) return;
+        final uri = Uri.tryParse(href);
+        if (uri != null) {
+          launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
+      },
     );
   }
 

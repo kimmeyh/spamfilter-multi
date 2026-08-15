@@ -175,5 +175,36 @@ void main() {
                 'Help is always the LAST standard action.');
       }
     });
+
+    test('the builder declares the FULL canonical order (Sprint 58 MV-4)', () {
+      // Harold's audited order (2026-08-15): Review "No Rule" Items, View
+      // Scan History, Manual Scan, Select Account, Settings, Help. The
+      // Help-last test above only pinned ONE relative position -- this pins
+      // all of them, so ANY reorder of the standard block fails the build
+      // (the Manual Scan move that motivated this test would have been
+      // invisible to the previous assertions).
+      const canonicalOrder = <String>[
+        'Review "No Rule" Items',
+        'View Scan History',
+        'Manual Scan',
+        'Select Account',
+        'Settings',
+        'Help',
+      ];
+
+      final builder =
+          File('lib/ui/widgets/standard_app_bar_actions.dart').readAsStringSync();
+
+      var previousPosition = -1;
+      for (final tooltip in canonicalOrder) {
+        final position = builder.indexOf("tooltip: '$tooltip'");
+        expect(position, greaterThan(-1),
+            reason: 'builder must define `$tooltip`');
+        expect(position, greaterThan(previousPosition),
+            reason: '`$tooltip` must be declared after the action before it '
+                'in the canonical order: ${canonicalOrder.join(' -> ')}');
+        previousPosition = position;
+      }
+    });
   });
 }

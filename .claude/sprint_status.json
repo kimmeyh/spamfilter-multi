@@ -31,7 +31,7 @@
     "_process_note": "Phase 6.6 carry-forward applied correctly again (Sprint 57 -> Sprint 58, to be done on merge notification): branch to be created from feature/20260813_Sprint_57 immediately on merge, before any other commits. SPRINT_56_SUMMARY.md was NOT created during Sprint 57 planning -- consistent with the Sprint 55 precedent (plan + retrospective docs sufficed, Last Completed Sprint carries the narrative), not a gap."
   },
 
-  "github_issues": [318],
+  "github_issues": [318, 319, 320],
   "_github_issues_note": "Issues #313 (F142) and #312 (F149) manually closed 2026-08-14 during Sprint 58 Post-Merge Cleanup (GitFlow does not auto-close on feature->develop merge). #311 (Harold's develop->main tracking issue) is MERGED -- PR #316 completed the real merge, resolving the F148/0.6.2.0 known gap. #315 (F150) remains open but DEFERRED (blocked on Harold's Firebase Console action) -- not this sprint's scope. #318 (F151, Windows first-run UX) is Sprint 58's actual scope card, opened 2026-08-15 during Backlog Refinement; PR #317 updated to reference it. This array was not populated when the issue was created -- corrected 2026-08-15 when the require-sprint-cards hook caught the gap.",
 
   "test_metrics": {

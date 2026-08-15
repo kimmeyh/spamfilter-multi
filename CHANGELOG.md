@@ -26,6 +26,10 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-08-15 (Sprint 58, Manual Validation follow-ups round 2)
+- **feat**: F151h (MV-4/MV-5) -- AppBar icon order audited against Harold's canonical left-to-right spec: Reload, Export Results, Search (screen-specific), then Review "No Rule" Items, View Scan History, Manual Scan, Select Account, Settings, Help. One change needed in the shared builder (Manual Scan moved from first-in-block to after View Scan History -- applies to every screen at once), plus the Help screen now shows the Review "No Rule" Items icon (previously suppressed). The policy gate now asserts the FULL declaration order, not just Help-last. (Issue #319)
+- **feat**: F151i (MV-7) -- Help content now renders as formatted Markdown (headers, bold, lists, tappable links opening in the default browser) instead of raw text with literal `##`/`**` markers. Content files audited for Markdown validity (already clean -- written as Markdown from the start per ADR-0038). New dependency `flutter_markdown_plus` (the official continuation of Google's discontinued `flutter_markdown`). All 31 F145 deep-link integration tests re-run green against the new rendered heights; 3 existing Help-content tests updated from single-Text-widget assertions to rendered-tree text collection (the content contract is unchanged, only the widget shape). (Issue #320)
+
 ### 2026-08-15 (Sprint 58, Manual Validation follow-ups) (Issue #318)
 - **fix**: MV-1 -- tapping the Search icon on the Scan Results screen now focuses the search text box immediately, so typing can start without a second click. The Ctrl+F path already requested focus; the icon path was missing the same post-frame request, and the TextField's own autofocus loses the race against the screen's outer keyboard-shortcut Focus wrapper.
 - **fix**: MV-2 -- the close-search control changed from an X to a back-arrow (Material convention for leaving in-AppBar search mode); the X visually collided with the app-exit X on the opposite end of the AppBar.
