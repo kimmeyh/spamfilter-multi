@@ -1124,7 +1124,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                       Colors.white,
                       EmailActionType.none,
                       'No existing rule or safe sender matched these emails. '
-                      'Review them to add a rule or safe sender.'),
+                          'Review them to add a rule or safe sender.'),
                   _buildSpecialStatChip(
                       'Errors',
                       errorCount,
@@ -1635,335 +1635,472 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               bottom: bottom,
               left: 16,
               right: 16,
-              child: Material(
-                elevation: 8,
-                borderRadius: BorderRadius.circular(12),
-                child: SelectionArea(
-                  child: SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Handle bar
-                          Center(
-                            child: Container(
-                              width: 40,
-                              height: 4,
-                              margin: const EdgeInsets.only(bottom: 12),
-                              decoration: BoxDecoration(
-                                color: Colors.grey[300],
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                          ),
-                          // One-line summary matching Results screen format
-                          Row(
+              // F151e (Sprint 58): the popup previously stretched edge-to-edge
+              // minus 16px margins on both sides -- at the default 1600px
+              // window width that meant a ~1568px-wide popup, so the 3-button
+              // safe-sender/block-rule grids (already laid out side-by-side,
+              // not stacked) each stretched far wider than their content
+              // needed, reading as oversized. Capping the width and centering
+              // makes the popup a reasonable dialog size on large windows
+              // while the left/right: 16 fallback still applies on narrow ones
+              // (ConstrainedBox never grows PAST the Positioned bounds).
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 480),
+                  child: Material(
+                    elevation: 8,
+                    borderRadius: BorderRadius.circular(12),
+                    child: SelectionArea(
+                      child: SingleChildScrollView(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              _actionIcon(result.action),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  displaySenderEmail,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
+                              // Handle bar
+                              Center(
+                                child: Container(
+                                  width: 40,
+                                  height: 4,
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey[300],
+                                    borderRadius: BorderRadius.circular(2),
                                   ),
-                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
-                              // F136 (Sprint 52): SKIP -- leaves this item
-                              // completely unaffected and moves to the next
-                              // unaddressed one. Harold: "add a 'Skip' button
-                              // in the header ... button should be about the
-                              // same size as the safe sender and rules
-                              // buttons", and (steering) reuse an existing
-                              // button rather than building a new control.
-                              //
-                              // It reuses `_quickActionThenAdvance` -- the SAME
-                              // navigation the quick actions use -- with a
-                              // no-op action and a covers-NOTHING predicate.
-                              // That is what makes "next unaddressed item" mean
-                              // exactly what it means for every other button
-                              // here, instead of a second, subtly-different
-                              // traversal that could drift.
-                              //
-                              // Only shown under the "No rule" filter: outside
-                              // it there is no unaddressed-item sequence to
-                              // advance through, and `_quickActionThenAdvance`
-                              // itself no-ops on navigation in that case.
-                              if (_filter == EmailActionType.none) ...[
-                                const SizedBox(width: 8),
-                                _buildSkipButton(
-                                  result: result,
-                                  dialogContext: dialogContext,
-                                  anchorPosition: itemPosition,
-                                  anchorSize: itemSize,
-                                ),
-                              ],
-                              const SizedBox(width: 8),
-                              result.success
-                                  ? const Icon(Icons.check,
-                                      color: Colors.green, size: 18)
-                                  : const Icon(Icons.error,
-                                      color: Colors.red, size: 18),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          // Subtitle line: folder • subject • rule
-                          Text(
-                            '${email.folderName} • $displaySubject • ${matchedRule.isNotEmpty ? matchedRule : "No rule"}',
-                            style: TextStyle(
-                                fontSize: 12, color: Colors.grey[600]),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 8),
-                          // Date/time
-                          Row(
-                            children: [
-                              Icon(Icons.schedule,
-                                  size: 14, color: Colors.grey[500]),
-                              const SizedBox(width: 4),
+                              // One-line summary matching Results screen format
+                              Row(
+                                children: [
+                                  _actionIcon(result.action),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      displaySenderEmail,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  // F136 (Sprint 52): SKIP -- leaves this item
+                                  // completely unaffected and moves to the next
+                                  // unaddressed one. Harold: "add a 'Skip' button
+                                  // in the header ... button should be about the
+                                  // same size as the safe sender and rules
+                                  // buttons", and (steering) reuse an existing
+                                  // button rather than building a new control.
+                                  //
+                                  // It reuses `_quickActionThenAdvance` -- the SAME
+                                  // navigation the quick actions use -- with a
+                                  // no-op action and a covers-NOTHING predicate.
+                                  // That is what makes "next unaddressed item" mean
+                                  // exactly what it means for every other button
+                                  // here, instead of a second, subtly-different
+                                  // traversal that could drift.
+                                  //
+                                  // Only shown under the "No rule" filter: outside
+                                  // it there is no unaddressed-item sequence to
+                                  // advance through, and `_quickActionThenAdvance`
+                                  // itself no-ops on navigation in that case.
+                                  if (_filter == EmailActionType.none) ...[
+                                    const SizedBox(width: 8),
+                                    _buildSkipButton(
+                                      result: result,
+                                      dialogContext: dialogContext,
+                                      anchorPosition: itemPosition,
+                                      anchorSize: itemSize,
+                                    ),
+                                  ],
+                                  const SizedBox(width: 8),
+                                  result.success
+                                      ? const Icon(Icons.check,
+                                          color: Colors.green, size: 18)
+                                      : const Icon(Icons.error,
+                                          color: Colors.red, size: 18),
+                                ],
+                              ),
+                              const SizedBox(height: 4),
+                              // Subtitle line: folder • subject • rule
                               Text(
-                                dateStr,
+                                '${email.folderName} • $displaySubject • ${matchedRule.isNotEmpty ? matchedRule : "No rule"}',
                                 style: TextStyle(
-                                    fontSize: 11, color: Colors.grey.shade600),
+                                    fontSize: 12, color: Colors.grey[600]),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              if (displaySenderDomain != null) ...[
-                                const SizedBox(width: 12),
-                                Icon(Icons.domain,
-                                    size: 14, color: Colors.grey[500]),
-                                const SizedBox(width: 4),
-                                Text(
-                                  displaySenderDomain,
-                                  style: TextStyle(
-                                      fontSize: 11, color: Colors.grey.shade600),
-                                ),
-                              ],
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          // Action result badge
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: _getActionColor(result.action)
-                                  .withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              _getActionDescription(result),
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w500,
-                                color: _getActionColor(result.action),
+                              const SizedBox(height: 8),
+                              // Date/time
+                              Row(
+                                children: [
+                                  Icon(Icons.schedule,
+                                      size: 14, color: Colors.grey[500]),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    dateStr,
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey.shade600),
+                                  ),
+                                  if (displaySenderDomain != null) ...[
+                                    const SizedBox(width: 12),
+                                    Icon(Icons.domain,
+                                        size: 14, color: Colors.grey[500]),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      displaySenderDomain,
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          color: Colors.grey.shade600),
+                                    ),
+                                  ],
+                                ],
                               ),
-                            ),
-                          ),
-                          const Divider(height: 20),
-
-                          // === SHARED PROVIDER HINT ===
-                          if (rawSenderDomain != null &&
-                              CommonEmailProviders.isCommonProvider(
-                                  rawSenderDomain)) ...[
-                            Builder(builder: (_) {
-                              final providerName =
-                                  CommonEmailProviders.getProviderName(
-                                          rawSenderDomain) ??
-                                      'Unknown';
-                              return Container(
-                                padding: const EdgeInsets.all(10),
+                              const SizedBox(height: 8),
+                              // Action result badge
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: Colors.amber.withValues(alpha: 0.12),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(
-                                      color:
-                                          Colors.amber.withValues(alpha: 0.4)),
+                                  color: _getActionColor(result.action)
+                                      .withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(4),
                                 ),
+                                child: Text(
+                                  _getActionDescription(result),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: _getActionColor(result.action),
+                                  ),
+                                ),
+                              ),
+                              const Divider(height: 20),
+
+                              // === SHARED PROVIDER HINT ===
+                              if (rawSenderDomain != null &&
+                                  CommonEmailProviders.isCommonProvider(
+                                      rawSenderDomain)) ...[
+                                Builder(builder: (_) {
+                                  final providerName =
+                                      CommonEmailProviders.getProviderName(
+                                              rawSenderDomain) ??
+                                          'Unknown';
+                                  return Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color:
+                                          Colors.amber.withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                          color: Colors.amber
+                                              .withValues(alpha: 0.4)),
+                                    ),
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Icon(Icons.info_outline,
+                                            size: 16, color: Colors.amber[800]),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: Text(
+                                            '$providerName is a shared email provider. '
+                                            'Use "Exact Email" when adding rules for this sender.',
+                                            style: TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.amber[900]),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }),
+                                const SizedBox(height: 12),
+                              ],
+
+                              // === SAFE SENDER SECTION ===
+                              // Issue 5: Always show Safe Sender options for all emails
+                              Text(
+                                isSafeSender
+                                    ? 'Update Safe Sender'
+                                    : 'Add to Safe Senders',
+                                style: const TextStyle(
+                                    fontSize: 13, fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 8),
+                              // MT-1 (Sprint 50, Harold): FIXED 3-column grid -- the
+                              // Email | Exact Domain | Entire Domain actions keep the
+                              // SAME position for every item (equal-width cells,
+                              // ellipsized subtitles, disabled placeholder when a domain
+                              // action is unavailable) so muscle memory works across
+                              // items. Replaces the flowing Wrap whose button positions
+                              // shifted with address length.
+                              IntrinsicHeight(
                                 child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
                                   children: [
-                                    Icon(Icons.info_outline,
-                                        size: 16, color: Colors.amber[800]),
+                                    Expanded(
+                                      child: _buildInlineActionButton(
+                                        icon: Icons.person,
+                                        label: 'Exact Email',
+                                        subtitle: displaySenderEmail,
+                                        color: Colors.green,
+                                        isMatched: isSafeSender &&
+                                            effectiveEval?.matchedPatternType ==
+                                                'exact_email',
+                                        onTap: () {
+                                          Navigator.pop(dialogContext);
+                                          // Use normalized email (plus-signs stripped) to match SafeSenderList evaluation
+                                          _quickActionThenAdvance(
+                                            current: result,
+                                            anchorPosition: itemPosition,
+                                            anchorSize: itemSize,
+                                            action: () => _addSafeSender(
+                                                normalizedSenderEmail, 'exact',
+                                                email: email),
+                                            coveredByAction: coversSameEmail,
+                                          );
+                                        },
+                                      ),
+                                    ),
                                     const SizedBox(width: 8),
                                     Expanded(
-                                      child: Text(
-                                        '$providerName is a shared email provider. '
-                                        'Use "Exact Email" when adding rules for this sender.',
-                                        style: TextStyle(
-                                            fontSize: 11,
-                                            color: Colors.amber[900]),
-                                      ),
+                                      child: rawSenderDomain == null
+                                          ? _buildInlineActionButton(
+                                              icon: Icons.domain,
+                                              label: 'Exact Domain',
+                                              subtitle: 'Not available',
+                                              color: Colors.green,
+                                              onTap: null,
+                                            )
+                                          : _buildInlineActionButton(
+                                              icon: Icons.domain,
+                                              label: 'Exact Domain',
+                                              subtitle: '@$displaySenderDomain',
+                                              color: Colors.green,
+                                              isMatched: isSafeSender &&
+                                                  effectiveEval
+                                                          ?.matchedPatternType ==
+                                                      'exact_domain',
+                                              onTap: () async {
+                                                Navigator.pop(dialogContext);
+                                                // F47: Check for email provider domain
+                                                if (!await _checkProviderDomainWarning(
+                                                    domain: rawSenderDomain,
+                                                    isBlockRule: false)) {
+                                                  return;
+                                                }
+                                                _quickActionThenAdvance(
+                                                  current: result,
+                                                  anchorPosition: itemPosition,
+                                                  anchorSize: itemSize,
+                                                  action: () => _addSafeSender(
+                                                      '@$rawSenderDomain',
+                                                      'exactDomain',
+                                                      email: email),
+                                                  coveredByAction:
+                                                      coversExactDomain,
+                                                );
+                                              },
+                                            ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: rawSenderDomain == null
+                                          ? _buildInlineActionButton(
+                                              icon: Icons.public,
+                                              label: 'Entire Domain',
+                                              subtitle: 'Not available',
+                                              color: Colors.green,
+                                              onTap: null,
+                                            )
+                                          : _buildInlineActionButton(
+                                              icon: Icons.public,
+                                              label: 'Entire Domain',
+                                              subtitle:
+                                                  '@*.${displayRootDomain ?? displaySenderDomain}',
+                                              color: Colors.green,
+                                              isMatched: isSafeSender &&
+                                                  effectiveEval
+                                                          ?.matchedPatternType ==
+                                                      'entire_domain',
+                                              onTap: () async {
+                                                Navigator.pop(dialogContext);
+                                                // F47: Check for email provider domain
+                                                if (!await _checkProviderDomainWarning(
+                                                    domain: rawRootDomain ??
+                                                        rawSenderDomain,
+                                                    isBlockRule: false)) {
+                                                  return;
+                                                }
+                                                _quickActionThenAdvance(
+                                                  current: result,
+                                                  anchorPosition: itemPosition,
+                                                  anchorSize: itemSize,
+                                                  action: () => _addSafeSender(
+                                                      rawRootDomain ??
+                                                          rawSenderDomain,
+                                                      'entireDomain',
+                                                      email: email),
+                                                  coveredByAction:
+                                                      coversEntireDomain,
+                                                );
+                                              },
+                                            ),
                                     ),
                                   ],
                                 ),
-                              );
-                            }),
-                            const SizedBox(height: 12),
-                          ],
+                              ),
+                              const SizedBox(height: 12),
 
-                          // === SAFE SENDER SECTION ===
-                          // Issue 5: Always show Safe Sender options for all emails
-                          Text(
-                            isSafeSender
-                                ? 'Update Safe Sender'
-                                : 'Add to Safe Senders',
-                            style: const TextStyle(
-                                fontSize: 13, fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 8),
-                          // MT-1 (Sprint 50, Harold): FIXED 3-column grid -- the
-                          // Email | Exact Domain | Entire Domain actions keep the
-                          // SAME position for every item (equal-width cells,
-                          // ellipsized subtitles, disabled placeholder when a domain
-                          // action is unavailable) so muscle memory works across
-                          // items. Replaces the flowing Wrap whose button positions
-                          // shifted with address length.
-                          IntrinsicHeight(
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Expanded(
+                              // === BLOCK RULE SECTION ===
+                              // Issue 5: Always show Block Rule options for all emails
+                              const Text(
+                                'Create Block Rule',
+                                style: TextStyle(
+                                    fontSize: 13, fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 8),
+                              // MT-1 (Sprint 50, Harold): same fixed 3-column grid as the
+                              // Safe row -- Block Entire Domain is ALWAYS the right-most
+                              // cell. Block Subject gets its own full-width row below so
+                              // its presence/absence never shifts the grid.
+                              IntrinsicHeight(
+                                child: Row(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Expanded(
+                                      child: _buildInlineActionButton(
+                                        icon: Icons.person_off,
+                                        label: 'Block Email',
+                                        subtitle: displaySenderEmail,
+                                        color: Colors.red,
+                                        isMatched: isDeleted &&
+                                            effectiveEval?.matchedPatternType ==
+                                                'exact_email',
+                                        onTap: () {
+                                          Navigator.pop(dialogContext);
+                                          _quickActionThenAdvance(
+                                            current: result,
+                                            anchorPosition: itemPosition,
+                                            anchorSize: itemSize,
+                                            action: () => _createBlockRule(
+                                                'from', rawSenderEmail,
+                                                email: email),
+                                            coveredByAction: coversSameEmail,
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: rawSenderDomain == null
+                                          ? _buildInlineActionButton(
+                                              icon: Icons.domain_disabled,
+                                              label: 'Block Exact Domain',
+                                              subtitle: 'Not available',
+                                              color: Colors.red,
+                                              onTap: null,
+                                            )
+                                          : _buildInlineActionButton(
+                                              icon: Icons.domain_disabled,
+                                              label: 'Block Exact Domain',
+                                              subtitle: '@$displaySenderDomain',
+                                              color: Colors.red,
+                                              isMatched: isDeleted &&
+                                                  effectiveEval
+                                                          ?.matchedPatternType ==
+                                                      'exact_domain',
+                                              onTap: () async {
+                                                Navigator.pop(dialogContext);
+                                                // F47: Check for email provider domain
+                                                if (!await _checkProviderDomainWarning(
+                                                    domain: rawSenderDomain,
+                                                    isBlockRule: true)) {
+                                                  return;
+                                                }
+                                                _quickActionThenAdvance(
+                                                  current: result,
+                                                  anchorPosition: itemPosition,
+                                                  anchorSize: itemSize,
+                                                  action: () =>
+                                                      _createBlockRule(
+                                                          'exactDomain',
+                                                          '@$rawSenderDomain',
+                                                          email: email),
+                                                  coveredByAction:
+                                                      coversExactDomain,
+                                                );
+                                              },
+                                            ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: rawSenderDomain == null
+                                          ? _buildInlineActionButton(
+                                              icon: Icons.public_off,
+                                              label: 'Block Entire Domain',
+                                              subtitle: 'Not available',
+                                              color: Colors.red,
+                                              onTap: null,
+                                            )
+                                          : _buildInlineActionButton(
+                                              icon: Icons.public_off,
+                                              label: 'Block Entire Domain',
+                                              subtitle:
+                                                  '@*.${displayRootDomain ?? displaySenderDomain}',
+                                              color: Colors.red,
+                                              isMatched: isDeleted &&
+                                                  effectiveEval
+                                                          ?.matchedPatternType ==
+                                                      'entire_domain',
+                                              onTap: () async {
+                                                Navigator.pop(dialogContext);
+                                                // F47: Check for email provider domain
+                                                if (!await _checkProviderDomainWarning(
+                                                    domain: rawRootDomain ??
+                                                        rawSenderDomain,
+                                                    isBlockRule: true)) {
+                                                  return;
+                                                }
+                                                _quickActionThenAdvance(
+                                                  current: result,
+                                                  anchorPosition: itemPosition,
+                                                  anchorSize: itemSize,
+                                                  action: () =>
+                                                      _createBlockRule(
+                                                          'entireDomain',
+                                                          rawRootDomain ??
+                                                              rawSenderDomain,
+                                                          email: email),
+                                                  coveredByAction:
+                                                      coversEntireDomain,
+                                                );
+                                              },
+                                            ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              if (cleanedSubject.isNotEmpty &&
+                                  cleanedSubject != '(No subject)') ...[
+                                const SizedBox(height: 8),
+                                SizedBox(
+                                  width: double.infinity,
                                   child: _buildInlineActionButton(
-                                    icon: Icons.person,
-                                    label: 'Exact Email',
-                                    subtitle: displaySenderEmail,
-                                    color: Colors.green,
-                                    isMatched: isSafeSender &&
-                                        effectiveEval?.matchedPatternType ==
-                                            'exact_email',
-                                    onTap: () {
-                                      Navigator.pop(dialogContext);
-                                      // Use normalized email (plus-signs stripped) to match SafeSenderList evaluation
-                                      _quickActionThenAdvance(
-                                        current: result,
-                                        anchorPosition: itemPosition,
-                                        anchorSize: itemSize,
-                                        action: () => _addSafeSender(
-                                            normalizedSenderEmail, 'exact',
-                                            email: email),
-                                        coveredByAction: coversSameEmail,
-                                      );
-                                    },
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: rawSenderDomain == null
-                                      ? _buildInlineActionButton(
-                                          icon: Icons.domain,
-                                          label: 'Exact Domain',
-                                          subtitle: 'Not available',
-                                          color: Colors.green,
-                                          onTap: null,
-                                        )
-                                      : _buildInlineActionButton(
-                                          icon: Icons.domain,
-                                          label: 'Exact Domain',
-                                          subtitle: '@$displaySenderDomain',
-                                          color: Colors.green,
-                                          isMatched: isSafeSender &&
-                                              effectiveEval
-                                                      ?.matchedPatternType ==
-                                                  'exact_domain',
-                                          onTap: () async {
-                                            Navigator.pop(dialogContext);
-                                            // F47: Check for email provider domain
-                                            if (!await _checkProviderDomainWarning(
-                                                domain: rawSenderDomain,
-                                                isBlockRule: false)) {
-                                              return;
-                                            }
-                                            _quickActionThenAdvance(
-                                              current: result,
-                                              anchorPosition: itemPosition,
-                                              anchorSize: itemSize,
-                                              action: () => _addSafeSender(
-                                                  '@$rawSenderDomain',
-                                                  'exactDomain',
-                                                  email: email),
-                                              coveredByAction:
-                                                  coversExactDomain,
-                                            );
-                                          },
-                                        ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: rawSenderDomain == null
-                                      ? _buildInlineActionButton(
-                                          icon: Icons.public,
-                                          label: 'Entire Domain',
-                                          subtitle: 'Not available',
-                                          color: Colors.green,
-                                          onTap: null,
-                                        )
-                                      : _buildInlineActionButton(
-                                          icon: Icons.public,
-                                          label: 'Entire Domain',
-                                          subtitle:
-                                              '@*.${displayRootDomain ?? displaySenderDomain}',
-                                          color: Colors.green,
-                                          isMatched: isSafeSender &&
-                                              effectiveEval
-                                                      ?.matchedPatternType ==
-                                                  'entire_domain',
-                                          onTap: () async {
-                                            Navigator.pop(dialogContext);
-                                            // F47: Check for email provider domain
-                                            if (!await _checkProviderDomainWarning(
-                                                domain: rawRootDomain ??
-                                                    rawSenderDomain,
-                                                isBlockRule: false)) {
-                                              return;
-                                            }
-                                            _quickActionThenAdvance(
-                                              current: result,
-                                              anchorPosition: itemPosition,
-                                              anchorSize: itemSize,
-                                              action: () => _addSafeSender(
-                                                  rawRootDomain ??
-                                                      rawSenderDomain,
-                                                  'entireDomain',
-                                                  email: email),
-                                              coveredByAction:
-                                                  coversEntireDomain,
-                                            );
-                                          },
-                                        ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-
-                          // === BLOCK RULE SECTION ===
-                          // Issue 5: Always show Block Rule options for all emails
-                          const Text(
-                            'Create Block Rule',
-                            style: TextStyle(
-                                fontSize: 13, fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 8),
-                          // MT-1 (Sprint 50, Harold): same fixed 3-column grid as the
-                          // Safe row -- Block Entire Domain is ALWAYS the right-most
-                          // cell. Block Subject gets its own full-width row below so
-                          // its presence/absence never shifts the grid.
-                          IntrinsicHeight(
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Expanded(
-                                  child: _buildInlineActionButton(
-                                    icon: Icons.person_off,
-                                    label: 'Block Email',
-                                    subtitle: displaySenderEmail,
-                                    color: Colors.red,
+                                    icon: Icons.subject,
+                                    label: 'Block Subject',
+                                    subtitle: cleanedSubject.length > 20
+                                        ? '${cleanedSubject.substring(0, 20)}...'
+                                        : cleanedSubject,
+                                    color: Colors.orange,
                                     isMatched: isDeleted &&
                                         effectiveEval?.matchedPatternType ==
-                                            'exact_email',
+                                            'subject',
                                     onTap: () {
                                       Navigator.pop(dialogContext);
                                       _quickActionThenAdvance(
@@ -1971,138 +2108,23 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                                         anchorPosition: itemPosition,
                                         anchorSize: itemSize,
                                         action: () => _createBlockRule(
-                                            'from', rawSenderEmail,
+                                            'subject', cleanedSubject,
                                             email: email),
-                                        coveredByAction: coversSameEmail,
+                                        coveredByAction: coversSubject,
                                       );
                                     },
                                   ),
                                 ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: rawSenderDomain == null
-                                      ? _buildInlineActionButton(
-                                          icon: Icons.domain_disabled,
-                                          label: 'Block Exact Domain',
-                                          subtitle: 'Not available',
-                                          color: Colors.red,
-                                          onTap: null,
-                                        )
-                                      : _buildInlineActionButton(
-                                          icon: Icons.domain_disabled,
-                                          label: 'Block Exact Domain',
-                                          subtitle: '@$displaySenderDomain',
-                                          color: Colors.red,
-                                          isMatched: isDeleted &&
-                                              effectiveEval
-                                                      ?.matchedPatternType ==
-                                                  'exact_domain',
-                                          onTap: () async {
-                                            Navigator.pop(dialogContext);
-                                            // F47: Check for email provider domain
-                                            if (!await _checkProviderDomainWarning(
-                                                domain: rawSenderDomain,
-                                                isBlockRule: true)) {
-                                              return;
-                                            }
-                                            _quickActionThenAdvance(
-                                              current: result,
-                                              anchorPosition: itemPosition,
-                                              anchorSize: itemSize,
-                                              action: () => _createBlockRule(
-                                                  'exactDomain',
-                                                  '@$rawSenderDomain',
-                                                  email: email),
-                                              coveredByAction:
-                                                  coversExactDomain,
-                                            );
-                                          },
-                                        ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: rawSenderDomain == null
-                                      ? _buildInlineActionButton(
-                                          icon: Icons.public_off,
-                                          label: 'Block Entire Domain',
-                                          subtitle: 'Not available',
-                                          color: Colors.red,
-                                          onTap: null,
-                                        )
-                                      : _buildInlineActionButton(
-                                          icon: Icons.public_off,
-                                          label: 'Block Entire Domain',
-                                          subtitle:
-                                              '@*.${displayRootDomain ?? displaySenderDomain}',
-                                          color: Colors.red,
-                                          isMatched: isDeleted &&
-                                              effectiveEval
-                                                      ?.matchedPatternType ==
-                                                  'entire_domain',
-                                          onTap: () async {
-                                            Navigator.pop(dialogContext);
-                                            // F47: Check for email provider domain
-                                            if (!await _checkProviderDomainWarning(
-                                                domain: rawRootDomain ??
-                                                    rawSenderDomain,
-                                                isBlockRule: true)) {
-                                              return;
-                                            }
-                                            _quickActionThenAdvance(
-                                              current: result,
-                                              anchorPosition: itemPosition,
-                                              anchorSize: itemSize,
-                                              action: () => _createBlockRule(
-                                                  'entireDomain',
-                                                  rawRootDomain ??
-                                                      rawSenderDomain,
-                                                  email: email),
-                                              coveredByAction:
-                                                  coversEntireDomain,
-                                            );
-                                          },
-                                        ),
-                                ),
                               ],
-                            ),
+                            ],
                           ),
-                          if (cleanedSubject.isNotEmpty &&
-                              cleanedSubject != '(No subject)') ...[
-                            const SizedBox(height: 8),
-                            SizedBox(
-                              width: double.infinity,
-                              child: _buildInlineActionButton(
-                                icon: Icons.subject,
-                                label: 'Block Subject',
-                                subtitle: cleanedSubject.length > 20
-                                    ? '${cleanedSubject.substring(0, 20)}...'
-                                    : cleanedSubject,
-                                color: Colors.orange,
-                                isMatched: isDeleted &&
-                                    effectiveEval?.matchedPatternType ==
-                                        'subject',
-                                onTap: () {
-                                  Navigator.pop(dialogContext);
-                                  _quickActionThenAdvance(
-                                    current: result,
-                                    anchorPosition: itemPosition,
-                                    anchorSize: itemSize,
-                                    action: () => _createBlockRule(
-                                        'subject', cleanedSubject,
-                                        email: email),
-                                    coveredByAction: coversSubject,
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
-                        ],
+                        ),
                       ),
-                    ),
-                  ),
-                ), // Close SelectionArea
-              ),
-            ),
+                    ), // Close SelectionArea
+                  ), // Close Material
+                ), // Close ConstrainedBox
+              ), // Close Center
+            ), // Close Positioned
           ],
         );
       },
@@ -2213,76 +2235,76 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       child: Tooltip(
         message: enabled ? '$label. $subtitle' : '$label (unavailable)',
         child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: isMatched
-                ? effectiveColor
-                : effectiveColor.withValues(alpha: 0.3),
-            width: isMatched ? 2 : 1, // Thicker border for matched rule
-          ),
+          onTap: onTap,
           borderRadius: BorderRadius.circular(8),
-          color: isMatched
-              ? effectiveColor.withValues(
-                  alpha: 0.15) // Darker shade for matched
-              : effectiveColor.withValues(alpha: 0.05),
-        ),
-        child: Stack(
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: isMatched
+                    ? effectiveColor
+                    : effectiveColor.withValues(alpha: 0.3),
+                width: isMatched ? 2 : 1, // Thicker border for matched rule
+              ),
+              borderRadius: BorderRadius.circular(8),
+              color: isMatched
+                  ? effectiveColor.withValues(
+                      alpha: 0.15) // Darker shade for matched
+                  : effectiveColor.withValues(alpha: 0.05),
+            ),
+            child: Stack(
               children: [
-                Row(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(icon, size: 16, color: effectiveColor),
-                    const SizedBox(width: 6),
-                    Flexible(
-                      child: Text(
-                        label,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: effectiveColor,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(icon, size: 16, color: effectiveColor),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            label,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: effectiveColor,
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: TextStyle(fontSize: 10, color: Colors.grey[600]),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+                // Item 2: Green checkmark in top-right corner for matched rule
+                if (isMatched)
+                  Positioned(
+                    top: -4,
+                    right: -4,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.check,
+                        size: 12,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
               ],
             ),
-            // Item 2: Green checkmark in top-right corner for matched rule
-            if (isMatched)
-              Positioned(
-                top: -4,
-                right: -4,
-                child: Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    color: color,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.check,
-                    size: 12,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
+          ),
         ),
       ),
     );
@@ -2410,8 +2432,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           ),
           borderRadius: BorderRadius.circular(8),
           child: Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               border: Border.all(
                 color: Colors.blueGrey.withValues(alpha: 0.3),
@@ -2422,7 +2443,8 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.skip_next, size: 16, color: Colors.blueGrey.shade700),
+                Icon(Icons.skip_next,
+                    size: 16, color: Colors.blueGrey.shade700),
                 const SizedBox(width: 6),
                 Text(
                   'Skip',
