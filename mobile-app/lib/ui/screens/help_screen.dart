@@ -459,11 +459,28 @@ class _HelpScreenState extends State<HelpScreen> {
         h3: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
         code: const TextStyle(fontSize: 13, fontFamily: 'monospace'),
       ),
-      onTapLink: (text, href, title) {
+      onTapLink: (text, href, title) async {
         if (href == null) return;
         final uri = Uri.tryParse(href);
-        if (uri != null) {
-          launchUrl(uri, mode: LaunchMode.externalApplication);
+        if (uri == null) return;
+        // Copilot review (PR #317): launchUrl returns a Future and can
+        // throw (e.g. no handler for the scheme) -- await it inside a
+        // try/catch so a bad link degrades to a SnackBar instead of an
+        // unhandled async error crashing the Help screen.
+        try {
+          final launched =
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
+          if (!launched && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Could not open the link.')),
+            );
+          }
+        } catch (_) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Could not open the link.')),
+            );
+          }
         }
       },
     );

@@ -67,11 +67,11 @@ You can remove any TLD from the blocked set, or add additional ones. If you regu
 
 ## Step 7: Set Up Daily Background Scanning
 
-Once you have configured your rules and safe senders to your liking, enable background scanning in Settings. Background scanning automatically scans your email on a schedule you set. After the scan completes, the app stores the results in "View Scan History" and emails without rules are listed in the "Review "No Rule" Items" screen.
+Once you have configured your rules and safe senders to your liking, enable background scanning in Settings. Background scanning automatically scans your email on a schedule you set. After the scan completes, the app stores the results in View Scan History, and emails without rules are listed on the Review "No Rule" Items screen.
 
-This means you do not have to manually run a scan periodically, or every day, but will run in the background. The Background scanning ensures all emails from safe senders are in your default/defined "Safe Sender Folder" (see Settings > Account) and all emails matching "Delete Rules" are in your default/defined "Deleted Rule Folder".
+This means you do not have to manually run a scan periodically or every day -- scans run automatically in the background. Background scanning ensures all emails from safe senders are in your default/defined Safe Sender Folder (see Settings > Account) and all emails matching Delete Rules are in your default/defined Deleted Rule Folder.
 
-Once configured and running, the app should open to the "Review "No Rule" Items where you can update the rules as needed daily, every few days or weekly depending on the activity you see in your accounts. A second way to update "No Rule" items is to go to "View Scan History", select the last scan for each email, select the "No rule" button, click on the first item and decide on a rule or Skip. Determine the way that works best for you.
+Once configured and running, the app should open to the Review "No Rule" Items screen, where you can update the rules as needed daily, every few days, or weekly depending on the activity you see in your accounts. A second way to update "No Rule" items is to go to View Scan History, select the last scan for each email account, select the "No rule" button, click on the first item, and decide on a rule or Skip. Determine the way that works best for you.
 
 ## Step 8: Process Ongoing No-Rule Emails and Tune Your Rules
 

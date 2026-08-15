@@ -43,7 +43,9 @@ class ErrorMessages {
       return 'Too many failed sign-in attempts. Try again at $hh:$mm.';
     }
     if (error is AuthenticationException) {
-      return 'Sign-in failed. Please check your email and password and try again.';
+      // Copilot review (PR #317): provider-agnostic wording -- OAuth flows
+      // (Gmail Google Sign-In) have no password for the user to check.
+      return 'Sign-in failed. Please check your sign-in details and try again.';
     }
     if (error is ConnectionException) {
       return 'Unable to connect to the email server. Please check your internet connection and try again.';
