@@ -10,12 +10,12 @@
     "pr_number": 317,
     "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/317",
     "start_date": "2026-08-14",
-    "status": "Phase 6.6 carry-forward + Post-Merge Cleanup complete. Store release 0.7.0.0 (Submission 14) built, submitted, CERTIFIED AND LIVE 2026-08-15, Check C confirmed clean; post-cert close-out committed. Backlog Refinement RE-SCOPED 2026-08-15: F150 (Android build blocker) deferred (still blocked on Harold's Firebase Console action) in favor of F151 (Windows first-run/onboarding UX), sourced from Harold's user-centric MVP test script + First-Run Evaluation Summary Page, confirmed via a live Windows walkthrough (real 0.7.0.0 prod exe, genuinely empty account/data state achieved by backing up and clearing 3 independent data-persistence layers, then fully restored and byte-verified). F152 registered as a new reusable periodic HOLD template for re-running this evaluation on future releases. PR #317 (draft, Phase 3.3.1) needs its title/body/issue-card updated from F150 to F151 -- not yet done as of this status update.",
-    "plan_approved": false,
-    "plan_approval_date": null,
-    "blanket_execution_approved": false,
+    "status": "Phase 5.3 Manual Validation. Sprint plan approved 2026-08-15; all 7 F151 tasks (F151a-g) code-complete, tested, committed, pushed. Full test suite 1,885 passed / 29 skipped / 0 failed; flutter analyze clean throughout. Windows dev app built and launched for Manual Validation (build 0.7.1+1 [DEV]). PR #317 title/body/issue-card already updated to F151 during Backlog Refinement. Awaiting Harold's Manual Validation pass -- recommendation recorded in SPRINT_58_PLAN.md Sprint-Level Notes. Notable: Task 7 surfaced a major WinWright tooling discovery (SPI_SETSCREENREADER flag prerequisite) that may invalidate F140's Sprint 54 negative finding -- F153 upgraded from HOLD to Priority 10 for next-sprint re-investigation.",
+    "plan_approved": true,
+    "plan_approval_date": "2026-08-15",
+    "blanket_execution_approved": true,
     "scope": ["F151"],
-    "_scope_note": "F151 (Windows first-run UX) is Sprint 58's scope per Harold's explicit direction 2026-08-15, superseding the earlier F150 scoping. F150 remains open/deferred, still blocked on Harold's Firebase Console prerequisite -- next candidate once resolved. F151 not yet formally plan-approved (Phase 3) -- sprint planning is the next action."
+    "_scope_note": "F151 (Windows first-run UX) is Sprint 58's scope per Harold's explicit direction 2026-08-15, superseding the earlier F150 scoping. F150 remains open/deferred, still blocked on Harold's Firebase Console prerequisite -- next candidate once resolved. F151 fully executed (7/7 tasks); Manual Validation is the current phase."
   },
 
   "previous_sprint": {
@@ -31,17 +31,17 @@
     "_process_note": "Phase 6.6 carry-forward applied correctly again (Sprint 57 -> Sprint 58, to be done on merge notification): branch to be created from feature/20260813_Sprint_57 immediately on merge, before any other commits. SPRINT_56_SUMMARY.md was NOT created during Sprint 57 planning -- consistent with the Sprint 55 precedent (plan + retrospective docs sufficed, Last Completed Sprint carries the narrative), not a gap."
   },
 
-  "github_issues": [],
-  "_github_issues_note": "Issues #313 (F142) and #312 (F149) manually closed 2026-08-14 during Sprint 58 Post-Merge Cleanup (GitFlow does not auto-close on feature->develop merge). #311 (Harold's develop->main tracking issue) is MERGED -- PR #316 completed the real merge, resolving the F148/0.6.2.0 known gap. #315 (F150) remains open but DEFERRED (blocked on Harold's Firebase Console action) -- not this sprint's scope. #318 (F151, Windows first-run UX) is Sprint 58's actual scope, opened 2026-08-15; PR #317 updated to reference it.",
+  "github_issues": [318],
+  "_github_issues_note": "Issues #313 (F142) and #312 (F149) manually closed 2026-08-14 during Sprint 58 Post-Merge Cleanup (GitFlow does not auto-close on feature->develop merge). #311 (Harold's develop->main tracking issue) is MERGED -- PR #316 completed the real merge, resolving the F148/0.6.2.0 known gap. #315 (F150) remains open but DEFERRED (blocked on Harold's Firebase Console action) -- not this sprint's scope. #318 (F151, Windows first-run UX) is Sprint 58's actual scope card, opened 2026-08-15 during Backlog Refinement; PR #317 updated to reference it. This array was not populated when the issue was created -- corrected 2026-08-15 when the require-sprint-cards hook caught the gap.",
 
   "test_metrics": {
-    "tests_passing": 1864,
+    "tests_passing": 1885,
     "tests_skipped": 29,
     "tests_failing": 0,
     "analyzer_warnings": 0,
-    "_test_metrics_note": "1,864 as of 2026-08-14 (Sprint 57 final full run, analyzer clean) -- up from Sprint 56's 1,857. F149 added 6 new mutation-verified tests (test/unit/services/f91_safe_sender_dedup_test.dart). F142 replaced desktop_default_screen_test.dart's internal symbol references (no net count change to that file) and added 1 new policy gate (test/policy/f142_android_nav_removal_test.dart, +1 test). Net +7 vs Sprint 56 (6+1).",
+    "_test_metrics_note": "1,885 as of 2026-08-15 (Sprint 58 final full run, analyzer clean) -- up from Sprint 57's 1,864. F151 (7 tasks) added net +21 tests: F151a empty-state (+4), F151b Help-callout (+2, extended existing file), F151c chip-tooltips/Moved-removal (+2, new file), F151d demo-safe-sender predicate (+5, new file), F151e popup-width (+1, new file), F151f error-messages (+7, new file). All mutation-verified.",
     "hook_test_cases": "45/45 passing (.claude/hooks/run-test-cases.ps1) -- unchanged since Sprint 52.",
-    "winwright_sweep": "Not run this sprint. F142/F149 validated via widget/unit tests, a real Android build attempt (blocked by F94, see below), and live-account log investigation, not WinWright.",
+    "winwright_sweep": "Live interactive WinWright session this sprint (Backlog Refinement walkthrough + Task 7 environment-compatibility check) -- major discovery: SPI_SETSCREENREADER OS flag was the missing prerequisite for WinWright to see/click Flutter content at all, previously misread as a permanent Flutter-Windows UIA limitation (F140). Flag left enabled. See F153.",
     "coverage_percent": null,
     "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5)."
   },

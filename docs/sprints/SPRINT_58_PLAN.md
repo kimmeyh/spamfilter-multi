@@ -322,8 +322,18 @@
 
 ## Sprint-Level Notes
 
-**F153 registered separately** (HOLD, `docs/ALL_SPRINTS_MASTER_PLAN.md`) -- re-investigation of F140's WinWright/Flutter-Windows-UIA limitation, per Harold's 2026-08-15 request. NOT part of this sprint's execution scope; captured as a future periodic-review candidate since it needs research (Flutter changelog/issue-tracker checks) rather than app code changes.
+**F153 registered separately** (originally HOLD, upgraded to Priority 10 mid-sprint, `docs/ALL_SPRINTS_MASTER_PLAN.md`) -- re-investigation of F140's WinWright/Flutter-Windows-UIA limitation, per Harold's 2026-08-15 request. Task 7's investigation found the likely root cause the same day (a missing `SPI_SETSCREENREADER` OS flag, not a genuine Flutter engine limitation) -- see Task 7's completion notes and F153's updated master-plan entry for the full re-test scope this unlocks for a future sprint.
 
 **F152 registered separately** (HOLD, `docs/ALL_SPRINTS_MASTER_PLAN.md`) -- the First-Run Evaluation methodology itself, registered as a reusable periodic template so future re-runs do not need to re-derive Sprint 58's process from scratch.
 
-**Manual Validation recommendation** (to be confirmed/refined once Tasks 1-7 are code-complete): build and launch the Windows dev app, then walk through the SAME live-walkthrough sequence used during Backlog Refinement -- zero-accounts screen (verify welcome copy + Demo Mode visibility), Demo Mode -> Platform Selection -> Demo Scan -> Results (verify chip tooltips, no Moved chip, Safe-category result present, wording clarity), open an email-detail popup at default window size (verify no-scroll layout), and trigger a real connection/scan failure if practical (verify improved error messaging). This mirrors the Backlog Refinement walkthrough closely enough that Harold's prior familiarity with the flow should make re-validation fast.
+## Final Sprint Status (2026-08-15)
+
+All 7 tasks complete. Full test suite: **1,885 passed / 29 skipped / 0 failed** (up from 1,877 at Sprint 57 close -- net +8 new tests: 4 empty-state, 2 Help-callout, 2 chip-tooltip/Moved-removal, 5 F151d predicate, 1 popup-width, 7 error-messages -- some replaced/extended existing coverage rather than adding a net-new file each). `flutter analyze` clean throughout every task. Windows dev app built and launched successfully for Manual Validation (build `0.7.1+1 [DEV]`).
+
+**Notable mid-sprint corrections** (all surfaced and approved/self-corrected before proceeding, not silently absorbed):
+- Task 4's scope changed from "add demo data" to "fix a real scan-pipeline bug" after investigation found the demo dataset was already correct -- Harold approved via AskUserQuestion before the fix was written.
+- Task 5's planned approach (restructure the button grid) was corrected after reading the actual code showed the grid was already correct -- the real fix was the popup's outer width constraint.
+- Task 6's planned approach (wire in `ErrorDisplay` widgets) was corrected after reading the actual UI structure showed none of the 3 call sites fit that widget family -- built a shared message-classification helper instead.
+- Task 7 surfaced a significant tooling discovery (the screen-reader-flag prerequisite) that likely also affects F140's Sprint 54 finding and possibly other WinWright-limitation-driven design decisions recorded elsewhere in the docs -- flagged via F153, not silently corrected without a paper trail.
+
+**Manual Validation recommendation**: build and launch the Windows dev app (DONE, see above), then walk through the SAME live-walkthrough sequence used during Backlog Refinement -- zero-accounts screen (verify welcome copy + Demo Mode visibility), Demo Mode -> Platform Selection -> Demo Scan -> Results (verify chip tooltips, no Moved chip, Safe-category result now present, wording clarity), open an email-detail popup at default window size (verify no-scroll layout, capped width), and trigger a real connection/scan failure if practical (verify improved error messaging). This mirrors the Backlog Refinement walkthrough closely enough that Harold's prior familiarity with the flow should make re-validation fast.
