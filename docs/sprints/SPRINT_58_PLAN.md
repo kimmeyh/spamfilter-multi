@@ -52,6 +52,8 @@
 
 **Est-Effort**: 20-30m
 
+**Completion notes (2026-08-15)**: Implemented as planned -- `EmptyState` gained a generic optional `secondaryActionLabel`/`onSecondaryActionPressed` slot (reusable by other empty states later, not a one-off field), `NoAccountsEmptyState` gained purpose copy plus an `onTryDemoMode` param wired to a new `_startDemoMode()` in `AccountSelectionScreen` that mirrors `PlatformSelectionScreen._startDemoMode()` verbatim (same `ScanProgressScreen` push, same demo params) -- no new navigation logic invented. 4 new widget tests in `test/ui/widgets/empty_state_test.dart`, mutation-verified. `flutter analyze` clean. Actual ~15m (see `CODING_VELOCITY.md`).
+
 ---
 
 ## Task 2 -- F151b: Walkthrough discoverability callout on Help screen (Priority 10)
@@ -88,6 +90,8 @@
 **Step-types**: UI-MOVE, TEST-WIDGET
 
 **Est-Effort**: 10-20m
+
+**Completion notes (2026-08-15)**: Implemented as planned -- reused `_scrollTo(HelpSection)` (existing F145 deep-link mechanism) verbatim, and the F140 "duplicate near top" pattern already used for the version display. 2 new widget tests in `test/unit/ui/help_screen_test.dart`; one test-design correction discovered mid-task (see `CODING_VELOCITY.md`: the screen's eager-`Column` architecture means `find.text()` cannot prove visibility, only presence -- switched to a scroll-offset assertion). Both mutation-verified. `flutter analyze` clean. Actual ~15m.
 
 ---
 

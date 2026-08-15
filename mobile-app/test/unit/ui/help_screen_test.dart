@@ -78,6 +78,52 @@ void main() {
     }
   });
 
+  testWidgets(
+      'HelpScreen shows a "First time? Start here" callout near the top, '
+      'visible without scrolling (F151b, Sprint 58)', (tester) async {
+    // Same rationale as the F140 version-display test above -- a first-time
+    // user should not have to already know to scroll to the last of 22
+    // sections to find the walkthrough.
+    await tester.pumpWidget(
+      const MaterialApp(home: HelpScreen()),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('First time? Start here'), findsOneWidget);
+  });
+
+  testWidgets(
+      'Tapping the "First time? Start here" callout scrolls toward the '
+      'walkthrough section (F151b, Sprint 58)', (tester) async {
+    // The screen builds all 22 sections into one eager Column (not a lazy
+    // ListView, per the Round-3 fix documented in help_screen.dart), so
+    // find.text() locates every section's text regardless of scroll
+    // position -- it does not prove visibility. Assert on scroll OFFSET
+    // instead, matching how the existing initialSection test above avoids
+    // asserting an exact platform-sensitive scroll position but still
+    // proves the scroll actually moved.
+    await tester.binding.setSurfaceSize(const Size(800, 600));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await tester.pumpWidget(
+      const MaterialApp(home: HelpScreen()),
+    );
+    await tester.pumpAndSettle();
+
+    final scrollable = find.byType(Scrollable).first;
+    final initialOffset = tester.state<ScrollableState>(scrollable).position.pixels;
+    expect(initialOffset, 0.0,
+        reason: 'screen should open at the top with no initialSection');
+
+    await tester.tap(find.text('First time? Start here'));
+    await tester.pumpAndSettle();
+
+    final offsetAfterTap = tester.state<ScrollableState>(scrollable).position.pixels;
+    expect(offsetAfterTap, greaterThan(initialOffset),
+        reason: 'tapping the callout should scroll down toward the '
+            'last-positioned walkthrough section');
+  });
+
   testWidgets('HelpScreen accepts an initialSection without throwing',
       (tester) async {
     // The ensureVisible scroll is best-effort and depends on ListView's

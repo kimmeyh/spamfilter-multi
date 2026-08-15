@@ -215,6 +215,25 @@ class _HelpScreenState extends State<HelpScreen> {
                     );
                   },
                 ),
+                // F151b (Sprint 58): "First time? Start here" callout, near
+                // the top so it is visible without scrolling -- closes the
+                // gap F75 (Sprint 34) explicitly deferred. The walkthrough
+                // section itself stays last (line ~259) so screen-anchored
+                // reference sections are not pushed down for readers who
+                // already know the app; this callout is the discoverable
+                // shortcut for first-time users instead.
+                Card(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  child: ListTile(
+                    leading: const Icon(Icons.explore_outlined),
+                    title: const Text('First time? Start here'),
+                    subtitle: const Text(
+                        'Jump to the step-by-step walkthrough for getting started.'),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                    onTap: () => _scrollTo(HelpSection.walkthrough),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 // Sprint 38 F85 (ADR-0038): all section bodies now load
                 // from `assets/content/help/*.md` via the asset manifest.
                 // Titles remain inline because they are short labels, not

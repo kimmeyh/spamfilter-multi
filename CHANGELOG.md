@@ -26,6 +26,10 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-08-15 (Sprint 58)
+- **feat**: F151a -- the zero-accounts empty state (`AccountSelectionScreen`) now explains what the app does and surfaces a "Try Demo Mode instead" action distinct from "Add Account," so a first-time user can find the no-account-needed exploration path without a prior tap. Sourced from a live user-centric first-run walkthrough (Harold, 2026-08-15).
+- **feat**: F151b -- the Help screen now shows a "First time? Start here" callout near the top, linking directly to the 8-step walkthrough (previously the last of 22 passive sections, requiring the user to already know it existed and scroll to the bottom). Closes the gap F75 (Sprint 34) explicitly deferred.
+
 ## [0.7.0] - 2026-08-15
 
 MINOR release -- first under the enforced semver policy to bump MINOR rather than PATCH, triggered by
