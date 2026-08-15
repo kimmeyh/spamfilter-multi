@@ -48,16 +48,16 @@
 
   "store_release": {
     "_see_also": "docs/STORE_VERSION_STATUS.md is the quick-check summary (live Store version + current dev version, both with a last-verified date). This block is the working detail behind that summary. Keep both in sync; STORE_VERSION_STATUS.md is what to open for a fast answer, this block is where the evidence lives.",
-    "live_version": "0.6.2",
-    "live_submission_number": 13,
-    "previous_live_version": "0.6.1",
-    "certified_at": "2026-08-13",
-    "certification_evidence": "Partner Center screenshot, Harold, 2026-08-13: Application overview banner 'Congrats! Your product is now updated' + 'Your latest product is now available on Microsoft Store'; Store presence card shows 'Submission 13: Last modified on 08/13/2026' with a green checkmark 'Your product is currently available in the Microsoft Store'.",
+    "live_version": "0.7.0",
+    "live_submission_number": 14,
+    "previous_live_version": "0.6.2",
+    "certified_at": "2026-08-15",
+    "certification_evidence": "Harold confirmed certification completed 2026-08-15. Check C smoke pass CONFIRMED via screenshot of the actual Store-installed app: title bar 'MyEmailSpamFilter' (no [DEV]), Settings > General shows 'Version 0.7.0' (no [DEV] marker) -- the strongest possible evidence, direct on-device confirmation.",
     "submitted_version": "0.7.0",
     "submission_number": 14,
     "built_at": "2026-08-14",
-    "submitted_at": null,
-    "status": "UPLOADED TO PARTNER CENTER, DRAFT -- NOT YET SUBMITTED FOR CERTIFICATION. Harold confirmed via Partner Center screenshots (2026-08-14): Submission 14 Packages page shows my_email_spam_filter.msix v0.7.0.0 X64 uploaded, Validated, ranked #1 (offered first); the old v0.6.2.0 package is marked for removal on save. Application overview shows 'Product update: In draft (Submission 14: Last modified on 08/14/2026)', Packages row status 'Updated'. Store presence still correctly shows Submission 13 (0.6.2.0) live/read-only, as expected until 14 is submitted and passes. 'Submit for certification' button visible, not yet clicked.",
+    "submitted_at": "2026-08-14",
+    "status": "CERTIFIED AND LIVE. Submission 14 (0.7.0.0) certified 2026-08-15, confirmed via Check C smoke pass on the installed Store build (title bar + Settings > General both clean, no [DEV] markers, version reads 0.7.0). First MINOR release under the semver policy -- Sprint 57's F142 feat entry triggered the MINOR bump from 0.6.2 -> 0.7.0. Built from a genuinely current main (real develop->main merge via PR #316 already in place), no local-unpushed-merge workaround needed.",
     "artifact": "D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix",
     "verification": "Full test suite in prod worktree (post-pull, pre-build): 1,865 passed / 29 skipped / 0 failed; flutter analyze clean. Build log Check A: confirmed --dart-define=APP_ENV=prod --dart-define-from-file=secrets.prod.json in the inner flutter build windows command. Check B (--release-self-test --expected-version=0.7.0): RESULT: PASS on all 6 checks (APP_ENV=prod, NATIVE_APP_ENV=prod, both suffixes empty, no [DEV] in title, version match actual=0.7.0). Manifest Version=0.7.0.0 confirmed via Expand-Archive + AppxManifest.xml (unpacked folder cleaned up after). Size 16.81 MB (17627671 bytes), normal range.",
     "_build_process_note_2026_08_14": "Prod worktree had the SAME class of stale local-only leftovers as the 0.6.2.0 cycle (msix_version: 0.6.1.0 + generated_plugin_registrant.* churn) -- discarded via `git checkout -- .` (Harold approved via AskUserQuestion since this is a destructive-pattern action gated by the auto-mode classifier; Harold also asked that this class of discard be pre-approved going forward -- see CLAUDE.md/STORE_RELEASE_PROCESS.md note to add). Then a REAL `git pull origin main` (not a local-only merge this time) brought main current -- Harold had already completed the real develop->main merge via PR #316 before this build started, so no local-unpushed-merge workaround was needed. msix_version bumped 0.6.0.0 -> 0.7.0.0 locally in the prod worktree (uncommitted, per the standing convention -- dev worktree's own version bump to 0.7.0+1 was already committed for real on the Sprint 57 branch during Sprint 57 itself, commit visible in develop history).",
@@ -73,13 +73,17 @@
       "DONE 2026-08-14 (Harold, PR #316): the REAL develop -> main merge/PR completed -- resolves the 0.6.2.0-cycle known gap; main and develop are now fully in sync.",
       "DONE 2026-08-14: dev worktree bump 0.6.2 -> 0.7.0 (MINOR, per semver policy -- F142 feat entry) already applied during Sprint 57, commit visible on develop.",
       "DONE 2026-08-14: 0.7.0.0 MSIX built + verified (manifest 0.7.0.0, --release-self-test PASS all 6 checks, full suite 1,865/0 failed, analyze clean).",
-      "DONE 2026-08-14 (Harold): 0.7.0.0 MSIX uploaded to Partner Center as Submission 14, validated, package ranked #1 -- confirmed via Partner Center screenshots (Packages page + Application overview)."
+      "DONE 2026-08-14 (Harold): 0.7.0.0 MSIX uploaded to Partner Center as Submission 14, validated, package ranked #1 -- confirmed via Partner Center screenshots (Packages page + Application overview).",
+      "DONE 2026-08-15 (Harold): Submission 14 (0.7.0.0) CERTIFIED AND LIVE.",
+      "DONE 2026-08-15: Check C smoke pass CONFIRMED -- screenshot of the actual Store-installed app: title bar clean, Settings > General 'Version 0.7.0', no [DEV] anywhere."
     ],
     "post_cert_closeout_pending": [
-      "NEXT (Harold): click 'Submit for certification' on Submission 14 (currently In draft, not yet submitted).",
-      "AFTER certification: Check C smoke pass on the live Store build; update docs/STORE_VERSION_STATUS.md Live row; update ALL_SPRINTS_MASTER_PLAN.md; bump dev worktree to the next version; move CHANGELOG [Unreleased] under a [0.7.0] heading."
+      "docs/STORE_VERSION_STATUS.md Live row -> 0.7.0.0 (Submission 14).",
+      "docs/ALL_SPRINTS_MASTER_PLAN.md Store status line updated.",
+      "CHANGELOG.md [Unreleased] entries moved under a new [0.7.0] heading + Version Links added.",
+      "Dev worktree bumped 0.7.0 -> next version per the semver policy (PATCH unless a feat lands first)."
     ],
-    "_prior_release_history": "0.6.2 (Submission 13): built 2026-08-13, certified + LIVE same day, Harold-verified clean (Check C). 0.6.1 (Submission 12): built 2026-08-12, certified + LIVE (per Harold's 2026-08-13 direct confirmation). 0.6.0 (Submission 11): built 2026-08-09, certified + LIVE 2026-08-10, Harold-verified clean. 0.5.9 (Submission 10): built + certified + LIVE 2026-08-03, Harold-verified clean via winget uninstall/reinstall workaround (client-side propagation lag on cert day, resolved). 0.5.8 (Submission 9): built 2026-07-27, submitted 2026-07-28, certified 2026-07-29, Harold-verified clean 2026-07-30."
+    "_prior_release_history": "0.7.0 (Submission 14): built 2026-08-14, certified + LIVE 2026-08-15, Harold-verified clean (Check C). First MINOR release under the semver policy. 0.6.2 (Submission 13): built 2026-08-13, certified + LIVE same day, Harold-verified clean (Check C). 0.6.1 (Submission 12): built 2026-08-12, certified + LIVE (per Harold's 2026-08-13 direct confirmation). 0.6.0 (Submission 11): built 2026-08-09, certified + LIVE 2026-08-10, Harold-verified clean. 0.5.9 (Submission 10): built + certified + LIVE 2026-08-03, Harold-verified clean via winget uninstall/reinstall workaround (client-side propagation lag on cert day, resolved). 0.5.8 (Submission 9): built 2026-07-27, submitted 2026-07-28, certified 2026-07-29, Harold-verified clean 2026-07-30."
   },
 
   "environment_notes": [

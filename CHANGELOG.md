@@ -26,6 +26,12 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-08-15
+
+MINOR release -- first under the enforced semver policy to bump MINOR rather than PATCH, triggered by
+F142's `feat` entry. Submission 14, certified and published 2026-08-15. Contains F142, F149, the
+"Scan Again" navigation fix, and the GitHub Copilot review follow-up on PR #314.
+
 ### 2026-08-14 (Sprint 57, GitHub Copilot review, PR #314)
 - **fix**: Copilot review finding -- F149's new `filterAlreadyInTargetFolder()` logged the raw sender address when skipping a re-promotion. Redacted via the existing `Redact.email()` helper, matching this file's established logging convention.
 - **fix**: Copilot review finding -- `startRealScan()`'s SettingsStore reads, rule-loading wait, and initial navigation ran outside its try/catch, so a failure there (before the scan itself started) would surface as an unhandled async error with no user-facing feedback. The entire function body is now one try/catch.
@@ -1092,6 +1098,7 @@ See git history for detailed changes prior to Phase 3.1.
 ## Version Links
 
 [Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.6.2...HEAD
+[0.7.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.6.2...v0.7.0
 [0.6.2]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.6.1...v0.6.2
 [0.6.1]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.6.0...v0.6.1
 [0.6.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.5.9...v0.6.0
