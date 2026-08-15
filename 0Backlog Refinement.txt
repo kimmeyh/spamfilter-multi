@@ -14,6 +14,112 @@ Sprint 5n Scope should include the below items. Please complete sprint planning 
     - Help button on the screen should point to this new section in the Help page. Adjust all other help links and related test scripts as appropriate.
   - Add the icon for "Review "No Rule" items to the Help screen
 ---------------------------------------------------------------------------------------------------------
+Sprint 58 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
+Sprint 58 Backlog Refinement: User-Centric MVP Gap Analysis (Windows-only)                            │
+│                                                                                                       │
+│ Status: Gap analysis phase complete via static/code analysis. Next: live self-administered            │
+│                                                                                                       │
+│ Windows walkthrough (Harold approved "Option 1" -- requires exiting plan mode to build/launch).       │
+│                                                                                                       │
+│ Context                                                                                               │
+│                                                                                                       │
+│ Harold provided a user-centric MVP test script (install -> launch -> understand purpose ->            │
+│ complete primary task -> clear feedback) as a Backlog Refinement input for Sprint 58, followed        │
+│ by a more detailed "First-Run Evaluation Summary Page" (7 sections: Installation & Launch,            │
+│ First-Run Orientation, Completing the Primary Task, Feedback & Confirmation, Emotional                │
+│ Experience, Environment Compatibility, Quick User Feedback Capture). This is NOT a code-change        │
+│ request -- it's backlog-refinement discussion input. Harold's process: (a) gap analysis for           │
+│ discussion first, (b) formal F#-numbered candidate backlog items later, pending his reaction.         │
+│                                                                                                       │
+│ Scope constraint (Harold, explicit steering): Windows only, for now. Android gets its own             │
+│ pass during the Android rollout track (F142/F143/F144/F150) later -- do not fold Android              │
+│ verification into this work, even though shared/provider-agnostic code changes will likely also       │
+│ benefit Android eventually.                                                                           │
+│                                                                                                       │
+│ Findings so far (static/code analysis via Explore agent + master-plan grep)                           │
+│                                                                                                       │
+│ Core workflow is fully built and functional: add account -> OAuth/IMAP creds -> scan ->               │
+│ results -> tune rules. The gaps are almost entirely about first-time DISCOVERY and TRUST, not         │
+│ missing functionality.                                                                                │
+│                                                                                                       │
+│ Confirmed gaps (code-verified):                                                                       │
+│ 1. No welcome/value-prop screen -- AccountSelectionScreen's empty state (zero accounts) shows         │
+│ only an icon + "No Accounts Yet" + "Add Account" button (account_selection_screen.dart:727-736,       │
+│ empty_state.dart:83-101). Nothing explains what the app does.                                         │
+│ 2. Demo Mode is buried -- only surfaced one tap deep, inside "Add Account" -> PlatformSelectionScreen │
+│ (platform_selection_screen.dart:122-132), not visible from the first screen a new user sees.          │
+│ 3. The built 8-step walkthrough (mobile-app/assets/content/help/walkthrough.md, confirmed             │
+│ current/substantial) is opt-in and buried -- last of 22 sections on HelpScreen                        │
+│ (help_screen.dart:258-259), reachable only via a manually-tapped ? icon. F75 (existing                │
+│ HOLD backlog item, docs/ALL_SPRINTS_MASTER_PLAN.md:1029-1088) explicitly scoped OUT both a            │
+│ "First time? Start here" Help-screen callout (line 1076) and a first-launch onboarding overlay        │
+│ (line 1077, "out of scope for v1; flag for future consideration") -- no successor item owns           │
+│ finishing either piece today.                                                                         │
+│ 4. Two error paths fall back to raw exception interpolation instead of the friendlier                 │
+│ ErrorDisplay/AuthenticationErrorDisplay/NetworkErrorDisplay widgets that already exist                │
+│ (mobile-app/lib/ui/widgets/error_display.dart) but aren't wired in there:                             │
+│   - AccountSetupScreen._testConnection() catch-all -> 'Connection failed: $e'                         │
+│ (account_setup_screen.dart:238)                                                                       │
+│   - AccountSetupScreen._handleConnect() credential-save failure -> 'Failed to save credentials: $e' (account_setup_screen.dart:299-301)                                                                   │
+│   - startRealScan() scan-failure catch -> 'Scan failed: $e' (scan_progress_screen.dart:696-712);      │
+│ known/accepted gap if context is unmounted (logged only, not shown) -- already documented in          │
+│ a code comment, not a new finding.                                                                    │
+│ 5. No Windows-specific first-launch UI at all -- windows/runner/main.cpp wWinMain only handles        │
+│ single-instance mutex + background-scan mutex probing + window title; no splash, no first-run         │
+│ marker, no native welcome dialog. docs/STORE_RELEASE_PROCESS.md has zero OOBE-related content.        │
+│                                                                                                       │
+│ New territory surfaced by the "First-Run Evaluation Summary Page" that static analysis alone          │
+│ cannot resolve (needs the live walkthrough):                                                          │
+│ - Section 1 specifics: installer clarity, security trust signals / SmartScreen or                     │
+│ unsigned-package warnings, unexpected permission prompts on first launch -- not yet checked           │
+│ directly (only confirmed STORE_RELEASE_PROCESS.md has no OOBE content, which is a docs gap,           │
+│ not proof of a UX gap).                                                                               │
+│ - Section 5 (Emotional Experience): confidence, frustration points, perceived speed,                  │
+│ trustworthiness -- these are measurement/experience questions, not code-inspectable. Can only         │
+│ be captured by actually using the app fresh.                                                          │
+│ - Section 6 (Environment Compatibility): window resizing, DPI scaling, common-hardware                │
+│ performance, UI flicker/jitter -- genuinely unaudited for Windows. The closest existing item,         │
+│ F63 (docs/ALL_SPRINTS_MASTER_PLAN.md:444-449), is superseded and scoped to ANDROID                    │
+│ touch-target/density adaptation across 5 screens -- it says nothing about Windows window-resize       │
+│ or DPI behavior. This is real new ground.                                                             │
+│                                                                                                       │
+│ No existing backlog item currently covers: a welcome/value-prop screen, proactive Demo Mode           │
+│ surfacing, a forced/suggested first-run walkthrough trigger, wiring ErrorDisplay into the two         │
+│ identified raw-exception paths, or Windows window-resize/DPI/hardware-perf verification.              │
+│                                                                                                       │
+│ Next step (Harold approved "Option 1")                                                                │
+│                                                                                                       │
+│ Self-administered live Windows pass through the First-Run Evaluation Summary Page's 7 sections        │
+│ against the actual built+launched Windows dev app, playing a genuinely fresh first-time user          │
+│ (zero accounts, real taps, noting actual confusion/friction points) rather than inferring from        │
+│ code. This requires:                                                                                  │
+│ - Building and launching the Windows dev app (build-windows.ps1) -- an execution action, not          │
+│ read-only, so needs plan mode exited first.                                                           │
+│ - Possibly clearing/using a fresh account state to genuinely simulate zero-accounts first-run         │
+│ (need to confirm with Harold whether to use a clean profile or just narrate the empty-state           │
+│ screens already confirmed to exist).                                                                  │
+│ - Walking Sections 1-6 and recording real answers, especially the ones static analysis could not      │
+│ resolve (1's install-warning specifics, 5, 6).                                                        │
+│ - This produces the INPUT for formal backlog item drafting (part "b" of Harold's two-phase ask)       │
+│ -- still not drafting F#-numbered items during this pass, just gathering the live-walkthrough         │
+│ evidence to combine with the code-verified findings above.                                            │
+│                                                                                                       │
+│ After the live walkthrough                                                                            │
+│                                                                                                       │
+│ Combine live-walkthrough findings with the code-verified list above, present a consolidated           │
+│ Windows-only gap analysis to Harold, then (pending his reaction) draft formal F#-numbered             │
+│ candidate items in the standard docs/BACKLOG_REFINEMENT.md presentation format for his review.        │
+│                                                                                                       │
+│ Note on plan-mode mechanics                                                                           │
+│                                                                                                       │
+│ This "plan" is a Backlog Refinement discussion-input tracker, not an implementation plan -- no        │
+│ code change is being planned. The live Windows walkthrough Harold approved is an execution            │
+│ action and cannot happen while plan mode is active; ExitPlanMode is being called so that walkthrough  │
+│ can proceed once Harold confirms exiting plan mode is appropriate here (this is not a normal          │
+│ "approve this code change" plan-mode use, so flagging that explicitly rather than presenting a        │
+│ traditional implementation plan for approval).
+
+---------------------------------------------------------------------------------------------------------
 Sprint 56 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
 
 Sprint 56 Plan is ready for your approval — docs/sprints/SPRINT_56_PLAN.md, committed and pushed.

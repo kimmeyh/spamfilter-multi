@@ -10,12 +10,12 @@
     "pr_number": 317,
     "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/317",
     "start_date": "2026-08-14",
-    "status": "Phase 6.6 carry-forward + Post-Merge Cleanup complete. Store release 0.7.0.0 (Submission 14) built, submitted, CERTIFIED AND LIVE 2026-08-15, Check C confirmed clean; post-cert close-out committed. Light Backlog Refinement done -- F150 (Issue #315) confirmed the sole unblocked candidate. Phase 3.3.1 (issue card + draft PR) done 2026-08-15 -- PR #317 created as DRAFT (was late; #315 already existed as the card, PR was the gap, caught by the verify-closeout-complete Stop hook). BLOCKED: F150's actual fix requires Harold's Firebase Console action (register applicationId, download matching google-services.json) before implementation can proceed -- no code work started yet.",
+    "status": "Phase 6.6 carry-forward + Post-Merge Cleanup complete. Store release 0.7.0.0 (Submission 14) built, submitted, CERTIFIED AND LIVE 2026-08-15, Check C confirmed clean; post-cert close-out committed. Backlog Refinement RE-SCOPED 2026-08-15: F150 (Android build blocker) deferred (still blocked on Harold's Firebase Console action) in favor of F151 (Windows first-run/onboarding UX), sourced from Harold's user-centric MVP test script + First-Run Evaluation Summary Page, confirmed via a live Windows walkthrough (real 0.7.0.0 prod exe, genuinely empty account/data state achieved by backing up and clearing 3 independent data-persistence layers, then fully restored and byte-verified). F152 registered as a new reusable periodic HOLD template for re-running this evaluation on future releases. PR #317 (draft, Phase 3.3.1) needs its title/body/issue-card updated from F150 to F151 -- not yet done as of this status update.",
     "plan_approved": false,
     "plan_approval_date": null,
     "blanket_execution_approved": false,
-    "scope": ["F150"],
-    "_scope_note": "F150 (Issue #315) is the sole candidate, confirmed via Backlog Refinement 2026-08-14 -- everything else Android-related is HOLD or depends on F150. Not yet formally plan-approved (Phase 3) since the fix itself is blocked on Harold's Firebase Console prerequisite; draft PR #317 opened per Phase 3.3.1 ahead of that to avoid another late-PR miss."
+    "scope": ["F151"],
+    "_scope_note": "F151 (Windows first-run UX) is Sprint 58's scope per Harold's explicit direction 2026-08-15, superseding the earlier F150 scoping. F150 remains open/deferred, still blocked on Harold's Firebase Console prerequisite -- next candidate once resolved. F151 not yet formally plan-approved (Phase 3) -- sprint planning is the next action."
   },
 
   "previous_sprint": {
@@ -32,7 +32,7 @@
   },
 
   "github_issues": [],
-  "_github_issues_note": "Issues #313 (F142) and #312 (F149) manually closed 2026-08-14 during Sprint 58 Post-Merge Cleanup (GitFlow does not auto-close on feature->develop merge). #311 (Harold's develop->main tracking issue) is MERGED -- PR #316 completed the real merge, resolving the F148/0.6.2.0 known gap. #315 (F150) remains open, targeted for Sprint 58.",
+  "_github_issues_note": "Issues #313 (F142) and #312 (F149) manually closed 2026-08-14 during Sprint 58 Post-Merge Cleanup (GitFlow does not auto-close on feature->develop merge). #311 (Harold's develop->main tracking issue) is MERGED -- PR #316 completed the real merge, resolving the F148/0.6.2.0 known gap. #315 (F150) remains open but DEFERRED (blocked on Harold's Firebase Console action) -- not this sprint's scope. #318 (F151, Windows first-run UX) is Sprint 58's actual scope, opened 2026-08-15; PR #317 updated to reference it.",
 
   "test_metrics": {
     "tests_passing": 1864,
