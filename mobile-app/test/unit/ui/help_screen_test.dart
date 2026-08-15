@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
 
+import 'package:my_email_spam_filter/core/providers/selected_account_provider.dart';
 import 'package:my_email_spam_filter/ui/screens/help_screen.dart';
 
 /// Widget tests for [HelpScreen] (F54, Sprint 33).
@@ -142,6 +144,34 @@ void main() {
     expect(find.textContaining('**'), findsNothing,
         reason: 'raw ** bold markers must not be visible -- content must '
             'render as formatted Markdown');
+  });
+
+  testWidgets(
+      'Help opened WITHOUT account context resolves one lazily from the '
+      'session selection, so account-scoped icons appear (Sprint 58 MV)',
+      (tester) async {
+    // Reproduces the Manual Validation finding (Harold, 2026-08-15): Help
+    // opened from Select Account passed no accountId, so Scan History,
+    // Manual Scan, and Settings icons were all missing. The fix resolves an
+    // account lazily via the F135 pattern -- here, the session selection.
+    // (The secure-storage saved-accounts list is unavailable in the test
+    // environment; the resolver trusts the session selection in that case.)
+    final selection = SelectedAccountProvider()..select('user@aol.com');
+
+    await tester.pumpWidget(
+      ChangeNotifierProvider<SelectedAccountProvider>.value(
+        value: selection,
+        child: const MaterialApp(home: HelpScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('View Scan History'), findsOneWidget,
+        reason: 'Scan History icon must appear once an account is resolved');
+    expect(find.byTooltip('Settings'), findsOneWidget,
+        reason: 'Settings icon must appear once an account is resolved');
+    expect(find.byTooltip('Manual Scan'), findsOneWidget,
+        reason: 'Manual Scan icon must appear once an account is resolved');
   });
 
   testWidgets('HelpScreen accepts an initialSection without throwing',

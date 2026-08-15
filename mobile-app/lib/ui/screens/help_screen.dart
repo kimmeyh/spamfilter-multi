@@ -15,7 +15,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+import '../../adapters/storage/secure_credentials_store.dart';
+import '../../core/providers/selected_account_provider.dart';
 
 import '../../core/services/app_environment.dart';
 import '../../core/services/content_loader.dart';
@@ -93,6 +97,17 @@ class _HelpScreenState extends State<HelpScreen> {
     for (final s in HelpSection.values) s: GlobalKey(),
   };
 
+  /// Sprint 58 Manual Validation (Harold, 2026-08-15): Help opened from the
+  /// Select Account screen showed only 2 standard icons -- Scan History,
+  /// Manual Scan, and Settings were all missing, because that caller has no
+  /// account context to pass and this screen relied SOLELY on
+  /// [HelpScreen.accountId]. Every other nullable-account screen (Scan
+  /// History, No-Rule Review) already resolves an account lazily via the
+  /// F135 pattern: explicit context first, then the session selection, then
+  /// the first saved account. This applies the same pattern here, so the
+  /// account-scoped icons appear whenever ANY account is resolvable.
+  String? _resolvedAccountId;
+
   @override
   void initState() {
     super.initState();
@@ -100,6 +115,42 @@ class _HelpScreenState extends State<HelpScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) => _scrollTo(
             widget.initialSection!,
           ));
+    }
+    if (widget.accountId == null) {
+      _resolveAccountContext();
+    }
+  }
+
+  Future<void> _resolveAccountContext() async {
+    // Session selection first (F135). Read defensively: the provider is an
+    // OPTIONAL input (widget tests may pump this screen without it), and a
+    // missing provider is the only tolerated failure -- matching the
+    // scan_history_screen precedent.
+    String? selected;
+    try {
+      selected = context.read<SelectedAccountProvider>().accountId;
+    } on ProviderNotFoundException {
+      selected = null;
+    }
+
+    // The session selection is trusted outright: it was set by a live flow
+    // this session, and deleted-account leakage is already prevented at the
+    // source (SelectedAccountProvider.clear() fires when an account is
+    // deleted). Validating against getSavedAccounts() here would be WRONG,
+    // not just redundant: that method swallows all errors and returns []
+    // for both "zero accounts" and "backend failure", so a transient
+    // keystore failure (or a widget-test environment) would silently drop a
+    // perfectly live selection.
+    String? resolved = selected;
+    if (resolved == null || resolved.isEmpty) {
+      // No session selection -- fall back to the first saved account.
+      // getSavedAccounts never throws (returns [] on any failure).
+      final saved = await SecureCredentialsStore().getSavedAccounts();
+      if (saved.isNotEmpty) resolved = saved.first;
+    }
+
+    if (resolved != null && resolved.isNotEmpty && mounted) {
+      setState(() => _resolvedAccountId = resolved);
     }
   }
 
@@ -155,7 +206,13 @@ class _HelpScreenState extends State<HelpScreen> {
   @override
   Widget build(BuildContext context) {
     final viewportHeight = MediaQuery.of(context).size.height;
-    final hasAccount = widget.accountId != null;
+    // Sprint 58 MV: explicit caller context wins; otherwise the lazily
+    // resolved account (session selection -> first saved account) keeps the
+    // account-scoped icons (Scan History, Manual Scan, Settings) available
+    // even when Help was opened from a screen with no account context
+    // (e.g. Select Account).
+    final effectiveAccountId = widget.accountId ?? _resolvedAccountId;
+    final hasAccount = effectiveAccountId != null;
     return Scaffold(
       appBar: AppBarWithExit(
         title: const Text('Help'),
@@ -167,8 +224,8 @@ class _HelpScreenState extends State<HelpScreen> {
         actions: StandardAppBarActions.build(
           context: context,
           helpSection: HelpSection.settings, // unused -- includeHelp is false
-          accountId: hasAccount ? widget.accountId : null,
-          accountEmail: widget.accountEmail ?? widget.accountId,
+          accountId: effectiveAccountId,
+          accountEmail: widget.accountEmail ?? effectiveAccountId,
           platformId: widget.platformId ?? '',
           platformDisplayName: widget.platformDisplayName ?? '',
           // MV-5 (Sprint 58 Manual Validation, Harold 2026-08-15): the
