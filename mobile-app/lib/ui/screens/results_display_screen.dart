@@ -1017,13 +1017,13 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                               _getEffectiveAction(r) == EmailActionType.delete)
                           .length
                       : scanProvider.deletedCount;
-              final movedCount = _evaluationOverrides.isNotEmpty ||
-                      showingHistorical
-                  ? allResults
-                      .where((r) =>
-                          _getEffectiveAction(r) == EmailActionType.moveToJunk)
-                      .length
-                  : scanProvider.movedCount;
+              // F151c (Sprint 58): the "Moved" summary chip was removed --
+              // move-on-match is not yet implemented, so this count always
+              // read 0 alongside real, populated chips, confirmed via live
+              // walkthrough as reading like a bug rather than an intentional
+              // zero. scanProvider.movedCount itself is untouched (still
+              // used by background-scan logging/notifications and
+              // ScanHistoryScreen's own separate "Moved" display).
               final safeCount = _evaluationOverrides.isNotEmpty ||
                       showingHistorical
                   ? allResults
@@ -1051,13 +1051,15 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                       foundCount,
                       const Color(0xFF2196F3),
                       Colors.white,
-                      SpecialFilter.found),
+                      SpecialFilter.found,
+                      'Total emails found in the scanned folder(s).'),
                   _buildSpecialStatChip(
                       'Processed',
                       processedCount,
                       const Color(0xFF9C27B0),
                       Colors.white,
-                      SpecialFilter.processed),
+                      SpecialFilter.processed,
+                      'Emails evaluated against your rules so far.'),
                   _buildStatChipWithMode(
                     isSafeSendersOnly || isReadOnly
                         ? 'Deleted (not processed)'
@@ -1070,19 +1072,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                         ? Colors.black54
                         : Colors.white,
                     EmailActionType.delete,
-                  ),
-                  _buildStatChipWithMode(
                     isSafeSendersOnly || isReadOnly
-                        ? 'Moved (not processed)'
-                        : 'Moved',
-                    movedCount,
-                    isSafeSendersOnly || isReadOnly
-                        ? const Color(0xFFFFCC80)
-                        : const Color(0xFFFF9800),
-                    isSafeSendersOnly || isReadOnly
-                        ? Colors.black54
-                        : Colors.white,
-                    EmailActionType.moveToJunk,
+                        ? 'These emails match a block rule and WOULD BE deleted, '
+                            'but nothing has actually happened yet -- this scan '
+                            'only reports what would occur.'
+                        : 'These emails matched a block rule and were deleted.',
                   ),
                   _buildStatChipWithMode(
                     isRulesOnly || isReadOnly ? 'Safe (not processed)' : 'Safe',
@@ -1092,6 +1086,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                         : const Color(0xFF4CAF50),
                     isRulesOnly || isReadOnly ? Colors.black54 : Colors.white,
                     EmailActionType.safeSender,
+                    isRulesOnly || isReadOnly
+                        ? 'These emails match a safe-sender rule and WOULD BE '
+                            'kept, but nothing has actually happened yet -- this '
+                            'scan only reports what would occur.'
+                        : 'These emails matched a safe-sender rule and were kept.',
                   ),
                   // F91 (Sprint 39): informational chip for source-folder
                   // duplicates removed during post-safe-sender-move dedup
@@ -1123,13 +1122,16 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                       noRuleCount,
                       const Color(0xFF757575),
                       Colors.white,
-                      EmailActionType.none),
+                      EmailActionType.none,
+                      'No existing rule or safe sender matched these emails. '
+                      'Review them to add a rule or safe sender.'),
                   _buildSpecialStatChip(
                       'Errors',
                       errorCount,
                       const Color(0xFFD32F2F),
                       Colors.white,
-                      SpecialFilter.error),
+                      SpecialFilter.error,
+                      'Emails that could not be processed due to an error.'),
                   _buildFolderFilterChip(allResults),
                 ],
               );
@@ -1269,78 +1271,90 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   }
 
   /// Build stat chip with mode-aware styling
+  /// F151c (Sprint 58): every summary chip carries a tooltip explaining what
+  /// it means in plain language, since a first-time user has no other
+  /// context for what "Processed" or "No rule" mean before hovering.
   Widget _buildStatChipWithMode(String label, int value, Color bg, Color fg,
-      EmailActionType? filterType) {
+      EmailActionType? filterType, String tooltip) {
     final isActive = _filter == filterType;
 
-    return GestureDetector(
-      onTap: () {
-        if (filterType != null) {
-          _toggleFilter(filterType);
-        }
-      },
-      child: Chip(
-        label: Text('$label: $value'),
-        backgroundColor: isActive ? bg.withValues(alpha: 0.7) : bg,
-        labelStyle: TextStyle(
-          color: fg,
-          fontWeight: isActive ? FontWeight.w900 : FontWeight.bold,
-          fontSize: label.contains('not processed') ? 11 : 14,
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        onTap: () {
+          if (filterType != null) {
+            _toggleFilter(filterType);
+          }
+        },
+        child: Chip(
+          label: Text('$label: $value'),
+          backgroundColor: isActive ? bg.withValues(alpha: 0.7) : bg,
+          labelStyle: TextStyle(
+            color: fg,
+            fontWeight: isActive ? FontWeight.w900 : FontWeight.bold,
+            fontSize: label.contains('not processed') ? 11 : 14,
+          ),
+          side: isActive
+              ? const BorderSide(color: Colors.black, width: 2)
+              : BorderSide.none,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         ),
-        side: isActive
-            ? const BorderSide(color: Colors.black, width: 2)
-            : BorderSide.none,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       ),
     );
   }
 
   Widget _buildStatChip(String label, int value, Color bg, Color fg,
-      EmailActionType? filterType) {
+      EmailActionType? filterType, String tooltip) {
     // Determine if this chip is currently the active filter
     final isActive = _filter == filterType;
 
-    return GestureDetector(
-      onTap: () {
-        if (filterType != null) {
-          _toggleFilter(filterType);
-        }
-      },
-      child: Chip(
-        label: Text('$label: $value'),
-        backgroundColor: isActive ? bg.withValues(alpha: 0.7) : bg,
-        labelStyle: TextStyle(
-          color: fg,
-          fontWeight: isActive ? FontWeight.w900 : FontWeight.bold,
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        onTap: () {
+          if (filterType != null) {
+            _toggleFilter(filterType);
+          }
+        },
+        child: Chip(
+          label: Text('$label: $value'),
+          backgroundColor: isActive ? bg.withValues(alpha: 0.7) : bg,
+          labelStyle: TextStyle(
+            color: fg,
+            fontWeight: isActive ? FontWeight.w900 : FontWeight.bold,
+          ),
+          side: isActive
+              ? const BorderSide(color: Colors.black, width: 2)
+              : BorderSide.none,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         ),
-        side: isActive
-            ? const BorderSide(color: Colors.black, width: 2)
-            : BorderSide.none,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       ),
     );
   }
 
   /// Build stat chip for special filters (Found, Processed, Error)
-  Widget _buildSpecialStatChip(
-      String label, int value, Color bg, Color fg, SpecialFilter filterType) {
+  Widget _buildSpecialStatChip(String label, int value, Color bg, Color fg,
+      SpecialFilter filterType, String tooltip) {
     final isActive = _specialFilter == filterType;
 
-    return GestureDetector(
-      onTap: () {
-        _toggleSpecialFilter(filterType);
-      },
-      child: Chip(
-        label: Text('$label: $value'),
-        backgroundColor: isActive ? bg.withValues(alpha: 0.7) : bg,
-        labelStyle: TextStyle(
-          color: fg,
-          fontWeight: isActive ? FontWeight.w900 : FontWeight.bold,
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        onTap: () {
+          _toggleSpecialFilter(filterType);
+        },
+        child: Chip(
+          label: Text('$label: $value'),
+          backgroundColor: isActive ? bg.withValues(alpha: 0.7) : bg,
+          labelStyle: TextStyle(
+            color: fg,
+            fontWeight: isActive ? FontWeight.w900 : FontWeight.bold,
+          ),
+          side: isActive
+              ? const BorderSide(color: Colors.black, width: 2)
+              : BorderSide.none,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         ),
-        side: isActive
-            ? const BorderSide(color: Colors.black, width: 2)
-            : BorderSide.none,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       ),
     );
   }

@@ -135,6 +135,8 @@
 
 **Est-Effort**: 30-45m
 
+**Completion notes (2026-08-15)**: Implemented as planned. R-4's "confirm/extract a shared widget" needed no work -- `ResultsDisplayScreen` was already the single shared build path for Demo and Live scans. Removing the Moved chip surfaced (and required deleting) an unused local `movedCount` variable; `scanProvider.movedCount` itself is untouched, confirmed still used elsewhere (background-scan logging/notifications, `ScanHistoryScreen`'s own separate out-of-scope display) via grep before touching anything. New test file `test/ui/screens/results_display_chip_tooltips_test.dart` (2 tests), reusing the established DB-widget-test harness. Both mutation-verified; full `test/ui/screens/` suite (163 tests) re-run clean. `flutter analyze` clean. Actual ~30m.
+
 ---
 
 ## Task 4 -- F151d: Add safe-sender example to demo dataset (Priority 10)
