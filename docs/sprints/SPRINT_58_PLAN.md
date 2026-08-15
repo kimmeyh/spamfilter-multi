@@ -1,0 +1,298 @@
+# Sprint 58 Plan
+
+**Branch**: `feature/20260814_Sprint_58`
+**Dates**: 2026-08-15 --
+**Scope defined by Harold** (2026-08-15): F151 (Windows first-run/onboarding UX). F150 (Android build blocker) deferred -- still blocked on Harold's Firebase Console action, not this sprint's scope.
+
+**Context (F151)**: Harold provided a user-centric MVP test script plus a detailed "First-Run Evaluation Summary Page" (7 sections: Installation & Launch, First-Run Orientation, Completing the Primary Task, Feedback & Confirmation, Emotional Experience, Environment Compatibility, Quick User Feedback Capture) as Sprint 58 Backlog Refinement input. Investigated via static code analysis (Explore agent), then CONFIRMED via a live Windows walkthrough: the real 0.7.0.0 production exe was built and launched with a genuinely empty account/data state (required backing up and clearing three independent data-persistence layers -- see `docs/ALL_SPRINTS_MASTER_PLAN.md` F151's Investigation Note -- fully restored and byte-verified afterward). Harold drove the app interactively while Claude observed and recorded findings via WinWright screenshots, surfacing 5 additional concrete findings beyond the original static-analysis gaps (chip tooltips, missing safe-sender demo example, dead "Moved" chip, oversized email-detail popup).
+
+**Governing finding**: the core workflow (add account -> OAuth/IMAP credentials -> scan -> results -> tune rules) is fully built and functional. The gap is entirely about a first-time user DISCOVERING that workflow, UNDERSTANDING its results, and TRUSTING its outcomes -- not missing functionality.
+
+**Scope constraint**: Windows Desktop only (Harold, explicit steering 2026-08-15). Android deferred to the Android rollout track (F142/F143/F144/F150) later -- shared/provider-agnostic widget changes will likely also render on Android eventually, but this sprint's Definition of Done is Windows manual validation only.
+
+---
+
+## Task 1 -- F151a: Welcome/orientation + Demo Mode surfacing on empty-accounts screen (Priority 10)
+
+**Value**: This enables a brand-new user to understand what the app does and discover the safe (no-account-needed) way to explore it, within the first screen they see. This prevents the current experience where a zero-accounts user sees only an icon and "Add Account," with no explanation of purpose and no visible path to Demo Mode until they are already one tap into account setup.
+
+**Requirements** (numbered, detailed):
+- R-1: `AccountSelectionScreen`'s empty state (`NoAccountsEmptyState` in `empty_state.dart:83-101`) gains brief purpose-explaining copy -- what the app does (spam filtering across email providers) -- above or alongside the existing "No Accounts Yet" / "Add your first email account..." text. Keep it short (1-2 sentences); this is not a full onboarding flow, just orientation.
+- R-2: The empty state also surfaces Demo Mode as a visible, clearly-labeled option distinct from "Add Account" -- e.g. a secondary button or link ("Try Demo Mode instead") -- so a user who wants to explore first does not have to guess that "Add Account" leads to it. Reuse the existing Demo Mode entry point/navigation (`PlatformSelectionScreen`'s "Try Demo Mode" card, `platform_selection_screen.dart:122-132`) rather than inventing a new code path.
+- R-3: Keep the existing "Add Account" primary button and its behavior unchanged -- this is additive, not a replacement of the current flow.
+
+**Affected components / files**:
+- `mobile-app/lib/ui/widgets/empty_state.dart` -- `NoAccountsEmptyState` gains purpose copy + a secondary Demo Mode action.
+- `mobile-app/lib/ui/screens/account_selection_screen.dart` -- wires the new secondary action to the existing Demo Mode navigation path (confirm exact call site during implementation; likely mirrors how "Add Account" currently navigates to `PlatformSelectionScreen`, but launches directly into Demo Mode rather than the provider list).
+
+**Dependencies / blockers**: None.
+
+**Non-functional requirements**:
+- Accessibility: new text/buttons need `Semantics` coverage consistent with F133's existing remediation on this screen (confirmed present, 4 occurrences in `account_selection_screen.dart`).
+- Platform: Windows-only Definition of Done per sprint scope; the widget change itself is shared/provider-agnostic and will render on Android once that track resumes, but no Android verification this sprint.
+
+**Acceptance criteria** (measurable, traceable):
+- AC-1: Given zero saved accounts, When `AccountSelectionScreen` renders, Then the empty state displays purpose-explaining copy in addition to the existing "No Accounts Yet" text.
+- AC-2: Given zero saved accounts, When `AccountSelectionScreen` renders, Then a Demo Mode action is visible and distinct from "Add Account," without requiring any prior tap.
+- AC-3: Given the Demo Mode action is tapped, When navigation completes, Then the user reaches the same Demo Mode flow as the existing "Add Account" -> "Try Demo Mode" path (no new/duplicate demo-data logic).
+- AC-4: The existing "Add Account" button and its navigation behavior are unchanged.
+
+**Tests to write** (one intent per AC; name pyramid level + target file):
+- T-1 (verifies AC-1, AC-2) -- TEST-WIDGET, extend or create `mobile-app/test/ui/widgets/empty_state_test.dart` (or `test/ui/screens/account_selection_screen_test.dart` if that is the established location for this screen -- confirm during implementation): pump `NoAccountsEmptyState`/`AccountSelectionScreen` with zero accounts, assert both the purpose copy and the Demo Mode action are present and rendered.
+- T-2 (verifies AC-3) -- TEST-WIDGET: tap the new Demo Mode action, assert navigation reaches the expected Demo Mode entry point (same destination as the existing "Add Account" -> "Try Demo Mode" path).
+- T-3 (verifies AC-4) -- TEST-WIDGET (likely already covered by existing `account_selection_screen_test.dart` coverage; confirm no regression rather than writing new).
+
+**Definition of Done**: default task-level DoD PLUS: manual Windows visual verification of the new empty-state copy/layout (Manual Validation).
+
+**Model**: Haiku -- *why not escalate*: single-screen, single-widget copy + one new secondary button reusing an existing navigation path. No architectural decision, no cross-cutting concern.
+
+**Executed-by**: _(fill at completion)_
+
+**Step-types**: UI-NEW, TEST-WIDGET
+
+**Est-Effort**: 20-30m
+
+---
+
+## Task 2 -- F151b: Walkthrough discoverability callout on Help screen (Priority 10)
+
+**Value**: This enables a user who does not already know the 8-step walkthrough exists to find it, by surfacing it at the top of the Help screen instead of leaving it as the last of 22 passive sections. This closes the specific gap F75 (Sprint 34) explicitly deferred ("Add a 'First time? Start here' callout on the main Help screen entry pointing to the walkthrough" -- never implemented).
+
+**Requirements** (numbered, detailed):
+- R-1: `HelpScreen` (`help_screen.dart`) gains a visible callout near the top (before the 22-section list, or pinned/highlighted) reading something like "First time? Start here" that deep-links to `HelpSection.walkthrough` (the existing last section, `help_screen.dart:258-259`).
+- R-2: Reuse the existing `HelpSection` deep-link mechanism (the same one `openHelp()` and per-screen Help icons already use, `help_screen.dart:418-437`) rather than inventing a new navigation path.
+- R-3: The walkthrough section itself (`assets/content/help/walkthrough.md`) is NOT modified by this task -- its content was already rewritten in Sprint 55 and is out of scope here.
+
+**Affected components / files**:
+- `mobile-app/lib/ui/screens/help_screen.dart` -- add the callout widget near the top of the section list, wired to the existing walkthrough deep-link.
+
+**Dependencies / blockers**: None.
+
+**Non-functional requirements**:
+- Accessibility: callout needs `Semantics` coverage matching the screen's existing pattern.
+
+**Acceptance criteria** (measurable, traceable):
+- AC-1: Given `HelpScreen` is opened, When the screen renders, Then a "First time? Start here" (or equivalent) callout is visible without scrolling, before the full section list.
+- AC-2: Given the callout is tapped, When navigation completes, Then the screen scrolls to (or otherwise surfaces) the `HelpSection.walkthrough` content, using the existing deep-link mechanism.
+
+**Tests to write** (one intent per AC; name pyramid level + target file):
+- T-1 (verifies AC-1) -- TEST-WIDGET, extend `mobile-app/test/ui/screens/help_screen_test.dart` (or `integration_test/help_deep_link_test.dart` if that is the more appropriate location given F145's existing coverage there): assert the callout renders and is visible in the initial viewport.
+- T-2 (verifies AC-2) -- TEST-WIDGET or INTEGRATION (reuse F145's `integration_test/help_deep_link_test.dart` pattern, which already covers all 22 `HelpSection` values): tap the callout, assert the walkthrough section is reached via the same deep-link path as the existing per-screen Help icons.
+
+**Definition of Done**: default task-level DoD PLUS: None -- default DoD only.
+
+**Model**: Haiku -- *why not escalate*: single-screen addition reusing an existing, proven deep-link mechanism. No new navigation logic to design.
+
+**Executed-by**: _(fill at completion)_
+
+**Step-types**: UI-MOVE, TEST-WIDGET
+
+**Est-Effort**: 10-20m
+
+---
+
+## Task 3 -- F151c: Scan Results chip tooltips + remove dead Moved chip + wording fix (Priority 10)
+
+**Value**: This prevents first-time-user confusion on the Scan Results screen, which live-walkthrough testing (Harold, 2026-08-15) confirmed is dense and under-explained: 7 colored chips with no explanation, one chip (Moved) that always reads 0 because the underlying feature does not exist yet (reads as a bug, not an intentional zero), and ambiguous wording ("Deleted (not processed)") that reads as self-contradictory without already knowing Read-Only-mode semantics.
+
+**Requirements** (numbered, detailed):
+- R-1: Add a tooltip (Flutter `Tooltip` widget, standard long-press/hover reveal) to each of the remaining 6 summary chips (Found, Processed, Deleted, Safe, No rule, Errors) explaining what each count means in plain language.
+- R-2: Remove the "Moved" chip entirely from the results-summary widget, since the move-on-match feature it reports on is not yet implemented -- confirmed via live walkthrough (always shows 0 alongside real, populated chips: Found 59, Processed 38, Deleted 26, No rule 12). Do NOT implement the Moved feature itself -- that is explicitly out of scope (see F151's "Not in scope" note in the master plan).
+- R-3: Clarify the "Deleted (not processed)" (and equivalent "Safe (not processed)") wording so it does not read as contradictory -- either via the new tooltip (R-1) alone, or a small wording adjustment (e.g. "Would be deleted" in Read-Only mode) if the tooltip alone does not resolve the ambiguity. Judgment call during implementation; the tooltip is the primary fix, wording is a secondary option if still unclear after adding it.
+- R-4: This is a SHARED widget -- confirm the fix applies to both the Demo Scan results screen and real (Live Scan) Scan Results screens, since both currently render the same summary-chip row. Do not duplicate the fix per-screen if a shared widget already exists; if the chip row is NOT currently a shared widget, extracting one is in scope here (small refactor, not a new task).
+
+**Affected components / files**:
+- `mobile-app/lib/ui/screens/results_display_screen.dart` -- the summary-chip row (confirm exact widget/class name during implementation; likely a private builder method or a small dedicated widget given the "shared between Demo and Live" requirement in R-4).
+
+**Dependencies / blockers**: None.
+
+**Non-functional requirements**:
+- Accessibility: `Tooltip` widgets are natively accessible (screen readers announce tooltip text); confirm this is sufticient or whether additional `Semantics` wrapping is needed per this codebase's existing pattern.
+
+**Acceptance criteria** (measurable, traceable):
+- AC-1: Given the Scan Results screen (Demo or Live), When a user long-presses or hovers a summary chip (Found/Processed/Deleted/Safe/No rule/Errors), Then a tooltip explaining that chip's meaning appears.
+- AC-2: The "Moved" chip no longer appears on the Scan Results screen (Demo or Live), given the move-on-match feature does not exist.
+- AC-3: The "Deleted (not processed)" wording (and equivalent "Safe (not processed)") no longer reads as self-contradictory -- verified via tooltip content and/or adjusted label text, confirmed during Manual Validation as a genuine improvement (subjective judgment call, not machine-testable -- flag for Harold's Manual Validation review specifically).
+- AC-4: Both Demo Scan and real (Live Scan) Scan Results screens render the fix identically (same shared widget/logic).
+
+**Tests to write** (one intent per AC; name pyramid level + target file):
+- T-1 (verifies AC-1) -- TEST-WIDGET in `mobile-app/test/ui/screens/results_display_screen_test.dart`: assert each remaining chip has an associated `Tooltip` widget with non-empty message text.
+- T-2 (verifies AC-2) -- TEST-WIDGET: assert no "Moved" chip is present in the rendered summary row, for both Demo and Live scan result states.
+- T-3 (verifies AC-4) -- TEST-WIDGET: assert the same chip-row widget/logic is used for both Demo and Live scan results (e.g. by pumping both states and confirming structural equivalence, or by testing the shared widget directly if extracted per R-4).
+- (AC-3 is not independently unit-testable -- covered by T-1's tooltip-content assertion plus Manual Validation.)
+
+**Definition of Done**: default task-level DoD PLUS: manual Windows visual verification that tooltips read clearly and the Moved-chip removal does not break the summary row's layout (Manual Validation).
+
+**Model**: Sonnet -- *why not Haiku*: R-4's "confirm/extract a shared widget between Demo and Live" is a structural judgment call across two call sites, not a single-file mechanical change; R-3's wording decision also requires reading actual rendered output to judge ambiguity, beyond a pure Haiku heuristic match.
+
+**Executed-by**: _(fill at completion)_
+
+**Step-types**: UI-MOVE, SVC-EDIT, TEST-WIDGET
+
+**Est-Effort**: 30-45m
+
+---
+
+## Task 4 -- F151d: Add safe-sender example to demo dataset (Priority 10)
+
+**Value**: This enables a first-time user's very first Demo Scan to demonstrate all major outcome categories (delete, safe, no-rule), not just delete/no-rule as confirmed during the live walkthrough (2026-08-15: the 38 processed demo emails included 0 Safe-category matches).
+
+**Requirements** (numbered, detailed):
+- R-1: Add at least one email to the demo dataset that matches an existing default safe-sender rule (or add a demo-specific safe-sender rule alongside it, whichever fits the existing demo-data architecture), so a fresh Demo Scan shows a non-zero "Safe" chip.
+- R-2: Locate the existing demo dataset source (confirm exact file/service during implementation -- likely a fixture list or generator referenced by the Demo Mode scan path) and follow its existing pattern/format for adding a new sample email, matching the style of existing entries (e.g. `DemoBlockHeader`/`DemoBlockSubject`/`DemoBlockBody` tags seen in the live walkthrough's results).
+
+**Affected components / files**:
+- Demo dataset source file (confirm exact path during implementation -- search for the existing "50+ sample emails" generator/fixture referenced in `platform_selection_screen.dart`'s "Try Demo Mode" description).
+
+**Dependencies / blockers**: None.
+
+**Non-functional requirements**: None.
+
+**Acceptance criteria** (measurable, traceable):
+- AC-1: Given a fresh Demo Scan run, When results are computed, Then at least 1 email is categorized as "Safe" (matches an existing safe-sender rule).
+- AC-2: The added email does not change any other existing demo-data counts in a way that breaks existing demo-related tests (if any assert exact counts).
+
+**Tests to write** (one intent per AC; name pyramid level + target file):
+- T-1 (verifies AC-1) -- TEST-UNIT or TEST-WIDGET (whichever matches the existing demo-data test pattern, if one exists; if not, a new lightweight test in `test/unit/` or `test/core/` asserting the demo dataset contains at least one safe-sender-matching entry): confirm the new entry evaluates to "Safe" against the current default rule set.
+- T-2 (verifies AC-2) -- run existing demo-related tests, confirm no count-based assertions break; update them if they hardcode the previous total count (acceptable, expected consequence of this change).
+
+**Definition of Done**: default task-level DoD PLUS: manual confirmation via a real Demo Scan run that a Safe-category result appears (Manual Validation, can double up with Task 3's manual check).
+
+**Model**: Haiku -- *why not escalate*: adding one data entry following an existing established pattern. No architectural decision.
+
+**Executed-by**: _(fill at completion)_
+
+**Step-types**: DATA, TEST-UNIT
+
+**Est-Effort**: 10-15m
+
+---
+
+## Task 5 -- F151e: Email-detail action popup layout fix (Priority 10)
+
+**Value**: This prevents the email-detail action popup (opened from a Scan Results row) from overflowing the default window size, confirmed via live walkthrough screenshot (Harold, 2026-08-15): the "Add to Safe Senders" (3 buttons) and "Create Block Rule" (3 buttons, plus a partially-cut-off "Block Subject" row) sections stack full-width vertically below their labels, forcing a scroll before a user can see all options at default resolution.
+
+**Requirements** (numbered, detailed):
+- R-1: Change the "Add to Safe Senders" button layout from 3 full-width stacked buttons to 3 smaller buttons arranged beside the "Add to Safe Senders" label (horizontal row or a compact grid, whichever fits Flutter's `Row`/`Wrap` conventions already used elsewhere in this codebase).
+- R-2: Apply the same treatment to the "Create Block Rule" section's 3 buttons (Block Email / Block Exact Domain / Block Entire Domain) -- and confirm whether the 4th partially-visible "Block Subject" row (seen cut off in the screenshot) is part of this same button group or a separate control; adjust its layout consistently if it is part of the same group.
+- R-3: The popup must fit within the default window size (1600x900, the size confirmed during the live walkthrough) without requiring a scroll to see both the Safe-Senders and Block-Rule button groups, given a typical email's metadata (sender, subject, timestamp, matched rule) above them.
+
+**Affected components / files**:
+- The email-detail action popup widget (confirm exact file during implementation -- likely within or adjacent to `results_display_screen.dart`, given it is opened from a Scan Results row).
+
+**Dependencies / blockers**: None.
+
+**Non-functional requirements**:
+- Accessibility: smaller/repositioned buttons must retain their existing `Semantics` labels/tap targets; do not shrink below platform minimum touch/click target guidance even though this is Windows-desktop-only (mouse-click, not touch, but still should not become uncomfortably small to click precisely).
+
+**Acceptance criteria** (measurable, traceable):
+- AC-1: Given the email-detail popup is open at the default window size (1600x900), When rendered, Then both the "Add to Safe Senders" and "Create Block Rule" button groups are visible without scrolling.
+- AC-2: Each button group's 3 buttons are arranged beside (not stacked full-width below) their section label, and are visibly smaller than the current full-width buttons.
+- AC-3: All existing button functionality (Exact Email / Exact Domain / Entire Domain for Safe Senders; Block Email / Block Exact Domain / Block Entire Domain for Block Rule) is unchanged -- this is a layout-only change, no behavior change.
+
+**Tests to write** (one intent per AC; name pyramid level + target file):
+- T-1 (verifies AC-1, AC-2) -- TEST-WIDGET, extend the existing test file for this popup (confirm location during implementation): assert both button groups render within expected bounds at a 1600x900 test viewport, and that buttons are laid out horizontally relative to their label (not vertically stacked).
+- T-2 (verifies AC-3) -- TEST-WIDGET: tap each of the 6 (or 7, if Block Subject is part of the group) buttons, assert the existing tap handlers still fire with unchanged behavior (reuse/extend existing tap-handler test coverage if present).
+
+**Definition of Done**: default task-level DoD PLUS: manual Windows visual verification at default window size (1600x900) confirming no scroll is needed (Manual Validation) -- this is fundamentally a visual/layout fix, so manual confirmation is the primary proof, tests are a regression backstop.
+
+**Model**: Sonnet -- *why not Haiku*: this is a layout redesign (stacked-full-width to beside-label-compact) requiring judgment about spacing/sizing/wrap behavior to actually fit the target constraint, not a mechanical single-property change.
+
+**Executed-by**: _(fill at completion)_
+
+**Step-types**: UI-MOVE, TEST-WIDGET
+
+**Est-Effort**: 25-40m
+
+---
+
+## Task 6 -- F151f: Wire ErrorDisplay family into 3 raw-exception paths (Priority 10)
+
+**Value**: This prevents a first-time user from seeing raw exception text (e.g. `Connection failed: SocketException: ...`) instead of a human-readable, actionable error message during account setup or scanning -- confirmed via code trace that 3 specific paths bypass the existing `ErrorDisplay`/`AuthenticationErrorDisplay`/`NetworkErrorDisplay` widgets already used elsewhere in this codebase (e.g. `AccountSelectionScreen`'s load-failure state).
+
+**Requirements** (numbered, detailed):
+- R-1: `AccountSetupScreen._testConnection()`'s catch-all (`account_setup_screen.dart:238`, currently `'Connection failed: $e'`) is replaced with the appropriate `ErrorDisplay` family widget (`NetworkErrorDisplay` for connectivity failures, `AuthenticationErrorDisplay` for auth failures -- distinguish by exception type/message content during implementation, matching however the existing rate-limit-specific handling in the same method already does this).
+- R-2: `AccountSetupScreen._handleConnect()`'s credential-save failure (`account_setup_screen.dart:299-301`, currently `'Failed to save credentials: $e'`) is replaced with an appropriate `ErrorDisplay` family widget or `GenericErrorDisplay` if no more specific variant fits.
+- R-3: `startRealScan()`'s scan-failure catch (`scan_progress_screen.dart:696-712`, currently `'Scan failed: $e'`) is replaced with an appropriate `ErrorDisplay` family widget where the display context allows it (SnackBar vs. a dedicated error widget -- confirm which fits this call site's UI context; a SnackBar cannot host a full `ErrorDisplay` widget, so this may require either a different presentation mechanism or a SnackBar with clearer copy if `ErrorDisplay` genuinely does not fit inline). The KNOWN, ALREADY-DOCUMENTED unmounted-context gap (failure logged but not shown if the user navigated away) is explicitly OUT OF SCOPE -- do not attempt to fix that as part of this task.
+- R-4: In all three cases, preserve the existing rate-limit-specific friendly message handling in `_testConnection()` (already good, per the code) -- this task only fixes the fallback/generic paths, not the parts that already work well.
+
+**Affected components / files**:
+- `mobile-app/lib/ui/screens/account_setup_screen.dart:238` -- `_testConnection()` catch-all.
+- `mobile-app/lib/ui/screens/account_setup_screen.dart:299-301` -- `_handleConnect()` credential-save failure.
+- `mobile-app/lib/ui/screens/scan_progress_screen.dart:696-712` -- `startRealScan()` scan-failure catch.
+- `mobile-app/lib/ui/widgets/error_display.dart` -- reused, not modified (unless a genuinely new variant is needed, which is not expected).
+
+**Dependencies / blockers**: None.
+
+**Non-functional requirements**:
+- Accessibility: `ErrorDisplay` family widgets are presumed already accessible per their existing use elsewhere; no new accessibility work expected, just reuse.
+
+**Acceptance criteria** (measurable, traceable):
+- AC-1: Given a connection-test failure in `AccountSetupScreen` (not a rate-limit case, which already has friendly handling), When the error is displayed, Then it uses an `ErrorDisplay` family widget instead of raw `'Connection failed: $e'` text.
+- AC-2: Given a credential-save failure in `AccountSetupScreen`, When the error is displayed, Then it uses an `ErrorDisplay` family widget instead of raw `'Failed to save credentials: $e'` text.
+- AC-3: Given a scan failure in `startRealScan()` (context still mounted), When the error is displayed, Then it uses clearer, human-readable messaging instead of raw `'Scan failed: $e'` text -- via `ErrorDisplay` if the UI context supports it, or improved SnackBar copy if it does not (judgment call, record which approach was taken and why).
+- AC-4: The existing rate-limit-specific friendly message in `_testConnection()` is unchanged.
+- AC-5: The unmounted-context silent-log behavior in `startRealScan()` is unchanged (explicitly out of scope, not touched).
+
+**Tests to write** (one intent per AC; name pyramid level + target file):
+- T-1 (verifies AC-1) -- TEST-WIDGET, extend `mobile-app/test/ui/screens/account_setup_screen_test.dart`: simulate a non-rate-limit connection failure, assert an `ErrorDisplay` family widget (not raw text) is rendered.
+- T-2 (verifies AC-2) -- TEST-WIDGET: simulate a credential-save failure, assert an `ErrorDisplay` family widget is rendered.
+- T-3 (verifies AC-3) -- TEST-WIDGET, extend `mobile-app/test/ui/screens/scan_progress_screen_test.dart` (or wherever `startRealScan()`'s existing error-path coverage lives): simulate a scan failure with a mounted context, assert improved messaging (exact assertion depends on which approach -- `ErrorDisplay` vs. improved SnackBar -- was chosen during implementation).
+- T-4 (verifies AC-4) -- TEST-WIDGET: simulate a rate-limit-specific failure, assert the existing friendly message is unchanged (regression guard).
+- T-5 (verifies AC-5) -- TEST-WIDGET: confirm the unmounted-context behavior test (if one already exists from the Sprint 57 Copilot-review fix) still passes unchanged.
+
+**Definition of Done**: default task-level DoD PLUS: manual Windows verification that a real triggered failure (e.g. a bad IMAP password) shows the improved error UI (Manual Validation).
+
+**Model**: Sonnet -- *why not Haiku*: requires distinguishing exception types to pick the right `ErrorDisplay` variant per path (not a single mechanical substitution), and R-3's SnackBar-vs-ErrorDisplay judgment call for the scan-failure context requires reading the actual UI structure to decide what fits.
+
+**Executed-by**: _(fill at completion)_
+
+**Step-types**: SVC-EDIT, TEST-WIDGET
+
+**Est-Effort**: 25-40m
+
+---
+
+## Task 7 -- F151g: Windows environment-compatibility investigation (Priority 10, investigation-only)
+
+**Value**: This produces concrete, filed findings on window-resize/DPI-scaling/hardware-performance/UI-stability behavior, which the First-Run Evaluation Summary Page's Section 6 flagged as genuinely unaudited for Windows (F63, the closest existing item, is superseded and scoped to Android touch-density, not Windows resize/DPI). This is an investigation pass, not a fix -- findings become new backlog candidates, not inline changes, to keep this task time-boxed and separate architectural/design decisions from mechanical execution.
+
+**Requirements** (numbered, detailed):
+- R-1: Manually resize the main window across a representative range (small/default/maximized, plus at least one non-16:9 aspect ratio if practical) on the primary screens exercised elsewhere in this sprint (Account Selection, Manual Scan, Scan Results, Help) and note any layout breakage, overflow, or clipping.
+- R-2: Confirm current behavior at the machine's actual DPI scale (125%, confirmed via WinWright screenshot metadata during the live walkthrough) is clean; if a second DPI scale is easily testable (e.g. 100% or 150% via Windows display settings), spot-check at least one additional scale, time permitting.
+- R-3: Note any UI flicker/jitter observed during normal interaction (screen transitions, scan progress updates) -- qualitative observation, not a performance-profiling exercise.
+- R-4: This is TIME-BOXED -- if the investigation surfaces more than can be fixed as trivial in-sprint tweaks, STOP and file findings as new backlog candidate(s) rather than expanding scope. Do not attempt architectural fixes (e.g. a full responsive-design framework) inline.
+
+**Affected components / files**: None expected (investigation-only); any trivial, obviously-safe fixes found (e.g. a single hardcoded width causing an obvious overflow) may be applied inline if genuinely trivial -- judgment call, err toward filing a follow-up item instead if there is any doubt.
+
+**Dependencies / blockers**: None.
+
+**Non-functional requirements**: None.
+
+**Acceptance criteria** (measurable, traceable):
+- AC-1: Window-resize behavior is checked across the 4 primary screens (Account Selection, Manual Scan, Scan Results, Help) at small/default/maximized sizes, with findings recorded (pass or specific issue) for each.
+- AC-2: DPI-scale behavior is checked at the machine's actual scale (125%) at minimum, with findings recorded.
+- AC-3: Any issues found are filed as new, appropriately-scoped backlog candidate item(s) in `docs/ALL_SPRINTS_MASTER_PLAN.md` (not fixed inline unless genuinely trivial per R-4) -- OR, if no issues are found, that clean result is explicitly recorded (not silently omitted).
+
+**Tests to write**: None -- this is a manual investigation task, not a code change with automatable acceptance criteria.
+
+**Definition of Done**: default task-level DoD (items 2/3/6 -- tests/analyze/velocity-log -- do not apply, this is investigation-only) PLUS:
+- Findings recorded in this plan's completion notes, with any new backlog items cross-referenced by their new F# number.
+
+**Model**: Sonnet -- *why not Haiku*: judging what counts as a "genuine" layout issue vs. cosmetic non-issue, and correctly time-boxing/scoping any follow-up items, requires more judgment than a mechanical check.
+
+**Executed-by**: _(fill at completion)_
+
+**Step-types**: DOCS (investigation + findings write-up)
+
+**Est-Effort**: 20-30m (hard time-box per R-4)
+
+---
+
+## Sprint-Level Notes
+
+**F153 registered separately** (HOLD, `docs/ALL_SPRINTS_MASTER_PLAN.md`) -- re-investigation of F140's WinWright/Flutter-Windows-UIA limitation, per Harold's 2026-08-15 request. NOT part of this sprint's execution scope; captured as a future periodic-review candidate since it needs research (Flutter changelog/issue-tracker checks) rather than app code changes.
+
+**F152 registered separately** (HOLD, `docs/ALL_SPRINTS_MASTER_PLAN.md`) -- the First-Run Evaluation methodology itself, registered as a reusable periodic template so future re-runs do not need to re-derive Sprint 58's process from scratch.
+
+**Manual Validation recommendation** (to be confirmed/refined once Tasks 1-7 are code-complete): build and launch the Windows dev app, then walk through the SAME live-walkthrough sequence used during Backlog Refinement -- zero-accounts screen (verify welcome copy + Demo Mode visibility), Demo Mode -> Platform Selection -> Demo Scan -> Results (verify chip tooltips, no Moved chip, Safe-category result present, wording clarity), open an email-detail popup at default window size (verify no-scroll layout), and trigger a real connection/scan failure if practical (verify improved error messaging). This mirrors the Backlog Refinement walkthrough closely enough that Harold's prior familiarity with the flow should make re-validation fast.

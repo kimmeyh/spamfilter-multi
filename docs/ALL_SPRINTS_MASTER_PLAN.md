@@ -320,6 +320,22 @@ _(F127 CI_* repo secrets: **RESOLVED-RESCOPED** (Harold 2026-07-24) -- the secre
 
 ### HOLD Items (Periodic Reviews)
 
+**F153. Re-investigate Flutter Windows UIA/accessibility-tree exposure to WinWright (~time-boxed, no-history) Priority HOLD**
+- Phase: Tooling / Testing Infrastructure
+- Platform: Windows Desktop
+- **Background**: F140 (Sprint 54, 2026-08-03) found a definitive NEGATIVE result at the time -- Flutter's Windows UIA bridge exposed ZERO control patterns to WinWright, for any element type, and no scrollable-region control type existed at all. This is a Flutter-Windows-engine embedding limitation, not a usage gap or an app-code omission -- `Semantics` widgets in Dart (which DO work correctly for real screen readers, per F133's Sprint 52 remediation) are not wired through to anything UIA-visible on Windows. The accepted fallback (R-3) was to duplicate key content (version display) visually rather than rely on automation reaching it.
+- **Reconfirmed during F151's live walkthrough (Sprint 58, 2026-08-15)**: `ww_get_snapshot` against the real 0.7.0.0 production build still returns an empty content `Pane` (0 children) on every screen tested, consistent with F140's original finding -- the app's own code has not regressed here, this is still the same platform ceiling.
+- **Why re-investigate rather than accept as permanent**: it is unreasonable on its face that a widely-used cross-platform framework's Windows target has NO path to standard OS accessibility APIs -- either this is a genuinely unaddressed Flutter engine gap (worth a plain upstream bug-tracker check, since Flutter ships frequent engine updates and this may have been fixed since Aug 2026), or there is a known workaround/opt-in flag/semantics-bridge setting that the original F140 spike did not find. A full month-plus has passed with multiple Flutter SDK point releases in that window; a fresh, cheap re-check is warranted before treating this as settled.
+- **Scope for this re-run**:
+  1. Check current Flutter stable-channel release notes / changelog for any Windows accessibility/semantics-bridge/UIA-related fixes since the version used in the original F140 spike.
+  2. Check Flutter's own GitHub issue tracker for the specific bug/limitation (Windows UIA control-pattern exposure) -- is it tracked, and has its status changed?
+  3. Check whether `flutter run` / `flutter build windows` has any accessibility-related build flag or `--enable-*` option that was not tried in the original spike.
+  4. If a real fix or workaround is found: re-run the original F140 spike's exact test (does `ww_get_snapshot`/`ww_inspect` see actual Flutter widget content, not just window chrome) against a real build to confirm before declaring this resolved.
+  5. If still negative: re-confirm and update this item's own findings with the current date, so future re-checks have a fresh baseline rather than citing an increasingly-stale Sprint 54 result.
+- **How to use**: Duplicate this item, assign a sprint, and remove HOLD. After completion, keep this template for the next periodic re-check (suggested cadence: alongside any Flutter SDK major/stable-channel upgrade, or every ~10 sprints if no upgrade has occurred).
+- HOLD rationale: Template item, reusable -- Flutter's own engine evolves independently of this app, so a negative result today does not guarantee a negative result indefinitely.
+- Source: Harold, 2026-08-15, during F151's live Windows walkthrough -- flagged as unreasonable that no real fix exists and requested a fresh backlog item to re-investigate rather than accept F140's finding as permanent.
+
 **F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD**
 - Phase: Release Readiness (reusable template)
 - Platform: Windows Desktop
