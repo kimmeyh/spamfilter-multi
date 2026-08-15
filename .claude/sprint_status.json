@@ -7,15 +7,15 @@
   "current_sprint": {
     "number": 58,
     "branch": "feature/20260814_Sprint_58",
-    "pr_number": null,
-    "pr_url": null,
+    "pr_number": 317,
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/317",
     "start_date": "2026-08-14",
-    "status": "Phase 6.6 carry-forward complete (branch created from feature/20260813_Sprint_57, pushed). Post-Merge Cleanup complete: PR #314 confirmed MERGED (commit 43d155a on develop); Harold also completed the long-outstanding real develop->main merge via PR #316 (main and develop now fully in sync, resolving the F148/0.6.2.0 known-gap). Issues #313 (F142) and #312 (F149) manually closed (GitFlow does not auto-close on feature->develop merge). #315 (F150) remains open, targeted for this sprint. Next action: Backlog Refinement per docs/BACKLOG_REFINEMENT.md, then prep the next Store release per docs/STORE_RELEASE_PROCESS.md per Harold's standing request.",
+    "status": "Phase 6.6 carry-forward + Post-Merge Cleanup complete. Store release 0.7.0.0 (Submission 14) built, submitted, CERTIFIED AND LIVE 2026-08-15, Check C confirmed clean; post-cert close-out committed. Light Backlog Refinement done -- F150 (Issue #315) confirmed the sole unblocked candidate. Phase 3.3.1 (issue card + draft PR) done 2026-08-15 -- PR #317 created as DRAFT (was late; #315 already existed as the card, PR was the gap, caught by the verify-closeout-complete Stop hook). BLOCKED: F150's actual fix requires Harold's Firebase Console action (register applicationId, download matching google-services.json) before implementation can proceed -- no code work started yet.",
     "plan_approved": false,
     "plan_approval_date": null,
     "blanket_execution_approved": false,
-    "scope": [],
-    "_scope_note": "Not yet scoped. Run Backlog Refinement first. F150 targeted for this sprint per Harold's 2026-08-14 instruction ('we will address in the next sprint')."
+    "scope": ["F150"],
+    "_scope_note": "F150 (Issue #315) is the sole candidate, confirmed via Backlog Refinement 2026-08-14 -- everything else Android-related is HOLD or depends on F150. Not yet formally plan-approved (Phase 3) since the fix itself is blocked on Harold's Firebase Console prerequisite; draft PR #317 opened per Phase 3.3.1 ahead of that to avoid another late-PR miss."
   },
 
   "previous_sprint": {
