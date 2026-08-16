@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:path/path.dart' as path;
 import 'package:my_email_spam_filter/core/services/powershell_script_generator.dart';
-import 'package:my_email_spam_filter/core/services/background_scan_manager.dart';
+import 'package:my_email_spam_filter/core/services/scan_frequency.dart';
 
 void main() {
   group('PowerShellScriptGenerator', () {

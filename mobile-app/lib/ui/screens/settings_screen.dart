@@ -11,7 +11,7 @@ import 'package:provider/provider.dart';
 import '../../core/providers/selected_account_provider.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
-import '../../core/services/background_scan_manager.dart' show ScanFrequency;
+import '../../core/services/scan_frequency.dart';
 import '../../core/services/background_scan_windows_worker.dart';
 import '../../core/services/windows_task_scheduler_service.dart';
 import '../../core/storage/database_helper.dart';

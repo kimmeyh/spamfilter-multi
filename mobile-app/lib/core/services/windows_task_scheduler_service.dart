@@ -4,7 +4,7 @@ import 'package:logger/logger.dart';
 import 'package:path/path.dart' as path;
 
 import 'app_environment.dart';
-import 'background_scan_manager.dart';
+import 'scan_frequency.dart';
 import 'powershell_script_generator.dart';
 import '../utils/account_id_sanitizer.dart';
 import '../../util/redact.dart';

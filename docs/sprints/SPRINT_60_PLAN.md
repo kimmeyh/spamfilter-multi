@@ -248,9 +248,19 @@ _**Risk & rollback**_: build-config changes are fully covered by git revert of t
 
 **Model**: Sonnet -- *why not Haiku*: an architecture-mirroring evaluation with a removal decision. *(Escalate to Fable/Opus only on a genuine design blocker per SPRINT_PLANNING.md triggers.)*
 
-**Executed-by**: _(fill at completion)_
+**Executed-by**: Fable 5 (session model; executed inline)
 **Step-types**: SVC-EDIT, DATA (manifest), TEST-UNIT, DOCS
-**Est-Effort**: 2-3h time-boxed (evaluation + POST_NOTIFICATIONS + removal certain; scheduler implementation only if it fits)
+**Est-Effort**: 2-3h time-boxed -- **Actual: ~50m (evaluation + removal; scheduler split out per the pre-declared threshold)**
+
+**COMPLETION NOTES (2026-08-16)**:
+- R-1 DESIGN VERDICT (Windows architecture as the reference, per the 2026-08-03 direction):
+  - MIRRORS 1:1: per-account scheduling (WorkManager unique periodic work per accountId = per-account Task Scheduler tasks, ADR-0039/0040); frequency vocabulary (`ScanFrequency` unchanged; WorkManager's 15-min minimum period aligns exactly with `every15min`); settings-driven per-account frequency (same `SettingsStore` keys).
+  - GENUINE SUBSTITUTIONS: WorkManager's in-process callback dispatch replaces the execution-alias + headless-exe model (no Android analogue of launching a versioned exe; this is the one place the old code's shape was right); network-connected constraint replaces Task Scheduler conditions.
+  - CANNOT CARRY OVER: exact-time firing -- WorkManager defers under Doze/battery optimization; acceptable for this workload (scans are periodic hygiene, not alarms).
+- R-2 EXECUTED: all four dead files removed (`background_scan_manager.dart`, `background_scan_service.dart`, `background_scan_worker.dart`, `background_scan_notification_service.dart` -- the last was itself transitively dead, referenced only by the dead service) plus their dead tests; `workmanager` dependency dropped (its only consumers). LIVE salvage: `ScanFrequency` extracted to `scan_frequency.dart` (it is the Windows path's frequency vocabulary -- 6 live importers retargeted), its tests consolidated into `scan_frequency_test.dart`; the background-scan INTEGRATION test kept (it exercises live stores) minus its two dead-symbol tests. Untruncated verification grep: every remaining mention of the removed symbols is comment-only.
+- R-3 PREMISE CORRECTED (recorded, not silently skipped): the evaluation revealed there is NO Android notification call site at all -- the notification service was dead code too. A POST_NOTIFICATIONS runtime request with nothing behind it would prompt the user for a permission nothing can use (and reads badly in Play review). The request therefore ships WITH the scheduler in F161, at the genuine first-notification-need moment. AC-3's on-emulator verification moves to F161 accordingly.
+- R-4 THRESHOLD APPLIED as pre-declared: the mirrored scheduler sized ~3-5h (scheduler + settings wiring + notification rebuild + permission + tests) -- outside this task's box. **F161 registered** (Priority 24) carrying the design verdict.
+- Verification: `flutter analyze` clean after retargeting 6 importers + 4 test files; full suite **1,853 passed / 29 skipped / 0 failed** post-removal (down 44 from 1,897 -- exactly the deleted dead-code tests; the 29 standing skips are untouched, so F160's audit table remains accurate).
 
 _**Risk & rollback**_: dead-code removal is git-revertible and gated on zero-reference proof; permission request is additive with an explicit denied path.
 

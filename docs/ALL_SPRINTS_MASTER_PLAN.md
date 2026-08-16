@@ -295,6 +295,14 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Scope: the cowork review's closing observation -- "version or constraint metadata that no gate watches" is the same class as the WinWright scripts sitting outside the rename net. Extend coverage: (1) `check-version-consistency.ps1` + `version_consistency_test.dart` assert the DEV worktree's `msix_config.msix_version` equals pubspec `version`'s X.Y.Z + `.0` (it drifted silently from 0.6.0.0 for ~10 releases); (2) evaluate a lightweight check that dependency-floor comments citing an upstream fix version match the constraint (the `^17.0.0`-vs-17.2.1 miss); scope to what is cheaply assertable, record what is deliberately left unwatched.
 - Source: Claude cowork PR #326 review (2026-08-15), findings 3/4 + closing pattern.
 
+**F161. Android background-scan scheduler mirroring the Windows per-account architecture + notifications + POST_NOTIFICATIONS (~3-5h) Priority 24 (NEW, Sprint 60 F144 follow-up)**
+- Phase: Android rollout track
+- Platform: Android
+- Background: F144 (Sprint 60) evaluated and REMOVED the unwired pre-architecture `BackgroundScanManager`/`BackgroundScanService`/worker/notification-service (zero call sites; workmanager dependency dropped with them). The design verdict (SPRINT_60_PLAN.md Task 6 completion notes) found a full mirror of the Windows architecture feasible: WorkManager unique periodic work per account maps 1:1 to the per-account Task Scheduler tasks (ADR-0039/0040); network constraints map to task conditions; the execution-alias mechanism has no Android analogue (WorkManager's in-process callback dispatch is the genuine substitution); WorkManager's 15-minute minimum period aligns with `ScanFrequency.every15min`. Cannot carry over: exact-time firing (WorkManager defers under Doze -- acceptable for this workload).
+- Scope: implement the mirrored scheduler (per-account scheduling driven by the same `ScanFrequency` settings the Windows path uses), rebuild the Android notification path on flutter_local_notifications v17, and add the `POST_NOTIFICATIONS` runtime request at the first-notification-need moment (deliberately deferred from F144: with no Android notification call site existing, a permission prompt would have asked for something nothing could fire -- premise corrected in-sprint). Re-add `workmanager` at implementation time.
+- Depends on: none (F150 build unblock + F144 clean slate both landed).
+- Source: F144 evaluation, Sprint 60, 2026-08-16.
+
 **F152. Periodic User-Centric First-Run Evaluation (~2-3h per review, plus fix-item time if findings warrant) Priority HOLD** _(TEMPLATE -- first run produced F151 above, Sprint 58 Backlog Refinement, 2026-08-15)_
 - Phase: UX Spike (reusable template)
 - Platform: Windows Desktop (this run); extend per-platform when other platforms are release-ready
@@ -465,7 +473,7 @@ _(Sprint 51-52 detail sections pruned per Maintenance Rule 2 -- all shipped/reso
 
 _(F142 shipped Sprint 57 -- see `docs/sprints/SPRINT_57_PLAN.md` and CHANGELOG.md 2026-08-14. `MainNavigationScreen`'s `Platform.isAndroid` bottom-nav branch removed entirely; both platforms now share the same default-screen decision, `appDefaultScreenFor`, formerly `_DesktopDefaultScreen`/`desktopDefaultScreenFor`. Manual on-device Android validation was blocked by the pre-existing F94/F150 build issue -- see F150 below.)_
 
-**F143. Android entry point + touch-adapted selection for No-Rule Review screen (~time-boxed, no-history) Priority 20 (PROMOTED from HOLD at Sprint 60 refinement -- F142 satisfied Sprint 57, F150 build blocker resolved Sprint 59; Android track is actionable)**
+**F143. Android entry point + touch-adapted selection for No-Rule Review screen -- [DONE Sprint 60, 2026-08-16: long-press + tap-toggle touch model, desktop semantics pinned unchanged, AppBar icon un-gated per F142's revisit note. See SPRINT_60_PLAN.md Task 5.]**
 - Phase: Android / Google Play Store Readiness
 - Platform: Android
 - **Finding** (F141 deep dive): `NoRuleReviewScreen` (F39/F135) -- the desktop app's DEFAULT screen when accounts exist -- has ZERO Android entry point. `StandardAppBarActions` gates its AppBar icon to `Platform.isWindows`; prior to F142 (Sprint 57), the Android nav branch never reached the shared default-screen decision at all. **F142 now routes Android through the SAME `appDefaultScreenFor` decision desktop uses, so Android reaches `NoRuleReviewScreen` as its default screen when accounts exist** -- the remaining gap this item covers is narrower than originally scoped: the AppBar icon deep-link still stays Windows-gated (F142's own explicit R-3 decision, since this item's touch-selection redesign has not landed yet), and the screen's multi-item selection mechanism itself needs the touch redesign below.
@@ -473,7 +481,7 @@ _(F142 shipped Sprint 57 -- see `docs/sprints/SPRINT_57_PLAN.md` and CHANGELOG.m
 - Depends on: none remaining -- F142's navigation shell landed Sprint 57. Note: on-device Android verification of this item will hit the same F150 build blocker until that is resolved.
 - Source: Sprint 54 F141 deep dive, 2026-08-03; F142 dependency satisfied Sprint 57.
 
-**F144. Re-evaluate Android background scanning against the Windows Task Scheduler pattern (WorkManager as the only genuine platform substitution) + add POST_NOTIFICATIONS runtime request (~time-boxed, no-history) Priority 22 (PROMOTED from HOLD at Sprint 60 refinement -- F150 build blocker resolved Sprint 59)**
+**F144. Re-evaluate Android background scanning -- [DONE Sprint 60, 2026-08-16: evaluation complete, dead scheduler code REMOVED (4 lib files + workmanager dep), design verdict written; implementation + POST_NOTIFICATIONS split to F161 per the card's pre-declared threshold. See SPRINT_60_PLAN.md Task 6.]**
 - Phase: Android / Google Play Store Readiness
 - Platform: Android
 - **Finding** (F141 deep dive): `BackgroundScanManager`/`BackgroundScanService` (a `workmanager`-based scheduler, pre-dating the current architecture) exist in source but have ZERO call sites anywhere in `lib/` -- entirely unwired since Windows' `WindowsTaskSchedulerService`-based path became the maintained, actively-developed background-scan architecture (per-account scheduling, ADR-0039/0040, F98). Separately, no `POST_NOTIFICATIONS` runtime permission request exists anywhere (Android 13+/API 33+ requires this at runtime in addition to the manifest declaration, which IS auto-merged by dependent plugins) -- without it, notifications would silently never show.
