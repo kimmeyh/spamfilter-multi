@@ -283,6 +283,14 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Depends on: none. Runs before F154.
 - Source: Harold, Sprint 59 Backlog Refinement, 2026-08-15. Full task card: `docs/sprints/SPRINT_59_PLAN.md` Task 3.
 
+**F156. Full Android app testing walk-through -- automated where possible, errors expected and fixed as found (~half-day+, scope firms up as errors surface) Priority 20 (NEW, Sprint 59 Manual Validation)**
+- Phase: Android rollout track
+- Platform: Android (emulator; F150 unblocked builds 2026-08-15)
+- Scope (Harold, 2026-08-15): a full walk-through of the Android app now that it builds/installs/launches again -- "preferably done via Flutter or WinWright tests, uncovering errors -- I expect some. They are not a problem, just need to fix them." Tooling reality: WinWright cannot see inside the emulator (Windows-UIA only); the equivalents are `integration_test` on the emulator device (the F99 harness runs there), plus adb-driven flows (screencap, uiautomator dump, input injection, logcat) validated during F150. Expect first-run-on-Android errors in paths never exercised on-device (background scanning via workmanager, notifications with the new v17 plugin, OAuth once SHA-1 lands, storage paths).
+- Prereq now DONE: SHA-1 fingerprint registration (2026-08-15, same day as F150).
+- Sequencing: after Sprint 59; natural lead-in to F143/F144 and the Google Play track.
+- Source: Harold, Sprint 59 Manual Validation feedback, 2026-08-15.
+
 **F152. Periodic User-Centric First-Run Evaluation (~2-3h per review, plus fix-item time if findings warrant) Priority HOLD** _(TEMPLATE -- first run produced F151 above, Sprint 58 Backlog Refinement, 2026-08-15)_
 - Phase: UX Spike (reusable template)
 - Platform: Windows Desktop (this run); extend per-platform when other platforms are release-ready
