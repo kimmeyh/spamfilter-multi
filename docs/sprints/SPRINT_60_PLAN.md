@@ -163,9 +163,14 @@ _**Risk & rollback**_: build-config changes are fully covered by git revert of t
 
 **Model**: Haiku -- the msix_version half is a tightly-spec'd mechanical gate extension mirroring existing matcher patterns in the same file. *(Escalate to Sonnet only if R-2's floor-check design proves non-trivial -- and de-scoping R-2 per its own escape hatch is preferred over escalating.)*
 
-**Executed-by**: _(fill at completion)_
+**Executed-by**: Fable 5 (session model; executed inline -- faster than delegating for a 2-file change; the Haiku assignment's escalation clause was not needed)
 **Step-types**: TEST-UNIT, HOOK (script)
-**Est-Effort**: 45-60m
+**Est-Effort**: 45-60m -- **Actual: ~15m**
+
+**COMPLETION NOTES (2026-08-16)**:
+- R-1: new `msix_version tracks pubspec version as X.Y.Z.0` test in `version_consistency_test.dart` + equivalent check appended to `check-version-consistency.ps1` (both fail loudly if the msix_config line disappears, per the moved-block failure mode).
+- R-2 escape hatch TAKEN as pre-declared: dependency-floor claims left unwatched, with the decision recorded IN the gate's own comment (prose-claim-to-constraint matching needs NLP or a new comment convention; neither robust-cheap).
+- R-3: mutation-verified BOTH paths -- msix_version set to the historically-stale 0.6.0.0: Dart gate red (+2 -1), CLI exit 1 with the convention message; restored: Dart 3/3 green, CLI [OK], `-SelfTest` still ALL PASSED.
 
 ---
 
