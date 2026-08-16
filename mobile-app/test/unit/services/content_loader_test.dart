@@ -34,6 +34,7 @@ void main() {
         HelpSection.manualScan: 'manualScan',
         HelpSection.resultsDisplay: 'resultsDisplay',
         HelpSection.scanHistory: 'scanHistory',
+        HelpSection.reviewNoRuleItems: 'reviewNoRuleItems',
         HelpSection.settings: 'settings',
         HelpSection.generalRulesManagement: 'generalRulesManagement',
         HelpSection.generalScanHistoryRetention: 'generalScanHistoryRetention',

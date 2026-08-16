@@ -34,6 +34,11 @@ enum HelpSection {
   manualScan,
   resultsDisplay,
   scanHistory,
+  // Sprint 59 F154: dedicated section for the Review No Rule Items screen --
+  // the app's default screen when accounts exist. Previously that screen
+  // deep-linked to resultsDisplay as a nearest-match stand-in (the gap was
+  // filed in the F133-S52 findings).
+  reviewNoRuleItems,
   settings,
   // Settings > General sub-sections (appear in tab-order below settings)
   generalRulesManagement,
@@ -229,7 +234,7 @@ class _HelpScreenState extends State<HelpScreen> {
           platformId: widget.platformId ?? '',
           platformDisplayName: widget.platformDisplayName ?? '',
           // MV-5 (Sprint 58 Manual Validation, Harold 2026-08-15): the
-          // Review "No Rule" Items icon now appears on Help too (previously
+          // Review No Rule Items icon now appears on Help too (previously
           // suppressed here) -- the builder's default includes it.
           includeScanHistory: hasAccount,
           includeHelp: false,
@@ -308,6 +313,8 @@ class _HelpScreenState extends State<HelpScreen> {
                 _section(HelpSection.manualScan, title: 'Manual Scan'),
                 _section(HelpSection.resultsDisplay, title: 'Results'),
                 _section(HelpSection.scanHistory, title: 'Scan History'),
+                _section(HelpSection.reviewNoRuleItems,
+                    title: 'Review No Rule Items'),
                 _section(HelpSection.settings, title: 'Settings'),
                 // --- Settings > General sub-sections (in on-screen order) ---
                 _section(HelpSection.generalRulesManagement,
@@ -504,6 +511,8 @@ class _HelpScreenState extends State<HelpScreen> {
         return 'resultsDisplay';
       case HelpSection.scanHistory:
         return 'scanHistory';
+      case HelpSection.reviewNoRuleItems:
+        return 'reviewNoRuleItems';
       case HelpSection.settings:
         return 'settings';
       case HelpSection.generalRulesManagement:

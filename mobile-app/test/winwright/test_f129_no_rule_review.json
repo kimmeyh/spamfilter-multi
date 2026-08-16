@@ -2,8 +2,8 @@
   "version": "1",
   "appId": "",
   "mode": "test",
-  "attachTitle": "MyEmailSpamFilter",
-  "description": "F129 (Sprint 51): Review \"No Rule\" Items screen -- entry point, account filter chips, and the covered-item sweep's reload path. COVERS the Sprint 50 surfaces MT-3 (entry point on the home screen) and MT-2c (sweep runs on every load). READ-ONLY: navigates and clicks filter chips only -- creates no rules, adds no safe senders, marks nothing processed -- so it is inherently net-zero on the dev DB; the final case returns to the home screen. TWO HARNESS CONSTRAINTS drove this design (Sprint 51 discovery, both re-confirmed live): (1) `ww_assert*` is NOT replayable by the script runner (README line 195) -- a case containing only asserts reports FAILED even when the UI is correct, so verification here is expressed as CLICKS: a click that resolves proves the element exists with that exact name, and a missing element errors the step. (2) The Windows UIA projection of Flutter semantics surfaces only widgets carrying a `tooltip:` plus screen titles and Text nodes; `Semantics(label:)` on a merged container does NOT project, so home-screen account ROWS are unaddressable by name and are deliberately not used. SELECTORS VERIFIED LIVE 2026-07-28 against dev build 0.5.8.",
+  "attachTitle": "MyEmailSpamFilter [DEV]",
+  "description": "F129 (Sprint 51): Review No Rule Items screen -- filter chips and the covered-item sweep's reload path. COVERS the Sprint 50 surfaces MT-3 (the screen is reachable -- post-F135 it IS the home screen when accounts exist, so reachability is proven by its chips resolving on launch, not by an entry-point click) and MT-2c (sweep runs on every load). READ-ONLY: clicks filter chips and navigates only -- creates no rules, adds no safe senders, marks nothing processed -- so it is inherently net-zero on the dev DB; the final steps return to the home screen. TWO HARNESS CONSTRAINTS drove this design (Sprint 51 discovery, both re-confirmed live): (1) `ww_assert*` is NOT replayable by the script runner (README line 195) -- a case containing only asserts reports FAILED even when the UI is correct, so verification here is expressed as CLICKS: a click that resolves proves the element exists with that exact name, and a missing element errors the step. (2) The Windows UIA projection of Flutter semantics surfaces only widgets carrying a `tooltip:` plus screen titles and Text nodes; `Semantics(label:)` on a merged container does NOT project, so account ROWS are unaddressable by name and are deliberately not used. SELECTORS VERIFIED LIVE 2026-07-28 against dev build 0.5.8; REWORKED 2026-08-15 (Sprint 59): F135 (Sprint 52) made this screen the app default -- the home-screen entry-point click and 'Back' teardown steps were structurally stale (the screen has no self-referential icon and no Back; it is the root) and the reload tooltip was renamed from 'Refresh' to 'Re-check the last scan (does not fetch new mail)' per Harold's Sprint 52 feedback. Screen-name renamed to 'Review No Rule Items' per F155.",
   "runConfig": {
     "captureScreenshots": false,
     "screenshotFormat": "png",
@@ -15,26 +15,25 @@
   "testCases": [
     {
       "id": "F129-NR-1",
-      "title": "MT-3 + MT-2c: entry point opens the screen, filter chips render, reload re-runs the sweep, Back returns home",
+      "title": "Post-F135 home screen renders filter chips; reload re-runs the sweep; navigation round-trip survives",
       "steps": [
-        { "tool": "ww_window_state", "state": "maximize" },
+        { "_comment": "PRIMING QUERY -- also guarantees a maximized window so nothing is off-screen.",
+          "tool": "ww_window_state", "state": "maximize" },
 
-        { "_comment": "MT-3: the Review No Rule entry point exists on the home screen and opens the screen. A resolve failure here means the Sprint 50 MT-3 entry point regressed.",
-          "tool": "ww_click", "selector": "type=Button[name='Review \"No Rule\" Items']" },
+        { "_comment": "MT-3 (post-F135 form): the app opens ON the Review No Rule Items screen when accounts exist. The 'All Accounts' chip exists only on this screen, so it resolving IS the reachability proof. MT-2c evidence: the count chips carry the post-sweep totals -- counts are data-dependent, prefix match keeps the script valid across scans.",
+          "tool": "ww_invoke", "selector": "type=Button[name*='All Accounts (']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name*='@aol.com (']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name*='@gmail.com (']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name*='All Accounts (']" },
 
-        { "_comment": "MT-2c evidence: with a populated pool the count chips carry the post-sweep totals. These are what change when the sweep drops covered items, so clicking them proves the sweep produced a coherent count rather than an empty screen. Counts are data-dependent -- prefix match keeps the script valid across scans.",
-          "tool": "ww_click", "selector": "type=Button[name*='kimmeyharold@aol.com (']" },
-        { "tool": "ww_click", "selector": "type=Button[name*='kimmeyh@gmail.com (']" },
-        { "tool": "ww_click", "selector": "type=Button[name*='All Accounts (']" },
+        { "_comment": "MT-2c: the reload button re-enters _loadItems, which runs the covered-item sweep before display. The screen must survive the reload with its chips intact. Tooltip renamed from 'Refresh' in Sprint 52 (Harold: 'Refresh' read as 'go check for new mail', which this does not do).",
+          "tool": "ww_invoke", "selector": "type=Button[name='Re-check the last scan (does not fetch new mail)']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name*='All Accounts (']" },
 
-        { "_comment": "MT-2c: Refresh re-enters _loadItems, which runs the covered-item sweep before display. The screen must survive the reload with its chips intact.",
-          "tool": "ww_click", "selector": "type=Button[name='Refresh']" },
-        { "tool": "ww_click", "selector": "type=Button[name*='All Accounts (']" },
-
-        { "_comment": "Teardown: return to the home screen. Clicking the entry point again proves we are back and the button still resolves.",
-          "tool": "ww_click", "selector": "type=Button[name='Back']" },
-        { "tool": "ww_click", "selector": "type=Button[name='Review \"No Rule\" Items']" },
-        { "tool": "ww_click", "selector": "type=Button[name='Back']" }
+        { "_comment": "Navigation round-trip: away to Scan History and Back. Post-F135 there is no 'Back' FROM this screen (it is the root; the X is Exit Application) -- teardown is simply being back on it, proven by the chip resolving again.",
+          "tool": "ww_invoke", "selector": "type=Button[name='View Scan History']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name='Back']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name*='All Accounts (']" }
       ]
     }
   ]

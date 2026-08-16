@@ -686,7 +686,7 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBarWithExit(
-        title: const Text('Review "No Rule" Items'),
+        title: const Text('Review No Rule Items'),
         // F134 (Sprint 52): canonical order from the ONE shared builder --
         // Refresh (screen-specific, first), then View Scan History, Accounts,
         // Settings, Help, then the auto-appended Exit. Harold specified this
@@ -694,7 +694,7 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
         // appear in this order: Refresh, View Scan History, Accounts,
         // Settings, Help".
         //
-        // includeNoRuleReview: false -- this IS the Review "No Rule" screen; a
+        // includeNoRuleReview: false -- this IS the Review No Rule Items screen; a
         // self-referential entry point would be noise.
         // Settings is account-scoped while this screen is cross-account, so the
         // accountId comes from the F135 resolver (which never prompts here);
@@ -702,11 +702,10 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
         // pushing a bogus id.
         actions: StandardAppBarActions.build(
           context: context,
-          // No dedicated HelpSection exists for this screen; resultsDisplay is
-          // the nearest match (this screen reviews scan results). Adding a
-          // reviewNoRule section is a CONTENT task, filed in the F133-S52
-          // findings rather than smuggled into an icon-ordering change.
-          helpSection: HelpSection.resultsDisplay,
+          // F154 (Sprint 59): this screen finally has its own Help section
+          // (previously deep-linked to resultsDisplay as a nearest-match
+          // stand-in, a gap filed in the F133-S52 findings).
+          helpSection: HelpSection.reviewNoRuleItems,
           accountId: _resolveAccountIdForSettings(),
           includeNoRuleReview: false,
           // Own handler (not the builder's default) purely so this screen can

@@ -52,7 +52,7 @@ void main() {
       expect(find.byType(NoRuleReviewScreen), findsNothing);
     });
 
-    testWidgets('true (accounts exist) shows Review "No Rule" Items',
+    testWidgets('true (accounts exist) shows Review No Rule Items',
         (tester) async {
       await tester.pumpWidget(MaterialApp(
         home: appDefaultScreenFor(hasAccounts: true),

@@ -118,7 +118,7 @@ $appWindowTitle = "MyEmailSpamFilter"   # matches the scripts' attachTitle
 # ---------------------------------------------------------------------------
 
 function Ensure-FreshAppAtHome {
-    param([int]$WaitForWindowSec = 12)
+    param([int]$WaitForWindowSec = 30)
 
     # (1) Defensive teardown of any existing dev-app instance.
     Get-Process $appProcName -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
@@ -130,12 +130,20 @@ function Ensure-FreshAppAtHome {
     }
 
     # (2) Fresh launch and wait for the main window (home screen) to appear.
+    # Sprint 59 hardening: since F135 (Sprint 52) the home screen is Review No
+    # Rule Items, whose first load runs the covered-item sweep against the full
+    # rule set BEFORE the window title appears -- measured 10-16s on the dev DB
+    # (2026-08-15), vs the ~5s this wait was originally tuned for. The old
+    # 12s deadline + 2s settle raced that startup and produced intermittent
+    # 'No main window found' failures on step 2 of every script. Wait longer,
+    # and settle for 8s after the title appears so the first script step meets
+    # a genuinely idle app.
     Start-Process -FilePath $devAppExe | Out-Null
     $deadline = (Get-Date).AddSeconds($WaitForWindowSec)
     while ((Get-Date) -lt $deadline) {
         $p = Get-Process $appProcName -ErrorAction SilentlyContinue |
              Where-Object { $_.MainWindowTitle -like "*$appWindowTitle*" }
-        if ($p) { Start-Sleep -Seconds 2; return $true }   # small settle after window appears
+        if ($p) { Start-Sleep -Seconds 8; return $true }   # settle: let the home-screen sweep finish
         Start-Sleep -Milliseconds 500
     }
     Write-Warning "Dev app window '$appWindowTitle' did not appear within ${WaitForWindowSec}s."
@@ -201,9 +209,13 @@ if ($doSnapshot) {
     try {
         $snapshotBefore = Invoke-DbSnapshot
     } catch {
-        Write-Host "[DB-SNAPSHOT] WARNING: Pre-sweep snapshot failed: $_" -ForegroundColor Yellow
-        Write-Host "[DB-SNAPSHOT] Continuing without DB snapshot guard. Use -NoSnapshotDb to suppress this warning." -ForegroundColor Yellow
-        $doSnapshot = $false
+        # Sprint 59 IMP-4: a guard that cannot run must FAIL the sweep, not
+        # soft-continue -- the soft path let a PS-5.1 BOM bug disable drift
+        # protection silently for the whole Sprint 59 session. An unguarded
+        # sweep is only acceptable as an EXPLICIT choice (-NoSnapshotDb).
+        Write-Host "[DB-SNAPSHOT] FATAL: Pre-sweep snapshot failed: $_" -ForegroundColor Red
+        Write-Host "[DB-SNAPSHOT] Refusing to run the sweep without the drift guard. Fix the guard, or run with -NoSnapshotDb to explicitly waive it." -ForegroundColor Red
+        exit 1
     }
 }
 
@@ -324,7 +336,16 @@ if ($doSnapshot -and $snapshotBefore) {
             $driftDetected = $true
         }
     } catch {
-        Write-Host "[DB-SNAPSHOT] WARNING: Post-sweep snapshot failed: $_" -ForegroundColor Yellow
+        # Sprint 59 cowork-review finding 2: the IMP-4 loud-fail rule must
+        # apply to BOTH ends of the sweep. A post-sweep snapshot failure means
+        # the drift comparison NEVER RAN -- exiting 0 here would report
+        # "success, no drift" with no drift check performed, the exact
+        # indistinguishable-from-a-passing-guard class IMP-4 eliminated on the
+        # pre-sweep side. (Plausible asymmetric failure: 'database is locked'
+        # on the post read while the app is still up.)
+        Write-Host "[DB-SNAPSHOT] FATAL: Post-sweep snapshot failed: $_" -ForegroundColor Red
+        Write-Host "[DB-SNAPSHOT] The drift comparison did not run -- treating the sweep as FAILED. Re-run, or use -NoSnapshotDb to explicitly waive the guard." -ForegroundColor Red
+        $driftDetected = $true
     }
 }
 

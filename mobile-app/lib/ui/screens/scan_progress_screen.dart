@@ -196,7 +196,7 @@ class _ScanProgressScreenState extends State<ScanProgressScreen> with RouteAware
             },
           ),
           // F134 (Sprint 51 retro IMP-2): the canonical icon order now comes
-          // from ONE shared builder -- Review "No Rule" Items, View Scan
+          // from ONE shared builder -- Review No Rule Items, View Scan
           // History, Accounts, Settings, Help, [X auto].
           //
           // This screen previously carried a comment asserting a

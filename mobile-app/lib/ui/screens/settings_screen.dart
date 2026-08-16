@@ -522,7 +522,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         // History, Accounts, Help, [X auto]. Help deep-links to the section
         // matching the currently visible tab.
         // F134 (Sprint 52): canonical order from the ONE shared builder --
-        // Review "No Rule" Items, View Scan History, Accounts, Settings, Help,
+        // Review No Rule Items, View Scan History, Accounts, Settings, Help,
         // then the auto-appended Exit. Previously this screen ran
         // No-Rule / History / Accounts / HELP, with Help third-from-last
         // instead of last. Change the order in StandardAppBarActions, not here.
