@@ -7,6 +7,16 @@ Pre-Kickoff) from `docs/ALL_SPRINTS_MASTER_PLAN.md` "Next Sprint Candidates".
 
 - None (all four roles: none).
 
+## Approved early-sprint chore (Harold, 2026-08-16)
+
+- **Line-ending normalization**: add `.gitattributes` (`* text=auto eol=lf`; `*.bat`/`*.cmd`/`*.ps1`
+  pinned `eol=crlf` -- cmd.exe LF-label edge cases and Authenticode CRLF assumptions) plus the
+  one-time `git add --renormalize .` commit, with that commit's hash recorded in
+  `.git-blame-ignore-revs`. Run as the FIRST commit(s) on the Sprint 61 branch so the repo-wide
+  content-neutral diff stays out of feature history. Watch-item: if Visual Studio regenerates
+  `windows/runner` files as phantom-dirty CRLF, add a targeted `eol=crlf` line for those paths
+  rather than reverting the policy. Ends the "LF will be replaced by CRLF" warning noise.
+
 ## Standing context for scope selection
 
 - 0.9.0.0 / Submission 16: if certified by sprint start, Step 7 release close-out is pending
