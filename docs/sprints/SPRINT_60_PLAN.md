@@ -126,9 +126,16 @@ _**Risk & rollback**_: build-config changes are fully covered by git revert of t
 
 **Model**: Sonnet -- *why not Haiku*: R-2 is a security/config judgment call, not mechanical YAML.
 
-**Executed-by**: _(fill at completion)_
+**Executed-by**: Fable 5 (session model; executed inline)
 **Step-types**: DEVOPS (CI), DOCS
-**Est-Effort**: 30-60m
+**Est-Effort**: 30-60m -- **Actual: ~25m**
+
+**COMPLETION NOTES (2026-08-16)**:
+- R-2 decision: option (c) STUB, committed at `android/ci/google-services.ci.json` -- real package name, deliberately fake values, self-documenting comment. Rationale written in the workflow: PUBLIC repo rules out committing the real config (Firebase API key); a secret buys nothing while CI never RUNS the app (F127 philosophy); the stub exercises exactly what the F150 class breaks (config/applicationId matching).
+- Local pre-verification: stub PASSES `:app:processDebugGoogleServices`; MUTATION (package swapped to a wrong name) FAILS with the exact F150 signature 'No matching client found' -- both run against the real gradle task, real config backed up and restored (verified) around both checks.
+- Job: ubuntu-latest + temurin JDK 17 + the same pinned Flutter as the sibling jobs; runs on PRs to develop.
+- AC-1 (CI green on this sprint's PR) verified on push -- result recorded below when the run completes.
+- AC-3: the negative check is the mutation above -- the F150 state is exactly 'config without the real applicationId', and it fails the job's core task.
 
 ---
 
