@@ -1,6 +1,6 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-15 (Sprint 59 execution complete except F150; entering Manual Validation)",
+  "_last_updated": "2026-08-15 (Sprint 59: all tasks complete, Manual Validation in progress)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
@@ -9,7 +9,7 @@
     "pr_number": 326,
     "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/326",
     "start_date": "2026-08-15",
-    "status": "Phase 5.3 MANUAL VALIDATION (Harold-driven; asking is correct from here on). F153/F155/F154 DONE + WinWright sweep restored green (unplanned; scripts stale since F135). F150 waiting on Harold's Firebase Console action (steps+SHA-1 provided). Suite 1,892/29/0; deep-link 32/32; sweep 3/3; analyze clean. Commits through e995d0d pushed. MV items: F154 help-content draft review, rename spot-check, optional Android emulator check if F150 lands, WinWright capability-docs review. Cowork review findings 2-5 not visible to Claude verbatim -- ask Harold to paste at MV.",
+    "status": "Phase 5.3 MANUAL VALIDATION -- ALL 4 TASKS COMPLETE (F150/F153/F155/F154) + WinWright sweep restoration. Suite 1,893/29/0; deep-link 32/32; sweep 3/3; analyze clean. Commits through e551e56 pushed. Dev app running (post-plugin-bump build). MV headline: F154 help-content draft review. Open threads: cowork review findings 2-5 not seen verbatim; build.gradle.kts minSdk un-pin appeared unexplained during F150 window, reverted to the F108 pin (Harold to confirm); SHA-1 fingerprint still to add in Firebase before Google Sign-In testing (Android track).",
     "plan_approved": true,
     "plan_approval_date": "2026-08-15",
     "blanket_execution_approved": true,
@@ -101,8 +101,8 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Harold: Firebase Console registration for F150 (then debug build + emulator verify)",
-    "Harold: Manual Validation (F154 content draft is the headline item)",
-    "Harold: paste Claude cowork findings 2-5 if any remain unaddressed"
+    "Harold: Manual Validation (F154 content draft; rename spot-check)",
+    "Harold: paste cowork findings 2-5 if any remain unaddressed; confirm minSdk revert",
+    "Phase 7 on MV completion"
   ]
 }
