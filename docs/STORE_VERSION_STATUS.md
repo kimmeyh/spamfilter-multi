@@ -18,7 +18,7 @@ Partner Center before saying anything about the Store version.
 | | Version | Last verified | Notes |
 |---|---|---|---|
 | **Live/certified on Store** (cache) | 0.8.0.0 | 2026-08-15 (Harold, three screenshots same day as submission: Partner Center overview "Congrats! Your product is now updated" + Store presence "currently available"; Store client product page "Installed version 0.8.0.0"; the INSTALLED app running -- title bar "MyEmailSpamFilter" with no `[DEV]`, Settings > General "Version 0.8.0" with no `[DEV]` marker, the strongest possible evidence) | Submission 15, certified and published 2026-08-15, same day as upload. Second MINOR release under the semver policy (Sprint 58's F151 `feat` entries). Superseded 0.7.0.0/Submission 14. Built via the local-unpushed-merge pattern (the 0.8.0 version bump postdated the develop->main merge of Sprint 58). |
-| **Dev worktree** (authoritative -- mirrors `pubspec.yaml`) | 0.8.1+1 | 2026-08-15 | Bumped PATCH+1 after the 0.8.0.0 release per Step 7 (semver MINOR/PATCH decision re-applies at the NEXT release from what `[Unreleased]` accumulates). On `feature/20260815_Sprint_59`. |
+| **Dev worktree** (authoritative -- mirrors `pubspec.yaml`) | 0.9.0+1 | 2026-08-15 | Bumped MINOR per the enforced semver policy (Sprint 59's `[Unreleased]` contains the F154 `feat` entry) as the release-kickoff commit for the 0.9.0.0 Store build, on `feature/20260815_Sprint_60`. `msix_version` bumped in step (0.8.1.0 -> 0.9.0.0), now committed in the DEV worktree too per the Sprint 59 convention note below. |
 
 ## msix_version convention (which worktree's value ships)
 
