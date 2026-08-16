@@ -141,9 +141,16 @@
 
 **Model**: Sonnet -- *why not Haiku*: authoring accurate user-facing content from reading real screen behavior, plus the R-5 judgment audit. The wiring alone would be Haiku-able; the content is the hard part.
 
-**Executed-by**: _(fill at completion)_
+**Executed-by**: Fable 5 (session model; executed inline -- content research was already in-context from planning)
 **Step-types**: CONTENT, UI-MOVE, TEST-WIDGET, TEST-INTEGRATION
-**Est-Effort**: 45-60m
+**Est-Effort**: 45-60m -- **Actual: ~30m**
+
+**COMPLETION NOTES (2026-08-15)**:
+- Content (`review_no_rule_items.md`) written from a read of `no_rule_review_screen.dart` itself: cross-account latest-scan aggregation, filter chips with counts, plain/Ctrl/Shift click selection semantics (verified against `_handleItemTap` -- plain click is select/toggle, NOT open-detail; this screen is triage-only), right-click + Apply Rule bulk menu (3 safe-sender + 3 block + Remove Current Rule described by label AND effect: dismisses as reviewed without creating a rule), auto-removal of rule-covered items on reload (`_sweepCoveredItems`), and the Reload tooltip's own does-not-fetch-mail distinction. **DRAFT FOR HAROLD'S REVIEW AT MANUAL VALIDATION** (explicit R-2 ask).
+- Wiring: `HelpSection.reviewNoRuleItems` placed after `scanHistory` (screen-anchored order); `_section()` entry titled "Review No Rule Items" (F155 name); `_manifestKeyFor` case; manifest + pubspec asset entries; `no_rule_review_screen.dart` helpSection switched from the resultsDisplay stand-in (comment updated to the resolution note).
+- R-5 audit: the only other `resultsDisplay` caller is `results_display_screen.dart` linking to its OWN section (plus its demo branch) -- correct as-is, no change.
+- Tests: enum-count 22 -> 23 (`help_screen_test.dart`, plus its "22 sections" comment); `help_deep_link_test.dart` `_allSections` += reviewNoRuleItems (map is explicit, not values-derived -- the enum-count gate is what forces this map to be revisited); NEW `test/ui/screens/no_rule_review_help_link_test.dart` pinning the screen-side wiring end to end (pumps the real screen with the sibling tests' secure-storage channel stub + DatabaseTestHelper, taps Help, asserts the section title lands at the Scrollable top per the F145 pattern). MUTATION-VERIFIED: switching the screen back to resultsDisplay turns the new test red; restored green. Validator 23/23; `flutter analyze` clean.
+- Harness note: `pumpAndSettle` on the pumped screen times out (ambient animations); bounded pumps used, matching sibling tests.
 
 ---
 

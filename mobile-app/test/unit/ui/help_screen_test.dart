@@ -97,7 +97,7 @@ void main() {
   testWidgets(
       'Tapping the "First time? Start here" callout scrolls toward the '
       'walkthrough section (F151b, Sprint 58)', (tester) async {
-    // The screen builds all 22 sections into one eager Column (not a lazy
+    // The screen builds all 23 sections into one eager Column (not a lazy
     // ListView, per the Round-3 fix documented in help_screen.dart), so
     // find.text() locates every section's text regardless of scroll
     // position -- it does not prove visibility. Assert on scroll OFFSET
@@ -201,6 +201,7 @@ void main() {
     // Sprint 37: added otherWaysToReduceJunk -> 20.
     // Sprint 39 F74: added faq -> 21.
     // Sprint 40 F75: added walkthrough -> 22.
-    expect(HelpSection.values, hasLength(22));
+    // Sprint 59 F154: added reviewNoRuleItems -> 23.
+    expect(HelpSection.values, hasLength(23));
   });
 }

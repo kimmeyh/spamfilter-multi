@@ -93,6 +93,7 @@ const _allSections = <HelpSection, String>{
   HelpSection.manualScan: 'Manual Scan',
   HelpSection.resultsDisplay: 'Results',
   HelpSection.scanHistory: 'Scan History',
+  HelpSection.reviewNoRuleItems: 'Review No Rule Items',
   HelpSection.settings: 'Settings',
   HelpSection.generalRulesManagement: 'General > Rules Management',
   HelpSection.generalScanHistoryRetention: 'General > Scan History',

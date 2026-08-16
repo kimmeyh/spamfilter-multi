@@ -702,11 +702,10 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
         // pushing a bogus id.
         actions: StandardAppBarActions.build(
           context: context,
-          // No dedicated HelpSection exists for this screen; resultsDisplay is
-          // the nearest match (this screen reviews scan results). Adding a
-          // reviewNoRule section is a CONTENT task, filed in the F133-S52
-          // findings rather than smuggled into an icon-ordering change.
-          helpSection: HelpSection.resultsDisplay,
+          // F154 (Sprint 59): this screen finally has its own Help section
+          // (previously deep-linked to resultsDisplay as a nearest-match
+          // stand-in, a gap filed in the F133-S52 findings).
+          helpSection: HelpSection.reviewNoRuleItems,
           accountId: _resolveAccountIdForSettings(),
           includeNoRuleReview: false,
           // Own handler (not the builder's default) purely so this screen can

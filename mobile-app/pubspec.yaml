@@ -96,6 +96,7 @@ flutter:
     - assets/content/help/manual_scan.md
     - assets/content/help/results_display.md
     - assets/content/help/scan_history.md
+    - assets/content/help/review_no_rule_items.md
     - assets/content/help/settings.md
     - assets/content/help/general_rules_management.md
     - assets/content/help/general_scan_history_retention.md
