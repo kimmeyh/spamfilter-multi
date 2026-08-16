@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// F134 (Sprint 52): build-failing gate on the canonical AppBar action order.
 ///
 /// Harold specified ONE order for every screen: screen-specific actions first,
-/// then `Review "No Rule" Items, View Scan History, Accounts, Settings, Help`,
+/// then `Review No Rule Items, View Scan History, Accounts, Settings, Help`,
 /// with **Help always last** and the Exit button auto-appended by
 /// `AppBarWithExit`.
 ///
@@ -26,12 +26,12 @@ void main() {
     ///
     /// 'Manual Scan' joined the set on 2026-07-31 (Harold, during MV-1): the
     /// account screen was the ONLY route to Manual Scan, which became a dead
-    /// end once F135 made Review "No Rule" Items the desktop default. It
+    /// end once F135 made Review No Rule Items the desktop default. It
     /// follows the same rule as every other action -- default-ON, with
     /// `includeManualScan: false` used ONLY by the Manual Scan screen itself.
     const standardActionTooltips = <String>[
       'Manual Scan',
-      'Review "No Rule" Items',
+      'Review No Rule Items',
       'View Scan History',
       'Select Account',
       'Settings',
@@ -46,7 +46,7 @@ void main() {
     /// file. Keying by file alone (the original form) exempted every standard
     /// action in that file -- a blind spot Copilot caught on PR #292.
     const allowedExemptions = <String, String>{
-      'scan_history_screen.dart::Review "No Rule" Items':
+      'scan_history_screen.dart::Review No Rule Items':
           'In-BODY filter chip: a compact Review-No-Rule icon rendered directly '
           'above the "No Rule" total chip (_buildNoRuleChipWithReviewIcon). It '
           'is page content, not an AppBar action, so the canonical order does '
@@ -177,14 +177,14 @@ void main() {
     });
 
     test('the builder declares the FULL canonical order (Sprint 58 MV-4)', () {
-      // Harold's audited order (2026-08-15): Review "No Rule" Items, View
+      // Harold's audited order (2026-08-15): Review No Rule Items, View
       // Scan History, Manual Scan, Select Account, Settings, Help. The
       // Help-last test above only pinned ONE relative position -- this pins
       // all of them, so ANY reorder of the standard block fails the build
       // (the Manual Scan move that motivated this test would have been
       // invisible to the previous assertions).
       const canonicalOrder = <String>[
-        'Review "No Rule" Items',
+        'Review No Rule Items',
         'View Scan History',
         'Manual Scan',
         'Select Account',

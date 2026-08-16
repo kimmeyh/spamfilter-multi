@@ -76,7 +76,7 @@ class _AppDefaultScreenState extends State<_AppDefaultScreen> {
 ///
 /// [hasAccounts] null means "still resolving".
 ///   null  -> neutral spinner (never flash Account Selection then replace it)
-///   true  -> Review "No Rule" Items (F135: the app default when accounts exist)
+///   true  -> Review No Rule Items (F135: the app default when accounts exist)
 ///   false -> Account Selection (nothing to review yet, and it is the screen
 ///            that can add an account or repair a broken credential store)
 @visibleForTesting

@@ -7,12 +7,60 @@ Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPIN
 ---------------------------------------------------------------------------------------------------------
 Sprint 5n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
 
+---------------------------------------------------------------------------------------------------------
+Sprint 59 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
 
 - Add to backlog and target for this sprint:
-  - Add a help section for the "Review "No Rule" Items Screen
+  - Add a help section for the "Review "No Rule" Items" Screen
     - Please draft content to be reviewed during Manual Validation.  Use other help text as examples for content. Use actual functionality and process in forming content.
     - Help button on the screen should point to this new section in the Help page. Adjust all other help links and related test scripts as appropriate.
-  - Add the icon for "Review "No Rule" items to the Help screen
+  - Can you rename across the app "Review "No Rule" Items" to "Review No Rule Items" -- icons, text in help, sprint execution docs, sprint backlog items...
+    - no need to update historical records. Just from here forward
+- F153. Re-investigate Flutter Windows UIA/WinWright with the SPI_SETSCREENREADER flag (~time-boxed) Priority 10
+- F150. Android debug builds fail outright -- google-services.json/applicationId mismatch (~time-boxed) Priority 10 (Issue #315)
+  - this one needs to be done first as you might need me to walk through this or answer questions.
+
+Candidates at a glance
+
+- F153. Re-investigate Flutter Windows UIA/WinWright with the SPI_SETSCREENREADER flag (~time-boxed) Priority 10
+- F150. Android debug builds fail outright -- google-services.json/applicationId mismatch (~time-boxed) Priority 10 (Issue #315)
+- HOLD (periodic templates): F152, F111, F139, F70, F130, F71
+- HOLD (Android/Google Play): F143, F144, F94, F95, F63, SEC-15, SEC-8b, F6, SEC-4, SEC-6, SEC-7/GP-9 (dup), SEC-9, Issue #163, F4, GP-2/3/4/5/6/7/8/10/12
+
+Tooling / Testing Infrastructure
+
+F153. Re-investigate Flutter Windows UIA/accessibility-tree exposure to WinWright (~time-boxed, no-history) Priority 10
+- Phase: Tooling / Testing Infrastructure
+- Platform: Windows Desktop
+- Sprint 58's Task 7 found the likely root cause of F140's "zero UIA patterns" finding: the SPI_SETSCREENREADER OS flag was never enabled during any prior test. With it enabled, WinWright immediately saw full semantics trees, clicked real buttons, and scrolled real content.
+- First step is cheap: re-run F140's exact spike with the flag confirmed on; then correct or confirm the documented limitations (F139's Known Gap note, WINWRIGHT_SELECTORS.md's F140 section); investigate whether a pre-flight flag check belongs in the sprint process.
+- Depends on: none — flag already enabled on this machine.
+
+Android / Google Play Store Readiness
+
+F150. Android debug builds fail outright -- google-services.json/applicationId mismatch (~time-boxed, no-history) Priority 10 (Issue #315)
+- Phase: Android / Google Play Store Readiness
+- Platform: Android
+- Every Android build fails at :app:processDebugGoogleServices (registered applicationId is com.example.spamfiltermobile, actual is com.myemailspamfilter). Blocks ALL Android work including F143/F144.
+- Depends on: Harold's Firebase Console action (register the real applicationId, download a matching google-services.json) — still the blocking prerequisite.
+
+HOLD Items
+
+Unchanged since the 2026-08-14 review — periodic templates (F152 first-run evaluation, F111 store-readiness, F139 local-install smoke, F70 security, F130 process-docs, F71 architecture) and the Android/GP track (F143/F144 ready once F150 clears; rest unchanged).
+
+---
+Pausing here before scope selection, as requested. And the Store build is done:
+
+0.8.0.0 MSIX ready for your Partner Center upload
+
+- Version: 0.8.0.0 — MINOR per the enforced semver policy (Sprint 58 shipped feat entries F151a/h/i); dev bumped 0.7.1 → 0.8.0 on the Sprint 59 branch
+- All checks PASS: build-log dart-defines (Check A), --release-self-test 6/6 with actual: 0.8.0 (Check B), manifest Version="0.8.0.0", size 17.07 MB (~0.3 MB above prior releases from the new Markdown dependency — expected)
+- Prod suite: 1,892 passed / 0 failed before building
+- Artifact: D:\Data\Harold\github\spamfilter-multi-prod\mobile-app\build\windows\x64\runner\Release\my_email_spam_filter.msix
+
+Upload and submit when ready — release notes go in Store listings → "What's new in this version" after the package validates. Suggested user-facing notes: "New first-run experience: the app now explains itself on first launch with a built-in Demo Mode; Help is fully formatted with a step-by-step getting-started guide; scan results now include explanatory tooltips; search and error messages improved."
+
+Then let me know your Sprint 59 scope pick (F153, F150 if you've done the Firebase step, or something else).
 ---------------------------------------------------------------------------------------------------------
 Sprint 58 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
 Sprint 58 Backlog Refinement: User-Centric MVP Gap Analysis (Windows-only)                            │

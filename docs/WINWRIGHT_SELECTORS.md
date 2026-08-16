@@ -2,10 +2,15 @@
 
 **Purpose**: Quick reference for winwright selector syntax when automating the Flutter Windows Desktop app.
 
-**Prerequisite**: The `SPI_SETSCREENREADER` flag must be enabled before winwright can see Flutter elements. Run:
+**Prerequisites (MUST check both, every WinWright session -- F153, Sprint 59)**:
+
+1. The `SPI_SETSCREENREADER` flag must be enabled before winwright can see Flutter elements. CHECK FIRST, do not assume:
 ```powershell
-.\mobile-app\scripts\enable-screen-reader-flag.ps1 enable
+.\mobile-app\scripts\enable-screen-reader-flag.ps1 status   # must print True
+.\mobile-app\scripts\enable-screen-reader-flag.ps1 enable   # if False
 ```
+   (Persistence across reboots is unverified -- it survived within-day sessions in Sprints 58-59, but a reboot may clear it. Always run `status`.)
+2. **Prime the semantics tree with one `ww_get_snapshot` immediately after `ww_attach`/`ww_launch`, before any other query.** Flutter builds its semantics tree lazily on the first *semantic* query: the first raw query (`ww_dump_tree`) after app launch returns only an opaque `FLUTTERVIEW` pane even with the flag on; after one `ww_get_snapshot`, every subsequent query (including `ww_dump_tree`) returns the full tree. Verified directly in F153's Sprint 59 re-test; this lazy init is the likely cause of F140's Sprint 54 "empty tree" measurements.
 
 ---
 
@@ -90,13 +95,25 @@ Flutter TabBar tabs render as `Text` elements, NOT `Tab` controls. Prefer `useIn
 Full detail, including the search box that cannot be cleared and the semantics wrapper shapes that
 name a node while making it unclickable: `mobile-app/test/winwright/README.md` (Sprint 51 notes).
 
-### No scroll patterns exposed at all (F140, Sprint 54 -- definitive negative result)
+### Scrolling and patterns: what actually works (F153 re-test, Sprint 59 -- SUPERSEDES F140's Sprint 54 negative result)
 
-**Flutter's Windows UIA bridge does not expose ANY control patterns to WinWright, for ANY element type -- not even `InvokePattern` on Buttons, which we know work.** Confirmed via `ww_dump_tree` with `includePatterns: true`: every element in the tree, across all control types present (`Button`, `CheckBox`, `Edit`, `Group`, `Text`, `MenuBar`, `MenuItem`, `Pane`, `TitleBar`, `Window`), returned an empty/absent `patterns` field. There is also no distinct `ScrollBar` control type or any Group/Pane marked as scrollable anywhere in the tree.
+F140 (Sprint 54) concluded that Flutter exposes no UIA patterns at all and that off-screen content is unreachable. **The F153 re-test (2026-08-15, flag enabled + tree primed from the start) refutes the practical conclusion.** F140's measurement was likely confounded twice: the `SPI_SETSCREENREADER` flag was apparently never actually enabled during the original spike, and the lazy-semantics-init behavior (see Prerequisites above) makes the first query look empty even with the flag on.
 
-**Conclusion**: WinWright/UIA has no mechanism to scroll a Flutter Windows app's off-screen content into view, regardless of technique (`ww_scroll` direction/find_target modes, mouse-wheel simulation, a different container selector) -- because Flutter does not expose scroll affordances as UIA patterns in the first place; clicks work via a different (likely coordinate/event-injection) path WinWright wraps, not via `InvokePattern` dispatch. This is a Flutter-Windows-embedding limitation, not a WinWright usage error.
+Verified capabilities (each tested directly against the running dev app):
 
-**Practical implication**: any UI content that sits below the fold on a long single-page scrollable screen is NOT reachable by WinWright automation. If a value needs to be automation-verifiable (like the app version, given its role in the F119 defect-detection story), duplicate it near the top of the page rather than relying on scroll-to-reach. See `settings_screen.dart` (`_buildGeneralTab`) and `help_screen.dart` for the applied pattern -- version text duplicated as the first list item / first Column child, full original content left in place at the bottom.
+- **`ww_invoke` works on Buttons** -- pure `InvokePattern` dispatch (no mouse fallback in that tool), succeeded on AppBar buttons repeatedly. Consistent with the Sprint 51 table above; F140's "not even InvokePattern" claim is wrong.
+- **`ww_scroll` mode=direction WORKS and the direction is correct** (`down` advances the document). Tested on the Help screen; content visibly moved and element bounds updated live. Sprint 58's observed direction-inversion did not reproduce. Selector for the scroll container: `type="Pane"`.
+- **Each direction-mode call moves only ~165px regardless of `amount` (line vs page)** -- reaching content far down a long page (Help is ~6000px) takes many repeated calls. Works, but budget for it. Use a known element's live `bounds.y` (via `ww_dump_tree` with a selector) as the position probe between calls.
+- **Off-screen elements ARE in the tree**, with real out-of-viewport bounds and `isOffscreen: true` -- the entire Help Column is queryable without any scrolling. Finding/reading a value never requires scroll-to-reach; only *clicking* does (`ww_click` refuses off-screen targets; `ww_invoke` does not check -- see behavior 2 above).
+- **The F140 poster-child gap is closed**: `Version 0.8.0 [DEV]` on Settings > General was read directly via `ww_dump_tree` (`name*="Version 0.8"`, `isOffscreen: false`) -- the version text now sits at the TOP of the tab (the F140-era duplicate-near-top mitigation), and the whole General tab fits the default window with its bottom element (`Go to View Scan History`) already on-screen. Release verification (F139) can automate the version read instead of requiring a Harold visual check.
+
+Verified residual gaps (do NOT use these):
+
+- **`ww_scroll` mode=into_view is broken on Flutter, two ways**: by `handleId` it throws `PropertyNotSupportedException` (Flutter elements do not support the `RuntimeId` UIA property, which that path requires); by `selector` it returns `{"success": true, "method": "none"}` while moving NOTHING -- a false success. Use direction mode instead.
+- **`ww_scroll` mode=find_target is a tree lookup, not a scroll, on these screens**: since Flutter exposes whole subtrees up front, it returns `found: true, stepsRequired: 0` for content thousands of px below the fold. Fine for existence checks; proves nothing about visibility.
+- `ww_dump_tree includePatterns: true` still prints no pattern annotations -- pattern *reporting* is incomplete even though pattern *invocation* works. Do not infer capability from the dump; test the verb.
+
+The F145 caution below (WinWright geometry can misreport during animated transitions -- never assert scroll-target correctness from snapshots) remains fully in force.
 
 ### WinWright can produce a FALSE FAILURE, not just a blind spot (F145, Sprint 55)
 

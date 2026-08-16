@@ -16,7 +16,7 @@ import '../screens/settings_screen.dart';
 /// Harold specified the canonical order for every screen (2026-07-30; Manual
 /// Scan position updated per the Sprint 58 MV-4 audit, 2026-08-15):
 ///
-///   Review "No Rule" Items, View Scan History, Manual Scan, Select Account,
+///   Review No Rule Items, View Scan History, Manual Scan, Select Account,
 ///   Settings, Help
 ///
 /// with screen-specific icons preceding that block in the order Reload,
@@ -80,7 +80,7 @@ class StandardAppBarActions {
       // that order.
       ...leading,
 
-      // 1. Review "No Rule" Items -- Windows-desktop scoped, matching the
+      // 1. Review No Rule Items -- Windows-desktop scoped, matching the
       //    existing F112/F39 entry points.
       //
       //    F142 (Sprint 57) DECISION: deliberately left Windows-gated rather
@@ -98,7 +98,7 @@ class StandardAppBarActions {
       if (includeNoRuleReview && Platform.isWindows)
         IconButton(
           icon: const Icon(Icons.rule_folder_outlined),
-          tooltip: 'Review "No Rule" Items',
+          tooltip: 'Review No Rule Items',
           onPressed: () => Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const NoRuleReviewScreen()),
           ),
@@ -193,7 +193,7 @@ class StandardAppBarActions {
       // `Navigator.popUntil(context, (route) => route.isFirst)`. That was
       // correct BEFORE F135 -- Account Selection was effectively what the first
       // route rendered, so unwinding to it worked. F135 changed the desktop
-      // default screen to Review "No Rule" Items, and the first route is
+      // default screen to Review No Rule Items, and the first route is
       // MainNavigationScreen, which now renders the No-Rule screen inline
       // whenever at least one account exists. Account Selection is therefore
       // NOT a route on desktop at all, so popUntil could never reach it:

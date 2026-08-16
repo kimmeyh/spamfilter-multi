@@ -19,6 +19,7 @@ help:
   manualScan: help/manual_scan.md
   resultsDisplay: help/results_display.md
   scanHistory: help/scan_history.md
+  reviewNoRuleItems: help/review_no_rule_items.md
   settings: help/settings.md
   generalRulesManagement: help/general_rules_management.md
   generalScanHistoryRetention: help/general_scan_history_retention.md

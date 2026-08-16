@@ -97,7 +97,7 @@ default sweep and pass green with zero DB drift (verified 2026-07-28):
 
 | Script | Purpose | Origin |
 |--------|--------|--------|
-| `test_f129_no_rule_review.json` | MT-3 entry point + account filter chips + reload path on the Review "No Rule" screen | S51 F129 (new) |
+| `test_f129_no_rule_review.json` | MT-3 entry point + account filter chips + reload path on the Review No Rule Items screen | S51 F129 (new) |
 | `test_f124_rule_labels.json` | F124: Manage Rules category/sub-type display -- row accessible names, the details dialog's labelled `Category`/`Sub-Type` fields and their values, and all 7 filter chips (each paired with the `Clear` button that exists only while a filter is active) | S51 F129 (new) |
 | `test_mt2c_no_rule_sweep.json` | MT-2c: the covered-item sweep is idempotent across an in-place Refresh AND a full screen re-entry -- named rows must SURVIVE (guards over-collection, the Sprint 50 bug shape) | S51 F129 (new) |
 
