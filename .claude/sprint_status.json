@@ -1,6 +1,6 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-16 (Sprint 60 execution complete; Manual Validation)",
+  "_last_updated": "2026-08-16 (Sprint 60 Phase 7.7 close-out)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
@@ -9,7 +9,7 @@
     "pr_number": 335,
     "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/335",
     "start_date": "2026-08-16",
-    "status": "Phase 5.3 MANUAL VALIDATION -- ALL 7 TASKS COMPLETE. Suite 1,853/29/0; on-device integration 32/32; CI 3/3 jobs green; analyze clean. HEAD dc63fbc. MV items: F160 dispositions (headline), Android interactive flows (Gmail OAuth, live IMAP, touch selection with real rows), Windows regression eyeball. Emulator has the final APK installed.",
+    "status": "Phase 7.7 CLOSE-OUT -- retro COMPLETE (14x4; Cat 1 Good with IMP-1 python-tooling rule applied as memory; Cats 2-12 Very Good; IMP-2/3/4 declined; Cat 14 -> F167 registered). MV complete (4 rounds, approved 2026-08-16). Docs triad done (PLAN + RETROSPECTIVE + SUMMARY); master plan rolled; Sprint 61 stub created; ARCHITECTURE.md F144 staleness fixed. PR #335 to be marked Ready at end of 7.7. Suite 1,859/26/0, analyze clean.",
     "plan_approved": true,
     "plan_approval_date": "2026-08-16",
     "blanket_execution_approved": true,
@@ -20,9 +20,10 @@
       "F159",
       "F143",
       "F144",
-      "F156"
+      "F156",
+      "F166"
     ],
-    "_scope_note": "Priority order F156=10 reflects importance; execution order defers F156 to last deliberately (stated in plan header)."
+    "_scope_note": "F166 added mid-sprint per Harold's plan-then-execute steering (card #336). Original 7 tasks + F166 all complete."
   },
   "previous_sprint": {
     "number": 59,
@@ -31,19 +32,24 @@
     "status": "CLOSED -- merged #326->develop, #327->main 2026-08-15; cards #322-#325 + #315 closed; shipped as 0.9.0.0/Submission 16."
   },
   "github_issues": [
-    318,
-    319,
-    320
+    328,
+    329,
+    330,
+    331,
+    332,
+    333,
+    334,
+    336
   ],
-  "_github_issues_note": "Issues #313 (F142) and #312 (F149) manually closed 2026-08-14 during Sprint 58 Post-Merge Cleanup (GitFlow does not auto-close on feature->develop merge). #311 (Harold's develop->main tracking issue) is MERGED -- PR #316 completed the real merge, resolving the F148/0.6.2.0 known gap. #315 (F150) remains open but DEFERRED (blocked on Harold's Firebase Console action) -- not this sprint's scope. #318 (F151, Windows first-run UX) is Sprint 58's actual scope card, opened 2026-08-15 during Backlog Refinement; PR #317 updated to reference it. This array was not populated when the issue was created -- corrected 2026-08-15 when the require-sprint-cards hook caught the gap.",
+  "_github_issues_note": "Sprint 60 cards: #328 F160, #329 F156, #330 F157, #331 F158, #332 F159, #333 F144, #334 F143, #336 F166 -- all work complete; close cards at post-merge cleanup. Older open items: #318/#319/#320 (Sprint 58-era), #315 closed with Sprint 59.",
   "test_metrics": {
-    "tests_passing": 1891,
-    "tests_skipped": 29,
+    "tests_passing": 1859,
+    "tests_skipped": 26,
     "tests_failing": 0,
     "analyzer_warnings": 0,
-    "_test_metrics_note": "1,891 as of 2026-08-15 (Sprint 58 final full run at close-out, analyzer clean) -- up from Sprint 57's 1,864 (net +27). F151a-g added +21 (empty-state 4, Help-callout 2, chip-tooltips 2, F151d predicate 5, popup-width 1, error-messages 7); MV rounds added +6 (search behavior 3, full-order gate 1, Markdown rendering 1, Help lazy-account 1). All mutation-verified. The 31-test F145 deep-link integration suite (not in this count -- integration_test/) also re-run green against F151i's Markdown rendering.",
+    "_test_metrics_note": "1,859 / 26 skipped / 0 failed as of 2026-08-16 (Sprint 60 final full run, analyzer clean). Skips 29 -> 26 via F160 dispositions (3 discontinued tests deleted). Net vs Sprint 59's 1,893: F144 deleted the unwired background-scan code AND its test files; new tests added for touch selection (3), compact/filter (3), scan persistence (1), demo label (1), popup width, msix gate, dropdown updates. All mutation-verified.",
     "hook_test_cases": "45/45 passing (.claude/hooks/run-test-cases.ps1) -- unchanged since Sprint 52.",
-    "winwright_sweep": "Live interactive WinWright session this sprint (Backlog Refinement walkthrough + Task 7 environment-compatibility check) -- major discovery: SPI_SETSCREENREADER OS flag was the missing prerequisite for WinWright to see/click Flutter content at all, previously misread as a permanent Flutter-Windows UIA limitation (F140). Flag left enabled. See F153.",
+    "winwright_sweep": "Not run at Sprint 60 close: lib/ui changes this sprint were validated by Harold's 4-round interactive MV on BOTH platforms plus the new widget regression suites; WinWright cannot see the Android emulator, and the Windows surfaces Harold exercised directly. Recorded here per IMP-5 evidence rule.",
     "coverage_percent": null,
     "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5)."
   },
@@ -63,8 +69,10 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Harold: F160 skipped-test dispositions",
-    "Harold: Android interactive MV flows + Windows spot-check",
-    "Phase 7 on MV completion"
+    "Mark PR #335 Ready for Review at end of 7.7 (then 7.7.5 announce)",
+    "Harold: review/merge PR #335 -> develop, then develop -> main",
+    "On merge: branch feature/<date>_Sprint_61 FROM the Sprint 60 branch immediately (checklist 6.6)",
+    "On Submission 16 certification: Store release Step 7 close-out (STORE_VERSION_STATUS Live row, CHANGELOG [0.9.0] heading, dev bump 0.9.0 -> 0.9.1)",
+    "Sprint 61 Phase 1 refinement from master plan candidates (F161/F162/F167/F163/F164/F165)"
   ]
 }
