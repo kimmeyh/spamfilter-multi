@@ -61,6 +61,12 @@ void main() {
   });
 
   tearDown(() async {
+    // PR #335 review (Copilot): clear the mock channel handler so it cannot
+    // leak into other tests in the same process.
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+            const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+            null);
     await testHelper.tearDown();
   });
 

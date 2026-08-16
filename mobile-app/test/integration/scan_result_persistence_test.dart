@@ -79,6 +79,7 @@ void main() {
         totalEmails: 5,
         scanType: 'manual',
         foldersScanned: ['INBOX'],
+        platformId: 'aol',
       );
 
       final results =
@@ -95,8 +96,61 @@ void main() {
       expect(account, hasLength(1),
           reason: 'the ensure step must have created the accounts row');
       expect(account.first['platform_id'], 'aol',
-          reason: 'platform id parsed from the platform-email accountId form');
-      expect(account.first['email'], 'fresh@aol.com');
+          reason: 'platform id comes from the EXPLICIT startScan platformId '
+              '(PR #335 review: no accountId guess-parsing)');
+      expect(account.first['email'], 'fresh@aol.com',
+          reason: 'email recovered by stripping the known "aol-" prefix');
+    });
+
+    test(
+        'ensured accounts row never guess-parses: a dash-containing plain '
+        'email stays intact, and a platform prefix strips exactly (PR #335 '
+        'Copilot finding)', () async {
+      // Case 1: plain-email accountId containing a dash, no platform known.
+      // The old dash-split would have produced platform "my", email
+      // "name@gmail.com" -- corrupted. Now it stays whole.
+      const dashEmailId = 'my-name@gmail.com';
+      final p1 = EmailScanProvider();
+      p1.initializePersistence(
+        scanResultStore: scanResultStore,
+        unmatchedEmailStore: unmatchedEmailStore,
+        databaseHelper: databaseHelper,
+      );
+      p1.setCurrentAccountId(dashEmailId);
+      await p1.startScan(
+          totalEmails: 1, scanType: 'manual', foldersScanned: ['INBOX']);
+
+      final db = await databaseHelper.database;
+      var row = await db.query('accounts',
+          where: 'account_id = ?', whereArgs: [dashEmailId]);
+      expect(row, hasLength(1));
+      expect(row.first['email'], dashEmailId,
+          reason: 'a dash inside a plain email must NOT be split');
+      expect(row.first['platform_id'], 'unknown',
+          reason: 'no platform passed -> unknown, never a guessed fragment');
+
+      // Case 2: platform-email form where the EMAIL ITSELF contains a dash.
+      const prefixedId = 'aol-my-name@aol.com';
+      final p2 = EmailScanProvider();
+      p2.initializePersistence(
+        scanResultStore: scanResultStore,
+        unmatchedEmailStore: unmatchedEmailStore,
+        databaseHelper: databaseHelper,
+      );
+      p2.setCurrentAccountId(prefixedId);
+      await p2.startScan(
+          totalEmails: 1,
+          scanType: 'manual',
+          foldersScanned: ['INBOX'],
+          platformId: 'aol');
+
+      row = await db.query('accounts',
+          where: 'account_id = ?', whereArgs: [prefixedId]);
+      expect(row, hasLength(1));
+      expect(row.first['platform_id'], 'aol');
+      expect(row.first['email'], 'my-name@aol.com',
+          reason: 'only the known "aol-" prefix strips; the email keeps its '
+              'own dash');
     });
 
     test('Scan result is created when scan starts', () async {

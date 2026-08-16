@@ -196,10 +196,15 @@ class ScanStartedEmptyState extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
+    // PR #335 cowork review: same overflow-proofing as EmptyState.build --
+    // this widget renders in the identical 40%-height box on the Results
+    // screen and overflowed short (landscape-phone) viewports the same way.
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
+        child: Padding(
         padding: const EdgeInsets.all(32.0),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // Loading indicator
@@ -226,6 +231,7 @@ class ScanStartedEmptyState extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
           ],
+        ),
         ),
       ),
     );

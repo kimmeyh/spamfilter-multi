@@ -20,10 +20,13 @@
 #   .\build-with-secrets.ps1 -BuildType debug -InstallToEmulator
 
 param(
-    [string]$Avd = "pixel34_updated"
+    [string]$Avd = "pixel34_updated",
+    # PR #335 review (Copilot): SDK root configurable for other machines/CI;
+    # default stays this box's validated install (the AVD lives under it).
+    [string]$SdkRoot = "C:\Android\android-sdk"
 )
 
-$sdkRoot = "C:\Android\android-sdk"
+$sdkRoot = $SdkRoot
 $emulator = Join-Path $sdkRoot "emulator\emulator.exe"
 
 if (-not (Test-Path $emulator)) {

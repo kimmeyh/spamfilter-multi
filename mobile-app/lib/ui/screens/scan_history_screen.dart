@@ -438,13 +438,13 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
   }
 
   /// F112 (Sprint 47): the "No Rule" total chip with a small tappable
-  /// "Review No Rule Items" icon centered directly above it (Windows only,
-  /// consistent with the other Review entry points). On non-Windows it is
-  /// just the plain chip.
+  /// "Review No Rule Items" icon centered directly above it. PR #335 cowork
+  /// review: originally Windows-gated "consistent with the other Review
+  /// entry points" -- F143 (Sprint 60) un-gated every other entry point, so
+  /// the gate here had become the sole inconsistent holdout and is removed.
   Widget _buildNoRuleChipWithReviewIcon(int totalNoRule) {
     final chip = _buildTotalChip('No Rule', totalNoRule, Colors.grey,
         'Total unique emails currently with no rules assigned');
-    if (!Platform.isWindows) return chip;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [

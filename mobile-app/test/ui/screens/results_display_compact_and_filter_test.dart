@@ -2,11 +2,13 @@
 /// Results-screen findings, both pinned here:
 ///
 /// 1. FILTER-BANNER X WAS DEAD with only the DEFAULT filter active: the X
-///    called `_toggleFilter(null)`, which clears the ACTION filter -- but the
-///    screen's initState default is the Processed SPECIAL filter, so with
-///    nothing else active the call was a no-op and the banner could not be
-///    dismissed ("couldn't x out of Showing 59 of 59 message"). The X now
-///    clears every filter dimension (`_clearAllFilters`).
+///    called `_toggleFilter(null)`, which clears the ACTION filter -- but at
+///    the time the screen's initState default was the Processed SPECIAL
+///    filter, so with nothing else active the call was a no-op and the
+///    banner could not be dismissed ("couldn't x out of Showing 59 of 59
+///    message"). The X now clears every filter dimension
+///    (`_clearAllFilters`) -- pinned here across action AND folder filters
+///    per the PR #335 cowork review.
 ///
 /// 2. COMPACT LAYOUT: on a phone-width screen the fixed header stack
 ///    (summary card + banners) consumed nearly the whole height, leaving a
@@ -124,8 +126,8 @@ void main() {
     }
 
     testWidgets(
-        'the filter banner X dismisses the banner even when ONLY the default '
-        'Processed special filter is active (the dead-X bug)', (tester) async {
+        'the filter banner X clears EVERY filter dimension (action + folder), '
+        'the dead-X bug', (tester) async {
       tester.view.physicalSize = const Size(1600, 900);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
@@ -136,18 +138,37 @@ void main() {
 
       // The initState default (F166: the No rule action filter) makes the
       // banner show without ANY user action -- exactly Harold's state.
-      final banner = find.textContaining('Tap chip again to clear filter');
+      final banner = find.textContaining('Tap X to clear filters');
       expect(banner, findsOneWidget,
-          reason: 'precondition: the default Processed filter shows the '
+          reason: 'precondition: the default No-rule filter shows the '
               'banner on load');
+
+      // PR #335 cowork review (mutation gap): tapping X with only the
+      // DEFAULT ACTION filter active also passes against the OLD buggy
+      // handler and against a narrow fix that clears `_filter` alone. Set
+      // the FOLDER dimension too, so this pins the actual claim -- the X
+      // clears EVERY filter dimension.
+      await tester.tap(find.textContaining('Folders:'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('INBOX').last);
+      await tester.pump();
+      await tester.tap(find.text('Apply'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Folders: 1'), findsOneWidget,
+          reason: 'precondition: the folder dimension is now active too');
 
       await tester.tap(find.byTooltip('Clear filter'));
       await tester.pump();
 
       expect(banner, findsNothing,
           reason: 'the X must dismiss the banner with only the DEFAULT '
-              'special filter active -- _toggleFilter(null) was a no-op in '
-              'that state and left the X dead');
+              'filter active -- _toggleFilter(null) was a no-op in that '
+              'state and left the X dead');
+      expect(find.textContaining('Folders: All'), findsOneWidget,
+          reason: 'the X must ALSO clear the folder dimension -- a handler '
+              'that clears only the action filter leaves this at '
+              '"Folders: 1" and the list still filtered');
     });
 
     testWidgets(

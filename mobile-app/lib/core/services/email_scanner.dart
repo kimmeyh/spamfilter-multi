@@ -173,6 +173,7 @@ class EmailScanner {
         totalEmails: 0,
         scanType: scanType,
         foldersScanned: folderNames,
+        platformId: platformId,
       );
       AppLogger.scan('Step 3: scanProvider.status AFTER startScan: ${scanProvider.status}');
 

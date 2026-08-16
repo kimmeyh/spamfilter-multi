@@ -369,3 +369,29 @@ Haiku 1 task (F159), Sonnet 6 tasks (F160 judgment-audit, F157 toolchain study, 
 - Windows dev build rebuilt at HEAD (analyze clean) and launched fresh for the sweep.
 - Sweep result: **3/3 scripts PASS, DB drift none** -- `test_f124_rule_labels.json` (10 steps, 5m05s), `test_f129_no_rule_review.json` (10 steps, 1m47s), `test_mt2c_no_rule_sweep.json` (25 steps, 4m09s).
 - First run failed mt2c at step 6 exactly as its header documents for the data-precondition case: the two baseline sender rows had been ADDRESSED by Harold's MV rule/safe-sender additions (checked against the runner/README/script header FIRST -- known, not new evidence). Baselines refreshed from the live dev DB (`usecadence@wholehealthup.com`, `reminder@healthyfocusinsights.com`, 3 unaddressed rows available); re-run PASS. F166's header redesign did not break any script (none reference the retired chips, as the winwright_script_strings policy gate already guaranteed).
+
+## PR #335 review round (2026-08-16) -- Copilot + Claude cowork
+
+**Copilot (5 comments)**
+- C1 exception classification: REFUTED with a direct Dart probe -- `Exception('x').runtimeType` IS `_Exception`, so the app-authored pass-through matches as intended (and `email_scanner_test` pins the behavior). No change.
+- C2 accountId guess-parsing: VALID, FIXED. `startScan` now takes an explicit `platformId` threaded from EmailScanner (mirroring the Windows worker); the email is recovered only by stripping the known `<platformId>-` prefix, so `my-name@gmail.com` is no longer split into platform `my`. New regression test covers both dash cases.
+- C3 mock-handler leak: FIXED (tearDown clears the secure-storage channel handler; the touch test already had one -- the duplicate was removed after the cowork review flagged it).
+- C4 `AIza...` stub key: FIXED -> `ci-stub-not-a-real-api-key` (no secret-scanner bait).
+- C5 hardcoded SDK root: FIXED -- `start-emulator.ps1` gained `-SdkRoot` (default unchanged).
+
+**Claude cowork -- F166 scope (9 findings)**
+1. Empty-state chain regression (MOST SEVERE): the chain branched on `_filter != null` to mean "your filter hid everything", but F166 made a No-rule filter the DEFAULT, so a never-scanned account was told its filters hid emails that never existed. FIXED: branch on `allResults.isNotEmpty` instead. A widget test for this was attempted and DELETED -- the empty-account path hangs both the DB harness and a plain pumpAndSettle (the screen awaits data that never arrives); the fix is verified by reading the branch chain and by analyze, and is NOT pinned by a test. Recorded as a known gap rather than shipped as a hanging test.
+2. X-clears-all-dimensions test was not mutation-meaningful: FIXED -- it now activates the FOLDER dimension too and asserts `Folders: All` after the X; mutation-verified (removing `_selectedFolders = {}` turns it red).
+3. F151c chip tooltips silently lost, guarding test passing vacuously off AppBar tooltips: FIXED -- all five Harold-approved F151c explanations restored VERBATIM as dropdown-entry subtitles, the Found explanation moved onto the chip-face tooltip, and the test rewritten to assert those exact strings; mutation-verified.
+4. Stale banner instruction "Tap chip again to clear filter" (chips no longer exist, dropdown has no toggle-off): FIXED -> "Tap X to clear filters".
+5. Popup show-above branch could sit up to 8px off-window: FIXED -- the `+8` gap is now inside the guard (`spaceAbove >= popupHeight + 8`).
+6. `minWidth: 400` inert under FractionallySizedBox's tight constraint: FIXED (removed, with the reason recorded).
+7. `ScanStartedEmptyState` not overflow-proofed alongside its sibling: FIXED (scrollable + min-sized).
+8. Dead `SpecialFilter.found`: REMOVED.
+9. "Scan complete <duration>" grew on every rebuild (30s scan read 12m 30s after 12 min of triage): FIXED -- duration frozen at `completeScan` via a new `scanEndTime`.
+
+**Claude cowork -- F143 scope (4 findings)**
+1. Help text promised tap-toggle "on a touch screen" while the code gates on Android/iOS (wrong on Windows touchscreens): FIXED -- wording now names Android and iOS.
+2. `scan_history_screen._buildNoRuleChipWithReviewIcon` was the last `Platform.isWindows` gate on a Review entry point, with a comment claiming Windows-gating was the convention F143 had just removed everywhere else: FIXED -- un-gated, comment corrected.
+3. AC-1 long-press was not mutation-meaningful (deleting `onLongPress` degrades to a plain tap that produces the identical asserted state): FIXED -- AC-1 now long-presses an ALREADY-SELECTED row and asserts it stays selected (a degraded tap would deselect); mutation-verified red with the wiring removed.
+4. Duplicated tearDown from the Copilot fix: removed.

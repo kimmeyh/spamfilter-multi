@@ -105,6 +105,9 @@ void main() {
   });
 
   tearDown(() async {
+    // Clear the mock channel handler so it cannot leak into other tests in
+    // the same process (Copilot PR #335 review asked for this; it was
+    // already here -- kept as the single cleanup site).
     const channel =
         MethodChannel('plugins.it_nomads.com/flutter_secure_storage');
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
@@ -156,6 +159,21 @@ void main() {
     expect(find.text('Clear'), findsOneWidget,
         reason: 'the contextual bar (Clear/Apply Rule) appears with the '
             'selection');
+
+    // PR #335 cowork review (mutation gap): the assertions above ALSO pass
+    // if `onLongPress` is deleted -- a long-press with no recognizer
+    // degrades to a plain tap, which selects the row through the
+    // replace-single branch and yields the identical state. Long-press is
+    // ADDITIVE, so pressing an ALREADY-SELECTED row must keep it selected;
+    // a degraded plain tap would toggle it OFF ('Clear' would disappear).
+    // That asymmetry is what actually pins the wiring.
+    await tester.longPress(rowA());
+    await tester.pump();
+
+    expect(find.text('1 selected'), findsOneWidget,
+        reason: 'long-press is additive: re-pressing a selected row leaves '
+            'it selected (a plain tap would deselect it, which is exactly '
+            'what an unwired onLongPress degrades to)');
   });
 
   testWidgets(

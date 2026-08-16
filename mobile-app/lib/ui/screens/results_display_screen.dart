@@ -66,7 +66,9 @@ class ResultsDisplayScreen extends StatefulWidget {
 
 /// Special filter types beyond EmailActionType
 enum SpecialFilter {
-  found, // All emails (Found)
+  // PR #335 cowork review: `found` removed -- the F166 dropdown represents
+  // all-results as all-null filters; the deleted Found chip was its only
+  // setter.
   processed, // All processed emails (Processed)
   error, // Only emails with errors
 }
@@ -464,9 +466,6 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     // Apply special filter first (Found, Processed, Error)
     if (_specialFilter != null) {
       switch (_specialFilter!) {
-        case SpecialFilter.found:
-          // Show all emails (no filtering)
-          break;
         case SpecialFilter.processed:
           // Show only successfully processed emails
           results = results.where((result) => result.success).toList();
@@ -779,19 +778,23 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                                     MediaQuery.of(context).size.height * 0.4,
                                 // [UPDATED] Testing feedback FB-5: Only show "No Results Yet"
                                 // if no scan has EVER been run for this account
+                                // PR #335 cowork review: this chain predated
+                                // the F166 "No rule" DEFAULT filter, which
+                                // made `_filter != null` true on every idle
+                                // screen -- so never-scanned and found-zero
+                                // states wrongly showed "No Matching Emails".
+                                // Filters only explain an empty list when
+                                // there was something to filter: branch on
+                                // allResults, not on the filter fields.
                                 child: scanProvider.status ==
                                         ScanStatus.scanning
                                     ? const ScanStartedEmptyState()
-                                    : scanProvider.status ==
-                                                ScanStatus.completed &&
-                                            _filter == null
-                                        ? const ScanCompleteNoEmailsEmptyState()
-                                        : _filter != null
-                                            ? const NoMatchingEmailsEmptyState()
-                                            : (_historicalLoaded &&
-                                                    !_hasEverScanned)
-                                                ? const NoResultsEmptyState()
-                                                : const ScanCompleteNoEmailsEmptyState(),
+                                    : allResults.isNotEmpty
+                                        ? const NoMatchingEmailsEmptyState()
+                                        : (_historicalLoaded &&
+                                                !_hasEverScanned)
+                                            ? const NoResultsEmptyState()
+                                            : const ScanCompleteNoEmailsEmptyState(),
                               ),
                             ],
                           )
@@ -901,7 +904,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Showing $filteredCount of $totalCount emails • Tap chip again to clear filter',
+              // PR #335 cowork review: the old "Tap chip again" instruction
+              // described the removed stat chips; the dropdown has no
+              // toggle-off, so the X is the clear affordance.
+              'Showing $filteredCount of $totalCount emails • Tap X to clear filters',
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.blue.shade900,
@@ -1215,8 +1221,13 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
 
     if (isCompleted) {
       // Completed: show checkmark with summary
-      final duration = scanProvider.scanStartTime != null
-          ? DateTime.now().difference(scanProvider.scanStartTime!)
+      // PR #335 cowork review: measure to the FROZEN end time -- computing
+      // to DateTime.now() at build time made the displayed duration grow
+      // with every rebuild during triage (a 30s scan read "12m 30s" after
+      // 12 minutes on the screen).
+      final duration = (scanProvider.scanStartTime != null &&
+              scanProvider.scanEndTime != null)
+          ? scanProvider.scanEndTime!.difference(scanProvider.scanStartTime!)
           : null;
       final durationText = duration != null ? _formatDuration(duration) : null;
 
@@ -1294,28 +1305,34 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     required String deletedLabel,
     required String safeLabel,
   }) {
-    // (label, count, apply-callback) per Harold's specified option order.
-    final options = <(String, int, VoidCallback)>[
+    // (label, count, apply-callback, explanation) per Harold's specified
+    // option order. PR #335 cowork review: the explanation strings are the
+    // F151c (Sprint 58) plain-language chip tooltips VERBATIM -- the chips
+    // they were attached to are gone, but the explanations were a Harold-
+    // validated first-run-UX deliverable and now ride the dropdown entries
+    // instead of being silently dropped with the chips.
+    final options = <(String, int, VoidCallback, String)>[
       ('No rule', noRuleCount, () {
         _filter = EmailActionType.none;
         _specialFilter = null;
-      }),
+      }, 'No existing rule or safe sender matched these emails. '
+          'Review them to add a rule or safe sender.'),
       (safeLabel, safeCount, () {
         _filter = EmailActionType.safeSender;
         _specialFilter = null;
-      }),
+      }, 'These emails matched a safe sender.'),
       (deletedLabel, deletedCount, () {
         _filter = EmailActionType.delete;
         _specialFilter = null;
-      }),
+      }, 'These emails matched a delete rule.'),
       ('Errors', errorCount, () {
         _specialFilter = SpecialFilter.error;
         _filter = null;
-      }),
+      }, 'Emails that could not be processed due to an error.'),
       ('Processed', processedCount, () {
         _specialFilter = SpecialFilter.processed;
         _filter = null;
-      }),
+      }, 'Emails evaluated against your rules so far.'),
     ];
 
     String face;
@@ -1334,13 +1351,26 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     }
 
     return PopupMenuButton<int>(
-      tooltip: 'Filter the email list',
+      // F151c 'Found' explanation preserved on the chip face, which is
+      // what the removed Found chip's tooltip described.
+      tooltip: 'Filter the email list. '
+          'Total emails found in the scanned folder(s): $foundCount.',
       onSelected: (index) => setState(() => options[index].$3()),
       itemBuilder: (context) => [
         for (var i = 0; i < options.length; i++)
           PopupMenuItem<int>(
             value: i,
-            child: Text('${options[i].$1}: ${options[i].$2}'),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('${options[i].$1}: ${options[i].$2}'),
+                Text(
+                  options[i].$4,
+                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                ),
+              ],
+            ),
           ),
       ],
       child: Chip(
@@ -1633,8 +1663,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           } else if (spaceBelow >= popupHeight) {
             // Show directly below email (no room to also expose the next item)
             top = (itemBottom + 8).clamp(0.0, maxTop);
-          } else if (spaceAbove >= popupHeight) {
-            // Show above email
+          } else if (spaceAbove >= popupHeight + 8) {
+            // Show above email. PR #335 cowork review: the +8 belongs in the
+            // guard too -- with spaceAbove in [popupHeight, popupHeight+8)
+            // the 8px gap pushed the popup's top edge up to 8px off-window.
             bottom = screenHeight - itemPosition.dy + 8; // 8px gap
           } else {
             // Not enough room above or below -- as high as needed to fit.
@@ -1677,13 +1709,11 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                   // maxHeight (Sprint 60 MV): the hard cap that makes the
                   // clamped `top` a real fit guarantee -- content beyond the
                   // cap scrolls inside the popup instead of clipping off the
-                  // window's bottom edge. minWidth applies only where the
-                  // window can afford it (desktop).
-                  constraints: BoxConstraints(
-                      minWidth: MediaQuery.of(context).size.width < 600
-                          ? 0
-                          : 400,
-                      maxHeight: popupHeight),
+                  // window's bottom edge. (PR #335 cowork review: the old
+                  // minWidth: 400 here was inert -- FractionallySizedBox
+                  // hands down a TIGHT width, so the min could never apply;
+                  // width is governed by widthFactor alone.)
+                  constraints: BoxConstraints(maxHeight: popupHeight),
                   child: Material(
                     elevation: 8,
                     borderRadius: BorderRadius.circular(12),

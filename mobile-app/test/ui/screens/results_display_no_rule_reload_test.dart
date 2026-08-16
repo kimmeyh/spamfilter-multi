@@ -251,7 +251,13 @@ void main() {
       expect(find.text('No rule: 1'), findsOneWidget,
           reason: 'Dropdown face: effective "No rule" count must drop to 1 '
               'on first paint');
-      await tester.tap(find.byTooltip('Filter the email list'));
+      // The face tooltip also carries the F151c "Found" explanation
+      // (PR #335 cowork review), so match on its stable prefix.
+      final filterTooltip = tester
+          .widgetList<Tooltip>(find.byType(Tooltip))
+          .map((w) => w.message ?? '')
+          .firstWhere((m) => m.startsWith('Filter the email list'));
+      await tester.tap(find.byTooltip(filterTooltip));
       await tester.pump();
       // readOnly mode renders the deleted entry as "Deleted (not processed)".
       expect(find.text('Deleted (not processed): 1'), findsOneWidget,
