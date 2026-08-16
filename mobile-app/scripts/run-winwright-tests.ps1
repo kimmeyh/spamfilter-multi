@@ -209,9 +209,13 @@ if ($doSnapshot) {
     try {
         $snapshotBefore = Invoke-DbSnapshot
     } catch {
-        Write-Host "[DB-SNAPSHOT] WARNING: Pre-sweep snapshot failed: $_" -ForegroundColor Yellow
-        Write-Host "[DB-SNAPSHOT] Continuing without DB snapshot guard. Use -NoSnapshotDb to suppress this warning." -ForegroundColor Yellow
-        $doSnapshot = $false
+        # Sprint 59 IMP-4: a guard that cannot run must FAIL the sweep, not
+        # soft-continue -- the soft path let a PS-5.1 BOM bug disable drift
+        # protection silently for the whole Sprint 59 session. An unguarded
+        # sweep is only acceptable as an EXPLICIT choice (-NoSnapshotDb).
+        Write-Host "[DB-SNAPSHOT] FATAL: Pre-sweep snapshot failed: $_" -ForegroundColor Red
+        Write-Host "[DB-SNAPSHOT] Refusing to run the sweep without the drift guard. Fix the guard, or run with -NoSnapshotDb to explicitly waive it." -ForegroundColor Red
+        exit 1
     }
 }
 

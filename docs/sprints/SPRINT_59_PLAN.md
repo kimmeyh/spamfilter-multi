@@ -176,6 +176,10 @@ The end-of-sprint WinWright sweep (mandatory: lib/ui touched) failed 3/3 on firs
 - Residual finding (NOT fixed, time-boxed): the runner's DB snapshot guard errors (`Parse error near line 1: near "."`) and continues without the drift guard -- pre-existing, surfaced in every run this session. Backlog candidate.
 - MT2C-3's premise ("cold re-mount on re-entry") is unreachable post-F135 (the root route stays alive); reworked as a navigation round-trip with the fresh-mount case delegated to the widget test, documented in the script.
 
+**SWEEP EVIDENCE RECORD (IMP-5 format -- final close-out runs, 2026-08-15)**:
+- Mid-sprint sweep (post-F155/F154, pre-retro): 3/3 scripts PASS, 66/66 steps (f124 31/31, f129 10/10, mt2c 25/25). DB guard NOT operational that run (BOM bug, discovered and fixed at retro IMP-4).
+- Post-IMP-3/IMP-4 verification sweep: f124 PASS 31/31, f129 PASS 10/10 -- DEV-scoped attach verified; DB drift guard OPERATIONAL end to end (pre/post snapshots 3,871 rules / 610 safe_senders / 10 app_settings, "No drift detected"). mt2c: DATA-PRECONDITION not met, not a regression -- Harold's Manual Validation addressed all 13 no-rule items, leaving the list empty ("0 items" confirmed via live tree dump), and the script requires >= 2 unaddressed rows for its baseline-stability assertions; its chip/navigation steps passed, the row-checkbox step correctly resolved 0. Precondition now documented in the script; a deterministic seeding preamble noted as future work (folds naturally into F156).
+
 ## Execution order and Manual Validation
 
 **Order**: Task 1 (F150, interactive -- Harold available) -> Task 2 (F153) -> Task 3 (F155 rename) -> Task 4 (F154 help section).

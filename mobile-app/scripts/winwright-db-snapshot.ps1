@@ -80,14 +80,27 @@ function Get-TableRows {
         throw "[DB-SNAPSHOT] sqlite3.exe not found. Expected at C:\Android\android-sdk\platform-tools\sqlite3.exe or in PATH."
     }
 
-    # Use .mode list (pipe-delimited) for deterministic, whitespace-stable output.
+    # Sprint 59 IMP-4: NO stdin, NO dot-commands. The original implementation
+    # piped ".mode list`nSELECT ..." via stdin; Windows PowerShell 5.1 writes a
+    # UTF-8 BOM into that pipe, sqlite3 sees `<BOM>.mode` as SQL and fails with
+    # `Parse error near line 1: near "."` -- and the guard then silently ran
+    # with EVERY table treated as empty (no drift protection at all, unnoticed
+    # until the Sprint 59 sweep). The `-list` CLI flag replaces `.mode list`,
+    # and the SQL travels as an argument, so no encoding trap exists.
     # ORDER BY rowid ensures consistent ordering across runs.
-    $query = ".mode list`nSELECT * FROM `"$TableName`" ORDER BY rowid;"
-    $rows = $query | & $Sqlite3Exe $DbFilePath 2>&1
+    $sql = "SELECT * FROM `"$TableName`" ORDER BY rowid;"
+    $rows = & $Sqlite3Exe -list $DbFilePath $sql 2>&1
     if ($LASTEXITCODE -ne 0) {
-        # Table may not exist (e.g., first run before migration) -- treat as empty
-        Write-Host "[DB-SNAPSHOT] Warning: table '$TableName' returned non-zero from sqlite3 (may not exist yet). Treating as empty." -ForegroundColor Yellow
-        return @()
+        $errText = ($rows | Out-String).Trim()
+        if ($errText -match 'no such table') {
+            # Legitimately absent (e.g., first run before migration) -- empty.
+            Write-Host "[DB-SNAPSHOT] Table '$TableName' does not exist yet. Treating as empty." -ForegroundColor Yellow
+            return @()
+        }
+        # Sprint 59 IMP-4: any OTHER failure must be LOUD. A guard that cannot
+        # read the DB and continues anyway is indistinguishable from a passing
+        # guard -- exactly the failure mode that hid the BOM bug.
+        throw "[DB-SNAPSHOT] sqlite3 failed reading table '$TableName': $errText"
     }
     # Filter out empty lines; return as string array
     return @($rows | Where-Object { $_ -ne "" })

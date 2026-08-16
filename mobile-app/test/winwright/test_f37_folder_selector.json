@@ -2,7 +2,7 @@
   "version": "1",
   "appId": "",
   "mode": "test",
-  "attachTitle": "MyEmailSpamFilter",
+  "attachTitle": "MyEmailSpamFilter [DEV]",
   "description": "F37 Folder Selectors (new coverage, Sprint 40, authored 2026-06-05). From Settings > Account tab (Folder Settings), opens the Safe Sender Folder picker and the Deleted Rule Folder picker, exercising the per-provider folder list + search box. CRITICAL state-restore: folder selection auto-saves, so this script NEVER clicks a folder RadioButton -- it only opens each picker, types in the search box (non-persisting), and backs out, leaving the saved selection unchanged. Selectors verified against live UI 2026-06-05.",
   "runConfig": {
     "captureScreenshots": false,
