@@ -295,9 +295,26 @@ _**Risk & rollback**_: dead-code removal is git-revertible and gated on zero-ref
 
 **Model**: Sonnet -- *why not Haiku*: exploratory testing with live root-causing across the whole app surface.
 
-**Executed-by**: _(fill at completion)_
+**Executed-by**: Fable 5 (session model; executed inline -- interactive adb driving with live diagnosis)
 **Step-types**: TEST-INTEGRATION, SVC-EDIT (fixes as found), DOCS
-**Est-Effort**: half-day time-boxed (~3-4h)
+**Est-Effort**: half-day time-boxed (~3-4h) -- **Actual: ~2h including the three fixes**
+
+**RESULTS TABLE (R-5) -- flow / method / result** (fresh install, API-34 emulator, sprint-final build):
+
+| Flow | Method | Result |
+|---|---|---|
+| First-run launch (zero accounts) | adb launch + screencap | PASS -- F151a welcome state renders; F143's un-gated Review No Rule Items icon now present in the Android AppBar |
+| Demo Mode entry | adb tap + screencap | PASS -- Manual Scan in DEMO MODE, Read-Only, INBOX |
+| Demo Scan | adb tap + screencap | **ERROR FOUND -> FIXED**: every scan failed at `PRAGMA busy_timeout` -- Android's SQLiteDatabase rejects value-returning PRAGMAs via execSQL; `journal_mode=WAL` was ALSO silently failing into its catch (Android never had WAL). Fixed with `rawQuery` for both (works on Android AND desktop FFI). Post-fix: scan completes in 1s -- Found 59 / Processed 59 / Deleted 26 / **Safe 21 (F151d verified on Android)** / No rule 12 / Errors 0; no dead Moved chip; provider-sender grouping renders |
+| Scan-failure error surface | screenshot inspection | **SECONDARY FINDING -> FIXED**: the status header showed a DOUBLED prefix + raw exception ('Scan failed: Scan failed: DatabaseException(...) sql ...'). `email_scanner.dart` now routes through `ErrorMessages.humanize` (F151f's helper); errorScan keeps the single prefix. Existing tests assert only the prefix -- still green |
+| Review No Rule Items entry (F143 icon) | adb tap + screencap | PASS -- screen opens via the new Android entry point; '0 items' is CORRECT (demo items live under the unsaved demo account; same behavior as Windows) |
+| Touch selection (F143) | -- | Model covered by the 3 new widget tests; on-device interaction NEEDS REAL ROWS -> **Harold-interactive at MV** (add real account, scan, long-press) |
+| Help deep-link from the screen (F154/F145/F151i/F155) | adb tap + screencap | PASS -- lands directly on 'Review No Rule Items', Markdown-rendered, new name, Copilot-corrected wording visible |
+| Help content vs F143 | content review | **CONTENT GAP FOUND -> FIXED**: the F154 section described desktop-only selection (written pre-F143); a touch-selection sentence added to `review_no_rule_items.md` |
+| Settings from zero-account screen | adb tap + fast screencap | PASS (initially looked like a dead icon -- a 1s-recapture showed the deliberate 'Please add an email account first' SnackBar; account-scoping behavior matches Windows) |
+| Help deep-link suite (all 23 sections + conditional resolution) | **integration_test ON the emulator device** | **PASS 32/32 on the Android device** -- the sprint's automated on-device coverage |
+| Gmail OAuth / live IMAP add-account / rules mgmt rendering / touch selection with real rows | -- | **Harold-interactive at Manual Validation** (same pattern as the F150 console walkthrough) |
+| Notifications / POST_NOTIFICATIONS | -- | N/A this sprint -- no Android notification path exists until F161 (F144's verdict) |
 
 ---
 
@@ -313,3 +330,5 @@ _**Risk & rollback**_: dead-code removal is git-revertible and gated on zero-ref
 Haiku 1 task (F159), Sonnet 6 tasks (F160 judgment-audit, F157 toolchain study, F158 config decision, F143 interaction redesign, F144 architecture evaluation, F156 exploratory walk-through) -- cheapest-first applied per task; no top-tier assignments; escalation triggers stated inline.
 
 **Total Est-Effort**: ~7-10h (roughly 1.5-2 working days), dominated by F156's half-day box and F144's 2-3h box.
+
+**F156 verification at close**: on-device integration suite 32/32; local full suite **1,853 passed / 29 skipped / 0 failed**; `flutter analyze` clean. (One intermediate run failed 1: the humanize change collided with `email_scanner_test`'s pinned platform-not-supported message -- resolved with the app-authored-Exception pass-through rule, which is the better behavior anyway: informative app messages reach the user, raw internals get humanized.) AC-2 status: all in-box errors fixed with the fixes recorded above; no out-of-box findings needed filing. AC-1: every planned flow has a recorded result; Gmail OAuth / live IMAP / touch-with-real-rows are the Harold-interactive MV items by design (R-4).
