@@ -41,7 +41,7 @@
     334,
     336
   ],
-  "_github_issues_note": "Sprint 60 cards: #328 F160, #329 F156, #330 F157, #331 F158, #332 F159, #333 F144, #334 F143, #336 F166 -- all work complete; close cards at post-merge cleanup. Older open items: #318/#319/#320 (Sprint 58-era), #315 closed with Sprint 59.",
+  "_github_issues_note": "Sprint 60 cards (verified against gh issue list 2026-08-16): #328 F160, #329 F157, #330 F158, #331 F159, #332 F143, #333 F144, #334 F156, #336 F166 -- all work complete; close cards at post-merge cleanup. Older open items: #318/#319/#320 (Sprint 58-era), #315 closed with Sprint 59.",
   "test_metrics": {
     "tests_passing": 1859,
     "tests_skipped": 26,

@@ -2,10 +2,10 @@
 
 **Dates**: 2026-08-15 to 2026-08-16
 **Branch**: `feature/20260815_Sprint_60` | **PR**: #335 -> develop
-**Scope**: F160 (skipped-tests audit, Issue #328), F156 (full Android walk-through, Issue #329),
-F157 (gradle/minSdk study + implement, Issue #330), F158 (Android CI job, Issue #331), F159
-(metadata gates, Issue #332), F143 (touch selection, Issue #334), F144 (Android background-scan
-re-evaluation, Issue #333); F166 (Scan Results header redesign, Issue #336) added mid-sprint per
+**Scope**: F160 (skipped-tests audit, Issue #328), F157 (gradle/minSdk study + implement,
+Issue #329), F158 (Android CI job, Issue #330), F159 (metadata gates, Issue #331), F143 (touch
+selection, Issue #332), F144 (Android background-scan re-evaluation, Issue #333), F156 (full
+Android walk-through, Issue #334); F166 (Scan Results header redesign, Issue #336) added mid-sprint per
 Harold's plan-then-execute steering. Same-window context: 0.9.0.0 / Submission 16 uploaded to
 Partner Center and in certification (Step 7 release close-out triggers on certification).
 
