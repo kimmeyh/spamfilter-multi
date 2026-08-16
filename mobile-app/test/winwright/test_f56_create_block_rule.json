@@ -20,7 +20,7 @@
         { "_comment": "PRIMING QUERY: Flutter builds its UIA semantics tree lazily IN RESPONSE TO A QUERY, not on a timer -- on a cold-launched app the first query returns an opaque FLUTTERVIEW pane. This also maximizes, so nothing is off-screen (Save Rule sits below the fold otherwise).",
           "tool": "ww_window_state", "state": "maximize" },
 
-        { "_comment": "F135 (Sprint 52) changed the desktop DEFAULT screen to Review 'No Rule' Items when at least one account exists, and Settings now resolves its account lazily -- so the account-picker step this script used to have is GONE. Settings opens straight onto the General tab.",
+        { "_comment": "F135 (Sprint 52) changed the desktop DEFAULT screen to Review No Rule Items when at least one account exists, and Settings now resolves its account lazily -- so the account-picker step this script used to have is GONE. Settings opens straight onto the General tab.",
           "tool": "ww_invoke", "selector": "type=Button[name='Settings']" },
 
         { "_comment": "PROOF OF ARRIVAL: the General tab exists only once Settings is open. Tabs project as Text nodes, so they need the physical-mouse path.",

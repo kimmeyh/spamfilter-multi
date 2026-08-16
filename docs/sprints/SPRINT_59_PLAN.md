@@ -154,6 +154,16 @@
 
 ---
 
+## Unplanned in-sprint work: WinWright sweep restoration (2026-08-15)
+
+The end-of-sprint WinWright sweep (mandatory: lib/ui touched) failed 3/3 on first run and was restored to green (3/3 scripts, 66/66 steps). Root causes, all pre-existing except one:
+- All three active scripts still assumed the PRE-F135 UI (Sprint 52): a home-screen entry-point icon (the screen has BEEN home since F135 and suppresses its own icon), the Settings account-picker overlay (removed by F135's lazy resolution), 'Refresh' tooltips (renamed Sprint 52), and July-era baseline sender rows. The sweep had not actually run green since 2026-07-28 -- Sprints 52-58 all touched lib/ui, so the end-of-sprint sweep step was evidently skipped or not verified for 7 sprints. **Process finding for the retrospective.**
+- One miss was this sprint's (F155): a `head -5`-truncated verification grep hid 2 old-name selectors in `test_mt2c_no_rule_sweep.json`.
+- A NEW launch-timing race: post-F135 the home screen runs the covered-item sweep against the full rule set BEFORE the window titles itself (~10-16s measured), racing the runner's 12s wait + 2s settle -- symptom was 'No main window found' on step 2 of every script. Runner hardened to 30s + 8s with the rationale in a comment.
+- **Claude cowork review point (relayed by Harold) implemented**: WinWright scripts encode user-facing strings but sat outside the Dart rename net. New policy gate `test/policy/winwright_script_strings_test.dart` fails the suite if any script references a retired string (old screen name, `name='Refresh'` selectors, the removed account-picker); mutation-verified red/green.
+- Residual finding (NOT fixed, time-boxed): the runner's DB snapshot guard errors (`Parse error near line 1: near "."`) and continues without the drift guard -- pre-existing, surfaced in every run this session. Backlog candidate.
+- MT2C-3's premise ("cold re-mount on re-entry") is unreachable post-F135 (the root route stays alive); reworked as a navigation round-trip with the fresh-mount case delegated to the widget test, documented in the script.
+
 ## Execution order and Manual Validation
 
 **Order**: Task 1 (F150, interactive -- Harold available) -> Task 2 (F153) -> Task 3 (F155 rename) -> Task 4 (F154 help section).

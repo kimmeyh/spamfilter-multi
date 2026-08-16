@@ -118,7 +118,7 @@ $appWindowTitle = "MyEmailSpamFilter"   # matches the scripts' attachTitle
 # ---------------------------------------------------------------------------
 
 function Ensure-FreshAppAtHome {
-    param([int]$WaitForWindowSec = 12)
+    param([int]$WaitForWindowSec = 30)
 
     # (1) Defensive teardown of any existing dev-app instance.
     Get-Process $appProcName -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
@@ -130,12 +130,20 @@ function Ensure-FreshAppAtHome {
     }
 
     # (2) Fresh launch and wait for the main window (home screen) to appear.
+    # Sprint 59 hardening: since F135 (Sprint 52) the home screen is Review No
+    # Rule Items, whose first load runs the covered-item sweep against the full
+    # rule set BEFORE the window title appears -- measured 10-16s on the dev DB
+    # (2026-08-15), vs the ~5s this wait was originally tuned for. The old
+    # 12s deadline + 2s settle raced that startup and produced intermittent
+    # 'No main window found' failures on step 2 of every script. Wait longer,
+    # and settle for 8s after the title appears so the first script step meets
+    # a genuinely idle app.
     Start-Process -FilePath $devAppExe | Out-Null
     $deadline = (Get-Date).AddSeconds($WaitForWindowSec)
     while ((Get-Date) -lt $deadline) {
         $p = Get-Process $appProcName -ErrorAction SilentlyContinue |
              Where-Object { $_.MainWindowTitle -like "*$appWindowTitle*" }
-        if ($p) { Start-Sleep -Seconds 2; return $true }   # small settle after window appears
+        if ($p) { Start-Sleep -Seconds 8; return $true }   # settle: let the home-screen sweep finish
         Start-Sleep -Milliseconds 500
     }
     Write-Warning "Dev app window '$appWindowTitle' did not appear within ${WaitForWindowSec}s."

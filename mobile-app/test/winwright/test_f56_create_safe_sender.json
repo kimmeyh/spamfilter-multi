@@ -20,7 +20,7 @@
         { "_comment": "PRIMING QUERY (Flutter builds its semantics tree lazily ON QUERY, not on a timer) + maximize, so Save Rule is not below the fold.",
           "tool": "ww_window_state", "state": "maximize" },
 
-        { "_comment": "F135 (Sprint 52): the account-picker step this script used to have is GONE -- the desktop default screen is now Review 'No Rule' Items and Settings resolves its account lazily, opening straight onto the General tab.",
+        { "_comment": "F135 (Sprint 52): the account-picker step this script used to have is GONE -- the desktop default screen is now Review No Rule Items and Settings resolves its account lazily, opening straight onto the General tab.",
           "tool": "ww_invoke", "selector": "type=Button[name='Settings']" },
 
         { "_comment": "PROOF OF ARRIVAL. Tabs project as Text nodes -> physical mouse path.",
