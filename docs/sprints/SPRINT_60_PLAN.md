@@ -134,7 +134,7 @@ _**Risk & rollback**_: build-config changes are fully covered by git revert of t
 - R-2 decision: option (c) STUB, committed at `android/ci/google-services.ci.json` -- real package name, deliberately fake values, self-documenting comment. Rationale written in the workflow: PUBLIC repo rules out committing the real config (Firebase API key); a secret buys nothing while CI never RUNS the app (F127 philosophy); the stub exercises exactly what the F150 class breaks (config/applicationId matching).
 - Local pre-verification: stub PASSES `:app:processDebugGoogleServices`; MUTATION (package swapped to a wrong name) FAILS with the exact F150 signature 'No matching client found' -- both run against the real gradle task, real config backed up and restored (verified) around both checks.
 - Job: ubuntu-latest + temurin JDK 17 + the same pinned Flutter as the sibling jobs; runs on PRs to develop.
-- AC-1 (CI green on this sprint's PR) verified on push -- result recorded below when the run completes.
+- AC-1 VERIFIED: PR #335 CI run -- 'Analyze and Test: pass, Android Build Verification: pass, Windows Build Verification: pass'.
 - AC-3: the negative check is the mutation above -- the F150 state is exactly 'config without the real applicationId', and it fails the job's core task.
 
 ---
@@ -204,9 +204,18 @@ _**Risk & rollback**_: build-config changes are fully covered by git revert of t
 
 **Model**: Sonnet -- *why not Haiku*: an interaction-model change on the app's default screen with strict do-not-regress desktop semantics.
 
-**Executed-by**: _(fill at completion)_
+**Executed-by**: Fable 5 (session model; executed inline)
 **Step-types**: UI-MOVE, TEST-WIDGET
-**Est-Effort**: 60-90m
+**Est-Effort**: 60-90m -- **Actual: ~70m (of which ~35m was test-harness archaeology)**
+
+**COMPLETION NOTES (2026-08-16)**:
+- R-1: long-press ADDS the row (wired on all platforms -- harmless extra path on desktop, one code path); on touch platforms (Theme platform android/iOS) a plain tap while a selection is active TOGGLES the tapped row. The existing selection bar/Apply Rule menu serves as the contextual bar unchanged.
+- R-2 VERIFIED: desktop replace-single semantics pinned by a dedicated regression-guard test (AC-3); all 12 pre-existing screen tests plus the F129 semantics tests untouched and green.
+- R-3: `Platform.isWindows` gate removed from the builder (comment now records the F142->F143 history); `dart:io` import dropped; both gate-pin tests updated to assert the icon on EVERY platform (they previously ran the assertion Windows-only, which kept it out of CI).
+- Platform seam decision: `Theme.of(context).platform` rather than `defaultTargetPlatform` -- the global `debugDefaultTargetPlatformOverride` trips the foundation-vars test invariant in this Flutter version even when reset via addTearDown (discovered empirically); the Theme seam is per-tree and invariant-clean.
+- Test-harness lesson re-learned (the sibling test's header documents it): sqflite_ffi calls never resolve in the fake-async widget-test zone -- the new test uses runAsync + mountAndLoadDbWidget, plus the secure-storage stub must serve the `saved_accounts` key because `_loadItems` enumerates accounts from secure storage, NOT the DB.
+- MUTATIONS: (a) icon suppressed in the builder -> both updated gate-pin tests red (+4 -2); (b) touch branch disabled -> AC-2 red while the desktop guard stays green (+2 -1); both restored, all green.
+- Verification: new suite 3/3; `flutter analyze` clean; full suite **1,897 passed / 29 skipped / 0 failed**.
 
 ---
 

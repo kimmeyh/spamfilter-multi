@@ -1,4 +1,3 @@
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -111,15 +110,11 @@ void main() {
       // before pushing (covered by its own path); both are asserted PRESENT
       // below rather than pressed here.
       //
-      // PLATFORM-CONDITIONAL rather than a whole-test Windows skip (Copilot,
-      // PR #292): only the Review No Rule Items icon is Windows-scoped in
-      // the builder. Skipping the entire test on !Windows meant CI (which runs
-      // `flutter test` on ubuntu-latest) NEVER exercised the MV-1 regression
-      // gate -- protection existed only on local Windows runs. The three
-      // cross-platform actions now run everywhere; the No-Rule icon is
-      // asserted only where the builder emits it.
+      // F143 (Sprint 60): the Review No Rule Items icon lost its Windows gate
+      // (touch selection landed), so ALL four actions are now cross-platform
+      // and asserted unconditionally -- including on CI's ubuntu runner.
       final navigatingActions = <String>[
-        if (Platform.isWindows) 'Review No Rule Items',
+        'Review No Rule Items',
         'View Scan History',
         'Select Account',
         'Settings',

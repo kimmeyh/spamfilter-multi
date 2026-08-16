@@ -318,6 +318,34 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
 
   // --- Selection ---
 
+  /// F143 (Sprint 60): touch platforms get long-press-to-select plus
+  /// tap-to-toggle while a selection is active. Reads `Theme.of(context)
+  /// .platform` (which defaults to `defaultTargetPlatform`) rather than
+  /// dart:io Platform, so widget tests can drive both models per-tree via
+  /// `ThemeData(platform: ...)` -- the global
+  /// `debugDefaultTargetPlatformOverride` trips the foundation-vars test
+  /// invariant in this Flutter version even when reset via addTearDown.
+  bool get _isTouchPlatform {
+    final platform = Theme.of(context).platform;
+    return platform == TargetPlatform.android ||
+        platform == TargetPlatform.iOS;
+  }
+
+  /// F143 (Sprint 60): long-press ADDS the row to the selection (entering
+  /// selection mode if none exists) -- the Android idiom for starting a
+  /// multi-select. Wired on every platform: on desktop it is a harmless
+  /// additional way to add to a selection, and keeping it unconditional means
+  /// one code path instead of a platform fork (the plan's NFR: the selection
+  /// MODEL is input-driven; only the tap semantics below are platform-scoped).
+  void _handleItemLongPress(int index) {
+    final id = _filteredItems[index].email.id;
+    if (id == null) return;
+    setState(() {
+      _selectedIds.add(id);
+      _lastClickedIndex = index;
+    });
+  }
+
   void _handleItemTap(int index, {required bool ctrlPressed, required bool shiftPressed}) {
     final id = _filteredItems[index].email.id;
     if (id == null) return;
@@ -332,6 +360,18 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
           if (rowId != null) _selectedIds.add(rowId);
         }
       } else if (ctrlPressed) {
+        if (_selectedIds.contains(id)) {
+          _selectedIds.remove(id);
+        } else {
+          _selectedIds.add(id);
+        }
+        _lastClickedIndex = index;
+      } else if (_isTouchPlatform && _selectedIds.isNotEmpty) {
+        // F143 (Sprint 60): TOUCH selection mode. Once a selection exists
+        // (entered via long-press or checkbox), a plain tap TOGGLES the row --
+        // the touch equivalent of Ctrl+click, since touch has no modifier
+        // keys. Touch-platform-scoped so desktop keeps its established
+        // replace-single semantics below (F143 R-2: desktop unchanged).
         if (_selectedIds.contains(id)) {
           _selectedIds.remove(id);
         } else {
@@ -925,6 +965,7 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
           ctrlPressed: HardwareKeyboard.instance.isControlPressed,
           shiftPressed: HardwareKeyboard.instance.isShiftPressed,
         ),
+        onLongPress: () => _handleItemLongPress(index),
         onSecondaryTapDown: (details) {
           if (id != null && !_selectedIds.contains(id)) {
             setState(() {
