@@ -55,6 +55,50 @@ void main() {
       await testHelper.tearDown();
     });
 
+    test(
+        'F156/Sprint 60 REGRESSION: persistence works with NO pre-existing '
+        'accounts row (the Android state that silently dropped every scan)',
+        () async {
+      // The exact production shape found on Android: the accounts table is
+      // EMPTY (only the Windows background worker ever created the row), so
+      // scan_results' FK failed on every interactive scan and persistence
+      // silently no-op'd. The shared path now ensures the row itself.
+      // NOTE: deliberately NO createTestAccount here -- every sibling test
+      // pre-creates the row ("required for FK constraints" in the harness),
+      // which is precisely why this class of failure never showed in tests.
+      const freshAccountId = 'aol-fresh@aol.com';
+      final freshProvider = EmailScanProvider();
+      freshProvider.initializePersistence(
+        scanResultStore: scanResultStore,
+        unmatchedEmailStore: unmatchedEmailStore,
+        databaseHelper: databaseHelper,
+      );
+      freshProvider.setCurrentAccountId(freshAccountId);
+
+      await freshProvider.startScan(
+        totalEmails: 5,
+        scanType: 'manual',
+        foldersScanned: ['INBOX'],
+      );
+
+      final results =
+          await scanResultStore.getScanResultsByAccount(freshAccountId);
+      expect(results.isNotEmpty, true,
+          reason: 'the scan result MUST persist even when no accounts row '
+              'pre-exists -- the shared path now creates it (previously only '
+              'the Windows background worker did, so Android lost every '
+              'scan: no history, no no-rule items)');
+
+      final db = await databaseHelper.database;
+      final account = await db.query('accounts',
+          where: 'account_id = ?', whereArgs: [freshAccountId]);
+      expect(account, hasLength(1),
+          reason: 'the ensure step must have created the accounts row');
+      expect(account.first['platform_id'], 'aol',
+          reason: 'platform id parsed from the platform-email accountId form');
+      expect(account.first['email'], 'fresh@aol.com');
+    });
+
     test('Scan result is created when scan starts', () async {
       // Initial state
       expect(scanProvider.status.toString(), contains('idle'));

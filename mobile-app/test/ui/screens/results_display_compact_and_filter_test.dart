@@ -48,15 +48,15 @@ void main() {
         accountId,
         scanType: 'manual',
         scanMode: 'readonly',
-        totalEmails: 3,
+        totalEmails: 20,
       );
 
       final now = DateTime.now().millisecondsSinceEpoch;
       await testHelper.dbHelper.insertEmailActionBatch([
+        // 20 rows so the folded compact list genuinely scrolls (fewer rows
+        // fit the viewport entirely and the scroll assertions would no-op).
         for (final (id, from) in [
-          ('3001', 'a@spam.com'),
-          ('3002', 'b@spam.com'),
-          ('3003', 'c@spam.com'),
+          for (var i = 0; i < 20; i++) ('30$i', 'sender$i@spam.com'),
         ])
           {
             'scan_result_id': scanId,
@@ -65,11 +65,10 @@ void main() {
             'email_subject': 'Subject $id',
             'email_received_date': now,
             'email_folder': 'INBOX',
-            // 'delete' = PROCESSED rows, so the screen's default Processed
-            // filter shows them (unprocessed rows would leave the list empty
-            // and render the empty state, which has its own unrelated
-            // small-screen overflow).
-            'action_type': 'delete',
+            // 'none' = No-rule rows, so the screen's default filter (F166:
+            // No rule) shows them; other action types would leave the
+            // filtered list empty.
+            'action_type': 'none',
             'matched_rule_name': null,
             'matched_pattern': null,
             'is_safe_sender': 0,
@@ -135,8 +134,8 @@ void main() {
       await mount(tester);
       await tester.pump();
 
-      // The initState default (Processed special filter) makes the banner
-      // show without ANY user action -- exactly Harold's state.
+      // The initState default (F166: the No rule action filter) makes the
+      // banner show without ANY user action -- exactly Harold's state.
       final banner = find.textContaining('Tap chip again to clear filter');
       expect(banner, findsOneWidget,
           reason: 'precondition: the default Processed filter shows the '

@@ -245,13 +245,21 @@ void main() {
           findsOneWidget,
           reason: 'F82 footer must show cumulative progress on first paint');
 
-      // 3) Chip strip: "No rule" count reflects the effective action override
-      //    (now 1), and the "Deleted" chip reflects the newly-matched email.
+      // 3) F166 (Sprint 60 MV): the chip strip became a single-select filter
+      //    DROPDOWN. The face shows the active (default No rule) entry with
+      //    its effective count; the Deleted count lives in the opened menu.
       expect(find.text('No rule: 1'), findsOneWidget,
-          reason: 'Effective "No rule" count must drop to 1 on first paint');
-      // readOnly mode renders the deleted chip as "Deleted (not processed)".
+          reason: 'Dropdown face: effective "No rule" count must drop to 1 '
+              'on first paint');
+      await tester.tap(find.byTooltip('Filter the email list'));
+      await tester.pump();
+      // readOnly mode renders the deleted entry as "Deleted (not processed)".
       expect(find.text('Deleted (not processed): 1'), findsOneWidget,
-          reason: 'Newly matched email counts toward the Deleted chip');
+          reason: 'Newly matched email counts toward the Deleted entry in '
+              'the filter dropdown');
+      // Close the menu without changing the filter.
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pump();
     });
 
     // Sprint 46 manual-testing feedback (Harold 2026-07-11): the "No rule"
@@ -300,10 +308,11 @@ void main() {
             wrapScreen(ruleProvider, scanProvider,
                 instanceKey: const ValueKey('advanceMount')));
 
-        // Activate the "No rule" filter (the advance is scoped to it).
-        expect(find.text('No rule: 3'), findsOneWidget);
-        await tester.tap(find.text('No rule: 3'));
-        await tester.pump();
+        // F166 (Sprint 60 MV): "No rule" is now the DEFAULT filter, shown
+        // on the dropdown face -- no activation tap needed (tapping the face
+        // would open the menu instead).
+        expect(find.text('No rule: 3'), findsOneWidget,
+            reason: 'default No-rule filter active, face shows the count');
 
         // Open the popup on the first spam.com email.
         await tester.tap(find.text('bad@spam.com'));

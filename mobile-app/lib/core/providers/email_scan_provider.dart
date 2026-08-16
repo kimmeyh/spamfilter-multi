@@ -274,6 +274,17 @@ class EmailScanProvider extends ChangeNotifier {
     // [NEW] SPRINT 4: Create scan result record if persistence is enabled
     if (persist && _scanResultStore != null && _currentAccountId != null) {
       try {
+        // F156/Sprint 60 (Android walk-through root cause): scan_results has
+        // an FK to accounts(account_id), but until now the ONLY code that
+        // ever created the accounts row was the WINDOWS background-scan
+        // worker's _ensureAccountInDatabase -- Windows-only code that masked
+        // this shared gap for months (background scans run every 15 min on
+        // the dev machine). On Android nothing created the row, so EVERY
+        // interactive scan's persistence failed the FK here, was caught
+        // below, and the scan silently completed with no history, no
+        // email_actions, and no no-rule items. Ensure the row in the SHARED
+        // path so persistence works wherever the scan runs.
+        await _ensureAccountRow(_currentAccountId!);
         final scanResult = ScanResult(
           accountId: _currentAccountId!,
           scanType: scanType,
@@ -488,6 +499,42 @@ class EmailScanProvider extends ChangeNotifier {
     } catch (e) {
       _logger.e('Failed to persist email actions: $e');
     }
+  }
+
+  /// F156/Sprint 60: make sure the accounts row backing scan_results' FK
+  /// exists (mirrors the Windows worker's _ensureAccountInDatabase, which was
+  /// previously the only creator of this row). Best-effort: a failure here
+  /// surfaces as the existing addScanResult catch, same as before.
+  Future<void> _ensureAccountRow(String accountId) async {
+    if (_databaseHelper == null) return;
+    final db = await _databaseHelper!.database;
+    final existing = await db.query(
+      'accounts',
+      where: 'account_id = ?',
+      whereArgs: [accountId],
+      limit: 1,
+    );
+    if (existing.isNotEmpty) return;
+
+    // accountId formats vary: "email" or "platform-email".
+    String email = accountId;
+    String platformId = 'unknown';
+    final dashIndex = accountId.indexOf('-');
+    if (dashIndex > 0 && dashIndex < accountId.length - 1) {
+      final afterDash = accountId.substring(dashIndex + 1);
+      if (afterDash.contains('@')) {
+        email = afterDash;
+        platformId = accountId.substring(0, dashIndex);
+      }
+    }
+    await db.insert('accounts', {
+      'account_id': accountId,
+      'platform_id': platformId,
+      'email': email,
+      'date_added': DateTime.now().millisecondsSinceEpoch,
+    });
+    _logger.i('Inserted missing accounts row for ${Redact.accountId(accountId)} '
+        '(scan persistence FK)');
   }
 
   /// [NEW] SPRINT 4: Mark scan as failed with error and persist error state

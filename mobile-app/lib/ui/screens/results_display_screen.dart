@@ -136,10 +136,13 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   @override
   void initState() {
     super.initState();
-    // Item 4: Set Processed filter on by default
+    // Sprint 60 MV (F166, Harold): the DEFAULT filter is now "No rule" --
+    // the triage workflow is the screen's primary use, and with this default
+    // an item leaves the (filtered) list the moment a rule/safe sender
+    // addresses it. (Replaced the original Item-4 Processed default.)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       setState(() {
-        _specialFilter = SpecialFilter.processed;
+        _filter = EmailActionType.none;
       });
     });
     // Load last completed scan for historical display
@@ -552,31 +555,6 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       _filter = null;
       _specialFilter = null;
       _selectedFolders = {};
-    });
-  }
-
-  void _toggleFilter(EmailActionType? filterType) {
-    setState(() {
-      // If clicking the same filter, clear it (show all)
-      if (_filter == filterType) {
-        _filter = null;
-      } else {
-        _filter = filterType;
-        _specialFilter = null; // Clear special filter when action filter is set
-      }
-    });
-  }
-
-  /// Toggle special filter (Found, Processed, Error)
-  void _toggleSpecialFilter(SpecialFilter filterType) {
-    setState(() {
-      // If clicking the same filter, clear it (show all)
-      if (_specialFilter == filterType) {
-        _specialFilter = null;
-      } else {
-        _specialFilter = filterType;
-        _filter = null; // Clear action filter when special filter is set
-      }
     });
   }
 
@@ -1038,10 +1016,16 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                   hasLiveResults, showingHistorical, scanProvider, allResults),
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            if (scanTypeLabel != null || scanTimeLabel != null) ...[
+            if (scanTypeLabel != null ||
+                scanTimeLabel != null ||
+                hasLiveResults) ...[
               const SizedBox(height: 4),
+              // F166 (Sprint 60 MV, Harold): the scan status indicator
+              // ("Scan complete <duration>" / progress) renders INLINE on
+              // the same line as "Live Scan" instead of its own row.
               Wrap(
                 spacing: 12,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   if (scanTypeLabel != null)
                     Text(
@@ -1060,13 +1044,10 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                         color: Colors.grey[600],
                       ),
                     ),
+                  if (hasLiveResults)
+                    _buildScanStatusIndicator(scanProvider),
                 ],
               ),
-            ],
-            // [NEW] F34: Scan status indicator (in-progress or completed)
-            if (hasLiveResults) ...[
-              const SizedBox(height: 8),
-              _buildScanStatusIndicator(scanProvider),
             ],
             const SizedBox(height: 8),
             // [UPDATED] FB-2a: Use same interactive filter chips for both live and historical
@@ -1111,62 +1092,31 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                   ? allResults.where((r) => !r.success).length
                   : scanProvider.errorCount;
 
+              // F166 (Sprint 60 MV, Harold): the six stat chips replaced by
+              // ONE single-select filter dropdown + the Folders chip on a
+              // single line. Counts live in the dropdown entries; the
+              // mode-adaptive "(not processed)" labels carry over. The
+              // dup-removed informational chip (F91) stays, shown only when
+              // non-zero.
               return Wrap(
                 spacing: 12,
                 runSpacing: 12,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  _buildSpecialStatChip(
-                      'Found',
-                      foundCount,
-                      const Color(0xFF2196F3),
-                      Colors.white,
-                      SpecialFilter.found,
-                      'Total emails found in the scanned folder(s).'),
-                  _buildSpecialStatChip(
-                      'Processed',
-                      processedCount,
-                      const Color(0xFF9C27B0),
-                      Colors.white,
-                      SpecialFilter.processed,
-                      'Emails evaluated against your rules so far.'),
-                  _buildStatChipWithMode(
-                    isSafeSendersOnly || isReadOnly
+                  _buildFilterDropdownChip(
+                    foundCount: foundCount,
+                    processedCount: processedCount,
+                    deletedCount: deletedCount,
+                    safeCount: safeCount,
+                    noRuleCount: noRuleCount,
+                    errorCount: errorCount,
+                    deletedLabel: isSafeSendersOnly || isReadOnly
                         ? 'Deleted (not processed)'
                         : 'Deleted',
-                    deletedCount,
-                    isSafeSendersOnly || isReadOnly
-                        ? const Color(0xFFEF9A9A)
-                        : const Color(0xFFF44336),
-                    isSafeSendersOnly || isReadOnly
-                        ? Colors.black54
-                        : Colors.white,
-                    EmailActionType.delete,
-                    isSafeSendersOnly || isReadOnly
-                        ? 'These emails match a block rule and WOULD BE deleted, '
-                            'but nothing has actually happened yet -- this scan '
-                            'only reports what would occur.'
-                        : 'These emails matched a block rule and were deleted.',
+                    safeLabel: isRulesOnly || isReadOnly
+                        ? 'Safe (not processed)'
+                        : 'Safe',
                   ),
-                  _buildStatChipWithMode(
-                    isRulesOnly || isReadOnly ? 'Safe (not processed)' : 'Safe',
-                    safeCount,
-                    isRulesOnly || isReadOnly
-                        ? const Color(0xFFA5D6A7)
-                        : const Color(0xFF4CAF50),
-                    isRulesOnly || isReadOnly ? Colors.black54 : Colors.white,
-                    EmailActionType.safeSender,
-                    isRulesOnly || isReadOnly
-                        ? 'These emails match a safe-sender rule and WOULD BE '
-                            'kept, but nothing has actually happened yet -- this '
-                            'scan only reports what would occur.'
-                        : 'These emails matched a safe-sender rule and were kept.',
-                  ),
-                  // F91 (Sprint 39): informational chip for source-folder
-                  // duplicates removed during post-safe-sender-move dedup
-                  // (server-acknowledged-but-not-performed move
-                  // reconciliation; confirmed provider-agnostic, F146
-                  // Sprint 55). Shown only when the count is greater than
-                  // zero so it does not clutter the summary otherwise.
                   if (scanProvider.safeSenderDedupCount > 0)
                     Tooltip(
                       message:
@@ -1186,21 +1136,6 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                             horizontal: 8, vertical: 4),
                       ),
                     ),
-                  _buildStatChip(
-                      'No rule',
-                      noRuleCount,
-                      const Color(0xFF757575),
-                      Colors.white,
-                      EmailActionType.none,
-                      'No existing rule or safe sender matched these emails. '
-                          'Review them to add a rule or safe sender.'),
-                  _buildSpecialStatChip(
-                      'Errors',
-                      errorCount,
-                      const Color(0xFFD32F2F),
-                      Colors.white,
-                      SpecialFilter.error,
-                      'Emails that could not be processed due to an error.'),
                   _buildFolderFilterChip(allResults),
                 ],
               );
@@ -1286,6 +1221,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
       final durationText = duration != null ? _formatDuration(duration) : null;
 
       return Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.check_circle, size: 16, color: Colors.green[700]),
           const SizedBox(width: 6),
@@ -1310,6 +1246,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
 
     if (hasError) {
       return Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.error_outline, size: 16, color: Colors.red[700]),
           const SizedBox(width: 6),
@@ -1339,96 +1276,92 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
     return '${duration.inSeconds}s';
   }
 
-  /// Build stat chip with mode-aware styling
-  /// F151c (Sprint 58): every summary chip carries a tooltip explaining what
-  /// it means in plain language, since a first-time user has no other
-  /// context for what "Processed" or "No rule" mean before hovering.
-  Widget _buildStatChipWithMode(String label, int value, Color bg, Color fg,
-      EmailActionType? filterType, String tooltip) {
-    final isActive = _filter == filterType;
-
-    return Tooltip(
-      message: tooltip,
-      child: GestureDetector(
-        onTap: () {
-          if (filterType != null) {
-            _toggleFilter(filterType);
-          }
-        },
-        child: Chip(
-          label: Text('$label: $value'),
-          backgroundColor: isActive ? bg.withValues(alpha: 0.7) : bg,
-          labelStyle: TextStyle(
-            color: fg,
-            fontWeight: isActive ? FontWeight.w900 : FontWeight.bold,
-            fontSize: label.contains('not processed') ? 11 : 14,
-          ),
-          side: isActive
-              ? const BorderSide(color: Colors.black, width: 2)
-              : BorderSide.none,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatChip(String label, int value, Color bg, Color fg,
-      EmailActionType? filterType, String tooltip) {
-    // Determine if this chip is currently the active filter
-    final isActive = _filter == filterType;
-
-    return Tooltip(
-      message: tooltip,
-      child: GestureDetector(
-        onTap: () {
-          if (filterType != null) {
-            _toggleFilter(filterType);
-          }
-        },
-        child: Chip(
-          label: Text('$label: $value'),
-          backgroundColor: isActive ? bg.withValues(alpha: 0.7) : bg,
-          labelStyle: TextStyle(
-            color: fg,
-            fontWeight: isActive ? FontWeight.w900 : FontWeight.bold,
-          ),
-          side: isActive
-              ? const BorderSide(color: Colors.black, width: 2)
-              : BorderSide.none,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        ),
-      ),
-    );
-  }
-
-  /// Build stat chip for special filters (Found, Processed, Error)
-  Widget _buildSpecialStatChip(String label, int value, Color bg, Color fg,
-      SpecialFilter filterType, String tooltip) {
-    final isActive = _specialFilter == filterType;
-
-    return Tooltip(
-      message: tooltip,
-      child: GestureDetector(
-        onTap: () {
-          _toggleSpecialFilter(filterType);
-        },
-        child: Chip(
-          label: Text('$label: $value'),
-          backgroundColor: isActive ? bg.withValues(alpha: 0.7) : bg,
-          labelStyle: TextStyle(
-            color: fg,
-            fontWeight: isActive ? FontWeight.w900 : FontWeight.bold,
-          ),
-          side: isActive
-              ? const BorderSide(color: Colors.black, width: 2)
-              : BorderSide.none,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        ),
-      ),
-    );
-  }
-
   /// Build folder filter dropdown chip (Item 6)
+  /// F166 (Sprint 60 MV, Harold): the single-select filter dropdown that
+  /// replaced the six stat chips. Each entry carries its live count; choosing
+  /// one sets the corresponding filter (action or special) and clears the
+  /// other dimension -- single-select by construction. The chip face shows
+  /// the ACTIVE selection; when the user clears all filters (the banner X),
+  /// it falls back to an "All" face with the Found total, so the total-found
+  /// information the old Found chip carried remains visible.
+  Widget _buildFilterDropdownChip({
+    required int foundCount,
+    required int processedCount,
+    required int deletedCount,
+    required int safeCount,
+    required int noRuleCount,
+    required int errorCount,
+    required String deletedLabel,
+    required String safeLabel,
+  }) {
+    // (label, count, apply-callback) per Harold's specified option order.
+    final options = <(String, int, VoidCallback)>[
+      ('No rule', noRuleCount, () {
+        _filter = EmailActionType.none;
+        _specialFilter = null;
+      }),
+      (safeLabel, safeCount, () {
+        _filter = EmailActionType.safeSender;
+        _specialFilter = null;
+      }),
+      (deletedLabel, deletedCount, () {
+        _filter = EmailActionType.delete;
+        _specialFilter = null;
+      }),
+      ('Errors', errorCount, () {
+        _specialFilter = SpecialFilter.error;
+        _filter = null;
+      }),
+      ('Processed', processedCount, () {
+        _specialFilter = SpecialFilter.processed;
+        _filter = null;
+      }),
+    ];
+
+    String face;
+    if (_filter == EmailActionType.none) {
+      face = 'No rule: $noRuleCount';
+    } else if (_filter == EmailActionType.safeSender) {
+      face = '$safeLabel: $safeCount';
+    } else if (_filter == EmailActionType.delete) {
+      face = '$deletedLabel: $deletedCount';
+    } else if (_specialFilter == SpecialFilter.error) {
+      face = 'Errors: $errorCount';
+    } else if (_specialFilter == SpecialFilter.processed) {
+      face = 'Processed: $processedCount';
+    } else {
+      face = 'All: $foundCount';
+    }
+
+    return PopupMenuButton<int>(
+      tooltip: 'Filter the email list',
+      onSelected: (index) => setState(() => options[index].$3()),
+      itemBuilder: (context) => [
+        for (var i = 0; i < options.length; i++)
+          PopupMenuItem<int>(
+            value: i,
+            child: Text('${options[i].$1}: ${options[i].$2}'),
+          ),
+      ],
+      child: Chip(
+        label: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(face),
+            const Icon(Icons.arrow_drop_down, size: 20),
+          ],
+        ),
+        backgroundColor: const Color(0xFF757575),
+        labelStyle: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+        ),
+        side: BorderSide.none,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      ),
+    );
+  }
+
   Widget _buildFolderFilterChip(List<EmailActionResult> allResults) {
     // Issue 3: Use cached folders for performance
     final folders = _cachedFolders ?? [];
@@ -1730,16 +1663,27 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
               // content roughly double the width. FractionallySizedBox
               // scales with the window, so narrow windows keep a usable
               // proportional popup instead of a fixed-width overflow.
+              // Sprint 60 MV round 3 (Harold, Android): the desktop layout
+              // (right-65% + minWidth 400) forced onto a phone width produced
+              // a letter-wrapped, right-overflowing popup. On compact widths
+              // the popup takes the FULL width (the left-column-visible
+              // rationale does not apply when the popup covers the row list
+              // anyway); desktop keeps the F151e/MV-8 right-65% layout.
               child: FractionallySizedBox(
                 alignment: Alignment.centerRight,
-                widthFactor: 0.65,
+                widthFactor:
+                    MediaQuery.of(context).size.width < 600 ? 1.0 : 0.65,
                 child: ConstrainedBox(
                   // maxHeight (Sprint 60 MV): the hard cap that makes the
                   // clamped `top` a real fit guarantee -- content beyond the
                   // cap scrolls inside the popup instead of clipping off the
-                  // window's bottom edge.
+                  // window's bottom edge. minWidth applies only where the
+                  // window can afford it (desktop).
                   constraints: BoxConstraints(
-                      minWidth: 400, maxHeight: popupHeight),
+                      minWidth: MediaQuery.of(context).size.width < 600
+                          ? 0
+                          : 400,
+                      maxHeight: popupHeight),
                   child: Material(
                     elevation: 8,
                     borderRadius: BorderRadius.circular(12),
@@ -2881,46 +2825,17 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
             color: isComplete ? Colors.green.shade300 : Colors.amber.shade300,
           ),
         ),
-        child: Row(
-          children: [
-            Icon(
-              isComplete ? Icons.check_circle : Icons.flag_outlined,
-              size: 18,
-              color: isComplete ? Colors.green.shade700 : Colors.amber.shade800,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                isComplete
-                    ? 'All $initial "No rule" emails addressed.'
-                    : '$addressed of $initial "No rule" emails addressed -- $remaining remaining.',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: isComplete
-                      ? Colors.green.shade900
-                      : Colors.amber.shade900,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            if (initial > 0)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: SizedBox(
-                  width: 80,
-                  height: 6,
-                  child: LinearProgressIndicator(
-                    value: addressed / initial,
-                    backgroundColor: Colors.grey.shade300,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      isComplete
-                          ? Colors.green.shade600
-                          : Colors.amber.shade700,
-                    ),
-                  ),
-                ),
-              ),
-          ],
+        // Sprint 60 MV (F166, Harold): flag icon and trailing progress bar
+        // removed -- the text alone carries the information.
+        child: Text(
+          isComplete
+              ? 'All $initial "No rule" emails addressed.'
+              : '$addressed of $initial "No rule" emails addressed -- $remaining remaining.',
+          style: TextStyle(
+            fontSize: 13,
+            color: isComplete ? Colors.green.shade900 : Colors.amber.shade900,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ),
     );

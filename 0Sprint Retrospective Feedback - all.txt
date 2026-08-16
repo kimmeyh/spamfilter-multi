@@ -5,7 +5,46 @@ Copilot review - see 0Claudedev_prompts.txt
 Manual Validation complete
 Sprint 60 Review/Retrospective - Combined Product Owner, Scrum Master and Lead Developer feedback
 - Effective while as Efficient as Reasonably Possible
-  - Very Good
+  - Good
+  - Can you address these errors in such a way as they are done correctly in the future:
+"""Bash(python - <<'EOF'
+  t = open(r"C:\Users\kimme\AppData\Local\Temp\claude\f166_tests.log", encoding="utf-8", errors="ignore").read()
+  i = t.find('matched row hidden, footer "1 of 2')
+  # find the failure block before the [E] line
+  seg = t[max(0,i-4000):i+200]
+  # print last TestFailure block
+  j = seg.rfind("TestFailure")
+  print(seg[max(0,j-200):j+900] if j>=0 else seg[-1500:])
+  EOF)
+Error: Exit code 1
+Traceback (most recent call last):
+  File "<stdin>", line 7, in <module>
+  File "C:\python312\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 30-149: character maps to <undefined>"""
+"""Bash(python - <<'EOF'
+  import sys, io, re
+  sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="ascii", errors="replace")
+  import subprocess
+  r = subprocess.run(["flutter","test","test/ui/screens/results_display_compact_and_filter_test.dart","test/ui/screens/results_display_no_rule_reload_test.dart"], capture_output=True, text=True, encoding="utf-8", errors="ignore")
+  t = r.stdout + r.stderr
+  for m in re.finditer(r"The following TestFailure was thrown", t):
+      seg = re.sub(r"\x1b\[[0-9;]*m", "", t[m.start():m.start()+420])
+      print("="*50); print(seg[:380])
+  EOF)
+Error: Exit code 1
+Traceback (most recent call last):
+  File "<stdin>", line 4, in <module>
+  File "C:\python312\Lib\subprocess.py", line 548, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\python312\Lib\subprocess.py", line 1026, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+  File "C:\python312\Lib\subprocess.py", line 1538, in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [WinError 2] The system cannot find the file specified"""
 - Testing Approach
   - Very Good
 - Effort Accuracy
@@ -31,7 +70,7 @@ Sprint 60 Review/Retrospective - Combined Product Owner, Scrum Master and Lead D
 - Minor function updates that need to be added to the next sprint plan
   - none
 - Function updates that can be added to the backlog for a future sprint
-  - none
+  - Android - updates to Help text specific to Android - again follow the best practice of everything the same unless that is not reasonably possible, then adapt for the platform as minimally as possible while still meeting what is reasonably needed - see ADR for details.
 - Questions to be discussed before ending the sprint
   - none
 

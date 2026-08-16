@@ -295,6 +295,27 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Scope: the cowork review's closing observation -- "version or constraint metadata that no gate watches" is the same class as the WinWright scripts sitting outside the rename net. Extend coverage: (1) `check-version-consistency.ps1` + `version_consistency_test.dart` assert the DEV worktree's `msix_config.msix_version` equals pubspec `version`'s X.Y.Z + `.0` (it drifted silently from 0.6.0.0 for ~10 releases); (2) evaluate a lightweight check that dependency-floor comments citing an upstream fix version match the constraint (the `^17.0.0`-vs-17.2.1 miss); scope to what is cheaply assertable, record what is deliberately left unwatched.
 - Source: Claude cowork PR #326 review (2026-08-15), findings 3/4 + closing pattern.
 
+**F164. Android live-scan performance investigation -- debug-vs-release + emulator factors (~1-2h measured comparison) Priority 28 (NEW, Sprint 60 MV -- Harold)**
+- Phase: Android rollout track / performance
+- Platform: Android
+- Observation (Harold, 2026-08-16): Manual Scan > Live Scan is noticeably slower on the Android emulator than the Windows app against the same mailbox.
+- Analysis at registration (answering Harold's "any inherent architectural reason?"): NO -- the scan pipeline (EmailScanner, adapters, rule evaluation, DB writes) is the same shared Dart code on both platforms. The measurable differences are environmental: (1) the Android build under test is a DEBUG APK -- Dart runs JIT with assertions, typically 2-10x slower than AOT; the Windows dev build is a RELEASE build (build-windows.ps1 builds --release); (2) emulator overhead (QEMU/WHPX virtualization, NAT'd network stack adds IMAP round-trip latency); (3) WAL was silently absent on Android until the Sprint 60 PRAGMA fix (now active -- DB writes should already be better than what Harold measured).
+- Scope: measure a `--release` APK on the emulator (and a physical device if available) against the same mailbox/folder set as Windows; record per-phase timings (connect, fetch, evaluate, persist); conclude whether any REAL gap remains after removing the debug/emulator factors; file fixes only if a genuine gap survives.
+- Source: Harold, Sprint 60 Manual Validation, 2026-08-16.
+
+**F165. Cross-device rules-DB sharing -- user cloud storage (iCloud/OneDrive/Box/Google Drive) exploration + hosted-tier option (~half-day exploration) Priority 30 (NEW, Sprint 60 MV -- Harold; product direction)**
+- Phase: Product direction / architecture exploration
+- Platform: All
+- Direction (Harold, 2026-08-16): long-term, the recommended deployment is a PHONE (Android/iPhone) doing the periodic background scans instead of the Windows app -- which makes the rules DB per-device divergence a real problem. Explore letting the user share their rules DB between devices via THEIR OWN cloud storage (iCloud / OneDrive / Box / Google Drive), e.g. exported-snapshot sync or file-provider integration. Additionally evaluate a hosted-sync option as a paid tier (~$4/year, non-free app option) -- pricing/product decision stays with Harold.
+- Exploration deliverables: sync-model options (file-based snapshot vs true sync; conflict handling for rule edits on two devices), per-provider integration effort, security posture (rules contain sender addresses -- privacy note), and a recommendation. Builds on the existing YAML export invariants as the likely interchange format.
+- Source: Harold, Sprint 60 Manual Validation, 2026-08-16.
+
+**F166. Scan Results header redesign -- filter dropdown + folders chip on one line, inline scan-complete, simplified no-rule banner (~2-3h incl. test updates) Priority 8 (Sprint 60 MV -- Harold; EXECUTING in-sprint)**
+- Phase: Core App Quality / UX
+- Platform: All (shared widget; per-spec identical on both)
+- Spec (Harold, 2026-08-16): (1) replace the summary chip rows with TWO chips on a single line: a single-select filter DROPDOWN (options with counts: No Rule -- the new DEFAULT filter; Safe or Safe (not processed) per mode; Deleted or Deleted (not processed) per mode; Errors; Processed) and the existing Folders chip; (2) move "Scan complete <duration>" onto the same line as, and after, "Live Scan" (both apps); (3) shorten the "0 of N "No rule" emails addressed" banner by removing the flag icon before it and the progress-bar element at the end. Design note recorded at planning: with No Rule as the default filter, rows leave the filtered view the moment they are addressed -- which also resolves Harold's "added safe senders but they still appear in the list" observation (Results rows are the scan's permanent record by design; the default filter now hides addressed ones).
+- Source: Harold, Sprint 60 Manual Validation, 2026-08-16.
+
 **F162. Windows-vs-Android functionality parity audit (full walk-through) + parity ADR (~half-day audit + ADR authoring) Priority 18 (NEW, Sprint 60 Manual Validation -- Harold)**
 - Phase: Android rollout track / architecture governance
 - Platform: All

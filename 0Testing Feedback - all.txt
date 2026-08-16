@@ -9,6 +9,44 @@ Sprint 6n Manual Validation Feedback
 ---------------------------------------------------------------------------------------------------------
 Sprint 60 Manual Validation Feedback 
 
+- Android 
+  - Have run 3 full scans, but scan history is empty on the re-launch. The scan had many no-rule items, but nothing shows in the "No Rule" screen.
+
+
+- Android 
+  - Manual Scan > Live Scan > Summary Results screen (would be same/similar for all Scan Results screens)
+    - Click on an email to add/update rules (see image)
+- Add to backlog
+  - Manual Scan > Live Scan for Android is definitely slower than same for Windows app. Could be emulator or something else.
+    - Is there any known reason why the architecture for scanning would be inherently slower on Android? Is it just due to being an emulator?
+- The Android rules DB will be different from Android to Windows.
+  - I believe long-term, recommendation is to use either Android (or iPhone) to do periodic background scans and updates (instead of Windows App)
+  - Can we explore if it makes sense to allow the user to share their rules DB between devices by storing on their personal iCloud or OneDrive or Box or Google Drive?
+  - Could offer to host one for them for a additional tier (non-free app option) at $4 per year?
+- Scan Results screens - Found, Processed... chips
+  - What about 2 chips on single line
+    1) Drop down with only one selectable: No Rule: <n> (default), Safe: <n> OR Safe (not processed): <n>, Deleted: <n> OR Deleted (not processed): <n>, Errors: <n>, Processed: <n>)
+    2) Folders: All - same as current
+  - Also Move "Scan complete <n>m <n>s" to same line as and after "Live Scan" (windows app and android app)
+  - Also shorten "0 of 68 "No rule" emails addressed..." to remove the "flag icon" before it and ?? icon at the end (see image)
+
+
+
+===========
+- Add to backlog - audit of full functionality of Windows App versus Android app via walk-through.
+  - added needed updates as backlog items (reference related ADR defining where architecture and functionality should be the same and when it can be different, and how to manage implementation of "differences".
+  - if items are already in the backlog - update the related backlog item(s) as needed.
+1. F160 dispositions (the headline decision): the audit table is in SPRINT_60_PLAN.md Task 1 — a per-group yes/no on my 11-update / 3-discontinue / 15-keep verdicts is enough.
+- approving all your recommendations
+2. Android interactive flows (emulator is ready, same walkthrough style as Firebase): add a real account (Gmail OAuth now that SHA-1 is live, or AOL IMAP), run a live scan, then long-press rows on Review No Rule Items to feel the F143 touch selection with real items.
+- Demo Scan - should match current functionality of Windows app and display - only differentiating where necessary (reference related ADR defining where architecture and functionality should be the same and when it can be different).  Add to backlog items with sufficient details.
+  - only showing 10 example emails - different from the examples used for Windows app (50+) - should be the same examples (see image) 
+  - Buttons for Processed, Deleted, Safe, No Rule, Errors do not work - functionality should match Windows app, display should be specific to Android (only as needed).
+- Manual Scan
+  - Scan mode does not match current functionality (see image)
+
+3. Windows spot-check (app running): a quick scan or reload to confirm the PRAGMA change is invisible on desktop (the full FFI suite already exercises it), and anything else you'd normally poke.
+- see 2 images - the email rule pop-up has to fit in the window for every email in the list that is visible - the first 2 do not fit in the Windows default window size.  Can it be adjusted?
 
 ---------------------------------------------------------------------------------------------------------
 Sprint 59 Manual Validation Feedback 
@@ -22,11 +60,7 @@ Sprint 59 Manual Validation Feedback
 
 - Production feedback:  
   - Production build has not completed a background task since 11:54am today (the production app has not been running interactively for most of that time, if not all). [Image #104] 
-  - Can't find Setting for how often the background scan runs. (every 15, 30, 45 minutes, 24 hours?) - believe it is currently set at 15 minutes, but should be user selectable
-  - IF it needs to be re-added, it should:
-    - be re-added to the Setting > Background and should be per account setting
-    - new selector should have drop down for minutes, and hours. Then a way to type in the number. Reasonable verification.
-    - OK to convert to days, hours, minutes for display purposes (example: 4235 minutes would display as 2 days, 22 hours, 35 minutes. and 53 hours as 2 days, 5 hours, 0 minutes.)
+
 
 ---------------------------------------------------------------------------------------------------------
 Sprint 58 Manual Validation Feedback 
