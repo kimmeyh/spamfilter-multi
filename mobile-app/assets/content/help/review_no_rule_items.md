@@ -2,7 +2,7 @@ Collects the emails that no rule matched, from every account's most recent scan,
 
 When more than one account is configured, chips above the list filter by account. "All Accounts" shows everything; each chip shows that account's item count.
 
-**Selecting items**: click a row or its checkbox to select it. On Windows desktop, Ctrl+click adds or removes individual rows, and Shift+click selects a range. Right-click a row to open the action menu directly.
+**Selecting items**: click a row to select it, or use its checkbox (the checkbox always toggles just that one row). On Windows desktop, Ctrl+click on a row adds or removes that row from the selection, and Shift+click on a row selects the range from your last click. Right-click a row to open the action menu directly.
 
 **Acting on a selection** (via the "Apply Rule" menu or right-click):
 
