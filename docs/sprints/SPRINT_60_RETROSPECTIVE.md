@@ -9,7 +9,29 @@
 
 ### 1. Effective while as Efficient as Reasonably Possible
 
-- **Product Owner / Scrum Master / Lead Developer** (combined, Harold verbatim): Good. "Can you address these errors in such a way as they are done correctly in the future:" [two Bash python heredoc failures quoted: (a) `UnicodeEncodeError: 'charmap' codec can't encode characters` from printing UTF-8 log content to a cp1252 stdout; (b) `FileNotFoundError: [WinError 2]` from `subprocess.run(["flutter", ...])`].
+- **Product Owner / Scrum Master / Lead Developer** (combined, Harold verbatim): Good. "Can you address these errors in such a way as they are done correctly in the future:" followed by two quoted failure transcripts:
+
+  ```
+  Bash(python - <<'EOF' ... [reading f166_tests.log and printing a TestFailure block] ... EOF)
+  Error: Exit code 1
+  Traceback (most recent call last):
+    File "<stdin>", line 7, in <module>
+    File "C:\python312\Lib\encodings\cp1252.py", line 19, in encode
+      return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+  UnicodeEncodeError: 'charmap' codec can't encode characters in position 30-149: character maps to <undefined>
+  ```
+
+  ```
+  Bash(python - <<'EOF' ... subprocess.run(["flutter","test",...]) ... EOF)
+  Error: Exit code 1
+  Traceback (most recent call last):
+    File "<stdin>", line 4, in <module>
+    File "C:\python312\Lib\subprocess.py", line 548, in run
+    File "C:\python312\Lib\subprocess.py", line 1026, in __init__
+    File "C:\python312\Lib\subprocess.py", line 1538, in _execute_child
+      hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+  FileNotFoundError: [WinError 2] The system cannot find the file specified
+  ```
 - **Claude Code Development Team**: Both failures are the same class: using python heredocs on Windows without accounting for Windows process/console semantics. Root causes and permanent corrections: (a) Windows python stdout defaults to cp1252; any script that prints file or log content must start with `sys.stdout.reconfigure(encoding="utf-8", errors="replace")`. (b) `flutter` is `flutter.bat` on Windows and `CreateProcess` does not resolve batch files without a shell; the correct pattern is to never wrap tool invocations in python `subprocess` at all: run the tool via the shell to a log file, then parse the file with python. Both recovered in under a minute each mid-sprint, but they were foreseeable; proposed as IMP-1 (memory rule). One additional self-caught inefficiency: during mutation-verification of the demo-label fix, `git checkout --` was used to restore the mutated file while the real fix was still uncommitted, reverting the fix itself (caught immediately because the test was re-run; proposed as IMP-2).
 
 ### 2. Testing Approach
