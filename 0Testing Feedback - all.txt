@@ -4,8 +4,29 @@ can you write a effective but compact /compact string I can use to compact where
 
 Manual Validation complete
 ---------------------------------------------------------------------------------------------------------
-Sprint 5n Manual Validation Feedback 
+Sprint 6n Manual Validation Feedback 
 
+---------------------------------------------------------------------------------------------------------
+Sprint 60 Manual Validation Feedback 
+
+
+---------------------------------------------------------------------------------------------------------
+Sprint 59 Manual Validation Feedback 
+
+
+
+
+1. F150 (Firebase Console): register Android app com.myemailspamfilter in project spamfilter-multi, add SHA-1 F6:CF:21:00:94:7A:D9:4E:8A:E9:25:66:5F:8F:20:DB:55:15:8F:17, download the new google-services.json, and I'll place and verify it with a real build.
+2. Manual Validation (app is running): review the Review No Rule Items help content (Help icon on the home screen now jumps straight to it); spot-check the rename on tooltips and the screen title; review the corrected WinWright capability statements in docs/WINWRIGHT_SELECTORS.md if desired.
+
+
+- Production feedback:  
+  - Production build has not completed a background task since 11:54am today (the production app has not been running interactively for most of that time, if not all). [Image #104] 
+  - Can't find Setting for how often the background scan runs. (every 15, 30, 45 minutes, 24 hours?) - believe it is currently set at 15 minutes, but should be user selectable
+  - IF it needs to be re-added, it should:
+    - be re-added to the Setting > Background and should be per account setting
+    - new selector should have drop down for minutes, and hours. Then a way to type in the number. Reasonable verification.
+    - OK to convert to days, hours, minutes for display purposes (example: 4235 minutes would display as 2 days, 22 hours, 35 minutes. and 53 hours as 2 days, 5 hours, 0 minutes.)
 
 ---------------------------------------------------------------------------------------------------------
 Sprint 58 Manual Validation Feedback 

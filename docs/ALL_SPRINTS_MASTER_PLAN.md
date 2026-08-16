@@ -260,6 +260,13 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 
 ### Core App Quality
 
+**F160. Skipped-tests audit: per-test purpose, skip reason, and keep/update/discontinue recommendation for all 29 skipped tests (~45-60m) Priority 8 (NEW, Sprint 60 refinement -- Harold)**
+- Phase: Testing / suite hygiene
+- Platform: All
+- Scope (Harold, 2026-08-16): for each of the 29 tests reported skipped in every full run, briefly state (1) what the test does and its original purpose, (2) why it is skipped, (3) a recommendation: discontinued, updated to working, or kept for special-purpose testing -- presented as a decision table for Harold's disposition. Planning inventory: 25 skip sites across 9 files (group-level skips account for the site-vs-run-count difference; the audit reconciles exactly). Skip-reason categories found at planning: real credentials/network required (gmail_api_adapter, aol_folder_scan, imap_adapter), platform-native plugin required (credential_verification), pending DI refactoring (delete_to_trash), pending Issue #117 refactoring (email_scanner_readonly_mode group), migration behavior mismatch (yaml_migration_integration x3), intentional-design documentation (rule_evaluator).
+- Deliverable: the audit table (in the sprint plan or a dedicated doc) + Harold's dispositions recorded; implementing approved dispositions is follow-up scope unless trivially small.
+- Source: Harold, Sprint 60 scope selection, 2026-08-16.
+
 **F156. Full Android app testing walk-through -- automated where possible, errors expected and fixed as found (~half-day+, scope firms up as errors surface) Priority 10 (Sprint 59 Manual Validation; re-prioritized at Sprint 60 refinement)**
 - Phase: Android rollout track
 - Platform: Android (emulator; F150 unblocked builds 2026-08-15)

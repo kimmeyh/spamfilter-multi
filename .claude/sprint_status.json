@@ -1,40 +1,34 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-16 (Submission 16 in certification; Sprint 60 scope selection pending)",
+  "_last_updated": "2026-08-16 (Sprint 60 plan presented, awaiting approval; Submission 16 in certification)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
+    "number": 60,
+    "branch": "feature/20260815_Sprint_60",
+    "pr_number": null,
+    "pr_url": null,
+    "start_date": "2026-08-16",
+    "status": "Phase 3 PLANNING -- SPRINT_60_PLAN.md written, PRESENTED TO HAROLD, AWAITING APPROVAL. Scope (Harold 2026-08-16): F160 (NEW skipped-tests audit) + F156/F157/F158/F159/F143/F144. Proposed execution order F160->F157->F158->F159->F143->F144->F156-last (walk-through validates final state). On approval: Phase 3.3.1 cards + draft PR (branch already exists -- do NOT skip 3.3.1).",
+    "plan_approved": false,
+    "plan_approval_date": null,
+    "blanket_execution_approved": false,
+    "scope": [
+      "F160",
+      "F157",
+      "F158",
+      "F159",
+      "F143",
+      "F144",
+      "F156"
+    ],
+    "_scope_note": "Priority order F156=10 reflects importance; execution order defers F156 to last deliberately (stated in plan header)."
+  },
+  "previous_sprint": {
     "number": 59,
     "branch": "feature/20260815_Sprint_59",
     "pr_number": 326,
-    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/326",
-    "start_date": "2026-08-15",
-    "status": "Sprint 59 CLOSED (merged #326->develop, #327->main; cards #322-#325 + #315 closed). Sprint 60 branch created FROM Sprint 59 branch (Phase 6.6), 0.9.0 kickoff committed (a65e6e0). 0.9.0.0 MSIX built+verified, awaiting Harold upload. Backlog Refinement presented; awaiting Harold's Sprint 60 scope selection.",
-    "plan_approved": true,
-    "plan_approval_date": "2026-08-15",
-    "blanket_execution_approved": true,
-    "scope": [
-      "F150",
-      "F153",
-      "F155",
-      "F154"
-    ],
-    "_scope_note": "Execution order F150 -> F153 -> F155 -> F154 (rename before new help content so content uses the final name). Store: 0.8.0.0 / Submission 15 IN CERTIFICATION (see store_release block); post-cert close-out (Check C, STORE_VERSION_STATUS Live row, CHANGELOG [0.8.0] heading, next dev bump) pends Harold's confirmation, independent of sprint tasks."
-  },
-  "previous_sprint": {
-    "number": 58,
-    "branch": "feature/20260814_Sprint_58",
-    "pr_number": 317,
-    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/317",
-    "start_date": "2026-08-14",
-    "status": "COMPLETE AND MERGED (develop PR #317, then develop->main). Phase 6.6 carry-forward done: feature/20260815_Sprint_59 branched from the Sprint 58 feature branch. Retro + doc triad complete. Final suite 1,891 passed / 29 skipped / 0 failed.",
-    "plan_approved": true,
-    "plan_approval_date": "2026-08-15",
-    "blanket_execution_approved": true,
-    "scope": [
-      "F151"
-    ],
-    "_scope_note": "F151 (Windows first-run UX) is Sprint 58's scope per Harold's explicit direction 2026-08-15, superseding the earlier F150 scoping. F150 remains open/deferred, still blocked on Harold's Firebase Console prerequisite -- next candidate once resolved. F151 fully executed (7/7 tasks); Manual Validation is the current phase."
+    "status": "CLOSED -- merged #326->develop, #327->main 2026-08-15; cards #322-#325 + #315 closed; shipped as 0.9.0.0/Submission 16."
   },
   "github_issues": [
     318,
@@ -69,7 +63,8 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Harold: select Sprint 60 scope from the refinement candidates (F156-F159 set, F143/F144, or a mix)",
-    "On Submission 16 certification: Step 7 close-out (Live row, CHANGELOG [0.9.0], dev bump 0.9.1)"
+    "Harold: review/approve SPRINT_60_PLAN.md",
+    "On approval: Phase 3.3.1 cards + draft PR, then execute",
+    "On Submission 16 certification: Step 7 close-out"
   ]
 }

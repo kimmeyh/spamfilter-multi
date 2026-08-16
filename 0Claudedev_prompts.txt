@@ -18,7 +18,7 @@ Let me know when completed so I can review and merge the PR
 Please wait 7 minutes for it to complete.
 
 Common Sprint PR merged prompt:
-PR merged.  Please continue following the sprint checklist and \docs\SPRINT_EXECUTION_WORKFLOW.md until backlog refinement (docs\BACKLOG_REFINEMENT.md)
+PR merged to develop, then PR merged develop to main.  Please continue following the sprint checklist and \docs\SPRINT_EXECUTION_WORKFLOW.md until backlog refinement (docs\BACKLOG_REFINEMENT.md). Then before selecting sprint scope, please follow the Microsoft Store release process in docs/STORE_RELEASE_PROCESS.md to build and prep the next store update.
 
 Common post reboot and Claude Code crashed prompts:
 claude --continue

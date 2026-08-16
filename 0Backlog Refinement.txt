@@ -5,7 +5,18 @@ All Sprint tasks and sub-tasks are approved.
 Continue without addition approvals until Manual Validation, providing your recommendation for Manual Validation steps.
 Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPING_CRITERIA.md
 ---------------------------------------------------------------------------------------------------------
-Sprint 5n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
+Sprint 6n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
+
+---------------------------------------------------------------------------------------------------------
+Sprint 60 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
+- Add to backlog and target for this sprint
+  - For each of the 29 skipped tests """Verification: suite 1,893 / 29 skipped / 0 failed; deep-link integration 32/32; sweep 3/3; analyze
+  clean. PR #326 (draft) is current.Verification: suite 1,893 / 29 skipped / 0 failed; deep-link integration 32/32; sweep 3/3; analyze clean.
+  PR #326 (draft) is current.""" can you tell me briefly: what each test does and original purpose, why it is being skipped, your opinion on
+  if the test should be: discontinued, updated to working or kept for special purpose testing.
+
+
+
 
 ---------------------------------------------------------------------------------------------------------
 Sprint 59 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
