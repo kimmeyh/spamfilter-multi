@@ -542,6 +542,19 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
   int _providerGroupCount = 0;
 
   /// Toggle filter when stat chip is clicked
+  /// Sprint 60 MV (Harold, Android re-validation): the filter banner's X.
+  /// It used to call _toggleFilter(null), which only clears the ACTION
+  /// filter -- with just the DEFAULT Processed special filter active (the
+  /// initState default), `_filter == null` already, so the call was a no-op
+  /// and the X was dead. Clear every filter dimension the banner reports.
+  void _clearAllFilters() {
+    setState(() {
+      _filter = null;
+      _specialFilter = null;
+      _selectedFolders = {};
+    });
+  }
+
   void _toggleFilter(EmailActionType? filterType) {
     setState(() {
       // If clicking the same filter, clear it (show all)
@@ -735,9 +748,17 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         body: SelectionArea(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
+            child: Builder(builder: (context) {
+              // Sprint 60 MV (Harold, Android re-validation): on a phone the
+              // fixed header stack (summary card + banners) consumed nearly
+              // the whole height, leaving a ~one-row list viewport ("not
+              // enough room to scroll"). On COMPACT widths the header items
+              // scroll WITH the list (folded into the same ListView), giving
+              // the list the full screen; desktop keeps the fixed header
+              // exactly as before (600px threshold: phones fold, the 1600px
+              // default Windows window never does).
+              final isCompact = MediaQuery.of(context).size.width < 600;
+              final headerItems = <Widget>[
                 _buildSummary(summary, scanProvider, allResults),
                 // F38: Non-blocking re-processing banner
                 if (_isReProcessing) ...[
@@ -752,10 +773,15 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                   _buildFilterStatus(filteredResults.length, allResults.length),
                   const SizedBox(height: 8),
                 ],
-                // Sprint 38 F82 (Issue #252): "M of N no-rules addressed" indicator
-                // when there were any no-rule emails to triage. Hidden when the
-                // initial count was zero (clean scan, nothing for the user to do).
+                // Sprint 38 F82 (Issue #252): "M of N no-rules addressed"
+                // indicator when there were any no-rule emails to triage.
                 _buildNoRuleProgressFooter(),
+              ];
+              final headerLen = isCompact ? headerItems.length : 0;
+              return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (!isCompact) ...headerItems,
                 Expanded(
                   child: RefreshIndicator(
                     onRefresh: () async {
@@ -769,6 +795,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                         ? ListView(
                             // Wrap empty state in ListView for pull-to-refresh gesture
                             children: [
+                              if (isCompact) ...headerItems,
                               SizedBox(
                                 height:
                                     MediaQuery.of(context).size.height * 0.4,
@@ -791,12 +818,18 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                             ],
                           )
                         : ListView.separated(
-                            itemCount: filteredResults.length +
+                            itemCount: headerLen +
+                                filteredResults.length +
                                 (_providerGroupCount > 0 ? 2 : 0),
-                            separatorBuilder: (_, __) =>
-                                const Divider(height: 1),
-                            itemBuilder: (_, index) =>
-                                _buildGroupedRow(filteredResults, index),
+                            // No dividers between the folded-in header items,
+                            // dividers between email rows as before.
+                            separatorBuilder: (_, index) => index < headerLen
+                                ? const SizedBox.shrink()
+                                : const Divider(height: 1),
+                            itemBuilder: (_, index) => index < headerLen
+                                ? headerItems[index]
+                                : _buildGroupedRow(
+                                    filteredResults, index - headerLen),
                           ),
                   ),
                 ),
@@ -869,7 +902,8 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                     ],
                   ),
               ],
-            ),
+            );
+            }),
           ),
         ), // Close SelectionArea
       ),
@@ -898,7 +932,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.clear, size: 16),
-            onPressed: () => _toggleFilter(null),
+            onPressed: _clearAllFilters,
             tooltip: 'Clear filter',
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
