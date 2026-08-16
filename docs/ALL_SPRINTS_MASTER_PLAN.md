@@ -254,13 +254,13 @@ _(Prior: **Sprint 49** F119-c + prod-DB restoration, PR #276; **Sprint 48** F119
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: August 3, 2026 (Sprint 53 Phase 1 refinement, post-PR-292/293 merge to develop/main, updated again same day during Sprint 53 execution. F137, F138 surfaced from Sprint 52's retro Category 14 + the F133 accessibility audit's dead-code finding; F138 decided and closed same-day. F139 (HOLD template) and F140 surfaced live during the F-STORE-53 smoke test -- see below.)
+**Last Reviewed**: August 15, 2026 (Sprint 60 Phase 1 refinement: F156-F159 re-prioritized 10/12/14/16 as a sprint-together set; F143/F144 PROMOTED from HOLD to 20/22 now that F150 unblocked the Android track. Prior review: August 3, 2026 (Sprint 53 Phase 1 refinement, post-PR-292/293 merge to develop/main, updated again same day during Sprint 53 execution. F137, F138 surfaced from Sprint 52's retro Category 14 + the F133 accessibility audit's dead-code finding; F138 decided and closed same-day. F139 (HOLD template) and F140 surfaced live during the F-STORE-53 smoke test -- see below.)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
 ### Core App Quality
 
-**F156. Full Android app testing walk-through -- automated where possible, errors expected and fixed as found (~half-day+, scope firms up as errors surface) Priority 20 (NEW, Sprint 59 Manual Validation)**
+**F156. Full Android app testing walk-through -- automated where possible, errors expected and fixed as found (~half-day+, scope firms up as errors surface) Priority 10 (Sprint 59 Manual Validation; re-prioritized at Sprint 60 refinement)**
 - Phase: Android rollout track
 - Platform: Android (emulator; F150 unblocked builds 2026-08-15)
 - Scope (Harold, 2026-08-15): a full walk-through of the Android app now that it builds/installs/launches again -- "preferably done via Flutter or WinWright tests, uncovering errors -- I expect some. They are not a problem, just need to fix them." Tooling reality: WinWright cannot see inside the emulator (Windows-UIA only); the equivalents are `integration_test` on the emulator device (the F99 harness runs there), plus adb-driven flows (screencap, uiautomator dump, input injection, logcat) validated during F150. Expect first-run-on-Android errors in paths never exercised on-device (background scanning via workmanager, notifications with the new v17 plugin, OAuth once SHA-1 lands, storage paths).
@@ -268,7 +268,7 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Sequencing: after Sprint 59; natural lead-in to F143/F144 and the Google Play track.
 - Source: Harold, Sprint 59 Manual Validation feedback, 2026-08-15.
 
-**F157. Impact study: adopt the Flutter-suggested gradle/minSdk modernization (~time-boxed study; implement in-item if impact < 200 LOC and < 2h wall-clock) Priority 20 (NEW, Sprint 59 retro)**
+**F157. Impact study: adopt the Flutter-suggested gradle/minSdk modernization (~time-boxed study; implement in-item if impact < 200 LOC and < 2h wall-clock) Priority 12 (Sprint 59 retro; sprints together with F156)**
 - Phase: Android rollout track / build hygiene
 - Platform: Android (build config)
 - Background: during Sprint 59's F150 builds, Flutter's own gradle-file migrator rewrote `mobile-app/android/app/build.gradle.kts` (`minSdk = 23` -> `minSdk = flutter.minSdkVersion`, log line "Upgrading build.gradle.kts"). The rewrite was reverted to preserve the F108 pin (flutter_secure_storage 10 requires API 23+) pending this study. Harold explicitly declined a pin-protecting policy gate (Sprint 59 retro IMP-6, skipped): the preference is to absorb tool-driven upgrades per "carry as little tech debt as reasonably possible", not fence them out.
@@ -276,13 +276,13 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Watch-item until done: the migrator may re-apply its rewrite on any future `flutter build apk` -- read `git status --short` before committing after Android builds (this is what caught it in Sprint 59).
 - Source: Harold, Sprint 59 retrospective, 2026-08-15.
 
-**F158. CI guard for the F150 regression class -- Android debug build job (~30-60m incl. the config question) Priority 20 (NEW, Sprint 59 cowork review finding 3; target next sprint)**
+**F158. CI guard for the F150 regression class -- Android debug build job (~30-60m incl. the config question) Priority 14 (Sprint 59 cowork review finding 3; sprints together with F156/F157)**
 - Phase: Android rollout track / CI
 - Platform: CI (ubuntu or windows runner)
 - Scope: add a `flutter build apk --debug` job to `.github/workflows/ci.yml` so the F150 class (Android build broken for months, found only manually) cannot recur silently. Design question to resolve first: `google-services.json` is gitignored, and the build fails at `:app:processDebugGoogleServices` without it -- the job needs either a checked-in CI-safe config (google-services.json is not a secret in the credential sense, but the repo currently treats it as one), a repo-secret-injected copy, or a validate-only stub. Decide deliberately, do not just commit the real file.
 - Source: Claude cowork PR #326 review (2026-08-15), finding 3. IMP-6's decline (minSdk pin gate) was upgrade-freedom, a different question from build coverage.
 
-**F159. Metadata-under-gates: extend the version-consistency net to msix_version and dependency floors (~45-60m) Priority 20 (NEW, Sprint 59 cowork review closing pattern; target next sprint)**
+**F159. Metadata-under-gates: extend the version-consistency net to msix_version and dependency floors (~45-60m) Priority 16 (Sprint 59 cowork review closing pattern; sprints together with F156-F158)**
 - Phase: Build hygiene / policy gates
 - Platform: All (repo metadata)
 - Scope: the cowork review's closing observation -- "version or constraint metadata that no gate watches" is the same class as the WinWright scripts sitting outside the rename net. Extend coverage: (1) `check-version-consistency.ps1` + `version_consistency_test.dart` assert the DEV worktree's `msix_config.msix_version` equals pubspec `version`'s X.Y.Z + `.0` (it drifted silently from 0.6.0.0 for ~10 releases); (2) evaluate a lightweight check that dependency-floor comments citing an upstream fix version match the constraint (the `^17.0.0`-vs-17.2.1 miss); scope to what is cheaply assertable, record what is deliberately left unwatched.
@@ -458,7 +458,7 @@ _(Sprint 51-52 detail sections pruned per Maintenance Rule 2 -- all shipped/reso
 
 _(F142 shipped Sprint 57 -- see `docs/sprints/SPRINT_57_PLAN.md` and CHANGELOG.md 2026-08-14. `MainNavigationScreen`'s `Platform.isAndroid` bottom-nav branch removed entirely; both platforms now share the same default-screen decision, `appDefaultScreenFor`, formerly `_DesktopDefaultScreen`/`desktopDefaultScreenFor`. Manual on-device Android validation was blocked by the pre-existing F94/F150 build issue -- see F150 below.)_
 
-**F143. Android entry point + touch-adapted selection for No-Rule Review screen (~time-boxed, no-history) Priority HOLD (F142 dependency satisfied Sprint 57)**
+**F143. Android entry point + touch-adapted selection for No-Rule Review screen (~time-boxed, no-history) Priority 20 (PROMOTED from HOLD at Sprint 60 refinement -- F142 satisfied Sprint 57, F150 build blocker resolved Sprint 59; Android track is actionable)**
 - Phase: Android / Google Play Store Readiness
 - Platform: Android
 - **Finding** (F141 deep dive): `NoRuleReviewScreen` (F39/F135) -- the desktop app's DEFAULT screen when accounts exist -- has ZERO Android entry point. `StandardAppBarActions` gates its AppBar icon to `Platform.isWindows`; prior to F142 (Sprint 57), the Android nav branch never reached the shared default-screen decision at all. **F142 now routes Android through the SAME `appDefaultScreenFor` decision desktop uses, so Android reaches `NoRuleReviewScreen` as its default screen when accounts exist** -- the remaining gap this item covers is narrower than originally scoped: the AppBar icon deep-link still stays Windows-gated (F142's own explicit R-3 decision, since this item's touch-selection redesign has not landed yet), and the screen's multi-item selection mechanism itself needs the touch redesign below.
@@ -466,7 +466,7 @@ _(F142 shipped Sprint 57 -- see `docs/sprints/SPRINT_57_PLAN.md` and CHANGELOG.m
 - Depends on: none remaining -- F142's navigation shell landed Sprint 57. Note: on-device Android verification of this item will hit the same F150 build blocker until that is resolved.
 - Source: Sprint 54 F141 deep dive, 2026-08-03; F142 dependency satisfied Sprint 57.
 
-**F144. Re-evaluate Android background scanning against the Windows Task Scheduler pattern (WorkManager as the only genuine platform substitution) + add POST_NOTIFICATIONS runtime request (~time-boxed, no-history) Priority HOLD**
+**F144. Re-evaluate Android background scanning against the Windows Task Scheduler pattern (WorkManager as the only genuine platform substitution) + add POST_NOTIFICATIONS runtime request (~time-boxed, no-history) Priority 22 (PROMOTED from HOLD at Sprint 60 refinement -- F150 build blocker resolved Sprint 59)**
 - Phase: Android / Google Play Store Readiness
 - Platform: Android
 - **Finding** (F141 deep dive): `BackgroundScanManager`/`BackgroundScanService` (a `workmanager`-based scheduler, pre-dating the current architecture) exist in source but have ZERO call sites anywhere in `lib/` -- entirely unwired since Windows' `WindowsTaskSchedulerService`-based path became the maintained, actively-developed background-scan architecture (per-account scheduling, ADR-0039/0040, F98). Separately, no `POST_NOTIFICATIONS` runtime permission request exists anywhere (Android 13+/API 33+ requires this at runtime in addition to the manifest declaration, which IS auto-merged by dependent plugins) -- without it, notifications would silently never show.
