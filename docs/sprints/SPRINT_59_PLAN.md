@@ -33,9 +33,20 @@
 
 **Model**: Sonnet -- *why not Haiku*: interactive external-system walkthrough with live diagnosis if the console output does not match expectations.
 
-**Executed-by**: _(fill at completion)_
+**Executed-by**: Fable 5 (session model; interactive walkthrough with Harold driving the console)
 **Step-types**: DATA (external config), DOCS
-**Est-Effort**: 30-60m (interactive; depends on console round-trips)
+**Est-Effort**: 30-60m (interactive; depends on console round-trips) -- **Actual: ~45m including the masked second blocker**
+
+**COMPLETION NOTES (2026-08-15)**:
+- R-1: Harold registered `com.myemailspamfilter` in Firebase project spamfilter-multi via screenshot-guided steps. One round-trip miss caught live: browser autofill silently substituted the OLD package into the registration form; the wrong entry was verified via Project settings (packages are immutable), removed (30-day-delete flow, all-checkbox acknowledgment), and re-registered correctly with the name typed by hand. Interesting artifact: the ORIGINAL stale Firebase entry is `com.example.spamfilter_mobile` (underscore) while the local stale json carried `com.example.spamfiltermobile` -- two different stale identities, which is why the autofilled duplicate was not rejected. SHA-1 field no longer exists on the registration form in the current console; fingerprint still to be added via 'Add fingerprint' on the app card before Google Sign-In testing (NOT needed for the build -- deferred to the Android track, noted here so it is not lost).
+- R-2: `google-services (2).json` (downloads redirect to D:\Data\Temp\Downloads) verified to contain the `com.myemailspamfilter` client, installed to `mobile-app/android/app/google-services.json`; old file backed up to session scratchpad; confirmed gitignored.
+- R-3/AC-1: build passed `:app:processDebugGoogleServices` on the first post-fix run -- which UNMASKED a second, pre-existing blocker: `flutter_local_notifications` 16.3.3 fails to compile against Android SDK 34 (upstream `bigLargeIcon` ambiguity, famous issue, fixed upstream in 17.0.0). Bumped to ^17.0.0 (resolved 17.2.4) with a pubspec comment; our usage is initialize/show/AndroidNotificationDetails only -- v17's breaking changes are in scheduling APIs we do not call. Analyze clean; full suite re-run after the bump (result recorded below).
+- AC-2: debug APK (173.7 MB) installed to the `pixel34_updated` emulator (launch quirks solved: that AVD belongs to the SECOND SDK at C:\Android\android-sdk -- its own emulator.exe must be used; the LOCALAPPDATA SDK's emulator cannot read its system image, and the old Nexus x86 AVD no longer boots under current WHPX. `netsimd.exe` crash dialog during boot is a known benign emulator sidecar failure.) App launched: `MainActivity` foreground, screenshot captured.
+- F142 T-3 opportunistic check PASSED: fresh install (zero accounts) lands on Select Account per the shared `appDefaultScreenFor` decision; F151a's welcome/orientation empty state ("No Accounts Yet" + explanation + "Try Demo Mode instead") renders on Android.
+- AC-3: `git check-ignore` confirms the config file untracked.
+- R-4 scope guard held: no flavor work (F94 stays HOLD).
+- Post-bump verification: `flutter analyze` clean; full suite **1,893 passed / 29 skipped / 0 failed**. (First full-suite run had a single failure in `default_rule_set_service_test.dart` 'pattern_type classification' -- passed 22/22 in isolation and green on the clean full re-run; unrelated to the plugin bump, looks like cross-shard ffi-DB interference. Flagged for the retro as a flake data point.)
+- Also delivered on request: the app icon added to the emulator home screen via `adb input draganddrop` (drawer -> home), screenshot-verified.
 
 ---
 
