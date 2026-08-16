@@ -336,7 +336,16 @@ if ($doSnapshot -and $snapshotBefore) {
             $driftDetected = $true
         }
     } catch {
-        Write-Host "[DB-SNAPSHOT] WARNING: Post-sweep snapshot failed: $_" -ForegroundColor Yellow
+        # Sprint 59 cowork-review finding 2: the IMP-4 loud-fail rule must
+        # apply to BOTH ends of the sweep. A post-sweep snapshot failure means
+        # the drift comparison NEVER RAN -- exiting 0 here would report
+        # "success, no drift" with no drift check performed, the exact
+        # indistinguishable-from-a-passing-guard class IMP-4 eliminated on the
+        # pre-sweep side. (Plausible asymmetric failure: 'database is locked'
+        # on the post read while the app is still up.)
+        Write-Host "[DB-SNAPSHOT] FATAL: Post-sweep snapshot failed: $_" -ForegroundColor Red
+        Write-Host "[DB-SNAPSHOT] The drift comparison did not run -- treating the sweep as FAILED. Re-run, or use -NoSnapshotDb to explicitly waive the guard." -ForegroundColor Red
+        $driftDetected = $true
     }
 }
 

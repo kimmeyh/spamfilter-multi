@@ -6,8 +6,8 @@ When more than one account is configured, chips above the list filter by account
 
 **Acting on a selection** (via the "Apply Rule" menu or right-click):
 
-- **Add Safe Sender** (Exact Email / Exact Domain / Entire Domain): trust the sender so future scans leave their mail alone.
-- **Add Block Rule** (Exact Email / Exact Domain / Entire Domain): treat matching mail as spam on future scans.
+- **Add Safe Sender - Exact Email / Exact Domain / Entire Domain**: trust the sender so future scans leave their mail alone.
+- **Add Block Rule - Exact Email / Exact Domain / Entire Domain**: treat matching mail as spam on future scans.
 - **Remove Current Rule**: dismiss the selection as reviewed without creating any rule. The items leave the list.
 
 Items also leave the list automatically once a rule covers them -- including rules you add elsewhere in the app. The screen re-checks this on every reload.

@@ -276,6 +276,18 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Watch-item until done: the migrator may re-apply its rewrite on any future `flutter build apk` -- read `git status --short` before committing after Android builds (this is what caught it in Sprint 59).
 - Source: Harold, Sprint 59 retrospective, 2026-08-15.
 
+**F158. CI guard for the F150 regression class -- Android debug build job (~30-60m incl. the config question) Priority 20 (NEW, Sprint 59 cowork review finding 3; target next sprint)**
+- Phase: Android rollout track / CI
+- Platform: CI (ubuntu or windows runner)
+- Scope: add a `flutter build apk --debug` job to `.github/workflows/ci.yml` so the F150 class (Android build broken for months, found only manually) cannot recur silently. Design question to resolve first: `google-services.json` is gitignored, and the build fails at `:app:processDebugGoogleServices` without it -- the job needs either a checked-in CI-safe config (google-services.json is not a secret in the credential sense, but the repo currently treats it as one), a repo-secret-injected copy, or a validate-only stub. Decide deliberately, do not just commit the real file.
+- Source: Claude cowork PR #326 review (2026-08-15), finding 3. IMP-6's decline (minSdk pin gate) was upgrade-freedom, a different question from build coverage.
+
+**F159. Metadata-under-gates: extend the version-consistency net to msix_version and dependency floors (~45-60m) Priority 20 (NEW, Sprint 59 cowork review closing pattern; target next sprint)**
+- Phase: Build hygiene / policy gates
+- Platform: All (repo metadata)
+- Scope: the cowork review's closing observation -- "version or constraint metadata that no gate watches" is the same class as the WinWright scripts sitting outside the rename net. Extend coverage: (1) `check-version-consistency.ps1` + `version_consistency_test.dart` assert the DEV worktree's `msix_config.msix_version` equals pubspec `version`'s X.Y.Z + `.0` (it drifted silently from 0.6.0.0 for ~10 releases); (2) evaluate a lightweight check that dependency-floor comments citing an upstream fix version match the constraint (the `^17.0.0`-vs-17.2.1 miss); scope to what is cheaply assertable, record what is deliberately left unwatched.
+- Source: Claude cowork PR #326 review (2026-08-15), findings 3/4 + closing pattern.
+
 **F152. Periodic User-Centric First-Run Evaluation (~2-3h per review, plus fix-item time if findings warrant) Priority HOLD** _(TEMPLATE -- first run produced F151 above, Sprint 58 Backlog Refinement, 2026-08-15)_
 - Phase: UX Spike (reusable template)
 - Platform: Windows Desktop (this run); extend per-platform when other platforms are release-ready

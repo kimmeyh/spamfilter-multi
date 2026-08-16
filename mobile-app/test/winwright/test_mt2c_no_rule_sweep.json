@@ -22,8 +22,8 @@
 
         { "_comment": "Post-F135 the app OPENS on this screen when accounts exist; the 'All Accounts' chip exists only here, so it resolving is the reachability proof. Reaching this point means _loadItems -- and therefore _sweepCoveredItems -- has already run once against the full rule/safe-sender set. The account chips carry the POST-sweep counts in their accessible names; prefix-matched because counts are data-dependent.",
           "tool": "ww_invoke", "selector": "type=Button[name*='All Accounts (']" },
-        { "tool": "ww_invoke", "selector": "type=Button[name*='kimmeyharold@aol.com (']" },
-        { "tool": "ww_invoke", "selector": "type=Button[name*='kimmeyh@gmail.com (']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name*='@aol.com (']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name*='@gmail.com (']" },
         { "tool": "ww_invoke", "selector": "type=Button[name*='All Accounts (']" },
 
         { "_comment": "BASELINE ROW A. Each row exposes a 'Select <sender>' checkbox thanks to the Sprint 51 F129 semantics work. CheckBox needs ww_click (TogglePattern, not InvokePattern -- fact 1).",

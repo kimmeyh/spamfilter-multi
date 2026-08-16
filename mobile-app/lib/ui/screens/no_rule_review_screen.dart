@@ -694,7 +694,7 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
         // appear in this order: Refresh, View Scan History, Accounts,
         // Settings, Help".
         //
-        // includeNoRuleReview: false -- this IS the Review "No Rule" screen; a
+        // includeNoRuleReview: false -- this IS the Review No Rule Items screen; a
         // self-referential entry point would be noise.
         // Settings is account-scoped while this screen is cross-account, so the
         // accountId comes from the F135 resolver (which never prompts here);

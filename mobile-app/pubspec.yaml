@@ -46,7 +46,7 @@ dependencies:
 
   # Phase 3.5 Sprint 7 - Background Scanning
   workmanager: ^0.9.0  # Background task scheduling (Android/iOS) (F108, Sprint 44: 0.5->0.9; we use NetworkType.connected + a simple inputData map, unaffected by the enum renames / native-Map change)
-  flutter_local_notifications: ^17.0.0  # Local notifications (F150, Sprint 59: 16->17; v16 does not compile against Android SDK 34 -- upstream bigLargeIcon ambiguity, fixed in 17.0.0. We use only initialize/show/AndroidNotificationDetails; the v17 breaking changes are in scheduling APIs we do not call.)
+  flutter_local_notifications: ^17.2.1  # Local notifications (F150, Sprint 59: 16->17; v16 does not compile against Android SDK 34 -- upstream bigLargeIcon ambiguity. NOTE: 17.0.0 only SURFACES the ambiguity (it bumps compileSdk to 34); the actual fix is upstream issue #2329, first released in 17.2.1 -- hence the floor here (Claude cowork review, 2026-08-15). We use only initialize/show/AndroidNotificationDetails; the v17 breaking changes are in scheduling APIs we do not call.)
   connectivity_plus: ^5.0.0  # Network connectivity detection
   battery_plus: ^5.0.0  # Battery level detection
 

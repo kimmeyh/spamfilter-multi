@@ -22,8 +22,8 @@
 
         { "_comment": "MT-3 (post-F135 form): the app opens ON the Review No Rule Items screen when accounts exist. The 'All Accounts' chip exists only on this screen, so it resolving IS the reachability proof. MT-2c evidence: the count chips carry the post-sweep totals -- counts are data-dependent, prefix match keeps the script valid across scans.",
           "tool": "ww_invoke", "selector": "type=Button[name*='All Accounts (']" },
-        { "tool": "ww_invoke", "selector": "type=Button[name*='kimmeyharold@aol.com (']" },
-        { "tool": "ww_invoke", "selector": "type=Button[name*='kimmeyh@gmail.com (']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name*='@aol.com (']" },
+        { "tool": "ww_invoke", "selector": "type=Button[name*='@gmail.com (']" },
         { "tool": "ww_invoke", "selector": "type=Button[name*='All Accounts (']" },
 
         { "_comment": "MT-2c: the reload button re-enters _loadItems, which runs the covered-item sweep before display. The screen must survive the reload with its chips intact. Tooltip renamed from 'Refresh' in Sprint 52 (Harold: 'Refresh' read as 'go check for new mail', which this does not do).",

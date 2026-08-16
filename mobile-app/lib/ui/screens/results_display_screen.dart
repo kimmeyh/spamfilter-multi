@@ -682,7 +682,7 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                   },
                 ),
           // F134 (Sprint 52): canonical order from the ONE shared builder --
-          // Download, Find (screen-specific, leading), then Review "No Rule"
+          // Download, Find (screen-specific, leading), then Review No Rule
           // Items, View Scan History, Accounts, Settings, Help, then the
           // auto-appended Exit. Exactly Harold's spec for this screen.
           // Previously this ran Download, Search, No-Rule, History, Accounts,
