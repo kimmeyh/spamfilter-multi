@@ -1636,6 +1636,18 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
         double? top;
         double? bottom;
 
+        // Sprint 60 MV (Harold): the popup must FIT fully inside the window
+        // for EVERY visible row. `popupHeight` is an estimate the real
+        // content can exceed, and the branches below never clamped `top` --
+        // so for rows near the TOP of the list the popup started low enough
+        // that its bottom rows ("Block Subject") were clipped off-window.
+        // Two-part fix: (1) every `top` is clamped so top + popupHeight stays
+        // on-screen; (2) the popup itself is hard-capped at `popupHeight`
+        // (see the ConstrainedBox below), so the clamp is against the REAL
+        // maximum height, with the existing inner SingleChildScrollView as
+        // the graceful fallback if content ever exceeds the cap.
+        final maxTop = (screenHeight - popupHeight - 8).clamp(8.0, screenHeight);
+
         if (itemPosition != null && itemSize != null) {
           final itemBottom = itemPosition.dy + itemSize.height;
           final spaceBelow = screenHeight - itemBottom;
@@ -1650,16 +1662,16 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
 
           if (spaceBelow >= popupHeight + oneItemGap) {
             // Show one email lower, keeping the next list item clickable
-            top = itemBottom + oneItemGap + 8; // 8px gap
+            top = (itemBottom + oneItemGap + 8).clamp(0.0, maxTop);
           } else if (spaceBelow >= popupHeight) {
             // Show directly below email (no room to also expose the next item)
-            top = itemBottom + 8; // 8px gap
+            top = (itemBottom + 8).clamp(0.0, maxTop);
           } else if (spaceAbove >= popupHeight) {
             // Show above email
             bottom = screenHeight - itemPosition.dy + 8; // 8px gap
           } else {
-            // Not enough room above or below - align with first email
-            top = itemPosition.dy;
+            // Not enough room above or below -- as high as needed to fit.
+            top = itemPosition.dy.clamp(0.0, maxTop);
           }
         }
 
@@ -1688,7 +1700,12 @@ class _ResultsDisplayScreenState extends State<ResultsDisplayScreen> {
                 alignment: Alignment.centerRight,
                 widthFactor: 0.65,
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(minWidth: 400),
+                  // maxHeight (Sprint 60 MV): the hard cap that makes the
+                  // clamped `top` a real fit guarantee -- content beyond the
+                  // cap scrolls inside the popup instead of clipping off the
+                  // window's bottom edge.
+                  constraints: BoxConstraints(
+                      minWidth: 400, maxHeight: popupHeight),
                   child: Material(
                     elevation: 8,
                     borderRadius: BorderRadius.circular(12),

@@ -295,6 +295,20 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Scope: the cowork review's closing observation -- "version or constraint metadata that no gate watches" is the same class as the WinWright scripts sitting outside the rename net. Extend coverage: (1) `check-version-consistency.ps1` + `version_consistency_test.dart` assert the DEV worktree's `msix_config.msix_version` equals pubspec `version`'s X.Y.Z + `.0` (it drifted silently from 0.6.0.0 for ~10 releases); (2) evaluate a lightweight check that dependency-floor comments citing an upstream fix version match the constraint (the `^17.0.0`-vs-17.2.1 miss); scope to what is cheaply assertable, record what is deliberately left unwatched.
 - Source: Claude cowork PR #326 review (2026-08-15), findings 3/4 + closing pattern.
 
+**F162. Windows-vs-Android functionality parity audit (full walk-through) + parity ADR (~half-day audit + ADR authoring) Priority 18 (NEW, Sprint 60 Manual Validation -- Harold)**
+- Phase: Android rollout track / architecture governance
+- Platform: All
+- Scope (Harold, 2026-08-16): a full-functionality walk-through comparing the Windows app against the Android app, producing (1) a NEW ADR defining where architecture and functionality MUST be identical across platforms, where they MAY differ (platform conventions, input models, platform "cannots"), and HOW differences are managed/implemented going forward; (2) needed-update backlog items for every divergence found, each referencing the ADR's rules; (3) updates to EXISTING backlog items where they already cover a found divergence (per Harold: update rather than duplicate).
+- Context/cautionary tale from the same MV round: the suspected divergences Harold observed (10-sample demo data, dead summary-chip buttons, a "Select Scan Mode" dialog removed in Feb 2026) turned out to be an ANCIENT `com.example.spamfiltermobile` install still present on the emulator AVD (the AVD had also reverted state, dropping the current install) -- the audit must run against a VERIFIED current install (`pm list packages` + version check first; the stale package is now uninstalled). Real parity gaps may still exist; the audit finds them systematically instead of anecdotally.
+- Sequencing: natural companion to F156's walk-through method and F161's scheduler work; the ADR should land before or with the first parity-fix items.
+- Source: Harold, Sprint 60 Manual Validation, 2026-08-16.
+
+**F163. Skipped-tests remediation -- implement the 11 approved update-to-working verdicts (~2-4h across 4 work items) Priority 26 (NEW, Sprint 60 F160 dispositions -- Harold approved all recommendations)**
+- Phase: Testing / suite hygiene
+- Platform: All
+- Scope: Harold approved every F160 recommendation (2026-08-16). The 3 discontinues were applied in-sprint (2 rejected-design yaml_migration tests + the rule_evaluator design-note skip deleted). This item carries the 4 update-to-working work items: (1) gmail_api_adapter no-auth error-path tests -- channel-stub seam, or discontinue if the adapter cannot run stubbed (fallback pre-approved); (2) delete_to_trash safety trio -- adapter mock-seam investigation (highest value: guards delete-recoverability); (3) email_scanner_readonly_mode group -- rebuild against the current provider architecture (read-only enforcement is the product's core safety promise, currently uncovered); (4) yaml_migration backup-creation test -- fix the assert-timing race. The 15 keep-for-special-purpose tests stay as-is by decision.
+- Source: F160 audit (SPRINT_60_PLAN.md Task 1) + Harold's blanket approval, Sprint 60 MV, 2026-08-16.
+
 **F161. Android background-scan scheduler mirroring the Windows per-account architecture + notifications + POST_NOTIFICATIONS (~3-5h) Priority 24 (NEW, Sprint 60 F144 follow-up)**
 - Phase: Android rollout track
 - Platform: Android
