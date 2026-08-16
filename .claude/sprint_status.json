@@ -49,7 +49,7 @@
     "analyzer_warnings": 0,
     "_test_metrics_note": "1,859 / 26 skipped / 0 failed as of 2026-08-16 (Sprint 60 final full run, analyzer clean). Skips 29 -> 26 via F160 dispositions (3 discontinued tests deleted). Net vs Sprint 59's 1,893: F144 deleted the unwired background-scan code AND its test files; new tests added for touch selection (3), compact/filter (3), scan persistence (1), demo label (1), popup width, msix gate, dropdown updates. All mutation-verified.",
     "hook_test_cases": "45/45 passing (.claude/hooks/run-test-cases.ps1) -- unchanged since Sprint 52.",
-    "winwright_sweep": "Not run at Sprint 60 close: lib/ui changes this sprint were validated by Harold's 4-round interactive MV on BOTH platforms plus the new widget regression suites; WinWright cannot see the Android emulator, and the Windows surfaces Harold exercised directly. Recorded here per IMP-5 evidence rule.",
+    "winwright_sweep": "End-of-sprint sweep RUN 2026-08-16 at close-out (lib/ui touched): 3/3 scripts PASS (f124_rule_labels 10 steps, f129_no_rule_review 10 steps, mt2c_no_rule_sweep 25 steps), DB drift none. First run failed mt2c at its DOCUMENTED data-precondition (Harold's MV rule/safe-sender adds addressed the old baseline rows); baselines refreshed from the live dev DB per the script's own maintenance note, re-run PASS.",
     "coverage_percent": null,
     "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5)."
   },
