@@ -86,9 +86,16 @@
 
 **Model**: Sonnet -- *why not Haiku*: toolchain-behavior investigation with a compatibility judgment against a documented hard floor.
 
-**Executed-by**: _(fill at completion)_
+**Executed-by**: Fable 5 (session model; executed inline)
 **Step-types**: DATA (build config), DOCS
-**Est-Effort**: 30-60m study; +<=2h only if the implement-in-item threshold is met
+**Est-Effort**: 30-60m study; +<=2h only if the implement-in-item threshold is met -- **Actual: ~25m total (study + implement)**
+
+**COMPLETION NOTES (2026-08-16)**:
+- R-1: `flutter.minSdkVersion` = **24** on this toolchain (read directly from the Flutter gradle plugin's `FlutterExtension.kt`) -- above F108's 23 floor.
+- R-2: full change-set captured via a deliberate throwaway `flutter build apk --debug`: the migrator rewrote exactly ONE line (`minSdk = 23` -> `minSdk = flutter.minSdkVersion`, "Upgrading build.gradle.kts"); no sibling gradle files touched.
+- R-3/R-4: ADOPTED, implemented in-item (1 line + comment, minutes -- far under the 200-LOC/2h threshold), as `minSdk = maxOf(flutter.minSdkVersion, 23)`: tracks Flutter's floor automatically AND keeps F108's requirement explicit in code instead of trusting Flutter's default never to drop. Effective floor rises 23 -> 24 (drops Android 6.0; F108's own negligible-user-base reasoning applies).
+- R-5/AC-2: clean rebuild with the maxOf form: **zero "Upgrading" messages and no migrator diff** -- the form does not match the migrator's literal-value pattern, so the rewrite loop is broken. Fresh APK installed + launched on the emulator (old install removed first -- the AVD hit INSTALL_FAILED_INSUFFICIENT_STORAGE with two 173MB debug APKs; noted for F156's walk-through hygiene); `dumpsys package` confirms effective `minSdk=24`.
+- AC-3: the Sprint 59 watch-item ("migrator may re-apply on future builds") is RETIRED.
 
 _**Risk & rollback**_: build-config changes are fully covered by git revert of the gradle files; the debug build + emulator launch is the acceptance gate before anything is kept.
 

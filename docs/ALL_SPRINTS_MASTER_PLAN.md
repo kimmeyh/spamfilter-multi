@@ -275,7 +275,7 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Sequencing: after Sprint 59; natural lead-in to F143/F144 and the Google Play track.
 - Source: Harold, Sprint 59 Manual Validation feedback, 2026-08-15.
 
-**F157. Impact study: adopt the Flutter-suggested gradle/minSdk modernization (~time-boxed study; implement in-item if impact < 200 LOC and < 2h wall-clock) Priority 12 (Sprint 59 retro; sprints together with F156)**
+**F157. Impact study: adopt the Flutter-suggested gradle/minSdk modernization -- [DONE Sprint 60, 2026-08-16: adopted as `minSdk = maxOf(flutter.minSdkVersion, 23)`; migrator's change-set was that one line; effective floor now 24, tracks Flutter; watch-item retired. See SPRINT_60_PLAN.md Task 2.]**
 - Phase: Android rollout track / build hygiene
 - Platform: Android (build config)
 - Background: during Sprint 59's F150 builds, Flutter's own gradle-file migrator rewrote `mobile-app/android/app/build.gradle.kts` (`minSdk = 23` -> `minSdk = flutter.minSdkVersion`, log line "Upgrading build.gradle.kts"). The rewrite was reverted to preserve the F108 pin (flutter_secure_storage 10 requires API 23+) pending this study. Harold explicitly declined a pin-protecting policy gate (Sprint 59 retro IMP-6, skipped): the preference is to absorb tool-driven upgrades per "carry as little tech debt as reasonably possible", not fence them out.
