@@ -546,6 +546,13 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
     final isCompleted = scan.status == 'completed';
     final isError = scan.status == 'error';
     final isManual = scan.scanType == 'manual';
+    // Sprint 60 MV (Harold): demo scans record scanType 'demo' but the old
+    // binary manual/background labeling showed them as "Background" -- on a
+    // platform with no background scheduler at all (F144/F161), a plainly
+    // wrong badge. Three-way label; anything unknown still says Background.
+    final typeLabel = isManual
+        ? 'Manual'
+        : (scan.scanType == 'demo' ? 'Demo' : 'Background');
 
     // Build subtitle with scan type badge and mode
     final modeLabel = _scanModeLabel(scan.scanMode);
@@ -569,7 +576,7 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
         container: true,
         button: canOpen,
         excludeSemantics: true,
-        label: '${isManual ? 'Manual' : 'Background'} scan - $accountEmail - '
+        label: '$typeLabel scan - $accountEmail - '
             '$modeLabel - ${scan.status}',
         hint: canOpen ? 'View scan results' : null,
         onTap: canOpen ? () => _navigateToResults(scan) : null,
@@ -605,7 +612,7 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      isManual ? 'Manual' : 'Background',
+                      typeLabel,
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,

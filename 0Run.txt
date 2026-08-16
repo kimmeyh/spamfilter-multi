@@ -14,11 +14,15 @@ Get-Process -Name "MyEmailSpamFilter-Dev" -ErrorAction SilentlyContinue |
     Select-Object Id, MainWindowTitle, Responding
 
 # *** RUN PROD variant manually - no longer works.
-Start-Process "D:\Data\Harold\github\spamfilter-multi\mobile-app\dist\prod\MyEmailSpamFilter.exe"
+Start-Process myemailspamfilter.exe
+Start-Process "shell:AppsFolder\KimmeyConsulting-Ohio.MyEmailSpamFilter_3t07cykjy5226!myemailspamfilter"
 
 
-# Run Android Emulator -------------------------
+# Android Run Emulator (simple, no rebuild) -------------------------
 #   Preferred method
+powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\start-emulator.ps1"
+
+
 powershell -NoProfile -ExecutionPolicy Bypass -Command "cd D:\Data\Harold\github\spamfilter-multi\mobile-app\scripts; .\build-with-secrets.ps1 -Run"
 # or  -StartEmulator?
 
