@@ -518,6 +518,26 @@ try {
         }
 
         # Step 5: Install APK with retries
+        #
+        # Sprint 60 storage pre-flight (Harold's maintenance question): an
+        # `install -r` upgrade briefly needs room for TWO copies of the APK,
+        # and the AVD's /data sits chronically ~85% full -- the transient
+        # squeeze produced INSTALL_FAILED_INSUFFICIENT_STORAGE failures that
+        # pushed deploys into uninstall cycles (which WIPE saved accounts:
+        # secure-storage keys die with the keystore on uninstall and cannot
+        # be backed up). Automated here at the point of failure rather than
+        # as a process/checklist step, so it maintains itself: if free space
+        # is under 2x the APK size + 200MB, trim system caches first.
+        $apkSizeMB = [math]::Ceiling((Get-Item $apkPath).Length / 1MB)
+        $neededMB = (2 * $apkSizeMB) + 200
+        $dfOut = & adb shell df -m /data 2>$null | Select-Object -Last 1
+        if ($dfOut -match '\s(\d+)\s+\d+%') {
+            $freeMB = [int]$Matches[1]
+            if ($freeMB -lt $neededMB) {
+                Write-Host "[Step 5/6] Low emulator storage (${freeMB}MB free, want ${neededMB}MB) -- trimming caches..." -ForegroundColor Yellow
+                & adb shell pm trim-caches 2000M 2>$null | Out-Null
+            }
+        }
         Write-Host "[Step 5/6] Installing APK to emulator..."
         $maxInstallTries = 3
         $installSuccess = $false
