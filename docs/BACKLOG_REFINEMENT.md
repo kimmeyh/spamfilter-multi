@@ -36,14 +36,36 @@ Backlog refinement (also called "grooming") is a collaborative session where the
 
 ### When to Conduct Refinement
 
-Backlog refinement is **on-demand** (not before every sprint). Conduct when:
+**[CORRECTED F170, Sprint 61]** This section previously said refinement was "on-demand (not before
+every sprint)", which CONTRADICTED the Sprint 36 policy stated in both
+`SPRINT_EXECUTION_WORKFLOW.md` ("Phase 1 | Backlog Refinement | **MANDATORY** -- every sprint; no PO
+request needed") and `SPRINT_CHECKLIST.md`. The mandatory policy is authoritative; this document was
+stale. `ALL_SPRINTS_MASTER_PLAN.md` carried the same stale trigger and is corrected with it.
 
-- **Product Owner requests it** (explicit trigger)
-- **Significant new features** are identified that need scoping
-- **Priorities have shifted** due to business changes or user feedback
-- **Backlog has grown stale** (items over 3 sprints old without review)
-- **Major sprint completed** that opens new possibilities
-- **Technical debt accumulated** that needs prioritization
+Refinement is **MANDATORY**, and it runs **TWICE per cycle** as part of Phase 8 (the Release Cycle).
+The two passes share this document's format but have DIFFERENT purposes:
+
+#### Pass 1 -- Completeness Sweep (Phase 8.2)
+
+Runs immediately after the sprint PR merges to `develop`, in parallel with Harold's `main` merge.
+
+- **Purpose**: confirm every sprint-close step was actually captured and completed -- cards closed,
+  docs triad present, master plan rolled, status file current, shipped items pruned from candidates.
+- **Output**: corrections and gap-fills, so the backlog reflects reality.
+- **Does NOT select scope.** Selecting the next sprint's scope here is premature: the Store release
+  has not happened, and close-out gaps may still be open.
+
+#### Pass 2 -- Scope Selection (Phase 8.4)
+
+Runs once the Store submission is in process.
+
+- **Purpose**: present the candidate slate and capture the Product Owner's selection.
+- **Output**: the selected scope, feeding Phase 3 planning.
+- **This is the ONLY pass that selects scope.**
+
+Additional (non-cycle) triggers for an extra full refinement still apply: a Product Owner request,
+significant new features needing scoping, shifted priorities, a stale backlog (items over 3 sprints
+without review), or accumulated technical debt needing prioritization.
 
 **Note**: Quick priority changes can be handled during sprint planning without full refinement.
 
@@ -512,11 +534,18 @@ the summary view is scanning the full slate without cross-referencing. Example o
 
 ### When to Skip Refinement
 
-Skip full refinement if:
+**[CORRECTED F170, Sprint 61]** The two Phase 8 passes are **NEVER skipped** -- they are mandatory
+per the Sprint 36 policy, and skipping pass 1 is precisely how close-out gaps survive into the next
+sprint. The criteria below apply ONLY to an EXTRA, out-of-cycle full refinement:
+
+Skip an extra out-of-cycle refinement if:
 - Last refinement was within 2 sprints
 - No significant new features identified
 - Priorities unchanged since last review
 - Sprint planning can handle minor adjustments
+
+A pass can be SHORT when there is genuinely little to correct or select -- "short" is not "skipped",
+and the pass still produces its recorded output.
 
 ### When to Request Refinement
 

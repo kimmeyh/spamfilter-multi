@@ -232,7 +232,14 @@ if ($branch -match '_Sprint_(\d+)') {
 
                 # (a) Status file phase marker -- authoritative.
                 $statusText = [string]$stW.current_sprint.status
-                if ($statusText -match '(?i)(manual validation|manual-validation|phase 5\.3|phase 5\.[4-9]|phase 6|phase 7|retrospective|code review|awaiting harold|validation feedback)') {
+                # F170 (Sprint 61): the Phase 8 RELEASE CYCLE markers are added here. The
+                # whole cycle -- `main` merge, refinement pass 1, Store release,
+                # refinement pass 2 -- sits AFTER Manual Validation, so asking Harold
+                # questions there is correct. Previously this was safe only by ACCIDENT
+                # (no plan file existed yet, so Gate 1b exited first); the moment a
+                # next-sprint plan stub is created -- which SPRINT_CHECKLIST.md MANDATES
+                # at Phase 7.7 -- that accident breaks. This makes the exemption deliberate.
+                if ($statusText -match '(?i)(manual validation|manual-validation|phase 5\.3|phase 5\.[4-9]|phase 6|phase 7|phase 8|retrospective|code review|awaiting harold|validation feedback|release cycle|pre-kickoff|store release|completeness sweep|scope selection|awaiting scope)') {
                     exit 0  # past the enforcement window -> asking is legitimate
                 }
             }

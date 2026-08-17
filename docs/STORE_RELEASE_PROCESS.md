@@ -29,6 +29,17 @@
 
 ---
 
+## Where this sits in the sprint cycle
+
+**[F170, Sprint 61]** This process is **Phase 8.3** of the Release Cycle -- it runs after the sprint
+PR merges to `develop` and after Backlog Refinement pass 1 (the completeness sweep), and BEFORE
+Backlog Refinement pass 2 (scope selection). The next sprint's scope is deliberately NOT chosen
+until this submission is in process. Authoritative definition:
+`SPRINT_EXECUTION_WORKFLOW.md` "Phase 8: The Release Cycle".
+
+**Platform scope**: this covers the **Windows** app. The Android / Google Play track (F94, GP-*) is
+a separate future release path.
+
 ## Pre-Release Checklist
 
 Before starting a store release, confirm all of these:
@@ -114,7 +125,30 @@ Copy-Item D:\Data\Harold\github\spamfilter-multi\mobile-app\secrets.dev.json `
 
 ## Step 3: Build the MSIX
 
-**Operate in the prod worktree** (`D:\Data\Harold\github\spamfilter-multi-prod\`) on the `main` branch *after* the develop -> main merge. (We usually merge first, then build -- but if you prefer to sanity-check the MSIX pre-merge, build from a local `main` with develop merged in and discard the working tree after upload.)
+**Operate in the prod worktree** (`D:\Data\Harold\github\spamfilter-multi-prod\`) on the `main` branch.
+
+> **[CLARIFIED F170, Sprint 61 -- Harold, 2026-08-17]** The previous wording ("We usually merge
+> first, then build -- but if you prefer...") left the ordering ambiguous. It is not ambiguous:
+>
+> **`main` must contain this sprint's merge BEFORE the MSIX is built.** That is a hard PRECONDITION
+> of this step, because the package is built from this worktree on `main` -- building earlier
+> silently packages stale code.
+>
+> It is NOT a reason to idle: Harold performs the `develop` -> `main` merge in parallel while
+> Backlog Refinement pass 1 runs (Phase 8.2). Do not wait for it; DO confirm it here.
+>
+> **Verify before building** (Sprint 60 hit exactly this -- the prod worktree sat 33 commits behind):
+>
+> ```powershell
+> cd D:\Data\Harold\github\spamfilter-multi-prod
+> git fetch origin
+> git status -sb          # must NOT report "behind"
+> git log --oneline -1    # must show this sprint's merge
+> ```
+>
+> **Version-bump independence**: the dev version bump may happen before OR after the `main` merge --
+> it lands in the NEXT sprint's branch, which never touches `main`. The two are independent; only
+> the precondition above constrains ordering.
 
 **Supported command** (the only path that injects dart-defines correctly):
 
@@ -241,6 +275,12 @@ Expected size: ~16-17 MB. A size below 5 MB or above 50 MB is suspicious -- inve
 ## Step 5: Merge develop -> main (Harold only)
 
 Per `CLAUDE.md` branch policy, **only Harold** creates PRs from develop to main. This step documents what Harold does; other team members skip to Step 6 with an already-merged main.
+
+> **[F170, Sprint 61]** In cycle terms this is **Phase 8.1**, and it normally happens EARLIER than
+> this step number implies -- in parallel with Phase 8.2 (Backlog Refinement pass 1), before Step 3
+> builds the MSIX. The step is numbered 5 here for historical reasons; its real position in the
+> cycle is defined in `SPRINT_EXECUTION_WORKFLOW.md` "Phase 8: The Release Cycle". Step 3's
+> precondition is what actually enforces the dependency.
 
 ```powershell
 cd D:\Data\Harold\github\spamfilter-multi

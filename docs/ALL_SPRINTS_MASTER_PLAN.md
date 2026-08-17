@@ -17,7 +17,9 @@ This section describes when and how to update this document during sprint execut
 | **Phase 2 (Pre-Kickoff)** | Verify "Last Completed Sprint" is current; confirm all items from completed sprint are marked done or removed |
 | **Phase 3 (Planning)** | Review "Next Sprint Candidates" for completeness; add any new items found in GitHub Issues; re-prioritize list; move selected items into sprint plan |
 | **Phase 7 (Retrospective)** | Update "Past Sprint Summary" table; update "Last Completed Sprint"; remove completed feature/bug detail sections; add new issues discovered during sprint |
-| **Backlog Refinement** | Full review of all sections; re-prioritize; add/remove items; verify GitHub Issue alignment |
+| **Phase 8.2 (Refinement pass 1 -- completeness sweep)** | Verify the completed sprint's items are marked done or removed; confirm "Last Completed Sprint" is current; prune shipped items from Next Sprint Candidates. Does NOT select scope. |
+| **Phase 8.3 (Store release)** | Update "Last Completed Sprint" with the store release outcome (`STORE_RELEASE_PROCESS.md` Step 7). **Added F170 -- the release mutates this document, and that trigger was previously unlisted.** |
+| **Phase 8.4 (Refinement pass 2 -- scope selection)** | Full review of all sections; re-prioritize; add/remove items; verify GitHub Issue alignment; capture the Product Owner's selection for Phase 3. |
 
 ### Maintenance Rules
 
@@ -43,7 +45,7 @@ This section describes when and how to update this document during sprint execut
 | **SPRINT_EXECUTION_WORKFLOW.md** | Step-by-step execution checklist | During sprint execution (Phases 1-7) |
 | **SPRINT_STOPPING_CRITERIA.md** | When/why to stop working | When uncertain if blocked or should continue |
 | **SPRINT_RETROSPECTIVE.md** | Sprint review and retrospective guide | After PR submission (Phase 7) |
-| **BACKLOG_REFINEMENT.md** | Backlog refinement process | When requested by Product Owner |
+| **BACKLOG_REFINEMENT.md** | Backlog refinement process | MANDATORY twice per cycle -- Phase 8.2 (completeness sweep) and Phase 8.4 (scope selection); extra passes on request |
 | **TESTING_STRATEGY.md** | Testing approach and requirements | When writing or reviewing tests |
 | **QUALITY_STANDARDS.md** | Quality standards for code and documentation | When writing code or documentation |
 | **TROUBLESHOOTING.md** | Common issues and solutions | When encountering errors or debugging |

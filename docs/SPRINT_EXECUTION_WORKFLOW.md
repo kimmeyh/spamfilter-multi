@@ -49,6 +49,7 @@ This document describes the step-by-step process for executing sprints in the sp
 | **Phase 5** | Code Review & Testing | Final review, full test suite, manual validation |
 | **Phase 6** | Push to Remote & Create PR | Finalize, push, create PR |
 | **Phase 7** | Sprint Review & Retrospective | Mandatory review, feedback, documentation |
+| **Phase 8** | **Release Cycle** | **MANDATORY after every merge to `develop`** -- `main` merge, completeness sweep, Store release, scope selection. See "Phase 8: The Release Cycle" below. |
 
 ---
 
@@ -1341,16 +1342,19 @@ Before conducting sprint review, build and test the Windows desktop app:
   - Confirm PR was readied for final approval at 7.7.5
 
 - [ ] **7.9 Proactive Next Steps** (MANDATORY after sprint completion)
-  - After sprint completion, present 3 options to user:
-    1. **Sprint Review**: Conduct formal retrospective (if not already done in Phase 7)
-    2. **Start Next Sprint**: Begin planning and execution of next sprint from ALL_SPRINTS_MASTER_PLAN.md
-    3. **Ad-hoc Work**: Work on unplanned tasks or investigations outside sprint framework
+  - **[UPDATED F170, Sprint 61]** After the sprint PR merges to `develop`, the default next step is
+    **Phase 8: The Release Cycle** -- NOT "start the next sprint". Starting Sprint N+1 directly skips
+    the `main` merge, the completeness sweep, the Store release, and scope selection.
+  - Present these options:
+    1. **Phase 8 Release Cycle** (DEFAULT): proceed through the cycle below
+    2. **Sprint Review**: conduct the retrospective (if not already done in Phase 7)
+    3. **Ad-hoc Work**: unplanned tasks or investigations outside the sprint framework
   - **Template**:
     ```
     Sprint N complete! What would you like to do next?
 
-    1. [CHECKLIST] Sprint Review (if not already conducted)
-    2. Start Sprint N+1 (see ALL_SPRINTS_MASTER_PLAN.md for details)
+    1. [RELEASE] Phase 8 Release Cycle (default -- see SPRINT_EXECUTION_WORKFLOW.md Phase 8)
+    2. [CHECKLIST] Sprint Review (if not already conducted)
     3. [CONFIG] Ad-hoc work (tasks outside sprint framework)
 
     Please let me know your preference.
@@ -1447,6 +1451,21 @@ Generated with [Claude Code](https://claude.com/claude-code)
 > 3. **Code Review happens AFTER testing complete** -- reviewing code that still has open testing-feedback fixes wastes review effort.
 > 4. **Retrospective is BEFORE merge** -- the retrospective can surface fixes that must land before merge.
 > 5. **Sprint N+1 begins only AFTER merge to develop** -- starting Sprint N+1 with Sprint N still unmerged risks divergent branch state.
+>
+> **[CORRECTED F170, Sprint 61 -- approved by Harold at Phase 3.7, 2026-08-17]** Rule 5 was
+> necessary but not sufficient: it jumped straight from the `develop` merge to Sprint N+1, omitting
+> four steps the project actually performs every time. The merge to `develop` is the START of
+> **Phase 8: The Release Cycle**, not the end of the sprint's sequence. The corrected tail is:
+>
+> 6. **`develop` merges to `main`** (Harold only). This runs IN PARALLEL and does NOT block the
+>    next step -- but it IS a hard precondition of the Store MSIX build (see Phase 8).
+> 7. **Backlog Refinement pass 1 -- the COMPLETENESS SWEEP**: verify every sprint-close step was
+>    actually captured and completed. This is not scope selection.
+> 8. **The Microsoft Store release** (`STORE_RELEASE_PROCESS.md`), which builds from `main`.
+> 9. **Backlog Refinement pass 2 -- SCOPE SELECTION**, once the Store submission is in process.
+> 10. **THEN Phase 3 planning for Sprint N+1.**
+>
+> The five original rules are unchanged in intent; this adds the steps that were missing.
 
 
 
@@ -1612,6 +1631,86 @@ Once user approves PR:
    - Stale branches in `git branch` output are expected and intentional.
 
 ---
+
+---
+
+## Phase 8: The Release Cycle
+
+**Added F170 (Sprint 61), approved by Harold at Phase 3.7 on 2026-08-17.** This is the AUTHORITATIVE
+definition; every other document cross-references this section rather than restating it.
+
+**Naming note**: this is "Phase 8" or "the Release Cycle" -- deliberately NOT "Step 7", which already
+means two different things in this repo (`STORE_RELEASE_PROCESS.md` Step 7 = post-submission
+close-out; the Phase 7 retrospective protocol's Step 7 = apply approved improvements).
+
+### Why this exists
+
+The project ran this cycle for many sprints without it being written down anywhere. The only
+artifact that described it was `.claude/sprint_status.json` -- a STATE file carrying hand-written
+prose, doing a process document's job. The cost was concrete: a close-out hook fired as a false
+positive three times in one session because no document told it this window existed.
+
+### The cycle
+
+Runs after EVERY sprint PR merge to `develop`. Not conditional on what the sprint contained.
+
+| # | Step | Owner | Blocking? |
+|---|------|-------|-----------|
+| 1 | Sprint PR merged to `develop` | Harold | Starts the cycle |
+| 2 | `develop` merged to `main` | Harold | **NO** -- runs in parallel; see the dependency note |
+| 3 | **Backlog Refinement pass 1 -- COMPLETENESS SWEEP** | Claude | Yes, before step 4 |
+| 4 | **Microsoft Store release** (`STORE_RELEASE_PROCESS.md`) | Claude builds, Harold uploads | Yes, before step 5 |
+| 5 | **Backlog Refinement pass 2 -- SCOPE SELECTION** | Claude presents, Harold selects | Yes, before step 6 |
+| 6 | Phase 3 planning for the next sprint | Claude | -- |
+
+### The `main`-merge dependency (Harold, 2026-08-17)
+
+**Do NOT wait for the `main` merge. DO confirm it before building the MSIX.**
+
+Harold performs the `develop` -> `main` merge himself, so step 2 proceeds in parallel with step 3 --
+blocking refinement on it wastes time. But the Store MSIX is built from the PROD WORKTREE ON `main`,
+so a build started before the merge lands silently packages stale code.
+
+The confirmation is a build-time PRECONDITION, not a waiting step: verify `main` actually contains
+this sprint's merge before building. In Sprint 60 the prod worktree sat **33 commits behind**
+`origin/main`, which was caught only by checking -- exactly the failure this precondition prevents.
+
+### Version bump independence (Harold, 2026-08-17)
+
+The dev version bump may happen BEFORE or AFTER the `main` merge; the two are independent, because
+the bump lands in the NEXT sprint's branch, which never touches `main`. This dissolves what
+`STORE_RELEASE_PROCESS.md` previously presented as an unresolved ordering ambiguity. The only real
+constraint is the build-time precondition above.
+
+### The two refinement passes are DIFFERENT
+
+They share a document (`BACKLOG_REFINEMENT.md`) and a format, but not a purpose:
+
+| | Pass 1 -- Completeness Sweep | Pass 2 -- Scope Selection |
+|---|---|---|
+| **When** | Immediately after the merge | After the Store submission is in process |
+| **Purpose** | Confirm every sprint-close step was captured and completed | Choose the next sprint's scope |
+| **Output** | Corrections and gap-fills; the backlog reflects reality | A Product-Owner-selected slate feeding Phase 3 |
+| **Selection?** | **NO** -- selecting scope here is premature | **YES** -- this is where it happens |
+
+Running only one pass is the failure mode this distinction prevents: scope gets picked while
+close-out gaps are still open, and those gaps then surface mid-sprint.
+
+### Platform scope
+
+The Store release covers the **Windows** app. The Android / Google Play track (F94, GP-*) is a
+SEPARATE future release path and is NOT part of this cycle today. When Play releases begin, this
+section gains an Android branch rather than being silently assumed to cover both.
+
+### Tooling that knows about this window
+
+- `.claude/hooks/verify-closeout-complete.ps1` -- its `pr_number` check is gated on `plan_approved`,
+  because `pr_number` is legitimately null across this entire cycle (fixed 2026-08-17 after three
+  false positives).
+- `.claude/hooks/sprint-auto-advance.ps1` -- asking Harold questions during this cycle is CORRECT,
+  not an auto-advance violation; the enforcement window is Phase 3.7 approval to Phase 5.3 only.
+- `.claude/sprint_status.json` `current_sprint.status` -- keep it current; it is how a resumed
+  session knows which part of the cycle it is in.
 
 **Version**: 2.0
 **Last Updated**: February 16, 2026
