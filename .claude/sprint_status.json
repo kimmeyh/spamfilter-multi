@@ -9,12 +9,22 @@
     "pr_number": null,
     "pr_url": null,
     "start_date": "2026-08-17",
-    "status": "PRE-KICKOFF. Branch created from the Sprint 60 branch per checklist 6.6 and pushed. NEXT (Harold's instruction 2026-08-16): (1) finish Sprint 60 close-out checklist, (2) Backlog Refinement per docs/BACKLOG_REFINEMENT.md, (3) BEFORE scope selection -- run docs/STORE_RELEASE_PROCESS.md to build and prep the next Store update. NO plan approval yet; Phase 3.3.1 cards + draft PR not yet created.",
+    "status": "Phase 3 PLANNING COMPLETE -- SPRINT_61_PLAN.md drafted (9 tasks) and presented for Harold's 3.7 approval. NOT YET APPROVED: plan_approved stays false, no cards, no PR until approval. Standing constraint recorded on the plan: every task accounts for BOTH Windows and Android, parity rule = same unless it cannot be, then a minimal declared platform exception -- across backend, frontend, data, architecture, development, security, testing, deployment. 4 open questions await Harold: 2 Class-3 (correcting a frozen ordering statement; store-process ordering conflict), 1 Class-1 (parity ADR), sprint size.",
     "plan_approved": false,
     "plan_approval_date": null,
     "blanket_execution_approved": false,
-    "scope": [],
-    "_scope_note": "Scope NOT selected yet. Harold pre-targeted F168 (production background/bulk scan folder-scope UX) for this sprint.",
+    "scope": [
+      "Task0-lineendings",
+      "F170",
+      "F169",
+      "F168",
+      "F172",
+      "F171",
+      "F162",
+      "F167",
+      "F161"
+    ],
+    "_scope_note": "Harold-selected 2026-08-17. F163 EXCLUDED after verification: 22 skip sites remain across 7 files (26 skipped in the suite), so the 11 update-to-working verdicts are NOT done -- F160 delivered the audit, F163 is the implementation. Stays Priority 26 for Sprint 62. New items registered this session: F171 (min-window sweep), F172 (version on 8 screens), F173 (periodic testing deep dive, recurring HOLD).",
     "_pr_number_null_reason": "DELIBERATE, not a miss. Sprint 61 is at PRE-KICKOFF: plan_approved=false, scope=[]. Phase 3.3.1 creates the cards + DRAFT PR AT PLAN APPROVAL. Harold's standing release cycle (F170) runs: merge -> develop, merge -> main, Backlog Refinement pass 1 (completeness sweep), Microsoft Store release, Backlog Refinement pass 2 (scope selection), THEN Phase 3. pr_number is legitimately null across that whole span. FIXED 2026-08-16: verify-closeout-complete.ps1 now gates its pr_number check on plan_approved, so this no longer needs a prose exemption -- the hook understands the window. Clear this key at Phase 3.3.1 when the real PR is created."
   },
   "previous_sprint": {
@@ -52,9 +62,8 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Sprint 60 close-out checklist walk (Phase 7.7.5 / 7.8 / 7.9 completion under the merged PR)",
-    "Backlog Refinement per docs/BACKLOG_REFINEMENT.md (presentation format rules apply)",
-    "BEFORE scope selection: Microsoft Store release per docs/STORE_RELEASE_PROCESS.md -- build + prep next Store update",
-    "Then Sprint 61 scope selection (Harold pre-targeted F168) -> Phase 3 plan -> 3.3.1 cards + DRAFT PR"
+    "Harold: review SPRINT_61_PLAN.md and answer the 4 open questions (Phase 3.7 approval)",
+    "On approval: set plan_approved=true, create the 9 sprint cards + DRAFT PR (Phase 3.3.1), clear _pr_number_null_reason",
+    "Then execute in task order: Task 0 (line endings) -> F170 -> F169 -> F168 -> F172 -> F171 -> F162 -> F167 -> F161"
   ]
 }

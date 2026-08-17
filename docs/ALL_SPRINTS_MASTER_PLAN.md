@@ -334,6 +334,32 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Likely touchpoints: walkthrough.md and Help sections that reference Windows-only surfaces (Task Scheduler background scans, system tray, window sizing, keyboard/mouse selection idioms vs the F143 touch idioms).
 - Source: Harold, Sprint 60 Retrospective, 2026-08-16.
 
+**F171. Minimum-supported-window UI sweep: 1024x640 epx, maximized (~2-3h) Priority 8 (NEW, Sprint 61 -- Harold; ASSIGNED)**
+- Phase: Core App Quality / UX
+- Platform: Windows Desktop primarily; Android checked for the same class of clipping per the parity ADR
+- Scope (Harold, 2026-08-17): Microsoft documents **1024x640 epx as the Windows 11 minimum display, maximized**. Run the typical UI walk-through AT that size and confirm every screen is USABLE -- nothing clipped, nothing unreachable, no control pushed off-window, no horizontal scroll needed to reach a primary action.
+- Why now: Sprint 60 already surfaced two clipping defects at constrained widths (the AppBar icon row overflowing at ~411px, and the account chips clipping in F169). Both were found by accident. This makes the minimum size a deliberate, repeatable check rather than something discovered when a user hits it.
+- Scope note: this is a SWEEP that produces findings; fixes for anything found are either folded in if small or filed as their own items. Record the screen list actually walked so the next run is comparable.
+- Source: Harold, 2026-08-17.
+
+**F172. Version number displayed on every major screen, right of the `?` icon (~1-2h) Priority 10 (NEW, Sprint 61 -- Harold; ASSIGNED)**
+- Phase: Core App Quality / UX
+- Platform: All (shared AppBar actions widget -- one change, both apps, per the parity ADR)
+- Scope (Harold, 2026-08-17): show the current version as `Version <n>.<n>.<n>` immediately to the RIGHT of the `?` (Help) icon on: **Review No Rule Items, Scan History, Scan Results, Manual Scan, Live Scan's Scan Results, Select Account, Settings, Help**.
+- Rationale (Harold): "it is useful in all screenshot captures" -- every screenshot in a bug report, MV round, or Store listing then carries the build it came from. Sprint 60 lost time to exactly this gap: an Android session was run against an ancient `com.example` install and the divergences were mistaken for current-code defects.
+- Implementation notes: the version must come from the single runtime source (the same one `settings_screen` renders and `version_consistency_test` gates), NOT a new literal -- a hardcoded string here would immediately drift and would be caught by that gate. `AppEnvironment.displaySuffix` must still append for dev builds so `[DEV]` remains visible. Add to the shared `standard_app_bar_actions` builder so all 8 screens inherit it rather than 8 separate edits.
+- Watch-item: F171 tests at 1024x640 and the AppBar already overflows at phone widths -- adding a text element to that row interacts directly with both. Sequence F172 with F171 and re-check narrow widths after.
+- Source: Harold, 2026-08-17.
+
+**F173. Periodic "Test Coverage and Appropriate Testing" Deep Dive (~4-8h per review) Priority HOLD (NEW, Sprint 61 -- Harold; recurring HOLD template)**
+- Phase: Testing / periodic review
+- Platform: All -- backend, frontend/UI, data layer, Windows app, Android app
+- Scope (Harold, 2026-08-17): a recurring deep dive answering TWO distinct questions, not one: (1) **coverage** -- what is tested and what is not, across backend, frontend/UI, data layer, and both apps; (2) **appropriateness** -- *does each test clearly test what it intends to test, AND does each SET of tests do what the set intends to do?* The second question is the one ordinary coverage metrics cannot answer.
+- Why this matters here specifically: Sprint 60 produced three concrete instances of tests that passed while proving nothing -- a popup-fit test that stayed green against the broken code until it was tightened, a chip-tooltip test that passed off unrelated AppBar tooltips after the widget it guarded was deleted, and a long-press test that would have passed with the gesture wiring removed. All three were caught only because mutation-verification was run by hand. A periodic sweep institutionalizes that check.
+- Method: mutation-verify a sample of existing gates (break what each guards, confirm red); look for assertions that prove EXISTENCE where the claim is about behavior, ordering, or sizing; check that test names still describe what the test does; check per-layer coverage gaps; report findings as backlog items.
+- Cadence: same periodic-HOLD model as F70 (Security) and F71 (Architecture) -- triggered by Harold, not calendar-automatic.
+- Source: Harold, 2026-08-17.
+
 **F170. Encode the post-merge Release Cycle (merge -> main -> refinement pass 1 -> Store release -> refinement pass 2 -> plan) across the process docs, hooks, and skills (~3-4h) Priority 2 (NEW, Sprint 61 -- Harold; ASSIGNED TO SPRINT 61, RUNS FIRST)**
 - Phase: Process / tooling
 - Platform: N/A (process documentation, hooks, skills)
