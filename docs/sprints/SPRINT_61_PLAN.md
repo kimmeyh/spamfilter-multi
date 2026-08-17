@@ -20,10 +20,13 @@ Pre-Kickoff) from `docs/ALL_SPRINTS_MASTER_PLAN.md` "Next Sprint Candidates".
 ## Harold-targeted for THIS sprint (2026-08-16)
 
 - **F168** (Priority 6): background scan skipped the Inbox (ran Bulk/Bulk Mail only) while the
-  manual scan over Bulk/Bulk Mail/Inbox found and deleted 6 rule-matching Inbox emails. Suspected
-  cause: background-specific folder override resolving ahead of the per-account selection in
-  `SettingsStore.getEffectiveFolders`. Harold explicitly asked that this be targeted for the next
-  sprint. Confirmed NOT fixed by Sprint 60 (those fixes were Android-only).
+  manual scan over Bulk/Bulk Mail/Inbox found and deleted 6 rule-matching Inbox emails. **Cause
+  confirmed by Harold same-day: Inbox was genuinely not selected in the background folder scope
+  ("but thought I had").** So this is a UX/discoverability item, not a scanner defect: the app
+  let a user believe Inbox was covered, and a wrong scope is indistinguishable from "no spam
+  found" in the results. Scope: surface the active background folder scope at selection time,
+  consider warning when Inbox is omitted, and re-examine whether background and manual scopes
+  should be independently editable. Harold asked that this be targeted for this sprint.
 
 ## Standing context for scope selection
 
