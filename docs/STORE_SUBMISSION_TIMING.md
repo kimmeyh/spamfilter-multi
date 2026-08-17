@@ -1,0 +1,59 @@
+# Store Submission Timing
+
+Turnaround history for Microsoft Store submissions: how long each one took from
+**submit** to **certified/live**. Purpose is planning -- deciding whether a release
+started tonight can realistically be live tomorrow.
+
+**Timestamps are derived from this repo's git history**, specifically the commits
+that recorded each submission and each certification in `.claude/sprint_status.json`
+and `docs/STORE_VERSION_STATUS.md`. That makes them accurate to when the event was
+*recorded*, which for submissions is within minutes (the commit is made right after
+the upload) but for certifications can lag by hours -- a submission that certifies
+overnight is typically recorded the next morning. **Treat certification times as an
+upper bound, never as a precise measurement.** Partner Center is the only exact
+source, and it is not machine-readable from this repo (no API credentials
+configured; the dashboard requires an interactive authenticated session).
+
+## History
+
+| Submission | Version | Submitted (recorded) | Certified/live (recorded) | Elapsed (upper bound) |
+|---|---|---|---|---|
+| 17 | 0.10.0.0 | 2026-08-16 21:51 | *pending* | -- |
+| 16 | 0.9.0.0 | 2026-08-15 22:56 | 2026-08-16 (Harold, Partner Center screenshot) | < 24h |
+| 15 | 0.8.0.0 | 2026-08-15 18:45 | 2026-08-15 19:36 | **~51 minutes** |
+| 14 | 0.7.0.0 | 2026-08-14 11:28 (uploaded as draft) | 2026-08-15 11:20 | ~24h (draft-first, so not a clean measure) |
+| 13 | 0.6.2.0 | 2026-08-13 08:59 | 2026-08-13 16:00 | **~7 hours** |
+| 12 | 0.6.1.0 | 2026-08-12 08:36 | (not separately recorded) | -- |
+| 11 | 0.6.0.0 | 2026-08-09 23:37 | 2026-08-10 09:59 | ~10h (overnight -- includes sleep time) |
+| 10 | 0.5.9.0 | 2026-08-03 09:07 | 2026-08-03 (same day, per the F-STORE-53 record) | < 1 day |
+
+## What the numbers actually say
+
+- **The fast path is under an hour.** Submission 15 went submit-to-live in ~51
+  minutes, and it is the cleanest datapoint in the set (both events recorded the
+  same evening, minutes after they happened).
+- **Same-day is the norm, not the exception.** Submissions 10, 13, and 15 all
+  certified the same day. Overnight cases (11, 16) are bounded by when someone
+  looked, not by Microsoft being slow.
+- **Microsoft's own stated SLA is far more conservative**: "a few hours, but in
+  some cases up to 3 business days" (Partner Center certification-status panel).
+  Our observed times have consistently beaten that, but a single slow submission
+  would not be anomalous -- do not promise a release date on the strength of the
+  ~51-minute best case.
+- **Planning rule of thumb**: a submission uploaded in the evening has usually been
+  live by the next morning. Anything tighter than that is luck, not schedule.
+
+## Keeping this current
+
+Add a row at each submission, and fill in the certification column when Harold
+confirms it in Partner Center. Two rules:
+
+1. **Never fill the certified column from this file's own guesswork or from
+   `.claude/sprint_status.json`** -- both are caches. It gets filled from a direct
+   Partner Center observation (screenshot, or Harold saying he checked).
+2. Record the recorded-at time honestly, and mark it if the real event clearly
+   happened earlier (e.g. an overnight certification noticed at 8am).
+
+To measure a submission precisely, note the Partner Center "Last modified"
+timestamp on the submission when it flips to Publishing/live rather than relying on
+when it was noticed here.

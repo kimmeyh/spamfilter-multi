@@ -306,6 +306,11 @@ Within 24 hours of submission:
 - [ ] Partner Center shows submission status = "In certification" or further along. If stuck at "Preliminary review" past 24h, investigate.
 - [ ] Note the submission timestamp in the sprint retrospective (close-out addendum if the sprint is already closed).
 
+**Timing reference**: `docs/STORE_SUBMISSION_TIMING.md` tracks submit-to-live turnaround
+across submissions (observed: ~51 minutes best case, same-day typical, vs Microsoft's stated
+"a few hours to 3 business days"). Add a row there at each submission and fill in the
+certification time from a DIRECT Partner Center observation.
+
 When certification completes:
 
 - [ ] **If passed**: App is live on the Store within a few hours. Download the Store version on a test machine, sign in, confirm the OAuth flow works end-to-end, confirm the About screen shows the new version.
