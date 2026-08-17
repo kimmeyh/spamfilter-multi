@@ -428,7 +428,20 @@ All backlog items in ALL_SPRINTS_MASTER_PLAN.md MUST use this format. This is th
 - **F122. Review-No-Rule screen load-error polish (~30m) Priority 12**
 - ...
 - **F94. Android dev/prod/store flavors + applicationId diagnosis (~6-8h) Priority 50**
-- HOLD: F70/F71/F111, SEC-11b+F106, ... (one line, ids only)
+- HOLD items follow, ONE LINE EACH in the same shape (id, title, effort, Priority HOLD):
+- F70. Periodic Security Deep Dive (~4-8h per review) Priority HOLD
+- F111. Periodic Windows App Store upload readiness verification (~110-175m per review) Priority HOLD
+- ...
+```
+
+**HOLD item display (Harold, 2026-08-17)**: HOLD items are listed **one line each**, carrying the
+same information as an active item's header line -- `<ID>. <Title> (~<effort>) Priority HOLD` --
+NOT collapsed into a bare list of ids. Rationale: an id alone (`F165`, `SEC-8b`) forces the Product
+Owner to go look up what it even is before deciding whether it should leave HOLD. The whole point of
+the summary view is scanning the full slate without cross-referencing. Example of the required shape:
+
+```markdown
+- F165. Cross-device rules-DB sharing + hosted tier exploration (~half-day) Priority 30
 ```
 
 **Item format**:
@@ -446,7 +459,7 @@ All backlog items in ALL_SPRINTS_MASTER_PLAN.md MUST use this format. This is th
 - **Priority**: Numeric, generally in increments of 10; items that can sprint together use increments of 2
 - **Phase**: Group items under section headers by phase (e.g., "Windows Store Readiness", "Core App")
 - **Platform**: Windows Desktop, Android, All, or N/A
-- **HOLD items**: Use `Priority HOLD` instead of a number; grouped in a separate HOLD section
+- **HOLD items**: Use `Priority HOLD` instead of a number; grouped in a separate HOLD section. In the SUMMARY INDEX they appear **one line each** in full `<ID>. <Title> (~<effort>) Priority HOLD` form -- never squashed to a comma-separated id list (Harold, 2026-08-17). In the DETAIL sections they keep the standard Phase/Platform/description bullets like any other item.
 - **No separate sections** for bugs or tech debt -- they are interleaved by priority within their phase group
 - **Completed items**: Remove from the backlog (history lives in sprint docs and CHANGELOG.md)
 
@@ -524,6 +537,7 @@ Request refinement if:
 **Status**: Active
 
 **Updates**:
+- 1.4 (2026-08-17): HOLD items in the Summary Index display one line each in full `<ID>. <Title> (~<effort>) Priority HOLD` form, never a bare id list -- Harold
 - 1.3 (2026-07-24): Summary Index required at the top of every presentation (header lines only, then details) -- Harold, Sprint 50
 - 1.2 (2026-07-24): Presentation-format scope clarified -- the in-chat Phase 1.2 candidate presentation mirrors the Backlog Presentation Format exactly (Sprint 50 correction)
 - 1.1 (2026-03-19): Added Backlog Presentation Format spec, item identification rules (F#/WS/GP prefixes)
