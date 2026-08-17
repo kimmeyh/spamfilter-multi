@@ -188,6 +188,12 @@ _**Decision-class interrupts**_: **Class 3 (Scrum Master)** -- R-3 changes an ex
 
 **Est-Effort**: 60-120m
 
+**COMPLETION NOTES (2026-08-17)**: DONE. Chip Row replaced by a `PopupMenuButton` dropdown mirroring the F166 pattern; face shows the active selection with its count, entries carry per-account counts and a check on the active one. `_clearSelection()` preserved via an extracted `_onAccountFilterChanged`. Dead `_buildAccountChip` removed (analyzer caught it as unreferenced). All 3 ACs tested at 411px phone width; AC-2 mutation-verified (removing `_clearSelection()` turns it red).
+
+**TWO OVERFLOW DEFECTS FOUND AND FIXED, one of them PRE-EXISTING**: (a) the new menu-entry Row overflowed 7.7px at phone width -- fixed with Flexible + ellipsis; (b) **`_buildSelectionBar` overflowed by ~105px at 411px, and this was NOT caused by F169** -- verified by diff that the selection bar is untouched by this task; its fixed 40px gap plus three intrinsic-width children simply never fit a phone, and no prior test had rendered this screen at phone width. Fixed by flexing the label and replacing the fixed gap + Spacer with a single flexible spacer. This is exactly the defect class F171 (Task 5) exists to hunt, found early because F169's tests were written at the width the bug reproduces at.
+
+**Suite note**: an initial full run reported 17 "loading" failures; re-running with the project's documented `--concurrency=4` gave **1,865 passed / 26 skipped / 0 failed**, confirming those were a resource artifact rather than real failures. Analyze clean. Actual effort ~35m (est 60-120m).
+
 ---
 
 ### Task 3 -- F168: Background/bulk scan folder scope visibility (Priority 6)

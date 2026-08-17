@@ -791,45 +791,96 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
     );
   }
 
+  /// F169 (Sprint 61): single-select account DROPDOWN, replacing the
+  /// horizontally scrolling chip Row.
+  ///
+  /// The chips were laid out in a `SingleChildScrollView(Axis.horizontal)`
+  /// with NO scroll affordance, so on a phone the second chip clipped at the
+  /// window edge and any third account was off-screen entirely -- an account
+  /// the user could not reach at all (Harold, 2026-08-16: "All account must be
+  /// viewable"). A dropdown is width-independent by construction, so it cannot
+  /// clip at any window size.
+  ///
+  /// Mirrors the F166 pattern on `results_display_screen` (PopupMenuButton
+  /// whose face shows the active selection with its live count) rather than
+  /// inventing a second account-selection idiom. Shared widget: identical on
+  /// Windows and Android per the Sprint 61 parity rule.
   Widget _buildAccountFilter() {
+    // (label, value) in display order: All Accounts first, then each account.
+    final options = <(String, String)>[
+      ('All Accounts (${_allItems.length})', 'all'),
+      for (final accountId in _distinctAccounts)
+        (
+          '${_accountEmails[accountId] ?? accountId} '
+              '(${_allItems.where((i) => i.accountId == accountId).length})',
+          accountId,
+        ),
+    ];
+
+    final activeLabel = options
+        .firstWhere((o) => o.$2 == _accountFilter,
+            orElse: () => options.first)
+        .$1;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Align(
         alignment: Alignment.centerLeft,
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              _buildAccountChip('All Accounts (${_allItems.length})', 'all'),
-              const SizedBox(width: 8),
-              ..._distinctAccounts.map((accountId) {
-                final count = _allItems.where((i) => i.accountId == accountId).length;
-                final email = _accountEmails[accountId] ?? accountId;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: _buildAccountChip('$email ($count)', accountId),
-                );
-              }),
-            ],
+        child: PopupMenuButton<String>(
+          tooltip: 'Filter by account',
+          onSelected: _onAccountFilterChanged,
+          itemBuilder: (context) => [
+            for (final option in options)
+              PopupMenuItem<String>(
+                value: option.$2,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Check the active entry so the current selection is
+                    // obvious inside the menu, not only on the face.
+                    SizedBox(
+                      width: 24,
+                      child: option.$2 == _accountFilter
+                          ? const Icon(Icons.check, size: 18)
+                          : null,
+                    ),
+                    // Flexible + ellipsis: a long account label must not
+                    // overflow the menu at phone width -- caught by the F169
+                    // test at 411px, which is the exact width the old chip row
+                    // failed at.
+                    Flexible(
+                      child: Text(option.$1, overflow: TextOverflow.ellipsis),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+          child: Chip(
+            label: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: Text(activeLabel, overflow: TextOverflow.ellipsis),
+                ),
+                const Icon(Icons.arrow_drop_down, size: 20),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildAccountChip(String label, String value) {
-    final isSelected = _accountFilter == value;
-    return FilterChip(
-      label: Text(label, overflow: TextOverflow.ellipsis),
-      selected: isSelected,
-      onSelected: (selected) {
-        setState(() {
-          _accountFilter = value;
-          _applyFilter();
-          _clearSelection();
-        });
-      },
-    );
+  /// Applies an account-filter change. Extracted from the old chip handler so
+  /// the behavior is IDENTICAL: set the filter, re-apply it, and CLEAR THE
+  /// SELECTION -- dropping that last step would let a hidden selection from
+  /// one account carry over into another.
+  void _onAccountFilterChanged(String value) {
+    setState(() {
+      _accountFilter = value;
+      _applyFilter();
+      _clearSelection();
+    });
   }
 
   Widget _buildSelectionBar() {
@@ -839,23 +890,41 @@ class _NoRuleReviewScreenState extends State<NoRuleReviewScreen> {
       // F115 (Sprint 47): when items are selected, order is
       // `Apply Rule` (left) -> `N selected` -> ~5 spaces -> `Clear`.
       // With nothing selected, just show the item count.
+      // F171/F169 (Sprint 61): this Row overflowed by ~105px at 411px width --
+      // a PRE-EXISTING narrow-width defect (the selection bar is untouched by
+      // F169; the new dropdown test simply rendered at a phone width for the
+      // first time and exposed it). The fixed 40px gap plus three intrinsic
+      // children exceeded a phone's width whenever a selection was active.
+      // Fixed by letting the label flex and shrink instead of forcing its
+      // natural size, and by replacing the fixed gap + Spacer with a single
+      // flexible gap.
       child: Row(
         children: [
           if (count > 0) ...[
             _buildBulkActionMenu(),
             const SizedBox(width: 12),
-            Text(
-              '$count selected',
-              style: Theme.of(context).textTheme.bodyMedium,
+            Flexible(
+              child: Text(
+                '$count selected',
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
             ),
-            const SizedBox(width: 40), // ~5 spaces
+            // Was SizedBox(width: 40) + Spacer(): the fixed gap is what tipped
+            // narrow widths over. A flexible spacer keeps the same visual
+            // separation on desktop while collapsing on a phone.
+            const Spacer(),
             TextButton(onPressed: _clearSelection, child: const Text('Clear')),
-          ] else
-            Text(
-              '${_filteredItems.length} item${_filteredItems.length == 1 ? "" : "s"}',
-              style: Theme.of(context).textTheme.bodyMedium,
+          ] else ...[
+            Flexible(
+              child: Text(
+                '${_filteredItems.length} item${_filteredItems.length == 1 ? "" : "s"}',
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
             ),
-          const Spacer(),
+            const Spacer(),
+          ],
         ],
       ),
     );
