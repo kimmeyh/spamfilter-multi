@@ -1,53 +1,35 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-16 (Sprint 60 Phase 7.7 close-out)",
+  "_last_updated": "2026-08-17 (Sprint 60 CLOSED + merged; Sprint 61 branch open, pre-kickoff)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
+    "number": 61,
+    "branch": "feature/20260816_Sprint_61",
+    "pr_number": null,
+    "pr_url": null,
+    "start_date": "2026-08-17",
+    "status": "PRE-KICKOFF. Branch created from the Sprint 60 branch per checklist 6.6 and pushed. NEXT (Harold's instruction 2026-08-16): (1) finish Sprint 60 close-out checklist, (2) Backlog Refinement per docs/BACKLOG_REFINEMENT.md, (3) BEFORE scope selection -- run docs/STORE_RELEASE_PROCESS.md to build and prep the next Store update. NO plan approval yet; Phase 3.3.1 cards + draft PR not yet created.",
+    "plan_approved": false,
+    "plan_approval_date": null,
+    "blanket_execution_approved": false,
+    "scope": [],
+    "_scope_note": "Scope NOT selected yet. Harold pre-targeted F168 (production background/bulk scan folder-scope UX) for this sprint."
+  },
+  "previous_sprint": {
     "number": 60,
     "branch": "feature/20260815_Sprint_60",
     "pr_number": 335,
-    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/335",
-    "start_date": "2026-08-16",
-    "status": "Phase 7.7 CLOSE-OUT -- retro COMPLETE (14x4; Cat 1 Good with IMP-1 python-tooling rule applied as memory; Cats 2-12 Very Good; IMP-2/3/4 declined; Cat 14 -> F167 registered). MV complete (4 rounds, approved 2026-08-16). Docs triad done (PLAN + RETROSPECTIVE + SUMMARY); master plan rolled; Sprint 61 stub created; ARCHITECTURE.md F144 staleness fixed. PR #335 to be marked Ready at end of 7.7. Suite 1,859/26/0, analyze clean.",
-    "plan_approved": true,
-    "plan_approval_date": "2026-08-16",
-    "blanket_execution_approved": true,
-    "scope": [
-      "F160",
-      "F157",
-      "F158",
-      "F159",
-      "F143",
-      "F144",
-      "F156",
-      "F166"
-    ],
-    "_scope_note": "F166 added mid-sprint per Harold's plan-then-execute steering (card #336). Original 7 tasks + F166 all complete."
+    "status": "CLOSED -- PR #335 merged to develop 2026-08-17 (merge commit 639e191), develop merged to main by Harold. Cards #328-#334 + #336 all closed. Shipped: F160 audit (skips 29->26), F156 Android walk-through (2 CRITICAL Android fixes: PRAGMA, accounts-FK), F157 gradle/minSdk, F158 Android CI job, F159 metadata gates, F143 touch selection, F144 dead-scheduler removal, F166 header redesign, plus 4 MV rounds and a 3-round PR review (Copilot 6 + Claude cowork 13 findings). Final suite 1,862/26/0."
   },
-  "previous_sprint": {
-    "number": 59,
-    "branch": "feature/20260815_Sprint_59",
-    "pr_number": 326,
-    "status": "CLOSED -- merged #326->develop, #327->main 2026-08-15; cards #322-#325 + #315 closed; shipped as 0.9.0.0/Submission 16."
-  },
-  "github_issues": [
-    328,
-    329,
-    330,
-    331,
-    332,
-    333,
-    334,
-    336
-  ],
-  "_github_issues_note": "Sprint 60 cards (verified against gh issue list 2026-08-16): #328 F160, #329 F157, #330 F158, #331 F159, #332 F143, #333 F144, #334 F156, #336 F166 -- all work complete; close cards at post-merge cleanup. Older open items: #318/#319/#320 (Sprint 58-era), #315 closed with Sprint 59.",
+  "github_issues": [],
+  "_github_issues_note": "Sprint 60 cards #328-#334 + #336 all CLOSED at post-merge cleanup 2026-08-17. Zero issues open. Sprint 61 cards get created at Phase 3.3.1 after scope selection.",
   "test_metrics": {
-    "tests_passing": 1859,
+    "tests_passing": 1862,
     "tests_skipped": 26,
     "tests_failing": 0,
     "analyzer_warnings": 0,
-    "_test_metrics_note": "1,859 / 26 skipped / 0 failed as of 2026-08-16 (Sprint 60 final full run, analyzer clean). Skips 29 -> 26 via F160 dispositions (3 discontinued tests deleted). Net vs Sprint 59's 1,893: F144 deleted the unwired background-scan code AND its test files; new tests added for touch selection (3), compact/filter (3), scan persistence (1), demo label (1), popup width, msix gate, dropdown updates. All mutation-verified.",
+    "_test_metrics_note": "1,862 passed / 26 skipped / 0 failed at Sprint 60 close (final PR-review commit), analyzer clean. Up from 1,859 via the PR-review round (accountId dash-parsing gate +2, empty-state/dropdown test updates).",
     "hook_test_cases": "45/45 passing (.claude/hooks/run-test-cases.ps1) -- unchanged since Sprint 52.",
     "winwright_sweep": "End-of-sprint sweep RUN 2026-08-16 at close-out (lib/ui touched): 3/3 scripts PASS (f124_rule_labels 10 steps, f129_no_rule_review 10 steps, mt2c_no_rule_sweep 25 steps), DB drift none. First run failed mt2c at its DOCUMENTED data-precondition (Harold's MV rule/safe-sender adds addressed the old baseline rows); baselines refreshed from the live dev DB per the script's own maintenance note, re-run PASS.",
     "coverage_percent": null,
@@ -69,10 +51,9 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Mark PR #335 Ready for Review at end of 7.7 (then 7.7.5 announce)",
-    "Harold: review/merge PR #335 -> develop, then develop -> main",
-    "On merge: branch feature/<date>_Sprint_61 FROM the Sprint 60 branch immediately (checklist 6.6)",
-    "On Submission 16 certification: Store release Step 7 close-out (STORE_VERSION_STATUS Live row, CHANGELOG [0.9.0] heading, dev bump 0.9.0 -> 0.9.1)",
-    "Sprint 61 Phase 1 refinement from master plan candidates (F161/F162/F167/F163/F164/F165)"
+    "Sprint 60 close-out checklist walk (Phase 7.7.5 / 7.8 / 7.9 completion under the merged PR)",
+    "Backlog Refinement per docs/BACKLOG_REFINEMENT.md (presentation format rules apply)",
+    "BEFORE scope selection: Microsoft Store release per docs/STORE_RELEASE_PROCESS.md -- build + prep next Store update",
+    "Then Sprint 61 scope selection (Harold pre-targeted F168) -> Phase 3 plan -> 3.3.1 cards + DRAFT PR"
   ]
 }
