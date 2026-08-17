@@ -1,0 +1,18 @@
+- generic [ref=f1e5]:
+  - img "Organization background image" [ref=f1e6]
+  - generic [ref=f1e7]:
+    - generic [ref=f1e13]:
+      - img "Microsoft" [ref=f1e16]
+      - main [ref=f1e17]:
+        - generic [ref=f1e20]:
+          - heading "Trying to sign you in" [level=1] [ref=f1e21]
+          - progressbar "Please wait" [ref=f1e22]
+          - link "Cancel" [active] [ref=f1e28] [cursor=pointer]:
+            - /url: "#"
+    - contentinfo [ref=f1e29]:
+      - generic [ref=f1e30]:
+        - link "Terms of use" [ref=f1e31] [cursor=pointer]:
+          - /url: https://www.microsoft.com/en-US/servicesagreement/
+        - link "Privacy & cookies" [ref=f1e32] [cursor=pointer]:
+          - /url: https://privacy.microsoft.com/en-US/privacystatement
+        - button "Click here for troubleshooting information" [ref=f1e33] [cursor=pointer]: ...

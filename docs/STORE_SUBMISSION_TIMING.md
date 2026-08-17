@@ -29,9 +29,15 @@ configured; the dashboard requires an interactive authenticated session).
 
 ## What the numbers actually say
 
-- **The fast path is under an hour.** Submission 15 went submit-to-live in ~51
-  minutes, and it is the cleanest datapoint in the set (both events recorded the
-  same evening, minutes after they happened).
+- **The fast path is under an hour -- and the true floor is UNKNOWN.** Submission 15
+  shows ~51 minutes submit-to-live, the shortest gap in the set. **Harold, 2026-08-16:
+  "I have just never checked it in less than 51 minutes."** That is the key correction
+  to how this table reads: every elapsed figure here is bounded below by OBSERVATION
+  CADENCE, not by Microsoft. A submission that certified in 15 minutes and was noticed
+  at 51 records as 51. Do not treat ~51m as a floor, a typical time, or evidence of how
+  fast certification runs -- until a submission is polled continuously, this table
+  cannot tell us the real minimum. Submission 17 is the first one polled at a fixed
+  10-minute interval specifically to find out.
 - **Same-day is the norm, not the exception.** Submissions 10, 13, and 15 all
   certified the same day. Overnight cases (11, 16) are bounded by when someone
   looked, not by Microsoft being slow.
@@ -53,6 +59,9 @@ confirms it in Partner Center. Two rules:
    Partner Center observation (screenshot, or Harold saying he checked).
 2. Record the recorded-at time honestly, and mark it if the real event clearly
    happened earlier (e.g. an overnight certification noticed at 8am).
+3. **Note the polling cadence for each row.** An elapsed time is only as precise as
+   the interval it was sampled at; a row observed once the next morning says almost
+   nothing about certification speed.
 
 To measure a submission precisely, note the Partner Center "Last modified"
 timestamp on the submission when it flips to Publishing/live rather than relying on
