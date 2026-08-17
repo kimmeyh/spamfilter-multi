@@ -1,6 +1,6 @@
 # Sprint 61 Plan
 
-**Status**: DRAFT -- awaiting Harold's Phase 3.7 approval.
+**Status**: **APPROVED (Harold, Phase 3.7, 2026-08-17)** -- executing.
 **Branch**: `feature/20260816_Sprint_61` | **PR**: not yet created (Phase 3.3.1 fires at approval)
 **Dates**: 2026-08-17 to TBD
 **Prior sprint**: Sprint 60 CLOSED (PR #335 merged to develop and main); 0.10.0.0 / Submission 17 CERTIFIED AND LIVE 2026-08-16 (~26 minutes submit-to-live, measured).
@@ -466,9 +466,14 @@ _**Decision-class interrupts**_: **Class 1/2** -- re-adding a removed dependency
 
 Two top-tier assignments out of nine, each justified above rather than defaulted.
 
-## Open questions for Phase 3.7 approval
+## Phase 3.7 approval record (Harold, 2026-08-17)
+
+**APPROVED.** All 9 tasks in scope. Answers recorded below; the two Class-3 items are resolved, the
+Class-1 item is approved WITH a scoped mid-sprint exception, and sprint size is confirmed.
+
+## Open questions for Phase 3.7 approval -- ALL ANSWERED
 
 1. **Task 1 R-3** (Class 3): correcting the "Canonical Next Steps progression", currently flagged MUST NOT be reordered. Approve the correction? -- **ANSWERED implicitly by R-2a/R-2b: the progression must change, since it omits the `main` merge, the release, and both refinement passes. Treated as approved-in-substance; the correction will be shown in the completion notes for confirmation.**
 2. **Task 1 R-7** (Class 3): store-process ordering. -- **ANSWERED (Harold, 2026-08-17): no conflict. The `main` merge does not block refinement; it is a precondition of the MSIX BUILD only. The version bump is independent because it lands in the next sprint's branch, which never touches `main`.** Encoded as R-2a/R-2b.
-3. **Task 6** (Class 1): the parity ADR. **The question, restated (it was referenced without being explained -- Harold, 2026-08-17):** an ADR is a Class-1 architectural decision, which the Decision-Class Taxonomy forbids Claude from making unilaterally. The proposal was to DRAFT the ADR, then present it for Harold's approval BEFORE Tasks 7 (F167) and 8 (F161) build on it -- because both write platform exceptions that only make sense once the rule defining "exception" is settled; if the rule changed afterwards, both would need reworking. **STATUS: still awaiting Harold's decision on whether that one mid-sprint approval stop is wanted.** Default if unanswered: draft it, present it at the next natural break, and continue with the tasks that do NOT depend on it rather than idling.
+3. **Task 6** (Class 1): the parity ADR. **The question, restated (it was referenced without being explained -- Harold, 2026-08-17):** an ADR is a Class-1 architectural decision, which the Decision-Class Taxonomy forbids Claude from making unilaterally. The proposal was to DRAFT the ADR, then present it for Harold's approval BEFORE Tasks 7 (F167) and 8 (F161) build on it -- because both write platform exceptions that only make sense once the rule defining "exception" is settled; if the rule changed afterwards, both would need reworking. **ANSWERED (Harold, 2026-08-17): YES -- "mid-sprint ADR approval is OK as an exception for this sprint."** So Task 6 STOPS for approval once the ADR is drafted, and Tasks 7/8 do not begin until it is approved. **Scope of the exception, stated so it is not over-applied**: it covers the parity ADR in THIS sprint only. It is not a general licence to pause at other points -- everything else remains under the standing Phase 3.7 authorization and the Phase Auto-Advance Rule. While awaiting ADR approval, execution continues on tasks that do not depend on it rather than idling.
 4. **Sprint size**: 9 tasks at ~17-27 hours. -- **ANSWERED (Harold, 2026-08-17): "not an issue." All 9 tasks confirmed in scope; F161 stays.**
