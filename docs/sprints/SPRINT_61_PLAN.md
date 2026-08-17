@@ -83,6 +83,8 @@ Execution order is the task order below. Task 0 is the pre-approved chore; Task 
 
 _**Risk & rollback**_: Risk -- a repo-wide rewrite touching many files. Mitigation: content-neutral by construction, guarded by the full suite (AC-2). Rollback: revert the two commits.
 
+**COMPLETION NOTES (2026-08-17)**: DONE. `.gitattributes` added (LF everywhere; `.bat`/`.cmd`/`.ps1` pinned CRLF; binary asset types marked so they are never touched). **`git add --renormalize .` produced ZERO changed files** -- a useful finding: the repo was ALREADY LF-consistent in storage, so the constant "LF will be replaced by CRLF" warnings came entirely from checkout-time conversion, not from mixed content. Consequences: (a) there is no renormalization commit and blame history is untouched, so the anticipated `.git-blame-ignore-revs` entry does not exist; the file is still created, with that fact recorded, so the next bulk formatting change has an obvious home; (b) AC-1 (no warnings on a later commit) is verified by observation on subsequent commits rather than by the diff. AC-2 verified: `flutter analyze` clean, full suite **1,862 passed / 26 skipped / 0 failed**. AC-3 re-read against reality: no hash to record, and the file states why. Actual effort ~15m (est 20-40m).
+
 ---
 
 ### Task 1 -- F170: Encode the post-merge Release Cycle (Priority 2)
