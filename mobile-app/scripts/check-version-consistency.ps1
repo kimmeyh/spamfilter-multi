@@ -108,5 +108,18 @@ if ($violations.Count -gt 0) {
     exit 1
 }
 
-Write-Host "[OK] All app-version literals match pubspec.yaml ($canonical)." -ForegroundColor Green
+# F159 (Sprint 60): msix_version must track pubspec version as X.Y.Z.0 -- the
+# dev-worktree value sat silently stale at 0.6.0.0 for ~10 releases because
+# nothing watched it. Convention: docs/STORE_VERSION_STATUS.md.
+if ($pubspec -notmatch '(?m)^\s*msix_version:\s*(\d+\.\d+\.\d+\.\d+)') {
+    Write-Host "[FAIL] Could not find an 'msix_version: A.B.C.D' line in pubspec.yaml (msix_config moved? update this check)." -ForegroundColor Red
+    exit 1
+}
+$msix = $Matches[1]
+if ($msix -ne "$canonical.0") {
+    Write-Host "[FAIL] msix_version ($msix) must equal pubspec version + '.0' ($canonical.0). Bump both together." -ForegroundColor Red
+    exit 1
+}
+
+Write-Host "[OK] All app-version literals match pubspec.yaml ($canonical); msix_version tracks it ($msix)." -ForegroundColor Green
 exit 0

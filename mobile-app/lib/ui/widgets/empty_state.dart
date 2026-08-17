@@ -29,12 +29,18 @@ class EmptyState extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
+    // Sprint 60 MV: SingleChildScrollView + mainAxisSize.min make this
+    // overflow-proof in SHORT viewports (the Results screen's 40%-height
+    // empty-state box on a phone overflowed this Column by ~44px). In normal
+    // viewports the scroll view never engages and the layout is unchanged.
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
             // Icon
             Icon(
               icon,
@@ -86,6 +92,7 @@ class EmptyState extends StatelessWidget {
               ),
             ],
           ],
+          ),
         ),
       ),
     );
@@ -189,10 +196,15 @@ class ScanStartedEmptyState extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
+    // PR #335 cowork review: same overflow-proofing as EmptyState.build --
+    // this widget renders in the identical 40%-height box on the Results
+    // screen and overflowed short (landscape-phone) viewports the same way.
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
+        child: Padding(
         padding: const EdgeInsets.all(32.0),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // Loading indicator
@@ -219,6 +231,7 @@ class ScanStartedEmptyState extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
           ],
+        ),
         ),
       ),
     );

@@ -99,9 +99,16 @@ class DatabaseHelper implements RuleDatabaseProvider {
         // a busy_timeout makes a blocked writer WAIT (up to 30s) for the lock to
         // free instead of failing immediately. This is the first line of defense;
         // the worker also retries the whole scan on a persistent lock.
-        await db.execute('PRAGMA busy_timeout = 30000');
+        // F156 (Sprint 60, first Android walk-through): these two PRAGMAs
+        // RETURN a value, and Android's SQLiteDatabase rejects value-returning
+        // statements via execSQL ("Queries can be performed using
+        // SQLiteDatabase query or rawQuery methods only") -- which failed
+        // EVERY scan on Android at busy_timeout, and silently dropped WAL
+        // (its failure was swallowed by the catch below). rawQuery works on
+        // both Android and the desktop FFI implementation.
+        await db.rawQuery('PRAGMA busy_timeout = 30000');
         try {
-          await db.execute('PRAGMA journal_mode = WAL');
+          await db.rawQuery('PRAGMA journal_mode = WAL');
         } catch (e) {
           // WAL is unavailable on some platforms/filesystems; busy_timeout still
           // applies. Non-fatal, but log it (Copilot review PR #263) since losing

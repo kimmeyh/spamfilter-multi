@@ -19,7 +19,7 @@ import 'core/services/windows_task_scheduler_service.dart';
 import 'core/services/per_account_bg_migration.dart';
 import 'core/services/app_environment.dart';
 import 'core/services/dev_environment_seeder.dart';
-import 'core/services/background_scan_manager.dart' show ScanFrequency;
+import 'core/services/scan_frequency.dart';
 import 'core/storage/settings_store.dart';
 import 'core/storage/unmatched_email_store.dart';
 import 'core/storage/database_helper.dart';

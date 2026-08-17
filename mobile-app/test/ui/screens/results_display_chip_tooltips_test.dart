@@ -137,15 +137,34 @@ void main() {
             tester, wrapScreen(ruleProvider, scanProvider));
       });
 
-      // Every summary chip (Found, Processed, Deleted, Safe, No rule, Errors)
-      // is wrapped in a Tooltip with non-empty message text.
-      final tooltips = tester.widgetList<Tooltip>(find.byType(Tooltip));
-      expect(tooltips.length, greaterThanOrEqualTo(6),
-          reason: 'expected a Tooltip per remaining summary chip');
-      for (final tooltip in tooltips) {
-        expect(tooltip.message, isNotNull);
-        expect(tooltip.message!.trim(), isNotEmpty,
-            reason: 'a chip Tooltip must have real explanatory text');
+      // PR #335 cowork review: this assertion used to count Tooltips
+      // anywhere in the tree and passed vacuously off the AppBar icons
+      // alone once F166 replaced the chips with a dropdown. It now asserts
+      // the F151c explanations THEMSELVES, wherever they live -- the
+      // dropdown entries (opened below) plus the chip-face tooltip.
+      final faceMessage = tester
+          .widgetList<Tooltip>(find.byType(Tooltip))
+          .map((w) => w.message ?? '')
+          .firstWhere((m) => m.startsWith('Filter the email list'),
+              orElse: () => '');
+      expect(faceMessage, contains('Total emails found'),
+          reason: 'the removed Found chip F151c explanation must survive '
+              'on the dropdown face');
+
+      await tester.tap(find.byTooltip(faceMessage));
+      await tester.pumpAndSettle();
+
+      // Each F151c explanation, verbatim from Sprint 58.
+      for (final explanation in [
+        'No existing rule or safe sender matched these emails.',
+        'These emails matched a safe sender.',
+        'These emails matched a delete rule.',
+        'Emails that could not be processed due to an error.',
+        'Emails evaluated against your rules so far.',
+      ]) {
+        expect(find.textContaining(explanation), findsOneWidget,
+            reason: 'F151c plain-language explanation "$explanation" must '
+                'still reach the user after the F166 redesign');
       }
     });
   });

@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:path/path.dart' as path;
 import 'package:logger/logger.dart';
 
-import 'background_scan_manager.dart';
+import 'scan_frequency.dart';
 import '../../util/redact.dart';
 
 /// Generates PowerShell scripts for Windows Task Scheduler operations

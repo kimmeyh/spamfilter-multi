@@ -7,7 +7,6 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:my_email_spam_filter/core/utils/account_id_sanitizer.dart';
 import 'package:my_email_spam_filter/core/services/background_mode_service.dart';
-import 'package:my_email_spam_filter/core/services/background_scan_manager.dart';
 import 'package:my_email_spam_filter/core/services/per_account_bg_migration.dart';
 import 'package:my_email_spam_filter/core/services/windows_task_scheduler_service.dart';
 import 'package:my_email_spam_filter/core/storage/database_helper.dart';
@@ -63,11 +62,10 @@ void main() {
           WindowsTaskSchedulerService.taskName);
     });
 
-    test('WorkManager unique name uses :: separator', () {
-      expect(BackgroundScanManager.taskNameFor('gmail-a@b.com'),
-          'background_scan_task::gmail-a@b.com');
-      expect(BackgroundScanManager.taskNameFor(null), 'background_scan_task');
-    });
+    // F144 (Sprint 60): the WorkManager unique-name test was removed with
+    // its subject (BackgroundScanManager, the unwired pre-architecture
+    // Android scheduler). The Windows task-name contract above is the live
+    // per-account naming scheme.
   });
 
   group('F98 settings store per-account frequency', () {

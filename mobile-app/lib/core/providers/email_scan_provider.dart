@@ -165,6 +165,8 @@ class EmailScanProvider extends ChangeNotifier {
   String? get statusMessage => _statusMessage;
   String? get currentFolder => _currentFolder;  // [NEW] NEW: Get current folder being scanned
   DateTime? get scanStartTime => _scanStartTime;  // [NEW] SPRINT 11: Get scan start timestamp
+  DateTime? _scanEndTime;  // PR #335 review: frozen at completeScan so displayed duration stops growing
+  DateTime? get scanEndTime => _scanEndTime;
   List<EmailActionResult> get results => _results;
   int get deletedCount => _deletedCount;
   int get movedCount => _movedCount;
@@ -252,6 +254,7 @@ class EmailScanProvider extends ChangeNotifier {
     String scanType = 'manual',  // [NEW] SPRINT 4: manual or background
     List<String> foldersScanned = const [],
     bool persist = true,  // [FIX] SPRINT 17: Allow UI-only startScan without creating db record
+    String? platformId,  // PR #335 review: explicit platform for the ensured accounts row (no accountId parsing)
   }) async {
     _status = ScanStatus.scanning;
     _processedCount = 0;
@@ -266,6 +269,7 @@ class EmailScanProvider extends ChangeNotifier {
     _currentEmail = null;
     _statusMessage = 'Starting scan...';
     _scanStartTime = DateTime.now();  // [NEW] SPRINT 11: Record when scan started
+    _scanEndTime = null;  // PR #335 review: new scan, no frozen end yet
 
     // [NEW] PHASE 3.3: Reset throttling state for new scan
     _emailsSinceLastNotification = 0;
@@ -274,6 +278,17 @@ class EmailScanProvider extends ChangeNotifier {
     // [NEW] SPRINT 4: Create scan result record if persistence is enabled
     if (persist && _scanResultStore != null && _currentAccountId != null) {
       try {
+        // F156/Sprint 60 (Android walk-through root cause): scan_results has
+        // an FK to accounts(account_id), but until now the ONLY code that
+        // ever created the accounts row was the WINDOWS background-scan
+        // worker's _ensureAccountInDatabase -- Windows-only code that masked
+        // this shared gap for months (background scans run every 15 min on
+        // the dev machine). On Android nothing created the row, so EVERY
+        // interactive scan's persistence failed the FK here, was caught
+        // below, and the scan silently completed with no history, no
+        // email_actions, and no no-rule items. Ensure the row in the SHARED
+        // path so persistence works wherever the scan runs.
+        await _ensureAccountRow(_currentAccountId!, platformId: platformId);
         final scanResult = ScanResult(
           accountId: _currentAccountId!,
           scanType: scanType,
@@ -359,6 +374,7 @@ class EmailScanProvider extends ChangeNotifier {
   /// [NEW] SPRINT 4: Complete scan and persist final results
   Future<void> completeScan() async {
     _status = ScanStatus.completed;
+    _scanEndTime = DateTime.now();  // PR #335 review: freeze the duration
     _currentEmail = null;
     _currentFolder = null;  // [NEW] ISSUE #128: Clear folder on completion
     final modeName = getScanModeDisplayName();
@@ -488,6 +504,42 @@ class EmailScanProvider extends ChangeNotifier {
     } catch (e) {
       _logger.e('Failed to persist email actions: $e');
     }
+  }
+
+  /// F156/Sprint 60: make sure the accounts row backing scan_results' FK
+  /// exists (mirrors the Windows worker's _ensureAccountInDatabase, which was
+  /// previously the only creator of this row). Best-effort: a failure here
+  /// surfaces as the existing addScanResult catch, same as before.
+  Future<void> _ensureAccountRow(String accountId, {String? platformId}) async {
+    if (_databaseHelper == null) return;
+    final db = await _databaseHelper!.database;
+    final existing = await db.query(
+      'accounts',
+      where: 'account_id = ?',
+      whereArgs: [accountId],
+      limit: 1,
+    );
+    if (existing.isNotEmpty) return;
+
+    // PR #335 review (Copilot): NO accountId guess-parsing -- a dash-guessing
+    // split corrupts plain-email accountIds that contain dashes
+    // ("my-name@gmail.com" -> platform "my"). The caller passes the platform
+    // explicitly (mirroring the Windows worker's _ensureAccountInDatabase);
+    // the email is recovered ONLY by stripping the known "<platformId>-"
+    // prefix. Anything else stores the accountId as-is with an unknown
+    // platform: correct-but-unlabeled beats wrongly split.
+    String email = accountId;
+    if (platformId != null && accountId.startsWith('$platformId-')) {
+      email = accountId.substring(platformId.length + 1);
+    }
+    await db.insert('accounts', {
+      'account_id': accountId,
+      'platform_id': platformId ?? 'unknown',
+      'email': email,
+      'date_added': DateTime.now().millisecondsSinceEpoch,
+    });
+    _logger.i('Inserted missing accounts row for ${Redact.accountId(accountId)} '
+        '(scan persistence FK)');
   }
 
   /// [NEW] SPRINT 4: Mark scan as failed with error and persist error state

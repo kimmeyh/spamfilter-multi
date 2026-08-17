@@ -55,6 +55,104 @@ void main() {
       await testHelper.tearDown();
     });
 
+    test(
+        'F156/Sprint 60 REGRESSION: persistence works with NO pre-existing '
+        'accounts row (the Android state that silently dropped every scan)',
+        () async {
+      // The exact production shape found on Android: the accounts table is
+      // EMPTY (only the Windows background worker ever created the row), so
+      // scan_results' FK failed on every interactive scan and persistence
+      // silently no-op'd. The shared path now ensures the row itself.
+      // NOTE: deliberately NO createTestAccount here -- every sibling test
+      // pre-creates the row ("required for FK constraints" in the harness),
+      // which is precisely why this class of failure never showed in tests.
+      const freshAccountId = 'aol-fresh@aol.com';
+      final freshProvider = EmailScanProvider();
+      freshProvider.initializePersistence(
+        scanResultStore: scanResultStore,
+        unmatchedEmailStore: unmatchedEmailStore,
+        databaseHelper: databaseHelper,
+      );
+      freshProvider.setCurrentAccountId(freshAccountId);
+
+      await freshProvider.startScan(
+        totalEmails: 5,
+        scanType: 'manual',
+        foldersScanned: ['INBOX'],
+        platformId: 'aol',
+      );
+
+      final results =
+          await scanResultStore.getScanResultsByAccount(freshAccountId);
+      expect(results.isNotEmpty, true,
+          reason: 'the scan result MUST persist even when no accounts row '
+              'pre-exists -- the shared path now creates it (previously only '
+              'the Windows background worker did, so Android lost every '
+              'scan: no history, no no-rule items)');
+
+      final db = await databaseHelper.database;
+      final account = await db.query('accounts',
+          where: 'account_id = ?', whereArgs: [freshAccountId]);
+      expect(account, hasLength(1),
+          reason: 'the ensure step must have created the accounts row');
+      expect(account.first['platform_id'], 'aol',
+          reason: 'platform id comes from the EXPLICIT startScan platformId '
+              '(PR #335 review: no accountId guess-parsing)');
+      expect(account.first['email'], 'fresh@aol.com',
+          reason: 'email recovered by stripping the known "aol-" prefix');
+    });
+
+    test(
+        'ensured accounts row never guess-parses: a dash-containing plain '
+        'email stays intact, and a platform prefix strips exactly (PR #335 '
+        'Copilot finding)', () async {
+      // Case 1: plain-email accountId containing a dash, no platform known.
+      // The old dash-split would have produced platform "my", email
+      // "name@gmail.com" -- corrupted. Now it stays whole.
+      const dashEmailId = 'my-name@gmail.com';
+      final p1 = EmailScanProvider();
+      p1.initializePersistence(
+        scanResultStore: scanResultStore,
+        unmatchedEmailStore: unmatchedEmailStore,
+        databaseHelper: databaseHelper,
+      );
+      p1.setCurrentAccountId(dashEmailId);
+      await p1.startScan(
+          totalEmails: 1, scanType: 'manual', foldersScanned: ['INBOX']);
+
+      final db = await databaseHelper.database;
+      var row = await db.query('accounts',
+          where: 'account_id = ?', whereArgs: [dashEmailId]);
+      expect(row, hasLength(1));
+      expect(row.first['email'], dashEmailId,
+          reason: 'a dash inside a plain email must NOT be split');
+      expect(row.first['platform_id'], 'unknown',
+          reason: 'no platform passed -> unknown, never a guessed fragment');
+
+      // Case 2: platform-email form where the EMAIL ITSELF contains a dash.
+      const prefixedId = 'aol-my-name@aol.com';
+      final p2 = EmailScanProvider();
+      p2.initializePersistence(
+        scanResultStore: scanResultStore,
+        unmatchedEmailStore: unmatchedEmailStore,
+        databaseHelper: databaseHelper,
+      );
+      p2.setCurrentAccountId(prefixedId);
+      await p2.startScan(
+          totalEmails: 1,
+          scanType: 'manual',
+          foldersScanned: ['INBOX'],
+          platformId: 'aol');
+
+      row = await db.query('accounts',
+          where: 'account_id = ?', whereArgs: [prefixedId]);
+      expect(row, hasLength(1));
+      expect(row.first['platform_id'], 'aol');
+      expect(row.first['email'], 'my-name@aol.com',
+          reason: 'only the known "aol-" prefix strips; the email keeps its '
+              'own dash');
+    });
+
     test('Scan result is created when scan starts', () async {
       // Initial state
       expect(scanProvider.status.toString(), contains('idle'));

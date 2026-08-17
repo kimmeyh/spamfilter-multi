@@ -438,13 +438,13 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
   }
 
   /// F112 (Sprint 47): the "No Rule" total chip with a small tappable
-  /// "Review No Rule Items" icon centered directly above it (Windows only,
-  /// consistent with the other Review entry points). On non-Windows it is
-  /// just the plain chip.
+  /// "Review No Rule Items" icon centered directly above it. PR #335 cowork
+  /// review: originally Windows-gated "consistent with the other Review
+  /// entry points" -- F143 (Sprint 60) un-gated every other entry point, so
+  /// the gate here had become the sole inconsistent holdout and is removed.
   Widget _buildNoRuleChipWithReviewIcon(int totalNoRule) {
     final chip = _buildTotalChip('No Rule', totalNoRule, Colors.grey,
         'Total unique emails currently with no rules assigned');
-    if (!Platform.isWindows) return chip;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -546,6 +546,13 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
     final isCompleted = scan.status == 'completed';
     final isError = scan.status == 'error';
     final isManual = scan.scanType == 'manual';
+    // Sprint 60 MV (Harold): demo scans record scanType 'demo' but the old
+    // binary manual/background labeling showed them as "Background" -- on a
+    // platform with no background scheduler at all (F144/F161), a plainly
+    // wrong badge. Three-way label; anything unknown still says Background.
+    final typeLabel = isManual
+        ? 'Manual'
+        : (scan.scanType == 'demo' ? 'Demo' : 'Background');
 
     // Build subtitle with scan type badge and mode
     final modeLabel = _scanModeLabel(scan.scanMode);
@@ -569,7 +576,7 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
         container: true,
         button: canOpen,
         excludeSemantics: true,
-        label: '${isManual ? 'Manual' : 'Background'} scan - $accountEmail - '
+        label: '$typeLabel scan - $accountEmail - '
             '$modeLabel - ${scan.status}',
         hint: canOpen ? 'View scan results' : null,
         onTap: canOpen ? () => _navigateToResults(scan) : null,
@@ -605,7 +612,7 @@ class _ScanHistoryScreenState extends State<ScanHistoryScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      isManual ? 'Manual' : 'Background',
+                      typeLabel,
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,

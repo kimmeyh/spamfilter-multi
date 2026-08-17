@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:my_email_spam_filter/core/storage/database_helper.dart';
 import 'package:my_email_spam_filter/core/storage/background_scan_log_store.dart';
 import 'package:my_email_spam_filter/core/storage/account_store.dart';
-import 'package:my_email_spam_filter/core/services/background_scan_manager.dart';
 import '../helpers/database_test_helper.dart';
 
 /// Integration tests for background scanning workflow
@@ -252,25 +251,10 @@ void main() {
       expect(totalUnmatched, 16); // 5 + 8 + 3
     });
 
-    test('frequency validation for scheduling', () {
-      for (final freq in ScanFrequency.values) {
-        expect(
-          BackgroundScanManager.isValidFrequency(freq.minutes),
-          true,
-          reason: 'Frequency ${freq.label} should be valid',
-        );
-      }
-    });
-
-    test('schedule status reflects current configuration', () {
-      final statusDisabled = ScanScheduleStatus(isScheduled: false);
-      expect(statusDisabled.toString(), contains('disabled'));
-
-      final statusEnabled = ScanScheduleStatus(
-        isScheduled: true,
-        frequency: ScanFrequency.daily,
-      );
-      expect(statusEnabled.toString(), contains('Daily'));
-    });
+    // F144 (Sprint 60): the 'frequency validation' and 'schedule status'
+    // tests were removed with their subjects (BackgroundScanManager
+    // .isValidFrequency / ScanScheduleStatus -- the unwired pre-architecture
+    // Android scheduler). ScanFrequency's own coverage lives in
+    // test/unit/services/scan_frequency_test.dart.
   });
 }

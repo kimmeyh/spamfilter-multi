@@ -4,7 +4,62 @@ can you write a effective but compact /compact string I can use to compact where
 
 Manual Validation complete
 ---------------------------------------------------------------------------------------------------------
-Sprint 5n Manual Validation Feedback 
+Sprint 6n Manual Validation Feedback 
+
+---------------------------------------------------------------------------------------------------------
+Sprint 60 Manual Validation Feedback 
+
+- Android 
+  - Have run 3 full scans, but scan history is empty on the re-launch. The scan had many no-rule items, but nothing shows in the "No Rule" screen.
+
+
+- Android 
+  - Manual Scan > Live Scan > Summary Results screen (would be same/similar for all Scan Results screens)
+    - Click on an email to add/update rules (see image)
+- Add to backlog
+  - Manual Scan > Live Scan for Android is definitely slower than same for Windows app. Could be emulator or something else.
+    - Is there any known reason why the architecture for scanning would be inherently slower on Android? Is it just due to being an emulator?
+- The Android rules DB will be different from Android to Windows.
+  - I believe long-term, recommendation is to use either Android (or iPhone) to do periodic background scans and updates (instead of Windows App)
+  - Can we explore if it makes sense to allow the user to share their rules DB between devices by storing on their personal iCloud or OneDrive or Box or Google Drive?
+  - Could offer to host one for them for a additional tier (non-free app option) at $4 per year?
+- Scan Results screens - Found, Processed... chips
+  - What about 2 chips on single line
+    1) Drop down with only one selectable: No Rule: <n> (default), Safe: <n> OR Safe (not processed): <n>, Deleted: <n> OR Deleted (not processed): <n>, Errors: <n>, Processed: <n>)
+    2) Folders: All - same as current
+  - Also Move "Scan complete <n>m <n>s" to same line as and after "Live Scan" (windows app and android app)
+  - Also shorten "0 of 68 "No rule" emails addressed..." to remove the "flag icon" before it and ?? icon at the end (see image)
+
+
+
+===========
+- Add to backlog - audit of full functionality of Windows App versus Android app via walk-through.
+  - added needed updates as backlog items (reference related ADR defining where architecture and functionality should be the same and when it can be different, and how to manage implementation of "differences".
+  - if items are already in the backlog - update the related backlog item(s) as needed.
+1. F160 dispositions (the headline decision): the audit table is in SPRINT_60_PLAN.md Task 1 — a per-group yes/no on my 11-update / 3-discontinue / 15-keep verdicts is enough.
+- approving all your recommendations
+2. Android interactive flows (emulator is ready, same walkthrough style as Firebase): add a real account (Gmail OAuth now that SHA-1 is live, or AOL IMAP), run a live scan, then long-press rows on Review No Rule Items to feel the F143 touch selection with real items.
+- Demo Scan - should match current functionality of Windows app and display - only differentiating where necessary (reference related ADR defining where architecture and functionality should be the same and when it can be different).  Add to backlog items with sufficient details.
+  - only showing 10 example emails - different from the examples used for Windows app (50+) - should be the same examples (see image) 
+  - Buttons for Processed, Deleted, Safe, No Rule, Errors do not work - functionality should match Windows app, display should be specific to Android (only as needed).
+- Manual Scan
+  - Scan mode does not match current functionality (see image)
+
+3. Windows spot-check (app running): a quick scan or reload to confirm the PRAGMA change is invisible on desktop (the full FFI suite already exercises it), and anything else you'd normally poke.
+- see 2 images - the email rule pop-up has to fit in the window for every email in the list that is visible - the first 2 do not fit in the Windows default window size.  Can it be adjusted?
+
+---------------------------------------------------------------------------------------------------------
+Sprint 59 Manual Validation Feedback 
+
+
+
+
+1. F150 (Firebase Console): register Android app com.myemailspamfilter in project spamfilter-multi, add SHA-1 F6:CF:21:00:94:7A:D9:4E:8A:E9:25:66:5F:8F:20:DB:55:15:8F:17, download the new google-services.json, and I'll place and verify it with a real build.
+2. Manual Validation (app is running): review the Review No Rule Items help content (Help icon on the home screen now jumps straight to it); spot-check the rename on tooltips and the screen title; review the corrected WinWright capability statements in docs/WINWRIGHT_SELECTORS.md if desired.
+
+
+- Production feedback:  
+  - Production build has not completed a background task since 11:54am today (the production app has not been running interactively for most of that time, if not all). [Image #104] 
 
 
 ---------------------------------------------------------------------------------------------------------
