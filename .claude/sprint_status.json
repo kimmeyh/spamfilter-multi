@@ -36,13 +36,13 @@
     "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5)."
   },
   "store_release": {
-    "status": "0.9.0.0 / Submission 16 SUBMITTED 2026-08-16 (Harold, Partner Center), IN CERTIFICATION (pre-processing confirmed via overview screenshot; packages page showed v0.9.0.0 ranked 1 with v0.8.0.0 removal). Third MINOR release (Sprint 59 F154 feat). Build evidence: Checks A/B/manifest/size all PASS (see git history of this block, commit c096580). Pre-merge prod SHA 0cf0ea9. On certification: Step 7 close-out -- STORE_VERSION_STATUS Live row, CHANGELOG [0.9.0] heading + links, dev bump 0.9.0 -> 0.9.1, sprint retro addendum already notes the submission timestamp.",
-    "live_version": "0.8.0.0",
-    "submission": 15,
-    "certified_date": "2026-08-15",
-    "pending_upload_version": "0.9.0.0",
-    "submission_pending": 16,
-    "submitted_date": "2026-08-16"
+    "status": "0.9.0.0 / Submission 16 CERTIFIED AND LIVE (confirmed by Harold 2026-08-16 via Partner Center Packages screenshot: my_email_spam_filter.msix v0.9.0.0 X64 ranked 1 for Windows 10/11 Desktop, and Submission 17 already open in the left nav). Third MINOR release under the semver policy. NEXT: 0.10.0.0 as Submission 17 -- MINOR because [Unreleased] carries 4 feat entries (F166 header redesign among them), so PATCH would violate CHANGELOG_POLICY.",
+    "live_version": "0.9.0.0",
+    "submission": 16,
+    "certified_date": "2026-08-16",
+    "pending_upload_version": "0.10.0.0",
+    "submission_pending": 17,
+    "submitted_date": null
   },
   "environment_notes": [
     "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",

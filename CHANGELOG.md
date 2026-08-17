@@ -26,6 +26,7 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+
 ### 2026-08-16 (Sprint 60)
 - **fix**: PR #335 review round (GitHub Copilot + Claude cowork) -- 13 findings addressed. User-visible: a never-scanned account no longer reads "No Matching Emails" (the F166 No-rule DEFAULT filter made the empty-state chain think a filter was hiding results); the F151c plain-language explanations for every summary category survive the chip-to-dropdown redesign (restored verbatim as dropdown entries plus the chip-face tooltip, now pinned by an assertion on the strings themselves rather than a Tooltip count that passed vacuously); the filter banner says "Tap X to clear filters" instead of naming chips that no longer exist; the email popup can no longer sit up to 8px off-window in its show-above branch; "Scan complete <duration>" is frozen at completion instead of growing with every rebuild during triage; ScanStartedEmptyState is overflow-proof; and the Review No Rule Items shortcut on Scan History is no longer Windows-gated (the last holdout after F143 un-gated the rest). Internal: scan persistence takes an explicit platformId instead of guess-splitting accountIds on dashes (`my-name@gmail.com` was becoming platform "my"), the CI stub key no longer looks like a Google API key, `start-emulator.ps1` takes -SdkRoot, dead `SpecialFilter.found` and an inert popup minWidth removed, and two weak tests (filter-X, long-press) were made mutation-meaningful. Known gap recorded: the empty-state fix ships without a widget test (the empty-account path hangs the test harness). (PR #335 review)
 - **fix**: Sprint 60 MV round 4 -- a Demo scan in Scan History was badged "Background": the card label was a binary manual-or-background choice, so scanType 'demo' fell into the Background bucket (on Android, a platform with no background scheduler at all). Three-way Manual/Demo/Background label, pinned by a mutation-verified test. Round 4 also root-caused "Review No Rule Items empty despite No Rule 12 in history" as CORRECT behavior via on-device DB forensics: the items belong to the Demo scan, and demo results never feed Review No Rule on any platform (it aggregates configured accounts only). (Sprint 60 MV, Harold)
@@ -43,6 +44,8 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 - **test**: F159 -- the version-consistency gate (Dart test + CLI script) now also asserts `msix_config.msix_version` equals the pubspec version + `.0` (it drifted silently at 0.6.0.0 for ~10 releases with nothing watching). Both paths mutation-verified red/green. Recorded scope decision: dependency-floor claims in pubspec comments vs constraints remain deliberately unwatched (no robust cheap check without a new comment convention); that class stays a review-time concern. (Issue #331)
 - **test**: F158 -- CI gains an Android Build Verification job (`flutter build apk --debug`, ubuntu + JDK 17), closing the F150 regression class (Android build broken for months, discovered only manually). The gitignored `google-services.json` is satisfied in CI by a committed STUB (`android/ci/google-services.ci.json`: real package name, deliberately fake everything else -- public repo, and CI never runs the app; same reasoning as F127's empty dart-defines). Stub verified locally against the exact gradle task, and mutation-verified: a wrong-package stub fails with the F150 'No matching client' signature. (Issue #330)
 - **chore**: F157 -- adopted the Flutter gradle migrator's minSdk modernization, with the F108 floor kept explicit: `minSdk = maxOf(flutter.minSdkVersion, 23)`. The migrator's full change-set was exactly this one line (verified by a deliberate throwaway build); the literal-pin form was being silently rewritten on every `flutter build apk`. Current toolchain resolves flutter.minSdkVersion = 24, so the effective floor rises 23 -> 24 (drops Android 6.0 Marshmallow -- same negligible-user-base reasoning as F108's own 21 -> 23 move); it now tracks Flutter automatically. The maxOf form does NOT retrigger the migrator (verified: clean rebuild, zero "Upgrading" messages) -- the Sprint 59 watch-item is RETIRED. Fresh APK installed + launched on the emulator; device reports effective minSdk=24. (Issue #329)
+
+## [0.9.0] - 2026-08-16
 
 ### 2026-08-15 (Sprint 59 Complete)
 - **chore**: dev-worktree `msix_config.msix_version` refreshed `0.6.0.0` -> `0.8.1.0` (it had sat stale since the 0.6.0 release; harmless because Store MSIX builds always come from the PROD worktree's locally-bumped value -- convention now documented in `docs/STORE_VERSION_STATUS.md` per the Claude cowork review question).
@@ -1158,7 +1161,8 @@ See git history for detailed changes prior to Phase 3.1.
 
 ## Version Links
 
-[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.6.2...v0.7.0
 [0.6.2]: https://github.com/kimmeyh/spamfilter-multi/compare/v0.6.1...v0.6.2
