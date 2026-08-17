@@ -254,7 +254,7 @@ _(Prior: **Sprint 49** F119-c + prod-DB restoration, PR #276; **Sprint 48** F119
 
 ## Next Sprint Candidates
 
-**Last Reviewed**: August 15, 2026 (Sprint 60 Phase 1 refinement: F156-F159 re-prioritized 10/12/14/16 as a sprint-together set; F143/F144 PROMOTED from HOLD to 20/22 now that F150 unblocked the Android track. Prior review: August 3, 2026 (Sprint 53 Phase 1 refinement, post-PR-292/293 merge to develop/main, updated again same day during Sprint 53 execution. F137, F138 surfaced from Sprint 52's retro Category 14 + the F133 accessibility audit's dead-code finding; F138 decided and closed same-day. F139 (HOLD template) and F140 surfaced live during the F-STORE-53 smoke test -- see below.)
+**Last Reviewed**: August 17, 2026 (Sprint 61 Phase 1 refinement, post-Sprint-60 merge to develop/main: 8 shipped items pruned (F143/F144/F156/F157/F158/F159/F160/F166); closed decision item F138 removed from candidates (history lives in the Sprint 52/53 records); 8 items surfaced during Sprint 60 registered and prioritized -- F168 (6, production background-scope UX, Harold-targeted), F162 (18), F167 (22), F161 (24), F163 (26), F164 (28), F165 (30). Active non-HOLD slate is 7 items; everything else is HOLD. Prior review: August 15, 2026 (Sprint 60 Phase 1: F156-F159 re-prioritized as a sprint-together set; F143/F144 promoted from HOLD once F150 unblocked the Android track).)
 
 All incomplete items in relative priority order. Priority in increments of 10; items that can sprint together in increments of 2. HOLD items grouped at bottom. See [Feature and Bug Details](#feature-and-bug-details) for deep-dive specs. See [BACKLOG_REFINEMENT.md](BACKLOG_REFINEMENT.md) for presentation format rules.
 
@@ -369,13 +369,6 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Source: Harold, 2026-08-15 -- "at the end this first-use analysis will be added as a permanent backlog ON HOLD item that we can re-use."
 
 _(F149 shipped Sprint 57 -- see `docs/sprints/SPRINT_57_PLAN.md` and CHANGELOG.md 2026-08-14. Root-caused as an always-existing gap in F91's (Sprint 39) design, not a regression: F91 only reconciled the SOURCE folder after a safe-sender move; F149 added a symmetric pre-move check against the TARGET folder using the existing `searchByMessageId` capability. F148 shipped Sprint 56 -- see `docs/sprints/SPRINT_56_PLAN.md` and CHANGELOG.md 2026-08-13. F145/F146/F147 all shipped Sprint 55 -- see `docs/sprints/SPRINT_55_PLAN.md`, CHANGELOG.md 2026-08-10, and `docs/WINWRIGHT_SELECTORS.md`'s new F145 entry (WinWright false-failure finding + the real HelpScreen scroll-timing bug it led to). F145 also produced `integration_test/help_deep_link_test.dart`, the durable regression suite for all 22 HelpSection values.)_
-
-**F138. Decide: should the 5 rule-editing screens gain account context? -- [CLOSED 2026-08-03, Harold: not needed]**
-- Phase: Core App Quality / UX
-- Platform: All
-- **Decision**: Harold reviewed and closed same-day -- "icons not needed in this context." `rules_management`, `safe_senders_management`, `rule_test`, `rule_quick_add`, and `yaml_import_export` stay deliberately Help-only focused editors with no Manual Scan/Settings/Accounts AppBar icons. Not a defect; working as intended.
-- Candidate for `.github/copilot-instructions.md`'s settled-decisions list, since these five screens keep surfacing in review passes as "missing" the icons other screens have.
-- Source: Sprint 52 retrospective Category 14.
 
 ### Sprint Assignment (Sprint 47 pre-kickoff rollover, 2026-07-11)
 
