@@ -36,7 +36,7 @@
     "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5)."
   },
   "store_release": {
-    "status": "0.9.0.0 / Submission 16 CERTIFIED AND LIVE (confirmed by Harold 2026-08-16 via Partner Center Packages screenshot: my_email_spam_filter.msix v0.9.0.0 X64 ranked 1 for Windows 10/11 Desktop, and Submission 17 already open in the left nav). Third MINOR release under the semver policy. NEXT: 0.10.0.0 as Submission 17 -- MINOR because [Unreleased] carries 4 feat entries (F166 header redesign among them), so PATCH would violate CHANGELOG_POLICY.",
+    "status": "0.9.0.0 / Submission 16 CERTIFIED AND LIVE (Harold-verified in Partner Center 2026-08-16). 0.10.0.0 BUILT AND VERIFIED 2026-08-16, AWAITING HAROLD'S UPLOAD as Submission 17. Build evidence -- Check A (build log): inner command ran with --dart-define=APP_ENV=prod --dart-define-from-file=secrets.prod.json. Check B (--release-self-test --expected-version=0.10.0): ALL 6 PASS (APP_ENV=prod, NATIVE_APP_ENV=prod, displaySuffix empty, dataDirSuffix empty, no [DEV] in windowTitle, version 0.10.0). Manifest: Identity 0.10.0.0, KimmeyConsulting-Ohio.MyEmailSpamFilter, 17.07 MB. Artifact: D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\build\\windowsd\runner\\Release\\my_email_spam_filter.msix. Prod worktree synced to main (33 commits) with only the 3 pre-approved generated plugin files discarded; msix_version bumped LOCALLY (uncommitted) per process.",
     "live_version": "0.9.0.0",
     "submission": 16,
     "certified_date": "2026-08-16",
