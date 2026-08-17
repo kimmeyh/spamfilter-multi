@@ -238,6 +238,14 @@ _**Decision-class interrupts**_: **Class 3 (Scrum Master)** -- R-3 changes an ex
 
 _**Decision-class interrupts**_: **Class 1/2** -- R-3 (merging the two folder scopes) would change a persistence/configuration model. Recommend only; surface at Manual Validation.
 
+**COMPLETION NOTES (2026-08-17)**: DONE (R-1/R-2/R-4). The scope was ALREADY listed in Settings (R-1 was largely satisfied -- the selector shows "Selected Folders" with the list and per-folder chips), so the real gap was R-2: nothing flagged a missing Inbox. Added `SettingsScreen.scopeCoversInbox` (public static, directly testable) plus an opt-in `warnIfInboxMissing` on the shared folder selector, enabled on the BACKGROUND selector only -- a manual scan shows its folder list in the results header immediately, whereas an unattended background scan with a wrong scope can go unnoticed indefinitely. Warning, not prohibition, per R-2.
+
+**Harold's steering during execution (2026-08-17)** confirmed the diagnosis twice: (1) "for aol accounts, background scan would include inbox, bulk and bulk mail" -- verified against `SettingsStore.defaultAolScanFolders`, which is exactly `['Inbox', 'Bulk', 'Bulk Mail']`, so the production scope was a silent DEVIATION from the intended default; (2) "it is possible that I removed inbox to do some test, but don't remember it" -- which is the point of the feature: deliberate or accidental, nothing afterwards told him background scans had stopped covering the Inbox.
+
+Predicate design decisions, each pinned by a test: empty scope counts as COVERED (empty resolves to provider defaults, so warning there would fire on every new account's default state); matching is on the last path segment, case-insensitive and trimmed (so `INBOX`, `[Gmail]/Inbox`, ` Inbox ` all count); and matching is EXACT, not substring -- mutation-verified, because `contains('inbox')` would let "Inbox Archive" silently suppress the warning for a scope with no real Inbox, which is the exact failure mode the feature exists to prevent.
+
+R-4 (no scan-behavior change) held: `getEffectiveFolders` untouched. R-3's recommendation is deferred to Manual Validation as planned. Suite **1,870 passed / 26 skipped / 0 failed**; analyze clean. Actual effort ~30m (est 60-120m).
+
 ---
 
 ### Task 4 -- F172: Version number on 8 screens, right of the `?` icon (Priority 10)

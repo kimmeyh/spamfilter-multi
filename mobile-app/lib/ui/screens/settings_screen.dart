@@ -52,6 +52,21 @@ import 'yaml_import_export_screen.dart';
 /// );
 /// ```
 class SettingsScreen extends StatefulWidget {
+  /// F168 (Sprint 61): does this folder scope cover the Inbox?
+  ///
+  /// Matched case-insensitively against the folder's LAST path segment, so
+  /// provider-prefixed names ("INBOX", "Inbox", "[Gmail]/Inbox") all count.
+  static bool scopeCoversInbox(List<String> folders) {
+    // An EMPTY scope means "use the provider defaults", which include the
+    // Inbox -- so empty is covered, not uncovered. Warning on empty would fire
+    // on the default state and train the user to ignore it.
+    if (folders.isEmpty) return true;
+    return folders.any((f) {
+      final leaf = f.split('/').last.split(r'\').last.trim().toLowerCase();
+      return leaf == 'inbox';
+    });
+  }
+
   /// The account whose settings are shown, or null when Settings was opened
   /// WITHOUT a resolved account (F135 R-10 / F133-S52 R-10, Sprint 52).
   ///
@@ -1365,6 +1380,11 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
         const SizedBox(height: 8),
         _buildFolderSelector(
           folders: _backgroundScanFolders,
+          // F168: background scans are unattended -- a wrong scope here can go
+          // unnoticed indefinitely, which is why the warning is enabled on
+          // this selector and not on the manual one (a manual scan shows its
+          // folder list in the results header immediately).
+          warnIfInboxMissing: true,
           onChanged: (folders) async {
             setState(() => _backgroundScanFolders = folders);
             // [UPDATED] ISSUE #123: Save per-account background scan folders
@@ -1777,9 +1797,11 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     );
   }
 
+
   Widget _buildFolderSelector({
     required List<String> folders,
     required Future<void> Function(List<String>) onChanged,
+    bool warnIfInboxMissing = false,
   }) {
     // [UPDATED] ISSUE #123+#124: Show "Select Folders" button to open folder selection dialog
     return Card(
@@ -1801,6 +1823,32 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
               label: const Text('Select Folders'),
             ),
           ),
+          // F168 (Sprint 61, Harold's production finding): a background scope
+          // that omits the Inbox is indistinguishable from "no spam found" --
+          // the scan reports Found 0 and looks healthy while spam accumulates
+          // in the Inbox it never looked at. Warn, do not prohibit: a
+          // deliberate Bulk-only scope stays valid.
+          if (warnIfInboxMissing && !SettingsScreen.scopeCoversInbox(folders))
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.warning_amber_rounded,
+                      size: 20, color: Colors.orange.shade800),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'The Inbox is not in this scope, so background scans will '
+                      'not check it. Spam arriving in the Inbox will be left '
+                      'alone and the scan will still report success.',
+                      style: TextStyle(
+                          fontSize: 12, color: Colors.orange.shade900),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           if (folders.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
