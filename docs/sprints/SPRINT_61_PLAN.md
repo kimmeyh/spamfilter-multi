@@ -19,6 +19,16 @@ Pre-Kickoff) from `docs/ALL_SPRINTS_MASTER_PLAN.md` "Next Sprint Candidates".
 
 ## Harold-targeted for THIS sprint (2026-08-16)
 
+- **F170** (Priority 2) -- **RUNS FIRST, by Harold's explicit instruction.** Encode the post-merge
+  Release Cycle across the process docs, hooks, and skills: merge to `develop` -> merge to `main`
+  -> Backlog Refinement **pass 1 (completeness sweep)** -> Microsoft Store release -> once the
+  submission is in process, Backlog Refinement **pass 2 (scope selection)** -> Phase 3 planning.
+  Runs first because every later sprint depends on the process being right, and because the
+  `verify-closeout-complete` hook currently produces false positives for the entire window
+  between merge and scope selection (it fired twice on 2026-08-16). Survey findings, the one hard
+  code defect, and the one wrong authoritative ordering statement are recorded on the master-plan
+  item.
+
 - **F169** (Priority 4): the Review No Rule Items account filter clips accounts off-screen at
   phone width -- a horizontally scrollable chip Row with no scroll affordance, so with two
   accounts the AOL account is unreachable. Harold: "All account must be viewable", and approved
