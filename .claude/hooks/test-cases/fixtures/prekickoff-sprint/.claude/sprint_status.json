@@ -1,0 +1,18 @@
+{
+  "_description": "Test fixture (F170, Sprint 61): the PRE-KICKOFF window of Harold's standing release cycle -- sprint branch created at checklist 6.6, prior sprint merged and closed out, but plan NOT approved and scope NOT selected, so no PR is owed yet. This is the state during: merge to develop -> merge to main -> Backlog Refinement pass 1 (completeness sweep) -> Microsoft Store release -> Backlog Refinement pass 2 (scope selection). verify-closeout-complete.ps1 must ALLOW a close-out claim here -- the claim refers to the PRIOR sprint / the release, not to this un-started one. Before the F170 precondition fix this fired as a false positive three times in one session (2026-08-16).",
+  "_last_updated": "2026-08-17T02:00:00Z",
+  "current_sprint": {
+    "number": 61,
+    "branch": "feature/20260816_Sprint_61",
+    "status": "PRE-KICKOFF -- awaiting scope selection",
+    "plan_approved": false,
+    "pr_number": null,
+    "pr_url": null,
+    "scope": []
+  },
+  "previous_sprint": {
+    "number": 60,
+    "pr_number": 335,
+    "status": "CLOSED -- merged to develop and main"
+  }
+}

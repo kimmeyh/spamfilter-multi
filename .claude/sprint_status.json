@@ -15,7 +15,7 @@
     "blanket_execution_approved": false,
     "scope": [],
     "_scope_note": "Scope NOT selected yet. Harold pre-targeted F168 (production background/bulk scan folder-scope UX) for this sprint.",
-    "_pr_number_null_reason": "DELIBERATE, not a miss. Sprint 61 is at PRE-KICKOFF: plan_approved=false, scope=[]. Phase 3.3.1 creates the cards + DRAFT PR AT PLAN APPROVAL -- which has not happened. Harold's instruction (2026-08-16) set the order: Sprint 60 close-out -> Backlog Refinement -> Microsoft Store release -> THEN scope selection. Opening a PR before an approved plan would create one against an empty, unapproved sprint. The verify-closeout-complete hook flags this null as a Phase 3.3.1 violation; it is a false positive in the pre-kickoff window and is answered by stating the exemption, never by bypassing the hook. Clear this key at Phase 3.3.1 when the real PR is created."
+    "_pr_number_null_reason": "DELIBERATE, not a miss. Sprint 61 is at PRE-KICKOFF: plan_approved=false, scope=[]. Phase 3.3.1 creates the cards + DRAFT PR AT PLAN APPROVAL. Harold's standing release cycle (F170) runs: merge -> develop, merge -> main, Backlog Refinement pass 1 (completeness sweep), Microsoft Store release, Backlog Refinement pass 2 (scope selection), THEN Phase 3. pr_number is legitimately null across that whole span. FIXED 2026-08-16: verify-closeout-complete.ps1 now gates its pr_number check on plan_approved, so this no longer needs a prose exemption -- the hook understands the window. Clear this key at Phase 3.3.1 when the real PR is created."
   },
   "previous_sprint": {
     "number": 60,
@@ -31,7 +31,7 @@
     "tests_failing": 0,
     "analyzer_warnings": 0,
     "_test_metrics_note": "1,862 passed / 26 skipped / 0 failed at Sprint 60 close (final PR-review commit), analyzer clean. Up from 1,859 via the PR-review round (accountId dash-parsing gate +2, empty-state/dropdown test updates).",
-    "hook_test_cases": "45/45 passing (.claude/hooks/run-test-cases.ps1) -- unchanged since Sprint 52.",
+    "hook_test_cases": "46/46 passing (.claude/hooks/run-test-cases.ps1) -- +1 for the F170 pre-kickoff allow case.",
     "winwright_sweep": "End-of-sprint sweep RUN 2026-08-16 at close-out (lib/ui touched): 3/3 scripts PASS (f124_rule_labels 10 steps, f129_no_rule_review 10 steps, mt2c_no_rule_sweep 25 steps), DB drift none. First run failed mt2c at its DOCUMENTED data-precondition (Harold's MV rule/safe-sender adds addressed the old baseline rows); baselines refreshed from the live dev DB per the script's own maintenance note, re-run PASS.",
     "coverage_percent": null,
     "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5)."
