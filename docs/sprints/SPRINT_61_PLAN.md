@@ -19,6 +19,12 @@ Pre-Kickoff) from `docs/ALL_SPRINTS_MASTER_PLAN.md` "Next Sprint Candidates".
 
 ## Harold-targeted for THIS sprint (2026-08-16)
 
+- **F169** (Priority 4): the Review No Rule Items account filter clips accounts off-screen at
+  phone width -- a horizontally scrollable chip Row with no scroll affordance, so with two
+  accounts the AOL account is unreachable. Harold: "All account must be viewable", and approved
+  reusing the F166 Scan Results dropdown pattern (single-select, default All) on BOTH Windows and
+  Android. Assigned to this sprint at registration.
+
 - **F168** (Priority 6): background scan skipped the Inbox (ran Bulk/Bulk Mail only) while the
   manual scan over Bulk/Bulk Mail/Inbox found and deleted 6 rule-matching Inbox emails. **Cause
   confirmed by Harold same-day: Inbox was genuinely not selected in the background folder scope
