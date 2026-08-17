@@ -1,0 +1,30 @@
+{
+  "_comment": "F158 (Sprint 60): CI-ONLY stub of google-services.json. The REAL file is gitignored (it carries the Firebase project's API key, and this is a public repo); a repo secret was rejected because CI never RUNS the app -- the build only needs structurally-valid JSON whose client matches the applicationId (the exact F150 failure class this job guards). Same philosophy as F127's empty dart-defines. Every value except package_name is deliberately fake; do NOT copy this file into a dev environment.",
+  "project_info": {
+    "project_number": "000000000000",
+    "project_id": "ci-stub-project",
+    "storage_bucket": "ci-stub-project.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:000000000000:android:0000000000000000000000",
+        "android_client_info": {
+          "package_name": "com.myemailspamfilter"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "ci-stub-not-a-real-api-key"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

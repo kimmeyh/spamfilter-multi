@@ -214,9 +214,14 @@ class BackgroundScanWindowsWorker {
           // Resolve platform ID from credential store or infer from account ID
           String? platformId = await credStore.getPlatformId(accountId);
           if (platformId == null || platformId.isEmpty) {
-            // Infer from account ID format: "{platform}-{email}"
+            // Infer from account ID format: "{platform}-{email}".
+            // PR #335 review: only a dash BEFORE the local part can be a
+            // platform prefix. A dash inside the email itself
+            // ("my-name@gmail.com") must not be read as a platform, or the
+            // inferred value would then be stripped off the stored email.
+            final atIndex = accountId.indexOf('@');
             final dashIndex = accountId.indexOf('-');
-            if (dashIndex > 0) {
+            if (dashIndex > 0 && (atIndex < 0 || dashIndex < atIndex)) {
               platformId = accountId.substring(0, dashIndex);
               await _bgLog('Inferred platformId: $platformId from accountId: ${Redact.accountId(accountId)}');
             } else {
@@ -365,14 +370,16 @@ class BackgroundScanWindowsWorker {
       );
 
       if (existing.isEmpty) {
-        // Extract email from accountId (format varies: "email" or "platform-email")
+        // PR #335 review (Copilot, second pass): same policy as the shared
+        // path's _ensureAccountRow -- NO dash guessing. The old heuristic
+        // split at the FIRST dash whenever the remainder contained '@', so
+        // a plain-email accountId like "my-name@gmail.com" was stored with
+        // email "name@gmail.com". This worker already receives platformId,
+        // so strip exactly that known prefix and otherwise keep the
+        // accountId whole.
         String email = accountId;
-        final dashIndex = accountId.indexOf('-');
-        if (dashIndex > 0 && dashIndex < accountId.length - 1) {
-          final afterDash = accountId.substring(dashIndex + 1);
-          if (afterDash.contains('@')) {
-            email = afterDash;
-          }
+        if (accountId.startsWith('$platformId-')) {
+          email = accountId.substring(platformId.length + 1);
         }
 
         await db.insert('accounts', {

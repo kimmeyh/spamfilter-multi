@@ -128,5 +128,35 @@ void main() {
               'pubspec.yaml ($canonical). See the 5-file version checklist in '
               'docs/STORE_RELEASE_PROCESS.md:\n${violations.join('\n')}');
     });
+
+    test('msix_version tracks pubspec version as X.Y.Z.0 (F159, Sprint 60)', () {
+      // F159 (Sprint 60, from the Sprint 59 Claude cowork review): the DEV
+      // worktree's `msix_config.msix_version` sat silently stale at 0.6.0.0
+      // for ~10 releases because nothing watched it -- Store builds ship from
+      // the PROD worktree, so the drift was harmless but misleading (the
+      // convention is documented in docs/STORE_VERSION_STATUS.md). Since
+      // Sprint 59 the dev value is kept in step with the app version; this
+      // assertion is what makes "kept in step" true by construction.
+      //
+      // Deliberately LEFT UNWATCHED by this gate (recorded scope decision,
+      // F159 R-2): dependency-floor claims in pubspec comments ("fixed in
+      // 17.2.1") vs the constraint. Matching prose claims to constraints
+      // needs natural-language parsing or a new comment convention; neither
+      // is robust-cheap. The `^17.0.0`-vs-17.2.1 class remains a review-time
+      // concern.
+      final canonical = _canonicalVersion();
+      final pubspec = File('pubspec.yaml').readAsStringSync();
+      final m = RegExp(r'^\s*msix_version:\s*(\d+\.\d+\.\d+\.\d+)',
+              multiLine: true)
+          .firstMatch(pubspec);
+      expect(m, isNotNull,
+          reason: 'pubspec.yaml has no msix_version line -- the msix_config '
+              'block moved or was removed; update this gate alongside it.');
+      expect(m!.group(1), '$canonical.0',
+          reason: 'msix_version (${m.group(1)}) must be pubspec version '
+              '($canonical) + ".0". Convention: docs/STORE_VERSION_STATUS.md '
+              '"msix_version convention" section. Bump both together (they '
+              'are 3 lines apart in the same file).');
+    });
   });
 }

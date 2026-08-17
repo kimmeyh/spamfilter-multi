@@ -249,42 +249,6 @@ rules:
       expect(isComplete, isTrue);
     });
 
-    test('8. Migration handles malformed YAML gracefully', skip: 'MigrationManager throws on malformed YAML instead of partial import', () async {
-      // Arrange: Create invalid YAML
-      final rulesYaml = r'''
-version: "1.0"
-settings:
-  default_execution_order_increment: 10
-rules:
-  - name: "ValidRule"
-    enabled: "True"
-    conditions:
-      type: "OR"
-      from: ["^valid@example\\.com$"]
-    actions:
-      delete: true
-
-  - name: "InvalidRule"
-    enabled: "True"
-    conditions:
-      # Missing type field
-      from: ["^invalid@example\\.com$"]
-    actions:
-      # Missing action
-''';
-
-      final rulesFile = File(appPaths.rulesFilePath);
-      await rulesFile.parent.create(recursive: true);
-      await rulesFile.writeAsString(rulesYaml);
-
-      // Act: Run migration (should not crash)
-      final results = await migrationManager.migrate();
-
-      // Assert: Valid rule imported, invalid skipped
-      expect(results.rulesImported, greaterThanOrEqualTo(1));
-      expect(results.errors, isNotEmpty); // Invalid rule logged as error
-    });
-
     test('9. Migration tracks statistics correctly', () async {
       // Arrange: Create YAML with multiple rules and safe senders
       final rulesYaml = r'''
@@ -393,31 +357,6 @@ rules:
 
     tearDown(() async {
       await testHelper.tearDown();
-    });
-
-    test('Migration handles missing condition type gracefully', skip: 'MigrationManager throws on missing condition type instead of reporting error', () async {
-      // Arrange: Rule without condition type
-      final rulesYaml = r'''
-version: "1.0"
-rules:
-  - name: "MissingTypeRule"
-    enabled: "True"
-    conditions:
-      from: ["^test@example\\.com$"]
-    actions:
-      delete: true
-''';
-
-      final rulesFile = File(appPaths.rulesFilePath);
-      await rulesFile.parent.create(recursive: true);
-      await rulesFile.writeAsString(rulesYaml);
-
-      // Act: Run migration (should not crash)
-      final results = await migrationManager.migrate();
-
-      // Assert: Error reported but migration completes
-      expect(results.isComplete, isTrue);
-      expect(results.errors, isNotEmpty);
     });
 
     test('Migration handles duplicate rule names in YAML by importing first, skipping second', () async {

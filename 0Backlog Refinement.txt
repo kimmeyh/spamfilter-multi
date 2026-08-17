@@ -5,8 +5,69 @@ All Sprint tasks and sub-tasks are approved.
 Continue without addition approvals until Manual Validation, providing your recommendation for Manual Validation steps.
 Do not stop to ask questions unless meeting the criteria in \docs\SPRINT_STOPPING_CRITERIA.md
 ---------------------------------------------------------------------------------------------------------
-Sprint 5n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
+Sprint 6n Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval.  Note that everything needs to take into account both the Windows App and the Android app and ADR stating that everything should be functionally and UI the same unless it cannot be - and where it cannot be it should be implemented as a platform exception for what is needed -- this applies to all backend code, frontend code, data, architecture, development, security, testing, deployment.
 
+---------------------------------------------------------------------------------------------------------
+Sprint 60 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
+- Add to backlog and target for this sprint
+  - For each of the 29 skipped tests """Verification: suite 1,893 / 29 skipped / 0 failed; deep-link integration 32/32; sweep 3/3; analyze
+  clean. PR #326 (draft) is current.Verification: suite 1,893 / 29 skipped / 0 failed; deep-link integration 32/32; sweep 3/3; analyze clean.
+  PR #326 (draft) is current.""" can you tell me briefly: what each test does and original purpose, why it is being skipped, your opinion on
+  if the test should be: discontinued, updated to working or kept for special purpose testing.
+- F156. Full Android app testing walk-through -- automated where possible, errors expected and fixed as found (~half-day+) Priority 10
+- F157. Impact study: adopt the Flutter-suggested gradle/minSdk modernization (~time-boxed; implement in-item if < 200 LOC and < 2h) Priority 12
+- F158. CI guard for the F150 regression class -- Android debug build job (~30-60m) Priority 14
+- F159. Metadata-under-gates: version-consistency net for msix_version and dependency floors (~45-60m) Priority 16
+- F143. Android entry point + touch-adapted selection for No-Rule Review screen (~time-boxed, no-history) Priority 20
+- F144. Android background scanning re-evaluation (WorkManager) + POST_NOTIFICATIONS runtime request (~time-boxed, no-history) Priority 22
+
+
+
+Backlog Refinement — Sprint 60 candidates
+
+Candidates at a glance
+
+- F156. Full Android app testing walk-through -- automated where possible, errors expected and fixed as found (~half-day+) Priority 10
+- F157. Impact study: adopt the Flutter-suggested gradle/minSdk modernization (~time-boxed; implement in-item if < 200 LOC and < 2h) Priority 12
+- F158. CI guard for the F150 regression class -- Android debug build job (~30-60m) Priority 14
+- F159. Metadata-under-gates: version-consistency net for msix_version and dependency floors (~45-60m) Priority 16
+- F143. Android entry point + touch-adapted selection for No-Rule Review screen (~time-boxed, no-history) Priority 20
+- F144. Android background scanning re-evaluation (WorkManager) + POST_NOTIFICATIONS runtime request (~time-boxed, no-history) Priority 22
+- HOLD: F111/F139/F152 (periodic templates), F70/F71/F130, F94/F95, F63, SEC-15/SEC-8b/SEC-4/SEC-6/SEC-7/SEC-9, F6, Issue #163, F4, GP-* (Play track)
+
+Core App Quality / Android rollout track
+
+F156. Full Android app testing walk-through (~half-day+) Priority 10
+- Phase: Android rollout track
+- Platform: Android (emulator; F150 unblocked builds, SHA-1 registered)
+- Your walk-through ask from MV: automated where possible (integration_test on the emulator + the adb toolchain proven in Sprint 59); errors expected in never-exercised on-device paths (background scanning, notifications on plugin v17, OAuth, storage); fix as found.
+
+F157. gradle/minSdk modernization impact study (~time-boxed) Priority 12
+- Phase: Android rollout track / build hygiene
+- Platform: Android (build config)
+- Study the migrator's suggested change (what does flutter.minSdkVersion resolve to; does it satisfy F108's >= 23); implement in-item if impact < 200 LOC and < 2h, else report and split.
+
+F158. Android debug build CI job (~30-60m) Priority 14
+- Phase: Android rollout track / CI
+- Platform: CI
+- flutter build apk --debug job so the F150 class cannot recur silently; resolve the gitignored google-services.json CI-config question deliberately.
+
+F159. Metadata-under-gates (~45-60m) Priority 16
+- Phase: Build hygiene / policy gates
+- Platform: All (repo metadata)
+- Extend the version gate to dev msix_version (drifted silently ~10 releases) and evaluate a dependency-floor claim check (the ^17.0.0-vs-17.2.1 miss).
+
+F143. Android No-Rule Review entry point + touch selection (~time-boxed, no-history) Priority 20
+- Phase: Android rollout track
+- Platform: Android
+- Promoted from HOLD: F142 landed Sprint 57 and F150 removed the build blocker; the Windows-gated AppBar icon and touch-adapted multi-select are the remaining pieces.
+
+F144. Android background scanning re-evaluation + POST_NOTIFICATIONS (~time-boxed, no-history) Priority 22
+- Phase: Android rollout track
+- Platform: Android
+- Promoted from HOLD for the same reason; pairs naturally after F143/F156.
+
+F156 through F159 are sized to sprint together (~1 day); adding F143 makes a fuller Android-focused sprint. Which items do you select for Sprint 60?
 ---------------------------------------------------------------------------------------------------------
 Sprint 59 Scope should include the below items. Please complete sprint planning (/docs/sprint_planning.md) for the below items and present for approval:
 

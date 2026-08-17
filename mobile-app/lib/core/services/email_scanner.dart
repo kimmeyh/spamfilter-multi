@@ -24,6 +24,7 @@ import '../../adapters/email_providers/gmail_api_adapter.dart';
 import '../../adapters/email_providers/platform_registry.dart';
 import '../../adapters/email_providers/spam_filter_platform.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
+import '../../util/error_messages.dart';
 
 /// Service to orchestrate email scanning with live IMAP connection
 class EmailScanner {
@@ -172,6 +173,7 @@ class EmailScanner {
         totalEmails: 0,
         scanType: scanType,
         foldersScanned: folderNames,
+        platformId: platformId,
       );
       AppLogger.scan('Step 3: scanProvider.status AFTER startScan: ${scanProvider.status}');
 
@@ -821,7 +823,19 @@ class EmailScanner {
         // add targeted scrubbing here.
         await LiveScanLogger.log('SCAN FAILED accountId=${Redact.accountId(accountId)} error=$e');
       }
-      await scanProvider.errorScan('Scan failed: $e');
+      // F156 (Sprint 60, Android walk-through finding): this used to pass
+      // 'Scan failed: $e' -- errorScan prepends its own 'Scan failed: ' too,
+      // so the status header showed a DOUBLED prefix followed by the raw
+      // exception (a DatabaseException with SQL text, on the first Android
+      // demo scan). Rule: a PLAIN `Exception('...')` here is app-authored
+      // text written to be read (e.g. 'Platform X not supported' -- pinned by
+      // email_scanner_test), so it passes through minus the 'Exception: '
+      // prefix; every other error type (DatabaseException, socket errors,
+      // ...) is raw internals and goes through ErrorMessages.humanize.
+      final msg = e.runtimeType.toString() == '_Exception'
+          ? e.toString().replaceFirst('Exception: ', '')
+          : ErrorMessages.humanize(e);
+      await scanProvider.errorScan(msg);
       rethrow;
     } finally {
       // Sprint 38 F86: always deregister the rule-set listener, including

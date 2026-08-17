@@ -74,3 +74,7 @@ Harold, 2026-08-15: **"a except imp-6"** -- apply IMP-1 through IMP-5 now; **IMP
 - IMP-5 (sweep leaves an artifact): APPLIED -- `docs/SPRINT_CHECKLIST.md` sweep line now requires recorded evidence in the sprint plan's completion notes.
 - IMP-6 (minSdk pin policy gate): SKIPPED per Harold (see rationale above). The existing safeguard remains the staging rule: read `git status --short` before every commit, which is what caught the migrator's rewrite this sprint.
 - Follow-on (Harold, same session): **F157 registered** -- impact study on the gradle/minSdk modernization the migrator attempted, with implementation folded into the item if measured impact is < 200 LOC and < 2 hours wall-clock. This is the constructive counterpart to skipping IMP-6: instead of fencing the upgrade out, study and absorb it.
+
+## Close-out addendum (Step 7 post-submission note)
+
+0.9.0.0 (Submission 16) uploaded and submitted by Harold on 2026-08-16, in certification at pre-processing (screenshots verified). The release carries Sprint 59's work; built from origin/main + the local-unpushed 0.9.0 kickoff merge (a65e6e0), all release checks PASS.

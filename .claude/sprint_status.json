@@ -1,98 +1,66 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-15 (Sprint 59 Phase 7.7 complete)",
+  "_last_updated": "2026-08-16 (Sprint 60 Phase 7.7 close-out)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
+    "number": 60,
+    "branch": "feature/20260815_Sprint_60",
+    "pr_number": 335,
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/335",
+    "start_date": "2026-08-16",
+    "status": "Phase 7.7 CLOSE-OUT -- retro COMPLETE (14x4; Cat 1 Good with IMP-1 python-tooling rule applied as memory; Cats 2-12 Very Good; IMP-2/3/4 declined; Cat 14 -> F167 registered). MV complete (4 rounds, approved 2026-08-16). Docs triad done (PLAN + RETROSPECTIVE + SUMMARY); master plan rolled; Sprint 61 stub created; ARCHITECTURE.md F144 staleness fixed. PR #335 to be marked Ready at end of 7.7. Suite 1,859/26/0, analyze clean.",
+    "plan_approved": true,
+    "plan_approval_date": "2026-08-16",
+    "blanket_execution_approved": true,
+    "scope": [
+      "F160",
+      "F157",
+      "F158",
+      "F159",
+      "F143",
+      "F144",
+      "F156",
+      "F166"
+    ],
+    "_scope_note": "F166 added mid-sprint per Harold's plan-then-execute steering (card #336). Original 7 tasks + F166 all complete."
+  },
+  "previous_sprint": {
     "number": 59,
     "branch": "feature/20260815_Sprint_59",
     "pr_number": 326,
-    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/326",
-    "start_date": "2026-08-15",
-    "status": "Phase 7.7 COMPLETE -- awaiting Harold's PR review/merge. All 4 tasks + sweep restoration shipped; Manual Validation complete; retro ALL 14 categories 'Very Good'; 5/6 improvements applied (IMP-6 skipped -> F157 registered). Doc triad complete. Suite 1,893/29/0. PR #326 marked READY at end of 7.7. On merge: Phase 6.6 carry-forward (branch Sprint 60 FROM feature/20260815_Sprint_59), close cards #322-#325 by hand, then Backlog Refinement -- F156/F157/F143/F144 lead candidates. Harold will re-request the cowork review post-retro, pre-Copilot.",
-    "plan_approved": true,
-    "plan_approval_date": "2026-08-15",
-    "blanket_execution_approved": true,
-    "scope": [
-      "F150",
-      "F153",
-      "F155",
-      "F154"
-    ],
-    "_scope_note": "Execution order F150 -> F153 -> F155 -> F154 (rename before new help content so content uses the final name). Store: 0.8.0.0 / Submission 15 IN CERTIFICATION (see store_release block); post-cert close-out (Check C, STORE_VERSION_STATUS Live row, CHANGELOG [0.8.0] heading, next dev bump) pends Harold's confirmation, independent of sprint tasks."
-  },
-  "previous_sprint": {
-    "number": 58,
-    "branch": "feature/20260814_Sprint_58",
-    "pr_number": 317,
-    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/317",
-    "start_date": "2026-08-14",
-    "status": "COMPLETE AND MERGED (develop PR #317, then develop->main). Phase 6.6 carry-forward done: feature/20260815_Sprint_59 branched from the Sprint 58 feature branch. Retro + doc triad complete. Final suite 1,891 passed / 29 skipped / 0 failed.",
-    "plan_approved": true,
-    "plan_approval_date": "2026-08-15",
-    "blanket_execution_approved": true,
-    "scope": [
-      "F151"
-    ],
-    "_scope_note": "F151 (Windows first-run UX) is Sprint 58's scope per Harold's explicit direction 2026-08-15, superseding the earlier F150 scoping. F150 remains open/deferred, still blocked on Harold's Firebase Console prerequisite -- next candidate once resolved. F151 fully executed (7/7 tasks); Manual Validation is the current phase."
+    "status": "CLOSED -- merged #326->develop, #327->main 2026-08-15; cards #322-#325 + #315 closed; shipped as 0.9.0.0/Submission 16."
   },
   "github_issues": [
-    318,
-    319,
-    320
+    328,
+    329,
+    330,
+    331,
+    332,
+    333,
+    334,
+    336
   ],
-  "_github_issues_note": "Issues #313 (F142) and #312 (F149) manually closed 2026-08-14 during Sprint 58 Post-Merge Cleanup (GitFlow does not auto-close on feature->develop merge). #311 (Harold's develop->main tracking issue) is MERGED -- PR #316 completed the real merge, resolving the F148/0.6.2.0 known gap. #315 (F150) remains open but DEFERRED (blocked on Harold's Firebase Console action) -- not this sprint's scope. #318 (F151, Windows first-run UX) is Sprint 58's actual scope card, opened 2026-08-15 during Backlog Refinement; PR #317 updated to reference it. This array was not populated when the issue was created -- corrected 2026-08-15 when the require-sprint-cards hook caught the gap.",
+  "_github_issues_note": "Sprint 60 cards (verified against gh issue list 2026-08-16): #328 F160, #329 F157, #330 F158, #331 F159, #332 F143, #333 F144, #334 F156, #336 F166 -- all work complete; close cards at post-merge cleanup. Older open items: #318/#319/#320 (Sprint 58-era), #315 closed with Sprint 59.",
   "test_metrics": {
-    "tests_passing": 1891,
-    "tests_skipped": 29,
+    "tests_passing": 1859,
+    "tests_skipped": 26,
     "tests_failing": 0,
     "analyzer_warnings": 0,
-    "_test_metrics_note": "1,891 as of 2026-08-15 (Sprint 58 final full run at close-out, analyzer clean) -- up from Sprint 57's 1,864 (net +27). F151a-g added +21 (empty-state 4, Help-callout 2, chip-tooltips 2, F151d predicate 5, popup-width 1, error-messages 7); MV rounds added +6 (search behavior 3, full-order gate 1, Markdown rendering 1, Help lazy-account 1). All mutation-verified. The 31-test F145 deep-link integration suite (not in this count -- integration_test/) also re-run green against F151i's Markdown rendering.",
+    "_test_metrics_note": "1,859 / 26 skipped / 0 failed as of 2026-08-16 (Sprint 60 final full run, analyzer clean). Skips 29 -> 26 via F160 dispositions (3 discontinued tests deleted). Net vs Sprint 59's 1,893: F144 deleted the unwired background-scan code AND its test files; new tests added for touch selection (3), compact/filter (3), scan persistence (1), demo label (1), popup width, msix gate, dropdown updates. All mutation-verified.",
     "hook_test_cases": "45/45 passing (.claude/hooks/run-test-cases.ps1) -- unchanged since Sprint 52.",
-    "winwright_sweep": "Live interactive WinWright session this sprint (Backlog Refinement walkthrough + Task 7 environment-compatibility check) -- major discovery: SPI_SETSCREENREADER OS flag was the missing prerequisite for WinWright to see/click Flutter content at all, previously misread as a permanent Flutter-Windows UIA limitation (F140). Flag left enabled. See F153.",
+    "winwright_sweep": "End-of-sprint sweep RUN 2026-08-16 at close-out (lib/ui touched): 3/3 scripts PASS (f124_rule_labels 10 steps, f129_no_rule_review 10 steps, mt2c_no_rule_sweep 25 steps), DB drift none. First run failed mt2c at its DOCUMENTED data-precondition (Harold's MV rule/safe-sender adds addressed the old baseline rows); baselines refreshed from the live dev DB per the script's own maintenance note, re-run PASS.",
     "coverage_percent": null,
     "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5)."
   },
   "store_release": {
-    "_see_also": "docs/STORE_VERSION_STATUS.md is the quick-check summary (live Store version + current dev version, both with a last-verified date). This block is the working detail behind that summary. Keep both in sync; STORE_VERSION_STATUS.md is what to open for a fast answer, this block is where the evidence lives.",
+    "status": "0.9.0.0 / Submission 16 SUBMITTED 2026-08-16 (Harold, Partner Center), IN CERTIFICATION (pre-processing confirmed via overview screenshot; packages page showed v0.9.0.0 ranked 1 with v0.8.0.0 removal). Third MINOR release (Sprint 59 F154 feat). Build evidence: Checks A/B/manifest/size all PASS (see git history of this block, commit c096580). Pre-merge prod SHA 0cf0ea9. On certification: Step 7 close-out -- STORE_VERSION_STATUS Live row, CHANGELOG [0.9.0] heading + links, dev bump 0.9.0 -> 0.9.1, sprint retro addendum already notes the submission timestamp.",
     "live_version": "0.8.0.0",
-    "live_submission_number": 14,
-    "previous_live_version": "0.6.2",
-    "certified_at": "2026-08-15",
-    "certification_evidence": "Harold confirmed certification completed 2026-08-15. Check C smoke pass CONFIRMED via screenshot of the actual Store-installed app: title bar 'MyEmailSpamFilter' (no [DEV]), Settings > General shows 'Version 0.7.0' (no [DEV] marker) -- the strongest possible evidence, direct on-device confirmation.",
-    "submitted_version": "0.8.0",
-    "submission_number": 15,
-    "built_at": "2026-08-15",
-    "submitted_at": "2026-08-15",
-    "status": "0.8.0.0 / Submission 15 CERTIFIED AND LIVE 2026-08-15 (same day as upload). Verified by Harold via three screenshots: Partner Center overview 'product is now updated' + Store presence 'currently available'; Store client product page 'Installed version 0.8.0.0' (last updated 08/15/2026); the INSTALLED app running with title 'MyEmailSpamFilter' (no [DEV]) and Settings > General 'Version 0.8.0' (no [DEV]) -- the strongest evidence. Step 7 close-out COMPLETE 2026-08-15: STORE_VERSION_STATUS Live row 0.8.0.0 + Dev row 0.8.1+1; CHANGELOG [0.8.0] heading + comparison links (also fixed the stale [Unreleased] base link that still pointed at v0.6.2); master plan Last Completed Sprint store outcome; dev pubspec bumped 0.8.0+1 -> 0.8.1+1 (msix_version in dev pubspec also refreshed 0.6.0.0 -> 0.8.1.0, it had been stale since 0.6.0); version_consistency gate green post-bump.",
-    "artifact": "D:\\Data\\Harold\\github\\spamfilter-multi-prod\\mobile-app\\build\\windows\\x64\\runner\\Release\\my_email_spam_filter.msix",
-    "verification": "Full test suite in prod worktree (post-pull, pre-build): 1,865 passed / 29 skipped / 0 failed; flutter analyze clean. Build log Check A: confirmed --dart-define=APP_ENV=prod --dart-define-from-file=secrets.prod.json in the inner flutter build windows command. Check B (--release-self-test --expected-version=0.7.0): RESULT: PASS on all 6 checks (APP_ENV=prod, NATIVE_APP_ENV=prod, both suffixes empty, no [DEV] in title, version match actual=0.7.0). Manifest Version=0.7.0.0 confirmed via Expand-Archive + AppxManifest.xml (unpacked folder cleaned up after). Size 16.81 MB (17627671 bytes), normal range.",
-    "_build_process_note_2026_08_14": "Prod worktree had the SAME class of stale local-only leftovers as the 0.6.2.0 cycle (msix_version: 0.6.1.0 + generated_plugin_registrant.* churn) -- discarded via `git checkout -- .` (Harold approved via AskUserQuestion since this is a destructive-pattern action gated by the auto-mode classifier; Harold also asked that this class of discard be pre-approved going forward -- see CLAUDE.md/STORE_RELEASE_PROCESS.md note to add). Then a REAL `git pull origin main` (not a local-only merge this time) brought main current -- Harold had already completed the real develop->main merge via PR #316 before this build started, so no local-unpushed-merge workaround was needed. msix_version bumped 0.6.0.0 -> 0.7.0.0 locally in the prod worktree (uncommitted, per the standing convention -- dev worktree's own version bump to 0.7.0+1 was already committed for real on the Sprint 57 branch during Sprint 57 itself, commit visible in develop history).",
-    "post_cert_closeout_done": [
-      "DONE 2026-08-13 (per Harold's direct confirmation): 0.6.1.0/Submission 12 certified and live (superseded same day by 0.6.2.0/Submission 13).",
-      "DONE 2026-08-13: dev worktree bumped 0.6.1 -> 0.6.2 (commit ff03d35, Sprint 57 branch) per the semver policy (PATCH -- F148 is fix-only).",
-      "DONE 2026-08-13: 0.6.2.0 MSIX built + verified (manifest 0.6.2.0, --release-self-test PASS all 6 checks, policy gates 23/23 green, full suite 1,858/0 failed).",
-      "DONE 2026-08-13 (Harold): uploaded 0.6.2.0 MSIX to Partner Center, submitted for certification.",
-      "DONE 2026-08-13 (Harold): Submission 13 (0.6.2.0) CERTIFIED AND LIVE -- confirmed via Partner Center screenshot (Store presence card, green checkmark, 'Congrats! Your product is now updated').",
-      "DONE 2026-08-13: docs/ALL_SPRINTS_MASTER_PLAN.md Store status line updated.",
-      "DONE 2026-08-13: CHANGELOG.md [0.6.2] heading + Version Links added ([Unreleased] entries moved under it; also backfilled a missing [0.6.1] heading from the prior interrupted release cycle).",
-      "DONE 2026-08-13 (Harold): Check C smoke pass CONFIRMED -- screenshot of the actual Store-downloaded/installed app: title bar 'MyEmailSpamFilter' (no [DEV]), Settings > General shows 'Version 0.6.2' (no [DEV] marker). This is the definitive on-device confirmation, stronger than the Partner Center screenshot alone.",
-      "DONE 2026-08-14 (Harold, PR #316): the REAL develop -> main merge/PR completed -- resolves the 0.6.2.0-cycle known gap; main and develop are now fully in sync.",
-      "DONE 2026-08-14: dev worktree bump 0.6.2 -> 0.7.0 (MINOR, per semver policy -- F142 feat entry) already applied during Sprint 57, commit visible on develop.",
-      "DONE 2026-08-14: 0.7.0.0 MSIX built + verified (manifest 0.7.0.0, --release-self-test PASS all 6 checks, full suite 1,865/0 failed, analyze clean).",
-      "DONE 2026-08-14 (Harold): 0.7.0.0 MSIX uploaded to Partner Center as Submission 14, validated, package ranked #1 -- confirmed via Partner Center screenshots (Packages page + Application overview).",
-      "DONE 2026-08-15 (Harold): Submission 14 (0.7.0.0) CERTIFIED AND LIVE.",
-      "DONE 2026-08-15: Check C smoke pass CONFIRMED -- screenshot of the actual Store-installed app: title bar clean, Settings > General 'Version 0.7.0', no [DEV] anywhere."
-    ],
-    "post_cert_closeout_pending": [
-      "docs/STORE_VERSION_STATUS.md Live row -> 0.7.0.0 (Submission 14).",
-      "docs/ALL_SPRINTS_MASTER_PLAN.md Store status line updated.",
-      "CHANGELOG.md [Unreleased] entries moved under a new [0.7.0] heading + Version Links added.",
-      "Dev worktree bumped 0.7.0 -> next version per the semver policy (PATCH unless a feat lands first)."
-    ],
-    "_prior_release_history": "0.7.0 (Submission 14): built 2026-08-14, certified + LIVE 2026-08-15, Harold-verified clean (Check C). First MINOR release under the semver policy. 0.6.2 (Submission 13): built 2026-08-13, certified + LIVE same day, Harold-verified clean (Check C). 0.6.1 (Submission 12): built 2026-08-12, certified + LIVE (per Harold's 2026-08-13 direct confirmation). 0.6.0 (Submission 11): built 2026-08-09, certified + LIVE 2026-08-10, Harold-verified clean. 0.5.9 (Submission 10): built + certified + LIVE 2026-08-03, Harold-verified clean via winget uninstall/reinstall workaround (client-side propagation lag on cert day, resolved). 0.5.8 (Submission 9): built 2026-07-27, submitted 2026-07-28, certified 2026-07-29, Harold-verified clean 2026-07-30.",
     "submission": 15,
-    "certified_date": "2026-08-15"
+    "certified_date": "2026-08-15",
+    "pending_upload_version": "0.9.0.0",
+    "submission_pending": 16,
+    "submitted_date": "2026-08-16"
   },
   "environment_notes": [
     "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",
@@ -101,8 +69,10 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Harold: cowork review re-request, then Copilot review, then review/merge PR #326",
-    "On merge: Phase 6.6 carry-forward + post-merge cleanup (close #322-#325)",
-    "Backlog Refinement: F156, F157, F143/F144 candidates"
+    "Mark PR #335 Ready for Review at end of 7.7 (then 7.7.5 announce)",
+    "Harold: review/merge PR #335 -> develop, then develop -> main",
+    "On merge: branch feature/<date>_Sprint_61 FROM the Sprint 60 branch immediately (checklist 6.6)",
+    "On Submission 16 certification: Store release Step 7 close-out (STORE_VERSION_STATUS Live row, CHANGELOG [0.9.0] heading, dev bump 0.9.0 -> 0.9.1)",
+    "Sprint 61 Phase 1 refinement from master plan candidates (F161/F162/F167/F163/F164/F165)"
   ]
 }

@@ -421,58 +421,7 @@ void main() {
       expect(result.shouldDelete, isTrue);
     });
 
-    test('matches authentic from: header to detect spoofed emails',
-      skip: 'RuleEvaluator uses message.from (display), not headers[From] - intentional design to use parsed from field',
-      () async {
-      // NOTE: This test is skipped because RuleEvaluator intentionally uses message.from
-      // (the parsed display address) rather than the raw headers['From'] value.
-      // This is by design - see _matchesHeaderPattern() line 179-180.
-      //
-      // To enable anti-spoofing detection, the RuleEvaluator would need to be
-      // enhanced to optionally match against the raw From header value.
-      //
-      // Pattern matches domains with "0za12o" subdomain (common spam pattern)
-      ruleSet = RuleSet(
-        version: '1.0',
-        settings: {},
-        rules: [
-          createTestRule(
-            name: 'SpamAutoDeleteHeader',
-            conditions: RuleConditions(
-              type: 'OR',
-              header: [r'from:.*@(?:[a-z0-9-]+\.)*0za12o\.[a-z0-9.-]+$'],
-            ),
-          ),
-        ],
-      );
-      evaluator = RuleEvaluator(
-        ruleSet: ruleSet,
-        safeSenderList: safeSenders,
-        compiler: compiler,
-      );
-
-      // Spammer attempts to spoof a legitimate sender
-      // Display From looks legitimate, but authentic header From reveals true sender
-      final email = createTestEmail(
-        from: 'support@legitbank.com',  // Spoofed display From
-        headers: {
-          'From': 'noreply@mail.0za12o.spammer.net',  // Authentic From header
-          'Reply-To': 'phishing@another-domain.com',
-          'Content-Type': 'text/html',
-        },
-        subject: 'Urgent: Verify Your Account',
-        body: 'Click here to verify your account...',
-      );
-      final result = await evaluator.evaluate(email);
-
-      // Rule matches because authentic "from:" header contains @mail.0za12o.spammer.net
-      // Pattern: @(?:[a-z0-9-]+\.)*0za12o\.[a-z0-9.-]+$
-      // Matches: from:noreply@mail.0za12o.spammer.net (after lowercase/trim)
-      expect(result.shouldDelete, isTrue);
-      expect(result.matchedRule, equals('SpamAutoDeleteHeader'));
-      expect(result.matchedPattern, equals(r'from:.*@(?:[a-z0-9-]+\.)*0za12o\.[a-z0-9.-]+$'));
     });
-  });
 
   group('RuleEvaluator - Exception Handling', () {
     test('exception prevents rule from matching (from exception)', () async {

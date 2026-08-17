@@ -158,5 +158,47 @@ void main() {
           reason: 'popup must be roomier than the too-squashed 480px '
               'centered version');
     });
+
+    testWidgets(
+        'popup fits FULLY inside the window when opened from the FIRST list '
+        'row (Sprint 60 MV: top rows previously clipped the bottom actions '
+        'off-window)', (tester) async {
+      // 650px height: SHORTER than the popup's intrinsic content, so the
+      // pre-fix code (unclamped top + no height cap) demonstrably overflows
+      // the bottom here -- verified by mutation (the first 900px version of
+      // this test stayed green against the pre-fix code: worthless).
+      tester.view.physicalSize = const Size(1600, 650);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      late RuleSetProvider ruleProvider;
+      await tester.runAsync(() async {
+        ruleProvider = await buildRuleProvider();
+        final scanProvider = EmailScanProvider();
+        await mountAndLoadDbWidget(
+            tester, wrapScreen(ruleProvider, scanProvider));
+      });
+
+      // The seeded result is the FIRST row -- the exact case Harold showed
+      // clipping: plenty of space below the row, so the popup positioned
+      // itself low and its bottom ("Block Subject" row) ran past the window.
+      await tester.tap(find.text('bad@spam.com'));
+      await tester.pumpAndSettle();
+
+      final popupFinder = find
+          .byWidgetPredicate((w) => w is Material && w.elevation == 8);
+      expect(popupFinder, findsOneWidget);
+
+      final popupRect = tester.getRect(popupFinder);
+      const windowHeight = 650.0;
+      expect(popupRect.bottom, lessThanOrEqualTo(windowHeight),
+          reason: 'Sprint 60 MV (Harold): the email-rule popup must fit '
+              'fully inside the window for EVERY visible row. A bottom edge '
+              'past the window means the clamp/height-cap fix regressed and '
+              'the action buttons are being clipped again.');
+      expect(popupRect.top, greaterThanOrEqualTo(0),
+          reason: 'the clamp must never push the popup off the top either');
+    });
   });
 }

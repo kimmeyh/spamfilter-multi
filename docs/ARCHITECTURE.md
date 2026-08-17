@@ -2,7 +2,7 @@
 
 **Purpose**: Detailed architectural documentation for the spamfilter-multi Flutter application
 
-**Last Updated**: June 20, 2026 (Sprint 42: F98 per-account background scanning per ADR-0039; F99 two-harness E2E testing; BUG-S37-2 ccTLD audit)
+**Last Updated**: August 16, 2026 (Sprint 60: F144 removed the unwired Android WorkManager background-scan code, ScanFrequency extracted; prior: Sprint 42 F98 per-account background scanning per ADR-0039)
 
 ## SPRINT EXECUTION Documentation
 
@@ -182,8 +182,7 @@ Business logic and domain services.
 |---------|---------|
 | **BackgroundModeService** | Detects `--background-scan` CLI flag in main.dart |
 | **BackgroundScanWindowsWorker** | Headless worker for Windows Task Scheduler scans |
-| **BackgroundScanWorker** | Android WorkManager callback dispatcher |
-| **BackgroundScanManager** | Schedule/cancel background scans |
+| **ScanFrequency** (`scan_frequency.dart`, F144 Sprint 60) | Shared frequency enum for scheduling UI + Windows scheduler (extracted when the unwired Android WorkManager code -- BackgroundScanManager/Service/Worker/NotificationService -- was removed; Android scheduler is F161) |
 | **WindowsTaskSchedulerService** | Create/manage Windows Task Scheduler tasks; per-account tasks (ADR-0014, ADR-0039 F98) -- `taskNameFor(accountId)`, enumerate/orphan cleanup |
 | **WindowsNotificationService** | Windows toast notifications via PowerShell WinRT (ADR-0018) |
 | **WindowsSystemTrayService** | System tray icon with context menu (ADR-0019) |
