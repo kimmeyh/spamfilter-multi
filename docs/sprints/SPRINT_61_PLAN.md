@@ -17,6 +17,14 @@ Pre-Kickoff) from `docs/ALL_SPRINTS_MASTER_PLAN.md` "Next Sprint Candidates".
   `windows/runner` files as phantom-dirty CRLF, add a targeted `eol=crlf` line for those paths
   rather than reverting the policy. Ends the "LF will be replaced by CRLF" warning noise.
 
+## Harold-targeted for THIS sprint (2026-08-16)
+
+- **F168** (Priority 6): background scan skipped the Inbox (ran Bulk/Bulk Mail only) while the
+  manual scan over Bulk/Bulk Mail/Inbox found and deleted 6 rule-matching Inbox emails. Suspected
+  cause: background-specific folder override resolving ahead of the per-account selection in
+  `SettingsStore.getEffectiveFolders`. Harold explicitly asked that this be targeted for the next
+  sprint. Confirmed NOT fixed by Sprint 60 (those fixes were Android-only).
+
 ## Standing context for scope selection
 
 - 0.9.0.0 / Submission 16: if certified by sprint start, Step 7 release close-out is pending
