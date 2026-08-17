@@ -292,6 +292,14 @@ R-4 (no scan-behavior change) held: `getEffectiveFolders` untouched. R-3's recom
 
 **Est-Effort**: 60-120m
 
+**COMPLETION NOTES (2026-08-17)**: DONE. `AppBarVersionLabel` added to the SHARED `StandardAppBarActions.build` after the Help icon -- ONE edit, all 8 screens (verified: all 7 screen files call the shared builder with zero `includeVersion: false` opt-outs; Scan Results and Live Scan's results share `results_display_screen`). Reads the runtime `AppVersion.get()`; `AppEnvironment.displaySuffix` still appends so dev builds keep `[DEV]`. Renders nothing until resolved (no flicker/reflow) and cannot throw. Default-on with an `includeVersion` opt-out, matching the sibling-actions pattern (Sprint 52 IMP-5).
+
+**THE PLANNED RISK MATERIALIZED, exactly as the card predicted**: adding a text element overflowed the already-crowded AppBar by ~81px at 411px -- caught not by the F172 tests but by the F169 tests, which render that screen at phone width. Resolved by suppressing the label below 600px (the app's existing compact threshold, so there is ONE notion of "compact"): it is screenshot provenance, not a control, so dropping it on phones costs nothing while overflowing would clip real action buttons. Windows at its 1024x640 epx minimum is far above the threshold, so the label is always present where screenshots are actually taken.
+
+**Two test-quality corrections made during execution**: (1) the phone-width test then passed VACUOUSLY -- "no overflow" is trivially true where the label is absent -- so it now asserts the label is deliberately absent, plus a new 700px guard proving the suppression does not leak upward and silently strip the version from desktop screenshots; (2) the `9.9.9` test sentinel tripped `version_consistency_test`, which sweeps `test/` for `Version <X.Y.Z>` literals and correctly read it as stale -- the gate was RIGHT, so the sentinel is now assembled at runtime instead of weakening the gate. AC-1 mutation-verified (moving the label before the Help icon turns it red).
+
+Suite **1,876 passed / 26 skipped / 0 failed**; analyze clean; `appbar_action_order_test` and `version_consistency_test` both pass. Actual effort ~40m (est 60-120m).
+
 ---
 
 ### Task 5 -- F171: Minimum-supported-window UI sweep at 1024x640 epx (Priority 8)
