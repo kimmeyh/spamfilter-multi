@@ -14,7 +14,8 @@
     "plan_approval_date": null,
     "blanket_execution_approved": false,
     "scope": [],
-    "_scope_note": "Scope NOT selected yet. Harold pre-targeted F168 (production background/bulk scan folder-scope UX) for this sprint."
+    "_scope_note": "Scope NOT selected yet. Harold pre-targeted F168 (production background/bulk scan folder-scope UX) for this sprint.",
+    "_pr_number_null_reason": "DELIBERATE, not a miss. Sprint 61 is at PRE-KICKOFF: plan_approved=false, scope=[]. Phase 3.3.1 creates the cards + DRAFT PR AT PLAN APPROVAL -- which has not happened. Harold's instruction (2026-08-16) set the order: Sprint 60 close-out -> Backlog Refinement -> Microsoft Store release -> THEN scope selection. Opening a PR before an approved plan would create one against an empty, unapproved sprint. The verify-closeout-complete hook flags this null as a Phase 3.3.1 violation; it is a false positive in the pre-kickoff window and is answered by stating the exemption, never by bypassing the hook. Clear this key at Phase 3.3.1 when the real PR is created."
   },
   "previous_sprint": {
     "number": 60,
