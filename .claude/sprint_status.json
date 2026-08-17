@@ -36,13 +36,13 @@
     "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5)."
   },
   "store_release": {
-    "status": "0.10.0.0 / Submission 17 SUBMITTED 2026-08-17 (Harold, Partner Center) and IN CERTIFICATION -- verified by two screenshots: Packages page shows my_email_spam_filter.msix v0.10.0.0 X64 ranked 1 for Windows 10/11 Desktop with v0.9.0.0 ranked 2 and marked for removal (correct supersede), and the overview shows 'Product update: In certification (Submission 17: Last modified 08/17/2026)' with the pipeline at Pre-processing, plus 'Store presence (Submission 16)' still live at 0.9.0.0. FOURTH MINOR release under the semver policy (Sprint 60's F166 + 3 other feat entries). Build evidence: Check A (build log dart-defines) PASS; Check B (--release-self-test --expected-version=0.10.0) 6/6 PASS (APP_ENV=prod, NATIVE_APP_ENV=prod, both suffixes empty, no [DEV] title, version 0.10.0); manifest Identity 0.10.0.0, 17.07 MB. ON CERTIFICATION: Step 7 close-out -- update STORE_VERSION_STATUS.md Live row to 0.10.0.0/Submission 17 (verify in Partner Center first, never from this cache), then bump dev 0.10.0 -> next version at the following release.",
-    "live_version": "0.9.0.0",
-    "submission": 16,
+    "status": "0.10.0.0 / Submission 17 CERTIFIED AND LIVE 2026-08-16 22:17 -- verified by DIRECT Partner Center observation (authenticated Playwright session): Store presence = Submission 17, certification badge cleared, 'Congrats! Your product is now updated'. Submit-to-live ~26 MINUTES (21:51 -> 22:17), the first submission measured at a fixed 10-minute polling cadence -- half the previous apparent best case, which was an observation-cadence artifact (Harold's correction). Fourth MINOR release. Build evidence: Check A dart-defines PASS; Check B self-test 6/6 PASS; manifest Identity 0.10.0.0, 17.07 MB. NEXT RELEASE: dev currently EQUALS live at 0.10.0 -- bump dev at that release's Step 1.",
+    "live_version": "0.10.0.0",
+    "submission": 17,
     "certified_date": "2026-08-16",
-    "pending_upload_version": "0.10.0.0",
-    "submission_pending": 17,
-    "submitted_date": "2026-08-17"
+    "pending_upload_version": null,
+    "submission_pending": null,
+    "submitted_date": "2026-08-16"
   },
   "environment_notes": [
     "RESOLVED 2026-07-29 (verified 07-30): the Store fault was an Acronis file-system filter blocking AppXSvc cleanup, fixed by an Acronis Protection exclusion. 23h uptime with ZERO Id-493 events vs a 176-file/6-min baseline; Store client self-updated 22606.1401.6.0 -> .10.0 (requires a working deployment pipeline). Filter drivers remain loaded -- backup protection was NOT disabled. See ALL_SPRINTS_MASTER_PLAN ENV-1 for the picker gotcha if it recurs.",

@@ -17,8 +17,8 @@ Partner Center before saying anything about the Store version.
 
 | | Version | Last verified | Notes |
 |---|---|---|---|
-| **Live/certified on Store** (cache) | 0.9.0.0 | 2026-08-16 (Harold, Partner Center Packages screenshot: `my_email_spam_filter.msix` v0.9.0.0 X64 ranked 1 for Windows 10/11 Desktop, min version 10.0.17763.0; **Submission 17 already open** in the left nav, which is itself proof Submission 16 completed) | Submission 16, certified 2026-08-16, uploaded 2026-08-16. Third MINOR release under the semver policy (Sprint 59's F154 `feat`). Superseded 0.8.0.0/Submission 15. |
-| **Dev worktree** (authoritative -- mirrors `pubspec.yaml`) | 0.9.0+1 | 2026-08-15 | Bumped MINOR per the enforced semver policy (Sprint 59's `[Unreleased]` contains the F154 `feat` entry) as the release-kickoff commit for the 0.9.0.0 Store build, on `feature/20260815_Sprint_60`. `msix_version` bumped in step (0.8.1.0 -> 0.9.0.0), now committed in the DEV worktree too per the Sprint 59 convention note below. |
+| **Live/certified on Store** (cache) | 0.10.0.0 | 2026-08-16 22:17 (direct Partner Center observation via authenticated Playwright session: Store presence reads **Submission 17**, the "Update in certification" badge is gone, and the dashboard shows "Congrats! Your product is now updated / Your latest product is now available on Microsoft Store") | Submission 17, submitted 21:51 and live by 22:17 the same evening -- **~26 minutes measured** at a 10-minute polling cadence (see `STORE_SUBMISSION_TIMING.md`). Fourth MINOR release under the semver policy (Sprint 60's F166 + 3 other `feat` entries). Superseded 0.9.0.0/Submission 16. |
+| **Dev worktree** (authoritative -- mirrors `pubspec.yaml`) | 0.10.0+1 | 2026-08-16 | Bumped MINOR (0.9.0 -> 0.10.0) at the 0.10.0.0 release kickoff on `feature/20260816_Sprint_61`, per the enforced semver policy (Sprint 60's `[Unreleased]` carried 4 `feat` entries). **NOTE: dev now EQUALS the live Store version.** The next release bumps dev one step ahead again at its Step 1 -- MINOR or PATCH depending on what `[Unreleased]` contains at that time. |
 
 ## msix_version convention (which worktree's value ships)
 

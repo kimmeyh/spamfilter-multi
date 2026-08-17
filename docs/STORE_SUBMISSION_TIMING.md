@@ -18,7 +18,7 @@ configured; the dashboard requires an interactive authenticated session).
 
 | Submission | Version | Submitted (recorded) | Certified/live (recorded) | Elapsed (upper bound) |
 |---|---|---|---|---|
-| 17 | 0.10.0.0 | 2026-08-16 21:51 | *pending* | -- |
+| 17 | 0.10.0.0 | 2026-08-16 21:51 | 2026-08-16 22:17 (Playwright, 10-min poll) | **~26 minutes** (measured) |
 | 16 | 0.9.0.0 | 2026-08-15 22:56 | 2026-08-16 (Harold, Partner Center screenshot) | < 24h |
 | 15 | 0.8.0.0 | 2026-08-15 18:45 | 2026-08-15 19:36 | **~51 minutes** |
 | 14 | 0.7.0.0 | 2026-08-14 11:28 (uploaded as draft) | 2026-08-15 11:20 | ~24h (draft-first, so not a clean measure) |
@@ -29,7 +29,13 @@ configured; the dashboard requires an interactive authenticated session).
 
 ## What the numbers actually say
 
-- **The fast path is under an hour -- and the true floor is UNKNOWN.** Submission 15
+- **MEASURED FLOOR: ~26 minutes (Submission 17).** The first submission polled at a
+  fixed 10-minute cadence went submit-to-live in about 26 minutes: submitted 21:51,
+  pre-processing 21:57, certification in progress 22:03, published by 22:17. This is
+  the only row in this table sampled tightly enough to mean anything, and it lands at
+  HALF the previous apparent best case -- exactly what Harold predicted when he
+  overruled a 20-minute interval. Certification is fast; our records were slow.
+- **The old "fast path is ~51 minutes" reading was an artifact.** Submission 15
   shows ~51 minutes submit-to-live, the shortest gap in the set. **Harold, 2026-08-16:
   "I have just never checked it in less than 51 minutes."** That is the key correction
   to how this table reads: every elapsed figure here is bounded below by OBSERVATION
@@ -38,6 +44,9 @@ configured; the dashboard requires an interactive authenticated session).
   fast certification runs -- until a submission is polled continuously, this table
   cannot tell us the real minimum. Submission 17 is the first one polled at a fixed
   10-minute interval specifically to find out.
+- **Planning implication**: an evening submission is realistically live within the
+  hour, not the next morning. That is now backed by a measurement rather than by the
+  gap between two glances at the dashboard.
 - **Same-day is the norm, not the exception.** Submissions 10, 13, and 15 all
   certified the same day. Overnight cases (11, 16) are bounded by when someone
   looked, not by Microsoft being slow.
