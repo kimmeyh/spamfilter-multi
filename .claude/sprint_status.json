@@ -9,7 +9,7 @@
     "pr_number": 347,
     "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/347",
     "start_date": "2026-08-17",
-    "status": "Phase 5.3 MANUAL VALIDATION -- 6 of 9 tasks COMPLETE (Task 0 line-endings, F170 release cycle, F169 account dropdown, F168 Inbox warning, F172 version stamp, F171 min-window sweep; cards #340/#341/#338/#339/#342/#343 closed). Windows dev app BUILT AND LAUNCHED for validation; Android emulator booting, APK to follow. MV recommendations with PASS conditions recorded in SPRINT_61_PLAN.md. BLOCKED-ON-HAROLD: ADR-0042 (cross-platform parity) is PROPOSED and gates Tasks 7 (F167) and 8 (F161) -- the scoped mid-sprint approval stop Harold authorized on 2026-08-17. Suite 1,880 passed / 26 skipped / 0 failed; analyze clean; hook suite 47/47.",
+    "status": "Phase 5.3 MANUAL VALIDATION -- ALL 9 TASKS CODE-COMPLETE (cards #338-#346 closed; #341 F170 and #346 F161 closed 2026-08-18 after the ADR-0042 acceptance unblocked them). Suite 1,892 passed / 26 skipped / 0 failed; analyze clean; hook suite 47/47. Windows dev app built+launched for MV; F161 debug APK (174MB) built, emulator boot in progress for install (NOTE: 2 consecutive emulator failures today -- one wedged-unclickable, one silent exit -- environment is flaky). MV steps incl. the F161 on-device AC-2 verification are in SPRINT_61_PLAN.md. Remaining Harold-driven: MV rounds, then Phase 7 retrospective (turn-ending failures are a pre-named retro item per Harold).",
     "plan_approved": true,
     "plan_approval_date": "2026-08-17",
     "blanket_execution_approved": true,
@@ -33,18 +33,14 @@
     "pr_number": 335,
     "status": "CLOSED -- PR #335 merged to develop 2026-08-17 (merge commit 639e191), develop merged to main by Harold. Cards #328-#334 + #336 all closed. Shipped: F160 audit (skips 29->26), F156 Android walk-through (2 CRITICAL Android fixes: PRAGMA, accounts-FK), F157 gradle/minSdk, F158 Android CI job, F159 metadata gates, F143 touch selection, F144 dead-scheduler removal, F166 header redesign, plus 4 MV rounds and a 3-round PR review (Copilot 6 + Claude cowork 13 findings). Final suite 1,862/26/0."
   },
-  "github_issues": [
-    344,
-    345,
-    346
-  ],
-  "_github_issues_note": "Sprint 61: #340/#341/#338/#339/#342/#343 CLOSED. OPEN: #344 (F162 -- ADR drafted, awaiting Harold's approval), #345 (F167) and #346 (F161), both gated on that ADR.",
+  "github_issues": [],
+  "_github_issues_note": "Sprint 61 cards #338-#346 ALL CLOSED (work complete). Zero issues open.",
   "test_metrics": {
-    "tests_passing": 1880,
+    "tests_passing": 1892,
     "tests_skipped": 26,
     "tests_failing": 0,
     "analyzer_warnings": 0,
-    "_test_metrics_note": "1,862 passed / 26 skipped / 0 failed at Sprint 60 close (final PR-review commit), analyzer clean. Up from 1,859 via the PR-review round (accountId dash-parsing gate +2, empty-state/dropdown test updates).",
+    "_test_metrics_note": "1,892 passed / 26 skipped / 0 failed at F161 completion (2026-08-18), analyze clean. Sprint 61 added: account-dropdown 3, settings-scope 5, appbar-version 6, min-window 4, help-claims 3, scheduler 9, plus the hook release-cycle case (hook suite 47/47). Run with --concurrency=4.",
     "hook_test_cases": "47/47 passing (.claude/hooks/run-test-cases.ps1) -- +1 F170 release-cycle case.",
     "winwright_sweep": "End-of-sprint sweep RUN 2026-08-16 at close-out (lib/ui touched): 3/3 scripts PASS (f124_rule_labels 10 steps, f129_no_rule_review 10 steps, mt2c_no_rule_sweep 25 steps), DB drift none. First run failed mt2c at its DOCUMENTED data-precondition (Harold's MV rule/safe-sender adds addressed the old baseline rows); baselines refreshed from the live dev DB per the script's own maintenance note, re-run PASS.",
     "coverage_percent": null,
@@ -66,9 +62,9 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Harold: approve/amend ADR-0042 (gates Tasks 7 and 8)",
-    "Harold: Manual Validation per SPRINT_61_PLAN.md 'Manual Validation -- recommended steps'",
-    "Claude: install the Android APK once the emulator finishes booting",
-    "On ADR approval: execute F167 then F161"
+    "Install F161 APK to emulator when boot completes (in progress; emulator flaky today)",
+    "Harold: Manual Validation per SPRINT_61_PLAN.md incl. F161 on-device AC-2 (enable background scan + Test button, then Claude pulls the DB via adb run-as)",
+    "Phase 7 retrospective after MV (pre-named item: turn-ending failures, 3 occurrences)",
+    "Keep PR #347 DRAFT until end of Phase 7.7"
   ]
 }
