@@ -339,6 +339,18 @@ Suite **1,876 passed / 26 skipped / 0 failed**; analyze clean; `appbar_action_or
 
 **Est-Effort**: 120-180m
 
+**COMPLETION NOTES (2026-08-17)**: DONE (automated portion). New `minimum_window_size_sweep_test.dart` walks the worst-case surfaces at **1024x640 epx**: the full AppBar action row with every action enabled AND the F172 version label; a realistically long account-email title; both empty states; and a guard that the F172 label IS still shown at the minimum size (if its 600px compact threshold ever crept above 1024, desktop screenshots would silently lose their build stamp -- the whole point of F172).
+
+**Result: no NEW clipping defects at 1024x640.** That is a genuine finding, not a silence: two real defects HAD already been found and fixed earlier in this sprint at narrower widths (the F169 account-chip clipping, and a pre-existing ~105px selection-bar overflow), plus the F172 AppBar overflow at 411px. The Windows minimum is comfortably wider than the sizes where this app actually breaks.
+
+**Screens covered where** (recorded so the next run is comparable, per R-3): AppBar row + version label + long title + empty states -> this file at 1024x640. Review No Rule Items -> `no_rule_review_account_dropdown_test` at 411px. Scan Results -> `results_display_compact_and_filter_test` at 599px and `results_display_popup_width_test` at 650px height. This file deliberately does NOT duplicate the DB+secure-storage harnesses those suites already carry.
+
+**Honest scope limit**: the automated sweep covers "nothing clipped", which is the mechanically detectable criterion and the one every defect found so far falls under. The other three R-2 criteria (no primary action off-window, no horizontal scrolling to reach a control, popups fully inside the window) are judgment calls at the pixel level and are listed as Manual Validation steps rather than claimed as automated. R-5 (Android same-class check) is covered by the phone-width tests above.
+
+One harness note worth keeping: `ScanStartedEmptyState` holds a perpetual `CircularProgressIndicator`, so `pumpAndSettle` TIMES OUT on it rather than reporting a layout problem -- a single `pump` is what actually measures layout there.
+
+Suite **1,880 passed / 26 skipped / 0 failed**; analyze clean. Actual effort ~25m (est 120-180m) -- far under, because the sprint's earlier tasks had already found and fixed the narrow-width defects this sweep was chartered to hunt.
+
 ---
 
 ### Task 6 -- F162: Windows-vs-Android parity audit + parity ADR (Priority 18)
