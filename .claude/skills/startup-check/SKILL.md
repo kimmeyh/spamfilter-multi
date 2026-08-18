@@ -104,6 +104,7 @@ Startup Check:
 - Git: [branch] with [N uncommitted files / clean]
 - GitHub CLI: [working/failed]
 - Phase 3.7 Approval: [verified (source) / NOT VERIFIED -- present plan summary and ask / N/A (not on a sprint feature branch)]
+- Release Cycle: [N/A / IN PHASE 8 -- name the step: 8.1 main merge (parallel) / 8.2 refinement pass 1 (completeness sweep) / 8.3 Store release / 8.4 refinement pass 2 (scope selection)] <!-- F170 (Sprint 61): the window between a sprint PR merging and the next scope selection is PHASE 8, defined in SPRINT_EXECUTION_WORKFLOW.md "Phase 8: The Release Cycle". A session resumed mid-cycle reads current_sprint.status to locate itself; pr_number null + plan_approved false is the NORMAL pre-kickoff state here, not a missing-artifact finding. -->
 - Ready: [Yes/No]
 
 
