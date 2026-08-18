@@ -521,3 +521,66 @@ Class-1 item is approved WITH a scoped mid-sprint exception, and sprint size is 
 2. **Task 1 R-7** (Class 3): store-process ordering. -- **ANSWERED (Harold, 2026-08-17): no conflict. The `main` merge does not block refinement; it is a precondition of the MSIX BUILD only. The version bump is independent because it lands in the next sprint's branch, which never touches `main`.** Encoded as R-2a/R-2b.
 3. **Task 6** (Class 1): the parity ADR. **The question, restated (it was referenced without being explained -- Harold, 2026-08-17):** an ADR is a Class-1 architectural decision, which the Decision-Class Taxonomy forbids Claude from making unilaterally. The proposal was to DRAFT the ADR, then present it for Harold's approval BEFORE Tasks 7 (F167) and 8 (F161) build on it -- because both write platform exceptions that only make sense once the rule defining "exception" is settled; if the rule changed afterwards, both would need reworking. **ANSWERED (Harold, 2026-08-17): YES -- "mid-sprint ADR approval is OK as an exception for this sprint."** So Task 6 STOPS for approval once the ADR is drafted, and Tasks 7/8 do not begin until it is approved. **Scope of the exception, stated so it is not over-applied**: it covers the parity ADR in THIS sprint only. It is not a general licence to pause at other points -- everything else remains under the standing Phase 3.7 authorization and the Phase Auto-Advance Rule. While awaiting ADR approval, execution continues on tasks that do not depend on it rather than idling.
 4. **Sprint size**: 9 tasks at ~17-27 hours. -- **ANSWERED (Harold, 2026-08-17): "not an issue." All 9 tasks confirmed in scope; F161 stays.**
+
+---
+
+## Manual Validation -- recommended steps (prepared 2026-08-17)
+
+Six tasks are complete and testable now; Tasks 7-8 are gated on the ADR approval below. Ordered
+cheapest-signal-first, and each step says what a PASS looks like so a wrong result is unambiguous.
+
+### Blocking decision first
+
+**ADR-0042 (`docs/adr/0042-cross-platform-parity-and-platform-exceptions.md`) needs your approval.**
+It is indexed as PROPOSED and gates Tasks 7 (F167 Android Help) and 8 (F161 Android scheduler).
+Approve, amend, or reject -- it also carries one open question for you: whether to add a policy gate
+requiring every `Platform.is*` fork to carry an explanatory comment (cheap to assert, but noisy
+against the 51 grandfathered sites).
+
+### Windows app
+
+1. **F172 version stamp (quickest confidence check)** -- open Review No Rule Items, Scan History,
+   Scan Results, Manual Scan, Live Scan results, Select Account, Settings, Help. PASS: each shows
+   `Version 0.10.0 [DEV]` immediately right of the `?` icon. This is also the fastest way to confirm
+   you are testing the NEW build -- the exact confusion that cost a Sprint 60 validation round.
+2. **F169 account dropdown** -- on Review No Rule Items, open the account filter. PASS: a dropdown
+   (not a chip row), defaulting to `All Accounts (<total>)`, listing every configured account with
+   its count and a check on the active one. Select a specific account: the list narrows. **Then the
+   behavior most at risk:** select some rows, switch accounts, and confirm the selection is CLEARED
+   rather than carried across.
+3. **F168 Inbox warning** -- Settings > Background tab > folder selection. Remove Inbox from the
+   scope. PASS: an orange warning appears saying background scans will not check the Inbox and will
+   still report success. Re-add Inbox: the warning disappears. **This is the defect from your
+   production incident** -- worth confirming the wording actually tells you the consequence.
+   *Note*: this is the DEV app; your production background scope is a separate settings store
+   (ADR-0035), so fixing dev does not change prod.
+4. **F171 minimum window** -- resize the window to roughly 1024x640 and walk the main screens.
+   PASS: nothing clipped, no control unreachable, no horizontal scrolling needed, popups fully
+   inside the window. The automated sweep covers "nothing clipped"; the other three are judgment
+   calls that need your eyes.
+5. **Regression spot-check** -- Review No Rule Items with items selected: the selection bar
+   (`Apply Rule` / `N selected` / `Clear`) should look unchanged at normal window size. I changed
+   its layout to fix a pre-existing overflow, so it is worth one glance.
+
+### Android app
+
+6. **F172 + F169 on Android** -- the parity claims. PASS: the account filter is the same dropdown as
+   Windows. **The version label is deliberately ABSENT on a phone-width screen** (below 600px it is
+   suppressed so it cannot crowd the action buttons off-screen) -- that is intended, not a bug, and
+   is the one place the two platforms intentionally differ this sprint.
+7. **F168 on Android** -- Settings > Background tab shows the same warning behavior. Note Android
+   has no background scheduler until F161, so this is the setting surface only.
+
+### Not testable yet (gated)
+
+- **F167** (Android Help text) and **F161** (Android background scheduler) -- both blocked on
+  ADR-0042. F161 is the sprint's largest task; if the ADR lands late, it is the natural candidate to
+  carry into Sprint 62.
+
+### Known limits worth stating plainly
+
+- The Windows-vs-Android parity walk-through (F162 R-4) is folded into your validation above rather
+  than run separately -- the code-level audit found no systemic divergence, and running it twice
+  would be waste.
+- F170's documentation changes (Phase 8 release cycle) cannot be "tested" in the app; they are
+  verified by reading, and the hook portion is covered by the 47/47 hook suite.
