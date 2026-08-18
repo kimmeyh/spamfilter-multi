@@ -6,6 +6,7 @@ import '../../core/services/app_version.dart';
 import '../../core/services/data_deletion_service.dart';
 import '../../core/services/default_rule_set_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/selected_account_provider.dart';
@@ -13,7 +14,7 @@ import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 import '../../core/services/scan_frequency.dart';
 import '../../core/services/background_scan_windows_worker.dart';
-import '../../core/services/windows_task_scheduler_service.dart';
+import '../../core/services/background_scan_scheduler.dart';
 import '../../core/storage/database_helper.dart';
 import '../../core/storage/settings_store.dart';
 import '../../core/storage/background_scan_log_store.dart';
@@ -1213,26 +1214,40 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
 
   /// Create, update, or delete the Windows Task Scheduler task for THIS account
   /// (F98 / ADR-0039 -- one task per enabled account).
-  Future<void> _updateWindowsScheduledTask({required bool enabled}) async {
+  /// F161 (Sprint 61): renamed from `_updateWindowsScheduledTask` and rerouted
+  /// through the ADR-0042 platform factory -- this call site is now
+  /// platform-free. The exists->update/create decision it used to make inline
+  /// lives in the Windows adapter; Android registers per-account unique
+  /// WorkManager work; unsupported platforms get the explicit no-op scheduler
+  /// (isSupported=false), so nothing here silently pretends to schedule.
+  Future<void> _updateScheduledScan({required bool enabled}) async {
     try {
       final accountId = _requireAccountId;
+      final scheduler = BackgroundScanSchedulerFactory.instance;
+
+      if (!scheduler.isSupported) {
+        _logger.w('Background scheduling unsupported on this platform '
+            '(${scheduler.mechanismLabel})');
+        return;
+      }
+
       bool success;
       if (enabled) {
         final frequency = ScanFrequency.fromMinutes(_backgroundScanFrequency);
         if (frequency == ScanFrequency.disabled) return;
 
-        final exists =
-            await WindowsTaskSchedulerService.taskExists(accountId: accountId);
-        if (exists) {
-          success = await WindowsTaskSchedulerService.updateScheduledTask(
-              frequency: frequency, accountId: accountId);
-        } else {
-          success = await WindowsTaskSchedulerService.createScheduledTask(
-              frequency: frequency, accountId: accountId);
-        }
+        // F161 R-2: POST_NOTIFICATIONS is requested HERE, at the moment the
+        // user enables the feature whose completion notification needs it --
+        // contextual, and gated on the call site actually existing (the
+        // Android worker's completion notification). No-op on non-Android.
+        await _requestNotificationPermissionIfNeeded();
+
+        success = await scheduler.schedule(
+            accountId: accountId, frequency: frequency);
 
         if (success) {
-          _logger.i('Windows scheduled task updated: ${frequency.label}');
+          _logger.i('Scheduled background scan updated: ${frequency.label} '
+              'via ${scheduler.mechanismLabel}');
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -1241,28 +1256,28 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             );
           }
         } else {
-          _logger.e('Windows scheduled task creation returned false');
+          _logger.e('Background scan scheduling returned false '
+              '(${scheduler.mechanismLabel})');
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                  content: Text('Failed to create Windows scheduled task')),
+                  content: Text('Failed to schedule background scan')),
             );
           }
         }
       } else {
-        success = await WindowsTaskSchedulerService.deleteScheduledTask(
-            accountId: accountId);
+        success = await scheduler.cancel(accountId);
         if (success) {
-          _logger.i('Windows scheduled task deleted for this account');
+          _logger.i('Scheduled background scan cancelled for this account');
         }
       }
     } catch (e) {
-      _logger.e('Failed to update Windows scheduled task', error: e);
+      _logger.e('Failed to update scheduled background scan', error: e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content:
-                  Text('Failed to update Windows scheduled task: $e')),
+                  Text('Failed to update scheduled background scan: $e')),
         );
       }
     }
@@ -1324,7 +1339,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 .setAccountBackgroundEnabled(_requireAccountId, value);
             // On Windows, create or delete THIS account's Task Scheduler task.
             if (Platform.isWindows) {
-              await _updateWindowsScheduledTask(enabled: value);
+              await _updateScheduledScan(enabled: value);
             }
           },
         ),
@@ -1348,7 +1363,7 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                 .setAccountBackgroundFrequency(_requireAccountId, freq);
             // On Windows, update THIS account's Task Scheduler frequency if enabled
             if (Platform.isWindows && _backgroundScanEnabled) {
-              await _updateWindowsScheduledTask(enabled: true);
+              await _updateScheduledScan(enabled: true);
             }
           },
         ),
@@ -1440,6 +1455,24 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
   }
 
   /// Execute a one-time background scan for testing
+  /// F161 R-2: request POST_NOTIFICATIONS on Android 13+ when the user
+  /// engages background scanning -- the feature whose completion notification
+  /// needs it. Contextual by design (best practice AND the F144-corrected
+  /// premise: never prompt for a permission with no call site behind it).
+  /// Best-effort: a denied permission degrades to no notification; the scan
+  /// and its persistence are unaffected.
+  Future<void> _requestNotificationPermissionIfNeeded() async {
+    if (!Platform.isAndroid) return;
+    try {
+      await FlutterLocalNotificationsPlugin()
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.requestNotificationsPermission();
+    } catch (e) {
+      _logger.w('Notification permission request failed: $e');
+    }
+  }
+
   Future<void> _runTestBackgroundScan() async {
     setState(() => _isTestingScan = true);
 
@@ -1465,11 +1498,33 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             ),
           );
         }
+      } else if (Platform.isAndroid) {
+        // F161: Android test path -- runs the WorkManager pipeline once,
+        // immediately, through the same dispatcher a scheduled run uses, so
+        // it genuinely tests the scheduled path rather than a lookalike.
+        await _requestNotificationPermissionIfNeeded();
+        final scheduler = BackgroundScanSchedulerFactory.instance;
+        final queued = scheduler is AndroidSchedulerAdapter
+            ? await scheduler.runTestScan(_requireAccountId)
+            : false;
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(queued
+                  ? 'Test scan queued. A notification will appear when it '
+                      'completes; results land in View Scan History.'
+                  : 'Failed to queue the test scan.'),
+              backgroundColor: queued ? Colors.green : Colors.red,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Test background scan is only supported on Windows desktop.'),
+              content: Text(
+                  'Test background scan is not supported on this platform.'),
             ),
           );
         }

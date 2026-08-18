@@ -32,6 +32,8 @@ import 'util/redact.dart';
 // import 'ui/screens/platform_selection_screen.dart'; // OLD: Direct to platform selection.
 import 'ui/screens/main_navigation_screen.dart'; // NEW: Main navigation with bottom nav (Android)
 import 'ui/theme/app_theme.dart';
+import 'package:workmanager/workmanager.dart';
+import 'core/services/android_background_scan_worker.dart';
 
 /// Global RouteObserver for tracking navigation events
 final RouteObserver<ModalRoute<void>> routeObserver = RouteObserver<ModalRoute<void>>();
@@ -277,6 +279,22 @@ void main(List<String> args) async {
   }
 
   // Initialize Windows system tray and notifications (Windows only)
+  if (Platform.isAndroid) {
+    // F161 (Sprint 61): register the WorkManager dispatcher so scheduled
+    // per-account background scans can fire (ADR-0039 mirrored per ADR-0042;
+    // the Windows counterpart is the Task Scheduler block below). One-time
+    // registration; the scheduling itself happens per-account from Settings
+    // through BackgroundScanSchedulerFactory. Best-effort: a failure here
+    // must not block foreground startup -- scheduled scans would simply not
+    // fire, and Settings' Test button would surface that.
+    try {
+      await Workmanager().initialize(androidBackgroundScanDispatcher);
+      Logger().i('Android WorkManager dispatcher registered');
+    } catch (e) {
+      Logger().e('WorkManager initialization failed: $e');
+    }
+  }
+
   if (Platform.isWindows) {
     // F109c (Sprint 44): ingest any background-scan deferrals the native runner
     // recorded to the handoff file while this foreground app was open, into the

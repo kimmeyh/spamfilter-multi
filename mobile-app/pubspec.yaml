@@ -45,9 +45,12 @@ dependencies:
   sqflite_common_ffi: ^2.3.0  # SQLite FFI for desktop platforms
 
   # Phase 3.5 Sprint 7 - Background Scanning
-  # workmanager removed F144 (Sprint 60): its only consumers were the unwired
-  # pre-architecture BackgroundScanManager/worker (zero call sites, deleted).
-  # Re-add when the Windows-mirroring Android scheduler lands (follow-up item).
+  # workmanager re-added F161 (Sprint 61), WITH the working Android scheduler
+  # in the same commit (the F144 removal note said re-add when the
+  # Windows-mirroring scheduler lands -- it now has: the ADR-0042 platform
+  # factory in background_scan_scheduler.dart + the WorkManager dispatcher in
+  # android_background_scan_worker.dart). Android SHIPMENT PREREQUISITE for
+  # the Play track.
   flutter_local_notifications: ^17.2.1  # Local notifications (F150, Sprint 59: 16->17; v16 does not compile against Android SDK 34 -- upstream bigLargeIcon ambiguity. NOTE: 17.0.0 only SURFACES the ambiguity (it bumps compileSdk to 34); the actual fix is upstream issue #2329, first released in 17.2.1 -- hence the floor here (Claude cowork review, 2026-08-15). We use only initialize/show/AndroidNotificationDetails; the v17 breaking changes are in scheduling APIs we do not call.)
   connectivity_plus: ^5.0.0  # Network connectivity detection
   battery_plus: ^5.0.0  # Battery level detection
@@ -65,6 +68,7 @@ dependencies:
   punycode: ^1.0.0
   syncfusion_flutter_xlsio: ^33.1.44
   package_info_plus: ^9.0.1
+  workmanager: ^0.10.7
 
   # Phase 2+ - UI Enhancement
   # flutter_svg: ^2.0.9
@@ -77,6 +81,8 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
   msix: ^3.16.8
+  plugin_platform_interface: ^2.1.8
+  workmanager_platform_interface: ^0.10.4
 
 flutter:
   uses-material-design: true

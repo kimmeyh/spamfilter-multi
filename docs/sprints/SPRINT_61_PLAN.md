@@ -581,11 +581,21 @@ against the 51 grandfathered sites).
 7. **F168 on Android** -- Settings > Background tab shows the same warning behavior. Note Android
    has no background scheduler until F161, so this is the setting surface only.
 
-### Not testable yet (gated)
+### Android background scanning (F161 -- ADR approved, code complete)
 
-- **F167** (Android Help text) and **F161** (Android background scheduler) -- both blocked on
-  ADR-0042. F161 is the sprint's largest task; if the ADR lands late, it is the natural candidate to
-  carry into Sprint 62.
+8. **F161 on-device verification (AC-2)** -- on the emulator with the new APK: Settings >
+   Background tab > enable background scanning for your account (expect the Android 13+
+   notification permission prompt -- that is R-2 working), then tap **Test Background Scan**.
+   PASS: a "Background scan complete" notification with the counts appears within a minute or so,
+   and the scan shows in View Scan History. I will then pull the on-device DB (`adb run-as` +
+   sqlite3) and confirm the scan_results / email_actions / unmatched_emails rows -- the
+   verification method that caught both Sprint 60 bugs. The scheduled periodic path registers with
+   identical code; the Test button runs the same dispatcher.
+
+### Formerly gated -- now delivered
+
+- **F167** and **F161** were blocked on ADR-0042; Harold accepted it 2026-08-18 (with the platform-
+  factories addition) and both tasks are complete above.
 
 ### Known limits worth stating plainly
 
