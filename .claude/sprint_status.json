@@ -9,7 +9,7 @@
     "pr_number": 347,
     "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/347",
     "start_date": "2026-08-17",
-    "status": "Phase 4 EXECUTION -- plan APPROVED 2026-08-17, 9 cards created (#338-#346), draft PR #347 open. Executing in task order: Task 0 (line endings) -> F170 -> F169 -> F168 -> F172 -> F171 -> F162 (ADR STOPS for Harold's approval, a scoped mid-sprint exception he approved for this sprint only) -> F167 -> F161. Standing constraint: every task covers BOTH apps; same unless it cannot be, then a minimal declared platform exception.",
+    "status": "Phase 5.3 MANUAL VALIDATION -- 6 of 9 tasks COMPLETE (Task 0 line-endings, F170 release cycle, F169 account dropdown, F168 Inbox warning, F172 version stamp, F171 min-window sweep; cards #340/#341/#338/#339/#342/#343 closed). Windows dev app BUILT AND LAUNCHED for validation; Android emulator booting, APK to follow. MV recommendations with PASS conditions recorded in SPRINT_61_PLAN.md. BLOCKED-ON-HAROLD: ADR-0042 (cross-platform parity) is PROPOSED and gates Tasks 7 (F167) and 8 (F161) -- the scoped mid-sprint approval stop Harold authorized on 2026-08-17. Suite 1,880 passed / 26 skipped / 0 failed; analyze clean; hook suite 47/47.",
     "plan_approved": true,
     "plan_approval_date": "2026-08-17",
     "blanket_execution_approved": true,
@@ -24,7 +24,8 @@
       "F167",
       "F161"
     ],
-    "_scope_note": "Harold-selected 2026-08-17. F163 EXCLUDED after verification: 22 skip sites remain across 7 files (26 skipped in the suite), so the 11 update-to-working verdicts are NOT done -- F160 delivered the audit, F163 is the implementation. Stays Priority 26 for Sprint 62. New items registered this session: F171 (min-window sweep), F172 (version on 8 screens), F173 (periodic testing deep dive, recurring HOLD)."
+    "_scope_note": "Harold-selected 2026-08-17. F163 EXCLUDED after verification: 22 skip sites remain across 7 files (26 skipped in the suite), so the 11 update-to-working verdicts are NOT done -- F160 delivered the audit, F163 is the implementation. Stays Priority 26 for Sprint 62. New items registered this session: F171 (min-window sweep), F172 (version on 8 screens), F173 (periodic testing deep dive, recurring HOLD).",
+    "_mv_note": "Phase 5.3 reached 2026-08-17. From Manual Validation onward the work is Harold-driven, so asking questions is CORRECT rather than an auto-advance violation -- this status field is what tells sprint-auto-advance Gate 1c the window has closed."
   },
   "previous_sprint": {
     "number": 60,
@@ -33,24 +34,18 @@
     "status": "CLOSED -- PR #335 merged to develop 2026-08-17 (merge commit 639e191), develop merged to main by Harold. Cards #328-#334 + #336 all closed. Shipped: F160 audit (skips 29->26), F156 Android walk-through (2 CRITICAL Android fixes: PRAGMA, accounts-FK), F157 gradle/minSdk, F158 Android CI job, F159 metadata gates, F143 touch selection, F144 dead-scheduler removal, F166 header redesign, plus 4 MV rounds and a 3-round PR review (Copilot 6 + Claude cowork 13 findings). Final suite 1,862/26/0."
   },
   "github_issues": [
-    338,
-    339,
-    340,
-    341,
-    342,
-    343,
     344,
     345,
     346
   ],
-  "_github_issues_note": "Sprint 61 cards: #340 Task 0 (line endings), #341 F170, #338 F169, #339 F168, #342 F172, #343 F171, #344 F162, #345 F167, #346 F161. Created at Phase 3.3.1 on 2026-08-17 with draft PR #347.",
+  "_github_issues_note": "Sprint 61: #340/#341/#338/#339/#342/#343 CLOSED. OPEN: #344 (F162 -- ADR drafted, awaiting Harold's approval), #345 (F167) and #346 (F161), both gated on that ADR.",
   "test_metrics": {
-    "tests_passing": 1862,
+    "tests_passing": 1880,
     "tests_skipped": 26,
     "tests_failing": 0,
     "analyzer_warnings": 0,
     "_test_metrics_note": "1,862 passed / 26 skipped / 0 failed at Sprint 60 close (final PR-review commit), analyzer clean. Up from 1,859 via the PR-review round (accountId dash-parsing gate +2, empty-state/dropdown test updates).",
-    "hook_test_cases": "46/46 passing (.claude/hooks/run-test-cases.ps1) -- +1 for the F170 pre-kickoff allow case.",
+    "hook_test_cases": "47/47 passing (.claude/hooks/run-test-cases.ps1) -- +1 F170 release-cycle case.",
     "winwright_sweep": "End-of-sprint sweep RUN 2026-08-16 at close-out (lib/ui touched): 3/3 scripts PASS (f124_rule_labels 10 steps, f129_no_rule_review 10 steps, mt2c_no_rule_sweep 25 steps), DB drift none. First run failed mt2c at its DOCUMENTED data-precondition (Harold's MV rule/safe-sender adds addressed the old baseline rows); baselines refreshed from the live dev DB per the script's own maintenance note, re-run PASS.",
     "coverage_percent": null,
     "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5)."
@@ -71,9 +66,9 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Execute Task 0 (line-ending normalization) -- runs first, repo-wide content-neutral",
-    "Then F170 (release cycle) -- Harold's explicit first-among-features instruction",
-    "F162's ADR draft STOPS for Harold's approval before F167/F161 begin",
-    "Keep PR #347 DRAFT until end of Phase 7.7"
+    "Harold: approve/amend ADR-0042 (gates Tasks 7 and 8)",
+    "Harold: Manual Validation per SPRINT_61_PLAN.md 'Manual Validation -- recommended steps'",
+    "Claude: install the Android APK once the emulator finishes booting",
+    "On ADR approval: execute F167 then F161"
   ]
 }
