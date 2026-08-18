@@ -26,6 +26,10 @@ Format: `- **type**: Description (Issue #N)` where type is feat|fix|chore|docs
 
 ## [Unreleased]
 
+### 2026-08-18 (Sprint 61)
+- **fix**: F167 -- Help no longer claims background scanning wakes "the Windows Task Scheduler (or Android WorkManager)". It now describes the capability rather than per-platform mechanisms, which is accurate everywhere and cannot drift as implementations change. A new policy gate keeps mechanism names and stale platform caveats out of user-facing Help. (Issue #345)
+- **docs**: ADR-0042 accepted -- cross-platform parity: functionality and UI are the same on Windows and Android unless they cannot be, and any difference is an explicit, minimal platform exception. Endorses platform factories for whole-capability differences, used sparingly, with rules preventing a factory from hiding a silently-empty implementation. (Issue #344)
+
 ### 2026-08-17 (Sprint 61)
 - **test**: F171 -- new sweep verifying the UI is usable at 1024x640 epx, the Windows 11 minimum window size Microsoft documents. No new clipping was found at that size; the defects this sprint fixed (account chips, selection bar, AppBar row) all occur at narrower phone widths. Makes the minimum size a deliberate repeatable check instead of something discovered by accident. (Issue #343)
 - **feat**: F172 -- the app version now appears to the right of the Help icon on every major screen (Review No Rule Items, Scan History, Scan Results, Manual Scan, Live Scan results, Select Account, Settings, Help), so every screenshot carries the build it came from. Dev builds still show their `[DEV]` marker. On narrow phone-width screens the label is omitted rather than crowding the action buttons. (Issue #342)

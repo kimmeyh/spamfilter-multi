@@ -443,6 +443,16 @@ _**Decision-class interrupts**_: **Class 1 (Chief Architect)** -- an ADR IS an a
 
 **Est-Effort**: 120-180m
 
+**COMPLETION NOTES (2026-08-18)**: DONE, with the fix CHANGED MID-TASK by Harold's steering. The audit found the Help content already largely platform-neutral: `review_no_rule_items.md` was correctly scoped by the PR #335 fix ("On Windows desktop" / "On Android and iOS"), and the FAQ's data-location passage already names Windows explicitly and covers other platforms. **One real defect**: `background_scanning.md` claimed the app "wakes up the Windows Task Scheduler (or Android WorkManager)" -- promising Android scheduled scanning that does not exist.
+
+**My first fix was wrong and Harold corrected it.** I added a "Background Scanning is a Windows feature today... no scheduled scan runs yet" caveat. Harold: *"we have not delivered to customers an Android package yet. The scheduler will need to be in place (key requirement) before shipment, so we need to delete the help text about it."* With no shipped Android package there is NO user to warn, and the caveat would become stale text the moment F161 lands -- diligence-shaped maintenance debt. Reverted to platform-neutral wording describing the CAPABILITY ("the operating-system scheduler"), which is true on every platform, needs no caveat, and cannot drift as implementations change.
+
+**New gate** `test/policy/help_platform_claims_test.dart` forbids BOTH errors: naming either per-platform mechanism, and carrying an Android-limitation caveat. Mutation-verified against the original text. Third test pins the F143 selection idioms as correctly platform-scoped.
+
+**Requirement captured beyond the task**: ADR-0042 now records this as a development-time gap rather than a shipped platform difference, and **F161 GATES the Google Play track** (F94, GP-*) as a shipment prerequisite -- noted on the master-plan item too. Saved as memory `feedback-no-caveats-for-unshipped-platforms`.
+
+Suite **1,883 passed / 26 skipped / 0 failed**; analyze clean. Actual effort ~25m (est 120-180m) -- under, because the content was already mostly correct and the audit said so rather than manufacturing edits.
+
 ---
 
 ### Task 8 -- F161: Android background-scan scheduler + POST_NOTIFICATIONS (Priority 24)
