@@ -397,6 +397,14 @@ Suite **1,880 passed / 26 skipped / 0 failed**; analyze clean. Actual effort ~25
 
 _**Decision-class interrupts**_: **Class 1 (Chief Architect)** -- an ADR IS an architectural decision. The draft is presented for approval before Tasks 7 and 8 treat it as binding.
 
+**COMPLETION NOTES (2026-08-17)**: ADR DRAFTED, **AWAITING HAROLD'S APPROVAL** -- `docs/adr/0042-cross-platform-parity-and-platform-exceptions.md`, indexed as PROPOSED. Tasks 7 and 8 are gated on it per the scoped mid-sprint exception Harold approved. The ADR states the rule, its all-layers scope, what counts as "cannot be", five implementation requirements for an exception, and two accepted non-parities (background scheduling until F161; the Windows-only Store path). It is grounded in two OBSERVED failure modes rather than principle: Sprint 60's accounts-FK bug (shared architecture, uneven platform coverage, months of silent Android data loss) and the stale `scan_history_screen` gate whose comment claimed a convention F143 had already removed.
+
+**AUDIT PORTION (R-4/R-5/R-6) -- code-level inventory complete**: **51 `Platform.is*` sites across 12 files; 39 carry a nearby explanatory comment, 12 do not.** Reviewing the 12: the `settings_screen` one has its explanation immediately BELOW the fork rather than above (a scanner artifact, not a real gap); `app_theme` (2 sites, affecting every screen's dialog shape/elevation) is deliberate platform styling; the rest are Windows-service guards and path-separator/export-directory choices that are self-evident from their surrounding code. **No undocumented fork was found that hides a real parity gap.** That is a meaningful negative result: the ~51 forks are overwhelmingly legitimate, which is why the ADR grandfathers them rather than mandating a sweeping rewrite whose regression risk would exceed its value.
+
+**Harold's descope steering honored**: he noted at registration that the full walk-through "may not be necessary" now that the stale-app confusion is resolved. The code-level audit above found no systemic divergence, so this task did NOT manufacture findings to justify its estimate. The remaining live Windows-vs-Android walk-through is folded into Manual Validation, where Harold exercises both apps anyway -- rather than being run twice.
+
+**Divergences already recorded and dispositioned** (R-6): AppBar crowding at phone widths -- ADDRESSED this sprint (F172 degrades the version label below 600px; F169 removed the clipping chip row). Android background scheduling -- Task 8 (F161), gated on this ADR.
+
 ---
 
 ### Task 7 -- F167: Android Help text adaptation (Priority 22)
