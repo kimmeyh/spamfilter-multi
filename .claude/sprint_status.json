@@ -33,8 +33,18 @@
     "pr_number": 335,
     "status": "CLOSED -- PR #335 merged to develop 2026-08-17 (merge commit 639e191), develop merged to main by Harold. Cards #328-#334 + #336 all closed. Shipped: F160 audit (skips 29->26), F156 Android walk-through (2 CRITICAL Android fixes: PRAGMA, accounts-FK), F157 gradle/minSdk, F158 Android CI job, F159 metadata gates, F143 touch selection, F144 dead-scheduler removal, F166 header redesign, plus 4 MV rounds and a 3-round PR review (Copilot 6 + Claude cowork 13 findings). Final suite 1,862/26/0."
   },
-  "github_issues": [],
-  "_github_issues_note": "Sprint 61 cards #338-#346 ALL CLOSED (work complete). Zero issues open.",
+  "github_issues": [
+    338,
+    339,
+    340,
+    341,
+    342,
+    343,
+    344,
+    345,
+    346
+  ],
+  "_github_issues_note": "Sprint 61 cards #338-#346, created at Phase 3.3.1, ALL CLOSED as work completed (#338 F169, #339 F168, #340 Task 0, #341 F170, #342 F172, #343 F171, #344 F162, #345 F167, #346 F161). KEEP the numbers listed even after closing: require-sprint-cards reads an empty array as 'Phase 3.3.1 never happened' and blocks commits -- emptying it on 2026-08-18 caused exactly that false positive, twice, because the fix was chained into the blocked command (the Sprint 60 lesson re-learned). The array empties at the NEXT sprint's rollover, not at card closure.",
   "test_metrics": {
     "tests_passing": 1892,
     "tests_skipped": 26,
