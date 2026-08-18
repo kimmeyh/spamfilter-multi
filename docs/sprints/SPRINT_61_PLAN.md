@@ -517,6 +517,8 @@ _**Decision-class interrupts**_: **Class 1/2** -- re-adding a removed dependency
 
 Suite **1,892 passed / 26 skipped / 0 failed**; analyze clean. Actual effort ~120m of the 180-300m estimate, with AC-2's on-device portion pending MV.
 
+**MV ROUND 1 FINDING (2026-08-18, found live on-device with Harold): the settings call sites were still Windows-gated.** Harold enabled background scanning on Android -- the setting persisted (`background_enabled = true` in the device log) but NO permission prompt appeared and NO work was registered. Root cause: BOTH `_updateScheduledScan` call sites (the enable toggle and the frequency selector) still carried their pre-F161 `if (Platform.isWindows)` guards. The reroute made the function platform-free but left the gates in front of it, so Android persisted a setting that LIED -- precisely the ADR-0042 failure shape (a platform-local gate starving shared behavior), and precisely why the completion note's known-limitation (c) was wrong to call the reroute "mechanical". The gap my 9 adapter tests could not see is exactly the call-site coverage I skipped. Both gates removed (the factory + isSupported own the platform decision now); the Windows-only deferral status line legitimately keeps its gate. Diagnosed in ~4 minutes from the device log because the persistence line appeared with no scheduling line after it -- the same evidence-chain method as Sprint 60.
+
 ---
 
 ## Not in scope, with reasons

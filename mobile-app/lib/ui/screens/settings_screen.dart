@@ -1337,10 +1337,14 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             // F98 (ADR-0039): write the PER-ACCOUNT override, not the global flag.
             await _settingsStore
                 .setAccountBackgroundEnabled(_requireAccountId, value);
-            // On Windows, create or delete THIS account's Task Scheduler task.
-            if (Platform.isWindows) {
-              await _updateScheduledScan(enabled: value);
-            }
+            // F161 (Sprint 61, found live on-device): this call was still
+            // gated behind Platform.isWindows AFTER the factory reroute, so
+            // on Android the setting persisted but no work was ever
+            // scheduled -- the setting LIED, exactly the ADR-0042 failure
+            // shape (a platform-local gate starving shared behavior). The
+            // factory + isSupported now own the platform decision; the call
+            // site is unconditional.
+            await _updateScheduledScan(enabled: value);
           },
         ),
         // F109a (Sprint 44): explain the deferral-while-app-open behavior so an
@@ -1361,8 +1365,11 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
             // F98 (ADR-0039): write the PER-ACCOUNT frequency override.
             await _settingsStore
                 .setAccountBackgroundFrequency(_requireAccountId, freq);
-            // On Windows, update THIS account's Task Scheduler frequency if enabled
-            if (Platform.isWindows && _backgroundScanEnabled) {
+            // Reschedule at the new frequency if enabled -- platform-free
+            // since F161; the factory owns the platform decision (the old
+            // Platform.isWindows gate here starved Android identically to
+            // the enable toggle above).
+            if (_backgroundScanEnabled) {
               await _updateScheduledScan(enabled: true);
             }
           },
