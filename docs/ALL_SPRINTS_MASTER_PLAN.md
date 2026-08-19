@@ -318,6 +318,13 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Spec (Harold, 2026-08-16): (1) replace the summary chip rows with TWO chips on a single line: a single-select filter DROPDOWN (options with counts: No Rule -- the new DEFAULT filter; Safe or Safe (not processed) per mode; Deleted or Deleted (not processed) per mode; Errors; Processed) and the existing Folders chip; (2) move "Scan complete <duration>" onto the same line as, and after, "Live Scan" (both apps); (3) shorten the "0 of N "No rule" emails addressed" banner by removing the flag icon before it and the progress-bar element at the end. Design note recorded at planning: with No Rule as the default filter, rows leave the filtered view the moment they are addressed -- which also resolves Harold's "added safe senders but they still appear in the list" observation (Results rows are the scan's permanent record by design; the default filter now hides addressed ones).
 - Source: Harold, Sprint 60 Manual Validation, 2026-08-16.
 
+**F174. Per-folder IMAP fetch failure is silent -- errors=0 despite a folder failing to fetch (~1-2h) Priority 20 (NEW, Sprint 61 F161 on-device validation)**
+- Phase: Core App Quality / scanner
+- Platform: All (shared IMAP pipeline)
+- Observation (2026-08-18, during the F161 on-device test scan): fetching the "Unwanted" folder threw `InvalidArgumentException: no ID added to sequence` (likely the empty-folder / empty-sequence-set edge in the IMAP fetch), the scan completed normally, and the results reported **errors=0**. So a whole folder silently contributed nothing, indistinguishable from "folder was clean".
+- Why it matters: this is the F168 silent-scope class in miniature -- a scan that looks healthy while quietly not looking somewhere. The per-folder failure should at minimum count toward errorCount or surface as a per-folder status, and the empty-sequence edge itself should be handled rather than thrown.
+- Source: device logcat during Sprint 61 F161 AC-2 verification.
+
 **F168. Background scan skipped Inbox while the manual scan caught it -- background-vs-manual folder-scope divergence (~1-2h investigate + fix) Priority 6 (NEW, Sprint 60 production observation -- Harold; TARGET NEXT SPRINT)**
 - Phase: Core App Quality / background scanning
 - Platform: Windows (production 0.9.0.0), applies to any platform once Android scheduling lands (F161)
