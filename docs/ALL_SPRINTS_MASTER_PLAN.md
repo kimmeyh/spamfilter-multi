@@ -318,6 +318,20 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Spec (Harold, 2026-08-16): (1) replace the summary chip rows with TWO chips on a single line: a single-select filter DROPDOWN (options with counts: No Rule -- the new DEFAULT filter; Safe or Safe (not processed) per mode; Deleted or Deleted (not processed) per mode; Errors; Processed) and the existing Folders chip; (2) move "Scan complete <duration>" onto the same line as, and after, "Live Scan" (both apps); (3) shorten the "0 of N "No rule" emails addressed" banner by removing the flag icon before it and the progress-bar element at the end. Design note recorded at planning: with No Rule as the default filter, rows leave the filtered view the moment they are addressed -- which also resolves Harold's "added safe senders but they still appear in the list" observation (Results rows are the scan's permanent record by design; the default filter now hides addressed ones).
 - Source: Harold, Sprint 60 Manual Validation, 2026-08-16.
 
+**F176. Show the account email on the Manual Scan and Live Scan screens (~1h) Priority 16 (NEW, Sprint 61 MV -- Harold)**
+- Phase: Core App Quality / UX
+- Platform: All (Harold: "If not already on Windows screens, should probably be added there as well")
+- Scope (Harold, 2026-08-19): "add current email address to Manual scan screen on mobile and the live scan screen (small in order to fit)." Small type so it fits phone width; per ADR-0042 land it shared once and verify both platforms. Rationale surfaced during multi-account MV: with two accounts configured, the scan screens do not say WHICH account is scanning -- the Settings Background tab got exactly this header in Sprint 38 for the same reason.
+- Source: Harold, Sprint 61 Manual Validation, 2026-08-19.
+
+**F177. Memory-bounded, chunked IMAP fetch with incremental progress (~4-6h) Priority 8 (NEW, Sprint 61 MV -- ROOT CAUSE of the Android scan deaths)**
+- Phase: Core App Quality / scanner
+- Platform: All (shared adapter; Android is where it kills the process, Windows carries the same unbounded shape)
+- **Root cause, proven from Android's process-exit records (`dumpsys activity exit-info`, 2026-08-19)**: the `daysBack=0` full-mailbox fetch loads EVERY matched message's full content into memory in one blocking `fetchMessages` call. On the ~137-message AOL mailbox this ballooned the app to **817MB-1.4GB PSS**; Android issued LOW_MEMORY kills at 02:31 and 07:24 (two more bloat states caught at force-stop: 1.4GB, 1.2GB, with ANR traces on file). Every death triggered WorkManager retry-on-relaunch, stacking duplicate scans that died faster -- the entire day's "hung scans" cascade. The 3-message gmail account never approached the limit, which is why gmail always completed in under a minute.
+- Fix shape: fetch in bounded chunks (e.g. 20-25 UIDs per batch), process/evaluate each chunk before fetching the next, release references between chunks; report per-chunk progress to the provider so the UI's "0 emails" blindness (20+ minutes with no feedback) is fixed by the same change; consider capping retained body size (body_preview already truncates at persist time -- truncate at FETCH time instead of holding full bodies).
+- Interacts with: F175 (concurrency multiplied the memory), F164 (Android scan performance -- this is likely its real answer), and the WorkManager retry policy (a one-off test task that retries forever on a crashing scan re-detonates on every launch; bound the retries).
+- Source: Sprint 61 F161 validation forensics, 2026-08-19.
+
 **F175. Android scan concurrency control -- mutual exclusion + active-scan detection with wait estimate (~3-4h) Priority 12 (NEW, Sprint 61 MV -- Harold)**
 - Phase: Core App Quality / background scanning
 - Platform: Android primarily (Windows already has per-account task serialization + foreground deferral, F109/ADR-0039); the detection/notify UX should be shared per ADR-0042
