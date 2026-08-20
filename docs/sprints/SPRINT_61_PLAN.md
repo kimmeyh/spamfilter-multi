@@ -616,6 +616,34 @@ against the 51 grandfathered sites).
 - **F167** and **F161** were blocked on ADR-0042; Harold accepted it 2026-08-18 (with the platform-
   factories addition) and both tasks are complete above.
 
+### F161 MV RESULT: count-parity check PASSED (2026-08-20)
+
+Harold asked whether background scanning was expected to "work correctly or just work." Answered
+with a live experiment on kimmeyharold@aol.com, both scans readOnly at Scan Range = 4 days, run
+alone in sequence (manual first, background Test second):
+
+- **Manual (scan_results row 59)**: 144 total, 31 processed, 2 deleted, 29 no-rule, 0 errors,
+  2m14s. Its Inbox fetch was 141 emails -- the Sprint 38 no-rule backlog re-scan from UID 202846,
+  not just the 4-day window.
+- **Background Test (row 61)**: 48 total, 20 processed, 0 deleted, 20 no-rule, 0 errors, 20s. It
+  fetched only from the 4-day floor because the manual run had advanced the no-rule cursor.
+- **Parity proof**: the background scan's 20 email_actions rows match the manual scan's 20
+  in-window rows EXACTLY -- same senders, subjects, received timestamps, folders, and outcomes.
+  The manual scan's extra 11 actions (including both simulated deletes, tld_1390 and tld_1451)
+  are all from the pre-window backlog range the background scan correctly did not re-fetch.
+  Arithmetic closes: 31 = 11 backlog + 20 window; 29 no-rule = 9 + 20. Same pipeline, same rule
+  decisions, same persistence.
+
+Findings logged along the way (all registered in ALL_SPRINTS_MASTER_PLAN.md): F174 (empty-folder
+UID fetch throws), F175 (scan concurrency control + orphaned in_progress reconciliation -- rows
+56-58 and 60 are permanent orphans from kills), F176 (account email on scan screens), F177
+(memory-bounded chunked fetch, m=20 -- root cause of the daysBack=0 LOW_MEMORY kill cascade).
+Operational lessons: a killed WorkManager task re-fires at every app launch until it succeeds
+(cleared by deleting no_backup/androidx.work.workdb*), and the Manual and Background tabs have
+SEPARATE Scan Range settings -- the first Test ran at daysBack=0 because only the manual tab had
+been updated. Minor open observation: manual recorded total_emails=144 while the trace fetched
+146 (141+5) -- consistent off-by-2, likely dedup, outcomes unaffected.
+
 ### Known limits worth stating plainly
 
 - The Windows-vs-Android parity walk-through (F162 R-4) is folded into your validation above rather
