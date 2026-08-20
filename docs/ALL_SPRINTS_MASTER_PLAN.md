@@ -332,6 +332,15 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Interacts with: F175 (concurrency multiplied the memory), F164 (Android scan performance -- this is likely its real answer), and the WorkManager retry policy (a one-off test task that retries forever on a crashing scan re-detonates on every launch; bound the retries).
 - Source: Sprint 61 F161 validation forensics, 2026-08-19.
 
+**F178. Android review popup clips its bottom sections -- "Block Subject" unreachable even when scrolled (~1-2h) Priority 14 (NEW, Sprint 61 MV -- Harold, with screenshots)**
+- Phase: Core App Quality / UX
+- Platform: Android (phone height); the same widget was already fixed for Windows in Sprint 60
+- Observation (Harold, 2026-08-20, emulator at phone size): on Scan Results, the per-email review popup cannot reveal its bottom content -- "Even when scrolled you cannot see the Subject part of the pop-up." The "Block Subject" row is clipped at the bottom edge with the inner scroll already at its end (two screenshots on file, unscrolled + fully scrolled).
+- Context: this is the Android sibling of the Sprint 60 Windows fix in `results_display_screen.dart` (~lines 1623-1700): that fix clamps `top` and hard-caps the popup at 60% of `MediaQuery.size.height` with an inner `SingleChildScrollView` fallback. Leading hypothesis (NOT yet confirmed): on Android, `MediaQuery.size.height` includes the system status/navigation bar areas, so the positioned popup's bottom edge can sit under the nav bar, and/or the scroll extent is computed against the un-inset height -- so the last section stays clipped even at full scroll. Fix shape: subtract view insets/padding when computing `popupHeight`/`maxTop` (use the safe-area height), verify at phone height that full scroll reaches "Block Subject" and the block-rule buttons below it; per ADR-0042 verify the Windows placement is unchanged by the shared edit.
+- Source: Harold, Sprint 61 Manual Validation, 2026-08-20.
+
+**Sprint 62 validation carry-over (not an F-item): Windows background-scan regression check (F161 AC-4).** Harold, 2026-08-20: Windows 1024x640 sweep and selection bar both PASS by inspection; the Windows background-scan-unchanged check "I believe it is working as expected" but was not explicitly exercised this sprint -- add it to Sprint 62's Manual Validation steps (one glance at Windows Scan History confirming scheduled background scans kept running normally through/after the Sprint 61 scheduler refactor).
+
 **F175. Android scan concurrency control -- mutual exclusion + active-scan detection with wait estimate (~3-4h) Priority 12 (NEW, Sprint 61 MV -- Harold)**
 - Phase: Core App Quality / background scanning
 - Platform: Android primarily (Windows already has per-account task serialization + foreground deferral, F109/ADR-0039); the detection/notify UX should be shared per ADR-0042

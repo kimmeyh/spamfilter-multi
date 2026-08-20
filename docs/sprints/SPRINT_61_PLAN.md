@@ -644,6 +644,26 @@ SEPARATE Scan Range settings -- the first Test ran at daysBack=0 because only th
 been updated. Minor open observation: manual recorded total_emails=144 while the trace fetched
 146 (141+5) -- consistent off-by-2, likely dedup, outcomes unaffected.
 
+### Windows MV RESULTS (Harold, 2026-08-20)
+
+- **F171 1024x640 judgment checks: PASS** ("Windows a. looks good").
+- **F169 selection bar: PASS** ("windows b. looks good").
+- **F161 AC-4 (Windows background scanning unchanged)**: Harold believes it is working as
+  expected but it was not explicitly exercised -- **carried to Sprint 62 Manual Validation** per
+  his instruction (registered in ALL_SPRINTS_MASTER_PLAN.md as a validation carry-over).
+
+### Android MV finding -> F178 (registered)
+
+At phone height, the Scan Results review popup clips its bottom sections -- "Block Subject" is
+unreachable even with the inner scroll at its end (Harold, two screenshots). This is the Android
+sibling of the Sprint 60 Windows popup fix; leading hypothesis is un-inset MediaQuery height
+letting the popup bottom sit under the system navigation bar. Registered as **F178** for next
+sprint; not fixed in-sprint (Sprint 61 scope is closed, and the fix needs its own phone-height
+verification pass).
+
+**Manual Validation is COMPLETE**: all recommended steps executed or explicitly dispositioned
+(one carry-over above), four new backlog items registered from findings (F174-F178, F173 recurring).
+
 ### Known limits worth stating plainly
 
 - The Windows-vs-Android parity walk-through (F162 R-4) is folded into your validation above rather
