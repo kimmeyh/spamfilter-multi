@@ -1,6 +1,6 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-17 (Sprint 60 CLOSED + merged; Sprint 61 branch open, pre-kickoff)",
+  "_last_updated": "2026-08-21 (Sprint 61 Phase 7 COMPLETE: retro + all 4 IMPs applied; PR #347 set ready for review)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
@@ -9,7 +9,7 @@
     "pr_number": 347,
     "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/347",
     "start_date": "2026-08-17",
-    "status": "Phase 5.3 MANUAL VALIDATION -- ALL 9 TASKS CODE-COMPLETE (cards #338-#346 closed; #341 F170 and #346 F161 closed 2026-08-18 after the ADR-0042 acceptance unblocked them). Suite 1,892 passed / 26 skipped / 0 failed; analyze clean; hook suite 47/47. Windows dev app built+launched for MV; F161 debug APK (174MB) built, emulator boot in progress for install (NOTE: 2 consecutive emulator failures today -- one wedged-unclickable, one silent exit -- environment is flaky). MV steps incl. the F161 on-device AC-2 verification are in SPRINT_61_PLAN.md. Remaining Harold-driven: MV rounds, then Phase 7 retrospective (turn-ending failures are a pre-named retro item per Harold).",
+    "status": "Phase 7 COMPLETE (2026-08-21) -- MV complete 2026-08-20 (F161 count-parity PASS; F174-F178 registered; Windows F171/F169 PASS; F161 AC-4 carried to Sprint 62 validation). Retrospective complete: 14 categories x 4 roles, Harold combined feedback verbatim; ALL 4 improvements approved (\"all\") and applied (IMP-1 dangling-commitment hook gate, IMP-2 factory call-site policy gate + ADR-0042 rule, IMP-3/4 memory saves). Close-out docs done: CHANGELOG, master plan (Sprint 60+61 completion metadata; 8 items DONE-pruned), SPRINT_61_RETROSPECTIVE.md, SPRINT_61_SUMMARY.md, SPRINT_62_PLAN.md stub, ARCHITECTURE.md F161 components. Suite 1,893/26/0; hooks 49/49. PR #347 READY FOR REVIEW -- awaiting Harold merge, then Phase 8 Release Cycle.",
     "plan_approved": true,
     "plan_approval_date": "2026-08-17",
     "blanket_execution_approved": true,
@@ -46,12 +46,12 @@
   ],
   "_github_issues_note": "Sprint 61 cards #338-#346, created at Phase 3.3.1, ALL CLOSED as work completed (#338 F169, #339 F168, #340 Task 0, #341 F170, #342 F172, #343 F171, #344 F162, #345 F167, #346 F161). KEEP the numbers listed even after closing: require-sprint-cards reads an empty array as 'Phase 3.3.1 never happened' and blocks commits -- emptying it on 2026-08-18 caused exactly that false positive, twice, because the fix was chained into the blocked command (the Sprint 60 lesson re-learned). The array empties at the NEXT sprint's rollover, not at card closure.",
   "test_metrics": {
-    "tests_passing": 1892,
+    "tests_passing": 1893,
     "tests_skipped": 26,
     "tests_failing": 0,
     "analyzer_warnings": 0,
-    "_test_metrics_note": "1,892 passed / 26 skipped / 0 failed at F161 completion (2026-08-18), analyze clean. Sprint 61 added: account-dropdown 3, settings-scope 5, appbar-version 6, min-window 4, help-claims 3, scheduler 9, plus the hook release-cycle case (hook suite 47/47). Run with --concurrency=4.",
-    "hook_test_cases": "47/47 passing (.claude/hooks/run-test-cases.ps1) -- +1 F170 release-cycle case.",
+    "_test_metrics_note": "1,893 passed / 26 skipped / 0 failed at Phase 7 close (2026-08-21, full run --concurrency=4), analyze clean. Adds factory_call_site_test (IMP-2).",
+    "hook_test_cases": "49/49 passing -- +2 IMP-1 cases (violation-13 dangling commitment, allow-16 past-tense).",
     "winwright_sweep": "End-of-sprint sweep RUN 2026-08-16 at close-out (lib/ui touched): 3/3 scripts PASS (f124_rule_labels 10 steps, f129_no_rule_review 10 steps, mt2c_no_rule_sweep 25 steps), DB drift none. First run failed mt2c at its DOCUMENTED data-precondition (Harold's MV rule/safe-sender adds addressed the old baseline rows); baselines refreshed from the live dev DB per the script's own maintenance note, re-run PASS.",
     "coverage_percent": null,
     "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5)."
@@ -72,9 +72,9 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Install F161 APK to emulator when boot completes (in progress; emulator flaky today)",
-    "Harold: Manual Validation per SPRINT_61_PLAN.md incl. F161 on-device AC-2 (enable background scan + Test button, then Claude pulls the DB via adb run-as)",
-    "Phase 7 retrospective after MV (pre-named item: turn-ending failures, 3 occurrences)",
-    "Keep PR #347 DRAFT until end of Phase 7.7"
+    "Harold: review + merge PR #347 to develop",
+    "ON MERGE: branch feature/<date>_Sprint_62 FROM the Sprint 61 branch immediately (checklist 6.6); empty github_issues at that rollover",
+    "Phase 8: Harold merges develop->main (parallel); refinement pass 1 completeness sweep; Store release per STORE_RELEASE_PROCESS.md (bump dev 0.10.0 first -- dev currently EQUALS live); refinement pass 2 scope selection",
+    "Sprint 62 MV carry-over: Windows background-scan regression glance (F161 AC-4)"
   ]
 }
