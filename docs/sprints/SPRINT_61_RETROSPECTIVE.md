@@ -158,3 +158,29 @@ with a feature/issue number assigned during Phase 7.7 documentation updates.)
 ### Questions to be discussed before ending the sprint
 
 - **Harold (verbatim)**: none
+
+## Improvements -- proposed, approved, applied
+
+Harold approved ALL FOUR ("all", 2026-08-21). Each is applied with evidence:
+
+- **IMP-1 (turn-ending guard) -- APPLIED**: `sprint-auto-advance.ps1` Gate 2 now also blocks a
+  turn that ENDS on a future commitment ("Next: F169. I'll start with...") with no action taken,
+  checked against the message tail so mid-message narration does not trip it. Two new test cases
+  (violation-13, allow-16); hook suite 49/49. The violation case would have passed every
+  pre-existing gate (no question mark, no procedural phrase), proving the new patterns are what
+  catch it. Memory rule already covered by the hook plus this record.
+- **IMP-2 (factory call-site verification) -- APPLIED**: ADR-0042's factory section gains the
+  rule "call-site verification is part of introducing a factory, not optional cleanup", citing
+  the F161 escape. First instance implemented: `test/policy/factory_call_site_test.dart` pins
+  both `_updateScheduledScan` call sites in settings_screen as platform-free (exact count
+  asserted, comment lines stripped so the explanatory comments cannot mask a real guard).
+  Mutation-verified: re-adding `if (Platform.isWindows)` at a call site turns it red.
+- **IMP-3 (claimed-change verification) -- APPLIED**: memory `feedback_claimed_change_verification`
+  saved -- any completion note naming a specific file change requires a same-turn grep of that
+  file. Covers both Sprint 61 instances (the never-landed `-ColdBoot` switch, the doc-script
+  clobber).
+- **IMP-4 (operational memory saves) -- APPLIED**: memories saved for WorkManager
+  retry-on-relaunch persistence (and the workdb clearing procedure), the separate
+  Manual/Background Scan Range settings, and the background-Bash-child variant added to the
+  existing Start-Process memory (the emulator died when its parent background task's shell
+  closed).

@@ -79,6 +79,15 @@ existed only on the Windows path and Android silently persisted nothing for mont
   and doc comment say it does nothing on this platform, and why), never an empty method body.
 - **The interface is defined by the shared contract, not by the richer platform's capabilities.**
   Otherwise the weaker platform's implementation is forced into no-ops by construction.
+- **Call-site verification is part of introducing a factory, not optional cleanup** (IMP-2, Sprint
+  61 retro, approved by Harold 2026-08-21). When a factory replaces inline platform checks, grep
+  EVERY former call site for residual platform guards, and pin the reroute with a test or policy
+  gate. A reroute is never "mechanical": Sprint 61's F161 shipped the factory fully tested while
+  both `settings_screen` call sites kept their `if (Platform.isWindows)` guards, so Android
+  silently got no scheduling -- found live by Harold in Manual Validation, one file away from the
+  9 mutation-verified adapter tests. The factory's whole value (platform-free callers) is only
+  real if the callers are verified platform-free. First instance:
+  `test/policy/factory_call_site_test.dart`.
 
 ### Deliberate non-parity, recorded
 
