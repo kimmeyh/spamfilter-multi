@@ -1,50 +1,29 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-21 (Sprint 61 Phase 7 COMPLETE: retro + all 4 IMPs applied; PR #347 set ready for review)",
+  "_last_updated": "2026-08-21 (Sprint 61 MERGED to develop + main; Sprint 62 branch open, Phase 8 Release Cycle in progress)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
+    "number": 62,
+    "branch": "feature/20260821_Sprint_62",
+    "pr_number": null,
+    "_pr_number_null_reason": "Phase 8 Release Cycle in progress -- no scope selected, no plan, no cards, no PR yet. Legitimate until Phase 3.3.1.",
+    "start_date": "2026-08-21",
+    "status": "PHASE 8 RELEASE CYCLE (post-merge, pre-scope): 8.1 main merge DONE (Harold, PR #348). NEXT: 8.2 refinement pass 1 completeness sweep, then 8.3 Store release per STORE_RELEASE_PROCESS.md (Harold directed: build+prep BEFORE scope selection; dev 0.10.0 EQUALS live -- bump at Step 1), then 8.4 refinement pass 2 scope selection.",
+    "plan_approved": false,
+    "plan_approval_date": null,
+    "blanket_execution_approved": false,
+    "scope": [],
+    "_scope_note": "Scope selection happens at Phase 8.4. Candidates flagged at Sprint 61 close: F168 follow-on/F175/F177 (fresh evidence), F178 (small, screenshot-documented), F163. Category 13 carry-ins in SPRINT_62_PLAN.md stub."
+  },
+  "previous_sprint": {
     "number": 61,
     "branch": "feature/20260816_Sprint_61",
     "pr_number": 347,
-    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/347",
-    "start_date": "2026-08-17",
-    "status": "Phase 7 COMPLETE (2026-08-21) -- MV complete 2026-08-20 (F161 count-parity PASS; F174-F178 registered; Windows F171/F169 PASS; F161 AC-4 carried to Sprint 62 validation). Retrospective complete: 14 categories x 4 roles, Harold combined feedback verbatim; ALL 4 improvements approved (\"all\") and applied (IMP-1 dangling-commitment hook gate, IMP-2 factory call-site policy gate + ADR-0042 rule, IMP-3/4 memory saves). Close-out docs done: CHANGELOG, master plan (Sprint 60+61 completion metadata; 8 items DONE-pruned), SPRINT_61_RETROSPECTIVE.md, SPRINT_61_SUMMARY.md, SPRINT_62_PLAN.md stub, ARCHITECTURE.md F161 components. Suite 1,893/26/0; hooks 49/49. PR #347 READY FOR REVIEW -- awaiting Harold merge, then Phase 8 Release Cycle.",
-    "plan_approved": true,
-    "plan_approval_date": "2026-08-17",
-    "blanket_execution_approved": true,
-    "scope": [
-      "Task0-lineendings",
-      "F170",
-      "F169",
-      "F168",
-      "F172",
-      "F171",
-      "F162",
-      "F167",
-      "F161"
-    ],
-    "_scope_note": "Harold-selected 2026-08-17. F163 EXCLUDED after verification: 22 skip sites remain across 7 files (26 skipped in the suite), so the 11 update-to-working verdicts are NOT done -- F160 delivered the audit, F163 is the implementation. Stays Priority 26 for Sprint 62. New items registered this session: F171 (min-window sweep), F172 (version on 8 screens), F173 (periodic testing deep dive, recurring HOLD).",
-    "_mv_note": "Phase 5.3 reached 2026-08-17. From Manual Validation onward the work is Harold-driven, so asking questions is CORRECT rather than an auto-advance violation -- this status field is what tells sprint-auto-advance Gate 1c the window has closed."
+    "status": "CLOSED -- PR #347 merged to develop 2026-08-21 (merge 0ad1107), develop merged to main by Harold (PR #348, 64e6ed7). Cards #338-#346 all closed; zero open issues verified. Shipped: Task 0 line endings, F170 Phase 8 encoding, F169 dropdown, F168 scope warning, F172 version label, F171 min-window sweep, F162/ADR-0042, F167 Help wording, F161 Android scheduler (count-parity PASS; Play prerequisite MET). Retro complete, all 4 IMPs applied; Copilot review 2/2 addressed+resolved. Final suite 1,893/26/0; hooks 49/49."
   },
-  "previous_sprint": {
-    "number": 60,
-    "branch": "feature/20260815_Sprint_60",
-    "pr_number": 335,
-    "status": "CLOSED -- PR #335 merged to develop 2026-08-17 (merge commit 639e191), develop merged to main by Harold. Cards #328-#334 + #336 all closed. Shipped: F160 audit (skips 29->26), F156 Android walk-through (2 CRITICAL Android fixes: PRAGMA, accounts-FK), F157 gradle/minSdk, F158 Android CI job, F159 metadata gates, F143 touch selection, F144 dead-scheduler removal, F166 header redesign, plus 4 MV rounds and a 3-round PR review (Copilot 6 + Claude cowork 13 findings). Final suite 1,862/26/0."
-  },
-  "github_issues": [
-    338,
-    339,
-    340,
-    341,
-    342,
-    343,
-    344,
-    345,
-    346
-  ],
-  "_github_issues_note": "Sprint 61 cards #338-#346, created at Phase 3.3.1, ALL CLOSED as work completed (#338 F169, #339 F168, #340 Task 0, #341 F170, #342 F172, #343 F171, #344 F162, #345 F167, #346 F161). KEEP the numbers listed even after closing: require-sprint-cards reads an empty array as 'Phase 3.3.1 never happened' and blocks commits -- emptying it on 2026-08-18 caused exactly that false positive, twice, because the fix was chained into the blocked command (the Sprint 60 lesson re-learned). The array empties at the NEXT sprint's rollover, not at card closure.",
+  "github_issues": [],
+  "_github_issues_note": "EMPTIED at the Sprint 62 rollover 2026-08-21 per the rule: the array empties at next-sprint rollover only, never at card closure. Sprint 62 cards will populate it at Phase 3.3.1.",
   "test_metrics": {
     "tests_passing": 1893,
     "tests_skipped": 26,
@@ -72,9 +51,9 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Harold: review + merge PR #347 to develop",
-    "ON MERGE: branch feature/<date>_Sprint_62 FROM the Sprint 61 branch immediately (checklist 6.6); empty github_issues at that rollover",
-    "Phase 8: Harold merges develop->main (parallel); refinement pass 1 completeness sweep; Store release per STORE_RELEASE_PROCESS.md (bump dev 0.10.0 first -- dev currently EQUALS live); refinement pass 2 scope selection",
+    "Phase 8.2: Backlog Refinement pass 1 (completeness sweep -- does NOT select scope)",
+    "Phase 8.3: Store release per STORE_RELEASE_PROCESS.md -- confirm main contains 0ad1107 in the prod worktree, bump versions (dev equals live at 0.10.0), build MSIX, verify, notify Harold for upload",
+    "Phase 8.4: refinement pass 2 -- Harold selects Sprint 62 scope",
     "Sprint 62 MV carry-over: Windows background-scan regression glance (F161 AC-4)"
   ]
 }
