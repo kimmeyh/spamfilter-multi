@@ -7,6 +7,38 @@ Manual Validation complete
 Sprint 6n Manual Validation Feedback 
 
 ---------------------------------------------------------------------------------------------------------
+Sprint 62 Manual Validation Feedback 
+
+- Is there a way to prevent the CI checks after every commit and only have them run once the PR is "Ready for Review"? Seems very wasteful of resources and may eventually incur personal cost due to misuse. (see image #189)
+- One of the CI checks on this PR is failing - can you resolve
+Windows: F161 AC-4 Scan History glance
+- F176 email labels
+- F178 popup placement unchanged
+Android: F177 daysBack=0 AOL Test scan (I will watch memory live — say when you start it and I will arm the monitors), F175 manual-during-background wait notice + orphaned rows now "interrupted", F178 Block Subject reachable, F176 labels.
+
+- Windows: dev build (MyEmailSpamFilter-Dev.exe) built clean and running — window title will show [DEV] with Version 0.11.0.
+- Android: Sprint 62 debug APK installed on the emulator, accounts preserved.
+
+The full recommended MV walk is in my earlier message; the short version — Windows: F161 AC-4 Scan History glance, F176 email labels, F178 popup placement unchanged. Android: F177 daysBack=0 AOL Test scan (I will watch memory live — say when you start it and I will arm the monitors), F175 manual-during-background wait notice + orphaned rows now "interrupted", F178 Block Subject reachable, F176 labels.
+
+Two items need your word during MV: the F175 R-7 settings-interplay recommendation (adopt to backlog / status quo / different shape) and the rulesOnly testLimit enforcement observation (recommend registering as a backlog item). Over to you.
+---------------------------------------------------------------------------------------------------------
+Sprint 61 Manual Validation Feedback 
+
+
+The Windows app is running and ready for validation now — that is the bulk of what needs your eyes, and none of it waits on Android.
+
+Corrected one artifact the hook caught legitimately: sprint_status.json still read "Phase 4 Execution" when the sprint had reached Manual Validation. That field is both a Phase 7.7 checklist item and the signal the auto-advance hook reads to know its window has closed, so the stale value made a legitimate MV question look like a violation. Fixed the file rather than bypassing the hook.
+
+Start here (Windows):
+
+1. Version stamp — any screen should show Version 0.10.0 [DEV] right of the ? icon. Fastest confirmation you are on the new build.
+2. Account dropdown on Review No Rule Items — then the risky bit: select rows, switch accounts, confirm the selection clears.
+3. Inbox warning — Settings > Background, remove Inbox from the scope, confirm the warning explains the consequence. This is your production incident.
+4. Resize to ~1024x640 and check the judgment criteria automation cannot: nothing unreachable, no horizontal scrolling, popups inside the window.
+
+Android status: the emulator has been booting ~9 minutes and is still reporting offline. QEMU is consuming CPU so it is progressing, not hung; an adb restart did not clear it. I am waiting on it and will build and install the APK as soon as it responds. If it does not come up shortly I will report that rather than let it sit silently.
+---------------------------------------------------------------------------------------------------------
 Sprint 60 Manual Validation Feedback 
 
 - Android 

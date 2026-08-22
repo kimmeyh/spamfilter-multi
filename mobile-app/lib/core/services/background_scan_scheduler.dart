@@ -245,6 +245,14 @@ class AndroidSchedulerAdapter implements BackgroundScanScheduler {
         // unique name UPDATES the existing work (frequency changes take
         // effect) instead of duplicating it or keeping the stale schedule.
         existingWorkPolicy: ExistingPeriodicWorkPolicy.update,
+        // F175 R-6 (Sprint 62): a killed task re-fires with EXPONENTIAL
+        // backoff instead of immediately at every app launch. During the
+        // Sprint 61 validation, a crashing scan re-detonated on each
+        // relaunch (WorkManager retries persisted work until it ever
+        // succeeds), stacking concurrent scans. Backoff bounds the blast
+        // radius; the F177 memory fix removes the crash cause itself.
+        backoffPolicy: BackoffPolicy.exponential,
+        backoffPolicyDelay: const Duration(minutes: 10),
       );
       return true;
     } catch (e) {
@@ -257,6 +265,14 @@ class AndroidSchedulerAdapter implements BackgroundScanScheduler {
   Future<bool> cancel(String accountId) async {
     try {
       await Workmanager().cancelByUniqueName(uniqueNameFor(accountId));
+      // F175 R-6 (Sprint 62): also cancel any pending TEST one-off.
+      // Disabling background scanning used to cancel only the periodic
+      // work, leaving a failed test task to retry at every app launch
+      // FOREVER (the Sprint 61 stuck-retry that had to be cleared by
+      // deleting WorkManager's database by hand). Cancel-with-nothing-
+      // pending is a no-op, per the interface's idempotent-cancel rule.
+      await Workmanager()
+          .cancelByUniqueName('${uniqueNameFor(accountId)}_test');
       return true;
     } catch (e) {
       Logger().e('WorkManager cancel failed: $e');
@@ -274,6 +290,10 @@ class AndroidSchedulerAdapter implements BackgroundScanScheduler {
         kAndroidScanTestTaskName,
         inputData: {'accountId': accountId},
         constraints: Constraints(networkType: NetworkType.connected),
+        // F175 R-6: same bounded backoff as the periodic task -- a crashed
+        // test scan must not re-detonate immediately at every app launch.
+        backoffPolicy: BackoffPolicy.exponential,
+        backoffPolicyDelay: const Duration(minutes: 10),
       );
       return true;
     } catch (e) {

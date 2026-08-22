@@ -50,6 +50,16 @@ class GmailApiAdapter with BatchOperationsMixin implements SpamFilterPlatform {
     _gmailApi = gmail.GmailApi(_GoogleAuthClient(headers));
   }
 
+  /// F163 R-2 (Sprint 62): test-only injection of a [gmail.GmailApi] built
+  /// over a fake HTTP client, so delete-recoverability behavior (trash API,
+  /// never permanent delete) is verifiable without OAuth. Mirrors the F177
+  /// `GenericIMAPAdapter.debugSetImapClient` seam; production code never
+  /// calls this -- [_setGmailApi] remains the only production path.
+  @visibleForTesting
+  void debugSetGmailApi(gmail.GmailApi api) {
+    _gmailApi = api;
+  }
+
   @override
   String get platformId => 'gmail';
 

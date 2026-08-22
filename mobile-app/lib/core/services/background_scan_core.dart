@@ -15,6 +15,8 @@
 /// export. Those stay in the platform workers.
 library;
 
+import 'dart:async';
+
 import 'package:logger/logger.dart';
 
 import '../../adapters/storage/secure_credentials_store.dart';
@@ -23,6 +25,7 @@ import '../providers/email_scan_provider.dart';
 import '../providers/rule_set_provider.dart';
 import '../storage/settings_store.dart';
 import 'email_scanner.dart';
+import 'scan_coordinator.dart';
 
 /// Result of scanning a single account in the background.
 ///
@@ -129,11 +132,30 @@ class BackgroundScanCore {
       scanProvider: scanProvider,
     );
 
-    await scanner.scanInbox(
-      daysBack: daysBack,
-      folderNames: folders,
-      scanType: 'background',
-    );
+    // F175 (Sprint 62): hard timeout on the whole background scan. A hung
+    // scan (dead socket, provider stall) used to sit `in_progress` forever
+    // with no error; now it is failed loudly. Dart's timeout does not
+    // cancel the underlying work -- if the zombie scan later completes it
+    // will honestly overwrite the row to completed -- but the WORKER is
+    // unblocked and the row records the timeout. Manual scans deliberately
+    // have no timeout wrap: a user is watching and can cancel; startup
+    // reconciliation (reconcileStaleInProgressScans) is their backstop.
+    try {
+      await scanner
+          .scanInbox(
+            daysBack: daysBack,
+            folderNames: folders,
+            scanType: 'background',
+          )
+          .timeout(ScanCoordinator.scanTimeout);
+    } on TimeoutException {
+      final minutes = ScanCoordinator.scanTimeout.inMinutes;
+      _logger.e('Background scan TIMED OUT after $minutes minutes for '
+          '${Redact.accountId(accountId)} -- marking failed (F175)');
+      await scanProvider
+          .errorScan('Scan timed out after $minutes minutes (F175)');
+      rethrow;
+    }
 
     // Extract results from the scan provider
     final outcome = AccountScanOutcome(
