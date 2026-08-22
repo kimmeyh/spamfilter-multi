@@ -360,6 +360,13 @@ All incomplete items in relative priority order. Priority in increments of 10; i
 - Scope: Harold approved every F160 recommendation (2026-08-16). The 3 discontinues were applied in-sprint (2 rejected-design yaml_migration tests + the rule_evaluator design-note skip deleted). This item carries the 4 update-to-working work items: (1) gmail_api_adapter no-auth error-path tests -- channel-stub seam, or discontinue if the adapter cannot run stubbed (fallback pre-approved); (2) delete_to_trash safety trio -- adapter mock-seam investigation (highest value: guards delete-recoverability); (3) email_scanner_readonly_mode group -- rebuild against the current provider architecture (read-only enforcement is the product's core safety promise, currently uncovered); (4) yaml_migration backup-creation test -- fix the assert-timing race. The 15 keep-for-special-purpose tests stay as-is by decision.
 - Source: F160 audit (SPRINT_60_PLAN.md Task 1) + Harold's blanket approval, Sprint 60 MV, 2026-08-16.
 
+**F180. Bound message-body size at FETCH and EVALUATION time (~2-3h) Priority 10 (NEW, Sprint 62 MV -- F177 phase 2)**
+- Phase: Core App Quality / scanner
+- Platform: All (shared adapter + evaluator input)
+- Evidence (2026-08-22 live F177 validation): the m=20 batching PASSED its survival test -- the previously-fatal daysBack=0 scan (181 emails) completed in 6m17s with no kill, in-flight cost down from ~6MB to ~1.6MB per message -- but peak PSS still reached ~1.0GB, and Dart keeps freed heap pages mapped afterward (no manual GC/release exists; a live `am send-trim-memory` attempt could not reduce it). The remaining allocation source is FULL message bodies: `BODY.PEEK[]` pulls multi-MB MIME per message, and rule evaluation runs the whole regex set over the full decoded body.
+- Fix shape (pre-recorded in F177's registration as the next lever): (1) fetch headers + a bounded text portion (`BODY.PEEK[HEADER]` + partial `BODY.PEEK[TEXT]<0.N>`), or (2) cap the body handed to the evaluator (e.g., first 256KB -- body rules match marketing phrases, not megabyte tails), or both. Outcome-equivalence test must define what a body-rule match against a truncated body means (document the cap as a matching contract, not silently).
+- Source: Sprint 62 F177 on-device validation, 2026-08-22.
+
 **F179. Subject-blocking phrase picker -- user selects (or GenAI recommends) the blocking SUBSET of a subject (~3-5h) Priority HOLD (NEW, Sprint 62 MV -- Harold; gated on the GenAI track)**
 - Phase: Core App Quality / rules UX
 - Platform: All (shared review popup)
