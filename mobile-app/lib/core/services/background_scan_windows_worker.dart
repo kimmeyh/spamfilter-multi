@@ -12,10 +12,10 @@ import '../providers/email_scan_provider.dart';
 import '../providers/rule_set_provider.dart';
 import '../services/app_environment.dart';
 import '../services/app_version.dart';
-import '../services/email_scanner.dart';
 import '../../adapters/storage/app_paths.dart';
 import '../../adapters/storage/secure_credentials_store.dart';
 import '../../util/redact.dart';
+import 'background_scan_core.dart';
 
 /// Windows-specific background scan worker
 ///
@@ -530,67 +530,28 @@ class BackgroundScanWindowsWorker {
     required RuleSetProvider ruleSetProvider,
     required SettingsStore settingsStore,
   }) async {
-    _logger.i('Scanning account: ${Redact.accountId(accountId)} (platform: $platformId)');
-
-    // Get effective background scan settings for this account
-    final scanMode = await settingsStore.getEffectiveScanMode(
-      accountId,
-      isBackground: true,
-    );
-    final folders = await settingsStore.getEffectiveFolders(
-      accountId,
-      isBackground: true,
-    );
-
-    // [NEW] ISSUE #153: Load days-back setting for background scans
-    final daysBack = await settingsStore.getEffectiveDaysBack(
-      accountId,
-      isBackground: true,
-    );
-
-    _logger.d('Scan mode: ${scanMode.name}, folders: $folders, daysBack: $daysBack');
-    await _bgLog('Scan settings for ${Redact.accountId(accountId)}: mode=${scanMode.name}, folders=$folders, daysBack=$daysBack');
-
-    // Create a headless scan provider (no UI listeners in background mode)
-    final scanProvider = EmailScanProvider();
-    scanProvider.initializeScanMode(mode: scanMode);
-
-    // Create and run the email scanner
-    final scanner = EmailScanner(
-      platformId: platformId,
+    // F161 (Sprint 61): the per-account scan body moved VERBATIM to the shared
+    // BackgroundScanCore so the Android WorkManager worker runs the identical
+    // orchestration instead of a drift-prone copy (ADR-0042; the Sprint 60
+    // accounts-FK bug lived in exactly such a platform-local orchestration).
+    // This wrapper keeps the worker's call sites and _ScanResult type
+    // unchanged. dbHelper stays a parameter: the scanner reaches the database
+    // through its own initialization, but the signature is part of this
+    // worker's tested surface and is left as-is.
+    final outcome = await BackgroundScanCore.scanAccount(
       accountId: accountId,
+      platformId: platformId,
       ruleSetProvider: ruleSetProvider,
-      scanProvider: scanProvider,
+      settingsStore: settingsStore,
     );
-
-    await scanner.scanInbox(
-      daysBack: daysBack,
-      folderNames: folders,
-      scanType: 'background',
-    );
-
-    // Extract results from the scan provider
-    final emailsProcessed = scanProvider.processedCount;
-    final deletedCount = scanProvider.deletedCount;
-    final movedCount = scanProvider.movedCount;
-    final safeCount = scanProvider.safeSendersCount;
-    final unmatchedCount = scanProvider.noRuleCount;
-    final errorCount = scanProvider.errorCount;
-
-    _logger.i(
-      'Account scan completed: ${Redact.accountId(accountId)} - '
-      'Processed: $emailsProcessed, Deleted: $deletedCount, Moved: $movedCount, '
-      'Safe: $safeCount, No Rule: $unmatchedCount, Errors: $errorCount',
-    );
-
     return _ScanResult(
-      emailsProcessed: emailsProcessed,
-      deletedCount: deletedCount,
-      movedCount: movedCount,
-      safeCount: safeCount,
-      unmatchedCount: unmatchedCount,
-      errorCount: errorCount,
-      scanProvider: scanProvider,
+      emailsProcessed: outcome.emailsProcessed,
+      deletedCount: outcome.deletedCount,
+      movedCount: outcome.movedCount,
+      safeCount: outcome.safeCount,
+      unmatchedCount: outcome.unmatchedCount,
+      errorCount: outcome.errorCount,
+      scanProvider: outcome.scanProvider,
     );
   }
 }

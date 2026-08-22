@@ -1,4 +1,4 @@
-Background Scanning runs the same rules engine as Manual Scan, but on a schedule -- the app wakes up the Windows Task Scheduler (or Android WorkManager) without an open window. Scan Mode, Scan Range, and Default Folders are shared with Manual Scan (see that section above).
+Background Scanning runs the same rules engine as Manual Scan, but on a schedule -- the app wakes up through the operating system's scheduler without an open window. Scan Mode, Scan Range, and Default Folders are shared with Manual Scan (see that section above).
 
 Background Scanning is configured **per account**. The Background tab shows which account you are configuring (see the account header at the top of the tab), and each enabled account gets its own scheduled entry that runs on its own frequency. Enabling it on one account does not enable it on the others.
 

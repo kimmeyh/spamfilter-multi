@@ -232,7 +232,14 @@ if ($branch -match '_Sprint_(\d+)') {
 
                 # (a) Status file phase marker -- authoritative.
                 $statusText = [string]$stW.current_sprint.status
-                if ($statusText -match '(?i)(manual validation|manual-validation|phase 5\.3|phase 5\.[4-9]|phase 6|phase 7|retrospective|code review|awaiting harold|validation feedback)') {
+                # F170 (Sprint 61): the Phase 8 RELEASE CYCLE markers are added here. The
+                # whole cycle -- `main` merge, refinement pass 1, Store release,
+                # refinement pass 2 -- sits AFTER Manual Validation, so asking Harold
+                # questions there is correct. Previously this was safe only by ACCIDENT
+                # (no plan file existed yet, so Gate 1b exited first); the moment a
+                # next-sprint plan stub is created -- which SPRINT_CHECKLIST.md MANDATES
+                # at Phase 7.7 -- that accident breaks. This makes the exemption deliberate.
+                if ($statusText -match '(?i)(manual validation|manual-validation|phase 5\.3|phase 5\.[4-9]|phase 6|phase 7|phase 8|retrospective|code review|awaiting harold|validation feedback|release cycle|pre-kickoff|store release|completeness sweep|scope selection|awaiting scope)') {
                     exit 0  # past the enforcement window -> asking is legitimate
                 }
             }
@@ -280,9 +287,30 @@ foreach ($pat in $procPatterns) {
     }
 }
 
-# If no question mark AND no procedural phrase, allow the stop.
-# (Statements ending in a period are fine.)
-if (-not ($endsWithQuestionMark -or $matchedProcPhrase)) {
+# IMP-1 (Sprint 61 retro): ending the turn on a FUTURE COMMITMENT is the same
+# violation as asking permission -- the announced action never ran. Sprint 61
+# had three of these ("Next: F169. I'll start with the dropdown." <turn ends>).
+# Checked against the message TAIL only, so mid-message narration that is
+# followed by more content does not trip it. A commitment is only a violation
+# inside the enforcement window (Gates 1b/1c above already scoped that).
+$tail = if ($trimmed.Length -gt 300) { $trimmed.Substring($trimmed.Length - 300) } else { $trimmed }
+$commitmentPatterns = @(
+    "(?i)\b(i|we)('ll| will)( now| next)? (start|begin|proceed|do|run|build|create|update|fix|implement|write|execute|extract|wire|add|move on|continue|tackle|pick up)\b[^.!?]*[.!]\s*$"
+    '(?i)\bnext[,:]? (i|we)[^.!?]*[.!]\s*$'
+    '(?i)\b(proceeding|moving) (to|on to)\b[^.!?]*[.!]\s*$'
+    '(?i)\bnow (executing|starting|beginning|building|running|implementing)\b[^.!?]*[.!]\s*$'
+)
+$matchedCommitment = $false
+foreach ($pat in $commitmentPatterns) {
+    if ($tail -match $pat) {
+        $matchedCommitment = $true
+        break
+    }
+}
+
+# If no question mark AND no procedural phrase AND no dangling commitment,
+# allow the stop. (Statements ending in a period are fine.)
+if (-not ($endsWithQuestionMark -or $matchedProcPhrase -or $matchedCommitment)) {
     exit 0
 }
 
@@ -359,7 +387,7 @@ foreach ($pat in $legitimatePatterns) {
 $correction = @"
 [BLOCKED by sprint-auto-advance hook]
 
-You ended your turn with a procedural question on branch '$branch' (a sprint feature branch). This violates the Phase Auto-Advance Rule (CLAUDE.md section 7 'Development Philosophy: Co-Lead Developer Collaboration' item 7) and the Standing Approval Inventory (docs/SPRINT_EXECUTION_WORKFLOW.md Phase 3.7).
+You ended your turn with a procedural question OR a dangling future commitment (announcing the next action without executing it -- IMP-1, Sprint 61 retro) on branch '$branch' (a sprint feature branch). This violates the Phase Auto-Advance Rule (CLAUDE.md section 7 'Development Philosophy: Co-Lead Developer Collaboration' item 7) and the Standing Approval Inventory (docs/SPRINT_EXECUTION_WORKFLOW.md Phase 3.7).
 
 Sprint-plan approval at Phase 3 is DURABLE authorization through Manual Validation. The acceptable stopping criteria are enumerated in docs/SPRINT_STOPPING_CRITERIA.md sections 1-9. 'Confirming the next step' is not on that list.
 

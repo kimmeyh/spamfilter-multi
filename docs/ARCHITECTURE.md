@@ -2,7 +2,7 @@
 
 **Purpose**: Detailed architectural documentation for the spamfilter-multi Flutter application
 
-**Last Updated**: August 16, 2026 (Sprint 60: F144 removed the unwired Android WorkManager background-scan code, ScanFrequency extracted; prior: Sprint 42 F98 per-account background scanning per ADR-0039)
+**Last Updated**: August 20, 2026 (Sprint 61: F161 Android background scheduling via the ADR-0042 platform factory -- BackgroundScanCore shared pipeline, BackgroundScanScheduler adapters, AndroidBackgroundScanWorker; prior: Sprint 60 F144 removal, Sprint 42 F98 per-account scanning per ADR-0039)
 
 ## SPRINT EXECUTION Documentation
 
@@ -181,8 +181,11 @@ Business logic and domain services.
 | Service | Purpose |
 |---------|---------|
 | **BackgroundModeService** | Detects `--background-scan` CLI flag in main.dart |
-| **BackgroundScanWindowsWorker** | Headless worker for Windows Task Scheduler scans |
-| **ScanFrequency** (`scan_frequency.dart`, F144 Sprint 60) | Shared frequency enum for scheduling UI + Windows scheduler (extracted when the unwired Android WorkManager code -- BackgroundScanManager/Service/Worker/NotificationService -- was removed; Android scheduler is F161) |
+| **BackgroundScanCore** (`background_scan_core.dart`, F161 Sprint 61) | The per-account scan orchestration BOTH platforms run (settings resolution with `isBackground: true`, headless EmailScanProvider, shared EmailScanner, persistence) -- extracted verbatim from the Windows worker so background scans are the identical pipeline everywhere |
+| **BackgroundScanScheduler** (`background_scan_scheduler.dart`, F161 Sprint 61, ADR-0042 platform factory) | Shared scheduling contract (isSupported/isScheduled/schedule/cancel) with `WindowsSchedulerAdapter` (Task Scheduler), `AndroidSchedulerAdapter` (WorkManager per-account unique work, 15-min floor, network-required, UPDATE policy), and `UnsupportedPlatformScheduler` (explicit named no-op); resolved by `BackgroundScanSchedulerFactory` with a test override seam |
+| **AndroidBackgroundScanWorker** (`android_background_scan_worker.dart`, F161 Sprint 61) | WorkManager dispatcher (`@pragma('vm:entry-point')`) + worker mirroring the Windows preamble; completion notification via flutter_local_notifications |
+| **BackgroundScanWindowsWorker** | Headless worker for Windows Task Scheduler scans (delegates the per-account scan to BackgroundScanCore since F161) |
+| **ScanFrequency** (`scan_frequency.dart`, F144 Sprint 60) | Shared frequency enum for scheduling UI + both schedulers (extracted when the unwired Android WorkManager code -- BackgroundScanManager/Service/Worker/NotificationService -- was removed; the working Android scheduler landed as F161, Sprint 61) |
 | **WindowsTaskSchedulerService** | Create/manage Windows Task Scheduler tasks; per-account tasks (ADR-0014, ADR-0039 F98) -- `taskNameFor(accountId)`, enumerate/orphan cleanup |
 | **WindowsNotificationService** | Windows toast notifications via PowerShell WinRT (ADR-0018) |
 | **WindowsSystemTrayService** | System tray icon with context menu (ADR-0019) |

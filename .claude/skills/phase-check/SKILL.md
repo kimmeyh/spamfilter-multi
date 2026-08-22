@@ -14,7 +14,8 @@ Verify the current sprint phase is complete and review the next phase requiremen
 
 1. **Read the Sprint Checklist**: Read `docs/SPRINT_CHECKLIST.md`
 
-2. **Determine Current Phase**: Based on the conversation context, identify which sprint phase was just completed (Phase 2, 3, 4, 5, 6, or 7)
+2. **Determine Current Phase**: Based on the conversation context, identify which sprint phase was just completed (Phase 2, 3, 4, 5, 6, 7, or 8)
+   - **Phase 8 is the Release Cycle** (F170, Sprint 61): merge to `main` (parallel) -> refinement pass 1 (completeness sweep) -> Store release -> refinement pass 2 (scope selection) -> next sprint's Phase 3. Authoritative definition: SPRINT_EXECUTION_WORKFLOW.md "Phase 8: The Release Cycle"; checklist items 8.1-8.5 in SPRINT_CHECKLIST.md. It runs after EVERY merge to `develop`, not conditionally.
 
 3. **Verify Current Phase Completion**: List all checklist items for the current phase and mark each as:
    - [OK] Complete

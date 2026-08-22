@@ -1,65 +1,68 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-16 (Sprint 60 Phase 7.7 close-out)",
+  "_last_updated": "2026-08-21 (Sprint 61 Phase 7 COMPLETE: retro + all 4 IMPs applied; PR #347 set ready for review)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
+    "number": 61,
+    "branch": "feature/20260816_Sprint_61",
+    "pr_number": 347,
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/347",
+    "start_date": "2026-08-17",
+    "status": "Phase 7 COMPLETE (2026-08-21) -- MV complete 2026-08-20 (F161 count-parity PASS; F174-F178 registered; Windows F171/F169 PASS; F161 AC-4 carried to Sprint 62 validation). Retrospective complete: 14 categories x 4 roles, Harold combined feedback verbatim; ALL 4 improvements approved (\"all\") and applied (IMP-1 dangling-commitment hook gate, IMP-2 factory call-site policy gate + ADR-0042 rule, IMP-3/4 memory saves). Close-out docs done: CHANGELOG, master plan (Sprint 60+61 completion metadata; 8 items DONE-pruned), SPRINT_61_RETROSPECTIVE.md, SPRINT_61_SUMMARY.md, SPRINT_62_PLAN.md stub, ARCHITECTURE.md F161 components. Suite 1,893/26/0; hooks 49/49. PR #347 READY FOR REVIEW -- awaiting Harold merge, then Phase 8 Release Cycle.",
+    "plan_approved": true,
+    "plan_approval_date": "2026-08-17",
+    "blanket_execution_approved": true,
+    "scope": [
+      "Task0-lineendings",
+      "F170",
+      "F169",
+      "F168",
+      "F172",
+      "F171",
+      "F162",
+      "F167",
+      "F161"
+    ],
+    "_scope_note": "Harold-selected 2026-08-17. F163 EXCLUDED after verification: 22 skip sites remain across 7 files (26 skipped in the suite), so the 11 update-to-working verdicts are NOT done -- F160 delivered the audit, F163 is the implementation. Stays Priority 26 for Sprint 62. New items registered this session: F171 (min-window sweep), F172 (version on 8 screens), F173 (periodic testing deep dive, recurring HOLD).",
+    "_mv_note": "Phase 5.3 reached 2026-08-17. From Manual Validation onward the work is Harold-driven, so asking questions is CORRECT rather than an auto-advance violation -- this status field is what tells sprint-auto-advance Gate 1c the window has closed."
+  },
+  "previous_sprint": {
     "number": 60,
     "branch": "feature/20260815_Sprint_60",
     "pr_number": 335,
-    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/335",
-    "start_date": "2026-08-16",
-    "status": "Phase 7.7 CLOSE-OUT -- retro COMPLETE (14x4; Cat 1 Good with IMP-1 python-tooling rule applied as memory; Cats 2-12 Very Good; IMP-2/3/4 declined; Cat 14 -> F167 registered). MV complete (4 rounds, approved 2026-08-16). Docs triad done (PLAN + RETROSPECTIVE + SUMMARY); master plan rolled; Sprint 61 stub created; ARCHITECTURE.md F144 staleness fixed. PR #335 to be marked Ready at end of 7.7. Suite 1,859/26/0, analyze clean.",
-    "plan_approved": true,
-    "plan_approval_date": "2026-08-16",
-    "blanket_execution_approved": true,
-    "scope": [
-      "F160",
-      "F157",
-      "F158",
-      "F159",
-      "F143",
-      "F144",
-      "F156",
-      "F166"
-    ],
-    "_scope_note": "F166 added mid-sprint per Harold's plan-then-execute steering (card #336). Original 7 tasks + F166 all complete."
-  },
-  "previous_sprint": {
-    "number": 59,
-    "branch": "feature/20260815_Sprint_59",
-    "pr_number": 326,
-    "status": "CLOSED -- merged #326->develop, #327->main 2026-08-15; cards #322-#325 + #315 closed; shipped as 0.9.0.0/Submission 16."
+    "status": "CLOSED -- PR #335 merged to develop 2026-08-17 (merge commit 639e191), develop merged to main by Harold. Cards #328-#334 + #336 all closed. Shipped: F160 audit (skips 29->26), F156 Android walk-through (2 CRITICAL Android fixes: PRAGMA, accounts-FK), F157 gradle/minSdk, F158 Android CI job, F159 metadata gates, F143 touch selection, F144 dead-scheduler removal, F166 header redesign, plus 4 MV rounds and a 3-round PR review (Copilot 6 + Claude cowork 13 findings). Final suite 1,862/26/0."
   },
   "github_issues": [
-    328,
-    329,
-    330,
-    331,
-    332,
-    333,
-    334,
-    336
+    338,
+    339,
+    340,
+    341,
+    342,
+    343,
+    344,
+    345,
+    346
   ],
-  "_github_issues_note": "Sprint 60 cards (verified against gh issue list 2026-08-16): #328 F160, #329 F157, #330 F158, #331 F159, #332 F143, #333 F144, #334 F156, #336 F166 -- all work complete; close cards at post-merge cleanup. Older open items: #318/#319/#320 (Sprint 58-era), #315 closed with Sprint 59.",
+  "_github_issues_note": "Sprint 61 cards #338-#346, created at Phase 3.3.1, ALL CLOSED as work completed (#338 F169, #339 F168, #340 Task 0, #341 F170, #342 F172, #343 F171, #344 F162, #345 F167, #346 F161). KEEP the numbers listed even after closing: require-sprint-cards reads an empty array as 'Phase 3.3.1 never happened' and blocks commits -- emptying it on 2026-08-18 caused exactly that false positive, twice, because the fix was chained into the blocked command (the Sprint 60 lesson re-learned). The array empties at the NEXT sprint's rollover, not at card closure.",
   "test_metrics": {
-    "tests_passing": 1859,
+    "tests_passing": 1893,
     "tests_skipped": 26,
     "tests_failing": 0,
     "analyzer_warnings": 0,
-    "_test_metrics_note": "1,859 / 26 skipped / 0 failed as of 2026-08-16 (Sprint 60 final full run, analyzer clean). Skips 29 -> 26 via F160 dispositions (3 discontinued tests deleted). Net vs Sprint 59's 1,893: F144 deleted the unwired background-scan code AND its test files; new tests added for touch selection (3), compact/filter (3), scan persistence (1), demo label (1), popup width, msix gate, dropdown updates. All mutation-verified.",
-    "hook_test_cases": "45/45 passing (.claude/hooks/run-test-cases.ps1) -- unchanged since Sprint 52.",
+    "_test_metrics_note": "1,893 passed / 26 skipped / 0 failed at Phase 7 close (2026-08-21, full run --concurrency=4), analyze clean. Adds factory_call_site_test (IMP-2).",
+    "hook_test_cases": "49/49 passing -- +2 IMP-1 cases (violation-13 dangling commitment, allow-16 past-tense).",
     "winwright_sweep": "End-of-sprint sweep RUN 2026-08-16 at close-out (lib/ui touched): 3/3 scripts PASS (f124_rule_labels 10 steps, f129_no_rule_review 10 steps, mt2c_no_rule_sweep 25 steps), DB drift none. First run failed mt2c at its DOCUMENTED data-precondition (Harold's MV rule/safe-sender adds addressed the old baseline rows); baselines refreshed from the live dev DB per the script's own maintenance note, re-run PASS.",
     "coverage_percent": null,
     "_note": "Run full suites with --concurrency=4 (Sprint 49 IMP-5)."
   },
   "store_release": {
-    "status": "0.9.0.0 / Submission 16 SUBMITTED 2026-08-16 (Harold, Partner Center), IN CERTIFICATION (pre-processing confirmed via overview screenshot; packages page showed v0.9.0.0 ranked 1 with v0.8.0.0 removal). Third MINOR release (Sprint 59 F154 feat). Build evidence: Checks A/B/manifest/size all PASS (see git history of this block, commit c096580). Pre-merge prod SHA 0cf0ea9. On certification: Step 7 close-out -- STORE_VERSION_STATUS Live row, CHANGELOG [0.9.0] heading + links, dev bump 0.9.0 -> 0.9.1, sprint retro addendum already notes the submission timestamp.",
-    "live_version": "0.8.0.0",
-    "submission": 15,
-    "certified_date": "2026-08-15",
-    "pending_upload_version": "0.9.0.0",
-    "submission_pending": 16,
+    "status": "0.10.0.0 / Submission 17 CERTIFIED AND LIVE 2026-08-16 22:17 -- verified by DIRECT Partner Center observation (authenticated Playwright session): Store presence = Submission 17, certification badge cleared, 'Congrats! Your product is now updated'. Submit-to-live ~26 MINUTES (21:51 -> 22:17), the first submission measured at a fixed 10-minute polling cadence -- half the previous apparent best case, which was an observation-cadence artifact (Harold's correction). Fourth MINOR release. Build evidence: Check A dart-defines PASS; Check B self-test 6/6 PASS; manifest Identity 0.10.0.0, 17.07 MB. NEXT RELEASE: dev currently EQUALS live at 0.10.0 -- bump dev at that release's Step 1.",
+    "live_version": "0.10.0.0",
+    "submission": 17,
+    "certified_date": "2026-08-16",
+    "pending_upload_version": null,
+    "submission_pending": null,
     "submitted_date": "2026-08-16"
   },
   "environment_notes": [
@@ -69,10 +72,9 @@
   ],
   "blocking_issues": [],
   "next_actions": [
-    "Mark PR #335 Ready for Review at end of 7.7 (then 7.7.5 announce)",
-    "Harold: review/merge PR #335 -> develop, then develop -> main",
-    "On merge: branch feature/<date>_Sprint_61 FROM the Sprint 60 branch immediately (checklist 6.6)",
-    "On Submission 16 certification: Store release Step 7 close-out (STORE_VERSION_STATUS Live row, CHANGELOG [0.9.0] heading, dev bump 0.9.0 -> 0.9.1)",
-    "Sprint 61 Phase 1 refinement from master plan candidates (F161/F162/F167/F163/F164/F165)"
+    "Harold: review + merge PR #347 to develop",
+    "ON MERGE: branch feature/<date>_Sprint_62 FROM the Sprint 61 branch immediately (checklist 6.6); empty github_issues at that rollover",
+    "Phase 8: Harold merges develop->main (parallel); refinement pass 1 completeness sweep; Store release per STORE_RELEASE_PROCESS.md (bump dev 0.10.0 first -- dev currently EQUALS live); refinement pass 2 scope selection",
+    "Sprint 62 MV carry-over: Windows background-scan regression glance (F161 AC-4)"
   ]
 }

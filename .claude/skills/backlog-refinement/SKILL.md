@@ -10,6 +10,22 @@ Phase 1 Backlog Refinement is a DETERMINISTIC process (Harold, Sprint 50): there
 nothing to figure out, only a template to follow exactly, every time. This skill
 encodes it so the presentation can never drift again.
 
+## WHICH PASS ARE YOU IN? (F170, Sprint 61 -- decide this FIRST)
+
+Refinement runs TWICE per cycle, as Phase 8.2 and Phase 8.4. The steps below are shared, but
+**step 5 applies to pass 2 only**:
+
+- **Pass 1 -- COMPLETENESS SWEEP (Phase 8.2)**, immediately after the sprint PR merges to `develop`:
+  confirm every sprint-close step was captured and completed (cards closed, docs triad present,
+  master plan rolled, status file current, shipped items pruned). **SKIP step 5 -- this pass does
+  NOT select scope.** Selecting here is premature: the Store release has not happened and close-out
+  gaps may still be open.
+- **Pass 2 -- SCOPE SELECTION (Phase 8.4)**, once the Store submission is in process: present the
+  slate and capture the selection. **Step 5 applies.**
+
+If you cannot tell which pass you are in, read `.claude/sprint_status.json`
+`current_sprint.status`, and see `SPRINT_EXECUTION_WORKFLOW.md` "Phase 8: The Release Cycle".
+
 ## Steps (in order, no substitutions)
 
 1. **READ THE FORMAT FIRST -- IN THIS TURN**: Read `docs/BACKLOG_REFINEMENT.md`
@@ -49,6 +65,8 @@ encodes it so the presentation can never drift again.
      list, not woven into it
 
 5. **Capture the Product Owner's selection** for the Phase 3 plan doc.
+   **PASS 2 ONLY** -- in pass 1 (the completeness sweep) skip this step entirely; there is no
+   selection to make yet (F170, Sprint 61).
 
 6. **Document + commit** (Step 6): update ALL_SPRINTS_MASTER_PLAN.md (new items
    in the same format, re-prioritized order, obsolete items removed with reason);

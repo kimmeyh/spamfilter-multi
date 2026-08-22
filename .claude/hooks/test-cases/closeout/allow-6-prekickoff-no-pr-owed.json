@@ -1,0 +1,8 @@
+{
+  "cwd": "D:/Data/Harold/github/spamfilter-multi/.claude/hooks/test-cases/fixtures/prekickoff-sprint",
+  "branch_override": "feature/20260816_Sprint_61",
+  "hook_event_name": "Stop",
+  "dirty_zero_files_override": "",
+  "session_id": "closeout-allow-6",
+  "last_assistant_message": "Sprint 60 is closed out and 0.10.0.0 is live on the Store. Sprint 61 is at pre-kickoff awaiting your scope decision -- ready for next sprint scope selection."
+}

@@ -1,0 +1,38 @@
+# Line-ending policy (Sprint 61 Task 0, approved by Harold 2026-08-16).
+#
+# WHY: with no .gitattributes, Git's autocrlf on Windows converted line endings
+# per-checkout, so every commit emitted "LF will be replaced by CRLF" warnings
+# and files written LF by tooling showed as fully-changed diffs. Normalizing in
+# the repository removes that entire class of noise.
+#
+# The repo stores LF and checks out LF. LF is also what the Flutter/Dart
+# ecosystem and the ubuntu CI runners expect.
+* text=auto eol=lf
+
+# EXCEPTIONS -- Windows-native script types stay CRLF:
+#  - .bat / .cmd: cmd.exe has documented parsing edge cases with LF line
+#    endings (notably around labels used by goto), so CRLF is the safe default.
+#  - .ps1: PowerShell itself handles LF fine, but Authenticode signature blocks
+#    assume CRLF, so a signed script would break. Pinned pre-emptively.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary assets -- never touch these.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.msix binary
+*.appx binary
+*.keystore binary
+*.jks binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+*.xlsx binary
+*.db binary

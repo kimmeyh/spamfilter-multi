@@ -245,3 +245,9 @@ cython_debug/
 #.idea/
 
 
+
+# Playwright MCP session artifacts (snapshots/console logs, machine-local)
+.playwright-mcp/
+
+# Kotlin compiler session artifacts (build byproducts)
+mobile-app/android/.kotlin/
