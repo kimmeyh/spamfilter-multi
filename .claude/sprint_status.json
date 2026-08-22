@@ -1,6 +1,6 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-22 (0.11.0.0 LIVE; pass-2 slate presented, awaiting scope selection)",
+  "_last_updated": "2026-08-22 (Sprint 62 plan drafted, cards created, awaiting 3.7 approval)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
@@ -9,11 +9,18 @@
     "pr_number": null,
     "_pr_number_null_reason": "Phase 8 Release Cycle in progress -- no scope selected, no plan, no cards, no PR yet. Legitimate until Phase 3.3.1.",
     "start_date": "2026-08-21",
-    "status": "PHASE 8 RELEASE CYCLE: 8.1 DONE (main merged), 8.2 DONE (pass-1 sweep), 8.3 DONE (0.11.0.0 LIVE, Submission 18), 8.4 IN PROGRESS -- pass-2 slate presented 2026-08-22, awaiting Harold scope selection for Sprint 62. Then Phase 3 planning.",
+    "status": "Phase 3 PLANNING: scope selected by Harold at 8.4 (F177, F175, F178, F176, F174, F163 + F161 AC-4 MV carry-over). SPRINT_62_PLAN.md drafted with full cards; GitHub cards #349-#354 created; draft PR at 3.3.1. AWAITING Phase 3.7 approval.",
     "plan_approved": false,
     "plan_approval_date": null,
     "blanket_execution_approved": false,
-    "scope": [],
+    "scope": [
+      "F177",
+      "F175",
+      "F178",
+      "F176",
+      "F174",
+      "F163"
+    ],
     "_scope_note": "Scope selection happens at Phase 8.4. Candidates flagged at Sprint 61 close: F168 follow-on/F175/F177 (fresh evidence), F178 (small, screenshot-documented), F163. Category 13 carry-ins in SPRINT_62_PLAN.md stub."
   },
   "previous_sprint": {
@@ -22,8 +29,15 @@
     "pr_number": 347,
     "status": "CLOSED -- PR #347 merged to develop 2026-08-21 (merge 0ad1107), develop merged to main by Harold (PR #348, 64e6ed7). Cards #338-#346 all closed; zero open issues verified. Shipped: Task 0 line endings, F170 Phase 8 encoding, F169 dropdown, F168 scope warning, F172 version label, F171 min-window sweep, F162/ADR-0042, F167 Help wording, F161 Android scheduler (count-parity PASS; Play prerequisite MET). Retro complete, all 4 IMPs applied; Copilot review 2/2 addressed+resolved. Final suite 1,893/26/0; hooks 49/49."
   },
-  "github_issues": [],
-  "_github_issues_note": "EMPTIED at the Sprint 62 rollover 2026-08-21 per the rule: the array empties at next-sprint rollover only, never at card closure. Sprint 62 cards will populate it at Phase 3.3.1.",
+  "github_issues": [
+    349,
+    350,
+    351,
+    352,
+    353,
+    354
+  ],
+  "_github_issues_note": "Sprint 62 cards created at Phase 3.3.1 (2026-08-22): #349 F177, #350 F174, #351 F175, #352 F178, #353 F176, #354 F163. KEEP numbers listed after closure; array empties only at the NEXT sprint rollover.",
   "test_metrics": {
     "tests_passing": 1893,
     "tests_skipped": 26,
