@@ -50,6 +50,29 @@ class EmailMessage {
     this.authClassificationOverride,
   });
 
+  /// F177 (Sprint 62): a copy of this message whose [body] is truncated to
+  /// [maxBodyLength] characters. Used by EmailScanner AFTER rule evaluation
+  /// so retained per-scan records stop holding full message bodies (the
+  /// ~7-10MB-per-message retention behind the Sprint 61 LOW_MEMORY kills).
+  /// Everything a downstream consumer needs survives: headers (auth
+  /// classification), messageIdHeader (dedup/target-folder search), id,
+  /// from, subject, folder. Nothing in the UI or persistence reads more
+  /// than a 100-character body preview (kBodyPreviewMaxLength, SEC-14).
+  EmailMessage copyWithTruncatedBody(int maxBodyLength) {
+    if (body.length <= maxBodyLength) return this;
+    return EmailMessage(
+      id: id,
+      from: from,
+      subject: subject,
+      body: body.substring(0, maxBodyLength),
+      headers: headers,
+      receivedDate: receivedDate,
+      folderName: folderName,
+      messageIdHeader: messageIdHeader,
+      authClassificationOverride: authClassificationOverride,
+    );
+  }
+
   /// Extract sender email from 'From' header
   /// Uses PatternNormalization to handle plus-sign subaddressing
   String getSenderEmail() {

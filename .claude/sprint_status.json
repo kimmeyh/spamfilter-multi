@@ -1,18 +1,17 @@
 {
   "_description": "Sprint status file that persists across context compaction. Update after each phase/sub-phase completion.",
-  "_last_updated": "2026-08-22 (Sprint 62 plan drafted, cards created, awaiting 3.7 approval)",
+  "_last_updated": "2026-08-22 (Sprint 62 approved, execution started)",
   "_usage": "Read this file after context compaction to restore sprint approval state and progress.",
   "_staleness_note": "This file had drifted 15 sprints (last updated at Sprint 35, 2026-04-19) before being refreshed at Sprint 50 close-out. It is a Phase 7.7 checklist item -- update it at every sprint close-out, not opportunistically.",
   "current_sprint": {
     "number": 62,
     "branch": "feature/20260821_Sprint_62",
-    "pr_number": null,
-    "_pr_number_null_reason": "Phase 8 Release Cycle in progress -- no scope selected, no plan, no cards, no PR yet. Legitimate until Phase 3.3.1.",
+    "pr_number": 355,
     "start_date": "2026-08-21",
-    "status": "Phase 3 PLANNING: scope selected by Harold at 8.4 (F177, F175, F178, F176, F174, F163 + F161 AC-4 MV carry-over). SPRINT_62_PLAN.md drafted with full cards; GitHub cards #349-#354 created; draft PR at 3.3.1. AWAITING Phase 3.7 approval.",
-    "plan_approved": false,
-    "plan_approval_date": null,
-    "blanket_execution_approved": false,
+    "status": "Phase 4 EXECUTION (approved 2026-08-22, blanket through MV): Task 1 F177 in progress. Order: F177 -> F174 -> F175 -> F178 -> F176 -> F163.",
+    "plan_approved": true,
+    "plan_approval_date": "2026-08-22",
+    "blanket_execution_approved": true,
     "scope": [
       "F177",
       "F175",
@@ -21,7 +20,8 @@
       "F174",
       "F163"
     ],
-    "_scope_note": "Scope selection happens at Phase 8.4. Candidates flagged at Sprint 61 close: F168 follow-on/F175/F177 (fresh evidence), F178 (small, screenshot-documented), F163. Category 13 carry-ins in SPRINT_62_PLAN.md stub."
+    "_scope_note": "Scope selection happens at Phase 8.4. Candidates flagged at Sprint 61 close: F168 follow-on/F175/F177 (fresh evidence), F178 (small, screenshot-documented), F163. Category 13 carry-ins in SPRINT_62_PLAN.md stub.",
+    "pr_url": "https://github.com/kimmeyh/spamfilter-multi/pull/355"
   },
   "previous_sprint": {
     "number": 61,

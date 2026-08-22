@@ -167,9 +167,14 @@ Business logic and domain services.
 2. Load credentials from `SecureCredentialsStore`
 3. Connect to email provider
 4. Initialize scan result persistence (database)
-5. For each folder: fetch messages, evaluate against rules, take actions (batch operations)
+5. For each folder: fetch messages **in bounded batches of 20 (F177, Sprint 62)** -- each batch
+   is evaluated against rules immediately and reduced to a body-truncated record
+   (`kBodyPreviewMaxLength`) before the next batch is fetched, so full message content is never
+   accumulated (the fix for the Sprint 61 unbounded-fetch LOW_MEMORY kills); actions are then
+   taken from the evaluated records in batch operations (Issue #144 two-phase design preserved)
 6. Persist individual email actions to database
-7. Update UI progress (throttled per [ADR-0022](adr/0022-throttled-ui-progress-updates.md))
+7. Update UI progress (throttled per [ADR-0022](adr/0022-throttled-ui-progress-updates.md);
+   per-batch fetch progress since F177)
 8. Finalize scan results
 
 #### RuleConflictDetector

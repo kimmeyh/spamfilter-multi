@@ -64,24 +64,46 @@ class _RecordingImapAdapter extends GenericIMAPAdapter {
   Future<List<EmailMessage>> fetchMessages({
     required int daysBack,
     required List<String> folderNames,
+    Future<void> Function(
+      List<EmailMessage> batch,
+      int fetchedSoFar,
+      int totalUids,
+    )? onBatch,
   }) async {
     fullFetchCallCount++;
     // Simulate the full mailbox: many more messages than the incremental
     // path would return, matching the real AOL Bulk-Mail-301-vs-8 defect
     // shape (full fetch sees everything, incremental sees only the tail).
-    return List.generate(
+    final all = List.generate(
         20, (i) => _fakeMessage('${100 + i}', folderNames.first));
+    // F177: honor the streaming contract -- with onBatch, hand off and
+    // return empty, as the real adapter does.
+    if (onBatch != null) {
+      await onBatch(all, all.length, all.length);
+      return [];
+    }
+    return all;
   }
 
   @override
   Future<ImapIncrementalFetchResult> fetchMessagesIncremental({
     required int startUid,
     required String folderName,
+    Future<void> Function(
+      List<EmailMessage> batch,
+      int fetchedSoFar,
+      int totalUids,
+    )? onBatch,
   }) async {
     incrementalFetchCallCount++;
     lastIncrementalStartUid = startUid;
+    final emails = [_fakeMessage('${startUid + 1}', folderName)];
+    if (onBatch != null) {
+      await onBatch(emails, emails.length, emails.length);
+      return ImapIncrementalFetchResult(emails: [], newCursor: startUid + 1);
+    }
     return ImapIncrementalFetchResult(
-      emails: [_fakeMessage('${startUid + 1}', folderName)],
+      emails: emails,
       newCursor: startUid + 1,
     );
   }

@@ -92,7 +92,37 @@ after this task.
 adapter/scanner/provider with a memory-lifecycle invariant; beyond Haiku heuristics (4+ files,
 core scan path). Not top-tier: the design (m=20, per-batch loop) is already fixed and recorded.
 
-**Executed-by** (filled at completion):
+**Executed-by** (filled at completion): Fable 5 -- single-session sprint execution (continuity
+with the in-context design decisions outweighed tier hand-off; same reasoning as Sprint 61).
+
+**COMPLETION NOTES (2026-08-22)**: DONE, ~75m of 60-100m est. All ACs met:
+- AC-1: every UID FETCH bounded to `GenericIMAPAdapter.fetchBatchSize = 20` (adapter test pins
+  20/20/7 for a 47-UID folder; mutation m=10000 -> red).
+- AC-2: per-batch monotonic progress via the adapter `onBatch` handoff -> scanner `batchSink`
+  (incrementFoundEmails + updateProgress per batch).
+- AC-3: outcome equivalence pinned by a full `scanInbox` demo test against an INDEPENDENT
+  unbatched evaluation of the same messages -- identical safe/delete/move/no-rule counts.
+- AC-4: both the full-fetch (daysBack=0) and backlog-cursor incremental paths batch (adapter
+  test covers fetchMessagesIncremental streaming with correct cursor).
+- AC-5 / R-5: Gmail's network granularity is already per-message (messages.get per id); its
+  RETURNED list is bounded by the scanner's m=20 slicing, which feeds ALL list-returning paths
+  (Gmail/demo/mock) through the same evaluateBatch sink as the streamed IMAP path.
+- **Documented deviation from R-2's literal wording** (implementation choice, recorded): each
+  batch is fetched, evaluated, and reduced to a `copyWithTruncatedBody(kBodyPreviewMaxLength)`
+  record before the next fetch -- but PERSISTENCE stays at the established post-6b points,
+  preserving the Issue #144 two-phase batch-action design and the plan's own single-row
+  scan_results NFR. The memory intent (bounded retention, per-batch release) is met by
+  truncation: full bodies are evaluated, never retained. Verified no consumer reads more than
+  the 100-char preview (UI reads no `.body` at all).
+- **Test-vacuity catch worth keeping**: demo mock bodies are ALL under the 100-char cap, so the
+  first retention assertion passed even with truncation removed (mutation survived). Fixed with
+  a long-body (50KB x 25) provider injected via the new
+  `PlatformRegistry.overrideFactoryForTest` seam -- non-vacuous by construction, and the
+  truncation mutation now goes red. Four mutations verified red total.
+- New test seams: `GenericIMAPAdapter.debugSetImapClient` (fake ImapClient, scripted
+  SEARCH/FETCH), `PlatformRegistry.overrideFactoryForTest` (restore-in-tearDown contract).
+- On-emulator memory DoD check deferred to MV (with Harold's daysBack=0 AOL run -- the
+  previously-fatal case), as planned.
 
 **Step-types**: SVC-EDIT+TEST-UNIT
 
